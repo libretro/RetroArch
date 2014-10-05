@@ -56,8 +56,6 @@ void apple_input_enable_icade(bool on);
 
 void apple_input_enable_small_keyboard(bool on);
 
-uint32_t apple_input_get_icade_buttons(void);
-
 void apple_input_reset_icade_buttons(void);
 
 void apple_input_keyboard_event(bool down, unsigned code,

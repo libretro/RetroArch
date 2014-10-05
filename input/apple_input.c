@@ -244,7 +244,7 @@ void apple_input_enable_icade(bool on)
    icade_buttons = 0;
 }
 
-uint32_t apple_input_get_icade_buttons(void)
+static uint32_t apple_input_get_icade_buttons(void)
 {
    return icade_enabled ? icade_buttons : 0;
 }
