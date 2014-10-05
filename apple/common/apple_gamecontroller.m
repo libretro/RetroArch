@@ -16,6 +16,7 @@
 #include <Availability.h>
 #include "RetroArch_Apple.h"
 #import <GameController/GameController.h>
+#include "apple_gamecontroller.h"
 #include "../../input/apple_input.h"
 
 static BOOL apple_gamecontroller_available(void)
@@ -111,7 +112,7 @@ static void apple_gamecontroller_register(GCGamepad *gamepad)
 
 static void apple_gamecontroller_connect(GCController *controller)
 {
-    int32_t slot = apple_joypad_connect_gcapi();
+    int32_t slot = apple_joypad_connect_gcapi(slots);
     
     controller.playerIndex = (slot >= 0 && slot < MAX_PLAYERS) ? slot : GCControllerPlayerIndexUnset;
     
@@ -123,10 +124,11 @@ static void apple_gamecontroller_connect(GCController *controller)
 
 static void apple_gamecontroller_disconnect(GCController* controller)
 {
-    if (controller.playerIndex == GCControllerPlayerIndexUnset)
+   unsigned pad = (uint32_t)controller.playerIndex;
+    if (pad == GCControllerPlayerIndexUnset)
         return;
     
-    pad_connection_disconnect((uint32_t)controller.playerIndex);
+    pad_connection_disconnect(&slots[pad], pad);
 }
 
 void apple_gamecontroller_init(void)

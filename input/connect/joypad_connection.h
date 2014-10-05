@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "../input_common.h"
 
 typedef void (*send_control_t)(void *data, uint8_t *buf, size_t size);
 
@@ -45,25 +46,31 @@ typedef struct
     bool is_gcapi;
 } joypad_connection_t;
 
-int32_t pad_connection_connect(const char* name, void *data, send_control_t ptr);
+int32_t pad_connection_connect(joypad_connection_t *joyconn,
+   const char* name, void *data, send_control_t ptr);
 
-int32_t apple_joypad_connect_gcapi(void);
+int32_t apple_joypad_connect_gcapi(joypad_connection_t *joyconn);
 
-void pad_connection_init(void);
+void *pad_connection_init(unsigned pads);
 
-void pad_connection_destroy(void);
+void pad_connection_destroy(joypad_connection_t *joyconn);
 
-void pad_connection_disconnect(uint32_t slot);
+void pad_connection_disconnect(joypad_connection_t *joyconn,
+   unsigned index);
 
-void pad_connection_packet(uint32_t slot, uint8_t* data, uint32_t length);
+void pad_connection_packet(joypad_connection_t *joyconn,
+   unsigned index, uint8_t* data, uint32_t length);
 
-uint32_t pad_connection_get_buttons(unsigned index);
+uint32_t pad_connection_get_buttons(joypad_connection_t *joyconn,
+   unsigned index);
 
-int16_t pad_connection_get_axis(unsigned index, unsigned i);
+int16_t pad_connection_get_axis(joypad_connection_t *joyconn,
+   unsigned index, unsigned i);
 
 /* Determine if connected joypad is a hidpad backed device.
  * If false, pad_connection_packet cannot be used */
 
-bool pad_connection_has_interface(uint32_t slot);
+bool pad_connection_has_interface(joypad_connection_t *joyconn,
+   unsigned index);
 
 #endif

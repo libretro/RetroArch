@@ -16,6 +16,10 @@
 #ifndef __APPLE_RARCH_GAMECONTROLLER_H__
 #define __APPLE_RARCH_GAMECONTROLLER_H__
 
+#include "../../input/connect/joypad_connection.h"
+
+joypad_connection_t *slots;
+
 void apple_gamecontroller_init(void);
 void apple_gamecontroller_poll_all(void);
 

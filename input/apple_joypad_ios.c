@@ -24,9 +24,14 @@
 #include "../apple/iOS/bluetooth/btpad_queue.c"
 #include "connect/joypad_connection.h"
 
+joypad_connection_t *slots;
+
 static bool apple_joypad_init(void)
 {
-   pad_connection_init();
+   slots = (joypad_connection_t*)pad_connection_init(MAX_PLAYERS);
+    
+   if (!slots)
+      return false;
    return true;
 }
 
@@ -37,13 +42,13 @@ static bool apple_joypad_query_pad(unsigned pad)
 
 static void apple_joypad_destroy(void)
 {
-   pad_connection_destroy();
+   pad_connection_destroy(slots);
 }
 
 static bool apple_joypad_button(unsigned port, uint16_t joykey)
 {
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-   uint32_t buttons = pad_connection_get_buttons(port);
+   uint32_t buttons = pad_connection_get_buttons(&slots[port], port);
    if (!apple || joykey == NO_BTN)
       return false;
 
@@ -68,13 +73,13 @@ static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
       val = apple->axes[port][AXIS_NEG_GET(joyaxis)];
-      val += pad_connection_get_axis(port, AXIS_NEG_GET(joyaxis));
+      val += pad_connection_get_axis(&slots[port], port, AXIS_NEG_GET(joyaxis));
       val = (val < 0) ? val : 0;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
       val = apple->axes[port][AXIS_POS_GET(joyaxis)];
-      val += pad_connection_get_axis(port, AXIS_POS_GET(joyaxis));
+      val += pad_connection_get_axis(&slots[port], port, AXIS_POS_GET(joyaxis));
       val = (val > 0) ? val : 0;
    }
 
@@ -89,7 +94,7 @@ static void apple_joypad_poll(void)
 static bool apple_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   return pad_connection_rumble(pad, effect, strength);
+   return pad_connection_rumble(&slots[pad], pad, effect, strength);
 }
 
 static const char *apple_joypad_name(unsigned joypad)
