@@ -123,6 +123,7 @@ enum basic_event
    RARCH_CMD_CORE_INFO_DEINIT,
    RARCH_CMD_CORE_INFO_INIT,
    RARCH_CMD_CORE_DEINIT,
+   RARCH_CMD_CORE_INIT,
    RARCH_CMD_AUDIO_SET_BLOCKING_STATE,
    RARCH_CMD_AUDIO_SET_NONBLOCKING_STATE,
    RARCH_CMD_VIDEO_APPLY_STATE_CHANGES,
@@ -812,7 +813,7 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
       int *argc, char **argv);
 int rarch_main_init(int argc, char *argv[]);
 void rarch_main_set_state(unsigned action);
-void rarch_main_command(unsigned action);
+bool rarch_main_command(unsigned action);
 int rarch_main_iterate(void);
 void rarch_main_deinit(void);
 void rarch_render_cached_frame(void);

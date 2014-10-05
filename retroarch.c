@@ -1832,12 +1832,6 @@ static void init_system_info(void)
    g_extern.system.block_extract = info->block_extract;
 }
 
-static void init_system_av_info(void)
-{
-   pretro_get_system_av_info(&g_extern.system.av_info);
-   g_extern.frame_limit.last_frame_time = rarch_get_time_usec();
-}
-
 static void verify_api_version(void)
 {
    /* TODO - when libretro v2 gets added, allow for switching
@@ -1876,6 +1870,12 @@ static void validate_cpu_features(void)
 #endif
 }
 
+static void init_system_av_info(void)
+{
+   pretro_get_system_av_info(&g_extern.system.av_info);
+   g_extern.frame_limit.last_frame_time = rarch_get_time_usec();
+}
+
 static void deinit_core(void)
 {
    pretro_unload_game();
@@ -1884,6 +1884,48 @@ static void deinit_core(void)
    rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
 
    uninit_libretro_sym();
+}
+
+/* 
+ * Returns:
+ * 0 - success
+ * 1 - error
+ */
+static bool init_core(void)
+{
+   verify_api_version();
+   pretro_init();
+
+   g_extern.use_sram = !g_extern.libretro_dummy &&
+      !g_extern.libretro_no_content;
+
+   if (g_extern.libretro_no_content && !g_extern.libretro_dummy)
+   {
+      if (!init_content_file())
+         return false;
+   }
+   else if (!g_extern.libretro_dummy)
+   {
+      rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
+
+      if (!init_content_file())
+         return false;
+
+      set_savestate_auto_index();
+
+      if (load_save_files())
+         RARCH_LOG("Skipping SRAM load.\n");
+
+      load_auto_state();
+
+      rarch_main_command(RARCH_CMD_BSV_MOVIE_INIT);
+      rarch_main_command(RARCH_CMD_NETPLAY_INIT);
+   }
+
+   retro_init_libretro_cbs(&driver.retro_ctx);
+   init_system_av_info();
+
+   return true;
 }
 
 int rarch_main_init(int argc, char *argv[])
@@ -1919,37 +1961,8 @@ int rarch_main_init(int argc, char *argv[])
 
    init_drivers_pre();
 
-   verify_api_version();
-   pretro_init();
-
-   g_extern.use_sram = !g_extern.libretro_dummy &&
-      !g_extern.libretro_no_content;
-
-   if (g_extern.libretro_no_content && !g_extern.libretro_dummy)
-   {
-      if (!init_content_file())
-         goto error;
-   }
-   else if (!g_extern.libretro_dummy)
-   {
-      rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
-
-      if (!init_content_file())
-         goto error;
-
-      set_savestate_auto_index();
-
-      if (load_save_files())
-         RARCH_LOG("Skipping SRAM load.\n");
-
-      load_auto_state();
-
-      rarch_main_command(RARCH_CMD_BSV_MOVIE_INIT);
-      rarch_main_command(RARCH_CMD_NETPLAY_INIT);
-   }
-
-   retro_init_libretro_cbs(&driver.retro_ctx);
-   init_system_av_info();
+   if (!rarch_main_command(RARCH_CMD_CORE_INIT))
+      goto error;
 
    rarch_main_command(RARCH_CMD_DRIVERS_INIT);
    rarch_main_command(RARCH_CMD_COMMAND_INIT);
@@ -2134,7 +2147,7 @@ static void history_playlist_new(void)
             g_settings.content_history_size);
 }
 
-void rarch_main_command(unsigned cmd)
+bool rarch_main_command(unsigned cmd)
 {
    bool boolean = false;
 
@@ -2163,11 +2176,11 @@ void rarch_main_command(unsigned cmd)
          /* Immutable - disallow savestate load when 
           * we absolutely cannot change game state. */
          if (g_extern.bsv.movie)
-            return;
+            return false;
 
 #ifdef HAVE_NETPLAY
          if (driver.netplay_data)
-            return;
+            return false;
 #endif
          main_state(cmd);
          break;
@@ -2229,7 +2242,7 @@ void rarch_main_command(unsigned cmd)
       case RARCH_CMD_REWIND_DEINIT:
 #ifdef HAVE_NETPLAY
          if (driver.netplay_data)
-            return;
+            return false;
 #endif
          if (g_extern.state_manager)
             state_manager_free(g_extern.state_manager);
@@ -2260,18 +2273,17 @@ void rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_AUDIO_STOP:
          if (!driver.audio_data)
-            return;
+            return false;
          if (!driver.audio->alive(driver.audio_data))
-            return;
+            return false;
 
          driver.audio->stop(driver.audio_data);
          break;
       case RARCH_CMD_AUDIO_START:
          if (!driver.audio_data)
-            return;
-
+            return false;
          if (driver.audio->alive(driver.audio_data))
-            return;
+            return false;
 
          if (!g_extern.audio_data.mute
                && !driver.audio->start(driver.audio_data))
@@ -2325,7 +2337,7 @@ void rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_RECORD_DEINIT:
          if (!driver.recording_data || !driver.recording)
-            return;
+            return false;
 
          if (driver.recording->finalize)
             driver.recording->finalize(driver.recording_data);
@@ -2371,6 +2383,10 @@ void rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_CORE_DEINIT:
          deinit_core();
+         break;
+      case RARCH_CMD_CORE_INIT:
+         if (!init_core())
+            return false;
          break;
       case RARCH_CMD_VIDEO_APPLY_STATE_CHANGES:
          if (driver.video_data && driver.video_poke
@@ -2464,7 +2480,7 @@ void rarch_main_command(unsigned cmd)
          {
             unsigned i;
             if (!*g_settings.video.shader_dir)
-               return;
+               return false;
 
             g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir,
                   "cg|cgp|glsl|glslp", false);
@@ -2472,7 +2488,7 @@ void rarch_main_command(unsigned cmd)
             if (!g_extern.shader_dir.list || g_extern.shader_dir.list->size == 0)
             {
                rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
-               return;
+               return false;
             }
 
             g_extern.shader_dir.ptr  = 0;
@@ -2602,6 +2618,8 @@ void rarch_main_command(unsigned cmd)
          }
          break;
    }
+
+   return true;
 }
 
 void rarch_main_deinit(void)
