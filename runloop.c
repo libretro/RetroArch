@@ -144,8 +144,6 @@ static void check_pause(bool pressed, bool frameadvance_pressed)
 {
    static bool old_focus    = true;
    bool focus               = true;
-   bool has_set_audio_stop  = false;
-   bool has_set_audio_start = false;
 
    /* FRAMEADVANCE will set us into pause mode. */
    pressed |= !g_extern.is_paused && frameadvance_pressed;
@@ -154,40 +152,25 @@ static void check_pause(bool pressed, bool frameadvance_pressed)
       focus = driver.video->focus(driver.video_data);
 
    if (focus && pressed)
-   {
       g_extern.is_paused = !g_extern.is_paused;
-
-      if (g_extern.is_paused)
-      {
-         RARCH_LOG("Paused.\n");
-         has_set_audio_stop = true;
-      }
-      else
-      {
-         RARCH_LOG("Unpaused.\n");
-         has_set_audio_start = true;
-      }
-   }
    else if (focus && !old_focus)
-   {
-      RARCH_LOG("Unpaused.\n");
       g_extern.is_paused  = false;
-      has_set_audio_start = true;
-   }
    else if (!focus && old_focus)
+      g_extern.is_paused = true;
+
+   if (g_extern.is_paused)
    {
       RARCH_LOG("Paused.\n");
-      g_extern.is_paused = true;
-      has_set_audio_stop = true;
-   }
-
-   if (has_set_audio_stop)
       rarch_main_command(RARCH_CMD_AUDIO_STOP);
-   if (has_set_audio_start)
-      rarch_main_command(RARCH_CMD_AUDIO_START);
 
-   if (g_extern.is_paused && g_settings.video.black_frame_insertion)
-      rarch_render_cached_frame();
+      if (g_settings.video.black_frame_insertion)
+         rarch_render_cached_frame();
+   }
+   else
+   {
+      RARCH_LOG("Unpaused.\n");
+      rarch_main_command(RARCH_CMD_AUDIO_START);
+   }
 
    old_focus = focus;
 }
