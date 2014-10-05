@@ -376,51 +376,45 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
    char msg[PATH_MAX];
    const char *shader = NULL, *ext = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
-   bool should_apply = false;
 
    if (!g_extern.shader_dir.list || !driver.video->set_shader)
       return;
 
    if (pressed_next)
    {
-      should_apply = true;
       g_extern.shader_dir.ptr = (g_extern.shader_dir.ptr + 1) %
          g_extern.shader_dir.list->size;
    }
    else if (pressed_prev)
    {
-      should_apply = true;
       if (g_extern.shader_dir.ptr == 0)
          g_extern.shader_dir.ptr = g_extern.shader_dir.list->size - 1;
       else
          g_extern.shader_dir.ptr--;
    }
-
-   if (!should_apply)
+   else
       return;
 
-   {
-      shader = g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
-      ext    = path_get_extension(shader);
+   shader = g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
+   ext    = path_get_extension(shader);
 
-      if (strcmp(ext, "glsl") == 0 || strcmp(ext, "glslp") == 0)
-         type = RARCH_SHADER_GLSL;
-      else if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
-         type = RARCH_SHADER_CG;
+   if (strcmp(ext, "glsl") == 0 || strcmp(ext, "glslp") == 0)
+      type = RARCH_SHADER_GLSL;
+   else if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
+      type = RARCH_SHADER_CG;
 
-      if (type == RARCH_SHADER_NONE)
-         return;
+   if (type == RARCH_SHADER_NONE)
+      return;
 
-      msg_queue_clear(g_extern.msg_queue);
+   msg_queue_clear(g_extern.msg_queue);
 
-      snprintf(msg, sizeof(msg), "Shader #%u: \"%s\".",
-            (unsigned)g_extern.shader_dir.ptr, shader);
-      msg_queue_push(g_extern.msg_queue, msg, 1, 120);
-      RARCH_LOG("Applying shader \"%s\".\n", shader);
+   snprintf(msg, sizeof(msg), "Shader #%u: \"%s\".",
+         (unsigned)g_extern.shader_dir.ptr, shader);
+   msg_queue_push(g_extern.msg_queue, msg, 1, 120);
+   RARCH_LOG("Applying shader \"%s\".\n", shader);
 
-      if (!driver.video->set_shader(driver.video_data, type, shader))
-         RARCH_WARN("Failed to apply shader.\n");
-   }
+   if (!driver.video->set_shader(driver.video_data, type, shader))
+      RARCH_WARN("Failed to apply shader.\n");
 }
 
 /* 
