@@ -681,7 +681,6 @@ extern rarch_joypad_driver_t *joypad_drivers[];
 #define check_shader_dir_func(trigger_input) check_shader_dir(BIND_PRESSED(trigger_input, RARCH_SHADER_NEXT), BIND_PRESSED(trigger_input, RARCH_SHADER_PREV))
 #define check_enter_menu_func(input) BIND_PRESSED(input, RARCH_MENU_TOGGLE)
 #define check_mute_func(input, old_input) check_mute(BIND_PRESSED(input, RARCH_MUTE), BIND_PRESSED(old_input, RARCH_MUTE))
-#define check_volume_func(input, old_input) check_volume(BIND_PRESSED(input, RARCH_VOLUME_UP), BIND_PRESSED(old_input, RARCH_VOLUME_DOWN))
 #define check_fullscreen_func(trigger_input) rarch_check_fullscreen(BIND_PRESSED(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
 #define check_fast_forward_button_func(input, old_input, trigger_input) check_fast_forward_button(BIND_PRESSED(trigger_input, RARCH_FAST_FORWARD_KEY), BIND_PRESSED(input, RARCH_FAST_FORWARD_HOLD_KEY), BIND_PRESSED(old_input, RARCH_FAST_FORWARD_HOLD_KEY))
 #define check_rewind_func(input) check_rewind(BIND_PRESSED(input, RARCH_REWIND))

@@ -48,17 +48,11 @@ static void check_mute(void)
    RARCH_LOG("%s\n", msg);
 }
 
-static void check_volume(bool pressed_up, bool pressed_down)
+static void set_volume(float gain)
 {
    char msg[256];
 
-   if (pressed_up)
-      g_extern.audio_data.volume_db += 0.5f;
-   else if (pressed_down)
-      g_extern.audio_data.volume_db -= 0.5f;
-   else
-      return;
-
+   g_extern.audio_data.volume_db += gain;
    g_extern.audio_data.volume_db = max(g_extern.audio_data.volume_db, -80.0f);
    g_extern.audio_data.volume_db = min(g_extern.audio_data.volume_db, 12.0f);
 
@@ -433,7 +427,10 @@ static int do_state_checks(
    if (BIND_PRESSED(trigger_input, RARCH_MUTE))
       check_mute();
 
-   check_volume_func(input, old_input);
+   if (BIND_PRESSED(input, RARCH_VOLUME_UP))
+      set_volume(0.5f);
+   else if (BIND_PRESSED(input, RARCH_VOLUME_DOWN))
+      set_volume(-0.5f);
 
    if (BIND_PRESSED(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
       check_grab_mouse_toggle();
