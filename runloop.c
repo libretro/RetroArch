@@ -421,22 +421,22 @@ static int do_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
-   if (BIND_PRESSED(trigger_input, RARCH_SCREENSHOT))
+   if (BIT64_GET(trigger_input, RARCH_SCREENSHOT))
       rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
 
-   if (BIND_PRESSED(trigger_input, RARCH_MUTE))
+   if (BIT64_GET(trigger_input, RARCH_MUTE))
       check_mute();
 
-   if (BIND_PRESSED(input, RARCH_VOLUME_UP))
+   if (BIT64_GET(input, RARCH_VOLUME_UP))
       set_volume(0.5f);
-   else if (BIND_PRESSED(input, RARCH_VOLUME_DOWN))
+   else if (BIT64_GET(input, RARCH_VOLUME_DOWN))
       set_volume(-0.5f);
 
-   if (BIND_PRESSED(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
+   if (BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
       check_grab_mouse_toggle();
 
 #ifdef HAVE_OVERLAY
-   if (BIND_PRESSED(trigger_input, RARCH_OVERLAY_NEXT))
+   if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))
       input_overlay_next(driver.overlay);
 #endif
 
@@ -464,33 +464,33 @@ static int do_state_checks(
 
    check_stateslots_func(trigger_input);
 
-   if (BIND_PRESSED(trigger_input, RARCH_SAVE_STATE_KEY))
+   if (BIT64_GET(trigger_input, RARCH_SAVE_STATE_KEY))
       rarch_main_command(RARCH_CMD_SAVE_STATE);
-   else if (BIND_PRESSED(trigger_input, RARCH_LOAD_STATE_KEY))
+   else if (BIT64_GET(trigger_input, RARCH_LOAD_STATE_KEY))
       rarch_main_command(RARCH_CMD_LOAD_STATE);
 
    check_rewind_func(input);
 
    check_slowmotion_func(input);
 
-   if (BIND_PRESSED(trigger_input, RARCH_MOVIE_RECORD_TOGGLE))
+   if (BIT64_GET(trigger_input, RARCH_MOVIE_RECORD_TOGGLE))
       check_movie();
 
    check_shader_dir_func(trigger_input);
 
-   if (BIND_PRESSED(trigger_input, RARCH_CHEAT_INDEX_PLUS))
+   if (BIT64_GET(trigger_input, RARCH_CHEAT_INDEX_PLUS))
       cheat_manager_index_next(g_extern.cheat);
-   else if (BIND_PRESSED(trigger_input, RARCH_CHEAT_INDEX_MINUS))
+   else if (BIT64_GET(trigger_input, RARCH_CHEAT_INDEX_MINUS))
       cheat_manager_index_prev(g_extern.cheat);
-   else if (BIND_PRESSED(trigger_input, RARCH_CHEAT_TOGGLE))
+   else if (BIT64_GET(trigger_input, RARCH_CHEAT_TOGGLE))
       cheat_manager_toggle(g_extern.cheat);
 
-   if (BIND_PRESSED(trigger_input, RARCH_DISK_EJECT_TOGGLE))
+   if (BIT64_GET(trigger_input, RARCH_DISK_EJECT_TOGGLE))
       rarch_main_command(RARCH_CMD_DISK_EJECT_TOGGLE);
-   else if (BIND_PRESSED(trigger_input, RARCH_DISK_NEXT))
+   else if (BIT64_GET(trigger_input, RARCH_DISK_NEXT))
       rarch_main_command(RARCH_CMD_DISK_NEXT);
 
-   if (BIND_PRESSED(trigger_input, RARCH_RESET))
+   if (BIT64_GET(trigger_input, RARCH_RESET))
       rarch_main_command(RARCH_CMD_RESET);
 
 exit:

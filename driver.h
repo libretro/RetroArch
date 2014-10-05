@@ -674,19 +674,19 @@ extern menu_ctx_driver_backend_t menu_ctx_backend_lakka;
 
 extern rarch_joypad_driver_t *joypad_drivers[];
 
-#define check_netplay_flip_func(trigger_input) check_netplay_flip(BIND_PRESSED(trigger_input, RARCH_NETPLAY_FLIP), BIND_PRESSED(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
-#define check_overlay_func(input, old_input) rarch_check_overlay(BIND_PRESSED(input, RARCH_OVERLAY_NEXT), BIND_PRESSED(old_input, RARCH_OVERLAY_NEXT))
-#define check_oneshot_func(trigger_input) (check_is_oneshot(BIND_PRESSED(trigger_input, RARCH_FRAMEADVANCE), BIND_PRESSED(trigger_input, RARCH_REWIND)))
-#define check_slowmotion_func(input) check_slowmotion(BIND_PRESSED(input, RARCH_SLOWMOTION))
-#define check_shader_dir_func(trigger_input) check_shader_dir(BIND_PRESSED(trigger_input, RARCH_SHADER_NEXT), BIND_PRESSED(trigger_input, RARCH_SHADER_PREV))
-#define check_enter_menu_func(input) BIND_PRESSED(input, RARCH_MENU_TOGGLE)
-#define check_mute_func(input, old_input) check_mute(BIND_PRESSED(input, RARCH_MUTE), BIND_PRESSED(old_input, RARCH_MUTE))
-#define check_fullscreen_func(trigger_input) rarch_check_fullscreen(BIND_PRESSED(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
-#define check_fast_forward_button_func(input, old_input, trigger_input) check_fast_forward_button(BIND_PRESSED(trigger_input, RARCH_FAST_FORWARD_KEY), BIND_PRESSED(input, RARCH_FAST_FORWARD_HOLD_KEY), BIND_PRESSED(old_input, RARCH_FAST_FORWARD_HOLD_KEY))
-#define check_rewind_func(input) check_rewind(BIND_PRESSED(input, RARCH_REWIND))
-#define check_stateslots_func(trigger_input) check_stateslots(BIND_PRESSED(trigger_input, RARCH_STATE_SLOT_PLUS), BIND_PRESSED(trigger_input, RARCH_STATE_SLOT_MINUS))
-#define check_pause_func(input) check_pause(BIND_PRESSED(input, RARCH_PAUSE_TOGGLE), BIND_PRESSED(input, RARCH_FRAMEADVANCE))
-#define check_quit_key_func(input) BIND_PRESSED(input, RARCH_QUIT_KEY)
+#define check_netplay_flip_func(trigger_input) check_netplay_flip(BIT64_GET(trigger_input, RARCH_NETPLAY_FLIP), BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+#define check_overlay_func(input, old_input) rarch_check_overlay(BIT64_GET(input, RARCH_OVERLAY_NEXT), BIT64_GET(old_input, RARCH_OVERLAY_NEXT))
+#define check_oneshot_func(trigger_input) (check_is_oneshot(BIT64_GET(trigger_input, RARCH_FRAMEADVANCE), BIT64_GET(trigger_input, RARCH_REWIND)))
+#define check_slowmotion_func(input) check_slowmotion(BIT64_GET(input, RARCH_SLOWMOTION))
+#define check_shader_dir_func(trigger_input) check_shader_dir(BIT64_GET(trigger_input, RARCH_SHADER_NEXT), BIT64_GET(trigger_input, RARCH_SHADER_PREV))
+#define check_enter_menu_func(input) BIT64_GET(input, RARCH_MENU_TOGGLE)
+#define check_mute_func(input, old_input) check_mute(BIT64_GET(input, RARCH_MUTE), BIT64_GET(old_input, RARCH_MUTE))
+#define check_fullscreen_func(trigger_input) rarch_check_fullscreen(BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+#define check_fast_forward_button_func(input, old_input, trigger_input) check_fast_forward_button(BIT64_GET(trigger_input, RARCH_FAST_FORWARD_KEY), BIT64_GET(input, RARCH_FAST_FORWARD_HOLD_KEY), BIT64_GET(old_input, RARCH_FAST_FORWARD_HOLD_KEY))
+#define check_rewind_func(input) check_rewind(BIT64_GET(input, RARCH_REWIND))
+#define check_stateslots_func(trigger_input) check_stateslots(BIT64_GET(trigger_input, RARCH_STATE_SLOT_PLUS), BIT64_GET(trigger_input, RARCH_STATE_SLOT_MINUS))
+#define check_pause_func(input) check_pause(BIT64_GET(input, RARCH_PAUSE_TOGGLE), BIT64_GET(input, RARCH_FRAMEADVANCE))
+#define check_quit_key_func(input) BIT64_GET(input, RARCH_QUIT_KEY)
 
 #ifdef __cplusplus
 }

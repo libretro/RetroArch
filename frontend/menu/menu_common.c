@@ -313,7 +313,7 @@ int menu_iterate(retro_input_t input,
       return -1;
 
 #ifdef HAVE_OVERLAY
-   if (BIND_PRESSED(trigger_input, RARCH_OVERLAY_NEXT))
+   if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))
          input_overlay_next(driver.overlay);
 #endif
    check_fullscreen_func(trigger_input);
