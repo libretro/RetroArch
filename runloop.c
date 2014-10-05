@@ -440,6 +440,9 @@ static int do_state_checks(
       input_overlay_next(driver.overlay);
 #endif
 
+   if (!g_extern.is_paused)
+      check_fullscreen_func(trigger_input);
+
 #ifdef HAVE_NETPLAY
    if (driver.netplay_data)
    {
