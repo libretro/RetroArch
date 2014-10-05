@@ -161,31 +161,30 @@ static void check_fast_forward_button(bool fastforward_pressed,
 
 static void check_stateslots(bool pressed_increase, bool pressed_decrease)
 {
+   char msg[PATH_MAX];
+
    /* Save state slots */
    if (pressed_increase)
       g_settings.state_slot++;
-
-   if (pressed_decrease)
+   else if (pressed_decrease)
    {
       if (g_settings.state_slot > 0)
          g_settings.state_slot--;
    }
+   else
+      return;
 
-   if (pressed_increase || pressed_decrease)
-   {
-      char msg[PATH_MAX];
 
-      if (g_extern.msg_queue)
-         msg_queue_clear(g_extern.msg_queue);
+   if (g_extern.msg_queue)
+      msg_queue_clear(g_extern.msg_queue);
 
-      snprintf(msg, sizeof(msg), "State slot: %d",
-            g_settings.state_slot);
+   snprintf(msg, sizeof(msg), "State slot: %d",
+         g_settings.state_slot);
 
-      if (g_extern.msg_queue)
-         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   if (g_extern.msg_queue)
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
-      RARCH_LOG("%s\n", msg);
-   }
+   RARCH_LOG("%s\n", msg);
 }
 
 static inline void setup_rewind_audio(void)
@@ -402,8 +401,7 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
       type = RARCH_SHADER_GLSL;
    else if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
       type = RARCH_SHADER_CG;
-
-   if (type == RARCH_SHADER_NONE)
+   else
       return;
 
    msg_queue_clear(g_extern.msg_queue);
