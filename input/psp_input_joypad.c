@@ -43,8 +43,6 @@ static bool psp_joypad_init(void)
 
 static bool psp_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   psp_input_t *psp = (psp_input_t*)driver.input_data;
-
    if (port_num >= MAX_PADS)
       return false;
 
@@ -53,15 +51,10 @@ static bool psp_joypad_button(unsigned port_num, uint16_t joykey)
 
 static int16_t psp_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
-   psp_input_t *psp = (psp_input_t*)driver.input_data;
+   int val = 0, axis = -1;
+   bool is_neg = false, is_pos = false;
    if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
       return 0;
-
-   int val = 0;
-
-   int axis    = -1;
-   bool is_neg = false;
-   bool is_pos = false;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
@@ -159,7 +152,6 @@ static void psp_joypad_poll(void)
 
 static bool psp_joypad_query_pad(unsigned pad)
 {
-   psp_input_t *psp = (psp_input_t*)driver.input_data;
    return pad < MAX_PLAYERS && pad_state;
 }
 

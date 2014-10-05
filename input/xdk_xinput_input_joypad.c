@@ -77,12 +77,10 @@ static bool xdk_joypad_init(void)
 
 static bool xdk_joypad_button(unsigned port, uint16_t joykey)
 {
-   xdk_input_t *xdk = (xdk_input_t*)driver.input_data;
-
    if (port >= MAX_PADS)
       return false;
 
-   return xdk->pad_state[port] & (1ULL << joykey);
+   return pad_state[port] & (1ULL << joykey);
 }
 
 static int16_t xdk_joypad_axis(unsigned port, uint32_t joyaxis)
