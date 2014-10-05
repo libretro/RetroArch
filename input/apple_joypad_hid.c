@@ -299,8 +299,9 @@ static bool apple_joypad_button(unsigned port, uint16_t joykey)
    if (GET_HAT_DIR(joykey))
       return false;
    // Check the button
-   return (port < MAX_PLAYERS && joykey < 32) ? 
-      (apple->buttons[port] & (1 << joykey)) != 0 : false;
+   if ((port < MAX_PLAYERS) && (joykey < 32))
+       return ((apple->buttons[port] & (1 << joykey)) != 0);
+    return false;
 }
 
 static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
