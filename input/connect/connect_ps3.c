@@ -26,6 +26,7 @@ struct hidpad_ps3_data
    send_control_t send_control;
    uint8_t data[512];
    uint32_t slot;
+   uint32_t button_result;
    bool have_led;
    uint16_t motors[2];
 };
@@ -88,7 +89,29 @@ static void hidpad_ps3_disconnect(void *data)
 
 static uint32_t hidpad_ps3_get_buttons(void *data)
 {
-   uint32_t i, result = 0, pressed_keys;
+   struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
+   if (device)
+      return device->button_result;
+   return 0;
+}
+
+static int16_t hidpad_ps3_get_axis(void *data, unsigned axis)
+{
+   struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
+    
+   if (device && (axis < 4))
+   {
+      int val = device->data[7 + axis];
+      val = (val << 8) - 0x8000;
+      return (abs(val) > 0x1000) ? val : 0;
+   }
+
+   return 0;
+}
+
+static void hidpad_ps3_packet_handler(void *data, uint8_t *packet, uint16_t size)
+{
+   uint32_t i, pressed_keys;
    static const uint32_t button_mapping[17] =
    {
       RETRO_DEVICE_ID_JOYPAD_SELECT,
@@ -110,34 +133,6 @@ static uint32_t hidpad_ps3_get_buttons(void *data)
       16 //< PS Button
    };
    struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
-
-   pressed_keys = device->data[3] | (device->data[4] << 8) |
-    ((device->data[5] & 1) << 16);
-
-   for (i = 0; i < 17; i ++)
-      result |= (pressed_keys & (1 << i)) ?
-       (1 << button_mapping[i]) : 0;
-
-   return result;
-}
-
-static int16_t hidpad_ps3_get_axis(void *data, unsigned axis)
-{
-   struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
-    
-   if (device && (axis < 4))
-   {
-      int val = device->data[7 + axis];
-      val = (val << 8) - 0x8000;
-      return (abs(val) > 0x1000) ? val : 0;
-   }
-
-   return 0;
-}
-
-static void hidpad_ps3_packet_handler(void *data, uint8_t *packet, uint16_t size)
-{
-   struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
     
    if (!device)
       return;
@@ -149,6 +144,15 @@ static void hidpad_ps3_packet_handler(void *data, uint8_t *packet, uint16_t size
    }
 
    memcpy(device->data, packet, size);
+
+   device->button_result = 0;
+
+   pressed_keys = device->data[3] | (device->data[4] << 8) |
+    ((device->data[5] & 1) << 16);
+
+   for (i = 0; i < 17; i ++)
+      device->button_result |= (pressed_keys & (1 << i)) ?
+       (1 << button_mapping[i]) : 0;
 }
 
 static void hidpad_ps3_set_rumble(void *data,
