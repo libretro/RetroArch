@@ -1963,7 +1963,7 @@ int rarch_main_init(int argc, char *argv[])
    return 0;
 
 error:
-   deinit_core();
+   rarch_main_command(RARCH_CMD_CORE_DEINIT);
 
    g_extern.main_is_init = false;
    return 1;
@@ -2369,6 +2369,9 @@ void rarch_main_command(unsigned cmd)
 #endif
          }
          break;
+      case RARCH_CMD_CORE_DEINIT:
+         deinit_core();
+         break;
       case RARCH_CMD_VIDEO_APPLY_STATE_CHANGES:
          if (driver.video_data && driver.video_poke
                && driver.video_poke->apply_state_changes)
@@ -2618,7 +2621,7 @@ void rarch_main_deinit(void)
 
    rarch_main_command(RARCH_CMD_AUTOSAVE_STATE);
 
-   deinit_core();
+   rarch_main_command(RARCH_CMD_CORE_DEINIT);
 
    rarch_main_command(RARCH_CMD_TEMPORARY_CONTENT_DEINIT);
    rarch_main_command(RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
