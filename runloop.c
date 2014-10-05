@@ -105,6 +105,7 @@ static void check_pause(bool pressed, bool frameadvance_pressed)
 {
    static bool old_focus    = true;
    bool focus               = true;
+   bool old_is_paused       = g_extern.is_paused;
 
    /* FRAMEADVANCE will set us into pause mode. */
    pressed |= !g_extern.is_paused && frameadvance_pressed;
@@ -119,6 +120,11 @@ static void check_pause(bool pressed, bool frameadvance_pressed)
    else if (!focus && old_focus)
       g_extern.is_paused  = true;
 
+   old_focus = focus;
+
+   if (g_extern.is_paused == old_is_paused)
+      return;
+
    if (g_extern.is_paused)
    {
       RARCH_LOG("Paused.\n");
@@ -132,8 +138,6 @@ static void check_pause(bool pressed, bool frameadvance_pressed)
       RARCH_LOG("Unpaused.\n");
       rarch_main_command(RARCH_CMD_AUDIO_START);
    }
-
-   old_focus = focus;
 }
 
 static inline void check_oneshot(bool oneshot_pressed, bool rewind_pressed)
