@@ -1353,7 +1353,7 @@ static void set_savestate_auto_index(void)
    RARCH_LOG("Found last state slot: #%d\n", g_settings.state_slot);
 }
 
-static void fill_pathnames(void)
+static void rarch_init_savefile_paths(void)
 {
    rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
 
@@ -1434,7 +1434,11 @@ static void fill_pathnames(void)
             g_extern.savefile_name, ".rtc", sizeof(savefile_name_rtc));
       string_list_append(g_extern.savefiles, savefile_name_rtc, attr);
    }
+}
 
+static void fill_pathnames(void)
+{
+   rarch_init_savefile_paths();
    fill_pathname(g_extern.bsv.movie_path, g_extern.savefile_name, "",
          sizeof(g_extern.bsv.movie_path));
 
@@ -1611,7 +1615,7 @@ void rarch_disk_control_append_image(const char *path)
        * started out in a single disk case, and that this way
        * of doing it makes the most sense. */
       set_paths(path);
-      fill_pathnames();
+      rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
    }
 
    rarch_main_command(RARCH_CMD_AUTOSAVE_INIT);
@@ -1928,7 +1932,7 @@ int rarch_main_init(int argc, char *argv[])
    }
    else if (!g_extern.libretro_dummy)
    {
-      fill_pathnames();
+      rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
 
       if (!init_content_file())
          goto error;
@@ -1952,7 +1956,6 @@ int rarch_main_init(int argc, char *argv[])
    rarch_main_command(RARCH_CMD_REWIND_INIT);
    rarch_main_command(RARCH_CMD_CONTROLLERS_INIT);
    rarch_main_command(RARCH_CMD_RECORD_INIT);
-   rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
    rarch_main_command(RARCH_CMD_CHEATS_INIT);
 
    g_extern.error_in_init = false;
@@ -2487,6 +2490,7 @@ void rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_SAVEFILES_INIT:
          rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
+         fill_pathnames();
 
          g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable
 #ifdef HAVE_NETPLAY
