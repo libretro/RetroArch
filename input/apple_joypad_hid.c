@@ -151,15 +151,6 @@ static void hid_device_report(void* context, IOReturn result, void *sender,
       pad_connection_packet(connection->slot, connection->data, reportLength + 1);
 }
 
-static void apple_hid_receive_control(unsigned index)
-{
-   int i;
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-   apple->buttons[index] = pad_connection_get_buttons(index);
-   for (i = 0; i < 4; i++)
-      apple->axes[index][i] = pad_connection_get_axis(index, i);
-}
-
 static void add_device(void* context, IOReturn result,
       void* sender, IOHIDDeviceRef device)
 {
@@ -259,7 +250,7 @@ static bool apple_joypad_init(void)
 
    IOHIDManagerOpen(g_hid_manager, kIOHIDOptionsTypeNone);
     
-   pad_connection_init(&apple_hid_receive_control);
+   pad_connection_init();
 
    return true;
 }
@@ -292,6 +283,7 @@ static void apple_joypad_destroy(void)
 static bool apple_joypad_button(unsigned port, uint16_t joykey)
 {
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   uint32_t buttons = pad_connection_get_buttons(port);
    if (!apple || joykey == NO_BTN)
       return false;
 
@@ -300,7 +292,8 @@ static bool apple_joypad_button(unsigned port, uint16_t joykey)
       return false;
    // Check the button
    if ((port < MAX_PLAYERS) && (joykey < 32))
-       return ((apple->buttons[port] & (1 << joykey)) != 0);
+       return ((apple->buttons[port] & (1 << joykey)) != 0) ||
+              ((buttons & (1 << joykey)) != 0);
     return false;
 }
 
@@ -315,11 +308,13 @@ static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
       val = apple->axes[port][AXIS_NEG_GET(joyaxis)];
+      val += pad_connection_get_axis(port, AXIS_NEG_GET(joyaxis));
       val = (val < 0) ? val : 0;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
       val = apple->axes[port][AXIS_POS_GET(joyaxis)];
+      val += pad_connection_get_axis(port, AXIS_POS_GET(joyaxis));
       val = (val > 0) ? val : 0;
    }
 

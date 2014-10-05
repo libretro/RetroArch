@@ -20,7 +20,6 @@ typedef struct
 {
    bool used;
    struct pad_connection_interface *iface;
-   receive_control_t receive_control;
    void* data;
    
    bool is_gcapi;
@@ -42,14 +41,11 @@ static int find_vacant_pad(void)
    return -1;
 }
 
-void pad_connection_init(receive_control_t receive_control)
+void pad_connection_init()
 {
     int i;
     for (i = 0; i < MAX_PLAYERS; i++)
-    {
         memset(&slots[i], 0, sizeof(slots[0]));
-        slots[i].receive_control = receive_control;
-    }
 }
 
 int32_t pad_connection_connect(const char* name, void *data, send_control_t ptr)
@@ -132,8 +128,6 @@ void pad_connection_packet(uint32_t pad,
 
       if (s->iface && s->data && s->iface->packet_handler)
          s->iface->packet_handler(s->data, data, length);
-      if (s->receive_control)
-         s->receive_control(pad);
    }
 }
 
