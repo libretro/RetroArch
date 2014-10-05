@@ -29,9 +29,7 @@ static void check_mute(void)
    const char *msg = !g_extern.audio_data.mute ?
       "Audio muted." : "Audio unmuted.";
 
-   if (!driver.audio_data)
-      return;
-   if (!driver.audio_active)
+   if (!driver.audio_data || !driver.audio_active)
       return;
 
    g_extern.audio_data.mute = !g_extern.audio_data.mute;
@@ -152,15 +150,13 @@ static void check_fast_forward_button(bool fastforward_pressed,
       bool hold_pressed, bool old_hold_pressed)
 {
    if (fastforward_pressed)
-   {
       driver.nonblock_state = !driver.nonblock_state;
-      driver_set_nonblock_state(driver.nonblock_state);
-   }
    else if (old_hold_pressed != hold_pressed)
-   {
       driver.nonblock_state = hold_pressed;
-      driver_set_nonblock_state(driver.nonblock_state);
-   }
+   else
+      return;
+
+   driver_set_nonblock_state(driver.nonblock_state);
 }
 
 static void check_stateslots(bool pressed_increase, bool pressed_decrease)
