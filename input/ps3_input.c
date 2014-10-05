@@ -71,20 +71,21 @@ static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
 {
    CellMouseData mouse_state;
    cellMouseGetData(id, &mouse_state);
+   
+   if (!ps3->mice_connected)
+      return 0;
 
    switch (id)
    {
       /* TODO: mouse wheel up/down */
       case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return (!ps3->mice_connected ? 0 : 
-               mouse_state.buttons & CELL_MOUSE_BUTTON_1);
+         return (mouse_state.buttons & CELL_MOUSE_BUTTON_1);
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return (!ps3->mice_connected ? 0 : 
-               mouse_state.buttons & CELL_MOUSE_BUTTON_2);
+         return (mouse_state.buttons & CELL_MOUSE_BUTTON_2);
       case RETRO_DEVICE_ID_MOUSE_X:
-         return (!ps3->mice_connected ? 0 : mouse_state.x_axis);
+         return (mouse_state.x_axis);
       case RETRO_DEVICE_ID_MOUSE_Y:
-         return (!ps3->mice_connected ? 0 : mouse_state.y_axis);
+         return (mouse_state.y_axis);
    }
 
    return 0;
@@ -92,7 +93,8 @@ static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
 
 #endif
 
-static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
+static int16_t ps3_input_state(void *data,
+      const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
