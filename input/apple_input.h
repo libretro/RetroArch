@@ -43,7 +43,7 @@ typedef struct
    uint32_t mouse_buttons;
    int16_t mouse_delta[2];
 
-   uint32_t keys[MAX_KEYS];
+   uint32_t key_state[MAX_KEYS];
 
    uint32_t buttons[MAX_PLAYERS];
    int16_t axes[MAX_PLAYERS][4];

@@ -190,10 +190,10 @@ static bool handle_small_keyboard(unsigned* code, bool down)
    translated_code = (*code < 128) ? mapping[*code] : 0;
    
    /* Allow old keys to be released. */
-   if (!down && apple->keys[*code])
+   if (!down && apple->key_state[*code])
       return false;
 
-   if ((!down && apple->keys[translated_code]) ||
+   if ((!down && apple->key_state[translated_code]) ||
        small_keyboard_active)
    {
       *code = translated_code;
@@ -289,7 +289,7 @@ void apple_input_keyboard_event(bool down,
    if (code == 0 || code >= MAX_KEYS)
       return;
 
-   apple->keys[code] = down;
+   apple->key_state[code] = down;
 
    mods |= (mod & NSAlphaShiftKeyMask) ? RETROKMOD_CAPSLOCK : 0;
    mods |= (mod & NSShiftKeyMask)      ? RETROKMOD_SHIFT : 0;
@@ -316,7 +316,7 @@ int32_t apple_input_find_any_key(void)
    input_init_keyboard_lut(rarch_key_map_apple_hid);
 
    for (i = 0; apple_key_name_map[i].hid_id; i++)
-      if (apple->keys[apple_key_name_map[i].hid_id])
+      if (apple->key_state[apple_key_name_map[i].hid_id])
          return apple_key_name_map[i].hid_id;
 
    return 0;
@@ -371,7 +371,7 @@ static int16_t apple_input_is_pressed(apple_input_data_t *apple, unsigned port_n
    {
       const struct retro_keybind *bind = &binds[id];
       unsigned bit = input_translate_rk_to_keysym(bind->key);
-      return bind->valid && apple->keys[bit];
+      return bind->valid && apple->key_state[bit];
    }
    return 0;
 }
@@ -484,7 +484,7 @@ static int16_t apple_input_state(void *data,
       case RETRO_DEVICE_KEYBOARD:
        {
            unsigned bit = input_translate_rk_to_keysym((enum retro_key)id);
-           return (id < RETROK_LAST) && apple->keys[bit];
+           return (id < RETROK_LAST) && apple->key_state[bit];
        }
       case RETRO_DEVICE_MOUSE:
          return apple_mouse_state(apple, id);
