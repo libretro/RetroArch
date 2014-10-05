@@ -703,7 +703,15 @@ int rarch_main_iterate(void)
    if (driver.flushing_input)
    {
       if (input)
+      {
          input = 0;
+         /* If core was paused before
+          * entering menu, evoke
+          * pause toggle to wake it up.
+          */
+         if (g_extern.is_paused)
+            input |= (1ULL << RARCH_PAUSE_TOGGLE);
+      }
       else
          driver.flushing_input = false;
    }
