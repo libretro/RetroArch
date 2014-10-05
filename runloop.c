@@ -75,45 +75,6 @@ static void check_volume(bool pressed_up, bool pressed_down)
    g_extern.audio_data.volume_gain = db_to_gain(g_extern.audio_data.volume_db);
 }
 
-static void check_turbo(void)
-{
-   unsigned i;
-   static const struct retro_keybind *binds[MAX_PLAYERS] = {
-      g_settings.input.binds[0],
-      g_settings.input.binds[1],
-      g_settings.input.binds[2],
-      g_settings.input.binds[3],
-      g_settings.input.binds[4],
-      g_settings.input.binds[5],
-      g_settings.input.binds[6],
-      g_settings.input.binds[7],
-      g_settings.input.binds[8],
-      g_settings.input.binds[9],
-      g_settings.input.binds[10],
-      g_settings.input.binds[11],
-      g_settings.input.binds[12],
-      g_settings.input.binds[13],
-      g_settings.input.binds[14],
-      g_settings.input.binds[15],
-   };
-
-   g_extern.turbo_count++;
-
-
-   if (driver.block_libretro_input)
-   {
-      memset(g_extern.turbo_frame_enable, 0,
-            sizeof(g_extern.turbo_frame_enable));
-      return;
-
-   }
-
-   for (i = 0; i < MAX_PLAYERS; i++)
-      g_extern.turbo_frame_enable[i] =
-         driver.input->input_state(driver.input_data, binds, i,
-               RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
-}
-
 static void check_grab_mouse_toggle(void)
 {
    static bool grab_mouse_state  = false;
@@ -485,8 +446,6 @@ static int do_state_checks(
 
    check_volume_func(input, old_input);
 
-   check_turbo();
-
    if (BIND_PRESSED(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
       check_grab_mouse_toggle();
 
@@ -653,9 +612,28 @@ static void check_block_hotkey(bool enable_hotkey)
 
 static inline retro_input_t input_keys_pressed(void)
 {
-   static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
+   static const struct retro_keybind *binds[MAX_PLAYERS] = {
+      g_settings.input.binds[0],
+      g_settings.input.binds[1],
+      g_settings.input.binds[2],
+      g_settings.input.binds[3],
+      g_settings.input.binds[4],
+      g_settings.input.binds[5],
+      g_settings.input.binds[6],
+      g_settings.input.binds[7],
+      g_settings.input.binds[8],
+      g_settings.input.binds[9],
+      g_settings.input.binds[10],
+      g_settings.input.binds[11],
+      g_settings.input.binds[12],
+      g_settings.input.binds[13],
+      g_settings.input.binds[14],
+      g_settings.input.binds[15],
+   };
    retro_input_t ret = 0;
    int i, key;
+
+   g_extern.turbo_count++;
 
    check_block_hotkey(driver.input->key_pressed(driver.input_data,
             RARCH_ENABLE_HOTKEY));
@@ -665,8 +643,14 @@ static inline retro_input_t input_keys_pressed(void)
          ANALOG_DPAD_LSTICK : g_settings.input.analog_dpad_mode[0]);
 
    for (i = 0; i < MAX_PLAYERS; i++)
+   {
       input_push_analog_dpad(g_settings.input.autoconf_binds[i],
             g_settings.input.analog_dpad_mode[i]);
+
+      g_extern.turbo_frame_enable[i] = driver.block_libretro_input ? 0 :
+         driver.input->input_state(driver.input_data, binds, i,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+   }
 
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
