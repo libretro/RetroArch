@@ -192,7 +192,7 @@ static void check_pause(bool pressed, bool frameadvance_pressed)
    old_focus = focus;
 }
 
-static void check_oneshot(bool oneshot_pressed, bool rewind_pressed)
+static inline void check_oneshot(bool oneshot_pressed, bool rewind_pressed)
 {
    /* Rewind buttons works like FRAMEREWIND when paused.
     * We will one-shot in that case. */
