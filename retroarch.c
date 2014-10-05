@@ -2050,8 +2050,9 @@ void rarch_main_set_state(unsigned cmd)
 /* Save a new configuration to a file. Filename is based
  * on heuristics to avoid typing. */
 
-static void save_core_config(void)
+static bool save_core_config(void)
 {
+   bool ret = false;
    char config_dir[PATH_MAX], config_name[PATH_MAX],
         config_path[PATH_MAX], msg[PATH_MAX];
    bool found_path = false;
@@ -2070,7 +2071,7 @@ static void save_core_config(void)
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
       RARCH_ERR("%s\n", msg);
-      return;
+      return false;
    }
 
    /* Infer file name based on libretro core. */
@@ -2114,7 +2115,7 @@ static void save_core_config(void)
             sizeof(config_path));
    }
 
-   if (config_save_file(config_path))
+   if ((ret = config_save_file(config_path)))
    {
       strlcpy(g_extern.config_path, config_path,
             sizeof(g_extern.config_path));
@@ -2131,6 +2132,8 @@ static void save_core_config(void)
 
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+
+   return ret;
 }
 
 static void history_playlist_new(void)
@@ -2449,7 +2452,8 @@ bool rarch_main_command(unsigned cmd)
             driver.frontend_ctx->set_fork(true, false);
          break;
       case RARCH_CMD_MENU_SAVE_CONFIG:
-         save_core_config();
+         if (!save_core_config())
+            return false;
          break;
       case RARCH_CMD_SHADERS_APPLY_CHANGES:
 #ifdef HAVE_MENU
