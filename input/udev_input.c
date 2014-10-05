@@ -144,9 +144,9 @@ static void udev_handle_keyboard(udev_input_t *udev,
    {
       case EV_KEY:
          if (event->value)
-            set_bit(udev->key_state, event->code);
+            BIT_SET(udev->key_state, event->code);
          else
-            clear_bit(udev->key_state, event->code);
+            BIT_CLEAR(udev->key_state, event->code);
 
 #ifdef HAVE_XKBCOMMON
          if (udev->xkb_state)
@@ -504,7 +504,8 @@ static bool udev_input_is_pressed(udev_input_t *udev, const struct retro_keybind
    if (id < RARCH_BIND_LIST_END)
    {
       const struct retro_keybind *bind = &binds[id];
-      return bind->valid && get_bit(udev->key_state, input_translate_rk_to_keysym(binds[id].key));
+      unsigned bit = input_translate_rk_to_keysym(binds[id].key);
+      return bind->valid && BIT_GET(udev->key_state, bit);
    }
    return false;
 }
@@ -542,8 +543,10 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
          return ret;
 
       case RETRO_DEVICE_KEYBOARD:
-         return id < RETROK_LAST && get_bit(udev->key_state, input_translate_rk_to_keysym((enum retro_key)id));
-
+         {
+            unsigned bit = input_translate_rk_to_keysym((enum retro_key)id);
+            return id < RETROK_LAST && BIT_GET(udev->key_state, bit);
+         }
       case RETRO_DEVICE_MOUSE:
          return udev_mouse_state(udev, id);
 

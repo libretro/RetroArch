@@ -116,14 +116,18 @@ typedef struct
    uint32_t data[8];
 } rarch_bits_t;
 
-#define BIT128_SET(a, bit)   ((a).data[(bit) >> 5] |= 1 << ((bit) & 31))
+#define BIT128_SET(a, bit)   ((a).data[(bit) >> 5] |=  (1 << ((bit) & 31))
 #define BIT128_CLEAR(a, bit) ((a).data[(bit) >> 5] &= ~(1 << ((bit) & 31)))
-#define BIT128_GET(a, bit)   ((a).data[(bit) >> 5] & (1 << ((bit) & 31)))
+#define BIT128_GET(a, bit)   ((a).data[(bit) >> 5] &   (1 << ((bit) & 31)))
 #define BIT128_CLEAR_ALL(a)  memset(&(a), 0, sizeof(a));
 
-#define BIT64_SET(a, bit)   ((a) |= 1ULL << (bit))
-#define BIT64_CLEAR(a, bit) ((a) &= 1ULL << (bit))
+#define BIT64_SET(a, bit)   ((a) |= (1ULL << (bit)))
+#define BIT64_CLEAR(a, bit) ((a) &= (1ULL << (bit)))
 #define BIT64_GET(a, bit)   (((a) & (1ULL << (bit))) != 0)
 #define BIT64_CLEAR_ALL(a)  ((a) = 0)
+
+#define BIT_SET(a, bit)   ((a)[(bit) >> 3] |=  (1 << ((bit) & 7)))
+#define BIT_CLEAR(a, bit) ((a)[(bit) >> 3] &= ~(1 << ((bit) & 7)))
+#define BIT_GET(a, bit)   ((a)[(bit) >> 3] &   (1 << ((bit) & 7)))
 
 #endif
