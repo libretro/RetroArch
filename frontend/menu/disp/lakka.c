@@ -328,6 +328,7 @@ void lakka_draw_background(void)
    coords.vertices = 4;
    coords.vertex = vertex;
    coords.tex_coord = tex_coord;
+   coords.lut_tex_coord = tex_coord;
    coords.color = textures[TEXTURE_BG].id ? color : black_color;
    glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_BG].id);
 
@@ -373,6 +374,7 @@ void lakka_draw_icon(GLuint texture, float x, float y,
    coords.vertices = 4;
    coords.vertex = vertex;
    coords.tex_coord = tex_coord;
+   coords.lut_tex_coord = tex_coord;
    coords.color = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
