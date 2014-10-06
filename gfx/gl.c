@@ -1493,7 +1493,8 @@ static bool gl_frame(void *data, const void *frame,
    if (gl->should_resize)
    {
       gl->should_resize = false;
-      gl->ctx_driver->set_resize(gl, gl->win_width, gl->win_height);
+      if (gl->ctx_driver)
+         gl->ctx_driver->set_resize(gl, gl->win_width, gl->win_height);
 
 #ifdef HAVE_FBO
       if (gl->fbo_inited)
@@ -1600,7 +1601,8 @@ static bool gl_frame(void *data, const void *frame,
       gl_render_overlay(gl);
 #endif
 
-   gl->ctx_driver->update_window_title(gl);
+   if (gl->ctx_driver)
+      gl->ctx_driver->update_window_title(gl);
 
    RARCH_PERFORMANCE_STOP(frame_run);
 
@@ -1643,11 +1645,13 @@ static bool gl_frame(void *data, const void *frame,
          !driver.nonblock_state && !g_extern.is_slowmotion
          && !g_extern.is_paused)
    {
-      gl->ctx_driver->swap_buffers(gl);
+      if (gl->ctx_driver)
+         gl->ctx_driver->swap_buffers(gl);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   gl->ctx_driver->swap_buffers(gl);
+   if (gl->ctx_driver)
+      gl->ctx_driver->swap_buffers(gl);
    g_extern.frame_count++;
 
 #ifdef HAVE_GL_SYNC
