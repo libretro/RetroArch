@@ -388,6 +388,8 @@ int menu_action_setting_set(unsigned id, const char *label,
    unsigned port = driver.menu->current_pad;
    const file_list_t *list = (const file_list_t*)driver.menu->selection_buf;
 
+   /* Check if setting belongs to settings menu. */
+
    rarch_setting_t *setting = (rarch_setting_t*)menu_entries_get_last_setting(
          list->list[driver.menu->selection_ptr].label,
          driver.menu->selection_ptr,
@@ -396,250 +398,253 @@ int menu_action_setting_set(unsigned id, const char *label,
 
    if (setting)
       return menu_action_handle_setting(setting, id, label, action);
+
+   /* Check if setting belongs to main menu. */
+
+   setting = (rarch_setting_t*)menu_entries_get_last_setting(
+         list->list[driver.menu->selection_ptr].label,
+         driver.menu->selection_ptr,
+         setting_data_get_mainmenu(true)
+         );
+
+   if (setting)
+   {
+      if (!strcmp(setting->name, "disk_index"))
+      {
+         int step = 0;
+
+         if (action == MENU_ACTION_RIGHT || action == MENU_ACTION_OK)
+            step = 1;
+         else if (action == MENU_ACTION_LEFT)
+            step = -1;
+
+         if (step)
+         {
+            const struct retro_disk_control_callback *control =
+               (const struct retro_disk_control_callback*)
+               &g_extern.system.disk_control;
+            unsigned num_disks = control->get_num_images();
+            unsigned current   = control->get_image_index();
+            unsigned next_index = (current + num_disks + 1 + step)
+               % (num_disks + 1);
+            rarch_disk_control_set_eject(true, false);
+            rarch_disk_control_set_index(next_index);
+            rarch_disk_control_set_eject(false, false);
+         }
+      }
+
+      return menu_action_handle_setting(setting, id, label, action);
+   }
+
+   /* Fallback. */
+
+   if (!strcmp(label, "input_bind_device_id"))
+   {
+      int *p = &g_settings.input.joypad_map[port];
+      if (action == MENU_ACTION_START)
+         *p = port;
+      else if (action == MENU_ACTION_LEFT)
+         (*p)--;
+      else if (action == MENU_ACTION_RIGHT)
+         (*p)++;
+
+      if (*p < -1)
+         *p = -1;
+      else if (*p >= MAX_PLAYERS)
+         *p = MAX_PLAYERS - 1;
+   }
+   else if (!strcmp(label, "input_bind_device_type"))
+   {
+      unsigned current_device, current_index, i, devices[128];
+      const struct retro_controller_info *desc;
+      unsigned types = 0;
+
+      devices[types++] = RETRO_DEVICE_NONE;
+      devices[types++] = RETRO_DEVICE_JOYPAD;
+
+      /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+       * older core which doesn't use SET_CONTROLLER_INFO. */
+      if (!g_extern.system.num_ports)
+         devices[types++] = RETRO_DEVICE_ANALOG;
+
+      desc = port < g_extern.system.num_ports ?
+         &g_extern.system.ports[port] : NULL;
+      if (desc)
+      {
+         for (i = 0; i < desc->num_types; i++)
+         {
+            unsigned id = desc->types[i].id;
+            if (types < ARRAY_SIZE(devices) &&
+                  id != RETRO_DEVICE_NONE &&
+                  id != RETRO_DEVICE_JOYPAD)
+               devices[types++] = id;
+         }
+      }
+
+      current_device = g_settings.input.libretro_device[port];
+      current_index = 0;
+      for (i = 0; i < types; i++)
+      {
+         if (current_device == devices[i])
+         {
+            current_index = i;
+            break;
+         }
+      }
+
+      bool updated = true;
+      switch (action)
+      {
+         case MENU_ACTION_START:
+            current_device = RETRO_DEVICE_JOYPAD;
+            break;
+
+         case MENU_ACTION_LEFT:
+            current_device = devices
+               [(current_index + types - 1) % types];
+            break;
+
+         case MENU_ACTION_RIGHT:
+         case MENU_ACTION_OK:
+            current_device = devices
+               [(current_index + 1) % types];
+            break;
+
+         default:
+            updated = false;
+      }
+
+      if (updated)
+      {
+         g_settings.input.libretro_device[port] = current_device;
+         pretro_set_controller_port_device(port, current_device);
+      }
+
+   }
+   else if (!strcmp(label, "input_bind_player_no"))
+   {
+      if (action == MENU_ACTION_START)
+         driver.menu->current_pad = 0;
+      else if (action == MENU_ACTION_LEFT)
+      {
+         if (driver.menu->current_pad != 0)
+            driver.menu->current_pad--;
+      }
+      else if (action == MENU_ACTION_RIGHT)
+      {
+         if (driver.menu->current_pad < MAX_PLAYERS - 1)
+            driver.menu->current_pad++;
+      }
+      if (port != driver.menu->current_pad)
+         driver.menu->need_refresh = true;
+      port = driver.menu->current_pad;
+   }
+   else if (!strcmp(label, "input_bind_analog_dpad_mode"))
+   {
+      switch (action)
+      {
+         case MENU_ACTION_START:
+            g_settings.input.analog_dpad_mode[port] = 0;
+            break;
+
+         case MENU_ACTION_OK:
+         case MENU_ACTION_RIGHT:
+            g_settings.input.analog_dpad_mode[port] =
+               (g_settings.input.analog_dpad_mode[port] + 1)
+               % ANALOG_DPAD_LAST;
+            break;
+
+         case MENU_ACTION_LEFT:
+            g_settings.input.analog_dpad_mode[port] =
+               (g_settings.input.analog_dpad_mode
+                [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
+            break;
+
+         default:
+            break;
+      }
+   }
    else
    {
-      setting = (rarch_setting_t*)menu_entries_get_last_setting(
-            list->list[driver.menu->selection_ptr].label,
-            driver.menu->selection_ptr,
-            setting_data_get_mainmenu(true)
-            );
-
-      if (setting)
+      switch (id)
       {
-         if (!strcmp(setting->name, "disk_index"))
-         {
-            int step = 0;
-
-            if (action == MENU_ACTION_RIGHT || action == MENU_ACTION_OK)
-               step = 1;
-            else if (action == MENU_ACTION_LEFT)
-               step = -1;
-
-            if (step)
-            {
-               const struct retro_disk_control_callback *control =
-                  (const struct retro_disk_control_callback*)
-                  &g_extern.system.disk_control;
-               unsigned num_disks = control->get_num_images();
-               unsigned current   = control->get_image_index();
-               unsigned next_index = (current + num_disks + 1 + step)
-                  % (num_disks + 1);
-               rarch_disk_control_set_eject(true, false);
-               rarch_disk_control_set_index(next_index);
-               rarch_disk_control_set_eject(false, false);
-            }
-         }
-
-         return menu_action_handle_setting(setting, id, label, action);
-      }
-      else if (!strcmp(label, "input_bind_device_id"))
-      {
-         int *p = &g_settings.input.joypad_map[port];
-         if (action == MENU_ACTION_START)
-            *p = port;
-         else if (action == MENU_ACTION_LEFT)
-            (*p)--;
-         else if (action == MENU_ACTION_RIGHT)
-            (*p)++;
-
-         if (*p < -1)
-            *p = -1;
-         else if (*p >= MAX_PLAYERS)
-            *p = MAX_PLAYERS - 1;
-      }
-      else if (!strcmp(label, "input_bind_device_type"))
-      {
-         unsigned current_device, current_index, i, devices[128];
-         const struct retro_controller_info *desc;
-         unsigned types = 0;
-
-         devices[types++] = RETRO_DEVICE_NONE;
-         devices[types++] = RETRO_DEVICE_JOYPAD;
-
-         /* Only push RETRO_DEVICE_ANALOG as default if we use an 
-          * older core which doesn't use SET_CONTROLLER_INFO. */
-         if (!g_extern.system.num_ports)
-            devices[types++] = RETRO_DEVICE_ANALOG;
-
-         desc = port < g_extern.system.num_ports ?
-            &g_extern.system.ports[port] : NULL;
-         if (desc)
-         {
-            for (i = 0; i < desc->num_types; i++)
-            {
-               unsigned id = desc->types[i].id;
-               if (types < ARRAY_SIZE(devices) &&
-                     id != RETRO_DEVICE_NONE &&
-                     id != RETRO_DEVICE_JOYPAD)
-                  devices[types++] = id;
-            }
-         }
-
-         current_device = g_settings.input.libretro_device[port];
-         current_index = 0;
-         for (i = 0; i < types; i++)
-         {
-            if (current_device == devices[i])
-            {
-               current_index = i;
-               break;
-            }
-         }
-
-         bool updated = true;
-         switch (action)
-         {
-            case MENU_ACTION_START:
-               current_device = RETRO_DEVICE_JOYPAD;
-               break;
-
-            case MENU_ACTION_LEFT:
-               current_device = devices
-                  [(current_index + types - 1) % types];
-               break;
-
-            case MENU_ACTION_RIGHT:
-            case MENU_ACTION_OK:
-               current_device = devices
-                  [(current_index + 1) % types];
-               break;
-
-            default:
-               updated = false;
-         }
-
-         if (updated)
-         {
-            g_settings.input.libretro_device[port] = current_device;
-            pretro_set_controller_port_device(port, current_device);
-         }
-
-      }
-      else if (!strcmp(label, "input_bind_player_no"))
-      {
-         if (action == MENU_ACTION_START)
-            driver.menu->current_pad = 0;
-         else if (action == MENU_ACTION_LEFT)
-         {
-            if (driver.menu->current_pad != 0)
-               driver.menu->current_pad--;
-         }
-         else if (action == MENU_ACTION_RIGHT)
-         {
-            if (driver.menu->current_pad < MAX_PLAYERS - 1)
-               driver.menu->current_pad++;
-         }
-         if (port != driver.menu->current_pad)
-            driver.menu->need_refresh = true;
-         port = driver.menu->current_pad;
-      }
-      else if (!strcmp(label, "input_bind_analog_dpad_mode"))
-      {
-         switch (action)
-         {
-            case MENU_ACTION_START:
-               g_settings.input.analog_dpad_mode[port] = 0;
-               break;
-
-            case MENU_ACTION_OK:
-            case MENU_ACTION_RIGHT:
-               g_settings.input.analog_dpad_mode[port] =
-                  (g_settings.input.analog_dpad_mode[port] + 1)
-                  % ANALOG_DPAD_LAST;
-               break;
-
-            case MENU_ACTION_LEFT:
-               g_settings.input.analog_dpad_mode[port] =
-                  (g_settings.input.analog_dpad_mode
-                   [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
-               break;
-
-            default:
-               break;
-         }
-      }
-      else
-      {
-         switch (id)
-         {
-            case MENU_SETTINGS_CUSTOM_BIND_MODE:
-               if (action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-                  driver.menu->bind_mode_keyboard =
-                    !driver.menu->bind_mode_keyboard;
-               break;
+         case MENU_SETTINGS_CUSTOM_BIND_MODE:
+            if (action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
+               driver.menu->bind_mode_keyboard =
+                  !driver.menu->bind_mode_keyboard;
+            break;
 #if defined(GEKKO)
-            case MENU_SETTINGS_VIDEO_RESOLUTION:
-               if (action == MENU_ACTION_LEFT)
+         case MENU_SETTINGS_VIDEO_RESOLUTION:
+            if (action == MENU_ACTION_LEFT)
+            {
+               if (menu_current_gx_resolution > 0)
+                  menu_current_gx_resolution--;
+            }
+            else if (action == MENU_ACTION_RIGHT)
+            {
+               if (menu_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
                {
-                  if (menu_current_gx_resolution > 0)
-                     menu_current_gx_resolution--;
-               }
-               else if (action == MENU_ACTION_RIGHT)
-               {
-                  if (menu_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
-                  {
 #ifdef HW_RVL
-                     if ((menu_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
-                        if (CONF_GetVideo() != CONF_VIDEO_PAL)
-                           return 0;
+                  if ((menu_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
+                     if (CONF_GetVideo() != CONF_VIDEO_PAL)
+                        return 0;
 #endif
 
-                     menu_current_gx_resolution++;
-                  }
+                  menu_current_gx_resolution++;
                }
-               else if (action == MENU_ACTION_OK)
-               {
-                  if (driver.video_data)
-                     gx_set_video_mode(driver.video_data, menu_gx_resolutions
-                           [menu_current_gx_resolution][0],
-                           menu_gx_resolutions[menu_current_gx_resolution][1]);
-               }
-               break;
+            }
+            else if (action == MENU_ACTION_OK)
+            {
+               if (driver.video_data)
+                  gx_set_video_mode(driver.video_data, menu_gx_resolutions
+                        [menu_current_gx_resolution][0],
+                        menu_gx_resolutions[menu_current_gx_resolution][1]);
+            }
+            break;
 #elif defined(__CELLOS_LV2__)
-            case MENU_SETTINGS_VIDEO_RESOLUTION:
-               if (action == MENU_ACTION_LEFT)
+         case MENU_SETTINGS_VIDEO_RESOLUTION:
+            if (action == MENU_ACTION_LEFT)
+            {
+               if (g_extern.console.screen.resolutions.current.idx)
                {
-                  if (g_extern.console.screen.resolutions.current.idx)
-                  {
-                     g_extern.console.screen.resolutions.current.idx--;
-                     g_extern.console.screen.resolutions.current.id =
-                        g_extern.console.screen.resolutions.list
-                        [g_extern.console.screen.resolutions.current.idx];
-                  }
+                  g_extern.console.screen.resolutions.current.idx--;
+                  g_extern.console.screen.resolutions.current.id =
+                     g_extern.console.screen.resolutions.list
+                     [g_extern.console.screen.resolutions.current.idx];
                }
-               else if (action == MENU_ACTION_RIGHT)
+            }
+            else if (action == MENU_ACTION_RIGHT)
+            {
+               if (g_extern.console.screen.resolutions.current.idx + 1 <
+                     g_extern.console.screen.resolutions.count)
                {
-                  if (g_extern.console.screen.resolutions.current.idx + 1 <
-                        g_extern.console.screen.resolutions.count)
-                  {
-                     g_extern.console.screen.resolutions.current.idx++;
-                     g_extern.console.screen.resolutions.current.id =
-                        g_extern.console.screen.resolutions.list
-                        [g_extern.console.screen.resolutions.current.idx];
-                  }
+                  g_extern.console.screen.resolutions.current.idx++;
+                  g_extern.console.screen.resolutions.current.id =
+                     g_extern.console.screen.resolutions.list
+                     [g_extern.console.screen.resolutions.current.idx];
                }
-               else if (action == MENU_ACTION_OK)
+            }
+            else if (action == MENU_ACTION_OK)
+            {
+               if (g_extern.console.screen.resolutions.list[
+                     g_extern.console.screen.resolutions.current.idx] == 
+                     CELL_VIDEO_OUT_RESOLUTION_576)
                {
-                  if (g_extern.console.screen.resolutions.list[
-                        g_extern.console.screen.resolutions.current.idx] == 
-                        CELL_VIDEO_OUT_RESOLUTION_576)
-                  {
-                     if (g_extern.console.screen.pal_enable)
-                        g_extern.console.screen.pal60_enable = true;
-                  }
-                  else
-                  {
-                     g_extern.console.screen.pal_enable = false;
-                     g_extern.console.screen.pal60_enable = false;
-                  }
+                  if (g_extern.console.screen.pal_enable)
+                     g_extern.console.screen.pal60_enable = true;
+               }
+               else
+               {
+                  g_extern.console.screen.pal_enable = false;
+                  g_extern.console.screen.pal60_enable = false;
+               }
 
-                  rarch_main_command(RARCH_CMD_REINIT);
-               }
+               rarch_main_command(RARCH_CMD_REINIT);
+            }
 #endif
-               break;
-            default:
-               break;
-         }
+            break;
+         default:
+            break;
       }
    }
 
