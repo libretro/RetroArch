@@ -2124,22 +2124,13 @@ static void general_write_handler(void *data)
       rarch_main_command(rarch_cmd);
 }
 
-#define APPEND(list, list_info, VALUE)                                                                   \
-   if (list_info->index == list_info->size)                                                              \
-   {                                                                                    \
-      list_info->size *= 2;                                                                   \
-                                                                                        \
+#define APPEND(list, list_info, VALUE) \
+   if (list_info->index == list_info->size) \
+   { \
+      list_info->size *= 2; \
       if (!(list = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * list_info->size)))  \
-      {                                                                                 \
-         RARCH_ERR("Settings list reallocation failed.\n");                             \
-         free(list);                                                                    \
-         if (list_info)                                                                 \
-            free(list_info);                                                            \
-         list      = NULL;                                                               \
-         list_info = NULL;                                                              \
-         return NULL;                                                                   \
-      }                                                                                 \
-   }                                                                                    \
+      goto error; \
+   } \
    (list[list_info->index++]) = VALUE
 
 #define START_GROUP(group_info, NAME)                       strlcpy(group_info.name, NAME, sizeof(group_info.name)); APPEND(list, list_info, setting_data_group_setting (ST_GROUP, NAME));
