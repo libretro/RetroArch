@@ -2127,17 +2127,15 @@ static void general_write_handler(void *data)
 #define APPEND(VALUE)                                                                   \
    if (index == list_size)                                                              \
    {                                                                                    \
-      rarch_setting_t* list_temp = NULL;                                                \
       list_size *= 2;                                                                   \
                                                                                         \
-      if (!(list_temp = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * list_size)))  \
+      if (!(list = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * list_size)))  \
       {                                                                                 \
          RARCH_ERR("Settings list reallocation failed.\n");                             \
          free(list);                                                                    \
          list = NULL;                                                                   \
          return NULL;                                                                   \
       }                                                                                 \
-      list = list_temp;                                                                 \
    }                                                                                    \
    (list[index++]) = VALUE
 
@@ -2181,7 +2179,6 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
 {
    int index = 0;
    static rarch_setting_t* list = NULL;
-   rarch_setting_t* list_tmp = NULL;
    int list_size = 32;
    static bool lists[32];
 
@@ -2250,12 +2247,7 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
    APPEND(terminator);
 
    /* flatten this array to save ourselves some kilobytes */
-   list_tmp = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * index);
-   if (list_tmp)
-   {
-      list = list_tmp;
-   }
-   else
+   if (!(list = (rarch_setting_t*)realloc(list, index * sizeof(rarch_setting_t))))
    {
       RARCH_ERR("setting_data_get_mainmenu list flattening failed.\n");
       free(list);
@@ -2272,7 +2264,6 @@ rarch_setting_t *setting_data_get_list(void)
 {
    int i, player, index = 0;
    static rarch_setting_t* list = NULL;
-   rarch_setting_t* list_tmp = NULL;
    int list_size = 512;
 
    if (list)
@@ -2622,13 +2613,7 @@ rarch_setting_t *setting_data_get_list(void)
    APPEND(terminator);
 
    /* flatten this array to save ourselves some kilobytes. */
-   list_tmp = (rarch_setting_t*)
-      realloc(list, sizeof(rarch_setting_t) * index);
-   if (list_tmp)
-   {
-      list = list_tmp;
-   }
-   else
+   if (!(list = (rarch_setting_t*)realloc(list, index * sizeof(rarch_setting_t))))
    {
       RARCH_ERR("setting_data_get_list list flattening failed.\n");
       free(list);
