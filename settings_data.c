@@ -2124,38 +2124,49 @@ static void general_write_handler(void *data)
       rarch_main_command(rarch_cmd);
 }
 
-#define APPEND(list, list_info, VALUE)                                                                   \
-   if (list_info->index == list_info->size)                                                              \
-   {                                                                                    \
-      list_info->size *= 2;                                                                   \
-                                                                                        \
-      if (!(list = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * list_info->size)))  \
-      {                                                                                 \
-         RARCH_ERR("Settings list reallocation failed.\n");                             \
-         free(list);                                                                    \
-         if (list_info)                                                                 \
-            free(list_info);                                                            \
-         list      = NULL;                                                               \
-         list_info = NULL;                                                              \
-         return NULL;                                                                   \
-      }                                                                                 \
-   }                                                                                    \
-   (list[list_info->index++]) = VALUE
+static bool data_list_append(rarch_setting_t *list,
+      rarch_setting_info_t *list_info,
+      rarch_setting_t value)
+{
+   if (!list || !list_info)
+      return false;
 
-#define START_GROUP(NAME)                       { const char *GROUP_NAME = NAME; APPEND(list, list_info, setting_data_group_setting (ST_GROUP, NAME));
-#define END_GROUP()                             APPEND(list, list_info, setting_data_group_setting (ST_END_GROUP, 0)); }
-#define START_SUB_GROUP(NAME, GROUPNAME)        { const char *SUBGROUP_NAME = NAME; (void)SUBGROUP_NAME; APPEND(list, list_info, setting_data_subgroup_setting (ST_SUB_GROUP, NAME, GROUPNAME));
-#define END_SUB_GROUP()                         APPEND(list, list_info, setting_data_group_setting (ST_END_SUB_GROUP, 0)); }
-#define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   APPEND(list, list_info, setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
-#define CONFIG_INT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)    APPEND(list, list_info, setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
-#define CONFIG_UINT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   APPEND(list, list_info, setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
-#define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, ROUNDING, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)  APPEND(list, list_info, setting_data_float_setting (NAME, SHORT, &TARGET, DEF, ROUNDING, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
-#define CONFIG_PATH(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   APPEND(list, list_info, setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
-#define CONFIG_DIR(TARGET, NAME, SHORT, DEF, EMPTY, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   APPEND(list, list_info, setting_data_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, EMPTY, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
-#define CONFIG_STRING(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER) APPEND(list, list_info, setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
+   if (list_info->index == list_info->size)
+   {
+      list_info->size *= 2;
+
+      if (!(list = (rarch_setting_t*)
+               realloc(list, sizeof(rarch_setting_t) * list_info->size)))
+      {
+         RARCH_ERR("Settings list reallocation failed.\n");
+         free(list);
+         if (list_info)
+            free(list_info);
+         list      = NULL;
+         list_info = NULL;
+
+         return false;
+      }
+   }
+
+   list[list_info->index++] = value;
+   return true;
+}
+
+#define START_GROUP(NAME)                       { const char *GROUP_NAME = NAME; if (!(data_list_append(list, list_info, setting_data_group_setting (ST_GROUP, NAME)))) return NULL;
+#define END_GROUP()                             if (!(data_list_append(list, list_info, setting_data_group_setting (ST_END_GROUP, 0)))) return NULL; }
+#define START_SUB_GROUP(NAME, GROUPNAME)        { const char *SUBGROUP_NAME = NAME; (void)SUBGROUP_NAME; if (!(data_list_append(list, list_info, setting_data_subgroup_setting (ST_SUB_GROUP, NAME, GROUPNAME)))) return NULL;
+#define END_SUB_GROUP()                         if (!(data_list_append(list, list_info, setting_data_group_setting (ST_END_SUB_GROUP, 0)))) return NULL; }
+#define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   if (!(data_list_append(list, list_info, setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)))) return NULL;
+#define CONFIG_INT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)    if (!(data_list_append(list, list_info, setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)))) return NULL;
+#define CONFIG_UINT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   if (!(data_list_append(list, list_info, setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)))) return NULL;
+#define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, ROUNDING, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)  if (!(data_list_append(list, list_info, setting_data_float_setting (NAME, SHORT, &TARGET, DEF, ROUNDING, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)))) return NULL;
+#define CONFIG_PATH(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   if (!(data_list_append(list, list_info, setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)))) return NULL;
+#define CONFIG_DIR(TARGET, NAME, SHORT, DEF, EMPTY, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   if (!(data_list_append(list, list_info, setting_data_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, EMPTY, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)))) return NULL;
+#define CONFIG_STRING(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER) if (!(data_list_append(list, list_info, setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)))) return NULL;
 #define CONFIG_HEX(TARGET, NAME, SHORT, GROUP, SUBGROUP)
 #define CONFIG_BIND(TARGET, PLAYER, NAME, SHORT, DEF, GROUP, SUBGROUP) \
-   APPEND(list, list_info, setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF, GROUP, SUBGROUP));
+   if (!(data_list_append(list, list_info, setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF, GROUP, SUBGROUP)))) return NULL;
 
 #define WITH_FLAGS(list, list_info, FLAGS) (list[list_info->index - 1]).flags |= FLAGS;
 
@@ -2253,7 +2264,7 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
       END_GROUP()
 
       rarch_setting_t terminator = { ST_NONE };
-   APPEND(list, list_info, terminator);
+      data_list_append(list, list_info, terminator);
 
    /* flatten this array to save ourselves some kilobytes */
    if (!(list = (rarch_setting_t*)realloc(list, list_info->index * sizeof(rarch_setting_t))))
@@ -2637,7 +2648,7 @@ rarch_setting_t *setting_data_get_list(void)
       END_GROUP()
 
       rarch_setting_t terminator = { ST_NONE };
-   APPEND(list, list_info, terminator);
+   data_list_append(list, list_info, terminator);
 
    /* flatten this array to save ourselves some kilobytes. */
    if (!(list = (rarch_setting_t*)realloc(list, list_info->index * sizeof(rarch_setting_t))))
