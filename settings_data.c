@@ -2142,10 +2142,10 @@ static void general_write_handler(void *data)
    }                                                                                    \
    (list[list_info->index++]) = VALUE
 
-#define START_GROUP(group_name, NAME)                       strlcpy(group_info.name, NAME, sizeof(group_info.name)); APPEND(list, list_info, setting_data_group_setting (ST_GROUP, NAME));
-#define END_GROUP()                             APPEND(list, list_info, setting_data_group_setting (ST_END_GROUP, 0));
-#define START_SUB_GROUP(NAME, group_info)        strlcpy(subgroup_info.name, NAME, sizeof(subgroup_info.name)); APPEND(list, list_info, setting_data_subgroup_setting (ST_SUB_GROUP, NAME, group_info));
-#define END_SUB_GROUP()                         APPEND(list, list_info, setting_data_group_setting (ST_END_SUB_GROUP, 0));
+#define START_GROUP(group_info, NAME)                       strlcpy(group_info.name, NAME, sizeof(group_info.name)); APPEND(list, list_info, setting_data_group_setting (ST_GROUP, NAME));
+#define END_GROUP(list, list_info)                             APPEND(list, list_info, setting_data_group_setting (ST_END_GROUP, 0));
+#define START_SUB_GROUP(list, list_info, NAME, group_info, subgroup_info)        strlcpy(subgroup_info.name, NAME, sizeof(subgroup_info.name)); APPEND(list, list_info, setting_data_subgroup_setting (ST_SUB_GROUP, NAME, group_info));
+#define END_SUB_GROUP(list, list_info)                         APPEND(list, list_info, setting_data_group_setting (ST_END_SUB_GROUP, 0));
 #define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   APPEND(list, list_info, setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER));
 #define CONFIG_INT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)    APPEND(list, list_info, setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER));
 #define CONFIG_UINT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   APPEND(list, list_info, setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER));
@@ -2212,7 +2212,7 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
       goto error;
 
    START_GROUP(group_info, "Main Menu")
-      START_SUB_GROUP("State", group_info.name)
+      START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
       CONFIG_BOOL(lists[0],     "core_list",     "Core",          false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION)
 #endif
@@ -2253,8 +2253,8 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
       CONFIG_BOOL(lists[16], "save_new_config", "Save New Config", false, "", "",group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION) WITH_CMD(list, list_info, RARCH_CMD_MENU_SAVE_CONFIG)
       CONFIG_BOOL(lists[17], "help", "Help", false, "", "",group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION)
       CONFIG_BOOL(lists[18], "quit_retroarch", "Quit RetroArch", false, "", "",group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION) WITH_CMD(list, list_info, RARCH_CMD_QUIT_RETROARCH)
-      END_SUB_GROUP()
-      END_GROUP()
+      END_SUB_GROUP(list, list_info)
+      END_GROUP(list, list_info)
 
       rarch_setting_t terminator = { ST_NONE };
    APPEND(list, list_info, terminator);
@@ -2313,7 +2313,7 @@ rarch_setting_t *setting_data_get_list(void)
       goto error;
 
    START_GROUP(group_info, "Driver Options")
-      START_SUB_GROUP("State", group_info.name)
+      START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info)
       CONFIG_STRING(g_settings.input.driver,             "input_driver",               "Input Driver",               config_get_default_input(), group_info.name, subgroup_info.name, NULL, NULL) WITH_FLAGS(list, list_info, SD_FLAG_IS_DRIVER)
       CONFIG_STRING(g_settings.video.driver,             "video_driver",               "Video Driver",               config_get_default_video(), group_info.name, subgroup_info.name, NULL, NULL) WITH_FLAGS(list, list_info, SD_FLAG_IS_DRIVER)
 #ifdef HAVE_OPENGL
@@ -2329,11 +2329,11 @@ rarch_setting_t *setting_data_get_list(void)
       CONFIG_STRING(g_settings.input.joypad_driver,      "input_joypad_driver",        "Joypad Driver",              config_get_default_joypad(), group_info.name, subgroup_info.name, NULL, NULL) WITH_FLAGS(list, list_info, SD_FLAG_IS_DRIVER)
       CONFIG_STRING(g_settings.input.keyboard_layout,    "input_keyboard_layout",      "Keyboard Layout",            "", group_info.name, subgroup_info.name, NULL, NULL) WITH_FLAGS(list, list_info, SD_FLAG_IS_DRIVER)
 
-      END_SUB_GROUP()
-      END_GROUP()
+      END_SUB_GROUP(list, list_info)
+      END_GROUP(list, list_info)
 
       START_GROUP(group_info, "General Options")
-      START_SUB_GROUP("State", group_info.name)
+      START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info)
       CONFIG_BOOL(g_extern.verbosity,                      "log_verbosity",        "Logging Verbosity", false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_UINT(g_settings.libretro_log_level,           "libretro_log_level",        "Libretro Logging Level", libretro_log_level, group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 3, 1.0, true, true)
       CONFIG_BOOL(g_extern.perfcnt_enable,               "perfcnt_enable",       "Performance Counters", false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
@@ -2359,8 +2359,8 @@ rarch_setting_t *setting_data_get_list(void)
       CONFIG_BOOL(g_settings.savestate_auto_save,        "savestate_auto_save",        "Auto Save State",            savestate_auto_save, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_settings.savestate_auto_load,        "savestate_auto_load",        "Auto Load State",            savestate_auto_load, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_INT(g_settings.state_slot,                    "state_slot",                 "State Slot",                 0, group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
-      END_SUB_GROUP()
-      START_SUB_GROUP("Miscellaneous", group_info.name)
+      END_SUB_GROUP(list, list_info)
+      START_SUB_GROUP(list, list_info, "Miscellaneous", group_info.name, subgroup_info)
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
       CONFIG_BOOL(g_settings.network_cmd_enable,         "network_cmd_enable",         "Network Commands",           network_cmd_enable, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
 #if 0
@@ -2368,14 +2368,14 @@ rarch_setting_t *setting_data_get_list(void)
 #endif
       CONFIG_BOOL(g_settings.stdin_cmd_enable,           "stdin_cmd_enable",           "stdin command",              stdin_cmd_enable, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
 #endif
-      END_SUB_GROUP()
-      END_GROUP()
+      END_SUB_GROUP(list, list_info)
+      END_GROUP(list, list_info)
 
       START_GROUP(group_info, "Video Options")
-      START_SUB_GROUP("State", group_info.name)
+      START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info)
       CONFIG_BOOL(g_settings.video.shared_context,  "video_shared_context",  "HW Shared Context Enable",   false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
-      END_SUB_GROUP()
-      START_SUB_GROUP("Monitor", group_info.name)
+      END_SUB_GROUP(list, list_info)
+      START_SUB_GROUP(list, list_info, "Monitor", group_info.name, subgroup_info)
       CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index, group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 1, 1, true, false) WITH_CMD(list, list_info, RARCH_CMD_REINIT)
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
       CONFIG_BOOL(g_settings.video.fullscreen,           "video_fullscreen",           "Use Fullscreen mode",        fullscreen, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_CMD(list, list_info, RARCH_CMD_REINIT) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
@@ -2386,16 +2386,16 @@ rarch_setting_t *setting_data_get_list(void)
       CONFIG_FLOAT(g_settings.video.refresh_rate,        "video_refresh_rate",         "Refresh Rate",               refresh_rate, "%.3f Hz", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 0, 0.001, true, false)
       CONFIG_FLOAT(g_settings.video.refresh_rate,        "video_refresh_rate_auto",    "Estimated Monitor FPS",      refresh_rate, "%.3f Hz", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_settings.video.force_srgb_disable,     "video_force_srgb_disable",   "Force-disable sRGB FBO",     false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_CMD(list, list_info, RARCH_CMD_REINIT) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
-      END_SUB_GROUP()
+      END_SUB_GROUP(list, list_info)
 
-      START_SUB_GROUP("Aspect", group_info.name)
+      START_SUB_GROUP(list, list_info, "Aspect", group_info.name, subgroup_info)
       CONFIG_BOOL(g_settings.video.force_aspect,         "video_force_aspect",         "Force aspect ratio",         force_aspect, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_FLOAT(g_settings.video.aspect_ratio,        "video_aspect_ratio",         "Aspect Ratio",               aspect_ratio, "%.2f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_settings.video.aspect_ratio_auto,    "video_aspect_ratio_auto",    "Use Auto Aspect Ratio",      aspect_ratio_auto, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_UINT(g_settings.video.aspect_ratio_idx,     "aspect_ratio_index",         "Aspect Ratio Index",         aspect_ratio_idx, group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, LAST_ASPECT_RATIO, 1, true, true) WITH_CMD(list, list_info, RARCH_CMD_VIDEO_SET_ASPECT_RATIO) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
-      END_SUB_GROUP()
+      END_SUB_GROUP(list, list_info)
 
-      START_SUB_GROUP("Scaling", group_info.name)
+      START_SUB_GROUP(list, list_info, "Scaling", group_info.name, subgroup_info)
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
       CONFIG_FLOAT(g_settings.video.scale,              "video_scale",               "Windowed Scale",                    scale, "%.1fx", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 1.0, 10.0, 1.0, true, true) 
 #endif
@@ -2417,10 +2417,10 @@ rarch_setting_t *setting_data_get_list(void)
 #if defined(HW_RVL) || defined(_XBOX360)
       CONFIG_UINT(g_extern.console.screen.gamma_correction, "video_gamma",             "Gamma",                      0, group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, MAX_GAMMA_SETTING, 1, true, true) WITH_CMD(list, list_info, RARCH_CMD_VIDEO_APPLY_STATE_CHANGES) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
 #endif
-      END_SUB_GROUP()
+      END_SUB_GROUP(list, list_info)
 
 
-      START_SUB_GROUP("Synchronization", group_info.name)
+      START_SUB_GROUP(list, list_info, "Synchronization", group_info.name, subgroup_info)
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
       CONFIG_BOOL(g_settings.video.threaded,             "video_threaded",             "Threaded Video",         video_threaded, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_CMD(list, list_info, RARCH_CMD_REINIT) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
 #endif
@@ -2432,9 +2432,9 @@ rarch_setting_t *setting_data_get_list(void)
 #if !defined(RARCH_MOBILE)
       CONFIG_BOOL(g_settings.video.black_frame_insertion, "video_black_frame_insertion", "Black Frame Insertion",      black_frame_insertion, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
 #endif
-      END_SUB_GROUP()
+      END_SUB_GROUP(list, list_info)
 
-      START_SUB_GROUP("Miscellaneous", group_info.name)
+      START_SUB_GROUP(list, list_info, "Miscellaneous", group_info.name, subgroup_info)
       CONFIG_BOOL(g_settings.video.post_filter_record,   "video_post_filter_record",   "Post filter record Enable",         post_filter_record, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_settings.video.gpu_record,           "video_gpu_record",           "GPU Record Enable",                 gpu_record, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_settings.video.gpu_screenshot,       "video_gpu_screenshot",       "GPU Screenshot Enable",             gpu_screenshot, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
@@ -2449,75 +2449,75 @@ rarch_setting_t *setting_data_get_list(void)
 #ifdef _XBOX1
       CONFIG_UINT(g_settings.video.swap_interval,        "video_filter_flicker",        "Flicker filter",        0, group_info.name, subgroup_info.name, general_write_handler, general_read_handler)       WITH_RANGE(list, list_info, 0, 5, 1, true, true)
 #endif
-      END_SUB_GROUP()
+      END_SUB_GROUP(list, list_info)
 
-      END_GROUP()
+      END_GROUP(list, list_info)
 
       START_GROUP(group_info, "Shader Options")
-      START_SUB_GROUP("State", group_info.name)
+      START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info)
       CONFIG_BOOL(g_settings.video.shader_enable,        "video_shader_enable",        "Enable Shaders",             shader_enable, "OFF", "ON", group_info.name, subgroup_info.name, NULL, NULL)
       CONFIG_PATH(g_settings.video.shader_path,          "video_shader",               "Shader",                     "", group_info.name, subgroup_info.name, NULL, NULL)       WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY)
-      END_SUB_GROUP()
-      END_GROUP()
+      END_SUB_GROUP(list, list_info)
+      END_GROUP(list, list_info)
 
       START_GROUP(group_info, "Font Options")
-      START_SUB_GROUP("Messages", group_info.name)
+      START_SUB_GROUP(list, list_info, "Messages", group_info.name, subgroup_info)
       CONFIG_PATH(g_settings.video.font_path,            "video_font_path",            "Font Path",                  "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)       WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY)
       CONFIG_FLOAT(g_settings.video.font_size,           "video_font_size",            "OSD Font Size",              font_size, "%.1f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 1.00, 100.00, 1.0, true, true)
       CONFIG_BOOL(g_settings.video.font_enable,          "video_font_enable",          "OSD Font Enable",            font_enable, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_FLOAT(g_settings.video.msg_pos_x,           "video_message_pos_x",        "Message X Position",         message_pos_offset_x, "%.3f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 1, 0.01, true, true)
       CONFIG_FLOAT(g_settings.video.msg_pos_y,           "video_message_pos_y",        "Message Y Position",         message_pos_offset_y, "%.3f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 1, 0.01, true, true)
       /* message color */
-      END_SUB_GROUP()
-      END_GROUP()
+      END_SUB_GROUP(list, list_info)
+      END_GROUP(list, list_info)
 
       START_GROUP(group_info, "Audio Options")
-      START_SUB_GROUP("State", group_info.name)
+      START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info)
       CONFIG_BOOL(g_settings.audio.enable,               "audio_enable",               "Audio Enable",                     audio_enable, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute_enable",          "Audio Mute",                 false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_FLOAT(g_settings.audio.volume,              "audio_volume",               "Volume Level",               audio_volume, "%.1f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, -80, 12, 1.0, true, true)
 #ifdef __CELLOS_LV2__
       CONFIG_BOOL(g_extern.console.sound.system_bgm_enable,               "system_bgm_enable",               "System BGM Enable",                     false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
 #endif
-      END_SUB_GROUP()
+      END_SUB_GROUP(list, list_info)
 
-      START_SUB_GROUP("Synchronization", group_info.name)
+      START_SUB_GROUP(list, list_info, "Synchronization", group_info.name, subgroup_info)
       CONFIG_BOOL(g_settings.audio.sync,                 "audio_sync",                 "Audio Sync Enable",                audio_sync, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_UINT(g_settings.audio.latency,              "audio_latency",              "Audio Latency",                    g_defaults.settings.out_latency ? g_defaults.settings.out_latency : out_latency, group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_FLOAT(g_settings.audio.rate_control_delta,  "audio_rate_control_delta",   "Audio Rate Control Delta",         rate_control_delta, "%.3f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 0, 0.001, true, false)
       CONFIG_UINT(g_settings.audio.block_frames,         "audio_block_frames",         "Block Frames",               0, group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
-      END_SUB_GROUP()
+      END_SUB_GROUP(list, list_info)
 
-      START_SUB_GROUP("Miscellaneous", group_info.name)
+      START_SUB_GROUP(list, list_info, "Miscellaneous", group_info.name, subgroup_info)
       CONFIG_STRING(g_settings.audio.device,             "audio_device",               "Device",                     "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT)
       CONFIG_UINT(g_settings.audio.out_rate,             "audio_out_rate",             "Audio Output Rate",          out_rate, group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_PATH(g_settings.audio.dsp_plugin,           "audio_dsp_plugin",           "DSP Plugin",                 g_settings.audio.filter_dir, group_info.name, subgroup_info.name, general_write_handler, general_read_handler)          WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY) WITH_VALUES(list, list_info, "dsp") WITH_CMD(list, list_info, RARCH_CMD_DSP_FILTER_INIT)
-      END_SUB_GROUP()
-      END_GROUP()
+      END_SUB_GROUP(list, list_info)
+      END_GROUP(list, list_info)
 
       START_GROUP(group_info, "Input Options")
-      START_SUB_GROUP("State", group_info.name)
+      START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info)
       CONFIG_BOOL(g_settings.input.autodetect_enable,    "input_autodetect_enable",    "Autodetect Enable",   input_autodetect_enable, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
-      END_SUB_GROUP()
+      END_SUB_GROUP(list, list_info)
 
-      START_SUB_GROUP("Joypad Mapping", group_info.name)
+      START_SUB_GROUP(list, list_info, "Joypad Mapping", group_info.name, subgroup_info)
       /* TODO: input_libretro_device_p%u */
       CONFIG_INT(g_settings.input.joypad_map[0],         "input_player1_joypad_index", "Player 1 Pad Index",         0, group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_INT(g_settings.input.joypad_map[1],         "input_player2_joypad_index", "Player 2 Pad Index",         1, group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_INT(g_settings.input.joypad_map[2],         "input_player3_joypad_index", "Player 3 Pad Index",         2, group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_INT(g_settings.input.joypad_map[3],         "input_player4_joypad_index", "Player 4 Pad Index",         3, group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_INT(g_settings.input.joypad_map[4],         "input_player5_joypad_index", "Player 5 Pad Index",         4, group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
-      END_SUB_GROUP()
+      END_SUB_GROUP(list, list_info)
 
-      START_SUB_GROUP("Turbo/Deadzone", group_info.name)
+      START_SUB_GROUP(list, list_info, "Turbo/Deadzone", group_info.name, subgroup_info)
       CONFIG_FLOAT(g_settings.input.axis_threshold,      "input_axis_threshold",       "Input Axis Threshold",       axis_threshold, "%.3f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 1.00, 0.001, true, true)
       CONFIG_UINT(g_settings.input.turbo_period,         "input_turbo_period",         "Turbo Period",               turbo_period, group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 1, 0, 1, true, false)
       CONFIG_UINT(g_settings.input.turbo_duty_cycle,     "input_duty_cycle",           "Duty Cycle",                 turbo_duty_cycle, group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 1, 0, 1, true, false)
-      END_SUB_GROUP()
+      END_SUB_GROUP(list, list_info)
 
       /* The second argument to config bind is 1 
        * based for players and 0 only for meta keys. */
-      START_SUB_GROUP("Meta Keys", group_info.name)
+      START_SUB_GROUP(list, list_info, "Meta Keys", group_info.name, subgroup_info)
       for (i = 0; i != RARCH_BIND_LIST_END; i ++)
          if (input_config_bind_map[i].meta)
          {
@@ -2527,7 +2527,7 @@ rarch_setting_t *setting_data_get_list(void)
                   bind->base, bind->desc, &retro_keybinds_1[i],
                   group_info.name, subgroup_info.name)
          }
-   END_SUB_GROUP()
+   END_SUB_GROUP(list, list_info)
 
       for (player = 0; player < MAX_PLAYERS; player ++)
       {
@@ -2536,7 +2536,7 @@ rarch_setting_t *setting_data_get_list(void)
             (player == 0) ? retro_keybinds_1 : retro_keybinds_rest;
          snprintf(buffer, sizeof(buffer), "Player %d", player + 1);
 
-         START_SUB_GROUP(strdup(buffer), group_info.name)
+         START_SUB_GROUP(list, list_info, strdup(buffer), group_info.name, subgroup_info)
             for (i = 0; i != RARCH_BIND_LIST_END; i ++)
             {
                if (!input_config_bind_map[i].meta)
@@ -2548,61 +2548,61 @@ rarch_setting_t *setting_data_get_list(void)
                         group_info.name, subgroup_info.name)
                }
             }
-         END_SUB_GROUP()
+         END_SUB_GROUP(list, list_info)
       }
-   START_SUB_GROUP("Onscreen Keyboard", group_info.name)
+   START_SUB_GROUP(list, list_info, "Onscreen Keyboard", group_info.name, subgroup_info)
       CONFIG_BOOL(g_settings.osk.enable, "osk_enable", "Onscreen Keyboard Enable",     false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
-      END_SUB_GROUP()
+      END_SUB_GROUP(list, list_info)
 
-      START_SUB_GROUP("Miscellaneous", group_info.name)
+      START_SUB_GROUP(list, list_info, "Miscellaneous", group_info.name, subgroup_info)
       CONFIG_BOOL(g_settings.input.netplay_client_swap_input, "netplay_client_swap_input", "Swap Netplay Input",     netplay_client_swap_input, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
-      END_SUB_GROUP()
-      END_GROUP()
+      END_SUB_GROUP(list, list_info)
+      END_GROUP(list, list_info)
 
 #ifdef HAVE_OVERLAY
       START_GROUP(group_info, "Overlay Options")
-      START_SUB_GROUP("State", group_info.name)
+      START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info)
       CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Overlay Preset",              g_extern.overlay_dir, group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY) WITH_VALUES(list, list_info, "cfg") WITH_CMD(list, list_info, RARCH_CMD_OVERLAY_INIT)
       CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, "%.2f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 1, 0.01, true, true) WITH_CMD(list, list_info, RARCH_CMD_OVERLAY_SET_ALPHA_MOD) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
       CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, "%.2f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 2, 0.01, true, true) WITH_CMD(list, list_info, RARCH_CMD_OVERLAY_SET_SCALE_FACTOR) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
-      END_SUB_GROUP()
-      END_GROUP()
+      END_SUB_GROUP(list, list_info)
+      END_GROUP(list, list_info)
 #endif
 
 #ifdef HAVE_MENU
       START_GROUP(group_info, "Menu Options")
-      START_SUB_GROUP("State", group_info.name)
+      START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info)
       CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen", menu_show_start_screen, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_settings.menu.pause_libretro,            "menu_pause_libretro",  "Pause Libretro",        true, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_CMD(list, list_info, RARCH_CMD_MENU_PAUSE_LIBRETRO) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
-      END_SUB_GROUP()
-      END_GROUP()
+      END_SUB_GROUP(list, list_info)
+      END_GROUP(list, list_info)
 #endif
 
 #ifdef HAVE_NETPLAY
       START_GROUP(group_info, "Netplay Options")
-      START_SUB_GROUP("State", group_info.name)
+      START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info)
       CONFIG_BOOL(g_extern.netplay_enable,            "netplay_enable",  "Netplay Enable",        false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_STRING(g_extern.netplay_server,          "netplay_ip_address",   "IP Address",       "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT)
       CONFIG_BOOL(g_extern.netplay_is_client,         "netplay_mode",    "Netplay Client Enable",          false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_extern.netplay_is_spectate,       "netplay_spectator_mode_enable",    "Netplay Spectator Enable",          false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_UINT(g_extern.netplay_sync_frames,       "netplay_delay_frames",      "Netplay Delay Frames",      0, group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 10, 1, true, false)
       CONFIG_UINT(g_extern.netplay_port,       "netplay_tcp_udp_port",      "Netplay TCP/UDP Port",      RARCH_DEFAULT_PORT, group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 1, 99999, 1, true, true) WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT)
-      END_SUB_GROUP()
-      END_GROUP()
+      END_SUB_GROUP(list, list_info)
+      END_GROUP(list, list_info)
 #endif
 
       START_GROUP(group_info, "User Options")
-      START_SUB_GROUP("State", group_info.name)
+      START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info)
       CONFIG_STRING(g_settings.username,          "netplay_nickname",   "Username",       "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT)
       CONFIG_UINT(g_settings.user_language,     "user_language",      "Language",       def_user_language, group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, RETRO_LANGUAGE_LAST-1, 1, true, true) WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT)
-      END_SUB_GROUP()
-      END_GROUP()
+      END_SUB_GROUP(list, list_info)
+      END_GROUP(list, list_info)
 
       START_GROUP(group_info, "Path Options")
-      START_SUB_GROUP("State", group_info.name)
+      START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info)
       CONFIG_UINT(g_settings.content_history_size,          "game_history_size",          "Content History Size",       default_content_history_size, group_info.name, subgroup_info.name, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 0, 1.0, true, false)
-      END_SUB_GROUP()
-      START_SUB_GROUP("Paths", group_info.name)
+      END_SUB_GROUP(list, list_info)
+      START_SUB_GROUP(list, list_info, "Paths", group_info.name, subgroup_info)
 #ifdef HAVE_MENU
       CONFIG_DIR(g_settings.menu_content_directory,     "rgui_browser_directory",     "Browser Directory",          "", "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)                WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
       CONFIG_DIR(g_settings.content_directory,     "content_directory",     "Content Directory",          "", "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)                WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
@@ -2635,15 +2635,15 @@ rarch_setting_t *setting_data_get_list(void)
    CONFIG_DIR(g_extern.savestate_dir, "savestate_directory", "Savestate Directory", "", "<Content dir>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_DIR(g_settings.system_directory, "system_directory", "System Directory", "", "<Content dir>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_DIR(g_settings.extraction_directory, "extraction_directory", "Extraction Directory", "", "<None>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
-      END_SUB_GROUP()
-      END_GROUP()
+      END_SUB_GROUP(list, list_info)
+      END_GROUP(list, list_info)
 
       START_GROUP(group_info, "Privacy Options")
-      START_SUB_GROUP("State", group_info.name)
+      START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info)
       CONFIG_BOOL(g_settings.camera.allow,     "camera_allow",     "Allow Camera",          false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_settings.location.allow,     "location_allow",     "Allow Location",          false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
-      END_SUB_GROUP()
-      END_GROUP()
+      END_SUB_GROUP(list, list_info)
+      END_GROUP(list, list_info)
 
       rarch_setting_t terminator = { ST_NONE };
    APPEND(list, list_info, terminator);
