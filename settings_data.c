@@ -2124,28 +2124,37 @@ static void general_write_handler(void *data)
       rarch_main_command(rarch_cmd);
 }
 
-#define APPEND(list, list_info, VALUE) \
-   if (list_info->index == list_info->size) \
-   { \
-      list_info->size *= 2; \
-      if (!(list = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * list_info->size)))  \
-      goto error; \
-   } \
-   (list[list_info->index++]) = VALUE
+static bool data_list_append(rarch_setting_t *list,
+      rarch_setting_info_t *list_info, rarch_setting_t value)
+{
+   if (!list || !list_info)
+      return false;
 
-#define START_GROUP(group_info, NAME)                       strlcpy(group_info.name, NAME, sizeof(group_info.name)); APPEND(list, list_info, setting_data_group_setting (ST_GROUP, NAME));
-#define END_GROUP(list, list_info)                             APPEND(list, list_info, setting_data_group_setting (ST_END_GROUP, 0));
-#define START_SUB_GROUP(list, list_info, NAME, group_info, subgroup_info)        strlcpy(subgroup_info.name, NAME, sizeof(subgroup_info.name)); APPEND(list, list_info, setting_data_subgroup_setting (ST_SUB_GROUP, NAME, group_info));
-#define END_SUB_GROUP(list, list_info)                         APPEND(list, list_info, setting_data_group_setting (ST_END_SUB_GROUP, 0));
-#define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   APPEND(list, list_info, setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER));
-#define CONFIG_INT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)    APPEND(list, list_info, setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER));
-#define CONFIG_UINT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   APPEND(list, list_info, setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER));
-#define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)  APPEND(list, list_info, setting_data_float_setting (NAME, SHORT, &TARGET, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER));
-#define CONFIG_PATH(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   APPEND(list, list_info, setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER));
-#define CONFIG_DIR(TARGET, NAME, SHORT, DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   APPEND(list, list_info, setting_data_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER));
-#define CONFIG_STRING(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) APPEND(list, list_info, setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER));
+   if (list_info->index == list_info->size)
+   {
+      list_info->size *= 2;
+      if (!(list = (rarch_setting_t*)
+               realloc(list, sizeof(rarch_setting_t) * list_info->size)))
+         return false;
+   }
+
+   list[list_info->index++] = value;
+   return true;
+}
+
+#define START_GROUP(group_info, NAME)                       strlcpy(group_info.name, NAME, sizeof(group_info.name)); if (!(data_list_append(list, list_info, setting_data_group_setting (ST_GROUP, NAME)))) goto error;
+#define END_GROUP(list, list_info)                             if (!(data_list_append(list, list_info, setting_data_group_setting (ST_END_GROUP, 0)))) goto error;
+#define START_SUB_GROUP(list, list_info, NAME, group_info, subgroup_info)        strlcpy(subgroup_info.name, NAME, sizeof(subgroup_info.name)); if (!(data_list_append(list, list_info, setting_data_subgroup_setting (ST_SUB_GROUP, NAME, group_info)))) goto error;
+#define END_SUB_GROUP(list, list_info)                         if (!(data_list_append(list, list_info, setting_data_group_setting (ST_END_SUB_GROUP, 0)))) goto error;
+#define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   if (!data_list_append(list, list_info, setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER))) goto error;
+#define CONFIG_INT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)    if (!(data_list_append(list, list_info, setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) goto error;
+#define CONFIG_UINT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   if (!(data_list_append(list, list_info, setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) goto error;
+#define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)  if (!(data_list_append(list, list_info, setting_data_float_setting (NAME, SHORT, &TARGET, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) goto error;
+#define CONFIG_PATH(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   if (!(data_list_append(list, list_info, setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) goto error;
+#define CONFIG_DIR(TARGET, NAME, SHORT, DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   if (!(data_list_append(list, list_info, setting_data_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) goto error;
+#define CONFIG_STRING(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) if (!(data_list_append(list, list_info, setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) goto error;
 #define CONFIG_HEX(TARGET, NAME, SHORT, group_info, subgroup_info)
-#define CONFIG_BIND(TARGET, PLAYER, NAME, SHORT, DEF, group_info, subgroup_info) APPEND(list, list_info, setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF, group_info, subgroup_info));
+#define CONFIG_BIND(TARGET, PLAYER, NAME, SHORT, DEF, group_info, subgroup_info) if (!(data_list_append(list, list_info, setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF, group_info, subgroup_info)))) goto error;
 
 #define WITH_FLAGS(list, list_info, FLAGS) (list[list_info->index - 1]).flags |= FLAGS;
 
@@ -2248,7 +2257,8 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
       END_GROUP(list, list_info)
 
       rarch_setting_t terminator = { ST_NONE };
-   APPEND(list, list_info, terminator);
+      if (!(data_list_append(list, list_info, terminator)))
+         goto error;
 
    /* flatten this array to save ourselves some kilobytes */
    if (!(list = (rarch_setting_t*)realloc(list, list_info->index * sizeof(rarch_setting_t))))
@@ -2518,7 +2528,7 @@ rarch_setting_t *setting_data_get_list(void)
                   bind->base, bind->desc, &retro_keybinds_1[i],
                   group_info.name, subgroup_info.name)
          }
-   END_SUB_GROUP(list, list_info)
+   END_SUB_GROUP(list, list_info);
 
       for (player = 0; player < MAX_PLAYERS; player ++)
       {
@@ -2637,7 +2647,8 @@ rarch_setting_t *setting_data_get_list(void)
       END_GROUP(list, list_info)
 
       rarch_setting_t terminator = { ST_NONE };
-   APPEND(list, list_info, terminator);
+   if (!(data_list_append(list, list_info, terminator)))
+      goto error;
 
    /* flatten this array to save ourselves some kilobytes. */
    if (!(list = (rarch_setting_t*)realloc(list, list_info->index * sizeof(rarch_setting_t))))
