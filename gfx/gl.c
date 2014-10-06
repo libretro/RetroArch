@@ -946,7 +946,7 @@ static void gl_check_fbo_dimensions(gl_t *gl)
    }
 }
 
-static void gl_frame_fbo(gl_t *gl, shader_backend_t *shader,
+static void gl_frame_fbo(gl_t *gl,
       const struct gl_tex_info *tex_info)
 {
    const struct gl_fbo_rect *prev_rect;
@@ -984,24 +984,24 @@ static void gl_frame_fbo(gl_t *gl, shader_backend_t *shader,
 
       glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
 
-      shader->use(gl, i + 1);
+      gl->shader->use(gl, i + 1);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
-      if (shader->mipmap_input(i + 1))
+      if (gl->shader->mipmap_input(i + 1))
          glGenerateMipmap(GL_TEXTURE_2D);
 
       glClear(GL_COLOR_BUFFER_BIT);
 
       /* Render to FBO with certain size. */
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
-      shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
+      gl->shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
             gl->vp.width, gl->vp.height, g_extern.frame_count, 
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
       gl->coords.vertices = 4;
-      shader->set_coords(&gl->coords);
-      shader->set_mvp(gl, &gl->mvp);
+      gl->shader->set_coords(&gl->coords);
+      gl->shader->set_mvp(gl, &gl->mvp);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
 
@@ -1029,17 +1029,17 @@ static void gl_frame_fbo(gl_t *gl, shader_backend_t *shader,
 
    /* Render our FBO texture to back buffer. */
    gl_bind_backbuffer();
-   shader->use(gl, gl->fbo_pass + 1);
+   gl->shader->use(gl, gl->fbo_pass + 1);
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
-   if (shader->mipmap_input(gl->fbo_pass + 1))
+   if (gl->shader->mipmap_input(gl->fbo_pass + 1))
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 
-   shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
+   gl->shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
          gl->vp.width, gl->vp.height, g_extern.frame_count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
@@ -1047,8 +1047,8 @@ static void gl_frame_fbo(gl_t *gl, shader_backend_t *shader,
    gl->coords.vertex = gl->vertex_ptr;
 
    gl->coords.vertices = 4;
-   shader->set_coords(&gl->coords);
-   shader->set_mvp(gl, &gl->mvp);
+   gl->shader->set_coords(&gl->coords);
+   gl->shader->set_mvp(gl, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.tex_coord = gl->tex_info.coord;
@@ -1461,7 +1461,6 @@ static bool gl_frame(void *data, const void *frame,
    RARCH_PERFORMANCE_START(frame_run);
 
    gl_t *gl = (gl_t*)data;
-   shader_backend_t *shader = (shader_backend_t*)gl->shader;
 
    if (!gl)
       return true;
@@ -1473,7 +1472,7 @@ static bool gl_frame(void *data, const void *frame,
       glBindVertexArray(gl->vao);
 #endif
 
-   shader->use(gl, 1);
+   gl->shader->use(gl, 1);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -1566,20 +1565,20 @@ static bool gl_frame(void *data, const void *frame,
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   shader->set_params(gl, width, height,
+   gl->shader->set_params(gl, width, height,
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
          g_extern.frame_count, 
          &gl->tex_info, gl->prev_info, NULL, 0);
 
    gl->coords.vertices = 4;
-   shader->set_coords(&gl->coords);
-   shader->set_mvp(gl, &gl->mvp);
+   gl->shader->set_coords(&gl->coords);
+   gl->shader->set_mvp(gl, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
-      gl_frame_fbo(gl, shader, &gl->tex_info);
+      gl_frame_fbo(gl, &gl->tex_info);
 #endif
 
    gl_set_prev_texture(gl, &gl->tex_info);
@@ -1610,7 +1609,7 @@ static bool gl_frame(void *data, const void *frame,
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
-      shader->use(gl, 0);
+      gl->shader->use(gl, 0);
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
       gl_disable_client_arrays(gl);
