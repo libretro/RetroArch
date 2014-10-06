@@ -2167,9 +2167,9 @@ static void general_write_handler(void *data)
    (list[list_info->index - 1]).enforce_maxrange = ENFORCE_MAXRANGE; \
    WITH_FLAGS(list, list_info, SD_FLAG_HAS_RANGE)
 
-#define WITH_VALUES(VALUES) (list[list_info->index -1]).values = VALUES;
+#define WITH_VALUES(list, list_info, VALUES) (list[list_info->index -1]).values = VALUES;
 
-#define WITH_CMD(VALUES) (list[list_info->index -1]).cmd_trigger.idx = VALUES;
+#define WITH_CMD(list, list_info, VALUES) (list[list_info->index -1]).cmd_trigger.idx = VALUES;
 
 #ifdef GEKKO
 #define MAX_GAMMA_SETTING 2
@@ -2236,19 +2236,19 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
       }
       if (g_extern.main_is_init && !g_extern.libretro_dummy)
       {
-         CONFIG_BOOL(lists[9],     "savestate",  "Save State", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_EXIT) WITH_CMD(RARCH_CMD_SAVE_STATE)
-         CONFIG_BOOL(lists[10],     "loadstate",  "Load State", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_EXIT) WITH_CMD(RARCH_CMD_LOAD_STATE)
-         CONFIG_BOOL(lists[11],     "take_screenshot",  "Take Screenshot", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION) WITH_CMD(RARCH_CMD_TAKE_SCREENSHOT)
-         CONFIG_BOOL(lists[12],     "resume_content",  "Resume Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION) WITH_FLAGS(list, list_info, SD_FLAG_EXIT) WITH_CMD(RARCH_CMD_RESUME)
-         CONFIG_BOOL(lists[13],     "restart_content",  "Restart Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION) WITH_FLAGS(list, list_info, SD_FLAG_EXIT) WITH_CMD(RARCH_CMD_RESET)
+         CONFIG_BOOL(lists[9],     "savestate",  "Save State", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_EXIT) WITH_CMD(list, list_info, RARCH_CMD_SAVE_STATE)
+         CONFIG_BOOL(lists[10],     "loadstate",  "Load State", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_EXIT) WITH_CMD(list, list_info, RARCH_CMD_LOAD_STATE)
+         CONFIG_BOOL(lists[11],     "take_screenshot",  "Take Screenshot", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION) WITH_CMD(list, list_info, RARCH_CMD_TAKE_SCREENSHOT)
+         CONFIG_BOOL(lists[12],     "resume_content",  "Resume Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION) WITH_FLAGS(list, list_info, SD_FLAG_EXIT) WITH_CMD(list, list_info, RARCH_CMD_RESUME)
+         CONFIG_BOOL(lists[13],     "restart_content",  "Restart Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION) WITH_FLAGS(list, list_info, SD_FLAG_EXIT) WITH_CMD(list, list_info, RARCH_CMD_RESET)
       }
 #ifndef HAVE_DYNAMIC
-      CONFIG_BOOL(lists[14], "restart_retroarch", "Restart RetroArch", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION) WITH_CMD(RARCH_CMD_RESTART_RETROARCH)
+      CONFIG_BOOL(lists[14], "restart_retroarch", "Restart RetroArch", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION) WITH_CMD(list, list_info, RARCH_CMD_RESTART_RETROARCH)
 #endif
       CONFIG_BOOL(lists[15], "configurations", "Configurations", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(lists[16], "save_new_config", "Save New Config", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION) WITH_CMD(RARCH_CMD_MENU_SAVE_CONFIG)
+      CONFIG_BOOL(lists[16], "save_new_config", "Save New Config", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION) WITH_CMD(list, list_info, RARCH_CMD_MENU_SAVE_CONFIG)
       CONFIG_BOOL(lists[17], "help", "Help", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION)
-      CONFIG_BOOL(lists[18], "quit_retroarch", "Quit RetroArch", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION) WITH_CMD(RARCH_CMD_QUIT_RETROARCH)
+      CONFIG_BOOL(lists[18], "quit_retroarch", "Quit RetroArch", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_PUSH_ACTION) WITH_CMD(list, list_info, RARCH_CMD_QUIT_RETROARCH)
       END_SUB_GROUP()
       END_GROUP()
 
@@ -2332,16 +2332,16 @@ rarch_setting_t *setting_data_get_list(void)
       CONFIG_BOOL(g_settings.core_specific_config,       "core_specific_config",        "Configuration Per-Core", default_core_specific_config, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_settings.load_dummy_on_core_shutdown, "dummy_on_core_shutdown",      "Dummy On Core Shutdown", load_dummy_on_core_shutdown, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             fps_show, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(g_settings.rewind_enable,              "rewind_enable",              "Rewind",                     rewind_enable, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(RARCH_CMD_REWIND_TOGGLE) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
+      CONFIG_BOOL(g_settings.rewind_enable,              "rewind_enable",              "Rewind",                     rewind_enable, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(list, list_info, RARCH_CMD_REWIND_TOGGLE) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
 #if 0
       CONFIG_SIZE(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
       CONFIG_UINT(g_settings.rewind_granularity,         "rewind_granularity",         "Rewind Granularity",         rewind_granularity, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 1, 32768, 1, true, false)
       CONFIG_BOOL(g_settings.block_sram_overwrite,       "block_sram_overwrite",       "SRAM Block overwrite",       block_sram_overwrite, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #ifdef HAVE_THREADS
-      CONFIG_UINT(g_settings.autosave_interval,          "autosave_interval",          "SRAM Autosave",          autosave_interval, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 0, 10, true, false) WITH_CMD(RARCH_CMD_AUTOSAVE_INIT) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
+      CONFIG_UINT(g_settings.autosave_interval,          "autosave_interval",          "SRAM Autosave",          autosave_interval, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 0, 10, true, false) WITH_CMD(list, list_info, RARCH_CMD_AUTOSAVE_INIT) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
 #endif
-      CONFIG_BOOL(g_settings.video.disable_composition,  "video_disable_composition",  "Window Compositing Disable",         disable_composition, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(RARCH_CMD_REINIT) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
+      CONFIG_BOOL(g_settings.video.disable_composition,  "video_disable_composition",  "Window Compositing Disable",         disable_composition, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(list, list_info, RARCH_CMD_REINIT) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
       CONFIG_BOOL(g_settings.pause_nonactive,            "pause_nonactive",            "Window Unfocus Pause",       pause_nonactive, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_settings.fastforward_ratio_throttle_enable,         "fastforward_ratio_throttle_enable",          "Limit Maximum Run Speed", fastforward_ratio_throttle_enable, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_FLOAT(g_settings.fastforward_ratio,         "fastforward_ratio",          "Maximum Run Speed",         fastforward_ratio, "%.1fx", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 1, 10, 0.1, true, true)
@@ -2367,23 +2367,23 @@ rarch_setting_t *setting_data_get_list(void)
       CONFIG_BOOL(g_settings.video.shared_context,  "video_shared_context",  "HW Shared Context Enable",   false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       END_SUB_GROUP()
       START_SUB_GROUP("Monitor", GROUP_NAME)
-      CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 1, 1, true, false) WITH_CMD(RARCH_CMD_REINIT)
+      CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 1, 1, true, false) WITH_CMD(list, list_info, RARCH_CMD_REINIT)
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-      CONFIG_BOOL(g_settings.video.fullscreen,           "video_fullscreen",           "Use Fullscreen mode",        fullscreen, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(RARCH_CMD_REINIT) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
+      CONFIG_BOOL(g_settings.video.fullscreen,           "video_fullscreen",           "Use Fullscreen mode",        fullscreen, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(list, list_info, RARCH_CMD_REINIT) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
 #endif
       CONFIG_BOOL(g_settings.video.windowed_fullscreen,  "video_windowed_fullscreen",  "Windowed Fullscreen Mode",   windowed_fullscreen, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_UINT(g_settings.video.fullscreen_x,         "video_fullscreen_x",         "Fullscreen Width",           fullscreen_x, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_UINT(g_settings.video.fullscreen_y,         "video_fullscreen_y",         "Fullscreen Height",          fullscreen_y, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_FLOAT(g_settings.video.refresh_rate,        "video_refresh_rate",         "Refresh Rate",               refresh_rate, "%.3f Hz", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 0, 0.001, true, false)
       CONFIG_FLOAT(g_settings.video.refresh_rate,        "video_refresh_rate_auto",    "Estimated Monitor FPS",      refresh_rate, "%.3f Hz", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(g_settings.video.force_srgb_disable,     "video_force_srgb_disable",   "Force-disable sRGB FBO",     false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(RARCH_CMD_REINIT) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
+      CONFIG_BOOL(g_settings.video.force_srgb_disable,     "video_force_srgb_disable",   "Force-disable sRGB FBO",     false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(list, list_info, RARCH_CMD_REINIT) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
       END_SUB_GROUP()
 
       START_SUB_GROUP("Aspect", GROUP_NAME)
       CONFIG_BOOL(g_settings.video.force_aspect,         "video_force_aspect",         "Force aspect ratio",         force_aspect, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_FLOAT(g_settings.video.aspect_ratio,        "video_aspect_ratio",         "Aspect Ratio",               aspect_ratio, "%.2f", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_settings.video.aspect_ratio_auto,    "video_aspect_ratio_auto",    "Use Auto Aspect Ratio",      aspect_ratio_auto, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_UINT(g_settings.video.aspect_ratio_idx,     "aspect_ratio_index",         "Aspect Ratio Index",         aspect_ratio_idx, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, LAST_ASPECT_RATIO, 1, true, true) WITH_CMD(RARCH_CMD_VIDEO_SET_ASPECT_RATIO) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
+      CONFIG_UINT(g_settings.video.aspect_ratio_idx,     "aspect_ratio_index",         "Aspect Ratio Index",         aspect_ratio_idx, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, LAST_ASPECT_RATIO, 1, true, true) WITH_CMD(list, list_info, RARCH_CMD_VIDEO_SET_ASPECT_RATIO) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
       END_SUB_GROUP()
 
       START_SUB_GROUP("Scaling", GROUP_NAME)
@@ -2406,17 +2406,17 @@ rarch_setting_t *setting_data_get_list(void)
 #endif
       CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 3, 1, true, true)
 #if defined(HW_RVL) || defined(_XBOX360)
-      CONFIG_UINT(g_extern.console.screen.gamma_correction, "video_gamma",             "Gamma",                      0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, MAX_GAMMA_SETTING, 1, true, true) WITH_CMD(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
+      CONFIG_UINT(g_extern.console.screen.gamma_correction, "video_gamma",             "Gamma",                      0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, MAX_GAMMA_SETTING, 1, true, true) WITH_CMD(list, list_info, RARCH_CMD_VIDEO_APPLY_STATE_CHANGES) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
 #endif
       END_SUB_GROUP()
 
 
       START_SUB_GROUP("Synchronization", GROUP_NAME)
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
-      CONFIG_BOOL(g_settings.video.threaded,             "video_threaded",             "Threaded Video",         video_threaded, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(RARCH_CMD_REINIT) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
+      CONFIG_BOOL(g_settings.video.threaded,             "video_threaded",             "Threaded Video",         video_threaded, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(list, list_info, RARCH_CMD_REINIT) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
 #endif
       CONFIG_BOOL(g_settings.video.vsync,                "video_vsync",                "VSync",                      vsync, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_UINT(g_settings.video.swap_interval,        "video_swap_interval",        "VSync Swap Interval",        swap_interval, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_RANGE(list, list_info, 1, 4, 1, true, true) WITH_CMD(RARCH_CMD_VIDEO_SET_BLOCKING_STATE) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
+      CONFIG_UINT(g_settings.video.swap_interval,        "video_swap_interval",        "VSync Swap Interval",        swap_interval, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_RANGE(list, list_info, 1, 4, 1, true, true) WITH_CMD(list, list_info, RARCH_CMD_VIDEO_SET_BLOCKING_STATE) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
       CONFIG_BOOL(g_settings.video.hard_sync,            "video_hard_sync",            "Hard GPU Sync",              hard_sync, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_UINT(g_settings.video.hard_sync_frames,     "video_hard_sync_frames",     "Hard GPU Sync Frames",       hard_sync_frames, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)    WITH_RANGE(list, list_info, 0, 3, 1, true, true)
       CONFIG_UINT(g_settings.video.frame_delay,          "video_frame_delay",          "Frame Delay",                frame_delay, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)    WITH_RANGE(list, list_info, 0, 15, 1, true, true)
@@ -2432,10 +2432,10 @@ rarch_setting_t *setting_data_get_list(void)
       CONFIG_BOOL(g_settings.video.allow_rotate,         "video_allow_rotate",         "Allow rotation",             allow_rotate, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_settings.video.crop_overscan,        "video_crop_overscan",        "Crop Overscan (reload)",     crop_overscan, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #ifndef HAVE_FILTERS_BUILTIN
-      CONFIG_PATH(g_settings.video.softfilter_plugin,    "video_filter",               "Software filter",            g_settings.video.filter_dir, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY) WITH_VALUES("filt") WITH_CMD(RARCH_CMD_REINIT)
+      CONFIG_PATH(g_settings.video.softfilter_plugin,    "video_filter",               "Software filter",            g_settings.video.filter_dir, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY) WITH_VALUES(list, list_info, "filt") WITH_CMD(list, list_info, RARCH_CMD_REINIT)
 #endif
 #if defined(_XBOX1) || defined(HW_RVL)
-      CONFIG_BOOL(g_extern.console.softfilter_enable,   "soft_filter",   "Soft Filter Enable",         false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES)
+      CONFIG_BOOL(g_extern.console.softfilter_enable,   "soft_filter",   "Soft Filter Enable",         false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(list, list_info, RARCH_CMD_VIDEO_APPLY_STATE_CHANGES)
 #endif
 #ifdef _XBOX1
       CONFIG_UINT(g_settings.video.swap_interval,        "video_filter_flicker",        "Flicker filter",        0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_RANGE(list, list_info, 0, 5, 1, true, true)
@@ -2482,7 +2482,7 @@ rarch_setting_t *setting_data_get_list(void)
       START_SUB_GROUP("Miscellaneous", GROUP_NAME)
       CONFIG_STRING(g_settings.audio.device,             "audio_device",               "Device",                     "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT)
       CONFIG_UINT(g_settings.audio.out_rate,             "audio_out_rate",             "Audio Output Rate",          out_rate, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_PATH(g_settings.audio.dsp_plugin,           "audio_dsp_plugin",           "DSP Plugin",                 g_settings.audio.filter_dir, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)          WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY) WITH_VALUES("dsp") WITH_CMD(RARCH_CMD_DSP_FILTER_INIT)
+      CONFIG_PATH(g_settings.audio.dsp_plugin,           "audio_dsp_plugin",           "DSP Plugin",                 g_settings.audio.filter_dir, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)          WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY) WITH_VALUES(list, list_info, "dsp") WITH_CMD(list, list_info, RARCH_CMD_DSP_FILTER_INIT)
       END_SUB_GROUP()
       END_GROUP()
 
@@ -2553,9 +2553,9 @@ rarch_setting_t *setting_data_get_list(void)
 #ifdef HAVE_OVERLAY
       START_GROUP("Overlay Options")
       START_SUB_GROUP("State", GROUP_NAME)
-      CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Overlay Preset",              g_extern.overlay_dir, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg") WITH_CMD(RARCH_CMD_OVERLAY_INIT)
-      CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, "%.2f", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 1, 0.01, true, true) WITH_CMD(RARCH_CMD_OVERLAY_SET_ALPHA_MOD) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
-      CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, "%.2f", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 2, 0.01, true, true) WITH_CMD(RARCH_CMD_OVERLAY_SET_SCALE_FACTOR) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
+      CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Overlay Preset",              g_extern.overlay_dir, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY) WITH_VALUES(list, list_info, "cfg") WITH_CMD(list, list_info, RARCH_CMD_OVERLAY_INIT)
+      CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, "%.2f", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 1, 0.01, true, true) WITH_CMD(list, list_info, RARCH_CMD_OVERLAY_SET_ALPHA_MOD) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
+      CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, "%.2f", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(list, list_info, 0, 2, 0.01, true, true) WITH_CMD(list, list_info, RARCH_CMD_OVERLAY_SET_SCALE_FACTOR) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
       END_SUB_GROUP()
       END_GROUP()
 #endif
@@ -2564,7 +2564,7 @@ rarch_setting_t *setting_data_get_list(void)
       START_GROUP("Menu Options")
       START_SUB_GROUP("State", GROUP_NAME)
       CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen", menu_show_start_screen, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(g_settings.menu.pause_libretro,            "menu_pause_libretro",  "Pause Libretro",        true, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(RARCH_CMD_MENU_PAUSE_LIBRETRO) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
+      CONFIG_BOOL(g_settings.menu.pause_libretro,            "menu_pause_libretro",  "Pause Libretro",        true, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(list, list_info, RARCH_CMD_MENU_PAUSE_LIBRETRO) WITH_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO)
       END_SUB_GROUP()
       END_GROUP()
 #endif
@@ -2602,8 +2602,8 @@ rarch_setting_t *setting_data_get_list(void)
 
 #endif
       CONFIG_PATH(g_settings.libretro,                   "libretro_path",              "Libretro Path",              "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY)
-      CONFIG_DIR(g_settings.libretro_directory,         "libretro_dir_path",         "Core Directory",              g_defaults.core_dir, "<None>", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR) WITH_CMD(RARCH_CMD_CORE_INFO_INIT)
-      CONFIG_DIR(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        g_defaults.core_info_dir, "<None>", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR) WITH_CMD(RARCH_CMD_CORE_INFO_INIT)
+      CONFIG_DIR(g_settings.libretro_directory,         "libretro_dir_path",         "Core Directory",              g_defaults.core_dir, "<None>", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR) WITH_CMD(list, list_info, RARCH_CMD_CORE_INFO_INIT)
+      CONFIG_DIR(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        g_defaults.core_info_dir, "<None>", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR) WITH_CMD(list, list_info, RARCH_CMD_CORE_INFO_INIT)
       CONFIG_PATH(g_settings.core_options_path,          "core_options_path",          "Core Options Path",          "", "Paths", SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY)
       CONFIG_PATH(g_settings.cheat_database,             "cheat_database_path",        "Cheat Database",             "", "Paths", SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY)
       CONFIG_PATH(g_settings.cheat_settings_path,        "cheat_settings_path",        "Cheat Settings",             "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(list, list_info, SD_FLAG_ALLOW_EMPTY)
