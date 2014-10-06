@@ -2139,7 +2139,7 @@ static bool data_list_append(rarch_setting_t **list,
          return false;
    }
 
-   *list[list_info->index++] = value;
+   (*list)[list_info->index++] = value;
    return true;
 }
 
