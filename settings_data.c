@@ -2182,9 +2182,9 @@ static void data_list_current_add_cmd(
    (*list)[list_info->index -1].cmd_trigger.idx = values;
 }
 
-#define START_GROUP(group_info, NAME)                       strlcpy(group_info.name, NAME, sizeof(group_info.name)); if (!(data_list_append(&list, list_info, setting_data_group_setting (ST_GROUP, NAME)))) goto error
+#define START_GROUP(group_info, NAME)                       group_info.name = NAME; if (!(data_list_append(&list, list_info, setting_data_group_setting (ST_GROUP, NAME)))) goto error
 #define END_GROUP(list, list_info)                             if (!(data_list_append(&list, list_info, setting_data_group_setting (ST_END_GROUP, 0)))) goto error
-#define START_SUB_GROUP(list, list_info, NAME, group_info, subgroup_info)        strlcpy(subgroup_info.name, NAME, sizeof(subgroup_info.name)); if (!(data_list_append(&list, list_info, setting_data_subgroup_setting (ST_SUB_GROUP, NAME, group_info)))) goto error
+#define START_SUB_GROUP(list, list_info, NAME, group_info, subgroup_info)        subgroup_info.name = NAME; if (!(data_list_append(&list, list_info, setting_data_subgroup_setting (ST_SUB_GROUP, NAME, group_info)))) goto error
 #define END_SUB_GROUP(list, list_info)                         if (!(data_list_append(&list, list_info, setting_data_group_setting (ST_END_SUB_GROUP, 0)))) goto error
 #define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   if (!data_list_append(&list, list_info, setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER))) goto error
 #define CONFIG_INT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)    if (!(data_list_append(&list, list_info, setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) goto error

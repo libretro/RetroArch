@@ -68,7 +68,7 @@ typedef struct rarch_setting_info
 
 typedef struct rarch_setting_group_info
 {
-   char name[PATH_MAX];
+   const char *name;
 } rarch_setting_group_info_t;
 
 typedef struct rarch_setting
