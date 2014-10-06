@@ -244,11 +244,6 @@ void apple_input_enable_icade(bool on)
    icade_buttons = 0;
 }
 
-static uint32_t apple_input_get_icade_buttons(void)
-{
-   return icade_enabled ? icade_buttons : 0;
-}
-
 void apple_input_reset_icade_buttons(void)
 {
    icade_buttons = 0;
@@ -333,8 +328,8 @@ int32_t apple_input_find_any_button(uint32_t port)
        apple->joypad->poll();
 
    buttons = apple->buttons[port];
-   if (port == 0)
-      BIT32_SET(buttons, apple_input_get_icade_buttons());
+   if (port == 0 && icade_enabled)
+      BIT32_SET(buttons, icade_buttons);
 
    if (buttons)
       for (i = 0; i != 32; i ++)
@@ -416,7 +411,8 @@ static void apple_input_poll(void *data)
    if (apple->joypad)
       apple->joypad->poll();
 
-   BIT32_SET(apple->buttons[0], apple_input_get_icade_buttons());
+   if (icade_enabled)
+      BIT32_SET(apple->buttons[0], icade_buttons);
 
    apple->mouse_delta[0] = 0;
    apple->mouse_delta[1] = 0;
