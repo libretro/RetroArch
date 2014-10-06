@@ -59,7 +59,13 @@ enum setting_flags
    SD_FLAG_CMD_APPLY_AUTO = (1 << 9),
 };
 
-typedef struct rarch_setting_t
+typedef struct rarch_setting_info
+{
+   int index;
+   int size;
+} rarch_setting_info_t;
+
+typedef struct rarch_setting
 {
    enum setting_type type;
 
