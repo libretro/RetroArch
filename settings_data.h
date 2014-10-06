@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include "conf/config_file.h"
+#include "miscellaneous.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,7 +68,7 @@ typedef struct rarch_setting_info
 
 typedef struct rarch_setting_group_info
 {
-   const char *name;
+   char name[PATH_MAX];
 } rarch_setting_group_info_t;
 
 typedef struct rarch_setting
