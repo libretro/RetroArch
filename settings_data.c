@@ -2128,21 +2128,16 @@ static void general_write_handler(void *data)
    if (index == list_size)                                                              \
    {                                                                                    \
       rarch_setting_t* list_temp = NULL;                                                \
-                                                                                        \
       list_size *= 2;                                                                   \
-      list_temp = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * list_size); \
                                                                                         \
-      if (list_temp)                                                                    \
-      {                                                                                 \
-         list = list_temp;                                                              \
-      }                                                                                 \
-      else                                                                              \
+      if (!(list_temp = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * list_size)))  \
       {                                                                                 \
          RARCH_ERR("Settings list reallocation failed.\n");                             \
          free(list);                                                                    \
          list = NULL;                                                                   \
          return NULL;                                                                   \
       }                                                                                 \
+      list = list_temp;                                                                 \
    }                                                                                    \
    (list[index++]) = VALUE
 
