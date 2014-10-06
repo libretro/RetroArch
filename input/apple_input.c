@@ -374,9 +374,6 @@ static void *apple_input_init(void)
 {
    apple_input_data_t *apple = NULL;
     
-   if (driver.input_data)
-      return driver.input_data;
-    
    apple = (apple_input_data_t*)calloc(1, sizeof(*apple));
    if (!apple)
       return NULL;
@@ -384,8 +381,6 @@ static void *apple_input_init(void)
    input_init_keyboard_lut(rarch_key_map_apple_hid);
 
    apple->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
-    
-   driver.input_data_own = true;
     
    return apple;
 }
