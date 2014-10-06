@@ -2181,8 +2181,13 @@ static void general_write_handler(void *data)
 rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
 {
    rarch_setting_info_t *list_info = NULL;
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
    static rarch_setting_t* list = NULL;
    static bool lists[32];
+
+   (void)group_info;
+   (void)subgroup_info;
 
    if (list)
    {
@@ -2283,8 +2288,13 @@ error:
 rarch_setting_t *setting_data_get_list(void)
 {
    int i, player;
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
    rarch_setting_info_t *list_info = NULL;
    static rarch_setting_t* list = NULL;
+
+   (void)group_info;
+   (void)subgroup_info;
 
    if (list)
       return list;

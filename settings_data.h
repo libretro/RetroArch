@@ -65,6 +65,11 @@ typedef struct rarch_setting_info
    int size;
 } rarch_setting_info_t;
 
+typedef struct rarch_setting_group_info
+{
+   const char *name;
+} rarch_setting_group_info_t;
+
 typedef struct rarch_setting
 {
    enum setting_type type;
