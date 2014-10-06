@@ -2133,8 +2133,9 @@ static bool data_list_append(rarch_setting_t **list,
    if (list_info->index == list_info->size)
    {
       list_info->size *= 2;
-      if (!(*list = (rarch_setting_t*)
-               realloc(*list, sizeof(rarch_setting_t) * list_info->size)))
+      *list = (rarch_setting_t*)
+         realloc(*list, sizeof(rarch_setting_t) * list_info->size);
+      if (!*list)
          return false;
    }
 
