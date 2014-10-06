@@ -28,6 +28,7 @@
 #include "../../../general.h"
 #include "../../../gfx/gfx_common.h"
 #include "../../../gfx/gl_common.h"
+#include "../../../gfx/video_thread_wrapper.h"
 #include "../../../gfx/shader/shader_context.h"
 #include "../../../config.def.h"
 #include "../../../file.h"
@@ -702,7 +703,7 @@ static void lakka_frame(void)
    glDisable(GL_BLEND);
 }
 
-static GLuint lakka_png_texture_load(const char * file_name)
+static GLuint lakka_png_texture_load_(const char * file_name)
 {
    if (! path_file_exists(file_name))
       return 0;
@@ -722,6 +723,29 @@ static GLuint lakka_png_texture_load(const char * file_name)
    free(ti.pixels);
 
    return texture;
+}
+static int lakka_png_texture_load_wrap(void * file_name)
+{
+   return lakka_png_texture_load_(file_name);
+}
+
+
+static GLuint lakka_png_texture_load(const char* file_name)
+{
+   if (g_settings.video.threaded
+         && !g_extern.system.hw_render_callback.context_type)
+   {
+      thread_video_t *thr = (thread_video_t*)driver.video_data;
+      thr->cmd_data.custom_command.method = lakka_png_texture_load_wrap;
+      thr->cmd_data.custom_command.data   = (void*)file_name;
+      thr->send_cmd_func(thr, CMD_CUSTOM_COMMAND);
+      thr->wait_reply_func(thr, CMD_CUSTOM_COMMAND);
+
+      return thr->cmd_data.custom_command.return_value;
+
+   }
+
+   return lakka_png_texture_load_(file_name);
 }
 
 static void lakka_context_destroy(void *data)
