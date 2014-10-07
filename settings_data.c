@@ -489,12 +489,12 @@ static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
          strlcpy(type_str, "-1 (auto)", type_str_size);
       else
          snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
+
+      return;
    }
-   else
-   {
-      strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label :
-            setting->boolean.off_label, type_str_size);
-   }
+
+   strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label :
+         setting->boolean.off_label, type_str_size);
 }
 
 static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
@@ -585,12 +585,12 @@ static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
                refresh_rate, 100.0 * deviation, sample_points);
       else
          strlcpy(type_str, "N/A", type_str_size);
+
+      return;
    }
-   else
-   {
-      snprintf(type_str, type_str_size, setting->rounding_fraction,
-            *setting->value.fraction);
-   }
+
+   snprintf(type_str, type_str_size, setting->rounding_fraction,
+         *setting->value.fraction);
 }
 
 void setting_data_get_string_representation(rarch_setting_t* setting,
@@ -1720,12 +1720,11 @@ static void menu_common_setting_set_label_perf(char *type_str,
             ((unsigned long long)counters[offset]->total /
              (unsigned long long)counters[offset]->call_cnt),
             (unsigned long long)counters[offset]->call_cnt);
+      return;
    }
-   else
-   {
-      *type_str = '\0';
-      *w = 0;
-   }
+
+   *type_str = '\0';
+   *w = 0;
 }
 
 void setting_data_get_label(char *type_str,
