@@ -28,10 +28,6 @@
 #include "audio/audio_thread_wrapper.h"
 #include "gfx/gfx_common.h"
 
-#ifdef HAVE_X11
-#include "gfx/context/x11_common.h"
-#endif
-
 #ifdef HAVE_MENU
 #include "frontend/menu/menu_common.h"
 #endif

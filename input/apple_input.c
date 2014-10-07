@@ -463,6 +463,9 @@ static int16_t apple_input_state(void *data,
 {
    apple_input_data_t *apple = (apple_input_data_t*)data;
 
+   if (!apple || !apple->joypad)
+      return 0;
+
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
@@ -489,8 +492,10 @@ static int16_t apple_input_state(void *data,
 static bool apple_input_bind_button_pressed(void *data, int key)
 {
    apple_input_data_t *apple = (apple_input_data_t*)data;
-   return apple_input_is_pressed(apple, 0, g_settings.input.binds[0], key) ||
-      input_joypad_pressed(apple->joypad, 0, g_settings.input.binds[0], key);
+   if (apple && apple->joypad)
+      return apple_input_is_pressed(apple, 0, g_settings.input.binds[0], key) ||
+         input_joypad_pressed(apple->joypad, 0, g_settings.input.binds[0], key);
+   return false;
 }
 
 static void apple_input_free(void *data)
