@@ -386,6 +386,8 @@ unsigned menu_common_type_is(const char *label, unsigned type)
    if (
          type == MENU_SETTINGS ||
          type == MENU_FILE_CATEGORY ||
+         !strcmp(label, "Shader Options") ||
+         !strcmp(label, "Input Options") ||
          !strcmp(label, "core_options") ||
          !strcmp(label, "core_information") ||
          !strcmp(label, "video_shader_parameters") ||
