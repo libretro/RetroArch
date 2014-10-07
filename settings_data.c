@@ -2144,7 +2144,7 @@ static void data_list_current_add_cmd(
 #define MAX_GAMMA_SETTING 1
 #endif
 
-bool setting_data_get_list_main_menu_options(
+bool setting_data_append_list_main_menu_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2267,7 +2267,7 @@ void *rarch_setting_list_new(unsigned size)
 }
 
 
-bool setting_data_get_list_driver_options(
+bool setting_data_append_list_driver_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2306,7 +2306,7 @@ bool setting_data_get_list_driver_options(
    return true;
 }
 
-bool setting_data_get_list_general_options(
+bool setting_data_append_list_general_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2367,7 +2367,7 @@ bool setting_data_get_list_general_options(
    return true;
 }
 
-bool setting_data_get_list_video_options(
+bool setting_data_append_list_video_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2484,7 +2484,7 @@ bool setting_data_get_list_video_options(
    return true;
 }
 
-bool setting_data_get_list_shader_options(
+bool setting_data_append_list_shader_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2502,7 +2502,7 @@ bool setting_data_get_list_shader_options(
    return true;
 }
 
-bool setting_data_get_list_font_options(
+bool setting_data_append_list_font_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2526,7 +2526,7 @@ bool setting_data_get_list_font_options(
    return true;
 }
 
-bool setting_data_get_list_audio_options(
+bool setting_data_append_list_audio_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2566,7 +2566,7 @@ bool setting_data_get_list_audio_options(
    return true;
 }
 
-bool setting_data_get_list_input_options(
+bool setting_data_append_list_input_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2648,7 +2648,7 @@ bool setting_data_get_list_input_options(
    return true;
 }
 
-bool setting_data_get_list_overlay_options(
+bool setting_data_append_list_overlay_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2677,7 +2677,7 @@ bool setting_data_get_list_overlay_options(
    return true;
 }
 
-bool setting_data_get_list_menu_options(
+bool setting_data_append_list_menu_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2698,7 +2698,7 @@ bool setting_data_get_list_menu_options(
    return true;
 }
 
-bool setting_data_get_list_netplay_options(
+bool setting_data_append_list_netplay_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2725,7 +2725,7 @@ bool setting_data_get_list_netplay_options(
    return true;
 }
 
-bool setting_data_get_list_user_options(
+bool setting_data_append_list_user_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2745,7 +2745,7 @@ bool setting_data_get_list_user_options(
    return true;
 }
 
-bool setting_data_get_list_path_options(
+bool setting_data_append_list_path_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2817,7 +2817,7 @@ bool setting_data_get_list_path_options(
    return true;
 }
 
-bool setting_data_get_list_privacy_options(
+bool setting_data_append_list_privacy_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2858,7 +2858,7 @@ rarch_setting_t *setting_data_get_mainmenu(bool need_refresh)
    if (!list)
       goto error;
 
-   if (!setting_data_get_list_main_menu_options(&list, list_info))
+   if (!setting_data_append_list_main_menu_options(&list, list_info))
       goto error;
 
    rarch_setting_t terminator = { ST_NONE };
@@ -2905,43 +2905,43 @@ rarch_setting_t *setting_data_get_list(bool need_refresh)
    if (!list)
       goto error;
 
-   if (!setting_data_get_list_driver_options(&list, list_info))
+   if (!setting_data_append_list_driver_options(&list, list_info))
       goto error;
 
-   if (!setting_data_get_list_general_options(&list, list_info))
+   if (!setting_data_append_list_general_options(&list, list_info))
       goto error;
 
-   if (!setting_data_get_list_video_options(&list, list_info))
+   if (!setting_data_append_list_video_options(&list, list_info))
       goto error;
 
-   if (!setting_data_get_list_shader_options(&list, list_info))
+   if (!setting_data_append_list_shader_options(&list, list_info))
       goto error;
 
-   if (!setting_data_get_list_font_options(&list, list_info))
+   if (!setting_data_append_list_font_options(&list, list_info))
       goto error;
 
-   if (!setting_data_get_list_audio_options(&list, list_info))
+   if (!setting_data_append_list_audio_options(&list, list_info))
       goto error;
 
-   if (!setting_data_get_list_input_options(&list, list_info))
+   if (!setting_data_append_list_input_options(&list, list_info))
       goto error;
 
-   if (!setting_data_get_list_overlay_options(&list, list_info))
+   if (!setting_data_append_list_overlay_options(&list, list_info))
       goto error;
 
-   if (!setting_data_get_list_menu_options(&list, list_info))
+   if (!setting_data_append_list_menu_options(&list, list_info))
       goto error;
 
-   if (!setting_data_get_list_netplay_options(&list, list_info))
+   if (!setting_data_append_list_netplay_options(&list, list_info))
       goto error;
 
-   if (!setting_data_get_list_user_options(&list, list_info))
+   if (!setting_data_append_list_user_options(&list, list_info))
       goto error;
 
-   if (!setting_data_get_list_path_options(&list, list_info))
+   if (!setting_data_append_list_path_options(&list, list_info))
       goto error;
 
-   if (!setting_data_get_list_privacy_options(&list, list_info))
+   if (!setting_data_append_list_privacy_options(&list, list_info))
       goto error;
 
 
