@@ -2287,6 +2287,50 @@ bool setting_data_get_list_main_menu_options(
    return true;
 }
 
+
+void rarch_setting_info_list_free(rarch_setting_info_t *list_info)
+{
+   if (list_info)
+      free(list_info);
+   list_info = NULL;
+}
+
+void rarch_setting_list_free(rarch_setting_t *list)
+{
+   if (list)
+      free(list);
+   list = NULL;
+}
+
+void *rarch_setting_info_list_new(void)
+{
+   rarch_setting_info_t *list_info = (rarch_setting_info_t*)
+      calloc(1, sizeof(*list_info));
+
+   if (!list_info)
+   {
+      RARCH_ERR("Info list allocation failed.\n");
+      return NULL;
+   }
+
+   list_info->index = 0;
+   list_info->size  = 32;
+
+   return list_info;
+}
+
+void *rarch_setting_list_new(unsigned size)
+{
+   rarch_setting_t *list = (rarch_setting_t*)calloc(size, sizeof(*list));
+   if (!list)
+   {
+      RARCH_ERR("Setting list allocation failed.\n");
+      return NULL;
+   }
+
+   return list;
+}
+
 #ifdef HAVE_MENU
 rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
 {
@@ -2303,21 +2347,14 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
       if (!regenerate)
          return list;
 
-      free(list);
-      list = NULL;
+      rarch_setting_list_free(list);
    }
 
-   list_info = (rarch_setting_info_t*)calloc(1, sizeof(*list_info));
+   list_info = (rarch_setting_info_t*)rarch_setting_info_list_new();
    if (!list_info)
-   {
-      RARCH_ERR("Settings info list allocation failed.\n");
       return NULL;
-   }
 
-   list_info->index = 0;
-   list_info->size  = 32;
-
-   list = (rarch_setting_t*)malloc(sizeof(rarch_setting_t) * list_info->size);
+   list = (rarch_setting_t*)rarch_setting_list_new(list_info->size);
    if (!list)
       goto error;
 
@@ -2332,9 +2369,7 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
    if (!(list = (rarch_setting_t*)realloc(list, list_info->index * sizeof(rarch_setting_t))))
       goto error;
 
-   if (list_info)
-      free(list_info);
-   list_info = NULL;
+   rarch_setting_info_list_free(list_info);
 
    /* do not optimize into return realloc(),
     * list is static and must be written. */
@@ -2342,12 +2377,8 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
 
 error:
    RARCH_ERR("Allocation failed.\n");
-   if (list_info)
-      free(list_info);
-   list_info = NULL;
-   if (list)
-      free(list);
-   list = NULL;
+   rarch_setting_info_list_free(list_info);
+   rarch_setting_list_free(list);
 
    return NULL;
 }
@@ -2920,6 +2951,7 @@ bool setting_data_get_list_privacy_options(
    return true;
 }
 
+
 rarch_setting_t *setting_data_get_list(void)
 {
    rarch_setting_info_t *list_info = NULL;
@@ -2928,17 +2960,11 @@ rarch_setting_t *setting_data_get_list(void)
    if (list)
       return list;
 
-   list_info = (rarch_setting_info_t*)calloc(1, sizeof(*list_info));
+   list_info = (rarch_setting_info_t*)rarch_setting_info_list_new();
    if (!list_info)
-   {
-      RARCH_ERR("Settings info list allocation failed.\n");
       return NULL;
-   }
 
-   list_info->index = 0;
-   list_info->size  = 512;
-
-   list = (rarch_setting_t*)malloc(sizeof(rarch_setting_t) * list_info->size);
+   list = (rarch_setting_t*)rarch_setting_list_new(list_info->size);
    if (!list)
       goto error;
 
@@ -2990,9 +3016,7 @@ rarch_setting_t *setting_data_get_list(void)
    if (!(list = (rarch_setting_t*)realloc(list, list_info->index * sizeof(rarch_setting_t))))
       goto error;
 
-   if (list_info)
-      free(list_info);
-   list_info = NULL;
+   rarch_setting_info_list_free(list_info);
 
    /* do not optimize into return realloc(),
     * list is static and must be written. */
@@ -3000,12 +3024,8 @@ rarch_setting_t *setting_data_get_list(void)
 
 error:
    RARCH_ERR("Allocation failed.\n");
-   if (list_info)
-      free(list_info);
-   list_info = NULL;
-   if (list)
-      free(list);
-   list = NULL;
+   rarch_setting_info_list_free(list_info);
+   rarch_setting_list_free(list);
 
    return NULL;
 }
