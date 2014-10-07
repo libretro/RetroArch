@@ -385,28 +385,16 @@ unsigned menu_common_type_is(const char *label, unsigned type)
 
    if (
          type == MENU_SETTINGS ||
-         !strcmp(label, "General Options") ||
+         type == MENU_FILE_CATEGORY ||
          !strcmp(label, "core_options") ||
          !strcmp(label, "core_information") ||
-         !strcmp(label, "Video Options") ||
-         !strcmp(label, "Font Options") ||
-         !strcmp(label, "Shader Options") ||
          !strcmp(label, "video_shader_parameters") ||
          !strcmp(label, "video_shader_preset_parameters") ||
-         !strcmp(label, "Audio Options") ||
          !strcmp(label, "disk_options") ||
-         !strcmp(label, "Path Options") ||
-         !strcmp(label, "Menu Options") ||
-         !strcmp(label, "Privacy Options") ||
-         !strcmp(label, "Overlay Options") ||
-         !strcmp(label, "User Options") ||
-         !strcmp(label, "Netplay Options") ||
          !strcmp(label, "settings") ||
-         !strcmp(label, "Driver Options") ||
          !strcmp(label, "performance_counters") ||
          !strcmp(label, "frontend_counters") ||
-         !strcmp(label, "core_counters") ||
-         !strcmp(label, "Input Options")
+         !strcmp(label, "core_counters")
          )
          return MENU_SETTINGS;
 
