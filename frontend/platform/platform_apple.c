@@ -124,6 +124,9 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
       return;
    bundle_url = CFBundleCopyBundleURL(bundle);
    CFStringRef bundle_path = CFURLCopyPath(bundle_url);
+    
+   (void)bundle_path_buf;
+   (void)home_dir_buf;
    
 #ifdef IOS
    CFURLRef home_dir = CFCopyHomeDirectoryURL();
