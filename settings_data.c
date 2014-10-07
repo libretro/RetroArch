@@ -2205,82 +2205,278 @@ bool setting_data_append_list_main_menu_options(
    START_GROUP(group_info, "Main Menu");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
-   CONFIG_BOOL(lists[0],     "core_list",     "Core",          false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   CONFIG_BOOL(
+         lists[0],
+         "core_list",
+         "Core",
+         false,
+         "",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_PUSH_ACTION);
 #endif
    if (g_defaults.history)
    {
-      CONFIG_BOOL(lists[1],     "history_list",  "Load Content (History)", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+      CONFIG_BOOL(
+            lists[1],
+            "history_list",
+            "Load Content (History)",
+            false,
+            "",
+            "",
+            group_info.name,
+            subgroup_info.name,
+            general_write_handler,
+            general_read_handler);
       data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
-   if (driver.menu && g_extern.core_info && core_info_list_num_info_files(g_extern.core_info))
+   if (
+         driver.menu 
+         && g_extern.core_info 
+         && core_info_list_num_info_files(g_extern.core_info))
    {
-      CONFIG_BOOL(lists[2],     "detect_core_list",  "Load Content (Detect Core)", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+      CONFIG_BOOL(
+            lists[2],
+            "detect_core_list",
+            "Load Content (Detect Core)",
+            false,
+            "",
+            "",
+            group_info.name,
+            subgroup_info.name,
+            general_write_handler,
+            general_read_handler);
       data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
-   CONFIG_BOOL(lists[3],     "load_content",  "Load Content", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         lists[3],
+         "load_content",
+         "Load Content",
+         false,
+         "",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
-   CONFIG_BOOL(lists[4],     "core_options",  "Core Options", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         lists[4],
+         "core_options",
+         "Core Options",
+         false,
+         "",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
-   CONFIG_BOOL(lists[5],     "core_information",  "Core Information", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         lists[5],
+         "core_information",
+         "Core Information",
+         false,
+         "",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    if (g_extern.main_is_init
          && !g_extern.libretro_dummy
          && g_extern.system.disk_control.get_num_images)
    {
-      CONFIG_BOOL(lists[6],     "disk_options",  "Core Disk Options", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+      CONFIG_BOOL(
+            lists[6],
+            "disk_options",
+            "Core Disk Options",
+            false,
+            "",
+            "",
+            group_info.name,
+            subgroup_info.name,
+            general_write_handler,
+            general_read_handler);
       data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
-   CONFIG_BOOL(lists[7],     "settings",  "Settings", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         lists[7],
+         "settings",
+         "Settings",
+         false,
+         "",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    if (g_extern.perfcnt_enable)
    {
-      CONFIG_BOOL(lists[8],     "performance_counters",  "Performance Counters", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+      CONFIG_BOOL(
+            lists[8],
+            "performance_counters",
+            "Performance Counters",
+            false,
+            "",
+            "",
+            group_info.name,
+            subgroup_info.name,
+            general_write_handler,
+            general_read_handler);
       data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
-      CONFIG_BOOL(lists[9],     "savestate",  "Save State", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+      CONFIG_BOOL(
+            lists[9],
+            "savestate",
+            "Save State",
+            false,
+            "",
+            "",
+            group_info.name,
+            subgroup_info.name,
+            general_write_handler,
+            general_read_handler);
       data_list_current_add_cmd  (list, list_info, RARCH_CMD_SAVE_STATE);
       data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
 
-      CONFIG_BOOL(lists[10],     "loadstate",  "Load State", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+      CONFIG_BOOL(
+            lists[10],
+            "loadstate",
+            "Load State",
+            false,
+            "",
+            "",
+            group_info.name,
+            subgroup_info.name,
+            general_write_handler,
+            general_read_handler);
       data_list_current_add_cmd  (list, list_info, RARCH_CMD_LOAD_STATE);
       data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
 
-      CONFIG_BOOL(lists[11],     "take_screenshot",  "Take Screenshot", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+      CONFIG_BOOL(
+            lists[11],
+            "take_screenshot",
+            "Take Screenshot",
+            false,
+            "",
+            "",
+            group_info.name,
+            subgroup_info.name,
+            general_write_handler,
+            general_read_handler);
       data_list_current_add_cmd  (list, list_info, RARCH_CMD_TAKE_SCREENSHOT);
       data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
-      CONFIG_BOOL(lists[12],     "resume_content",  "Resume Content", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+      CONFIG_BOOL(
+            lists[12],
+            "resume_content",
+            "Resume Content",
+            false,
+            "",
+            "",
+            group_info.name,
+            subgroup_info.name,
+            general_write_handler,
+            general_read_handler);
       data_list_current_add_cmd  (list, list_info, RARCH_CMD_RESUME);
       data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
       data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
 
-      CONFIG_BOOL(lists[13],     "restart_content",  "Restart Content", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+      CONFIG_BOOL(
+            lists[13],
+            "restart_content",
+            "Restart Content",
+            false,
+            "",
+            "",
+            group_info.name,
+            subgroup_info.name,
+            general_write_handler,
+            general_read_handler);
       data_list_current_add_cmd(list, list_info, RARCH_CMD_RESET);
       data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
       data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
    }
 #ifndef HAVE_DYNAMIC
-   CONFIG_BOOL(lists[14], "restart_retroarch", "Restart RetroArch", false, "", "",group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         lists[14],
+         "restart_retroarch",
+         "Restart RetroArch",
+         false,
+         "",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_RESTART_RETROARCH);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 #endif
 
-   CONFIG_BOOL(lists[15], "configurations", "Configurations", false, "", "",group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         lists[15],
+         "configurations",
+         "Configurations",
+         false,
+         "",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 
-   CONFIG_BOOL(lists[16], "save_new_config", "Save New Config", false, "", "",group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         lists[16],
+         "save_new_config",
+         "Save New Config",
+         false,
+         "",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_MENU_SAVE_CONFIG);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
-   CONFIG_BOOL(lists[17], "help", "Help", false, "", "",group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         lists[17],
+         "help",
+         "Help",
+         false,
+         "",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
-   CONFIG_BOOL(lists[18], "quit_retroarch", "Quit RetroArch", false, "", "",group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         lists[18],
+         "quit_retroarch",
+         "Quit RetroArch",
+         false,
+         "",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_QUIT_RETROARCH);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
@@ -2871,7 +3067,15 @@ bool setting_data_append_list_video_options(
    data_list_current_add_cmd(list, list_info, RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
 #endif
 #ifdef _XBOX1
-   CONFIG_UINT(g_settings.video.swap_interval,        "video_filter_flicker",        "Flicker filter",        0, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_UINT(
+         g_settings.video.swap_interval,
+         "video_filter_flicker",
+         "Flicker filter",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 0, 5, 1, true, true);
 #endif
    END_SUB_GROUP(list, list_info);
@@ -3096,7 +3300,14 @@ bool setting_data_append_list_audio_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
+   data_list_current_add_range(
+         list,
+         list_info,
+         0,
+         0,
+         0.001,
+         true,
+         false);
 
    CONFIG_UINT(
          g_settings.audio.block_frames,
@@ -3694,60 +3905,237 @@ bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
 #endif
-   CONFIG_PATH(g_settings.libretro,                   "libretro_path",              "Libretro Path",              "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)                ;
+   CONFIG_PATH(
+         g_settings.libretro,
+         "libretro_path",
+         "Libretro Path",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler)                ;
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
-   CONFIG_DIR(g_settings.libretro_directory,         "libretro_dir_path",         "Core Directory",              g_defaults.core_dir, "<None>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_DIR(
+         g_settings.libretro_directory,
+         "libretro_dir_path",
+         "Core Directory",
+         g_defaults.core_dir,
+         "<None>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_CORE_INFO_INIT);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
-   CONFIG_DIR(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        g_defaults.core_info_dir, "<None>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_DIR(
+         g_settings.libretro_info_path,
+         "libretro_info_path",
+         "Core Info Directory",
+         g_defaults.core_info_dir,
+         "<None>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_CORE_INFO_INIT);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
-   CONFIG_PATH(g_settings.core_options_path,          "core_options_path",          "Core Options Path",          "", "Paths", subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_PATH(
+         g_settings.core_options_path,
+         "core_options_path",
+         "Core Options Path",
+         "",
+         "Paths",
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
-   CONFIG_PATH(g_settings.cheat_database,             "cheat_database_path",        "Cheat Database",             "", "Paths", subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_PATH(
+         g_settings.cheat_database,
+         "cheat_database_path",
+         "Cheat Database",
+         "",
+         "Paths",
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
-   CONFIG_PATH(g_settings.cheat_settings_path,        "cheat_settings_path",        "Cheat Settings",             "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_PATH(
+         g_settings.cheat_settings_path,
+         "cheat_settings_path",
+         "Cheat Settings",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
-   CONFIG_PATH(g_settings.content_history_path,          "game_history_path",          "Content History Path",       "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_PATH(
+         g_settings.content_history_path,
+         "game_history_path",
+         "Content History Path",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
-   CONFIG_DIR(g_settings.video.filter_dir,         "video_filter_dir",         "VideoFilter Directory",              "", "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+   CONFIG_DIR(
+         g_settings.video.filter_dir,
+         "video_filter_dir",
+         "VideoFilter Directory",
+         "",
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
-   CONFIG_DIR(g_settings.audio.filter_dir,         "audio_filter_dir",         "AudioFilter Directory",              "", "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+   CONFIG_DIR(
+         g_settings.audio.filter_dir,
+         "audio_filter_dir",
+         "AudioFilter Directory",
+         "",
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
 #if defined(HAVE_DYLIB) && defined(HAVE_SHADER_MANAGER)
-   CONFIG_DIR(g_settings.video.shader_dir,           "video_shader_dir",           "Shader Directory", g_defaults.shader_dir, "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+   CONFIG_DIR(
+         g_settings.video.shader_dir,
+         "video_shader_dir",
+         "Shader Directory",
+         g_defaults.shader_dir,
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 #endif
 
 #ifdef HAVE_OVERLAY
-   CONFIG_DIR(g_extern.overlay_dir,                  "overlay_directory",          "Overlay Directory", g_defaults.overlay_dir, "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+   CONFIG_DIR(
+         g_extern.overlay_dir,
+         "overlay_directory",
+         "Overlay Directory",
+         g_defaults.overlay_dir,
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 #endif
 
-   CONFIG_DIR(g_settings.resampler_directory,       "resampler_directory",       "Resampler Directory",       "", "<Content dir>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+   CONFIG_DIR(
+         g_settings.resampler_directory,
+         "resampler_directory",
+         "Resampler Directory",
+         "",
+         "<Content dir>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
-   CONFIG_DIR(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       "", "<Content dir>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+   CONFIG_DIR(
+         g_settings.screenshot_directory,
+         "screenshot_directory",
+         "Screenshot Directory",
+         "",
+         "<Content dir>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
-   CONFIG_DIR(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory", "", "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+   CONFIG_DIR(
+         g_settings.input.autoconfig_dir,
+         "joypad_autoconfig_dir",
+         "Joypad Autoconfig Directory",
+         "",
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
-   CONFIG_DIR(g_settings.playlist_directory,       "playlist_directory",      "Playlist Directory", "", "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+   CONFIG_DIR(
+         g_settings.playlist_directory,
+         "playlist_directory",
+         "Playlist Directory",
+         "",
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
-   CONFIG_DIR(g_extern.savefile_dir, "savefile_directory", "Savefile Directory", "", "<Content dir>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_DIR(
+         g_extern.savefile_dir,
+         "savefile_directory",
+         "Savefile Directory",
+         "",
+         "<Content dir>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 
-   CONFIG_DIR(g_extern.savestate_dir, "savestate_directory", "Savestate Directory", "", "<Content dir>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_DIR(
+         g_extern.savestate_dir,
+         "savestate_directory",
+         "Savestate Directory",
+         "",
+         "<Content dir>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 
    CONFIG_DIR(
          g_settings.system_directory,
