@@ -2436,6 +2436,8 @@ bool setting_data_append_list_driver_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Driver Options");
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_STRING(
@@ -2564,6 +2566,7 @@ bool setting_data_append_list_general_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "General Options");
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -2870,6 +2873,7 @@ bool setting_data_append_list_video_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Video Options");
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -3463,6 +3467,7 @@ bool setting_data_append_list_font_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Font Options");
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "Messages", group_info.name, subgroup_info);
 
    CONFIG_PATH(
@@ -3538,6 +3543,7 @@ bool setting_data_append_list_audio_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Audio Options");
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -3925,6 +3931,7 @@ bool setting_data_append_list_overlay_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Overlay Options");
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_PATH(
@@ -3984,6 +3991,7 @@ bool setting_data_append_list_menu_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Menu Options");
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -4027,6 +4035,7 @@ bool setting_data_append_list_netplay_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Netplay Options");
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -4114,6 +4123,7 @@ bool setting_data_append_list_user_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "User Options");
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_STRING(
@@ -4160,6 +4170,7 @@ bool setting_data_append_list_path_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Path Options");
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_UINT(
@@ -4504,6 +4515,7 @@ bool setting_data_append_list_privacy_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Privacy Options");
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(

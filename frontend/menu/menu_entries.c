@@ -155,6 +155,8 @@ static int setting_set_flags(rarch_setting_t *setting)
       return MENU_FILE_DRIVER;
    if (setting->type == ST_PATH)
       return MENU_FILE_PATH;
+   if (setting->flags & SD_FLAG_IS_CATEGORY)
+      return MENU_FILE_CATEGORY;
    return 0;
 }
 
@@ -197,19 +199,7 @@ int menu_entries_push_list(menu_handle_t *menu,
                setting->name, setting_set_flags(setting), 0);
       }
    }
-   else if (
-         !strcmp(label, "Driver Options") ||
-         !strcmp(label, "General Options") ||
-         !strcmp(label, "Overlay Options") ||
-         !strcmp(label, "Privacy Options") ||
-         !strcmp(label, "Video Options") ||
-         !strcmp(label, "Menu Options") ||
-         !strcmp(label, "Audio Options") ||
-         !strcmp(label, "Path Options") ||
-         !strcmp(label, "Font Options") ||
-         !strcmp(label, "User Options") ||
-         !strcmp(label, "Netplay Options")
-         )
+   else if (menu_type == MENU_FILE_CATEGORY)
    {
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
             label);
@@ -250,7 +240,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       {
          if (setting->type == ST_GROUP)
             file_list_push(list, setting->short_description,
-                  setting->name, MENU_FILE_SWITCH, 0);
+                  setting->name, setting_set_flags(setting), 0);
       }
    }
    else if (!strcmp(label, "history_list"))

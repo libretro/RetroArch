@@ -81,6 +81,7 @@ typedef enum
    MENU_FILE_SWITCH,
    MENU_FILE_CARCHIVE,
    MENU_FILE_IN_CARCHIVE,
+   MENU_FILE_CATEGORY,
    MENU_SETTINGS,
 } menu_file_type_t;
 
