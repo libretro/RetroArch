@@ -41,17 +41,8 @@
 static void get_input_config_prefix(char *buf, size_t sizeof_buf,
       rarch_setting_t *setting)
 {
-   if (!buf)
-   {
-      RARCH_ERR("Null buffer passed.\n");
+   if (!buf || !setting)
       return;
-   }
-
-   if (!setting)
-   {
-      RARCH_ERR("Null setting passed.\n");
-      return;
-   }
 
    snprintf(buf, sizeof_buf, "input%cplayer%u",
          setting->index ? '_' : '\0', setting->index);
@@ -62,17 +53,8 @@ static void get_input_config_key(char *buf, size_t sizeof_buf,
 {
    char prefix[32];
 
-   if (!buf)
-   {
-      RARCH_ERR("Null buffer passed.\n");
+   if (!buf || !setting)
       return;
-   }
-
-   if (!setting)
-   {
-      RARCH_ERR("Null setting passed.\n");
-      return;
-   }
 
    get_input_config_prefix(prefix, sizeof(prefix), setting);
    snprintf(buf, sizeof_buf, "%s_%s%c%s", prefix, setting->name,
@@ -87,18 +69,8 @@ static void get_key_name(char *buf, size_t sizeof_buf,
 {
    uint32_t hidkey, i;
 
-   if (!buf)
-   {
-      RARCH_ERR("Null buffer passed.\n");
+   if (!buf || !setting)
       return;
-   }
-
-   if (!setting)
-   {
-      RARCH_ERR("Null setting passed.\n");
-      return;
-   }
-
    if (BINDFOR(*setting).key == RETROK_UNKNOWN)
       return;
 
@@ -118,18 +90,8 @@ static void get_key_name(char *buf, size_t sizeof_buf,
 static void get_button_name(char *buf, size_t sizeof_buf,
       rarch_setting_t* setting)
 {
-   if (!buf)
-   {
-      RARCH_ERR("Null buffer passed.\n");
+   if (!buf || !setting)
       return;
-   }
-
-   if (!setting)
-   {
-      RARCH_ERR("Null setting passed.\n");
-      return;
-   }
-
    if (BINDFOR(*setting).joykey == NO_BTN)
       return;
 
@@ -142,17 +104,8 @@ static void get_axis_name(char *buf, size_t sizeof_buf,
 {
    uint32_t joyaxis;
 
-   if (!buf)
-   {
-      RARCH_ERR("Null buffer passed.\n");
+   if (!buf || !setting)
       return;
-   }
-
-   if (!setting)
-   {
-      RARCH_ERR("Null setting passed.\n");
-      return;
-   }
 
    joyaxis = BINDFOR(*setting).joyaxis;
 
@@ -165,10 +118,7 @@ static void get_axis_name(char *buf, size_t sizeof_buf,
 void setting_data_reset_setting(rarch_setting_t* setting)
 {
    if (!setting)
-   {
-      RARCH_ERR("Null setting passed.\n");
       return;
-   }
 
    switch (setting->type)
    {
@@ -530,10 +480,7 @@ static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
       char *type_str, size_t type_str_size)
 {
    if (!setting)
-   {
-      RARCH_ERR("Null setting passed.\n");
       return;
-   }
 
    if (!strcmp(setting->name, "savestate") ||
          !strcmp(setting->name, "loadstate"))
@@ -554,10 +501,7 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
       char *type_str, size_t type_str_size)
 {
    if (!setting)
-   {
-      RARCH_ERR("Null setting passed.\n");
       return;
-   }
 
    if (!strcmp(setting->name, "video_monitor_index"))
    {
@@ -628,10 +572,7 @@ static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
       char *type_str, size_t type_str_size)
 {
    if (!setting)
-   {
-      RARCH_ERR("Null setting passed.\n");
       return;
-   }
 
    if (!strcmp(setting->name, "video_refresh_rate_auto"))
    {
@@ -2308,10 +2249,7 @@ void *rarch_setting_info_list_new(void)
       calloc(1, sizeof(*list_info));
 
    if (!list_info)
-   {
-      RARCH_ERR("Info list allocation failed.\n");
       return NULL;
-   }
 
    list_info->index = 0;
    list_info->size  = 32;
@@ -2323,10 +2261,7 @@ void *rarch_setting_list_new(unsigned size)
 {
    rarch_setting_t *list = (rarch_setting_t*)calloc(size, sizeof(*list));
    if (!list)
-   {
-      RARCH_ERR("Setting list allocation failed.\n");
       return NULL;
-   }
 
    return list;
 }
