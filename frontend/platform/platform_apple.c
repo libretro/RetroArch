@@ -100,17 +100,71 @@ static void do_iteration(void)
 
 void apple_start_iteration(void)
 {
-    iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
-          true, 0, (CFRunLoopObserverCallBack)do_iteration, 0);
-    CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer,
-          kCFRunLoopCommonModes);
+   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
+         true, 0, (CFRunLoopObserverCallBack)do_iteration, 0);
+   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer,
+         kCFRunLoopCommonModes);
 }
 
 void apple_stop_iteration(void)
 {
-    CFRunLoopObserverInvalidate(iterate_observer);
-    CFRelease(iterate_observer);
-    iterate_observer = 0;
+   CFRunLoopObserverInvalidate(iterate_observer);
+   CFRelease(iterate_observer);
+   iterate_observer = 0;
+}
+
+static void frontend_apple_get_environment_settings(int *argc, char *argv[],
+      void *args, void *params_data)
+{
+
+   char bundle_path_buf[PATH_MAX + 1];
+   CFURLRef bundle_url;
+   CFBundleRef bundle = CFBundleGetMainBundle();
+   if (!bundle)
+      return;
+   bundle_url = CFBundleCopyBundleURL(bundle);
+   
+#ifdef IOS
+#if 0
+   CFURLRef home_dir = CFCopyHomeDirectoryURL();
+   int doc_len = 10; /* Length of "/Documents" */
+   int pre_len = 7;  /* Length of "file://" */
+   int dd_len = CFURLGetBytes(home_dir, NULL, 0 );
+   UInt8 *dd_bs = (UInt8 *)(malloc(dd_len - pre_len + doc_len));
+   CFURLGetFileSystemRepresentation(home_dir, true, dd_bs, dd_len - pre_len);
+   /* We subtract another 1 to get the NUL */
+   strlcpy((char *)(dd_bs + dd_len - pre_len - 1), "/Documents", doc_len + 1);
+
+   CFStringGetCString(home_dir,    home_dir_buf,    sizeof(home_dir_buf),    kCFStringEncodingUTF8);
+   CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
+
+   fill_pathname_join(g_defaults.system_dir, home_dir_buf, ".RetroArch", sizeof(g_defaults.system_dir));
+   fill_pathname_join(g_defaults.core_dir, bundle_path_buf, "modules", sizeof(g_defaults.core_dir));
+
+   strlcpy(g_defaults.menu_config_dir, g_defaults.system_dir, sizeof(g_defaults.menu_config_dir));
+   fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
+
+   strlcpy(g_defaults.sram_dir, g_defaults.system_dir, sizeof(g_defaults.sram_dir));
+   strlcpy(g_defaults.savestate_dir, g_defaults.system_dir, sizeof(g_defaults.savestate_dir));
+
+   path_mkdir(bundle_path_buf);
+
+   if (access(paths, 0755) != 0)
+      RARCH_ERR("Failed to create or access base directory: %s\n", bundle_path_buf);
+   else
+   {
+      path_mkdir(g_defaults.system_dir);
+
+      if (access(g_defaults.system_dir, 0755) != 0)
+         RARCH_ERR("Failed to create or access system directory: %s.\n", g_defaults.system_dir);
+   }
+
+   CFRelease(home_dir);
+#endif
+#endif
+
+   CFRelease(bundle_path);
+   CFRelease(bundle_url);
 }
 
 extern void apple_rarch_exited(void);
@@ -127,7 +181,7 @@ static int frontend_apple_get_rating(void)
    return -1;
 }
 const frontend_ctx_driver_t frontend_ctx_apple = {
-   NULL,                         /* environment_get */
+   frontend_apple_get_environment_settings, /* environment_get */
    NULL,                         /* init */
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */
