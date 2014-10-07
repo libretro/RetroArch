@@ -77,7 +77,7 @@ const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident)
    unsigned i;
    for (i = 0; i < ARRAY_SIZE(gfx_ctx_drivers); i++)
    {
-      if (strcmp(gfx_ctx_drivers[i]->ident, ident) == 0)
+      if (gfx_ctx_drivers[i] && strcmp(gfx_ctx_drivers[i]->ident, ident) == 0)
          return gfx_ctx_drivers[i];
    }
 
