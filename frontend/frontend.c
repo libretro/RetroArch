@@ -20,11 +20,6 @@
 #include "../general.h"
 #include "../performance.h"
 
-#if defined(HAVE_MENU)
-#include "menu/menu_input_line_cb.h"
-#include "menu/menu_common.h"
-#endif
-
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
 #include "../config.def.h"
 #endif
