@@ -2123,19 +2123,69 @@ static void data_list_current_add_cmd(
    (*list)[list_info->index -1].cmd_trigger.idx = values;
 }
 
-#define START_GROUP(group_info, NAME)                       group_info.name = NAME; if (!(data_list_append(list, list_info, setting_data_group_setting (ST_GROUP, NAME)))) return false
-#define END_GROUP(list, list_info)                             if (!(data_list_append(list, list_info, setting_data_group_setting (ST_END_GROUP, 0)))) return false
-#define START_SUB_GROUP(list, list_info, NAME, group_info, subgroup_info)        subgroup_info.name = NAME; if (!(data_list_append(list, list_info, setting_data_subgroup_setting (ST_SUB_GROUP, NAME, group_info)))) return false
-#define END_SUB_GROUP(list, list_info)                         if (!(data_list_append(list, list_info, setting_data_group_setting (ST_END_SUB_GROUP, 0)))) return false 
-#define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   if (!data_list_append(list, list_info, setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))return false 
-#define CONFIG_INT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)    if (!(data_list_append(list, list_info, setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false 
-#define CONFIG_UINT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   if (!(data_list_append(list, list_info, setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false 
-#define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)  if (!(data_list_append(list, list_info, setting_data_float_setting (NAME, SHORT, &TARGET, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false 
-#define CONFIG_PATH(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   if (!(data_list_append(list, list_info, setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false 
-#define CONFIG_DIR(TARGET, NAME, SHORT, DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)   if (!(data_list_append(list, list_info, setting_data_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false 
-#define CONFIG_STRING(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) if (!(data_list_append(list, list_info, setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false 
+#define START_GROUP(group_info, NAME) \
+{ \
+   group_info.name = NAME; \
+   if (!(data_list_append(list, list_info, setting_data_group_setting (ST_GROUP, NAME)))) return false; \
+}
+
+#define END_GROUP(list, list_info) \
+{ \
+   if (!(data_list_append(list, list_info, setting_data_group_setting (ST_END_GROUP, 0)))) return false; \
+}
+
+#define START_SUB_GROUP(list, list_info, NAME, group_info, subgroup_info) \
+{ \
+   subgroup_info.name = NAME; \
+   if (!(data_list_append(list, list_info, setting_data_subgroup_setting (ST_SUB_GROUP, NAME, group_info)))) return false; \
+}
+
+#define END_SUB_GROUP(list, list_info) \
+{ \
+   if (!(data_list_append(list, list_info, setting_data_group_setting (ST_END_SUB_GROUP, 0)))) return false; \
+}
+
+#define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+{ \
+   if (!data_list_append(list, list_info, setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))return false; \
+}
+
+#define CONFIG_INT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+{ \
+   if (!(data_list_append(list, list_info, setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+}
+
+#define CONFIG_UINT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+{ \
+   if (!(data_list_append(list, list_info, setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+}
+
+#define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+{ \
+   if (!(data_list_append(list, list_info, setting_data_float_setting (NAME, SHORT, &TARGET, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+}
+
+#define CONFIG_PATH(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+{ \
+   if (!(data_list_append(list, list_info, setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+}
+
+#define CONFIG_DIR(TARGET, NAME, SHORT, DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+{ \
+   if (!(data_list_append(list, list_info, setting_data_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+}
+
+#define CONFIG_STRING(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+{ \
+   if (!(data_list_append(list, list_info, setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+}
+
 #define CONFIG_HEX(TARGET, NAME, SHORT, group_info, subgroup_info)
-#define CONFIG_BIND(TARGET, PLAYER, NAME, SHORT, DEF, group_info, subgroup_info) if (!(data_list_append(list, list_info, setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF, group_info, subgroup_info)))) return false
+
+#define CONFIG_BIND(TARGET, PLAYER, NAME, SHORT, DEF, group_info, subgroup_info) \
+{ \
+   if (!(data_list_append(list, list_info, setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF, group_info, subgroup_info)))) return false; \
+}
 
 
 #ifdef GEKKO
@@ -2170,10 +2220,13 @@ bool setting_data_append_list_main_menu_options(
    }
    CONFIG_BOOL(lists[3],     "load_content",  "Load Content", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+
    CONFIG_BOOL(lists[4],     "core_options",  "Core Options", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+
    CONFIG_BOOL(lists[5],     "core_information",  "Core Information", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+
    if (g_extern.main_is_init
          && !g_extern.libretro_dummy
          && g_extern.system.disk_control.get_num_images)
@@ -2193,16 +2246,20 @@ bool setting_data_append_list_main_menu_options(
       CONFIG_BOOL(lists[9],     "savestate",  "Save State", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
       data_list_current_add_cmd  (list, list_info, RARCH_CMD_SAVE_STATE);
       data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
+
       CONFIG_BOOL(lists[10],     "loadstate",  "Load State", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
       data_list_current_add_cmd  (list, list_info, RARCH_CMD_LOAD_STATE);
       data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
+
       CONFIG_BOOL(lists[11],     "take_screenshot",  "Take Screenshot", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
       data_list_current_add_cmd  (list, list_info, RARCH_CMD_TAKE_SCREENSHOT);
       data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+
       CONFIG_BOOL(lists[12],     "resume_content",  "Resume Content", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
       data_list_current_add_cmd  (list, list_info, RARCH_CMD_RESUME);
       data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
       data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
+
       CONFIG_BOOL(lists[13],     "restart_content",  "Restart Content", false, "", "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
       data_list_current_add_cmd(list, list_info, RARCH_CMD_RESET);
       data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
@@ -2213,15 +2270,20 @@ bool setting_data_append_list_main_menu_options(
    data_list_current_add_cmd(list, list_info, RARCH_CMD_RESTART_RETROARCH);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 #endif
+
    CONFIG_BOOL(lists[15], "configurations", "Configurations", false, "", "",group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
    CONFIG_BOOL(lists[16], "save_new_config", "Save New Config", false, "", "",group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_MENU_SAVE_CONFIG);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+
    CONFIG_BOOL(lists[17], "help", "Help", false, "", "",group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+
    CONFIG_BOOL(lists[18], "quit_retroarch", "Quit RetroArch", false, "", "",group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_QUIT_RETROARCH);
    data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 
@@ -2276,28 +2338,117 @@ bool setting_data_append_list_driver_options(
 
    START_GROUP(group_info, "Driver Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
-   CONFIG_STRING(g_settings.input.driver,             "input_driver",               "Input Driver",               config_get_default_input(), group_info.name, subgroup_info.name, NULL, NULL);
+
+   CONFIG_STRING(
+         g_settings.input.driver,
+         "input_driver",
+         "Input Driver",
+         config_get_default_input(),
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
    data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-   CONFIG_STRING(g_settings.video.driver,             "video_driver",               "Video Driver",               config_get_default_video(), group_info.name, subgroup_info.name, NULL, NULL);
+
+   CONFIG_STRING(
+         g_settings.video.driver,
+         "video_driver",
+         "Video Driver",
+         config_get_default_video(),
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
    data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+
 #ifdef HAVE_OPENGL
-   CONFIG_STRING(g_settings.video.gl_context,         "video_gl_context",           "OpenGL Context Driver",      "", group_info.name, subgroup_info.name, NULL, NULL);
+   CONFIG_STRING(
+         g_settings.video.gl_context,
+         "video_gl_context",
+         "OpenGL Context Driver",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
    data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 #endif
-   CONFIG_STRING(g_settings.audio.driver,             "audio_driver",               "Audio Driver",               config_get_default_audio(), group_info.name, subgroup_info.name, NULL, NULL);
+   CONFIG_STRING(
+         g_settings.audio.driver,
+         "audio_driver",
+         "Audio Driver",
+         config_get_default_audio(),
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
    data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-   CONFIG_STRING(g_settings.audio.resampler,          "audio_resampler_driver",     "Audio Resampler Driver",     config_get_default_audio_resampler(), group_info.name, subgroup_info.name, NULL, NULL);
-   CONFIG_STRING(g_settings.camera.driver,            "camera_driver",              "Camera Driver",              config_get_default_camera(), group_info.name, subgroup_info.name, NULL, NULL);
+
+   CONFIG_STRING(
+         g_settings.audio.resampler,
+         "audio_resampler_driver",
+         "Audio Resampler Driver",
+         config_get_default_audio_resampler(),
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
+
+   CONFIG_STRING(
+         g_settings.camera.driver,
+         "camera_driver",
+         "Camera Driver",
+         config_get_default_camera(),
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
    data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-   CONFIG_STRING(g_settings.location.driver,          "location_driver",            "Location Driver",            config_get_default_location(), group_info.name, subgroup_info.name, NULL, NULL);
+
+   CONFIG_STRING(
+         g_settings.location.driver,
+         "location_driver",
+         "Location Driver",
+         config_get_default_location(),
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
    data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+
 #ifdef HAVE_MENU
-   CONFIG_STRING(g_settings.menu.driver,              "menu_driver",                "Menu Driver",                config_get_default_menu(), group_info.name, subgroup_info.name, NULL, NULL);
+   CONFIG_STRING(
+         g_settings.menu.driver,
+         "menu_driver",
+         "Menu Driver",
+         config_get_default_menu(),
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
    data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 #endif
-   CONFIG_STRING(g_settings.input.joypad_driver,      "input_joypad_driver",        "Joypad Driver",              config_get_default_joypad(), group_info.name, subgroup_info.name, NULL, NULL);
+
+   CONFIG_STRING(
+         g_settings.input.joypad_driver,
+         "input_joypad_driver",
+         "Joypad Driver",
+         config_get_default_joypad(),
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
    data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-   CONFIG_STRING(g_settings.input.keyboard_layout,    "input_keyboard_layout",      "Keyboard Layout",            "", group_info.name, subgroup_info.name, NULL, NULL);
+
+   CONFIG_STRING(
+         g_settings.input.keyboard_layout,
+         "input_keyboard_layout",
+         "Keyboard Layout",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
    data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    END_SUB_GROUP(list, list_info);
@@ -2315,51 +2466,296 @@ bool setting_data_append_list_general_options(
 
    START_GROUP(group_info, "General Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
-   CONFIG_BOOL(g_extern.verbosity,                      "log_verbosity",        "Logging Verbosity", false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_UINT(g_settings.libretro_log_level,           "libretro_log_level",        "Libretro Logging Level", libretro_log_level, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_extern.verbosity,
+         "log_verbosity",
+         "Logging Verbosity",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_UINT(g_settings.libretro_log_level,
+         "libretro_log_level",
+         "Libretro Logging Level",
+         libretro_log_level,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 0, 3, 1.0, true, true);
 
-   CONFIG_BOOL(g_extern.perfcnt_enable,               "perfcnt_enable",       "Performance Counters", false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.core_specific_config,       "core_specific_config",        "Configuration Per-Core", default_core_specific_config, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.load_dummy_on_core_shutdown, "dummy_on_core_shutdown",      "Dummy On Core Shutdown", load_dummy_on_core_shutdown, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             fps_show, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.rewind_enable,              "rewind_enable",              "Rewind",                     rewind_enable, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(g_extern.perfcnt_enable,
+         "perfcnt_enable",
+         "Performance Counters",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(g_settings.config_save_on_exit,
+         "config_save_on_exit",
+         "Configuration Save On Exit",
+         config_save_on_exit,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.core_specific_config,
+         "core_specific_config",
+         "Configuration Per-Core",
+         default_core_specific_config,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.load_dummy_on_core_shutdown,
+         "dummy_on_core_shutdown",
+         "Dummy On Core Shutdown",
+         load_dummy_on_core_shutdown,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(g_settings.fps_show,
+         "fps_show",
+         "Show Framerate",
+         fps_show,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.rewind_enable,
+         "rewind_enable",
+         "Rewind",
+         rewind_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_REWIND_TOGGLE);
    data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #if 0
-   CONFIG_SIZE(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size, group_info.name, subgroup_info.name, general_write_handler, general_read_handler)
+   CONFIG_SIZE(
+         g_settings.rewind_buffer_size,
+         "rewind_buffer_size",
+         "Rewind Buffer Size",
+         rewind_buffer_size,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler)
 #endif
-      CONFIG_UINT(g_settings.rewind_granularity,         "rewind_granularity",         "Rewind Granularity",         rewind_granularity, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+      CONFIG_UINT(
+            g_settings.rewind_granularity,
+            "rewind_granularity",
+            "Rewind Granularity",
+            rewind_granularity,
+            group_info.name,
+            subgroup_info.name,
+            general_write_handler,
+            general_read_handler);
    data_list_current_add_range(list, list_info, 1, 32768, 1, true, false);
-   CONFIG_BOOL(g_settings.block_sram_overwrite,       "block_sram_overwrite",       "SRAM Block overwrite",       block_sram_overwrite, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);;
+
+   CONFIG_BOOL(
+         g_settings.block_sram_overwrite,
+         "block_sram_overwrite",
+         "SRAM Block overwrite",
+         block_sram_overwrite,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);;
+
 #ifdef HAVE_THREADS
-   CONFIG_UINT(g_settings.autosave_interval,          "autosave_interval",          "SRAM Autosave",          autosave_interval, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_UINT(
+         g_settings.autosave_interval,
+         "autosave_interval",
+         "SRAM Autosave",
+         autosave_interval,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_AUTOSAVE_INIT);
    data_list_current_add_range(list, list_info, 0, 0, 10, true, false);
    data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #endif
-   CONFIG_BOOL(g_settings.video.disable_composition,  "video_disable_composition",  "Window Compositing Disable",         disable_composition, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.video.disable_composition,
+         "video_disable_composition",
+         "Window Compositing Disable",
+         disable_composition,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
    data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-   CONFIG_BOOL(g_settings.pause_nonactive,            "pause_nonactive",            "Window Unfocus Pause",       pause_nonactive, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.fastforward_ratio_throttle_enable,         "fastforward_ratio_throttle_enable",          "Limit Maximum Run Speed", fastforward_ratio_throttle_enable, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_FLOAT(g_settings.fastforward_ratio,         "fastforward_ratio",          "Maximum Run Speed",         fastforward_ratio, "%.1fx", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.pause_nonactive,
+         "pause_nonactive",
+         "Window Unfocus Pause",
+         pause_nonactive,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.fastforward_ratio_throttle_enable,
+         "fastforward_ratio_throttle_enable",
+         "Limit Maximum Run Speed",
+         fastforward_ratio_throttle_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_FLOAT(
+         g_settings.fastforward_ratio,
+         "fastforward_ratio",
+         "Maximum Run Speed",
+         fastforward_ratio,
+         "%.1fx",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 1, 10, 0.1, true, true);
-   CONFIG_FLOAT(g_settings.slowmotion_ratio,          "slowmotion_ratio",           "Slow-Motion Ratio",          slowmotion_ratio, "%.1fx", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_FLOAT(
+         g_settings.slowmotion_ratio,
+         "slowmotion_ratio",
+         "Slow-Motion Ratio",
+         slowmotion_ratio,
+         "%.1fx",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 1, 10, 1.0, true, true);
-   CONFIG_BOOL(g_settings.savestate_auto_index,       "savestate_auto_index",       "Save State Auto Index",      savestate_auto_index, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.savestate_auto_save,        "savestate_auto_save",        "Auto Save State",            savestate_auto_save, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.savestate_auto_load,        "savestate_auto_load",        "Auto Load State",            savestate_auto_load, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_INT(g_settings.state_slot,                    "state_slot",                 "State Slot",                 0, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.savestate_auto_index,
+         "savestate_auto_index",
+         "Save State Auto Index",
+         savestate_auto_index,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.savestate_auto_save,
+         "savestate_auto_save",
+         "Auto Save State",
+         savestate_auto_save,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+            general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.savestate_auto_load,
+         "savestate_auto_load",
+         "Auto Load State",
+         savestate_auto_load,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_INT(
+         g_settings.state_slot,
+         "state_slot",
+         "State Slot",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
    END_SUB_GROUP(list, list_info);
-   START_SUB_GROUP(list, list_info, "Miscellaneous", group_info.name, subgroup_info);
+   START_SUB_GROUP(
+         list,
+         list_info,
+         "Miscellaneous",
+         group_info.name,
+         subgroup_info);
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-   CONFIG_BOOL(g_settings.network_cmd_enable,         "network_cmd_enable",         "Network Commands",           network_cmd_enable, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         g_settings.network_cmd_enable,
+         "network_cmd_enable",
+         "Network Commands",
+         network_cmd_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 #if 0
-   CONFIG_INT(g_settings.network_cmd_port,            "network_cmd_port",           "Network Command Port",       network_cmd_port, group_info.name, subgroup_info.name, NULL);
+   CONFIG_INT(
+         g_settings.network_cmd_port,
+         "network_cmd_port",
+         "Network Command Port",
+         network_cmd_port,
+         group_info.name,
+         subgroup_info.name,
+         NULL);
 #endif
-   CONFIG_BOOL(g_settings.stdin_cmd_enable,           "stdin_cmd_enable",           "stdin command",              stdin_cmd_enable, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         g_settings.stdin_cmd_enable,
+         "stdin_cmd_enable",
+         "stdin command",
+         stdin_cmd_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 #endif
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -2493,9 +2889,30 @@ bool setting_data_append_list_shader_options(
 
    START_GROUP(group_info, "Shader Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
-   CONFIG_BOOL(g_settings.video.shader_enable,        "video_shader_enable",        "Enable Shaders",             shader_enable, "OFF", "ON", group_info.name, subgroup_info.name, NULL, NULL);
-   CONFIG_PATH(g_settings.video.shader_path,          "video_shader",               "Shader",                     "", group_info.name, subgroup_info.name, NULL, NULL);
+
+   CONFIG_BOOL(
+         g_settings.video.shader_enable,
+         "video_shader_enable",
+         "Enable Shaders",
+         shader_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
+
+   CONFIG_PATH(
+         g_settings.video.shader_path,
+         "video_shader",
+         "Shader",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 
@@ -2511,15 +2928,66 @@ bool setting_data_append_list_font_options(
 
    START_GROUP(group_info, "Font Options");
    START_SUB_GROUP(list, list_info, "Messages", group_info.name, subgroup_info);
-   CONFIG_PATH(g_settings.video.font_path,            "video_font_path",            "Font Path",                  "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_PATH(
+         g_settings.video.font_path,
+         "video_font_path",
+         "Font Path",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
-   CONFIG_FLOAT(g_settings.video.font_size,           "video_font_size",            "OSD Font Size",              font_size, "%.1f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_FLOAT(
+         g_settings.video.font_size,
+         "video_font_size",
+         "OSD Font Size",
+         font_size,
+         "%.1f",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 1.00, 100.00, 1.0, true, true);
-   CONFIG_BOOL(g_settings.video.font_enable,          "video_font_enable",          "OSD Font Enable",            font_enable, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_FLOAT(g_settings.video.msg_pos_x,           "video_message_pos_x",        "Message X Position",         message_pos_offset_x, "%.3f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.video.font_enable,
+         "video_font_enable",
+         "OSD Font Enable",
+         font_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_FLOAT(
+         g_settings.video.msg_pos_x,
+         "video_message_pos_x",
+         "Message X Position",
+         message_pos_offset_x,
+         "%.3f",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
-   CONFIG_FLOAT(g_settings.video.msg_pos_y,           "video_message_pos_y",        "Message Y Position",         message_pos_offset_y, "%.3f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_FLOAT(
+         g_settings.video.msg_pos_y,
+         "video_message_pos_y",
+         "Message Y Position",
+         message_pos_offset_y,
+         "%.3f",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
+
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 
@@ -2535,31 +3003,154 @@ bool setting_data_append_list_audio_options(
 
    START_GROUP(group_info, "Audio Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
-   CONFIG_BOOL(g_settings.audio.enable,               "audio_enable",               "Audio Enable",                     audio_enable, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute_enable",          "Audio Mute",                 false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_FLOAT(g_settings.audio.volume,              "audio_volume",               "Volume Level",               audio_volume, "%.1f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.audio.enable,
+         "audio_enable",
+         "Audio Enable",
+         audio_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_extern.audio_data.mute,
+         "audio_mute_enable",
+         "Audio Mute",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_FLOAT(
+         g_settings.audio.volume,
+         "audio_volume",
+         "Volume Level",
+         audio_volume,
+         "%.1f",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
+
 #ifdef __CELLOS_LV2__
-   CONFIG_BOOL(g_extern.console.sound.system_bgm_enable,               "system_bgm_enable",               "System BGM Enable",                     false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         g_extern.console.sound.system_bgm_enable,
+         "system_bgm_enable",
+         "System BGM Enable",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 #endif
+
    END_SUB_GROUP(list, list_info);
 
-   START_SUB_GROUP(list, list_info, "Synchronization", group_info.name, subgroup_info);
-   CONFIG_BOOL(g_settings.audio.sync,                 "audio_sync",                 "Audio Sync Enable",                audio_sync, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_UINT(g_settings.audio.latency,              "audio_latency",              "Audio Latency",                    g_defaults.settings.out_latency ? g_defaults.settings.out_latency : out_latency, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_FLOAT(g_settings.audio.rate_control_delta,  "audio_rate_control_delta",   "Audio Rate Control Delta",         rate_control_delta, "%.3f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   START_SUB_GROUP(
+         list,
+         list_info,
+         "Synchronization",
+         group_info.name,
+         subgroup_info);
+
+   CONFIG_BOOL(
+         g_settings.audio.sync,
+         "audio_sync",
+         "Audio Sync Enable",
+         audio_sync,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.audio.latency,
+         "audio_latency",
+         "Audio Latency",
+         g_defaults.settings.out_latency ? 
+         g_defaults.settings.out_latency : out_latency,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_FLOAT(
+         g_settings.audio.rate_control_delta,
+         "audio_rate_control_delta",
+         "Audio Rate Control Delta",
+         rate_control_delta,
+         "%.3f",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
-   CONFIG_UINT(g_settings.audio.block_frames,         "audio_block_frames",         "Block Frames",               0, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.audio.block_frames,
+         "audio_block_frames",
+         "Block Frames",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
    END_SUB_GROUP(list, list_info);
 
-   START_SUB_GROUP(list, list_info, "Miscellaneous", group_info.name, subgroup_info);
-   CONFIG_STRING(g_settings.audio.device,             "audio_device",               "Device",                     "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   START_SUB_GROUP(
+         list,
+         list_info,
+         "Miscellaneous",
+         group_info.name,
+         subgroup_info);
+
+   CONFIG_STRING(
+         g_settings.audio.device,
+         "audio_device",
+         "Device",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-   CONFIG_UINT(g_settings.audio.out_rate,             "audio_out_rate",             "Audio Output Rate",          out_rate, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_PATH(g_settings.audio.dsp_plugin,           "audio_dsp_plugin",           "DSP Plugin",                 g_settings.audio.filter_dir, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.audio.out_rate,
+         "audio_out_rate",
+         "Audio Output Rate",
+         out_rate,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_PATH(
+         g_settings.audio.dsp_plugin,
+         "audio_dsp_plugin",
+         "DSP Plugin",
+         g_settings.audio.filter_dir,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_values(list, list_info, "dsp");
    data_list_current_add_cmd(list, list_info, RARCH_CMD_DSP_FILTER_INIT);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 
@@ -2576,30 +3167,131 @@ bool setting_data_append_list_input_options(
 
    START_GROUP(group_info, "Input Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
-   CONFIG_BOOL(g_settings.input.autodetect_enable,    "input_autodetect_enable",    "Autodetect Enable",   input_autodetect_enable, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.input.autodetect_enable,
+         "input_autodetect_enable",
+         "Autodetect Enable",
+         input_autodetect_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    END_SUB_GROUP(list, list_info);
 
-   START_SUB_GROUP(list, list_info, "Joypad Mapping", group_info.name, subgroup_info);
+   START_SUB_GROUP(
+         list,
+         list_info,
+         "Joypad Mapping",
+         group_info.name,
+         subgroup_info);
+
    /* TODO: input_libretro_device_p%u */
-   CONFIG_INT(g_settings.input.joypad_map[0],         "input_player1_joypad_index", "Player 1 Pad Index",         0, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_INT(g_settings.input.joypad_map[1],         "input_player2_joypad_index", "Player 2 Pad Index",         1, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_INT(g_settings.input.joypad_map[2],         "input_player3_joypad_index", "Player 3 Pad Index",         2, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_INT(g_settings.input.joypad_map[3],         "input_player4_joypad_index", "Player 4 Pad Index",         3, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_INT(g_settings.input.joypad_map[4],         "input_player5_joypad_index", "Player 5 Pad Index",         4, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_INT(
+         g_settings.input.joypad_map[0],
+         "input_player1_joypad_index",
+         "Player 1 Pad Index",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_INT(
+         g_settings.input.joypad_map[1],
+         "input_player2_joypad_index",
+         "Player 2 Pad Index",
+         1,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_INT(
+         g_settings.input.joypad_map[2],
+         "input_player3_joypad_index",
+         "Player 3 Pad Index",
+         2,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_INT(
+         g_settings.input.joypad_map[3],
+         "input_player4_joypad_index",
+         "Player 4 Pad Index",
+         3,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_INT(
+         g_settings.input.joypad_map[4],
+         "input_player5_joypad_index",
+         "Player 5 Pad Index",
+         4,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    END_SUB_GROUP(list, list_info);
 
-   START_SUB_GROUP(list, list_info, "Turbo/Deadzone", group_info.name, subgroup_info);
-   CONFIG_FLOAT(g_settings.input.axis_threshold,      "input_axis_threshold",       "Input Axis Threshold",       axis_threshold, "%.3f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   START_SUB_GROUP(
+         list,
+         list_info,
+         "Turbo/Deadzone",
+         group_info.name,
+         subgroup_info);
+
+   CONFIG_FLOAT(
+         g_settings.input.axis_threshold,
+         "input_axis_threshold",
+         "Input Axis Threshold",
+         axis_threshold,
+         "%.3f",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 0, 1.00, 0.001, true, true);
-   CONFIG_UINT(g_settings.input.turbo_period,         "input_turbo_period",         "Turbo Period",               turbo_period, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.input.turbo_period,
+         "input_turbo_period",
+         "Turbo Period",
+         turbo_period,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 1, 0, 1, true, false);
-   CONFIG_UINT(g_settings.input.turbo_duty_cycle,     "input_duty_cycle",           "Duty Cycle",                 turbo_duty_cycle, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.input.turbo_duty_cycle,
+         "input_duty_cycle",
+         "Duty Cycle",
+         turbo_duty_cycle,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 1, 0, 1, true, false);
+
    END_SUB_GROUP(list, list_info);
 
    /* The second argument to config bind is 1 
     * based for players and 0 only for meta keys. */
-   START_SUB_GROUP(list, list_info, "Meta Keys", group_info.name, subgroup_info);
+   START_SUB_GROUP(
+         list,
+         list_info,
+         "Meta Keys",
+         group_info.name,
+         subgroup_info);
 
    for (i = 0; i != RARCH_BIND_LIST_END; i ++)
    {
@@ -2636,12 +3328,45 @@ bool setting_data_append_list_input_options(
       }
       END_SUB_GROUP(list, list_info);
    }
-   START_SUB_GROUP(list, list_info, "Onscreen Keyboard", group_info.name, subgroup_info);
-   CONFIG_BOOL(g_settings.osk.enable, "osk_enable", "Onscreen Keyboard Enable",     false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   START_SUB_GROUP(
+         list,
+         list_info,
+         "Onscreen Keyboard",
+         group_info.name,
+         subgroup_info);
+
+   CONFIG_BOOL(
+         g_settings.osk.enable,
+         "osk_enable",
+         "Onscreen Keyboard Enable",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
    END_SUB_GROUP(list, list_info);
 
-   START_SUB_GROUP(list, list_info, "Miscellaneous", group_info.name, subgroup_info);
-   CONFIG_BOOL(g_settings.input.netplay_client_swap_input, "netplay_client_swap_input", "Swap Netplay Input",     netplay_client_swap_input, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   START_SUB_GROUP(
+         list,
+         list_info,
+         "Miscellaneous",
+         group_info.name,
+         subgroup_info);
+
+   CONFIG_BOOL(
+         g_settings.input.netplay_client_swap_input,
+         "netplay_client_swap_input",
+         "Swap Netplay Input",
+         netplay_client_swap_input,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 
@@ -2658,18 +3383,48 @@ bool setting_data_append_list_overlay_options(
 
    START_GROUP(group_info, "Overlay Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
-   CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Overlay Preset",              g_extern.overlay_dir, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_PATH(
+         g_settings.input.overlay,
+         "input_overlay",
+         "Overlay Preset",
+         g_extern.overlay_dir,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_values(list, list_info, "cfg");
    data_list_current_add_cmd(list, list_info, RARCH_CMD_OVERLAY_INIT);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
-   CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, "%.2f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_FLOAT(
+         g_settings.input.overlay_opacity,
+         "input_overlay_opacity",
+         "Overlay Opacity",
+         0.7f,
+         "%.2f",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_OVERLAY_SET_ALPHA_MOD);
    data_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
    data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-   CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, "%.2f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_FLOAT(
+         g_settings.input.overlay_scale,
+         "input_overlay_scale",
+         "Overlay Scale",
+         1.0f,
+         "%.2f",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_OVERLAY_SET_SCALE_FACTOR);
    data_list_current_add_range(list, list_info, 0, 2, 0.01, true, true);
    data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 #endif
@@ -2687,8 +3442,30 @@ bool setting_data_append_list_menu_options(
 
    START_GROUP(group_info, "Menu Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
-   CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen", menu_show_start_screen, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.menu.pause_libretro,            "menu_pause_libretro",  "Pause Libretro",        true, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.menu_show_start_screen,
+         "rgui_show_start_screen",
+         "Show Start Screen",
+         menu_show_start_screen,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.menu.pause_libretro,
+         "menu_pause_libretro",
+         "Pause Libretro",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_MENU_PAUSE_LIBRETRO);
    data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
    END_SUB_GROUP(list, list_info);
@@ -2708,16 +3485,77 @@ bool setting_data_append_list_netplay_options(
 
    START_GROUP(group_info, "Netplay Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
-   CONFIG_BOOL(g_extern.netplay_enable,            "netplay_enable",  "Netplay Enable",        false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_STRING(g_extern.netplay_server,          "netplay_ip_address",   "IP Address",       "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_extern.netplay_enable,
+         "netplay_enable",
+         "Netplay Enable",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_STRING(
+         g_extern.netplay_server,
+         "netplay_ip_address",
+         "IP Address",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-   CONFIG_BOOL(g_extern.netplay_is_client,         "netplay_mode",    "Netplay Client Enable",          false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_extern.netplay_is_spectate,       "netplay_spectator_mode_enable",    "Netplay Spectator Enable",          false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_UINT(g_extern.netplay_sync_frames,       "netplay_delay_frames",      "Netplay Delay Frames",      0, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_extern.netplay_is_client,
+         "netplay_mode",
+         "Netplay Client Enable",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_extern.netplay_is_spectate,
+         "netplay_spectator_mode_enable",
+         "Netplay Spectator Enable",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   
+   CONFIG_UINT(
+         g_extern.netplay_sync_frames,
+         "netplay_delay_frames",
+         "Netplay Delay Frames",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 0, 10, 1, true, false);
-   CONFIG_UINT(g_extern.netplay_port,       "netplay_tcp_udp_port",      "Netplay TCP/UDP Port",      RARCH_DEFAULT_PORT, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_UINT(
+         g_extern.netplay_port,
+         "netplay_tcp_udp_port",
+         "Netplay TCP/UDP Port",
+         RARCH_DEFAULT_PORT,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 1, 99999, 1, true, true);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 #endif
@@ -2734,11 +3572,37 @@ bool setting_data_append_list_user_options(
 
    START_GROUP(group_info, "User Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
-   CONFIG_STRING(g_settings.username,          "netplay_nickname",   "Username",       "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_STRING(
+         g_settings.username,
+         "netplay_nickname",
+         "Username",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-   CONFIG_UINT(g_settings.user_language,     "user_language",      "Language",       def_user_language, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_range(list, list_info, 0, RETRO_LANGUAGE_LAST-1, 1, true, true);
+
+   CONFIG_UINT(
+         g_settings.user_language,
+         "user_language",
+         "Language",
+         def_user_language,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_range(
+         list,
+         list_info,
+         0,
+         RETRO_LANGUAGE_LAST-1,
+         1,
+         true,
+         true);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 
@@ -2754,42 +3618,111 @@ bool setting_data_append_list_path_options(
 
    START_GROUP(group_info, "Path Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
-   CONFIG_UINT(g_settings.content_history_size,          "game_history_size",          "Content History Size",       default_content_history_size, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.content_history_size,
+         "game_history_size",
+         "Content History Size",
+         default_content_history_size,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 0, 0, 1.0, true, false);
+
    END_SUB_GROUP(list, list_info);
    START_SUB_GROUP(list, list_info, "Paths", group_info.name, subgroup_info);
 #ifdef HAVE_MENU
-   CONFIG_DIR(g_settings.menu_content_directory,     "rgui_browser_directory",     "Browser Directory",          "", "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
-   CONFIG_DIR(g_settings.content_directory,     "content_directory",     "Content Directory",          "", "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
-   CONFIG_DIR(g_settings.assets_directory,           "assets_directory",           "Assets Directory",           "", "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
-   CONFIG_DIR(g_settings.menu_config_directory,      "rgui_config_directory",      "Config Directory",           "", "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+   CONFIG_DIR(
+         g_settings.menu_content_directory,
+         "rgui_browser_directory",
+         "Browser Directory",
+         "",
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+
+   CONFIG_DIR(
+         g_settings.content_directory,
+         "content_directory",
+         "Content Directory",
+         "",
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+
+   CONFIG_DIR(
+         g_settings.assets_directory,
+         "assets_directory",
+         "Assets Directory",
+         "",
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+
+   CONFIG_DIR(
+         g_settings.menu_config_directory,
+         "rgui_config_directory",
+         "Config Directory",
+         "",
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
 #endif
    CONFIG_PATH(g_settings.libretro,                   "libretro_path",              "Libretro Path",              "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler)                ;
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+
    CONFIG_DIR(g_settings.libretro_directory,         "libretro_dir_path",         "Core Directory",              g_defaults.core_dir, "<None>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_CORE_INFO_INIT);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+
    CONFIG_DIR(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        g_defaults.core_info_dir, "<None>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_CORE_INFO_INIT);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+
    CONFIG_PATH(g_settings.core_options_path,          "core_options_path",          "Core Options Path",          "", "Paths", subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+
    CONFIG_PATH(g_settings.cheat_database,             "cheat_database_path",        "Cheat Database",             "", "Paths", subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+
    CONFIG_PATH(g_settings.cheat_settings_path,        "cheat_settings_path",        "Cheat Settings",             "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+
    CONFIG_PATH(g_settings.content_history_path,          "game_history_path",          "Content History Path",       "", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_DIR(g_settings.video.filter_dir,         "video_filter_dir",         "VideoFilter Directory",              "", "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+
    CONFIG_DIR(g_settings.audio.filter_dir,         "audio_filter_dir",         "AudioFilter Directory",              "", "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+
 #if defined(HAVE_DYLIB) && defined(HAVE_SHADER_MANAGER)
    CONFIG_DIR(g_settings.video.shader_dir,           "video_shader_dir",           "Shader Directory", g_defaults.shader_dir, "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -2799,18 +3732,44 @@ bool setting_data_append_list_path_options(
    CONFIG_DIR(g_extern.overlay_dir,                  "overlay_directory",          "Overlay Directory", g_defaults.overlay_dir, "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 #endif
+
    CONFIG_DIR(g_settings.resampler_directory,       "resampler_directory",       "Resampler Directory",       "", "<Content dir>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+
    CONFIG_DIR(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       "", "<Content dir>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+
    CONFIG_DIR(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory", "", "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+
    CONFIG_DIR(g_settings.playlist_directory,       "playlist_directory",      "Playlist Directory", "", "<default>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+
    CONFIG_DIR(g_extern.savefile_dir, "savefile_directory", "Savefile Directory", "", "<Content dir>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
    CONFIG_DIR(g_extern.savestate_dir, "savestate_directory", "Savestate Directory", "", "<Content dir>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_DIR(g_settings.system_directory, "system_directory", "System Directory", "", "<Content dir>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_DIR(g_settings.extraction_directory, "extraction_directory", "Extraction Directory", "", "<None>", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_DIR(
+         g_settings.system_directory,
+         "system_directory",
+         "System Directory",
+         "",
+         "<Content dir>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_DIR(
+         g_settings.extraction_directory,
+         "extraction_directory",
+         "Extraction Directory",
+         "",
+         "<None>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 
@@ -2826,8 +3785,30 @@ bool setting_data_append_list_privacy_options(
 
    START_GROUP(group_info, "Privacy Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
-   CONFIG_BOOL(g_settings.camera.allow,     "camera_allow",     "Allow Camera",          false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.location.allow,     "location_allow",     "Allow Location",          false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.camera.allow,
+         "camera_allow",
+         "Allow Camera",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.location.allow,
+         "location_allow",
+         "Allow Location",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 
