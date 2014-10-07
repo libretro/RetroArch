@@ -580,7 +580,6 @@ struct global
       double orig_src_ratio;
       size_t driver_buffer_size;
 
-      float volume_db;
       float volume_gain;
    } audio_data;
 
