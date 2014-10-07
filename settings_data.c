@@ -3838,15 +3838,23 @@ bool setting_data_append_list_input_options(
 
       for (i = 0; i < RARCH_BIND_LIST_END; i ++)
       {
+         char label[PATH_MAX];
          const struct input_bind_map* bind = 
             (const struct input_bind_map*)&input_config_bind_map[i];
 
          if (!bind || bind->meta)
             continue;
 
-         CONFIG_BIND(g_settings.input.binds[player][i], player + 1,
-               bind->base, bind->desc, &defaults[i],
-               group_info.name, subgroup_info.name);
+         snprintf(label, sizeof(label), "%s %s", buffer, bind->desc);
+
+         CONFIG_BIND(
+               g_settings.input.binds[player][i],
+               player + 1,
+               bind->base,
+               strdup(label),
+               &defaults[i],
+               group_info.name,
+               subgroup_info.name);
       }
       END_SUB_GROUP(list, list_info);
    }
