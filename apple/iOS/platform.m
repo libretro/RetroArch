@@ -77,6 +77,9 @@ static void handle_touch_event(NSArray* touches)
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
    const float scale = [[UIScreen mainScreen] scale];
 
+   if (!apple)
+      return;
+
    apple->touch_count = 0;
    
    for(i = 0; i < touches.count && (apple->touch_count < MAX_TOUCHES); i ++)

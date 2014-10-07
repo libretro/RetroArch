@@ -284,7 +284,8 @@ void apple_input_keyboard_event(bool down,
    if (code == 0 || code >= MAX_KEYS)
       return;
 
-   apple->key_state[code] = down;
+   if (apple)
+      apple->key_state[code] = down;
 
    mods |= (mod & NSAlphaShiftKeyMask) ? RETROKMOD_CAPSLOCK : 0;
    mods |= (mod & NSShiftKeyMask)      ? RETROKMOD_SHIFT : 0;
