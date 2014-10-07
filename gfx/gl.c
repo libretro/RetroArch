@@ -1492,8 +1492,7 @@ static bool gl_frame(void *data, const void *frame,
    if (gl->should_resize)
    {
       gl->should_resize = false;
-      if (gl->ctx_driver)
-         gl->ctx_driver->set_resize(gl, gl->win_width, gl->win_height);
+      gl->ctx_driver->set_resize(gl, gl->win_width, gl->win_height);
 
 #ifdef HAVE_FBO
       if (gl->fbo_inited)
@@ -1600,8 +1599,7 @@ static bool gl_frame(void *data, const void *frame,
       gl_render_overlay(gl);
 #endif
 
-   if (gl->ctx_driver)
-      gl->ctx_driver->update_window_title(gl);
+   gl->ctx_driver->update_window_title(gl);
 
    RARCH_PERFORMANCE_STOP(frame_run);
 
@@ -1644,13 +1642,11 @@ static bool gl_frame(void *data, const void *frame,
          !driver.nonblock_state && !g_extern.is_slowmotion
          && !g_extern.is_paused)
    {
-      if (gl->ctx_driver)
-         gl->ctx_driver->swap_buffers(gl);
+      gl->ctx_driver->swap_buffers(gl);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   if (gl->ctx_driver)
-      gl->ctx_driver->swap_buffers(gl);
+   gl->ctx_driver->swap_buffers(gl);
    g_extern.frame_count++;
 
 #ifdef HAVE_GL_SYNC
@@ -2460,7 +2456,7 @@ static bool gl_focus(void *data)
 {
    gl_t *gl = (gl_t*)data;
 
-   if (gl && gl->ctx_driver)
+   if (gl)
       return gl->ctx_driver->has_focus(gl);
    return false;
 }
