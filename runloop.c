@@ -52,16 +52,16 @@ static void set_volume(float gain)
 {
    char msg[256];
 
-   g_extern.audio_data.volume_db += gain;
-   g_extern.audio_data.volume_db = max(g_extern.audio_data.volume_db, -80.0f);
-   g_extern.audio_data.volume_db = min(g_extern.audio_data.volume_db, 12.0f);
+   g_settings.audio.volume += gain;
+   g_settings.audio.volume = max(g_settings.audio.volume, -80.0f);
+   g_settings.audio.volume = min(g_settings.audio.volume, 12.0f);
 
-   snprintf(msg, sizeof(msg), "Volume: %.1f dB", g_extern.audio_data.volume_db);
+   snprintf(msg, sizeof(msg), "Volume: %.1f dB", g_settings.audio.volume);
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
    RARCH_LOG("%s\n", msg);
 
-   g_extern.audio_data.volume_gain = db_to_gain(g_extern.audio_data.volume_db);
+   g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
 }
 
 static void check_grab_mouse_toggle(void)
