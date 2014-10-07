@@ -484,7 +484,7 @@ struct global
    struct string_list *savefiles;
 
    /* For --subsystem content. */
-   char subsystem[256];
+   char subsystem[PATH_MAX];
    struct string_list *subsystem_fullpaths;
 
    char savefile_name[PATH_MAX];
