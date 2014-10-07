@@ -136,8 +136,10 @@ const gfx_ctx_driver_t gfx_ctx_null = {
    gfx_ctx_null_swap_buffers,
    gfx_ctx_null_input_driver,
    NULL,
+#ifdef HAVE_EGL
    NULL,
    NULL,
+#endif
    gfx_ctx_null_show_mouse,
    "null",
    gfx_ctx_null_bind_hw_render,
