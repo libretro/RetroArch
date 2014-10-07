@@ -167,7 +167,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    char tmp[256];
    size_t list_size = 0;
    rarch_setting_t *setting_data = (rarch_setting_t *)
-      setting_data_get_list();
+      setting_data_get_list(true);
    bool do_action = false;
 
 #if 0
@@ -211,7 +211,6 @@ int menu_entries_push_list(menu_handle_t *menu,
          !strcmp(label, "Netplay Options")
          )
    {
-      rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
             label);
 
@@ -242,7 +241,6 @@ int menu_entries_push_list(menu_handle_t *menu,
    }
    else if (!strcmp(label, "settings"))
    {
-      rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
             "Driver Options");
 

@@ -246,7 +246,7 @@ static void glui_frame(void)
       file_list_get_at_offset(driver.menu->selection_buf, i, &path,
             &entry_label, &type);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
-            setting_data_get_list(),
+            setting_data_get_list(false),
             driver.menu->selection_buf->list[i].label);
       (void)setting;
 

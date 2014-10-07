@@ -801,7 +801,7 @@ static void lakka_context_destroy(void *data)
 
 void lakka_init_settings(void)
 {
-   rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
+   rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list(false);
 
    menu_category_t *category = (menu_category_t*)&categories[0];
 

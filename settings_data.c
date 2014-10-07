@@ -1791,7 +1791,7 @@ void setting_data_get_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned index)
 {
-   rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
+   rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list(false);
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
          driver.menu->selection_buf->list[index].label);
 
@@ -2331,58 +2331,6 @@ void *rarch_setting_list_new(unsigned size)
    return list;
 }
 
-#ifdef HAVE_MENU
-rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
-{
-   rarch_setting_info_t *list_info = NULL;
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-   static rarch_setting_t* list = NULL;
-
-   (void)group_info;
-   (void)subgroup_info;
-
-   if (list)
-   {
-      if (!regenerate)
-         return list;
-
-      rarch_setting_list_free(list);
-   }
-
-   list_info = (rarch_setting_info_t*)rarch_setting_info_list_new();
-   if (!list_info)
-      return NULL;
-
-   list = (rarch_setting_t*)rarch_setting_list_new(list_info->size);
-   if (!list)
-      goto error;
-
-   if (!setting_data_get_list_main_menu_options(&list, list_info))
-      goto error;
-
-   rarch_setting_t terminator = { ST_NONE };
-   if (!(data_list_append(&list, list_info, terminator)))
-      goto error;
-
-   /* flatten this array to save ourselves some kilobytes */
-   if (!(list = (rarch_setting_t*)realloc(list, list_info->index * sizeof(rarch_setting_t))))
-      goto error;
-
-   rarch_setting_info_list_free(list_info);
-
-   /* do not optimize into return realloc(),
-    * list is static and must be written. */
-   return (rarch_setting_t*)list;
-
-error:
-   RARCH_ERR("Allocation failed.\n");
-   rarch_setting_info_list_free(list_info);
-   rarch_setting_list_free(list);
-
-   return NULL;
-}
-#endif
 
 bool setting_data_get_list_driver_options(
       rarch_setting_t **list,
@@ -2951,14 +2899,68 @@ bool setting_data_get_list_privacy_options(
    return true;
 }
 
+#ifdef HAVE_MENU
+/* TODO - combine this with setting_data_get_list. */
 
-rarch_setting_t *setting_data_get_list(void)
+rarch_setting_t *setting_data_get_mainmenu(bool need_refresh)
 {
    rarch_setting_info_t *list_info = NULL;
    static rarch_setting_t* list = NULL;
 
    if (list)
-      return list;
+   {
+      if (!need_refresh)
+         return list;
+
+      rarch_setting_list_free(list);
+   }
+
+   list_info = (rarch_setting_info_t*)rarch_setting_info_list_new();
+   if (!list_info)
+      return NULL;
+
+   list = (rarch_setting_t*)rarch_setting_list_new(list_info->size);
+   if (!list)
+      goto error;
+
+   if (!setting_data_get_list_main_menu_options(&list, list_info))
+      goto error;
+
+   rarch_setting_t terminator = { ST_NONE };
+   if (!(data_list_append(&list, list_info, terminator)))
+      goto error;
+
+   /* flatten this array to save ourselves some kilobytes */
+   if (!(list = (rarch_setting_t*)realloc(list, list_info->index * sizeof(rarch_setting_t))))
+      goto error;
+
+   rarch_setting_info_list_free(list_info);
+
+   /* do not optimize into return realloc(),
+    * list is static and must be written. */
+   return (rarch_setting_t*)list;
+
+error:
+   RARCH_ERR("Allocation failed.\n");
+   rarch_setting_info_list_free(list_info);
+   rarch_setting_list_free(list);
+
+   return NULL;
+}
+#endif
+
+rarch_setting_t *setting_data_get_list(bool need_refresh)
+{
+   rarch_setting_info_t *list_info = NULL;
+   static rarch_setting_t* list = NULL;
+
+   if (list)
+   {
+      if (!need_refresh)
+         return list;
+
+      rarch_setting_list_free(list);
+   }
 
    list_info = (rarch_setting_info_t*)rarch_setting_info_list_new();
    if (!list_info)

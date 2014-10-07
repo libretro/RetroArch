@@ -72,7 +72,7 @@ void st_uint_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
    rarch_setting_t *current_setting = NULL;
-   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
+   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list(false);
 
    if (str && *str && setting_data)
    {
@@ -88,7 +88,7 @@ void st_string_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
    rarch_setting_t *current_setting = NULL;
-   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
+   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list(false);
  
    if (str && *str && setting_data)
    {
