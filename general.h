@@ -755,7 +755,7 @@ struct global
 
    bool main_is_init;
    bool error_in_init;
-   char error_string[1024];
+   char error_string[PATH_MAX];
    jmp_buf error_sjlj_context;
 
    bool libretro_no_content;
