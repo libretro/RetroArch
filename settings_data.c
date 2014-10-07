@@ -3739,57 +3739,21 @@ bool setting_data_append_list_input_options(
          subgroup_info);
 
    /* TODO: input_libretro_device_p%u */
-
-   CONFIG_INT(
-         g_settings.input.joypad_map[0],
-         "input_player1_joypad_index",
-         "Player 1 Pad Index",
-         0,
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-
-   CONFIG_INT(
-         g_settings.input.joypad_map[1],
-         "input_player2_joypad_index",
-         "Player 2 Pad Index",
-         1,
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-
-   CONFIG_INT(
-         g_settings.input.joypad_map[2],
-         "input_player3_joypad_index",
-         "Player 3 Pad Index",
-         2,
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-
-   CONFIG_INT(
-         g_settings.input.joypad_map[3],
-         "input_player4_joypad_index",
-         "Player 4 Pad Index",
-         3,
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-
-   CONFIG_INT(
-         g_settings.input.joypad_map[4],
-         "input_player5_joypad_index",
-         "Player 5 Pad Index",
-         4,
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-   END_SUB_GROUP(list, list_info);
+   for (player = 0; player < MAX_PLAYERS; player ++)
+   {
+      char key[PATH_MAX], label[PATH_MAX];
+      snprintf(key, sizeof(key),     "input_player%d_joypad_index", player + 1);
+      snprintf(label, sizeof(label), "Player %d Pad Index", player + 1);
+      CONFIG_INT(
+            g_settings.input.joypad_map[player],
+            strdup(key),
+            strdup(label),
+            0,
+            group_info.name,
+            subgroup_info.name,
+            general_write_handler,
+            general_read_handler);
+   }
 
    START_SUB_GROUP(
          list,
