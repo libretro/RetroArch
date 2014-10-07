@@ -123,6 +123,7 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    if (!bundle)
       return;
    bundle_url = CFBundleCopyBundleURL(bundle);
+   CFStringRef bundle_path = CFURLCopyPath(bundle_url);
    
 #ifdef IOS
 #if 0
