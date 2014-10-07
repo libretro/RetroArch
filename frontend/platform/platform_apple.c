@@ -117,7 +117,7 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
 
-   char bundle_path_buf[PATH_MAX + 1];
+   char bundle_path_buf[PATH_MAX + 1], home_dir_buf[PATH_MAX + 1];
    CFURLRef bundle_url;
    CFBundleRef bundle = CFBundleGetMainBundle();
    if (!bundle)
@@ -126,7 +126,6 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    CFStringRef bundle_path = CFURLCopyPath(bundle_url);
    
 #ifdef IOS
-#if 0
    CFURLRef home_dir = CFCopyHomeDirectoryURL();
    int doc_len = 10; /* Length of "/Documents" */
    int pre_len = 7;  /* Length of "file://" */
@@ -135,8 +134,10 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    CFURLGetFileSystemRepresentation(home_dir, true, dd_bs, dd_len - pre_len);
    /* We subtract another 1 to get the NUL */
    strlcpy((char *)(dd_bs + dd_len - pre_len - 1), "/Documents", doc_len + 1);
+    
+   CFStringRef home_dir_ref = CFURLCopyPath(home_dir);
 
-   CFStringGetCString(home_dir,    home_dir_buf,    sizeof(home_dir_buf),    kCFStringEncodingUTF8);
+   CFStringGetCString(home_dir_ref,    home_dir_buf,    sizeof(home_dir_buf),    kCFStringEncodingUTF8);
    CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
 
    fill_pathname_join(g_defaults.system_dir, home_dir_buf, ".RetroArch", sizeof(g_defaults.system_dir));
@@ -150,7 +151,7 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
 
    path_mkdir(bundle_path_buf);
 
-   if (access(paths, 0755) != 0)
+   if (access(bundle_path_buf, 0755) != 0)
       RARCH_ERR("Failed to create or access base directory: %s\n", bundle_path_buf);
    else
    {
@@ -161,7 +162,6 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    }
 
    CFRelease(home_dir);
-#endif
 #endif
 
    CFRelease(bundle_path);

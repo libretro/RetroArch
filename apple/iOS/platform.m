@@ -180,8 +180,6 @@ static void handle_touch_event(NSArray* touches)
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
-   const char *paths;
-
    apple_platform = self;
    [self setDelegate:self];
 
@@ -190,6 +188,9 @@ static void handle_touch_event(NSArray* touches)
    [self showPauseMenu:self];
    [self.window makeKeyAndVisible];
 
+#if 0
+   const char *paths;
+   
    // Build system paths and test permissions
    self.documentsDirectory = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
    fill_pathname_join(g_defaults.system_dir, self.documentsDirectory.UTF8String, ".RetroArch", sizeof(g_defaults.system_dir));
@@ -222,6 +223,7 @@ static void handle_touch_event(NSArray* touches)
          apple_display_alert(msg, "Error");
       }
    }
+#endif
 
    [self pushViewController:[RAMainMenu new] animated:YES];
 
