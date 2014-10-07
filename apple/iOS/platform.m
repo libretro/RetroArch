@@ -180,8 +180,6 @@ static void handle_touch_event(NSArray* touches)
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
-   rarch_setting_t* frontend_settings;
-   const core_info_list_t* core_list;
    const char *paths;
 
    apple_platform = self;
@@ -229,14 +227,9 @@ static void handle_touch_event(NSArray* touches)
 
    // Warn if there are no cores present
    core_info_set_core_path();
-   core_list = (const core_info_list_t*)core_info_list_get();
 
    apple_run_core(0, NULL, nil, 0);
    apple_gamecontroller_init();
-
-   // Load system config
-   frontend_settings = (rarch_setting_t*)apple_get_frontend_settings();
-   setting_data_reset(frontend_settings);
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
