@@ -349,6 +349,7 @@ ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o \
 			 gfx/gl_common.o \
 			 gfx/gfx_context.o \
+			 gfx/context/gfx_null_ctx.o \
 			 gfx/fonts/gl_font.o \
 			 gfx/fonts/gl_raster_font.o \
 			 gfx/math/matrix.o \

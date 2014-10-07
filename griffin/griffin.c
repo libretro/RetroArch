@@ -101,6 +101,7 @@ VIDEO CONTEXT
 ============================================================ */
 
 #include "../gfx/gfx_context.c"
+#include "../gfx/context/gfx_null_ctx.c"
 
 #if defined(__CELLOS_LV2__)
 #include "../gfx/context/ps3_ctx.c"
