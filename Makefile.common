@@ -97,6 +97,7 @@ OBJ += frontend/frontend.o \
 		driver.o \
 		general.o \
 		settings.o \
+		settings_list.o \
 		settings_data.o \
 		dynamic.o \
 		dynamic_dummy.o \

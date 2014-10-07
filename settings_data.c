@@ -2065,126 +2065,68 @@ static void general_write_handler(void *data)
       rarch_main_command(rarch_cmd);
 }
 
-static bool data_list_append(rarch_setting_t **list,
-      rarch_setting_info_t *list_info, rarch_setting_t value)
-{
-   if (!list || !*list || !list_info)
-      return false;
-
-   if (list_info->index == list_info->size)
-   {
-      list_info->size *= 2;
-      *list = (rarch_setting_t*)
-         realloc(*list, sizeof(rarch_setting_t) * list_info->size);
-      if (!*list)
-         return false;
-   }
-
-   (*list)[list_info->index++] = value;
-   return true;
-}
-
-static void data_list_current_add_flags(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned values)
-{
-   (*list)[list_info->index - 1].flags |= values;
-}
-
-static void data_list_current_add_range(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      float min, float max, float step,
-      bool enforce_minrange_enable, bool enforce_maxrange_enable)
-{
-   (*list)[list_info->index - 1].min               = min;
-   (*list)[list_info->index - 1].step              = step;
-   (*list)[list_info->index - 1].max               = max;
-   (*list)[list_info->index - 1].enforce_minrange  = enforce_minrange_enable;
-   (*list)[list_info->index - 1].enforce_maxrange  = enforce_maxrange_enable;
-
-   data_list_current_add_flags(list, list_info, SD_FLAG_HAS_RANGE);
-}
-
-static void data_list_current_add_values(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      const char *values)
-{
-   (*list)[list_info->index -1].values = values;
-}
-
-static void data_list_current_add_cmd(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned values)
-{
-   (*list)[list_info->index -1].cmd_trigger.idx = values;
-}
-
 #define START_GROUP(group_info, NAME) \
 { \
    group_info.name = NAME; \
-   if (!(data_list_append(list, list_info, setting_data_group_setting (ST_GROUP, NAME)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_data_group_setting (ST_GROUP, NAME)))) return false; \
 }
 
 #define END_GROUP(list, list_info) \
 { \
-   if (!(data_list_append(list, list_info, setting_data_group_setting (ST_END_GROUP, 0)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_data_group_setting (ST_END_GROUP, 0)))) return false; \
 }
 
 #define START_SUB_GROUP(list, list_info, NAME, group_info, subgroup_info) \
 { \
    subgroup_info.name = NAME; \
-   if (!(data_list_append(list, list_info, setting_data_subgroup_setting (ST_SUB_GROUP, NAME, group_info)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_data_subgroup_setting (ST_SUB_GROUP, NAME, group_info)))) return false; \
 }
 
 #define END_SUB_GROUP(list, list_info) \
 { \
-   if (!(data_list_append(list, list_info, setting_data_group_setting (ST_END_SUB_GROUP, 0)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_data_group_setting (ST_END_SUB_GROUP, 0)))) return false; \
 }
 
 #define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!data_list_append(list, list_info, setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))return false; \
+   if (!settings_list_append(list, list_info, setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))return false; \
 }
 
 #define CONFIG_INT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(data_list_append(list, list_info, setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_UINT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(data_list_append(list, list_info, setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(data_list_append(list, list_info, setting_data_float_setting (NAME, SHORT, &TARGET, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_data_float_setting (NAME, SHORT, &TARGET, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_PATH(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(data_list_append(list, list_info, setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_DIR(TARGET, NAME, SHORT, DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(data_list_append(list, list_info, setting_data_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_data_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_STRING(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(data_list_append(list, list_info, setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_HEX(TARGET, NAME, SHORT, group_info, subgroup_info)
 
 #define CONFIG_BIND(TARGET, PLAYER, NAME, SHORT, DEF, group_info, subgroup_info) \
 { \
-   if (!(data_list_append(list, list_info, setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF, group_info, subgroup_info)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF, group_info, subgroup_info)))) return false; \
 }
 
 
@@ -2216,7 +2158,7 @@ bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_PUSH_ACTION);
@@ -2234,7 +2176,7 @@ bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    if (
          driver.menu 
@@ -2252,7 +2194,7 @@ bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    CONFIG_BOOL(
          lists[3],
@@ -2265,7 +2207,7 @@ bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    CONFIG_BOOL(
          lists[4],
@@ -2278,7 +2220,7 @@ bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    CONFIG_BOOL(
          lists[5],
@@ -2291,7 +2233,7 @@ bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    if (g_extern.main_is_init
          && !g_extern.libretro_dummy
@@ -2308,7 +2250,7 @@ bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    CONFIG_BOOL(
          lists[7],
@@ -2321,7 +2263,7 @@ bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    if (g_extern.perfcnt_enable)
    {
       CONFIG_BOOL(
@@ -2335,7 +2277,7 @@ bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
@@ -2350,8 +2292,8 @@ bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      data_list_current_add_cmd  (list, list_info, RARCH_CMD_SAVE_STATE);
-      data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
+      settings_list_current_add_cmd  (list, list_info, RARCH_CMD_SAVE_STATE);
+      settings_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
 
       CONFIG_BOOL(
             lists[10],
@@ -2364,8 +2306,8 @@ bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      data_list_current_add_cmd  (list, list_info, RARCH_CMD_LOAD_STATE);
-      data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
+      settings_list_current_add_cmd  (list, list_info, RARCH_CMD_LOAD_STATE);
+      settings_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
 
       CONFIG_BOOL(
             lists[11],
@@ -2378,8 +2320,8 @@ bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      data_list_current_add_cmd  (list, list_info, RARCH_CMD_TAKE_SCREENSHOT);
-      data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+      settings_list_current_add_cmd  (list, list_info, RARCH_CMD_TAKE_SCREENSHOT);
+      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
       CONFIG_BOOL(
             lists[12],
@@ -2392,9 +2334,9 @@ bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      data_list_current_add_cmd  (list, list_info, RARCH_CMD_RESUME);
-      data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
-      data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
+      settings_list_current_add_cmd  (list, list_info, RARCH_CMD_RESUME);
+      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+      settings_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
 
       CONFIG_BOOL(
             lists[13],
@@ -2407,9 +2349,9 @@ bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      data_list_current_add_cmd(list, list_info, RARCH_CMD_RESET);
-      data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
-      data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
+      settings_list_current_add_cmd(list, list_info, RARCH_CMD_RESET);
+      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+      settings_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
    }
 #ifndef HAVE_DYNAMIC
    CONFIG_BOOL(
@@ -2423,8 +2365,8 @@ bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_RESTART_RETROARCH);
-   data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_RESTART_RETROARCH);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 #endif
 
    CONFIG_BOOL(
@@ -2450,8 +2392,8 @@ bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_MENU_SAVE_CONFIG);
-   data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_MENU_SAVE_CONFIG);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    CONFIG_BOOL(
          lists[17],
@@ -2464,7 +2406,7 @@ bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    CONFIG_BOOL(
          lists[18],
@@ -2477,53 +2419,14 @@ bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_QUIT_RETROARCH);
-   data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_QUIT_RETROARCH);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 
    return true;
 }
-
-
-void rarch_setting_info_list_free(rarch_setting_info_t *list_info)
-{
-   if (list_info)
-      free(list_info);
-   list_info = NULL;
-}
-
-void rarch_setting_list_free(rarch_setting_t *list)
-{
-   if (list)
-      free(list);
-   list = NULL;
-}
-
-void *rarch_setting_info_list_new(void)
-{
-   rarch_setting_info_t *list_info = (rarch_setting_info_t*)
-      calloc(1, sizeof(*list_info));
-
-   if (!list_info)
-      return NULL;
-
-   list_info->index = 0;
-   list_info->size  = 32;
-
-   return list_info;
-}
-
-void *rarch_setting_list_new(unsigned size)
-{
-   rarch_setting_t *list = (rarch_setting_t*)calloc(size, sizeof(*list));
-   if (!list)
-      return NULL;
-
-   return list;
-}
-
 
 bool setting_data_append_list_driver_options(
       rarch_setting_t **list,
@@ -2544,7 +2447,7 @@ bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING(
          g_settings.video.driver,
@@ -2555,7 +2458,7 @@ bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
 #ifdef HAVE_OPENGL
    CONFIG_STRING(
@@ -2567,7 +2470,7 @@ bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 #endif
    CONFIG_STRING(
          g_settings.audio.driver,
@@ -2578,7 +2481,7 @@ bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING(
          g_settings.audio.resampler,
@@ -2599,7 +2502,7 @@ bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING(
          g_settings.location.driver,
@@ -2610,7 +2513,7 @@ bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
 #ifdef HAVE_MENU
    CONFIG_STRING(
@@ -2622,7 +2525,7 @@ bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 #endif
 
    CONFIG_STRING(
@@ -2634,7 +2537,7 @@ bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING(
          g_settings.input.keyboard_layout,
@@ -2645,7 +2548,7 @@ bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -2683,7 +2586,7 @@ bool setting_data_append_list_general_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 0, 3, 1.0, true, true);
+   settings_list_current_add_range(list, list_info, 0, 3, 1.0, true, true);
 
    CONFIG_BOOL(g_extern.perfcnt_enable,
          "perfcnt_enable",
@@ -2753,8 +2656,8 @@ bool setting_data_append_list_general_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_REWIND_TOGGLE);
-   data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_REWIND_TOGGLE);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #if 0
    CONFIG_SIZE(
          g_settings.rewind_buffer_size,
@@ -2775,7 +2678,7 @@ bool setting_data_append_list_general_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-   data_list_current_add_range(list, list_info, 1, 32768, 1, true, false);
+   settings_list_current_add_range(list, list_info, 1, 32768, 1, true, false);
 
    CONFIG_BOOL(
          g_settings.block_sram_overwrite,
@@ -2799,9 +2702,9 @@ bool setting_data_append_list_general_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_AUTOSAVE_INIT);
-   data_list_current_add_range(list, list_info, 0, 0, 10, true, false);
-   data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_AUTOSAVE_INIT);
+   settings_list_current_add_range(list, list_info, 0, 0, 10, true, false);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #endif
 
    CONFIG_BOOL(
@@ -2815,8 +2718,8 @@ bool setting_data_append_list_general_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    CONFIG_BOOL(
          g_settings.pause_nonactive,
@@ -2852,7 +2755,7 @@ bool setting_data_append_list_general_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 1, 10, 0.1, true, true);
+   settings_list_current_add_range(list, list_info, 1, 10, 0.1, true, true);
 
    CONFIG_FLOAT(
          g_settings.slowmotion_ratio,
@@ -2864,7 +2767,7 @@ bool setting_data_append_list_general_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 1, 10, 1.0, true, true);
+   settings_list_current_add_range(list, list_info, 1, 10, 1.0, true, true);
 
    CONFIG_BOOL(
          g_settings.savestate_auto_index,
@@ -2993,8 +2896,8 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   data_list_current_add_range(list, list_info, 0, 1, 1, true, false);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
+   settings_list_current_add_range(list, list_info, 0, 1, 1, true, false);
 
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
    CONFIG_BOOL(
@@ -3008,8 +2911,8 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #endif
    CONFIG_BOOL(
          g_settings.video.windowed_fullscreen,
@@ -3053,7 +2956,7 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
+   settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
 
    CONFIG_FLOAT(
          g_settings.video.refresh_rate,
@@ -3077,8 +2980,8 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    END_SUB_GROUP(list, list_info);
 
@@ -3127,11 +3030,11 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(
+   settings_list_current_add_cmd(
          list,
          list_info,
          RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
-   data_list_current_add_range(
+   settings_list_current_add_range(
          list,
          list_info,
          0,
@@ -3139,7 +3042,7 @@ bool setting_data_append_list_video_options(
          1,
          true,
          true);
-   data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    END_SUB_GROUP(list, list_info);
 
@@ -3156,7 +3059,7 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
+   settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
 #endif
 
    CONFIG_BOOL(
@@ -3221,7 +3124,7 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 640, 720, 2, true, true);
+   settings_list_current_add_range(list, list_info, 640, 720, 2, true, true);
 
    CONFIG_BOOL(
          g_settings.video.vfilter,
@@ -3271,7 +3174,7 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+   settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
 
 #if defined(HW_RVL) || defined(_XBOX360)
    CONFIG_UINT(
@@ -3283,11 +3186,11 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(
+   settings_list_current_add_cmd(
          list,
          list_info,
          RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
-   data_list_current_add_range(
+   settings_list_current_add_range(
          list,
          list_info,
          0,
@@ -3295,7 +3198,7 @@ bool setting_data_append_list_video_options(
          1,
          true,
          true);
-   data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #endif
    END_SUB_GROUP(list, list_info);
 
@@ -3318,8 +3221,8 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #endif
 
    CONFIG_BOOL(
@@ -3343,9 +3246,9 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
-   data_list_current_add_range(list, list_info, 1, 4, 1, true, true);
-   data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
+   settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    CONFIG_BOOL(
          g_settings.video.hard_sync,
@@ -3368,7 +3271,7 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+   settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
 
    CONFIG_UINT(
          g_settings.video.frame_delay,
@@ -3379,7 +3282,7 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 0, 15, 1, true, true);
+   settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
 #if !defined(RARCH_MOBILE)
    CONFIG_BOOL(
          g_settings.video.black_frame_insertion,
@@ -3472,9 +3375,9 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_values(list, list_info, "filt");
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_list_current_add_values(list, list_info, "filt");
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 #endif
 
 #if defined(_XBOX1) || defined(HW_RVL)
@@ -3489,7 +3392,7 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(
+   settings_list_current_add_cmd(
          list,
          list_info,
          RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
@@ -3505,7 +3408,7 @@ bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 0, 5, 1, true, true);
+   settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
 #endif
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -3544,7 +3447,7 @@ bool setting_data_append_list_shader_options(
          subgroup_info.name,
          NULL,
          NULL);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -3571,7 +3474,7 @@ bool setting_data_append_list_font_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_FLOAT(
          g_settings.video.font_size,
@@ -3583,7 +3486,7 @@ bool setting_data_append_list_font_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 1.00, 100.00, 1.0, true, true);
+   settings_list_current_add_range(list, list_info, 1.00, 100.00, 1.0, true, true);
 
    CONFIG_BOOL(
          g_settings.video.font_enable,
@@ -3607,7 +3510,7 @@ bool setting_data_append_list_font_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
+   settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
 
    CONFIG_FLOAT(
          g_settings.video.msg_pos_y,
@@ -3619,7 +3522,7 @@ bool setting_data_append_list_font_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
+   settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -3671,7 +3574,7 @@ bool setting_data_append_list_audio_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
+   settings_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
 
 #ifdef __CELLOS_LV2__
    CONFIG_BOOL(
@@ -3729,7 +3632,7 @@ bool setting_data_append_list_audio_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(
+   settings_list_current_add_range(
          list,
          list_info,
          0,
@@ -3766,7 +3669,7 @@ bool setting_data_append_list_audio_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_UINT(
          g_settings.audio.out_rate,
@@ -3787,9 +3690,9 @@ bool setting_data_append_list_audio_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_values(list, list_info, "dsp");
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_DSP_FILTER_INIT);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_list_current_add_values(list, list_info, "dsp");
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_DSP_FILTER_INIT);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -3898,7 +3801,7 @@ bool setting_data_append_list_input_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 0, 1.00, 0.001, true, true);
+   settings_list_current_add_range(list, list_info, 0, 1.00, 0.001, true, true);
 
    CONFIG_UINT(
          g_settings.input.turbo_period,
@@ -3909,7 +3812,7 @@ bool setting_data_append_list_input_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 1, 0, 1, true, false);
+   settings_list_current_add_range(list, list_info, 1, 0, 1, true, false);
 
    CONFIG_UINT(
          g_settings.input.turbo_duty_cycle,
@@ -3920,7 +3823,7 @@ bool setting_data_append_list_input_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 1, 0, 1, true, false);
+   settings_list_current_add_range(list, list_info, 1, 0, 1, true, false);
 
    END_SUB_GROUP(list, list_info);
 
@@ -4033,9 +3936,9 @@ bool setting_data_append_list_overlay_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_values(list, list_info, "cfg");
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_OVERLAY_INIT);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_list_current_add_values(list, list_info, "cfg");
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_OVERLAY_INIT);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_FLOAT(
          g_settings.input.overlay_opacity,
@@ -4047,9 +3950,9 @@ bool setting_data_append_list_overlay_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_OVERLAY_SET_ALPHA_MOD);
-   data_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
-   data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_OVERLAY_SET_ALPHA_MOD);
+   settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    CONFIG_FLOAT(
          g_settings.input.overlay_scale,
@@ -4061,9 +3964,9 @@ bool setting_data_append_list_overlay_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_OVERLAY_SET_SCALE_FACTOR);
-   data_list_current_add_range(list, list_info, 0, 2, 0.01, true, true);
-   data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_OVERLAY_SET_SCALE_FACTOR);
+   settings_list_current_add_range(list, list_info, 0, 2, 0.01, true, true);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -4106,8 +4009,8 @@ bool setting_data_append_list_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_MENU_PAUSE_LIBRETRO);
-   data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_MENU_PAUSE_LIBRETRO);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 #endif
@@ -4147,7 +4050,7 @@ bool setting_data_append_list_netplay_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_BOOL(
          g_extern.netplay_is_client,
@@ -4182,7 +4085,7 @@ bool setting_data_append_list_netplay_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 0, 10, 1, true, false);
+   settings_list_current_add_range(list, list_info, 0, 10, 1, true, false);
 
    CONFIG_UINT(
          g_extern.netplay_port,
@@ -4193,8 +4096,8 @@ bool setting_data_append_list_netplay_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 1, 99999, 1, true, true);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   settings_list_current_add_range(list, list_info, 1, 99999, 1, true, true);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -4222,7 +4125,7 @@ bool setting_data_append_list_user_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_UINT(
          g_settings.user_language,
@@ -4233,7 +4136,7 @@ bool setting_data_append_list_user_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(
+   settings_list_current_add_range(
          list,
          list_info,
          0,
@@ -4241,7 +4144,7 @@ bool setting_data_append_list_user_options(
          1,
          true,
          true);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -4268,7 +4171,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_range(list, list_info, 0, 0, 1.0, true, false);
+   settings_list_current_add_range(list, list_info, 0, 0, 1.0, true, false);
 
    END_SUB_GROUP(list, list_info);
    START_SUB_GROUP(list, list_info, "Paths", group_info.name, subgroup_info);
@@ -4283,7 +4186,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4298,7 +4201,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4313,7 +4216,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4328,7 +4231,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4343,7 +4246,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler)                ;
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_DIR(
          g_settings.libretro_directory,
@@ -4355,8 +4258,8 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_CORE_INFO_INIT);
-   data_list_current_add_flags(
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_CORE_INFO_INIT);
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4371,8 +4274,8 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_CORE_INFO_INIT);
-   data_list_current_add_flags(
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_CORE_INFO_INIT);
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4386,7 +4289,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_PATH(
          g_settings.cheat_database,
@@ -4397,7 +4300,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_PATH(
          g_settings.cheat_settings_path,
@@ -4407,7 +4310,7 @@ bool setting_data_append_list_path_options(
          group_info.name,
          subgroup_info.name,
          general_write_handler, general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_PATH(
          g_settings.content_history_path,
@@ -4418,7 +4321,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_DIR(
          g_settings.video.filter_dir,
@@ -4430,7 +4333,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4445,7 +4348,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4461,7 +4364,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4478,7 +4381,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4494,7 +4397,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4509,7 +4412,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4524,7 +4427,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4539,7 +4442,7 @@ bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   data_list_current_add_flags(
+   settings_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4645,14 +4548,14 @@ rarch_setting_t *setting_data_get_mainmenu(bool need_refresh)
       if (!need_refresh)
          return list;
 
-      rarch_setting_list_free(list);
+      settings_list_free(list);
    }
 
-   list_info = (rarch_setting_info_t*)rarch_setting_info_list_new();
+   list_info = (rarch_setting_info_t*)settings_info_list_new();
    if (!list_info)
       return NULL;
 
-   list = (rarch_setting_t*)rarch_setting_list_new(list_info->size);
+   list = (rarch_setting_t*)settings_list_new(list_info->size);
    if (!list)
       goto error;
 
@@ -4660,14 +4563,14 @@ rarch_setting_t *setting_data_get_mainmenu(bool need_refresh)
       goto error;
 
    rarch_setting_t terminator = { ST_NONE };
-   if (!(data_list_append(&list, list_info, terminator)))
+   if (!(settings_list_append(&list, list_info, terminator)))
       goto error;
 
    /* flatten this array to save ourselves some kilobytes */
    if (!(list = (rarch_setting_t*)realloc(list, list_info->index * sizeof(rarch_setting_t))))
       goto error;
 
-   rarch_setting_info_list_free(list_info);
+   settings_info_list_free(list_info);
 
    /* do not optimize into return realloc(),
     * list is static and must be written. */
@@ -4675,8 +4578,8 @@ rarch_setting_t *setting_data_get_mainmenu(bool need_refresh)
 
 error:
    RARCH_ERR("Allocation failed.\n");
-   rarch_setting_info_list_free(list_info);
-   rarch_setting_list_free(list);
+   settings_info_list_free(list_info);
+   settings_list_free(list);
 
    return NULL;
 }
@@ -4692,14 +4595,14 @@ rarch_setting_t *setting_data_get_list(bool need_refresh)
       if (!need_refresh)
          return list;
 
-      rarch_setting_list_free(list);
+      settings_list_free(list);
    }
 
-   list_info = (rarch_setting_info_t*)rarch_setting_info_list_new();
+   list_info = (rarch_setting_info_t*)settings_info_list_new();
    if (!list_info)
       return NULL;
 
-   list = (rarch_setting_t*)rarch_setting_list_new(list_info->size);
+   list = (rarch_setting_t*)settings_list_new(list_info->size);
    if (!list)
       goto error;
 
@@ -4744,14 +4647,14 @@ rarch_setting_t *setting_data_get_list(bool need_refresh)
 
 
    rarch_setting_t terminator = { ST_NONE };
-   if (!(data_list_append(&list, list_info, terminator)))
+   if (!(settings_list_append(&list, list_info, terminator)))
       goto error;
 
    /* flatten this array to save ourselves some kilobytes. */
    if (!(list = (rarch_setting_t*)realloc(list, list_info->index * sizeof(rarch_setting_t))))
       goto error;
 
-   rarch_setting_info_list_free(list_info);
+   settings_info_list_free(list_info);
 
    /* do not optimize into return realloc(),
     * list is static and must be written. */
@@ -4759,8 +4662,8 @@ rarch_setting_t *setting_data_get_list(bool need_refresh)
 
 error:
    RARCH_ERR("Allocation failed.\n");
-   rarch_setting_info_list_free(list_info);
-   rarch_setting_list_free(list);
+   settings_info_list_free(list_info);
+   settings_list_free(list);
 
    return NULL;
 }
