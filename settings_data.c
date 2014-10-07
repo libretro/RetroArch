@@ -2968,104 +2968,533 @@ bool setting_data_append_list_video_options(
 
    START_GROUP(group_info, "Video Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
-   CONFIG_BOOL(g_settings.video.shared_context,  "video_shared_context",  "HW Shared Context Enable",   false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.video.shared_context,
+         "video_shared_context",
+         "HW Shared Context Enable",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
    END_SUB_GROUP(list, list_info);
    START_SUB_GROUP(list, list_info, "Monitor", group_info.name, subgroup_info);
-   CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.video.monitor_index,
+         "video_monitor_index",
+         "Monitor Index",
+         monitor_index,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
    data_list_current_add_range(list, list_info, 0, 1, 1, true, false);
+
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-   CONFIG_BOOL(g_settings.video.fullscreen,           "video_fullscreen",           "Use Fullscreen mode",        fullscreen, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         g_settings.video.fullscreen,
+         "video_fullscreen",
+         "Use Fullscreen mode",
+         fullscreen,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
    data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #endif
-   CONFIG_BOOL(g_settings.video.windowed_fullscreen,  "video_windowed_fullscreen",  "Windowed Fullscreen Mode",   windowed_fullscreen, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_UINT(g_settings.video.fullscreen_x,         "video_fullscreen_x",         "Fullscreen Width",           fullscreen_x, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_UINT(g_settings.video.fullscreen_y,         "video_fullscreen_y",         "Fullscreen Height",          fullscreen_y, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_FLOAT(g_settings.video.refresh_rate,        "video_refresh_rate",         "Refresh Rate",               refresh_rate, "%.3f Hz", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         g_settings.video.windowed_fullscreen,
+         "video_windowed_fullscreen",
+         "Windowed Fullscreen Mode",
+         windowed_fullscreen,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.video.fullscreen_x,
+         "video_fullscreen_x",
+         "Fullscreen Width",
+         fullscreen_x,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.video.fullscreen_y,
+         "video_fullscreen_y",
+         "Fullscreen Height",
+         fullscreen_y,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_FLOAT(
+         g_settings.video.refresh_rate,
+         "video_refresh_rate",
+         "Refresh Rate",
+         refresh_rate,
+         "%.3f Hz",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
-   CONFIG_FLOAT(g_settings.video.refresh_rate,        "video_refresh_rate_auto",    "Estimated Monitor FPS",      refresh_rate, "%.3f Hz", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.video.force_srgb_disable,     "video_force_srgb_disable",   "Force-disable sRGB FBO",     false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_FLOAT(
+         g_settings.video.refresh_rate,
+         "video_refresh_rate_auto",
+         "Estimated Monitor FPS",
+         refresh_rate,
+         "%.3f Hz",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.video.force_srgb_disable,
+         "video_force_srgb_disable",
+         "Force-disable sRGB FBO",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
    data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
    END_SUB_GROUP(list, list_info);
 
    START_SUB_GROUP(list, list_info, "Aspect", group_info.name, subgroup_info);
-   CONFIG_BOOL(g_settings.video.force_aspect,         "video_force_aspect",         "Force aspect ratio",         force_aspect, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_FLOAT(g_settings.video.aspect_ratio,        "video_aspect_ratio",         "Aspect Ratio",               aspect_ratio, "%.2f", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.video.aspect_ratio_auto,    "video_aspect_ratio_auto",    "Use Auto Aspect Ratio",      aspect_ratio_auto, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_UINT(g_settings.video.aspect_ratio_idx,     "aspect_ratio_index",         "Aspect Ratio Index",         aspect_ratio_idx, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
-   data_list_current_add_range(list, list_info, 0, LAST_ASPECT_RATIO, 1, true, true);
+   CONFIG_BOOL(
+         g_settings.video.force_aspect,
+         "video_force_aspect",
+         "Force aspect ratio",
+         force_aspect,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_FLOAT(
+         g_settings.video.aspect_ratio,
+         "video_aspect_ratio",
+         "Aspect Ratio",
+         aspect_ratio,
+         "%.2f",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.video.aspect_ratio_auto,
+         "video_aspect_ratio_auto",
+         "Use Auto Aspect Ratio",
+         aspect_ratio_auto,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.video.aspect_ratio_idx,
+         "aspect_ratio_index",
+         "Aspect Ratio Index",
+         aspect_ratio_idx,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_cmd(
+         list,
+         list_info,
+         RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
+   data_list_current_add_range(
+         list,
+         list_info,
+         0,
+         LAST_ASPECT_RATIO,
+         1,
+         true,
+         true);
    data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
    END_SUB_GROUP(list, list_info);
 
    START_SUB_GROUP(list, list_info, "Scaling", group_info.name, subgroup_info);
+
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-   CONFIG_FLOAT(g_settings.video.scale,              "video_scale",               "Windowed Scale",                    scale, "%.1fx", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_FLOAT(
+         g_settings.video.scale,
+         "video_scale",
+         "Windowed Scale",
+         scale,
+         "%.1fx",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
 #endif
-   CONFIG_BOOL(g_settings.video.scale_integer,        "video_scale_integer",        "Integer Scale",      scale_integer, "OFF", "ON",  group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_INT(g_extern.console.screen.viewports.custom_vp.x,         "custom_viewport_x",       "Custom Viewport X",       0, group_info.name, subgroup_info.name, NULL, NULL);
-   CONFIG_INT(g_extern.console.screen.viewports.custom_vp.y,         "custom_viewport_y",       "Custom Viewport Y",       0, group_info.name, subgroup_info.name, NULL, NULL);
-   CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.width,    "custom_viewport_width",   "Custom Viewport Width",   0, group_info.name, subgroup_info.name, NULL, NULL);
-   CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.height,   "custom_viewport_height",  "Custom Viewport Height",  0, group_info.name, subgroup_info.name, NULL, NULL);
+
+   CONFIG_BOOL(
+         g_settings.video.scale_integer,
+         "video_scale_integer",
+         "Integer Scale",
+         scale_integer,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_INT(
+         g_extern.console.screen.viewports.custom_vp.x,
+         "custom_viewport_x",
+         "Custom Viewport X",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
+   
+   CONFIG_INT(
+         g_extern.console.screen.viewports.custom_vp.y,
+         "custom_viewport_y",
+         "Custom Viewport Y",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
+
+   CONFIG_UINT(
+         g_extern.console.screen.viewports.custom_vp.width,
+         "custom_viewport_width",
+         "Custom Viewport Width",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
+
+   CONFIG_UINT(
+         g_extern.console.screen.viewports.custom_vp.height,
+         "custom_viewport_height",
+         "Custom Viewport Height",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         NULL,
+         NULL);
+
 #ifdef GEKKO
-   CONFIG_UINT(g_settings.video.viwidth,              "video_viwidth",              "Set Screen Width",           video_viwidth, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_UINT(
+         g_settings.video.viwidth,
+         "video_viwidth",
+         "Set Screen Width",
+         video_viwidth,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 640, 720, 2, true, true);
-   CONFIG_BOOL(g_settings.video.vfilter,              "video_vfilter",              "Deflicker",                  video_vfilter, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.video.vfilter,
+         "video_vfilter",
+         "Deflicker",
+         video_vfilter,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 #endif
-   CONFIG_BOOL(g_settings.video.smooth,               "video_smooth",               "Use Bilinear Filtering",     video_smooth, "Point filtering", "Bilinear filtering", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.video.smooth,
+         "video_smooth",
+         "Use Bilinear Filtering",
+         video_smooth,
+         "Point filtering",
+         "Bilinear filtering",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
 #if defined(__CELLOS_LV2__)
-   CONFIG_BOOL(g_extern.console.screen.pal60_enable,               "pal60_enable",               "Use PAL60 Mode",     false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         g_extern.console.screen.pal60_enable,
+         "pal60_enable",
+         "Use PAL60 Mode",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 #endif
-   CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   0, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.video.rotation,
+         "video_rotation",
+         "Rotation",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+
 #if defined(HW_RVL) || defined(_XBOX360)
-   CONFIG_UINT(g_extern.console.screen.gamma_correction, "video_gamma",             "Gamma",                      0, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_VIDEO_APPLY_STATE_CHANGES)
-      data_list_current_add_range(list, list_info, 0, MAX_GAMMA_SETTING, 1, true, true);
+   CONFIG_UINT(
+         g_extern.console.screen.gamma_correction,
+         "video_gamma",
+         "Gamma",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_cmd(
+         list,
+         list_info,
+         RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
+   data_list_current_add_range(
+         list,
+         list_info,
+         0,
+         MAX_GAMMA_SETTING,
+         1,
+         true,
+         true);
    data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #endif
    END_SUB_GROUP(list, list_info);
 
-   START_SUB_GROUP(list, list_info, "Synchronization", group_info.name, subgroup_info);
+   START_SUB_GROUP(
+         list,
+         list_info,
+         "Synchronization",
+         group_info.name,
+         subgroup_info);
+
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
-   CONFIG_BOOL(g_settings.video.threaded,             "video_threaded",             "Threaded Video",         video_threaded, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         g_settings.video.threaded,
+         "video_threaded",
+         "Threaded Video",
+         video_threaded,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
    data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #endif
-   CONFIG_BOOL(g_settings.video.vsync,                "video_vsync",                "VSync",                      vsync, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_UINT(g_settings.video.swap_interval,        "video_swap_interval",        "VSync Swap Interval",        swap_interval, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.video.vsync,
+         "video_vsync",
+         "VSync",
+         vsync,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.video.swap_interval,
+         "video_swap_interval",
+         "VSync Swap Interval",
+         swap_interval,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_cmd(list, list_info, RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
    data_list_current_add_range(list, list_info, 1, 4, 1, true, true);
    data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-   CONFIG_BOOL(g_settings.video.hard_sync,            "video_hard_sync",            "Hard GPU Sync",              hard_sync, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_UINT(g_settings.video.hard_sync_frames,     "video_hard_sync_frames",     "Hard GPU Sync Frames",       hard_sync_frames, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.video.hard_sync,
+         "video_hard_sync",
+         "Hard GPU Sync",
+         hard_sync,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.video.hard_sync_frames,
+         "video_hard_sync_frames",
+         "Hard GPU Sync Frames",
+         hard_sync_frames,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-   CONFIG_UINT(g_settings.video.frame_delay,          "video_frame_delay",          "Frame Delay",                frame_delay, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.video.frame_delay,
+         "video_frame_delay",
+         "Frame Delay",
+         frame_delay,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_range(list, list_info, 0, 15, 1, true, true);
 #if !defined(RARCH_MOBILE)
-   CONFIG_BOOL(g_settings.video.black_frame_insertion, "video_black_frame_insertion", "Black Frame Insertion",      black_frame_insertion, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_BOOL(
+         g_settings.video.black_frame_insertion,
+         "video_black_frame_insertion",
+         "Black Frame Insertion",
+         black_frame_insertion,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 #endif
    END_SUB_GROUP(list, list_info);
 
-   START_SUB_GROUP(list, list_info, "Miscellaneous", group_info.name, subgroup_info);
-   CONFIG_BOOL(g_settings.video.post_filter_record,   "video_post_filter_record",   "Post filter record Enable",         post_filter_record, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.video.gpu_record,           "video_gpu_record",           "GPU Record Enable",                 gpu_record, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.video.gpu_screenshot,       "video_gpu_screenshot",       "GPU Screenshot Enable",             gpu_screenshot, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.video.allow_rotate,         "video_allow_rotate",         "Allow rotation",             allow_rotate, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   CONFIG_BOOL(g_settings.video.crop_overscan,        "video_crop_overscan",        "Crop Overscan (reload)",     crop_overscan, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   START_SUB_GROUP(
+         list,
+         list_info,
+         "Miscellaneous",
+         group_info.name,
+         subgroup_info);
+
+   CONFIG_BOOL(
+         g_settings.video.post_filter_record,
+         "video_post_filter_record",
+         "Post filter record Enable",
+         post_filter_record,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.video.gpu_record,
+         "video_gpu_record",
+         "GPU Record Enable",
+         gpu_record,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.video.gpu_screenshot,
+         "video_gpu_screenshot",
+         "GPU Screenshot Enable",
+         gpu_screenshot,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.video.allow_rotate,
+         "video_allow_rotate",
+         "Allow rotation",
+         allow_rotate,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.video.crop_overscan,
+         "video_crop_overscan",
+         "Crop Overscan (reload)",
+         crop_overscan,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
 #ifndef HAVE_FILTERS_BUILTIN
-   CONFIG_PATH(g_settings.video.softfilter_plugin,    "video_filter",               "Software filter",            g_settings.video.filter_dir, group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
+   CONFIG_PATH(
+         g_settings.video.softfilter_plugin,
+         "video_filter",
+         "Software filter",
+         g_settings.video.filter_dir,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
    data_list_current_add_values(list, list_info, "filt");
    data_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
    data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 #endif
+
 #if defined(_XBOX1) || defined(HW_RVL)
-   CONFIG_BOOL(g_extern.console.softfilter_enable,   "soft_filter",   "Soft Filter Enable",         false, "OFF", "ON", group_info.name, subgroup_info.name, general_write_handler, general_read_handler);
-   data_list_current_add_cmd(list, list_info, RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
+   CONFIG_BOOL(
+         g_extern.console.softfilter_enable,
+         "soft_filter",
+         "Soft Filter Enable",
+         false,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   data_list_current_add_cmd(
+         list,
+         list_info,
+         RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
 #endif
+
 #ifdef _XBOX1
    CONFIG_UINT(
          g_settings.video.swap_interval,
