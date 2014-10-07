@@ -3715,6 +3715,7 @@ bool setting_data_append_list_input_options(
    unsigned i, player;
 
    START_GROUP(group_info, "Input Options");
+   //settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -3842,16 +3843,17 @@ bool setting_data_append_list_input_options(
          group_info.name,
          subgroup_info);
 
-   for (i = 0; i != RARCH_BIND_LIST_END; i ++)
+   for (i = 0; i < RARCH_BIND_LIST_END; i ++)
    {
-      if (input_config_bind_map[i].meta)
-      {
-         const struct input_bind_map* bind = (const struct input_bind_map*)
-            &input_config_bind_map[i];
-         CONFIG_BIND(g_settings.input.binds[0][i], 0,
-               bind->base, bind->desc, &retro_keybinds_1[i],
-               group_info.name, subgroup_info.name);
-      }
+      const struct input_bind_map* bind = (const struct input_bind_map*)
+         &input_config_bind_map[i];
+
+      if (!bind || !bind->meta)
+         continue;
+
+      CONFIG_BIND(g_settings.input.binds[0][i], 0,
+            bind->base, bind->desc, &retro_keybinds_1[i],
+            group_info.name, subgroup_info.name);
    }
    END_SUB_GROUP(list, list_info);
 
@@ -3860,20 +3862,27 @@ bool setting_data_append_list_input_options(
       char buffer[PATH_MAX];
       const struct retro_keybind* const defaults =
          (player == 0) ? retro_keybinds_1 : retro_keybinds_rest;
+
       snprintf(buffer, sizeof(buffer), "Player %d", player + 1);
 
-      START_SUB_GROUP(list, list_info, strdup(buffer), group_info.name, subgroup_info);
-      for (i = 0; i != RARCH_BIND_LIST_END; i ++)
-      {
-         if (!input_config_bind_map[i].meta)
-         {
-            const struct input_bind_map* bind = 
-               (const struct input_bind_map*)&input_config_bind_map[i];
+      START_SUB_GROUP(
+            list,
+            list_info,
+            strdup(buffer),
+            group_info.name,
+            subgroup_info);
 
-            CONFIG_BIND(g_settings.input.binds[player][i], player + 1,
-                  bind->base, bind->desc, &defaults[i],
-                  group_info.name, subgroup_info.name);
-         }
+      for (i = 0; i < RARCH_BIND_LIST_END; i ++)
+      {
+         const struct input_bind_map* bind = 
+            (const struct input_bind_map*)&input_config_bind_map[i];
+
+         if (!bind || bind->meta)
+            continue;
+
+         CONFIG_BIND(g_settings.input.binds[player][i], player + 1,
+               bind->base, bind->desc, &defaults[i],
+               group_info.name, subgroup_info.name);
       }
       END_SUB_GROUP(list, list_info);
    }
