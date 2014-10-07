@@ -2334,8 +2334,7 @@ bool setting_data_append_list_main_menu_options(
             general_write_handler,
             general_read_handler);
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_RESUME);
-      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
-      settings_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
+      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION | SD_FLAG_EXIT);
 
       CONFIG_BOOL(
             lists[13],
@@ -2349,8 +2348,7 @@ bool setting_data_append_list_main_menu_options(
             general_write_handler,
             general_read_handler);
       settings_list_current_add_cmd(list, list_info, RARCH_CMD_RESET);
-      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
-      settings_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
+      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION | SD_FLAG_EXIT);
    }
 #ifndef HAVE_DYNAMIC
    CONFIG_BOOL(
