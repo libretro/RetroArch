@@ -20,15 +20,12 @@
 #include "menu_shader.h"
 #include "../frontend.h"
 
-static void draw_frame(bool enable)
+static void draw_frame(void)
 {
    if (driver.video_data && driver.video_poke &&
          driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data,
-            enable, MENU_TEXTURE_FULLSCREEN);
-
-   if (!enable || !driver.video)
-      return;
+            true, MENU_TEXTURE_FULLSCREEN);
 
    if (!g_settings.menu.pause_libretro)
    {
@@ -38,7 +35,6 @@ static void draw_frame(bool enable)
          driver.block_libretro_input = true;
          pretro_run();
          driver.block_libretro_input = block_libretro_input;
-
          return;
       }
    }
@@ -111,8 +107,7 @@ bool load_menu_content(void)
          driver.menu_ctx->backend->iterate) 
       driver.menu_ctx->backend->iterate(MENU_ACTION_NOOP);
 
-   draw_frame(true);
-   draw_frame(false);
+   draw_frame();
 
    if (!(main_load_content(0, NULL, NULL, menu_environment_get,
          driver.frontend_ctx->process_args)))
@@ -356,8 +351,7 @@ int menu_iterate(retro_input_t input,
          && driver.menu_ctx->backend->iterate) 
       ret = driver.menu_ctx->backend->iterate(action);
 
-   draw_frame(true);
-   draw_frame(false);
+   draw_frame();
 
    if (driver.menu_ctx && driver.menu_ctx->input_postprocess)
       driver.menu_ctx->input_postprocess(input, old_input);
