@@ -489,6 +489,8 @@ static int do_state_checks(
       rarch_main_command(RARCH_CMD_DISK_EJECT_TOGGLE);
    else if (BIT64_GET(trigger_input, RARCH_DISK_NEXT))
       rarch_main_command(RARCH_CMD_DISK_NEXT);
+   else if (BIT64_GET(trigger_input, RARCH_DISK_PREV))
+      rarch_main_command(RARCH_CMD_DISK_PREV);	  
 
    if (BIT64_GET(trigger_input, RARCH_RESET))
       rarch_main_command(RARCH_CMD_RESET);
