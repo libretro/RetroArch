@@ -1259,6 +1259,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, overlay_next,          RARCH_OVERLAY_NEXT, "Overlay next"),
       DECLARE_META_BIND(2, disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE, "Disk eject toggle"),
       DECLARE_META_BIND(2, disk_next,             RARCH_DISK_NEXT, "Disk next"),
+	  DECLARE_META_BIND(2, disk_prev,             RARCH_DISK_NEXT, "Disk prev"),
       DECLARE_META_BIND(2, grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE, "Grab mouse toggle"),
 #ifdef HAVE_MENU
       DECLARE_META_BIND(1, menu_toggle,           RARCH_MENU_TOGGLE, "Menu toggle"),

@@ -1719,10 +1719,24 @@ static void check_disk_next(
    unsigned current   = control->get_image_index();
    if (num_disks && num_disks != UINT_MAX)
    {
-      /* Use "no disk" state when index == num_disks. */
-      unsigned next_index = current >= num_disks ?
-         0 : ((current + 1) % (num_disks + 1));
-      rarch_disk_control_set_index(next_index);
+      unsigned new_index = current;
+      current < num_disks - 1 ? new_index++ : new_index;
+      rarch_disk_control_set_index(new_index);
+   }
+   else
+      RARCH_ERR("Got invalid disk index from libretro.\n");
+}
+
+static void check_disk_prev(
+      const struct retro_disk_control_callback *control)
+{
+   unsigned num_disks = control->get_num_images();
+   unsigned current   = control->get_image_index();
+   if (num_disks && num_disks != UINT_MAX)
+   {
+      unsigned new_index = current;
+      current > 0 ? new_index-- : new_index;
+      rarch_disk_control_set_index(new_index);
    }
    else
       RARCH_ERR("Got invalid disk index from libretro.\n");
@@ -2602,8 +2616,19 @@ bool rarch_main_command(unsigned cmd)
                (const struct retro_disk_control_callback*)
                &g_extern.system.disk_control;
 
-            if (!control)
+            if (control->get_eject_state())
                check_disk_next(control);
+         }
+         break;
+      case RARCH_CMD_DISK_PREV:
+         if (g_extern.system.disk_control.get_num_images)
+         {
+            const struct retro_disk_control_callback *control = 
+               (const struct retro_disk_control_callback*)
+               &g_extern.system.disk_control;
+
+            if (control->get_eject_state())
+               check_disk_prev(control);
          }
          break;
       case RARCH_CMD_RUMBLE_STOP:
