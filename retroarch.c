@@ -1888,11 +1888,6 @@ static void deinit_core(void)
    uninit_libretro_sym();
 }
 
-/* 
- * Returns:
- * 0 - success
- * 1 - error
- */
 static bool init_core(void)
 {
    verify_api_version();
@@ -1901,27 +1896,26 @@ static bool init_core(void)
    g_extern.use_sram = !g_extern.libretro_dummy &&
       !g_extern.libretro_no_content;
 
-   if (g_extern.libretro_no_content && !g_extern.libretro_dummy)
+   if (!g_extern.libretro_dummy)
    {
-      if (!init_content_file())
-         return false;
-   }
-   else if (!g_extern.libretro_dummy)
-   {
-      rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
+      if (!g_extern.libretro_no_content)
+         rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
 
       if (!init_content_file())
          return false;
 
-      set_savestate_auto_index();
+      if (!g_extern.libretro_no_content)
+      {
+         set_savestate_auto_index();
 
-      if (load_save_files())
-         RARCH_LOG("Skipping SRAM load.\n");
+         if (load_save_files())
+            RARCH_LOG("Skipping SRAM load.\n");
 
-      load_auto_state();
+         load_auto_state();
 
-      rarch_main_command(RARCH_CMD_BSV_MOVIE_INIT);
-      rarch_main_command(RARCH_CMD_NETPLAY_INIT);
+         rarch_main_command(RARCH_CMD_BSV_MOVIE_INIT);
+         rarch_main_command(RARCH_CMD_NETPLAY_INIT);
+      }
    }
 
    retro_init_libretro_cbs(&driver.retro_ctx);
