@@ -808,7 +808,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          _pathToSave = BOXSTRING(g_defaults.config_path);
       }
       
-      setting_data = (rarch_setting_t*)setting_data_get_list(true);
+      setting_data = (rarch_setting_t*)setting_data_get_list(SL_FLAG_ALL_SETTINGS, true);
       setting_data_load_config_path(setting_data, _pathToSave.UTF8String);
       
       // HACK: Load the key mapping table
@@ -856,12 +856,12 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    {
       config_file_t* config = (config_file_t*)config_file_new(self.pathToSave.UTF8String);
 
-      if (config)
-      {
-          setting_data_save_config(setting_data_get_list(false), config);
-          config_file_write(config, self.pathToSave.UTF8String);
-          config_file_free(config);
-      }
+      if (!config)
+         return;
+      
+      setting_data_save_config(setting_data_get_list(SL_FLAG_ALL_SETTINGS, false), config);
+      config_file_write(config, self.pathToSave.UTF8String);
+      config_file_free(config);
    }
 }
 

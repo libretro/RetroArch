@@ -2406,6 +2406,8 @@ bool setting_data_append_list_main_menu_options(
          general_read_handler);
    settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
+   /* Apple rejects iOS apps that lets you forcibly quit an application. */
+#if !defined(IOS)
    CONFIG_BOOL(
          lists[18],
          "quit_retroarch",
@@ -2419,6 +2421,7 @@ bool setting_data_append_list_main_menu_options(
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_QUIT_RETROARCH);
    settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+#endif
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
