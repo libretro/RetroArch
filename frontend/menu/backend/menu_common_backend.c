@@ -53,9 +53,8 @@ static int menu_message_toggle(unsigned action)
 {
    if (driver.video_data && driver.menu_ctx
          && driver.menu_ctx->render_messagebox)
-   {
       driver.menu_ctx->render_messagebox(driver.menu->message_contents);
-   }
+
    if (action == MENU_ACTION_OK)
       menu_entries_pop(driver.menu->menu_stack);
 
