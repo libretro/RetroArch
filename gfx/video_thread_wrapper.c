@@ -292,13 +292,11 @@ static void thread_loop(void *data)
          bool alive = false;
          bool focus = false;
          struct rarch_viewport vp = {0};
-         
-         thr->frame.within_thread = true;
+
          if (thr->driver && thr->driver->frame)
             ret = thr->driver->frame(thr->driver_data,
                thr->frame.buffer, thr->frame.width, thr->frame.height,
                thr->frame.pitch, *thr->frame.msg ? thr->frame.msg : NULL);
-         thr->frame.within_thread = false;
 
          slock_unlock(thr->frame.lock);
 
@@ -713,11 +711,17 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
 static void thread_set_osd_msg(void *data, const char *msg, const struct font_params *params)
 {
    thread_video_t *thr = (thread_video_t*)data;
+
+   /* TODO : find a way to determine if the calling
+    * thread is the driver thread or not. */
+#if 0
    if (thr->frame.within_thread)
+#endif
    {
       if (thr->poke && thr->poke->set_osd_msg)
          thr->poke->set_osd_msg(thr->driver_data, msg, params);
    }
+#if 0
    else
    {
       strncpy(thr->cmd_data.osd_message.msg, msg, sizeof(thr->cmd_data.osd_message.msg));
@@ -725,6 +729,7 @@ static void thread_set_osd_msg(void *data, const char *msg, const struct font_pa
       thread_send_cmd(thr, CMD_POKE_SET_OSD_MSG);
       thread_wait_reply(thr, CMD_POKE_SET_OSD_MSG);
    }
+#endif
 }
 
 static void thread_apply_state_changes(void *data)
