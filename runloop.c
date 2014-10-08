@@ -40,21 +40,6 @@ static void set_volume(float gain)
    g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
 }
 
-static void check_grab_mouse_toggle(void)
-{
-   static bool grab_mouse_state  = false;
-
-   if (!driver.input->grab_mouse)
-      return;
-
-   grab_mouse_state = !grab_mouse_state;
-   RARCH_LOG("Grab mouse state: %s.\n", grab_mouse_state ? "yes" : "no");
-   driver.input->grab_mouse(driver.input_data, grab_mouse_state);
-
-   if (driver.video_poke && driver.video_poke->show_mouse)
-      driver.video_poke->show_mouse(driver.video_data, !grab_mouse_state);
-}
-
 #ifdef HAVE_NETPLAY
 static void check_netplay_flip(bool pressed, bool fullscreen_toggle_pressed)
 {
@@ -397,7 +382,7 @@ static int do_state_checks(
       set_volume(-0.5f);
 
    if (BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
-      check_grab_mouse_toggle();
+      rarch_main_command(RARCH_CMD_GRAB_MOUSE_TOGGLE);
 
 #ifdef HAVE_OVERLAY
    if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))

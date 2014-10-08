@@ -2680,6 +2680,23 @@ bool rarch_main_command(unsigned cmd)
             }
          }
          break;
+      case RARCH_CMD_GRAB_MOUSE_TOGGLE:
+         {
+            static bool grab_mouse_state  = false;
+
+            if (!driver.input || !driver.input->grab_mouse)
+               return false;
+
+            grab_mouse_state = !grab_mouse_state;
+            RARCH_LOG("Grab mouse state: %s.\n",
+                  grab_mouse_state ? "yes" : "no");
+            driver.input->grab_mouse(driver.input_data, grab_mouse_state);
+
+            if (driver.video_poke && driver.video_poke->show_mouse)
+               driver.video_poke->show_mouse(
+                     driver.video_data, !grab_mouse_state);
+         }
+         break;
    }
 
    return true;

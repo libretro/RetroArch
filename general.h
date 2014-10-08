@@ -163,6 +163,7 @@ enum basic_event
    RARCH_CMD_DISK_NEXT,
    RARCH_CMD_DISK_PREV,
    RARCH_CMD_RUMBLE_STOP,
+   RARCH_CMD_GRAB_MOUSE_TOGGLE,
 };
 
 enum action_state
