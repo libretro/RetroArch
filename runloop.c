@@ -66,7 +66,7 @@ static void check_netplay_flip(bool pressed, bool fullscreen_toggle_pressed)
 }
 #endif
 
-static void check_pause(bool pressed, bool frameadvance_pressed)
+static bool check_pause(bool pressed, bool frameadvance_pressed)
 {
    static bool old_focus    = true;
    bool focus               = true;
@@ -88,21 +88,9 @@ static void check_pause(bool pressed, bool frameadvance_pressed)
    old_focus = focus;
 
    if (g_extern.is_paused == old_is_paused)
-      return;
-
-   if (g_extern.is_paused)
-   {
-      RARCH_LOG("Paused.\n");
-      rarch_main_command(RARCH_CMD_AUDIO_STOP);
-
-      if (g_settings.video.black_frame_insertion)
-         rarch_render_cached_frame();
-   }
-   else
-   {
-      RARCH_LOG("Unpaused.\n");
-      rarch_main_command(RARCH_CMD_AUDIO_START);
-   }
+      return false;
+   
+   return true;
 }
 
 /* Rewind buttons works like FRAMEREWIND when paused.
@@ -426,7 +414,8 @@ static int do_state_checks(
       return 0;
    }
 #endif
-   check_pause_func(trigger_input);
+   if (check_pause_func(trigger_input))
+      rarch_main_command(RARCH_CMD_PAUSE_TOGGLE);
 
    if (g_extern.is_paused)
    {

@@ -2313,7 +2313,7 @@ bool rarch_main_command(unsigned cmd)
                "Audio muted." : "Audio unmuted.";
 
             if (!driver.audio_data || !driver.audio_active)
-               return;
+               return false;
 
             g_extern.audio_data.mute = !g_extern.audio_data.mute;
 
@@ -2492,6 +2492,21 @@ bool rarch_main_command(unsigned cmd)
 #ifdef HAVE_MENU
          menu_shader_manager_apply_changes();
 #endif
+         break;
+      case RARCH_CMD_PAUSE_TOGGLE:
+         if (g_extern.is_paused)
+         {
+            RARCH_LOG("Paused.\n");
+            rarch_main_command(RARCH_CMD_AUDIO_STOP);
+
+            if (g_settings.video.black_frame_insertion)
+               rarch_render_cached_frame();
+         }
+         else
+         {
+            RARCH_LOG("Unpaused.\n");
+            rarch_main_command(RARCH_CMD_AUDIO_START);
+         }
          break;
       case RARCH_CMD_MENU_PAUSE_LIBRETRO:
          if (g_extern.is_menu)
