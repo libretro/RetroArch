@@ -54,7 +54,7 @@ enum exynos_buffer_type {
 
 /* We have to handle three types of 'data' from the frontend, each abstracted by a *
  * G2D image object. The image objects are then backed by some storage buffer.     *
- * (1) the emulator framebuffer (backed by main buffer)                            *
+ * (1) the core framebuffer (backed by main buffer)                            *
  * (2) the menu buffer (backed by aux buffer)                                      *
  * (3) the font rendering buffer (backed by aux buffer)                            */
 enum exynos_image_type {
@@ -145,7 +145,7 @@ struct exynos_data {
   /* framebuffer aspect ratio */
   float aspect;
 
-  /* parameters for blitting emulator fb to screen */
+  /* parameters for blitting core fb to screen */
   unsigned blit_params[6];
 
   /* bytes per pixel */
@@ -1034,7 +1034,7 @@ struct exynos_video {
 
   unsigned bytes_per_pixel;
 
-  /* current dimensions of the emulator fb */
+  /* current dimensions of the core fb */
   unsigned width;
   unsigned height;
 
@@ -1261,7 +1261,7 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
   struct exynos_video *vid = data;
   struct exynos_page *page = NULL;
 
-  /* Check if neither menu nor emulator framebuffer is to be displayed. */
+  /* Check if neither menu nor core framebuffer is to be displayed. */
   if (!vid->menu_active && frame == NULL) return true;
 
   if (frame != NULL) {

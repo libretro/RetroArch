@@ -35,7 +35,7 @@ After you've configured the right things, you're ready for building. You'll want
 
 ### Emulator Cores
 
-Before building the app, you'll need to build the emulator cores.
+Before building the app, you'll need to build the libretro cores.
 
 You'll need to clone down the [libretro/libretro-super](https://github.com/libretro/libretro-super) repo into the same directory where you cloned this repo.
 
@@ -46,13 +46,13 @@ your-repos-dir/libretro-super
 your-repos-dir/RetroArch
 ```
 
-Run the libretro-super fetch script to first get the emulator core repos.
+Run the libretro-super fetch script to first get the libretro core repos.
 
 ```sh
 ./libretro-fetch.sh
 ```
 
-Run the libretro-super iOS build script to build the emulator cores.
+Run the libretro-super iOS build script to build the libretro cores.
 
 ```sh
 ./libretro-build-ios.sh
