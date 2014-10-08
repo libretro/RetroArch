@@ -2461,6 +2461,15 @@ static bool gl_focus(void *data)
    return false;
 }
 
+static bool gl_has_windowed(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+
+   if (gl && gl->ctx_driver)
+      gl->ctx_driver->has_windowed(gl);
+   return true;
+}
+
 static void gl_update_tex_filter_frame(gl_t *gl)
 {
    unsigned i;
@@ -3099,6 +3108,7 @@ video_driver_t video_gl = {
    gl_set_nonblock_state,
    gl_alive,
    gl_focus,
+   gl_has_windowed,
 
    gl_set_shader,
 

@@ -261,6 +261,12 @@ static bool gfx_ctx_has_focus(void *data)
    return true;
 }
 
+static bool gfx_ctx_has_windowed(void *data)
+{
+   (void)data;
+   return false;
+}
+
 const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    gfx_ctx_init,
    gfx_ctx_destroy,
@@ -273,6 +279,7 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    gfx_ctx_check_window,
    gfx_ctx_set_resize,
    gfx_ctx_has_focus,
+   gfx_ctx_has_windowed,
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
    gfx_ctx_get_proc_address,

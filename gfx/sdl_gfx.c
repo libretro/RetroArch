@@ -387,6 +387,14 @@ static bool sdl_gfx_focus(void *data)
    return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
 }
 
+static bool sdl_gfx_has_windowed(void *data)
+{
+   (void)data;
+
+   /* TODO - implement. */
+   return true;
+}
+
 static void sdl_gfx_viewport_info(void *data, struct rarch_viewport *vp)
 {
    sdl_video_t *vid = (sdl_video_t*)data;
@@ -522,6 +530,7 @@ video_driver_t video_sdl = {
    sdl_gfx_set_nonblock_state,
    sdl_gfx_alive,
    sdl_gfx_focus,
+   sdl_gfx_has_windowed,
    sdl_gfx_set_shader,
    sdl_gfx_free,
    "sdl",

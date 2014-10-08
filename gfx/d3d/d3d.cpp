@@ -413,6 +413,14 @@ static bool d3d_focus(void *data)
    return false;
 }
 
+static bool d3d_has_windowed(void *data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->has_windowed)
+      return d3d->ctx_driver->has_windowed(d3d);
+   return true;
+}
+
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -1874,6 +1882,7 @@ video_driver_t video_d3d = {
    d3d_set_nonblock_state,
    d3d_alive,
    d3d_focus,
+   d3d_has_windowed,
    d3d_set_shader,
    d3d_free,
    "d3d",

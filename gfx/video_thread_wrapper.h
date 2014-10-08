@@ -97,6 +97,7 @@ typedef struct thread_video
 
    bool alive;
    bool focus;
+   bool has_windowed;
    bool nonblock;
 
    retro_time_t last_time;

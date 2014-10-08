@@ -293,6 +293,16 @@ static bool gfx_ctx_d3d_has_focus(void *data)
    return GetFocus() == d3d->hWnd;
 }
 
+static bool gfx_ctx_d3d_has_windowed(void *data)
+{
+   (void)data;
+#ifdef _XBOX
+   return false;
+#else
+   return true;
+#endif
+}
+
 static bool gfx_ctx_d3d_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
@@ -451,6 +461,7 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_check_window,
    d3d_resize,
    gfx_ctx_d3d_has_focus,
+   gfx_ctx_d3d_has_windowed,
    gfx_ctx_d3d_swap_buffers,
    gfx_ctx_d3d_input_driver,
    NULL,

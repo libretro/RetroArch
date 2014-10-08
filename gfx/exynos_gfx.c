@@ -1325,31 +1325,45 @@ fail:
   return false;
 }
 
-static void exynos_gfx_set_nonblock_state(void *data, bool state) {
-  struct exynos_video *vid = data;
-
-  vid->data->sync = !state;
+static void exynos_gfx_set_nonblock_state(void *data, bool state)
+{
+   struct exynos_video *vid = data;
+   if (vid && vid->data)
+      vid->data->sync = !state;
 }
 
-static bool exynos_gfx_alive(void *data) {
-  (void)data;
-  return true; /* always alive */
+static bool exynos_gfx_alive(void *data)
+{
+   (void)data;
+   return true; /* always alive */
 }
 
-static bool exynos_gfx_focus(void *data) {
-  (void)data;
-  return true; /* drm device always has focus */
+static bool exynos_gfx_focus(void *data)
+{
+   (void)data;
+   return true; /* drm device always has focus */
+}
+
+static bool exynos_gfx_has_windowed(void *data)
+{
+   (void)data;
+
+   return false;
 }
 
 static void exynos_gfx_set_rotation(void *data, unsigned rotation)
 {
-  struct exynos_video *vid = data;
-  vid->menu_rotation = rotation;
+  struct exynos_video *vid = (struct exynos_video*)data;
+  if (vid)
+     vid->menu_rotation = rotation;
 }
 
 static void exynos_gfx_viewport_info(void *data, struct rarch_viewport *vp)
 {
-  struct exynos_video *vid = data;
+  struct exynos_video *vid = (struct exynos_video*)data;
+
+  if (!vid)
+     return;
 
   vp->x = vp->y = 0;
 
@@ -1357,81 +1371,91 @@ static void exynos_gfx_viewport_info(void *data, struct rarch_viewport *vp)
   vp->height = vp->full_height = vid->height;
 }
 
-static void exynos_set_aspect_ratio(void *data, unsigned aspect_ratio_idx) {
-  struct exynos_video *vid = data;
+static void exynos_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
+{
+   struct exynos_video *vid = data;
 
-  switch (aspect_ratio_idx) {
-    case ASPECT_RATIO_SQUARE:
-      gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
-    break;
+   switch (aspect_ratio_idx)
+   {
+      case ASPECT_RATIO_SQUARE:
+         gfx_set_square_pixel_viewport(
+               g_extern.system.av_info.geometry.base_width,
+               g_extern.system.av_info.geometry.base_height);
+         break;
 
-    case ASPECT_RATIO_CORE:
-      gfx_set_core_viewport();
-    break;
+      case ASPECT_RATIO_CORE:
+         gfx_set_core_viewport();
+         break;
 
-    case ASPECT_RATIO_CONFIG:
-      gfx_set_config_viewport();
-    break;
+      case ASPECT_RATIO_CONFIG:
+         gfx_set_config_viewport();
+         break;
 
-    default:
-    break;
-  }
+      default:
+         break;
+   }
 
-  g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
-  vid->aspect_changed = true;
+   g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
+   vid->aspect_changed = true;
 }
 
-static void exynos_apply_state_changes(void *data) {
-  (void)data;
+static void exynos_apply_state_changes(void *data)
+{
+   (void)data;
 }
 
 static void exynos_set_texture_frame(void *data, const void *frame, bool rgb32,
-                                     unsigned width, unsigned height, float alpha) {
-  const enum exynos_buffer_type buf_type = defaults[exynos_image_menu].buf_type;
+      unsigned width, unsigned height, float alpha)
+{
+   const enum exynos_buffer_type buf_type = defaults[exynos_image_menu].buf_type;
 
-  struct exynos_video *vid = data;
-  struct exynos_data *pdata = vid->data;
-  struct g2d_image *src = pdata->src[exynos_image_menu];
+   struct exynos_video *vid = data;
+   struct exynos_data *pdata = vid->data;
+   struct g2d_image *src = pdata->src[exynos_image_menu];
 
-  const unsigned size = width * height * (rgb32 ? 4 : 2);
+   const unsigned size = width * height * (rgb32 ? 4 : 2);
 
-  if (realloc_buffer(pdata, buf_type, size) != 0)
-    return;
+   if (realloc_buffer(pdata, buf_type, size) != 0)
+      return;
 
-  src->width = width;
-  src->height = height;
-  src->stride = width * (rgb32 ? 4 : 2);
-  src->color_mode = rgb32 ? G2D_COLOR_FMT_ARGB8888 | G2D_ORDER_RGBAX :
-                            G2D_COLOR_FMT_ARGB4444 | G2D_ORDER_RGBAX;
+   src->width = width;
+   src->height = height;
+   src->stride = width * (rgb32 ? 4 : 2);
+   src->color_mode = rgb32 ? G2D_COLOR_FMT_ARGB8888 | G2D_ORDER_RGBAX :
+      G2D_COLOR_FMT_ARGB4444 | G2D_ORDER_RGBAX;
 
-  src->component_alpha = (unsigned char)(255.0f * alpha);
-
-#if (EXYNOS_GFX_DEBUG_PERF == 1)
-  perf_memcpy(&pdata->perf, true);
-#endif
-
-  memcpy_neon(pdata->buf[buf_type]->vaddr, frame, size);
+   src->component_alpha = (unsigned char)(255.0f * alpha);
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
-  perf_memcpy(&pdata->perf, false);
+   perf_memcpy(&pdata->perf, true);
+#endif
+
+   memcpy_neon(pdata->buf[buf_type]->vaddr, frame, size);
+
+#if (EXYNOS_GFX_DEBUG_PERF == 1)
+   perf_memcpy(&pdata->perf, false);
 #endif
 }
 
-static void exynos_set_texture_enable(void *data, bool state, bool full_screen) {
+static void exynos_set_texture_enable(void *data, bool state, bool full_screen)
+{
   struct exynos_video *vid = data;
-  vid->menu_active = state;
+  if (vid)
+     vid->menu_active = state;
 }
 
-static void exynos_set_osd_msg(void *data, const char *msg, const struct font_params *params) {
-  struct exynos_video *vid = data;
-
-  /* TODO: what does this do? */
-  (void)msg;
-  (void)params;
+static void exynos_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params)
+{
+   (void)data;
+   (void)msg;
+   (void)params;
 }
 
-static void exynos_show_mouse(void *data, bool state) {
-  (void)data;
+static void exynos_show_mouse(void *data, bool state)
+{
+   (void)data;
+   (void)state;
 }
 
 static const video_poke_interface_t exynos_poke_interface = {
@@ -1481,6 +1505,7 @@ video_driver_t video_exynos = {
   exynos_gfx_set_nonblock_state,
   exynos_gfx_alive,
   exynos_gfx_focus,
+  exynos_gfx_has_windowed,
   exynos_gfx_set_shader,
   exynos_gfx_free,
   "exynos",

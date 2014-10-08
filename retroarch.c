@@ -1704,6 +1704,7 @@ static void check_disk_next(
 {
    unsigned num_disks = control->get_num_images();
    unsigned current   = control->get_image_index();
+
    if (num_disks && num_disks != UINT_MAX)
    {
       unsigned new_index = current;

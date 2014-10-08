@@ -291,6 +291,7 @@ static void thread_loop(void *data)
          bool ret = false;
          bool alive = false;
          bool focus = false;
+         bool has_windowed = true;
          struct rarch_viewport vp = {0};
 
          if (thr->driver && thr->driver->frame)
@@ -306,12 +307,16 @@ static void thread_loop(void *data)
          if (thr->driver && thr->driver->focus)
             focus = ret && thr->driver->focus(thr->driver_data);
 
+         if (thr->driver && thr->driver->has_windowed)
+            has_windowed = ret && thr->driver->has_windowed(thr->driver_data);
+
          if (thr->driver && thr->driver->viewport_info)
             thr->driver->viewport_info(thr->driver_data, &vp);
 
          slock_lock(thr->lock);
          thr->alive = alive;
          thr->focus = focus;
+         thr->has_windowed = has_windowed;
          thr->frame.updated = false;
          thr->vp = vp;
          scond_signal(thr->cond_cmd);
@@ -360,6 +365,15 @@ static bool thread_focus(void *data)
    thread_video_t *thr = (thread_video_t*)data;
    slock_lock(thr->lock);
    bool ret = thr->focus;
+   slock_unlock(thr->lock);
+   return ret;
+}
+
+static bool thread_has_windowed(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   slock_lock(thr->lock);
+   bool ret = thr->has_windowed;
    slock_unlock(thr->lock);
    return ret;
 }
@@ -474,6 +488,7 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info,
    thr->info = *info;
    thr->alive = true;
    thr->focus = true;
+   thr->has_windowed = true;
 
    size_t max_size = info->input_scale * RARCH_SCALE_BASE;
    max_size *= max_size;
@@ -788,6 +803,7 @@ static const video_driver_t video_thread = {
    thread_set_nonblock_state,
    thread_alive,
    thread_focus,
+   thread_has_windowed,
    thread_set_shader,
    thread_free,
    "Thread wrapper",

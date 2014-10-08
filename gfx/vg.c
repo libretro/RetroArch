@@ -413,7 +413,17 @@ static bool vg_alive(void *data)
 static bool vg_focus(void *data)
 {
    vg_t *vg = (vg_t*)data;
-   return vg->driver->has_focus(vg);
+   if (vg && vg->driver)
+      return vg->driver->has_focus(vg);
+   return false;
+}
+
+static bool vg_has_windowed(void *data)
+{
+   vg_t *vg = (vg_t*)data;
+   if (vg && vg->driver)
+      return vg->driver->has_windowed(vg);
+   return true;
 }
 
 static bool vg_set_shader(void *data,
@@ -460,6 +470,7 @@ video_driver_t video_vg = {
    vg_set_nonblock_state,
    vg_alive,
    vg_focus,
+   vg_has_windowed,
    vg_set_shader,
    vg_free,
    "vg",

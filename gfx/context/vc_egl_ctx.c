@@ -372,6 +372,12 @@ static bool gfx_ctx_has_focus(void *data)
    return g_inited;
 }
 
+static bool gfx_ctx_has_windowed(void *data)
+{
+   (void)data;
+   return false;
+}
+
 static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 {
    return eglGetProcAddress(symbol);
@@ -511,6 +517,7 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_check_window,
    gfx_ctx_set_resize,
    gfx_ctx_has_focus,
+   gfx_ctx_has_windowed,
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
    gfx_ctx_get_proc_address,

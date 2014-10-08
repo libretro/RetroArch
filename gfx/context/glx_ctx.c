@@ -602,6 +602,12 @@ static bool gfx_ctx_has_focus(void *data)
    return (win == g_win && g_has_focus) || g_true_full;
 }
 
+static bool gfx_ctx_has_windowed(void *data)
+{
+   (void)data;
+   return true;
+}
+
 static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
 {
    return glXGetProcAddress((const GLubyte*)symbol);
@@ -645,6 +651,7 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_check_window,
    gfx_ctx_set_resize,
    gfx_ctx_has_focus,
+   gfx_ctx_has_windowed,
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
    gfx_ctx_get_proc_address,

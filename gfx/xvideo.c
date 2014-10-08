@@ -777,6 +777,14 @@ static bool xv_focus(void *data)
    return xv->focus;
 }
 
+static bool xv_has_windowed(void *data)
+{
+   (void)data;
+
+   /* TODO - verify. */
+   return true;
+}
+
 static void xv_free(void *data)
 {
    xv_t *xv = (xv_t*)data;
@@ -850,6 +858,7 @@ video_driver_t video_xvideo = {
    xv_set_nonblock_state,
    xv_alive,
    xv_focus,
+   xv_has_windowed,
    xv_set_shader,
    xv_free,
    "xvideo",

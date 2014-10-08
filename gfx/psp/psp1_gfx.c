@@ -591,6 +591,12 @@ static bool psp_focus(void *data)
    return true;
 }
 
+static bool psp_has_windowed(void *data)
+{
+   (void)data;
+   return false;
+}
+
 static void psp_free(void *data)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
@@ -851,6 +857,7 @@ video_driver_t video_psp1 = {
    psp_set_nonblock_state,
    psp_alive,
    psp_focus,
+   psp_has_windowed,
    psp_set_shader,
    psp_free,
    "psp1",

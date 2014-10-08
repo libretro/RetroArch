@@ -252,6 +252,17 @@ static bool apple_gfx_ctx_has_focus(void *data)
 #endif
 }
 
+static bool apple_gfx_ctx_has_windowed(void *data)
+{
+   (void)data;
+
+#ifdef IOS
+   return false;
+#else
+   return true;
+#endif
+}
+
 static void apple_gfx_ctx_swap_buffers(void *data)
 {
    if (!(--g_fast_forward_skips < 0))
@@ -327,6 +338,7 @@ const gfx_ctx_driver_t gfx_ctx_apple = {
    apple_gfx_ctx_check_window,
    apple_gfx_ctx_set_resize,
    apple_gfx_ctx_has_focus,
+   apple_gfx_ctx_has_windowed,
    apple_gfx_ctx_swap_buffers,
    apple_gfx_ctx_input_driver,
    apple_gfx_ctx_get_proc_address,

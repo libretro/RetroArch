@@ -405,6 +405,9 @@ typedef struct video_driver
    /* Does the window have focus? */
    bool (*focus)(void *data);
 
+   /* Does the graphics conext support windowed mode? */
+   bool (*has_windowed)(void *data);
+
    /* Sets shader. Might not be implemented. Will be moved to
     * poke_interface later. */
    bool (*set_shader)(void *data, enum rarch_shader_type type,

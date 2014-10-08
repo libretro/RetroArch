@@ -879,6 +879,14 @@ static void omap_gfx_viewport_info(void *data, struct rarch_viewport *vp) {
   vp->height = vp->full_height = vid->height;
 }
 
+static bool omap_gfx_has_windowed(void *data)
+{
+   (void)data;
+
+   /* TODO - implement. */
+   return true;
+}
+
 static bool omap_gfx_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
@@ -916,6 +924,7 @@ video_driver_t video_omap = {
   omap_gfx_set_nonblock_state,
   omap_gfx_alive,
   omap_gfx_focus,
+  omap_gfx_has_windowed,
   omap_gfx_set_shader,
   omap_gfx_free,
   "omap",

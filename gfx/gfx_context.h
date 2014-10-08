@@ -89,6 +89,9 @@ typedef struct gfx_ctx_driver
    /* Checks if window has input focus. */
    bool (*has_focus)(void*);
 
+   /* Checks if context driver has windowed support. */
+   bool (*has_windowed)(void*);
+
    /* Swaps buffers. VBlank sync depends on 
     * earlier calls to swap_interval. */
    void (*swap_buffers)(void*);

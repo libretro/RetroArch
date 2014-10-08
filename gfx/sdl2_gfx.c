@@ -534,6 +534,15 @@ static bool sdl2_gfx_focus(void *data)
    return (SDL_GetWindowFlags(vid->window) & flags) == flags;
 }
 
+static bool sdl2_gfx_has_windowed(void *data)
+{
+   (void)data;
+
+   /* TODO - implement */
+
+   return true;
+}
+
 static void sdl2_gfx_free(void *data)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
@@ -721,6 +730,7 @@ video_driver_t video_sdl2 = {
    sdl2_gfx_set_nonblock_state,
    sdl2_gfx_alive,
    sdl2_gfx_focus,
+   sdl2_gfx_has_windowed,
    sdl2_gfx_set_shader,
    sdl2_gfx_free,
    "sdl2",

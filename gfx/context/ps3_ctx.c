@@ -172,6 +172,12 @@ static bool gfx_ctx_has_focus(void *data)
    return true;
 }
 
+static bool gfx_ctx_has_windowed(void *data)
+{
+   (void)data;
+   return false;
+}
+
 static void gfx_ctx_swap_buffers(void *data)
 {
    (void)data;
@@ -314,6 +320,7 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_check_window,
    gfx_ctx_set_resize,
    gfx_ctx_has_focus,
+   gfx_ctx_has_windowed,
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
    NULL,

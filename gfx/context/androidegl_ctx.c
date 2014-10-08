@@ -261,12 +261,19 @@ static bool gfx_ctx_has_focus(void *data)
    return true;
 }
 
+static bool gfx_ctx_has_windowed(void *data)
+{
+   (void)data;
+   return false;
+}
+
 static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
 {
    (void)data;
    g_use_hw_ctx = enable;
    if (g_egl_dpy && g_egl_surf)
-      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
+      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf,
+            enable ? g_egl_hw_ctx : g_egl_ctx);
 }
 
 const gfx_ctx_driver_t gfx_ctx_android = {
@@ -281,6 +288,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    gfx_ctx_check_window,
    gfx_ctx_set_resize,
    gfx_ctx_has_focus,
+   gfx_ctx_has_windowed,
    gfx_ctx_swap_buffers,
    gfx_ctx_input_driver,
    gfx_ctx_get_proc_address,

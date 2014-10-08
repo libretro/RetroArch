@@ -1056,6 +1056,12 @@ static bool gx_focus(void *data)
    return true;
 }
 
+static bool gx_has_windowed(void *data)
+{
+   (void)data;
+   return false;
+}
+
 static void gx_free(void *data)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
@@ -1333,6 +1339,7 @@ video_driver_t video_gx = {
    gx_set_nonblock_state,
    gx_alive,
    gx_focus,
+   gx_has_windowed,
    gx_set_shader,
    gx_free,
    "gx",
