@@ -93,7 +93,7 @@ void setting_data_get_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned index);
 #endif
-rarch_setting_t* setting_data_get_list(bool need_refresh);
+rarch_setting_t* setting_data_get_list(unsigned mask, bool need_refresh);
 
 #ifdef __cplusplus
 }

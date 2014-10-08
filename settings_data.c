@@ -1731,7 +1731,8 @@ void setting_data_get_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned index)
 {
-   rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list(false);
+   rarch_setting_t *setting_data = (rarch_setting_t*)
+      setting_data_get_list(SL_FLAG_ALL_SETTINGS, false);
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
          driver.menu->selection_buf->list[index].label);
 
@@ -4557,7 +4558,8 @@ rarch_setting_t *setting_data_get_mainmenu(bool need_refresh)
       goto error;
 
    /* flatten this array to save ourselves some kilobytes */
-   if (!(list = (rarch_setting_t*)realloc(list, list_info->index * sizeof(rarch_setting_t))))
+   if (!(list = (rarch_setting_t*)
+            realloc(list, list_info->index * sizeof(rarch_setting_t))))
       goto error;
 
    settings_info_list_free(list_info);
@@ -4575,15 +4577,17 @@ error:
 }
 #endif
 
-rarch_setting_t *setting_data_get_list(bool need_refresh)
+rarch_setting_t *setting_data_get_list(unsigned mask, bool need_refresh)
 {
+   static unsigned last_mask = 0;
    rarch_setting_info_t *list_info = NULL;
    static rarch_setting_t* list = NULL;
 
    if (list)
    {
-      if (!need_refresh)
-         return list;
+      if (mask == last_mask)
+         if (!need_refresh)
+            return list;
 
       settings_list_free(list);
    }
@@ -4596,55 +4600,102 @@ rarch_setting_t *setting_data_get_list(bool need_refresh)
    if (!list)
       goto error;
 
-   if (!setting_data_append_list_driver_options(&list, list_info))
-      goto error;
+   if (mask & SL_FLAG_MAIN_MENU)
+   {
+      if (!setting_data_append_list_main_menu_options(&list, list_info))
+         goto error;
+   }
 
-   if (!setting_data_append_list_general_options(&list, list_info))
-      goto error;
+   if (mask & SL_FLAG_DRIVER_OPTIONS)
+   {
+      if (!setting_data_append_list_driver_options(&list, list_info))
+         goto error;
+   }
 
-   if (!setting_data_append_list_video_options(&list, list_info))
-      goto error;
+   if (mask & SL_FLAG_GENERAL_OPTIONS)
+   {
+      if (!setting_data_append_list_general_options(&list, list_info))
+         goto error;
+   }
 
-   if (!setting_data_append_list_shader_options(&list, list_info))
-      goto error;
+   if (mask & SL_FLAG_GENERAL_OPTIONS)
+   {
+      if (!setting_data_append_list_video_options(&list, list_info))
+         goto error;
+   }
 
-   if (!setting_data_append_list_font_options(&list, list_info))
-      goto error;
+   if (mask & SL_FLAG_SHADER_OPTIONS)
+   {
+      if (!setting_data_append_list_shader_options(&list, list_info))
+         goto error;
+   }
 
-   if (!setting_data_append_list_audio_options(&list, list_info))
-      goto error;
+   if (mask & SL_FLAG_FONT_OPTIONS)
+   {
+      if (!setting_data_append_list_font_options(&list, list_info))
+         goto error;
+   }
 
-   if (!setting_data_append_list_input_options(&list, list_info))
-      goto error;
+   if (mask & SL_FLAG_AUDIO_OPTIONS)
+   {
+      if (!setting_data_append_list_audio_options(&list, list_info))
+         goto error;
+   }
 
-   if (!setting_data_append_list_overlay_options(&list, list_info))
-      goto error;
+   if (mask & SL_FLAG_INPUT_OPTIONS)
+   {
+      if (!setting_data_append_list_input_options(&list, list_info))
+         goto error;
+   }
 
-   if (!setting_data_append_list_menu_options(&list, list_info))
-      goto error;
+   if (mask & SL_FLAG_OVERLAY_OPTIONS)
+   {
+      if (!setting_data_append_list_overlay_options(&list, list_info))
+         goto error;
+   }
 
-   if (!setting_data_append_list_netplay_options(&list, list_info))
-      goto error;
+   if (mask & SL_FLAG_MENU_OPTIONS)
+   {
+      if (!setting_data_append_list_menu_options(&list, list_info))
+         goto error;
+   }
 
-   if (!setting_data_append_list_user_options(&list, list_info))
-      goto error;
+   if (mask & SL_FLAG_NETPLAY_OPTIONS)
+   {
+      if (!setting_data_append_list_netplay_options(&list, list_info))
+         goto error;
+   }
 
-   if (!setting_data_append_list_path_options(&list, list_info))
-      goto error;
+   if (mask & SL_FLAG_USER_OPTIONS)
+   {
+      if (!setting_data_append_list_user_options(&list, list_info))
+         goto error;
+   }
 
-   if (!setting_data_append_list_privacy_options(&list, list_info))
-      goto error;
+   if (mask & SL_FLAG_PATH_OPTIONS)
+   {
+      if (!setting_data_append_list_path_options(&list, list_info))
+         goto error;
+   }
 
+   if (mask & SL_FLAG_PRIVACY_OPTIONS)
+   {
+      if (!setting_data_append_list_privacy_options(&list, list_info))
+         goto error;
+   }
 
    rarch_setting_t terminator = { ST_NONE };
    if (!(settings_list_append(&list, list_info, terminator)))
       goto error;
 
    /* flatten this array to save ourselves some kilobytes. */
-   if (!(list = (rarch_setting_t*)realloc(list, list_info->index * sizeof(rarch_setting_t))))
+   if (!(list = (rarch_setting_t*)
+            realloc(list, list_info->index * sizeof(rarch_setting_t))))
       goto error;
 
    settings_info_list_free(list_info);
+
+   last_mask = mask;
 
    /* do not optimize into return realloc(),
     * list is static and must be written. */

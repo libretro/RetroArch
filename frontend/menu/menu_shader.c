@@ -361,7 +361,8 @@ int menu_shader_manager_setting_toggle(
 #endif
 
    rarch_setting_t *current_setting = NULL;
-   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list(false);
+   rarch_setting_t *setting_data = (rarch_setting_t *)
+      setting_data_get_list(SL_FLAG_ALL_SETTINGS, false);
 
 
    if (!strcmp(label, "video_shader_default_filter"))

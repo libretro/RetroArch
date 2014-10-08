@@ -169,7 +169,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    char tmp[256];
    size_t list_size = 0;
    rarch_setting_t *setting_data = (rarch_setting_t *)
-      setting_data_get_list(true);
+      setting_data_get_list(SL_FLAG_ALL_SETTINGS, true);
    bool do_action = false;
 
 #if 0
