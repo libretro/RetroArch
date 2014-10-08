@@ -314,7 +314,8 @@ int menu_iterate(retro_input_t input,
    if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))
          input_overlay_next(driver.overlay);
 #endif
-   check_fullscreen_func(trigger_input);
+   if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+      rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
 
    driver.retro_ctx.poll_cb();
 

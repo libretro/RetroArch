@@ -1567,19 +1567,6 @@ static void main_state(unsigned cmd)
    RARCH_LOG("%s\n", msg);
 }
 
-bool rarch_check_fullscreen(bool pressed)
-{
-   if (!pressed)
-      return false;
-
-   /* If we go fullscreen we drop all drivers and 
-    * reinitialize to be safe. */
-   g_settings.video.fullscreen = !g_settings.video.fullscreen;
-   rarch_main_command(RARCH_CMD_REINIT);
-
-   return true;
-}
-
 void rarch_disk_control_append_image(const char *path)
 {
    char msg[PATH_MAX];
@@ -2594,12 +2581,12 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_NETPLAY_DEINIT:
 #ifdef HAVE_NETPLAY
-		  {
-			  netplay_t *netplay = (netplay_t*)driver.netplay_data;
-         if (netplay)
-            netplay_free(netplay);
-         driver.netplay_data = NULL;
-		  }
+         {
+            netplay_t *netplay = (netplay_t*)driver.netplay_data;
+            if (netplay)
+               netplay_free(netplay);
+            driver.netplay_data = NULL;
+         }
 #endif
          break;
       case RARCH_CMD_NETPLAY_INIT:
@@ -2607,6 +2594,19 @@ bool rarch_main_command(unsigned cmd)
 #ifdef HAVE_NETPLAY
          init_netplay();
 #endif
+         break;
+      case RARCH_CMD_NETPLAY_FLIP_PLAYERS:
+         {
+            netplay_t *netplay = (netplay_t*)driver.netplay_data;
+            if (netplay)
+               netplay_flip_players(netplay);
+         }
+         break;
+      case RARCH_CMD_FULLSCREEN_TOGGLE:
+         /* If we go fullscreen we drop all drivers and 
+          * reinitialize to be safe. */
+         g_settings.video.fullscreen = !g_settings.video.fullscreen;
+         rarch_main_command(RARCH_CMD_REINIT);
          break;
       case RARCH_CMD_COMMAND_DEINIT:
 #ifdef HAVE_COMMAND
@@ -2655,8 +2655,13 @@ bool rarch_main_command(unsigned cmd)
                (const struct retro_disk_control_callback*)
                &g_extern.system.disk_control;
 
-            if (control->get_eject_state())
-               check_disk_next(control);
+            if (!control)
+               return false;
+
+            if (!control->get_eject_state())
+               return false;
+
+            check_disk_next(control);
          }
          break;
       case RARCH_CMD_DISK_PREV:
@@ -2666,8 +2671,13 @@ bool rarch_main_command(unsigned cmd)
                (const struct retro_disk_control_callback*)
                &g_extern.system.disk_control;
 
-            if (control->get_eject_state())
-               check_disk_prev(control);
+            if (!control)
+               return false;
+
+            if (!control->get_eject_state())
+               return false;
+
+            check_disk_prev(control);
          }
          break;
       case RARCH_CMD_RUMBLE_STOP:

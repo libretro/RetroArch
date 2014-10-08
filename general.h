@@ -150,6 +150,7 @@ enum basic_event
    RARCH_CMD_CHEATS_DEINIT,
    RARCH_CMD_NETPLAY_INIT,
    RARCH_CMD_NETPLAY_DEINIT,
+   RARCH_CMD_NETPLAY_FLIP_PLAYERS,
    RARCH_CMD_BSV_MOVIE_INIT,
    RARCH_CMD_BSV_MOVIE_DEINIT,
    RARCH_CMD_COMMAND_INIT,
@@ -164,6 +165,7 @@ enum basic_event
    RARCH_CMD_DISK_PREV,
    RARCH_CMD_RUMBLE_STOP,
    RARCH_CMD_GRAB_MOUSE_TOGGLE,
+   RARCH_CMD_FULLSCREEN_TOGGLE,
 };
 
 enum action_state
@@ -819,7 +821,6 @@ bool rarch_main_command(unsigned action);
 int rarch_main_iterate(void);
 void rarch_main_deinit(void);
 void rarch_render_cached_frame(void);
-bool rarch_check_fullscreen(bool pressed);
 void rarch_disk_control_set_eject(bool state, bool log);
 void rarch_disk_control_set_index(unsigned index);
 void rarch_disk_control_append_image(const char *path);

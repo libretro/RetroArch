@@ -40,17 +40,6 @@ static void set_volume(float gain)
    g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
 }
 
-#ifdef HAVE_NETPLAY
-static void check_netplay_flip(bool pressed, bool fullscreen_toggle_pressed)
-{
-   netplay_t *netplay = (netplay_t*)driver.netplay_data;
-   if (pressed && netplay)
-      netplay_flip_players(netplay);
-
-   rarch_check_fullscreen(fullscreen_toggle_pressed);
-}
-#endif
-
 static bool check_pause(bool pressed, bool frameadvance_pressed)
 {
    static bool old_focus    = true;
@@ -390,12 +379,19 @@ static int do_state_checks(
 #endif
 
    if (!g_extern.is_paused)
-      check_fullscreen_func(trigger_input);
+   {
+      if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+         rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
+   }
 
 #ifdef HAVE_NETPLAY
    if (driver.netplay_data)
    {
-      check_netplay_flip_func(trigger_input);
+      if (BIT64_GET(trigger_input, RARCH_NETPLAY_FLIP))
+         rarch_main_command(RARCH_CMD_NETPLAY_FLIP_PLAYERS);
+
+      if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+         rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
       return 0;
    }
 #endif
@@ -404,8 +400,12 @@ static int do_state_checks(
 
    if (g_extern.is_paused)
    {
-      if (check_fullscreen_func(trigger_input))
+      if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+      {
+         rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
          rarch_render_cached_frame();
+      }
+
       if (!check_oneshot_func(trigger_input))
          return 1;
    }
