@@ -212,6 +212,10 @@ static const struct cmd_map map[] = {
    { "DISK_PREV",              RARCH_DISK_PREV },   
    { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
+   { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
+   { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
+   { "MENU_A",                 RETRO_DEVICE_ID_JOYPAD_A },
+   { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
 };
 
 static bool cmd_set_shader(const char *arg)
