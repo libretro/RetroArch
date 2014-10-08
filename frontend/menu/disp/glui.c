@@ -398,6 +398,7 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    glui_frame,
    glui_init,
+   NULL,
    glui_free,
    glui_context_reset,
    NULL,

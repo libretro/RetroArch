@@ -869,7 +869,11 @@ static void init_menu(void)
       rarch_fail(1, "init_menu()");
    }
 
-   menu_init_list(driver.menu);
+   if (!(menu_init_list(driver.menu)))
+   {
+      RARCH_ERR("Cannot initialize menu lists.\n");
+      rarch_fail(1, "init_menu()");
+   }
 }
 #endif
 

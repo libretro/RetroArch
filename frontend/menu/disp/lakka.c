@@ -799,10 +799,14 @@ static void lakka_context_destroy(void *data)
    }
 }
 
-void lakka_init_settings(void)
+static bool lakka_init_settings(menu_handle_t *menu)
 {
-   rarch_setting_t *setting_data = (rarch_setting_t*)driver.menu->list_settings;
+   int j, k, jj = 0, kk;
+   rarch_setting_t *setting_data = (rarch_setting_t*)menu->list_settings;
    menu_category_t *category = (menu_category_t*)&categories[0];
+
+   if (!setting_data || !category)
+      return false;
 
    strlcpy(category->name, "Settings", sizeof(category->name));
    category->alpha = c_active_alpha;
@@ -812,57 +816,63 @@ void lakka_init_settings(void)
    category->items       = (menu_item_t*)
       calloc(category->num_items, sizeof(menu_item_t));
 
-   int j, k, jj, kk;
-   jj = 0;
    for (j = 0; j <= 512; j++)
    {
       rarch_setting_t *group = (rarch_setting_t*)&setting_data[j];
 
-      if (group && group->type == ST_GROUP)
+      if (!group)
+         continue;
+      if (group->type != ST_GROUP)
+         continue;
+
+      category->num_items++;
+      category->items = (menu_item_t*)
+         realloc(category->items, category->num_items * sizeof(menu_item_t));
+
+      if (!category->items)
+         return false;
+
+      menu_item_t *item  = (menu_item_t*)&category->items[jj];
+
+      if (!item)
+         return false;
+
+      strlcpy(item->name, group->name, sizeof(item->name));
+      item->alpha = jj ? i_passive_alpha : i_active_alpha;
+      item->zoom = jj ? i_passive_zoom : i_active_zoom;
+      item->y = jj ?
+         vspacing*(under_item_offset+jj) : vspacing * active_item_factor;
+      item->active_subitem = 0;
+      item->num_subitems = 0;
+      item->subitems = NULL;
+
+      kk = 0;
+      for (k = 0; k <= 512; k++)
       {
-         category->num_items++;
-         category->items = (menu_item_t*)
-            realloc(category->items, category->num_items * sizeof(menu_item_t));
+         rarch_setting_t *setting = (rarch_setting_t*)&setting_data[k];
 
-         menu_item_t *item  = (menu_item_t*)&category->items[jj];
-
-         strlcpy(item->name, group->name, sizeof(item->name));
-         item->alpha = jj ? i_passive_alpha : i_active_alpha;
-         item->zoom = jj ? i_passive_zoom : i_active_zoom;
-         item->y = jj ?
-            vspacing*(under_item_offset+jj) : vspacing * active_item_factor;
-         item->active_subitem = 0;
-         item->num_subitems = 0;
-         item->subitems = NULL;
-
-         kk = 0;
-         for (k = 0; k <= 512; k++)
+         if (setting
+               && setting->type != ST_SUB_GROUP 
+               && setting->group == group->name)
          {
-            rarch_setting_t *setting = (rarch_setting_t*)&setting_data[k];
+            item->num_subitems++;
 
-            if (setting
-                  && setting->type != ST_SUB_GROUP 
-                  && setting->group == group->name)
-            {
-               item->num_subitems++;
-
-               item->subitems = (menu_subitem_t*)
-                  realloc(item->subitems, 
+            item->subitems = (menu_subitem_t*)
+               realloc(item->subitems, 
                      item->num_subitems * sizeof(menu_subitem_t));
 
-               menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[kk];
+            menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[kk];
 
-               strlcpy(subitem->name, setting->short_description, 
-                     sizeof(subitem->name));
-               subitem->alpha = 0.0;
-               subitem->zoom = kk ? i_passive_zoom : i_active_zoom;
-               subitem->y = kk ? vspacing * (kk + under_item_offset)
-                  : vspacing * active_item_factor;
+            strlcpy(subitem->name, setting->short_description, 
+                  sizeof(subitem->name));
+            subitem->alpha = 0.0;
+            subitem->zoom = kk ? i_passive_zoom : i_active_zoom;
+            subitem->y = kk ? vspacing * (kk + under_item_offset)
+               : vspacing * active_item_factor;
 
-               subitem->setting = (rarch_setting_t*)&setting_data[k];
+            subitem->setting = (rarch_setting_t*)&setting_data[k];
 
-               kk++;
-            }
+            kk++;
          }
 
          jj++;
@@ -875,6 +885,9 @@ void lakka_init_settings(void)
 
    menu_item_t *itemq = (menu_item_t*)&category->items[jj];
 
+   if (!itemq)
+      return false;
+
    strlcpy(itemq->name, "Quit RetroArch", sizeof(itemq->name));
    itemq->alpha          = jj ? i_passive_alpha : i_active_alpha;
    itemq->zoom           = jj ? i_passive_zoom : i_active_zoom;
@@ -882,9 +895,11 @@ void lakka_init_settings(void)
       vspacing * active_item_factor;
    itemq->active_subitem = 0;
    itemq->num_subitems   = 0;
+
+   return true;
 }
 
-void lakka_settings_context_reset(void)
+static void lakka_settings_context_reset(void)
 {
    menu_item_t *item;
    int j, k;
@@ -1157,18 +1172,12 @@ static void lakka_init_core_info(void *data)
    core_info_list_free(g_extern.core_info);
    g_extern.core_info = NULL;
    if (*g_settings.libretro_directory)
-   {
       g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
-   }
 
    if (g_extern.core_info)
-   {
       num_categories = g_extern.core_info->count + 1;
-   }
    else
-   {
      num_categories = 1;
-   }
 }
 
 static void *lakka_init(void)
@@ -1201,25 +1210,31 @@ static void *lakka_init(void)
       return NULL;
    }
 
-   lakka_init_settings();
+   return menu;
+}
+
+static bool lakka_init_lists(void *data)
+{
+   int i;
+   menu_handle_t *menu = (menu_handle_t*)data;
+
+   if (!menu)
+      return false;
+
+   if (!lakka_init_settings(menu))
+      return false;
 
    for (i = 1; i < num_categories; i++)
    {
-      core_info_t *info;
-      core_info_list_t *info_list;
+      core_info_t *info = NULL;
       menu_category_t *category = (menu_category_t*)&categories[i];
-
-      info_list = (core_info_list_t*)g_extern.core_info;
-      info = NULL;
+      core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
 
       if (info_list)
          info = (core_info_t*)&info_list->list[i-1];
 
-      if (info == NULL)
-      {
-         free(menu);
-         return NULL;
-      }
+      if (!info)
+         return false;
 
       strlcpy(category->name, info->display_name, sizeof(category->name));
       strlcpy(category->libretro, info->path, sizeof(category->libretro));
@@ -1237,7 +1252,7 @@ static void *lakka_init(void)
                info->display_name);
    }
 
-   return menu;
+   return true;
 }
 
 menu_ctx_driver_t menu_ctx_lakka = {
@@ -1246,6 +1261,7 @@ menu_ctx_driver_t menu_ctx_lakka = {
    NULL,
    lakka_frame,
    lakka_init,
+   lakka_init_lists,
    lakka_free,
    lakka_context_reset,
    lakka_context_destroy,

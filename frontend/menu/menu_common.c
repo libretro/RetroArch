@@ -179,16 +179,25 @@ void menu_free_list(void *data)
    settings_list_free(menu->list_settings);
 }
 
-void menu_init_list(void *data)
+bool menu_init_list(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
    if (!menu)
-      return;
+      return false;
+
+   menu->list_mainmenu = setting_data_get_list(SL_FLAG_MAIN_MENU);
+   menu->list_settings = setting_data_get_list(SL_FLAG_ALL_SETTINGS);
 
    file_list_push(menu->menu_stack, "", "mainmenu", MENU_SETTINGS, 0);
    menu_clear_navigation(menu);
    menu_entries_push_list(menu, menu->selection_buf,
          "", "mainmenu", 0);
+
+   if (driver.menu_ctx && driver.menu_ctx->init_lists)
+      if (!(driver.menu_ctx->init_lists(menu)))
+            return false;
+
+   return true;
 }
 
 void menu_free(void *data)

@@ -139,7 +139,7 @@ void *menu_init(const void *data);
 
 void menu_free_list(void *data);
 
-void menu_init_list(void *data);
+bool menu_init_list(void *data);
 
 int menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input);

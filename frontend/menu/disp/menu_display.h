@@ -12,6 +12,7 @@ typedef struct menu_ctx_driver
    void  (*render)(void);
    void  (*frame)(void);
    void* (*init)(void);
+   bool  (*init_lists)(void*);
    void  (*free)(void*);
    void  (*context_reset)(void*);
    void  (*context_destroy)(void*);
