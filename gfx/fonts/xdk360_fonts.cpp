@@ -179,7 +179,7 @@ static HRESULT xdk360_video_font_create_shaders(
    return hr;
 }
 
-static bool xdk_init_font(void *data,
+static bool xdk360_init_font(void *data,
       const char *font_path, unsigned font_size)
 {
    (void)font_size;
@@ -246,7 +246,7 @@ error:
    return false;
 }
 
-static void xdk_deinit_font(void *data)
+static void xdk360_deinit_font(void *data)
 {
    xdk360_video_font_t *font = &m_Font;
 
@@ -272,7 +272,7 @@ static void xdk_deinit_font(void *data)
       m_xprResource.Destroy();
 }
 
-static void xdk_render_msg_post(xdk360_video_font_t * font, void *video_data)
+static void xdk360_render_msg_post(xdk360_video_font_t * font, void *video_data)
 {
    // Cache the global pointer into a register
    d3d_video_t *d3d = (d3d_video_t*)video_data;
@@ -285,7 +285,7 @@ static void xdk_render_msg_post(xdk360_video_font_t * font, void *video_data)
    d3dr->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState );
 }
 
-static void xdk_render_msg_pre(xdk360_video_font_t * font, void *video_data)
+static void xdk360_render_msg_pre(xdk360_video_font_t * font, void *video_data)
 {
    d3d_video_t *d3d = (d3d_video_t*)video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
@@ -317,7 +317,7 @@ static void xdk_render_msg_pre(xdk360_video_font_t * font, void *video_data)
    d3dr->SetVertexShaderConstantF( 2, vTexScale, 1 );
 }
 
-static void xdk_video_font_draw_text(xdk360_video_font_t *font, void *video_data,
+static void xdk360_draw_text(xdk360_video_font_t *font, void *video_data,
       float x, float y, const wchar_t * strText)
 {
    d3d_video_t *d3d = (d3d_video_t*)video_data;
@@ -439,7 +439,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font, void *video_data
    d3dr->EndVertices();
 }
 
-static void xdk_render_msg(void *data, const char *str_msg,
+static void xdk360_render_msg(void *data, const char *str_msg,
       const struct font_params *params)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -462,15 +462,15 @@ static void xdk_render_msg(void *data, const char *str_msg,
 
    if (msg || msg[0] != L'\0')
    {
-      xdk_render_msg_pre(font, d3d);
-      xdk_video_font_draw_text(font, d3d, x, y, msg);
-      xdk_render_msg_post(font, d3d);
+      xdk360_render_msg_pre(font, d3d);
+      xdk360_draw_text(font, d3d, x, y, msg);
+      xdk360_render_msg_post(font, d3d);
    }
 }
 
 d3d_font_renderer_t d3d_xbox360_font = {
-   xdk_init_font,
-   xdk_deinit_font,
-   xdk_render_msg,
+   xdk360_init_font,
+   xdk360_deinit_font,
+   xdk360_render_msg,
    "Xbox 360 fonts",
 };

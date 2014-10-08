@@ -34,24 +34,24 @@ typedef struct freetype_renderer
 
    struct font_atlas atlas;
    struct font_glyph glyphs[ATLAS_SIZE];
-} freetype_renderer_t;
+} font_renderer_t;
 
-static const struct font_atlas *freetype_renderer_get_atlas(void *data)
+static const struct font_atlas *font_renderer_ft_get_atlas(void *data)
 {
-   freetype_renderer_t *handle = (freetype_renderer_t*)data;
+   font_renderer_t *handle = (font_renderer_t*)data;
    return &handle->atlas;
 }
 
-static const struct font_glyph *freetype_renderer_get_glyph(
+static const struct font_glyph *font_renderer_ft_get_glyph(
       void *data, uint32_t code)
 {
-   freetype_renderer_t *handle = (freetype_renderer_t*)data;
+   font_renderer_t *handle = (font_renderer_t*)data;
    return code < ATLAS_SIZE ? &handle->glyphs[code] : NULL;
 }
 
-static void freetype_renderer_free(void *data)
+static void font_renderer_ft_free(void *data)
 {
-   freetype_renderer_t *handle = (freetype_renderer_t*)data;
+   font_renderer_t *handle = (font_renderer_t*)data;
    if (!handle)
       return;
 
@@ -64,7 +64,7 @@ static void freetype_renderer_free(void *data)
    free(handle);
 }
 
-static bool freetype_renderer_create_atlas(freetype_renderer_t *handle)
+static bool font_renderer_create_atlas(font_renderer_t *handle)
 {
    unsigned i;
    bool ret = true;
@@ -149,11 +149,11 @@ end:
    return ret;
 }
 
-static void *freetype_renderer_init(const char *font_path, float font_size)
+static void *font_renderer_ft_init(const char *font_path, float font_size)
 {
    FT_Error err;
 
-   freetype_renderer_t *handle = (freetype_renderer_t*)
+   font_renderer_t *handle = (font_renderer_t*)
       calloc(1, sizeof(*handle));
 
    if (!handle)
@@ -171,13 +171,13 @@ static void *freetype_renderer_init(const char *font_path, float font_size)
    if (err)
       goto error;
 
-   if (!freetype_renderer_create_atlas(handle))
+   if (!font_renderer_create_atlas(handle))
       goto error;
 
    return handle;
 
 error:
-   freetype_renderer_free(handle);
+   font_renderer_ft_free(handle);
    return NULL;
 }
 
@@ -202,7 +202,7 @@ static const char *font_paths[] = {
 };
 
 /* Highly OS/platform dependent. */
-static const char *freetype_renderer_get_default_font(void)
+static const char *font_renderer_ft_get_default_font(void)
 {
    size_t i;
    for (i = 0; i < ARRAY_SIZE(font_paths); i++)
@@ -215,10 +215,10 @@ static const char *freetype_renderer_get_default_font(void)
 }
 
 font_renderer_driver_t freetype_font_renderer = {
-   freetype_renderer_init,
-   freetype_renderer_get_atlas,
-   freetype_renderer_get_glyph,
-   freetype_renderer_free,
-   freetype_renderer_get_default_font,
+   font_renderer_ft_init,
+   font_renderer_ft_get_atlas,
+   font_renderer_ft_get_glyph,
+   font_renderer_ft_free,
+   font_renderer_ft_get_default_font,
    "freetype",
 };

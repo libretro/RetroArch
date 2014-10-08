@@ -32,13 +32,13 @@ typedef struct bm_renderer
    struct font_atlas atlas;
 } bm_renderer_t;
 
-static const struct font_atlas *font_renderer_get_atlas(void *data)
+static const struct font_atlas *font_renderer_bmp_get_atlas(void *data)
 {
    bm_renderer_t *handle = (bm_renderer_t*)data;
    return &handle->atlas;
 }
 
-static const struct font_glyph *font_renderer_get_glyph(
+static const struct font_glyph *font_renderer_bmp_get_glyph(
       void *data, uint32_t code)
 {
    bm_renderer_t *handle = (bm_renderer_t*)data;
@@ -72,7 +72,7 @@ static void char_to_texture(bm_renderer_t *handle, uint8_t letter,
    }
 }
 
-static void *font_renderer_init(const char *font_path, float font_size)
+static void *font_renderer_bmp_init(const char *font_path, float font_size)
 {
    (void)font_path;
    unsigned i;
@@ -108,7 +108,7 @@ static void *font_renderer_init(const char *font_path, float font_size)
    return handle;
 }
 
-static void font_renderer_free(void *data)
+static void font_renderer_bmp_free(void *data)
 {
    bm_renderer_t *handle = (bm_renderer_t*)data;
    if (!handle)
@@ -117,17 +117,17 @@ static void font_renderer_free(void *data)
    free(handle);
 }
 
-static const char *font_renderer_get_default_font(void)
+static const char *font_renderer_bmp_get_default_font(void)
 {
    return "";
 }
 
 font_renderer_driver_t bitmap_font_renderer = {
-   font_renderer_init,
-   font_renderer_get_atlas,
-   font_renderer_get_glyph,
-   font_renderer_free,
-   font_renderer_get_default_font,
+   font_renderer_bmp_init,
+   font_renderer_bmp_get_atlas,
+   font_renderer_bmp_get_glyph,
+   font_renderer_bmp_free,
+   font_renderer_bmp_get_default_font,
    "bitmap",
 };
 
