@@ -107,7 +107,7 @@ struct xmb_texture_item
 
 struct xmb_texture_item textures[TEXTURE_LAST];
 
-void xmb_draw_icon(GLuint texture, float x, float y,
+static void xmb_draw_icon(GLuint texture, float x, float y,
       float alpha, float rotation, float scale)
 {
    if (alpha > xmb_alpha)
