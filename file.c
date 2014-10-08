@@ -410,6 +410,14 @@ static bool load_content(const struct retro_subsystem_info *special,
             info[i].path =
                   additional_path_allocs->elems
                      [additional_path_allocs->size -1 ].data;
+
+            /* g_extern.temporary_content is initialized in init_content_file
+             * The following part takes care of cleanup of the unzipped files
+             * after exit.
+             */
+            rarch_assert(g_extern.temporary_content != NULL);
+            string_list_append(g_extern.temporary_content,
+                  new_path, attr);
          }
       }
    }
