@@ -4531,8 +4531,7 @@ bool setting_data_append_list_privacy_options(
 
 rarch_setting_t *setting_data_get_list(unsigned mask)
 {
-   static rarch_setting_t* list = NULL;
-
+   rarch_setting_t* list = NULL;
    rarch_setting_info_t *list_info = (rarch_setting_info_t*)
       settings_info_list_new();
    if (!list_info)
