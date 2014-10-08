@@ -185,9 +185,6 @@ void menu_init_list(void *data)
    if (!menu)
       return;
 
-   menu->list_mainmenu = setting_data_get_list(SL_FLAG_MAIN_MENU);
-   menu->list_settings = setting_data_get_list(SL_FLAG_ALL_SETTINGS);
-
    file_list_push(menu->menu_stack, "", "mainmenu", MENU_SETTINGS, 0);
    menu_clear_navigation(menu);
    menu_entries_push_list(menu, menu->selection_buf,
