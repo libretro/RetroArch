@@ -1998,6 +1998,8 @@ static void general_write_handler(void *data)
    }
    else if (!strcmp(setting->name, "audio_volume"))
       g_extern.audio_data.volume_gain = db_to_gain(*setting->value.fraction);
+   else if (!strcmp(setting->name, "audio_latency"))
+      rarch_cmd = RARCH_CMD_AUDIO_REINIT;
    else if (!strcmp(setting->name, "audio_rate_control_delta"))
    {
       if (*setting->value.fraction < 0.0005)
@@ -3628,6 +3630,8 @@ bool setting_data_append_list_audio_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_list_current_add_range(list, list_info, 1, 256, 1.0, true, true);
+
 
    CONFIG_FLOAT(
          g_settings.audio.rate_control_delta,

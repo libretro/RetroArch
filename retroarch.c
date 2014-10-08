@@ -2456,6 +2456,10 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_DRIVERS_INIT:
          init_drivers(DRIVERS_CMD_ALL);
          break;
+      case RARCH_CMD_AUDIO_REINIT:
+         uninit_drivers(DRIVER_AUDIO);
+         init_drivers(DRIVER_AUDIO);
+         break;
       case RARCH_CMD_RESET_CONTEXT:
          rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
          rarch_main_command(RARCH_CMD_DRIVERS_INIT);
