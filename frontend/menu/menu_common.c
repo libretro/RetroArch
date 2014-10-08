@@ -138,7 +138,7 @@ bool load_menu_content(void)
 
 void *menu_init(const void *data)
 {
-   menu_handle_t *menu;
+   menu_handle_t *menu = NULL;
    menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
 
    if (!menu_ctx)
@@ -156,13 +156,9 @@ void *menu_init(const void *data)
 #ifdef HAVE_SHADER_MANAGER
    menu->shader = (struct gfx_shader*)calloc(1, sizeof(struct gfx_shader));
 #endif
-   file_list_push(menu->menu_stack, "", "mainmenu", MENU_SETTINGS, 0);
-   menu_clear_navigation(menu);
    menu->push_start_screen = g_settings.menu_show_start_screen;
    g_settings.menu_show_start_screen = false;
 
-   menu_entries_push_list(menu, menu->selection_buf,
-         "", "mainmenu", 0);
 
    menu->current_pad = 0;
 
@@ -171,6 +167,24 @@ void *menu_init(const void *data)
    menu_shader_manager_init(menu);
 
    return menu;
+}
+
+void menu_free_list(void *data)
+{
+   (void)data;
+
+}
+
+void menu_init_list(void *data)
+{
+   menu_handle_t *menu = (menu_handle_t*)data;
+   if (!menu)
+      return;
+
+   file_list_push(menu->menu_stack, "", "mainmenu", MENU_SETTINGS, 0);
+   menu_clear_navigation(menu);
+   menu_entries_push_list(menu, menu->selection_buf,
+         "", "mainmenu", 0);
 }
 
 void menu_free(void *data)

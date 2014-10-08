@@ -868,6 +868,8 @@ static void init_menu(void)
       RARCH_ERR("Cannot initialize menu.\n");
       rarch_fail(1, "init_menu()");
    }
+
+   menu_init_list(driver.menu);
 }
 #endif
 
@@ -1487,6 +1489,7 @@ void uninit_drivers(void)
 
    if (!driver.menu_data_own)
    {
+      menu_free_list(driver.menu);
       menu_free(driver.menu);
       driver.menu = NULL;
    }
