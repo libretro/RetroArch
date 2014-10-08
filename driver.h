@@ -440,6 +440,30 @@ enum rarch_display_type
    RARCH_DISPLAY_OSX
 };
 
+/* Flags for init_drivers/uninit_drivers */
+enum
+{
+   DRIVER_AUDIO = 1 << 0,
+   DRIVER_VIDEO = 1 << 1,
+   DRIVER_INPUT = 1 << 2,
+   DRIVER_OSK = 1 << 3,
+   DRIVER_CAMERA = 1 << 4,
+   DRIVER_LOCATION = 1 << 5,
+   DRIVER_MENU = 1 << 6,
+   DRIVERS_VIDEO_INPUT = 1 << 7 /* note multiple drivers */
+};
+
+/* Drivers for RARCH_CMD_DRIVERS_DEINIT and RARCH_CMD_DRIVERS_INIT */
+#define DRIVERS_CMD_ALL \
+      ( DRIVER_AUDIO \
+      | DRIVER_VIDEO \
+      | DRIVER_INPUT \
+      | DRIVER_OSK \
+      | DRIVER_CAMERA \
+      | DRIVER_LOCATION \
+      | DRIVER_MENU \
+      | DRIVERS_VIDEO_INPUT )
+
 typedef struct driver
 {
    const frontend_ctx_driver_t *frontend_ctx;
@@ -550,9 +574,9 @@ typedef struct driver
    const char *current_msg;
 } driver_t;
 
-void init_drivers(void);
+void init_drivers(int flags);
 void init_drivers_pre(void);
-void uninit_drivers(void);
+void uninit_drivers(int flags);
 
 void find_prev_driver(const char *label, char *str, size_t sizeof_str);
 void find_next_driver(const char *label, char *str, size_t sizeof_str);

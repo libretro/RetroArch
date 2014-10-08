@@ -2451,10 +2451,10 @@ bool rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_DRIVERS_DEINIT:
-         uninit_drivers();
+         uninit_drivers(DRIVERS_CMD_ALL);
          break;
       case RARCH_CMD_DRIVERS_INIT:
-         init_drivers();
+         init_drivers(DRIVERS_CMD_ALL);
          break;
       case RARCH_CMD_RESET_CONTEXT:
          rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
