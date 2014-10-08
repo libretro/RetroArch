@@ -2307,6 +2307,30 @@ bool rarch_main_command(unsigned cmd)
             driver.audio_active = false;
          }
          break;
+      case RARCH_CMD_AUDIO_MUTE_TOGGLE:
+         {
+            const char *msg = !g_extern.audio_data.mute ?
+               "Audio muted." : "Audio unmuted.";
+
+            if (!driver.audio_data || !driver.audio_active)
+               return;
+
+            g_extern.audio_data.mute = !g_extern.audio_data.mute;
+
+            msg_queue_clear(g_extern.msg_queue);
+            msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+
+            if (g_extern.audio_data.mute)
+               rarch_main_command(RARCH_CMD_AUDIO_STOP);
+            else if (!rarch_main_command(RARCH_CMD_AUDIO_START))
+            {
+               RARCH_ERR("Failed to unmute audio.\n");
+               driver.audio_active = false;
+            }
+
+            RARCH_LOG("%s\n", msg);
+         }
+         break;
       case RARCH_CMD_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
          if (driver.overlay)

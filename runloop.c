@@ -24,30 +24,6 @@
 #include "frontend/menu/menu_common.h"
 #endif
 
-static void check_mute(void)
-{
-   const char *msg = !g_extern.audio_data.mute ?
-      "Audio muted." : "Audio unmuted.";
-
-   if (!driver.audio_data || !driver.audio_active)
-      return;
-
-   g_extern.audio_data.mute = !g_extern.audio_data.mute;
-
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-
-   if (g_extern.audio_data.mute)
-      rarch_main_command(RARCH_CMD_AUDIO_STOP);
-   else if (!rarch_main_command(RARCH_CMD_AUDIO_START))
-   {
-      RARCH_ERR("Failed to unmute audio.\n");
-      driver.audio_active = false;
-   }
-
-   RARCH_LOG("%s\n", msg);
-}
-
 static void set_volume(float gain)
 {
    char msg[256];
@@ -425,7 +401,7 @@ static int do_state_checks(
       rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
 
    if (BIT64_GET(trigger_input, RARCH_MUTE))
-      check_mute();
+      rarch_main_command(RARCH_CMD_AUDIO_MUTE_TOGGLE);
 
    if (BIT64_GET(input, RARCH_VOLUME_UP))
       set_volume(0.5f);
