@@ -173,7 +173,9 @@ error:
 
 bool core_option_updated(core_option_manager_t *opt)
 {
-   return opt->updated;
+   if (opt)
+      return opt->updated;
+   return false;
 }
 
 void core_option_flush(core_option_manager_t *opt)
@@ -189,30 +191,42 @@ void core_option_flush(core_option_manager_t *opt)
 
 size_t core_option_size(core_option_manager_t *opt)
 {
-   return opt->size;
+   if (opt)
+      return opt->size;
+   return 0;
 }
 
 const char *core_option_get_desc(core_option_manager_t *opt, size_t index)
 {
-   return opt->opts[index].desc;
+   if (opt)
+      return opt->opts[index].desc;
+   return NULL;
 }
 
 const char *core_option_get_val(core_option_manager_t *opt, size_t index)
 {
    struct core_option *option = (struct core_option*)&opt->opts[index];
-   return option->vals->elems[option->index].data;
+   if (option)
+      return option->vals->elems[option->index].data;
+   return NULL;
 }
 
 struct string_list *core_option_get_vals(
       core_option_manager_t *opt, size_t index)
 {
-   return opt->opts[index].vals;
+   if (opt)
+      return opt->opts[index].vals;
+   return NULL;
 }
 
 void core_option_set_val(core_option_manager_t *opt,
       size_t index, size_t val_index)
 {
    struct core_option *option= (struct core_option*)&opt->opts[index];
+
+   if (!option)
+      return;
+
    option->index = val_index % option->vals->size;
    opt->updated = true;
 }
@@ -220,6 +234,10 @@ void core_option_set_val(core_option_manager_t *opt,
 void core_option_next(core_option_manager_t *opt, size_t index)
 {
    struct core_option *option = (struct core_option*)&opt->opts[index];
+
+   if (!option)
+      return;
+
    option->index = (option->index + 1) % option->vals->size;
    opt->updated = true;
 }
@@ -227,6 +245,10 @@ void core_option_next(core_option_manager_t *opt, size_t index)
 void core_option_prev(core_option_manager_t *opt, size_t index)
 {
    struct core_option *option = (struct core_option*)&opt->opts[index];
+
+   if (!option)
+      return;
+
    option->index = (option->index + option->vals->size - 1) %
       option->vals->size;
    opt->updated = true;
@@ -234,6 +256,9 @@ void core_option_prev(core_option_manager_t *opt, size_t index)
 
 void core_option_set_default(core_option_manager_t *opt, size_t index)
 {
+   if (!opt)
+      return;
+
    opt->opts[index].index = 0;
    opt->updated = true;
 }
