@@ -62,7 +62,7 @@ static unsigned g_egl_res;
 static PFNEGLCREATEIMAGEKHRPROC peglCreateImageKHR;
 static PFNEGLDESTROYIMAGEKHRPROC peglDestroyImageKHR;
 
-static inline bool gfx_ctx_egl_query_extension(const char *ext)
+static inline bool gfx_ctx_vc_egl_query_extension(const char *ext)
 {
    const char *str = (const char*)eglQueryString(g_egl_dpy, EGL_EXTENSIONS);
    bool ret = str && strstr(str, ext);
@@ -78,7 +78,7 @@ static void sighandler(int sig)
    g_quit = 1;
 }
 
-static void gfx_ctx_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_vc_swap_interval(void *data, unsigned interval)
 {
    (void)data;
    // Can be called before initialization.
@@ -88,7 +88,7 @@ static void gfx_ctx_swap_interval(void *data, unsigned interval)
       eglSwapInterval(g_egl_dpy, interval);
 }
 
-static void gfx_ctx_check_window(void *data, bool *quit,
+static void gfx_ctx_vc_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)data;
@@ -100,20 +100,20 @@ static void gfx_ctx_check_window(void *data, bool *quit,
    *quit   = g_quit;
 }
 
-static void gfx_ctx_swap_buffers(void *data)
+static void gfx_ctx_vc_swap_buffers(void *data)
 {
    (void)data;
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
-static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static void gfx_ctx_vc_set_resize(void *data, unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
 }
 
-static void gfx_ctx_update_window_title(void *data)
+static void gfx_ctx_vc_update_window_title(void *data)
 {
    (void)data;
    char buf[128], buf_fps[128];
@@ -124,16 +124,17 @@ static void gfx_ctx_update_window_title(void *data)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
-static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
+static void gfx_ctx_vc_get_video_size(void *data,
+      unsigned *width, unsigned *height)
 {
    (void)data;
    *width  = g_fb_width;
    *height = g_fb_height;
 }
 
-static void gfx_ctx_destroy(void *data);
+static void gfx_ctx_vc_destroy(void *data);
 
-static bool gfx_ctx_init(void *data)
+static bool gfx_ctx_vc_init(void *data)
 {
    RARCH_LOG("[VC/EGL]: Initializing...\n");
    if (g_inited)
@@ -184,7 +185,9 @@ static bool gfx_ctx_init(void *data)
       goto error;
 
    // create an EGL rendering context
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (g_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL);
+   g_egl_ctx = eglCreateContext(
+         g_egl_dpy, g_config, EGL_NO_CONTEXT,
+         (g_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL);
    if (!g_egl_ctx)
       goto error;
 
@@ -241,11 +244,11 @@ static bool gfx_ctx_init(void *data)
    return true;
 
 error:
-   gfx_ctx_destroy(data);
+   gfx_ctx_vc_destroy(data);
    return false;
 }
 
-static bool gfx_ctx_set_video_mode(void *data,
+static bool gfx_ctx_vc_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -259,13 +262,14 @@ static bool gfx_ctx_set_video_mode(void *data,
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
-   gfx_ctx_swap_interval(data, g_interval);
+   gfx_ctx_vc_swap_interval(data, g_interval);
 
    g_inited = true;
    return true;
 }
 
-static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_vc_bind_api(void *data,
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
    (void)major;
@@ -284,7 +288,7 @@ static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, u
    }
 }
 
-static void gfx_ctx_destroy(void *data)
+static void gfx_ctx_vc_destroy(void *data)
 {
    (void)data;
    unsigned i;
@@ -309,7 +313,7 @@ static void gfx_ctx_destroy(void *data)
 
       if (g_egl_ctx)
       {
-         gfx_ctx_bind_api(data, g_api, 0, 0);
+         gfx_ctx_vc_bind_api(data, g_api, 0, 0);
          eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
          eglDestroyContext(g_egl_dpy, g_egl_ctx);
       }
@@ -326,7 +330,7 @@ static void gfx_ctx_destroy(void *data)
 
       if (g_egl_surf)
       {
-         gfx_ctx_bind_api(data, g_api, 0, 0);
+         gfx_ctx_vc_bind_api(data, g_api, 0, 0);
          eglDestroySurface(g_egl_dpy, g_egl_surf);
       }
 
@@ -338,7 +342,7 @@ static void gfx_ctx_destroy(void *data)
 
       eglBindAPI(EGL_OPENVG_API);
       eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-      gfx_ctx_bind_api(data, g_api, 0, 0);
+      gfx_ctx_vc_bind_api(data, g_api, 0, 0);
       eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
       eglTerminate(g_egl_dpy);
    }
@@ -359,31 +363,33 @@ static void gfx_ctx_destroy(void *data)
    }
 }
 
-static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void gfx_ctx_vc_input_driver(void *data,
+      const input_driver_t **input, void **input_data)
 {
    (void)data;
    *input = NULL;
    *input_data = NULL;
 }
 
-static bool gfx_ctx_has_focus(void *data)
+static bool gfx_ctx_vc_has_focus(void *data)
 {
    (void)data;
    return g_inited;
 }
 
-static bool gfx_ctx_has_windowed(void *data)
+static bool gfx_ctx_vc_has_windowed(void *data)
 {
    (void)data;
    return false;
 }
 
-static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
+static gfx_ctx_proc_t gfx_ctx_vc_get_proc_address(const char *symbol)
 {
    return eglGetProcAddress(symbol);
 }
 
-static float gfx_ctx_translate_aspect(void *data, unsigned width, unsigned height)
+static float gfx_ctx_vc_translate_aspect(void *data,
+      unsigned width, unsigned height)
 {
    (void)data;
    // check for SD televisions: they should always be 4:3.
@@ -393,20 +399,21 @@ static float gfx_ctx_translate_aspect(void *data, unsigned width, unsigned heigh
       return (float)width / height;
 }
 
-static bool gfx_ctx_init_egl_image_buffer(void *data, const video_info_t *video)
+static bool gfx_ctx_vc_init_egl_image_buffer(void *data,
+      const video_info_t *video)
 {
-   if (g_api == GFX_CTX_OPENVG_API) // don't bother, we just use VGImages for our EGLImage anyway
-   {
+   /* Don't bother, we just use VGImages for our EGLImage anyway. */
+   if (g_api == GFX_CTX_OPENVG_API)
       return false;
-   }
 
-   peglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC)gfx_ctx_get_proc_address("eglCreateImageKHR");
-   peglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC)gfx_ctx_get_proc_address("eglDestroyImageKHR");
+   peglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC)
+      gfx_ctx_vc_get_proc_address("eglCreateImageKHR");
+   peglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC)
+      gfx_ctx_vc_get_proc_address("eglDestroyImageKHR");
 
-   if (!peglCreateImageKHR || !peglDestroyImageKHR || !gfx_ctx_egl_query_extension("KHR_image"))
-   {
+   if (!peglCreateImageKHR || !peglDestroyImageKHR 
+         || !gfx_ctx_vc_egl_query_extension("KHR_image"))
       return false;
-   }
 
    g_egl_res = video->input_scale * RARCH_SCALE_BASE;
 
@@ -442,7 +449,7 @@ static bool gfx_ctx_init_egl_image_buffer(void *data, const video_info_t *video)
       goto fail;
    }
 
-   gfx_ctx_bind_api(data, g_api, 0, 0);
+   gfx_ctx_vc_bind_api(data, g_api, 0, 0);
    eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
 
    g_smooth = video->smooth;
@@ -461,13 +468,14 @@ fail:
       g_pbuff_surf = EGL_NO_CONTEXT;
    }
 
-   gfx_ctx_bind_api(data, g_api, 0, 0);
+   gfx_ctx_vc_bind_api(data, g_api, 0, 0);
    eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
 
    return false;
 }
 
-static bool gfx_ctx_write_egl_image(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
+static bool gfx_ctx_vc_write_egl_image(void *data, const void *frame, unsigned width,
+      unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
 {
    bool ret = false;
 
@@ -482,48 +490,65 @@ static bool gfx_ctx_write_egl_image(void *data, const void *frame, unsigned widt
 
    if (!eglBuffer[index] || !g_egl_vgimage[index])
    {
-      g_egl_vgimage[index] = vgCreateImage(rgb32 ? VG_sXRGB_8888 : VG_sRGB_565, g_egl_res, g_egl_res, VG_IMAGE_QUALITY_NONANTIALIASED);
-      eglBuffer[index] = peglCreateImageKHR(g_egl_dpy, g_eglimage_ctx, EGL_VG_PARENT_IMAGE_KHR, (EGLClientBuffer)g_egl_vgimage[index], NULL);
+      g_egl_vgimage[index] = vgCreateImage(
+            rgb32 ? VG_sXRGB_8888 : VG_sRGB_565,
+            g_egl_res,
+            g_egl_res,
+            VG_IMAGE_QUALITY_NONANTIALIASED);
+      eglBuffer[index] = peglCreateImageKHR(
+            g_egl_dpy,
+            g_eglimage_ctx,
+            EGL_VG_PARENT_IMAGE_KHR,
+            (EGLClientBuffer)g_egl_vgimage[index],
+            NULL);
       ret = true;
    }
 
-   vgImageSubData(g_egl_vgimage[index], frame, pitch, (rgb32 ? VG_sXRGB_8888 : VG_sRGB_565), 0, 0, width, height);
+   vgImageSubData(
+         g_egl_vgimage[index],
+         frame, pitch,
+         (rgb32 ? VG_sXRGB_8888 : VG_sRGB_565),
+         0,
+         0,
+         width,
+         height);
    *image_handle = eglBuffer[index];
 
-   gfx_ctx_bind_api(data, g_api, 0, 0);
+   gfx_ctx_vc_bind_api(data, g_api, 0, 0);
    eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
 
    return ret;
 }
 
-static void vc_gfx_ctx_bind_hw_render(void *data, bool enable)
+static void gfx_ctx_vc_bind_hw_render(void *data, bool enable)
 {
    (void)data;
    g_use_hw_ctx = enable;
 
    if (g_egl_dpy && g_egl_surf)
-      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
+      eglMakeCurrent(g_egl_dpy, g_egl_surf,
+            g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
 }
 
 const gfx_ctx_driver_t gfx_ctx_videocore = {
-   gfx_ctx_init,
-   gfx_ctx_destroy,
-   gfx_ctx_bind_api,
-   gfx_ctx_swap_interval,
-   gfx_ctx_set_video_mode,
-   gfx_ctx_get_video_size,
-   gfx_ctx_translate_aspect,
-   gfx_ctx_update_window_title,
-   gfx_ctx_check_window,
-   gfx_ctx_set_resize,
-   gfx_ctx_has_focus,
-   gfx_ctx_has_windowed,
-   gfx_ctx_swap_buffers,
-   gfx_ctx_input_driver,
-   gfx_ctx_get_proc_address,
-   gfx_ctx_init_egl_image_buffer,
-   gfx_ctx_write_egl_image,
+   gfx_ctx_vc_init,
+   gfx_ctx_vc_destroy,
+   gfx_ctx_vc_bind_api,
+   gfx_ctx_vc_swap_interval,
+   gfx_ctx_vc_set_video_mode,
+   gfx_ctx_vc_get_video_size,
+   gfx_ctx_vc_translate_aspect,
+   gfx_ctx_vc_update_window_title,
+   gfx_ctx_vc_check_window,
+   gfx_ctx_vc_set_resize,
+   gfx_ctx_vc_has_focus,
+   gfx_ctx_vc_has_windowed,
+   gfx_ctx_vc_swap_buffers,
+   gfx_ctx_vc_input_driver,
+   gfx_ctx_vc_get_proc_address,
+   gfx_ctx_vc_init_egl_image_buffer,
+   gfx_ctx_vc_write_egl_image,
    NULL,
    "videocore",
-   vc_gfx_ctx_bind_hw_render,
+   gfx_ctx_vc_bind_hw_render,
 };

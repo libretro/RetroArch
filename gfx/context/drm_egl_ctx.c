@@ -92,7 +92,8 @@ struct drm_fb
 };
 
 static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo);
-static void gfx_ctx_destroy(void *data);
+
+static void gfx_ctx_drm_egl_destroy(void *data);
 
 static void sighandler(int sig)
 {
@@ -100,7 +101,7 @@ static void sighandler(int sig)
    g_quit = 1;
 }
 
-static void gfx_ctx_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_drm_egl_swap_interval(void *data, unsigned interval)
 {
    (void)data;
    g_interval = interval;
@@ -108,7 +109,7 @@ static void gfx_ctx_swap_interval(void *data, unsigned interval)
       RARCH_WARN("[KMS/EGL]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
 }
 
-static void gfx_ctx_check_window(void *data, bool *quit,
+static void gfx_ctx_drm_egl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)data;
@@ -197,7 +198,7 @@ static void queue_flip(void)
    waiting_for_flip = true;
 }
 
-static void gfx_ctx_swap_buffers(void *data)
+static void gfx_ctx_drm_egl_swap_buffers(void *data)
 {
    (void)data;
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
@@ -220,14 +221,14 @@ static void gfx_ctx_swap_buffers(void *data)
    }
 }
 
-static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static void gfx_ctx_drm_egl_set_resize(void *data, unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
 }
 
-static void gfx_ctx_update_window_title(void *data)
+static void gfx_ctx_drm_egl_update_window_title(void *data)
 {
    (void)data;
    char buf[128], buf_fps[128];
@@ -238,7 +239,7 @@ static void gfx_ctx_update_window_title(void *data)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
-static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
+static void gfx_ctx_drm_egl_get_video_size(void *data, unsigned *width, unsigned *height)
 {
    (void)data;
    *width  = g_fb_width;
@@ -277,7 +278,7 @@ static void free_drm_resources(void)
    g_drm_fd      = -1;
 }
 
-static bool gfx_ctx_init(void *data)
+static bool gfx_ctx_drm_egl_init(void *data)
 {
    int i;
    unsigned monitor_index;
@@ -409,7 +410,7 @@ nextgpu:
 
 error:
    dir_list_free(gpu_descriptors);
-   gfx_ctx_destroy(data);
+   gfx_ctx_drm_egl_destroy(data);
    return false;
 }
 
@@ -511,7 +512,7 @@ static EGLint *egl_fill_attribs(EGLint *attr)
    return attr;
 }
 
-static bool gfx_ctx_set_video_mode(void *data,
+static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -689,11 +690,11 @@ static bool gfx_ctx_set_video_mode(void *data,
    return true;
 
 error:
-   gfx_ctx_destroy(data);
+   gfx_ctx_drm_egl_destroy(data);
    return false;
 }
 
-void gfx_ctx_destroy(void *data)
+static void gfx_ctx_drm_egl_destroy(void *data)
 {
    (void)data;
    // Make sure we acknowledge all page-flips.
@@ -752,31 +753,33 @@ void gfx_ctx_destroy(void *data)
    g_inited = false;
 }
 
-static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void gfx_ctx_drm_egl_input_driver(void *data,
+      const input_driver_t **input, void **input_data)
 {
    (void)data;
    *input = NULL;
    *input_data = NULL;
 }
 
-static bool gfx_ctx_has_focus(void *data)
+static bool gfx_ctx_drm_egl_has_focus(void *data)
 {
    (void)data;
    return g_inited;
 }
 
-static bool gfx_ctx_has_windowed(void *data)
+static bool gfx_ctx_drm_egl_has_windowed(void *data)
 {
    (void)data;
    return false;
 }
 
-static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
+static gfx_ctx_proc_t gfx_ctx_drm_egl_get_proc_address(const char *symbol)
 {
    return eglGetProcAddress(symbol);
 }
 
-static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_drm_egl_bind_api(void *data,
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
    g_major = major;
@@ -803,7 +806,7 @@ static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, u
    }
 }
 
-static void gfx_ctx_bind_hw_render(void *data, bool enable)
+static void gfx_ctx_drm_egl_bind_hw_render(void *data, bool enable)
 {
    (void)data;
    g_use_hw_ctx = enable;
@@ -812,25 +815,25 @@ static void gfx_ctx_bind_hw_render(void *data, bool enable)
 }
 
 const gfx_ctx_driver_t gfx_ctx_drm_egl = {
-   gfx_ctx_init,
-   gfx_ctx_destroy,
-   gfx_ctx_bind_api,
-   gfx_ctx_swap_interval,
-   gfx_ctx_set_video_mode,
-   gfx_ctx_get_video_size,
+   gfx_ctx_drm_egl_init,
+   gfx_ctx_drm_egl_destroy,
+   gfx_ctx_drm_egl_bind_api,
+   gfx_ctx_drm_egl_swap_interval,
+   gfx_ctx_drm_egl_set_video_mode,
+   gfx_ctx_drm_egl_get_video_size,
    NULL,
-   gfx_ctx_update_window_title,
-   gfx_ctx_check_window,
-   gfx_ctx_set_resize,
-   gfx_ctx_has_focus,
-   gfx_ctx_has_windowed,
-   gfx_ctx_swap_buffers,
-   gfx_ctx_input_driver,
-   gfx_ctx_get_proc_address,
+   gfx_ctx_drm_egl_update_window_title,
+   gfx_ctx_drm_egl_check_window,
+   gfx_ctx_drm_egl_set_resize,
+   gfx_ctx_drm_egl_has_focus,
+   gfx_ctx_drm_egl_has_windowed,
+   gfx_ctx_drm_egl_swap_buffers,
+   gfx_ctx_drm_egl_input_driver,
+   gfx_ctx_drm_egl_get_proc_address,
    NULL,
    NULL,
    NULL,
    "kms-egl",
-   gfx_ctx_bind_hw_render,
+   gfx_ctx_drm_egl_bind_hw_render,
 };
 

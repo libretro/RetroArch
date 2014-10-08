@@ -57,7 +57,8 @@ static bool g_resized;
 static bool g_restore_desktop;
 
 static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use);
-static void gfx_ctx_destroy(void *data);
+
+static void gfx_ctx_wgl_destroy(void *data);
 
 static BOOL (APIENTRY *p_swap_interval)(int);
 
@@ -78,6 +79,25 @@ static void setup_pixel_format(HDC hdc)
 
    SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
 }
+
+#ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
+#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#endif
+#ifndef WGL_CONTEXT_MINOR_VERSION_ARB
+#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
+#endif
+#ifndef WGL_CONTEXT_PROFILE_MASK_ARB
+#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
+#endif
+#ifndef WGL_CONTEXT_CORE_PROFILE_BIT_ARB
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x0001
+#endif
+#ifndef WGL_CONTEXT_FLAGS_ARB
+#define WGL_CONTEXT_FLAGS_ARB 0x2094
+#endif
+#ifndef WGL_CONTEXT_DEBUG_BIT_ARB
+#define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
+#endif
 
 static void create_gl_context(HWND hwnd)
 {
@@ -130,24 +150,6 @@ static void create_gl_context(HWND hwnd)
 
    if (core_context || debug)
    {
-#ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
-#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
-#endif
-#ifndef WGL_CONTEXT_MINOR_VERSION_ARB
-#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
-#endif
-#ifndef WGL_CONTEXT_PROFILE_MASK_ARB
-#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
-#endif
-#ifndef WGL_CONTEXT_CORE_PROFILE_BIT_ARB
-#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x0001
-#endif
-#ifndef WGL_CONTEXT_FLAGS_ARB
-#define WGL_CONTEXT_FLAGS_ARB 0x2094
-#endif
-#ifndef WGL_CONTEXT_DEBUG_BIT_ARB
-#define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
-#endif
       int attribs[16];
       int *aptr = attribs;
 
@@ -268,7 +270,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
-static void gfx_ctx_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
 {
    (void)data;
    g_interval = interval;
@@ -281,7 +283,7 @@ static void gfx_ctx_swap_interval(void *data, unsigned interval)
    }
 }
 
-static void gfx_ctx_check_window(void *data, bool *quit,
+static void gfx_ctx_wgl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)data;
@@ -304,20 +306,21 @@ static void gfx_ctx_check_window(void *data, bool *quit,
    }
 }
 
-static void gfx_ctx_swap_buffers(void *data)
+static void gfx_ctx_wgl_swap_buffers(void *data)
 {
    (void)data;
    SwapBuffers(g_hdc);
 }
 
-static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static void gfx_ctx_wgl_set_resize(void *data,
+      unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
 }
 
-static void gfx_ctx_update_window_title(void *data)
+static void gfx_ctx_wgl_update_window_title(void *data)
 {
    (void)data;
    char buf[128], buf_fps[128];
@@ -329,7 +332,7 @@ static void gfx_ctx_update_window_title(void *data)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
-static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
+static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *height)
 {
    (void)data;
    if (!g_hwnd)
@@ -355,7 +358,7 @@ static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT
    return TRUE;
 }
 
-static bool gfx_ctx_init(void *data)
+static bool gfx_ctx_wgl_init(void *data)
 {
    (void)data;
    if (g_inited)
@@ -419,7 +422,7 @@ static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use)
    GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
 }
 
-static bool gfx_ctx_set_video_mode(void *data,
+static bool gfx_ctx_wgl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -499,7 +502,7 @@ static bool gfx_ctx_set_video_mode(void *data,
 
    p_swap_interval = (BOOL (APIENTRY *)(int))wglGetProcAddress("wglSwapIntervalEXT");
 
-   gfx_ctx_swap_interval(data, g_interval);
+   gfx_ctx_wgl_swap_interval(data, g_interval);
 
    driver.display_type  = RARCH_DISPLAY_WIN32;
    driver.video_display = 0;
@@ -508,11 +511,11 @@ static bool gfx_ctx_set_video_mode(void *data,
    return true;
 
 error:
-   gfx_ctx_destroy(data);
+   gfx_ctx_wgl_destroy(data);
    return false;
 }
 
-static void gfx_ctx_destroy(void *data)
+static void gfx_ctx_wgl_destroy(void *data)
 {
    (void)data;
    if (g_hrc)
@@ -559,7 +562,8 @@ static void gfx_ctx_destroy(void *data)
    p_swap_interval = NULL;
 }
 
-static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void gfx_ctx_wgl_input_driver(void *data,
+      const input_driver_t **input, void **input_data)
 {
    (void)data;
    dinput_wgl   = input_dinput.init();
@@ -567,7 +571,7 @@ static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void 
    *input_data  = dinput_wgl;
 }
 
-static bool gfx_ctx_has_focus(void *data)
+static bool gfx_ctx_wgl_has_focus(void *data)
 {
    (void)data;
    if (!g_inited)
@@ -576,19 +580,20 @@ static bool gfx_ctx_has_focus(void *data)
    return GetFocus() == g_hwnd;
 }
 
-static bool gfx_ctx_has_windowed(void *data)
+static bool gfx_ctx_wgl_has_windowed(void *data)
 {
    (void)data;
 
    return true;
 }
 
-static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
+static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 {
    return (gfx_ctx_proc_t)wglGetProcAddress(symbol);
 }
 
-static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_wgl_bind_api(void *data,
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
    g_major = major;
@@ -596,13 +601,13 @@ static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, u
    return api == GFX_CTX_OPENGL_API;
 }
 
-static void gfx_ctx_show_mouse(void *data, bool state)
+static void gfx_ctx_wgl_show_mouse(void *data, bool state)
 {
    (void)data;
    show_cursor(state);
 }
 
-static void gfx_ctx_bind_hw_render(void *data, bool enable)
+static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
 {
    g_use_hw_ctx = enable;
    if (g_hdc)
@@ -610,23 +615,23 @@ static void gfx_ctx_bind_hw_render(void *data, bool enable)
 }
 
 const gfx_ctx_driver_t gfx_ctx_wgl = {
-   gfx_ctx_init,
-   gfx_ctx_destroy,
-   gfx_ctx_bind_api,
-   gfx_ctx_swap_interval,
-   gfx_ctx_set_video_mode,
-   gfx_ctx_get_video_size,
+   gfx_ctx_wgl_init,
+   gfx_ctx_wgl_destroy,
+   gfx_ctx_wgl_bind_api,
+   gfx_ctx_wgl_swap_interval,
+   gfx_ctx_wgl_set_video_mode,
+   gfx_ctx_wgl_get_video_size,
    NULL,
-   gfx_ctx_update_window_title,
-   gfx_ctx_check_window,
-   gfx_ctx_set_resize,
-   gfx_ctx_has_focus,
-   gfx_ctx_has_windowed,
-   gfx_ctx_swap_buffers,
-   gfx_ctx_input_driver,
-   gfx_ctx_get_proc_address,
-   gfx_ctx_show_mouse,
+   gfx_ctx_wgl_update_window_title,
+   gfx_ctx_wgl_check_window,
+   gfx_ctx_wgl_set_resize,
+   gfx_ctx_wgl_has_focus,
+   gfx_ctx_wgl_has_windowed,
+   gfx_ctx_wgl_swap_buffers,
+   gfx_ctx_wgl_input_driver,
+   gfx_ctx_wgl_get_proc_address,
+   gfx_ctx_wgl_show_mouse,
    "wgl",
-   gfx_ctx_bind_hw_render,
+   gfx_ctx_wgl_bind_hw_render,
 };
 

@@ -124,8 +124,10 @@ static const struct wl_registry_listener registry_listener = {
 
 
 
-static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height);
-static void gfx_ctx_destroy(void *data);
+static void gfx_ctx_wl_get_video_size(void *data,
+      unsigned *width, unsigned *height);
+
+static void gfx_ctx_wl_destroy(void *data);
 
 static void egl_report_error(void)
 {
@@ -157,7 +159,7 @@ static void egl_report_error(void)
    RARCH_ERR("[Wayland/EGL]: #0x%x, %s\n", (unsigned)error, str);
 }
 
-static void gfx_ctx_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_wl_swap_interval(void *data, unsigned interval)
 {
    (void)data;
    g_interval = interval;
@@ -196,7 +198,7 @@ static void flush_wayland_fd(void)
    }
 }
 
-static void gfx_ctx_check_window(void *data, bool *quit,
+static void gfx_ctx_wl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
@@ -204,7 +206,7 @@ static void gfx_ctx_check_window(void *data, bool *quit,
    flush_wayland_fd();
 
    unsigned new_width = *width, new_height = *height;
-   gfx_ctx_get_video_size(data, &new_width, &new_height);
+   gfx_ctx_wl_get_video_size(data, &new_width, &new_height);
 
    if (new_width != *width || new_height != *height)
    {
@@ -216,30 +218,32 @@ static void gfx_ctx_check_window(void *data, bool *quit,
    *quit = g_quit;
 }
 
-static void gfx_ctx_swap_buffers(void *data)
+static void gfx_ctx_wl_swap_buffers(void *data)
 {
    (void)data;
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
-static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static void gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 {
    (void)data;
    wl_egl_window_resize(g_win, width, height, 0, 0);
 }
 
-static void gfx_ctx_update_window_title(void *data)
+static void gfx_ctx_wl_update_window_title(void *data)
 {
    (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
-   if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
+   if (gfx_get_fps(buf, sizeof(buf),
+            fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
       wl_shell_surface_set_title(g_shell_surf, buf);
    if (fps_draw)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
-static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
+static void gfx_ctx_wl_get_video_size(void *data,
+      unsigned *width, unsigned *height)
 {
    (void)data;
    *width = g_width;
@@ -249,7 +253,7 @@ static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height
 #define DEFAULT_WINDOWED_WIDTH 640
 #define DEFAULT_WINDOWED_HEIGHT 480
 
-static bool gfx_ctx_init(void *data)
+static bool gfx_ctx_wl_init(void *data)
 {
 #define EGL_ATTRIBS_BASE \
    EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
@@ -365,7 +369,7 @@ static bool gfx_ctx_init(void *data)
    return true;
 
 error:
-   gfx_ctx_destroy(data);
+   gfx_ctx_wl_destroy(data);
    return false;
 }
 
@@ -429,7 +433,7 @@ static EGLint *egl_fill_attribs(EGLint *attr)
    return attr;
 }
 
-static bool gfx_ctx_set_video_mode(void *data,
+static bool gfx_ctx_wl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -482,7 +486,7 @@ static bool gfx_ctx_set_video_mode(void *data,
 
    RARCH_LOG("[Wayland/EGL]: Current context: %p.\n", (void*)eglGetCurrentContext());
 
-   gfx_ctx_swap_interval(data, g_interval);
+   gfx_ctx_wl_swap_interval(data, g_interval);
 
    if (fullscreen)
       wl_shell_surface_set_fullscreen(g_shell_surf, WL_SHELL_SURFACE_FULLSCREEN_METHOD_DEFAULT, 0, NULL);
@@ -491,11 +495,11 @@ static bool gfx_ctx_set_video_mode(void *data,
    return true;
 
 error:
-   gfx_ctx_destroy(data);
+   gfx_ctx_wl_destroy(data);
    return false;
 }
 
-static void gfx_ctx_destroy(void *data)
+static void gfx_ctx_wl_destroy(void *data)
 {
    (void)data;
 
@@ -503,7 +507,8 @@ static void gfx_ctx_destroy(void *data)
    {
       if (g_egl_ctx)
       {
-         eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+         eglMakeCurrent(g_egl_dpy,
+               EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
          eglDestroyContext(g_egl_dpy, g_egl_ctx);
       }
 
@@ -551,7 +556,8 @@ static void gfx_ctx_destroy(void *data)
    g_width = g_height = 0;
 }
 
-static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void gfx_ctx_wl_input_driver(void *data,
+      const input_driver_t **input, void **input_data)
 {
    (void)data;
    //void *wl    = input_wayland.init();
@@ -561,24 +567,25 @@ static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void 
    *input_data = NULL;
 }
 
-static bool gfx_ctx_has_focus(void *data)
+static bool gfx_ctx_wl_has_focus(void *data)
 {
    (void)data;
    return true;
 }
 
-static bool gfx_ctx_has_windowed(void *data)
+static bool gfx_ctx_wl_has_windowed(void *data)
 {
    (void)data;
    return true;
 }
 
-static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
+static gfx_ctx_proc_t gfx_ctx_wl_get_proc_address(const char *symbol)
 {
    return eglGetProcAddress(symbol);
 }
 
-static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_wl_bind_api(void *data,
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
    g_major = major;
@@ -605,12 +612,14 @@ static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, u
    }
 }
 
-static void gfx_ctx_bind_hw_render(void *data, bool enable)
+static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
 {
    (void)data;
    g_use_hw_ctx = enable;
+
    if (g_egl_dpy && g_egl_surf)
-      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
+      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf,
+            enable ? g_egl_hw_ctx : g_egl_ctx);
 }
 
 static void keyboard_handle_keymap(void* data,
@@ -754,24 +763,24 @@ static const struct wl_seat_listener seat_listener = {
 };
 
 const gfx_ctx_driver_t gfx_ctx_wayland = {
-   gfx_ctx_init,
-   gfx_ctx_destroy,
-   gfx_ctx_bind_api,
-   gfx_ctx_swap_interval,
-   gfx_ctx_set_video_mode,
-   gfx_ctx_get_video_size,
+   gfx_ctx_wl_init,
+   gfx_ctx_wl_destroy,
+   gfx_ctx_wl_bind_api,
+   gfx_ctx_wl_swap_interval,
+   gfx_ctx_wl_set_video_mode,
+   gfx_ctx_wl_get_video_size,
    NULL,
-   gfx_ctx_update_window_title,
-   gfx_ctx_check_window,
-   gfx_ctx_set_resize,
-   gfx_ctx_has_focus,
-   gfx_ctx_has_windowed,
-   gfx_ctx_swap_buffers,
-   gfx_ctx_input_driver,
-   gfx_ctx_get_proc_address,
+   gfx_ctx_wl_update_window_title,
+   gfx_ctx_wl_check_window,
+   gfx_ctx_wl_set_resize,
+   gfx_ctx_wl_has_focus,
+   gfx_ctx_wl_has_windowed,
+   gfx_ctx_wl_swap_buffers,
+   gfx_ctx_wl_input_driver,
+   gfx_ctx_wl_get_proc_address,
    NULL,
    NULL,
    NULL,
    "wayland",
-   gfx_ctx_bind_hw_render,
+   gfx_ctx_wl_bind_hw_render,
 };

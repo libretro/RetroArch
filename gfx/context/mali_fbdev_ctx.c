@@ -35,14 +35,15 @@ static void sighandler(int sig)
    g_quit = 1;
 }
 
-static void gfx_ctx_set_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_mali_fbdev_set_swap_interval(
+      void *data, unsigned interval)
 {
    (void)data;
    if (g_egl_dpy)
       eglSwapInterval(g_egl_dpy, interval);
 }
 
-static void gfx_ctx_destroy(void *data)
+static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
    (void)data;
 
@@ -70,7 +71,8 @@ static void gfx_ctx_destroy(void *data)
    g_resize   = false;
 }
 
-static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
+static void gfx_ctx_mali_fbdev_get_video_size(void *data,
+      unsigned *width, unsigned *height)
 {
    (void)data;
    if (g_egl_dpy != EGL_NO_DISPLAY && g_egl_surf != EGL_NO_SURFACE)
@@ -85,7 +87,7 @@ static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height
    }
 }
 
-static bool gfx_ctx_init(void *data)
+static bool gfx_ctx_mali_fbdev_init(void *data)
 {
    (void)data;
 
@@ -136,23 +138,23 @@ static bool gfx_ctx_init(void *data)
 
 error:
    RARCH_ERR("[Mali fbdev]: EGL error: %d.\n", eglGetError());
-   gfx_ctx_destroy(data);
+   gfx_ctx_mali_fbdev_destroy(data);
    return false;
 }
 
-static void gfx_ctx_swap_buffers(void *data)
+static void gfx_ctx_mali_fbdev_swap_buffers(void *data)
 {
    (void)data;
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
-static void gfx_ctx_check_window(void *data, bool *quit,
+static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
 
    unsigned new_width, new_height;
-   gfx_ctx_get_video_size(data, &new_width, &new_height);
+   gfx_ctx_mali_fbdev_get_video_size(data, &new_width, &new_height);
    if (new_width != *width || new_height != *height)
    {
       *width  = new_width;
@@ -163,14 +165,15 @@ static void gfx_ctx_check_window(void *data, bool *quit,
    *quit = g_quit;
 }
 
-static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static void gfx_ctx_mali_fbdev_set_resize(void *data,
+      unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
 }
 
-static void gfx_ctx_update_window_title(void *data)
+static void gfx_ctx_mali_fbdev_update_window_title(void *data)
 {
    (void)data;
    char buf[128], buf_fps[128];
@@ -181,11 +184,11 @@ static void gfx_ctx_update_window_title(void *data)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
-static bool gfx_ctx_set_video_mode(void *data,
+static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   // Pick some arbitrary default.
+   /* Pick some arbitrary default. */
    if (!width || !fullscreen)
       width = 1280;
    if (!height || !fullscreen)
@@ -195,7 +198,7 @@ static bool gfx_ctx_set_video_mode(void *data,
    g_height = height;
 
    static const EGLint attribs[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2, // Use version 2, even for GLES3.
+      EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
       EGL_NONE
    };
 
@@ -222,18 +225,19 @@ static bool gfx_ctx_set_video_mode(void *data,
 
 error:
    RARCH_ERR("[Mali fbdev]: EGL error: %d.\n", eglGetError());
-   gfx_ctx_destroy(data);
+   gfx_ctx_mali_fbdev_destroy(data);
    return false;
 }
 
-static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void gfx_ctx_mali_fbdev_input_driver(void *data,
+      const input_driver_t **input, void **input_data)
 {
    (void)data;
    *input = NULL;
    *input_data = NULL;
 }
 
-static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
+static gfx_ctx_proc_t gfx_ctx_mali_fbdev_get_proc_address(const char *symbol)
 {
    rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
    gfx_ctx_proc_t ret;
@@ -244,40 +248,41 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
    return ret;
 }
 
-static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_mali_fbdev_bind_api(void *data,
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
    return api == GFX_CTX_OPENGL_ES_API;
 }
 
-static bool gfx_ctx_has_focus(void *data)
+static bool gfx_ctx_mali_fbdev_has_focus(void *data)
 {
    (void)data;
    return true;
 }
 
-static bool gfx_ctx_has_windowed(void *data)
+static bool gfx_ctx_mali_fbdev_has_windowed(void *data)
 {
    (void)data;
    return false;
 }
 
 const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
-   gfx_ctx_init,
-   gfx_ctx_destroy,
-   gfx_ctx_bind_api,
-   gfx_ctx_set_swap_interval,
-   gfx_ctx_set_video_mode,
-   gfx_ctx_get_video_size,
+   gfx_ctx_mali_fbdev_init,
+   gfx_ctx_mali_fbdev_destroy,
+   gfx_ctx_mali_fbdev_bind_api,
+   gfx_ctx_mali_fbdev_set_swap_interval,
+   gfx_ctx_mali_fbdev_set_video_mode,
+   gfx_ctx_mali_fbdev_get_video_size,
    NULL,
-   gfx_ctx_update_window_title,
-   gfx_ctx_check_window,
-   gfx_ctx_set_resize,
-   gfx_ctx_has_focus,
-   gfx_ctx_has_windowed,
-   gfx_ctx_swap_buffers,
-   gfx_ctx_input_driver,
-   gfx_ctx_get_proc_address,
+   gfx_ctx_mali_fbdev_update_window_title,
+   gfx_ctx_mali_fbdev_check_window,
+   gfx_ctx_mali_fbdev_set_resize,
+   gfx_ctx_mali_fbdev_has_focus,
+   gfx_ctx_mali_fbdev_has_windowed,
+   gfx_ctx_mali_fbdev_swap_buffers,
+   gfx_ctx_mali_fbdev_input_driver,
+   gfx_ctx_mali_fbdev_get_proc_address,
 #ifdef HAVE_EGL
    NULL,
    NULL,

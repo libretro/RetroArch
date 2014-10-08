@@ -45,7 +45,7 @@ static PSGLdevice* gl_device;
 static PSGLcontext* gl_context;
 #endif
 
-static unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)
+static unsigned gfx_ctx_ps3_get_resolution_width(unsigned resolution_id)
 {
    CellVideoOutResolution resolution;
    cellVideoOutGetResolution(resolution_id, &resolution);
@@ -53,7 +53,7 @@ static unsigned gfx_ctx_get_resolution_width(unsigned resolution_id)
    return resolution.width;
 }
 
-static unsigned gfx_ctx_get_resolution_height(unsigned resolution_id)
+static unsigned gfx_ctx_ps3_get_resolution_height(unsigned resolution_id)
 {
    CellVideoOutResolution resolution;
    cellVideoOutGetResolution(resolution_id, &resolution);
@@ -61,7 +61,7 @@ static unsigned gfx_ctx_get_resolution_height(unsigned resolution_id)
    return resolution.height;
 }
 
-static float gfx_ctx_get_aspect_ratio(void *data)
+static float gfx_ctx_ps3_get_aspect_ratio(void *data)
 {
    (void)data;
    CellVideoOutState videoState;
@@ -78,7 +78,7 @@ static float gfx_ctx_get_aspect_ratio(void *data)
    return 16.0f/9.0f;
 }
 
-static void gfx_ctx_get_available_resolutions(void)
+static void gfx_ctx_ps3_get_available_resolutions(void)
 {
    bool defaultresolution;
    uint32_t resolution_count;
@@ -137,7 +137,7 @@ static void gfx_ctx_get_available_resolutions(void)
    g_extern.console.screen.resolutions.check = true;
 }
 
-static void gfx_ctx_set_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_ps3_set_swap_interval(void *data, unsigned interval)
 {
    (void)data;
 #if defined(HAVE_PSGL)
@@ -151,7 +151,7 @@ static void gfx_ctx_set_swap_interval(void *data, unsigned interval)
 #endif
 }
 
-static void gfx_ctx_check_window(void *data, bool *quit,
+static void gfx_ctx_ps3_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    gl_t *gl = data;
@@ -166,19 +166,19 @@ static void gfx_ctx_check_window(void *data, bool *quit,
       *resize = true;
 }
 
-static bool gfx_ctx_has_focus(void *data)
+static bool gfx_ctx_ps3_has_focus(void *data)
 {
    (void)data;
    return true;
 }
 
-static bool gfx_ctx_has_windowed(void *data)
+static bool gfx_ctx_ps3_has_windowed(void *data)
 {
    (void)data;
    return false;
 }
 
-static void gfx_ctx_swap_buffers(void *data)
+static void gfx_ctx_ps3_swap_buffers(void *data)
 {
    (void)data;
 #ifdef HAVE_LIBDBGFONT
@@ -192,20 +192,23 @@ static void gfx_ctx_swap_buffers(void *data)
 #endif
 }
 
-static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height) { }
+static void gfx_ctx_ps3_set_resize(void *data,
+      unsigned width, unsigned height) { }
 
-static void gfx_ctx_update_window_title(void *data)
+static void gfx_ctx_ps3_update_window_title(void *data)
 {
    (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
-   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
+   gfx_get_fps(buf, sizeof(buf), fps_draw 
+         ? buf_fps : NULL, sizeof(buf_fps));
 
    if (fps_draw)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
-static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
+static void gfx_ctx_ps3_get_video_size(void *data,
+      unsigned *width, unsigned *height)
 {
    (void)data;
 #if defined(HAVE_PSGL)
@@ -213,7 +216,7 @@ static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height
 #endif
 }
 
-static bool gfx_ctx_init(void *data)
+static bool gfx_ctx_ps3_init(void *data)
 {
    (void)data;
 #if defined(HAVE_PSGL)
@@ -239,8 +242,8 @@ static bool gfx_ctx_init(void *data)
    if (g_extern.console.screen.resolutions.current.id)
    {
       params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
-      params.width = gfx_ctx_get_resolution_width(g_extern.console.screen.resolutions.current.id);
-      params.height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.current.id);
+      params.width = gfx_ctx_ps3_get_resolution_width(g_extern.console.screen.resolutions.current.id);
+      params.height = gfx_ctx_ps3_get_resolution_height(g_extern.console.screen.resolutions.current.id);
       g_extern.console.screen.pal_enable = false;
 
       if (params.width == 720 && params.height == 576)
@@ -266,14 +269,17 @@ static bool gfx_ctx_init(void *data)
    psglResetCurrentContext();
 #endif
 
-   g_extern.console.screen.pal_enable = cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, CELL_VIDEO_OUT_RESOLUTION_576, CELL_VIDEO_OUT_ASPECT_AUTO, 0);
+   g_extern.console.screen.pal_enable = 
+      cellVideoOutGetResolutionAvailability(
+            CELL_VIDEO_OUT_PRIMARY, CELL_VIDEO_OUT_RESOLUTION_576,
+            CELL_VIDEO_OUT_ASPECT_AUTO, 0);
 
-   gfx_ctx_get_available_resolutions();
+   gfx_ctx_ps3_get_available_resolutions();
 
    return true;
 }
 
-static bool gfx_ctx_set_video_mode(void *data,
+static bool gfx_ctx_ps3_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -281,7 +287,7 @@ static bool gfx_ctx_set_video_mode(void *data,
    return true;
 }
 
-static void gfx_ctx_destroy(void *data)
+static void gfx_ctx_ps3_destroy(void *data)
 {
    (void)data;
 #if defined(HAVE_PSGL)
@@ -292,7 +298,8 @@ static void gfx_ctx_destroy(void *data)
 #endif
 }
 
-static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void gfx_ctx_ps3_input_driver(void *data,
+      const input_driver_t **input, void **input_data)
 {
    (void)data;
    void *ps3input = input_ps3.init();
@@ -300,7 +307,8 @@ static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void 
    *input_data = ps3input;
 }
 
-static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_ps3_bind_api(void *data,
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
    (void)major;
@@ -309,20 +317,20 @@ static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, u
 }
 
 const gfx_ctx_driver_t gfx_ctx_ps3 = {
-   gfx_ctx_init,
-   gfx_ctx_destroy,
-   gfx_ctx_bind_api,
-   gfx_ctx_set_swap_interval,
-   gfx_ctx_set_video_mode,
-   gfx_ctx_get_video_size,
+   gfx_ctx_ps3_init,
+   gfx_ctx_ps3_destroy,
+   gfx_ctx_ps3_bind_api,
+   gfx_ctx_ps3_set_swap_interval,
+   gfx_ctx_ps3_set_video_mode,
+   gfx_ctx_ps3_get_video_size,
    NULL,
-   gfx_ctx_update_window_title,
-   gfx_ctx_check_window,
-   gfx_ctx_set_resize,
-   gfx_ctx_has_focus,
-   gfx_ctx_has_windowed,
-   gfx_ctx_swap_buffers,
-   gfx_ctx_input_driver,
+   gfx_ctx_ps3_update_window_title,
+   gfx_ctx_ps3_check_window,
+   gfx_ctx_ps3_set_resize,
+   gfx_ctx_ps3_has_focus,
+   gfx_ctx_ps3_has_windowed,
+   gfx_ctx_ps3_swap_buffers,
+   gfx_ctx_ps3_input_driver,
    NULL,
    NULL,
    "ps3",
