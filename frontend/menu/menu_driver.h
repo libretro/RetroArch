@@ -113,10 +113,6 @@ typedef struct
    struct gfx_shader *parameter_shader;
    unsigned current_pad;
 
-   /* Used to throttle menu in case
-    * VSync is broken. */
-   int64_t last_time;
-
    struct menu_bind_state binds;
    struct
    {

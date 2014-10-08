@@ -175,8 +175,6 @@ void *menu_init(const void *data)
 
    menu_shader_manager_init(menu);
 
-   menu->last_time = rarch_get_time_usec();
-
    return menu;
 }
 
