@@ -171,8 +171,12 @@ void *menu_init(const void *data)
 
 void menu_free_list(void *data)
 {
-   (void)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
+   if (!menu)
+      return;
 
+   settings_list_free(menu->list_mainmenu);
+   settings_list_free(menu->list_settings);
 }
 
 void menu_init_list(void *data)
@@ -180,6 +184,9 @@ void menu_init_list(void *data)
    menu_handle_t *menu = (menu_handle_t*)data;
    if (!menu)
       return;
+
+   menu->list_mainmenu = setting_data_get_list(SL_FLAG_MAIN_MENU);
+   menu->list_settings = setting_data_get_list(SL_FLAG_ALL_SETTINGS);
 
    file_list_push(menu->menu_stack, "", "mainmenu", MENU_SETTINGS, 0);
    menu_clear_navigation(menu);

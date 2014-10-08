@@ -801,8 +801,7 @@ static void lakka_context_destroy(void *data)
 
 void lakka_init_settings(void)
 {
-   rarch_setting_t *setting_data = (rarch_setting_t*)
-      setting_data_get_list(SL_FLAG_ALL_SETTINGS, false);
+   rarch_setting_t *setting_data = (rarch_setting_t*)driver.menu->list_settings;
    menu_category_t *category = (menu_category_t*)&categories[0];
 
    strlcpy(category->name, "Settings", sizeof(category->name));

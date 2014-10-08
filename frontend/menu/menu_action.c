@@ -392,9 +392,7 @@ int menu_action_setting_set(unsigned id, const char *label,
 
    rarch_setting_t *setting = (rarch_setting_t*)menu_entries_get_last_setting(
          list->list[driver.menu->selection_ptr].label,
-         driver.menu->selection_ptr,
-         setting_data_get_list(SL_FLAG_ALL_SETTINGS, false)
-         );
+         driver.menu->selection_ptr, driver.menu->list_settings);
 
    if (setting)
       return menu_action_handle_setting(setting, id, label, action);
@@ -403,9 +401,7 @@ int menu_action_setting_set(unsigned id, const char *label,
 
    setting = (rarch_setting_t*)menu_entries_get_last_setting(
          list->list[driver.menu->selection_ptr].label,
-         driver.menu->selection_ptr,
-         setting_data_get_mainmenu(true)
-         );
+         driver.menu->selection_ptr, driver.menu->list_mainmenu);
 
    if (setting)
    {

@@ -1732,7 +1732,7 @@ void setting_data_get_label(char *type_str,
       const char *menu_label, const char *label, unsigned index)
 {
    rarch_setting_t *setting_data = (rarch_setting_t*)
-      setting_data_get_list(SL_FLAG_ALL_SETTINGS, false);
+      driver.menu->list_settings;
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
          driver.menu->selection_buf->list[index].label);
 
@@ -1825,7 +1825,7 @@ void setting_data_get_label(char *type_str,
       setting_data_get_string_representation(setting, type_str, type_str_size);
    else
    {
-      setting_data = (rarch_setting_t*)setting_data_get_mainmenu(true);
+      setting_data = (rarch_setting_t*)driver.menu->list_mainmenu;
 
       setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
             driver.menu->selection_buf->list[index].label);
@@ -4529,73 +4529,12 @@ bool setting_data_append_list_privacy_options(
    return true;
 }
 
-#ifdef HAVE_MENU
-/* TODO - combine this with setting_data_get_list. */
-
-rarch_setting_t *setting_data_get_mainmenu(bool need_refresh)
+rarch_setting_t *setting_data_get_list(unsigned mask)
 {
-   rarch_setting_info_t *list_info = NULL;
    static rarch_setting_t* list = NULL;
 
-   if (list)
-   {
-      if (!need_refresh)
-         return list;
-
-      settings_list_free(list);
-   }
-
-   list_info = (rarch_setting_info_t*)settings_info_list_new();
-   if (!list_info)
-      return NULL;
-
-   list = (rarch_setting_t*)settings_list_new(list_info->size);
-   if (!list)
-      goto error;
-
-   if (!setting_data_append_list_main_menu_options(&list, list_info))
-      goto error;
-
-   rarch_setting_t terminator = { ST_NONE };
-   if (!(settings_list_append(&list, list_info, terminator)))
-      goto error;
-
-   /* flatten this array to save ourselves some kilobytes */
-   if (!(list = (rarch_setting_t*)
-            realloc(list, list_info->index * sizeof(rarch_setting_t))))
-      goto error;
-
-   settings_info_list_free(list_info);
-
-   /* do not optimize into return realloc(),
-    * list is static and must be written. */
-   return (rarch_setting_t*)list;
-
-error:
-   RARCH_ERR("Allocation failed.\n");
-   settings_info_list_free(list_info);
-   settings_list_free(list);
-
-   return NULL;
-}
-#endif
-
-rarch_setting_t *setting_data_get_list(unsigned mask, bool need_refresh)
-{
-   static unsigned last_mask = 0;
-   rarch_setting_info_t *list_info = NULL;
-   static rarch_setting_t* list = NULL;
-
-   if (list)
-   {
-      if (mask == last_mask)
-         if (!need_refresh)
-            return list;
-
-      settings_list_free(list);
-   }
-
-   list_info = (rarch_setting_info_t*)settings_info_list_new();
+   rarch_setting_info_t *list_info = (rarch_setting_info_t*)
+      settings_info_list_new();
    if (!list_info)
       return NULL;
 
@@ -4698,11 +4637,9 @@ rarch_setting_t *setting_data_get_list(unsigned mask, bool need_refresh)
 
    settings_info_list_free(list_info);
 
-   last_mask = mask;
-
    /* do not optimize into return realloc(),
     * list is static and must be written. */
-   return (rarch_setting_t*)list;
+   return list;
 
 error:
    RARCH_ERR("Allocation failed.\n");

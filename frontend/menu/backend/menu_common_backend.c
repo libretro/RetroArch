@@ -67,8 +67,7 @@ static int menu_info_screen_iterate(unsigned action)
    char needle[PATH_MAX];
    unsigned info_type = 0;
    rarch_setting_t *current_setting = NULL;
-   rarch_setting_t *setting_data = (rarch_setting_t *)
-      setting_data_get_list(SL_FLAG_ALL_SETTINGS, false);
+   rarch_setting_t *setting_data = (rarch_setting_t *)driver.menu->list_settings;
    file_list_t *list = (file_list_t*)driver.menu->selection_buf;
 
    if (!driver.menu || !setting_data)
@@ -79,15 +78,14 @@ static int menu_info_screen_iterate(unsigned action)
 
    current_setting = (rarch_setting_t*)menu_entries_get_last_setting(
          list->list[driver.menu->selection_ptr].label,
-         driver.menu->selection_ptr,
-         setting_data_get_list(SL_FLAG_ALL_SETTINGS, false));
+         driver.menu->selection_ptr, driver.menu->list_settings);
 
    if (current_setting)
       strlcpy(needle, current_setting->name, sizeof(needle));
    else if ((current_setting = (rarch_setting_t*)menu_entries_get_last_setting(
             list->list[driver.menu->selection_ptr].label,
             driver.menu->selection_ptr,
-            setting_data_get_mainmenu(true))))
+            driver.menu->list_mainmenu)))
    {
       if (current_setting)
          strlcpy(needle, current_setting->name, sizeof(needle));
@@ -767,8 +765,7 @@ static int menu_action_ok(const char *menu_path,
    const char *label = NULL;
    const char *path = NULL;
    unsigned type = 0;
-   rarch_setting_t *setting_data = (rarch_setting_t *)
-      setting_data_get_list(SL_FLAG_ALL_SETTINGS, false);
+   rarch_setting_t *setting_data = (rarch_setting_t *)driver.menu->list_settings;
    rarch_setting_t *setting = (rarch_setting_t*)
       setting_data_find_setting(setting_data, menu_label);
 

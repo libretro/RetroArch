@@ -361,14 +361,11 @@ int menu_shader_manager_setting_toggle(
 #endif
 
    rarch_setting_t *current_setting = NULL;
-   rarch_setting_t *setting_data = (rarch_setting_t *)
-      setting_data_get_list(SL_FLAG_ALL_SETTINGS, false);
-
 
    if (!strcmp(label, "video_shader_default_filter"))
    {
       if ((current_setting = setting_data_find_setting(
-                  setting_data, "video_smooth")))
+                  driver.menu->list_settings, "video_smooth")))
          menu_action_setting_boolean(current_setting, action);
    }
    else if (id >= MENU_SETTINGS_SHADER_PARAMETER_0

@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include "../../boolean.h"
 #include "../../file_list.h"
-
+#include "../../settings_list.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -123,6 +123,9 @@ typedef struct
    } keyboard;
 
    bool bind_mode_keyboard;
+
+   rarch_setting_t *list_mainmenu;
+   rarch_setting_t *list_settings;
 } menu_handle_t;
 
 #ifdef __cplusplus

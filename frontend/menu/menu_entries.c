@@ -168,8 +168,6 @@ int menu_entries_push_list(menu_handle_t *menu,
    unsigned i;
    char tmp[256];
    size_t list_size = 0;
-   rarch_setting_t *setting_data = (rarch_setting_t *)
-      setting_data_get_list(SL_FLAG_ALL_SETTINGS, true);
    bool do_action = false;
 
 #if 0
@@ -180,9 +178,10 @@ int menu_entries_push_list(menu_handle_t *menu,
 
    if (!strcmp(label, "mainmenu"))
    {
-      rarch_setting_t *setting;
-      setting_data = (rarch_setting_t *)setting_data_get_mainmenu(true);
-      setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "Main Menu");
+      settings_list_free(menu->list_mainmenu);
+      menu->list_mainmenu = (rarch_setting_t *)
+         setting_data_get_list(SL_FLAG_MAIN_MENU);
+      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_mainmenu, "Main Menu");
 
       file_list_clear(list);
 
@@ -201,7 +200,10 @@ int menu_entries_push_list(menu_handle_t *menu,
    }
    else if (menu_type == MENU_FILE_CATEGORY)
    {
-      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
+      settings_list_free(menu->list_settings);
+      menu->list_settings = (rarch_setting_t *)
+         setting_data_get_list(SL_FLAG_ALL_SETTINGS);
+      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
             label);
 
       file_list_clear(list);
@@ -231,7 +233,10 @@ int menu_entries_push_list(menu_handle_t *menu,
    }
    else if (!strcmp(label, "settings"))
    {
-      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
+      settings_list_free(menu->list_settings);
+      menu->list_settings = (rarch_setting_t *)
+         setting_data_get_list(SL_FLAG_ALL_SETTINGS);
+      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
             "Driver Options");
 
       file_list_clear(list);
@@ -423,6 +428,10 @@ int menu_entries_push_list(menu_handle_t *menu,
    }
    else if (!strcmp(label, "Input Options"))
    {
+      rarch_setting_t *setting_data = (rarch_setting_t*)menu->list_settings;
+      settings_list_free(setting_data);
+      setting_data = (rarch_setting_t *)
+         setting_data_get_list(SL_FLAG_ALL_SETTINGS);
       file_list_clear(list);
       file_list_push(list, "Player", "input_bind_player_no", 0, 0);
       file_list_push(list, "Device", "input_bind_device_id", 0, 0);

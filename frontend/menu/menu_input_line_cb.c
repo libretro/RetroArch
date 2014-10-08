@@ -72,14 +72,12 @@ void st_uint_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
    rarch_setting_t *current_setting = NULL;
-   rarch_setting_t *setting_data = (rarch_setting_t *)
-      setting_data_get_list(SL_FLAG_ALL_SETTINGS, false);
 
-   if (str && *str && setting_data)
+   if (str && *str)
    {
       if ((current_setting = (rarch_setting_t*)
                setting_data_find_setting(
-                  setting_data, menu->keyboard.label_setting)))
+                  menu->list_settings, menu->keyboard.label_setting)))
          *current_setting->value.unsigned_integer = strtoul(str, NULL, 0);
    }
    menu_key_end_line(menu);
@@ -89,14 +87,12 @@ void st_string_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
    rarch_setting_t *current_setting = NULL;
-   rarch_setting_t *setting_data = (rarch_setting_t *)
-      setting_data_get_list(SL_FLAG_ALL_SETTINGS, false);
  
-   if (str && *str && setting_data)
+   if (str && *str)
    {
       if ((current_setting = (rarch_setting_t*)
                setting_data_find_setting(
-                  setting_data, menu->keyboard.label_setting)))
+                  menu->list_settings, menu->keyboard.label_setting)))
          menu_action_setting_set_current_string(current_setting, str);
       else
          menu_action_set_current_string_based_on_label(
