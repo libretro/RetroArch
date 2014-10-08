@@ -2466,7 +2466,7 @@ static bool gl_has_windowed(void *data)
    gl_t *gl = (gl_t*)data;
 
    if (gl && gl->ctx_driver)
-      gl->ctx_driver->has_windowed(gl);
+      return gl->ctx_driver->has_windowed(gl);
    return true;
 }
 
