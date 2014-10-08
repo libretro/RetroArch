@@ -678,6 +678,11 @@ MENU
 #include "../frontend/menu/disp/glui.c"
 #endif
 
+#ifdef HAVE_XMB
+#include "../frontend/menu/disp/xmb.c"
+#include "../frontend/menu/disp/tween.c"
+#endif
+
 #endif
 
 #ifdef HAVE_COMMAND

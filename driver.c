@@ -240,6 +240,9 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_GLUI)
    &menu_ctx_glui,
 #endif
+#if defined(HAVE_XMB)
+   &menu_ctx_xmb,
+#endif
 #if defined(HAVE_RGUI)
    &menu_ctx_rgui,
 #endif
