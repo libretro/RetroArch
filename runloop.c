@@ -373,10 +373,8 @@ static int do_state_checks(
    if (BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
       rarch_main_command(RARCH_CMD_GRAB_MOUSE_TOGGLE);
 
-#ifdef HAVE_OVERLAY
    if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))
-      input_overlay_next(driver.overlay);
-#endif
+      rarch_main_command(RARCH_CMD_OVERLAY_NEXT);
 
    if (!g_extern.is_paused)
    {

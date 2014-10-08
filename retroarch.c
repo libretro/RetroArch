@@ -2338,6 +2338,11 @@ bool rarch_main_command(unsigned cmd)
             RARCH_ERR("Failed to load overlay.\n");
 #endif
          break;
+      case RARCH_CMD_OVERLAY_NEXT:
+#ifdef HAVE_OVERLAY
+         input_overlay_next(driver.overlay);
+#endif
+         break;
       case RARCH_CMD_DSP_FILTER_DEINIT:
          if (g_extern.audio_data.dsp)
             rarch_dsp_filter_free(g_extern.audio_data.dsp);

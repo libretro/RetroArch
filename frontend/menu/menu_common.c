@@ -310,10 +310,8 @@ int menu_iterate(retro_input_t input,
    if (!driver.menu)
       return -1;
 
-#ifdef HAVE_OVERLAY
    if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))
-         input_overlay_next(driver.overlay);
-#endif
+      rarch_main_command(RARCH_CMD_OVERLAY_NEXT);
    if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
       rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
 
