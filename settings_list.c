@@ -58,7 +58,7 @@ bool settings_list_append(rarch_setting_t **list,
 
 static void null_write_handler(void *data)
 {
-   return;
+   (void)data;
 }
 
 void settings_list_current_add_flags(
