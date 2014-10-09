@@ -80,11 +80,6 @@ float setting_margin_left;
 
 GLuint fbo, fbocolor, fbodepth = 0;
 
-// Font variables
-static void *font;
-static const gl_font_renderer_t *font_driver;
-static char font_path[PATH_MAX];
-
 static const GLfloat vertex[] = {
    0, 0,
    1, 0,
@@ -229,11 +224,13 @@ static void lakka_responsive(void)
    strcpy(icon_dir, "96");
 }
 
-static char *str_replace (const char *string, const char *substr, const char *replacement)
+static char *str_replace (const char *string,
+      const char *substr, const char *replacement)
 {
    char *tok, *newstr, *oldstr, *head;
 
-   /* if either substr or replacement is NULL, duplicate string a let caller handle it */
+   /* if either substr or replacement is NULL, 
+    * duplicate string a let caller handle it. */
    if (!substr || !replacement)
       return strdup (string);
 
@@ -242,7 +239,8 @@ static char *str_replace (const char *string, const char *substr, const char *re
    while ( (tok = strstr ( head, substr )))
    {
       oldstr = newstr;
-      newstr = (char*)malloc(strlen(oldstr) - strlen(substr) + strlen(replacement) + 1);
+      newstr = (char*)malloc(
+            strlen(oldstr) - strlen(substr) + strlen(replacement) + 1);
 
       if (!newstr)
       {
@@ -791,12 +789,6 @@ static void lakka_context_destroy(void *data)
          }
       }
    }
-
-   if (font_driver)
-   {
-      font_driver->free(font);
-      font_driver = NULL;
-   }
 }
 
 static bool lakka_init_settings(menu_handle_t *menu)
@@ -945,10 +937,6 @@ static void lakka_context_reset(void *data)
    fill_pathname_join(iconpath, themepath, icon_dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
    
-   fill_pathname_join(font_path, themepath, "font.ttf", sizeof(font_path));
-
-   gl_font_init_first(&font_driver, &font, gl, font_path, lakka_font_size);
-
    fill_pathname_join(textures[TEXTURE_BG].path, iconpath,
          "bg.png", sizeof(textures[TEXTURE_BG].path));
    fill_pathname_join(textures[TEXTURE_SETTINGS].path, iconpath,
