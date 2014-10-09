@@ -122,14 +122,14 @@ typedef struct xmb_handle
 
 static xmb_handle_t *xmb_menu_data;
 
-static const GLfloat vertex[] = {
+static const GLfloat rmb_vertex[] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1,
 };
 
-static const GLfloat tex_coord[] = {
+static const GLfloat rmb_tex_coord[] = {
    0, 1,
    1, 1,
    0, 0,
@@ -173,9 +173,9 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
    glViewport(x, gl->win_height - y, xmb->xmb_icon_size, xmb->xmb_icon_size);
 
    coords.vertices = 4;
-   coords.vertex = vertex;
-   coords.tex_coord = tex_coord;
-   coords.lut_tex_coord = tex_coord;
+   coords.vertex = rmb_vertex;
+   coords.tex_coord = rmb_tex_coord;
+   coords.lut_tex_coord = rmb_tex_coord;
    coords.color = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
