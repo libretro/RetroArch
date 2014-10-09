@@ -508,6 +508,7 @@
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_LAKKA",
 					"-DHAVE_GLUI",
+					"-DHAVE_XMB",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				VALID_ARCHS = "armv7 armv7s";
@@ -562,6 +563,7 @@
 					"-DHAVE_7ZIP",
 					"-DHAVE_LAKKA",
 					"-DHAVE_GLUI",
+					"-DHAVE_XMB",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -593,6 +595,7 @@
 					"-DHAVE_7ZIP",
 					"-DHAVE_LAKKA",
 					"-DHAVE_GLUI",
+					"-DHAVE_XMB",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";

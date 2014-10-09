@@ -352,6 +352,7 @@
 					"-DHAVE_LAKKA",
 					"-DHAVE_GLUI",
 					"-DHAVE_HID",
+					"-DHAVE_XMB",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -421,6 +422,7 @@
 					"-DHAVE_LAKKA",
 					"-DHAVE_GLUI",
 					"-DHAVE_HID",
+					"-DHAVE_XMB",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
