@@ -59,37 +59,68 @@ typedef struct
    float y;
 } xmb_node_t;
 
-xmb_node_t *xmb_nodes;
 
 char xmb_title[256] = "";
 char xmb_oldtitle[256] = "";
-int xmb_depth = 0;
 int selptr = -1;
 int oldselptr = -1;
 
-unsigned line_height, glyph_width, xmb_margin, xmb_term_width, xmb_term_height;
-GLuint xmb_bg = 0;
-char box_message[PATH_MAX];
 
-float xmb_alpha = 1.0f;
+enum
+{
+   RMB_TEXTURE_MAIN = 0,
+   RMB_TEXTURE_FONT,
+   RMB_TEXTURE_BG,
+   RMB_TEXTURE_SETTINGS,
+   RMB_TEXTURE_SETTING,
+   RMB_TEXTURE_SUBSETTING,
+   RMB_TEXTURE_ARROW,
+   RMB_TEXTURE_RUN,
+   RMB_TEXTURE_RESUME,
+   RMB_TEXTURE_SAVESTATE,
+   RMB_TEXTURE_LOADSTATE,
+   RMB_TEXTURE_SCREENSHOT,
+   RMB_TEXTURE_RELOAD,
+   RMB_TEXTURE_LAST
+};
 
-char icon_dir[4];
+struct xmb_texture_item
+{
+   GLuint id;
+   char path[PATH_MAX];
+};
 
-int xmb_icon_size = 96;
-float xmb_hspacing = 150.0;
-float xmb_vspacing = 48.0;
-float xmb_font_size = 18;
-float xmb_margin_left = 224;
-float xmb_margin_top = 192;
-float xmb_title_margin_left = 15.0;
-float xmb_title_margin_top = 30.0;
-float xmb_label_margin_left = 64;
-float xmb_label_margin_top = 6.0;
-float xmb_setting_margin_left = 400;
+typedef struct xmb_handle
+{
+   int xmb_depth;
+   GLuint xmb_bg;
+   unsigned line_height;
+   unsigned glyph_width;
+   unsigned xmb_margin;
+   unsigned xmb_term_width;
+   unsigned xmb_term_height;
+   char icon_dir[4];
+   char box_message[PATH_MAX];
+   struct xmb_texture_item textures[RMB_TEXTURE_LAST];
+   int xmb_icon_size;
+   float xmb_alpha;
+   float xmb_hspacing;
+   float xmb_vspacing;
+   float xmb_font_size;
+   float xmb_margin_left;
+   float xmb_margin_top;
+   float xmb_title_margin_left;
+   float xmb_title_margin_top;
+   float xmb_label_margin_left;
+   float xmb_label_margin_top;
+   float xmb_setting_margin_left;
+   float xmb_above_item_offset;
+   float xmb_active_item_factor;
+   float xmb_under_item_offset;
+   xmb_node_t *xmb_nodes;
+} xmb_handle_t;
 
-float xmb_above_item_offset = -1.0;
-float xmb_active_item_factor = 2.75;
-float xmb_under_item_offset = 4.0;
+static xmb_handle_t *xmb_menu_data;
 
 static const GLfloat vertex[] = {
    0, 0,
@@ -105,37 +136,17 @@ static const GLfloat tex_coord[] = {
    1, 0,
 };
 
-enum
-{
-   TEXTURE_MAIN = 0,
-   TEXTURE_FONT,
-   TEXTURE_BG,
-   TEXTURE_SETTINGS,
-   TEXTURE_SETTING,
-   TEXTURE_SUBSETTING,
-   TEXTURE_ARROW,
-   TEXTURE_RUN,
-   TEXTURE_RESUME,
-   TEXTURE_SAVESTATE,
-   TEXTURE_LOADSTATE,
-   TEXTURE_SCREENSHOT,
-   TEXTURE_RELOAD,
-   TEXTURE_LAST
-};
-
-struct xmb_texture_item
-{
-   GLuint id;
-   char path[PATH_MAX];
-};
-
-struct xmb_texture_item textures[TEXTURE_LAST];
-
 static void xmb_draw_icon(GLuint texture, float x, float y,
       float alpha, float rotation, float scale)
 {
-   if (alpha > xmb_alpha)
-      alpha = xmb_alpha;
+   struct gl_coords coords;
+   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
+
+   if (!xmb)
+      return;
+
+   if (alpha > xmb->xmb_alpha)
+      alpha = xmb->xmb_alpha;
 
    if (alpha == 0)
       return;
@@ -145,8 +156,8 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
    if (!gl)
       return;
 
-   if (x < -xmb_icon_size || x > gl->win_width + xmb_icon_size
-         || y < -xmb_icon_size || y > gl->win_height + xmb_icon_size)
+   if (x < -xmb->xmb_icon_size || x > gl->win_width + xmb->xmb_icon_size
+         || y < -xmb->xmb_icon_size || y > gl->win_height + xmb->xmb_icon_size)
       return;
 
    GLfloat color[] = {
@@ -159,9 +170,8 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   glViewport(x, gl->win_height - y, xmb_icon_size, xmb_icon_size);
+   glViewport(x, gl->win_height - y, xmb->xmb_icon_size, xmb->xmb_icon_size);
 
-   struct gl_coords coords;
    coords.vertices = 4;
    coords.vertex = vertex;
    coords.tex_coord = tex_coord;
@@ -191,9 +201,15 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
 static void xmb_draw_text(const char *str, float x,
       float y, float scale, float alpha)
 {
-   if (alpha > xmb_alpha)
-      alpha = xmb_alpha;
-   uint8_t a8 = 255 * alpha;
+   uint8_t a8 = 0;
+   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
+
+   if (!xmb)
+      return;
+
+   if (alpha > xmb->xmb_alpha)
+      alpha = xmb->xmb_alpha;
+   a8 = 255 * alpha;
    if (a8 == 0)
       return;
 
@@ -202,8 +218,8 @@ static void xmb_draw_text(const char *str, float x,
    if (!gl)
       return;
 
-   if (x < -xmb_icon_size || x > gl->win_width + xmb_icon_size
-         || y < -xmb_icon_size || y > gl->win_height + xmb_icon_size)
+   if (x < -xmb->xmb_icon_size || x > gl->win_width + xmb->xmb_icon_size
+         || y < -xmb->xmb_icon_size || y > gl->win_height + xmb->xmb_icon_size)
       return;
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
@@ -224,6 +240,11 @@ static void xmb_draw_text(const char *str, float x,
 
 static void xmb_render_background(void)
 {
+   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
+
+   if (!xmb)
+      return;
+
    GLfloat black_color[] = {
       0.0f, 0.0f, 0.0f, 0.8f,
       0.0f, 0.0f, 0.0f, 0.8f,
@@ -256,8 +277,8 @@ static void xmb_render_background(void)
 
    gl->coords.vertex = vertex;
    gl->coords.tex_coord = tex_coord;
-   gl->coords.color = xmb_bg ? gl->white_color_ptr : black_color;
-   glBindTexture(GL_TEXTURE_2D, xmb_bg);
+   gl->coords.color = xmb->xmb_bg ? gl->white_color_ptr : black_color;
+   glBindTexture(GL_TEXTURE_2D, xmb->xmb_bg);
 
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
@@ -275,18 +296,21 @@ static void xmb_get_message(const char *message)
 {
    size_t i;
    (void)i;
+   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
 
    if (!driver.menu || !message || !*message)
       return;
 
-   strlcpy(box_message, message, sizeof(box_message));
+   strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
 }
 
 static void xmb_render_messagebox(const char *message)
 {
+   unsigned i;
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
 
-   if (!driver.menu || !gl)
+   if (!driver.menu || !gl || !xmb)
       return;
 
    struct string_list *list = string_split(message, "\n");
@@ -298,43 +322,46 @@ static void xmb_render_messagebox(const char *message)
       return;
    }
 
-   unsigned i;
-   int x = gl->win_width / 2 - strlen(list->elems[0].data) * glyph_width / 2;
-   int y = gl->win_height / 2 - list->size * line_height / 2;
+   int x = gl->win_width / 2 - strlen(list->elems[0].data) * xmb->glyph_width / 2;
+   int y = gl->win_height / 2 - list->size * xmb->line_height / 2;
+
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
-      xmb_draw_text(msg, x, y + i * xmb_vspacing, 1, 1);
+      xmb_draw_text(msg, x, y + i * xmb->xmb_vspacing, 1, 1);
    }
 
    string_list_free(list);
 }
 
-static void xmb_selection_pointer_changed()
+static void xmb_selection_pointer_changed(void)
 {
-   int num_nodes = file_list_get_size(driver.menu->selection_buf);
-
    int i;
+   int num_nodes = file_list_get_size(driver.menu->selection_buf);
+   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
+
+   if (!xmb)
+      return;
 
    for (i = 0; i < num_nodes; i++)
    {
       float iy;
       float ia = 0.5;
       float iz = 0.5;
-      xmb_node_t *node = (xmb_node_t*)&xmb_nodes[i];
+      xmb_node_t *node = (xmb_node_t*)&xmb->xmb_nodes[i];
 
       if (!node)
          continue;
 
-      iy = (i < selptr) ? xmb_vspacing *
-         (i - selptr + xmb_above_item_offset) :
-         xmb_vspacing * (i - selptr + xmb_under_item_offset);
+      iy = (i < selptr) ? xmb->xmb_vspacing *
+         (i - selptr + xmb->xmb_above_item_offset) :
+         xmb->xmb_vspacing * (i - selptr + xmb->xmb_under_item_offset);
 
       if (i == selptr)
       {
          ia = 1.0;
          iz = 1.0;
-         iy = xmb_vspacing * xmb_active_item_factor;
+         iy = xmb->xmb_vspacing * xmb->xmb_active_item_factor;
       }
 
       add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
@@ -347,17 +374,19 @@ static void xmb_selection_pointer_changed()
 
 static void xmb_screen_changed(void)
 {
-   int num_nodes = file_list_get_size(driver.menu->selection_buf);
-
-   xmb_nodes = (xmb_node_t*)
-      calloc(num_nodes, sizeof(xmb_node_t));
-
+   int i;
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
-   file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
+   int num_nodes = file_list_get_size(driver.menu->selection_buf);
+   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
 
-   int i;
+   if (!xmb)
+      return;
+
+   xmb->xmb_nodes = (xmb_node_t*)calloc(num_nodes, sizeof(xmb_node_t));
+
+   file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
    for (i = 0; i < num_nodes; i++)
    {
@@ -381,14 +410,14 @@ static void xmb_screen_changed(void)
 
       snprintf(name, sizeof(name), "%s", path_buf);
 
-      float iy = (i < selptr) ? xmb_vspacing *
-         (i - selptr + xmb_above_item_offset) :
-         xmb_vspacing * (i - selptr + xmb_under_item_offset);
+      float iy = (i < selptr) ? xmb->xmb_vspacing *
+         (i - selptr + xmb->xmb_above_item_offset) :
+         xmb->xmb_vspacing * (i - selptr + xmb->xmb_under_item_offset);
 
       if (i == selptr)
-         iy = xmb_vspacing * xmb_active_item_factor;
+         iy = xmb->xmb_vspacing * xmb->xmb_active_item_factor;
 
-      xmb_node_t *node = (xmb_node_t*)&xmb_nodes[i];
+      xmb_node_t *node = (xmb_node_t*)&xmb->xmb_nodes[i];
       strlcpy(node->name, name, sizeof(node->name));
       strlcpy(node->value, value, sizeof(node->value));
       node->alpha = i == selptr ? 1.0 : 0.5;
@@ -401,6 +430,10 @@ static void xmb_screen_changed(void)
 
 static void xmb_frame(void)
 {
+   const char *dir = NULL;
+   const char *label = NULL;
+   unsigned menu_type = 0;
+   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
 
    if (!driver.menu || !gl)
@@ -417,9 +450,6 @@ static void xmb_frame(void)
 
    xmb_render_background();
 
-   const char *dir = NULL;
-   const char *label = NULL;
-   unsigned menu_type = 0;
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
    if (!strcmp(xmb_title, ""))
@@ -468,7 +498,7 @@ static void xmb_frame(void)
 
    for (i = 0; i < file_list_get_size(driver.menu->selection_buf); i++)
    {
-      xmb_node_t *node = (xmb_node_t*)&xmb_nodes[i];
+      xmb_node_t *node = (xmb_node_t*)&xmb->xmb_nodes[i];
 
       /*float iy;
       float ia = 0.5;
@@ -484,29 +514,30 @@ static void xmb_frame(void)
          iy = xmb_vspacing * xmb_active_item_factor;
       }*/
 
-      xmb_draw_icon(textures[TEXTURE_SETTING].id,
-            xmb_margin_left + xmb_hspacing - xmb_icon_size/2.0, 
-            xmb_margin_top + node->y + xmb_icon_size/2.0, 
+      xmb_draw_icon(xmb->textures[RMB_TEXTURE_SETTING].id,
+            xmb->xmb_margin_left + xmb->xmb_hspacing - xmb->xmb_icon_size/2.0, 
+            xmb->xmb_margin_top + node->y + xmb->xmb_icon_size/2.0, 
             node->alpha, 
             0, 
             node->zoom);
 
       xmb_draw_text(node->name,
-            xmb_margin_left + xmb_hspacing + xmb_label_margin_left, 
-            xmb_margin_top + node->y + xmb_label_margin_top, 
+            xmb->xmb_margin_left + xmb->xmb_hspacing + xmb->xmb_label_margin_left, 
+            xmb->xmb_margin_top + node->y + xmb->xmb_label_margin_top, 
             1, 
             node->alpha);
 
       xmb_draw_text(node->value,
-            xmb_margin_left + xmb_hspacing + xmb_label_margin_left + xmb_setting_margin_left, 
-            xmb_margin_top + node->y + xmb_label_margin_top, 
+            xmb->xmb_margin_left + xmb->xmb_hspacing + 
+            xmb->xmb_label_margin_left + xmb->xmb_setting_margin_left, 
+            xmb->xmb_margin_top + node->y + xmb->xmb_label_margin_top, 
             1, 
             node->alpha);
    }
 
-   xmb_draw_icon(textures[TEXTURE_SETTINGS].id, 
-         xmb_margin_left + xmb_hspacing - xmb_icon_size/2.0,
-         xmb_margin_top + xmb_icon_size/2.0, 
+   xmb_draw_icon(xmb->textures[RMB_TEXTURE_SETTINGS].id, 
+         xmb->xmb_margin_left + xmb->xmb_hspacing - xmb->xmb_icon_size / 2.0,
+         xmb->xmb_margin_top + xmb->xmb_icon_size / 2.0, 
          1.0, 
          0, 
          1.0);
@@ -531,15 +562,16 @@ static void xmb_frame(void)
       const char *str = *driver.menu->keyboard.buffer;
       if (!str)
          str = "";
-      snprintf(msg, sizeof(msg), "%s\n%s", driver.menu->keyboard.label, str);
+      snprintf(msg, sizeof(msg), "%s\n%s",
+            driver.menu->keyboard.label, str);
       xmb_render_messagebox(msg);
    }
 
-   if (box_message[0] != '\0')
+   if (xmb->box_message[0] != '\0')
    {
       xmb_render_background();
-      xmb_render_messagebox(box_message);
-      box_message[0] = '\0';
+      xmb_render_messagebox(xmb->box_message);
+      xmb->box_message[0] = '\0';
    }
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
@@ -559,7 +591,7 @@ static void xmb_init_core_info(void *data)
 
 static void *xmb_init(void)
 {
-   menu_handle_t *menu;
+   menu_handle_t *menu = NULL;
    const video_driver_t *video_driver = NULL;
    gl_t *gl = (gl_t*)driver_video_resolve(&video_driver);
 
@@ -574,9 +606,32 @@ static void *xmb_init(void)
    if (!menu)
       return NULL;
 
+   xmb_menu_data = (xmb_handle_t*)calloc(1, sizeof(*xmb_menu_data));
+
+   if (!xmb_menu_data)
+      return NULL;
+
+   xmb_menu_data->xmb_icon_size           = 96;
+   xmb_menu_data->xmb_hspacing            = 150.0;
+   xmb_menu_data->xmb_vspacing            = 48.0;
+   xmb_menu_data->xmb_font_size           = 18;
+   xmb_menu_data->xmb_margin_left         = 224;
+   xmb_menu_data->xmb_margin_top          = 192;
+   xmb_menu_data->xmb_title_margin_left   = 15.0;
+   xmb_menu_data->xmb_title_margin_top    = 30.0;
+   xmb_menu_data->xmb_label_margin_left   = 64;
+   xmb_menu_data->xmb_label_margin_top    = 6.0;
+   xmb_menu_data->xmb_setting_margin_left = 400;
+   xmb_menu_data->xmb_above_item_offset   = -1.0;
+   xmb_menu_data->xmb_active_item_factor  = 2.75;
+   xmb_menu_data->xmb_under_item_offset   = 4.0;
+   xmb_menu_data->xmb_alpha               = 1.0f;
+   xmb_menu_data->xmb_depth               = 0;
+   xmb_menu_data->xmb_bg                  = 0;
+
    xmb_init_core_info(menu);
 
-   strcpy(icon_dir, "96");
+   strcpy(xmb_menu_data->icon_dir, "96");
 
    return menu;
 }
@@ -590,6 +645,10 @@ static void xmb_free(void *data)
 
    if (g_extern.core_info)
       core_info_list_free(g_extern.core_info);
+
+   if (xmb_menu_data)
+      free(xmb_menu_data);
+
    g_extern.core_info = NULL;
 }
 
@@ -639,19 +698,19 @@ static GLuint xmb_png_texture_load(const char* file_name)
 
 static void xmb_context_reset(void *data)
 {
+   int k;
+   char bgpath[PATH_MAX];
+   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX];
    menu_handle_t *menu = (menu_handle_t*)data;
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
     
    (void)gl;
 
    driver.gfx_use_rgba = true;
 
-   if (!menu)
+   if (!menu || !xmb)
       return;
-
-   int k;
-   char bgpath[PATH_MAX];
-   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX];
 
    fill_pathname_join(bgpath, g_settings.assets_directory,
          "xmb", sizeof(bgpath));
@@ -659,39 +718,39 @@ static void xmb_context_reset(void *data)
    fill_pathname_join(bgpath, bgpath, "bg.png", sizeof(bgpath));
 
    if (path_file_exists(bgpath))
-      xmb_bg = xmb_png_texture_load(bgpath);
+      xmb->xmb_bg = xmb_png_texture_load(bgpath);
 
    fill_pathname_join(mediapath, g_settings.assets_directory,
          "lakka", sizeof(mediapath));
    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
-   fill_pathname_join(iconpath, themepath, icon_dir, sizeof(iconpath));
+   fill_pathname_join(iconpath, themepath, xmb->icon_dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
-   fill_pathname_join(textures[TEXTURE_BG].path, iconpath,
-         "bg.png", sizeof(textures[TEXTURE_BG].path));
-   fill_pathname_join(textures[TEXTURE_SETTINGS].path, iconpath,
-         "settings.png", sizeof(textures[TEXTURE_SETTINGS].path));
-   fill_pathname_join(textures[TEXTURE_SETTING].path, iconpath,
-         "setting.png", sizeof(textures[TEXTURE_SETTING].path));
-   fill_pathname_join(textures[TEXTURE_SUBSETTING].path, iconpath,
-         "subsetting.png", sizeof(textures[TEXTURE_SUBSETTING].path));
-   fill_pathname_join(textures[TEXTURE_ARROW].path, iconpath,
-         "arrow.png", sizeof(textures[TEXTURE_ARROW].path));
-   fill_pathname_join(textures[TEXTURE_RUN].path, iconpath,
-         "run.png", sizeof(textures[TEXTURE_RUN].path));
-   fill_pathname_join(textures[TEXTURE_RESUME].path, iconpath,
-         "resume.png", sizeof(textures[TEXTURE_RESUME].path));
-   fill_pathname_join(textures[TEXTURE_SAVESTATE].path, iconpath,
-         "savestate.png", sizeof(textures[TEXTURE_SAVESTATE].path));
-   fill_pathname_join(textures[TEXTURE_LOADSTATE].path, iconpath,
-         "loadstate.png", sizeof(textures[TEXTURE_LOADSTATE].path));
-   fill_pathname_join(textures[TEXTURE_SCREENSHOT].path, iconpath,
-         "screenshot.png", sizeof(textures[TEXTURE_SCREENSHOT].path));
-   fill_pathname_join(textures[TEXTURE_RELOAD].path, iconpath,
-         "reload.png", sizeof(textures[TEXTURE_RELOAD].path));
+   fill_pathname_join(xmb->textures[RMB_TEXTURE_BG].path, iconpath,
+         "bg.png", sizeof(xmb->textures[RMB_TEXTURE_BG].path));
+   fill_pathname_join(xmb->textures[RMB_TEXTURE_SETTINGS].path, iconpath,
+         "settings.png", sizeof(xmb->textures[RMB_TEXTURE_SETTINGS].path));
+   fill_pathname_join(xmb->textures[RMB_TEXTURE_SETTING].path, iconpath,
+         "setting.png", sizeof(xmb->textures[RMB_TEXTURE_SETTING].path));
+   fill_pathname_join(xmb->textures[RMB_TEXTURE_SUBSETTING].path, iconpath,
+         "subsetting.png", sizeof(xmb->textures[RMB_TEXTURE_SUBSETTING].path));
+   fill_pathname_join(xmb->textures[RMB_TEXTURE_ARROW].path, iconpath,
+         "arrow.png", sizeof(xmb->textures[RMB_TEXTURE_ARROW].path));
+   fill_pathname_join(xmb->textures[RMB_TEXTURE_RUN].path, iconpath,
+         "run.png", sizeof(xmb->textures[RMB_TEXTURE_RUN].path));
+   fill_pathname_join(xmb->textures[RMB_TEXTURE_RESUME].path, iconpath,
+         "resume.png", sizeof(xmb->textures[RMB_TEXTURE_RESUME].path));
+   fill_pathname_join(xmb->textures[RMB_TEXTURE_SAVESTATE].path, iconpath,
+         "savestate.png", sizeof(xmb->textures[RMB_TEXTURE_SAVESTATE].path));
+   fill_pathname_join(xmb->textures[RMB_TEXTURE_LOADSTATE].path, iconpath,
+         "loadstate.png", sizeof(xmb->textures[RMB_TEXTURE_LOADSTATE].path));
+   fill_pathname_join(xmb->textures[RMB_TEXTURE_SCREENSHOT].path, iconpath,
+         "screenshot.png", sizeof(xmb->textures[RMB_TEXTURE_SCREENSHOT].path));
+   fill_pathname_join(xmb->textures[RMB_TEXTURE_RELOAD].path, iconpath,
+         "reload.png", sizeof(xmb->textures[RMB_TEXTURE_RELOAD].path));
 
-   for (k = 0; k < TEXTURE_LAST; k++)
-      textures[k].id = xmb_png_texture_load(textures[k].path);
+   for (k = 0; k < RMB_TEXTURE_LAST; k++)
+      xmb->textures[k].id = xmb_png_texture_load(xmb->textures[k].path);
 }
 
 menu_ctx_driver_t menu_ctx_xmb = {
