@@ -322,7 +322,9 @@ static void xmb_render_messagebox(const char *message)
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
-      xmb_draw_text(msg, x, y + i * xmb->xmb_vspacing, 1, 1);
+
+      if (msg)
+         xmb_draw_text(msg, x, y + i * xmb->xmb_vspacing, 1, 1);
    }
 
    string_list_free(list);
@@ -330,13 +332,14 @@ static void xmb_render_messagebox(const char *message)
 
 static void xmb_selection_pointer_changed(void)
 {
-   int i;
-   int current = driver.menu->selection_ptr;
-   int end = file_list_get_size(driver.menu->selection_buf);
+   int i, current, end;
    xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
 
-   if (!xmb)
+   if (!xmb || !driver.menu)
       return;
+
+   current = driver.menu->selection_ptr;
+   end = file_list_get_size(driver.menu->selection_buf);
 
    for (i = 0; i < end; i++)
    {
@@ -374,8 +377,10 @@ static void xmb_populate_entries(void *data, const char *path,
    unsigned menu_type = 0;
    xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
 
-   if (!xmb)
+   if (!xmb || !driver.menu)
       return;
+
+   int current = driver.menu->selection_ptr;
 
    end = num_nodes = file_list_get_size(driver.menu->selection_buf);
 
@@ -394,7 +399,6 @@ static void xmb_populate_entries(void *data, const char *path,
       xmb_node_t *node = NULL;
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
-      int current = driver.menu->selection_ptr;
 
       file_list_get_at_offset(driver.menu->selection_buf, i, &path,
             &entry_label, &type);
