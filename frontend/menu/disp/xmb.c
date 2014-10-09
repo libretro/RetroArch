@@ -434,6 +434,7 @@ static void xmb_populate_entries(void *data, const char *path,
 static void xmb_frame(void)
 {
    int i;
+   char title_msg[64];
    size_t begin, end;
    const char *dir = NULL;
    const char *label = NULL;
@@ -466,7 +467,6 @@ static void xmb_frame(void)
 
    xmb_draw_text(xmb_title, 30, 40, 1, 1);
 
-   char title_msg[64];
    const char *core_name = g_extern.menu.info.library_name;
    if (!core_name)
       core_name = g_extern.system.info.library_name;
@@ -622,7 +622,7 @@ static void *xmb_init(void)
 
    xmb_init_core_info(menu);
 
-   strcpy(xmb_menu_data->icon_dir, "96");
+   strlcpy(xmb_menu_data->icon_dir, "96", sizeof(xmb_menu_data->icon_dir));
 
    return menu;
 }
