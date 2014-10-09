@@ -224,6 +224,8 @@ static bool parport_joypad_init(void)
    char buf[NUM_BUTTONS * 3 + 1];
    char pin[3 + 1];
 
+   memset(buf, 0, NUM_BUTTONS * 3 + 1);
+
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       struct parport_joypad *pad = &g_pads[i];
