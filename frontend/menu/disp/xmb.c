@@ -59,9 +59,6 @@ typedef struct
 } xmb_node_t;
 
 
-int selptr = 0;
-int oldselptr = 0;
-
 enum
 {
    RMB_TEXTURE_MAIN = 0,
@@ -334,6 +331,7 @@ static void xmb_render_messagebox(const char *message)
 static void xmb_selection_pointer_changed(void)
 {
    int i;
+   int current = driver.menu->selection_ptr;
    int num_nodes = file_list_get_size(driver.menu->selection_buf);
    xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
 
@@ -350,11 +348,11 @@ static void xmb_selection_pointer_changed(void)
       if (!node)
          continue;
 
-      iy = (i < selptr) ? xmb->xmb_vspacing *
-         (i - selptr + xmb->xmb_above_item_offset) :
-         xmb->xmb_vspacing * (i - selptr + xmb->xmb_under_item_offset);
+      iy = (i < current) ? xmb->xmb_vspacing *
+         (i - current + xmb->xmb_above_item_offset) :
+         xmb->xmb_vspacing * (i - current + xmb->xmb_under_item_offset);
 
-      if (i == selptr)
+      if (i == current)
       {
          ia = 1.0;
          iz = 1.0;
@@ -365,8 +363,6 @@ static void xmb_selection_pointer_changed(void)
       add_tween(XMB_DELAY, iz, &node->zoom,  &inOutQuad, NULL);
       add_tween(XMB_DELAY, iy, &node->y,     &inOutQuad, NULL);
    }
-
-   oldselptr = selptr;
 }
 
 static void xmb_populate_entries(void *data, const char *path,
@@ -397,6 +393,7 @@ static void xmb_populate_entries(void *data, const char *path,
       xmb_node_t *node = NULL;
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
+      int current = driver.menu->selection_ptr;
 
       file_list_get_at_offset(driver.menu->selection_buf, i, &path,
             &entry_label, &type);
@@ -412,11 +409,11 @@ static void xmb_populate_entries(void *data, const char *path,
 
       strlcpy(name, path_buf, sizeof(name));
 
-      iy = (i < selptr) ? xmb->xmb_vspacing *
-         (i - selptr + xmb->xmb_above_item_offset) :
-         xmb->xmb_vspacing * (i - selptr + xmb->xmb_under_item_offset);
+      iy = (i < current) ? xmb->xmb_vspacing *
+         (i - current + xmb->xmb_above_item_offset) :
+         xmb->xmb_vspacing * (i - current + xmb->xmb_under_item_offset);
 
-      if (i == selptr)
+      if (i == current)
          iy = xmb->xmb_vspacing * xmb->xmb_active_item_factor;
 
       node = (xmb_node_t*)&xmb->xmb_nodes[i];
@@ -425,8 +422,8 @@ static void xmb_populate_entries(void *data, const char *path,
          continue;
 
       strlcpy(node->name, name, sizeof(node->name));
-      node->alpha = i == selptr ? 1.0 : 0.5;
-      node->zoom = i == selptr ? 1.0 : 0.5;
+      node->alpha = (i  == current) ? 1.0 : 0.5;
+      node->zoom  = (i  == current) ? 1.0 : 0.5;
       node->y = iy;
    }
 }
@@ -435,7 +432,7 @@ static void xmb_frame(void)
 {
    int i;
    char title_msg[64];
-   size_t begin, end;
+   size_t end;
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
@@ -458,12 +455,7 @@ static void xmb_frame(void)
 
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
-   selptr = begin = driver.menu->selection_ptr;
-
    get_title(label, dir, menu_type, xmb->xmb_title, sizeof(xmb->xmb_title));
-
-   if (selptr != oldselptr)
-      xmb_selection_pointer_changed();
 
    xmb_draw_text(xmb->xmb_title, 30, 40, 1, 1);
 
@@ -747,38 +739,52 @@ static void xmb_context_reset(void *data)
 static void xmb_navigation_clear(void *data)
 {
    (void)data;
+
+   xmb_selection_pointer_changed();
 }
 
 static void xmb_navigation_decrement(void *data)
 {
    (void)data;
+
+   xmb_selection_pointer_changed();
 }
 
 static void xmb_navigation_increment(void *data)
 {
    (void)data;
+
+   xmb_selection_pointer_changed();
 }
 
 static void xmb_navigation_set(void *data)
 {
    (void)data;
+
+   xmb_selection_pointer_changed();
 }
 
 static void xmb_navigation_set_last(void *data)
 {
    (void)data;
+
+   xmb_selection_pointer_changed();
 }
 
 static void xmb_navigation_descend_alphabet(void *data, size_t *unused)
 {
    (void)data;
    (void)unused;
+
+   xmb_selection_pointer_changed();
 }
 
 static void xmb_navigation_ascend_alphabet(void *data, size_t *unused)
 {
    (void)data;
    (void)unused;
+
+   xmb_selection_pointer_changed();
 }
 
 static void xmb_list_insert(void *data,
