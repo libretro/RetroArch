@@ -3750,13 +3750,20 @@ bool setting_data_append_list_input_options(
    /* TODO: input_libretro_device_p%u */
    for (player = 0; player < MAX_PLAYERS; player ++)
    {
-      char key[PATH_MAX], label[PATH_MAX];
-      snprintf(key, sizeof(key),     "input_player%d_joypad_index", player + 1);
-      snprintf(label, sizeof(label), "Player %d Pad Index", player + 1);
+      /* These constants match the string lengths.
+       * Keep them up to date or you'll get some really obvious bugs.
+       * 2 is the length of '99'; we don't need more players than that.
+       */
+      static char key[MAX_PLAYERS][25+2+1];
+      static char label[MAX_PLAYERS][17+2+1];
+      snprintf(key[player], sizeof(key[player]),
+               "input_player%d_joypad_index", player + 1);
+      snprintf(label[player], sizeof(label[player]),
+               "Player %d Pad Index", player + 1);
       CONFIG_INT(
             g_settings.input.joypad_map[player],
-            strdup(key),
-            strdup(label),
+            key[player],
+            label[player],
             0,
             group_info.name,
             subgroup_info.name,
@@ -3832,7 +3839,10 @@ bool setting_data_append_list_input_options(
 
    for (player = 0; player < MAX_PLAYERS; player ++)
    {
-      /* 7 for "Player ", 2 for number (we shouldn't need 100), and 1 for NUL. */
+      /* This constants matches the string length.
+       * Keep it up to date or you'll get some really obvious bugs.
+       * 2 is the length of '99'; we don't need more players than that.
+       */
       static char buffer[MAX_PLAYERS][7+2+1];
       const struct retro_keybind* const defaults =
          (player == 0) ? retro_keybinds_1 : retro_keybinds_rest;
