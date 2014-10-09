@@ -120,6 +120,7 @@ enum
    MENU_RMENU_XUI,
    MENU_LAKKA,
    MENU_GLUI,
+   MENU_XMB,
 };
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)

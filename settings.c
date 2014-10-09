@@ -232,6 +232,8 @@ const char *config_get_default_menu(void)
          return "lakka";
       case MENU_GLUI:
          return "glui";
+      case MENU_XMB:
+         return "xmb";
    }
 
    return "NULL";
