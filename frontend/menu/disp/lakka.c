@@ -866,9 +866,8 @@ static bool lakka_init_settings(menu_handle_t *menu)
 
             kk++;
          }
-
-         jj++;
       }
+      jj++;
    }
 
    category->num_items++;
