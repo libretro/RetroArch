@@ -309,7 +309,7 @@ static unsigned input_frame(uint64_t trigger_state)
    return MENU_ACTION_NOOP;
 }
 
-void apply_deferred_settings()
+void apply_deferred_settings(void)
 {
    rarch_setting_t *setting = driver.menu->list_settings;
    bool change = false;
