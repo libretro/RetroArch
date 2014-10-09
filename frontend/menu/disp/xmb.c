@@ -59,7 +59,6 @@ typedef struct
 } xmb_node_t;
 
 
-char xmb_title[256] = "";
 int selptr = 0;
 int oldselptr = 0;
 
@@ -98,6 +97,7 @@ typedef struct xmb_handle
    unsigned xmb_term_height;
    char icon_dir[4];
    char box_message[PATH_MAX];
+   char xmb_title[PATH_MAX];
    struct xmb_texture_item textures[RMB_TEXTURE_LAST];
    int xmb_icon_size;
    float xmb_alpha;
@@ -199,6 +199,7 @@ static void xmb_draw_text(const char *str, float x,
       float y, float scale, float alpha)
 {
    uint8_t a8 = 0;
+   struct font_params params = {0};
    xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
 
    if (!xmb)
@@ -221,7 +222,6 @@ static void xmb_draw_text(const char *str, float x,
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 
-   struct font_params params = {0};
    params.x = x / gl->win_width;
    params.y = 1.0f - y / gl->win_height;
 
@@ -460,12 +460,12 @@ static void xmb_frame(void)
 
    selptr = begin = driver.menu->selection_ptr;
 
-   get_title(label, dir, menu_type, xmb_title, sizeof(xmb_title));
+   get_title(label, dir, menu_type, xmb->xmb_title, sizeof(xmb->xmb_title));
 
    if (selptr != oldselptr)
       xmb_selection_pointer_changed();
 
-   xmb_draw_text(xmb_title, 30, 40, 1, 1);
+   xmb_draw_text(xmb->xmb_title, 30, 40, 1, 1);
 
    const char *core_name = g_extern.menu.info.library_name;
    if (!core_name)
