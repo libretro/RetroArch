@@ -744,6 +744,68 @@ static void xmb_context_reset(void *data)
       xmb->textures[k].id = xmb_png_texture_load(xmb->textures[k].path);
 }
 
+static void xmb_navigation_clear(void *data)
+{
+   (void)data;
+}
+
+static void xmb_navigation_decrement(void *data)
+{
+   (void)data;
+}
+
+static void xmb_navigation_increment(void *data)
+{
+   (void)data;
+}
+
+static void xmb_navigation_set(void *data)
+{
+   (void)data;
+}
+
+static void xmb_navigation_set_last(void *data)
+{
+   (void)data;
+}
+
+static void xmb_navigation_descend_alphabet(void *data, size_t *unused)
+{
+   (void)data;
+   (void)unused;
+}
+
+static void xmb_navigation_ascend_alphabet(void *data, size_t *unused)
+{
+   (void)data;
+   (void)unused;
+}
+
+static void xmb_list_insert(void *data,
+      const char *path, const char *unused, size_t list_size)
+{
+   (void)data;
+   (void)path;
+   (void)unused;
+   (void)list_size;
+}
+
+static void xmb_list_delete(void *data, size_t list_size)
+{
+   (void)data;
+   (void)list_size;
+}
+
+static void xmb_list_clear(void *data)
+{
+   (void)data;
+}
+
+static void xmb_list_set_selection(void *data)
+{
+   (void)data;
+}
+
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_get_message,
@@ -757,17 +819,17 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_populate_entries,
    NULL,
    NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
+   xmb_navigation_clear,
+   xmb_navigation_decrement,
+   xmb_navigation_increment,
+   xmb_navigation_set,
+   xmb_navigation_set_last,
+   xmb_navigation_descend_alphabet,
+   xmb_navigation_ascend_alphabet,
+   xmb_list_insert,
+   xmb_list_delete,
+   xmb_list_clear,
+   xmb_list_set_selection,
    xmb_init_core_info,
    &menu_ctx_backend_common,
    "xmb",
