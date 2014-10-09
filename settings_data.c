@@ -3871,7 +3871,7 @@ bool setting_data_append_list_input_options(
                g_settings.input.binds[player][i],
                player + 1,
                bind->base,
-               strdup(label),
+               strdup(label), /* TODO: Find a way to fix this memleak. */
                &defaults[i],
                group_info.name,
                subgroup_info.name);
