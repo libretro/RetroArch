@@ -61,10 +61,8 @@ typedef struct
 
 
 char xmb_title[256] = "";
-char xmb_oldtitle[256] = "";
-int selptr = -1;
-int oldselptr = -1;
-
+int selptr = 0;
+int oldselptr = 0;
 
 enum
 {
@@ -372,7 +370,8 @@ static void xmb_selection_pointer_changed(void)
    oldselptr = selptr;
 }
 
-static void xmb_screen_changed(void)
+static void xmb_populate_entries(void *data, const char *path,
+      const char *labell, unsigned ii)
 {
    int i;
    const char *dir = NULL;
@@ -434,8 +433,6 @@ static void xmb_screen_changed(void)
       node->zoom = i == selptr ? 1.0 : 0.5;
       node->y = iy;
    }
-
-   memcpy(xmb_oldtitle, xmb_title, sizeof(xmb_oldtitle));
 }
 
 static void xmb_frame(void)
@@ -462,25 +459,9 @@ static void xmb_frame(void)
 
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
-   if (!strcmp(xmb_title, ""))
-   {
-      get_title(label, dir, menu_type, xmb_title, sizeof(xmb_title));
-   }
-
-   if (selptr == -1)
-   {
-      selptr = driver.menu->selection_ptr;
-      oldselptr = driver.menu->selection_ptr;
-   }
-
    selptr = driver.menu->selection_ptr;
 
    get_title(label, dir, menu_type, xmb_title, sizeof(xmb_title));
-   if (strcmp(xmb_title, xmb_oldtitle))
-   {
-      xmb_screen_changed();
-      oldselptr = selptr;
-   }
 
    if (selptr != oldselptr)
       xmb_selection_pointer_changed();
@@ -509,20 +490,6 @@ static void xmb_frame(void)
    for (i = 0; i < file_list_get_size(driver.menu->selection_buf); i++)
    {
       xmb_node_t *node = (xmb_node_t*)&xmb->xmb_nodes[i];
-
-      /*float iy;
-      float ia = 0.5;
-      float iz = 0.5;
-
-      iy = i < selptr ? xmb_vspacing * (i - selptr + xmb_above_item_offset) :
-         xmb_vspacing * (i - selptr + xmb_under_item_offset);
-
-      if (i == selptr)
-      {
-         ia = 1.0;
-         iz = 1.0;
-         iy = xmb_vspacing * xmb_active_item_factor;
-      }*/
 
       xmb_draw_icon(xmb->textures[RMB_TEXTURE_SETTING].id,
             xmb->xmb_margin_left + xmb->xmb_hspacing - xmb->xmb_icon_size/2.0, 
@@ -773,7 +740,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_free,
    xmb_context_reset,
    NULL,
-   NULL,
+   xmb_populate_entries,
    NULL,
    NULL,
    NULL,
