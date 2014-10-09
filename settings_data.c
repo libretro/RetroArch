@@ -703,6 +703,7 @@ rarch_setting_t setting_data_float_setting(const char* name,
    result.change_handler = change_handler;
    result.read_handler = read_handler;
    result.value.fraction = target;
+   result.original_value.fraction = *target;
    result.default_value.fraction = default_value;
    return result;
 }
@@ -718,6 +719,7 @@ rarch_setting_t setting_data_bool_setting(const char* name,
    result.change_handler = change_handler;
    result.read_handler = read_handler;
    result.value.boolean = target;
+   result.original_value.boolean = *target;
    result.default_value.boolean = default_value;
    result.boolean.off_label = off;
    result.boolean.on_label = on;
@@ -735,6 +737,7 @@ rarch_setting_t setting_data_int_setting(const char* name,
    result.change_handler = change_handler;
    result.read_handler = read_handler;
    result.value.integer = target;
+   result.original_value.integer = *target;
    result.default_value.integer = default_value;
    return result;
 }
@@ -750,6 +753,7 @@ rarch_setting_t setting_data_uint_setting(const char* name,
    result.change_handler = change_handler;
    result.read_handler = read_handler;
    result.value.unsigned_integer = target;
+   result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer = default_value;
 
    return result;
@@ -3631,7 +3635,7 @@ bool setting_data_append_list_audio_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_range(list, list_info, 1, 256, 1.0, true, true);
-
+   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DEFERRED);
 
    CONFIG_FLOAT(
          g_settings.audio.rate_control_delta,

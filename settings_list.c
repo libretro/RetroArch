@@ -56,12 +56,24 @@ bool settings_list_append(rarch_setting_t **list,
    return true;
 }
 
+static void null_write_handler(void *data)
+{
+   return;
+}
+
 void settings_list_current_add_flags(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       unsigned values)
 {
+
    (*list)[list_info->index - 1].flags |= values;
+
+   if (values & SD_FLAG_IS_DEFERRED)
+   {
+      (*list)[list_info->index - 1].deferred_handler = (*list)[list_info->index - 1].change_handler;
+      (*list)[list_info->index - 1].change_handler = null_write_handler;
+   }
 }
 
 void settings_list_current_add_range(

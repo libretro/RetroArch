@@ -2015,6 +2015,8 @@ void rarch_main_set_state(unsigned cmd)
          break;
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU
+         apply_deferred_settings();
+
          g_extern.is_menu = false;
 
          driver_set_nonblock_state(driver.nonblock_state);

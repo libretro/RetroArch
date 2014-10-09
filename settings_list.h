@@ -56,6 +56,7 @@ enum setting_flags
    SD_FLAG_EXIT           = (1 << 8),
    SD_FLAG_CMD_APPLY_AUTO = (1 << 9),
    SD_FLAG_IS_CATEGORY    = (1 << 10),
+   SD_FLAG_IS_DEFERRED    = (1 << 11),
 };
 
 enum setting_list_flags
@@ -112,6 +113,7 @@ typedef struct rarch_setting
    uint64_t flags;
    
    change_handler_t change_handler;
+   change_handler_t deferred_handler;
    change_handler_t read_handler;
    
    union
@@ -133,6 +135,14 @@ typedef struct rarch_setting
       char* string;
       struct retro_keybind* keybind;
    } value;
+
+   union
+   {
+      bool boolean;
+      int integer;
+      unsigned int unsigned_integer;
+      float fraction;
+   } original_value;
 
    struct
    {

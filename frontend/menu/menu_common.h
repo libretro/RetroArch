@@ -160,6 +160,8 @@ int menu_common_core_setting_toggle(unsigned setting, unsigned action);
 int menu_common_setting_set_perf(unsigned setting, unsigned action,
       struct retro_perf_counter **counters, unsigned offset);
 
+void apply_deferred_settings();
+
 #ifdef __cplusplus
 }
 #endif
