@@ -40,8 +40,32 @@
 #include "../../../gfx/fonts/bitmap.h"
 
 #include "shared.h"
+#include "tween.h"
 
-#define THEME "monochrome"
+#ifndef XMB_THEME
+#define XMB_THEME "monochrome"
+#endif
+
+#ifndef XMB_DELAY
+#define XMB_DELAY 0.02
+#endif
+
+typedef struct
+{
+   char  name[256];
+   char  value[256];
+   float alpha;
+   float zoom;
+   float y;
+} xmb_node_t;
+
+xmb_node_t *xmb_nodes;
+
+char xmb_title[256] = "";
+char xmb_oldtitle[256] = "";
+int xmb_depth = 0;
+int selptr = -1;
+int oldselptr = -1;
 
 unsigned line_height, glyph_width, xmb_margin, xmb_term_width, xmb_term_height;
 GLuint xmb_bg = 0;
@@ -286,6 +310,95 @@ static void xmb_render_messagebox(const char *message)
    string_list_free(list);
 }
 
+static void xmb_selection_pointer_changed()
+{
+   int num_nodes = file_list_get_size(driver.menu->selection_buf);
+
+   int i;
+
+   for (i = 0; i < num_nodes; i++)
+   {
+      float iy;
+      float ia = 0.5;
+      float iz = 0.5;
+      xmb_node_t *node = (xmb_node_t*)&xmb_nodes[i];
+
+      if (!node)
+         continue;
+
+      iy = (i < selptr) ? xmb_vspacing *
+         (i - selptr + xmb_above_item_offset) :
+         xmb_vspacing * (i - selptr + xmb_under_item_offset);
+
+      if (i == selptr)
+      {
+         ia = 1.0;
+         iz = 1.0;
+         iy = xmb_vspacing * xmb_active_item_factor;
+      }
+
+      add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
+      add_tween(XMB_DELAY, iz, &node->zoom,  &inOutQuad, NULL);
+      add_tween(XMB_DELAY, iy, &node->y,     &inOutQuad, NULL);
+   }
+
+   oldselptr = selptr;
+}
+
+static void xmb_screen_changed()
+{
+   int num_nodes = file_list_get_size(driver.menu->selection_buf);
+
+   xmb_nodes = (xmb_node_t*)
+      calloc(num_nodes, sizeof(xmb_node_t));
+
+   const char *dir = NULL;
+   const char *label = NULL;
+   unsigned menu_type = 0;
+   file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
+
+   int i;
+
+   for (i = 0; i < num_nodes; i++)
+   {
+      char name[PATH_MAX], value[PATH_MAX],
+           entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
+           path_buf[PATH_MAX];
+      const char *path = NULL, *entry_label = NULL;
+      unsigned type = 0, w = 0;
+
+      file_list_get_at_offset(driver.menu->selection_buf, i, &path,
+            &entry_label, &type);
+      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
+            setting_data_get_list(SL_FLAG_ALL_SETTINGS, false),
+            driver.menu->selection_buf->list[i].label);
+      (void)setting;
+
+      disp_set_label(&w, type, i, label,
+            value, sizeof(value), 
+            entry_label, path,
+            path_buf, sizeof(path_buf));
+
+      snprintf(name, sizeof(name), "%s", path_buf);
+
+      float iy = (i < selptr) ? xmb_vspacing *
+         (i - selptr + xmb_above_item_offset) :
+         xmb_vspacing * (i - selptr + xmb_under_item_offset);
+
+      if (i == selptr)
+         iy = xmb_vspacing * xmb_active_item_factor;
+
+      xmb_node_t *node = (xmb_node_t*)&xmb_nodes[i];
+      strlcpy(node->name, name, sizeof(node->name));
+      strlcpy(node->value, value, sizeof(node->value));
+      node->alpha = i == selptr ? 1.0 : 0.5;
+      node->zoom = i == selptr ? 1.0 : 0.5;
+      node->y = iy;
+   }
+
+   memcpy(xmb_oldtitle, xmb_title, sizeof(xmb_oldtitle));
+}
+
 static void xmb_frame(void)
 {
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
@@ -298,18 +411,41 @@ static void xmb_frame(void)
          && !driver.menu->msg_force)
       return;
 
+   update_tweens(0.002);
+
    glViewport(0, 0, gl->win_width, gl->win_height);
 
    xmb_render_background();
 
-   char title[256];
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
-   get_title(label, dir, menu_type, title, sizeof(title));
-   xmb_draw_text(title, 30, 40, 1, 1);
+   if (!strcmp(xmb_title, ""))
+   {
+      get_title(label, dir, menu_type, xmb_title, sizeof(xmb_title));
+   }
+
+   if (selptr == -1)
+   {
+      selptr = driver.menu->selection_ptr;
+      oldselptr = driver.menu->selection_ptr;
+   }
+
+   selptr = driver.menu->selection_ptr;
+
+   get_title(label, dir, menu_type, xmb_title, sizeof(xmb_title));
+   if (strcmp(xmb_title, xmb_oldtitle))
+   {
+      xmb_screen_changed();
+      oldselptr = selptr;
+   }
+
+   if (selptr != oldselptr)
+      xmb_selection_pointer_changed();
+
+   xmb_draw_text(xmb_title, 30, 40, 1, 1);
 
    char title_msg[64];
    const char *core_name = g_extern.menu.info.library_name;
@@ -328,35 +464,13 @@ static void xmb_frame(void)
          core_name, core_version);
    xmb_draw_text(title_msg, 30, gl->win_height - 30, 1, 1);
 
-   unsigned x, y = 0;
-   int selptr = driver.menu->selection_ptr;
    int i;
 
    for (i = 0; i < file_list_get_size(driver.menu->selection_buf); i++)
    {
-      char message[PATH_MAX], type_str[PATH_MAX],
-           entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
-           path_buf[PATH_MAX];
-      const char *path = NULL, *entry_label = NULL;
-      unsigned type = 0, w = 0;
+      xmb_node_t *node = (xmb_node_t*)&xmb_nodes[i];
 
-      file_list_get_at_offset(driver.menu->selection_buf, i, &path,
-            &entry_label, &type);
-      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
-            setting_data_get_list(SL_FLAG_ALL_SETTINGS, false),
-            driver.menu->selection_buf->list[i].label);
-      (void)setting;
-
-      disp_set_label(&w, type, i, label,
-            type_str, sizeof(type_str), 
-            entry_label, path,
-            path_buf, sizeof(path_buf));
-
-      bool selected = (i == selptr);
-
-      snprintf(message, sizeof(message), "%s", path_buf);
-
-      float iy;
+      /*float iy;
       float ia = 0.5;
       float iz = 0.5;
 
@@ -368,26 +482,26 @@ static void xmb_frame(void)
          ia = 1.0;
          iz = 1.0;
          iy = xmb_vspacing * xmb_active_item_factor;
-      }
+      }*/
 
       xmb_draw_icon(textures[TEXTURE_SETTING].id,
             xmb_margin_left + xmb_hspacing - xmb_icon_size/2.0, 
-            xmb_margin_top + iy + xmb_icon_size/2.0, 
-            ia, 
+            xmb_margin_top + node->y + xmb_icon_size/2.0, 
+            node->alpha, 
             0, 
-            iz);
+            node->zoom);
 
-      xmb_draw_text(message,
+      xmb_draw_text(node->name,
             xmb_margin_left + xmb_hspacing + xmb_label_margin_left, 
-            xmb_margin_top + iy + xmb_label_margin_top, 
+            xmb_margin_top + node->y + xmb_label_margin_top, 
             1, 
-            ia);
+            node->alpha);
 
-      xmb_draw_text(type_str,
+      xmb_draw_text(node->value,
             xmb_margin_left + xmb_hspacing + xmb_label_margin_left + xmb_setting_margin_left, 
-            xmb_margin_top + iy + xmb_label_margin_top, 
+            xmb_margin_top + node->y + xmb_label_margin_top, 
             1, 
-            ia);
+            node->alpha);
    }
 
    xmb_draw_icon(textures[TEXTURE_SETTINGS].id, 
@@ -549,7 +663,7 @@ static void xmb_context_reset(void *data)
 
    fill_pathname_join(mediapath, g_settings.assets_directory,
          "lakka", sizeof(mediapath));
-   fill_pathname_join(themepath, mediapath, THEME, sizeof(themepath));
+   fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
    fill_pathname_join(iconpath, themepath, icon_dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
