@@ -53,7 +53,6 @@
 typedef struct
 {
    char  name[256];
-   char  value[256];
    float alpha;
    float zoom;
    float y;
@@ -390,16 +389,11 @@ static void xmb_populate_entries(void *data, const char *path,
 
    for (i = 0; i < num_nodes; i++)
    {
-      char name[PATH_MAX], value[PATH_MAX],
-           entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
-           path_buf[PATH_MAX];
+      char name[PATH_MAX], value[PATH_MAX], path_buf[PATH_MAX];
       float iy;
       xmb_node_t *node = NULL;
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
-
-      (void)entry_title_buf;
-      (void)type_str_buf;
 
       file_list_get_at_offset(driver.menu->selection_buf, i, &path,
             &entry_label, &type);
@@ -428,7 +422,6 @@ static void xmb_populate_entries(void *data, const char *path,
          continue;
 
       strlcpy(node->name, name, sizeof(node->name));
-      strlcpy(node->value, value, sizeof(node->value));
       node->alpha = i == selptr ? 1.0 : 0.5;
       node->zoom = i == selptr ? 1.0 : 0.5;
       node->y = iy;
@@ -489,7 +482,23 @@ static void xmb_frame(void)
 
    for (i = 0; i < file_list_get_size(driver.menu->selection_buf); i++)
    {
+      char value[PATH_MAX], path_buf[PATH_MAX];
+      const char *path = NULL, *entry_label = NULL;
+      unsigned type = 0, w = 0;
+
       xmb_node_t *node = (xmb_node_t*)&xmb->xmb_nodes[i];
+
+      file_list_get_at_offset(driver.menu->selection_buf, i, &path,
+            &entry_label, &type);
+      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
+            driver.menu->list_settings,
+            driver.menu->selection_buf->list[i].label);
+      (void)setting;
+
+      disp_set_label(&w, type, i, label,
+            value, sizeof(value),
+            entry_label, path,
+            path_buf, sizeof(path_buf));
 
       xmb_draw_icon(xmb->textures[RMB_TEXTURE_SETTING].id,
             xmb->xmb_margin_left + xmb->xmb_hspacing - xmb->xmb_icon_size/2.0, 
@@ -504,7 +513,7 @@ static void xmb_frame(void)
             1, 
             node->alpha);
 
-      xmb_draw_text(node->value,
+      xmb_draw_text(value,
             xmb->xmb_margin_left + xmb->xmb_hspacing + 
             xmb->xmb_label_margin_left + xmb->xmb_setting_margin_left, 
             xmb->xmb_margin_top + node->y + xmb->xmb_label_margin_top, 
