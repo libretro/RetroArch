@@ -1299,54 +1299,73 @@ static void init_video_input(void)
 
 }
 
-void init_drivers(void)
+void init_drivers(int flags)
 {
-   driver.video_data_own = false;
-   driver.audio_data_own = false;
-   driver.input_data_own = false;
-   driver.camera_data_own = false;
-   driver.location_data_own = false;
-   driver.osk_data_own = false;
+   if (flags & DRIVER_VIDEO)
+      driver.video_data_own = false;
+   if (flags & DRIVER_AUDIO)
+      driver.audio_data_own = false;
+   if (flags & DRIVER_INPUT)
+      driver.input_data_own = false;
+   if (flags & DRIVER_CAMERA)
+      driver.camera_data_own = false;
+   if (flags & DRIVER_LOCATION)
+      driver.location_data_own = false;
+   if (flags & DRIVER_OSK)
+      driver.osk_data_own = false;
+
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
    driver.menu_data_own = true;
 #endif
 
-   adjust_system_rates();
+   if (flags & (DRIVER_VIDEO | DRIVER_AUDIO))
+      adjust_system_rates();
 
-   g_extern.frame_count = 0;
+   if (flags & DRIVER_VIDEO)
+   {
+      g_extern.frame_count = 0;
 
-   init_video_input();
+      init_video_input();
 
-   if (!driver.video_cache_context_ack
-         && g_extern.system.hw_render_callback.context_reset)
-      g_extern.system.hw_render_callback.context_reset();
-   driver.video_cache_context_ack = false;
+      if (!driver.video_cache_context_ack
+            && g_extern.system.hw_render_callback.context_reset)
+         g_extern.system.hw_render_callback.context_reset();
+      driver.video_cache_context_ack = false;
 
-   init_audio();
+      g_extern.system.frame_time_last = 0;
+   }
+
+   if (flags & DRIVER_AUDIO)
+      init_audio();
 
    /* Only initialize camera driver if we're ever going to use it. */
-   if (driver.camera_active)
+   if ((flags & DRIVER_CAMERA) && driver.camera_active)
       init_camera();
 
    /* Only initialize location driver if we're ever going to use it. */
-   if (driver.location_active)
+   if ((flags & DRIVER_LOCATION) && driver.location_active)
       init_location();
 
-   init_osk();
+   if (flags & DRIVER_OSK)
+      init_osk();
 
 #ifdef HAVE_MENU
-   init_menu();
+   if (flags & DRIVER_MENU)
+   {
+      init_menu();
 
-   if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_reset)
-      driver.menu_ctx->context_reset(driver.menu);
+      if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_reset)
+         driver.menu_ctx->context_reset(driver.menu);
+   }
 #endif
 
-   /* Keep non-throttled state as good as possible. */
-   if (driver.nonblock_state)
-      driver_set_nonblock_state(driver.nonblock_state);
-
-   g_extern.system.frame_time_last = 0;
+   if (flags & (DRIVER_VIDEO | DRIVER_AUDIO))
+   {
+      /* Keep non-throttled state as good as possible. */
+      if (driver.nonblock_state)
+         driver_set_nonblock_state(driver.nonblock_state);
+   }
 }
 
 
@@ -1482,53 +1501,61 @@ static void uninit_video_input(void)
    compute_monitor_fps_statistics();
 }
 
-void uninit_drivers(void)
+void uninit_drivers(int flags)
 {
-   uninit_audio();
+   if (flags & DRIVER_AUDIO)
+      uninit_audio();
 
-   if (g_extern.system.hw_render_callback.context_destroy &&
-         !driver.video_cache_context)
-      g_extern.system.hw_render_callback.context_destroy();
+   if (flags & DRIVER_VIDEO)
+   {
+      if (g_extern.system.hw_render_callback.context_destroy &&
+               !driver.video_cache_context)
+            g_extern.system.hw_render_callback.context_destroy();
+   }
 
 #ifdef HAVE_MENU
-   if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_destroy)
-      driver.menu_ctx->context_destroy(driver.menu);
-
-   if (!driver.menu_data_own)
+   if (flags & DRIVER_MENU)
    {
-      menu_free_list(driver.menu);
-      menu_free(driver.menu);
-      driver.menu = NULL;
+      if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_destroy)
+            driver.menu_ctx->context_destroy(driver.menu);
+
+         if (!driver.menu_data_own)
+         {
+            menu_free_list(driver.menu);
+            menu_free(driver.menu);
+            driver.menu = NULL;
+         }
    }
 #endif
 
-   uninit_video_input();
+   if (flags & DRIVERS_VIDEO_INPUT)
+      uninit_video_input();
 
-   if (!driver.video_data_own)
+   if ((flags & DRIVER_VIDEO) && !driver.video_data_own)
       driver.video_data = NULL;
 
-   if (!driver.camera_data_own)
+   if ((flags & DRIVER_CAMERA) && !driver.camera_data_own)
    {
       uninit_camera();
       driver.camera_data = NULL;
    }
 
-   if (!driver.location_data_own)
+   if ((flags & DRIVER_LOCATION) && !driver.location_data_own)
    {
       uninit_location();
       driver.location_data = NULL;
    }
    
-   if (!driver.osk_data_own)
+   if ((flags & DRIVER_OSK) && !driver.osk_data_own)
    {
       uninit_osk();
       driver.osk_data = NULL;
    }
 
-   if (!driver.input_data_own)
+   if ((flags & DRIVER_INPUT) && !driver.input_data_own)
       driver.input_data = NULL;
 
-   if (!driver.audio_data_own)
+   if ((flags & DRIVER_AUDIO) && !driver.audio_data_own)
       driver.audio_data = NULL;
 }
 

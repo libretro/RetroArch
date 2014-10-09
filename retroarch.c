@@ -2015,6 +2015,8 @@ void rarch_main_set_state(unsigned cmd)
          break;
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU
+         apply_deferred_settings();
+
          g_extern.is_menu = false;
 
          driver_set_nonblock_state(driver.nonblock_state);
@@ -2451,10 +2453,14 @@ bool rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_DRIVERS_DEINIT:
-         uninit_drivers();
+         uninit_drivers(DRIVERS_CMD_ALL);
          break;
       case RARCH_CMD_DRIVERS_INIT:
-         init_drivers();
+         init_drivers(DRIVERS_CMD_ALL);
+         break;
+      case RARCH_CMD_AUDIO_REINIT:
+         uninit_drivers(DRIVER_AUDIO);
+         init_drivers(DRIVER_AUDIO);
          break;
       case RARCH_CMD_RESET_CONTEXT:
          rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);

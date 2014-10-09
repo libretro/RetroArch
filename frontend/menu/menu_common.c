@@ -309,6 +309,61 @@ static unsigned input_frame(uint64_t trigger_state)
    return MENU_ACTION_NOOP;
 }
 
+void apply_deferred_settings()
+{
+   rarch_setting_t *setting = driver.menu->list_settings;
+   bool change = false;
+
+   for (; setting->type != ST_NONE; setting++)
+   {
+      if ((setting->type < ST_GROUP) && (setting->flags & SD_FLAG_IS_DEFERRED))
+      {
+         switch (setting->type)
+         {
+            case ST_BOOL:
+               if (*setting->value.boolean != setting->original_value.boolean)
+               {
+                  setting->original_value.boolean = *setting->value.boolean;
+                  change = true;
+               }
+               break;
+            case ST_INT:
+               if (*setting->value.integer != setting->original_value.integer)
+               {
+                  setting->original_value.integer = *setting->value.integer;
+                  change = true;
+               }
+               break;
+            case ST_UINT:
+               if (*setting->value.unsigned_integer != setting->original_value.unsigned_integer)
+               {
+                  setting->original_value.unsigned_integer = *setting->value.unsigned_integer;
+                  change = true;
+               }
+               break;
+            case ST_FLOAT:
+               if (*setting->value.fraction != setting->original_value.fraction)
+               {
+                  setting->original_value.fraction = *setting->value.fraction;
+                  change = true;
+               }
+               break;
+            case ST_PATH:
+            case ST_DIR:
+            case ST_STRING:
+            case ST_BIND:
+               /* always run the deferred write handler */
+               change = true;
+               break;
+            default:
+               break;
+         }
+         if (change)
+            setting->deferred_handler(setting);
+      }
+   }
+}
+
 /* Returns:
  *  0  -  Forcibly wake up the loop.
  * -1  -  Quit out of iteration loop.
