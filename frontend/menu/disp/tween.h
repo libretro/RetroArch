@@ -21,6 +21,7 @@
 #include <stdlib.h>
 
 typedef float (*easingFunc)(float, float, float, float);
+
 typedef void (*tweenCallback) (void);
 
 typedef struct
@@ -35,8 +36,11 @@ typedef struct
    tweenCallback callback;
 } tween_t;
 
-void add_tween(float duration, float target_value, float* subject, easingFunc easing, tweenCallback callback);
-void update_tween(void *data, float dt);
+void add_tween(float duration, float target_value,
+      float* subject, easingFunc easing, tweenCallback callback);
+
+void update_tween(tween_t *data, float dt);
+
 void update_tweens(float dt);
 
 // from https://github.com/kikito/tween.lua/blob/master/tween.lua

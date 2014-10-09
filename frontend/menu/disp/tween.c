@@ -1,33 +1,30 @@
 #include "tween.h"
 #include <math.h>
 
-tween_t* tweens = NULL;
-int numtweens = 0;
+static tween_t* tweens = NULL;
+static int numtweens = 0;
+
+static void tween_free(tween_t *tw)
+{
+   if (tw)
+      free(tw);
+   tw = NULL;
+}
 
 void add_tween(float duration, float target_value, float* subject,
       easingFunc easing, tweenCallback callback)
 {
-   tween_t *tween;
-   tween_t *tweens_tmp;
+   tween_t *tween = NULL;
+   tweens = (tween_t*)
+      realloc(tweens, (numtweens + 1) * sizeof(tween_t));
 
-   numtweens++;
-
-   tweens_tmp = (tween_t*)realloc(tweens, numtweens * sizeof(tween_t));
-   if (tweens_tmp != NULL)
+   if (!tweens) /* Realloc failed. */
    {
-       tweens = tweens_tmp;
-   }
-   else // realloc failed
-   {
-      if (tweens != NULL)
-      {
-         free(tweens);
-         tweens = NULL;
-      }
-
+      tween_free(tweens);
       return;
    }
-   
+
+   numtweens++;
    tween = (tween_t*)&tweens[numtweens-1];
 
    if (!tween)
@@ -43,10 +40,8 @@ void add_tween(float duration, float target_value, float* subject,
    tween->callback = callback;
 }
 
-void update_tween(void *data, float dt)
+void update_tween(tween_t *tween, float dt)
 {
-   tween_t *tween = (tween_t*)data;
-
    if (!tween)
       return;
 
