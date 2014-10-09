@@ -332,13 +332,13 @@ static void xmb_selection_pointer_changed(void)
 {
    int i;
    int current = driver.menu->selection_ptr;
-   int num_nodes = file_list_get_size(driver.menu->selection_buf);
+   int end = file_list_get_size(driver.menu->selection_buf);
    xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
 
    if (!xmb)
       return;
 
-   for (i = 0; i < num_nodes; i++)
+   for (i = 0; i < end; i++)
    {
       float iy;
       float ia = 0.5;
@@ -368,15 +368,16 @@ static void xmb_selection_pointer_changed(void)
 static void xmb_populate_entries(void *data, const char *path,
       const char *labell, unsigned ii)
 {
-   int i;
+   int i, num_nodes, end;
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
-   int num_nodes = file_list_get_size(driver.menu->selection_buf);
    xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
 
    if (!xmb)
       return;
+
+   end = num_nodes = file_list_get_size(driver.menu->selection_buf);
 
    xmb->xmb_nodes = (xmb_node_t*)
       realloc(xmb->xmb_nodes, num_nodes * sizeof(xmb_node_t));
@@ -386,7 +387,7 @@ static void xmb_populate_entries(void *data, const char *path,
 
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
-   for (i = 0; i < num_nodes; i++)
+   for (i = 0; i < end; i++)
    {
       char name[PATH_MAX], value[PATH_MAX], path_buf[PATH_MAX];
       float iy;
