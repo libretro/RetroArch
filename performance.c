@@ -18,6 +18,7 @@
 #include "libretro.h"
 #include "performance.h"
 #include "general.h"
+#include "compat/strl.h"
 
 #ifdef ANDROID
 #include "performance/performance_android.h"
@@ -359,6 +360,11 @@ uint64_t rarch_get_cpu_features(void)
 {
    uint64_t cpu = 0;
 
+   const uint MAX_FEATURES = \
+         sizeof(" MMX MMXEXT SSE SSE2 SSE3 SSSE3 SS4 SSE4.2 AES AVX AVX2 NEON VMX VMX128 VFPU PS");
+   char buf[MAX_FEATURES];
+   memset(buf, 0, MAX_FEATURES);
+
 #if defined(CPU_X86)
    int flags[4];
    x86_cpuid(0, flags);
@@ -428,17 +434,6 @@ uint64_t rarch_get_cpu_features(void)
          cpu |= RETRO_SIMD_MMXEXT;
    }
 
-   RARCH_LOG("[CPUID]: MMX:    %u\n", !!(cpu & RETRO_SIMD_MMX));
-   RARCH_LOG("[CPUID]: MMXEXT: %u\n", !!(cpu & RETRO_SIMD_MMXEXT));
-   RARCH_LOG("[CPUID]: SSE:    %u\n", !!(cpu & RETRO_SIMD_SSE));
-   RARCH_LOG("[CPUID]: SSE2:   %u\n", !!(cpu & RETRO_SIMD_SSE2));
-   RARCH_LOG("[CPUID]: SSE3:   %u\n", !!(cpu & RETRO_SIMD_SSE3));
-   RARCH_LOG("[CPUID]: SSSE3:  %u\n", !!(cpu & RETRO_SIMD_SSSE3));
-   RARCH_LOG("[CPUID]: SSE4:   %u\n", !!(cpu & RETRO_SIMD_SSE4));
-   RARCH_LOG("[CPUID]: SSE4.2: %u\n", !!(cpu & RETRO_SIMD_SSE42));
-   RARCH_LOG("[CPUID]: AES:    %u\n", !!(cpu & RETRO_SIMD_AES));
-   RARCH_LOG("[CPUID]: AVX:    %u\n", !!(cpu & RETRO_SIMD_AVX));
-   RARCH_LOG("[CPUID]: AVX2:   %u\n", !!(cpu & RETRO_SIMD_AVX2));
 #elif defined(ANDROID) && defined(ANDROID_ARM)
    uint64_t cpu_flags = android_getCpuFeatures();
    (void)cpu_flags;
@@ -451,24 +446,38 @@ uint64_t rarch_get_cpu_features(void)
    }
 #endif
 
-   RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
 #elif defined(__ARM_NEON__)
    cpu |= RETRO_SIMD_NEON;
    arm_enable_runfast_mode();
-   RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
 #elif defined(__ALTIVEC__)
    cpu |= RETRO_SIMD_VMX;
-   RARCH_LOG("[CPUID]: VMX: %u\n", !!(cpu & RETRO_SIMD_VMX));
 #elif defined(XBOX360)
    cpu |= RETRO_SIMD_VMX128;
-   RARCH_LOG("[CPUID]: VMX128: %u\n", !!(cpu & RETRO_SIMD_VMX128));
 #elif defined(PSP)
    cpu |= RETRO_SIMD_VFPU;
-   RARCH_LOG("[CPUID]: VFPU: %u\n", !!(cpu & RETRO_SIMD_VFPU));
 #elif defined(GEKKO)
    cpu |= RETRO_SIMD_PS;
-   RARCH_LOG("[CPUID]: PS: %u\n", !!(cpu & RETRO_SIMD_PS));
 #endif
+
+   if (cpu & RETRO_SIMD_MMX)    strlcat(buf, " MMX", sizeof(buf));
+   if (cpu & RETRO_SIMD_MMXEXT) strlcat(buf, " MMXEXT", sizeof(buf));
+   if (cpu & RETRO_SIMD_SSE)    strlcat(buf, " SSE", sizeof(buf));
+   if (cpu & RETRO_SIMD_SSE2)   strlcat(buf, " SSE2", sizeof(buf));
+   if (cpu & RETRO_SIMD_SSE3)   strlcat(buf, " SSE3", sizeof(buf));
+   if (cpu & RETRO_SIMD_SSSE3)  strlcat(buf, " SSSE3", sizeof(buf));
+   if (cpu & RETRO_SIMD_SSE4)   strlcat(buf, " SSE4", sizeof(buf));
+   if (cpu & RETRO_SIMD_SSE42)  strlcat(buf, " SSE4.2", sizeof(buf));
+   if (cpu & RETRO_SIMD_AES)    strlcat(buf, " AES", sizeof(buf));
+   if (cpu & RETRO_SIMD_AVX)    strlcat(buf, " AVX", sizeof(buf));
+   if (cpu & RETRO_SIMD_AVX2)   strlcat(buf, " AVX2", sizeof(buf));
+   if (cpu & RETRO_SIMD_NEON)   strlcat(buf, " NEON", sizeof(buf));
+   if (cpu & RETRO_SIMD_VMX)    strlcat(buf, " VMX", sizeof(buf));
+   if (cpu & RETRO_SIMD_VMX128) strlcat(buf, " VMX128", sizeof(buf));
+   if (cpu & RETRO_SIMD_VFPU)   strlcat(buf, " VFPU", sizeof(buf));
+   if (cpu & RETRO_SIMD_PS)     strlcat(buf, " PS", sizeof(buf));
+
+   RARCH_LOG("[CPUID]: Features:%s\n", buf);
+
 
    return cpu;
 }
