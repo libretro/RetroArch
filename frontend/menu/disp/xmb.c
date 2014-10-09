@@ -384,7 +384,8 @@ static void xmb_screen_changed(void)
    if (!xmb)
       return;
 
-   xmb->xmb_nodes = (xmb_node_t*)calloc(num_nodes, sizeof(xmb_node_t));
+   xmb->xmb_nodes = (xmb_node_t*)
+      realloc(xmb->xmb_nodes, num_nodes * sizeof(xmb_node_t));
 
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
@@ -393,11 +394,13 @@ static void xmb_screen_changed(void)
       char name[PATH_MAX], value[PATH_MAX],
            entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
            path_buf[PATH_MAX];
+      float iy;
+      xmb_node_t *node = NULL;
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
-       
-       (void)entry_title_buf;
-       (void)type_str_buf;
+
+      (void)entry_title_buf;
+      (void)type_str_buf;
 
       file_list_get_at_offset(driver.menu->selection_buf, i, &path,
             &entry_label, &type);
@@ -413,14 +416,18 @@ static void xmb_screen_changed(void)
 
       snprintf(name, sizeof(name), "%s", path_buf);
 
-      float iy = (i < selptr) ? xmb->xmb_vspacing *
+      iy = (i < selptr) ? xmb->xmb_vspacing *
          (i - selptr + xmb->xmb_above_item_offset) :
          xmb->xmb_vspacing * (i - selptr + xmb->xmb_under_item_offset);
 
       if (i == selptr)
          iy = xmb->xmb_vspacing * xmb->xmb_active_item_factor;
 
-      xmb_node_t *node = (xmb_node_t*)&xmb->xmb_nodes[i];
+      node = (xmb_node_t*)&xmb->xmb_nodes[i];
+
+      if (!xmb)
+         continue;
+
       strlcpy(node->name, name, sizeof(node->name));
       strlcpy(node->value, value, sizeof(node->value));
       node->alpha = i == selptr ? 1.0 : 0.5;
