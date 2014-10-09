@@ -385,6 +385,9 @@ static void xmb_populate_entries(void *data, const char *path,
    xmb->xmb_nodes = (xmb_node_t*)
       realloc(xmb->xmb_nodes, num_nodes * sizeof(xmb_node_t));
 
+   if (!xmb->xmb_nodes)
+      return;
+
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
    for (i = 0; i < num_nodes; i++)
@@ -407,7 +410,7 @@ static void xmb_populate_entries(void *data, const char *path,
             entry_label, path,
             path_buf, sizeof(path_buf));
 
-      snprintf(name, sizeof(name), "%s", path_buf);
+      strlcpy(name, path_buf, sizeof(name));
 
       iy = (i < selptr) ? xmb->xmb_vspacing *
          (i - selptr + xmb->xmb_above_item_offset) :
@@ -430,6 +433,8 @@ static void xmb_populate_entries(void *data, const char *path,
 
 static void xmb_frame(void)
 {
+   int i;
+   size_t begin, end;
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
@@ -452,7 +457,7 @@ static void xmb_frame(void)
 
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
-   selptr = driver.menu->selection_ptr;
+   selptr = begin = driver.menu->selection_ptr;
 
    get_title(label, dir, menu_type, xmb_title, sizeof(xmb_title));
 
@@ -478,9 +483,9 @@ static void xmb_frame(void)
          core_name, core_version);
    xmb_draw_text(title_msg, 30, gl->win_height - 30, 1, 1);
 
-   int i;
+   end = file_list_get_size(driver.menu->selection_buf);
 
-   for (i = 0; i < file_list_get_size(driver.menu->selection_buf); i++)
+   for (i = 0; i < end; i++)
    {
       char value[PATH_MAX], path_buf[PATH_MAX];
       const char *path = NULL, *entry_label = NULL;
