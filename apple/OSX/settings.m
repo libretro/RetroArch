@@ -128,7 +128,7 @@ NSWindowDelegate>
    NSMutableArray* thisGroup = nil;
    NSMutableArray* thisSubGroup = nil;
    self.settings = [NSMutableArray array];
-   setting_data = (const rarch_setting_t *)setting_data_get_list(SL_FLAG_ALL_SETTINGS, true);
+   setting_data = (const rarch_setting_t *)driver.menu->list_settings;
 
    for (i = 0; setting_data[i].type; i ++)
    {
@@ -246,7 +246,7 @@ NSWindowDelegate>
    {
        char buffer[PATH_MAX];
        rarch_setting_t* setting_data, *setting = NULL;
-       setting_data = (rarch_setting_t*)setting_data_get_list(SL_FLAG_ALL_SETTINGS, false);
+       setting_data = (rarch_setting_t*)driver.menu->list_settings;
        setting = (rarch_setting_t*)&setting_data[[item intValue]];
        
        if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
@@ -282,8 +282,7 @@ NSWindowDelegate>
    if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
       return [tableColumn dataCell];
 
-   setting_data = (const rarch_setting_t *)
-   setting_data_get_list(SL_FLAG_ALL_SETTINGS, false);
+   setting_data = (const rarch_setting_t *)driver.menu->list_settings;
    setting      = (const rarch_setting_t *)&setting_data[[item intValue]];
 
    switch (setting->type)
@@ -305,8 +304,7 @@ NSWindowDelegate>
       
       if ([item isKindOfClass:[NSNumber class]])
       {
-          rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list(
-               SL_FLAG_ALL_SETTINGS, false);
+          rarch_setting_t *setting_data = (rarch_setting_t*)driver.menu->list_settings;
           rarch_setting_t *setting      = (rarch_setting_t*)&setting_data[[item intValue]];
           
           switch (setting->type)
@@ -336,7 +334,7 @@ NSWindowDelegate>
 
       if ([item isKindOfClass:[NSNumber class]])
       {
-          rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list(SL_FLAG_ALL_SETTINGS, false);
+          rarch_setting_t *setting_data = (rarch_setting_t *)driver.menu->list_settings;
           rarch_setting_t *setting = (rarch_setting_t*)&setting_data[[item intValue]];
           NSString *editor_string = (NSString*)editor.string;
           
