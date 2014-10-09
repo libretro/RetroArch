@@ -345,7 +345,7 @@ static void xmb_selection_pointer_changed()
    oldselptr = selptr;
 }
 
-static void xmb_screen_changed()
+static void xmb_screen_changed(void)
 {
    int num_nodes = file_list_get_size(driver.menu->selection_buf);
 
@@ -370,7 +370,7 @@ static void xmb_screen_changed()
       file_list_get_at_offset(driver.menu->selection_buf, i, &path,
             &entry_label, &type);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
-            setting_data_get_list(SL_FLAG_ALL_SETTINGS, false),
+            driver.menu->list_settings,
             driver.menu->selection_buf->list[i].label);
       (void)setting;
 
@@ -700,6 +700,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_frame,
    xmb_init,
+   NULL,
    xmb_free,
    xmb_context_reset,
    NULL,
