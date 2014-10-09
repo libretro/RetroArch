@@ -2600,11 +2600,13 @@ bool rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_NETPLAY_FLIP_PLAYERS:
+#ifdef HAVE_NETPLAY
          {
             netplay_t *netplay = (netplay_t*)driver.netplay_data;
             if (netplay)
                netplay_flip_players(netplay);
          }
+#endif
          break;
       case RARCH_CMD_FULLSCREEN_TOGGLE:
          if (!driver.video)

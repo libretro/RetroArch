@@ -919,7 +919,6 @@ static void lakka_context_reset(void *data)
    int i, j, k;
    char mediapath[256], themepath[256], iconpath[256];
    menu_handle_t *menu = (menu_handle_t*)data;
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
 
    if (!menu)
       return;
@@ -1169,7 +1168,6 @@ static void lakka_init_core_info(void *data)
 
 static void *lakka_init(void)
 {
-   int i;
    menu_handle_t *menu;
    const video_driver_t *video_driver = NULL;
    gl_t *gl = (gl_t*)driver_video_resolve(&video_driver);
