@@ -395,6 +395,9 @@ static void xmb_screen_changed(void)
            path_buf[PATH_MAX];
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
+       
+       (void)entry_title_buf;
+       (void)type_str_buf;
 
       file_list_get_at_offset(driver.menu->selection_buf, i, &path,
             &entry_label, &type);

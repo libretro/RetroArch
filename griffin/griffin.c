@@ -671,16 +671,12 @@ MENU
 #ifdef HAVE_LAKKA
 #include "../frontend/menu/backend/menu_lakka_backend.c"
 #include "../frontend/menu/disp/lakka.c"
+#include "../frontend/menu/disp/xmb.c"
 #include "../frontend/menu/disp/tween.c"
 #endif
 
 #ifdef HAVE_GLUI
 #include "../frontend/menu/disp/glui.c"
-#endif
-
-#ifdef HAVE_XMB
-#include "../frontend/menu/disp/xmb.c"
-#include "../frontend/menu/disp/tween.c"
 #endif
 
 #endif
