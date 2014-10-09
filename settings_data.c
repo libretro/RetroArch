@@ -3832,16 +3832,17 @@ bool setting_data_append_list_input_options(
 
    for (player = 0; player < MAX_PLAYERS; player ++)
    {
-      char buffer[PATH_MAX];
+      /* 7 for "Player ", 2 for number (we shouldn't need 100), and 1 for NUL. */
+      static char buffer[MAX_PLAYERS][7+2+1];
       const struct retro_keybind* const defaults =
          (player == 0) ? retro_keybinds_1 : retro_keybinds_rest;
 
-      snprintf(buffer, sizeof(buffer), "Player %d", player + 1);
+      snprintf(buffer[player], sizeof(buffer[player]), "Player %d", player + 1);
 
       START_SUB_GROUP(
             list,
             list_info,
-            strdup(buffer),
+            buffer[player],
             group_info.name,
             subgroup_info);
 
@@ -3854,7 +3855,7 @@ bool setting_data_append_list_input_options(
          if (!bind || bind->meta)
             continue;
 
-         snprintf(label, sizeof(label), "%s %s", buffer, bind->desc);
+         snprintf(label, sizeof(label), "%s %s", buffer[player], bind->desc);
 
          CONFIG_BIND(
                g_settings.input.binds[player][i],
