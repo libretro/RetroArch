@@ -66,7 +66,7 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
       --list->size;
 #ifdef HAVE_MENU
       if (driver.menu_ctx && driver.menu_ctx->list_delete)
-         driver.menu_ctx->list_delete(list, list->size);
+         driver.menu_ctx->list_delete(list, list->size, list->size);
 #endif
       free(list->list[list->size].path);
       free(list->list[list->size].label);
@@ -92,7 +92,7 @@ void file_list_free(file_list_t *list)
    {
 #ifdef HAVE_MENU
       if (driver.menu_ctx && driver.menu_ctx->list_delete)
-         driver.menu_ctx->list_delete(list, list->size);
+         driver.menu_ctx->list_delete(list, i, list->size);
 #endif
       free(list->list[i].path);
       free(list->list[i].label);

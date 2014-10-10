@@ -493,9 +493,11 @@ static void rmenu_xui_list_insert(void *data,
    XuiListSetText(m_menulist, list_size, buf);
 }
 
-static void rmenu_xui_list_delete(void *data, size_t list_size)
+static void rmenu_xui_list_delete(void *data, size_t index,
+      size_t list_size)
 {
    (void)data;
+   (void)index;
    XuiListDeleteItems(m_menulist, 0, list_size);
 }
 

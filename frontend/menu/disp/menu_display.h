@@ -28,7 +28,7 @@ typedef struct menu_ctx_driver
    void  (*navigation_descend_alphabet)(void *, size_t *);
    void  (*navigation_ascend_alphabet)(void *, size_t *);
    void  (*list_insert)(void *, const char *, const char *, size_t);
-   void  (*list_delete)(void *, size_t);
+   void  (*list_delete)(void *, size_t, size_t);
    void  (*list_clear)(void *);
    void  (*list_set_selection)(void *);
    void  (*init_core_info)(void *);
