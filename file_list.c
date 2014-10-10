@@ -61,7 +61,7 @@ size_t file_list_get_directory_ptr(const file_list_t *list)
 
 void file_list_pop(file_list_t *list, size_t *directory_ptr)
 {
-   if (!(list->size == 0))
+   if (list->size != 0)
    {
       --list->size;
 #ifdef HAVE_MENU
