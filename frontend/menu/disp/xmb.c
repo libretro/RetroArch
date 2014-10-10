@@ -73,32 +73,27 @@ struct xmb_texture_item
 
 typedef struct xmb_handle
 {
-   int xmb_depth;
-   GLuint xmb_bg;
-   unsigned line_height;
-   unsigned glyph_width;
-   unsigned xmb_margin;
-   unsigned xmb_term_width;
-   unsigned xmb_term_height;
+   int depth;
+   GLuint bg;
    char icon_dir[4];
    char box_message[PATH_MAX];
-   char xmb_title[PATH_MAX];
+   char title[PATH_MAX];
    struct xmb_texture_item textures[XMB_TEXTURE_LAST];
-   int xmb_icon_size;
-   float xmb_alpha;
-   float xmb_hspacing;
-   float xmb_vspacing;
-   float xmb_font_size;
-   float xmb_margin_left;
-   float xmb_margin_top;
-   float xmb_title_margin_left;
-   float xmb_title_margin_top;
-   float xmb_label_margin_left;
-   float xmb_label_margin_top;
-   float xmb_setting_margin_left;
-   float xmb_above_item_offset;
-   float xmb_active_item_factor;
-   float xmb_under_item_offset;
+   int icon_size;
+   float alpha;
+   float hspacing;
+   float vspacing;
+   float font_size;
+   float margin_left;
+   float margin_top;
+   float title_margin_left;
+   float title_margin_top;
+   float label_margin_left;
+   float label_margin_top;
+   float setting_margin_left;
+   float above_item_offset;
+   float active_item_factor;
+   float under_item_offset;
 } xmb_handle_t;
 
 static const GLfloat rmb_vertex[] = {
@@ -124,8 +119,8 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
    if (!xmb)
       return;
 
-   if (alpha > xmb->xmb_alpha)
-      alpha = xmb->xmb_alpha;
+   if (alpha > xmb->alpha)
+      alpha = xmb->alpha;
 
    if (alpha == 0)
       return;
@@ -135,8 +130,8 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
    if (!gl)
       return;
 
-   if (x < -xmb->xmb_icon_size || x > gl->win_width + xmb->xmb_icon_size
-         || y < -xmb->xmb_icon_size || y > gl->win_height + xmb->xmb_icon_size)
+   if (x < -xmb->icon_size || x > gl->win_width + xmb->icon_size
+         || y < -xmb->icon_size || y > gl->win_height + xmb->icon_size)
       return;
 
    GLfloat color[] = {
@@ -149,7 +144,7 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   glViewport(x, gl->win_height - y, xmb->xmb_icon_size, xmb->xmb_icon_size);
+   glViewport(x, gl->win_height - y, xmb->icon_size, xmb->icon_size);
 
    coords.vertices = 4;
    coords.vertex = rmb_vertex;
@@ -187,8 +182,8 @@ static void xmb_draw_text(const char *str, float x,
    if (!xmb)
       return;
 
-   if (alpha > xmb->xmb_alpha)
-      alpha = xmb->xmb_alpha;
+   if (alpha > xmb->alpha)
+      alpha = xmb->alpha;
    a8 = 255 * alpha;
    if (a8 == 0)
       return;
@@ -198,8 +193,8 @@ static void xmb_draw_text(const char *str, float x,
    if (!gl)
       return;
 
-   if (x < -xmb->xmb_icon_size || x > gl->win_width + xmb->xmb_icon_size
-         || y < -xmb->xmb_icon_size || y > gl->win_height + xmb->xmb_icon_size)
+   if (x < -xmb->icon_size || x > gl->win_width + xmb->icon_size
+         || y < -xmb->icon_size || y > gl->win_height + xmb->icon_size)
       return;
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
@@ -256,8 +251,8 @@ static void xmb_render_background(void)
 
    gl->coords.vertex = vertex;
    gl->coords.tex_coord = tex_coord;
-   gl->coords.color = xmb->xmb_bg ? gl->white_color_ptr : black_color;
-   glBindTexture(GL_TEXTURE_2D, xmb->xmb_bg);
+   gl->coords.color = xmb->bg ? gl->white_color_ptr : black_color;
+   glBindTexture(GL_TEXTURE_2D, xmb->bg);
 
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
@@ -301,15 +296,16 @@ static void xmb_render_messagebox(const char *message)
       return;
    }
 
-   int x = gl->win_width / 2 - strlen(list->elems[0].data) * xmb->glyph_width / 2;
-   int y = gl->win_height / 2 - list->size * xmb->line_height / 2;
+   // TODO, find a right way to center the messagebox
+   int x = 0;
+   int y = 0;
 
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
 
       if (msg)
-         xmb_draw_text(msg, x, y + i * xmb->xmb_vspacing, 1, 1);
+         xmb_draw_text(msg, x, y + i * xmb->vspacing, 1, 1);
    }
 
    string_list_free(list);
@@ -337,15 +333,15 @@ static void xmb_selection_pointer_changed(void)
       if (!node)
          continue;
 
-      iy = (i < current) ? xmb->xmb_vspacing *
-         (i - current + xmb->xmb_above_item_offset) :
-         xmb->xmb_vspacing * (i - current + xmb->xmb_under_item_offset);
+      iy = (i < current) ? xmb->vspacing *
+         (i - current + xmb->above_item_offset) :
+         xmb->vspacing * (i - current + xmb->under_item_offset);
 
       if (i == current)
       {
          ia = 1.0;
          iz = 1.0;
-         iy = xmb->xmb_vspacing * xmb->xmb_active_item_factor;
+         iy = xmb->vspacing * xmb->active_item_factor;
       }
 
       add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
@@ -387,9 +383,9 @@ static void xmb_frame(void)
 
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
-   get_title(label, dir, menu_type, xmb->xmb_title, sizeof(xmb->xmb_title));
+   get_title(label, dir, menu_type, xmb->title, sizeof(xmb->title));
 
-   xmb_draw_text(xmb->xmb_title, 30, 40, 1, 1);
+   xmb_draw_text(xmb->title, 30, 40, 1, 1);
 
    const char *core_name = g_extern.menu.info.library_name;
    if (!core_name)
@@ -427,29 +423,29 @@ static void xmb_frame(void)
             path_buf, sizeof(path_buf));
 
       xmb_draw_icon(xmb->textures[XMB_TEXTURE_SETTING].id,
-            xmb->xmb_margin_left + xmb->xmb_hspacing - xmb->xmb_icon_size/2.0, 
-            xmb->xmb_margin_top + node->y + xmb->xmb_icon_size/2.0, 
+            xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0, 
+            xmb->margin_top + node->y + xmb->icon_size/2.0, 
             node->alpha, 
             0, 
             node->zoom);
 
       xmb_draw_text(path_buf,
-            xmb->xmb_margin_left + xmb->xmb_hspacing + xmb->xmb_label_margin_left, 
-            xmb->xmb_margin_top + node->y + xmb->xmb_label_margin_top, 
+            xmb->margin_left + xmb->hspacing + xmb->label_margin_left, 
+            xmb->margin_top + node->y + xmb->label_margin_top, 
             1, 
             node->alpha);
 
       xmb_draw_text(value,
-            xmb->xmb_margin_left + xmb->xmb_hspacing + 
-            xmb->xmb_label_margin_left + xmb->xmb_setting_margin_left, 
-            xmb->xmb_margin_top + node->y + xmb->xmb_label_margin_top, 
+            xmb->margin_left + xmb->hspacing + 
+            xmb->label_margin_left + xmb->setting_margin_left, 
+            xmb->margin_top + node->y + xmb->label_margin_top, 
             1, 
             node->alpha);
    }
 
    xmb_draw_icon(xmb->textures[XMB_TEXTURE_SETTINGS].id, 
-         xmb->xmb_margin_left + xmb->xmb_hspacing - xmb->xmb_icon_size / 2.0,
-         xmb->xmb_margin_top + xmb->xmb_icon_size / 2.0, 
+         xmb->margin_left + xmb->hspacing - xmb->icon_size / 2.0,
+         xmb->margin_top + xmb->icon_size / 2.0, 
          1.0, 
          0, 
          1.0);
@@ -529,23 +525,23 @@ static void *xmb_init(void)
    if (!xmb)
       return NULL;
 
-   xmb->xmb_icon_size           = 96;
-   xmb->xmb_hspacing            = 150.0;
-   xmb->xmb_vspacing            = 48.0;
-   xmb->xmb_font_size           = 18;
-   xmb->xmb_margin_left         = 224;
-   xmb->xmb_margin_top          = 192;
-   xmb->xmb_title_margin_left   = 15.0;
-   xmb->xmb_title_margin_top    = 30.0;
-   xmb->xmb_label_margin_left   = 64;
-   xmb->xmb_label_margin_top    = 6.0;
-   xmb->xmb_setting_margin_left = 400;
-   xmb->xmb_above_item_offset   = -1.0;
-   xmb->xmb_active_item_factor  = 2.75;
-   xmb->xmb_under_item_offset   = 4.0;
-   xmb->xmb_alpha               = 1.0f;
-   xmb->xmb_depth               = 0;
-   xmb->xmb_bg                  = 0;
+   xmb->icon_size           = 96;
+   xmb->hspacing            = 150.0;
+   xmb->vspacing            = 48.0;
+   xmb->font_size           = 18;
+   xmb->margin_left         = 224;
+   xmb->margin_top          = 192;
+   xmb->title_margin_left   = 15.0;
+   xmb->title_margin_top    = 30.0;
+   xmb->label_margin_left   = 64;
+   xmb->label_margin_top    = 6.0;
+   xmb->setting_margin_left = 400;
+   xmb->above_item_offset   = -1.0;
+   xmb->active_item_factor  = 2.75;
+   xmb->under_item_offset   = 4.0;
+   xmb->alpha               = 1.0f;
+   xmb->depth               = 0;
+   xmb->bg                  = 0;
 
    strlcpy(xmb->icon_dir, "96", sizeof(xmb->icon_dir));
 
@@ -648,7 +644,7 @@ static void xmb_context_reset(void *data)
    fill_pathname_join(bgpath, bgpath, "bg.png", sizeof(bgpath));
 
    if (path_file_exists(bgpath))
-      xmb->xmb_bg = xmb_png_texture_load(bgpath);
+      xmb->bg = xmb_png_texture_load(bgpath);
 
    fill_pathname_join(mediapath, g_settings.assets_directory,
          "lakka", sizeof(mediapath));
@@ -756,12 +752,12 @@ static void xmb_list_insert(void *data,
 
    current = driver.menu->selection_ptr;
 
-   float iy = (i < current) ? xmb->xmb_vspacing *
-      (i - current + xmb->xmb_above_item_offset) :
-      xmb->xmb_vspacing * (i - current + xmb->xmb_under_item_offset);
+   float iy = (i < current) ? xmb->vspacing *
+      (i - current + xmb->above_item_offset) :
+      xmb->vspacing * (i - current + xmb->under_item_offset);
 
    if (i == current)
-      iy = xmb->xmb_vspacing * xmb->xmb_active_item_factor;
+      iy = xmb->vspacing * xmb->active_item_factor;
 
 
    node->alpha = (i  == driver.menu->selection_ptr) ? 1.0 : 0.5;
