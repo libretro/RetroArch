@@ -37,7 +37,6 @@
 
 #include "../../../settings_data.h"
 #include "../../../screenshot.h"
-#include "../../../gfx/fonts/bitmap.h"
 
 #include "shared.h"
 #include "tween.h"
@@ -626,9 +625,6 @@ static void *xmb_init(void)
 static void xmb_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
-
-   if (menu->alloc_font)
-      free((uint8_t*)menu->font);
 
    if (g_extern.core_info)
       core_info_list_free(g_extern.core_info);
