@@ -45,7 +45,6 @@
 #include "tween.h"
 
 // Category variables
-menu_category_t *categories;
 int depth = 0;
 int num_categories = 0;
 int menu_active_category = 0;
@@ -93,36 +92,6 @@ static const GLfloat tex_coord[] = {
    0, 0,
    1, 0,
 };
-
-enum
-{
-   TEXTURE_MAIN = 0,
-   TEXTURE_FONT,
-   TEXTURE_BG,
-   TEXTURE_SETTINGS,
-   TEXTURE_SETTING,
-   TEXTURE_SUBSETTING,
-   TEXTURE_ARROW,
-   TEXTURE_RUN,
-   TEXTURE_RESUME,
-   TEXTURE_SAVESTATE,
-   TEXTURE_LOADSTATE,
-   TEXTURE_SCREENSHOT,
-   TEXTURE_RELOAD,
-   TEXTURE_LAST
-};
-
-struct lakka_texture_item
-{
-   GLuint id;
-   char path[PATH_MAX];
-};
-
-
-typedef struct lakka_handle
-{
-   struct lakka_texture_item textures[TEXTURE_LAST];
-} lakka_handle_t;
 
 static void lakka_responsive(void)
 {
@@ -305,6 +274,7 @@ void lakka_draw_background(void)
    float alpha = 0.9f;
    gl_t *gl = NULL;
    lakka_handle_t *lakka = NULL;
+
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, global_alpha,
       1.0f, 1.0f, 1.0f, global_alpha,
@@ -423,15 +393,12 @@ static void lakka_draw_arrow(lakka_handle_t *lakka)
 static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
 {
    int k;
-   menu_category_t *category = (menu_category_t*)&categories[i];
+   menu_category_t *category = (menu_category_t*)&lakka->categories[i];
    menu_item_t *item = (menu_item_t*)&category->items[j];
    menu_category_t *active_category = (menu_category_t*)
-      &categories[menu_active_category];
+      &lakka->categories[menu_active_category];
    menu_item_t *active_item = (menu_item_t*)
       &active_category->items[active_category->active_item];
-
-   if (!lakka)
-      return;
 
    for(k = 0; k < item->num_subitems; k++)
    {
@@ -513,9 +480,9 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
 static void lakka_draw_items(lakka_handle_t *lakka, int i)
 {
    int j;
-   menu_category_t *category = (menu_category_t*)&categories[i];
+   menu_category_t *category = (menu_category_t*)&lakka->categories[i];
    menu_category_t *active_category = (menu_category_t*)
-      &categories[menu_active_category];
+      &lakka->categories[menu_active_category];
    menu_item_t *active_item = (menu_item_t*)
       &active_category->items[active_category->active_item];
     
@@ -566,7 +533,7 @@ static void lakka_draw_categories(lakka_handle_t *lakka)
 
    for(i = 0; i < num_categories; i++)
    {
-      menu_category_t *category = (menu_category_t*)&categories[i];
+      menu_category_t *category = (menu_category_t*)&lakka->categories[i];
 
       if (!category)
          continue;
@@ -700,7 +667,7 @@ static void lakka_frame(void)
       return;
 
    active_category = (menu_category_t*)
-      &categories[menu_active_category];
+      &lakka->categories[menu_active_category];
 
    if (!active_category)
       return;
@@ -811,7 +778,7 @@ static void lakka_context_destroy(void *data)
 
    for (i = 1; i < num_categories; i++)
    {
-      menu_category_t *category = (menu_category_t*)&categories[i];
+      menu_category_t *category = (menu_category_t*)&lakka->categories[i];
 
       if (!category)
          continue;
@@ -843,8 +810,16 @@ static void lakka_context_destroy(void *data)
 static bool lakka_init_settings(menu_handle_t *menu)
 {
    int j, k, jj = 0, kk;
+   lakka_handle_t *lakka = NULL;
+   menu_category_t *category = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t*)menu->list_settings;
-   menu_category_t *category = (menu_category_t*)&categories[0];
+
+   lakka = (lakka_handle_t*)menu->userdata;
+
+   if (!lakka)
+      return false;
+
+   category = (menu_category_t*)&lakka->categories[0];
 
    if (!setting_data || !category)
       return false;
@@ -954,7 +929,7 @@ static void lakka_settings_context_reset(void)
    if (!lakka)
       return;
 
-   category = (menu_category_t*)&categories[0];
+   category = (menu_category_t*)&lakka->categories[0];
 
    if (!category)
       return;
@@ -1030,7 +1005,7 @@ static void lakka_context_reset(void *data)
    lakka_settings_context_reset();
    for (i = 1; i < num_categories; i++)
    {
-      menu_category_t *category = (menu_category_t*)&categories[i];
+      menu_category_t *category = (menu_category_t*)&lakka->categories[i];
 
       char core_id[256], texturepath[256], content_texturepath[256],
            mediapath[256], themepath[256];
@@ -1209,7 +1184,8 @@ static void lakka_free(void *data)
    g_extern.core_info = NULL;
 }
 
-static int lakka_input_postprocess(retro_input_t state, retro_input_t old_state)
+static int lakka_input_postprocess(retro_input_t state,
+      retro_input_t old_state)
 {
    if (global_alpha == 0.0f)
       add_tween(LAKKA_DELAY, 1.0f, &global_alpha, &inOutQuad, NULL);
@@ -1237,7 +1213,8 @@ static void lakka_init_core_info(void *data)
 
 static void *lakka_init(void)
 {
-   menu_handle_t *menu;
+   menu_handle_t *menu = NULL;
+   lakka_handle_t *lakka = NULL;
    const video_driver_t *video_driver = NULL;
    gl_t *gl = (gl_t*)driver_video_resolve(&video_driver);
 
@@ -1255,19 +1232,25 @@ static void *lakka_init(void)
    lakka_responsive();
 
    lakka_init_core_info(menu);
-   categories = (menu_category_t*)
-      calloc(num_categories, sizeof(menu_category_t));
-
-   if (!categories)
-   {
-      free(menu);
-      return NULL;
-   }
 
    menu->userdata = (lakka_handle_t*)calloc(1, sizeof(lakka_handle_t));
 
    if (!menu->userdata)
       return NULL;
+
+   lakka = (lakka_handle_t*)menu->userdata;
+
+   if (!lakka)
+      return NULL;
+
+   lakka->categories = (menu_category_t*)
+      calloc(num_categories, sizeof(menu_category_t));
+
+   if (!lakka->categories)
+   {
+      free(menu);
+      return NULL;
+   }
 
    return menu;
 }
@@ -1276,8 +1259,14 @@ static bool lakka_init_lists(void *data)
 {
    int i;
    menu_handle_t *menu = (menu_handle_t*)data;
+   lakka_handle_t *lakka = NULL;
 
    if (!menu)
+      return false;
+
+   lakka = (lakka_handle_t*)menu->userdata;
+
+   if (!lakka)
       return false;
 
    if (!lakka_init_settings(menu))
@@ -1286,7 +1275,7 @@ static bool lakka_init_lists(void *data)
    for (i = 1; i < num_categories; i++)
    {
       core_info_t *info = NULL;
-      menu_category_t *category = (menu_category_t*)&categories[i];
+      menu_category_t *category = (menu_category_t*)&lakka->categories[i];
       core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
 
       if (info_list)

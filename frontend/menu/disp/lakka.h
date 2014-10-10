@@ -27,6 +27,24 @@
 #define LAKKA_DELAY 0.02
 #endif
 
+enum
+{
+   TEXTURE_MAIN = 0,
+   TEXTURE_FONT,
+   TEXTURE_BG,
+   TEXTURE_SETTINGS,
+   TEXTURE_SETTING,
+   TEXTURE_SUBSETTING,
+   TEXTURE_ARROW,
+   TEXTURE_RUN,
+   TEXTURE_RESUME,
+   TEXTURE_SAVESTATE,
+   TEXTURE_LOADSTATE,
+   TEXTURE_SCREENSHOT,
+   TEXTURE_RELOAD,
+   TEXTURE_LAST
+};
+
 extern int depth;
 extern int num_categories;
 extern float all_categories_x;
@@ -84,6 +102,18 @@ typedef struct
    menu_item_t *items;
 } menu_category_t;
 
-extern menu_category_t *categories;
+
+struct lakka_texture_item
+{
+   GLuint id;
+   char path[PATH_MAX];
+};
+
+
+typedef struct lakka_handle
+{
+   menu_category_t *categories;
+   struct lakka_texture_item textures[TEXTURE_LAST];
+} lakka_handle_t;
 
 #endif /* MENU_DISP_LAKKA_H */

@@ -44,7 +44,7 @@
 /* Move the categories left or right depending 
  * on the menu_active_category variable. */
 
-static void lakka_switch_categories(void)
+static void lakka_switch_categories(lakka_handle_t *lakka)
 {
    int i, j;
 
@@ -57,7 +57,7 @@ static void lakka_switch_categories(void)
    for (i = 0; i < num_categories; i++)
    {
       float ca, cz;
-      menu_category_t *category = (menu_category_t*)&categories[i];
+      menu_category_t *category = (menu_category_t*)&lakka->categories[i];
 
       if (!category)
          continue;
@@ -84,11 +84,11 @@ static void lakka_switch_categories(void)
    }
 }
 
-static void lakka_switch_items(void)
+static void lakka_switch_items(lakka_handle_t *lakka)
 {
    int j;
    menu_category_t *active_category = (menu_category_t*)
-      &categories[menu_active_category];
+      &lakka->categories[menu_active_category];
 
    for (j = 0; j < active_category->num_items; j++)
    {
@@ -117,11 +117,11 @@ static void lakka_switch_items(void)
    }
 }
 
-static void lakka_switch_subitems(void)
+static void lakka_switch_subitems(lakka_handle_t *lakka)
 {
    int k;
    menu_category_t *active_category = (menu_category_t*)
-      &categories[menu_active_category];
+      &lakka->categories[menu_active_category];
    menu_item_t *item = (menu_item_t*)
       &active_category->items[active_category->active_item];
 
@@ -165,9 +165,9 @@ static void lakka_switch_subitems(void)
    }
 }
 
-static void lakka_reset_submenu(int i, int j)
+static void lakka_reset_submenu(lakka_handle_t *lakka, int i, int j)
 {
-   menu_category_t *category = (menu_category_t*)&categories[i];
+   menu_category_t *category = (menu_category_t*)&lakka->categories[i];
 
    if (!category)
       return;
@@ -192,10 +192,10 @@ static void lakka_reset_submenu(int i, int j)
    }
 }
 
-static bool lakka_on_active_rom(void)
+static bool lakka_on_active_rom(lakka_handle_t *lakka)
 {
    menu_category_t *active_category = (menu_category_t*)
-      &categories[menu_active_category];
+      &lakka->categories[menu_active_category];
 
    return !(g_extern.main_is_init
             && !g_extern.libretro_dummy
@@ -204,7 +204,7 @@ static bool lakka_on_active_rom(void)
                active_category->active_item].rom)));
 }
 
-static void lakka_open_submenu(void)
+static void lakka_open_submenu(lakka_handle_t *lakka)
 {
    int i, j, k;
     
@@ -213,14 +213,15 @@ static void lakka_open_submenu(void)
    add_tween(LAKKA_DELAY, i_active_alpha, &arrow_alpha, &inOutQuad, NULL);
 
    menu_category_t *active_category = (menu_category_t*)
-      &categories[menu_active_category];
+      &lakka->categories[menu_active_category];
 
-   if (menu_active_category > 0 && lakka_on_active_rom())
-      lakka_reset_submenu(menu_active_category, active_category->active_item);
+   if (menu_active_category > 0 && lakka_on_active_rom(lakka))
+      lakka_reset_submenu(lakka, menu_active_category,
+            active_category->active_item);
    
    for (i = 0; i < num_categories; i++)
    {
-      menu_category_t *category = (menu_category_t*)&categories[i];
+      menu_category_t *category = (menu_category_t*)&lakka->categories[i];
 
       if (!category)
          continue;
@@ -263,7 +264,7 @@ static void lakka_open_submenu(void)
    }
 }
 
-static void lakka_close_submenu(void)
+static void lakka_close_submenu(lakka_handle_t *lakka)
 {
    int i, j, k;
     
@@ -274,7 +275,7 @@ static void lakka_close_submenu(void)
    for (i = 0; i < num_categories; i++)
    {
       float ca, cz;
-      menu_category_t *category = (menu_category_t*)&categories[i];
+      menu_category_t *category = (menu_category_t*)&lakka->categories[i];
       bool is_active_category = (i == menu_active_category);
 
       if (!category)
@@ -322,14 +323,17 @@ static int menu_lakka_iterate(unsigned action)
    menu_category_t *active_category = NULL;
    menu_item_t *active_item         = NULL;
    menu_subitem_t * active_subitem  = NULL;
+   lakka_handle_t *lakka            = NULL;
 
    if (!driver.menu)
-   {
-      RARCH_ERR("Cannot iterate menu, menu handle is not initialized.\n");
       return 0;
-   }
 
-   active_category = (menu_category_t*)&categories[menu_active_category];
+   lakka = (lakka_handle_t*)driver.menu->userdata;
+
+   if (!lakka)
+      return 0;
+
+   active_category = (menu_category_t*)&lakka->categories[menu_active_category];
 
    if (active_category)
       active_item = (menu_item_t*)
@@ -388,7 +392,7 @@ static int menu_lakka_iterate(unsigned action)
          if (depth == 0 && menu_active_category > 0)
          {
             menu_active_category--;
-            lakka_switch_categories();
+            lakka_switch_categories(lakka);
          }
          else if (depth == 1 && menu_active_category > 0 
             && (active_item->active_subitem == 1 
@@ -403,7 +407,7 @@ static int menu_lakka_iterate(unsigned action)
          if (depth == 0 && menu_active_category < num_categories-1)
          {
             menu_active_category++;
-            lakka_switch_categories();
+            lakka_switch_categories(lakka);
          }
          else if (depth == 1 && menu_active_category > 0 
             && (active_item->active_subitem == 1
@@ -420,7 +424,7 @@ static int menu_lakka_iterate(unsigned action)
                   (active_category->num_items - 1)))
          {
             active_category->active_item++;
-            lakka_switch_items();
+            lakka_switch_items(lakka);
          }
 
          /* If we are on subitems level, and we do not
@@ -437,7 +441,7 @@ static int menu_lakka_iterate(unsigned action)
                      && (!strcmp(g_extern.fullpath, active_item->rom)))))
          {
             active_item->active_subitem++;
-            lakka_switch_subitems();
+            lakka_switch_subitems(lakka);
          }
          break;
 
@@ -445,12 +449,12 @@ static int menu_lakka_iterate(unsigned action)
          if (depth == 0 && active_category->active_item > 0)
          {
             active_category->active_item--;
-            lakka_switch_items();
+            lakka_switch_items(lakka);
          }
          if (depth == 1 && active_item->active_subitem > 0)
          {
             active_item->active_subitem--;
-            lakka_switch_subitems();
+            lakka_switch_subitems(lakka);
          }
          break;
 
@@ -499,7 +503,7 @@ static int menu_lakka_iterate(unsigned action)
          }
          else if (depth == 0 && active_item->num_subitems)
          {
-            lakka_open_submenu();
+            lakka_open_submenu(lakka);
             depth = 1;
          }
          else if (depth == 0 && 
@@ -517,7 +521,7 @@ static int menu_lakka_iterate(unsigned action)
       case MENU_ACTION_CANCEL:
          if (depth == 1)
          {
-            lakka_close_submenu();
+            lakka_close_submenu(lakka);
             depth = 0;
          }
          break;
