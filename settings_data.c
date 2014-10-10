@@ -4550,6 +4550,7 @@ bool setting_data_append_list_privacy_options(
 
 rarch_setting_t *setting_data_get_list(unsigned mask)
 {
+   rarch_setting_t terminator = { ST_NONE };
    rarch_setting_t* list = NULL;
    rarch_setting_info_t *list_info = (rarch_setting_info_t*)
       settings_info_list_new();
@@ -4644,7 +4645,6 @@ rarch_setting_t *setting_data_get_list(unsigned mask)
          goto error;
    }
 
-   rarch_setting_t terminator = { ST_NONE };
    if (!(settings_list_append(&list, list_info, terminator)))
       goto error;
 
