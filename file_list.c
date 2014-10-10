@@ -58,15 +58,16 @@ size_t file_list_get_directory_ptr(const file_list_t *list)
    return list->list[size].directory_ptr;
 }
 
+
 void file_list_pop(file_list_t *list, size_t *directory_ptr)
 {
    if (!(list->size == 0))
    {
+      --list->size;
 #ifdef HAVE_MENU
       if (driver.menu_ctx && driver.menu_ctx->list_delete)
          driver.menu_ctx->list_delete(list, list->size);
 #endif
-      --list->size;
       free(list->list[list->size].path);
       free(list->list[list->size].label);
    }
@@ -89,6 +90,10 @@ void file_list_free(file_list_t *list)
 
    for (i = 0; i < list->size; i++)
    {
+#ifdef HAVE_MENU
+      if (driver.menu_ctx && driver.menu_ctx->list_delete)
+         driver.menu_ctx->list_delete(list, list->size);
+#endif
       free(list->list[i].path);
       free(list->list[i].label);
    }
@@ -156,6 +161,11 @@ static int file_list_alt_cmp(const void *a_, const void *b_)
 void file_list_sort_on_alt(file_list_t *list)
 {
    qsort(list->list, list->size, sizeof(list->list[0]), file_list_alt_cmp);
+}
+
+void *file_list_get_userdata_at_offset(const file_list_t *list, size_t index)
+{
+   return list->list[index].userdata;
 }
 
 void file_list_get_at_offset(const file_list_t *list, size_t index,

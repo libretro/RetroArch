@@ -30,6 +30,7 @@ struct item_file
    char *alt;
    unsigned type;
    size_t directory_ptr;
+   void *userdata;
 };
 
 typedef struct file_list
@@ -40,6 +41,9 @@ typedef struct file_list
    size_t size;
 } file_list_t;
 
+
+void *file_list_get_userdata_at_offset(const file_list_t *list, 
+      size_t index);
 
 void file_list_free(file_list_t *list);
 

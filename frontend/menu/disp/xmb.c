@@ -50,7 +50,6 @@
 
 typedef struct
 {
-   char  name[256];
    float alpha;
    float zoom;
    float y;
@@ -108,7 +107,6 @@ typedef struct xmb_handle
    float xmb_above_item_offset;
    float xmb_active_item_factor;
    float xmb_under_item_offset;
-   xmb_node_t *xmb_nodes;
 } xmb_handle_t;
 
 static const GLfloat rmb_vertex[] = {
@@ -341,7 +339,8 @@ static void xmb_selection_pointer_changed(void)
       float iy;
       float ia = 0.5;
       float iz = 0.5;
-      xmb_node_t *node = (xmb_node_t*)&xmb->xmb_nodes[i];
+      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(
+            driver.menu->selection_buf, i);
 
       if (!node)
          continue;
@@ -366,66 +365,6 @@ static void xmb_selection_pointer_changed(void)
 static void xmb_populate_entries(void *data, const char *path,
       const char *labell, unsigned ii)
 {
-   int i, num_nodes, end;
-   const char *dir = NULL;
-   const char *label = NULL;
-   unsigned menu_type = 0;
-   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
-
-   if (!xmb)
-      return;
-
-   int current = driver.menu->selection_ptr;
-
-   end = num_nodes = file_list_get_size(driver.menu->selection_buf);
-
-   xmb->xmb_nodes = (xmb_node_t*)
-      realloc(xmb->xmb_nodes, num_nodes * sizeof(xmb_node_t));
-
-   if (!xmb->xmb_nodes)
-      return;
-
-   file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
-
-   for (i = 0; i < end; i++)
-   {
-      char name[PATH_MAX], value[PATH_MAX], path_buf[PATH_MAX];
-      float iy;
-      xmb_node_t *node = NULL;
-      const char *path = NULL, *entry_label = NULL;
-      unsigned type = 0, w = 0;
-
-      file_list_get_at_offset(driver.menu->selection_buf, i, &path,
-            &entry_label, &type);
-      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
-            driver.menu->list_settings,
-            driver.menu->selection_buf->list[i].label);
-      (void)setting;
-
-      disp_set_label(&w, type, i, label,
-            value, sizeof(value), 
-            entry_label, path,
-            path_buf, sizeof(path_buf));
-
-      strlcpy(name, path_buf, sizeof(name));
-
-      iy = (i < current) ? xmb->xmb_vspacing *
-         (i - current + xmb->xmb_above_item_offset) :
-         xmb->xmb_vspacing * (i - current + xmb->xmb_under_item_offset);
-
-      if (i == current)
-         iy = xmb->xmb_vspacing * xmb->xmb_active_item_factor;
-
-      node = (xmb_node_t*)&xmb->xmb_nodes[i];
-
-      if (!xmb)
-         continue;
-
-      strlcpy(node->name, name, sizeof(node->name));
-      node->alpha = (i  == current) ? 1.0 : 0.5;
-      node->zoom  = (i  == current) ? 1.0 : 0.5;
-      node->y = iy;
-   }
 }
 
 static void xmb_frame(void)
@@ -483,16 +422,13 @@ static void xmb_frame(void)
       char value[PATH_MAX], path_buf[PATH_MAX];
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
-
-      xmb_node_t *node = (xmb_node_t*)&xmb->xmb_nodes[i];
+      xmb_node_t *node = NULL;
 
       file_list_get_at_offset(driver.menu->selection_buf, i, &path,
             &entry_label, &type);
-      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
-            driver.menu->list_settings,
-            driver.menu->selection_buf->list[i].label);
-      (void)setting;
-
+      node = (xmb_node_t*)file_list_get_userdata_at_offset(
+            driver.menu->selection_buf, i);
+      
       disp_set_label(&w, type, i, label,
             value, sizeof(value),
             entry_label, path,
@@ -505,7 +441,7 @@ static void xmb_frame(void)
             0, 
             node->zoom);
 
-      xmb_draw_text(node->name,
+      xmb_draw_text(path_buf,
             xmb->xmb_margin_left + xmb->xmb_hspacing + xmb->xmb_label_margin_left, 
             xmb->xmb_margin_top + node->y + xmb->xmb_label_margin_top, 
             1, 
@@ -809,16 +745,48 @@ static void xmb_navigation_ascend_alphabet(void *data, size_t *unused)
 static void xmb_list_insert(void *data,
       const char *path, const char *unused, size_t list_size)
 {
-   (void)data;
-   (void)path;
-   (void)unused;
-   (void)list_size;
+   int current = 0, i = list_size;
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+   file_list_t *list = (file_list_t*)data;
+
+   if (!list || !xmb)
+      return;
+
+   list->list[i].userdata = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
+
+   if (!list->list[i].userdata)
+      RARCH_ERR("XMB node could not be allocated.\n");
+
+   xmb_node_t *node = (xmb_node_t*)list->list[i].userdata;
+
+   if (!node)
+      return;
+
+   current = driver.menu->selection_ptr;
+
+   float iy = (i < current) ? xmb->xmb_vspacing *
+      (i - current + xmb->xmb_above_item_offset) :
+      xmb->xmb_vspacing * (i - current + xmb->xmb_under_item_offset);
+
+   if (i == current)
+      iy = xmb->xmb_vspacing * xmb->xmb_active_item_factor;
+
+
+   node->alpha = (i  == driver.menu->selection_ptr) ? 1.0 : 0.5;
+   node->zoom  = (i  == driver.menu->selection_ptr) ? 1.0 : 0.5;
+   node->y = iy;
 }
 
 static void xmb_list_delete(void *data, size_t list_size)
 {
-   (void)data;
-   (void)list_size;
+   file_list_t *list = (file_list_t*)data;
+
+   if (!list)
+      return;
+
+   if (list->list[list_size].userdata)
+      free(list->list[list_size].userdata);
+   list->list[list_size].userdata = NULL;
 }
 
 static void xmb_list_clear(void *data)
