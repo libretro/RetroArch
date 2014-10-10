@@ -118,7 +118,11 @@ struct lakka_texture_item
    char path[PATH_MAX];
 };
 
-struct lakka_texture_item textures[TEXTURE_LAST];
+
+typedef struct lakka_handle
+{
+   struct lakka_texture_item textures[TEXTURE_LAST];
+} lakka_handle_t;
 
 static void lakka_responsive(void)
 {
@@ -298,6 +302,9 @@ static void lakka_draw_text(const char *str, float x,
 
 void lakka_draw_background(void)
 {
+   float alpha = 0.9f;
+   gl_t *gl = NULL;
+   lakka_handle_t *lakka = NULL;
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, global_alpha,
       1.0f, 1.0f, 1.0f, global_alpha,
@@ -305,7 +312,6 @@ void lakka_draw_background(void)
       1.0f, 1.0f, 1.0f, global_alpha,
    };
 
-   float alpha = 0.9f;
    if (alpha > global_alpha)
       alpha = global_alpha;
 
@@ -316,9 +322,17 @@ void lakka_draw_background(void)
       0.0f, 0.0f, 0.0f, alpha,
    };
 
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   gl = (gl_t*)driver_video_resolve(NULL);
 
    if (!gl)
+      return;
+
+   if (!driver.menu)
+      return;
+
+   lakka = (lakka_handle_t*)driver.menu->userdata;
+
+   if (!lakka)
       return;
 
    glViewport(0, 0, gl->win_width, gl->win_height);
@@ -328,8 +342,8 @@ void lakka_draw_background(void)
    coords.vertex = vertex;
    coords.tex_coord = tex_coord;
    coords.lut_tex_coord = tex_coord;
-   coords.color = textures[TEXTURE_BG].id ? color : black_color;
-   glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_BG].id);
+   coords.color = lakka->textures[TEXTURE_BG].id ? color : black_color;
+   glBindTexture(GL_TEXTURE_2D, lakka->textures[TEXTURE_BG].id);
 
    gl->shader->set_coords(&coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
@@ -396,16 +410,17 @@ void lakka_draw_icon(GLuint texture, float x, float y,
    glDisable(GL_BLEND);
 }
 
-static void lakka_draw_arrow(void)
+static void lakka_draw_arrow(lakka_handle_t *lakka)
 {
-   lakka_draw_icon(textures[TEXTURE_ARROW].id,
-        margin_left + hspacing*(menu_active_category+1) +
-        all_categories_x + icon_size/2.0,
-        margin_top + vspacing*active_item_factor +
-        icon_size/2.0, arrow_alpha, 0, i_active_zoom);
+   if (lakka)
+      lakka_draw_icon(lakka->textures[TEXTURE_ARROW].id,
+            margin_left + hspacing*(menu_active_category+1) +
+            all_categories_x + icon_size/2.0,
+            margin_top + vspacing*active_item_factor +
+            icon_size/2.0, arrow_alpha, 0, i_active_zoom);
 }
 
-static void lakka_draw_subitems(int i, int j)
+static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
 {
    int k;
    menu_category_t *category = (menu_category_t*)&categories[i];
@@ -414,6 +429,9 @@ static void lakka_draw_subitems(int i, int j)
       &categories[menu_active_category];
    menu_item_t *active_item = (menu_item_t*)
       &active_category->items[active_category->active_item];
+
+   if (!lakka)
+      return;
 
    for(k = 0; k < item->num_subitems; k++)
    {
@@ -426,7 +444,7 @@ static void lakka_draw_subitems(int i, int j)
             && !g_extern.libretro_dummy
             && strcmp(g_extern.fullpath, active_item->rom) == 0)
       {
-         lakka_draw_icon(textures[TEXTURE_RESUME].id, 
+         lakka_draw_icon(lakka->textures[TEXTURE_RESUME].id, 
             margin_left + hspacing*(i+1) + icon_size*2 +
             all_categories_x - icon_size/2.0,
             margin_top + subitem->y + icon_size/2.0,
@@ -492,7 +510,7 @@ static void lakka_draw_subitems(int i, int j)
    }
 }
 
-static void lakka_draw_items(int i)
+static void lakka_draw_items(lakka_handle_t *lakka, int i)
 {
    int j;
    menu_category_t *category = (menu_category_t*)&categories[i];
@@ -502,6 +520,9 @@ static void lakka_draw_items(int i)
       &active_category->items[active_category->active_item];
     
    (void)active_item;
+
+   if (!lakka)
+      return;
 
    for(j = 0; j < category->num_items; j++)
    {
@@ -532,13 +553,16 @@ static void lakka_draw_items(int i)
 
       /* performance improvement */
       if (i == menu_active_category && j == category->active_item)
-         lakka_draw_subitems(i, j);
+         lakka_draw_subitems(lakka, i, j);
    }
 }
 
-static void lakka_draw_categories(void)
+static void lakka_draw_categories(lakka_handle_t *lakka)
 {
    int i;
+
+   if (!lakka)
+      return;
 
    for(i = 0; i < num_categories; i++)
    {
@@ -548,7 +572,7 @@ static void lakka_draw_categories(void)
          continue;
 
       /* draw items */
-      lakka_draw_items(i);
+      lakka_draw_items(lakka, i);
 
       /* draw category icon */
       lakka_draw_icon(category->icon, 
@@ -659,12 +683,26 @@ static void lakka_draw_fbo(void)
 
 static void lakka_frame(void)
 {
+   menu_item_t *active_item = NULL;
+   menu_category_t *active_category = NULL;
+   lakka_handle_t *lakka = NULL;
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
-   menu_category_t *active_category = (menu_category_t*)
-      &categories[menu_active_category];
-   menu_item_t *active_item;
 
-   if (!driver.menu || !gl || !active_category)
+   if (!gl)
+      return;
+
+   if (!driver.menu)
+      return;
+
+   lakka = (lakka_handle_t*)driver.menu->userdata;
+
+   if (!lakka)
+      return;
+
+   active_category = (menu_category_t*)
+      &categories[menu_active_category];
+
+   if (!active_category)
       return;
 
    active_item = (menu_item_t*)
@@ -676,8 +714,8 @@ static void lakka_frame(void)
    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
    glClearColor(0.0, 0.0, 0.0, 0.0);
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-   lakka_draw_categories();
-   lakka_draw_arrow();
+   lakka_draw_categories(lakka);
+   lakka_draw_arrow(lakka);
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
    glViewport(0, 0, gl->win_width, gl->win_height);
    lakka_draw_background();
@@ -685,8 +723,8 @@ static void lakka_frame(void)
 #else
    glViewport(0, 0, gl->win_width, gl->win_height);
    lakka_draw_background();
-   lakka_draw_categories();
-   lakka_draw_arrow();
+   lakka_draw_categories(lakka);
+   lakka_draw_arrow(lakka);
 #endif
 
    if (depth == 0)
@@ -749,7 +787,18 @@ static GLuint lakka_png_texture_load(const char* file_name)
 static void lakka_context_destroy(void *data)
 {
    int i, j, k;
-   (void)data;
+   menu_handle_t *menu = NULL;
+   lakka_handle_t *lakka = NULL;
+
+   menu = (menu_handle_t*)data;
+
+   if (!menu)
+      return;
+
+   lakka = (lakka_handle_t*)menu->userdata;
+
+   if (!lakka)
+      return;
 
 #if defined(HAVE_FBO) && defined(LAKKA_EFFECTS)
    glDeleteFramebuffers(1, &fbo);
@@ -758,7 +807,7 @@ static void lakka_context_destroy(void *data)
 #endif
 
    for (i = 0; i < TEXTURE_LAST; i++)
-      glDeleteTextures(1, &textures[i].id);
+      glDeleteTextures(1, &lakka->textures[i].id);
 
    for (i = 1; i < num_categories; i++)
    {
@@ -892,15 +941,26 @@ static bool lakka_init_settings(menu_handle_t *menu)
 
 static void lakka_settings_context_reset(void)
 {
-   menu_item_t *item;
    int j, k;
-   menu_category_t *category = (menu_category_t*)&categories[0];
+   lakka_handle_t *lakka = NULL;
+   menu_item_t *item = NULL;
+   menu_category_t *category = NULL;
+
+   if (!driver.menu)
+      return;
+
+   lakka = (lakka_handle_t*)driver.menu->userdata;
+
+   if (!lakka)
+      return;
+
+   category = (menu_category_t*)&categories[0];
 
    if (!category)
       return;
 
-   category->icon = textures[TEXTURE_SETTINGS].id;
-   category->item_icon = textures[TEXTURE_SETTING].id;
+   category->icon      = lakka->textures[TEXTURE_SETTINGS].id;
+   category->item_icon = lakka->textures[TEXTURE_SETTING].id;
 
    for  (j = 0; j < category->num_items; j++)
    {
@@ -909,7 +969,7 @@ static void lakka_settings_context_reset(void)
       for (k = 0; k < item->num_subitems; k++)
       {
          menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
-         subitem->icon = textures[TEXTURE_SUBSETTING].id;
+         subitem->icon = lakka->textures[TEXTURE_SUBSETTING].id;
       }
    }
 }
@@ -917,10 +977,16 @@ static void lakka_settings_context_reset(void)
 static void lakka_context_reset(void *data)
 {
    int i, j, k;
-   char mediapath[256], themepath[256], iconpath[256];
+   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX];
+   lakka_handle_t *lakka = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
 
    if (!menu)
+      return;
+
+   lakka = (lakka_handle_t*)menu->userdata;
+
+   if (!lakka)
       return;
 
 #if defined(HAVE_FBO) && defined(LAKKA_EFFECTS)
@@ -935,31 +1001,31 @@ static void lakka_context_reset(void *data)
    fill_pathname_join(iconpath, themepath, icon_dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
    
-   fill_pathname_join(textures[TEXTURE_BG].path, iconpath,
-         "bg.png", sizeof(textures[TEXTURE_BG].path));
-   fill_pathname_join(textures[TEXTURE_SETTINGS].path, iconpath,
-         "settings.png", sizeof(textures[TEXTURE_SETTINGS].path));
-   fill_pathname_join(textures[TEXTURE_SETTING].path, iconpath,
-         "setting.png", sizeof(textures[TEXTURE_SETTING].path));
-   fill_pathname_join(textures[TEXTURE_SUBSETTING].path, iconpath,
-         "subsetting.png", sizeof(textures[TEXTURE_SUBSETTING].path));
-   fill_pathname_join(textures[TEXTURE_ARROW].path, iconpath,
-         "arrow.png", sizeof(textures[TEXTURE_ARROW].path));
-   fill_pathname_join(textures[TEXTURE_RUN].path, iconpath,
-         "run.png", sizeof(textures[TEXTURE_RUN].path));
-   fill_pathname_join(textures[TEXTURE_RESUME].path, iconpath,
-         "resume.png", sizeof(textures[TEXTURE_RESUME].path));
-   fill_pathname_join(textures[TEXTURE_SAVESTATE].path, iconpath,
-         "savestate.png", sizeof(textures[TEXTURE_SAVESTATE].path));
-   fill_pathname_join(textures[TEXTURE_LOADSTATE].path, iconpath,
-         "loadstate.png", sizeof(textures[TEXTURE_LOADSTATE].path));
-   fill_pathname_join(textures[TEXTURE_SCREENSHOT].path, iconpath,
-         "screenshot.png", sizeof(textures[TEXTURE_SCREENSHOT].path));
-   fill_pathname_join(textures[TEXTURE_RELOAD].path, iconpath,
-         "reload.png", sizeof(textures[TEXTURE_RELOAD].path));
+   fill_pathname_join(lakka->textures[TEXTURE_BG].path, iconpath,
+         "bg.png", sizeof(lakka->textures[TEXTURE_BG].path));
+   fill_pathname_join(lakka->textures[TEXTURE_SETTINGS].path, iconpath,
+         "settings.png", sizeof(lakka->textures[TEXTURE_SETTINGS].path));
+   fill_pathname_join(lakka->textures[TEXTURE_SETTING].path, iconpath,
+         "setting.png", sizeof(lakka->textures[TEXTURE_SETTING].path));
+   fill_pathname_join(lakka->textures[TEXTURE_SUBSETTING].path, iconpath,
+         "subsetting.png", sizeof(lakka->textures[TEXTURE_SUBSETTING].path));
+   fill_pathname_join(lakka->textures[TEXTURE_ARROW].path, iconpath,
+         "arrow.png", sizeof(lakka->textures[TEXTURE_ARROW].path));
+   fill_pathname_join(lakka->textures[TEXTURE_RUN].path, iconpath,
+         "run.png", sizeof(lakka->textures[TEXTURE_RUN].path));
+   fill_pathname_join(lakka->textures[TEXTURE_RESUME].path, iconpath,
+         "resume.png", sizeof(lakka->textures[TEXTURE_RESUME].path));
+   fill_pathname_join(lakka->textures[TEXTURE_SAVESTATE].path, iconpath,
+         "savestate.png", sizeof(lakka->textures[TEXTURE_SAVESTATE].path));
+   fill_pathname_join(lakka->textures[TEXTURE_LOADSTATE].path, iconpath,
+         "loadstate.png", sizeof(lakka->textures[TEXTURE_LOADSTATE].path));
+   fill_pathname_join(lakka->textures[TEXTURE_SCREENSHOT].path, iconpath,
+         "screenshot.png", sizeof(lakka->textures[TEXTURE_SCREENSHOT].path));
+   fill_pathname_join(lakka->textures[TEXTURE_RELOAD].path, iconpath,
+         "reload.png", sizeof(lakka->textures[TEXTURE_RELOAD].path));
 
    for (k = 0; k < TEXTURE_LAST; k++)
-      textures[k].id = lakka_png_texture_load(textures[k].path);
+      lakka->textures[k].id = lakka_png_texture_load(lakka->textures[k].path);
 
    lakka_settings_context_reset();
    for (i = 1; i < num_categories; i++)
@@ -1016,19 +1082,19 @@ static void lakka_context_reset(void *data)
             switch (k)
             {
                case 0:
-                  subitem->icon = textures[TEXTURE_RUN].id;
+                  subitem->icon = lakka->textures[TEXTURE_RUN].id;
                   break;
                case 1:
-                  subitem->icon = textures[TEXTURE_SAVESTATE].id;
+                  subitem->icon = lakka->textures[TEXTURE_SAVESTATE].id;
                   break;
                case 2:
-                  subitem->icon = textures[TEXTURE_LOADSTATE].id;
+                  subitem->icon = lakka->textures[TEXTURE_LOADSTATE].id;
                   break;
                case 3:
-                  subitem->icon = textures[TEXTURE_SCREENSHOT].id;
+                  subitem->icon = lakka->textures[TEXTURE_SCREENSHOT].id;
                   break;
                case 4:
-                  subitem->icon = textures[TEXTURE_RELOAD].id;
+                  subitem->icon = lakka->textures[TEXTURE_RELOAD].id;
                   break;
             }
          }
@@ -1135,6 +1201,9 @@ static void lakka_free(void *data)
    if (menu->alloc_font)
       free((uint8_t*)menu->font);
 
+   if (menu->userdata)
+      free(menu->userdata);
+
    if (g_extern.core_info)
       core_info_list_free(g_extern.core_info);
    g_extern.core_info = NULL;
@@ -1194,6 +1263,11 @@ static void *lakka_init(void)
       free(menu);
       return NULL;
    }
+
+   menu->userdata = (lakka_handle_t*)calloc(1, sizeof(lakka_handle_t));
+
+   if (!menu->userdata)
+      return NULL;
 
    return menu;
 }
