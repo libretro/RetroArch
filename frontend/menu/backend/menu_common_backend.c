@@ -411,12 +411,15 @@ static int menu_settings_iterate(unsigned action)
       file_list_get_at_offset(driver.menu->selection_buf,
             driver.menu->selection_ptr, NULL, &label, &type);
 
-   if (!strcmp(label, "core_list"))
-      dir = g_settings.libretro_directory;
-   else if (!strcmp(label, "configurations"))
-      dir = g_settings.menu_config_directory;
-   else if (!strcmp(label, "disk_image_append"))
-      dir = g_settings.menu_content_directory;
+   if (label)
+   {
+      if (!strcmp(label, "core_list"))
+         dir = g_settings.libretro_directory;
+      else if (!strcmp(label, "configurations"))
+         dir = g_settings.menu_config_directory;
+      else if (!strcmp(label, "disk_image_append"))
+         dir = g_settings.menu_content_directory;
+   }
 
    if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_NOOP;

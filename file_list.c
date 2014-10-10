@@ -108,8 +108,11 @@ void file_list_clear(file_list_t *list)
    for (i = 0; i < list->size; i++)
    {
       free(list->list[i].path);
+      list->list[i].path = NULL;
       free(list->list[i].label);
+      list->list[i].label = NULL;
       free(list->list[i].alt);
+      list->list[i].alt = NULL;
    }
 
 #ifdef HAVE_MENU
