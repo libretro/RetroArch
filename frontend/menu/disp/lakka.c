@@ -55,19 +55,12 @@ float arrow_alpha = 0;
 float hspacing;
 float vspacing;
 float lakka_font_size;
-float margin_left;
-float margin_top;
-float title_margin_left;
-float title_margin_top;
-float label_margin_left;
-float label_margin_top;
 int icon_size;
 char icon_dir[4];
 float above_subitem_offset;
 float above_item_offset;
 float active_item_factor;
 float under_item_offset;
-float setting_margin_left;
 
 GLuint fbo, fbocolor, fbodepth = 0;
 
@@ -272,9 +265,9 @@ static void lakka_draw_arrow(lakka_handle_t *lakka)
 {
    if (lakka)
       lakka_draw_icon(lakka->textures[TEXTURE_ARROW].id,
-            margin_left + hspacing*(menu_active_category+1) +
+            lakka->margin_left + hspacing*(menu_active_category+1) +
             all_categories_x + icon_size/2.0,
-            margin_top + vspacing*active_item_factor +
+            lakka->margin_top + vspacing*active_item_factor +
             icon_size/2.0, arrow_alpha, 0, lakka->i_active_zoom);
 }
 
@@ -300,16 +293,16 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
             && strcmp(g_extern.fullpath, active_item->rom) == 0)
       {
          lakka_draw_icon(lakka->textures[TEXTURE_RESUME].id, 
-            margin_left + hspacing*(i+1) + icon_size*2 +
+            lakka->margin_left + hspacing*(i+1) + icon_size*2 +
             all_categories_x - icon_size/2.0,
-            margin_top + subitem->y + icon_size/2.0,
+            lakka->margin_top + subitem->y + icon_size/2.0,
             subitem->alpha,
             0, 
             subitem->zoom);
          lakka_draw_text("Resume",
-            margin_left + hspacing*(i+2.25) +
-            all_categories_x + label_margin_left,
-            margin_top + subitem->y + label_margin_top,
+            lakka->margin_left + hspacing*(i+2.25) +
+            all_categories_x + lakka->label_margin_left,
+            lakka->margin_top + subitem->y + lakka->label_margin_top,
             1, 
             subitem->alpha);
       }
@@ -320,17 +313,17 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
             strcmp(g_extern.fullpath, active_item->rom) == 0))
       {
          lakka_draw_icon(subitem->icon, 
-               margin_left + hspacing*(i+1) + icon_size*2 +
+               lakka->margin_left + hspacing*(i+1) + icon_size*2 +
                all_categories_x - icon_size/2.0, 
-               margin_top + subitem->y + icon_size/2.0, 
+               lakka->margin_top + subitem->y + icon_size/2.0, 
                subitem->alpha, 
                0, 
                subitem->zoom);
 
          lakka_draw_text(subitem->name, 
-               margin_left + hspacing * (i+2.25) +
-               all_categories_x + label_margin_left, 
-               margin_top + subitem->y + label_margin_top, 
+               lakka->margin_left + hspacing * (i+2.25) +
+               all_categories_x + lakka->label_margin_left, 
+               lakka->margin_top + subitem->y + lakka->label_margin_top, 
                1, 
                subitem->alpha);
 
@@ -342,9 +335,9 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
             else
                snprintf(slot, sizeof(slot), "%d", g_settings.state_slot);
             lakka_draw_text(slot, 
-                  margin_left + hspacing * (i+2.25) +
-                  all_categories_x + label_margin_left + setting_margin_left, 
-                  margin_top + subitem->y + label_margin_top, 
+                  lakka->margin_left + hspacing * (i+2.25) +
+                  all_categories_x + lakka->label_margin_left + lakka->setting_margin_left, 
+                  lakka->margin_top + subitem->y + lakka->label_margin_top, 
                   1, 
                   subitem->alpha);
          }
@@ -352,13 +345,13 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
 
       if (subitem->setting)
       {
-         char val[256];
+         char val[PATH_MAX];
          setting_data_get_string_representation(subitem->setting, val,
                sizeof(val));
          lakka_draw_text(val, 
-               margin_left + hspacing * (i+2.25) +
-               all_categories_x + label_margin_left + setting_margin_left, 
-               margin_top + subitem->y + label_margin_top, 
+               lakka->margin_left + hspacing * (i+2.25) +
+               all_categories_x + lakka->label_margin_left + lakka->setting_margin_left, 
+               lakka->margin_top + subitem->y + lakka->label_margin_top, 
                1, 
                subitem->alpha);
       }
@@ -390,18 +383,18 @@ static void lakka_draw_items(lakka_handle_t *lakka, int i)
          i <= menu_active_category + 1) /* performance improvement */
       {
          lakka_draw_icon(category->item_icon,
-            margin_left + hspacing*(i+1) +
+            lakka->margin_left + hspacing*(i+1) +
             all_categories_x - icon_size/2.0, 
-            margin_top + item->y + icon_size/2.0, 
+            lakka->margin_top + item->y + icon_size/2.0, 
             item->alpha, 
             0, 
             item->zoom);
 
          if (depth == 0)
             lakka_draw_text(item->name,
-               margin_left + hspacing * (i+1) +
-               all_categories_x + label_margin_left, 
-               margin_top + item->y + label_margin_top, 
+               lakka->margin_left + hspacing * (i+1) +
+               all_categories_x + lakka->label_margin_left, 
+               lakka->margin_top + item->y + lakka->label_margin_top, 
                1, 
                item->alpha);
       }
@@ -431,9 +424,9 @@ static void lakka_draw_categories(lakka_handle_t *lakka)
 
       /* draw category icon */
       lakka_draw_icon(category->icon, 
-            margin_left + (hspacing*(i+1)) +
+            lakka->margin_left + (hspacing*(i+1)) +
             all_categories_x - icon_size/2.0,
-            margin_top + icon_size/2.0, 
+            lakka->margin_top + icon_size/2.0, 
             category->alpha, 
             0, 
             category->zoom);
@@ -584,10 +577,10 @@ static void lakka_frame(void)
 
    if (depth == 0)
       lakka_draw_text(active_category->name,
-            title_margin_left, title_margin_top, 1, 1.0);
+            lakka->title_margin_left, lakka->title_margin_top, 1, 1.0);
    else if (active_item)
       lakka_draw_text(active_item->name,
-            title_margin_left, title_margin_top, 1, 1.0);
+            lakka->title_margin_left, lakka->title_margin_top, 1, 1.0);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 
@@ -1172,13 +1165,13 @@ static void *lakka_init(void)
       hspacing = 400;
       vspacing = 128;
       lakka_font_size = 42.0;
-      margin_left = 672.0;
-      margin_top = 512;
-      title_margin_left = 20.0;
-      title_margin_top = 50.0;
-      label_margin_left = 192;
-      label_margin_top = 15;
-      setting_margin_left = 1200;
+      lakka->margin_left = 672.0;
+      lakka->margin_top = 512;
+      lakka->title_margin_left = 20.0;
+      lakka->title_margin_top = 50.0;
+      lakka->label_margin_left = 192;
+      lakka->label_margin_top = 15;
+      lakka->setting_margin_left = 1200;
       strcpy(icon_dir, "256");
    }
    else if (gl->win_width >= 2560)
@@ -1187,14 +1180,14 @@ static void *lakka_init(void)
       hspacing = 300;
       vspacing = 96;
       lakka_font_size = 32.0;
-      margin_left = 448.0;
-      margin_top = 384;
-      title_margin_left = 15.0;
-      title_margin_top = 40.0;
-      label_margin_left = 144;
-      label_margin_top = 11.0;
+      lakka->margin_left = 448.0;
+      lakka->margin_top = 384;
+      lakka->title_margin_left = 15.0;
+      lakka->title_margin_top = 40.0;
+      lakka->label_margin_left = 144;
+      lakka->label_margin_top = 11.0;
+      lakka->setting_margin_left = 800;
       strcpy(icon_dir, "192");
-      setting_margin_left = 800;
    }
    else if (gl->win_width >= 1920)
    {
@@ -1202,13 +1195,13 @@ static void *lakka_init(void)
       hspacing = 200.0;
       vspacing = 64.0;
       lakka_font_size = 24;
-      margin_left = 336.0;
-      margin_top = 256;
-      title_margin_left = 15.0;
-      title_margin_top = 35.0;
-      label_margin_left = 85;
-      label_margin_top = 8.0;
-      setting_margin_left = 600;
+      lakka->margin_left = 336.0;
+      lakka->margin_top = 256;
+      lakka->title_margin_left = 15.0;
+      lakka->title_margin_top = 35.0;
+      lakka->label_margin_left = 85;
+      lakka->label_margin_top = 8.0;
+      lakka->setting_margin_left = 600;
       strcpy(icon_dir, "128");
    }
    else if (gl->win_width <= 640)
@@ -1217,14 +1210,14 @@ static void *lakka_init(void)
       hspacing = 100.0;
       vspacing = 32.0;
       lakka_font_size = 16;
-      margin_left = 60.0;
-      margin_top = 128.0;
-      title_margin_left = 10.0;
-      title_margin_top = 24.0;
-      label_margin_left = 48;
-      label_margin_top = 6.0;
+      lakka->margin_left = 60.0;
+      lakka->margin_top = 128.0;
+      lakka->title_margin_left = 10.0;
+      lakka->title_margin_top = 24.0;
+      lakka->label_margin_left = 48;
+      lakka->label_margin_top = 6.0;
+      lakka->setting_margin_left = 250;
       strcpy(icon_dir, "64");
-      setting_margin_left = 250;
    }
    else
    {
@@ -1232,13 +1225,13 @@ static void *lakka_init(void)
       hspacing = 150.0;
       vspacing = 48.0;
       lakka_font_size = 18;
-      margin_left = 224;
-      margin_top = 192;
-      title_margin_left = 15.0;
-      title_margin_top = 30.0;
-      label_margin_left = 64;
-      label_margin_top = 6.0;
-      setting_margin_left = 400;
+      lakka->margin_left = 224;
+      lakka->margin_top = 192;
+      lakka->title_margin_left = 15.0;
+      lakka->title_margin_top = 30.0;
+      lakka->label_margin_left = 64;
+      lakka->label_margin_top = 6.0;
+      lakka->setting_margin_left = 400;
       strcpy(icon_dir, "96");
    }
 

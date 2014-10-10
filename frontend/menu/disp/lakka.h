@@ -112,6 +112,13 @@ typedef struct lakka_handle
    float i_passive_zoom;
    float i_active_alpha;
    float i_passive_alpha;
+   float margin_left;
+   float margin_top;
+   float title_margin_left;
+   float title_margin_top;
+   float label_margin_left;
+   float label_margin_top;
+   float setting_margin_left;
    menu_category_t *categories;
    struct lakka_texture_item textures[TEXTURE_LAST];
 } lakka_handle_t;
