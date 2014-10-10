@@ -54,10 +54,6 @@ extern float global_scale;
 extern float arrow_alpha;
 extern float hspacing;
 extern float vspacing;
-extern float above_subitem_offset;
-extern float above_item_offset;
-extern float active_item_factor;
-extern float under_item_offset;
 
 typedef struct
 {
@@ -119,6 +115,10 @@ typedef struct lakka_handle
    float label_margin_left;
    float label_margin_top;
    float setting_margin_left;
+   float above_subitem_offset;
+   float above_item_offset;
+   float active_item_factor;
+   float under_item_offset;
    menu_category_t *categories;
    struct lakka_texture_item textures[TEXTURE_LAST];
 } lakka_handle_t;

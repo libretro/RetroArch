@@ -103,14 +103,14 @@ static void lakka_switch_items(lakka_handle_t *lakka)
          continue;
 
       iy = (j  < active_category->active_item) ? vspacing *
-         (j - active_category->active_item + above_item_offset) :
-         vspacing * (j - active_category->active_item + under_item_offset);
+         (j - active_category->active_item + lakka->above_item_offset) :
+         vspacing * (j - active_category->active_item + lakka->under_item_offset);
 
       if (j == active_category->active_item)
       {
          ia = lakka->i_active_alpha;
          iz = lakka->i_active_zoom;
-         iy = vspacing * active_item_factor;
+         iy = vspacing * lakka->active_item_factor;
       }
 
       add_tween(LAKKA_DELAY, ia, &active_item->alpha, &inOutQuad, NULL);
@@ -140,7 +140,7 @@ static void lakka_switch_subitems(lakka_handle_t *lakka)
          add_tween(LAKKA_DELAY, lakka->i_passive_alpha,
                &subitem->alpha, &inOutQuad, NULL);
          add_tween(LAKKA_DELAY, vspacing * (k - item->active_subitem + 
-                  above_subitem_offset), &subitem->y, &inOutQuad, NULL);
+                  lakka->above_subitem_offset), &subitem->y, &inOutQuad, NULL);
          add_tween(LAKKA_DELAY, lakka->i_passive_zoom,
                &subitem->zoom, &inOutQuad, NULL);
       }
@@ -149,7 +149,7 @@ static void lakka_switch_subitems(lakka_handle_t *lakka)
          /* Active item */
          add_tween(LAKKA_DELAY, lakka->i_active_alpha,
                &subitem->alpha, &inOutQuad, NULL);
-         add_tween(LAKKA_DELAY, vspacing * active_item_factor,
+         add_tween(LAKKA_DELAY, vspacing * lakka->active_item_factor,
                &subitem->y, &inOutQuad, NULL);
          add_tween(LAKKA_DELAY, lakka->i_active_zoom,
                &subitem->zoom, &inOutQuad, NULL);
@@ -160,7 +160,7 @@ static void lakka_switch_subitems(lakka_handle_t *lakka)
          add_tween(LAKKA_DELAY, lakka->i_passive_alpha,
                &subitem->alpha, &inOutQuad, NULL);
          add_tween(LAKKA_DELAY, vspacing * (k - item->active_subitem + 
-                  under_item_offset), &subitem->y, &inOutQuad, NULL);
+                  lakka->under_item_offset), &subitem->y, &inOutQuad, NULL);
          add_tween(LAKKA_DELAY, lakka->i_passive_zoom,
                &subitem->zoom, &inOutQuad, NULL);
       }
@@ -189,8 +189,8 @@ static void lakka_reset_submenu(lakka_handle_t *lakka, int i, int j)
       subitem->zoom = (k == category->items[j].active_subitem) ? 
          lakka->i_active_zoom : lakka->i_passive_zoom;
       subitem->y = k == 0 ? 
-         vspacing * active_item_factor : 
-         vspacing * (k + under_item_offset);
+         vspacing * lakka->active_item_factor : 
+         vspacing * (k + lakka->under_item_offset);
    }
 }
 

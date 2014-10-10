@@ -57,10 +57,6 @@ float vspacing;
 float lakka_font_size;
 int icon_size;
 char icon_dir[4];
-float above_subitem_offset;
-float above_item_offset;
-float active_item_factor;
-float under_item_offset;
 
 GLuint fbo, fbocolor, fbodepth = 0;
 
@@ -267,7 +263,7 @@ static void lakka_draw_arrow(lakka_handle_t *lakka)
       lakka_draw_icon(lakka->textures[TEXTURE_ARROW].id,
             lakka->margin_left + hspacing*(menu_active_category+1) +
             all_categories_x + icon_size/2.0,
-            lakka->margin_top + vspacing*active_item_factor +
+            lakka->margin_top + vspacing * lakka->active_item_factor +
             icon_size/2.0, arrow_alpha, 0, lakka->i_active_zoom);
 }
 
@@ -738,7 +734,8 @@ static bool lakka_init_settings(menu_handle_t *menu)
       item->alpha = jj ? lakka->i_passive_alpha : lakka->i_active_alpha;
       item->zoom  = jj ? lakka->i_passive_zoom  : lakka->i_active_zoom;
       item->y = jj ?
-         vspacing*(under_item_offset+jj) : vspacing * active_item_factor;
+         vspacing * (lakka->under_item_offset + jj) 
+         : vspacing * lakka->active_item_factor;
       item->active_subitem = 0;
       item->num_subitems = 0;
       item->subitems = NULL;
@@ -764,8 +761,8 @@ static bool lakka_init_settings(menu_handle_t *menu)
                   sizeof(subitem->name));
             subitem->alpha = 0.0;
             subitem->zoom = kk ? lakka->i_passive_zoom : lakka->i_active_zoom;
-            subitem->y = kk ? vspacing * (kk + under_item_offset)
-               : vspacing * active_item_factor;
+            subitem->y = kk ? vspacing * (kk + lakka->under_item_offset)
+               : vspacing * lakka->active_item_factor;
 
             subitem->setting = (rarch_setting_t*)&setting_data[k];
 
@@ -787,8 +784,8 @@ static bool lakka_init_settings(menu_handle_t *menu)
    strlcpy(itemq->name, "Quit RetroArch", sizeof(itemq->name));
    itemq->alpha          = jj ? lakka->i_passive_alpha : lakka->i_active_alpha;
    itemq->zoom           = jj ? lakka->i_passive_zoom  : lakka->i_active_zoom;
-   itemq->y              = jj ? vspacing*(under_item_offset+jj) :
-      vspacing * active_item_factor;
+   itemq->y              = jj ? vspacing * (lakka->under_item_offset + jj) :
+      vspacing * lakka->active_item_factor;
    itemq->active_subitem = 0;
    itemq->num_subitems   = 0;
 
@@ -986,8 +983,8 @@ static void lakka_init_subitems(lakka_handle_t *lakka, menu_item_t *item)
       }
       subitem->alpha = 0;
       subitem->zoom = k ? lakka->i_passive_zoom : lakka->i_active_zoom;
-      subitem->y = k ? vspacing * (k+under_item_offset) :
-         vspacing * active_item_factor;
+      subitem->y = k ? vspacing * (k + lakka->under_item_offset) :
+         vspacing * lakka->active_item_factor;
    }
 }
 
@@ -1009,8 +1006,8 @@ static void lakka_init_item(lakka_handle_t *lakka,
    item->alpha          = i != menu_active_category ? 0 :
                           n ? lakka->i_passive_alpha : lakka->i_active_alpha;
    item->zoom           = n ? lakka->i_passive_zoom  : lakka->i_active_zoom;
-   item->y              = n ? vspacing*(under_item_offset+n) :
-      vspacing*active_item_factor;
+   item->y              = n ? (vspacing * (lakka->under_item_offset + n)) :
+      (vspacing * lakka->active_item_factor);
    item->active_subitem = 0;
    item->num_subitems   = 5;
    item->subitems       = (menu_subitem_t*)
@@ -1154,10 +1151,10 @@ static void *lakka_init(void)
    lakka->i_active_alpha  = 1.0;
    lakka->i_passive_alpha = 0.5;
 
-   above_subitem_offset = 1.5;
-   above_item_offset = -1.0;
-   active_item_factor = 2.75;
-   under_item_offset = 4.0;
+   lakka->above_subitem_offset = 1.5;
+   lakka->above_item_offset    = -1.0;
+   lakka->active_item_factor   = 2.75;
+   lakka->under_item_offset    = 4.0;
 
    if (gl->win_width >= 3840)
    {
