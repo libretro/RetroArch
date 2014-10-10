@@ -28,14 +28,8 @@
 #include "../../../gfx/gl_common.h"
 #include "../../../gfx/video_thread_wrapper.h"
 #include "../../../config.def.h"
-#include "../../../file.h"
 #include "../../../dynamic.h"
 #include "../../../compat/posix_string.h"
-#include "../../../performance.h"
-#include "../../../input/input_common.h"
-
-#include "../../../settings_data.h"
-#include "../../../screenshot.h"
 
 #include "shared.h"
 #include "../menu_animation.h"
@@ -57,9 +51,7 @@ typedef struct
 
 enum
 {
-   XMB_TEXTURE_MAIN = 0,
-   XMB_TEXTURE_FONT,
-   XMB_TEXTURE_BG,
+   XMB_TEXTURE_BG = 0,
    XMB_TEXTURE_SETTINGS,
    XMB_TEXTURE_SETTING,
    XMB_TEXTURE_SUBSETTING,
