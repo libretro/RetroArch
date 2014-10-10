@@ -177,6 +177,9 @@ void menu_free_list(void *data)
 
    settings_list_free(menu->list_mainmenu);
    settings_list_free(menu->list_settings);
+
+   menu->list_mainmenu = NULL;
+   menu->list_settings = NULL;
 }
 
 bool menu_init_list(void *data)

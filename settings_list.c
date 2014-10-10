@@ -111,7 +111,6 @@ void settings_list_free(rarch_setting_t *list)
 {
    if (list)
       free(list);
-   list = NULL;
 }
 
 rarch_setting_t *settings_list_new(unsigned size)

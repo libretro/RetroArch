@@ -179,6 +179,8 @@ int menu_entries_push_list(menu_handle_t *menu,
    if (!strcmp(label, "mainmenu"))
    {
       settings_list_free(menu->list_mainmenu);
+      menu->list_mainmenu = NULL;
+
       menu->list_mainmenu = (rarch_setting_t *)
          setting_data_get_list(SL_FLAG_MAIN_MENU);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_mainmenu, "Main Menu");
@@ -201,6 +203,8 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (menu_type == MENU_FILE_CATEGORY)
    {
       settings_list_free(menu->list_settings);
+      menu->list_settings = NULL;
+
       menu->list_settings = (rarch_setting_t *)
          setting_data_get_list(SL_FLAG_ALL_SETTINGS);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
@@ -234,6 +238,8 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (!strcmp(label, "settings"))
    {
       settings_list_free(menu->list_settings);
+      menu->list_settings = NULL;
+
       menu->list_settings = (rarch_setting_t *)
          setting_data_get_list(SL_FLAG_ALL_SETTINGS);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
@@ -429,7 +435,9 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (!strcmp(label, "Input Options"))
    {
       rarch_setting_t *setting_data = (rarch_setting_t*)menu->list_settings;
-      settings_list_free(setting_data);
+      settings_list_free(menu->list_settings);
+      menu->list_settings = NULL;
+
       setting_data = (rarch_setting_t *)
          setting_data_get_list(SL_FLAG_ALL_SETTINGS);
       file_list_clear(list);
