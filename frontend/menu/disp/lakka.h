@@ -121,6 +121,9 @@ typedef struct lakka_handle
    char icon_dir[4];
    menu_category_t *categories;
    struct lakka_texture_item textures[TEXTURE_LAST];
+   GLuint fbo;
+   GLuint fbo_color;
+   GLuint fbo_depth;
 } lakka_handle_t;
 
 #endif /* MENU_DISP_LAKKA_H */

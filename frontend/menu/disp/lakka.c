@@ -44,8 +44,6 @@
 #include "lakka.h"
 #include "tween.h"
 
-GLuint fbo, fbocolor, fbodepth = 0;
-
 static const GLfloat vertex[] = {
    0, 0,
    1, 0,
@@ -444,19 +442,19 @@ static void lakka_check_fb_status(void)
     }
 }
 
-static void lakka_fbo_reset(void)
+static void lakka_fbo_reset(lakka_handle_t *lakka)
 {
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
    if (!gl)
       return;
 
-   glGenFramebuffers(1, &fbo);
-   glGenTextures(1, &fbocolor);
-   glGenRenderbuffers(1, &fbodepth);
+   glGenFramebuffers(1, &lakka->fbo);
+   glGenTextures(1, &lakka->fbo_color);
+   glGenRenderbuffers(1, &lakka->lakka->fbo_depth);
 
-   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   glBindFramebuffer(GL_FRAMEBUFFER, lakka->fbo);
 
-   glBindTexture(GL_TEXTURE_2D, fbocolor);
+   glBindTexture(GL_TEXTURE_2D, lakka->fbo_color);
    glTexImage2D(GL_TEXTURE_2D, 
          0, 
          GL_RGBA, 
@@ -468,11 +466,11 @@ static void lakka_fbo_reset(void)
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbocolor, 0);
+   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lakka->fbo_color, 0);
 
-   glBindRenderbuffer(GL_RENDERBUFFER, fbodepth);
+   glBindRenderbuffer(GL_RENDERBUFFER, lakka->fbo_depth);
    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, gl->win_width, gl->win_height);
-   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbodepth);
+   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, lakka->fbo_depth);
 
    lakka_check_fb_status();
 
@@ -490,7 +488,7 @@ static void lakka_draw_fbo(void)
    coords.vertex = vertex;
    coords.tex_coord = vertex;
    coords.color = gl->white_color_ptr;
-   glBindTexture(GL_TEXTURE_2D, fbocolor);
+   glBindTexture(GL_TEXTURE_2D, lakka->fbo_color);
 
    math_matrix mymat;
 
@@ -642,8 +640,8 @@ static void lakka_context_destroy(void *data)
 
 #if defined(HAVE_FBO) && defined(LAKKA_EFFECTS)
    glDeleteFramebuffers(1, &fbo);
-   glDeleteTextures(1, &fbocolor);
-   glDeleteTextures(1, &fbodepth);
+   glDeleteTextures(1, &lakka->fbo_color);
+   glDeleteTextures(1, &lakka->fbo_depth);
 #endif
 
    for (i = 0; i < TEXTURE_LAST; i++)
@@ -839,7 +837,7 @@ static void lakka_context_reset(void *data)
       return;
 
 #if defined(HAVE_FBO) && defined(LAKKA_EFFECTS)
-   lakka_fbo_reset();
+   lakka_fbo_reset(lakka);
 #endif
 
    driver.gfx_use_rgba = true;
@@ -1236,6 +1234,8 @@ static void *lakka_init(void)
    lakka->global_alpha         = 0.0f;
    lakka->global_scale         = 2.0f;
    lakka->arrow_alpha          = 0;
+
+   lakka->fbo_depth            = 0;
 
    return menu;
 }
