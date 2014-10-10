@@ -50,11 +50,11 @@ static void lakka_switch_categories(lakka_handle_t *lakka)
 
    /* Translation */
    add_tween(LAKKA_DELAY,
-         -menu_active_category * lakka->hspacing,
-         &all_categories_x, &inOutQuad, NULL);
+         -lakka->menu_active_category * lakka->hspacing,
+         &lakka->all_categories_x, &inOutQuad, NULL);
 
    /* Alpha tweening */
-   for (i = 0; i < num_categories; i++)
+   for (i = 0; i < lakka->num_categories; i++)
    {
       float ca, cz;
       menu_category_t *category = (menu_category_t*)&lakka->categories[i];
@@ -62,9 +62,9 @@ static void lakka_switch_categories(lakka_handle_t *lakka)
       if (!category)
          continue;
 
-      ca = (i == menu_active_category) 
+      ca = (i == lakka->menu_active_category) 
          ? lakka->c_active_alpha : lakka->c_passive_alpha;
-      cz = (i == menu_active_category) 
+      cz = (i == lakka->menu_active_category) 
          ? lakka->c_active_zoom : lakka->c_passive_zoom;
       add_tween(LAKKA_DELAY, ca, &category->alpha, &inOutQuad, NULL);
       add_tween(LAKKA_DELAY, cz, &category->zoom,  &inOutQuad, NULL);
@@ -73,7 +73,7 @@ static void lakka_switch_categories(lakka_handle_t *lakka)
       {
          float ia = 0;
 
-         if (i == menu_active_category)
+         if (i == lakka->menu_active_category)
          {
             ia = lakka->i_passive_alpha;
             if (j == category->active_item)
@@ -90,7 +90,7 @@ static void lakka_switch_items(lakka_handle_t *lakka)
 {
    int j;
    menu_category_t *active_category = (menu_category_t*)
-      &lakka->categories[menu_active_category];
+      &lakka->categories[lakka->menu_active_category];
 
    for (j = 0; j < active_category->num_items; j++)
    {
@@ -123,7 +123,7 @@ static void lakka_switch_subitems(lakka_handle_t *lakka)
 {
    int k;
    menu_category_t *active_category = (menu_category_t*)
-      &lakka->categories[menu_active_category];
+      &lakka->categories[lakka->menu_active_category];
    menu_item_t *item = (menu_item_t*)
       &active_category->items[active_category->active_item];
 
@@ -197,7 +197,7 @@ static void lakka_reset_submenu(lakka_handle_t *lakka, int i, int j)
 static bool lakka_on_active_rom(lakka_handle_t *lakka)
 {
    menu_category_t *active_category = (menu_category_t*)
-      &lakka->categories[menu_active_category];
+      &lakka->categories[lakka->menu_active_category];
 
    return !(g_extern.main_is_init
             && !g_extern.libretro_dummy
@@ -210,30 +210,30 @@ static void lakka_open_submenu(lakka_handle_t *lakka)
 {
    int i, j, k;
     
-   add_tween(LAKKA_DELAY, -lakka->hspacing * (menu_active_category+1),
-         &all_categories_x, &inOutQuad, NULL);
+   add_tween(LAKKA_DELAY, -lakka->hspacing * (lakka->menu_active_category+1),
+         &lakka->all_categories_x, &inOutQuad, NULL);
    add_tween(LAKKA_DELAY, lakka->i_active_alpha,
-         &arrow_alpha, &inOutQuad, NULL);
+         &lakka->arrow_alpha, &inOutQuad, NULL);
 
    menu_category_t *active_category = (menu_category_t*)
-      &lakka->categories[menu_active_category];
+      &lakka->categories[lakka->menu_active_category];
 
-   if (menu_active_category > 0 && lakka_on_active_rom(lakka))
-      lakka_reset_submenu(lakka, menu_active_category,
+   if (lakka->menu_active_category > 0 && lakka_on_active_rom(lakka))
+      lakka_reset_submenu(lakka, lakka->menu_active_category,
             active_category->active_item);
    
-   for (i = 0; i < num_categories; i++)
+   for (i = 0; i < lakka->num_categories; i++)
    {
       menu_category_t *category = (menu_category_t*)&lakka->categories[i];
 
       if (!category)
          continue;
 
-      float ca = (i == menu_active_category) 
+      float ca = (i == lakka->menu_active_category) 
          ? lakka->c_active_alpha : 0;
       add_tween(LAKKA_DELAY, ca, &category->alpha, &inOutQuad, NULL);
 
-      if (i != menu_active_category)
+      if (i != lakka->menu_active_category)
          continue;
 
       for (j = 0; j < category->num_items; j++)
@@ -272,15 +272,15 @@ static void lakka_close_submenu(lakka_handle_t *lakka)
 {
    int i, j, k;
     
-   add_tween(LAKKA_DELAY, -lakka->hspacing * menu_active_category,
-         &all_categories_x, &inOutQuad, NULL);
-   add_tween(LAKKA_DELAY, 0.0, &arrow_alpha, &inOutQuad, NULL);
+   add_tween(LAKKA_DELAY, -lakka->hspacing * lakka->menu_active_category,
+         &lakka->all_categories_x, &inOutQuad, NULL);
+   add_tween(LAKKA_DELAY, 0.0, &lakka->arrow_alpha, &inOutQuad, NULL);
    
-   for (i = 0; i < num_categories; i++)
+   for (i = 0; i < lakka->num_categories; i++)
    {
       float ca, cz;
       menu_category_t *category = (menu_category_t*)&lakka->categories[i];
-      bool is_active_category = (i == menu_active_category);
+      bool is_active_category = (i == lakka->menu_active_category);
 
       if (!category)
          continue;
@@ -293,7 +293,7 @@ static void lakka_close_submenu(lakka_handle_t *lakka)
       add_tween(LAKKA_DELAY, cz,
             &category->zoom, &inOutQuad, NULL);
 
-      if (i == menu_active_category)
+      if (i == lakka->menu_active_category)
       {
          for (j = 0; j < category->num_items; j++)
          {
@@ -337,7 +337,7 @@ static int menu_lakka_iterate(unsigned action)
    if (!lakka)
       return 0;
 
-   active_category = (menu_category_t*)&lakka->categories[menu_active_category];
+   active_category = (menu_category_t*)&lakka->categories[lakka->menu_active_category];
 
    if (active_category)
       active_item = (menu_item_t*)
@@ -353,7 +353,7 @@ static int menu_lakka_iterate(unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
 
-   if (action && depth == 1 && menu_active_category == 0 
+   if (action && (lakka->depth == 1) && (lakka->menu_active_category == 0)
       && active_subitem->setting)
    {
       rarch_setting_t *setting = (rarch_setting_t*)
@@ -387,18 +387,18 @@ static int menu_lakka_iterate(unsigned action)
       case MENU_ACTION_TOGGLE:
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
-            global_alpha = 0.0;
-            global_scale = 2.0;
+            lakka->global_alpha = 0.0;
+            lakka->global_scale = 2.0;
          }
          break;
 
       case MENU_ACTION_LEFT:
-         if (depth == 0 && menu_active_category > 0)
+         if ((lakka->depth == 0) && (lakka->menu_active_category > 0))
          {
-            menu_active_category--;
+            lakka->menu_active_category--;
             lakka_switch_categories(lakka);
          }
-         else if (depth == 1 && menu_active_category > 0 
+         else if ((lakka->depth == 1) && (lakka->menu_active_category > 0)
             && (active_item->active_subitem == 1 
             || active_item->active_subitem == 2)
             && g_settings.state_slot > -1)
@@ -408,12 +408,13 @@ static int menu_lakka_iterate(unsigned action)
          break;
 
       case MENU_ACTION_RIGHT:
-         if (depth == 0 && menu_active_category < num_categories-1)
+         if (lakka->depth == 0 && 
+              (lakka->menu_active_category < lakka->num_categories-1))
          {
-            menu_active_category++;
+            lakka->menu_active_category++;
             lakka_switch_categories(lakka);
          }
-         else if (depth == 1 && menu_active_category > 0 
+         else if (lakka->depth == 1 && lakka->menu_active_category > 0 
             && (active_item->active_subitem == 1
             || active_item->active_subitem == 2)
             && g_settings.state_slot < 255)
@@ -423,7 +424,7 @@ static int menu_lakka_iterate(unsigned action)
          break;
 
       case MENU_ACTION_DOWN:
-         if (depth == 0 
+         if (lakka->depth == 0 
                && (active_category->active_item < 
                   (active_category->num_items - 1)))
          {
@@ -434,10 +435,10 @@ static int menu_lakka_iterate(unsigned action)
          /* If we are on subitems level, and we do not
           * exceed the number of subitems, and we
           * are in settings or content is launched. */
-         if (depth == 1
+         if (lakka->depth == 1
                && (active_item->active_subitem < 
                   (active_item->num_subitems -1))
-               && (menu_active_category == 0 
+               && (lakka->menu_active_category == 0 
                   || ((active_item->active_subitem < 
                         (active_item->num_subitems - 1))
                      &&
@@ -450,12 +451,12 @@ static int menu_lakka_iterate(unsigned action)
          break;
 
       case MENU_ACTION_UP:
-         if (depth == 0 && active_category->active_item > 0)
+         if (lakka->depth == 0 && active_category->active_item > 0)
          {
             active_category->active_item--;
             lakka_switch_items(lakka);
          }
-         if (depth == 1 && active_item->active_subitem > 0)
+         if (lakka->depth == 1 && active_item->active_subitem > 0)
          {
             active_item->active_subitem--;
             lakka_switch_subitems(lakka);
@@ -463,16 +464,14 @@ static int menu_lakka_iterate(unsigned action)
          break;
 
       case MENU_ACTION_OK:
-         if (depth == 1 && menu_active_category > 0)
+         if (lakka->depth == 1 && lakka->menu_active_category > 0)
          {
             switch (active_item->active_subitem)
             {
                case 0:
                   if (g_extern.main_is_init && !g_extern.libretro_dummy
                         && (!strcmp(g_extern.fullpath, active_item->rom)))
-                  {
                      rarch_main_command(RARCH_CMD_RESUME);
-                  }
                   else
                   {
                      strlcpy(g_extern.fullpath,
@@ -505,28 +504,28 @@ static int menu_lakka_iterate(unsigned action)
                   break;
             }
          }
-         else if (depth == 0 && active_item->num_subitems)
+         else if (lakka->depth == 0 && active_item->num_subitems)
          {
             lakka_open_submenu(lakka);
-            depth = 1;
+            lakka->depth = 1;
          }
-         else if (depth == 0 && 
-               (menu_active_category == 0 &&
+         else if (lakka->depth == 0 && 
+               (lakka->menu_active_category == 0 &&
                 (active_category->active_item == 
                  (active_category->num_items - 1))))
          {
-            add_tween(LAKKA_DELAY, 1.0, &global_alpha, &inOutQuad, NULL);
-            add_tween(LAKKA_DELAY, 1.0, &global_scale, &inOutQuad, NULL);
+            add_tween(LAKKA_DELAY, 1.0, &lakka->global_alpha, &inOutQuad, NULL);
+            add_tween(LAKKA_DELAY, 1.0, &lakka->global_scale, &inOutQuad, NULL);
             rarch_main_command(RARCH_CMD_QUIT_RETROARCH);
             return -1;
          }
          break;
 
       case MENU_ACTION_CANCEL:
-         if (depth == 1)
+         if (lakka->depth == 1)
          {
             lakka_close_submenu(lakka);
-            depth = 0;
+            lakka->depth = 0;
          }
          break;
       default:

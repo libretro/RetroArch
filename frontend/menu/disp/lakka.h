@@ -45,14 +45,6 @@ enum
    TEXTURE_LAST
 };
 
-extern int depth;
-extern int num_categories;
-extern float all_categories_x;
-extern int menu_active_category;
-extern float global_alpha;
-extern float global_scale;
-extern float arrow_alpha;
-
 typedef struct
 {
    char  name[256];
@@ -95,7 +87,6 @@ struct lakka_texture_item
    char path[PATH_MAX];
 };
 
-
 typedef struct lakka_handle
 {
    float c_active_zoom;
@@ -119,6 +110,13 @@ typedef struct lakka_handle
    float under_item_offset;
    float hspacing;
    float vspacing;
+   float all_categories_x;
+   float global_alpha;
+   float global_scale;
+   float arrow_alpha;
+   int depth;
+   int num_categories;
+   int menu_active_category;
    int icon_size;
    char icon_dir[4];
    menu_category_t *categories;
