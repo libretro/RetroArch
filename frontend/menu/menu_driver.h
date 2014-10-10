@@ -67,6 +67,8 @@ struct menu_bind_state
 
 typedef struct
 {
+   void *userdata;
+
    /* Used for key repeat */
    unsigned delay_timer;
    unsigned delay_count;

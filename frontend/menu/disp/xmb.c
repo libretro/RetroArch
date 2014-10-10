@@ -112,8 +112,6 @@ typedef struct xmb_handle
    xmb_node_t *xmb_nodes;
 } xmb_handle_t;
 
-static xmb_handle_t *xmb_menu_data;
-
 static const GLfloat rmb_vertex[] = {
    0, 0,
    1, 0,
@@ -132,7 +130,7 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
       float alpha, float rotation, float scale)
 {
    struct gl_coords coords;
-   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
       return;
@@ -195,7 +193,7 @@ static void xmb_draw_text(const char *str, float x,
 {
    uint8_t a8 = 0;
    struct font_params params = {0};
-   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
       return;
@@ -232,7 +230,7 @@ static void xmb_draw_text(const char *str, float x,
 
 static void xmb_render_background(void)
 {
-   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
       return;
@@ -288,7 +286,7 @@ static void xmb_get_message(const char *message)
 {
    size_t i;
    (void)i;
-   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!driver.menu || !message || !*message)
       return;
@@ -300,7 +298,7 @@ static void xmb_render_messagebox(const char *message)
 {
    unsigned i;
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
-   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!driver.menu || !gl || !xmb)
       return;
@@ -331,9 +329,9 @@ static void xmb_render_messagebox(const char *message)
 static void xmb_selection_pointer_changed(void)
 {
    int i, current, end;
-   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
-   if (!xmb || !driver.menu)
+   if (!xmb)
       return;
 
    current = driver.menu->selection_ptr;
@@ -373,9 +371,9 @@ static void xmb_populate_entries(void *data, const char *path,
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
-   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
-   if (!xmb || !driver.menu)
+   if (!xmb)
       return;
 
    int current = driver.menu->selection_ptr;
@@ -439,10 +437,11 @@ static void xmb_frame(void)
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
-   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
 
-   if (!driver.menu || !gl)
+   if (!xmb || !gl)
       return;
 
    if (driver.menu->need_refresh
@@ -578,6 +577,7 @@ static void xmb_init_core_info(void *data)
 static void *xmb_init(void)
 {
    menu_handle_t *menu = NULL;
+   xmb_handle_t *xmb = NULL;
    const video_driver_t *video_driver = NULL;
    gl_t *gl = (gl_t*)driver_video_resolve(&video_driver);
 
@@ -592,32 +592,38 @@ static void *xmb_init(void)
    if (!menu)
       return NULL;
 
-   xmb_menu_data = (xmb_handle_t*)calloc(1, sizeof(*xmb_menu_data));
+   menu->userdata = (xmb_handle_t*)calloc(1, sizeof(xmb_handle_t));
 
-   if (!xmb_menu_data)
+   if (!menu->userdata)
       return NULL;
 
-   xmb_menu_data->xmb_icon_size           = 96;
-   xmb_menu_data->xmb_hspacing            = 150.0;
-   xmb_menu_data->xmb_vspacing            = 48.0;
-   xmb_menu_data->xmb_font_size           = 18;
-   xmb_menu_data->xmb_margin_left         = 224;
-   xmb_menu_data->xmb_margin_top          = 192;
-   xmb_menu_data->xmb_title_margin_left   = 15.0;
-   xmb_menu_data->xmb_title_margin_top    = 30.0;
-   xmb_menu_data->xmb_label_margin_left   = 64;
-   xmb_menu_data->xmb_label_margin_top    = 6.0;
-   xmb_menu_data->xmb_setting_margin_left = 400;
-   xmb_menu_data->xmb_above_item_offset   = -1.0;
-   xmb_menu_data->xmb_active_item_factor  = 2.75;
-   xmb_menu_data->xmb_under_item_offset   = 4.0;
-   xmb_menu_data->xmb_alpha               = 1.0f;
-   xmb_menu_data->xmb_depth               = 0;
-   xmb_menu_data->xmb_bg                  = 0;
+   xmb = (xmb_handle_t*)menu->userdata;
+
+   if (!xmb)
+      return NULL;
+
+   xmb->xmb_icon_size           = 96;
+   xmb->xmb_hspacing            = 150.0;
+   xmb->xmb_vspacing            = 48.0;
+   xmb->xmb_font_size           = 18;
+   xmb->xmb_margin_left         = 224;
+   xmb->xmb_margin_top          = 192;
+   xmb->xmb_title_margin_left   = 15.0;
+   xmb->xmb_title_margin_top    = 30.0;
+   xmb->xmb_label_margin_left   = 64;
+   xmb->xmb_label_margin_top    = 6.0;
+   xmb->xmb_setting_margin_left = 400;
+   xmb->xmb_above_item_offset   = -1.0;
+   xmb->xmb_active_item_factor  = 2.75;
+   xmb->xmb_under_item_offset   = 4.0;
+   xmb->xmb_alpha               = 1.0f;
+   xmb->xmb_depth               = 0;
+   xmb->xmb_bg                  = 0;
+
+   strlcpy(xmb->icon_dir, "96", sizeof(xmb->icon_dir));
 
    xmb_init_core_info(menu);
 
-   strlcpy(xmb_menu_data->icon_dir, "96", sizeof(xmb_menu_data->icon_dir));
 
    return menu;
 }
@@ -629,8 +635,8 @@ static void xmb_free(void *data)
    if (g_extern.core_info)
       core_info_list_free(g_extern.core_info);
 
-   if (xmb_menu_data)
-      free(xmb_menu_data);
+   if (menu->userdata)
+      free(menu->userdata);
 
    g_extern.core_info = NULL;
 }
@@ -684,9 +690,22 @@ static void xmb_context_reset(void *data)
    int k;
    char bgpath[PATH_MAX];
    char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX];
+   gl_t *gl = NULL;
+   xmb_handle_t *xmb = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
-   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
+
+   if (!menu)
+      return;
+
+   gl = (gl_t*)driver_video_resolve(NULL);
+
+   if (!gl)
+      return;
+
+   xmb = (xmb_handle_t*)menu->userdata;
+
+   if (!xmb)
+      return;
     
    (void)gl;
 
@@ -814,14 +833,18 @@ static void xmb_list_set_selection(void *data)
 
 static void xmb_context_destroy(void *data)
 {
-   (void)data;
+   int i;
+   xmb_handle_t *xmb = NULL;
+   menu_handle_t *menu = (menu_handle_t*)driver.menu;
 
-   xmb_handle_t *xmb = (xmb_handle_t*)xmb_menu_data;
+   if (!menu)
+      return;
+
+   xmb = (xmb_handle_t*)menu->userdata;
 
    if (!xmb)
       return;
 
-   int i;
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
       glDeleteTextures(1, &xmb->textures[i].id);
 }
