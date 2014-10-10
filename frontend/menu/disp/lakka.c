@@ -44,14 +44,14 @@
 #include "lakka.h"
 #include "tween.h"
 
-static const GLfloat vertex[] = {
+static const GLfloat lakka_vertex[] = {
    0, 0,
    1, 0,
    0, 1,
    1, 1,
 };
 
-static const GLfloat tex_coord[] = {
+static const GLfloat lakka_tex_coord[] = {
    0, 1,
    1, 1,
    0, 0,
@@ -175,9 +175,9 @@ void lakka_draw_background(void)
 
    struct gl_coords coords;
    coords.vertices = 4;
-   coords.vertex = vertex;
-   coords.tex_coord = tex_coord;
-   coords.lut_tex_coord = tex_coord;
+   coords.vertex = lakka_vertex;
+   coords.tex_coord = lakka_tex_coord;
+   coords.lut_tex_coord = lakka_tex_coord;
    coords.color = lakka->textures[TEXTURE_BG].id ? color : black_color;
    glBindTexture(GL_TEXTURE_2D, lakka->textures[TEXTURE_BG].id);
 
@@ -225,9 +225,9 @@ static void lakka_draw_icon(lakka_handle_t *lakka,
    glViewport(x, gl->win_height - y, lakka->icon_size, lakka->icon_size);
 
    coords.vertices = 4;
-   coords.vertex = vertex;
-   coords.tex_coord = tex_coord;
-   coords.lut_tex_coord = tex_coord;
+   coords.vertex = lakka_vertex;
+   coords.tex_coord = lakka_tex_coord;
+   coords.lut_tex_coord = lakka_tex_coord;
    coords.color = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -485,8 +485,8 @@ static void lakka_draw_fbo(void)
 
    struct gl_coords coords;
    coords.vertices = 4;
-   coords.vertex = vertex;
-   coords.tex_coord = vertex;
+   coords.vertex = lakka_vertex;
+   coords.tex_coord = lakka_vertex;
    coords.color = gl->white_color_ptr;
    glBindTexture(GL_TEXTURE_2D, lakka->fbo_color);
 
