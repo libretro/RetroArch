@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _MENU_DISPLAY_H
-#define _MENU_DISPLAY_H
+#ifndef _MENU_ANIMATION_H
+#define _MENU_ANIMATION_H
 
 #include <stdint.h>
 #include <stdlib.h>
