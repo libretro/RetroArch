@@ -40,12 +40,9 @@ void add_tween(float duration, float target_value, float* subject,
    tween->callback = callback;
 }
 
-void update_tween(tween_t *tween, float dt)
+static void update_tween(tween_t *tween, float dt, int *active_tweens)
 {
-   if (!tween)
-      return;
-
-   if (tween->running_since < tween->duration)
+   if (tween && tween->running_since < tween->duration)
    {
       tween->running_since += dt;
 
@@ -64,19 +61,17 @@ void update_tween(tween_t *tween, float dt)
             tween->callback();
       }
    }
+
+   *active_tweens += tween->running_since < tween->duration ? 1 : 0;
 }
 
 void update_tweens(float dt)
 {
-   int i, active_tweens;
-
-   active_tweens = 0;
+   int i;
+   int active_tweens = 0;
 
    for(i = 0; i < numtweens; i++)
-   {
-      update_tween(&tweens[i], dt);
-      active_tweens += tweens[i].running_since < tweens[i].duration ? 1 : 0;
-   }
+      update_tween(&tweens[i], dt, &active_tweens);
 
    if (numtweens && !active_tweens)
       numtweens = 0;
