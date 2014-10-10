@@ -54,14 +54,6 @@ extern float global_scale;
 extern float arrow_alpha;
 extern float hspacing;
 extern float vspacing;
-extern float c_active_zoom;
-extern float c_passive_zoom;
-extern float i_active_zoom;
-extern float i_passive_zoom;
-extern float c_active_alpha;
-extern float c_passive_alpha;
-extern float i_active_alpha;
-extern float i_passive_alpha;
 extern float above_subitem_offset;
 extern float above_item_offset;
 extern float active_item_factor;
@@ -112,6 +104,14 @@ struct lakka_texture_item
 
 typedef struct lakka_handle
 {
+   float c_active_zoom;
+   float c_passive_zoom;
+   float c_active_alpha;
+   float c_passive_alpha;
+   float i_active_zoom;
+   float i_passive_zoom;
+   float i_active_alpha;
+   float i_passive_alpha;
    menu_category_t *categories;
    struct lakka_texture_item textures[TEXTURE_LAST];
 } lakka_handle_t;

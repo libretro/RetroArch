@@ -54,14 +54,6 @@ float global_scale = 2.0f;
 float arrow_alpha = 0;
 float hspacing;
 float vspacing;
-float c_active_zoom;
-float c_passive_zoom;
-float i_active_zoom;
-float i_passive_zoom;
-float c_active_alpha;
-float c_passive_alpha;
-float i_active_alpha;
-float i_passive_alpha;
 float lakka_font_size;
 float margin_left;
 float margin_top;
@@ -92,110 +84,6 @@ static const GLfloat tex_coord[] = {
    0, 0,
    1, 0,
 };
-
-static void lakka_responsive(void)
-{
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
-
-   if (!gl)
-      return;
-
-   c_active_zoom = 1.0;
-   c_passive_zoom = 0.5;
-   i_active_zoom = 1.0;
-   i_passive_zoom = 0.5;
-
-   c_active_alpha = 1.0;
-   c_passive_alpha = 0.5;
-   i_active_alpha = 1.0;
-   i_passive_alpha = 0.5;
-
-   above_subitem_offset = 1.5;
-   above_item_offset = -1.0;
-   active_item_factor = 2.75;
-   under_item_offset = 4.0;
-
-   if (gl->win_width >= 3840)
-   {
-      icon_size = 256;
-      hspacing = 400;
-      vspacing = 128;
-      lakka_font_size = 42.0;
-      margin_left = 672.0;
-      margin_top = 512;
-      title_margin_left = 20.0;
-      title_margin_top = 50.0;
-      label_margin_left = 192;
-      label_margin_top = 15;
-      setting_margin_left = 1200;
-      strcpy(icon_dir, "256");
-      return;
-   }
-
-   if (gl->win_width >= 2560)
-   {
-      icon_size = 192;
-      hspacing = 300;
-      vspacing = 96;
-      lakka_font_size = 32.0;
-      margin_left = 448.0;
-      margin_top = 384;
-      title_margin_left = 15.0;
-      title_margin_top = 40.0;
-      label_margin_left = 144;
-      label_margin_top = 11.0;
-      strcpy(icon_dir, "192");
-      setting_margin_left = 800;
-      return;
-   }
-
-   if (gl->win_width >= 1920)
-   {
-      icon_size = 128;
-      hspacing = 200.0;
-      vspacing = 64.0;
-      lakka_font_size = 24;
-      margin_left = 336.0;
-      margin_top = 256;
-      title_margin_left = 15.0;
-      title_margin_top = 35.0;
-      label_margin_left = 85;
-      label_margin_top = 8.0;
-      setting_margin_left = 600;
-      strcpy(icon_dir, "128");
-      return;
-   }
-
-   if (gl->win_width <= 640)
-   {
-      icon_size = 64;
-      hspacing = 100.0;
-      vspacing = 32.0;
-      lakka_font_size = 16;
-      margin_left = 60.0;
-      margin_top = 128.0;
-      title_margin_left = 10.0;
-      title_margin_top = 24.0;
-      label_margin_left = 48;
-      label_margin_top = 6.0;
-      strcpy(icon_dir, "64");
-      setting_margin_left = 250;
-      return;
-   }
-
-   icon_size = 96;
-   hspacing = 150.0;
-   vspacing = 48.0;
-   lakka_font_size = 18;
-   margin_left = 224;
-   margin_top = 192;
-   title_margin_left = 15.0;
-   title_margin_top = 30.0;
-   label_margin_left = 64;
-   label_margin_top = 6.0;
-   setting_margin_left = 400;
-   strcpy(icon_dir, "96");
-}
 
 static char *str_replace (const char *string,
       const char *substr, const char *replacement)
@@ -387,7 +275,7 @@ static void lakka_draw_arrow(lakka_handle_t *lakka)
             margin_left + hspacing*(menu_active_category+1) +
             all_categories_x + icon_size/2.0,
             margin_top + vspacing*active_item_factor +
-            icon_size/2.0, arrow_alpha, 0, i_active_zoom);
+            icon_size/2.0, arrow_alpha, 0, lakka->i_active_zoom);
 }
 
 static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
@@ -825,8 +713,8 @@ static bool lakka_init_settings(menu_handle_t *menu)
       return false;
 
    strlcpy(category->name, "Settings", sizeof(category->name));
-   category->alpha = c_active_alpha;
-   category->zoom = c_active_zoom;
+   category->alpha       = lakka->c_active_alpha;
+   category->zoom        = lakka->c_active_zoom;
    category->active_item = 0;
    category->num_items   = 0;
    category->items       = (menu_item_t*)
@@ -854,8 +742,8 @@ static bool lakka_init_settings(menu_handle_t *menu)
          return false;
 
       strlcpy(item->name, group->name, sizeof(item->name));
-      item->alpha = jj ? i_passive_alpha : i_active_alpha;
-      item->zoom = jj ? i_passive_zoom : i_active_zoom;
+      item->alpha = jj ? lakka->i_passive_alpha : lakka->i_active_alpha;
+      item->zoom  = jj ? lakka->i_passive_zoom  : lakka->i_active_zoom;
       item->y = jj ?
          vspacing*(under_item_offset+jj) : vspacing * active_item_factor;
       item->active_subitem = 0;
@@ -882,7 +770,7 @@ static bool lakka_init_settings(menu_handle_t *menu)
             strlcpy(subitem->name, setting->short_description, 
                   sizeof(subitem->name));
             subitem->alpha = 0.0;
-            subitem->zoom = kk ? i_passive_zoom : i_active_zoom;
+            subitem->zoom = kk ? lakka->i_passive_zoom : lakka->i_active_zoom;
             subitem->y = kk ? vspacing * (kk + under_item_offset)
                : vspacing * active_item_factor;
 
@@ -904,8 +792,8 @@ static bool lakka_init_settings(menu_handle_t *menu)
       return false;
 
    strlcpy(itemq->name, "Quit RetroArch", sizeof(itemq->name));
-   itemq->alpha          = jj ? i_passive_alpha : i_active_alpha;
-   itemq->zoom           = jj ? i_passive_zoom : i_active_zoom;
+   itemq->alpha          = jj ? lakka->i_passive_alpha : lakka->i_active_alpha;
+   itemq->zoom           = jj ? lakka->i_passive_zoom  : lakka->i_active_zoom;
    itemq->y              = jj ? vspacing*(under_item_offset+jj) :
       vspacing * active_item_factor;
    itemq->active_subitem = 0;
@@ -1005,12 +893,12 @@ static void lakka_context_reset(void *data)
    lakka_settings_context_reset();
    for (i = 1; i < num_categories; i++)
    {
-      menu_category_t *category = (menu_category_t*)&lakka->categories[i];
+      char core_id[PATH_MAX], texturepath[PATH_MAX], content_texturepath[PATH_MAX],
+           mediapath[PATH_MAX], themepath[PATH_MAX];
 
-      char core_id[256], texturepath[256], content_texturepath[256],
-           mediapath[256], themepath[256];
-      core_info_t *info;
-      core_info_list_t *info_list;
+      menu_category_t *category = (menu_category_t*)&lakka->categories[i];
+      core_info_t *info = NULL;
+      core_info_list_t *info_list = NULL;
 
       fill_pathname_join(mediapath, g_settings.assets_directory,
             "lakka", sizeof(mediapath));
@@ -1024,16 +912,14 @@ static void lakka_context_reset(void *data)
       if (info_list)
          info = (core_info_t*)&info_list->list[i-1];
 
-      if (info != NULL && info->systemname)
+      if (info && info->systemname)
       {
          char *tmp = str_replace(info->systemname, "/", " ");
          strlcpy(core_id, tmp, sizeof(core_id));
          free(tmp);
       }
       else
-      {
          strlcpy(core_id, "default", sizeof(core_id));
-      }
 
       strlcpy(texturepath, iconpath, sizeof(texturepath));
       strlcat(texturepath, core_id, sizeof(texturepath));
@@ -1077,7 +963,7 @@ static void lakka_context_reset(void *data)
    }
 }
 
-static void lakka_init_subitems(menu_item_t *item)
+static void lakka_init_subitems(lakka_handle_t *lakka, menu_item_t *item)
 {
    int k;
    for (k = 0; k < item->num_subitems; k++)
@@ -1106,17 +992,17 @@ static void lakka_init_subitems(menu_item_t *item)
             break;
       }
       subitem->alpha = 0;
-      subitem->zoom = k ? i_passive_zoom : i_active_zoom;
+      subitem->zoom = k ? lakka->i_passive_zoom : lakka->i_active_zoom;
       subitem->y = k ? vspacing * (k+under_item_offset) :
          vspacing * active_item_factor;
    }
 }
 
-static void lakka_init_item(int i, int j, menu_category_t *category,
+static void lakka_init_item(lakka_handle_t *lakka,
+      int i, int j, menu_category_t *category,
       core_info_t *info, struct string_list *list, const char * name)
 {
-   menu_item_t *item;
-
+   menu_item_t *item = NULL;
    int n = category->num_items;
 
    category->num_items++;
@@ -1128,8 +1014,8 @@ static void lakka_init_item(int i, int j, menu_category_t *category,
    if (list != NULL)
       strlcpy(item->rom, list->elems[j].data, sizeof(item->rom));
    item->alpha          = i != menu_active_category ? 0 :
-                          n ? i_passive_alpha : i_active_alpha;
-   item->zoom           = n ? i_passive_zoom : i_active_zoom;
+                          n ? lakka->i_passive_alpha : lakka->i_active_alpha;
+   item->zoom           = n ? lakka->i_passive_zoom  : lakka->i_active_zoom;
    item->y              = n ? vspacing*(under_item_offset+n) :
       vspacing*active_item_factor;
    item->active_subitem = 0;
@@ -1137,14 +1023,15 @@ static void lakka_init_item(int i, int j, menu_category_t *category,
    item->subitems       = (menu_subitem_t*)
       calloc(item->num_subitems, sizeof(menu_subitem_t));
 
-   lakka_init_subitems(item);
+   lakka_init_subitems(lakka, item);
 }
 
-static void lakka_init_items(int i, menu_category_t *category,
+static void lakka_init_items(lakka_handle_t *lakka,
+      int i, menu_category_t *category,
       core_info_t *info, const char* path)
 {
    int num_items, j;
-   struct string_list *list;
+   struct string_list *list = NULL;
 
    if (category == NULL || info == NULL)
       return;
@@ -1158,10 +1045,10 @@ static void lakka_init_items(int i, menu_category_t *category,
    for (j = 0; j < num_items; j++)
    {
       if (list->elems[j].attr.i == RARCH_DIRECTORY) // is a directory
-         lakka_init_items(i, category, info, list->elems[j].data);
+         lakka_init_items(lakka, i, category, info, list->elems[j].data);
       else
       {
-         lakka_init_item(i, j, category, info, list, 
+         lakka_init_item(lakka, i, j, category, info, list, 
                path_basename(list->elems[j].data));
       }
    }
@@ -1242,7 +1129,6 @@ static void *lakka_init(void)
    if (!menu)
       return NULL;
 
-   lakka_responsive();
 
    lakka_init_core_info(menu);
 
@@ -1263,6 +1149,97 @@ static void *lakka_init(void)
    {
       free(menu);
       return NULL;
+   }
+
+   lakka->c_active_zoom   = 1.0;
+   lakka->c_passive_zoom  = 0.5;
+   lakka->i_active_zoom   = 1.0;
+   lakka->i_passive_zoom  = 0.5;
+
+   lakka->c_active_alpha  = 1.0;
+   lakka->c_passive_alpha = 0.5;
+   lakka->i_active_alpha  = 1.0;
+   lakka->i_passive_alpha = 0.5;
+
+   above_subitem_offset = 1.5;
+   above_item_offset = -1.0;
+   active_item_factor = 2.75;
+   under_item_offset = 4.0;
+
+   if (gl->win_width >= 3840)
+   {
+      icon_size = 256;
+      hspacing = 400;
+      vspacing = 128;
+      lakka_font_size = 42.0;
+      margin_left = 672.0;
+      margin_top = 512;
+      title_margin_left = 20.0;
+      title_margin_top = 50.0;
+      label_margin_left = 192;
+      label_margin_top = 15;
+      setting_margin_left = 1200;
+      strcpy(icon_dir, "256");
+   }
+   else if (gl->win_width >= 2560)
+   {
+      icon_size = 192;
+      hspacing = 300;
+      vspacing = 96;
+      lakka_font_size = 32.0;
+      margin_left = 448.0;
+      margin_top = 384;
+      title_margin_left = 15.0;
+      title_margin_top = 40.0;
+      label_margin_left = 144;
+      label_margin_top = 11.0;
+      strcpy(icon_dir, "192");
+      setting_margin_left = 800;
+   }
+   else if (gl->win_width >= 1920)
+   {
+      icon_size = 128;
+      hspacing = 200.0;
+      vspacing = 64.0;
+      lakka_font_size = 24;
+      margin_left = 336.0;
+      margin_top = 256;
+      title_margin_left = 15.0;
+      title_margin_top = 35.0;
+      label_margin_left = 85;
+      label_margin_top = 8.0;
+      setting_margin_left = 600;
+      strcpy(icon_dir, "128");
+   }
+   else if (gl->win_width <= 640)
+   {
+      icon_size = 64;
+      hspacing = 100.0;
+      vspacing = 32.0;
+      lakka_font_size = 16;
+      margin_left = 60.0;
+      margin_top = 128.0;
+      title_margin_left = 10.0;
+      title_margin_top = 24.0;
+      label_margin_left = 48;
+      label_margin_top = 6.0;
+      strcpy(icon_dir, "64");
+      setting_margin_left = 250;
+   }
+   else
+   {
+      icon_size = 96;
+      hspacing = 150.0;
+      vspacing = 48.0;
+      lakka_font_size = 18;
+      margin_left = 224;
+      margin_top = 192;
+      title_margin_left = 15.0;
+      title_margin_top = 30.0;
+      label_margin_left = 64;
+      label_margin_top = 6.0;
+      setting_margin_left = 400;
+      strcpy(icon_dir, "96");
    }
 
    return menu;
@@ -1299,17 +1276,17 @@ static bool lakka_init_lists(void *data)
 
       strlcpy(category->name, info->display_name, sizeof(category->name));
       strlcpy(category->libretro, info->path, sizeof(category->libretro));
-      category->alpha       = i_passive_alpha;
-      category->zoom        = c_passive_zoom;
+      category->alpha       = lakka->i_passive_alpha;
+      category->zoom        = lakka->c_passive_zoom;
       category->active_item = 0;
       category->num_items   = 0;
       category->items       = (menu_item_t*)
          calloc(category->num_items + 1, sizeof(menu_item_t));
 
       if (! info->supports_no_game)
-         lakka_init_items(i, category, info, g_settings.content_directory);
+         lakka_init_items(lakka, i, category, info, g_settings.content_directory);
       else
-         lakka_init_item(i, 0, category, info, NULL, 
+         lakka_init_item(lakka, i, 0, category, info, NULL, 
                info->display_name);
    }
 
