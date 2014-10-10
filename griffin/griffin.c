@@ -650,6 +650,7 @@ MENU
 #include "../frontend/menu/menu_entries.c"
 #include "../frontend/menu/menu_shader.c"
 #include "../frontend/menu/menu_navigation.c"
+#include "../frontend/menu/menu_animation.c"
 
 #include "../frontend/menu/backend/menu_common_backend.c"
 #endif
@@ -667,7 +668,6 @@ MENU
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../frontend/menu/disp/tween.c"
 
 #ifdef HAVE_LAKKA
 #include "../frontend/menu/backend/menu_lakka_backend.c"

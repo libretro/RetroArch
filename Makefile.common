@@ -280,7 +280,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 frontend/menu/menu_action.o \
 			 frontend/menu/menu_shader.o \
 			 frontend/menu/menu_entries.o \
-			 frontend/menu/disp/tween.o
+			 frontend/menu/menu_animation.o
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)

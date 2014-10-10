@@ -42,7 +42,7 @@
 #include "../../../gfx/fonts/bitmap.h"
 
 #include "lakka.h"
-#include "tween.h"
+#include "../menu_animation.h"
 
 static const GLfloat lakka_vertex[] = {
    0, 0,
