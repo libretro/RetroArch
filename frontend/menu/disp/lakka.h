@@ -52,8 +52,6 @@ extern int menu_active_category;
 extern float global_alpha;
 extern float global_scale;
 extern float arrow_alpha;
-extern float hspacing;
-extern float vspacing;
 
 typedef struct
 {
@@ -119,6 +117,10 @@ typedef struct lakka_handle
    float above_item_offset;
    float active_item_factor;
    float under_item_offset;
+   float hspacing;
+   float vspacing;
+   int icon_size;
+   char icon_dir[4];
    menu_category_t *categories;
    struct lakka_texture_item textures[TEXTURE_LAST];
 } lakka_handle_t;

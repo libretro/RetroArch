@@ -52,11 +52,6 @@ float all_categories_x = 0;
 float global_alpha = 0.0f;
 float global_scale = 2.0f;
 float arrow_alpha = 0;
-float hspacing;
-float vspacing;
-float lakka_font_size;
-int icon_size;
-char icon_dir[4];
 
 GLuint fbo, fbocolor, fbodepth = 0;
 
@@ -112,12 +107,17 @@ static char *str_replace (const char *string,
    return newstr;
 }
 
-static void lakka_draw_text(const char *str, float x,
+static void lakka_draw_text(lakka_handle_t *lakka,
+      const char *str, float x,
       float y, float scale, float alpha)
 {
    if (alpha > global_alpha)
       alpha = global_alpha;
    uint8_t a8 = 255 * alpha;
+
+   if (!lakka)
+      return;
+
    if (a8 == 0)
       return;
 
@@ -126,8 +126,8 @@ static void lakka_draw_text(const char *str, float x,
    if (!gl)
       return;
 
-   if (x < -icon_size || x > gl->win_width + icon_size
-         || y < -icon_size || y > gl->win_height + icon_size)
+   if (x < -lakka->icon_size || x > gl->win_width + lakka->icon_size
+         || y < -lakka->icon_size || y > gl->win_height + lakka->icon_size)
       return;
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
@@ -200,9 +200,14 @@ void lakka_draw_background(void)
    glDisable(GL_BLEND);
 }
 
-void lakka_draw_icon(GLuint texture, float x, float y,
+static void lakka_draw_icon(lakka_handle_t *lakka,
+      GLuint texture, float x, float y,
       float alpha, float rotation, float scale)
 {
+   struct gl_coords coords;
+   if (!lakka)
+      return;
+
    if (alpha > global_alpha)
       alpha = global_alpha;
 
@@ -214,8 +219,8 @@ void lakka_draw_icon(GLuint texture, float x, float y,
    if (!gl)
       return;
 
-   if (x < -icon_size || x > gl->win_width + icon_size
-         || y < -icon_size || y > gl->win_height + icon_size)
+   if (x < -lakka->icon_size || x > gl->win_width + lakka->icon_size
+         || y < -lakka->icon_size || y > gl->win_height + lakka->icon_size)
       return;
 
    GLfloat color[] = {
@@ -228,9 +233,8 @@ void lakka_draw_icon(GLuint texture, float x, float y,
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   glViewport(x, gl->win_height - y, icon_size, icon_size);
+   glViewport(x, gl->win_height - y, lakka->icon_size, lakka->icon_size);
 
-   struct gl_coords coords;
    coords.vertices = 4;
    coords.vertex = vertex;
    coords.tex_coord = tex_coord;
@@ -260,11 +264,11 @@ void lakka_draw_icon(GLuint texture, float x, float y,
 static void lakka_draw_arrow(lakka_handle_t *lakka)
 {
    if (lakka)
-      lakka_draw_icon(lakka->textures[TEXTURE_ARROW].id,
-            lakka->margin_left + hspacing*(menu_active_category+1) +
-            all_categories_x + icon_size/2.0,
-            lakka->margin_top + vspacing * lakka->active_item_factor +
-            icon_size/2.0, arrow_alpha, 0, lakka->i_active_zoom);
+      lakka_draw_icon(lakka, lakka->textures[TEXTURE_ARROW].id,
+            lakka->margin_left + lakka->hspacing * (menu_active_category+1) +
+            all_categories_x + lakka->icon_size / 2.0,
+            lakka->margin_top + lakka->vspacing * lakka->active_item_factor +
+            lakka->icon_size / 2.0, arrow_alpha, 0, lakka->i_active_zoom);
 }
 
 static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
@@ -288,15 +292,15 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
             && !g_extern.libretro_dummy
             && strcmp(g_extern.fullpath, active_item->rom) == 0)
       {
-         lakka_draw_icon(lakka->textures[TEXTURE_RESUME].id, 
-            lakka->margin_left + hspacing*(i+1) + icon_size*2 +
-            all_categories_x - icon_size/2.0,
-            lakka->margin_top + subitem->y + icon_size/2.0,
+         lakka_draw_icon(lakka, lakka->textures[TEXTURE_RESUME].id, 
+            lakka->margin_left + lakka->hspacing * (i+1) + lakka->icon_size * 2 +
+            all_categories_x - lakka->icon_size / 2.0,
+            lakka->margin_top + subitem->y + lakka->icon_size/2.0,
             subitem->alpha,
             0, 
             subitem->zoom);
-         lakka_draw_text("Resume",
-            lakka->margin_left + hspacing*(i+2.25) +
+         lakka_draw_text(lakka, "Resume",
+            lakka->margin_left + lakka->hspacing * (i+2.25) +
             all_categories_x + lakka->label_margin_left,
             lakka->margin_top + subitem->y + lakka->label_margin_top,
             1, 
@@ -308,16 +312,16 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
             !g_extern.libretro_dummy &&
             strcmp(g_extern.fullpath, active_item->rom) == 0))
       {
-         lakka_draw_icon(subitem->icon, 
-               lakka->margin_left + hspacing*(i+1) + icon_size*2 +
-               all_categories_x - icon_size/2.0, 
-               lakka->margin_top + subitem->y + icon_size/2.0, 
+         lakka_draw_icon(lakka, subitem->icon, 
+               lakka->margin_left + lakka->hspacing * (i+1) + lakka->icon_size * 2 +
+               all_categories_x - lakka->icon_size/2.0, 
+               lakka->margin_top + subitem->y + lakka->icon_size/2.0, 
                subitem->alpha, 
                0, 
                subitem->zoom);
 
-         lakka_draw_text(subitem->name, 
-               lakka->margin_left + hspacing * (i+2.25) +
+         lakka_draw_text(lakka, subitem->name, 
+               lakka->margin_left + lakka->hspacing * (i+2.25) +
                all_categories_x + lakka->label_margin_left, 
                lakka->margin_top + subitem->y + lakka->label_margin_top, 
                1, 
@@ -325,13 +329,14 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
 
          if (i && (k == 1 || k == 2))
          {
-            char slot[256];
+            char slot[PATH_MAX];
+
             if (g_settings.state_slot == -1)
                snprintf(slot, sizeof(slot), "%d (auto)", g_settings.state_slot);
             else
                snprintf(slot, sizeof(slot), "%d", g_settings.state_slot);
-            lakka_draw_text(slot, 
-                  lakka->margin_left + hspacing * (i+2.25) +
+            lakka_draw_text(lakka, slot, 
+                  lakka->margin_left + lakka->hspacing * (i+2.25) +
                   all_categories_x + lakka->label_margin_left + lakka->setting_margin_left, 
                   lakka->margin_top + subitem->y + lakka->label_margin_top, 
                   1, 
@@ -344,8 +349,8 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
          char val[PATH_MAX];
          setting_data_get_string_representation(subitem->setting, val,
                sizeof(val));
-         lakka_draw_text(val, 
-               lakka->margin_left + hspacing * (i+2.25) +
+         lakka_draw_text(lakka, val, 
+               lakka->margin_left + lakka->hspacing * (i+2.25) +
                all_categories_x + lakka->label_margin_left + lakka->setting_margin_left, 
                lakka->margin_top + subitem->y + lakka->label_margin_top, 
                1, 
@@ -378,17 +383,17 @@ static void lakka_draw_items(lakka_handle_t *lakka, int i)
       if (i >= menu_active_category - 1 &&
          i <= menu_active_category + 1) /* performance improvement */
       {
-         lakka_draw_icon(category->item_icon,
-            lakka->margin_left + hspacing*(i+1) +
-            all_categories_x - icon_size/2.0, 
-            lakka->margin_top + item->y + icon_size/2.0, 
+         lakka_draw_icon(lakka, category->item_icon,
+            lakka->margin_left + lakka->hspacing * (i+1) +
+            all_categories_x - lakka->icon_size / 2.0, 
+            lakka->margin_top + item->y + lakka->icon_size / 2.0, 
             item->alpha, 
             0, 
             item->zoom);
 
          if (depth == 0)
-            lakka_draw_text(item->name,
-               lakka->margin_left + hspacing * (i+1) +
+            lakka_draw_text(lakka, item->name,
+               lakka->margin_left + lakka->hspacing * (i+1) +
                all_categories_x + lakka->label_margin_left, 
                lakka->margin_top + item->y + lakka->label_margin_top, 
                1, 
@@ -419,10 +424,10 @@ static void lakka_draw_categories(lakka_handle_t *lakka)
       lakka_draw_items(lakka, i);
 
       /* draw category icon */
-      lakka_draw_icon(category->icon, 
-            lakka->margin_left + (hspacing*(i+1)) +
-            all_categories_x - icon_size/2.0,
-            lakka->margin_top + icon_size/2.0, 
+      lakka_draw_icon(lakka, category->icon, 
+            lakka->margin_left + (lakka->hspacing * (i+1)) +
+            all_categories_x - lakka->icon_size/2.0,
+            lakka->margin_top + lakka->icon_size/2.0, 
             category->alpha, 
             0, 
             category->zoom);
@@ -572,10 +577,10 @@ static void lakka_frame(void)
 #endif
 
    if (depth == 0)
-      lakka_draw_text(active_category->name,
+      lakka_draw_text(lakka, active_category->name,
             lakka->title_margin_left, lakka->title_margin_top, 1, 1.0);
    else if (active_item)
-      lakka_draw_text(active_item->name,
+      lakka_draw_text(lakka, active_item->name,
             lakka->title_margin_left, lakka->title_margin_top, 1, 1.0);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
@@ -734,8 +739,8 @@ static bool lakka_init_settings(menu_handle_t *menu)
       item->alpha = jj ? lakka->i_passive_alpha : lakka->i_active_alpha;
       item->zoom  = jj ? lakka->i_passive_zoom  : lakka->i_active_zoom;
       item->y = jj ?
-         vspacing * (lakka->under_item_offset + jj) 
-         : vspacing * lakka->active_item_factor;
+         lakka->vspacing * (lakka->under_item_offset + jj) 
+         : lakka->vspacing * lakka->active_item_factor;
       item->active_subitem = 0;
       item->num_subitems = 0;
       item->subitems = NULL;
@@ -761,8 +766,8 @@ static bool lakka_init_settings(menu_handle_t *menu)
                   sizeof(subitem->name));
             subitem->alpha = 0.0;
             subitem->zoom = kk ? lakka->i_passive_zoom : lakka->i_active_zoom;
-            subitem->y = kk ? vspacing * (kk + lakka->under_item_offset)
-               : vspacing * lakka->active_item_factor;
+            subitem->y = kk ? lakka->vspacing * (kk + lakka->under_item_offset)
+               : lakka->vspacing * lakka->active_item_factor;
 
             subitem->setting = (rarch_setting_t*)&setting_data[k];
 
@@ -784,8 +789,8 @@ static bool lakka_init_settings(menu_handle_t *menu)
    strlcpy(itemq->name, "Quit RetroArch", sizeof(itemq->name));
    itemq->alpha          = jj ? lakka->i_passive_alpha : lakka->i_active_alpha;
    itemq->zoom           = jj ? lakka->i_passive_zoom  : lakka->i_active_zoom;
-   itemq->y              = jj ? vspacing * (lakka->under_item_offset + jj) :
-      vspacing * lakka->active_item_factor;
+   itemq->y              = jj ? lakka->vspacing * (lakka->under_item_offset + jj) :
+      lakka->vspacing * lakka->active_item_factor;
    itemq->active_subitem = 0;
    itemq->num_subitems   = 0;
 
@@ -851,7 +856,7 @@ static void lakka_context_reset(void *data)
    fill_pathname_join(mediapath, g_settings.assets_directory,
          "lakka", sizeof(mediapath));
    fill_pathname_join(themepath, mediapath, THEME, sizeof(themepath));
-   fill_pathname_join(iconpath, themepath, icon_dir, sizeof(iconpath));
+   fill_pathname_join(iconpath, themepath, lakka->icon_dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
    
    fill_pathname_join(lakka->textures[TEXTURE_BG].path, iconpath,
@@ -893,7 +898,7 @@ static void lakka_context_reset(void *data)
       fill_pathname_join(mediapath, g_settings.assets_directory,
             "lakka", sizeof(mediapath));
       fill_pathname_join(themepath, mediapath, THEME, sizeof(themepath));
-      fill_pathname_join(iconpath, themepath, icon_dir, sizeof(iconpath));
+      fill_pathname_join(iconpath, themepath, lakka->icon_dir, sizeof(iconpath));
       fill_pathname_slash(iconpath, sizeof(iconpath));
 
       info_list = (core_info_list_t*)g_extern.core_info;
@@ -983,8 +988,8 @@ static void lakka_init_subitems(lakka_handle_t *lakka, menu_item_t *item)
       }
       subitem->alpha = 0;
       subitem->zoom = k ? lakka->i_passive_zoom : lakka->i_active_zoom;
-      subitem->y = k ? vspacing * (k + lakka->under_item_offset) :
-         vspacing * lakka->active_item_factor;
+      subitem->y = k ? lakka->vspacing * (k + lakka->under_item_offset) :
+         lakka->vspacing * lakka->active_item_factor;
    }
 }
 
@@ -1006,8 +1011,8 @@ static void lakka_init_item(lakka_handle_t *lakka,
    item->alpha          = i != menu_active_category ? 0 :
                           n ? lakka->i_passive_alpha : lakka->i_active_alpha;
    item->zoom           = n ? lakka->i_passive_zoom  : lakka->i_active_zoom;
-   item->y              = n ? (vspacing * (lakka->under_item_offset + n)) :
-      (vspacing * lakka->active_item_factor);
+   item->y              = n ? (lakka->vspacing * (lakka->under_item_offset + n)) :
+      (lakka->vspacing * lakka->active_item_factor);
    item->active_subitem = 0;
    item->num_subitems   = 5;
    item->subitems       = (menu_subitem_t*)
@@ -1158,10 +1163,9 @@ static void *lakka_init(void)
 
    if (gl->win_width >= 3840)
    {
-      icon_size = 256;
-      hspacing = 400;
-      vspacing = 128;
-      lakka_font_size = 42.0;
+      lakka->icon_size = 256;
+      lakka->hspacing = 400;
+      lakka->vspacing = 128;
       lakka->margin_left = 672.0;
       lakka->margin_top = 512;
       lakka->title_margin_left = 20.0;
@@ -1169,14 +1173,13 @@ static void *lakka_init(void)
       lakka->label_margin_left = 192;
       lakka->label_margin_top = 15;
       lakka->setting_margin_left = 1200;
-      strcpy(icon_dir, "256");
+      strcpy(lakka->icon_dir, "256");
    }
    else if (gl->win_width >= 2560)
    {
-      icon_size = 192;
-      hspacing = 300;
-      vspacing = 96;
-      lakka_font_size = 32.0;
+      lakka->icon_size = 192;
+      lakka->hspacing = 300;
+      lakka->vspacing = 96;
       lakka->margin_left = 448.0;
       lakka->margin_top = 384;
       lakka->title_margin_left = 15.0;
@@ -1184,14 +1187,13 @@ static void *lakka_init(void)
       lakka->label_margin_left = 144;
       lakka->label_margin_top = 11.0;
       lakka->setting_margin_left = 800;
-      strcpy(icon_dir, "192");
+      strcpy(lakka->icon_dir, "192");
    }
    else if (gl->win_width >= 1920)
    {
-      icon_size = 128;
-      hspacing = 200.0;
-      vspacing = 64.0;
-      lakka_font_size = 24;
+      lakka->icon_size = 128;
+      lakka->hspacing = 200.0;
+      lakka->vspacing = 64.0;
       lakka->margin_left = 336.0;
       lakka->margin_top = 256;
       lakka->title_margin_left = 15.0;
@@ -1199,14 +1201,13 @@ static void *lakka_init(void)
       lakka->label_margin_left = 85;
       lakka->label_margin_top = 8.0;
       lakka->setting_margin_left = 600;
-      strcpy(icon_dir, "128");
+      strcpy(lakka->icon_dir, "128");
    }
    else if (gl->win_width <= 640)
    {
-      icon_size = 64;
-      hspacing = 100.0;
-      vspacing = 32.0;
-      lakka_font_size = 16;
+      lakka->icon_size = 64;
+      lakka->hspacing = 100.0;
+      lakka->vspacing = 32.0;
       lakka->margin_left = 60.0;
       lakka->margin_top = 128.0;
       lakka->title_margin_left = 10.0;
@@ -1214,14 +1215,13 @@ static void *lakka_init(void)
       lakka->label_margin_left = 48;
       lakka->label_margin_top = 6.0;
       lakka->setting_margin_left = 250;
-      strcpy(icon_dir, "64");
+      strcpy(lakka->icon_dir, "64");
    }
    else
    {
-      icon_size = 96;
-      hspacing = 150.0;
-      vspacing = 48.0;
-      lakka_font_size = 18;
+      lakka->icon_size = 96;
+      lakka->hspacing = 150.0;
+      lakka->vspacing = 48.0;
       lakka->margin_left = 224;
       lakka->margin_top = 192;
       lakka->title_margin_left = 15.0;
@@ -1229,7 +1229,7 @@ static void *lakka_init(void)
       lakka->label_margin_left = 64;
       lakka->label_margin_top = 6.0;
       lakka->setting_margin_left = 400;
-      strcpy(icon_dir, "96");
+      strcpy(lakka->icon_dir, "96");
    }
 
    return menu;
