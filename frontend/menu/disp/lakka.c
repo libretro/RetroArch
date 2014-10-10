@@ -1169,6 +1169,19 @@ static void lakka_init_items(int i, menu_category_t *category,
    string_list_free(list);
 }
 
+static void lakka_free_userdata(void *data)
+{
+   lakka_handle_t *lakka = (lakka_handle_t*)data;
+
+   if (!lakka)
+      return;
+
+   if (lakka->categories)
+      free(lakka->categories);
+
+   free(lakka);
+}
+
 static void lakka_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
@@ -1177,7 +1190,7 @@ static void lakka_free(void *data)
       free((uint8_t*)menu->font);
 
    if (menu->userdata)
-      free(menu->userdata);
+      lakka_free_userdata(menu->userdata);
 
    if (g_extern.core_info)
       core_info_list_free(g_extern.core_info);
