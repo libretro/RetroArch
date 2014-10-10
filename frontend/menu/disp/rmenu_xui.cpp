@@ -121,7 +121,6 @@ CREATE_CLASS(CRetroArchMain, L"RetroArchMain");
 CRetroArch app;
 
 wchar_t strw_buffer[PATH_MAX];
-char str_buffer[PATH_MAX];
 
 /* Register custom classes */
 HRESULT CRetroArch::RegisterXuiClasses (void)
