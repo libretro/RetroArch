@@ -288,7 +288,7 @@ static void xmb_get_message(const char *message)
    (void)i;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
-   if (!driver.menu || !message || !*message)
+   if (!xmb || !message || !*message)
       return;
 
    strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
@@ -300,7 +300,7 @@ static void xmb_render_messagebox(const char *message)
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
-   if (!driver.menu || !gl || !xmb)
+   if (!gl || !xmb)
       return;
 
    struct string_list *list = string_split(message, "\n");
@@ -643,14 +643,15 @@ static void xmb_free(void *data)
 
 static GLuint xmb_png_texture_load_(const char * file_name)
 {
+   struct texture_image ti = {0};
+   GLuint texture = 0;
+
    if (! path_file_exists(file_name))
       return 0;
 
-   struct texture_image ti = {0};
    texture_image_load(&ti, file_name);
 
    /* Generate the OpenGL texture object */
-   GLuint texture = 0;
    glGenTextures(1, &texture);
    glBindTexture(GL_TEXTURE_2D, texture);
    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ti.width, ti.height, 0,
