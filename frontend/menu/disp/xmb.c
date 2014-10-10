@@ -780,13 +780,7 @@ static void xmb_list_delete(void *data, size_t index,
 
 static void xmb_list_clear(void *data)
 {
-   file_list_t *list = (file_list_t*)data;
-   size_t i;
-
-   for (i = 0; i < list->size; i++)
-   {
-      xmb_list_delete(list, i, list->size);
-   }
+   (void)data;
 }
 
 static void xmb_list_set_selection(void *data)
