@@ -185,6 +185,12 @@ static int menu_setting_ok_toggle(unsigned type,
       const char *dir, const char *label,
       unsigned action)
 {
+   menu_file_list_cbs_t *cbs = file_list_get_actiondata_at_offset(driver.menu->selection_buf,
+         driver.menu->selection_ptr);
+
+   if (cbs && cbs->action_ok)
+      return cbs->action_ok(dir, label, type, action);
+
    if (type == MENU_SETTINGS_CUSTOM_BIND_ALL)
    {
       driver.menu->binds.target = &g_settings.input.binds
@@ -275,16 +281,6 @@ static int menu_setting_ok_toggle(unsigned type,
          menu_poll_bind_state(&driver.menu->binds);
       }
 
-      return 0;
-   }
-   else if (
-         !strcmp(label, "load_content") ||
-         !strcmp(label, "detect_core_list")
-      )
-   {
-      menu_entries_push(driver.menu->menu_stack,
-            g_settings.menu_content_directory, label, MENU_FILE_DIRECTORY,
-            driver.menu->selection_ptr);
       return 0;
    }
    else if (!strcmp(label, "history_list") ||
@@ -1143,13 +1139,19 @@ static void menu_common_list_insert(void *data,
 static void menu_common_list_delete(void *data, size_t index,
       size_t list_size)
 {
+   menu_file_list_cbs_t *cbs = NULL;
    file_list_t *list = (file_list_t*)data;
 
    if (!list)
       return;
 
-   if (list->list[index].actiondata)
+   cbs = (menu_file_list_cbs_t*)list->list[index].actiondata;
+
+   if (cbs)
+   {
+      cbs->action_ok = NULL;
       free(list->list[index].actiondata);
+   }
    list->list[index].actiondata = NULL;
 }
 

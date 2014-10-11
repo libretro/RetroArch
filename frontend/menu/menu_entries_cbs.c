@@ -14,7 +14,17 @@
  */
 
 #include "menu_common.h"
+#include "menu_entries.h"
 #include "backend/menu_backend.h"
+
+static int action_ok_push_content_list(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   menu_entries_push(driver.menu->menu_stack,
+         g_settings.menu_content_directory, label, MENU_FILE_DIRECTORY,
+         driver.menu->selection_ptr);
+   return 0;
+}
 
 void menu_entries_cbs_init(void *data,
       const char *path, const char *label,
@@ -31,4 +41,11 @@ void menu_entries_cbs_init(void *data,
    if (!cbs)
       return;
 
+   cbs->action_ok = NULL;
+
+   if (
+         !strcmp(label, "load_content") ||
+         !strcmp(label, "detect_core_list")
+      )
+      cbs->action_ok = action_ok_push_content_list;
 }
