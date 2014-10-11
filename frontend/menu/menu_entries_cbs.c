@@ -31,7 +31,21 @@ static int action_ok_push_content_list(const char *path,
    return 0;
 }
 
-static int action_ok_push_history_or_path_list(const char *path,
+static int action_ok_push_history_list(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   if (!driver.menu)
+      return -1;
+
+   menu_entries_push(driver.menu->menu_stack,
+         "", label, type, driver.menu->selection_ptr);
+   menu_clear_navigation(driver.menu);
+   menu_entries_push_list(driver.menu, driver.menu->selection_buf, 
+         path, label, type);
+   return 0;
+}
+
+static int action_ok_push_path_list(const char *path,
       const char *label, unsigned type, size_t index)
 {
    if (!driver.menu)
@@ -75,10 +89,10 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          !strcmp(label, "detect_core_list")
       )
       cbs->action_ok = action_ok_push_content_list;
-   else if (!strcmp(label, "history_list") ||
-         menu_common_type_is(label, type) == MENU_FILE_DIRECTORY
-         )
-      cbs->action_ok = action_ok_push_history_or_path_list;
+   else if (!strcmp(label, "history_list"))
+      cbs->action_ok = action_ok_push_history_list;
+   else if (menu_common_type_is(label, type) == MENU_FILE_DIRECTORY)
+      cbs->action_ok = action_ok_push_path_list;
    else if (!strcmp(label, "shader_apply_changes"))
       cbs->action_ok = action_ok_shader_apply_changes;
    else if (!strcmp(label, "video_shader_preset_save_as"))

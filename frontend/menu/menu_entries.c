@@ -571,8 +571,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    RARCH_LOG("label: %s\n", label);
 #endif
 
-   if (!strcmp(label, "history_list") || 
-         !strcmp(label, "deferred_core_list"))
+   if (!strcmp(label, "deferred_core_list"))
       return menu_entries_push_list(driver.menu, list, dir, label, menu_type);
 
    if (menu_parse_check(label, menu_type) == -1)
