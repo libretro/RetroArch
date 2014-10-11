@@ -121,7 +121,7 @@ static void add_setting_entry(menu_handle_t *menu,
             setting->name, id, 0);
 }
 
-void menu_entries_push_perfcounter(menu_handle_t *menu,
+static void push_perfcounter(menu_handle_t *menu,
       file_list_t *list,
       const struct retro_perf_counter **counters,
       unsigned num, unsigned id)
@@ -158,6 +158,17 @@ static int setting_set_flags(rarch_setting_t *setting)
    if (setting->flags & SD_FLAG_IS_CATEGORY)
       return MENU_FILE_CATEGORY;
    return 0;
+}
+
+void menu_entries_push(
+      file_list_t *list,
+      const char *path, const char *label,
+      unsigned type,
+      size_t directory_ptr)
+{
+   file_list_push(list, path, label, type, directory_ptr);
+   menu_clear_navigation(driver.menu);
+   driver.menu->need_refresh = true;
 }
 
 int menu_entries_push_list(menu_handle_t *menu,
@@ -399,13 +410,13 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (!strcmp(label, "core_counters"))
    {
       file_list_clear(list);
-      menu_entries_push_perfcounter(menu, list, perf_counters_libretro,
+      push_perfcounter(menu, list, perf_counters_libretro,
             perf_ptr_libretro, MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
    }
    else if (!strcmp(label, "frontend_counters"))
    {
       file_list_clear(list);
-      menu_entries_push_perfcounter(menu, list, perf_counters_rarch,
+      push_perfcounter(menu, list, perf_counters_rarch,
             perf_ptr_rarch, MENU_SETTINGS_PERF_COUNTERS_BEGIN);
    }
    else if (!strcmp(label, "core_options"))
@@ -899,14 +910,6 @@ void menu_flush_stack_label(file_list_t *list,
    }
 }
 
-void menu_entries_push(file_list_t *list,
-      const char *path, const char *label, unsigned type,
-      size_t directory_ptr)
-{
-   file_list_push(list, path, label, type, directory_ptr);
-   menu_clear_navigation(driver.menu);
-   driver.menu->need_refresh = true;
-}
 
 int menu_entries_set_current_path_selection(
       rarch_setting_t *setting, const char *start_path,
