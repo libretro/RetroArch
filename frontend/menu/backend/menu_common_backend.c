@@ -213,11 +213,8 @@ static int menu_setting_ok_toggle(unsigned type,
    }
 #ifdef HAVE_SHADER_MANAGER
    else if (!strcmp(label, "video_shader_preset_save_as"))
-   {
-      if (action == MENU_ACTION_OK)
-         menu_key_start_line(driver.menu, "Preset Filename",
-               label, st_string_callback);
-   }
+      menu_key_start_line(driver.menu, "Preset Filename",
+            label, st_string_callback);
    else if (!strcmp(label, "shader_apply_changes"))
    {
       rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
@@ -1124,11 +1121,34 @@ static void menu_common_setting_set_label(char *type_str,
 static void menu_common_list_insert(void *data,
       const char *path, const char *unused, size_t list_size)
 {
+   int i = list_size;
+   file_list_t *list = (file_list_t*)data;
+
+   if (!list)
+      return;
+
+   list->list[i].actiondata = (menu_file_list_cbs_t*)
+      calloc(1, sizeof(menu_file_list_cbs_t));
+
+   if (!list->list[i].actiondata)
+   {
+      RARCH_ERR("Action data could not be allocated.\n");
+      return;
+   }
+
 }
 
 static void menu_common_list_delete(void *data, size_t index,
       size_t list_size)
 {
+   file_list_t *list = (file_list_t*)data;
+
+   if (!list)
+      return;
+
+   if (list->list[index].actiondata)
+      free(list->list[index].actiondata);
+   list->list[index].actiondata = NULL;
 }
 
 static void menu_common_list_clear(void *data)

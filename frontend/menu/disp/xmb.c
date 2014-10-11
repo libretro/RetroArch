@@ -736,7 +736,10 @@ static void xmb_list_insert(void *data,
    list->list[i].userdata = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
 
    if (!list->list[i].userdata)
+   {
       RARCH_ERR("XMB node could not be allocated.\n");
+      return;
+   }
 
    xmb_node_t *node = (xmb_node_t*)list->list[i].userdata;
 
