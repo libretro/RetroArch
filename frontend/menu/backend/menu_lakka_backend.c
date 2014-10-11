@@ -545,5 +545,9 @@ menu_ctx_driver_backend_t menu_ctx_backend_lakka = {
    menu_lakka_iterate,
    NULL,
    NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
    "menu_lakka",
 };

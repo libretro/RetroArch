@@ -35,8 +35,14 @@ void file_list_push(file_list_t *list,
    }
 
 #ifdef HAVE_MENU
-   if (driver.menu_ctx && driver.menu_ctx->list_insert)
-      driver.menu_ctx->list_insert(list, path, label, list->size);
+   if (driver.menu_ctx)
+   {
+      if (driver.menu_ctx->list_insert)
+         driver.menu_ctx->list_insert(list, path, label, list->size);
+
+      if (driver.menu_ctx->backend->list_insert)
+         driver.menu_ctx->backend->list_insert(list, path, label, list->size);
+   }
 #endif
 
    list->list[list->size].label = strdup(label);
@@ -65,8 +71,13 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
    {
       --list->size;
 #ifdef HAVE_MENU
-      if (driver.menu_ctx && driver.menu_ctx->list_delete)
-         driver.menu_ctx->list_delete(list, list->size, list->size);
+      if (driver.menu_ctx)
+      {
+         if (driver.menu_ctx->list_delete)
+            driver.menu_ctx->list_delete(list, list->size, list->size);
+         if (driver.menu_ctx->backend->list_delete)
+            driver.menu_ctx->backend->list_delete(list, list->size, list->size);
+      }
 #endif
       free(list->list[list->size].path);
       free(list->list[list->size].label);
@@ -76,8 +87,14 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
       *directory_ptr = list->list[list->size].directory_ptr;
 
 #ifdef HAVE_MENU
-   if (driver.menu_ctx && driver.menu_ctx->list_set_selection)
-      driver.menu_ctx->list_set_selection(list);
+   if (driver.menu_ctx)
+   {
+      if (driver.menu_ctx->list_set_selection)
+         driver.menu_ctx->list_set_selection(list);
+
+      if (driver.menu_ctx->backend->list_set_selection)
+         driver.menu_ctx->backend->list_set_selection(list);
+   }
 #endif
 }
 
@@ -91,8 +108,13 @@ void file_list_free(file_list_t *list)
    for (i = 0; i < list->size; i++)
    {
 #ifdef HAVE_MENU
-      if (driver.menu_ctx && driver.menu_ctx->list_delete)
-         driver.menu_ctx->list_delete(list, i, list->size);
+      if (driver.menu_ctx)
+      {
+         if (driver.menu_ctx->list_delete)
+            driver.menu_ctx->list_delete(list, i, list->size);
+         if (driver.menu_ctx->backend->list_delete)
+            driver.menu_ctx->backend->list_delete(list, i, list->size);
+      }
 #endif
       free(list->list[i].path);
       free(list->list[i].label);
@@ -116,8 +138,14 @@ void file_list_clear(file_list_t *list)
    }
 
 #ifdef HAVE_MENU
-   if (driver.menu_ctx && driver.menu_ctx->list_clear)
-      driver.menu_ctx->list_clear(list);
+   if (driver.menu_ctx)
+   {
+      if (driver.menu_ctx->list_clear)
+         driver.menu_ctx->list_clear(list);
+
+      if (driver.menu_ctx->backend->list_clear)
+         driver.menu_ctx->backend->list_clear(list);
+   }
 #endif
    list->size = 0;
 }
@@ -169,6 +197,11 @@ void file_list_sort_on_alt(file_list_t *list)
 void *file_list_get_userdata_at_offset(const file_list_t *list, size_t index)
 {
    return list->list[index].userdata;
+}
+
+void *file_list_get_actiondata_at_offset(const file_list_t *list, size_t index)
+{
+   return list->list[index].actiondata;
 }
 
 void file_list_get_at_offset(const file_list_t *list, size_t index,

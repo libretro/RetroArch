@@ -31,6 +31,7 @@ struct item_file
    unsigned type;
    size_t directory_ptr;
    void *userdata;
+   void *actiondata;
 };
 
 typedef struct file_list
