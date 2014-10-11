@@ -1602,7 +1602,7 @@ void rarch_disk_control_append_image(const char *path)
        * started out in a single disk case, and that this way
        * of doing it makes the most sense. */
       set_paths(path);
-      rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
+      fill_pathnames();
    }
 
    rarch_main_command(RARCH_CMD_AUTOSAVE_INIT);
@@ -1899,7 +1899,7 @@ static bool init_core(void)
    if (!g_extern.libretro_dummy)
    {
       if (!g_extern.libretro_no_content)
-         rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
+         fill_pathnames();
 
       if (!init_content_file())
          return false;
@@ -2558,7 +2558,6 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_SAVEFILES_INIT:
          rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
-         fill_pathnames();
 
          g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable
 #ifdef HAVE_NETPLAY
