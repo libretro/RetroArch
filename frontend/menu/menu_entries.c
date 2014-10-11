@@ -177,7 +177,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       unsigned menu_type)
 {
    unsigned i;
-   char tmp[256];
+   char tmp[PATH_MAX];
    size_t list_size = 0;
    bool do_action = false;
 
@@ -811,7 +811,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 
       for (i = 0; i < list_size; i++)
       {
-         char core_path[PATH_MAX], display_name[256];
+         char core_path[PATH_MAX], display_name[PATH_MAX];
          const char *path = NULL;
          unsigned type = 0;
 
