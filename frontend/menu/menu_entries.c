@@ -186,7 +186,6 @@ int menu_entries_push_list(menu_handle_t *menu,
    RARCH_LOG("Path is: %s\n", path);
    RARCH_LOG("Menu type is: %d\n", menu_type);
 #endif
-   file_list_clear(list);
 
    if (!strcmp(label, "Main Menu"))
    {
@@ -195,6 +194,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_mainmenu,
             label);
 
+      file_list_clear(list);
 
       for (; setting->type != ST_END_GROUP; setting++)
       {
@@ -215,6 +215,8 @@ int menu_entries_push_list(menu_handle_t *menu,
       menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
             label);
+
+      file_list_clear(list);
 
       if (!strcmp(label, "Video Options"))
       {
@@ -246,6 +248,8 @@ int menu_entries_push_list(menu_handle_t *menu,
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
             "Driver Options");
 
+      file_list_clear(list);
+
       for (; setting->type != ST_NONE; setting++)
       {
          if (setting->type == ST_GROUP)
@@ -255,6 +259,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    }
    else if (!strcmp(label, "history_list"))
    {
+      file_list_clear(list);
       list_size = content_playlist_size(g_defaults.history);
 
       for (i = 0; i < list_size; i++)
@@ -283,6 +288,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    }
    else if (!strcmp(label, "performance_counters"))
    {
+      file_list_clear(list);
       file_list_push(list, "Frontend Counters", "frontend_counters",
             MENU_FILE_SWITCH, 0);
       file_list_push(list, "Core Counters", "core_counters",
@@ -291,6 +297,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (!strcmp(label, "core_information"))
    {
       core_info_t *info = (core_info_t*)g_extern.core_info_current;
+      file_list_clear(list);
 
       if (info->data)
       {
@@ -386,6 +393,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (!strcmp(label, "deferred_core_list"))
    {
       const core_info_t *info = NULL;
+      file_list_clear(list);
       core_info_list_get_supported_cores(g_extern.core_info,
             driver.menu->deferred_path, &info, &list_size);
       for (i = 0; i < list_size; i++)
@@ -401,16 +409,19 @@ int menu_entries_push_list(menu_handle_t *menu,
    }
    else if (!strcmp(label, "core_counters"))
    {
+      file_list_clear(list);
       push_perfcounter(menu, list, perf_counters_libretro,
             perf_ptr_libretro, MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
    }
    else if (!strcmp(label, "frontend_counters"))
    {
+      file_list_clear(list);
       push_perfcounter(menu, list, perf_counters_rarch,
             perf_ptr_rarch, MENU_SETTINGS_PERF_COUNTERS_BEGIN);
    }
    else if (!strcmp(label, "core_options"))
    {
+      file_list_clear(list);
       if (g_extern.system.core_options)
       {
          size_t i;
@@ -429,6 +440,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       settings_list_free(menu->list_settings);
       menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
 
+      file_list_clear(list);
       file_list_push(list, "Player", "input_bind_player_no", 0, 0);
       file_list_push(list, "Device", "input_bind_device_id", 0, 0);
       file_list_push(list, "Device Type", "input_bind_device_type", 0, 0);
@@ -454,6 +466,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       if (!shader)
          return -1;
 
+      file_list_clear(list);
       file_list_push(list, "Apply Shader Changes", "shader_apply_changes",
             MENU_FILE_SWITCH, 0);
       file_list_push(list, "Default Filter", "video_shader_default_filter",
@@ -488,6 +501,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    }
    else if (!strcmp(label, "disk_options"))
    {
+      file_list_clear(list);
       file_list_push(list, "Disk Index", "disk_index", 0, 0);
       file_list_push(list, "Disk Image Append", "disk_image_append", 0, 0);
    }
@@ -496,6 +510,8 @@ int menu_entries_push_list(menu_handle_t *menu,
          !strcmp(label, "video_shader_parameters")
          )
    {
+      file_list_clear(list);
+
       struct gfx_shader *shader = (struct gfx_shader*)
          shader_manager_get_current_shader(menu, label, menu_type);
 
