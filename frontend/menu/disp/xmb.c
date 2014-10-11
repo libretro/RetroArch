@@ -296,16 +296,15 @@ static void xmb_render_messagebox(const char *message)
       return;
    }
 
-   // TODO, find a right way to center the messagebox
-   int x = 0;
-   int y = 0;
+   int x = gl->win_width / 2 - strlen(list->elems[0].data) * g_settings.video.font_size / 4;
+   int y = gl->win_height / 2 - list->size * g_settings.video.font_size / 2;
 
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
 
       if (msg)
-         xmb_draw_text(msg, x, y + i * xmb->vspacing, 1, 1);
+         xmb_draw_text(msg, x, y + i * g_settings.video.font_size, 1, 1);
    }
 
    string_list_free(list);
@@ -528,7 +527,6 @@ static void *xmb_init(void)
    xmb->icon_size           = 96;
    xmb->hspacing            = 150.0;
    xmb->vspacing            = 48.0;
-   xmb->font_size           = 18;
    xmb->margin_left         = 224;
    xmb->margin_top          = 192;
    xmb->title_margin_left   = 15.0;
