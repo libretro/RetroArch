@@ -93,7 +93,7 @@ void update_tweens(float dt)
    for(i = 0; i < numtweens; i++)
       update_tween(&tweens[i], dt, &active_tweens);
 
-   if (numtweens && !active_tweens)
+   if (!active_tweens)
       numtweens = 0;
 }
 
