@@ -222,11 +222,6 @@ static int menu_setting_ok_toggle(unsigned type,
    else if (!strcmp(label, "video_shader_preset_save_as"))
       menu_key_start_line(driver.menu, "Preset Filename",
             label, st_string_callback);
-   else if (!strcmp(label, "shader_apply_changes"))
-   {
-      rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
-      return 0;
-   }
 #endif
    else if (type == MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL)
    {

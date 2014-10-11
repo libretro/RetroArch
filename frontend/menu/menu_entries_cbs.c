@@ -15,6 +15,7 @@
 
 #include "menu_common.h"
 #include "menu_entries.h"
+#include "menu_shader.h"
 #include "backend/menu_backend.h"
 
 /* TODO - return with error values. */
@@ -39,6 +40,13 @@ static int action_ok_push_history_or_path_list(const char *path,
 
    menu_entries_push(driver.menu->menu_stack,
          "", label, type, driver.menu->selection_ptr);
+   return 0;
+}
+
+static int action_ok_shader_apply_changes(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
    return 0;
 }
 
@@ -68,4 +76,6 @@ void menu_entries_cbs_init(void *data,
          menu_common_type_is(label, type) == MENU_FILE_DIRECTORY
          )
       cbs->action_ok = action_ok_push_history_or_path_list;
+   else if (!strcmp(label, "shader_apply_changes"))
+      cbs->action_ok = action_ok_shader_apply_changes;
 }
