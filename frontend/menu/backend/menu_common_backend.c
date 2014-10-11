@@ -283,14 +283,6 @@ static int menu_setting_ok_toggle(unsigned type,
 
       return 0;
    }
-   else if (!strcmp(label, "history_list") ||
-         menu_common_type_is(label, type) == MENU_FILE_DIRECTORY
-         )
-   {
-      menu_entries_push(driver.menu->menu_stack,
-            "", label, type, driver.menu->selection_ptr);
-      return 0;
-   }
    else if (
          menu_common_type_is(label, type) == MENU_SETTINGS ||
          !strcmp(label, "core_list") ||

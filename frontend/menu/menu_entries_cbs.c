@@ -17,12 +17,28 @@
 #include "menu_entries.h"
 #include "backend/menu_backend.h"
 
+/* TODO - return with error values. */
+
 static int action_ok_push_content_list(const char *path,
       const char *label, unsigned type, size_t index)
 {
+   if (!driver.menu)
+      return 0;
+
    menu_entries_push(driver.menu->menu_stack,
          g_settings.menu_content_directory, label, MENU_FILE_DIRECTORY,
          driver.menu->selection_ptr);
+   return 0;
+}
+
+static int action_ok_push_history_or_path_list(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   if (!driver.menu)
+      return 0;
+
+   menu_entries_push(driver.menu->menu_stack,
+         "", label, type, driver.menu->selection_ptr);
    return 0;
 }
 
@@ -48,4 +64,8 @@ void menu_entries_cbs_init(void *data,
          !strcmp(label, "detect_core_list")
       )
       cbs->action_ok = action_ok_push_content_list;
+   else if (!strcmp(label, "history_list") ||
+         menu_common_type_is(label, type) == MENU_FILE_DIRECTORY
+         )
+      cbs->action_ok = action_ok_push_history_or_path_list;
 }
