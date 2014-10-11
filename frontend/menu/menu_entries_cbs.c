@@ -14,17 +14,16 @@
  */
 
 #include "menu_common.h"
+#include "menu_input_line_cb.h"
 #include "menu_entries.h"
 #include "menu_shader.h"
 #include "backend/menu_backend.h"
-
-/* TODO - return with error values. */
 
 static int action_ok_push_content_list(const char *path,
       const char *label, unsigned type, size_t index)
 {
    if (!driver.menu)
-      return 0;
+      return -1;
 
    menu_entries_push(driver.menu->menu_stack,
          g_settings.menu_content_directory, label, MENU_FILE_DIRECTORY,
@@ -36,7 +35,7 @@ static int action_ok_push_history_or_path_list(const char *path,
       const char *label, unsigned type, size_t index)
 {
    if (!driver.menu)
-      return 0;
+      return -1;
 
    menu_entries_push(driver.menu->menu_stack,
          "", label, type, driver.menu->selection_ptr);
@@ -50,18 +49,22 @@ static int action_ok_shader_apply_changes(const char *path,
    return 0;
 }
 
-void menu_entries_cbs_init(void *data,
-      const char *path, const char *label,
-      unsigned type, size_t index)
+static int action_ok_shader_preset_save_as(const char *path,
+      const char *label, unsigned type, size_t index)
 {
-   menu_file_list_cbs_t *cbs = NULL;
-   file_list_t *list = (file_list_t*)data;
+   if (!driver.menu)
+      return -1;
 
-   if (!list)
-      return;
+   menu_key_start_line(driver.menu, "Preset Filename",
+         label, st_string_callback);
+   return 0;
+}
 
-   cbs = (menu_file_list_cbs_t*)list->list[index].actiondata;
+/* Bind the OK callback function */
 
+static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t index)
+{
    if (!cbs)
       return;
 
@@ -78,4 +81,24 @@ void menu_entries_cbs_init(void *data,
       cbs->action_ok = action_ok_push_history_or_path_list;
    else if (!strcmp(label, "shader_apply_changes"))
       cbs->action_ok = action_ok_shader_apply_changes;
+   else if (!strcmp(label, "video_shader_preset_save_as"))
+      cbs->action_ok = action_ok_shader_preset_save_as;
+}
+
+void menu_entries_cbs_init(void *data,
+      const char *path, const char *label,
+      unsigned type, size_t index)
+{
+   menu_file_list_cbs_t *cbs = NULL;
+   file_list_t *list = (file_list_t*)data;
+
+   if (!list)
+      return;
+
+   cbs = (menu_file_list_cbs_t*)list->list[index].actiondata;
+
+   if (cbs)
+   {
+      menu_entries_cbs_init_bind_ok(cbs, path, label, type, index);
+   }
 }
