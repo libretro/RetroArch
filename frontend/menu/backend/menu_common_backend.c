@@ -419,7 +419,7 @@ static int menu_settings_iterate(unsigned action)
    }
 
    if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
-      action = MENU_ACTION_NOOP;
+      action = MENU_ACTION_REFRESH;
 
    switch (action)
    {
@@ -466,8 +466,20 @@ static int menu_settings_iterate(unsigned action)
          break;
 
       case MENU_ACTION_REFRESH:
-         menu_clear_navigation(driver.menu);
-         driver.menu->need_refresh = true;
+         file_list_get_last(driver.menu->menu_stack, &path, &label, &menu_type);
+
+         if ((menu_parse_check(label, menu_type) == -1))
+            menu_entries_push_list(driver.menu,
+                  driver.menu->selection_buf, path, label, menu_type);
+
+         /* Have to defer it so we let settings refresh. */
+         if (driver.menu->push_start_screen)
+         {
+            driver.menu->push_start_screen = false;
+            file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
+         }
+
+         driver.menu->need_refresh = false;
          break;
 
       case MENU_ACTION_MESSAGE:
@@ -478,24 +490,8 @@ static int menu_settings_iterate(unsigned action)
          break;
    }
 
-   file_list_get_last(driver.menu->menu_stack, &path, &label, &menu_type);
-
-   if (driver.menu->need_refresh && (menu_parse_check(label, menu_type) == -1))
-   {
-      driver.menu->need_refresh = false;
-      menu_entries_push_list(driver.menu,
-            driver.menu->selection_buf, path, label, menu_type);
-   }
-
    if (driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
-
-   /* Have to defer it so we let settings refresh. */
-   if (driver.menu->push_start_screen)
-   {
-      driver.menu->push_start_screen = false;
-      file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
-   }
 
    return 0;
 }
@@ -1035,7 +1031,7 @@ static int menu_common_iterate(unsigned action)
    }
 
    if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
-      action = MENU_ACTION_NOOP;
+      action = MENU_ACTION_REFRESH;
 
    scroll_speed = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
    fast_scroll_speed = 4 + 4 * scroll_speed;
@@ -1093,8 +1089,10 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_REFRESH:
-         menu_clear_navigation(driver.menu);
-         driver.menu->need_refresh = true;
+         menu_parse_and_resolve(driver.menu->selection_buf,
+                  driver.menu->menu_stack);
+
+         driver.menu->need_refresh = false;
          break;
 
       case MENU_ACTION_MESSAGE:
@@ -1105,12 +1103,6 @@ static int menu_common_iterate(unsigned action)
          break;
    }
 
-   if (driver.menu->need_refresh)
-   {
-      if (menu_parse_and_resolve(driver.menu->selection_buf,
-               driver.menu->menu_stack) == 0)
-         driver.menu->need_refresh = false;
-   }
 
    if (driver.menu_ctx && driver.menu_ctx->iterate)
       driver.menu_ctx->iterate(driver.menu, action);
