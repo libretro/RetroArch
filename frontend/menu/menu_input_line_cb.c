@@ -101,13 +101,11 @@ void st_string_callback(void *userdata, const char *str)
    menu_key_end_line(menu);
 }
 
-void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mod)
+void menu_key_event(bool down, unsigned keycode,
+      uint32_t character, uint16_t mod)
 {
    if (!driver.menu)
-   {
-      RARCH_ERR("Cannot invoke menu key event callback, menu handle is not initialized.\n");
       return;
-   }
 
    (void)down;
    (void)keycode;

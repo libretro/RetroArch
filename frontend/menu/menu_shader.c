@@ -27,7 +27,7 @@ extern size_t hack_shader_pass;
 void menu_shader_manager_init(void *data)
 {
    char cgp_path[PATH_MAX];
-   struct gfx_shader *shader;
+   struct gfx_shader *shader = NULL;
    config_file_t *conf = NULL;
    const char *config_path = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
@@ -287,14 +287,12 @@ unsigned menu_shader_manager_get_type(const struct gfx_shader *shader)
    unsigned i = 0, type = 0;
 
    if (!shader)
-   {
-      RARCH_ERR("Cannot get shader type, shader handle is not initialized.\n");
       return RARCH_SHADER_NONE;
-   }
 
    for (i = 0; i < shader->passes; i++)
    {
-      enum rarch_shader_type pass_type = gfx_shader_parse_type(shader->pass[i].source.path,
+      enum rarch_shader_type pass_type = 
+         gfx_shader_parse_type(shader->pass[i].source.path,
             RARCH_SHADER_NONE);
 
       switch (pass_type)
@@ -314,7 +312,8 @@ unsigned menu_shader_manager_get_type(const struct gfx_shader *shader)
    return type;
 }
 
-static int handle_shader_pass_setting(struct gfx_shader *shader, unsigned action)
+static int handle_shader_pass_setting(struct gfx_shader *shader,
+      unsigned action)
 {
    switch (action)
    {
@@ -536,27 +535,29 @@ int menu_shader_manager_setting_toggle(
 
 void menu_shader_manager_apply_changes(void)
 {
-   unsigned shader_type = RARCH_SHADER_NONE;
-   shader_type = menu_shader_manager_get_type(driver.menu->shader);
+   unsigned shader_type = menu_shader_manager_get_type(driver.menu->shader);
 
-   if (driver.menu->shader->passes && shader_type != RARCH_SHADER_NONE)
-      menu_shader_manager_save_preset(NULL, true);
-   else
+   if (driver.menu->shader->passes 
+         && shader_type != RARCH_SHADER_NONE)
    {
+      menu_shader_manager_save_preset(NULL, true);
+      return;
+   }
+
+   /* Fall-back */
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-      shader_type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
+   shader_type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
 #endif
 
-      if (shader_type == RARCH_SHADER_NONE)
-      {
+   if (shader_type == RARCH_SHADER_NONE)
+   {
 #if defined(HAVE_GLSL)
-         shader_type = RARCH_SHADER_GLSL;
+      shader_type = RARCH_SHADER_GLSL;
 #elif defined(HAVE_CG) || defined(HAVE_HLSL)
-         shader_type = RARCH_SHADER_CG;
+      shader_type = RARCH_SHADER_CG;
 #endif
-      }
-      menu_shader_manager_set_preset(NULL, shader_type, NULL);
    }
+   menu_shader_manager_set_preset(NULL, shader_type, NULL);
 }
 
 #else
