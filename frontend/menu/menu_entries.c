@@ -179,8 +179,6 @@ int menu_entries_push_list(menu_handle_t *menu,
    if (!strcmp(label, "mainmenu"))
    {
       settings_list_free(menu->list_mainmenu);
-      menu->list_mainmenu = NULL;
-
       menu->list_mainmenu = (rarch_setting_t *)
          setting_data_get_list(SL_FLAG_MAIN_MENU);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_mainmenu, "Main Menu");
@@ -203,8 +201,6 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (menu_type == MENU_FILE_CATEGORY)
    {
       settings_list_free(menu->list_settings);
-      menu->list_settings = NULL;
-
       menu->list_settings = (rarch_setting_t *)
          setting_data_get_list(SL_FLAG_ALL_SETTINGS);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
@@ -238,8 +234,6 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (!strcmp(label, "settings"))
    {
       settings_list_free(menu->list_settings);
-      menu->list_settings = NULL;
-
       menu->list_settings = (rarch_setting_t *)
          setting_data_get_list(SL_FLAG_ALL_SETTINGS);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
@@ -434,30 +428,27 @@ int menu_entries_push_list(menu_handle_t *menu,
    }
    else if (!strcmp(label, "Input Options"))
    {
-      rarch_setting_t *setting_data = (rarch_setting_t*)menu->list_settings;
       settings_list_free(menu->list_settings);
-      menu->list_settings = NULL;
-
-      setting_data = (rarch_setting_t *)
+      menu->list_settings = (rarch_setting_t *)
          setting_data_get_list(SL_FLAG_ALL_SETTINGS);
       file_list_clear(list);
       file_list_push(list, "Player", "input_bind_player_no", 0, 0);
       file_list_push(list, "Device", "input_bind_device_id", 0, 0);
       file_list_push(list, "Device Type", "input_bind_device_type", 0, 0);
       file_list_push(list, "Analog D-pad Mode", "input_bind_analog_dpad_mode", 0, 0);
-      add_setting_entry(menu,list,"input_axis_threshold", 0, setting_data);
-      add_setting_entry(menu,list,"input_autodetect_enable", 0, setting_data);
-      add_setting_entry(menu,list,"input_turbo_period", 0, setting_data);
-      add_setting_entry(menu,list,"input_duty_cycle", 0, setting_data);
+      add_setting_entry(menu,list,"input_axis_threshold", 0, menu->list_settings);
+      add_setting_entry(menu,list,"input_autodetect_enable", 0, menu->list_settings);
+      add_setting_entry(menu,list,"input_turbo_period", 0, menu->list_settings);
+      add_setting_entry(menu,list,"input_duty_cycle", 0, menu->list_settings);
       file_list_push(list, "Bind Mode", "",
             MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
       file_list_push(list, "Configure All (RetroPad)", "",
             MENU_SETTINGS_CUSTOM_BIND_ALL, 0);
       file_list_push(list, "Default All (RetroPad)", "",
             MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);
-      add_setting_entry(menu,list,"osk_enable", 0, setting_data);
+      add_setting_entry(menu,list,"osk_enable", 0, menu->list_settings);
       for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_ALL_LAST; i++)
-         add_setting_entry(menu, list, input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].base, i, setting_data);
+         add_setting_entry(menu, list, input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].base, i, menu->list_settings);
    }
    else if (!strcmp(label, "Shader Options"))
    {
