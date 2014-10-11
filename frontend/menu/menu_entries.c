@@ -136,7 +136,7 @@ void menu_entries_push_perfcounter(menu_handle_t *menu,
                id + i, 0);
 }
 
-void menu_entries_pop(file_list_t *list)
+void menu_entries_pop_list(file_list_t *list)
 {
    if (file_list_get_size(list) > 1)
    {

@@ -30,11 +30,12 @@ int menu_entries_push_list(menu_handle_t *menu,
       file_list_t *list, const char *path,
       const char *label, unsigned menu_type);
 
+void menu_entries_pop_list(file_list_t *list);
+
 int menu_parse_check(const char *label, unsigned menu_type);
 
 int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list);
 
-void menu_entries_pop(file_list_t *list);
 void menu_entries_pop_stack(file_list_t *list, const char *needle);
 
 void menu_flush_stack_type(file_list_t *list, unsigned final_type);
