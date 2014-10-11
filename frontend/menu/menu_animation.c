@@ -58,27 +58,31 @@ void add_tween(float duration, float target_value, float* subject,
 
 static void update_tween(tween_t *tween, float dt, int *active_tweens)
 {
-   if (tween && tween->running_since < tween->duration)
+   if (!tween)
+      return;
+
+   if (tween->running_since >= tween->duration)
+      return;
+
+   tween->running_since += dt;
+
+   if (tween->easing)
+      *tween->subject = tween->easing(
+            tween->running_since,
+            tween->initial_value,
+            tween->target_value - tween->initial_value,
+            tween->duration);
+
+   if (tween->running_since >= tween->duration)
    {
-      tween->running_since += dt;
+      *tween->subject = tween->target_value;
 
-      if (tween->easing)
-         *tween->subject = tween->easing(
-               tween->running_since,
-               tween->initial_value,
-               tween->target_value - tween->initial_value,
-               tween->duration);
-
-      if (tween->running_since >= tween->duration)
-      {
-         *tween->subject = tween->target_value;
-
-         if (tween->callback)
-            tween->callback();
-      }
+      if (tween->callback)
+         tween->callback();
    }
 
-   *active_tweens += tween->running_since < tween->duration ? 1 : 0;
+   if (tween->running_since < tween->duration)
+      *active_tweens += 1;
 }
 
 void update_tweens(float dt)
