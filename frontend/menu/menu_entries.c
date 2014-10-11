@@ -179,8 +179,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    if (!strcmp(label, "mainmenu"))
    {
       settings_list_free(menu->list_mainmenu);
-      menu->list_mainmenu = (rarch_setting_t *)
-         setting_data_get_list(SL_FLAG_MAIN_MENU);
+      menu->list_mainmenu = (rarch_setting_t *)setting_data_new(SL_FLAG_MAIN_MENU);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_mainmenu, "Main Menu");
 
       file_list_clear(list);
@@ -201,8 +200,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (menu_type == MENU_FILE_CATEGORY)
    {
       settings_list_free(menu->list_settings);
-      menu->list_settings = (rarch_setting_t *)
-         setting_data_get_list(SL_FLAG_ALL_SETTINGS);
+      menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
             label);
 
@@ -234,8 +232,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (!strcmp(label, "settings"))
    {
       settings_list_free(menu->list_settings);
-      menu->list_settings = (rarch_setting_t *)
-         setting_data_get_list(SL_FLAG_ALL_SETTINGS);
+      menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
             "Driver Options");
 
@@ -429,8 +426,8 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (!strcmp(label, "Input Options"))
    {
       settings_list_free(menu->list_settings);
-      menu->list_settings = (rarch_setting_t *)
-         setting_data_get_list(SL_FLAG_ALL_SETTINGS);
+      menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
+
       file_list_clear(list);
       file_list_push(list, "Player", "input_bind_player_no", 0, 0);
       file_list_push(list, "Device", "input_bind_device_id", 0, 0);

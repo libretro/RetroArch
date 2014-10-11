@@ -4548,7 +4548,7 @@ bool setting_data_append_list_privacy_options(
    return true;
 }
 
-rarch_setting_t *setting_data_get_list(unsigned mask)
+rarch_setting_t *setting_data_new(unsigned mask)
 {
    rarch_setting_t terminator = { ST_NONE };
    rarch_setting_t* list = NULL;
