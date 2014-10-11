@@ -252,8 +252,9 @@ void menu_ticker_line(char *buf, size_t len, unsigned index,
    {
       strlcpy(buf, str, len + 1 - 3);
       strlcat(buf, "...", len + 1);
+      return;
    }
-   else
+
    {
       /* Wrap long strings in options with some kind of ticker line. */
       unsigned ticker_period = 2 * (str_len - len) + 4;
