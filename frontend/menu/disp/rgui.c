@@ -42,11 +42,10 @@
 #define HAVE_SHADER_MANAGER
 #endif
 
-#if defined(PSP)
-static uint16_t __attribute((aligned(64))) menu_framebuf[400 * 240];
-#else
-static uint16_t menu_framebuf[400 * 240];
-#endif
+typedef struct rgui_handle
+{
+   uint16_t *menu_framebuf;
+} rgui_handle_t;
 
 #define RGUI_TERM_START_X (driver.menu->width / 21)
 #define RGUI_TERM_START_Y (driver.menu->height / 9)
@@ -410,20 +409,29 @@ static void rgui_render(void)
 
 static void *rgui_init(void)
 {
-   uint16_t *framebuf = menu_framebuf;
-   size_t framebuf_pitch;
-
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
       return NULL;
 
-   menu->frame_buf = framebuf;
+   menu->userdata = (rgui_handle_t*)calloc(1, sizeof(rgui_handle_t));
+   
+   if (!menu->userdata)
+      return NULL;
+   
+   rgui_handle_t *rgui = (rgui_handle_t*)menu->userdata;
+   
+   if (!rgui)
+      return NULL;
+   
+   menu->frame_buf = (uint16_t*)malloc(400 * 240 * sizeof(uint16_t)); 
+
+   if (!menu->frame_buf)
+      return NULL;
+
    menu->width = 320;
    menu->height = 240;
-   framebuf_pitch = menu->width * sizeof(uint16_t);
-
-   menu->frame_buf_pitch = framebuf_pitch;
+   menu->frame_buf_pitch = menu->width * sizeof(uint16_t);
 
    bool ret = rguidisp_init_font(menu);
 
@@ -440,7 +448,23 @@ static void *rgui_init(void)
 
 static void rgui_free(void *data)
 {
+   rgui_handle_t *rgui = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
+
+   if (!menu)
+      return;
+
+   rgui = (rgui_handle_t*)menu->userdata;
+
+   if (!rgui)
+      return;
+
+   if (menu->frame_buf)
+      free(menu->frame_buf);
+
+   if (menu->userdata)
+      free(menu->userdata);
+   driver.menu->userdata = NULL;
 
    if (menu->alloc_font)
       free((uint8_t*)menu->font);
@@ -453,7 +477,7 @@ void rgui_set_texture(void *data)
    if (driver.video_data && driver.video_poke &&
          driver.video_poke->set_texture_frame)
       driver.video_poke->set_texture_frame(driver.video_data,
-            menu_framebuf, false, menu->width, menu->height, 1.0f);
+            menu->frame_buf, false, menu->width, menu->height, 1.0f);
 }
 
 menu_ctx_driver_t menu_ctx_rgui = {
