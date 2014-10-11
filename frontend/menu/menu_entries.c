@@ -176,11 +176,12 @@ int menu_entries_push_list(menu_handle_t *menu,
    RARCH_LOG("Menu type is: %d\n", menu_type);
 #endif
 
-   if (!strcmp(label, "mainmenu"))
+   if (!strcmp(label, "Main Menu"))
    {
       settings_list_free(menu->list_mainmenu);
       menu->list_mainmenu = (rarch_setting_t *)setting_data_new(SL_FLAG_MAIN_MENU);
-      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_mainmenu, "Main Menu");
+      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_mainmenu,
+            label);
 
       file_list_clear(list);
 
