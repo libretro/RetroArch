@@ -46,7 +46,4 @@ int menu_entries_set_current_path_selection(
       const char *label, unsigned type,
       unsigned action);
 
-void *menu_entries_get_last_setting(const char *label, int index,
-      rarch_setting_t *settings);
-
 #endif

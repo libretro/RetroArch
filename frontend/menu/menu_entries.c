@@ -917,12 +917,3 @@ int menu_entries_set_current_path_selection(
 
    return menu_action_setting_apply(setting);
 }
-
-void *menu_entries_get_last_setting(const char *label, int index,
-      rarch_setting_t *settings)
-{
-   if (settings)
-      return (rarch_setting_t*)setting_data_find_setting(settings,
-            label);
-   return NULL;
-}

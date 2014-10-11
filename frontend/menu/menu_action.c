@@ -390,18 +390,16 @@ int menu_action_setting_set(unsigned id, const char *label,
 
    /* Check if setting belongs to settings menu. */
 
-   rarch_setting_t *setting = (rarch_setting_t*)menu_entries_get_last_setting(
-         list->list[driver.menu->selection_ptr].label,
-         driver.menu->selection_ptr, driver.menu->list_settings);
+   rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
+         driver.menu->list_settings, list->list[driver.menu->selection_ptr].label);
 
    if (setting)
       return menu_action_handle_setting(setting, id, label, action);
 
    /* Check if setting belongs to main menu. */
 
-   setting = (rarch_setting_t*)menu_entries_get_last_setting(
-         list->list[driver.menu->selection_ptr].label,
-         driver.menu->selection_ptr, driver.menu->list_mainmenu);
+   setting = (rarch_setting_t*)setting_data_find_setting(
+         driver.menu->list_mainmenu, list->list[driver.menu->selection_ptr].label);
 
    if (setting)
    {
