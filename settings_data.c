@@ -4655,8 +4655,6 @@ rarch_setting_t *setting_data_new(unsigned mask)
 
    settings_info_list_free(list_info);
 
-   /* do not optimize into return realloc(),
-    * list is static and must be written. */
    return list;
 
 error:
