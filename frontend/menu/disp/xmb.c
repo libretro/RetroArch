@@ -369,11 +369,6 @@ static void xmb_frame(void)
    if (!xmb || !gl)
       return;
 
-   if (driver.menu->need_refresh
-         && g_extern.is_menu
-         && !driver.menu->msg_force)
-      return;
-
    update_tweens(0.002);
 
    glViewport(0, 0, gl->win_width, gl->win_height);
