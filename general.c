@@ -18,11 +18,12 @@
 #include "general.h"
 
 void rarch_playlist_push(content_playlist_t *playlist,
-      const char *path)
+      const char *path, const char *core_path,
+      struct retro_system_info *info)
 {
    char tmp[PATH_MAX];
 
-   if (!playlist || !g_extern.libretro_dummy)
+   if (!playlist || !g_extern.libretro_dummy || !info)
       return;
 
    /* path can be relative here.
@@ -36,8 +37,8 @@ void rarch_playlist_push(content_playlist_t *playlist,
    if (g_extern.system.no_content || *tmp)
       content_playlist_push(playlist,
             *tmp ? tmp : NULL,
-            g_settings.libretro,
-            g_extern.system.info.library_name);
+            core_path,
+            info->library_name);
 }
 
 void rarch_playlist_load_content(content_playlist_t *playlist,

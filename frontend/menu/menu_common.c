@@ -91,10 +91,10 @@ bool load_menu_content(void)
          msg_queue_push(g_extern.msg_queue, str, 1, 1);
       }
 
-      content_playlist_push(g_defaults.history,
+      rarch_playlist_push(g_defaults.history,
             g_extern.fullpath,
             g_settings.libretro,
-            g_extern.menu.info.library_name);
+            &g_extern.menu.info);
    }
 
    /* redraw menu frame */

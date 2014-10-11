@@ -233,7 +233,10 @@ returntype main_entry(signature())
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
    if (ret)
 #endif
-      rarch_playlist_push(g_defaults.history, g_extern.fullpath);
+      rarch_playlist_push(g_defaults.history,
+            g_extern.fullpath,
+            g_settings.libretro,
+            &g_extern.system.info);
 #endif
 
 #if defined(HAVE_MAIN_LOOP)
