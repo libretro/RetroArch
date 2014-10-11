@@ -74,12 +74,14 @@ struct xmb_texture_item
 typedef struct xmb_handle
 {
    int depth;
+   int old_depth;
    GLuint bg;
    char icon_dir[4];
    char box_message[PATH_MAX];
    char title[PATH_MAX];
    struct xmb_texture_item textures[XMB_TEXTURE_LAST];
    int icon_size;
+   float x;
    float alpha;
    float hspacing;
    float vspacing;
@@ -350,8 +352,25 @@ static void xmb_selection_pointer_changed(void)
 }
 
 static void xmb_populate_entries(void *data, const char *path,
-      const char *labell, unsigned ii)
+      const char *label, unsigned i)
 {
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+
+   if (!xmb)
+      return;
+
+   xmb->depth = file_list_get_size(driver.menu->menu_stack);
+
+   if (xmb->depth > xmb->old_depth)
+   {
+      add_tween(XMB_DELAY, xmb->x-20, &xmb->x, &inOutQuad, NULL);
+   }
+   else if (xmb->depth < xmb->old_depth)
+   {
+      add_tween(XMB_DELAY, xmb->x+20, &xmb->x, &inOutQuad, NULL);
+   }
+
+   xmb->old_depth = xmb->depth;
 }
 
 static void xmb_frame(void)
@@ -417,20 +436,20 @@ static void xmb_frame(void)
             path_buf, sizeof(path_buf));
 
       xmb_draw_icon(xmb->textures[XMB_TEXTURE_SETTING].id,
-            xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0, 
+            xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0, 
             xmb->margin_top + node->y + xmb->icon_size/2.0, 
             node->alpha, 
             0, 
             node->zoom);
 
       xmb_draw_text(path_buf,
-            xmb->margin_left + xmb->hspacing + xmb->label_margin_left, 
+            xmb->x + xmb->margin_left + xmb->hspacing + xmb->label_margin_left, 
             xmb->margin_top + node->y + xmb->label_margin_top, 
             1, 
             node->alpha);
 
       xmb_draw_text(value,
-            xmb->margin_left + xmb->hspacing + 
+            xmb->x + xmb->margin_left + xmb->hspacing + 
             xmb->label_margin_left + xmb->setting_margin_left, 
             xmb->margin_top + node->y + xmb->label_margin_top, 
             1, 
@@ -438,7 +457,7 @@ static void xmb_frame(void)
    }
 
    xmb_draw_icon(xmb->textures[XMB_TEXTURE_SETTINGS].id, 
-         xmb->margin_left + xmb->hspacing - xmb->icon_size / 2.0,
+         xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size / 2.0,
          xmb->margin_top + xmb->icon_size / 2.0, 
          1.0, 
          0, 
@@ -532,8 +551,10 @@ static void *xmb_init(void)
    xmb->above_item_offset   = -1.0;
    xmb->active_item_factor  = 2.75;
    xmb->under_item_offset   = 4.0;
+   xmb->x                   = 0;
    xmb->alpha               = 1.0f;
-   xmb->depth               = 0;
+   xmb->depth               = 1;
+   xmb->old_depth           = 1;
    xmb->bg                  = 0;
 
    strlcpy(xmb->icon_dir, "96", sizeof(xmb->icon_dir));
