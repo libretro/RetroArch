@@ -25,6 +25,7 @@
 #include "menu_backend.h"
 #include "../menu_action.h"
 #include "../menu_entries.h"
+#include "../menu_entries_cbs.h"
 #include "../menu_navigation.h"
 #include "../menu_input_line_cb.h"
 
@@ -1119,23 +1120,24 @@ static void menu_common_setting_set_label(char *type_str,
 }
 
 static void menu_common_list_insert(void *data,
-      const char *path, const char *unused, size_t list_size)
+      const char *path, const char *label,
+      unsigned type, size_t index)
 {
-   int i = list_size;
    file_list_t *list = (file_list_t*)data;
 
    if (!list)
       return;
 
-   list->list[i].actiondata = (menu_file_list_cbs_t*)
+   list->list[index].actiondata = (menu_file_list_cbs_t*)
       calloc(1, sizeof(menu_file_list_cbs_t));
 
-   if (!list->list[i].actiondata)
+   if (!list->list[index].actiondata)
    {
       RARCH_ERR("Action data could not be allocated.\n");
       return;
    }
 
+   menu_entries_cbs_init(list, path, label, type, index);
 }
 
 static void menu_common_list_delete(void *data, size_t index,

@@ -41,7 +41,8 @@ void file_list_push(file_list_t *list,
          driver.menu_ctx->list_insert(list, path, label, list->size);
 
       if (driver.menu_ctx->backend->list_insert)
-         driver.menu_ctx->backend->list_insert(list, path, label, list->size);
+         driver.menu_ctx->backend->list_insert(list, path,
+               label, type,list->size);
    }
 #endif
 

@@ -5,11 +5,6 @@
 extern "C" {
 #endif
 
-typedef struct menu_file_list_cbs
-{
-   int (*action_ok)(const char *path, const char *label, unsigned type);
-} menu_file_list_cbs_t;
-
 typedef struct menu_ctx_driver
 {
    void  (*set_texture)(void*);
