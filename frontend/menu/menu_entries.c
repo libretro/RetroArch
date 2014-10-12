@@ -403,8 +403,6 @@ int menu_entries_push_list(menu_handle_t *menu,
    bool do_action = false;
    bool is_history_list = !strcmp(label, "history_list");
 
-   menu_clear_navigation(driver.menu);
-
 #if 0
    RARCH_LOG("Label is: %s\n", label);
    RARCH_LOG("Path is: %s\n", path);
