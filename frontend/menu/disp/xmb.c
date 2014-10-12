@@ -222,9 +222,9 @@ static void xmb_draw_text(const char *str, float x,
                                       str, &params);
 }
 
-static void xmb_render_background(void)
+static void xmb_render_background(bool force_transparency)
 {
-   float alpha = 0.9f;
+   float alpha = 0.75f;
    gl_t *gl = NULL;
    xmb_handle_t *xmb = NULL;
 
@@ -282,6 +282,7 @@ static void xmb_render_background(void)
 
    if ((g_settings.menu.pause_libretro
       || !g_extern.main_is_init || g_extern.libretro_dummy)
+      && !force_transparency
       && xmb->textures[XMB_TEXTURE_BG].id)
    {
       coords.color = color;
@@ -425,7 +426,7 @@ static void xmb_frame(void)
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
-   xmb_render_background();
+   xmb_render_background(false);
 
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
@@ -525,7 +526,7 @@ static void xmb_frame(void)
 
    if (xmb->box_message[0] != '\0')
    {
-      xmb_render_background();
+      xmb_render_background(true);
       xmb_render_messagebox(xmb->box_message);
       xmb->box_message[0] = '\0';
    }
