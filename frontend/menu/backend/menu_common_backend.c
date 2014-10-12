@@ -852,42 +852,6 @@ static int menu_action_ok(const char *menu_path,
             menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
 
             return 0;
-         case MENU_FILE_CORE:
-
-            if (!strcmp(menu_label, "deferred_core_list"))
-            {
-               strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
-               strlcpy(g_extern.fullpath, driver.menu->deferred_path,
-                     sizeof(g_extern.fullpath));
-
-               menu_common_load_content();
-
-               return -1;
-            }
-            else if (!strcmp(menu_label, "core_list"))
-            {
-               fill_pathname_join(g_settings.libretro, menu_path, path,
-                     sizeof(g_settings.libretro));
-               rarch_main_command(RARCH_CMD_LOAD_CORE);
-               menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-#if defined(HAVE_DYNAMIC)
-               /* No content needed for this core, load core immediately. */
-               if (driver.menu->load_no_content)
-               {
-                  *g_extern.fullpath = '\0';
-                  menu_common_load_content();
-                  return -1;
-               }
-
-               /* Core selection on non-console just updates directory listing.
-                * Will take effect on new content load. */
-#elif defined(RARCH_CONSOLE)
-               rarch_main_command(RARCH_CMD_RESTART_RETROARCH);
-               return -1;
-#endif
-            }
-
-            return 0;
          case MENU_FILE_DIRECTORY:
          case MENU_FILE_CARCHIVE:
 
