@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "menu_action.h"
 #include "menu_common.h"
 #include "menu_input_line_cb.h"
 #include "menu_entries.h"
@@ -137,6 +138,32 @@ static int action_ok_shader_preset_save_as(const char *path,
    return 0;
 }
 
+static int action_ok_path_use_directory(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   const char *menu_label   = NULL;
+   const char *menu_path    = NULL;
+   rarch_setting_t *setting = NULL;
+
+   if (!driver.menu)
+      return -1;
+
+   file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label, NULL);
+   setting = (rarch_setting_t*)
+      setting_data_find_setting(driver.menu->list_settings, menu_label);
+
+   if (!setting)
+      return -1;
+
+   if (setting->type == ST_DIR)
+   {
+      menu_action_setting_set_current_string(setting, menu_path);
+      menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
+   }
+
+   return 0;
+}
+
 /* Bind the OK callback function */
 
 static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
@@ -148,6 +175,8 @@ static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_shader_preset_load;
    else if (type == MENU_FILE_SHADER)
       cbs->action_ok = action_ok_shader_pass_load;
+   else if (type == MENU_FILE_USE_DIRECTORY)
+      cbs->action_ok = action_ok_path_use_directory;
    else
       return -1;
 

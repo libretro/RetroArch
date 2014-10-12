@@ -755,7 +755,6 @@ static int menu_action_ok(const char *menu_path,
 
 #if 0
    RARCH_LOG("menu label: %s\n", menu_label);
-   RARCH_LOG("type     : %d\n", type == MENU_FILE_USE_DIRECTORY);
    RARCH_LOG("type id  : %d\n", type);
 #endif
    while (true)
@@ -889,17 +888,6 @@ static int menu_action_ok(const char *menu_path,
             }
 
             return 0;
-
-         case MENU_FILE_USE_DIRECTORY:
-
-            if (setting && setting->type == ST_DIR)
-            {
-               menu_action_setting_set_current_string(setting, menu_path);
-               menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
-            }
-
-            return 0;
-
          case MENU_FILE_DIRECTORY:
          case MENU_FILE_CARCHIVE:
 
