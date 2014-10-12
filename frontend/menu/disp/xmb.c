@@ -216,17 +216,41 @@ static void xmb_draw_text(const char *str, float x,
 
 static void xmb_render_background(void)
 {
-   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+   float alpha = 0.9f;
+   gl_t *gl = NULL;
+   xmb_handle_t *xmb = NULL;
+
+   if (!driver.menu)
+      return;
+
+   xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
       return;
 
-   GLfloat black_color[] = {
-      0.0f, 0.0f, 0.0f, 0.8f,
-      0.0f, 0.0f, 0.0f, 0.8f,
-      0.0f, 0.0f, 0.0f, 0.8f,
-      0.0f, 0.0f, 0.0f, 0.8f,
+   GLfloat color[] = {
+      1.0f, 1.0f, 1.0f, xmb->alpha,
+      1.0f, 1.0f, 1.0f, xmb->alpha,
+      1.0f, 1.0f, 1.0f, xmb->alpha,
+      1.0f, 1.0f, 1.0f, xmb->alpha,
    };
+
+   if (alpha > xmb->alpha)
+      alpha = xmb->alpha;
+
+   GLfloat black_color[] = {
+      0.0f, 0.0f, 0.0f, alpha,
+      0.0f, 0.0f, 0.0f, alpha,
+      0.0f, 0.0f, 0.0f, alpha,
+      0.0f, 0.0f, 0.0f, alpha,
+   };
+
+   gl = (gl_t*)driver_video_resolve(NULL);
+
+   if (!gl)
+      return;
+
+   glViewport(0, 0, gl->win_width, gl->win_height);
 
    static const GLfloat vertex[] = {
       0, 0,
@@ -242,30 +266,20 @@ static void xmb_render_background(void)
       1, 0,
    };
 
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   struct gl_coords coords;
+   coords.vertices = 4;
+   coords.vertex = vertex;
+   coords.tex_coord = tex_coord;
+   coords.lut_tex_coord = tex_coord;
+   coords.color = xmb->textures[XMB_TEXTURE_BG].id ? color : black_color;
+   glBindTexture(GL_TEXTURE_2D, xmb->textures[XMB_TEXTURE_BG].id);
 
-   if (!gl)
-      return;
-
-   glViewport(0, 0, gl->win_width, gl->win_height);
-
-   glEnable(GL_BLEND);
-
-   gl->coords.vertex = vertex;
-   gl->coords.tex_coord = tex_coord;
-   gl->coords.color = xmb->bg ? gl->white_color_ptr : black_color;
-   glBindTexture(GL_TEXTURE_2D, xmb->bg);
-
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-
-   gl->coords.vertices = 4;
-   gl->shader->set_coords(&gl->coords);
+   gl->shader->set_coords(&coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
 
+   glEnable(GL_BLEND);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
-   gl->coords.color = gl->white_color_ptr;
 }
 
 static void xmb_get_message(const char *message)
