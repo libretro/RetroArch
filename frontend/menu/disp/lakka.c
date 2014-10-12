@@ -455,7 +455,7 @@ static void lakka_fbo_reset(lakka_handle_t *lakka)
 
    glGenFramebuffers(1, &lakka->fbo);
    glGenTextures(1, &lakka->fbo_color);
-   glGenRenderbuffers(1, &lakka->lakka->fbo_depth);
+   glGenRenderbuffers(1, &lakka->fbo_depth);
 
    glBindFramebuffer(GL_FRAMEBUFFER, lakka->fbo);
 
@@ -482,7 +482,7 @@ static void lakka_fbo_reset(lakka_handle_t *lakka)
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-static void lakka_draw_fbo(void)
+static void lakka_draw_fbo(lakka_handle_t *lakka)
 {
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
    if (!gl)
@@ -554,7 +554,7 @@ static void lakka_frame(void)
    update_tweens(0.002);
 
 #if defined(HAVE_FBO) && defined(LAKKA_EFFECTS)
-   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   glBindFramebuffer(GL_FRAMEBUFFER, lakka->fbo);
    glClearColor(0.0, 0.0, 0.0, 0.0);
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
    lakka_draw_categories(lakka);
@@ -562,7 +562,7 @@ static void lakka_frame(void)
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
    glViewport(0, 0, gl->win_width, gl->win_height);
    lakka_draw_background(false);
-   lakka_draw_fbo();
+   lakka_draw_fbo(lakka);
 #else
    glViewport(0, 0, gl->win_width, gl->win_height);
    lakka_draw_background(false);
@@ -643,7 +643,7 @@ static void lakka_context_destroy(void *data)
       return;
 
 #if defined(HAVE_FBO) && defined(LAKKA_EFFECTS)
-   glDeleteFramebuffers(1, &fbo);
+   glDeleteFramebuffers(1, &lakka->fbo);
    glDeleteTextures(1, &lakka->fbo_color);
    glDeleteTextures(1, &lakka->fbo_depth);
 #endif
