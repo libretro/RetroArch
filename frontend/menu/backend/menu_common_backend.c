@@ -825,15 +825,6 @@ static int menu_action_ok(const char *menu_path,
             }
 
             return 0;
-         case MENU_FILE_FONT:
-         case MENU_FILE_OVERLAY:
-         case MENU_FILE_AUDIOFILTER:
-         case MENU_FILE_VIDEOFILTER:
-
-            menu_action_setting_set_current_string_path(setting, menu_path, path);
-            menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
-
-            return 0;
       }
       break;
    }
