@@ -55,6 +55,20 @@ static int menu_message_toggle(unsigned action)
    return 0;
 }
 
+static int menu_setting_ok_toggle(unsigned type,
+      const char *path, const char *label,
+      unsigned action)
+{
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      file_list_get_actiondata_at_offset(driver.menu->selection_buf,
+         driver.menu->selection_ptr);
+
+   if (cbs && cbs->action_ok)
+      return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
+
+   return -1;
+}
+
 static int menu_info_screen_iterate(unsigned action)
 {
    char msg[PATH_MAX];
@@ -174,19 +188,6 @@ static int menu_start_screen_iterate(unsigned action)
    return 0;
 }
 
-static int menu_setting_ok_toggle(unsigned type,
-      const char *dir, const char *label,
-      unsigned action)
-{
-   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-      file_list_get_actiondata_at_offset(driver.menu->selection_buf,
-         driver.menu->selection_ptr);
-
-   if (cbs && cbs->action_ok)
-      return cbs->action_ok(dir, label, type, driver.menu->selection_ptr);
-
-   return -1;
-}
 
 static int menu_setting_start_toggle(unsigned type,
       const char *dir, const char *label,
@@ -251,8 +252,7 @@ static int menu_setting_toggle(unsigned type,
 
 static int menu_settings_iterate(unsigned action)
 {
-   const char *path = NULL;
-   const char *dir  = NULL;
+   const char *path  = NULL;
    const char *label = NULL;
    unsigned type = 0;
    unsigned menu_type = 0;
@@ -261,17 +261,7 @@ static int menu_settings_iterate(unsigned action)
 
    if (action != MENU_ACTION_REFRESH)
       file_list_get_at_offset(driver.menu->selection_buf,
-            driver.menu->selection_ptr, NULL, &label, &type);
-
-   if (label)
-   {
-      if (!strcmp(label, "core_list"))
-         dir = g_settings.libretro_directory;
-      else if (!strcmp(label, "configurations"))
-         dir = g_settings.menu_config_directory;
-      else if (!strcmp(label, "disk_image_append"))
-         dir = g_settings.menu_content_directory;
-   }
+            driver.menu->selection_ptr, &path, &label, &type);
 
    if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_REFRESH;
@@ -302,18 +292,17 @@ static int menu_settings_iterate(unsigned action)
                0, driver.menu->selection_ptr);
          break;
       case MENU_ACTION_OK:
-         if (menu_setting_ok_toggle(type, dir, label, action) == 0)
+         if (menu_setting_ok_toggle(type, path, label, action) == 0)
             return 0;
          /* fall-through */
       case MENU_ACTION_START:
-         if (menu_setting_start_toggle(type, dir, label, action) == 0)
+         if (menu_setting_start_toggle(type, path, label, action) == 0)
             return 0;
          /* fall-through */
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
          {
-            int ret = menu_setting_toggle(type, dir,
-                  label, action);
+            int ret = menu_setting_toggle(type, path, label, action);
 
             if (ret)
                return ret;
