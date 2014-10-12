@@ -300,6 +300,8 @@ static void xmb_render_background(bool force_transparency)
    glEnable(GL_BLEND);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
+
+   gl->coords.color = gl->white_color_ptr;
 }
 
 static void xmb_get_message(const char *message)
@@ -450,7 +452,7 @@ static void xmb_frame(void)
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
    xmb_draw_text(title_msg, xmb->title_margin_left, 
-         gl->win_height - xmb->title_margin_top, 1, 1);
+         gl->win_height - xmb->title_margin_top/2, 1, 1);
 
    end = file_list_get_size(driver.menu->selection_buf);
 
@@ -574,10 +576,10 @@ static void *xmb_init(void)
    if (!xmb)
       return NULL;
 
-   xmb->x                   = 0;
-   xmb->alpha               = 1.0f;
-   xmb->depth               = 1;
-   xmb->old_depth           = 1;
+   xmb->x               = 0;
+   xmb->alpha           = 1.0f;
+   xmb->depth           = 1;
+   xmb->old_depth       = 1;
 
    xmb->c_active_zoom   = 1.0;
    xmb->c_passive_zoom  = 0.5;
@@ -594,76 +596,44 @@ static void *xmb_init(void)
    xmb->active_item_factor   = 2.75;
    xmb->under_item_offset    = 4.0;
 
+   float scale_factor;
+
    if (gl->win_width >= 3840)
    {
-      xmb->icon_size = 256;
-      xmb->hspacing = 400;
-      xmb->vspacing = 128;
-      xmb->margin_left = 672.0;
-      xmb->margin_top = 512;
-      xmb->title_margin_left = 20.0;
-      xmb->title_margin_top = 50.0;
-      xmb->label_margin_left = 192;
-      xmb->label_margin_top = 15;
-      xmb->setting_margin_left = 1200;
+      scale_factor = 2.0;
       strlcpy(xmb->icon_dir, "256", sizeof(xmb->icon_dir));
    }
    else if (gl->win_width >= 2560)
    {
-      xmb->icon_size = 192;
-      xmb->hspacing = 300;
-      xmb->vspacing = 96;
-      xmb->margin_left = 448.0;
-      xmb->margin_top = 384;
-      xmb->title_margin_left = 15.0;
-      xmb->title_margin_top = 40.0;
-      xmb->label_margin_left = 144;
-      xmb->label_margin_top = 11.0;
-      xmb->setting_margin_left = 800;
+      scale_factor = 1.5;
       strlcpy(xmb->icon_dir, "192", sizeof(xmb->icon_dir));
    }
    else if (gl->win_width >= 1920)
    {
-      xmb->icon_size = 128;
-      xmb->hspacing = 200.0;
-      xmb->vspacing = 64.0;
-      xmb->margin_left = 336.0;
-      xmb->margin_top = 256;
-      xmb->title_margin_left = 15.0;
-      xmb->title_margin_top = 35.0;
-      xmb->label_margin_left = 85;
-      xmb->label_margin_top = 8.0;
-      xmb->setting_margin_left = 600;
+      scale_factor = 1.0;
       strlcpy(xmb->icon_dir, "128", sizeof(xmb->icon_dir));
    }
    else if (gl->win_width <= 640)
    {
-      xmb->icon_size = 64;
-      xmb->hspacing = 100.0;
-      xmb->vspacing = 32.0;
-      xmb->margin_left = 60.0;
-      xmb->margin_top = 128.0;
-      xmb->title_margin_left = 10.0;
-      xmb->title_margin_top = 24.0;
-      xmb->label_margin_left = 48;
-      xmb->label_margin_top = 6.0;
-      xmb->setting_margin_left = 250;
+      scale_factor = 0.5;
       strlcpy(xmb->icon_dir, "64", sizeof(xmb->icon_dir));
    }
    else
    {
-      xmb->icon_size = 96;
-      xmb->hspacing = 150.0;
-      xmb->vspacing = 48.0;
-      xmb->margin_left = 224;
-      xmb->margin_top = 192;
-      xmb->title_margin_left = 15.0;
-      xmb->title_margin_top = 30.0;
-      xmb->label_margin_left = 64;
-      xmb->label_margin_top = 6.0;
-      xmb->setting_margin_left = 400;
+      scale_factor = 3.0f/4.0f;
       strlcpy(xmb->icon_dir, "96", sizeof(xmb->icon_dir));
    }
+
+   xmb->icon_size = 128.0 * scale_factor;
+   xmb->hspacing = 200.0 * scale_factor;
+   xmb->vspacing = 64.0 * scale_factor;
+   xmb->margin_left = 336.0 * scale_factor;
+   xmb->margin_top = 256 * scale_factor;
+   xmb->title_margin_left = 15.0 * scale_factor;
+   xmb->title_margin_top = 20.0 * scale_factor + g_settings.video.font_size/3.0;
+   xmb->label_margin_left = 85.0 * scale_factor;
+   xmb->label_margin_top = g_settings.video.font_size/3.0;
+   xmb->setting_margin_left = 600.0 * scale_factor;
 
    xmb_init_core_info(menu);
 
