@@ -26,6 +26,7 @@
 #include "../../../general.h"
 #include "../../../gfx/gfx_common.h"
 #include "../../../gfx/gl_common.h"
+#include "../../../gfx/video_thread_wrapper.h"
 #include "../../../config.def.h"
 #include "../../../file.h"
 #include "../../../dynamic.h"
@@ -76,15 +77,38 @@ static void glui_blit_line(float x, float y, const char *message, bool green)
 
 static void glui_render_background(void)
 {
+   float alpha = 0.9f;
    gl_t *gl = NULL;
    glui_handle_t *glui = NULL;
 
-   GLfloat black_color[] = {
-      0.0f, 0.0f, 0.0f, 0.8f,
-      0.0f, 0.0f, 0.0f, 0.8f,
-      0.0f, 0.0f, 0.0f, 0.8f,
-      0.0f, 0.0f, 0.0f, 0.8f,
+   if (!driver.menu)
+      return;
+
+   glui = (glui_handle_t*)driver.menu->userdata;
+
+   if (!glui)
+      return;
+
+   GLfloat color[] = {
+      1.0f, 1.0f, 1.0f, alpha,
+      1.0f, 1.0f, 1.0f, alpha,
+      1.0f, 1.0f, 1.0f, alpha,
+      1.0f, 1.0f, 1.0f, alpha,
    };
+
+   GLfloat black_color[] = {
+      0.0f, 0.0f, 0.0f, alpha,
+      0.0f, 0.0f, 0.0f, alpha,
+      0.0f, 0.0f, 0.0f, alpha,
+      0.0f, 0.0f, 0.0f, alpha,
+   };
+
+   gl = (gl_t*)driver_video_resolve(NULL);
+
+   if (!gl)
+      return;
+
+   glViewport(0, 0, gl->win_width, gl->win_height);
 
    static const GLfloat vertex[] = {
       0, 0,
@@ -100,36 +124,31 @@ static void glui_render_background(void)
       1, 0,
    };
 
-   gl = (gl_t*)driver_video_resolve(NULL);
+   struct gl_coords coords;
+   coords.vertices = 4;
+   coords.vertex = vertex;
+   coords.tex_coord = tex_coord;
+   coords.lut_tex_coord = tex_coord;
 
-   if (!gl)
-      return;
+   if ((g_settings.menu.pause_libretro
+      || !g_extern.main_is_init || g_extern.libretro_dummy)
+      && glui->bg)
+   {
+      coords.color = color;
+      glBindTexture(GL_TEXTURE_2D, glui->bg);
+   }
+   else
+   {
+      coords.color = black_color;
+      glBindTexture(GL_TEXTURE_2D, 0);
+   }
 
-   glui = (glui_handle_t*)driver.menu->userdata;
-
-   if (!glui)
-      return;
-
-   glViewport(0, 0, gl->win_width, gl->win_height);
-
-   glEnable(GL_BLEND);
-
-   gl->coords.vertex = vertex;
-   gl->coords.tex_coord = tex_coord;
-   gl->coords.color = glui->bg 
-      ? gl->white_color_ptr : black_color;
-   glBindTexture(GL_TEXTURE_2D, glui->bg);
-
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-
-   gl->coords.vertices = 4;
-   gl->shader->set_coords(&gl->coords);
+   gl->shader->set_coords(&coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
 
+   glEnable(GL_BLEND);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
-   gl->coords.color = gl->white_color_ptr;
 }
 
 static void glui_get_message(const char *message)
@@ -403,8 +422,11 @@ static void glui_free(void *data)
    g_extern.core_info = NULL;
 }
 
-static GLuint glui_png_texture_load(const char * file_name)
+static GLuint glui_png_texture_load_(const char * file_name)
 {
+   if (! path_file_exists(file_name))
+      return 0;
+
    struct texture_image ti = {0};
    texture_image_load(&ti, file_name);
 
@@ -421,6 +443,30 @@ static GLuint glui_png_texture_load(const char * file_name)
 
    return texture;
 }
+static int glui_png_texture_load_wrap(void * file_name)
+{
+   return glui_png_texture_load_(file_name);
+}
+
+
+static GLuint glui_png_texture_load(const char* file_name)
+{
+   if (g_settings.video.threaded
+         && !g_extern.system.hw_render_callback.context_type)
+   {
+      thread_video_t *thr = (thread_video_t*)driver.video_data;
+      thr->cmd_data.custom_command.method = glui_png_texture_load_wrap;
+      thr->cmd_data.custom_command.data   = (void*)file_name;
+      thr->send_cmd_func(thr, CMD_CUSTOM_COMMAND);
+      thr->wait_reply_func(thr, CMD_CUSTOM_COMMAND);
+
+      return thr->cmd_data.custom_command.return_value;
+
+   }
+
+   return glui_png_texture_load_(file_name);
+}
+
 
 static void glui_context_reset(void *data)
 {
@@ -448,6 +494,8 @@ static void glui_context_reset(void *data)
 
    if (path_file_exists(bgpath))
       glui->bg = glui_png_texture_load(bgpath);
+
+   printf("%d\n", glui->bg);
 }
 
 menu_ctx_driver_t menu_ctx_glui = {

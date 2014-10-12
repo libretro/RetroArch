@@ -75,7 +75,6 @@ typedef struct xmb_handle
 {
    int depth;
    int old_depth;
-   GLuint bg;
    char icon_dir[4];
    char box_message[PATH_MAX];
    char title[PATH_MAX];
@@ -96,6 +95,15 @@ typedef struct xmb_handle
    float above_item_offset;
    float active_item_factor;
    float under_item_offset;
+   float above_subitem_offset;
+   float c_active_zoom;
+   float c_active_alpha;
+   float i_active_zoom;
+   float i_active_alpha;
+   float c_passive_zoom;
+   float c_passive_alpha;
+   float i_passive_zoom;
+   float i_passive_alpha;
 } xmb_handle_t;
 
 static const GLfloat rmb_vertex[] = {
@@ -271,8 +279,19 @@ static void xmb_render_background(void)
    coords.vertex = vertex;
    coords.tex_coord = tex_coord;
    coords.lut_tex_coord = tex_coord;
-   coords.color = xmb->textures[XMB_TEXTURE_BG].id ? color : black_color;
-   glBindTexture(GL_TEXTURE_2D, xmb->textures[XMB_TEXTURE_BG].id);
+
+   if ((g_settings.menu.pause_libretro
+      || !g_extern.main_is_init || g_extern.libretro_dummy)
+      && xmb->textures[XMB_TEXTURE_BG].id)
+   {
+      coords.color = color;
+      glBindTexture(GL_TEXTURE_2D, xmb->textures[XMB_TEXTURE_BG].id);
+   }
+   else
+   {
+      coords.color = black_color;
+      glBindTexture(GL_TEXTURE_2D, 0);
+   }
 
    gl->shader->set_coords(&coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
@@ -340,8 +359,8 @@ static void xmb_selection_pointer_changed(void)
    for (i = 0; i < end; i++)
    {
       float iy;
-      float ia = 0.5;
-      float iz = 0.5;
+      float ia = xmb->i_passive_alpha;
+      float iz = xmb->i_passive_zoom;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(
             driver.menu->selection_buf, i);
 
@@ -354,8 +373,8 @@ static void xmb_selection_pointer_changed(void)
 
       if (i == current)
       {
-         ia = 1.0;
-         iz = 1.0;
+         ia = xmb->i_active_alpha;
+         iz = xmb->i_active_zoom;
          iy = xmb->vspacing * xmb->active_item_factor;
       }
 
@@ -412,7 +431,8 @@ static void xmb_frame(void)
 
    get_title(label, dir, menu_type, xmb->title, sizeof(xmb->title));
 
-   xmb_draw_text(xmb->title, 30, 40, 1, 1);
+   xmb_draw_text(
+         xmb->title, xmb->title_margin_left, xmb->title_margin_top, 1, 1);
 
    const char *core_name = g_extern.menu.info.library_name;
    if (!core_name)
@@ -428,7 +448,8 @@ static void xmb_frame(void)
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
-   xmb_draw_text(title_msg, 30, gl->win_height - 30, 1, 1);
+   xmb_draw_text(title_msg, xmb->title_margin_left, 
+         gl->win_height - xmb->title_margin_top, 1, 1);
 
    end = file_list_get_size(driver.menu->selection_buf);
 
@@ -552,29 +573,98 @@ static void *xmb_init(void)
    if (!xmb)
       return NULL;
 
-   xmb->icon_size           = 96;
-   xmb->hspacing            = 150.0;
-   xmb->vspacing            = 48.0;
-   xmb->margin_left         = 224;
-   xmb->margin_top          = 192;
-   xmb->title_margin_left   = 15.0;
-   xmb->title_margin_top    = 30.0;
-   xmb->label_margin_left   = 64;
-   xmb->label_margin_top    = 6.0;
-   xmb->setting_margin_left = 400;
-   xmb->above_item_offset   = -1.0;
-   xmb->active_item_factor  = 2.75;
-   xmb->under_item_offset   = 4.0;
    xmb->x                   = 0;
    xmb->alpha               = 1.0f;
    xmb->depth               = 1;
    xmb->old_depth           = 1;
-   xmb->bg                  = 0;
 
-   strlcpy(xmb->icon_dir, "96", sizeof(xmb->icon_dir));
+   xmb->c_active_zoom   = 1.0;
+   xmb->c_passive_zoom  = 0.5;
+   xmb->i_active_zoom   = 1.0;
+   xmb->i_passive_zoom  = 0.5;
+
+   xmb->c_active_alpha  = 1.0;
+   xmb->c_passive_alpha = 0.5;
+   xmb->i_active_alpha  = 1.0;
+   xmb->i_passive_alpha = 0.5;
+
+   xmb->above_subitem_offset = 1.5;
+   xmb->above_item_offset    = -1.0;
+   xmb->active_item_factor   = 2.75;
+   xmb->under_item_offset    = 4.0;
+
+   if (gl->win_width >= 3840)
+   {
+      xmb->icon_size = 256;
+      xmb->hspacing = 400;
+      xmb->vspacing = 128;
+      xmb->margin_left = 672.0;
+      xmb->margin_top = 512;
+      xmb->title_margin_left = 20.0;
+      xmb->title_margin_top = 50.0;
+      xmb->label_margin_left = 192;
+      xmb->label_margin_top = 15;
+      xmb->setting_margin_left = 1200;
+      strcpy(xmb->icon_dir, "256");
+   }
+   else if (gl->win_width >= 2560)
+   {
+      xmb->icon_size = 192;
+      xmb->hspacing = 300;
+      xmb->vspacing = 96;
+      xmb->margin_left = 448.0;
+      xmb->margin_top = 384;
+      xmb->title_margin_left = 15.0;
+      xmb->title_margin_top = 40.0;
+      xmb->label_margin_left = 144;
+      xmb->label_margin_top = 11.0;
+      xmb->setting_margin_left = 800;
+      strcpy(xmb->icon_dir, "192");
+   }
+   else if (gl->win_width >= 1920)
+   {
+      xmb->icon_size = 128;
+      xmb->hspacing = 200.0;
+      xmb->vspacing = 64.0;
+      xmb->margin_left = 336.0;
+      xmb->margin_top = 256;
+      xmb->title_margin_left = 15.0;
+      xmb->title_margin_top = 35.0;
+      xmb->label_margin_left = 85;
+      xmb->label_margin_top = 8.0;
+      xmb->setting_margin_left = 600;
+      strcpy(xmb->icon_dir, "128");
+   }
+   else if (gl->win_width <= 640)
+   {
+      xmb->icon_size = 64;
+      xmb->hspacing = 100.0;
+      xmb->vspacing = 32.0;
+      xmb->margin_left = 60.0;
+      xmb->margin_top = 128.0;
+      xmb->title_margin_left = 10.0;
+      xmb->title_margin_top = 24.0;
+      xmb->label_margin_left = 48;
+      xmb->label_margin_top = 6.0;
+      xmb->setting_margin_left = 250;
+      strcpy(xmb->icon_dir, "64");
+   }
+   else
+   {
+      xmb->icon_size = 96;
+      xmb->hspacing = 150.0;
+      xmb->vspacing = 48.0;
+      xmb->margin_left = 224;
+      xmb->margin_top = 192;
+      xmb->title_margin_left = 15.0;
+      xmb->title_margin_top = 30.0;
+      xmb->label_margin_left = 64;
+      xmb->label_margin_top = 6.0;
+      xmb->setting_margin_left = 400;
+      strcpy(xmb->icon_dir, "96");
+   }
 
    xmb_init_core_info(menu);
-
 
    return menu;
 }
@@ -670,9 +760,6 @@ static void xmb_context_reset(void *data)
          "xmb", sizeof(bgpath));
 
    fill_pathname_join(bgpath, bgpath, "bg.png", sizeof(bgpath));
-
-   if (path_file_exists(bgpath))
-      xmb->bg = xmb_png_texture_load(bgpath);
 
    fill_pathname_join(mediapath, g_settings.assets_directory,
          "lakka", sizeof(mediapath));
@@ -791,8 +878,8 @@ static void xmb_list_insert(void *data,
       iy = xmb->vspacing * xmb->active_item_factor;
 
 
-   node->alpha = (i  == driver.menu->selection_ptr) ? 1.0 : 0.5;
-   node->zoom  = (i  == driver.menu->selection_ptr) ? 1.0 : 0.5;
+   node->alpha = (i == current) ? xmb->i_active_alpha : xmb->i_passive_alpha;
+   node->zoom  = (i == current) ? xmb->i_active_zoom : xmb->i_passive_zoom;
    node->y = iy;
 }
 
