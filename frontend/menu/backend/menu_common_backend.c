@@ -282,9 +282,8 @@ static int menu_settings_iterate(unsigned action)
 
    driver.menu->frame_buf_pitch = driver.menu->width * 2;
 
-   if (action != MENU_ACTION_REFRESH)
-      file_list_get_at_offset(driver.menu->selection_buf,
-            driver.menu->selection_ptr, &path, &label, &type);
+   file_list_get_at_offset(driver.menu->selection_buf,
+         driver.menu->selection_ptr, &path, &label, &type);
 
    if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_REFRESH;
