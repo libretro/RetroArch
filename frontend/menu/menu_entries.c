@@ -177,7 +177,6 @@ int menu_entries_push_list(menu_handle_t *menu,
       unsigned menu_type)
 {
    unsigned i;
-   char tmp[PATH_MAX];
    size_t list_size = 0;
    bool do_action = false;
    bool is_history_list = !strcmp(label, "history_list");
@@ -302,6 +301,8 @@ int menu_entries_push_list(menu_handle_t *menu,
 
       if (info->data)
       {
+         char tmp[PATH_MAX];
+
          snprintf(tmp, sizeof(tmp), "Core name: %s",
                info->display_name ? info->display_name : "");
          file_list_push(list, tmp, "",
@@ -732,13 +733,10 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    bool path_is_compressed = path_is_compressed_file(dir);
 
    if (path_is_compressed)
-   {
       str_list = compressed_file_list_new(dir,exts);
-   }
    else
-   {
       str_list = dir_list_new(dir, exts, true);
-   }
+
    if (!str_list)
       return -1;
 
