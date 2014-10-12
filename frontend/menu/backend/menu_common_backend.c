@@ -85,12 +85,14 @@ static int menu_info_screen_iterate(unsigned action)
       driver.menu_ctx->render();
 
    current_setting = (rarch_setting_t*)setting_data_find_setting(
-         driver.menu->list_settings, list->list[driver.menu->selection_ptr].label);
+         driver.menu->list_settings,
+         list->list[driver.menu->selection_ptr].label);
 
    if (current_setting)
       strlcpy(needle, current_setting->name, sizeof(needle));
    else if ((current_setting = (rarch_setting_t*)setting_data_find_setting(
-               driver.menu->list_mainmenu,  list->list[driver.menu->selection_ptr].label)))
+               driver.menu->list_mainmenu,
+               list->list[driver.menu->selection_ptr].label)))
    {
       if (current_setting)
          strlcpy(needle, current_setting->name, sizeof(needle));
