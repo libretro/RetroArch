@@ -75,6 +75,57 @@ static int action_ok_shader_apply_changes(const char *path,
    return 0;
 }
 
+// FIXME: Ugly hack, nees to be refactored badly
+size_t hack_shader_pass = 0;
+
+static int action_ok_shader_pass_load(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   const char *menu_path = NULL;
+   if (!driver.menu)
+      return -1;
+   (void)menu_path;
+
+#ifdef HAVE_SHADER_MANAGER
+   file_list_get_last(driver.menu->menu_stack, &menu_path, NULL,
+         NULL);
+   fill_pathname_join(driver.menu->shader->pass[hack_shader_pass].source.path,
+         menu_path, path,
+         sizeof(driver.menu->shader->pass[hack_shader_pass].source.path));
+
+   /* This will reset any changed parameters. */
+   gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+   menu_flush_stack_label(driver.menu->menu_stack, "Shader Options");
+   return 0;
+#else
+   return -1;
+#endif
+}
+
+static int action_ok_shader_preset_load(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   const char *menu_path = NULL;
+   char shader_path[PATH_MAX];
+   if (!driver.menu)
+      return -1;
+
+   (void)shader_path;
+   (void)menu_path;
+#ifdef HAVE_SHADER_MANAGER
+   file_list_get_last(driver.menu->menu_stack, &menu_path, NULL,
+         NULL);
+   fill_pathname_join(shader_path, menu_path, path, sizeof(shader_path));
+   menu_shader_manager_set_preset(driver.menu->shader,
+         gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
+         shader_path);
+   menu_flush_stack_label(driver.menu->menu_stack, "Shader Options");
+   return 0;
+#else
+   return -1;
+#endif
+}
+
 static int action_ok_shader_preset_save_as(const char *path,
       const char *label, unsigned type, size_t index)
 {
@@ -93,6 +144,10 @@ static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 {
    if (type == MENU_FILE_PLAYLIST_ENTRY)
       cbs->action_ok = action_ok_playlist_entry;
+   else if (type == MENU_FILE_SHADER_PRESET)
+      cbs->action_ok = action_ok_shader_preset_load;
+   else if (type == MENU_FILE_SHADER)
+      cbs->action_ok = action_ok_shader_pass_load;
    else
       return -1;
 

@@ -47,9 +47,6 @@ extern unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2];
 extern unsigned menu_current_gx_resolution;
 #endif
 
-// FIXME: Ugly hack, nees to be refactored badly
-size_t hack_shader_pass = 0;
-
 static int menu_message_toggle(unsigned action)
 {
    if (driver.video_data && driver.menu_ctx
@@ -743,8 +740,6 @@ static int menu_action_ok(const char *menu_path,
    rarch_setting_t *setting = (rarch_setting_t*)
       setting_data_find_setting(setting_data, menu_label);
 
-   (void)hack_shader_pass;
-
    if (file_list_get_size(driver.menu->selection_buf) == 0)
       return 0;
 
@@ -858,32 +853,6 @@ static int menu_action_ok(const char *menu_path,
             menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
 
             return 0;
-
-         case MENU_FILE_SHADER_PRESET:
-#ifdef HAVE_SHADER_MANAGER
-            {
-               char shader_path[PATH_MAX];
-               fill_pathname_join(shader_path, menu_path, path, sizeof(shader_path));
-               menu_shader_manager_set_preset(driver.menu->shader,
-                     gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
-                     shader_path);
-               menu_flush_stack_label(driver.menu->menu_stack, "Shader Options");
-            }
-#endif
-            return 0;
-         case MENU_FILE_SHADER:
-#ifdef HAVE_SHADER_MANAGER
-            fill_pathname_join(driver.menu->shader->pass[hack_shader_pass].source.path,
-                  menu_path, path,
-                  sizeof(driver.menu->shader->pass[hack_shader_pass].source.path));
-
-            /* This will reset any changed parameters. */
-            gfx_shader_resolve_parameters(NULL, driver.menu->shader);
-            menu_flush_stack_label(driver.menu->menu_stack, "Shader Options");
-#endif
-
-            return 0;
-
          case MENU_FILE_CORE:
 
             if (!strcmp(menu_label, "deferred_core_list"))
