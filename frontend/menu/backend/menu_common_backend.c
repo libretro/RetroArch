@@ -750,16 +750,6 @@ static int menu_action_ok(const char *menu_path,
    if (cbs && cbs->action_ok)
       return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
 
-   /* TODO - can we get rid of this now? */
-   if (menu_parse_check(label, type) == 0)
-   {
-      char cat_path[PATH_MAX];
-      fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
-
-      menu_entries_push(driver.menu->menu_stack,
-            cat_path, menu_label, type, driver.menu->selection_ptr);
-   }
-
    return 0;
 }
 
