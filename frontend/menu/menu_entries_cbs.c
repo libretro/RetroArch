@@ -734,6 +734,8 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
          !strcmp(label, "video_shader_preset_parameters")
       )
       cbs->action_toggle = menu_shader_manager_setting_toggle;
+   else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
+      cbs->action_toggle = menu_common_core_setting_toggle;
 }
 
 void menu_entries_cbs_init(void *data,

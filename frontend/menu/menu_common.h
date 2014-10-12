@@ -155,7 +155,8 @@ void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
 
 unsigned menu_common_type_is(const char *label, unsigned type);
 
-int menu_common_core_setting_toggle(unsigned setting, unsigned action);
+int menu_common_core_setting_toggle(unsigned type, const char *label, 
+      unsigned action);
 
 int menu_common_setting_set_perf(unsigned setting, unsigned action,
       struct retro_perf_counter **counters, unsigned offset);

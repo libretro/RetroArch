@@ -501,9 +501,12 @@ unsigned menu_common_type_is(const char *label, unsigned type)
    return 0;
 }
 
-int menu_common_core_setting_toggle(unsigned setting, unsigned action)
+int menu_common_core_setting_toggle(unsigned type, const char *label,
+      unsigned action)
 {
-   unsigned index = setting - MENU_SETTINGS_CORE_OPTION_START;
+   unsigned index = type - MENU_SETTINGS_CORE_OPTION_START;
+
+   (void)label;
 
    switch (action)
    {

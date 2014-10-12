@@ -254,9 +254,7 @@ static int menu_setting_toggle_pressed(unsigned type,
    if (cbs && cbs->action_toggle)
       return cbs->action_toggle(type, label, action);
 
-   if ((type >= MENU_SETTINGS_CORE_OPTION_START))
-      return menu_common_core_setting_toggle(type, action);
-   else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
+   if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
          type <= MENU_SETTINGS_PERF_COUNTERS_END)
    {
       counters = (struct retro_perf_counter**)perf_counters_rarch;
