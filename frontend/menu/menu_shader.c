@@ -440,12 +440,13 @@ int menu_shader_manager_setting_toggle(
    }
    else if (!strcmp(label, "video_shader_pass"))
    {
-      hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
+      unsigned offset = type - MENU_SETTINGS_SHADER_PASS_0;
+      hack_shader_pass = offset;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
       struct gfx_shader_pass *shader_pass = NULL;
 
       if (shader)
-         shader_pass = (struct gfx_shader_pass*)&shader->pass[hack_shader_pass];
+         shader_pass = (struct gfx_shader_pass*)&shader->pass[offset];
 
       switch (action)
       {

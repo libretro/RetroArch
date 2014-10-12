@@ -62,7 +62,6 @@ static int action_ok_push_history_list(const char *path,
 
    menu_entries_push(driver.menu->menu_stack,
          "", label, type, driver.menu->selection_ptr);
-   menu_clear_navigation(driver.menu);
    menu_entries_push_list(driver.menu, driver.menu->selection_buf, 
          path, label, type);
    return 0;
@@ -341,7 +340,6 @@ static int action_ok_file_load_with_detect_core(const char *path,
             "deferred_core_list",
             0,
             driver.menu->selection_ptr);
-      menu_clear_navigation(driver.menu);
       menu_entries_push_list(
             driver.menu,
             driver.menu->selection_buf,
