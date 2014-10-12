@@ -333,21 +333,11 @@ static int action_ok_file_load_with_detect_core(const char *path,
       return -1;
    }
    else if (ret == 0)
-   {
-      file_list_push(
+      menu_entries_push(
             driver.menu->menu_stack,
             g_settings.libretro_directory,
             "deferred_core_list",
-            0,
-            driver.menu->selection_ptr);
-      menu_clear_navigation(driver.menu, true);
-      menu_entries_push_list(
-            driver.menu,
-            driver.menu->selection_buf,
-            g_settings.libretro_directory,
-            "deferred_core_list",
-            0);
-   }
+            0, driver.menu->selection_ptr);
 
    return ret;
 }
