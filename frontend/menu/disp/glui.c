@@ -393,13 +393,12 @@ static void *glui_init(void)
    menu->userdata = (glui_handle_t*)calloc(1, sizeof(glui_handle_t));
 
    if (!menu->userdata)
+   {
+      free(menu);
       return NULL;
+   }
 
    glui = (glui_handle_t*)menu->userdata;
-
-   if (!glui)
-      return NULL;
-
    glui->bg = 0;
 
    glui_init_core_info(menu);
