@@ -605,7 +605,7 @@ static void *xmb_init(void)
       xmb->label_margin_left = 192;
       xmb->label_margin_top = 15;
       xmb->setting_margin_left = 1200;
-      strcpy(xmb->icon_dir, "256");
+      strlcpy(xmb->icon_dir, "256", sizeof(xmb->icon_dir));
    }
    else if (gl->win_width >= 2560)
    {
@@ -619,7 +619,7 @@ static void *xmb_init(void)
       xmb->label_margin_left = 144;
       xmb->label_margin_top = 11.0;
       xmb->setting_margin_left = 800;
-      strcpy(xmb->icon_dir, "192");
+      strlcpy(xmb->icon_dir, "192", sizeof(xmb->icon_dir));
    }
    else if (gl->win_width >= 1920)
    {
@@ -633,7 +633,7 @@ static void *xmb_init(void)
       xmb->label_margin_left = 85;
       xmb->label_margin_top = 8.0;
       xmb->setting_margin_left = 600;
-      strcpy(xmb->icon_dir, "128");
+      strlcpy(xmb->icon_dir, "128", sizeof(xmb->icon_dir));
    }
    else if (gl->win_width <= 640)
    {
@@ -647,7 +647,7 @@ static void *xmb_init(void)
       xmb->label_margin_left = 48;
       xmb->label_margin_top = 6.0;
       xmb->setting_margin_left = 250;
-      strcpy(xmb->icon_dir, "64");
+      strlcpy(xmb->icon_dir, "64", sizeof(xmb->icon_dir));
    }
    else
    {
@@ -661,7 +661,7 @@ static void *xmb_init(void)
       xmb->label_margin_left = 64;
       xmb->label_margin_top = 6.0;
       xmb->setting_margin_left = 400;
-      strcpy(xmb->icon_dir, "96");
+      strlcpy(xmb->icon_dir, "96", sizeof(xmb->icon_dir));
    }
 
    xmb_init_core_info(menu);
