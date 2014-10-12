@@ -349,6 +349,7 @@ static void glui_frame(void)
       const char *str = *driver.menu->keyboard.buffer;
       if (!str)
          str = "";
+      glui_render_background(true);
       snprintf(msg, sizeof(msg), "%s\n%s", driver.menu->keyboard.label, str);
       glui_render_messagebox(msg);
    }
