@@ -24,23 +24,14 @@
 #include "../menu_driver.h"
 #include "../menu_common.h"
 #include "../../../general.h"
-#include "../../../gfx/gfx_common.h"
 #include "../../../config.def.h"
-#include "../../../file.h"
 #include "../../../dynamic.h"
 #include "../../../compat/posix_string.h"
-#include "../../../performance.h"
-#include "../../../input/input_common.h"
 
 #include "../../../settings_data.h"
-#include "../../../screenshot.h"
 #include "../../../gfx/fonts/bitmap.h"
 
 #include "shared.h"
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-#define HAVE_SHADER_MANAGER
-#endif
 
 typedef struct rgui_handle
 {
