@@ -557,27 +557,12 @@ int menu_parse_check(const char *label, unsigned menu_type)
    return 0;
 }
 
-int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
+static int menu_parse_list(file_list_t *list, file_list_t *menu_list,
+      const char *dir, const char *label, unsigned type,
+      unsigned default_type_plain, const char *exts)
 {
    size_t i, list_size;
-   unsigned menu_type = 0, default_type_plain = MENU_FILE_PLAIN;
-
-   const char *dir = NULL;
-   const char *label = NULL;
-   const char *exts = NULL;
-   char ext_buf[PATH_MAX];
-
-   file_list_get_last(menu_list, &dir, &label, &menu_type);
-
-#if 0
-   RARCH_LOG("label: %s\n", label);
-#endif
-
-   if (!strcmp(label, "deferred_core_list"))
-      return menu_entries_push_list(driver.menu, list, dir, label, menu_type);
-
-   if (menu_parse_check(label, menu_type) == -1)
-      return - 1;
+   struct string_list *str_list = NULL;
 
    file_list_clear(list);
 
@@ -672,6 +657,148 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    LWP_MutexUnlock(gx_device_mutex);
 #endif
 
+   bool path_is_compressed = path_is_compressed_file(dir);
+
+   if (path_is_compressed)
+      str_list = compressed_file_list_new(dir,exts);
+   else
+      str_list = dir_list_new(dir, exts, true);
+
+   if (!str_list)
+      return -1;
+
+   dir_list_sort(str_list, true);
+
+   if (menu_common_type_is(label, type) == MENU_FILE_DIRECTORY)
+      file_list_push(list, "<Use this directory>", "",
+            MENU_FILE_USE_DIRECTORY, 0);
+
+   list_size = str_list->size;
+   for (i = 0; i < str_list->size; i++)
+   {
+      menu_file_type_t file_type = MENU_FILE_NONE;
+      switch (str_list->elems[i].attr.i)
+      {
+         case RARCH_DIRECTORY:
+            file_type = MENU_FILE_DIRECTORY;
+            break;
+         case RARCH_COMPRESSED_ARCHIVE:
+            file_type = MENU_FILE_CARCHIVE;
+            break;
+         case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
+            file_type = MENU_FILE_IN_CARCHIVE;
+            break;
+         case RARCH_PLAIN_FILE:
+         default:
+            if (!strcmp(label, "detect_core_list"))
+            {
+               if (path_is_compressed_file(str_list->elems[i].data))
+               {
+                  /* in case of deferred_core_list we have to interpret
+                   * every archive as an archive to disallow instant loading
+                   */
+                  file_type = MENU_FILE_CARCHIVE;
+                  break;
+               }
+            }
+            file_type = (menu_file_type_t)default_type_plain;
+            break;
+      }
+      bool is_dir = (file_type == MENU_FILE_DIRECTORY);
+
+      if ((menu_common_type_is(label, type) == MENU_FILE_DIRECTORY) && !is_dir)
+         continue;
+
+
+      /* Need to preserve slash first time. */
+      const char *path = str_list->elems[i].data;
+
+      if (*dir && !path_is_compressed)
+         path = path_basename(path);
+
+
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+#ifdef RARCH_CONSOLE
+      if (!strcmp(label, "core_list") && (is_dir ||
+               strcasecmp(path, SALAMANDER_FILE) == 0))
+         continue;
+#endif
+#endif
+
+      /* Push type further down in the chain.
+       * Needed for shader manager currently. */
+      if (!strcmp(label, "core_list"))
+      {
+         /* Compressed cores are unsupported */
+         if (file_type == MENU_FILE_CARCHIVE)
+            continue;
+
+         file_list_push(list, path, "",
+               is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE, 0);
+      }
+      else
+      file_list_push(list, path, "",
+            file_type, 0);
+   }
+
+   menu_entries_push_list(driver.menu, list,
+         dir, label, type);
+   string_list_free(str_list);
+
+   if (!strcmp(label, "core_list"))
+   {
+      file_list_get_last(menu_list, &dir, NULL, NULL);
+      list_size = file_list_get_size(list);
+
+      for (i = 0; i < list_size; i++)
+      {
+         char core_path[PATH_MAX], display_name[PATH_MAX];
+         const char *path = NULL;
+         unsigned type = 0;
+
+         file_list_get_at_offset(list, i, &path, NULL, &type);
+         if (type != MENU_FILE_CORE)
+            continue;
+
+         fill_pathname_join(core_path, dir, path, sizeof(core_path));
+
+         if (g_extern.core_info &&
+               core_info_list_get_display_name(g_extern.core_info,
+                  core_path, display_name, sizeof(display_name)))
+            file_list_set_alt_at_offset(list, i, display_name);
+      }
+      file_list_sort_on_alt(list);
+   }
+
+   driver.menu->scroll_indices_size = 0;
+   menu_build_scroll_indices(list);
+
+   entries_refresh(list);
+
+   return 0;
+}
+
+int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
+{
+   unsigned type = 0, default_type_plain = MENU_FILE_PLAIN;
+
+   const char *path = NULL;
+   const char *label = NULL;
+   const char *exts = NULL;
+   char ext_buf[PATH_MAX];
+
+   file_list_get_last(menu_list, &path, &label, &type);
+
+#if 0
+   RARCH_LOG("label: %s\n", label);
+#endif
+
+   if (!strcmp(label, "deferred_core_list"))
+      return menu_entries_push_list(driver.menu, list, path, label, type);
+
+   if (menu_parse_check(label, type) == -1)
+      return - 1;
+
    //RARCH_LOG("LABEL: %s\n", label);
    if (!strcmp(label, "core_list"))
       exts = EXT_EXECUTABLES;
@@ -712,7 +839,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    }
    else if (!strcmp(label, "game_history_path"))
       exts = "cfg";
-   else if (menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY)
+   else if (menu_common_type_is(label, type) == MENU_FILE_DIRECTORY)
       exts = ""; /* we ignore files anyway */
    else if (!strcmp(label, "detect_core_list"))
       exts = g_extern.core_info ? core_info_list_get_all_extensions(
@@ -728,126 +855,10 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    }
    else
       exts = g_extern.system.valid_extensions;
-
-   struct string_list *str_list = NULL;
-   bool path_is_compressed = path_is_compressed_file(dir);
-
-   if (path_is_compressed)
-      str_list = compressed_file_list_new(dir,exts);
-   else
-      str_list = dir_list_new(dir, exts, true);
-
-   if (!str_list)
-      return -1;
-
-   dir_list_sort(str_list, true);
-
-   if (menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY)
-      file_list_push(list, "<Use this directory>", "",
-            MENU_FILE_USE_DIRECTORY, 0);
-
-   list_size = str_list->size;
-   for (i = 0; i < str_list->size; i++)
-   {
-      menu_file_type_t file_type = MENU_FILE_NONE;
-      switch (str_list->elems[i].attr.i)
-      {
-         case RARCH_DIRECTORY:
-            file_type = MENU_FILE_DIRECTORY;
-            break;
-         case RARCH_COMPRESSED_ARCHIVE:
-            file_type = MENU_FILE_CARCHIVE;
-            break;
-         case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
-            file_type = MENU_FILE_IN_CARCHIVE;
-            break;
-         case RARCH_PLAIN_FILE:
-         default:
-            if (!strcmp(label, "detect_core_list"))
-            {
-               if (path_is_compressed_file(str_list->elems[i].data))
-               {
-                  /* in case of deferred_core_list we have to interpret
-                   * every archive as an archive to disallow instant loading
-                   */
-                  file_type = MENU_FILE_CARCHIVE;
-                  break;
-               }
-            }
-            file_type = (menu_file_type_t)default_type_plain;
-            break;
-      }
-      bool is_dir = (file_type == MENU_FILE_DIRECTORY);
-
-      if ((menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY) && !is_dir)
-         continue;
-
-
-      /* Need to preserve slash first time. */
-      const char *path = str_list->elems[i].data;
-
-      if (*dir && !path_is_compressed)
-         path = path_basename(path);
-
-
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-#ifdef RARCH_CONSOLE
-      if (!strcmp(label, "core_list") && (is_dir ||
-               strcasecmp(path, SALAMANDER_FILE) == 0))
-         continue;
-#endif
-#endif
-
-      /* Push menu_type further down in the chain.
-       * Needed for shader manager currently. */
-      if (!strcmp(label, "core_list"))
-      {
-         /* Compressed cores are unsupported */
-         if (file_type == MENU_FILE_CARCHIVE)
-            continue;
-
-         file_list_push(list, path, "",
-               is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE, 0);
-      }
-      else
-      file_list_push(list, path, "",
-            file_type, 0);
-   }
-
-   menu_entries_push_list(driver.menu, list,
-         dir, label, menu_type);
-   string_list_free(str_list);
-
-   if (!strcmp(label, "core_list"))
-   {
-      file_list_get_last(menu_list, &dir, NULL, NULL);
-      list_size = file_list_get_size(list);
-
-      for (i = 0; i < list_size; i++)
-      {
-         char core_path[PATH_MAX], display_name[PATH_MAX];
-         const char *path = NULL;
-         unsigned type = 0;
-
-         file_list_get_at_offset(list, i, &path, NULL, &type);
-         if (type != MENU_FILE_CORE)
-            continue;
-
-         fill_pathname_join(core_path, dir, path, sizeof(core_path));
-
-         if (g_extern.core_info &&
-               core_info_list_get_display_name(g_extern.core_info,
-                  core_path, display_name, sizeof(display_name)))
-            file_list_set_alt_at_offset(list, i, display_name);
-      }
-      file_list_sort_on_alt(list);
-   }
-
-   driver.menu->scroll_indices_size = 0;
-   menu_build_scroll_indices(list);
-
-   entries_refresh(list);
    
+   menu_parse_list(list, menu_list, path, label,
+         type, default_type_plain, exts);
+
    return 0;
 }
 
