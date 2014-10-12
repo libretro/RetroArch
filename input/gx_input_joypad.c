@@ -155,7 +155,7 @@ static const char *gx_joypad_name(unsigned pad)
 #endif
 #endif
       case WPAD_EXP_GAMECUBE:
-         return "Gamecube Controller";
+         return "GameCube Controller";
    }
 
    return NULL;
@@ -178,7 +178,7 @@ static const char *gx_joypad_name_static(unsigned pad)
 #endif
 #endif
       case WPAD_EXP_GAMECUBE:
-         return "Gamecube Controller";
+         return "GameCube Controller";
    }
 
    return NULL;
