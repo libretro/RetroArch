@@ -25,10 +25,8 @@
 #include "menu_backend.h"
 #include "../menu_entries.h"
 #include "../menu_entries_cbs.h"
-#include "../menu_navigation.h"
 #include "../menu_input_line_cb.h"
 
-#include "../../../driver.h"
 #include "../../../config.def.h"
 
 #ifdef GEKKO
