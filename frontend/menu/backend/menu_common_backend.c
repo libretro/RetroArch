@@ -23,20 +23,13 @@
 #include "../menu_common.h"
 #include "../../../settings_data.h"
 #include "menu_backend.h"
-#include "../menu_action.h"
 #include "../menu_entries.h"
 #include "../menu_entries_cbs.h"
 #include "../menu_navigation.h"
 #include "../menu_input_line_cb.h"
 
-#include "../../../gfx/gfx_common.h"
 #include "../../../driver.h"
-#include "../../../file_ext.h"
-#include "../../../input/input_common.h"
 #include "../../../config.def.h"
-#include "../../../input/keyboard_line.h"
-
-#include "../menu_shader.h"
 
 #ifdef GEKKO
 extern unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2];
