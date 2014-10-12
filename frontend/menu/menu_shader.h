@@ -23,6 +23,10 @@
 
 #include "../../gfx/shader/shader_context.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void menu_shader_manager_init(void *data);
 
 void menu_shader_manager_set_preset(struct gfx_shader *shader,
@@ -42,5 +46,9 @@ void menu_shader_manager_get_str(struct gfx_shader *shader,
       const char *label, unsigned type);
 
 void menu_shader_manager_apply_changes(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

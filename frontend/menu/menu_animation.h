@@ -20,6 +20,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef float (*easingFunc)(float, float, float, float);
 typedef void  (*tweenCallback) (void);
 
@@ -107,5 +111,9 @@ float outBounce(float t, float b, float c, float d);
 float inOutBounce(float t, float b, float c, float d);
 
 float outInBounce(float t, float b, float c, float d);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

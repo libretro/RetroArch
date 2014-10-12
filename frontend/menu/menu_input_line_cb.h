@@ -19,6 +19,10 @@
 
 #include "../../input/keyboard_line.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void menu_key_event(bool down, unsigned keycode, uint32_t character,
       uint16_t key_modifiers);
 
@@ -41,5 +45,9 @@ bool menu_custom_bind_keyboard_cb(void *data, unsigned code);
 int menu_input_bind_iterate(void *data);
 
 int menu_input_bind_iterate_keyboard(void *data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

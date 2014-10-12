@@ -18,8 +18,16 @@
 
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void menu_entries_cbs_init(void *data,
       const char *path, const char *label,
       unsigned type, size_t index);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

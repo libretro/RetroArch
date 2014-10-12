@@ -22,6 +22,10 @@
 #include "../../file_list.h"
 #include "../../settings_data.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void menu_entries_push(file_list_t *list,
       const char *path, const char *label, unsigned type,
       size_t directory_ptr);
@@ -45,5 +49,9 @@ int menu_entries_set_current_path_selection(
       rarch_setting_t *setting, const char *start_path,
       const char *label, unsigned type,
       unsigned action);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

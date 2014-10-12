@@ -19,6 +19,10 @@
 
 #include "../../settings_data.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int menu_action_setting_apply(rarch_setting_t *setting);
 
 int menu_action_setting_boolean(
@@ -47,5 +51,9 @@ int menu_action_setting_set(unsigned id, const char *label,
 
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned id, const char *label, unsigned action);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
