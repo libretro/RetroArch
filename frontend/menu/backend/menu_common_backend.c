@@ -243,33 +243,14 @@ static int menu_setting_start_pressed(unsigned type,
 }
 
 static int menu_setting_toggle_pressed(unsigned type,
-      const char *dir, const char *label,
-      unsigned action)
+      const char *label, unsigned action)
 {
-   struct retro_perf_counter **counters = NULL;
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       file_list_get_actiondata_at_offset(driver.menu->selection_buf,
             driver.menu->selection_ptr);
 
    if (cbs && cbs->action_toggle)
       return cbs->action_toggle(type, label, action);
-
-   if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
-         type <= MENU_SETTINGS_PERF_COUNTERS_END)
-   {
-      counters = (struct retro_perf_counter**)perf_counters_rarch;
-      return menu_common_setting_set_perf(type, action, counters,
-            type - MENU_SETTINGS_PERF_COUNTERS_BEGIN);
-   }
-   else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
-         type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
-   {
-      counters = (struct retro_perf_counter**)perf_counters_libretro;
-      return menu_common_setting_set_perf(type, action, counters,
-            type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
-   }
-   else if (driver.menu_ctx && driver.menu_ctx->backend)
-      return menu_action_setting_set(type, label, action);
 
    return 0;
 }
@@ -325,7 +306,7 @@ static int menu_settings_iterate(unsigned action)
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
          {
-            int ret = menu_setting_toggle_pressed(type, path, label, action);
+            int ret = menu_setting_toggle_pressed(type, label, action);
 
             if (ret)
                return ret;

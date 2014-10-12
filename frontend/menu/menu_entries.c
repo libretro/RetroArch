@@ -18,6 +18,7 @@
 #include "menu_action.h"
 #include "../../settings_data.h"
 #include "../../file_ext.h"
+#include "../../performance.h"
 
 static void entries_refresh(file_list_t *list)
 {

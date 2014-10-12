@@ -21,6 +21,7 @@
 #include "backend/menu_backend.h"
 
 #include "../../config.def.h"
+#include "../../performance.h"
 
 static void common_load_content(void)
 {
@@ -587,6 +588,42 @@ static int action_ok_help(const char *path,
    return 0;
 }
 
+static int performance_counters_core_toggle(unsigned type, const char *label,
+      unsigned action)
+{
+   struct retro_perf_counter **counters = (struct retro_perf_counter**)
+      perf_counters_libretro;
+   unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
+
+   (void)label;
+
+   if (counters[offset] && action == MENU_ACTION_START)
+   {
+      counters[offset]->total = 0;
+      counters[offset]->call_cnt = 0;
+   }
+
+   return 0;
+}
+
+static int performance_counters_frontend_toggle(unsigned type, const char *label,
+      unsigned action)
+{
+   struct retro_perf_counter **counters = (struct retro_perf_counter**)
+      perf_counters_rarch;
+   unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
+
+   (void)label;
+
+   if (counters[offset] && action == MENU_ACTION_START)
+   {
+      counters[offset]->total = 0;
+      counters[offset]->call_cnt = 0;
+   }
+
+   return 0;
+}
+
 static int core_setting_toggle(unsigned type, const char *label,
       unsigned action)
 {
@@ -756,7 +793,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return;
 
-   cbs->action_toggle = NULL;
+   cbs->action_toggle = menu_action_setting_set;
 
    if ((menu_common_type_is(label, type) == MENU_SETTINGS_SHADER_OPTIONS) ||
          !strcmp(label, "video_shader_parameters") ||
@@ -765,6 +802,12 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_toggle = menu_shader_manager_setting_toggle;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       cbs->action_toggle = core_setting_toggle;
+   else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
+         type <= MENU_SETTINGS_PERF_COUNTERS_END)
+      cbs->action_toggle = performance_counters_frontend_toggle;
+   else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
+         type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
+      cbs->action_toggle = performance_counters_core_toggle;
 }
 
 void menu_entries_cbs_init(void *data,

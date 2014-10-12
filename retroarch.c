@@ -29,6 +29,7 @@
 #include "dynamic.h"
 #include "compat/strl.h"
 #include "screenshot.h"
+#include "performance.h"
 #include "cheats.h"
 #include "compat/getopt_rarch.h"
 #include "compat/posix_string.h"

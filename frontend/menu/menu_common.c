@@ -500,15 +500,3 @@ unsigned menu_common_type_is(const char *label, unsigned type)
 
    return 0;
 }
-
-int menu_common_setting_set_perf(unsigned setting, unsigned action,
-      struct retro_perf_counter **counters, unsigned offset)
-{
-   if (counters[offset] && action == MENU_ACTION_START)
-   {
-      counters[offset]->total = 0;
-      counters[offset]->call_cnt = 0;
-   }
-
-   return 0;
-}

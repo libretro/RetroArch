@@ -28,6 +28,7 @@
 #include "menu_action.h"
 #include "../../input/keyboard_line.h"
 #include "menu_input_line_cb.h"
+#include "../../performance.h"
 #include "../../settings_data.h"
 
 void menu_key_start_line(void *data, const char *label,

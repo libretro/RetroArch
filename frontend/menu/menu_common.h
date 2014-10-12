@@ -30,7 +30,6 @@
 #include "../../playlist.h"
 #include "../../input/input_common.h"
 #include "../../input/keyboard_line.h"
-#include "../../performance.h"
 #include "../../gfx/shader/shader_context.h"
 
 #ifdef HAVE_RGUI
@@ -154,9 +153,6 @@ bool load_menu_content(void);
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
 
 unsigned menu_common_type_is(const char *label, unsigned type);
-
-int menu_common_setting_set_perf(unsigned setting, unsigned action,
-      struct retro_perf_counter **counters, unsigned offset);
 
 void apply_deferred_settings(void);
 
