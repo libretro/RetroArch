@@ -215,30 +215,15 @@ static int menu_start_screen_iterate(unsigned action)
 }
 
 static int menu_setting_start_pressed(unsigned type,
-      const char *dir, const char *label,
-      unsigned action)
+      const char *label, unsigned action)
 {
-   if (type >= MENU_SETTINGS_BIND_BEGIN &&
-         type <= MENU_SETTINGS_BIND_ALL_LAST)
-   {
-      struct retro_keybind *bind = (struct retro_keybind*)
-         &g_settings.input.binds[driver.menu->current_pad]
-         [type - MENU_SETTINGS_BIND_BEGIN];
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      file_list_get_actiondata_at_offset(driver.menu->selection_buf,
+            driver.menu->selection_ptr);
 
-      if (driver.menu->bind_mode_keyboard)
-      {
-         const struct retro_keybind *def_binds = driver.menu->current_pad ?
-            retro_keybinds_rest : retro_keybinds_1;
-         bind->key = def_binds[type - MENU_SETTINGS_BIND_BEGIN].key;
-      }
-      else
-      {
-         bind->joykey = NO_BTN;
-         bind->joyaxis = AXIS_NONE;
-      }
+   if (cbs && cbs->action_start)
+      return cbs->action_start(type, label, action);
 
-      return 0;
-   }
    return -1;
 }
 
@@ -300,7 +285,7 @@ static int menu_settings_iterate(unsigned action)
             return 0;
          /* fall-through */
       case MENU_ACTION_START:
-         if (menu_setting_start_pressed(type, path, label, action) == 0)
+         if (menu_setting_start_pressed(type, label, action) == 0)
             return 0;
          /* fall-through */
       case MENU_ACTION_LEFT:

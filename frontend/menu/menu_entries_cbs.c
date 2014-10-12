@@ -653,6 +653,38 @@ static int core_setting_toggle(unsigned type, const char *label,
    return 0;
 }
 
+static int action_start_bind(unsigned type, const char *label,
+      unsigned action)
+{
+   struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
+   struct retro_keybind *bind = (struct retro_keybind*)
+      &g_settings.input.binds[driver.menu->current_pad]
+      [type - MENU_SETTINGS_BIND_BEGIN];
+
+   if (!bind)
+      return -1;
+
+   (void)label;
+   (void)action;
+
+   if (!driver.menu->bind_mode_keyboard)
+   {
+      bind->joykey = NO_BTN;
+      bind->joyaxis = AXIS_NONE;
+      return 0;
+   }
+
+   if (driver.menu->current_pad)
+      def_binds = (struct retro_keybind*)retro_keybinds_rest;
+
+   if (!def_binds)
+      return -1;
+
+   bind->key = def_binds[type - MENU_SETTINGS_BIND_BEGIN].key;
+
+   return 0;
+}
+
 /* Bind the OK callback function */
 
 static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
@@ -740,6 +772,19 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
    return 0;
 }
 
+static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t index)
+{
+   if (!cbs)
+      return;
+
+   cbs->action_start = NULL;
+
+   if (type >= MENU_SETTINGS_BIND_BEGIN &&
+         type <= MENU_SETTINGS_BIND_ALL_LAST)
+      cbs->action_start = action_start_bind;
+}
+
 static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t index)
 {
@@ -825,6 +870,7 @@ void menu_entries_cbs_init(void *data,
    if (cbs)
    {
       menu_entries_cbs_init_bind_ok(cbs, path, label, type, index);
+      menu_entries_cbs_init_bind_start(cbs, path, label, type, index);
       menu_entries_cbs_init_bind_toggle(cbs, path, label, type, index);
    }
 }
