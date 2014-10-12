@@ -110,7 +110,7 @@ static int menu_info_screen_iterate(unsigned action)
 static int menu_start_screen_iterate(unsigned action)
 {
    unsigned i;
-   char msg[1024];
+   char msg[PATH_MAX];
 
    if (!driver.menu)
       return 0;
@@ -362,7 +362,7 @@ static int menu_settings_iterate(unsigned action)
 static int menu_viewport_iterate(unsigned action)
 {
    int stride_x = 1, stride_y = 1;
-   char msg[64];
+   char msg[PATH_MAX];
    struct retro_game_geometry *geom = NULL;
    const char *base_msg = NULL;
    const char *label = NULL;
@@ -545,6 +545,12 @@ static void menu_common_load_content(void)
 static int menu_load_or_open_zip_iterate(unsigned action)
 {
    char msg[PATH_MAX];
+   const char *menu_path  = NULL;
+   const char *menu_label = NULL;
+   const char* path       = NULL;
+   const char* label      = NULL;
+   unsigned int menu_type = 0, type = 0;
+
    snprintf(msg, sizeof(msg), "Opening compressed file\n"
          " \n"
 
@@ -561,11 +567,6 @@ static int menu_load_or_open_zip_iterate(unsigned action)
    if (action == MENU_ACTION_OK)
    {
       char cat_path[PATH_MAX];
-      const char *menu_path  = NULL;
-      const char *menu_label = NULL;
-      const char* path       = NULL;
-      const char* label      = NULL;
-      unsigned int menu_type = 0, type = 0;
 
       menu_entries_pop_list(driver.menu->menu_stack);
 
@@ -584,11 +585,6 @@ static int menu_load_or_open_zip_iterate(unsigned action)
    }
    else if (action == MENU_ACTION_CANCEL)
    {
-      const char *menu_path   = NULL;
-      const char *menu_label  = NULL;
-      const char* path        = NULL;
-      const char* label       = NULL;
-      unsigned int menu_type = 0, type = 0;
 
       menu_entries_pop_list(driver.menu->menu_stack);
 
@@ -603,6 +599,7 @@ static int menu_load_or_open_zip_iterate(unsigned action)
 
       int ret = rarch_defer_core(g_extern.core_info, menu_path, path,
             driver.menu->deferred_path, sizeof(driver.menu->deferred_path));
+
       if (ret == -1)
       {
          rarch_main_command(RARCH_CMD_LOAD_CORE);
