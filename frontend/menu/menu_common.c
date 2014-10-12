@@ -89,10 +89,10 @@ static void push_to_history_playlist(void)
       msg_queue_push(g_extern.msg_queue, str, 1, 1);
    }
 
-   rarch_playlist_push(g_defaults.history,
+   content_playlist_push(g_defaults.history,
          g_extern.fullpath,
          g_settings.libretro,
-         &g_extern.menu.info);
+         g_extern.menu.info.library_name);
 }
 
 bool load_menu_content(void)
