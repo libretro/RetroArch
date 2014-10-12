@@ -46,18 +46,6 @@ static int menu_message_toggle(unsigned action)
    return 0;
 }
 
-static int menu_setting_ok_pressed(
-      menu_file_list_cbs_t *cbs,
-      unsigned type,
-      const char *path,
-      const char *label,
-      unsigned action)
-{
-   if (cbs && cbs->action_ok)
-      return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
-   return -1;
-}
-
 static int menu_info_screen_iterate(unsigned action)
 {
    char msg[PATH_MAX];
@@ -203,28 +191,6 @@ static int menu_start_screen_iterate(unsigned action)
    return 0;
 }
 
-static int menu_setting_start_pressed(
-      menu_file_list_cbs_t *cbs,
-      unsigned type,
-      const char *label,
-      unsigned action)
-{
-   if (cbs && cbs->action_start)
-      return cbs->action_start(type, label, action);
-   return -1;
-}
-
-static int menu_setting_toggle_pressed(
-      menu_file_list_cbs_t *cbs,
-      unsigned type,
-      const char *label,
-      unsigned action)
-{
-   if (cbs && cbs->action_toggle)
-      return cbs->action_toggle(type, label, action);
-   return 0;
-}
-
 static int menu_settings_iterate(unsigned action)
 {
    const char *path  = NULL;
@@ -271,17 +237,20 @@ static int menu_settings_iterate(unsigned action)
                0, driver.menu->selection_ptr);
          break;
       case MENU_ACTION_OK:
-         if (menu_setting_ok_pressed(cbs, type, path, label, action) == 0)
-            return 0;
+         if (cbs && cbs->action_ok)
+            return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
          /* fall-through */
       case MENU_ACTION_START:
-         if (menu_setting_start_pressed(cbs, type, label, action) == 0)
-            return 0;
+         if (cbs && cbs->action_start)
+            return cbs->action_start(type, label, action);
          /* fall-through */
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
          {
-            int ret = menu_setting_toggle_pressed(cbs, type, label, action);
+            int ret = 0;
+            
+            if (cbs && cbs->action_toggle)
+               ret = cbs->action_toggle(type, label, action);
 
             if (ret)
                return ret;
