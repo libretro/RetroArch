@@ -596,8 +596,7 @@ static int menu_load_or_open_zip_iterate(unsigned action)
    return 0;
 }
 
-static int menu_action_ok(const char *menu_path,
-      const char *menu_label, unsigned menu_type)
+static int menu_action_ok(void)
 {
    const char *label             = NULL;
    const char *path              = NULL;
@@ -716,7 +715,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_OK:
-         ret = menu_action_ok(path, menu_label, menu_type);
+         ret = menu_action_ok();
          break;
 
       case MENU_ACTION_REFRESH:
