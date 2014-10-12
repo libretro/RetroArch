@@ -121,6 +121,30 @@ static int menu_info_screen_iterate(unsigned action)
    return 0;
 }
 
+static int menu_action_ok(void)
+{
+   const char *label             = NULL;
+   const char *path              = NULL;
+   menu_file_list_cbs_t *cbs     = NULL;
+   unsigned type                 = 0;
+
+   if (file_list_get_size(driver.menu->selection_buf) == 0)
+      return 0;
+
+   file_list_get_at_offset(driver.menu->selection_buf,
+         driver.menu->selection_ptr, &path, &label, &type);
+
+   cbs = (menu_file_list_cbs_t*)
+      file_list_get_actiondata_at_offset(driver.menu->selection_buf,
+         driver.menu->selection_ptr);
+
+   if (cbs && cbs->action_ok)
+      return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
+
+   return 0;
+}
+
+
 static int menu_start_screen_iterate(unsigned action)
 {
    unsigned i;
@@ -187,7 +211,6 @@ static int menu_start_screen_iterate(unsigned action)
 
    return 0;
 }
-
 
 static int menu_setting_start_toggle(unsigned type,
       const char *dir, const char *label,
@@ -316,13 +339,6 @@ static int menu_settings_iterate(unsigned action)
             menu_entries_push_list(driver.menu,
                   driver.menu->selection_buf, path, label, menu_type);
 
-         /* Have to defer it so we let settings refresh. */
-         if (driver.menu->push_start_screen)
-         {
-            driver.menu->push_start_screen = false;
-            file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
-         }
-
          driver.menu->need_refresh = false;
          break;
 
@@ -336,6 +352,13 @@ static int menu_settings_iterate(unsigned action)
 
    if (driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
+
+   /* Have to defer it so we let settings refresh. */
+   if (driver.menu->push_start_screen)
+   {
+      file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
+      driver.menu->push_start_screen = false;
+   }
 
    return 0;
 }
@@ -596,28 +619,6 @@ static int menu_load_or_open_zip_iterate(unsigned action)
    return 0;
 }
 
-static int menu_action_ok(void)
-{
-   const char *label             = NULL;
-   const char *path              = NULL;
-   menu_file_list_cbs_t *cbs     = NULL;
-   unsigned type                 = 0;
-
-   if (file_list_get_size(driver.menu->selection_buf) == 0)
-      return 0;
-
-   file_list_get_at_offset(driver.menu->selection_buf,
-         driver.menu->selection_ptr, &path, &label, &type);
-
-   cbs = (menu_file_list_cbs_t*)
-      file_list_get_actiondata_at_offset(driver.menu->selection_buf,
-         driver.menu->selection_ptr);
-
-   if (cbs && cbs->action_ok)
-      return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
-
-   return 0;
-}
 
 static int menu_common_iterate(unsigned action)
 {

@@ -575,13 +575,14 @@ static int action_ok_push_default(const char *path,
    return 0;
 }
 
-static int action_ok_info_screen(const char *path,
+static int action_ok_help(const char *path,
       const char *label, unsigned type, size_t index)
 {
    if (!driver.menu)
       return -1;
 
-   menu_entries_pop_list(driver.menu->menu_stack);
+   file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
+   driver.menu->push_start_screen = false;
 
    return 0;
 }
@@ -683,8 +684,8 @@ static void menu_entries_cbs_init_bind_ok_toggle(menu_file_list_cbs_t *cbs,
 
    if (menu_entries_cbs_init_bind_ok(cbs, path, label, type, index) == 0)
       return;
-   else if (!strcmp(label, "info_screen"))
-      cbs->action_ok = action_ok_info_screen;
+   else if (!strcmp(label, "help"))
+      cbs->action_ok = action_ok_help;
    else if (
          !strcmp(label, "Shader Options") ||
          !strcmp(label, "Input Options") ||
