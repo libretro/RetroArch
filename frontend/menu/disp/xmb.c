@@ -776,8 +776,6 @@ static void xmb_context_reset(void *data)
 static void xmb_navigation_clear(void *data)
 {
    (void)data;
-
-   xmb_selection_pointer_changed();
 }
 
 static void xmb_navigation_decrement(void *data)
