@@ -567,10 +567,8 @@ static int menu_load_or_open_zip_iterate(unsigned action)
          driver.menu_ctx->render_messagebox(msg);
    }
 
-   if (action == MENU_ACTION_OK)
+   if (action == MENU_ACTION_OK || action == MENU_ACTION_CANCEL)
    {
-      char cat_path[PATH_MAX];
-
       menu_entries_pop_list(driver.menu->menu_stack);
 
       file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label,
@@ -581,6 +579,11 @@ static int menu_load_or_open_zip_iterate(unsigned action)
 
       file_list_get_at_offset(driver.menu->selection_buf,
             driver.menu->selection_ptr, &path, &label, &type);
+   }
+
+   if (action == MENU_ACTION_OK)
+   {
+      char cat_path[PATH_MAX];
 
       fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
       menu_entries_push(driver.menu->menu_stack, cat_path, menu_label, type,
@@ -588,18 +591,6 @@ static int menu_load_or_open_zip_iterate(unsigned action)
    }
    else if (action == MENU_ACTION_CANCEL)
    {
-
-      menu_entries_pop_list(driver.menu->menu_stack);
-
-      file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label,
-            &menu_type);
-
-      if (file_list_get_size(driver.menu->selection_buf) == 0)
-         return 0;
-
-      file_list_get_at_offset(driver.menu->selection_buf,
-            driver.menu->selection_ptr, &path, &label, &type);
-
       int ret = rarch_defer_core(g_extern.core_info, menu_path, path,
             driver.menu->deferred_path, sizeof(driver.menu->deferred_path));
 
