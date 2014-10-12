@@ -61,7 +61,7 @@ static int menu_setting_ok_toggle(unsigned type,
 {
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       file_list_get_actiondata_at_offset(driver.menu->selection_buf,
-         driver.menu->selection_ptr);
+            driver.menu->selection_ptr);
 
    if (cbs && cbs->action_ok)
       return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
@@ -97,13 +97,13 @@ static int menu_info_screen_iterate(unsigned action)
    }
    else
    {
-         const char *label = NULL;
-         file_list_get_at_offset(driver.menu->selection_buf,
-               driver.menu->selection_ptr, NULL, &label,
-               &info_type);
+      const char *label = NULL;
+      file_list_get_at_offset(driver.menu->selection_buf,
+            driver.menu->selection_ptr, NULL, &label,
+            &info_type);
 
-         if (label)
-            strlcpy(needle, label, sizeof(needle));
+      if (label)
+         strlcpy(needle, label, sizeof(needle));
    }
 
    setting_data_get_description(needle, msg, sizeof(msg));
@@ -136,7 +136,7 @@ static int menu_action_ok(void)
 
    cbs = (menu_file_list_cbs_t*)
       file_list_get_actiondata_at_offset(driver.menu->selection_buf,
-         driver.menu->selection_ptr);
+            driver.menu->selection_ptr);
 
    if (cbs && cbs->action_ok)
       return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
@@ -201,7 +201,7 @@ static int menu_start_screen_iterate(unsigned action)
          " \n"
 
          "Press Accept/OK to continue.",
-         desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6]);
+      desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6]);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
       driver.menu_ctx->render_messagebox(msg);
@@ -249,7 +249,7 @@ static int menu_setting_toggle(unsigned type,
    if ((menu_common_type_is(label, type) == MENU_SETTINGS_SHADER_OPTIONS) ||
          !strcmp(label, "video_shader_parameters") ||
          !strcmp(label, "video_shader_preset_parameters")
-         )
+      )
       return menu_shader_manager_setting_toggle(type, label, action);
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       return menu_common_core_setting_toggle(type, action);
@@ -711,7 +711,7 @@ static int menu_common_iterate(unsigned action)
 
       case MENU_ACTION_REFRESH:
          menu_parse_and_resolve(driver.menu->selection_buf,
-                  driver.menu->menu_stack);
+               driver.menu->menu_stack);
 
          driver.menu->need_refresh = false;
          break;
