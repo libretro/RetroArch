@@ -294,31 +294,40 @@ static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 
    file_list_get_last(driver.menu->menu_stack, NULL, &menu_label, NULL);
 
-   if (type == MENU_FILE_PLAYLIST_ENTRY)
-      cbs->action_ok = action_ok_playlist_entry;
-   else if (type == MENU_FILE_SHADER_PRESET)
-      cbs->action_ok = action_ok_shader_preset_load;
-   else if (type == MENU_FILE_SHADER)
-      cbs->action_ok = action_ok_shader_pass_load;
-   else if (type == MENU_FILE_USE_DIRECTORY)
-      cbs->action_ok = action_ok_path_use_directory;
-   else if (type == MENU_FILE_CONFIG)
-      cbs->action_ok = action_ok_config_load;
-   else if (type == MENU_FILE_CORE)
+   switch (type)
    {
-      if (!strcmp(menu_label, "deferred_core_list"))
-         cbs->action_ok = action_ok_core_load_deferred;
-      else if (!strcmp(menu_label, "core_list"))
-         cbs->action_ok = action_ok_core_load;
-      else
+      case MENU_FILE_PLAYLIST_ENTRY:
+         cbs->action_ok = action_ok_playlist_entry;
+         break;
+      case MENU_FILE_SHADER_PRESET:
+         cbs->action_ok = action_ok_shader_preset_load;
+         break;
+      case MENU_FILE_SHADER:
+         cbs->action_ok = action_ok_shader_pass_load;
+         break;
+      case MENU_FILE_USE_DIRECTORY:
+         cbs->action_ok = action_ok_path_use_directory;
+         break;
+      case MENU_FILE_CONFIG:
+         cbs->action_ok = action_ok_config_load;
+         break;
+      case MENU_FILE_DIRECTORY:
+         cbs->action_ok = action_ok_directory_push;
+         break;
+      case MENU_FILE_CARCHIVE:
+         cbs->action_ok = action_ok_compressed_archive_push;
+         break;
+      case MENU_FILE_CORE:
+         if (!strcmp(menu_label, "deferred_core_list"))
+            cbs->action_ok = action_ok_core_load_deferred;
+         else if (!strcmp(menu_label, "core_list"))
+            cbs->action_ok = action_ok_core_load;
+         else
+            return -1;
+         break;
+      default:
          return -1;
    }
-   else if (type == MENU_FILE_DIRECTORY)
-      cbs->action_ok = action_ok_directory_push;
-   else if (type == MENU_FILE_CARCHIVE)
-      cbs->action_ok = action_ok_compressed_archive_push;
-   else
-      return -1;
 
    return 0;
 }
