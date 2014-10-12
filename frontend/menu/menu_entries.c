@@ -180,6 +180,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    char tmp[PATH_MAX];
    size_t list_size = 0;
    bool do_action = false;
+   bool is_history_list = !strcmp(label, "history_list");
 
 #if 0
    RARCH_LOG("Label is: %s\n", label);
@@ -526,7 +527,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    if (do_action)
    {
       driver.menu->scroll_indices_size = 0;
-      if (strcmp(label, "history_list") != 0)
+      if (is_history_list)
          menu_build_scroll_indices(list);
 
       entries_refresh(list);
