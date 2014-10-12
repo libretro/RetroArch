@@ -1179,7 +1179,7 @@ static void *lakka_init(void)
       lakka->label_margin_left = 192;
       lakka->label_margin_top = 15;
       lakka->setting_margin_left = 1200;
-      strcpy(lakka->icon_dir, "256");
+      strlcpy(lakka->icon_dir, "256", sizeof(lakka->icon_dir));
    }
    else if (gl->win_width >= 2560)
    {
@@ -1193,7 +1193,7 @@ static void *lakka_init(void)
       lakka->label_margin_left = 144;
       lakka->label_margin_top = 11.0;
       lakka->setting_margin_left = 800;
-      strcpy(lakka->icon_dir, "192");
+      strlcpy(lakka->icon_dir, "192", sizeof(lakka->icon_dir));
    }
    else if (gl->win_width >= 1920)
    {
@@ -1207,7 +1207,7 @@ static void *lakka_init(void)
       lakka->label_margin_left = 85;
       lakka->label_margin_top = 8.0;
       lakka->setting_margin_left = 600;
-      strcpy(lakka->icon_dir, "128");
+      strlcpy(lakka->icon_dir, "128", sizeof(lakka->icon_dir));
    }
    else if (gl->win_width <= 640)
    {
@@ -1221,7 +1221,7 @@ static void *lakka_init(void)
       lakka->label_margin_left = 48;
       lakka->label_margin_top = 6.0;
       lakka->setting_margin_left = 250;
-      strcpy(lakka->icon_dir, "64");
+      strlcpy(lakka->icon_dir, "64", sizeof(lakka->icon_dir));
    }
    else
    {
@@ -1235,7 +1235,7 @@ static void *lakka_init(void)
       lakka->label_margin_left = 64;
       lakka->label_margin_top = 6.0;
       lakka->setting_margin_left = 400;
-      strcpy(lakka->icon_dir, "96");
+      strlcpy(lakka->icon_dir, "96", sizeof(lakka->icon_dir));
    }
 
    lakka->depth                = 0;
