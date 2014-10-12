@@ -587,6 +587,35 @@ static int action_ok_help(const char *path,
    return 0;
 }
 
+static int core_setting_toggle(unsigned type, const char *label,
+      unsigned action)
+{
+   unsigned index = type - MENU_SETTINGS_CORE_OPTION_START;
+
+   (void)label;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         core_option_prev(g_extern.system.core_options, index);
+         break;
+
+      case MENU_ACTION_RIGHT:
+      case MENU_ACTION_OK:
+         core_option_next(g_extern.system.core_options, index);
+         break;
+
+      case MENU_ACTION_START:
+         core_option_set_default(g_extern.system.core_options, index);
+         break;
+
+      default:
+         break;
+   }
+
+   return 0;
+}
+
 /* Bind the OK callback function */
 
 static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
@@ -735,7 +764,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       )
       cbs->action_toggle = menu_shader_manager_setting_toggle;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
-      cbs->action_toggle = menu_common_core_setting_toggle;
+      cbs->action_toggle = core_setting_toggle;
 }
 
 void menu_entries_cbs_init(void *data,

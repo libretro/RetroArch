@@ -501,35 +501,6 @@ unsigned menu_common_type_is(const char *label, unsigned type)
    return 0;
 }
 
-int menu_common_core_setting_toggle(unsigned type, const char *label,
-      unsigned action)
-{
-   unsigned index = type - MENU_SETTINGS_CORE_OPTION_START;
-
-   (void)label;
-
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         core_option_prev(g_extern.system.core_options, index);
-         break;
-
-      case MENU_ACTION_RIGHT:
-      case MENU_ACTION_OK:
-         core_option_next(g_extern.system.core_options, index);
-         break;
-
-      case MENU_ACTION_START:
-         core_option_set_default(g_extern.system.core_options, index);
-         break;
-
-      default:
-         break;
-   }
-
-   return 0;
-}
-
 int menu_common_setting_set_perf(unsigned setting, unsigned action,
       struct retro_perf_counter **counters, unsigned offset)
 {
