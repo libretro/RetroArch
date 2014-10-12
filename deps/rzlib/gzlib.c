@@ -576,8 +576,8 @@ void ZLIB_INTERNAL gz_error(gz_statep state, int err, const char *msg)
              "%s%s%s", state->path, ": ", msg);
 #else
     strlcpy(state->msg, state->path, sizeof(state->msg));
-    strcat(state->msg, ": ");
-    strcat(state->msg, msg);
+    strlcat(state->msg, ": ", sizeof(state->msg));
+    strlcat(state->msg, msg, sizeof(state->msg));
 #endif
     return;
 }
