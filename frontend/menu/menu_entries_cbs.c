@@ -88,7 +88,18 @@ static int action_ok_shader_preset_save_as(const char *path,
 
 /* Bind the OK callback function */
 
-static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
+static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t index)
+{
+   if (type == MENU_FILE_PLAYLIST_ENTRY)
+      cbs->action_ok = action_ok_playlist_entry;
+   else
+      return -1;
+
+   return 0;
+}
+
+static void menu_entries_cbs_init_bind_ok_toggle(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t index)
 {
    if (!cbs)
@@ -96,12 +107,12 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 
    cbs->action_ok = NULL;
 
-   if (type == MENU_FILE_PLAYLIST_ENTRY)
-      cbs->action_ok = action_ok_playlist_entry;
+   if (menu_entries_cbs_init_bind_ok(cbs, path, label, type, index) == 0)
+      return;
    else if (
          !strcmp(label, "load_content") ||
          !strcmp(label, "detect_core_list")
-      )
+         )
       cbs->action_ok = action_ok_push_content_list;
    else if (!strcmp(label, "history_list"))
       cbs->action_ok = action_ok_push_history_list;
@@ -127,6 +138,6 @@ void menu_entries_cbs_init(void *data,
 
    if (cbs)
    {
-      menu_entries_cbs_init_bind_ok(cbs, path, label, type, index);
+      menu_entries_cbs_init_bind_ok_toggle(cbs, path, label, type, index);
    }
 }
