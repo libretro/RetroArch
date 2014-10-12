@@ -589,7 +589,7 @@ static int action_ok_help(const char *path,
 
 /* Bind the OK callback function */
 
-static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
+static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t index)
 {
    const char *menu_label = NULL;
@@ -674,7 +674,7 @@ static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    return 0;
 }
 
-static void menu_entries_cbs_init_bind_ok_toggle(menu_file_list_cbs_t *cbs,
+static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t index)
 {
    if (!cbs)
@@ -682,7 +682,7 @@ static void menu_entries_cbs_init_bind_ok_toggle(menu_file_list_cbs_t *cbs,
 
    cbs->action_ok = NULL;
 
-   if (menu_entries_cbs_init_bind_ok(cbs, path, label, type, index) == 0)
+   if (menu_entries_cbs_init_bind_ok_first(cbs, path, label, type, index) == 0)
       return;
    else if (!strcmp(label, "help"))
       cbs->action_ok = action_ok_help;
@@ -721,6 +721,21 @@ static void menu_entries_cbs_init_bind_ok_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_configurations_list;
 }
 
+static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t index)
+{
+   if (!cbs)
+      return;
+
+   cbs->action_toggle = NULL;
+
+   if ((menu_common_type_is(label, type) == MENU_SETTINGS_SHADER_OPTIONS) ||
+         !strcmp(label, "video_shader_parameters") ||
+         !strcmp(label, "video_shader_preset_parameters")
+      )
+      cbs->action_toggle = menu_shader_manager_setting_toggle;
+}
+
 void menu_entries_cbs_init(void *data,
       const char *path, const char *label,
       unsigned type, size_t index)
@@ -735,6 +750,7 @@ void menu_entries_cbs_init(void *data,
 
    if (cbs)
    {
-      menu_entries_cbs_init_bind_ok_toggle(cbs, path, label, type, index);
+      menu_entries_cbs_init_bind_ok(cbs, path, label, type, index);
+      menu_entries_cbs_init_bind_toggle(cbs, path, label, type, index);
    }
 }

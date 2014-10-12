@@ -9,6 +9,7 @@ typedef struct menu_file_list_cbs
 {
    int (*action_ok)(const char *path, const char *label, unsigned type,
          size_t index);
+   int (*action_toggle)(unsigned type, const char *label, unsigned action);
 } menu_file_list_cbs_t;
 
 typedef struct menu_ctx_driver_backend

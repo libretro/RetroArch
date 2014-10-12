@@ -55,7 +55,7 @@ static int menu_message_toggle(unsigned action)
    return 0;
 }
 
-static int menu_setting_ok_toggle(unsigned type,
+static int menu_setting_ok_pressed(unsigned type,
       const char *path, const char *label,
       unsigned action)
 {
@@ -214,7 +214,7 @@ static int menu_start_screen_iterate(unsigned action)
    return 0;
 }
 
-static int menu_setting_start_toggle(unsigned type,
+static int menu_setting_start_pressed(unsigned type,
       const char *dir, const char *label,
       unsigned action)
 {
@@ -242,18 +242,19 @@ static int menu_setting_start_toggle(unsigned type,
    return -1;
 }
 
-static int menu_setting_toggle(unsigned type,
+static int menu_setting_toggle_pressed(unsigned type,
       const char *dir, const char *label,
       unsigned action)
 {
    struct retro_perf_counter **counters = NULL;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      file_list_get_actiondata_at_offset(driver.menu->selection_buf,
+            driver.menu->selection_ptr);
 
-   if ((menu_common_type_is(label, type) == MENU_SETTINGS_SHADER_OPTIONS) ||
-         !strcmp(label, "video_shader_parameters") ||
-         !strcmp(label, "video_shader_preset_parameters")
-      )
-      return menu_shader_manager_setting_toggle(type, label, action);
-   else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
+   if (cbs && cbs->action_toggle)
+      return cbs->action_toggle(type, label, action);
+
+   if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       return menu_common_core_setting_toggle(type, action);
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
          type <= MENU_SETTINGS_PERF_COUNTERS_END)
@@ -316,17 +317,17 @@ static int menu_settings_iterate(unsigned action)
                0, driver.menu->selection_ptr);
          break;
       case MENU_ACTION_OK:
-         if (menu_setting_ok_toggle(type, path, label, action) == 0)
+         if (menu_setting_ok_pressed(type, path, label, action) == 0)
             return 0;
          /* fall-through */
       case MENU_ACTION_START:
-         if (menu_setting_start_toggle(type, path, label, action) == 0)
+         if (menu_setting_start_pressed(type, path, label, action) == 0)
             return 0;
          /* fall-through */
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
          {
-            int ret = menu_setting_toggle(type, path, label, action);
+            int ret = menu_setting_toggle_pressed(type, path, label, action);
 
             if (ret)
                return ret;
