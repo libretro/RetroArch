@@ -20,6 +20,13 @@
 #include "menu_shader.h"
 #include "backend/menu_backend.h"
 
+static void common_load_content(void)
+{
+   rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+   menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+   driver.menu->msg_force = true;
+}
+
 static int action_ok_push_content_list(const char *path,
       const char *label, unsigned type, size_t index)
 {
@@ -282,6 +289,94 @@ static int action_ok_config_load(const char *path,
    return 0;
 }
 
+static int action_ok_disk_image_append(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   const char *menu_path    = NULL;
+   char image[PATH_MAX];
+
+   if (!driver.menu)
+      return -1;
+
+   file_list_get_last(driver.menu->menu_stack, &menu_path, NULL, NULL);
+
+   fill_pathname_join(image, menu_path, path, sizeof(image));
+   rarch_disk_control_append_image(image);
+
+   rarch_main_command(RARCH_CMD_RESUME);
+
+   menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
+   return -1;
+}
+
+static int action_ok_file_load_with_detect_core(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   const char *menu_path    = NULL;
+   int ret;
+
+   if (!driver.menu)
+      return -1;
+
+   file_list_get_last(driver.menu->menu_stack, &menu_path, NULL, NULL);
+
+   ret = rarch_defer_core(g_extern.core_info,
+         menu_path, path, driver.menu->deferred_path,
+         sizeof(driver.menu->deferred_path));
+
+   if (ret == -1)
+   {
+      rarch_main_command(RARCH_CMD_LOAD_CORE);
+      common_load_content();
+      return -1;
+   }
+   else if (ret == 0)
+      menu_entries_push(driver.menu->menu_stack,
+            g_settings.libretro_directory, "deferred_core_list",
+            0, driver.menu->selection_ptr);
+
+   return ret;
+}
+
+static int action_ok_file_load(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   const char *menu_label   = NULL;
+   const char *menu_path    = NULL;
+   rarch_setting_t *setting = NULL;
+
+   if (!driver.menu)
+      return -1;
+
+   file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label, NULL);
+   setting = (rarch_setting_t*)
+      setting_data_find_setting(driver.menu->list_settings, menu_label);
+
+   if (setting && setting->type == ST_PATH)
+   {
+      menu_action_setting_set_current_string_path(setting, menu_path, path);
+      menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
+   }
+   else
+   {
+      if (type == MENU_FILE_IN_CARCHIVE)
+         fill_pathname_join_delim(g_extern.fullpath, menu_path, path,
+               '#',sizeof(g_extern.fullpath));
+      else
+         fill_pathname_join(g_extern.fullpath, menu_path, path,
+               sizeof(g_extern.fullpath));
+
+      common_load_content();
+      rarch_main_command(RARCH_CMD_LOAD_CONTENT_PERSIST);
+      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+      driver.menu->msg_force = true;
+
+      return -1;
+   }
+
+   return 0;
+}
+
 static int action_ok_set_path(const char *path,
       const char *label, unsigned type, size_t index)
 {
@@ -354,6 +449,17 @@ static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       case MENU_FILE_AUDIOFILTER:
       case MENU_FILE_VIDEOFILTER:
          cbs->action_ok = action_ok_set_path;
+         break;
+#ifdef HAVE_COMPRESSION
+      case MENU_FILE_IN_CARCHIVE:
+#endif
+      case MENU_FILE_PLAIN:
+         if (!strcmp(menu_label, "detect_core_list"))
+            cbs->action_ok = action_ok_file_load_with_detect_core;
+         else if (!strcmp(menu_label, "disk_image_append"))
+            cbs->action_ok = action_ok_disk_image_append;
+         else
+            cbs->action_ok = action_ok_file_load;
          break;
       default:
          return -1;

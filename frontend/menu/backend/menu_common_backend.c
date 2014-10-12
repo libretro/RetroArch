@@ -732,13 +732,10 @@ static int menu_load_or_open_zip_iterate(unsigned action)
 static int menu_action_ok(const char *menu_path,
       const char *menu_label, unsigned menu_type)
 {
-   const char *label = NULL;
-   const char *path = NULL;
-   menu_file_list_cbs_t *cbs = NULL;
-   unsigned type = 0;
-   rarch_setting_t *setting_data = (rarch_setting_t *)driver.menu->list_settings;
-   rarch_setting_t *setting = (rarch_setting_t*)
-      setting_data_find_setting(setting_data, menu_label);
+   const char *label             = NULL;
+   const char *path              = NULL;
+   menu_file_list_cbs_t *cbs     = NULL;
+   unsigned type                 = 0;
 
    if (file_list_get_size(driver.menu->selection_buf) == 0)
       return 0;
@@ -753,82 +750,7 @@ static int menu_action_ok(const char *menu_path,
    if (cbs && cbs->action_ok)
       return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
 
-#if 0
-   RARCH_LOG("menu label: %s\n", menu_label);
-   RARCH_LOG("type id  : %d\n", type);
-#endif
-   while (true)
-   {
-      switch (type)
-      {
-#ifdef HAVE_COMPRESSION
-         case MENU_FILE_IN_CARCHIVE:
-#endif
-         case MENU_FILE_PLAIN:
-
-            if (!strcmp(menu_label, "detect_core_list"))
-            {
-               int ret = rarch_defer_core(g_extern.core_info,
-                     menu_path, path, driver.menu->deferred_path,
-                     sizeof(driver.menu->deferred_path));
-
-               if (ret == -1)
-               {
-
-                  rarch_main_command(RARCH_CMD_LOAD_CORE);
-
-                  menu_common_load_content();
-
-                  return -1;
-               }
-               else if (ret == 0)
-                  menu_entries_push(driver.menu->menu_stack,
-                        g_settings.libretro_directory, "deferred_core_list",
-                        0, driver.menu->selection_ptr);
-            }
-            else if ((setting && setting->type == ST_PATH))
-            {
-               menu_action_setting_set_current_string_path(setting, menu_path, path);
-               menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
-            }
-            else if (!strcmp(menu_label, "disk_image_append"))
-            {
-               char image[PATH_MAX];
-
-               fill_pathname_join(image, menu_path, path, sizeof(image));
-               rarch_disk_control_append_image(image);
-
-               rarch_main_command(RARCH_CMD_RESUME);
-
-               menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-               return -1;
-            }
-            else
-            {
-               if (type == MENU_FILE_IN_CARCHIVE)
-               {
-                  fill_pathname_join_delim(g_extern.fullpath, menu_path, path,
-                        '#',sizeof(g_extern.fullpath));
-               }
-               else
-               {
-                  fill_pathname_join(g_extern.fullpath, menu_path, path,
-                        sizeof(g_extern.fullpath));
-               }
-
-               menu_common_load_content();
-               rarch_main_command(RARCH_CMD_LOAD_CONTENT_PERSIST);
-               menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-               driver.menu->msg_force = true;
-
-               return -1;
-            }
-
-            return 0;
-      }
-      break;
-   }
-
+   /* TODO - can we get rid of this now? */
    if (menu_parse_check(label, type) == 0)
    {
       char cat_path[PATH_MAX];
