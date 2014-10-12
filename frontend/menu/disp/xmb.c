@@ -279,8 +279,19 @@ static void xmb_render_background(void)
    coords.vertex = vertex;
    coords.tex_coord = tex_coord;
    coords.lut_tex_coord = tex_coord;
-   coords.color = xmb->textures[XMB_TEXTURE_BG].id ? color : black_color;
-   glBindTexture(GL_TEXTURE_2D, xmb->textures[XMB_TEXTURE_BG].id);
+
+   if ((g_settings.menu.pause_libretro
+      || !g_extern.main_is_init || g_extern.libretro_dummy)
+      && xmb->textures[XMB_TEXTURE_BG].id)
+   {
+      coords.color = color;
+      glBindTexture(GL_TEXTURE_2D, xmb->textures[XMB_TEXTURE_BG].id);
+   }
+   else
+   {
+      coords.color = black_color;
+      glBindTexture(GL_TEXTURE_2D, 0);
+   }
 
    gl->shader->set_coords(&coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);

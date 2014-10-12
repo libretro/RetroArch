@@ -178,8 +178,19 @@ void lakka_draw_background(void)
    coords.vertex = lakka_vertex;
    coords.tex_coord = lakka_tex_coord;
    coords.lut_tex_coord = lakka_tex_coord;
-   coords.color = lakka->textures[TEXTURE_BG].id ? color : black_color;
-   glBindTexture(GL_TEXTURE_2D, lakka->textures[TEXTURE_BG].id);
+
+   if ((g_settings.menu.pause_libretro
+      || !g_extern.main_is_init || g_extern.libretro_dummy)
+      && lakka->textures[TEXTURE_BG].id)
+   {
+      coords.color = color;
+      glBindTexture(GL_TEXTURE_2D, lakka->textures[TEXTURE_BG].id);
+   }
+   else
+   {
+      coords.color = black_color;
+      glBindTexture(GL_TEXTURE_2D, 0);
+   }
 
    gl->shader->set_coords(&coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
@@ -602,7 +613,6 @@ static int lakka_png_texture_load_wrap(void * file_name)
 {
    return lakka_png_texture_load_(file_name);
 }
-
 
 static GLuint lakka_png_texture_load(const char* file_name)
 {
