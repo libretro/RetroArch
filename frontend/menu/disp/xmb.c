@@ -531,6 +531,7 @@ static void xmb_frame(void)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s",
             driver.menu->keyboard.label, str);
+      xmb_render_background(true);
       xmb_render_messagebox(msg);
    }
 
