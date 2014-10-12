@@ -347,7 +347,7 @@ static int handle_shader_pass_setting(struct gfx_shader *shader,
 }
 
 int menu_shader_manager_setting_toggle(
-      unsigned id, const char *label, unsigned action)
+      unsigned type, const char *label, unsigned action)
 {
    if (!driver.menu)
    {
@@ -367,8 +367,8 @@ int menu_shader_manager_setting_toggle(
                   driver.menu->list_settings, "video_smooth")))
          menu_action_setting_boolean(current_setting, action);
    }
-   else if (id >= MENU_SETTINGS_SHADER_PARAMETER_0
-         && id <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
       bool apply_changes = false;
       struct gfx_shader *shader = NULL;
@@ -377,7 +377,7 @@ int menu_shader_manager_setting_toggle(
       if (!(shader = (struct gfx_shader*)driver.menu->parameter_shader))
          return 0;
 
-      if (!(param = &shader->parameters[id - MENU_SETTINGS_SHADER_PARAMETER_0]))
+      if (!(param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0]))
          return 0;
 
       switch (action)
@@ -417,7 +417,7 @@ int menu_shader_manager_setting_toggle(
    {
       if (!strcmp(label, "video_shader_num_passes"))
          return handle_shader_pass_setting(driver.menu->shader, action);
-      menu_action_setting_set(id, label, action);
+      menu_action_setting_set(type, label, action);
    }
    else if (!strcmp(label, "video_shader_preset"))
    {
@@ -427,7 +427,8 @@ int menu_shader_manager_setting_toggle(
             menu_entries_push(driver.menu->menu_stack,
                   g_settings.video.shader_dir, 
                   "video_shader_preset",
-                  id, driver.menu->selection_ptr);
+                  type,
+                  driver.menu->selection_ptr);
             break;
 
          case MENU_ACTION_START:
@@ -439,7 +440,7 @@ int menu_shader_manager_setting_toggle(
    }
    else if (!strcmp(label, "video_shader_pass"))
    {
-      hack_shader_pass = id - MENU_SETTINGS_SHADER_PASS_0;
+      hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
       struct gfx_shader_pass *shader_pass = NULL;
 
@@ -452,7 +453,8 @@ int menu_shader_manager_setting_toggle(
             menu_entries_push(driver.menu->menu_stack,
                   g_settings.video.shader_dir, 
                   "video_shader_pass",
-                  id, driver.menu->selection_ptr);
+                  type,
+                  driver.menu->selection_ptr);
             break;
          case MENU_ACTION_START:
             if (shader_pass)
@@ -465,7 +467,7 @@ int menu_shader_manager_setting_toggle(
    }
    else if (!strcmp(label, "video_shader_filter_pass"))
    {
-      unsigned pass = id - MENU_SETTINGS_SHADER_PASS_FILTER_0;
+      unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
       struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
          &shader->pass[pass];
@@ -493,7 +495,7 @@ int menu_shader_manager_setting_toggle(
    }
    else if (!strcmp(label, "video_shader_scale_pass"))
    {
-      unsigned pass = id - MENU_SETTINGS_SHADER_PASS_SCALE_0;
+      unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
       struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
          &shader->pass[pass];
