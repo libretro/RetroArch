@@ -185,14 +185,6 @@ static int menu_setting_ok_toggle(unsigned type,
    if (cbs && cbs->action_ok)
       return cbs->action_ok(dir, label, type, driver.menu->selection_ptr);
 
-   if (menu_common_type_is(label, type) == MENU_SETTINGS)
-   {
-      menu_entries_push(driver.menu->menu_stack,
-            dir ? dir : label, label, type,
-            driver.menu->selection_ptr);
-      return 0;
-   }
-
    return -1;
 }
 

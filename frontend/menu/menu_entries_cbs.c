@@ -563,6 +563,18 @@ static int action_ok_configurations_list(const char *path,
    return 0;
 }
 
+static int action_ok_push_default(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   if (!driver.menu)
+      return -1;
+
+   menu_entries_push(driver.menu->menu_stack,
+         label, label, type,
+         driver.menu->selection_ptr);
+   return 0;
+}
+
 /* Bind the OK callback function */
 
 static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
@@ -639,6 +651,10 @@ static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       case MENU_SETTINGS_CUSTOM_VIEWPORT:
          cbs->action_ok = action_ok_custom_viewport;
          break;
+      case MENU_SETTINGS:
+      case MENU_FILE_CATEGORY:
+         cbs->action_ok = action_ok_push_default;
+         break;
       default:
          return -1;
    }
@@ -656,6 +672,20 @@ static void menu_entries_cbs_init_bind_ok_toggle(menu_file_list_cbs_t *cbs,
 
    if (menu_entries_cbs_init_bind_ok(cbs, path, label, type, index) == 0)
       return;
+   else if (
+         !strcmp(label, "Shader Options") ||
+         !strcmp(label, "Input Options") ||
+         !strcmp(label, "core_options") ||
+         !strcmp(label, "core_information") ||
+         !strcmp(label, "video_shader_parameters") ||
+         !strcmp(label, "video_shader_preset_parameters") ||
+         !strcmp(label, "disk_options") ||
+         !strcmp(label, "settings") ||
+         !strcmp(label, "performance_counters") ||
+         !strcmp(label, "frontend_counters") ||
+         !strcmp(label, "core_counters")
+         )
+      cbs->action_ok = action_ok_push_default;
    else if (
          !strcmp(label, "load_content") ||
          !strcmp(label, "detect_core_list")
