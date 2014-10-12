@@ -75,9 +75,9 @@ static void glui_blit_line(float x, float y, const char *message, bool green)
                                       message, &params);
 }
 
-static void glui_render_background(void)
+static void glui_render_background(bool force_transparency)
 {
-   float alpha = 0.9f;
+   float alpha = 0.75f;
    gl_t *gl = NULL;
    glui_handle_t *glui = NULL;
 
@@ -132,6 +132,7 @@ static void glui_render_background(void)
 
    if ((g_settings.menu.pause_libretro
       || !g_extern.main_is_init || g_extern.libretro_dummy)
+      && !force_transparency
       && glui->bg)
    {
       coords.color = color;
@@ -256,7 +257,7 @@ static void glui_frame(void)
    if (end - begin > glui->term_height)
       end = begin + glui->term_height;
 
-   glui_render_background();
+   glui_render_background(false);
 
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
@@ -352,7 +353,7 @@ static void glui_frame(void)
 
    if (glui->box_message[0] != '\0')
    {
-      glui_render_background();
+      glui_render_background(true);
       glui_render_messagebox(glui->box_message);
       glui->box_message[0] = '\0';
    }

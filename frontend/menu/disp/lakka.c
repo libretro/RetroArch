@@ -135,9 +135,9 @@ static void lakka_draw_text(lakka_handle_t *lakka,
                                       str, &params);
 }
 
-void lakka_draw_background(void)
+void lakka_draw_background(bool force_transparency)
 {
-   float alpha = 0.9f;
+   float alpha = 0.75f;
    gl_t *gl = NULL;
    lakka_handle_t *lakka = NULL;
 
@@ -181,6 +181,7 @@ void lakka_draw_background(void)
 
    if ((g_settings.menu.pause_libretro
       || !g_extern.main_is_init || g_extern.libretro_dummy)
+      && !force_transparency
       && lakka->textures[TEXTURE_BG].id)
    {
       coords.color = color;
@@ -567,11 +568,11 @@ static void lakka_frame(void)
    lakka_draw_arrow(lakka);
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
    glViewport(0, 0, gl->win_width, gl->win_height);
-   lakka_draw_background();
+   lakka_draw_background(false);
    lakka_draw_fbo();
 #else
    glViewport(0, 0, gl->win_width, gl->win_height);
-   lakka_draw_background();
+   lakka_draw_background(false);
    lakka_draw_categories(lakka);
    lakka_draw_arrow(lakka);
 #endif
