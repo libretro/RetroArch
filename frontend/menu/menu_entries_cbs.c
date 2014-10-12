@@ -31,6 +31,18 @@ static int action_ok_push_content_list(const char *path,
    return 0;
 }
 
+static int action_ok_playlist_entry(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   if (!driver.menu)
+      return -1;
+
+   rarch_playlist_load_content(g_defaults.history,
+         driver.menu->selection_ptr);
+   menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
+   return -1;
+}
+
 static int action_ok_push_history_list(const char *path,
       const char *label, unsigned type, size_t index)
 {
@@ -84,7 +96,9 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 
    cbs->action_ok = NULL;
 
-   if (
+   if (type == MENU_FILE_PLAYLIST_ENTRY)
+      cbs->action_ok = action_ok_playlist_entry;
+   else if (
          !strcmp(label, "load_content") ||
          !strcmp(label, "detect_core_list")
       )
