@@ -259,6 +259,29 @@ static int action_ok_directory_push(const char *path,
    return 0;
 }
 
+static int action_ok_config_load(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   const char *menu_path  = NULL;
+   char config[PATH_MAX];
+
+   if (!driver.menu)
+      return -1;
+
+   file_list_get_last(driver.menu->menu_stack, &menu_path, NULL, NULL);
+
+   fill_pathname_join(config, menu_path, path, sizeof(config));
+   menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+   driver.menu->msg_force = true;
+   if (rarch_replace_config(config))
+   {
+      menu_clear_navigation(driver.menu);
+      return -1;
+   }
+
+   return 0;
+}
+
 /* Bind the OK callback function */
 
 static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
@@ -279,6 +302,8 @@ static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_shader_pass_load;
    else if (type == MENU_FILE_USE_DIRECTORY)
       cbs->action_ok = action_ok_path_use_directory;
+   else if (type == MENU_FILE_CONFIG)
+      cbs->action_ok = action_ok_config_load;
    else if (type == MENU_FILE_CORE)
    {
       if (!strcmp(menu_label, "deferred_core_list"))
