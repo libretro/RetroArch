@@ -852,26 +852,6 @@ static int menu_action_ok(const char *menu_path,
             menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
 
             return 0;
-         case MENU_FILE_DIRECTORY:
-         case MENU_FILE_CARCHIVE:
-
-            {
-               char cat_path[PATH_MAX];
-
-               if (type == MENU_FILE_CARCHIVE && !strcmp(menu_label, "detect_core_list"))
-               {
-                  file_list_push(driver.menu->menu_stack, path, "load_open_zip",
-                        0, driver.menu->selection_ptr);
-                  return 0;
-               }
-
-               fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
-               menu_entries_push(driver.menu->menu_stack,
-                     cat_path, menu_label, type, driver.menu->selection_ptr);
-            }
-
-            return 0;
-
       }
       break;
    }

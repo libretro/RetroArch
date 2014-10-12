@@ -214,6 +214,51 @@ static int action_ok_core_load(const char *path,
 #endif
 }
 
+static int action_ok_compressed_archive_push(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   const char *menu_path  = NULL;
+   const char *menu_label = NULL;
+   char cat_path[PATH_MAX];
+
+   if (!driver.menu)
+      return -1;
+
+   file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label, NULL);
+
+   if (!strcmp(menu_label, "detect_core_list"))
+   {
+      file_list_push(driver.menu->menu_stack, path, "load_open_zip",
+            0, driver.menu->selection_ptr);
+      return 0;
+   }
+
+   fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
+   menu_entries_push(driver.menu->menu_stack,
+         cat_path, menu_label, type, driver.menu->selection_ptr);
+
+   return 0;
+}
+
+static int action_ok_directory_push(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   const char *menu_path  = NULL;
+   const char *menu_label = NULL;
+   char cat_path[PATH_MAX];
+
+   if (!driver.menu)
+      return -1;
+
+   file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label, NULL);
+
+   fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
+   menu_entries_push(driver.menu->menu_stack,
+         cat_path, menu_label, type, driver.menu->selection_ptr);
+
+   return 0;
+}
+
 /* Bind the OK callback function */
 
 static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
@@ -243,6 +288,10 @@ static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       else
          return -1;
    }
+   else if (type == MENU_FILE_DIRECTORY)
+      cbs->action_ok = action_ok_directory_push;
+   else if (type == MENU_FILE_CARCHIVE)
+      cbs->action_ok = action_ok_compressed_archive_push;
    else
       return -1;
 
