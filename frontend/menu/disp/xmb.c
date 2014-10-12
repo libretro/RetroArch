@@ -411,7 +411,7 @@ static void xmb_populate_entries(void *data, const char *path,
 
 static void xmb_frame(void)
 {
-   int i;
+   int i, current;
    char title_msg[64];
    size_t end;
    const char *dir = NULL;
@@ -455,10 +455,12 @@ static void xmb_frame(void)
          gl->win_height - xmb->title_margin_top/2, 1, 1);
 
    end = file_list_get_size(driver.menu->selection_buf);
+   current = driver.menu->selection_ptr;
 
    for (i = 0; i < end; i++)
    {
-      char value[PATH_MAX], path_buf[PATH_MAX];
+      char val_buf[PATH_MAX], path_buf[PATH_MAX];
+      char name[256], value[256];
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
       xmb_node_t *node = NULL;
@@ -469,7 +471,7 @@ static void xmb_frame(void)
             driver.menu->selection_buf, i);
       
       disp_set_label(&w, type, i, label,
-            value, sizeof(value),
+            val_buf, sizeof(val_buf),
             entry_label, path,
             path_buf, sizeof(path_buf));
 
@@ -480,11 +482,17 @@ static void xmb_frame(void)
             0, 
             node->zoom);
 
-      xmb_draw_text(path_buf,
+      menu_ticker_line(name, 35, g_extern.frame_count / 20, path_buf,
+            (i == current));
+
+      xmb_draw_text(name,
             xmb->x + xmb->margin_left + xmb->hspacing + xmb->label_margin_left, 
             xmb->margin_top + node->y + xmb->label_margin_top, 
             1, 
             node->alpha);
+
+      menu_ticker_line(value, 35, g_extern.frame_count / 20, val_buf,
+            (i == current));
 
       xmb_draw_text(value,
             xmb->x + xmb->margin_left + xmb->hspacing + 
@@ -768,8 +776,6 @@ static void xmb_context_reset(void *data)
 static void xmb_navigation_clear(void *data)
 {
    (void)data;
-
-   xmb_selection_pointer_changed();
 }
 
 static void xmb_navigation_decrement(void *data)
