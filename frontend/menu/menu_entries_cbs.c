@@ -521,6 +521,48 @@ static int action_ok_custom_viewport(const char *path,
    return 0;
 }
 
+static int action_ok_core_list(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   const char *dir = g_settings.libretro_directory;
+
+   if (!driver.menu)
+      return -1;
+
+   menu_entries_push(driver.menu->menu_stack,
+         dir, label, type,
+         driver.menu->selection_ptr);
+
+   return 0;
+}
+
+static int action_ok_disk_image_append_list(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   const char *dir = g_settings.menu_content_directory;
+
+   if (!driver.menu)
+      return -1;
+
+   menu_entries_push(driver.menu->menu_stack,
+         dir, label, type,
+         driver.menu->selection_ptr);
+   return 0;
+}
+
+static int action_ok_configurations_list(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   const char *dir = g_settings.menu_config_directory;
+   if (!driver.menu)
+      return -1;
+
+   menu_entries_push(driver.menu->menu_stack,
+         dir ? dir : label, label, type,
+         driver.menu->selection_ptr);
+   return 0;
+}
+
 /* Bind the OK callback function */
 
 static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
@@ -627,6 +669,12 @@ static void menu_entries_cbs_init_bind_ok_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_shader_apply_changes;
    else if (!strcmp(label, "video_shader_preset_save_as"))
       cbs->action_ok = action_ok_shader_preset_save_as;
+   else if (!strcmp(label, "core_list"))
+      cbs->action_ok = action_ok_core_list;
+   else if (!strcmp(label, "disk_image_append"))
+      cbs->action_ok = action_ok_disk_image_append_list;
+   else if (!strcmp(label, "configurations"))
+      cbs->action_ok = action_ok_configurations_list;
 }
 
 void menu_entries_cbs_init(void *data,
