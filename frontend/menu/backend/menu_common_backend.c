@@ -36,10 +36,6 @@
 #include "../../../config.def.h"
 #include "../../../input/keyboard_line.h"
 
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#define HAVE_SHADER_MANAGER
-#endif
-
 #include "../menu_shader.h"
 
 #ifdef GEKKO
