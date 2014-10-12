@@ -150,6 +150,8 @@ static void glui_render_background(bool force_transparency)
    glEnable(GL_BLEND);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
+
+   gl->coords.color = gl->white_color_ptr;
 }
 
 static void glui_get_message(const char *message)

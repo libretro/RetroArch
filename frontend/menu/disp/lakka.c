@@ -199,6 +199,8 @@ void lakka_draw_background(bool force_transparency)
    glEnable(GL_BLEND);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
+
+   gl->coords.color = gl->white_color_ptr;
 }
 
 static void lakka_draw_icon(lakka_handle_t *lakka,
@@ -1168,76 +1170,44 @@ static void *lakka_init(void)
    lakka->active_item_factor   = 2.75;
    lakka->under_item_offset    = 4.0;
 
+   float scale_factor;
+
    if (gl->win_width >= 3840)
    {
-      lakka->icon_size = 256;
-      lakka->hspacing = 400;
-      lakka->vspacing = 128;
-      lakka->margin_left = 672.0;
-      lakka->margin_top = 512;
-      lakka->title_margin_left = 20.0;
-      lakka->title_margin_top = 50.0;
-      lakka->label_margin_left = 192;
-      lakka->label_margin_top = 15;
-      lakka->setting_margin_left = 1200;
+      scale_factor = 2.0;
       strlcpy(lakka->icon_dir, "256", sizeof(lakka->icon_dir));
    }
    else if (gl->win_width >= 2560)
    {
-      lakka->icon_size = 192;
-      lakka->hspacing = 300;
-      lakka->vspacing = 96;
-      lakka->margin_left = 448.0;
-      lakka->margin_top = 384;
-      lakka->title_margin_left = 15.0;
-      lakka->title_margin_top = 40.0;
-      lakka->label_margin_left = 144;
-      lakka->label_margin_top = 11.0;
-      lakka->setting_margin_left = 800;
+      scale_factor = 1.5;
       strlcpy(lakka->icon_dir, "192", sizeof(lakka->icon_dir));
    }
    else if (gl->win_width >= 1920)
    {
-      lakka->icon_size = 128;
-      lakka->hspacing = 200.0;
-      lakka->vspacing = 64.0;
-      lakka->margin_left = 336.0;
-      lakka->margin_top = 256;
-      lakka->title_margin_left = 15.0;
-      lakka->title_margin_top = 35.0;
-      lakka->label_margin_left = 85;
-      lakka->label_margin_top = 8.0;
-      lakka->setting_margin_left = 600;
+      scale_factor = 1.0;
       strlcpy(lakka->icon_dir, "128", sizeof(lakka->icon_dir));
    }
    else if (gl->win_width <= 640)
    {
-      lakka->icon_size = 64;
-      lakka->hspacing = 100.0;
-      lakka->vspacing = 32.0;
-      lakka->margin_left = 60.0;
-      lakka->margin_top = 128.0;
-      lakka->title_margin_left = 10.0;
-      lakka->title_margin_top = 24.0;
-      lakka->label_margin_left = 48;
-      lakka->label_margin_top = 6.0;
-      lakka->setting_margin_left = 250;
+      scale_factor = 0.5;
       strlcpy(lakka->icon_dir, "64", sizeof(lakka->icon_dir));
    }
    else
    {
-      lakka->icon_size = 96;
-      lakka->hspacing = 150.0;
-      lakka->vspacing = 48.0;
-      lakka->margin_left = 224;
-      lakka->margin_top = 192;
-      lakka->title_margin_left = 15.0;
-      lakka->title_margin_top = 30.0;
-      lakka->label_margin_left = 64;
-      lakka->label_margin_top = 6.0;
-      lakka->setting_margin_left = 400;
+      scale_factor = 3.0f/4.0f;
       strlcpy(lakka->icon_dir, "96", sizeof(lakka->icon_dir));
    }
+
+   lakka->icon_size = 128.0 * scale_factor;
+   lakka->hspacing = 200.0 * scale_factor;
+   lakka->vspacing = 64.0 * scale_factor;
+   lakka->margin_left = 336.0 * scale_factor;
+   lakka->margin_top = 256 * scale_factor;
+   lakka->title_margin_left = 15.0 * scale_factor;
+   lakka->title_margin_top = 20.0 * scale_factor + g_settings.video.font_size/3.0;
+   lakka->label_margin_left = 85.0 * scale_factor;
+   lakka->label_margin_top = g_settings.video.font_size/3.0;
+   lakka->setting_margin_left = 600.0 * scale_factor;
 
    lakka->depth                = 0;
    lakka->menu_active_category = 0;
