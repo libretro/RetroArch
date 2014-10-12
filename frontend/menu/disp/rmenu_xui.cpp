@@ -465,10 +465,14 @@ static void rmenu_xui_populate_entries(void *data, const char *path,
    XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
 }
 
-static void rmenu_xui_navigation_clear(void *data)
+static void rmenu_xui_navigation_clear(void *data, bool pending_push)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
-   XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
+
+   (void)pending_push;
+
+   if (menu)
+      XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
 }
 
 static void rmenu_xui_navigation_set_visible(void *data)

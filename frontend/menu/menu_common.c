@@ -192,7 +192,7 @@ bool menu_init_list(void *data)
    menu->list_settings = setting_data_new(SL_FLAG_ALL_SETTINGS);
 
    file_list_push(menu->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
-   menu_clear_navigation(menu);
+   menu_clear_navigation(menu, true);
    menu_entries_push_list(menu, menu->selection_buf,
          "", "Main Menu", 0);
 

@@ -23,12 +23,12 @@
 #include "menu_common.h"
 #include "menu_navigation.h"
 
-void menu_clear_navigation(menu_handle_t *menu)
+void menu_clear_navigation(menu_handle_t *menu, bool pending_push)
 {
    menu->selection_ptr = 0;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_clear)
-      driver.menu_ctx->navigation_clear(menu);
+      driver.menu_ctx->navigation_clear(menu, pending_push);
 }
 
 void menu_decrement_navigation(menu_handle_t *menu)

@@ -30,7 +30,7 @@ static void entries_refresh(file_list_t *list)
          && file_list_get_size(list))
       menu_set_navigation(driver.menu, file_list_get_size(list) - 1);
    else if (!file_list_get_size(list))
-      menu_clear_navigation(driver.menu);
+      menu_clear_navigation(driver.menu, true);
 }
 
 static inline struct gfx_shader *shader_manager_get_current_shader(
@@ -168,7 +168,7 @@ void menu_entries_push(
       size_t directory_ptr)
 {
    file_list_push(list, path, label, type, directory_ptr);
-   menu_clear_navigation(driver.menu);
+   menu_clear_navigation(driver.menu, true);
    driver.menu->need_refresh = true;
 }
 

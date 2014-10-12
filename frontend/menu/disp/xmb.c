@@ -771,9 +771,10 @@ static void xmb_context_reset(void *data)
       xmb->textures[k].id = xmb_png_texture_load(xmb->textures[k].path);
 }
 
-static void xmb_navigation_clear(void *data)
+static void xmb_navigation_clear(void *data, bool pending_push)
 {
    (void)data;
+   (void)pending_push;
 }
 
 static void xmb_navigation_decrement(void *data)

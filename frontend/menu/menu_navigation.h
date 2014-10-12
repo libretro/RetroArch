@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-void menu_clear_navigation(menu_handle_t *menu);
+void menu_clear_navigation(menu_handle_t *menu, bool pending_push);
 
 void menu_decrement_navigation(menu_handle_t *menu);
 

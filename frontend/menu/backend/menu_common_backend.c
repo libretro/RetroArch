@@ -226,7 +226,7 @@ static int menu_settings_iterate(unsigned action)
                file_list_get_size(driver.menu->selection_buf))
             menu_increment_navigation(driver.menu);
          else
-            menu_clear_navigation(driver.menu);
+            menu_clear_navigation(driver.menu, false);
          break;
 
       case MENU_ACTION_CANCEL:
@@ -600,7 +600,7 @@ static int menu_common_iterate(unsigned action)
             menu_set_navigation(driver.menu,
                   driver.menu->selection_ptr + scroll_speed);
          else
-            menu_clear_navigation(driver.menu);
+            menu_clear_navigation(driver.menu, false);
          break;
 
       case MENU_ACTION_LEFT:
@@ -608,7 +608,7 @@ static int menu_common_iterate(unsigned action)
             menu_set_navigation(driver.menu,
                   driver.menu->selection_ptr - fast_scroll_speed);
          else
-            menu_clear_navigation(driver.menu);
+            menu_clear_navigation(driver.menu, false);
          break;
 
       case MENU_ACTION_RIGHT:
