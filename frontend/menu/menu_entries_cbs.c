@@ -20,6 +20,8 @@
 #include "menu_shader.h"
 #include "backend/menu_backend.h"
 
+#include "../../config.def.h"
+
 static void common_load_content(void)
 {
    rarch_main_command(RARCH_CMD_LOAD_CONTENT);
@@ -401,6 +403,124 @@ static int action_ok_set_path(const char *path,
    return 0;
 }
 
+static int action_ok_bind_all(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   if (!driver.menu)
+      return -1;
+
+   driver.menu->binds.target = &g_settings.input.binds
+      [driver.menu->current_pad][0];
+   driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+   driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
+
+   file_list_push(driver.menu->menu_stack, "", "",
+         driver.menu->bind_mode_keyboard ?
+         MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
+         MENU_SETTINGS_CUSTOM_BIND,
+         driver.menu->selection_ptr);
+   if (driver.menu->bind_mode_keyboard)
+   {
+      driver.menu->binds.timeout_end =
+         rarch_get_time_usec() + 
+         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+      input_keyboard_wait_keys(driver.menu,
+            menu_custom_bind_keyboard_cb);
+   }
+   else
+   {
+      menu_poll_bind_get_rested_axes(&driver.menu->binds);
+      menu_poll_bind_state(&driver.menu->binds);
+   }
+   return 0;
+}
+
+static int action_ok_bind_default_all(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   unsigned i;
+   const struct retro_keybind *def_binds;
+   struct retro_keybind *target = (struct retro_keybind*)
+      &g_settings.input.binds[driver.menu->current_pad][0];
+
+   def_binds = driver.menu->current_pad ? retro_keybinds_rest : retro_keybinds_1;
+
+   driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+   driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
+
+   for (i = MENU_SETTINGS_BIND_BEGIN;
+         i <= MENU_SETTINGS_BIND_LAST; i++, target++)
+   {
+      if (driver.menu->bind_mode_keyboard)
+         target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
+      else
+      {
+         target->joykey = NO_BTN;
+         target->joyaxis = AXIS_NONE;
+      }
+   }
+   return 0;
+}
+
+static int action_ok_bind_key(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   struct retro_keybind *bind = NULL;
+
+   if (!driver.menu)
+      return -1;
+   
+   bind = (struct retro_keybind*)&g_settings.input.binds
+      [driver.menu->current_pad][type - MENU_SETTINGS_BIND_BEGIN];
+
+   driver.menu->binds.begin  = type;
+   driver.menu->binds.last   = type;
+   driver.menu->binds.target = bind;
+   driver.menu->binds.player = driver.menu->current_pad;
+   file_list_push(driver.menu->menu_stack, "", "",
+         driver.menu->bind_mode_keyboard ?
+         MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
+         driver.menu->selection_ptr);
+
+   if (driver.menu->bind_mode_keyboard)
+   {
+      driver.menu->binds.timeout_end = rarch_get_time_usec() +
+         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+      input_keyboard_wait_keys(driver.menu,
+            menu_custom_bind_keyboard_cb);
+   }
+   else
+   {
+      menu_poll_bind_get_rested_axes(&driver.menu->binds);
+      menu_poll_bind_state(&driver.menu->binds);
+   }
+
+   return 0;
+}
+
+static int action_ok_custom_viewport(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   file_list_push(driver.menu->menu_stack, "", "",
+         MENU_SETTINGS_CUSTOM_VIEWPORT,
+         driver.menu->selection_ptr);
+
+   /* Start with something sane. */
+   rarch_viewport_t *custom = (rarch_viewport_t*)
+      &g_extern.console.screen.viewports.custom_vp;
+
+   if (driver.video_data && driver.video &&
+         driver.video->viewport_info)
+      driver.video->viewport_info(driver.video_data, custom);
+   aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+      (float)custom->width / custom->height;
+
+   g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
+
+   rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
+   return 0;
+}
+
 /* Bind the OK callback function */
 
 static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
@@ -412,6 +532,13 @@ static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       return -1;
 
    file_list_get_last(driver.menu->menu_stack, NULL, &menu_label, NULL);
+
+   if (type >= MENU_SETTINGS_BIND_BEGIN &&
+         type <= MENU_SETTINGS_BIND_ALL_LAST)
+   {
+      cbs->action_ok = action_ok_bind_key;
+      return 0;
+   }
 
    switch (type)
    {
@@ -460,6 +587,15 @@ static int menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
             cbs->action_ok = action_ok_disk_image_append;
          else
             cbs->action_ok = action_ok_file_load;
+         break;
+      case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
+         cbs->action_ok = action_ok_bind_default_all;
+         break;
+      case MENU_SETTINGS_CUSTOM_BIND_ALL:
+         cbs->action_ok = action_ok_bind_all;
+         break;
+      case MENU_SETTINGS_CUSTOM_VIEWPORT:
+         cbs->action_ok = action_ok_custom_viewport;
          break;
       default:
          return -1;

@@ -185,89 +185,7 @@ static int menu_setting_ok_toggle(unsigned type,
    if (cbs && cbs->action_ok)
       return cbs->action_ok(dir, label, type, driver.menu->selection_ptr);
 
-   if (type == MENU_SETTINGS_CUSTOM_BIND_ALL)
-   {
-      driver.menu->binds.target = &g_settings.input.binds
-         [driver.menu->current_pad][0];
-      driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-      driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
-
-      file_list_push(driver.menu->menu_stack, "", "",
-            driver.menu->bind_mode_keyboard ?
-            MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
-            MENU_SETTINGS_CUSTOM_BIND,
-            driver.menu->selection_ptr);
-      if (driver.menu->bind_mode_keyboard)
-      {
-         driver.menu->binds.timeout_end =
-            rarch_get_time_usec() + 
-            MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-         input_keyboard_wait_keys(driver.menu,
-               menu_custom_bind_keyboard_cb);
-      }
-      else
-      {
-         menu_poll_bind_get_rested_axes(&driver.menu->binds);
-         menu_poll_bind_state(&driver.menu->binds);
-      }
-      return 0;
-   }
-   else if (type == MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL)
-   {
-      unsigned i;
-      struct retro_keybind *target = (struct retro_keybind*)
-         &g_settings.input.binds[driver.menu->current_pad][0];
-      const struct retro_keybind *def_binds = 
-         driver.menu->current_pad ? retro_keybinds_rest : retro_keybinds_1;
-
-      driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-      driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
-
-      for (i = MENU_SETTINGS_BIND_BEGIN;
-            i <= MENU_SETTINGS_BIND_LAST; i++, target++)
-      {
-         if (driver.menu->bind_mode_keyboard)
-            target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
-         else
-         {
-            target->joykey = NO_BTN;
-            target->joyaxis = AXIS_NONE;
-         }
-      }
-      return 0;
-   }
-   else if (type >= MENU_SETTINGS_BIND_BEGIN &&
-         type <= MENU_SETTINGS_BIND_ALL_LAST)
-   {
-      struct retro_keybind *bind = (struct retro_keybind*)
-         &g_settings.input.binds[driver.menu->current_pad]
-         [type - MENU_SETTINGS_BIND_BEGIN];
-
-      driver.menu->binds.begin  = type;
-      driver.menu->binds.last   = type;
-      driver.menu->binds.target = bind;
-      driver.menu->binds.player = driver.menu->current_pad;
-      file_list_push(driver.menu->menu_stack, "", "",
-            driver.menu->bind_mode_keyboard ?
-            MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
-            driver.menu->selection_ptr);
-
-      if (driver.menu->bind_mode_keyboard)
-      {
-         driver.menu->binds.timeout_end = rarch_get_time_usec() +
-            MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-         input_keyboard_wait_keys(driver.menu,
-               menu_custom_bind_keyboard_cb);
-      }
-      else
-      {
-         menu_poll_bind_get_rested_axes(&driver.menu->binds);
-         menu_poll_bind_state(&driver.menu->binds);
-      }
-
-      return 0;
-   }
-   else if (
+   if (
          menu_common_type_is(label, type) == MENU_SETTINGS ||
          !strcmp(label, "core_list") ||
          !strcmp(label, "configurations") ||
@@ -279,27 +197,7 @@ static int menu_setting_ok_toggle(unsigned type,
             driver.menu->selection_ptr);
       return 0;
    }
-   else if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
-   {
-      file_list_push(driver.menu->menu_stack, "", "",
-            MENU_SETTINGS_CUSTOM_VIEWPORT,
-            driver.menu->selection_ptr);
 
-      /* Start with something sane. */
-      rarch_viewport_t *custom = (rarch_viewport_t*)
-         &g_extern.console.screen.viewports.custom_vp;
-
-      if (driver.video_data && driver.video &&
-            driver.video->viewport_info)
-         driver.video->viewport_info(driver.video_data, custom);
-      aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-         (float)custom->width / custom->height;
-
-      g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
-
-      rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
-      return 0;
-   }
    return -1;
 }
 
