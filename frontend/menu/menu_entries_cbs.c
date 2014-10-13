@@ -575,6 +575,16 @@ static int action_ok_push_default(const char *path,
    return 0;
 }
 
+static int action_ok_disk_cycle_tray_status(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   if (!driver.menu)
+      return -1;
+
+   rarch_main_command(RARCH_CMD_DISK_EJECT_TOGGLE);
+   return 0;
+}
+
 static int action_ok_help(const char *path,
       const char *label, unsigned type, size_t index)
 {
@@ -677,9 +687,7 @@ static int disk_options_disk_index_toggle(unsigned type, const char *label,
       unsigned current   = control->get_image_index();
       unsigned next_index = (current + num_disks + 1 + step)
          % (num_disks + 1);
-      rarch_disk_control_set_eject(true, false);
       rarch_disk_control_set_index(next_index);
-      rarch_disk_control_set_eject(false, false);
    }
 
    return 0;
@@ -814,6 +822,8 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
       case MENU_FILE_CATEGORY:
          cbs->action_ok = action_ok_push_default;
          break;
+      case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS:
+         cbs->action_ok = action_ok_disk_cycle_tray_status;
       default:
          return -1;
    }

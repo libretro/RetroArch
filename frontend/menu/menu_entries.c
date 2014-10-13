@@ -507,6 +507,8 @@ static int push_list(menu_handle_t *menu,
       file_list_clear(list);
       file_list_push(list, "Disk Index", "disk_index",
             MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0);
+      file_list_push(list, "Disk Cycle Tray Status", "disk_cycle_tray_status",
+            MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0);
       file_list_push(list, "Disk Image Append", "disk_image_append",
             MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0);
    }
