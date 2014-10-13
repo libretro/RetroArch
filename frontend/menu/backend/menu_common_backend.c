@@ -219,6 +219,7 @@ static int menu_settings_iterate(unsigned action,
          break;
 
       case MENU_ACTION_CANCEL:
+         apply_deferred_settings();
          menu_entries_pop_list(driver.menu->menu_stack);
          break;
       case MENU_ACTION_SELECT:
