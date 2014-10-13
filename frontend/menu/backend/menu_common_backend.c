@@ -52,10 +52,9 @@ static int menu_info_screen_iterate(unsigned action)
    char needle[PATH_MAX];
    unsigned info_type = 0;
    rarch_setting_t *current_setting = NULL;
-   rarch_setting_t *setting_data = (rarch_setting_t *)driver.menu->list_settings;
    file_list_t *list = (file_list_t*)driver.menu->selection_buf;
 
-   if (!driver.menu || !setting_data)
+   if (!driver.menu)
       return 0;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
