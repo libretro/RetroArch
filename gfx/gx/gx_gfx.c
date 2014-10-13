@@ -310,15 +310,6 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    g_current_framebuf = 0;
 }
 
-const char *gx_get_video_mode(void)
-{
-   static char format[16];
-   snprintf(format, sizeof(format), "%.3ux%.3u%c",
-         gx_mode.fbWidth, gx_mode.efbHeight,
-         (gx_mode.viTVMode & 3) == VI_INTERLACE ? 'i' : 'p');
-   return format;
-}
-
 static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    gx_video_t *gx = (gx_video_t*)driver.video_data;
