@@ -1586,8 +1586,6 @@ void rarch_disk_control_append_image(const char *path)
    info.path = path;
    control->replace_image_index(new_index, &info);
 
-   rarch_disk_control_set_index(new_index);
-
    snprintf(msg, sizeof(msg), "Appended disk: %s", path);
    RARCH_LOG("%s\n", msg);
    msg_queue_clear(g_extern.msg_queue);
