@@ -188,13 +188,8 @@ bool menu_init_list(void *data)
    if (!menu)
       return false;
 
-   menu->list_mainmenu = setting_data_new(SL_FLAG_MAIN_MENU);
-   menu->list_settings = setting_data_new(SL_FLAG_ALL_SETTINGS);
-
-   file_list_push(menu->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
-   menu_clear_navigation(menu, true);
-   menu_entries_push_list(menu, menu->selection_buf,
-         "", "Main Menu", 0);
+   if (!menu_entries_init(menu))
+      return false;
 
    if (driver.menu_ctx && driver.menu_ctx->init_lists)
       if (!(driver.menu_ctx->init_lists(menu)))

@@ -172,228 +172,7 @@ void menu_entries_push(
    driver.menu->need_refresh = true;
 }
 
-static int menu_parse_list(file_list_t *list, file_list_t *menu_list,
-      const char *dir, const char *label, unsigned type,
-      unsigned default_type_plain, const char *exts)
-{
-   size_t i, list_size;
-   struct string_list *str_list = NULL;
-
-   file_list_clear(list);
-
-   if (!*dir)
-   {
-#if defined(GEKKO)
-#ifdef HW_RVL
-      file_list_push(list,
-            "sd:/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "usb:/", "", MENU_FILE_DIRECTORY, 0);
-#endif
-      file_list_push(list,
-            "carda:/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "cardb:/", "", MENU_FILE_DIRECTORY, 0);
-#elif defined(_XBOX1)
-      file_list_push(list,
-            "C:", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "D:", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "E:", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "F:", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "G:", "", MENU_FILE_DIRECTORY, 0);
-#elif defined(_XBOX360)
-      file_list_push(list,
-            "game:", "", MENU_FILE_DIRECTORY, 0);
-#elif defined(_WIN32)
-      unsigned drives = GetLogicalDrives();
-      char drive[] = " :\\";
-      for (i = 0; i < 32; i++)
-      {
-         drive[0] = 'A' + i;
-         if (drives & (1 << i))
-            file_list_push(list,
-                  drive, "", MENU_FILE_DIRECTORY, 0);
-      }
-#elif defined(__CELLOS_LV2__)
-      file_list_push(list,
-            "/app_home/",   "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "/dev_hdd0/",   "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "/dev_hdd1/",   "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "/host_root/",  "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "/dev_usb000/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "/dev_usb001/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "/dev_usb002/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "/dev_usb003/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "/dev_usb004/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "/dev_usb005/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "/dev_usb006/", "", MENU_FILE_DIRECTORY, 0);
-#elif defined(PSP)
-      file_list_push(list,
-            "ms0:/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "ef0:/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            "host0:/", "", MENU_FILE_DIRECTORY, 0);
-#elif defined(IOS)
-      file_list_push(list,
-            "/var/mobile/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
-            g_defaults.core_dir, "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list, "/", "",
-            MENU_FILE_DIRECTORY, 0);
-#else
-      file_list_push(list, "/", "",
-            MENU_FILE_DIRECTORY, 0);
-#endif
-      return 0;
-   }
-#if defined(GEKKO) && defined(HW_RVL)
-   LWP_MutexLock(gx_device_mutex);
-   int dev = gx_get_device_from_path(dir);
-
-   if (dev != -1 && !gx_devices[dev].mounted &&
-         gx_devices[dev].interface->isInserted())
-      fatMountSimple(gx_devices[dev].name, gx_devices[dev].interface);
-
-   LWP_MutexUnlock(gx_device_mutex);
-#endif
-
-   bool path_is_compressed = path_is_compressed_file(dir);
-
-   if (path_is_compressed)
-      str_list = compressed_file_list_new(dir,exts);
-   else
-      str_list = dir_list_new(dir, exts, true);
-
-   if (!str_list)
-      return -1;
-
-   dir_list_sort(str_list, true);
-
-   if (menu_common_type_is(label, type) == MENU_FILE_DIRECTORY)
-      file_list_push(list, "<Use this directory>", "",
-            MENU_FILE_USE_DIRECTORY, 0);
-
-   list_size = str_list->size;
-   for (i = 0; i < str_list->size; i++)
-   {
-      menu_file_type_t file_type = MENU_FILE_NONE;
-      switch (str_list->elems[i].attr.i)
-      {
-         case RARCH_DIRECTORY:
-            file_type = MENU_FILE_DIRECTORY;
-            break;
-         case RARCH_COMPRESSED_ARCHIVE:
-            file_type = MENU_FILE_CARCHIVE;
-            break;
-         case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
-            file_type = MENU_FILE_IN_CARCHIVE;
-            break;
-         case RARCH_PLAIN_FILE:
-         default:
-            if (!strcmp(label, "detect_core_list"))
-            {
-               if (path_is_compressed_file(str_list->elems[i].data))
-               {
-                  /* in case of deferred_core_list we have to interpret
-                   * every archive as an archive to disallow instant loading
-                   */
-                  file_type = MENU_FILE_CARCHIVE;
-                  break;
-               }
-            }
-            file_type = (menu_file_type_t)default_type_plain;
-            break;
-      }
-      bool is_dir = (file_type == MENU_FILE_DIRECTORY);
-
-      if ((menu_common_type_is(label, type) == MENU_FILE_DIRECTORY) && !is_dir)
-         continue;
-
-
-      /* Need to preserve slash first time. */
-      const char *path = str_list->elems[i].data;
-
-      if (*dir && !path_is_compressed)
-         path = path_basename(path);
-
-
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-#ifdef RARCH_CONSOLE
-      if (!strcmp(label, "core_list") && (is_dir ||
-               strcasecmp(path, SALAMANDER_FILE) == 0))
-         continue;
-#endif
-#endif
-
-      /* Push type further down in the chain.
-       * Needed for shader manager currently. */
-      if (!strcmp(label, "core_list"))
-      {
-         /* Compressed cores are unsupported */
-         if (file_type == MENU_FILE_CARCHIVE)
-            continue;
-
-         file_list_push(list, path, "",
-               is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE, 0);
-      }
-      else
-      file_list_push(list, path, "",
-            file_type, 0);
-   }
-
-   menu_entries_push_list(driver.menu, list,
-         dir, label, type);
-   string_list_free(str_list);
-
-   if (!strcmp(label, "core_list"))
-   {
-      file_list_get_last(menu_list, &dir, NULL, NULL);
-      list_size = file_list_get_size(list);
-
-      for (i = 0; i < list_size; i++)
-      {
-         char core_path[PATH_MAX], display_name[PATH_MAX];
-         const char *path = NULL;
-         unsigned type = 0;
-
-         file_list_get_at_offset(list, i, &path, NULL, &type);
-         if (type != MENU_FILE_CORE)
-            continue;
-
-         fill_pathname_join(core_path, dir, path, sizeof(core_path));
-
-         if (g_extern.core_info &&
-               core_info_list_get_display_name(g_extern.core_info,
-                  core_path, display_name, sizeof(display_name)))
-            file_list_set_alt_at_offset(list, i, display_name);
-      }
-      file_list_sort_on_alt(list);
-   }
-
-   driver.menu->scroll_indices_size = 0;
-   menu_build_scroll_indices(list);
-
-   entries_refresh(list);
-
-   return 0;
-}
-
-int menu_entries_push_list(menu_handle_t *menu,
+static int menu_entries_push_list(menu_handle_t *menu,
       file_list_t *list,
       const char *path, const char *label,
       unsigned menu_type)
@@ -763,6 +542,228 @@ int menu_entries_push_list(menu_handle_t *menu,
    return 0;
 }
 
+static int menu_parse_list(file_list_t *list, file_list_t *menu_list,
+      const char *dir, const char *label, unsigned type,
+      unsigned default_type_plain, const char *exts)
+{
+   size_t i, list_size;
+   struct string_list *str_list = NULL;
+
+   file_list_clear(list);
+
+   if (!*dir)
+   {
+#if defined(GEKKO)
+#ifdef HW_RVL
+      file_list_push(list,
+            "sd:/", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "usb:/", "", MENU_FILE_DIRECTORY, 0);
+#endif
+      file_list_push(list,
+            "carda:/", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "cardb:/", "", MENU_FILE_DIRECTORY, 0);
+#elif defined(_XBOX1)
+      file_list_push(list,
+            "C:", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "D:", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "E:", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "F:", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "G:", "", MENU_FILE_DIRECTORY, 0);
+#elif defined(_XBOX360)
+      file_list_push(list,
+            "game:", "", MENU_FILE_DIRECTORY, 0);
+#elif defined(_WIN32)
+      unsigned drives = GetLogicalDrives();
+      char drive[] = " :\\";
+      for (i = 0; i < 32; i++)
+      {
+         drive[0] = 'A' + i;
+         if (drives & (1 << i))
+            file_list_push(list,
+                  drive, "", MENU_FILE_DIRECTORY, 0);
+      }
+#elif defined(__CELLOS_LV2__)
+      file_list_push(list,
+            "/app_home/",   "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "/dev_hdd0/",   "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "/dev_hdd1/",   "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "/host_root/",  "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "/dev_usb000/", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "/dev_usb001/", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "/dev_usb002/", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "/dev_usb003/", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "/dev_usb004/", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "/dev_usb005/", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "/dev_usb006/", "", MENU_FILE_DIRECTORY, 0);
+#elif defined(PSP)
+      file_list_push(list,
+            "ms0:/", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "ef0:/", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            "host0:/", "", MENU_FILE_DIRECTORY, 0);
+#elif defined(IOS)
+      file_list_push(list,
+            "/var/mobile/", "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list,
+            g_defaults.core_dir, "", MENU_FILE_DIRECTORY, 0);
+      file_list_push(list, "/", "",
+            MENU_FILE_DIRECTORY, 0);
+#else
+      file_list_push(list, "/", "",
+            MENU_FILE_DIRECTORY, 0);
+#endif
+      return 0;
+   }
+#if defined(GEKKO) && defined(HW_RVL)
+   LWP_MutexLock(gx_device_mutex);
+   int dev = gx_get_device_from_path(dir);
+
+   if (dev != -1 && !gx_devices[dev].mounted &&
+         gx_devices[dev].interface->isInserted())
+      fatMountSimple(gx_devices[dev].name, gx_devices[dev].interface);
+
+   LWP_MutexUnlock(gx_device_mutex);
+#endif
+
+   bool path_is_compressed = path_is_compressed_file(dir);
+
+   if (path_is_compressed)
+      str_list = compressed_file_list_new(dir,exts);
+   else
+      str_list = dir_list_new(dir, exts, true);
+
+   if (!str_list)
+      return -1;
+
+   dir_list_sort(str_list, true);
+
+   if (menu_common_type_is(label, type) == MENU_FILE_DIRECTORY)
+      file_list_push(list, "<Use this directory>", "",
+            MENU_FILE_USE_DIRECTORY, 0);
+
+   list_size = str_list->size;
+   for (i = 0; i < str_list->size; i++)
+   {
+      menu_file_type_t file_type = MENU_FILE_NONE;
+      switch (str_list->elems[i].attr.i)
+      {
+         case RARCH_DIRECTORY:
+            file_type = MENU_FILE_DIRECTORY;
+            break;
+         case RARCH_COMPRESSED_ARCHIVE:
+            file_type = MENU_FILE_CARCHIVE;
+            break;
+         case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
+            file_type = MENU_FILE_IN_CARCHIVE;
+            break;
+         case RARCH_PLAIN_FILE:
+         default:
+            if (!strcmp(label, "detect_core_list"))
+            {
+               if (path_is_compressed_file(str_list->elems[i].data))
+               {
+                  /* in case of deferred_core_list we have to interpret
+                   * every archive as an archive to disallow instant loading
+                   */
+                  file_type = MENU_FILE_CARCHIVE;
+                  break;
+               }
+            }
+            file_type = (menu_file_type_t)default_type_plain;
+            break;
+      }
+      bool is_dir = (file_type == MENU_FILE_DIRECTORY);
+
+      if ((menu_common_type_is(label, type) == MENU_FILE_DIRECTORY) && !is_dir)
+         continue;
+
+
+      /* Need to preserve slash first time. */
+      const char *path = str_list->elems[i].data;
+
+      if (*dir && !path_is_compressed)
+         path = path_basename(path);
+
+
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+#ifdef RARCH_CONSOLE
+      if (!strcmp(label, "core_list") && (is_dir ||
+               strcasecmp(path, SALAMANDER_FILE) == 0))
+         continue;
+#endif
+#endif
+
+      /* Push type further down in the chain.
+       * Needed for shader manager currently. */
+      if (!strcmp(label, "core_list"))
+      {
+         /* Compressed cores are unsupported */
+         if (file_type == MENU_FILE_CARCHIVE)
+            continue;
+
+         file_list_push(list, path, "",
+               is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE, 0);
+      }
+      else
+      file_list_push(list, path, "",
+            file_type, 0);
+   }
+
+   menu_entries_push_list(driver.menu, list,
+         dir, label, type);
+   string_list_free(str_list);
+
+   if (!strcmp(label, "core_list"))
+   {
+      file_list_get_last(menu_list, &dir, NULL, NULL);
+      list_size = file_list_get_size(list);
+
+      for (i = 0; i < list_size; i++)
+      {
+         char core_path[PATH_MAX], display_name[PATH_MAX];
+         const char *path = NULL;
+         unsigned type = 0;
+
+         file_list_get_at_offset(list, i, &path, NULL, &type);
+         if (type != MENU_FILE_CORE)
+            continue;
+
+         fill_pathname_join(core_path, dir, path, sizeof(core_path));
+
+         if (g_extern.core_info &&
+               core_info_list_get_display_name(g_extern.core_info,
+                  core_path, display_name, sizeof(display_name)))
+            file_list_set_alt_at_offset(list, i, display_name);
+      }
+      file_list_sort_on_alt(list);
+   }
+
+   driver.menu->scroll_indices_size = 0;
+   menu_build_scroll_indices(list);
+
+   entries_refresh(list);
+
+   return 0;
+}
+
+
 static int menu_parse_check(const char *label, unsigned menu_type)
 {
 #if 0
@@ -945,4 +946,20 @@ int menu_entries_set_current_path_selection(
    }
 
    return menu_action_setting_apply(setting);
+}
+
+bool menu_entries_init(menu_handle_t *menu)
+{
+   if (!menu)
+      return false;
+
+   menu->list_mainmenu = setting_data_new(SL_FLAG_MAIN_MENU);
+   menu->list_settings = setting_data_new(SL_FLAG_ALL_SETTINGS);
+
+   file_list_push(menu->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
+   menu_clear_navigation(menu, true);
+   menu_entries_push_list(menu, menu->selection_buf,
+         "", "Main Menu", 0);
+
+   return true;
 }

@@ -30,10 +30,6 @@ void menu_entries_push(file_list_t *list,
       const char *path, const char *label, unsigned type,
       size_t directory_ptr);
 
-int menu_entries_push_list(menu_handle_t *menu,
-      file_list_t *list, const char *path,
-      const char *label, unsigned menu_type);
-
 void menu_entries_pop_list(file_list_t *list);
 
 int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list);
@@ -47,6 +43,8 @@ int menu_entries_set_current_path_selection(
       rarch_setting_t *setting, const char *start_path,
       const char *label, unsigned type,
       unsigned action);
+
+bool menu_entries_init(menu_handle_t *menu);
 
 #ifdef __cplusplus
 }
