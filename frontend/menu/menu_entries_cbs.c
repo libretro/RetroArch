@@ -657,10 +657,16 @@ static int disk_options_disk_index_toggle(unsigned type, const char *label,
 {
    int step = 0;
 
-   if (action == MENU_ACTION_RIGHT || action == MENU_ACTION_OK)
-      step = 1;
-   else if (action == MENU_ACTION_LEFT)
-      step = -1;
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         step = -1;
+         break;
+      case MENU_ACTION_RIGHT:
+      case MENU_ACTION_OK:
+         step = 1;
+         break;
+   }
 
    if (step)
    {
@@ -674,6 +680,23 @@ static int disk_options_disk_index_toggle(unsigned type, const char *label,
       rarch_disk_control_set_eject(true, false);
       rarch_disk_control_set_index(next_index);
       rarch_disk_control_set_eject(false, false);
+   }
+
+   return 0;
+}
+
+static int custom_bind_mode_toggle(unsigned type, const char *label,
+      unsigned action)
+{
+   if (!driver.menu)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         driver.menu->bind_mode_keyboard = !driver.menu->bind_mode_keyboard;
+         break;
    }
 
    return 0;
@@ -879,8 +902,16 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
          type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
       cbs->action_toggle = performance_counters_core_toggle;
-   else if (type == MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX)
-      cbs->action_toggle = disk_options_disk_index_toggle;
+
+   switch (type)
+   {
+      case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
+         cbs->action_toggle = disk_options_disk_index_toggle;
+         break;
+      case MENU_SETTINGS_CUSTOM_BIND_MODE:
+         cbs->action_toggle = custom_bind_mode_toggle;
+         break;
+   }
 }
 
 void menu_entries_cbs_init(void *data,

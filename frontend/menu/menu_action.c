@@ -536,11 +536,6 @@ int menu_action_setting_set(unsigned id, const char *label,
    {
       switch (id)
       {
-         case MENU_SETTINGS_CUSTOM_BIND_MODE:
-            if (action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-               driver.menu->bind_mode_keyboard =
-                  !driver.menu->bind_mode_keyboard;
-            break;
 #if defined(GEKKO)
          case MENU_SETTINGS_VIDEO_RESOLUTION:
             if (action == MENU_ACTION_LEFT)
