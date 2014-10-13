@@ -308,7 +308,10 @@ static void *rmenu_init(void)
    menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
 
    if (!menu_texture)
+   {
+      free(menu);
       return NULL;
+   }
 
    return menu;
 }
