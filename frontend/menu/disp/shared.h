@@ -139,6 +139,9 @@ static void disp_set_label(unsigned *w, unsigned type, unsigned i,
    if (!strcmp(label, "performance_counters"))
       *w = 28;
 
+   if (!strcmp(label, "history_list"))
+      *w = 6;
+
    if (type == MENU_FILE_CORE)
    {
       strlcpy(type_str, "(CORE)", type_str_size);
