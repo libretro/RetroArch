@@ -57,21 +57,26 @@ typedef struct
 } gx_audio_t;
 
 static volatile gx_audio_t *gx_audio_data;
+static volatile bool stop_audio;
 
 static void dma_callback(void)
 {
    gx_audio_t *wa = (gx_audio_t*)gx_audio_data;
 
-   /* Erase last chunk to avoid repeating audio. */
-   memset(wa->data[wa->dma_busy], 0, CHUNK_SIZE);
+   if (!stop_audio)
+   {
+      /* Erase last chunk to avoid repeating audio. */
+      memset(wa->data[wa->dma_busy], 0, CHUNK_SIZE);
 
-   wa->dma_busy = wa->dma_next;
-   wa->dma_next = (wa->dma_next + 1) & (BLOCKS - 1);
+      wa->dma_busy = wa->dma_next;
+      wa->dma_next = (wa->dma_next + 1) & (BLOCKS - 1);
 
-   DCFlushRange(wa->data[wa->dma_next], CHUNK_SIZE);
-   AIInitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
+      DCFlushRange(wa->data[wa->dma_next], CHUNK_SIZE);
 
-   OSSignalCond(wa->cond);
+      AIInitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
+
+      OSSignalCond(wa->cond);
+   }
 }
 
 static void *gx_audio_init(const char *device,
@@ -103,6 +108,7 @@ static void *gx_audio_init(const char *device,
 
    wa->dma_write = BLOCKS - 1;
    DCFlushRange(wa->data, sizeof(wa->data));
+   stop_audio = false;
    AIInitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
    AIStartDMA();
 
@@ -201,6 +207,7 @@ static void gx_audio_free(void *data)
    if (!wa)
       return;
 
+   stop_audio = true;
    AIStopDMA();
    AIRegisterDMACallback(NULL);
 
