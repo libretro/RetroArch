@@ -402,33 +402,7 @@ int menu_action_setting_set(unsigned id, const char *label,
          driver.menu->list_mainmenu, list->list[driver.menu->selection_ptr].label);
 
    if (setting)
-   {
-      if (!strcmp(setting->name, "disk_index"))
-      {
-         int step = 0;
-
-         if (action == MENU_ACTION_RIGHT || action == MENU_ACTION_OK)
-            step = 1;
-         else if (action == MENU_ACTION_LEFT)
-            step = -1;
-
-         if (step)
-         {
-            const struct retro_disk_control_callback *control =
-               (const struct retro_disk_control_callback*)
-               &g_extern.system.disk_control;
-            unsigned num_disks = control->get_num_images();
-            unsigned current   = control->get_image_index();
-            unsigned next_index = (current + num_disks + 1 + step)
-               % (num_disks + 1);
-            rarch_disk_control_set_eject(true, false);
-            rarch_disk_control_set_index(next_index);
-            rarch_disk_control_set_eject(false, false);
-         }
-      }
-
       return menu_action_handle_setting(setting, id, label, action);
-   }
 
    /* Fallback. */
 

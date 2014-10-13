@@ -182,7 +182,7 @@ static int push_list(menu_handle_t *menu,
    bool do_action = false;
    bool is_history_list = !strcmp(label, "history_list");
 
-#if 0
+#if 1
    RARCH_LOG("Label is: %s\n", label);
    RARCH_LOG("Path is: %s\n", path);
    RARCH_LOG("Menu type is: %d\n", menu_type);
@@ -506,8 +506,10 @@ static int push_list(menu_handle_t *menu,
    else if (!strcmp(label, "disk_options"))
    {
       file_list_clear(list);
-      file_list_push(list, "Disk Index", "disk_index", 0, 0);
-      file_list_push(list, "Disk Image Append", "disk_image_append", 0, 0);
+      file_list_push(list, "Disk Index", "disk_index",
+            MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0);
+      file_list_push(list, "Disk Image Append", "disk_image_append",
+            MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0);
    }
    else if (
          !strcmp(label, "video_shader_preset_parameters") ||
@@ -765,7 +767,7 @@ static int menu_parse_list(file_list_t *list, file_list_t *menu_list,
 
 static int menu_parse_check(const char *label, unsigned menu_type)
 {
-#if 0
+#if 1
    RARCH_LOG("label is menu_parse_check: %s\n", label);
 #endif
    bool check = (!((menu_type == MENU_FILE_DIRECTORY ||
@@ -796,7 +798,7 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
 
    file_list_get_last(menu_list, &path, &label, &type);
 
-#if 0
+#if 1
    RARCH_LOG("label: %s\n", label);
 #endif
  

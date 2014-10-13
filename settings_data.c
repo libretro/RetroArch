@@ -1844,18 +1844,6 @@ void setting_data_get_label(char *type_str,
             else
                strlcpy(type_str, "<default>", type_str_size);
          }
-         else if (!strcmp(setting->name, "disk_index"))
-         {
-            const struct retro_disk_control_callback *control =
-               (const struct retro_disk_control_callback*)
-               &g_extern.system.disk_control;
-            unsigned images = control->get_num_images();
-            unsigned current = control->get_image_index();
-            if (current >= images)
-               strlcpy(type_str, "No Disk", type_str_size);
-            else
-               snprintf(type_str, type_str_size, "%u", current + 1);
-         }
          else
             setting_data_get_string_representation(setting, type_str, type_str_size);
       }
@@ -1889,6 +1877,18 @@ void setting_data_get_label(char *type_str,
                strlcpy(type_str, driver.menu->bind_mode_keyboard ?
                      "RetroKeyboard" : "RetroPad", type_str_size);
                break;
+            case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
+               {
+                  const struct retro_disk_control_callback *control =
+                     (const struct retro_disk_control_callback*)
+                     &g_extern.system.disk_control;
+                  unsigned images = control->get_num_images();
+                  unsigned current = control->get_image_index();
+                  if (current >= images)
+                     strlcpy(type_str, "No Disk", type_str_size);
+                  else
+                     snprintf(type_str, type_str_size, "%u", current + 1);
+               }
             default:
                *type_str = '\0';
                *w = 0;

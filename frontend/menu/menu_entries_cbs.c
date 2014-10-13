@@ -652,6 +652,33 @@ static int core_setting_toggle(unsigned type, const char *label,
    return 0;
 }
 
+static int disk_options_disk_index_toggle(unsigned type, const char *label,
+      unsigned action)
+{
+   int step = 0;
+
+   if (action == MENU_ACTION_RIGHT || action == MENU_ACTION_OK)
+      step = 1;
+   else if (action == MENU_ACTION_LEFT)
+      step = -1;
+
+   if (step)
+   {
+      const struct retro_disk_control_callback *control =
+         (const struct retro_disk_control_callback*)
+         &g_extern.system.disk_control;
+      unsigned num_disks = control->get_num_images();
+      unsigned current   = control->get_image_index();
+      unsigned next_index = (current + num_disks + 1 + step)
+         % (num_disks + 1);
+      rarch_disk_control_set_eject(true, false);
+      rarch_disk_control_set_index(next_index);
+      rarch_disk_control_set_eject(false, false);
+   }
+
+   return 0;
+}
+
 static int action_start_bind(unsigned type, const char *label,
       unsigned action)
 {
@@ -852,6 +879,8 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
          type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
       cbs->action_toggle = performance_counters_core_toggle;
+   else if (type == MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX)
+      cbs->action_toggle = disk_options_disk_index_toggle;
 }
 
 void menu_entries_cbs_init(void *data,
