@@ -1731,6 +1731,63 @@ static void menu_common_setting_set_label_perf(char *type_str,
    *w = 0;
 }
 
+static int get_fallback_label(char *type_str,
+      size_t type_str_size, unsigned *w, unsigned type, 
+      const char *menu_label, const char *label, unsigned index)
+{
+   int ret = 0;
+
+   switch (type)
+   {
+#if defined(GEKKO)
+      case MENU_SETTINGS_VIDEO_RESOLUTION:
+         strlcpy(type_str, gx_get_video_mode(), type_str_size);
+         break;
+#elif defined(__CELLOS_LV2__)
+      case MENU_SETTINGS_VIDEO_RESOLUTION:
+         {
+            unsigned width = gfx_ctx_get_resolution_width(
+                  g_extern.console.screen.resolutions.list
+                  [g_extern.console.screen.resolutions.current.idx]);
+            unsigned height = gfx_ctx_get_resolution_height(
+                  g_extern.console.screen.resolutions.list
+                  [g_extern.console.screen.resolutions.current.idx]);
+            snprintf(type_str, type_str_size, "%ux%u", width, height);
+         }
+         break;
+#endif
+      case MENU_SETTINGS_CUSTOM_VIEWPORT:
+      case MENU_SETTINGS_CUSTOM_BIND_ALL:
+      case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
+         strlcpy(type_str, "...", type_str_size);
+         break;
+      case MENU_SETTINGS_CUSTOM_BIND_MODE:
+         strlcpy(type_str, driver.menu->bind_mode_keyboard ?
+               "RetroKeyboard" : "RetroPad", type_str_size);
+         break;
+      case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
+         {
+            const struct retro_disk_control_callback *control =
+               (const struct retro_disk_control_callback*)
+               &g_extern.system.disk_control;
+            unsigned images = control->get_num_images();
+            unsigned current = control->get_image_index();
+            if (current >= images)
+               strlcpy(type_str, "No Disk", type_str_size);
+            else
+               snprintf(type_str, type_str_size, "%u", current + 1);
+         }
+         break;
+      default:
+         *type_str = '\0';
+         *w = 0;
+         ret = -1;
+         break;
+   }
+
+   return ret;
+}
+
 void setting_data_get_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned index)
@@ -1739,6 +1796,10 @@ void setting_data_get_label(char *type_str,
       driver.menu->list_settings;
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
          driver.menu->selection_buf->list[index].label);
+
+   if ((get_fallback_label(type_str, type_str_size, w, type, menu_label,
+         label, index)) == 0)
+      return;
 
    if ((!strcmp(menu_label, "Shader Options") ||
             !strcmp(menu_label, "video_shader_parameters") ||
@@ -1849,51 +1910,6 @@ void setting_data_get_label(char *type_str,
       }
       else
       {
-         switch (type)
-         {
-#if defined(GEKKO)
-            case MENU_SETTINGS_VIDEO_RESOLUTION:
-               strlcpy(type_str, gx_get_video_mode(), type_str_size);
-               break;
-#elif defined(__CELLOS_LV2__)
-            case MENU_SETTINGS_VIDEO_RESOLUTION:
-               {
-                  unsigned width = gfx_ctx_get_resolution_width(
-                        g_extern.console.screen.resolutions.list
-                        [g_extern.console.screen.resolutions.current.idx]);
-                  unsigned height = gfx_ctx_get_resolution_height(
-                        g_extern.console.screen.resolutions.list
-                        [g_extern.console.screen.resolutions.current.idx]);
-                  snprintf(type_str, type_str_size, "%ux%u", width, height);
-               }
-               break;
-#endif
-            case MENU_SETTINGS_CUSTOM_VIEWPORT:
-            case MENU_SETTINGS_CUSTOM_BIND_ALL:
-            case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
-               strlcpy(type_str, "...", type_str_size);
-               break;
-            case MENU_SETTINGS_CUSTOM_BIND_MODE:
-               strlcpy(type_str, driver.menu->bind_mode_keyboard ?
-                     "RetroKeyboard" : "RetroPad", type_str_size);
-               break;
-            case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
-               {
-                  const struct retro_disk_control_callback *control =
-                     (const struct retro_disk_control_callback*)
-                     &g_extern.system.disk_control;
-                  unsigned images = control->get_num_images();
-                  unsigned current = control->get_image_index();
-                  if (current >= images)
-                     strlcpy(type_str, "No Disk", type_str_size);
-                  else
-                     snprintf(type_str, type_str_size, "%u", current + 1);
-               }
-            default:
-               *type_str = '\0';
-               *w = 0;
-               break;
-         }
       }
    }
 }
