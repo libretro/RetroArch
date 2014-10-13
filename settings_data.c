@@ -1792,8 +1792,6 @@ static int get_fallback_label(char *type_str,
          }
          break;
       default:
-         *type_str = '\0';
-         *w = 0;
          ret = -1;
          break;
    }
