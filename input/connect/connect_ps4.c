@@ -54,8 +54,14 @@ static void* hidpad_ps4_connect(void *connect_data, uint32_t slot, send_control_
    struct hidpad_ps4_data* device = (struct hidpad_ps4_data*)
     calloc(1, sizeof(struct hidpad_ps4_data));
 
-   if (!device || !connection)
+   if (!device)
       return NULL;
+
+   if (!connection)
+   {
+      free(device);
+      return NULL;
+   }
 
    device->connection = connection;  
    device->slot = slot;

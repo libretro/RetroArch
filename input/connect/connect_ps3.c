@@ -60,8 +60,14 @@ static void* hidpad_ps3_connect(void *connect_data, uint32_t slot, send_control_
    struct hidpad_ps3_data* device = (struct hidpad_ps3_data*)
     calloc(1, sizeof(struct hidpad_ps3_data));
 
-   if (!device || !connection)
+   if (!device)
       return NULL;
+
+   if (!connection)
+   {
+      free(device);
+      return NULL;
+   }
 
    device->connection = connection;  
    device->slot = slot;
