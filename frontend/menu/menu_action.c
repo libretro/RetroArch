@@ -43,22 +43,25 @@ int menu_action_setting_boolean(
          !strcmp(setting->name, "savestate") ||
          !strcmp(setting->name, "loadstate"))
    {
-      if (action == MENU_ACTION_START)
-         g_settings.state_slot = 0;
-      else if (action == MENU_ACTION_LEFT)
+      switch (action)
       {
-         // Slot -1 is (auto) slot.
-         if (g_settings.state_slot >= 0)
-            g_settings.state_slot--;
-      }
-      else if (action == MENU_ACTION_RIGHT)
-         g_settings.state_slot++;
-      else if (action == MENU_ACTION_OK)
-      {
-         *setting->value.boolean = !(*setting->value.boolean);
+         case MENU_ACTION_START:
+            g_settings.state_slot = 0;
+            break;
+         case MENU_ACTION_LEFT:
+            // Slot -1 is (auto) slot.
+            if (g_settings.state_slot >= 0)
+               g_settings.state_slot--;
+            break;
+         case MENU_ACTION_RIGHT:
+            g_settings.state_slot++;
+            break;
+         case MENU_ACTION_OK:
+            *setting->value.boolean = !(*setting->value.boolean);
 
-         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-            setting->cmd_trigger.triggered = true;
+            if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+               setting->cmd_trigger.triggered = true;
+            break;
       }
    }
    else
@@ -140,23 +143,28 @@ int menu_action_setting_fraction(
 {
    if (!strcmp(setting->name, "video_refresh_rate_auto"))
    {
-      if (action == MENU_ACTION_START)
-         g_extern.measure_data.frame_time_samples_count = 0;
-      else if (action == MENU_ACTION_OK)
+      switch (action)
       {
-         double refresh_rate, deviation = 0.0;
-         unsigned sample_points = 0;
+         case MENU_ACTION_START:
+            g_extern.measure_data.frame_time_samples_count = 0;
+            break;
+         case MENU_ACTION_OK:
+            {
+               double refresh_rate, deviation = 0.0;
+               unsigned sample_points = 0;
 
-         if (driver_monitor_fps_statistics(&refresh_rate,
-                  &deviation, &sample_points))
-         {
-            driver_set_monitor_refresh_rate(refresh_rate);
-            /* Incase refresh rate update forced non-block video. */
-            rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
-         }
+               if (driver_monitor_fps_statistics(&refresh_rate,
+                        &deviation, &sample_points))
+               {
+                  driver_set_monitor_refresh_rate(refresh_rate);
+                  /* Incase refresh rate update forced non-block video. */
+                  rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
+               }
 
-         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-            setting->cmd_trigger.triggered = true;
+               if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+                  setting->cmd_trigger.triggered = true;
+            }
+            break;
       }
    }
    else
@@ -203,10 +211,15 @@ void menu_action_setting_driver(
 {
    if (!strcmp(setting->name, "audio_resampler_driver"))
    {
-      if (action == MENU_ACTION_LEFT)
-         find_prev_resampler_driver();
-      else if (action == MENU_ACTION_RIGHT)
-         find_next_resampler_driver();
+      switch (action)
+      {
+         case MENU_ACTION_LEFT:
+            find_prev_resampler_driver();
+            break;
+         case MENU_ACTION_RIGHT:
+            find_next_resampler_driver();
+            break;
+      }
    }
    else if (setting->flags & SD_FLAG_IS_DRIVER)
    {
@@ -281,11 +294,16 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             (setting->flags & SD_FLAG_ALLOW_INPUT) || 
             id == MENU_FILE_LINEFEED_SWITCH)
       {
-         if (action == MENU_ACTION_OK)
-            menu_key_start_line(driver.menu, setting->short_description,
-                  setting->name, st_string_callback);
-         else if (action == MENU_ACTION_START)
-            *setting->value.string = '\0';
+         switch (action)
+         {
+            case MENU_ACTION_OK:
+               menu_key_start_line(driver.menu, setting->short_description,
+                     setting->name, st_string_callback);
+               break;
+            case MENU_ACTION_START:
+               *setting->value.string = '\0';
+               break;
+         }
       }
       else
          menu_action_setting_driver(setting, action);
@@ -408,13 +426,20 @@ int menu_action_setting_set(unsigned id, const char *label,
 
    if (!strcmp(label, "input_bind_device_id"))
    {
-      int *p = &g_settings.input.joypad_map[port];
-      if (action == MENU_ACTION_START)
-         *p = port;
-      else if (action == MENU_ACTION_LEFT)
-         (*p)--;
-      else if (action == MENU_ACTION_RIGHT)
-         (*p)++;
+      int *p = (int*)&g_settings.input.joypad_map[port];
+
+      switch (action)
+      {
+         case MENU_ACTION_START:
+            *p = port;
+            break;
+         case MENU_ACTION_LEFT:
+            (*p)--;
+            break;
+         case MENU_ACTION_RIGHT:
+            (*p)++;
+            break;
+      }
 
       if (*p < -1)
          *p = -1;
@@ -460,49 +485,50 @@ int menu_action_setting_set(unsigned id, const char *label,
          }
       }
 
-      bool updated = true;
       switch (action)
       {
          case MENU_ACTION_START:
             current_device = RETRO_DEVICE_JOYPAD;
+
+            g_settings.input.libretro_device[port] = current_device;
+            pretro_set_controller_port_device(port, current_device);
             break;
 
          case MENU_ACTION_LEFT:
             current_device = devices
                [(current_index + types - 1) % types];
+
+            g_settings.input.libretro_device[port] = current_device;
+            pretro_set_controller_port_device(port, current_device);
             break;
 
          case MENU_ACTION_RIGHT:
          case MENU_ACTION_OK:
             current_device = devices
                [(current_index + 1) % types];
+
+            g_settings.input.libretro_device[port] = current_device;
+            pretro_set_controller_port_device(port, current_device);
             break;
-
-         default:
-            updated = false;
       }
-
-      if (updated)
-      {
-         g_settings.input.libretro_device[port] = current_device;
-         pretro_set_controller_port_device(port, current_device);
-      }
-
    }
    else if (!strcmp(label, "input_bind_player_no"))
    {
-      if (action == MENU_ACTION_START)
-         driver.menu->current_pad = 0;
-      else if (action == MENU_ACTION_LEFT)
+      switch (action)
       {
-         if (driver.menu->current_pad != 0)
-            driver.menu->current_pad--;
+         case MENU_ACTION_START:
+            driver.menu->current_pad = 0;
+            break;
+         case MENU_ACTION_LEFT:
+            if (driver.menu->current_pad != 0)
+               driver.menu->current_pad--;
+            break;
+         case MENU_ACTION_RIGHT:
+            if (driver.menu->current_pad < MAX_PLAYERS - 1)
+               driver.menu->current_pad++;
+            break;
       }
-      else if (action == MENU_ACTION_RIGHT)
-      {
-         if (driver.menu->current_pad < MAX_PLAYERS - 1)
-            driver.menu->current_pad++;
-      }
+
       if (port != driver.menu->current_pad)
          driver.menu->need_refresh = true;
       port = driver.menu->current_pad;
@@ -527,9 +553,6 @@ int menu_action_setting_set(unsigned id, const char *label,
                (g_settings.input.analog_dpad_mode
                 [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
             break;
-
-         default:
-            break;
       }
    }
    else
@@ -538,75 +561,73 @@ int menu_action_setting_set(unsigned id, const char *label,
       {
 #if defined(GEKKO)
          case MENU_SETTINGS_VIDEO_RESOLUTION:
-            if (action == MENU_ACTION_LEFT)
+            switch (action)
             {
-               if (menu_current_gx_resolution > 0)
-                  menu_current_gx_resolution--;
-            }
-            else if (action == MENU_ACTION_RIGHT)
-            {
-               if (menu_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
-               {
+               case MENU_ACTION_LEFT:
+                  if (menu_current_gx_resolution > 0)
+                     menu_current_gx_resolution--;
+                  break;
+               case MENU_ACTION_RIGHT:
+                  if (menu_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
+                  {
 #ifdef HW_RVL
-                  if ((menu_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
-                     if (CONF_GetVideo() != CONF_VIDEO_PAL)
-                        return 0;
+                     if ((menu_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
+                        if (CONF_GetVideo() != CONF_VIDEO_PAL)
+                           return 0;
 #endif
 
-                  menu_current_gx_resolution++;
-               }
-            }
-            else if (action == MENU_ACTION_OK)
-            {
-               if (driver.video_data)
-                  gx_set_video_mode(driver.video_data, menu_gx_resolutions
-                        [menu_current_gx_resolution][0],
-                        menu_gx_resolutions[menu_current_gx_resolution][1]);
+                     menu_current_gx_resolution++;
+                  }
+                  break;
+               case MENU_ACTION_OK:
+                  if (driver.video_data)
+                     gx_set_video_mode(driver.video_data, menu_gx_resolutions
+                           [menu_current_gx_resolution][0],
+                           menu_gx_resolutions[menu_current_gx_resolution][1]);
+                  break;
             }
             break;
 #elif defined(__CELLOS_LV2__)
          case MENU_SETTINGS_VIDEO_RESOLUTION:
-            if (action == MENU_ACTION_LEFT)
+            switch (action)
             {
-               if (g_extern.console.screen.resolutions.current.idx)
-               {
-                  g_extern.console.screen.resolutions.current.idx--;
-                  g_extern.console.screen.resolutions.current.id =
-                     g_extern.console.screen.resolutions.list
-                     [g_extern.console.screen.resolutions.current.idx];
-               }
-            }
-            else if (action == MENU_ACTION_RIGHT)
-            {
-               if (g_extern.console.screen.resolutions.current.idx + 1 <
-                     g_extern.console.screen.resolutions.count)
-               {
-                  g_extern.console.screen.resolutions.current.idx++;
-                  g_extern.console.screen.resolutions.current.id =
-                     g_extern.console.screen.resolutions.list
-                     [g_extern.console.screen.resolutions.current.idx];
-               }
-            }
-            else if (action == MENU_ACTION_OK)
-            {
-               if (g_extern.console.screen.resolutions.list[
-                     g_extern.console.screen.resolutions.current.idx] == 
-                     CELL_VIDEO_OUT_RESOLUTION_576)
-               {
-                  if (g_extern.console.screen.pal_enable)
-                     g_extern.console.screen.pal60_enable = true;
-               }
-               else
-               {
-                  g_extern.console.screen.pal_enable = false;
-                  g_extern.console.screen.pal60_enable = false;
-               }
+               case MENU_ACTION_LEFT:
+                  if (g_extern.console.screen.resolutions.current.idx)
+                  {
+                     g_extern.console.screen.resolutions.current.idx--;
+                     g_extern.console.screen.resolutions.current.id =
+                        g_extern.console.screen.resolutions.list
+                        [g_extern.console.screen.resolutions.current.idx];
+                  }
+                  break;
+               case MENU_ACTION_RIGHT:
+                  if (g_extern.console.screen.resolutions.current.idx + 1 <
+                        g_extern.console.screen.resolutions.count)
+                  {
+                     g_extern.console.screen.resolutions.current.idx++;
+                     g_extern.console.screen.resolutions.current.id =
+                        g_extern.console.screen.resolutions.list
+                        [g_extern.console.screen.resolutions.current.idx];
+                  }
+                  break;
+               case MENU_ACTION_OK:
+                  if (g_extern.console.screen.resolutions.list[
+                        g_extern.console.screen.resolutions.current.idx] == 
+                        CELL_VIDEO_OUT_RESOLUTION_576)
+                  {
+                     if (g_extern.console.screen.pal_enable)
+                        g_extern.console.screen.pal60_enable = true;
+                  }
+                  else
+                  {
+                     g_extern.console.screen.pal_enable = false;
+                     g_extern.console.screen.pal60_enable = false;
+                  }
 
-               rarch_main_command(RARCH_CMD_REINIT);
+                  rarch_main_command(RARCH_CMD_REINIT);
+                  break;
             }
 #endif
-            break;
-         default:
             break;
       }
    }
