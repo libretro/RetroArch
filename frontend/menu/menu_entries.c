@@ -172,7 +172,7 @@ void menu_entries_push(
    driver.menu->need_refresh = true;
 }
 
-static int menu_entries_push_list(menu_handle_t *menu,
+static int push_list(menu_handle_t *menu,
       file_list_t *list,
       const char *path, const char *label,
       unsigned menu_type)
@@ -726,8 +726,7 @@ static int menu_parse_list(file_list_t *list, file_list_t *menu_list,
             file_type, 0);
    }
 
-   menu_entries_push_list(driver.menu, list,
-         dir, label, type);
+   push_list(driver.menu, list, dir, label, type);
    string_list_free(str_list);
 
    if (!strcmp(label, "core_list"))
@@ -802,7 +801,7 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
 #endif
  
    if (((menu_parse_check(label, type)) == -1))
-      return menu_entries_push_list(driver.menu, list, path, label, type);
+      return push_list(driver.menu, list, path, label, type);
 
    //RARCH_LOG("LABEL: %s\n", label);
    if (!strcmp(label, "core_list"))
@@ -958,7 +957,7 @@ bool menu_entries_init(menu_handle_t *menu)
 
    file_list_push(menu->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
    menu_clear_navigation(menu, true);
-   menu_entries_push_list(menu, menu->selection_buf,
+   push_list(menu, menu->selection_buf,
          "", "Main Menu", 0);
 
    return true;
