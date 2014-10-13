@@ -32,7 +32,7 @@ void menu_entries_push(file_list_t *list,
 
 void menu_entries_pop_list(file_list_t *list);
 
-int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list);
+int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list);
 
 void menu_entries_pop_stack(file_list_t *list, const char *needle);
 

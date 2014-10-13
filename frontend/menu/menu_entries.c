@@ -786,7 +786,7 @@ static int menu_parse_check(const char *label, unsigned menu_type)
 }
 
 
-int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
+int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
 {
    unsigned type = 0, default_type_plain = MENU_FILE_PLAIN;
 

@@ -258,7 +258,7 @@ static int menu_settings_iterate(unsigned action)
          break;
 
       case MENU_ACTION_REFRESH:
-         menu_parse_and_resolve(driver.menu->selection_buf,
+         menu_entries_deferred_push(driver.menu->selection_buf,
                driver.menu->menu_stack);
 
          driver.menu->need_refresh = false;
@@ -633,7 +633,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_REFRESH:
-         menu_parse_and_resolve(driver.menu->selection_buf,
+         menu_entries_deferred_push(driver.menu->selection_buf,
                driver.menu->menu_stack);
 
          driver.menu->need_refresh = false;
