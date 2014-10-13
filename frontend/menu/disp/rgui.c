@@ -412,8 +412,6 @@ static void *rgui_init(void)
       free(menu);
       return NULL;
    }
-   
-   rgui_handle_t *rgui = (rgui_handle_t*)menu->userdata;
 
    menu->frame_buf = (uint16_t*)malloc(400 * 240 * sizeof(uint16_t)); 
 
