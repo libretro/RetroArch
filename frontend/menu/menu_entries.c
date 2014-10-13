@@ -190,7 +190,6 @@ static int push_list(menu_handle_t *menu,
 
    if (!strcmp(label, "history_list"))
    {
-      RARCH_LOG("Gets here.\n");
       file_list_clear(list);
       list_size = content_playlist_size(g_defaults.history);
 
