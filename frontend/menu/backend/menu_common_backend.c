@@ -100,11 +100,10 @@ static int menu_info_screen_iterate(unsigned action)
    return 0;
 }
 
-static int menu_action_ok(void)
+static int menu_action_ok(menu_file_list_cbs_t *cbs)
 {
    const char *label             = NULL;
    const char *path              = NULL;
-   menu_file_list_cbs_t *cbs     = NULL;
    unsigned type                 = 0;
 
    if (file_list_get_size(driver.menu->selection_buf) == 0)
@@ -112,10 +111,6 @@ static int menu_action_ok(void)
 
    file_list_get_at_offset(driver.menu->selection_buf,
          driver.menu->selection_ptr, &path, &label, &type);
-
-   cbs = (menu_file_list_cbs_t*)
-      file_list_get_actiondata_at_offset(driver.menu->selection_buf,
-            driver.menu->selection_ptr);
 
    if (cbs && cbs->action_ok)
       return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
@@ -191,22 +186,18 @@ static int menu_start_screen_iterate(unsigned action)
    return 0;
 }
 
-static int menu_settings_iterate(unsigned action)
+static int menu_settings_iterate(unsigned action,
+      menu_file_list_cbs_t *cbs)
 {
    const char *path  = NULL;
    const char *label = NULL;
    unsigned type = 0;
    unsigned menu_type = 0;
-   menu_file_list_cbs_t *cbs = NULL;
    
    driver.menu->frame_buf_pitch = driver.menu->width * 2;
 
    file_list_get_at_offset(driver.menu->selection_buf,
          driver.menu->selection_ptr, &path, &label, &type);
-
-   cbs = (menu_file_list_cbs_t*)
-      file_list_get_actiondata_at_offset(driver.menu->selection_buf,
-            driver.menu->selection_ptr);
 
    if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_REFRESH;
@@ -540,6 +531,9 @@ static int menu_common_iterate(unsigned action)
    const char *path = NULL;
    const char *menu_label = NULL;
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      file_list_get_actiondata_at_offset(driver.menu->selection_buf,
+            driver.menu->selection_ptr);
 
    file_list_get_last(driver.menu->menu_stack, &path, &menu_label, &menu_type);
 
@@ -555,7 +549,7 @@ static int menu_common_iterate(unsigned action)
    else if (!strcmp(menu_label, "info_screen"))
       return menu_info_screen_iterate(action);
    else if (menu_common_type_is(menu_label, menu_type) == MENU_SETTINGS)
-      return menu_settings_iterate(action);
+      return menu_settings_iterate(action, cbs);
    else if (
          menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
          !strcmp(menu_label, "custom_viewport_2")
@@ -629,7 +623,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_OK:
-         ret = menu_action_ok();
+         ret = menu_action_ok(cbs);
          break;
 
       case MENU_ACTION_REFRESH:
