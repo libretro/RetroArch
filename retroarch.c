@@ -2177,6 +2177,9 @@ bool rarch_main_command(unsigned cmd)
             rarch_update_system_info(&g_extern.menu.info,
                   &driver.menu->load_no_content);
 #endif
+#ifndef HAVE_DYNAMIC
+         rarch_main_command(RARCH_CMD_QUIT);
+#endif
          break;
       case RARCH_CMD_LOAD_STATE:
          /* Immutable - disallow savestate load when 
