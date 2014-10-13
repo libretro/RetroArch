@@ -575,12 +575,12 @@ static void *xmb_init(void)
    menu->userdata = (xmb_handle_t*)calloc(1, sizeof(xmb_handle_t));
 
    if (!menu->userdata)
+   {
+      free(menu);
       return NULL;
+   }
 
    xmb = (xmb_handle_t*)menu->userdata;
-
-   if (!xmb)
-      return NULL;
 
    xmb->x               = 0;
    xmb->alpha           = 1.0f;
