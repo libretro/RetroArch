@@ -1966,6 +1966,8 @@ int rarch_main_init(int argc, char *argv[])
    rarch_main_command(RARCH_CMD_RECORD_INIT);
    rarch_main_command(RARCH_CMD_CHEATS_INIT);
 
+   rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
+
    g_extern.error_in_init = false;
    g_extern.main_is_init  = true;
    return 0;
@@ -2562,17 +2564,17 @@ bool rarch_main_command(unsigned cmd)
          g_extern.savefiles = NULL;
          break;
       case RARCH_CMD_SAVEFILES_INIT:
-         rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
-
          g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable
 #ifdef HAVE_NETPLAY
             && (!driver.netplay_data || !g_extern.netplay_is_client)
 #endif
             ;
+
+         if (!g_extern.use_sram)
+            RARCH_LOG("SRAM will not be saved.\n");
+
          if (g_extern.use_sram)
             rarch_main_command(RARCH_CMD_AUTOSAVE_INIT);
-         else
-            RARCH_LOG("SRAM will not be saved.\n");
          break;
       case RARCH_CMD_MSG_QUEUE_DEINIT:
          if (g_extern.msg_queue)
