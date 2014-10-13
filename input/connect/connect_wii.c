@@ -463,8 +463,14 @@ static void* hidpad_wii_connect(void *data, uint32_t slot,
    struct wiimote_t *device = (struct wiimote_t*)
       calloc(1, sizeof(struct wiimote_t));
 
-   if (!device || !connection)
+   if (!device)
       return NULL;
+
+   if (!connection)
+   {
+      free(device);
+      return NULL;
+   }
 
    device->connection = connection;
    device->unid = slot;
