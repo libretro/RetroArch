@@ -134,6 +134,7 @@ static void disp_set_label(unsigned *w, unsigned type, unsigned i,
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   *type_str = '\0';
    *w = 19;
 
    if (!strcmp(label, "performance_counters"))
