@@ -510,6 +510,9 @@ static void gx_joypad_poll(void)
    }
 
    uint64_t *state_p1 = &pad_state[0];
+   uint64_t *lifecycle_state = &g_extern.lifecycle_state;
+
+   *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
 
    if (g_menu)
    {
@@ -522,7 +525,7 @@ static void gx_joypad_poll(void)
             | (1ULL << GX_CLASSIC_HOME)
 #endif
             ))
-      g_extern.lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+      *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 }
 
 static bool gx_joypad_query_pad(unsigned pad)
