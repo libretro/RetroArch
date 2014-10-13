@@ -191,7 +191,6 @@ static int menu_settings_iterate(unsigned action,
    const char *path  = NULL;
    const char *label = NULL;
    unsigned type = 0;
-   unsigned menu_type = 0;
    
    driver.menu->frame_buf_pitch = driver.menu->width * 2;
 
