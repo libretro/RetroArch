@@ -94,8 +94,7 @@ static void gx_input_poll(void *data)
 
 static bool gx_input_key_pressed(void *data, int key)
 {
-   return (g_extern.lifecycle_state & (1ULL << key)) || 
-      input_joypad_pressed(&gx_joypad, 0, g_settings.input.binds[0], key);
+   return input_joypad_pressed(&gx_joypad, 0, g_settings.input.binds[0], key);
 }
 
 static uint64_t gx_input_get_capabilities(void *data)
