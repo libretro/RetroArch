@@ -258,11 +258,8 @@ static int menu_settings_iterate(unsigned action)
          break;
 
       case MENU_ACTION_REFRESH:
-         file_list_get_last(driver.menu->menu_stack, &path, &label, &menu_type);
-
-         if ((menu_parse_check(label, menu_type) == -1))
-            menu_entries_push_list(driver.menu,
-                  driver.menu->selection_buf, path, label, menu_type);
+         menu_parse_and_resolve(driver.menu->selection_buf,
+               driver.menu->menu_stack);
 
          driver.menu->need_refresh = false;
          break;

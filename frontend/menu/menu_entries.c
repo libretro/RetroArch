@@ -409,7 +409,37 @@ int menu_entries_push_list(menu_handle_t *menu,
    RARCH_LOG("Menu type is: %d\n", menu_type);
 #endif
 
-   if (!strcmp(label, "Main Menu"))
+   if (!strcmp(label, "history_list"))
+   {
+      RARCH_LOG("Gets here.\n");
+      file_list_clear(list);
+      list_size = content_playlist_size(g_defaults.history);
+
+      for (i = 0; i < list_size; i++)
+      {
+         char fill_buf[PATH_MAX];
+         const char *path      = NULL;
+         const char *core_name = NULL;
+
+         content_playlist_get_index(g_defaults.history, i,
+               &path, NULL, &core_name);
+         strlcpy(fill_buf, core_name, sizeof(fill_buf));
+
+         if (path)
+         {
+            char path_short[PATH_MAX];
+            fill_short_pathname_representation(path_short,path,sizeof(path_short));
+            snprintf(fill_buf,sizeof(fill_buf),"%s (%s)",
+               path_short,core_name);
+         }
+
+         file_list_push(list, fill_buf, "",
+               MENU_FILE_PLAYLIST_ENTRY, 0);
+
+         do_action = true;
+      }
+   }
+   else if (!strcmp(label, "Main Menu"))
    {
       settings_list_free(menu->list_mainmenu);
       menu->list_mainmenu = (rarch_setting_t *)setting_data_new(SL_FLAG_MAIN_MENU);
@@ -477,35 +507,6 @@ int menu_entries_push_list(menu_handle_t *menu,
          if (setting->type == ST_GROUP)
             file_list_push(list, setting->short_description,
                   setting->name, setting_set_flags(setting), 0);
-      }
-   }
-   else if (!strcmp(label, "history_list"))
-   {
-      file_list_clear(list);
-      list_size = content_playlist_size(g_defaults.history);
-
-      for (i = 0; i < list_size; i++)
-      {
-         char fill_buf[PATH_MAX];
-         const char *path      = NULL;
-         const char *core_name = NULL;
-
-         content_playlist_get_index(g_defaults.history, i,
-               &path, NULL, &core_name);
-         strlcpy(fill_buf, core_name, sizeof(fill_buf));
-
-         if (path)
-         {
-            char path_short[PATH_MAX];
-            fill_short_pathname_representation(path_short,path,sizeof(path_short));
-            snprintf(fill_buf,sizeof(fill_buf),"%s (%s)",
-               path_short,core_name);
-         }
-
-         file_list_push(list, fill_buf, "",
-               MENU_FILE_PLAYLIST_ENTRY, 0);
-
-         do_action = true;
       }
    }
    else if (!strcmp(label, "performance_counters"))
@@ -762,19 +763,23 @@ int menu_entries_push_list(menu_handle_t *menu,
    return 0;
 }
 
-int menu_parse_check(const char *label, unsigned menu_type)
+static int menu_parse_check(const char *label, unsigned menu_type)
 {
 #if 0
    RARCH_LOG("label is menu_parse_check: %s\n", label);
 #endif
-   if (!((menu_type == MENU_FILE_DIRECTORY ||
+   bool check = (!((menu_type == MENU_FILE_DIRECTORY ||
             menu_type == MENU_FILE_CARCHIVE ||
             menu_common_type_is(label, menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
             menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY ||
             menu_type == MENU_FILE_PATH ||
             !strcmp(label, "core_list") ||
             !strcmp(label, "configurations") ||
-            !strcmp(label, "disk_image_append"))))
+            !strcmp(label, "disk_image_append"))));
+   if (check)
+      return -1;
+   check = !strcmp(label, "history_list") || !strcmp(label, "deferred_core_list");
+   if (check)
       return -1;
    return 0;
 }
@@ -795,13 +800,8 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    RARCH_LOG("label: %s\n", label);
 #endif
  
-   if (
-         !strcmp(label, "history_list") ||
-         !strcmp(label, "deferred_core_list"))
+   if (((menu_parse_check(label, type)) == -1))
       return menu_entries_push_list(driver.menu, list, path, label, type);
-
-   if (menu_parse_check(label, type) == -1)
-      return - 1;
 
    //RARCH_LOG("LABEL: %s\n", label);
    if (!strcmp(label, "core_list"))
