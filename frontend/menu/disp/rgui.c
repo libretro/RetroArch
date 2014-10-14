@@ -466,7 +466,7 @@ static void rgui_free(void *data)
       free((uint8_t*)menu->font);
 }
 
-void rgui_set_texture(void *data)
+static void rgui_set_texture(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
 

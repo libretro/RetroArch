@@ -126,7 +126,7 @@ static void lakka_draw_text(lakka_handle_t *lakka,
                                       str, &params);
 }
 
-void lakka_draw_background(bool force_transparency)
+static void lakka_draw_background(bool force_transparency)
 {
    float alpha = 0.75f;
    gl_t *gl = NULL;
