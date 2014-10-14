@@ -253,63 +253,63 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 static const void *find_driver_nonempty(const char *label, int i,
       char *str, size_t sizeof_str)
 {
-   const void *driver = NULL;
+   const void *drv = NULL;
 
    if (!strcmp(label, "camera_driver"))
    {
-      driver = camera_drivers[i];
-      if (driver)
+      drv = camera_drivers[i];
+      if (drv)
          strlcpy(str, camera_drivers[i]->ident, sizeof_str);
    }
    else if (!strcmp(label, "location_driver"))
    {
-      driver = location_drivers[i];
-      if (driver)
+      drv = location_drivers[i];
+      if (drv)
          strlcpy(str, location_drivers[i]->ident, sizeof_str);
    }
    else if (!strcmp(label, "osk_driver"))
    {
-      driver = osk_drivers[i];
-      if (driver)
+      drv = osk_drivers[i];
+      if (drv)
          strlcpy(str, osk_drivers[i]->ident, sizeof_str);
    }
 #ifdef HAVE_MENU
    else if (!strcmp(label, "menu_driver"))
    {
-      driver = menu_ctx_drivers[i];
-      if (driver)
+      drv = menu_ctx_drivers[i];
+      if (drv)
          strlcpy(str, menu_ctx_drivers[i]->ident, sizeof_str);
    }
 #endif
    else if (!strcmp(label, "input_driver"))
    {
-      driver = input_drivers[i];
-      if (driver)
+      drv = input_drivers[i];
+      if (drv)
          strlcpy(str, input_drivers[i]->ident, sizeof_str);
    }
    else if (!strcmp(label, "input_joypad_driver"))
    {
-      driver = joypad_drivers[i];
-      if (driver)
+      drv = joypad_drivers[i];
+      if (drv)
          strlcpy(str, joypad_drivers[i]->ident, sizeof_str);
    }
    else if (!strcmp(label, "video_driver"))
    {
-      driver = video_drivers[i];
-      if (driver)
+      drv = video_drivers[i];
+      if (drv)
          strlcpy(str, video_drivers[i]->ident, sizeof_str);
    }
    else if (!strcmp(label, "audio_driver"))
    {
-      driver = audio_drivers[i];
-      if (driver)
+      drv = audio_drivers[i];
+      if (drv)
          strlcpy(str, audio_drivers[i]->ident, sizeof_str);
    }
 
-   return driver;
+   return drv;
 }
 
-static int find_driver_index(const char * label, const char *driver)
+static int find_driver_index(const char * label, const char *drv)
 {
    unsigned i;
    char str[PATH_MAX];
@@ -322,7 +322,7 @@ static int find_driver_index(const char * label, const char *driver)
          return -1;
       if (str[0] == '\0')
          break;
-      if (!strcasecmp(driver, str))
+      if (!strcasecmp(drv, str))
          return i;
    }
 
