@@ -196,7 +196,7 @@ void menu_shader_manager_get_str(struct gfx_shader *program,
    {
       unsigned pass        = (type - MENU_SETTINGS_SHADER_PASS_SCALE_0);
       unsigned scale_value = program->pass[pass].fbo.scale_x;
-      if (!scale)
+      if (!scale_value)
          strlcpy(type_str, "Don't care", type_str_size);
       else
          snprintf(type_str, type_str_size, "%ux", scale_value);
