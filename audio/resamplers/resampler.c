@@ -36,11 +36,11 @@ static const struct resampler_config resampler_config = {
    config_userdata_free,
 };
 
-static int find_resampler_driver_index(const char *driver)
+static int find_resampler_driver_index(const char *drv)
 {
    unsigned i;
    for (i = 0; resampler_drivers[i]; i++)
-      if (strcasecmp(driver, resampler_drivers[i]->ident) == 0)
+      if (strcasecmp(drv, resampler_drivers[i]->ident) == 0)
          return i;
    return -1;
 }
