@@ -427,7 +427,6 @@ static int push_list(menu_handle_t *menu,
       file_list_clear(list);
       if (g_extern.system.core_options)
       {
-         size_t i;
          size_t opts = core_option_size(g_extern.system.core_options);
          for (i = 0; i < opts; i++)
             file_list_push(list,
