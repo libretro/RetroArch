@@ -39,48 +39,8 @@ int menu_action_setting_apply(rarch_setting_t *setting)
 int menu_action_setting_boolean(
       rarch_setting_t *setting, unsigned action)
 {
-   if (
-         !strcmp(setting->name, "savestate") ||
-         !strcmp(setting->name, "loadstate"))
-   {
-      switch (action)
-      {
-         case MENU_ACTION_START:
-            g_settings.state_slot = 0;
-            break;
-         case MENU_ACTION_LEFT:
-            // Slot -1 is (auto) slot.
-            if (g_settings.state_slot >= 0)
-               g_settings.state_slot--;
-            break;
-         case MENU_ACTION_RIGHT:
-            g_settings.state_slot++;
-            break;
-         case MENU_ACTION_OK:
-            *setting->value.boolean = !(*setting->value.boolean);
-
-            if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-               setting->cmd_trigger.triggered = true;
-            break;
-      }
-   }
-   else
-   {
-      switch (action)
-      {
-         case MENU_ACTION_OK:
-            if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-               setting->cmd_trigger.triggered = true;
-            /* fall-through */
-         case MENU_ACTION_LEFT:
-         case MENU_ACTION_RIGHT:
-            *setting->value.boolean = !(*setting->value.boolean);
-            break;
-         case MENU_ACTION_START:
-            *setting->value.boolean = setting->default_value.boolean;
-            break;
-      }
-   }
+   if (setting->action_ok)
+      setting->action_ok(setting, action);
 
    return menu_action_setting_apply(setting);
 }

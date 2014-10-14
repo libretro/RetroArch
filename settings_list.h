@@ -81,6 +81,7 @@ enum setting_list_flags
 #define SL_FLAG_ALL_SETTINGS (SL_FLAG_ALL - SL_FLAG_MAIN_MENU)
 
 typedef void (*change_handler_t)(void *data);
+typedef int (*action_ok_handler_t)(void *data, unsigned action);
 
 typedef struct rarch_setting_info
 {
@@ -115,7 +116,8 @@ typedef struct rarch_setting
    change_handler_t change_handler;
    change_handler_t deferred_handler;
    change_handler_t read_handler;
-   
+   action_ok_handler_t action_ok;
+
    union
    {
       bool boolean;

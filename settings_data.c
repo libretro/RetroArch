@@ -673,6 +673,62 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
    }
 }
 
+static int setting_data_bool_action_ok_savestates(void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_START:
+         g_settings.state_slot = 0;
+         break;
+      case MENU_ACTION_LEFT:
+         // Slot -1 is (auto) slot.
+         if (g_settings.state_slot >= 0)
+            g_settings.state_slot--;
+         break;
+      case MENU_ACTION_RIGHT:
+         g_settings.state_slot++;
+         break;
+      case MENU_ACTION_OK:
+         *setting->value.boolean = !(*setting->value.boolean);
+
+         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+            setting->cmd_trigger.triggered = true;
+         break;
+   }
+
+   return 0;
+}
+
+static int setting_data_bool_action_ok_default(void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_OK:
+         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+            setting->cmd_trigger.triggered = true;
+         /* fall-through */
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         *setting->value.boolean = !(*setting->value.boolean);
+         break;
+      case MENU_ACTION_START:
+         *setting->value.boolean = setting->default_value.boolean;
+         break;
+   }
+
+   return 0;
+}
+
 rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name)
 {
    rarch_setting_t result = { type, name };
@@ -723,6 +779,8 @@ rarch_setting_t setting_data_bool_setting(const char* name,
    result.default_value.boolean = default_value;
    result.boolean.off_label = off;
    result.boolean.on_label = on;
+
+   result.action_ok = setting_data_bool_action_ok_default;
    return result;
 }
 
@@ -2325,6 +2383,7 @@ static bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
+      (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_savestates;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_SAVE_STATE);
       settings_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
 
@@ -2339,6 +2398,7 @@ static bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
+      (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_savestates;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_LOAD_STATE);
       settings_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
 
