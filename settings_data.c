@@ -35,6 +35,7 @@
 
 #ifdef HAVE_MENU
 #include "frontend/menu/menu_entries.h"
+#include "frontend/menu/menu_input_line_cb.h"
 #include "frontend/menu/menu_shader.h"
 #endif
 
@@ -729,6 +730,73 @@ static int setting_data_bool_action_ok_default(void *data, unsigned action)
    return 0;
 }
 
+static int setting_data_uint_action_ok_default(void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         if (*setting->value.unsigned_integer != setting->min)
+            *setting->value.unsigned_integer =
+               *setting->value.unsigned_integer - setting->step;
+
+         if (setting->enforce_minrange)
+         {
+            if (*setting->value.unsigned_integer < setting->min)
+               *setting->value.unsigned_integer = setting->min;
+         }
+         break;
+
+      case MENU_ACTION_OK:
+         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+            setting->cmd_trigger.triggered = true;
+         /* fall-through */
+      case MENU_ACTION_RIGHT:
+         *setting->value.unsigned_integer =
+            *setting->value.unsigned_integer + setting->step;
+
+         if (setting->enforce_maxrange)
+         {
+            if (*setting->value.unsigned_integer > setting->max)
+               *setting->value.unsigned_integer = setting->max;
+         }
+         break;
+
+      case MENU_ACTION_START:
+         *setting->value.unsigned_integer =
+            setting->default_value.unsigned_integer;
+         break;
+   }
+
+   return 0;
+}
+
+static int setting_data_uint_action_ok_linefeed(void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_OK:
+         menu_key_start_line(driver.menu, setting->short_description,
+               setting->name, st_uint_callback);
+         break;
+      case MENU_ACTION_START:
+         *setting->value.unsigned_integer = 
+            setting->default_value.unsigned_integer;
+         break;
+   }
+
+   return 0;
+}
+
 rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name)
 {
    rarch_setting_t result = { type, name };
@@ -813,6 +881,8 @@ rarch_setting_t setting_data_uint_setting(const char* name,
    result.value.unsigned_integer = target;
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer = default_value;
+
+   result.action_ok = setting_data_uint_action_ok_default;
 
    return result;
 }
@@ -2227,6 +2297,27 @@ static void general_write_handler(void *data)
 #define MAX_GAMMA_SETTING 1
 #endif
 
+static void setting_data_add_special_callbacks(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned values)
+{
+   if (values & SD_FLAG_ALLOW_INPUT)
+      (*list)[list_info->index - 1].action_ok = setting_data_uint_action_ok_linefeed;
+}
+
+static void settings_data_list_current_add_flags(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned values)
+{
+   settings_list_current_add_flags(
+         list,
+         list_info,
+         values);
+   setting_data_add_special_callbacks(list, list_info, values);
+}
+
 static bool setting_data_append_list_main_menu_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -2249,7 +2340,7 @@ static bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_PUSH_ACTION);
@@ -2267,7 +2358,7 @@ static bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    if (
          driver.menu 
@@ -2285,7 +2376,7 @@ static bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    CONFIG_BOOL(
          lists[3],
@@ -2298,7 +2389,7 @@ static bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    CONFIG_BOOL(
          lists[4],
@@ -2311,7 +2402,7 @@ static bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    CONFIG_BOOL(
          lists[5],
@@ -2324,7 +2415,7 @@ static bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    if (g_extern.main_is_init
          && !g_extern.libretro_dummy
@@ -2341,7 +2432,7 @@ static bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    CONFIG_BOOL(
          lists[7],
@@ -2354,7 +2445,7 @@ static bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    if (g_extern.perfcnt_enable)
    {
       CONFIG_BOOL(
@@ -2368,7 +2459,7 @@ static bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
@@ -2385,7 +2476,7 @@ static bool setting_data_append_list_main_menu_options(
             general_read_handler);
       (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_savestates;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_SAVE_STATE);
-      settings_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
 
       CONFIG_BOOL(
             lists[10],
@@ -2400,7 +2491,7 @@ static bool setting_data_append_list_main_menu_options(
             general_read_handler);
       (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_savestates;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_LOAD_STATE);
-      settings_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
 
       CONFIG_BOOL(
             lists[11],
@@ -2414,7 +2505,7 @@ static bool setting_data_append_list_main_menu_options(
             general_write_handler,
             general_read_handler);
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_TAKE_SCREENSHOT);
-      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
       CONFIG_BOOL(
             lists[12],
@@ -2428,7 +2519,7 @@ static bool setting_data_append_list_main_menu_options(
             general_write_handler,
             general_read_handler);
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_RESUME);
-      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION | SD_FLAG_EXIT);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION | SD_FLAG_EXIT);
 
       CONFIG_BOOL(
             lists[13],
@@ -2442,7 +2533,7 @@ static bool setting_data_append_list_main_menu_options(
             general_write_handler,
             general_read_handler);
       settings_list_current_add_cmd(list, list_info, RARCH_CMD_RESET);
-      settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION | SD_FLAG_EXIT);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION | SD_FLAG_EXIT);
    }
 #ifndef HAVE_DYNAMIC
    CONFIG_BOOL(
@@ -2457,7 +2548,7 @@ static bool setting_data_append_list_main_menu_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_RESTART_RETROARCH);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 #endif
 
    CONFIG_BOOL(
@@ -2484,7 +2575,7 @@ static bool setting_data_append_list_main_menu_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_MENU_SAVE_CONFIG);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    CONFIG_BOOL(
          lists[17],
@@ -2497,7 +2588,7 @@ static bool setting_data_append_list_main_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    /* Apple rejects iOS apps that lets you forcibly quit an application. */
 #if !defined(IOS)
@@ -2513,7 +2604,7 @@ static bool setting_data_append_list_main_menu_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_QUIT_RETROARCH);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 #endif
 
    END_SUB_GROUP(list, list_info);
@@ -2530,7 +2621,7 @@ static bool setting_data_append_list_driver_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Driver Options");
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
@@ -2543,7 +2634,7 @@ static bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING(
          g_settings.video.driver,
@@ -2554,7 +2645,7 @@ static bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
 #ifdef HAVE_OPENGL
    CONFIG_STRING(
@@ -2566,7 +2657,7 @@ static bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 #endif
    CONFIG_STRING(
          g_settings.audio.driver,
@@ -2577,7 +2668,7 @@ static bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING(
          g_settings.audio.resampler,
@@ -2598,7 +2689,7 @@ static bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING(
          g_settings.location.driver,
@@ -2609,7 +2700,7 @@ static bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
 #ifdef HAVE_MENU
    CONFIG_STRING(
@@ -2621,7 +2712,7 @@ static bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 #endif
 
    CONFIG_STRING(
@@ -2633,7 +2724,7 @@ static bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING(
          g_settings.input.keyboard_layout,
@@ -2644,7 +2735,7 @@ static bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -2660,7 +2751,7 @@ static bool setting_data_append_list_general_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "General Options");
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -2754,7 +2845,7 @@ static bool setting_data_append_list_general_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_REWIND_TOGGLE);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #if 0
    CONFIG_SIZE(
          g_settings.rewind_buffer_size,
@@ -2801,7 +2892,7 @@ static bool setting_data_append_list_general_options(
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_AUTOSAVE_INIT);
    settings_list_current_add_range(list, list_info, 0, 0, 10, true, false);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #endif
 
    CONFIG_BOOL(
@@ -2816,7 +2907,7 @@ static bool setting_data_append_list_general_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    CONFIG_BOOL(
          g_settings.pause_nonactive,
@@ -2967,7 +3058,7 @@ static bool setting_data_append_list_video_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Video Options");
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -3010,7 +3101,7 @@ static bool setting_data_append_list_video_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #endif
    CONFIG_BOOL(
          g_settings.video.windowed_fullscreen,
@@ -3079,7 +3170,7 @@ static bool setting_data_append_list_video_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    END_SUB_GROUP(list, list_info);
 
@@ -3140,7 +3231,7 @@ static bool setting_data_append_list_video_options(
          1,
          true,
          true);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    END_SUB_GROUP(list, list_info);
 
@@ -3296,7 +3387,7 @@ static bool setting_data_append_list_video_options(
          1,
          true,
          true);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #endif
    END_SUB_GROUP(list, list_info);
 
@@ -3320,7 +3411,7 @@ static bool setting_data_append_list_video_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #endif
 
    CONFIG_BOOL(
@@ -3346,7 +3437,7 @@ static bool setting_data_append_list_video_options(
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
    settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    CONFIG_BOOL(
          g_settings.video.hard_sync,
@@ -3475,7 +3566,7 @@ static bool setting_data_append_list_video_options(
          general_read_handler);
    settings_list_current_add_values(list, list_info, "filt");
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 #endif
 
 #if defined(_XBOX1) || defined(HW_RVL)
@@ -3545,7 +3636,7 @@ static bool setting_data_append_list_shader_options(
          subgroup_info.name,
          NULL,
          NULL);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -3561,7 +3652,7 @@ static bool setting_data_append_list_font_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Font Options");
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "Messages", group_info.name, subgroup_info);
 
    CONFIG_PATH(
@@ -3573,7 +3664,7 @@ static bool setting_data_append_list_font_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_FLOAT(
          g_settings.video.font_size,
@@ -3637,7 +3728,7 @@ static bool setting_data_append_list_audio_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Audio Options");
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -3722,7 +3813,7 @@ static bool setting_data_append_list_audio_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_range(list, list_info, 1, 256, 1.0, true, true);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_DEFERRED);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DEFERRED);
 
    CONFIG_FLOAT(
          g_settings.audio.rate_control_delta,
@@ -3771,7 +3862,7 @@ static bool setting_data_append_list_audio_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_UINT(
          g_settings.audio.out_rate,
@@ -3794,7 +3885,7 @@ static bool setting_data_append_list_audio_options(
          general_read_handler);
    settings_list_current_add_values(list, list_info, "dsp");
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_DSP_FILTER_INIT);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -3811,7 +3902,7 @@ static bool setting_data_append_list_input_options(
    unsigned i, player;
 
    START_GROUP(group_info, "Input Options");
-   //settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+   //settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -4019,7 +4110,7 @@ static bool setting_data_append_list_overlay_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Overlay Options");
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_PATH(
@@ -4033,7 +4124,7 @@ static bool setting_data_append_list_overlay_options(
          general_read_handler);
    settings_list_current_add_values(list, list_info, "cfg");
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_OVERLAY_INIT);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_FLOAT(
          g_settings.input.overlay_opacity,
@@ -4047,7 +4138,7 @@ static bool setting_data_append_list_overlay_options(
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_OVERLAY_SET_ALPHA_MOD);
    settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    CONFIG_FLOAT(
          g_settings.input.overlay_scale,
@@ -4061,7 +4152,7 @@ static bool setting_data_append_list_overlay_options(
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_OVERLAY_SET_SCALE_FACTOR);
    settings_list_current_add_range(list, list_info, 0, 2, 0.01, true, true);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -4079,7 +4170,7 @@ static bool setting_data_append_list_menu_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Menu Options");
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -4106,7 +4197,7 @@ static bool setting_data_append_list_menu_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_MENU_PAUSE_LIBRETRO);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 #endif
@@ -4123,7 +4214,7 @@ static bool setting_data_append_list_netplay_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Netplay Options");
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -4147,7 +4238,7 @@ static bool setting_data_append_list_netplay_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_BOOL(
          g_extern.netplay_is_client,
@@ -4194,7 +4285,7 @@ static bool setting_data_append_list_netplay_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_range(list, list_info, 1, 99999, 1, true, true);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -4211,7 +4302,7 @@ static bool setting_data_append_list_user_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "User Options");
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_STRING(
@@ -4223,7 +4314,7 @@ static bool setting_data_append_list_user_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_UINT(
          g_settings.user_language,
@@ -4242,7 +4333,7 @@ static bool setting_data_append_list_user_options(
          1,
          true,
          true);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -4258,7 +4349,7 @@ static bool setting_data_append_list_path_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Path Options");
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_UINT(
@@ -4285,7 +4376,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4300,7 +4391,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4315,7 +4406,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4330,7 +4421,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4348,7 +4439,7 @@ static bool setting_data_append_list_path_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_CORE_INFO_INIT);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4364,7 +4455,7 @@ static bool setting_data_append_list_path_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_CORE_INFO_INIT);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4378,7 +4469,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_PATH(
          g_settings.cheat_database,
@@ -4389,7 +4480,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_PATH(
          g_settings.cheat_settings_path,
@@ -4399,7 +4490,7 @@ static bool setting_data_append_list_path_options(
          group_info.name,
          subgroup_info.name,
          general_write_handler, general_read_handler);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_PATH(
          g_settings.content_history_path,
@@ -4410,7 +4501,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_DIR(
          g_settings.video.filter_dir,
@@ -4422,7 +4513,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4437,7 +4528,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4453,7 +4544,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4470,7 +4561,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4486,7 +4577,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4501,7 +4592,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4516,7 +4607,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4531,7 +4622,7 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_flags(
+   settings_data_list_current_add_flags(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
@@ -4593,7 +4684,7 @@ static bool setting_data_append_list_privacy_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Privacy Options");
-   settings_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -4624,6 +4715,7 @@ static bool setting_data_append_list_privacy_options(
 
    return true;
 }
+
 
 rarch_setting_t *setting_data_new(unsigned mask)
 {

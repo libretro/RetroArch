@@ -48,52 +48,8 @@ int menu_action_setting_boolean(
 int menu_action_setting_unsigned_integer(
       rarch_setting_t *setting, unsigned type, unsigned action)
 {
-   if (type == MENU_FILE_LINEFEED)
-   {
-      if (action == MENU_ACTION_OK)
-         menu_key_start_line(driver.menu, setting->short_description,
-               setting->name, st_uint_callback);
-      else if (action == MENU_ACTION_START)
-         *setting->value.unsigned_integer =
-            setting->default_value.unsigned_integer;
-   }
-   else
-   {
-      switch (action)
-      {
-         case MENU_ACTION_LEFT:
-            if (*setting->value.unsigned_integer != setting->min)
-               *setting->value.unsigned_integer =
-                  *setting->value.unsigned_integer - setting->step;
-
-            if (setting->enforce_minrange)
-            {
-               if (*setting->value.unsigned_integer < setting->min)
-                  *setting->value.unsigned_integer = setting->min;
-            }
-            break;
-
-         case MENU_ACTION_OK:
-            if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-               setting->cmd_trigger.triggered = true;
-            /* fall-through */
-         case MENU_ACTION_RIGHT:
-            *setting->value.unsigned_integer =
-               *setting->value.unsigned_integer + setting->step;
-
-            if (setting->enforce_maxrange)
-            {
-               if (*setting->value.unsigned_integer > setting->max)
-                  *setting->value.unsigned_integer = setting->max;
-            }
-            break;
-
-         case MENU_ACTION_START:
-            *setting->value.unsigned_integer =
-               setting->default_value.unsigned_integer;
-            break;
-      }
-   } 
+   if (setting->action_ok)
+      setting->action_ok(setting, action);
 
    return menu_action_setting_apply(setting);
 }
