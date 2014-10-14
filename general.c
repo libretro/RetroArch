@@ -51,6 +51,9 @@ void rarch_playlist_load_content(content_playlist_t *playlist,
          index, &path, &core_path, NULL);
 
    strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
+
+   driver.menu->load_no_content = (path) ? false : true;
+
    rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
 
    rarch_main_command(RARCH_CMD_LOAD_CORE);

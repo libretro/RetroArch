@@ -288,6 +288,7 @@ bool load_state(const char *path)
    for (i = 0; i < num_blocks; i++)
       free(blocks[i].data);
    free(blocks);
+   free(buf);
    return ret;
 }
 

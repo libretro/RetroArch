@@ -4276,16 +4276,6 @@ bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
 #endif
-   CONFIG_PATH(
-         g_settings.libretro,
-         "libretro_path",
-         "Libretro Path",
-         "",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler)                ;
-   settings_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_DIR(
          g_settings.libretro_directory,

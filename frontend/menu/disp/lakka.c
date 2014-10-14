@@ -1118,31 +1118,28 @@ static void *lakka_init(void)
    }
 
    menu = (menu_handle_t*)calloc(1, sizeof(*menu));
-
    if (!menu)
       return NULL;
 
+   menu->userdata = (lakka_handle_t*)calloc(1, sizeof(lakka_handle_t));
+   if (!menu->userdata)
+   {
+      free(menu);
+      return NULL;
+   }
 
    lakka_init_core_info(menu);
 
-   menu->userdata = (lakka_handle_t*)calloc(1, sizeof(lakka_handle_t));
-
-   if (!menu->userdata)
-      return NULL;
-
    lakka = (lakka_handle_t*)menu->userdata;
-
-   if (!lakka)
-      return NULL;
-
    lakka->num_categories       = g_extern.core_info ? (g_extern.core_info->count + 1) : 1;
-
    lakka->categories = (menu_category_t*)
       calloc(lakka->num_categories, sizeof(menu_category_t));
 
    if (!lakka->categories)
    {
+      free(menu->userdata);
       free(menu);
+      
       return NULL;
    }
 
