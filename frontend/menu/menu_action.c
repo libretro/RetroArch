@@ -122,7 +122,7 @@ int menu_action_setting_set_current_string_path(
 }
 
 
-int menu_action_handle_setting(rarch_setting_t *setting,
+static int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, const char *label, unsigned action)
 {
    if (setting->type == ST_BOOL)
