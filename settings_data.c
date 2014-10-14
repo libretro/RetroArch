@@ -2169,7 +2169,7 @@ static void general_write_handler(void *data)
 #define MAX_GAMMA_SETTING 1
 #endif
 
-bool setting_data_append_list_main_menu_options(
+static bool setting_data_append_list_main_menu_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2462,7 +2462,7 @@ bool setting_data_append_list_main_menu_options(
    return true;
 }
 
-bool setting_data_append_list_driver_options(
+static bool setting_data_append_list_driver_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2592,7 +2592,7 @@ bool setting_data_append_list_driver_options(
    return true;
 }
 
-bool setting_data_append_list_general_options(
+static bool setting_data_append_list_general_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -2899,7 +2899,7 @@ bool setting_data_append_list_general_options(
    return true;
 }
 
-bool setting_data_append_list_video_options(
+static bool setting_data_append_list_video_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -3454,7 +3454,7 @@ bool setting_data_append_list_video_options(
    return true;
 }
 
-bool setting_data_append_list_shader_options(
+static bool setting_data_append_list_shader_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -3493,7 +3493,7 @@ bool setting_data_append_list_shader_options(
    return true;
 }
 
-bool setting_data_append_list_font_options(
+static bool setting_data_append_list_font_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -3569,7 +3569,7 @@ bool setting_data_append_list_font_options(
    return true;
 }
 
-bool setting_data_append_list_audio_options(
+static bool setting_data_append_list_audio_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -3742,7 +3742,7 @@ bool setting_data_append_list_audio_options(
    return true;
 }
 
-bool setting_data_append_list_input_options(
+static bool setting_data_append_list_input_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -3950,7 +3950,7 @@ bool setting_data_append_list_input_options(
    return true;
 }
 
-bool setting_data_append_list_overlay_options(
+static bool setting_data_append_list_overlay_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -4010,7 +4010,7 @@ bool setting_data_append_list_overlay_options(
    return true;
 }
 
-bool setting_data_append_list_menu_options(
+static bool setting_data_append_list_menu_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -4054,7 +4054,7 @@ bool setting_data_append_list_menu_options(
    return true;
 }
 
-bool setting_data_append_list_netplay_options(
+static bool setting_data_append_list_netplay_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -4143,7 +4143,7 @@ bool setting_data_append_list_netplay_options(
    return true;
 }
 
-bool setting_data_append_list_user_options(
+static bool setting_data_append_list_user_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -4190,7 +4190,7 @@ bool setting_data_append_list_user_options(
    return true;
 }
 
-bool setting_data_append_list_path_options(
+static bool setting_data_append_list_path_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -4525,7 +4525,7 @@ bool setting_data_append_list_path_options(
    return true;
 }
 
-bool setting_data_append_list_privacy_options(
+static bool setting_data_append_list_privacy_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
