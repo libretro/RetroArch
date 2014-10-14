@@ -89,7 +89,7 @@ static char *str_replace (const char *string,
 
 static void lakka_draw_text(lakka_handle_t *lakka,
       const char *str, float x,
-      float y, float scale, float alpha)
+      float y, float scale_factor, float alpha)
 {
    if (alpha > lakka->global_alpha)
       alpha = lakka->global_alpha;
@@ -116,7 +116,7 @@ static void lakka_draw_text(lakka_handle_t *lakka,
    params.x = x / gl->win_width;
    params.y = 1.0f - y / gl->win_height;
 
-   params.scale = scale;
+   params.scale = scale_factor;
    params.color = FONT_COLOR_RGBA(255, 255, 255, a8);
    params.full_screen = true;
 
@@ -196,9 +196,12 @@ static void lakka_draw_background(bool force_transparency)
 
 static void lakka_draw_icon(lakka_handle_t *lakka,
       GLuint texture, float x, float y,
-      float alpha, float rotation, float scale)
+      float alpha, float rotation,
+      float scale_factor)
 {
    struct gl_coords coords;
+   math_matrix mymat, mrot;
+    
    if (!lakka)
       return;
 
@@ -236,14 +239,11 @@ static void lakka_draw_icon(lakka_handle_t *lakka,
    coords.color = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   math_matrix mymat;
-
-   math_matrix mrot;
    matrix_rotate_z(&mrot, rotation);
    matrix_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
    math_matrix mscal;
-   matrix_scale(&mscal, scale, scale, 1);
+   matrix_scale(&mscal, scale_factor, scale_factor, 1);
    matrix_multiply(&mymat, &mscal, &mymat);
 
    gl->shader->set_coords(&coords);

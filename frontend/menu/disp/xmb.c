@@ -118,9 +118,10 @@ static const GLfloat rmb_tex_coord[] = {
 };
 
 static void xmb_draw_icon(GLuint texture, float x, float y,
-      float alpha, float rotation, float scale)
+      float alpha, float rotation, float scale_factor)
 {
    struct gl_coords coords;
+   math_matrix mymat, mrot, mscal;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
@@ -160,14 +161,10 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
    coords.color = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   math_matrix mymat;
-
-   math_matrix mrot;
    matrix_rotate_z(&mrot, rotation);
    matrix_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
-   math_matrix mscal;
-   matrix_scale(&mscal, scale, scale, 1);
+   matrix_scale(&mscal, scale_factor, scale_factor, 1);
    matrix_multiply(&mymat, &mscal, &mymat);
 
    gl->shader->set_coords(&coords);
@@ -180,7 +177,7 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
 }
 
 static void xmb_draw_text(const char *str, float x,
-      float y, float scale, float alpha)
+      float y, float scale_factor, float alpha)
 {
    uint8_t a8 = 0;
    struct font_params params = {0};
@@ -209,7 +206,7 @@ static void xmb_draw_text(const char *str, float x,
    params.x = x / gl->win_width;
    params.y = 1.0f - y / gl->win_height;
 
-   params.scale = scale;
+   params.scale = scale_factor;
    params.color = FONT_COLOR_RGBA(255, 255, 255, a8);
    params.full_screen = true;
 
