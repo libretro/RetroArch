@@ -121,6 +121,28 @@ int menu_action_setting_set_current_string_path(
    return menu_action_setting_apply(setting);
 }
 
+static int menu_entries_set_current_path_selection(
+      rarch_setting_t *setting, const char *start_path,
+      const char *label, unsigned type,
+      unsigned action)
+{
+   switch (action)
+   {
+      case MENU_ACTION_OK:
+         menu_entries_push(driver.menu->menu_stack,
+               start_path, label, type,
+               driver.menu->selection_ptr);
+
+         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+            setting->cmd_trigger.triggered = true;
+         break;
+      case MENU_ACTION_START:
+         *setting->value.string = '\0';
+         break;
+   }
+
+   return menu_action_setting_apply(setting);
+}
 
 static int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, const char *label, unsigned action)

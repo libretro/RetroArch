@@ -925,30 +925,6 @@ void menu_flush_stack_label(file_list_t *list,
    }
 }
 
-
-int menu_entries_set_current_path_selection(
-      rarch_setting_t *setting, const char *start_path,
-      const char *label, unsigned type,
-      unsigned action)
-{
-   switch (action)
-   {
-      case MENU_ACTION_OK:
-         menu_entries_push(driver.menu->menu_stack,
-               start_path, label, type,
-               driver.menu->selection_ptr);
-
-         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-            setting->cmd_trigger.triggered = true;
-         break;
-      case MENU_ACTION_START:
-         *setting->value.string = '\0';
-         break;
-   }
-
-   return menu_action_setting_apply(setting);
-}
-
 bool menu_entries_init(menu_handle_t *menu)
 {
    if (!menu)
