@@ -775,6 +775,85 @@ static int setting_data_uint_action_ok_default(void *data, unsigned action)
    return 0;
 }
 
+static int setting_data_fraction_action_ok_video_refresh_rate_auto(
+      void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_START:
+         g_extern.measure_data.frame_time_samples_count = 0;
+         break;
+      case MENU_ACTION_OK:
+         {
+            double video_refresh_rate, deviation = 0.0;
+            unsigned sample_points = 0;
+
+            if (driver_monitor_fps_statistics(&video_refresh_rate,
+                     &deviation, &sample_points))
+            {
+               driver_set_monitor_refresh_rate(video_refresh_rate);
+               /* Incase refresh rate update forced non-block video. */
+               rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
+            }
+
+            if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+               setting->cmd_trigger.triggered = true;
+         }
+         break;
+   }
+
+   return 0;
+}
+
+static int setting_data_fraction_action_ok_default(
+      void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         *setting->value.fraction =
+            *setting->value.fraction - setting->step;
+
+         if (setting->enforce_minrange)
+         {
+            if (*setting->value.fraction < setting->min)
+               *setting->value.fraction = setting->min;
+         }
+         break;
+
+      case MENU_ACTION_OK:
+         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+            setting->cmd_trigger.triggered = true;
+         /* fall-through */
+      case MENU_ACTION_RIGHT:
+         *setting->value.fraction = 
+            *setting->value.fraction + setting->step;
+
+         if (setting->enforce_maxrange)
+         {
+            if (*setting->value.fraction > setting->max)
+               *setting->value.fraction = setting->max;
+         }
+         break;
+
+      case MENU_ACTION_START:
+         *setting->value.fraction = setting->default_value.fraction;
+         break;
+   }
+
+   return 0;
+}
+
 static int setting_data_uint_action_ok_linefeed(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -829,6 +908,8 @@ rarch_setting_t setting_data_float_setting(const char* name,
    result.value.fraction = target;
    result.original_value.fraction = *target;
    result.default_value.fraction = default_value;
+   
+   result.action_ok = setting_data_fraction_action_ok_default;
    return result;
 }
 
@@ -3157,6 +3238,8 @@ static bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   (*list)[list_info->index - 1].action_ok = 
+      &setting_data_fraction_action_ok_video_refresh_rate_auto;
 
    CONFIG_BOOL(
          g_settings.video.force_srgb_disable,

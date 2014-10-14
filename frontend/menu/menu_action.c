@@ -57,67 +57,8 @@ int menu_action_setting_unsigned_integer(
 int menu_action_setting_fraction(
       rarch_setting_t *setting, unsigned action)
 {
-   if (!strcmp(setting->name, "video_refresh_rate_auto"))
-   {
-      switch (action)
-      {
-         case MENU_ACTION_START:
-            g_extern.measure_data.frame_time_samples_count = 0;
-            break;
-         case MENU_ACTION_OK:
-            {
-               double video_refresh_rate, deviation = 0.0;
-               unsigned sample_points = 0;
-
-               if (driver_monitor_fps_statistics(&video_refresh_rate,
-                        &deviation, &sample_points))
-               {
-                  driver_set_monitor_refresh_rate(video_refresh_rate);
-                  /* Incase refresh rate update forced non-block video. */
-                  rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
-               }
-
-               if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-                  setting->cmd_trigger.triggered = true;
-            }
-            break;
-      }
-   }
-   else
-   {
-      switch (action)
-      {
-         case MENU_ACTION_LEFT:
-            *setting->value.fraction =
-               *setting->value.fraction - setting->step;
-
-            if (setting->enforce_minrange)
-            {
-               if (*setting->value.fraction < setting->min)
-                  *setting->value.fraction = setting->min;
-            }
-            break;
-
-         case MENU_ACTION_OK:
-            if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-               setting->cmd_trigger.triggered = true;
-            /* fall-through */
-         case MENU_ACTION_RIGHT:
-            *setting->value.fraction = 
-               *setting->value.fraction + setting->step;
-
-            if (setting->enforce_maxrange)
-            {
-               if (*setting->value.fraction > setting->max)
-                  *setting->value.fraction = setting->max;
-            }
-            break;
-
-         case MENU_ACTION_START:
-            *setting->value.fraction = setting->default_value.fraction;
-            break;
-      }
-   }
+   if (setting->action_ok)
+      setting->action_ok(setting, action);
 
    return menu_action_setting_apply(setting);
 }
