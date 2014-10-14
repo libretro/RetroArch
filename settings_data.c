@@ -576,13 +576,13 @@ static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
 
    if (!strcmp(setting->name, "video_refresh_rate_auto"))
    {
-      double refresh_rate = 0.0;
+      double video_refresh_rate = 0.0;
       double deviation = 0.0;
       unsigned sample_points = 0;
 
-      if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
+      if (driver_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
          snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
-               refresh_rate, 100.0 * deviation, sample_points);
+               video_refresh_rate, 100.0 * deviation, sample_points);
       else
          strlcpy(type_str, "N/A", type_str_size);
 
