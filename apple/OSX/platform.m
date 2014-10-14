@@ -32,28 +32,25 @@ static void* const associated_core_key = (void*)&associated_core_key;
 
 - (void)sendEvent:(NSEvent *)event
 {
-   int i;
-   NSEventType event_type;
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-
    [super sendEvent:event];
-   
-   event_type = event.type;
-   
+
+	apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   NSEventType event_type = event.type;
+
    switch ((NSInteger)event_type)
    {
       case NSKeyDown:
       case NSKeyUp:
       {
          NSString* ch = (NSString*)event.characters;
-         
+
          if (!ch || ch.length == 0)
             apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, 0, 0);
          else
          {
             apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, [ch characterAtIndex:0], event.modifierFlags);
-            
-            for (i = 1; i < ch.length; i ++)
+
+            for (NSUInteger i = 1; i < ch.length; i ++)
                apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:i], event.modifierFlags);
          }
       }
@@ -64,7 +61,7 @@ static void* const associated_core_key = (void*)&associated_core_key;
          uint32_t new_flags = event.modifierFlags;
          bool down = (new_flags & old_flags) == old_flags;
          old_flags = new_flags;
-         
+
          apple_input_keyboard_event(down, event.keyCode, 0, event.modifierFlags);
       }
          break;
@@ -77,7 +74,7 @@ static void* const associated_core_key = (void*)&associated_core_key;
          // Relative
          apple->mouse_delta[0] += event.deltaX;
          apple->mouse_delta[1] += event.deltaY;
-         
+
          // Absolute
          pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
          apple->touches[0].screen_x = pos.x;
@@ -133,14 +130,9 @@ static char** waiting_argv;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
-   NSComboBox* cb;
-   const core_info_list_t* core_list;
-   int i;
-   const char *paths;
-
    apple_platform = self;
 
-   paths = [[NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject] UTF8String];
+   const char* paths = [[NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject] UTF8String];
    fill_pathname_join(g_defaults.core_dir, NSBundle.mainBundle.bundlePath.UTF8String, "Contents/Resources/modules", sizeof(g_defaults.core_dir));
 
    fill_pathname_join(g_defaults.menu_config_dir, paths, "RetroArch", sizeof(g_defaults.menu_config_dir));
@@ -152,22 +144,22 @@ static char** waiting_argv;
 #endif
    
    [self.window setAcceptsMouseMovedEvents: YES];
-   
+
    [[RAGameView get] setFrame: [[self.window contentView] bounds]];
    [[self.window contentView] setAutoresizesSubviews:YES];
    [[self.window contentView] addSubview:[RAGameView get]];
    [self.window makeFirstResponder:[RAGameView get]];
-   
+
    self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:BOXSTRING("Settings")] autorelease];
-   
+
    // Warn if there are no cores present
    core_info_set_core_path();
-   core_list = (const core_info_list_t*)core_info_list_get();
+   const core_info_list_t* core_list = (const core_info_list_t*)core_info_list_get();
 
    // Create core select list
-   cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
-    
-   for (i = 0; core_list && i < core_list->count; i ++)
+   NSComboBox* cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
+
+   for (size_t i = 0; core_list && i < core_list->count; i ++)
    {
       NSString* desc = (NSString*)BOXSTRING(core_list->list[i].display_name);
 #if defined(MAC_OS_X_VERSION_10_6)
@@ -176,7 +168,7 @@ static char** waiting_argv;
 #endif
 	   [cb addItemWithObjectValue:desc];
    }
-   
+
    apple_run_core(waiting_argc, waiting_argv, nil, 0);
 
    waiting_argc = 0;
