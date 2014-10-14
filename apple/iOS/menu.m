@@ -808,6 +808,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          _pathToSave = BOXSTRING(g_defaults.config_path);
       }
       
+      // If we initialized with a nil core(like when starting up) driver.menu will be NULL
+      if (!driver.menu)
+         return NULL;
+      
       setting_data = (rarch_setting_t*)driver.menu->list_settings;
       
       if (!setting_data)
