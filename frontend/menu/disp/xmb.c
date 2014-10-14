@@ -59,6 +59,9 @@ enum
    XMB_TEXTURE_LOADSTATE,
    XMB_TEXTURE_SCREENSHOT,
    XMB_TEXTURE_RELOAD,
+   XMB_TEXTURE_FILE,
+   XMB_TEXTURE_FOLDER,
+   XMB_TEXTURE_ZIP,
    XMB_TEXTURE_LAST
 };
 
@@ -469,7 +472,24 @@ static void xmb_frame(void)
             entry_label, path,
             path_buf, sizeof(path_buf));
 
-      xmb_draw_icon(xmb->textures[XMB_TEXTURE_SETTING].id,
+      GLuint icon = 0;
+      switch(type)
+      {
+         case MENU_FILE_DIRECTORY:
+            icon = xmb->textures[XMB_TEXTURE_FOLDER].id;
+            break;
+         case MENU_FILE_PLAIN:
+            icon = xmb->textures[XMB_TEXTURE_FILE].id;
+            break;
+         case MENU_FILE_CARCHIVE:
+            icon = xmb->textures[XMB_TEXTURE_ZIP].id;
+            break;
+         default:
+            icon = xmb->textures[XMB_TEXTURE_SETTING].id;
+            break;
+      }
+
+      xmb_draw_icon(icon,
             xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0, 
             xmb->margin_top + node->y + xmb->icon_size/2.0, 
             node->alpha, 
@@ -763,6 +783,12 @@ static void xmb_context_reset(void *data)
          "screenshot.png", sizeof(xmb->textures[XMB_TEXTURE_SCREENSHOT].path));
    fill_pathname_join(xmb->textures[XMB_TEXTURE_RELOAD].path, iconpath,
          "reload.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
+   fill_pathname_join(xmb->textures[XMB_TEXTURE_FILE].path, iconpath,
+         "file.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
+   fill_pathname_join(xmb->textures[XMB_TEXTURE_FOLDER].path, iconpath,
+         "folder.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
+   fill_pathname_join(xmb->textures[XMB_TEXTURE_ZIP].path, iconpath,
+         "zip.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
 
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
       xmb->textures[k].id = xmb_png_texture_load(xmb->textures[k].path);
