@@ -123,14 +123,13 @@ NSWindowDelegate>
 
 - (void)awakeFromNib
 {
-   int i;
    const rarch_setting_t *setting_data;
    NSMutableArray* thisGroup = nil;
    NSMutableArray* thisSubGroup = nil;
    self.settings = [NSMutableArray array];
    setting_data = (const rarch_setting_t *)driver.menu->list_settings;
 
-   for (i = 0; setting_data[i].type; i ++)
+   for (int i = 0; setting_data[i].type; i ++)
    {
       switch (setting_data[i].type)
       {
@@ -138,8 +137,8 @@ NSWindowDelegate>
          {
             thisGroup = [NSMutableArray array];
 #if defined(MAC_OS_X_VERSION_10_6)
-			/* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
-            objc_setAssociatedObject(thisGroup, associated_name_tag, [NSString stringWithFormat:BOXSTRING("%s"), setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
+            objc_setAssociatedObject(thisGroup, associated_name_tag, BOXSTRING(setting_data[i].name), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 #endif
             break;
          }
@@ -156,8 +155,8 @@ NSWindowDelegate>
          {
             thisSubGroup = [NSMutableArray array];
 #if defined(MAC_OS_X_VERSION_10_6)
-			 /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
-            objc_setAssociatedObject(thisSubGroup, associated_name_tag, [NSString stringWithFormat:BOXSTRING("%s"), setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
+            objc_setAssociatedObject(thisSubGroup, associated_name_tag, BOXSTRING(setting_data[i].name), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 #endif
             break;
          }
