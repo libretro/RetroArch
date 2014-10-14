@@ -117,15 +117,6 @@ static struct gfx_shader *shader_null_get_current_shader(void)
    return NULL;
 }
 
-void shader_null_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*))
-{
-}
-
-void shader_null_set_context_type(bool core_profile,
-      unsigned major, unsigned minor)
-{
-}
-
 const shader_backend_t shader_null_backend = {
    shader_null_init,
    shader_null_deinit,

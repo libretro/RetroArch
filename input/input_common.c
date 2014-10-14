@@ -136,31 +136,31 @@ const rarch_joypad_driver_t *input_joypad_init_first(void)
    return NULL;
 }
 
-const char *input_joypad_name(const rarch_joypad_driver_t *driver,
+const char *input_joypad_name(const rarch_joypad_driver_t *drv,
       unsigned joypad)
 {
-   if (driver)
-      return driver->name(joypad);
+   if (drv)
+      return drv->name(joypad);
    return NULL;
 }
 
-bool input_joypad_set_rumble(const rarch_joypad_driver_t *driver,
+bool input_joypad_set_rumble(const rarch_joypad_driver_t *drv,
       unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
-   if (!driver || !driver->set_rumble)
+   if (!drv || !drv->set_rumble)
       return false;
 
    int joy_index = g_settings.input.joypad_map[port];
    if (joy_index < 0 || joy_index >= MAX_PLAYERS)
       return false;
 
-   return driver->set_rumble(joy_index, effect, strength);
+   return drv->set_rumble(joy_index, effect, strength);
 }
 
-bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
+bool input_joypad_pressed(const rarch_joypad_driver_t *drv,
       unsigned port, const struct retro_keybind *binds, unsigned key)
 {
-   if (!driver)
+   if (!drv)
       return false;
 
    int joy_index = g_settings.input.joypad_map[port];
@@ -178,23 +178,23 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
    if (joykey == NO_BTN)
       joykey = auto_binds[key].joykey;
 
-   if (driver->button(joy_index, (uint16_t)joykey))
+   if (drv->button(joy_index, (uint16_t)joykey))
       return true;
 
    uint32_t joyaxis = binds[key].joyaxis;
    if (joyaxis == AXIS_NONE)
       joyaxis = auto_binds[key].joyaxis;
 
-   int16_t axis = driver->axis(joy_index, joyaxis);
+   int16_t axis = drv->axis(joy_index, joyaxis);
    float scaled_axis = (float)abs(axis) / 0x8000;
    return scaled_axis > g_settings.input.axis_threshold;
 }
 
-int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
+int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
       unsigned port, unsigned index, unsigned id,
       const struct retro_keybind *binds)
 {
-   if (!driver)
+   if (!drv)
       return 0;
 
    int joy_index = g_settings.input.joypad_map[port];
@@ -221,8 +221,8 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
    if (axis_plus == AXIS_NONE)
       axis_plus = auto_binds[id_plus].joyaxis;
 
-   int16_t pressed_minus = abs(driver->axis(joy_index, axis_minus));
-   int16_t pressed_plus  = abs(driver->axis(joy_index, axis_plus));
+   int16_t pressed_minus = abs(drv->axis(joy_index, axis_minus));
+   int16_t pressed_plus  = abs(drv->axis(joy_index, axis_plus));
 
    int16_t res = pressed_plus - pressed_minus;
 
@@ -236,35 +236,35 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
    if (key_plus == NO_BTN)
       key_plus = auto_binds[id_plus].joykey;
 
-   int16_t digital_left  = driver->button(joy_index,
+   int16_t digital_left  = drv->button(joy_index,
          (uint16_t)key_minus) ? -0x7fff : 0;
-   int16_t digital_right = driver->button(joy_index,
+   int16_t digital_right = drv->button(joy_index,
          (uint16_t)key_plus)  ?  0x7fff : 0;
    return digital_right + digital_left;
 }
 
-int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *driver,
+int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *drv,
       unsigned joypad, unsigned axis)
 {
-   if (driver)
-      return driver->axis(joypad, AXIS_POS(axis)) +
-         driver->axis(joypad, AXIS_NEG(axis));
+   if (drv)
+      return drv->axis(joypad, AXIS_POS(axis)) +
+         drv->axis(joypad, AXIS_NEG(axis));
    return 0;
 }
 
-bool input_joypad_button_raw(const rarch_joypad_driver_t *driver,
+bool input_joypad_button_raw(const rarch_joypad_driver_t *drv,
       unsigned joypad, unsigned button)
 {
-   if (driver)
-      return driver->button(joypad, button);
+   if (drv)
+      return drv->button(joypad, button);
    return false;
 }
 
-bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
+bool input_joypad_hat_raw(const rarch_joypad_driver_t *drv,
       unsigned joypad, unsigned hat_dir, unsigned hat)
 {
-   if (driver)
-      return driver->button(joypad, HAT_MAP(hat, hat_dir));
+   if (drv)
+      return drv->button(joypad, HAT_MAP(hat, hat_dir));
    return false;
 }
 
@@ -1483,7 +1483,7 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
-      const char *btn = tmp;
+      btn = tmp;
       if (strcmp(btn, "nul") == 0)
          bind->joykey = NO_BTN;
       else
@@ -1509,11 +1509,11 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
          bind->joyaxis = AXIS_NONE;
       else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
       {
-         int axis = strtol(tmp + 1, NULL, 0);
+         int i_axis = strtol(tmp + 1, NULL, 0);
          if (*tmp == '+')
-            bind->joyaxis = AXIS_POS(axis);
+            bind->joyaxis = AXIS_POS(i_axis);
          else
-            bind->joyaxis = AXIS_NEG(axis);
+            bind->joyaxis = AXIS_NEG(i_axis);
       }
 
       /* Ensure that d-pad emulation doesn't screw this over. */

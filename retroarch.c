@@ -2070,10 +2070,10 @@ static bool save_core_config(void)
             sizeof(config_dir));
    else
    {
-      const char *msg = "Config directory not set. Cannot save new config.";
+      const char *message = "Config directory not set. Cannot save new config.";
       msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-      RARCH_ERR("%s\n", msg);
+      msg_queue_push(g_extern.msg_queue, message, 1, 180);
+      RARCH_ERR("%s\n", message);
       return false;
    }
 

@@ -124,56 +124,61 @@ void msg_queue_clear(msg_queue_t *queue)
 
 const char *msg_queue_pull(msg_queue_t *queue)
 {
+   struct queue_elem *front  = NULL, *last = NULL, *parent = NULL, *child = NULL;
+   size_t tmp_ptr = 1;
+    
+   (void)parent;
+   (void)child;
+   (void)tmp_ptr;
+    
    /* Nothing in queue. */
    if (!queue || queue->ptr == 1)
       return NULL;
 
-   struct queue_elem *front = queue->elems[1];
+   front = (struct queue_elem*)queue->elems[1];
    front->duration--;
    if (front->duration > 0)
       return front->msg;
-   else
+
+   free(queue->tmp_msg);
+   queue->tmp_msg = front->msg;
+   front->msg = NULL;
+
+   front = (struct queue_elem*)queue->elems[1];
+   last  = (struct queue_elem*)queue->elems[--queue->ptr];
+   queue->elems[1] = last;
+   free(front);
+
+   for (;;)
    {
-      free(queue->tmp_msg);
-      queue->tmp_msg = front->msg;
-      front->msg = NULL;
+      bool left = (tmp_ptr * 2 <= queue->ptr)
+         && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2]);
+      bool right = (tmp_ptr * 2 + 1 <= queue->ptr)
+         && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2 + 1]);
 
-      struct queue_elem *front = queue->elems[1];
-      struct queue_elem *last = queue->elems[--queue->ptr];
-      queue->elems[1] = last;
-      free(front);
+      if (!left && !right)
+         break;
 
-      size_t tmp_ptr = 1;
-      for (;;)
+      size_t switch_index = tmp_ptr;
+      if (left && !right)
+         switch_index <<= 1;
+      else if (right && !left)
+         switch_index += switch_index + 1;
+      else
       {
-         bool left = (tmp_ptr * 2 <= queue->ptr)
-            && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2]);
-         bool right = (tmp_ptr * 2 + 1 <= queue->ptr)
-            && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2 + 1]);
-
-         if (!left && !right)
-            break;
-
-         size_t switch_index = tmp_ptr;
-         if (left && !right)
+         if (queue->elems[tmp_ptr * 2]
+               >= queue->elems[tmp_ptr * 2 + 1])
             switch_index <<= 1;
-         else if (right && !left)
-            switch_index += switch_index + 1;
          else
-         {
-            if (queue->elems[tmp_ptr * 2]
-                  >= queue->elems[tmp_ptr * 2 + 1])
-               switch_index <<= 1;
-            else
-               switch_index += switch_index + 1;
-         }
-         struct queue_elem *parent = queue->elems[tmp_ptr];
-         struct queue_elem *child = queue->elems[switch_index];
-         queue->elems[tmp_ptr] = child;
-         queue->elems[switch_index] = parent;
-         tmp_ptr = switch_index;
+            switch_index += switch_index + 1;
       }
 
-      return queue->tmp_msg;
+      parent = (struct queue_elem*)queue->elems[tmp_ptr];
+      child  = (struct queue_elem*)queue->elems[switch_index];
+      queue->elems[tmp_ptr] = child;
+      queue->elems[switch_index] = parent;
+      tmp_ptr = switch_index;
    }
+
+   return queue->tmp_msg;
 }

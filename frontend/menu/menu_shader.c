@@ -147,22 +147,22 @@ void menu_shader_manager_set_preset(struct gfx_shader *shader,
    }
 }
 
-void menu_shader_manager_get_str(struct gfx_shader *shader,
+void menu_shader_manager_get_str(struct gfx_shader *program,
       char *type_str, size_t type_str_size, const char *menu_label,
       const char *label, unsigned type)
 {
    *type_str = '\0';
 
    if (!strcmp(label, "video_shader_num_passes"))
-      snprintf(type_str, type_str_size, "%u", shader->passes);
+      snprintf(type_str, type_str_size, "%u", program->passes);
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
       /* menu->parameter_shader here. */
-      if (shader)
+      if (program)
       {
          const struct gfx_shader_parameter *param =
-            (const struct gfx_shader_parameter*)&shader->parameters
+            (const struct gfx_shader_parameter*)&program->parameters
             [type - MENU_SETTINGS_SHADER_PARAMETER_0];
          snprintf(type_str, type_str_size, "%.2f [%.2f %.2f]",
                param->current, param->minimum, param->maximum);
@@ -174,9 +174,9 @@ void menu_shader_manager_get_str(struct gfx_shader *shader,
    else if (!strcmp(label, "video_shader_pass"))
    {
       unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_0);
-      if (*shader->pass[pass].source.path)
+      if (*program->pass[pass].source.path)
          fill_pathname_base(type_str,
-               shader->pass[pass].source.path, type_str_size);
+               program->pass[pass].source.path, type_str_size);
       else
          strlcpy(type_str, "N/A", type_str_size);
    }
@@ -189,17 +189,17 @@ void menu_shader_manager_get_str(struct gfx_shader *shader,
          "Nearest"
       };
 
-      strlcpy(type_str, modes[shader->pass[pass].filter],
+      strlcpy(type_str, modes[program->pass[pass].filter],
             type_str_size);
    }
    else if (!strcmp(label, "video_shader_scale_pass"))
    {
-      unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_SCALE_0);
-      unsigned scale = shader->pass[pass].fbo.scale_x;
-      if (!scale)
+      unsigned pass        = (type - MENU_SETTINGS_SHADER_PASS_SCALE_0);
+      unsigned scale_value = program->pass[pass].fbo.scale_x;
+      if (!scale_value)
          strlcpy(type_str, "Don't care", type_str_size);
       else
-         snprintf(type_str, type_str_size, "%ux", scale);
+         snprintf(type_str, type_str_size, "%ux", scale_value);
    }
 }
 

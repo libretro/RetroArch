@@ -126,7 +126,7 @@ static void lakka_draw_text(lakka_handle_t *lakka,
                                       str, &params);
 }
 
-void lakka_draw_background(bool force_transparency)
+static void lakka_draw_background(bool force_transparency)
 {
    float alpha = 0.75f;
    gl_t *gl = NULL;
@@ -882,9 +882,7 @@ static void lakka_context_reset(void *data)
 
    for (i = 1; i < lakka->num_categories; i++)
    {
-      char core_id[PATH_MAX], texturepath[PATH_MAX], content_texturepath[PATH_MAX],
-           mediapath[PATH_MAX], themepath[PATH_MAX];
-
+      char core_id[PATH_MAX], texturepath[PATH_MAX], content_texturepath[PATH_MAX];
       menu_category_t *category = (menu_category_t*)&lakka->categories[i];
       core_info_t *info = NULL;
       core_info_list_t *info_list = NULL;

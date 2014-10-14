@@ -48,7 +48,7 @@ void gl_load_texture_data(GLuint obj, const struct texture_image *img,
 }
 
 bool gl_load_luts(const struct gfx_shader *generic_shader,
-      GLuint *lut_textures)
+      GLuint *textures_lut)
 {
    unsigned i;
    unsigned num_luts = min(generic_shader->luts, GFX_MAX_TEXTURES);
@@ -59,7 +59,7 @@ bool gl_load_luts(const struct gfx_shader *generic_shader,
    /*  Original shader_glsl.c code only generated one 
     *  texture handle.  I assume it was a bug, but if not, 
     *  replace num_luts with 1 when GLSL is used. */
-   glGenTextures(num_luts, lut_textures);
+   glGenTextures(num_luts, textures_lut);
    for (i = 0; i < num_luts; i++)
    {
       struct texture_image img = {0};
@@ -73,7 +73,7 @@ bool gl_load_luts(const struct gfx_shader *generic_shader,
          return false;
       }
 
-      gl_load_texture_data(lut_textures[i], &img,
+      gl_load_texture_data(textures_lut[i], &img,
             driver.video->wrap_type_to_enum(generic_shader->lut[i].wrap),
             generic_shader->lut[i].filter != RARCH_FILTER_NEAREST,
             generic_shader->lut[i].mipmap);

@@ -238,7 +238,7 @@ static GLint get_uniform(GLuint prog, const char *base)
    for (i = 0; i < ARRAY_SIZE(glsl_prefixes); i++)
    {
       snprintf(buf, sizeof(buf), "%s%s", glsl_prefixes[i], base);
-      GLint loc = glGetUniformLocation(prog, buf);
+      loc = glGetUniformLocation(prog, buf);
       if (loc >= 0)
          return loc;
    }
@@ -258,7 +258,7 @@ static GLint get_attrib(GLuint prog, const char *base)
    for (i = 0; i < ARRAY_SIZE(glsl_prefixes); i++)
    {
       snprintf(buf, sizeof(buf), "%s%s", glsl_prefixes[i], base);
-      GLint loc = glGetAttribLocation(prog, buf);
+      loc = glGetAttribLocation(prog, buf);
       if (loc >= 0)
          return loc;
    }

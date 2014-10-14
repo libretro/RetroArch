@@ -29,7 +29,7 @@ static const font_renderer_driver_t *font_backends[] = {
 };
 
 bool font_renderer_create_default(
-      const font_renderer_driver_t **driver, void **handle,
+      const font_renderer_driver_t **drv, void **handle,
       const char *font_path, unsigned font_size)
 {
    unsigned i;
@@ -46,7 +46,7 @@ bool font_renderer_create_default(
       {
          RARCH_LOG("Using font rendering backend: %s.\n",
                font_backends[i]->ident);
-         *driver = font_backends[i];
+         *drv = font_backends[i];
          return true;
       }
       else
@@ -54,7 +54,7 @@ bool font_renderer_create_default(
                font_backends[i]->ident);
    }
 
-   *driver = NULL;
+   *drv = NULL;
    *handle = NULL;
    return false;
 }
