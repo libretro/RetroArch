@@ -375,6 +375,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
 
    snprintf(overlay_path_key, sizeof(overlay_path_key),
          "overlay%u_overlay", index);
+    
    if (config_get_path(conf, overlay_path_key,
             overlay_path, sizeof(overlay_path)))
    {
@@ -527,7 +528,7 @@ static bool input_overlay_resolve_targets(struct overlay *ol,
       size_t index, size_t size)
 {
    size_t i;
-   struct overlay *current = &ol[index];
+   struct overlay *current = (struct overlay*)&ol[index];
 
    for (i = 0; i < current->size; i++)
    {
