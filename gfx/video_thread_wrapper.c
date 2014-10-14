@@ -817,19 +817,19 @@ static const video_driver_t video_thread = {
 };
 
 static void thread_set_callbacks(thread_video_t *thr,
-      const video_driver_t *driver)
+      const video_driver_t *drv)
 {
    thr->video_thread = video_thread;
 
    /* Disable optional features if not present. */
-   if (!driver->read_viewport)
+   if (!drv->read_viewport)
       thr->video_thread.read_viewport = NULL;
-   if (!driver->set_rotation)
+   if (!drv->set_rotation)
       thr->video_thread.set_rotation = NULL;
-   if (!driver->set_shader)
+   if (!drv->set_shader)
       thr->video_thread.set_shader = NULL;
 #ifdef HAVE_OVERLAY
-   if (!driver->overlay_interface)
+   if (!drv->overlay_interface)
       thr->video_thread.overlay_interface = NULL;
 #endif
 
@@ -840,15 +840,15 @@ static void thread_set_callbacks(thread_video_t *thr,
 
 bool rarch_threaded_video_init(const video_driver_t **out_driver,
       void **out_data,  const input_driver_t **input, void **input_data,
-      const video_driver_t *driver, const video_info_t *info)
+      const video_driver_t *drv, const video_info_t *info)
 {
    thread_video_t *thr = (thread_video_t*)calloc(1, sizeof(*thr));
    if (!thr)
       return false;
 
-   thread_set_callbacks(thr, driver);
+   thread_set_callbacks(thr, drv);
 
-   thr->driver = driver;
+   thr->driver = drv;
    *out_driver = &thr->video_thread;
    *out_data   = thr;
    return thread_init(thr, info, input, input_data);
