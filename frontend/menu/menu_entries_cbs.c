@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "menu_entries_cbs.h"
 #include "menu_action.h"
 #include "menu_common.h"
 #include "menu_input_line_cb.h"
