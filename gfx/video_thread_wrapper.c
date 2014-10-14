@@ -288,7 +288,7 @@ static void thread_loop(void *data)
          slock_lock(thr->frame.lock);
 
          thread_update_driver_state(thr);
-         bool ret = false;
+         ret = false;
          bool alive = false;
          bool focus = false;
          bool has_windowed = true;
