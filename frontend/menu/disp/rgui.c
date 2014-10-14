@@ -417,6 +417,7 @@ static void *rgui_init(void)
 
    if (!menu->frame_buf)
    {
+      free(menu->userdata);
       free(menu);
       return NULL;
    }
