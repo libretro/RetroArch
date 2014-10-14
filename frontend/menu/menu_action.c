@@ -46,9 +46,9 @@ int menu_action_setting_boolean(
 }
 
 int menu_action_setting_unsigned_integer(
-      rarch_setting_t *setting, unsigned id, unsigned action)
+      rarch_setting_t *setting, unsigned type, unsigned action)
 {
-   if (id == MENU_FILE_LINEFEED)
+   if (type == MENU_FILE_LINEFEED)
    {
       if (action == MENU_ACTION_OK)
          menu_key_start_line(driver.menu, setting->short_description,
@@ -226,17 +226,17 @@ int menu_action_setting_set_current_string_path(
 
 
 int menu_action_handle_setting(rarch_setting_t *setting,
-      unsigned id, const char *label, unsigned action)
+      unsigned type, const char *label, unsigned action)
 {
    if (setting->type == ST_BOOL)
       return menu_action_setting_boolean(setting, action);
    if (setting->type == ST_UINT)
-      return menu_action_setting_unsigned_integer(setting, id, action);
+      return menu_action_setting_unsigned_integer(setting, type, action);
    if (setting->type == ST_FLOAT)
       return menu_action_setting_fraction(setting, action);
    if (setting->type == ST_PATH)
       return menu_entries_set_current_path_selection(setting,
-            setting->default_value.string, setting->name, id, action);
+            setting->default_value.string, setting->name, type, action);
 
    if (setting->type == ST_DIR)
    {
@@ -252,7 +252,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    {
       if (
             (setting->flags & SD_FLAG_ALLOW_INPUT) || 
-            id == MENU_FILE_LINEFEED_SWITCH)
+            type == MENU_FILE_LINEFEED_SWITCH)
       {
          switch (action)
          {
@@ -360,7 +360,7 @@ unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
-int menu_action_setting_set(unsigned id, const char *label,
+int menu_action_setting_set(unsigned type, const char *label,
       unsigned action)
 {
    unsigned port = driver.menu->current_pad;
@@ -372,7 +372,7 @@ int menu_action_setting_set(unsigned id, const char *label,
          driver.menu->list_settings, list->list[driver.menu->selection_ptr].label);
 
    if (setting)
-      return menu_action_handle_setting(setting, id, label, action);
+      return menu_action_handle_setting(setting, type, label, action);
 
    /* Check if setting belongs to main menu. */
 
@@ -380,7 +380,7 @@ int menu_action_setting_set(unsigned id, const char *label,
          driver.menu->list_mainmenu, list->list[driver.menu->selection_ptr].label);
 
    if (setting)
-      return menu_action_handle_setting(setting, id, label, action);
+      return menu_action_handle_setting(setting, type, label, action);
 
    /* Fallback. */
 
@@ -517,7 +517,7 @@ int menu_action_setting_set(unsigned id, const char *label,
    }
    else
    {
-      switch (id)
+      switch (type)
       {
 #if defined(GEKKO)
          case MENU_SETTINGS_VIDEO_RESOLUTION:
