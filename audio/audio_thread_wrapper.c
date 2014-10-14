@@ -204,16 +204,16 @@ static const audio_driver_t audio_thread = {
 };
 
 bool rarch_threaded_audio_init(const audio_driver_t **out_driver, void **out_data,
-      const char *device, unsigned out_rate, unsigned latency,
-      const audio_driver_t *driver)
+      const char *device, unsigned audio_out_rate, unsigned latency,
+      const audio_driver_t *drv)
 {
    audio_thread_t *thr = (audio_thread_t*)calloc(1, sizeof(*thr));
    if (!thr)
       return false;
 
-   thr->driver = driver;
+   thr->driver = (const audio_driver_t*)drv;
    thr->device = device;
-   thr->out_rate = out_rate;
+   thr->out_rate = audio_out_rate;
    thr->latency = latency;
 
    if (!(thr->cond = scond_new()))
