@@ -46,7 +46,7 @@ int menu_action_setting_boolean(
 }
 
 int menu_action_setting_unsigned_integer(
-      rarch_setting_t *setting, unsigned type, unsigned action)
+      rarch_setting_t *setting, unsigned action)
 {
    if (setting->action_ok)
       setting->action_ok(setting, action);
@@ -145,12 +145,15 @@ static int menu_entries_set_current_path_selection(
 }
 
 static int menu_action_handle_setting(rarch_setting_t *setting,
-      unsigned type, const char *label, unsigned action)
+      unsigned type, unsigned action)
 {
+   if (!setting)
+      return -1;
+
    if (setting->type == ST_BOOL)
       return menu_action_setting_boolean(setting, action);
    if (setting->type == ST_UINT)
-      return menu_action_setting_unsigned_integer(setting, type, action);
+      return menu_action_setting_unsigned_integer(setting, action);
    if (setting->type == ST_FLOAT)
       return menu_action_setting_fraction(setting, action);
    if (setting->type == ST_PATH)
@@ -291,7 +294,7 @@ int menu_action_setting_set(unsigned type, const char *label,
          driver.menu->list_settings, list->list[driver.menu->selection_ptr].label);
 
    if (setting)
-      return menu_action_handle_setting(setting, type, label, action);
+      return menu_action_handle_setting(setting, type, action);
 
    /* Check if setting belongs to main menu. */
 
@@ -299,7 +302,7 @@ int menu_action_setting_set(unsigned type, const char *label,
          driver.menu->list_mainmenu, list->list[driver.menu->selection_ptr].label);
 
    if (setting)
-      return menu_action_handle_setting(setting, type, label, action);
+      return menu_action_handle_setting(setting, type, action);
 
    /* Fallback. */
 

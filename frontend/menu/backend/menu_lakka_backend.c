@@ -371,7 +371,7 @@ static int menu_lakka_iterate(unsigned action)
             if (setting->type == ST_BOOL)
                menu_action_setting_boolean(setting, action);
             else if (setting->type == ST_UINT)
-               menu_action_setting_unsigned_integer(setting, 0, action);
+               menu_action_setting_unsigned_integer(setting, action);
             else if (setting->type == ST_FLOAT)
                menu_action_setting_fraction(setting, action);
             else if (setting->type == ST_STRING)
