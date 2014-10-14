@@ -110,13 +110,13 @@ int menu_action_setting_fraction(
             break;
          case MENU_ACTION_OK:
             {
-               double refresh_rate, deviation = 0.0;
+               double video_refresh_rate, deviation = 0.0;
                unsigned sample_points = 0;
 
-               if (driver_monitor_fps_statistics(&refresh_rate,
+               if (driver_monitor_fps_statistics(&video_refresh_rate,
                         &deviation, &sample_points))
                {
-                  driver_set_monitor_refresh_rate(refresh_rate);
+                  driver_set_monitor_refresh_rate(video_refresh_rate);
                   /* Incase refresh rate update forced non-block video. */
                   rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
                }
