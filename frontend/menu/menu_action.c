@@ -224,16 +224,16 @@ void menu_action_setting_driver(
    else if (setting->flags & SD_FLAG_IS_DRIVER)
    {
       const char *label    = setting->name;
-      char *driver         = (char*)setting->value.string;
+      char *drv            = (char*)setting->value.string;
       size_t sizeof_driver = setting->size;
 
       switch (action)
       {
          case MENU_ACTION_LEFT:
-            find_prev_driver(label, driver, sizeof_driver);
+            find_prev_driver(label, drv, sizeof_driver);
             break;
          case MENU_ACTION_RIGHT:
-            find_next_driver(label, driver, sizeof_driver);
+            find_next_driver(label, drv, sizeof_driver);
             break;
       }
    }
