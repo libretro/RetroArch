@@ -64,14 +64,13 @@ void apple_display_alert(const char *message, const char *title)
 
 - (BOOL)isPartialStringValid:(NSString*)partialString newEditingString:(NSString**)newString errorDescription:(NSString**)error
 {
-   NSUInteger i;
    bool hasDot = false;
 
    if (partialString.length)
-      for (i = 0; i < partialString.length; i ++)
+      for (NSUInteger i = 0; i < partialString.length; i ++)
       {
          unichar ch = [partialString characterAtIndex:i];
-         
+
          if (i == 0 && (!self.minimum || self.minimum.intValue < 0) && ch == '-')
             continue;
          else if (self.allowsFloats && !hasDot && ch == '.')
