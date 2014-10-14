@@ -301,7 +301,7 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
    /* Find all parameters in our shaders. */
    for (i = 0; i < shader->passes; i++)
    {
-      char line[2048];
+      char line[PATH_MAX];
       FILE *file = fopen(shader->pass[i].source.path, "r");
       if (!file)
          continue;
@@ -338,7 +338,7 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
    /* Read in parameters which override the defaults. */
    if (conf)
    {
-      char parameters[1024];
+      char parameters[PATH_MAX];
       char *save = NULL;
       const char *id;
 
@@ -349,7 +349,7 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
       for (id = strtok_r(parameters, ";", &save); id; 
             id = strtok_r(NULL, ";", &save))
       {
-         struct gfx_shader_parameter *param = (struct gfx_shader_parameter*)
+         param = (struct gfx_shader_parameter*)
             find_parameter(shader->parameters, shader->num_parameters, id);
 
          if (!param)

@@ -737,30 +737,30 @@ static void set_program_base_attrib(unsigned i)
       prg[i].lut_tex = cgGetNamedParameter(prg[i].vprg, "IN.lut_tex_coord");
 }
 
-static void set_pass_attrib(struct cg_program *prg, struct cg_fbo_params *fbo,
+static void set_pass_attrib(struct cg_program *program, struct cg_fbo_params *fbo,
       const char *attr)
 {
    char attr_buf[64];
 
    snprintf(attr_buf, sizeof(attr_buf), "%s.texture", attr);
    if (!fbo->tex)
-      fbo->tex = cgGetNamedParameter(prg->fprg, attr_buf);
+      fbo->tex = cgGetNamedParameter(program->fprg, attr_buf);
 
    snprintf(attr_buf, sizeof(attr_buf), "%s.video_size", attr);
    if (!fbo->vid_size_v)
-      fbo->vid_size_v = cgGetNamedParameter(prg->vprg, attr_buf);
+      fbo->vid_size_v = cgGetNamedParameter(program->vprg, attr_buf);
    if (!fbo->vid_size_f)
-      fbo->vid_size_f = cgGetNamedParameter(prg->fprg, attr_buf);
+      fbo->vid_size_f = cgGetNamedParameter(program->fprg, attr_buf);
 
    snprintf(attr_buf, sizeof(attr_buf), "%s.texture_size", attr);
    if (!fbo->tex_size_v)
-      fbo->tex_size_v = cgGetNamedParameter(prg->vprg, attr_buf);
+      fbo->tex_size_v = cgGetNamedParameter(program->vprg, attr_buf);
    if (!fbo->tex_size_f)
-      fbo->tex_size_f = cgGetNamedParameter(prg->fprg, attr_buf);
+      fbo->tex_size_f = cgGetNamedParameter(program->fprg, attr_buf);
 
    snprintf(attr_buf, sizeof(attr_buf), "%s.tex_coord", attr);
    if (!fbo->coord)
-      fbo->coord = cgGetNamedParameter(prg->vprg, attr_buf);
+      fbo->coord = cgGetNamedParameter(program->vprg, attr_buf);
 }
 
 static void set_program_attributes(unsigned i)
