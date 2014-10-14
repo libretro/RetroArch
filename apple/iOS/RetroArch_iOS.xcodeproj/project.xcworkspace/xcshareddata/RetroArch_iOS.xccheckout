@@ -40,14 +40,6 @@
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>
 			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>76200F0D6584D865E96F58DE862E738E88B23A3C</string>
-			<key>IDESourceControlWCCName</key>
-			<string></string>
-		</dict>
-		<dict>
-			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
-			<string>public.vcs.git</string>
-			<key>IDESourceControlWCCIdentifierKey</key>
 			<string>49FCA0A2-0FE0-4A7A-9C54-642C68ED726A</string>
 			<key>IDESourceControlWCCName</key>
 			<string>overlays</string>
