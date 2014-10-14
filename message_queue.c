@@ -124,11 +124,21 @@ void msg_queue_clear(msg_queue_t *queue)
 
 const char *msg_queue_pull(msg_queue_t *queue)
 {
+   struct queue_elem *front  = NULL;
+   struct queue_elem *last   = NULL;
+   struct queue_elem *parent = NULL;
+   struct queue_elem *child  = NULL;
+   size_t tmp_ptr = 1;
+    
+   (void)parent;
+   (void)child;
+   (void)tmp_ptr;
+    
    /* Nothing in queue. */
    if (!queue || queue->ptr == 1)
       return NULL;
 
-   struct queue_elem *front = queue->elems[1];
+   front = (struct queue_elem*)queue->elems[1];
    front->duration--;
    if (front->duration > 0)
       return front->msg;
@@ -138,12 +148,11 @@ const char *msg_queue_pull(msg_queue_t *queue)
       queue->tmp_msg = front->msg;
       front->msg = NULL;
 
-      struct queue_elem *front = queue->elems[1];
-      struct queue_elem *last = queue->elems[--queue->ptr];
+      front = (struct queue_elem*)queue->elems[1];
+      last  = (struct queue_elem*)queue->elems[--queue->ptr];
       queue->elems[1] = last;
       free(front);
 
-      size_t tmp_ptr = 1;
       for (;;)
       {
          bool left = (tmp_ptr * 2 <= queue->ptr)
@@ -167,8 +176,9 @@ const char *msg_queue_pull(msg_queue_t *queue)
             else
                switch_index += switch_index + 1;
          }
-         struct queue_elem *parent = queue->elems[tmp_ptr];
-         struct queue_elem *child = queue->elems[switch_index];
+          
+         parent = (struct queue_elem*)queue->elems[tmp_ptr];
+         child  = (struct queue_elem*)queue->elems[switch_index];
          queue->elems[tmp_ptr] = child;
          queue->elems[switch_index] = parent;
          tmp_ptr = switch_index;
