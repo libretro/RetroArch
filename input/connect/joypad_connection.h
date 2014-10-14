@@ -73,4 +73,7 @@ int16_t pad_connection_get_axis(joypad_connection_t *joyconn,
 bool pad_connection_has_interface(joypad_connection_t *joyconn,
    unsigned index);
 
+bool pad_connection_rumble(joypad_connection_t *s,
+   unsigned pad, enum retro_rumble_effect effect, uint16_t strength);
+
 #endif
