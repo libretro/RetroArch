@@ -77,39 +77,6 @@ int menu_action_setting_fraction(
    return 0;
 }
 
-static void menu_action_setting_driver(
-      rarch_setting_t *setting, unsigned action)
-{
-   if (!strcmp(setting->name, "audio_resampler_driver"))
-   {
-      switch (action)
-      {
-         case MENU_ACTION_LEFT:
-            find_prev_resampler_driver();
-            break;
-         case MENU_ACTION_RIGHT:
-            find_next_resampler_driver();
-            break;
-      }
-   }
-   else if (setting->flags & SD_FLAG_IS_DRIVER)
-   {
-      const char *label    = setting->name;
-      char *drv            = (char*)setting->value.string;
-      size_t sizeof_driver = setting->size;
-
-      switch (action)
-      {
-         case MENU_ACTION_LEFT:
-            find_prev_driver(label, drv, sizeof_driver);
-            break;
-         case MENU_ACTION_RIGHT:
-            find_next_driver(label, drv, sizeof_driver);
-            break;
-      }
-   }
-}
-
 int menu_action_setting_set_current_string(
       rarch_setting_t *setting, const char *str)
 {
@@ -225,21 +192,8 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 
    if (setting->type == ST_STRING)
    {
-      if (setting->flags & SD_FLAG_ALLOW_INPUT)
-      {
-         switch (action)
-         {
-            case MENU_ACTION_OK:
-               menu_key_start_line(driver.menu, setting->short_description,
-                     setting->name, st_string_callback);
-               break;
-            case MENU_ACTION_START:
-               *setting->value.string = '\0';
-               break;
-         }
-      }
-      else
-         menu_action_setting_driver(setting, action);
+      if (setting->action_toggle)
+         setting->action_toggle(setting, action);
    }
 
    return 0;

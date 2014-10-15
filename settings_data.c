@@ -2378,13 +2378,85 @@ static void general_write_handler(void *data)
 #define MAX_GAMMA_SETTING 1
 #endif
 
+static int setting_data_string_action_toggle_driver(void *data,
+      unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         find_prev_driver(setting->name, setting->value.string, setting->size);
+         break;
+      case MENU_ACTION_RIGHT:
+         find_next_driver(setting->name, setting->value.string, setting->size);
+         break;
+   }
+
+   return 0;
+}
+
+static int setting_data_string_action_toggle_allow_input(void *data,
+      unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting || !driver.menu)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_OK:
+         menu_key_start_line(driver.menu, setting->short_description,
+               setting->name, st_string_callback);
+         break;
+      case MENU_ACTION_START:
+         *setting->value.string = '\0';
+         break;
+   }
+
+   return 0;
+}
+
+static int setting_data_string_action_toggle_audio_resampler(void *data,
+      unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         find_prev_resampler_driver();
+         break;
+      case MENU_ACTION_RIGHT:
+         find_next_resampler_driver();
+         break;
+   }
+
+   return 0;
+}
+
 static void setting_data_add_special_callbacks(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       unsigned values)
 {
+   /* Action OK. */
    if (values & SD_FLAG_ALLOW_INPUT)
       (*list)[list_info->index - 1].action_ok = setting_data_uint_action_ok_linefeed;
+
+   /* Action Toggle. */
+   if (values & SD_FLAG_ALLOW_INPUT)
+      (*list)[list_info->index - 1].action_toggle = setting_data_string_action_toggle_allow_input;
+   else if (values & SD_FLAG_IS_DRIVER)
+      (*list)[list_info->index - 1].action_toggle = setting_data_string_action_toggle_driver;
 }
 
 static void settings_data_list_current_add_flags(
@@ -2760,6 +2832,7 @@ static bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
+   (*list)[list_info->index - 1].action_toggle = &setting_data_string_action_toggle_audio_resampler;
 
    CONFIG_STRING(
          g_settings.camera.driver,
