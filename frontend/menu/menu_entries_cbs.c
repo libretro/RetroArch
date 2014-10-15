@@ -1348,13 +1348,114 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
 static int deferred_push_core_information(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   int i;
+   core_info_t *info      = NULL;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
 
-   return push_list(driver.menu, list, path, label, type);
+   info = (core_info_t*)g_extern.core_info_current;
+   file_list_clear(list);
+
+   if (info->data)
+   {
+      char tmp[PATH_MAX];
+
+      snprintf(tmp, sizeof(tmp), "Core name: %s",
+            info->display_name ? info->display_name : "");
+      file_list_push(list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      if (info->authors_list)
+      {
+         strlcpy(tmp, "Authors: ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               info->authors_list, ", ");
+         file_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (info->permissions_list)
+      {
+         strlcpy(tmp, "Permissions: ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               info->permissions_list, ", ");
+         file_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (info->licenses_list)
+      {
+         strlcpy(tmp, "License(s): ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               info->licenses_list, ", ");
+         file_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (info->supported_extensions_list)
+      {
+         strlcpy(tmp, "Supported extensions: ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               info->supported_extensions_list, ", ");
+         file_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (info->firmware_count > 0)
+      {
+         core_info_list_update_missing_firmware(
+               g_extern.core_info, info->path,
+               g_settings.system_directory);
+
+         file_list_push(list, "Firmware: ", "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+         for (i = 0; i < info->firmware_count; i++)
+         {
+            if (info->firmware[i].desc)
+            {
+               snprintf(tmp, sizeof(tmp), "	name: %s",
+                     info->firmware[i].desc ? info->firmware[i].desc : "");
+               file_list_push(list, tmp, "",
+                     MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+               snprintf(tmp, sizeof(tmp), "	status: %s, %s",
+                     info->firmware[i].missing ?
+                     "missing" : "present",
+                     info->firmware[i].optional ?
+                     "optional" : "required");
+               file_list_push(list, tmp, "",
+                     MENU_SETTINGS_CORE_INFO_NONE, 0);
+            }
+         }
+      }
+
+      if (info->notes)
+      {
+         snprintf(tmp, sizeof(tmp), "Core notes: ");
+         file_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+         for (i = 0; i < info->note_list->size; i++)
+         {
+            snprintf(tmp, sizeof(tmp), " %s",
+                  info->note_list->elems[i].data);
+            file_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
+      }
+   }
+   else
+      file_list_push(list,
+            "No information available.", "",
+            MENU_SETTINGS_CORE_OPTION_NONE, 0);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
 }
 
 static int deferred_push_performance_counters(void *data, void *userdata,
