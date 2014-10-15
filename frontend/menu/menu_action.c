@@ -21,7 +21,7 @@
 #include "menu_shader.h"
 
 
-int menu_action_setting_apply(rarch_setting_t *setting)
+static int menu_action_setting_apply(rarch_setting_t *setting)
 {
    if (setting->change_handler)
       setting->change_handler(setting);
