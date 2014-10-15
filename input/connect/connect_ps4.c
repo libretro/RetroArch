@@ -85,6 +85,7 @@ static void hidpad_ps4_disconnect(void *data)
       free(device);
 }
 
+#if 0
 static uint32_t hidpad_ps4_get_buttons(void *data)
 {
    uint32_t result = 0;
@@ -125,7 +126,6 @@ static uint32_t hidpad_ps4_get_buttons(void *data)
    return result;
 }
 
-#if 0
 static int16_t hidpad_ps4_get_axis(void *data, unsigned axis)
 {
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
