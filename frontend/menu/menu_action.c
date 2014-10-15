@@ -77,7 +77,7 @@ int menu_action_setting_fraction(
    return 0;
 }
 
-void menu_action_setting_driver(
+static void menu_action_setting_driver(
       rarch_setting_t *setting, unsigned action)
 {
    if (!strcmp(setting->name, "audio_resampler_driver"))

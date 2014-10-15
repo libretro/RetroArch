@@ -32,9 +32,6 @@ int menu_action_setting_fraction(
 int menu_action_setting_unsigned_integer(
       rarch_setting_t *setting, unsigned action);
 
-void menu_action_setting_driver(
-      rarch_setting_t *setting, unsigned action);
-
 int menu_action_set_current_string_based_on_label(
       const char *label, const char *str);
 
