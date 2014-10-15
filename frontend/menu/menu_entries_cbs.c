@@ -924,24 +924,6 @@ static int action_toggle_shader_filter_default(unsigned type, const char *label,
    return 0;
 }
 
-static int action_ok_shader_num_passes(const char *path,
-      const char *label, unsigned type, size_t index)
-{
-   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-
-   if (!shader)
-      return -1;
-
-   if (shader && (shader->passes < GFX_MAX_SHADERS))
-      shader->passes++;
-   driver.menu->need_refresh = true;
-
-   if (driver.menu->need_refresh)
-      gfx_shader_resolve_parameters(NULL, driver.menu->shader);
-
-   return 0;
-}
-
 static int action_toggle_shader_num_passes(unsigned type, const char *label,
       unsigned action)
 {
@@ -987,23 +969,6 @@ static int action_ok_shader_parameters(const char *path,
          "video_shader_parameters",
          MENU_FILE_SWITCH, driver.menu->selection_ptr);
 #endif
-
-   return 0;
-}
-
-static int action_ok_input_bind_analog_dpad_mode(const char *path,
-      const char *label, unsigned type, size_t index)
-{
-   unsigned port = 0;
-   
-   if (!driver.menu)
-      return -1;
-
-   port = driver.menu->current_pad;
-
-   g_settings.input.analog_dpad_mode[port] =
-      (g_settings.input.analog_dpad_mode[port] + 1)
-      % ANALOG_DPAD_LAST;
 
    return 0;
 }
@@ -2258,8 +2223,6 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_shader_scale_pass;
    else if (!strcmp(label, "video_shader_filter_pass"))
       cbs->action_ok = action_ok_shader_filter_pass;
-   else if (!strcmp(label, "video_shader_num_passes"))
-      cbs->action_ok = action_ok_shader_num_passes;
    else if ((!strcmp(label, "video_shader_parameters") ||
             !strcmp(label, "video_shader_preset_parameters")))
       cbs->action_ok = action_ok_shader_parameters;
@@ -2296,8 +2259,6 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_disk_image_append_list;
    else if (!strcmp(label, "configurations"))
       cbs->action_ok = action_ok_configurations_list;
-   else if (!strcmp(label, "input_bind_analog_dpad_mode"))
-      cbs->action_ok = action_ok_input_bind_analog_dpad_mode;
 }
 
 static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
