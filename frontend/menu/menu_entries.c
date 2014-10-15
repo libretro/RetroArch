@@ -121,21 +121,6 @@ static void add_setting_entry(menu_handle_t *menu,
             setting->name, id, 0);
 }
 
-static void push_perfcounter(menu_handle_t *menu,
-      file_list_t *list,
-      const struct retro_perf_counter **counters,
-      unsigned num, unsigned id)
-{
-   unsigned i;
-   if (!counters || num == 0)
-      return;
-
-   for (i = 0; i < num; i++)
-      if (counters[i] && counters[i]->ident)
-         file_list_push(list, counters[i]->ident, "",
-               id + i, 0);
-}
-
 void menu_entries_pop_list(file_list_t *list)
 {
    if (file_list_get_size(list) > 1)
@@ -378,18 +363,6 @@ int push_list(menu_handle_t *menu,
       file_list_sort_on_alt(list);
 
       do_action = true;
-   }
-   else if (!strcmp(label, "core_counters"))
-   {
-      file_list_clear(list);
-      push_perfcounter(menu, list, perf_counters_libretro,
-            perf_ptr_libretro, MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
-   }
-   else if (!strcmp(label, "frontend_counters"))
-   {
-      file_list_clear(list);
-      push_perfcounter(menu, list, perf_counters_rarch,
-            perf_ptr_rarch, MENU_SETTINGS_PERF_COUNTERS_BEGIN);
    }
    else if (!strcmp(label, "core_options"))
    {

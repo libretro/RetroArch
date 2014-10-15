@@ -1436,6 +1436,21 @@ static int deferred_push_shader_options(void *data, void *userdata,
    return 0;
 }
 
+static void push_perfcounter(menu_handle_t *menu,
+      file_list_t *list,
+      const struct retro_perf_counter **counters,
+      unsigned num, unsigned id)
+{
+   unsigned i;
+   if (!counters || num == 0)
+      return;
+
+   for (i = 0; i < num; i++)
+      if (counters[i] && counters[i]->ident)
+         file_list_push(list, counters[i]->ident, "",
+               id + i, 0);
+}
+
 static int deferred_push_core_counters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -1445,7 +1460,9 @@ static int deferred_push_core_counters(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   return push_list(driver.menu, list, path, label, type);
+   file_list_clear(list);
+   push_perfcounter(driver.menu, list, perf_counters_libretro,
+         perf_ptr_libretro, MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
 
    return 0;
 }
@@ -1459,7 +1476,9 @@ static int deferred_push_frontend_counters(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   return push_list(driver.menu, list, path, label, type);
+   file_list_clear(list);
+   push_perfcounter(driver.menu, list, perf_counters_rarch,
+         perf_ptr_rarch, MENU_SETTINGS_PERF_COUNTERS_BEGIN);
 
    return 0;
 }
