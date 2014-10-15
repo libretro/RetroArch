@@ -1338,6 +1338,132 @@ static int deferred_push_core_information(void *data, void *userdata,
    return 0;
 }
 
+static int deferred_push_performance_counters(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   return push_list(driver.menu, list, path, label, type);
+
+   return 0;
+}
+
+static int deferred_push_video_shader_preset_parameters(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   return push_list(driver.menu, list, path, label, type);
+
+   return 0;
+}
+
+static int deferred_push_video_shader_parameters(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   return push_list(driver.menu, list, path, label, type);
+
+   return 0;
+}
+
+static int deferred_push_settings(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   return push_list(driver.menu, list, path, label, type);
+
+   return 0;
+}
+
+static int deferred_push_category(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   return push_list(driver.menu, list, path, label, type);
+
+   return 0;
+}
+
+static int deferred_push_input_options(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   return push_list(driver.menu, list, path, label, type);
+
+   return 0;
+}
+
+static int deferred_push_shader_options(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   return push_list(driver.menu, list, path, label, type);
+
+   return 0;
+}
+
+static int deferred_push_core_counters(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   return push_list(driver.menu, list, path, label, type);
+
+   return 0;
+}
+
+static int deferred_push_frontend_counters(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   return push_list(driver.menu, list, path, label, type);
+
+   return 0;
+}
+
 static int deferred_push_core_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -1814,18 +1940,36 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    cbs->action_deferred_push = deferred_push_default;
 
-   if (!strcmp(label, "deferred_core_list"))
+   if (!strcmp(label, "history_list"))
+      cbs->action_deferred_push = deferred_push_history_list;
+   else if (type == MENU_FILE_CATEGORY)
+      cbs->action_deferred_push = deferred_push_category;
+   else if (!strcmp(label, "deferred_core_list"))
       cbs->action_deferred_push = deferred_push_core_list_deferred;
+   else if (!strcmp(label, "Input Options"))
+      cbs->action_deferred_push = deferred_push_input_options;
+   else if (!strcmp(label, "Shader Options"))
+      cbs->action_deferred_push = deferred_push_shader_options;
    else if (!strcmp(label, "core_information"))
       cbs->action_deferred_push = deferred_push_core_information;
+   else if (!strcmp(label, "performance_counters"))
+      cbs->action_deferred_push = deferred_push_performance_counters;
+   else if (!strcmp(label, "core_counters"))
+      cbs->action_deferred_push = deferred_push_core_counters;
+   else if (!strcmp(label, "video_shader_preset_parameters"))
+      cbs->action_deferred_push = deferred_push_video_shader_preset_parameters;
+   else if (!strcmp(label, "video_shader_parameters"))
+      cbs->action_deferred_push = deferred_push_video_shader_parameters;
+   else if (!strcmp(label, "settings"))
+      cbs->action_deferred_push = deferred_push_settings;
+   else if (!strcmp(label, "frontend_counters"))
+      cbs->action_deferred_push = deferred_push_frontend_counters;
    else if (!strcmp(label, "core_options"))
       cbs->action_deferred_push = deferred_push_core_options;
    else if (!strcmp(label, "disk_options"))
       cbs->action_deferred_push = deferred_push_disk_options;
    else if (!strcmp(label, "core_list"))
       cbs->action_deferred_push = deferred_push_core_list;
-   else if (!strcmp(label, "history_list"))
-      cbs->action_deferred_push = deferred_push_history_list;
    else if (!strcmp(label, "configurations"))
       cbs->action_deferred_push = deferred_push_configurations;
    else if (!strcmp(label, "video_shader_preset"))

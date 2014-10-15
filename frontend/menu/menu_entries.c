@@ -729,27 +729,6 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
    return 0;
 }
 
-static int menu_parse_check(const char *label, unsigned menu_type)
-{
-#if 0
-   RARCH_LOG("label is menu_parse_check: %s\n", label);
-#endif
-   if (
-        menu_type == MENU_FILE_CATEGORY ||
-        !strcmp(label, "Main Menu") ||
-        !strcmp(label, "settings") ||
-        !strcmp(label, "performance_counters") ||
-        !strcmp(label, "core_counters") ||
-        !strcmp(label, "frontend_counters") ||
-        !strcmp(label, "Input Options") ||
-        !strcmp(label, "Shader Options") ||
-        !strcmp(label, "video_shader_preset_parameters") ||
-        !strcmp(label, "video_shader_parameters")
-        )
-      return -1;
-   return 0;
-}
-
 int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
 {
    unsigned type = 0;
@@ -760,13 +739,8 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
 
    file_list_get_last(menu_list, &path, &label, &type);
 
-   if (((menu_parse_check(label, type)) == -1))
-   {
-      if (strcmp(label, "history_list") != 0)
-         return push_list(driver.menu, list, path, label, type);
-   }
-
-   RARCH_LOG("label is: %s\n", label);
+   if (!strcmp(label, "Main Menu"))
+      return push_list(driver.menu, list, path, label, type);
 
    cbs = (menu_file_list_cbs_t*)
       file_list_get_last_actiondata(menu_list);
