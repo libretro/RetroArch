@@ -247,16 +247,6 @@ int push_list(menu_handle_t *menu,
       for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_ALL_LAST; i++)
          add_setting_entry(menu, list, input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].base, i, menu->list_settings);
    }
-   else if (!strcmp(label, "disk_options"))
-   {
-      file_list_clear(list);
-      file_list_push(list, "Disk Index", "disk_index",
-            MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0);
-      file_list_push(list, "Disk Cycle Tray Status", "disk_cycle_tray_status",
-            MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0);
-      file_list_push(list, "Disk Image Append", "disk_image_append",
-            MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0);
-   }
    else if (
          !strcmp(label, "video_shader_preset_parameters") ||
          !strcmp(label, "video_shader_parameters")

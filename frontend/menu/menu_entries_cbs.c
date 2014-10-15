@@ -1702,7 +1702,18 @@ static int deferred_push_disk_options(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   return push_list(driver.menu, list, path, label, type);
+   file_list_clear(list);
+   file_list_push(list, "Disk Index", "disk_index",
+         MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0);
+   file_list_push(list, "Disk Cycle Tray Status", "disk_cycle_tray_status",
+         MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0);
+   file_list_push(list, "Disk Image Append", "disk_image_append",
+         MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
 }
 
 static int deferred_push_core_list(void *data, void *userdata,
