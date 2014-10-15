@@ -193,7 +193,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    if (setting->type == ST_STRING)
    {
       if (setting->action_toggle)
-         setting->action_toggle(setting, action);
+         return setting->action_toggle(setting, action);
    }
 
    return 0;
