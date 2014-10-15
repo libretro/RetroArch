@@ -45,6 +45,10 @@ void menu_flush_stack_label(file_list_t *list, const char *needle);
 
 bool menu_entries_init(menu_handle_t *menu);
 
+void entries_refresh(file_list_t *list);
+
+void menu_build_scroll_indices(file_list_t *list);
+
 #ifdef __cplusplus
 }
 #endif
