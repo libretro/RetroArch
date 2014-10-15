@@ -131,38 +131,29 @@ void menu_entries_push(
    driver.menu->need_refresh = true;
 }
 
-int push_list(menu_handle_t *menu,
+static int push_main_menu_list(menu_handle_t *menu,
       file_list_t *list,
       const char *path, const char *label,
       unsigned menu_type)
 {
-#if 0
-   RARCH_LOG("Label is: %s\n", label);
-   RARCH_LOG("Path is: %s\n", path);
-   RARCH_LOG("Menu type is: %d\n", menu_type);
-#endif
+   settings_list_free(menu->list_mainmenu);
+   menu->list_mainmenu = (rarch_setting_t *)setting_data_new(SL_FLAG_MAIN_MENU);
+   rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_mainmenu,
+         label);
 
-   if (!strcmp(label, "Main Menu"))
+   file_list_clear(list);
+
+   for (; setting->type != ST_END_GROUP; setting++)
    {
-      settings_list_free(menu->list_mainmenu);
-      menu->list_mainmenu = (rarch_setting_t *)setting_data_new(SL_FLAG_MAIN_MENU);
-      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_mainmenu,
-            label);
+      if (
+            setting->type == ST_GROUP ||
+            setting->type == ST_SUB_GROUP ||
+            setting->type == ST_END_SUB_GROUP
+         )
+         continue;
 
-      file_list_clear(list);
-
-      for (; setting->type != ST_END_GROUP; setting++)
-      {
-         if (
-               setting->type == ST_GROUP ||
-               setting->type == ST_SUB_GROUP ||
-               setting->type == ST_END_SUB_GROUP
-            )
-            continue;
-
-         file_list_push(list, setting->short_description,
-               setting->name, setting_set_flags(setting), 0);
-      }
+      file_list_push(list, setting->short_description,
+            setting->name, setting_set_flags(setting), 0);
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
@@ -355,7 +346,6 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
             file_type, 0);
    }
 
-   push_list(driver.menu, list, dir, label, type);
    string_list_free(str_list);
 
    if (!strcmp(label, "core_list"))
@@ -401,7 +391,7 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
    file_list_get_last(menu_list, &path, &label, &type);
 
    if (!strcmp(label, "Main Menu"))
-      return push_list(driver.menu, list, path, label, type);
+      return push_main_menu_list(driver.menu, list, path, label, type);
 
    cbs = (menu_file_list_cbs_t*)
       file_list_get_last_actiondata(menu_list);
@@ -479,7 +469,7 @@ bool menu_entries_init(menu_handle_t *menu)
 
    file_list_push(menu->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
    menu_clear_navigation(menu, true);
-   push_list(menu, menu->selection_buf,
+   push_main_menu_list(menu, menu->selection_buf,
          "", "Main Menu", 0);
 
    return true;
