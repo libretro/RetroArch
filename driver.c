@@ -19,7 +19,7 @@
 #include "general.h"
 #include "file.h"
 #include "libretro.h"
-#include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <math.h>
 #include "compat/posix_string.h"
