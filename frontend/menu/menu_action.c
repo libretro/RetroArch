@@ -20,9 +20,12 @@
 #include "menu_entries.h"
 #include "menu_shader.h"
 
-
-static int menu_action_setting_apply(rarch_setting_t *setting)
+int menu_action_setting_boolean(
+      rarch_setting_t *setting, unsigned action)
 {
+   if (setting->action_ok)
+      setting->action_ok(setting, action);
+
    if (setting->change_handler)
       setting->change_handler(setting);
 
@@ -36,22 +39,23 @@ static int menu_action_setting_apply(rarch_setting_t *setting)
    return 0;
 }
 
-int menu_action_setting_boolean(
-      rarch_setting_t *setting, unsigned action)
-{
-   if (setting->action_ok)
-      setting->action_ok(setting, action);
-
-   return menu_action_setting_apply(setting);
-}
-
 int menu_action_setting_unsigned_integer(
       rarch_setting_t *setting, unsigned action)
 {
    if (setting->action_ok)
       setting->action_ok(setting, action);
 
-   return menu_action_setting_apply(setting);
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
+      return -1;
+   }
+
+   return 0;
 }
 
 int menu_action_setting_fraction(
@@ -60,7 +64,17 @@ int menu_action_setting_fraction(
    if (setting->action_ok)
       setting->action_ok(setting, action);
 
-   return menu_action_setting_apply(setting);
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
+      return -1;
+   }
+
+   return 0;
 }
 
 void menu_action_setting_driver(
@@ -101,7 +115,17 @@ int menu_action_setting_set_current_string(
 {
    strlcpy(setting->value.string, str, setting->size);
 
-   return menu_action_setting_apply(setting);
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
+      return -1;
+   }
+
+   return 0;
 }
 
 int menu_action_set_current_string_based_on_label(
@@ -118,7 +142,17 @@ int menu_action_setting_set_current_string_path(
 {
    fill_pathname_join(setting->value.string, dir, path, setting->size);
 
-   return menu_action_setting_apply(setting);
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
+      return -1;
+   }
+
+   return 0;
 }
 
 static int menu_entries_set_current_path_selection(
@@ -141,7 +175,17 @@ static int menu_entries_set_current_path_selection(
          break;
    }
 
-   return menu_action_setting_apply(setting);
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
+      return -1;
+   }
+
+   return 0;
 }
 
 static int menu_action_handle_setting(rarch_setting_t *setting,
@@ -165,7 +209,16 @@ static int menu_action_handle_setting(rarch_setting_t *setting,
       if (action == MENU_ACTION_START)
       {
          *setting->value.string = '\0';
-         return menu_action_setting_apply(setting);
+
+         if (setting->change_handler)
+            setting->change_handler(setting);
+
+         if (setting->flags & SD_FLAG_EXIT
+               && setting->cmd_trigger.triggered)
+         {
+            setting->cmd_trigger.triggered = false;
+            return -1;
+         }
       }
       return 0;
    }
