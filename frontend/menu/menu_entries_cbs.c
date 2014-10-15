@@ -1313,13 +1313,34 @@ static int action_start_bind(unsigned type, const char *label,
 static int deferred_push_core_list_deferred(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   int i;
+   size_t list_size = 0;
+   const core_info_t *info = NULL;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
 
-   return push_list(driver.menu, list, path, label, type);
+   file_list_clear(list);
+   core_info_list_get_supported_cores(g_extern.core_info,
+         driver.menu->deferred_path, &info, &list_size);
+
+   for (i = 0; i < list_size; i++)
+   {
+      file_list_push(list, info[i].path, "",
+            MENU_FILE_CORE, 0);
+      file_list_set_alt_at_offset(list, i,
+            info[i].display_name);
+   }
+
+   file_list_sort_on_alt(list);
+
+   driver.menu->scroll_indices_size = 0;
+   entries_refresh(list);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
 
    return 0;
 }
@@ -1334,8 +1355,6 @@ static int deferred_push_core_information(void *data, void *userdata,
       return -1;
 
    return push_list(driver.menu, list, path, label, type);
-
-   return 0;
 }
 
 static int deferred_push_performance_counters(void *data, void *userdata,
@@ -1348,8 +1367,6 @@ static int deferred_push_performance_counters(void *data, void *userdata,
       return -1;
 
    return push_list(driver.menu, list, path, label, type);
-
-   return 0;
 }
 
 static int deferred_push_video_shader_preset_parameters(void *data, void *userdata,
@@ -1362,8 +1379,6 @@ static int deferred_push_video_shader_preset_parameters(void *data, void *userda
       return -1;
 
    return push_list(driver.menu, list, path, label, type);
-
-   return 0;
 }
 
 static int deferred_push_video_shader_parameters(void *data, void *userdata,
@@ -1376,8 +1391,6 @@ static int deferred_push_video_shader_parameters(void *data, void *userdata,
       return -1;
 
    return push_list(driver.menu, list, path, label, type);
-
-   return 0;
 }
 
 static int deferred_push_settings(void *data, void *userdata,
@@ -1390,8 +1403,6 @@ static int deferred_push_settings(void *data, void *userdata,
       return -1;
 
    return push_list(driver.menu, list, path, label, type);
-
-   return 0;
 }
 
 static int deferred_push_category(void *data, void *userdata,
@@ -1404,8 +1415,6 @@ static int deferred_push_category(void *data, void *userdata,
       return -1;
 
    return push_list(driver.menu, list, path, label, type);
-
-   return 0;
 }
 
 static int deferred_push_input_options(void *data, void *userdata,
@@ -1418,8 +1427,6 @@ static int deferred_push_input_options(void *data, void *userdata,
       return -1;
 
    return push_list(driver.menu, list, path, label, type);
-
-   return 0;
 }
 
 static int deferred_push_shader_options(void *data, void *userdata,
@@ -1464,6 +1471,9 @@ static int deferred_push_core_counters(void *data, void *userdata,
    push_perfcounter(driver.menu, list, perf_counters_libretro,
          perf_ptr_libretro, MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
 
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
    return 0;
 }
 
@@ -1480,19 +1490,37 @@ static int deferred_push_frontend_counters(void *data, void *userdata,
    push_perfcounter(driver.menu, list, perf_counters_rarch,
          perf_ptr_rarch, MENU_SETTINGS_PERF_COUNTERS_BEGIN);
 
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
    return 0;
 }
 
 static int deferred_push_core_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   int i;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
 
-   return push_list(driver.menu, list, path, label, type);
+   file_list_clear(list);
+   if (g_extern.system.core_options)
+   {
+      size_t opts = core_option_size(g_extern.system.core_options);
+      for (i = 0; i < opts; i++)
+         file_list_push(list,
+               core_option_get_desc(g_extern.system.core_options, i), "",
+               MENU_SETTINGS_CORE_OPTION_START + i, 0);
+   }
+   else
+      file_list_push(list, "No options available.", "",
+               MENU_SETTINGS_CORE_OPTION_NONE, 0);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
 
    return 0;
 }
@@ -1507,8 +1535,6 @@ static int deferred_push_disk_options(void *data, void *userdata,
       return -1;
 
    return push_list(driver.menu, list, path, label, type);
-
-   return 0;
 }
 
 static int deferred_push_core_list(void *data, void *userdata,

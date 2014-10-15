@@ -347,38 +347,6 @@ int push_list(menu_handle_t *menu,
                "No information available.", "",
                MENU_SETTINGS_CORE_OPTION_NONE, 0);
    }
-   else if (!strcmp(label, "deferred_core_list"))
-   {
-      const core_info_t *info = NULL;
-      file_list_clear(list);
-      core_info_list_get_supported_cores(g_extern.core_info,
-            driver.menu->deferred_path, &info, &list_size);
-      for (i = 0; i < list_size; i++)
-      {
-         file_list_push(list, info[i].path, "",
-               MENU_FILE_CORE, 0);
-         file_list_set_alt_at_offset(list, i,
-               info[i].display_name);
-      }
-      file_list_sort_on_alt(list);
-
-      do_action = true;
-   }
-   else if (!strcmp(label, "core_options"))
-   {
-      file_list_clear(list);
-      if (g_extern.system.core_options)
-      {
-         size_t opts = core_option_size(g_extern.system.core_options);
-         for (i = 0; i < opts; i++)
-            file_list_push(list,
-                  core_option_get_desc(g_extern.system.core_options, i), "",
-                  MENU_SETTINGS_CORE_OPTION_START + i, 0);
-      }
-      else
-         file_list_push(list, "No options available.", "",
-               MENU_SETTINGS_CORE_OPTION_NONE, 0);
-   }
    else if (!strcmp(label, "Input Options"))
    {
       settings_list_free(menu->list_settings);
