@@ -848,6 +848,252 @@ static int action_toggle_shader_parameters(unsigned type, const char *label,
    return 0;
 }
 
+static int action_toggle_input_bind_analog_dpad_mode(unsigned type, const char *label,
+      unsigned action)
+{
+   unsigned port = 0;
+   
+   if (!driver.menu)
+      return -1;
+
+   port = driver.menu->current_pad;
+
+   switch (action)
+   {
+      case MENU_ACTION_START:
+         g_settings.input.analog_dpad_mode[port] = 0;
+         break;
+
+      case MENU_ACTION_OK:
+      case MENU_ACTION_RIGHT:
+         g_settings.input.analog_dpad_mode[port] =
+            (g_settings.input.analog_dpad_mode[port] + 1)
+            % ANALOG_DPAD_LAST;
+         break;
+
+      case MENU_ACTION_LEFT:
+         g_settings.input.analog_dpad_mode[port] =
+            (g_settings.input.analog_dpad_mode
+             [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
+         break;
+   }
+
+   return 0;
+}
+
+static int action_toggle_input_bind_device_id(unsigned type, const char *label,
+      unsigned action)
+{
+   int *p = NULL;
+   unsigned port = 0;
+   
+   if (!driver.menu)
+      return -1;
+
+   port = driver.menu->current_pad;
+   p = (int*)&g_settings.input.joypad_map[port];
+
+   switch (action)
+   {
+      case MENU_ACTION_START:
+         *p = port;
+         break;
+      case MENU_ACTION_LEFT:
+         (*p)--;
+         break;
+      case MENU_ACTION_RIGHT:
+         (*p)++;
+         break;
+   }
+
+   if (*p < -1)
+      *p = -1;
+   else if (*p >= MAX_PLAYERS)
+      *p = MAX_PLAYERS - 1;
+
+   return 0;
+}
+
+static int action_toggle_input_bind_device_type(unsigned type, const char *label,
+      unsigned action)
+{
+   unsigned current_device, current_index, i, devices[128];
+   const struct retro_controller_info *desc;
+   unsigned types = 0, port = 0;
+
+   if (!driver.menu)
+      return -1;
+
+   port = driver.menu->current_pad;
+
+   devices[types++] = RETRO_DEVICE_NONE;
+   devices[types++] = RETRO_DEVICE_JOYPAD;
+
+   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+    * older core which doesn't use SET_CONTROLLER_INFO. */
+   if (!g_extern.system.num_ports)
+      devices[types++] = RETRO_DEVICE_ANALOG;
+
+   desc = port < g_extern.system.num_ports ?
+      &g_extern.system.ports[port] : NULL;
+   if (desc)
+   {
+      for (i = 0; i < desc->num_types; i++)
+      {
+         unsigned id = desc->types[i].id;
+         if (types < ARRAY_SIZE(devices) &&
+               id != RETRO_DEVICE_NONE &&
+               id != RETRO_DEVICE_JOYPAD)
+            devices[types++] = id;
+      }
+   }
+
+   current_device = g_settings.input.libretro_device[port];
+   current_index = 0;
+   for (i = 0; i < types; i++)
+   {
+      if (current_device == devices[i])
+      {
+         current_index = i;
+         break;
+      }
+   }
+
+   switch (action)
+   {
+      case MENU_ACTION_START:
+         current_device = RETRO_DEVICE_JOYPAD;
+
+         g_settings.input.libretro_device[port] = current_device;
+         pretro_set_controller_port_device(port, current_device);
+         break;
+
+      case MENU_ACTION_LEFT:
+         current_device = devices
+            [(current_index + types - 1) % types];
+
+         g_settings.input.libretro_device[port] = current_device;
+         pretro_set_controller_port_device(port, current_device);
+         break;
+
+      case MENU_ACTION_RIGHT:
+      case MENU_ACTION_OK:
+         current_device = devices
+            [(current_index + 1) % types];
+
+         g_settings.input.libretro_device[port] = current_device;
+         pretro_set_controller_port_device(port, current_device);
+         break;
+   }
+
+   return 0;
+}
+
+static int action_toggle_video_resolution(unsigned type, const char *label,
+      unsigned action)
+{
+#ifdef GEKKO
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         if (menu_current_gx_resolution > 0)
+            menu_current_gx_resolution--;
+         break;
+      case MENU_ACTION_RIGHT:
+         if (menu_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
+         {
+#ifdef HW_RVL
+            if ((menu_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
+               if (CONF_GetVideo() != CONF_VIDEO_PAL)
+                  return 0;
+#endif
+
+            menu_current_gx_resolution++;
+         }
+         break;
+      case MENU_ACTION_OK:
+         if (driver.video_data)
+            gx_set_video_mode(driver.video_data, menu_gx_resolutions
+                  [menu_current_gx_resolution][0],
+                  menu_gx_resolutions[menu_current_gx_resolution][1]);
+         break;
+   }
+#elif defined(__CELLOS_LV2__)
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         if (g_extern.console.screen.resolutions.current.idx)
+         {
+            g_extern.console.screen.resolutions.current.idx--;
+            g_extern.console.screen.resolutions.current.id =
+               g_extern.console.screen.resolutions.list
+               [g_extern.console.screen.resolutions.current.idx];
+         }
+         break;
+      case MENU_ACTION_RIGHT:
+         if (g_extern.console.screen.resolutions.current.idx + 1 <
+               g_extern.console.screen.resolutions.count)
+         {
+            g_extern.console.screen.resolutions.current.idx++;
+            g_extern.console.screen.resolutions.current.id =
+               g_extern.console.screen.resolutions.list
+               [g_extern.console.screen.resolutions.current.idx];
+         }
+         break;
+      case MENU_ACTION_OK:
+         if (g_extern.console.screen.resolutions.list[
+               g_extern.console.screen.resolutions.current.idx] == 
+               CELL_VIDEO_OUT_RESOLUTION_576)
+         {
+            if (g_extern.console.screen.pal_enable)
+               g_extern.console.screen.pal60_enable = true;
+         }
+         else
+         {
+            g_extern.console.screen.pal_enable = false;
+            g_extern.console.screen.pal60_enable = false;
+         }
+
+         rarch_main_command(RARCH_CMD_REINIT);
+         break;
+   }
+#endif
+
+   return 0;
+}
+
+static int action_toggle_input_bind_player_no(unsigned type, const char *label,
+      unsigned action)
+{
+   unsigned port = 0;
+   
+   if (!driver.menu)
+      return -1;
+   
+   port = driver.menu->current_pad;
+
+   switch (action)
+   {
+      case MENU_ACTION_START:
+         driver.menu->current_pad = 0;
+         break;
+      case MENU_ACTION_LEFT:
+         if (driver.menu->current_pad != 0)
+            driver.menu->current_pad--;
+         break;
+      case MENU_ACTION_RIGHT:
+         if (driver.menu->current_pad < MAX_PLAYERS - 1)
+            driver.menu->current_pad++;
+         break;
+   }
+
+   if (port != driver.menu->current_pad)
+      driver.menu->need_refresh = true;
+   port = driver.menu->current_pad;
+
+   return 0;
+}
+
 static int performance_counters_frontend_toggle(unsigned type, const char *label,
       unsigned action)
 {
@@ -1152,6 +1398,16 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_toggle = action_toggle_shader_parameters;
    else if (!strcmp(label, "shader_apply_changes"))
       cbs->action_toggle = menu_action_setting_set;
+   else if (!strcmp(label, "input_bind_analog_dpad_mode"))
+      cbs->action_toggle = action_toggle_input_bind_analog_dpad_mode;
+   else if (!strcmp(label, "input_bind_player_no"))
+      cbs->action_toggle = action_toggle_input_bind_player_no;
+   else if (!strcmp(label, "input_bind_device_id"))
+      cbs->action_toggle = action_toggle_input_bind_device_id;
+   else if (!strcmp(label, "input_bind_device_type"))
+      cbs->action_toggle = action_toggle_input_bind_device_type;
+   else if (type == MENU_SETTINGS_VIDEO_RESOLUTION)
+      cbs->action_toggle = action_toggle_video_resolution;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       cbs->action_toggle = core_setting_toggle;
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
