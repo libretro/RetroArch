@@ -162,8 +162,6 @@ int push_list(menu_handle_t *menu,
       unsigned menu_type)
 {
    unsigned i;
-   size_t list_size = 0;
-   bool do_action = false;
 
 #if 0
    RARCH_LOG("Label is: %s\n", label);
@@ -339,12 +337,6 @@ int push_list(menu_handle_t *menu,
                   shader->parameters[i].desc, label,
                   MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
       menu->parameter_shader = shader;
-   }
-
-   if (do_action)
-   {
-      driver.menu->scroll_indices_size = 0;
-      entries_refresh(list);
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
