@@ -29,8 +29,8 @@
 		83D632E319ECFCC4009E3161 /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DC19ECFCC4009E3161 /* Icon-72.png */; };
 		83D632E419ECFCC4009E3161 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DD19ECFCC4009E3161 /* Icon.png */; };
 		83D632E519ECFCC4009E3161 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */; };
-		83D6361719ECFE2F009E3161 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 83D6361619ECFE2F009E3161 /* modules */; };
-		83D6361919ECFE40009E3161 /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 83D6361819ECFE40009E3161 /* overlays */; };
+		83EB676019EEAF050096F441 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* modules */; };
+		83EB676219EEAF1B0096F441 /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 83EB676119EEAF1B0096F441 /* overlays */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
 		963C3C34186E3DED00A6EB1E /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 963C3C33186E3DED00A6EB1E /* GameController.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
@@ -65,8 +65,8 @@
 		83D632DC19ECFCC4009E3161 /* Icon-72.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-72.png"; sourceTree = "<group>"; };
 		83D632DD19ECFCC4009E3161 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
 		83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseIndicatorView.xib; sourceTree = "<group>"; };
-		83D6361619ECFE2F009E3161 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; name = modules; path = ../modules; sourceTree = "<group>"; };
-		83D6361819ECFE40009E3161 /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../media/overlays; sourceTree = "<group>"; };
+		83EB675F19EEAF050096F441 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = SOURCE_ROOT; };
+		83EB676119EEAF1B0096F441 /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../media/overlays; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		963C3C33186E3DED00A6EB1E /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
@@ -119,8 +119,8 @@
 		83D632D719ECFCC4009E3161 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
-				83D6361819ECFE40009E3161 /* overlays */,
-				83D6361619ECFE2F009E3161 /* modules */,
+				83EB676119EEAF1B0096F441 /* overlays */,
+				83EB675F19EEAF050096F441 /* modules */,
 				83D632D819ECFCC4009E3161 /* Default-568h@2x.png */,
 				83D632D919ECFCC4009E3161 /* Default.png */,
 				83D632DA19ECFCC4009E3161 /* Default@2x.png */,
@@ -294,10 +294,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				83D632E219ECFCC4009E3161 /* ic_pause.png in Resources */,
-				83D6361919ECFE40009E3161 /* overlays in Resources */,
+				83EB676219EEAF1B0096F441 /* overlays in Resources */,
 				83D632E119ECFCC4009E3161 /* Default@2x.png in Resources */,
 				967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */,
-				83D6361719ECFE2F009E3161 /* modules in Resources */,
+				83EB676019EEAF050096F441 /* modules in Resources */,
 				83D632E019ECFCC4009E3161 /* Default.png in Resources */,
 				83D632DF19ECFCC4009E3161 /* Default-568h@2x.png in Resources */,
 				83D632E519ECFCC4009E3161 /* PauseIndicatorView.xib in Resources */,
