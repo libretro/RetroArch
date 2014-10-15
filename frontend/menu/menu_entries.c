@@ -171,7 +171,7 @@ void menu_entries_push(
    driver.menu->need_refresh = true;
 }
 
-static int push_list(menu_handle_t *menu,
+int push_list(menu_handle_t *menu,
       file_list_t *list,
       const char *path, const char *label,
       unsigned menu_type)
@@ -743,9 +743,6 @@ static int menu_parse_check(const char *label, unsigned menu_type)
             !strcmp(label, "core_list") ||
             !strcmp(label, "configurations") ||
             !strcmp(label, "disk_image_append"))));
-   if (check)
-      return -1;
-   check = !strcmp(label, "deferred_core_list");
    if (check)
       return -1;
    return 0;

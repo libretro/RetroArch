@@ -1310,6 +1310,20 @@ static int action_start_bind(unsigned type, const char *label,
    return 0;
 }
 
+static int deferred_push_core_list_deferred(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   return push_list(driver.menu, list, path, label, type);
+
+   return 0;
+}
+
 static int deferred_push_core_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -1758,7 +1772,9 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    cbs->action_deferred_push = deferred_push_default;
 
-   if (!strcmp(label, "core_list"))
+   if (!strcmp(label, "deferred_core_list"))
+      cbs->action_deferred_push = deferred_push_core_list_deferred;
+   else if (!strcmp(label, "core_list"))
       cbs->action_deferred_push = deferred_push_core_list;
    else if (!strcmp(label, "history_list"))
       cbs->action_deferred_push = deferred_push_history_list;
