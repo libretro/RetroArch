@@ -13,6 +13,8 @@ local int gz_decomp OF((gz_statep));
 local int gz_fetch OF((gz_statep));
 local int gz_skip OF((gz_statep, z_off64_t));
 
+int ZEXPORT gzgetc_(gzFile file);
+
 /* Use read() to load a buffer -- return -1 on error, otherwise 0.  Read from
    state->fd, and update state->eof, state->err, and state->msg as appropriate.
    This function needs to loop on read(), since read() is not guaranteed to

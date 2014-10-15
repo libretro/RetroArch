@@ -10,6 +10,8 @@ local int gz_init OF((gz_statep));
 local int gz_comp OF((gz_statep, int));
 local int gz_zero OF((gz_statep, z_off64_t));
 
+int ZEXPORTVA gzvprintf(gzFile file, const char *format, va_list va);
+
 /* Initialize state for writing a gzip file.  Mark initialization by setting
    state->size to non-zero.  Return -1 on failure or 0 on success. */
 local int gz_init(gz_statep state)
