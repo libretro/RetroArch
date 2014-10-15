@@ -402,12 +402,12 @@ static bool load_content(const struct retro_subsystem_info *special,
             }
 
             char new_path[PATH_MAX];
-            union string_list_elem_attr attr;
-            attr.i = 0;
+            union string_list_elem_attr attributes;
+            attributes.i = 0;
             fill_pathname_join(new_path,g_settings.extraction_directory,
                   path_basename(path),sizeof(new_path));
             read_compressed_file(path,NULL,new_path);
-            string_list_append(additional_path_allocs,new_path,attr);
+            string_list_append(additional_path_allocs,new_path, attributes);
             info[i].path =
                   additional_path_allocs->elems
                      [additional_path_allocs->size -1 ].data;
@@ -418,7 +418,7 @@ static bool load_content(const struct retro_subsystem_info *special,
              */
             rarch_assert(g_extern.temporary_content != NULL);
             string_list_append(g_extern.temporary_content,
-                  new_path, attr);
+                  new_path, attributes);
          }
       }
    }
