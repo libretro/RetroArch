@@ -739,8 +739,6 @@ static int menu_parse_check(const char *label, unsigned menu_type)
         !strcmp(label, "Main Menu") ||
         !strcmp(label, "settings") ||
         !strcmp(label, "performance_counters") ||
-        !strcmp(label, "core_information") ||
-        !strcmp(label, "deferred_core_list") ||
         !strcmp(label, "core_counters") ||
         !strcmp(label, "frontend_counters") ||
         !strcmp(label, "core_options") ||
