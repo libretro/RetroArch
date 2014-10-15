@@ -60,6 +60,8 @@ void file_list_get_last(const file_list_t *list,
       const char **path, const char **label,
       unsigned *type);
 
+void *file_list_get_last_actiondata(const file_list_t *list);
+
 size_t file_list_get_size(const file_list_t *list);
 size_t file_list_get_directory_ptr(const file_list_t *list);
 

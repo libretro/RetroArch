@@ -543,7 +543,7 @@ static int push_list(menu_handle_t *menu,
    return 0;
 }
 
-static int menu_parse_list(file_list_t *list, file_list_t *menu_list,
+int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
       const char *dir, const char *label, unsigned type,
       unsigned default_type_plain, const char *exts)
 {
@@ -792,6 +792,7 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
    const char *path = NULL;
    const char *label = NULL;
    const char *exts = NULL;
+   menu_file_list_cbs_t *cbs = NULL;
    char ext_buf[PATH_MAX];
 
    file_list_get_last(menu_list, &path, &label, &type);
@@ -802,6 +803,11 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
  
    if (((menu_parse_check(label, type)) == -1))
       return push_list(driver.menu, list, path, label, type);
+
+   cbs = (menu_file_list_cbs_t*)
+      file_list_get_last_actiondata(menu_list);
+
+   (void)cbs;
 
    //RARCH_LOG("LABEL: %s\n", label);
    if (!strcmp(label, "core_list"))
@@ -860,7 +866,7 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
    else
       exts = g_extern.system.valid_extensions;
    
-   menu_parse_list(list, menu_list, path, label,
+   menu_entries_parse_list(list, menu_list, path, label,
          type, default_type_plain, exts);
 
    return 0;

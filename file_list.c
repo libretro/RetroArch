@@ -205,6 +205,11 @@ void *file_list_get_actiondata_at_offset(const file_list_t *list, size_t index)
    return list->list[index].actiondata;
 }
 
+void *file_list_get_last_actiondata(const file_list_t *list)
+{
+   return list->list[list->size - 1].actiondata;
+}
+
 void file_list_get_at_offset(const file_list_t *list, size_t index,
       const char **path, const char **label, unsigned *file_type)
 {
