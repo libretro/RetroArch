@@ -1559,13 +1559,54 @@ static int deferred_push_input_options(void *data, void *userdata,
 static int deferred_push_shader_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   int i;
+   struct gfx_shader *shader = NULL;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
 
-   return push_list(driver.menu, list, path, label, type);
+   shader = (struct gfx_shader*)driver.menu->shader;
+
+   if (!shader)
+      return -1;
+
+   file_list_clear(list);
+   file_list_push(list, "Apply Shader Changes", "shader_apply_changes",
+         MENU_FILE_SWITCH, 0);
+   file_list_push(list, "Default Filter", "video_shader_default_filter",
+         0, 0);
+   file_list_push(list, "Load Shader Preset", "video_shader_preset",
+         MENU_FILE_SWITCH, 0);
+   file_list_push(list, "Shader Preset Save As",
+         "video_shader_preset_save_as", MENU_FILE_LINEFEED_SWITCH, 0);
+   file_list_push(list, "Parameters (Current)",
+         "video_shader_parameters", MENU_FILE_SWITCH, 0);
+   file_list_push(list, "Parameters (Menu)",
+         "video_shader_preset_parameters", MENU_FILE_SWITCH, 0);
+   file_list_push(list, "Shader Passes", "video_shader_num_passes",
+         0, 0);
+
+   for (i = 0; i < shader->passes; i++)
+   {
+      char buf[64];
+
+      snprintf(buf, sizeof(buf), "Shader #%u", i);
+      file_list_push(list, buf, "video_shader_pass",
+            MENU_SETTINGS_SHADER_PASS_0 + i, 0);
+
+      snprintf(buf, sizeof(buf), "Shader #%u Filter", i);
+      file_list_push(list, buf, "video_shader_filter_pass",
+            MENU_SETTINGS_SHADER_PASS_FILTER_0 + i, 0);
+
+      snprintf(buf, sizeof(buf), "Shader #%u Scale", i);
+      file_list_push(list, buf, "video_shader_scale_pass",
+            MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0);
+   }
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
 
    return 0;
 }
