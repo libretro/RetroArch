@@ -441,12 +441,6 @@ int menu_iterate(retro_input_t input,
 unsigned menu_common_type_is(const char *label, unsigned type)
 {
    if (
-         !strcmp(label, "video_shader_pass") ||
-         !strcmp(label, "video_shader_preset")
-         )
-      return MENU_SETTINGS_SHADER_OPTIONS;
-
-   if (
          type == MENU_SETTINGS ||
          type == MENU_FILE_CATEGORY ||
          !strcmp(label, "Shader Options") ||
