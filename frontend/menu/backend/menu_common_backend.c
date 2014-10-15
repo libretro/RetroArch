@@ -692,7 +692,10 @@ static void menu_common_list_delete(void *data, size_t index,
 
    if (cbs)
    {
-      cbs->action_ok = NULL;
+      cbs->action_start         = NULL;
+      cbs->action_ok            = NULL;
+      cbs->action_toggle        = NULL;
+      cbs->action_deferred_push = NULL;
       free(list->list[index].actiondata);
    }
    list->list[index].actiondata = NULL;
