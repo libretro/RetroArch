@@ -188,7 +188,7 @@ static int menu_entries_set_current_path_selection(
    return 0;
 }
 
-static int menu_action_handle_setting(rarch_setting_t *setting,
+int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action)
 {
    if (!setting)
