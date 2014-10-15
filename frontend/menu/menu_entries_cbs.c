@@ -754,6 +754,21 @@ static int shader_action_parameter_toggle(unsigned type, const char *label,
 extern size_t hack_shader_pass;
 #endif
 
+static int action_ok_shader_pass(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   if (!driver.menu)
+      return -1;
+
+   menu_entries_push(driver.menu->menu_stack,
+         g_settings.video.shader_dir, 
+         "video_shader_pass",
+         type,
+         driver.menu->selection_ptr);
+
+   return 0;
+}
+
 static int action_toggle_shader_pass(unsigned type, const char *label,
       unsigned action)
 {
@@ -767,13 +782,6 @@ static int action_toggle_shader_pass(unsigned type, const char *label,
 
    switch (action)
    {
-      case MENU_ACTION_OK:
-         menu_entries_push(driver.menu->menu_stack,
-               g_settings.video.shader_dir, 
-               "video_shader_pass",
-               type,
-               driver.menu->selection_ptr);
-         break;
       case MENU_ACTION_START:
          if (shader_pass)
             *shader_pass->source.path = '\0';
@@ -783,21 +791,40 @@ static int action_toggle_shader_pass(unsigned type, const char *label,
    return 0;
 }
 
-static int action_toggle_shader_preset(unsigned type, const char *label,
-      unsigned action)
+static int action_ok_shader_preset(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   if (!driver.menu)
+      return -1;
+
+   menu_entries_push(driver.menu->menu_stack,
+         g_settings.video.shader_dir, 
+         "video_shader_preset",
+         type,
+         driver.menu->selection_ptr);
+
+   return 0;
+}
+
+static int action_ok_shader_scale_pass(const char *path,
+      const char *label, unsigned type, size_t index)
 {
 #ifdef HAVE_SHADER_MANAGER
-   switch (action)
+   unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
+   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+   struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
+      &shader->pass[pass];
+   unsigned current_scale = shader_pass->fbo.scale_x;
+   unsigned delta = 1;
+   current_scale = (current_scale + delta) % 6;
+
+   if (shader_pass)
    {
-      case MENU_ACTION_OK:
-         menu_entries_push(driver.menu->menu_stack,
-               g_settings.video.shader_dir, 
-               "video_shader_preset",
-               type,
-               driver.menu->selection_ptr);
-         break;
+      shader_pass->fbo.valid = current_scale;
+      shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
    }
 #endif
+
    return 0;
 }
 
@@ -822,7 +849,6 @@ static int action_toggle_shader_scale_pass(unsigned type, const char *label,
 
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
-      case MENU_ACTION_OK:
          {
             unsigned current_scale = shader_pass->fbo.scale_x;
             unsigned delta = action == MENU_ACTION_LEFT ? 5 : 1;
@@ -837,6 +863,23 @@ static int action_toggle_shader_scale_pass(unsigned type, const char *label,
          break;
    }
 #endif
+   return 0;
+}
+
+static int action_ok_shader_filter_pass(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+#ifdef HAVE_SHADER_MANAGER
+   unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
+   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+   struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
+      &shader->pass[pass];
+   unsigned delta = 1;
+
+   if (shader_pass)
+      shader_pass->filter = ((shader_pass->filter + delta) % 3);
+#endif
+
    return 0;
 }
 
@@ -858,7 +901,6 @@ static int action_toggle_shader_filter_pass(unsigned type, const char *label,
 
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
-      case MENU_ACTION_OK:
          {
             unsigned delta = (action == MENU_ACTION_LEFT) ? 2 : 1;
             if (shader_pass)
@@ -879,6 +921,24 @@ static int action_toggle_shader_filter_default(unsigned type, const char *label,
                driver.menu->list_settings, "video_smooth")))
       menu_action_setting_boolean(current_setting, action);
 #endif
+   return 0;
+}
+
+static int action_ok_shader_num_passes(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+
+   if (!shader)
+      return -1;
+
+   if (shader && (shader->passes < GFX_MAX_SHADERS))
+      shader->passes++;
+   driver.menu->need_refresh = true;
+
+   if (driver.menu->need_refresh)
+      gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+
    return 0;
 }
 
@@ -906,7 +966,6 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
          break;
 
       case MENU_ACTION_RIGHT:
-      case MENU_ACTION_OK:
          if (shader && (shader->passes < GFX_MAX_SHADERS))
             shader->passes++;
          driver.menu->need_refresh = true;
@@ -920,19 +979,31 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
    return 0;
 }
 
-static int action_toggle_shader_parameters(unsigned type, const char *label,
-      unsigned action)
+static int action_ok_shader_parameters(const char *path,
+      const char *label, unsigned type, size_t index)
 {
 #ifdef HAVE_SHADER_MANAGER
-   switch (action)
-   {
-      case MENU_ACTION_OK:
-         menu_entries_push(driver.menu->menu_stack, "",
-               "video_shader_parameters",
-               MENU_FILE_SWITCH, driver.menu->selection_ptr);
-         break;
-   }
+   menu_entries_push(driver.menu->menu_stack, "",
+         "video_shader_parameters",
+         MENU_FILE_SWITCH, driver.menu->selection_ptr);
 #endif
+
+   return 0;
+}
+
+static int action_ok_input_bind_analog_dpad_mode(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+   unsigned port = 0;
+   
+   if (!driver.menu)
+      return -1;
+
+   port = driver.menu->current_pad;
+
+   g_settings.input.analog_dpad_mode[port] =
+      (g_settings.input.analog_dpad_mode[port] + 1)
+      % ANALOG_DPAD_LAST;
 
    return 0;
 }
@@ -953,7 +1024,6 @@ static int action_toggle_input_bind_analog_dpad_mode(unsigned type, const char *
          g_settings.input.analog_dpad_mode[port] = 0;
          break;
 
-      case MENU_ACTION_OK:
       case MENU_ACTION_RIGHT:
          g_settings.input.analog_dpad_mode[port] =
             (g_settings.input.analog_dpad_mode[port] + 1)
@@ -1066,7 +1136,6 @@ static int action_toggle_input_bind_device_type(unsigned type, const char *label
          break;
 
       case MENU_ACTION_RIGHT:
-      case MENU_ACTION_OK:
          current_device = devices
             [(current_index + 1) % types];
 
@@ -1215,7 +1284,6 @@ static int core_setting_toggle(unsigned type, const char *label,
          break;
 
       case MENU_ACTION_RIGHT:
-      case MENU_ACTION_OK:
          core_option_next(g_extern.system.core_options, index);
          break;
 
@@ -1241,7 +1309,6 @@ static int disk_options_disk_index_toggle(unsigned type, const char *label,
          step = -1;
          break;
       case MENU_ACTION_RIGHT:
-      case MENU_ACTION_OK:
          step = 1;
          break;
    }
@@ -2183,6 +2250,19 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       return;
    else if (!strcmp(label, "help"))
       cbs->action_ok = action_ok_help;
+   else if (!strcmp(label, "video_shader_pass"))
+      cbs->action_ok = action_ok_shader_pass;
+   else if (!strcmp(label, "video_shader_preset"))
+      cbs->action_ok = action_ok_shader_preset;
+   else if (!strcmp(label, "video_shader_scale_pass"))
+      cbs->action_ok = action_ok_shader_scale_pass;
+   else if (!strcmp(label, "video_shader_filter_pass"))
+      cbs->action_ok = action_ok_shader_filter_pass;
+   else if (!strcmp(label, "video_shader_num_passes"))
+      cbs->action_ok = action_ok_shader_num_passes;
+   else if ((!strcmp(label, "video_shader_parameters") ||
+            !strcmp(label, "video_shader_preset_parameters")))
+      cbs->action_ok = action_ok_shader_parameters;
    else if (
          !strcmp(label, "Shader Options") ||
          !strcmp(label, "Input Options") ||
@@ -2216,6 +2296,8 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_disk_image_append_list;
    else if (!strcmp(label, "configurations"))
       cbs->action_ok = action_ok_configurations_list;
+   else if (!strcmp(label, "input_bind_analog_dpad_mode"))
+      cbs->action_ok = action_ok_input_bind_analog_dpad_mode;
 }
 
 static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
@@ -2231,8 +2313,6 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_toggle = shader_action_parameter_toggle;
    else if (!strcmp(label, "video_shader_pass"))
       cbs->action_toggle = action_toggle_shader_pass;
-   else if (!strcmp(label, "video_shader_preset"))
-      cbs->action_toggle = action_toggle_shader_preset;
    else if (!strcmp(label, "video_shader_scale_pass"))
       cbs->action_toggle = action_toggle_shader_scale_pass;
    else if (!strcmp(label, "video_shader_filter_pass"))
@@ -2241,9 +2321,6 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_toggle = action_toggle_shader_filter_default;
    else if (!strcmp(label, "video_shader_num_passes"))
       cbs->action_toggle = action_toggle_shader_num_passes;
-   else if ((!strcmp(label, "video_shader_parameters") ||
-            !strcmp(label, "video_shader_preset_parameters")))
-      cbs->action_toggle = action_toggle_shader_parameters;
    else if (!strcmp(label, "shader_apply_changes"))
       cbs->action_toggle = menu_action_setting_set;
    else if (!strcmp(label, "input_bind_analog_dpad_mode"))
