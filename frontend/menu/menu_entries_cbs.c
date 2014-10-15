@@ -1467,7 +1467,16 @@ static int deferred_push_performance_counters(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   return push_list(driver.menu, list, path, label, type);
+   file_list_clear(list);
+   file_list_push(list, "Frontend Counters", "frontend_counters",
+         MENU_FILE_SWITCH, 0);
+   file_list_push(list, "Core Counters", "core_counters",
+         MENU_FILE_SWITCH, 0);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
 }
 
 static int deferred_push_video_shader_preset_parameters(void *data, void *userdata,

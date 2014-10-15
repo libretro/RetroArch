@@ -239,14 +239,6 @@ int push_list(menu_handle_t *menu,
                   setting->name, setting_set_flags(setting), 0);
       }
    }
-   else if (!strcmp(label, "performance_counters"))
-   {
-      file_list_clear(list);
-      file_list_push(list, "Frontend Counters", "frontend_counters",
-            MENU_FILE_SWITCH, 0);
-      file_list_push(list, "Core Counters", "core_counters",
-            MENU_FILE_SWITCH, 0);
-   }
    else if (!strcmp(label, "Input Options"))
    {
       settings_list_free(menu->list_settings);
