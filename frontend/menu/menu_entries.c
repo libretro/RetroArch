@@ -729,21 +729,27 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
    return 0;
 }
 
-
 static int menu_parse_check(const char *label, unsigned menu_type)
 {
 #if 0
    RARCH_LOG("label is menu_parse_check: %s\n", label);
 #endif
-   bool check = (!((menu_type == MENU_FILE_DIRECTORY ||
-            menu_type == MENU_FILE_CARCHIVE ||
-            menu_common_type_is(label, menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
-            menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY ||
-            menu_type == MENU_FILE_PATH ||
-            !strcmp(label, "core_list") ||
-            !strcmp(label, "configurations") ||
-            !strcmp(label, "disk_image_append"))));
-   if (check)
+   if (
+        menu_type == MENU_FILE_CATEGORY ||
+        !strcmp(label, "Main Menu") ||
+        !strcmp(label, "settings") ||
+        !strcmp(label, "performance_counters") ||
+        !strcmp(label, "core_information") ||
+        !strcmp(label, "deferred_core_list") ||
+        !strcmp(label, "core_counters") ||
+        !strcmp(label, "frontend_counters") ||
+        !strcmp(label, "core_options") ||
+        !strcmp(label, "Input Options") ||
+        !strcmp(label, "Shader Options") ||
+        !strcmp(label, "disk_options") ||
+        !strcmp(label, "video_shader_preset_parameters") ||
+        !strcmp(label, "video_shader_parameters")
+        )
       return -1;
    return 0;
 }
@@ -763,6 +769,8 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
       if (strcmp(label, "history_list") != 0)
          return push_list(driver.menu, list, path, label, type);
    }
+
+   RARCH_LOG("label is: %s\n", label);
 
    cbs = (menu_file_list_cbs_t*)
       file_list_get_last_actiondata(menu_list);
