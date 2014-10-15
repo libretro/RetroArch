@@ -744,7 +744,6 @@ static int menu_parse_check(const char *label, unsigned menu_type)
         !strcmp(label, "core_options") ||
         !strcmp(label, "Input Options") ||
         !strcmp(label, "Shader Options") ||
-        !strcmp(label, "disk_options") ||
         !strcmp(label, "video_shader_preset_parameters") ||
         !strcmp(label, "video_shader_parameters")
         )
