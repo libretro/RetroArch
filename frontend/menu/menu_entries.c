@@ -130,7 +130,7 @@ void menu_entries_pop_list(file_list_t *list)
    }
 }
 
-static int setting_set_flags(rarch_setting_t *setting)
+int setting_set_flags(rarch_setting_t *setting)
 {
    if (setting->flags & SD_FLAG_ALLOW_INPUT)
       return MENU_FILE_LINEFEED;
@@ -221,22 +221,6 @@ int push_list(menu_handle_t *menu,
 
          file_list_push(list, setting->short_description,
                setting->name, setting_set_flags(setting), 0);
-      }
-   }
-   else if (!strcmp(label, "settings"))
-   {
-      settings_list_free(menu->list_settings);
-      menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
-      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
-            "Driver Options");
-
-      file_list_clear(list);
-
-      for (; setting->type != ST_NONE; setting++)
-      {
-         if (setting->type == ST_GROUP)
-            file_list_push(list, setting->short_description,
-                  setting->name, setting_set_flags(setting), 0);
       }
    }
    else if (!strcmp(label, "Input Options"))

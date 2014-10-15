@@ -54,6 +54,8 @@ void entries_refresh(file_list_t *list);
 
 void menu_build_scroll_indices(file_list_t *list);
 
+int setting_set_flags(rarch_setting_t *setting);
+
 #ifdef __cplusplus
 }
 #endif

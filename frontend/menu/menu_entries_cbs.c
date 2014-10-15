@@ -1512,7 +1512,24 @@ static int deferred_push_settings(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   return push_list(driver.menu, list, path, label, type);
+   settings_list_free(driver.menu->list_settings);
+   driver.menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
+   rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(driver.menu->list_settings,
+         "Driver Options");
+
+   file_list_clear(list);
+
+   for (; setting->type != ST_NONE; setting++)
+   {
+      if (setting->type == ST_GROUP)
+         file_list_push(list, setting->short_description,
+               setting->name, setting_set_flags(setting), 0);
+   }
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
 }
 
 static int deferred_push_category(void *data, void *userdata,
