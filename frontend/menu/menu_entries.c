@@ -196,7 +196,6 @@ static int push_list(menu_handle_t *menu,
       for (i = 0; i < list_size; i++)
       {
          char fill_buf[PATH_MAX];
-         const char *path      = NULL;
          const char *core_name = NULL;
 
          content_playlist_get_index(g_defaults.history, i,
@@ -740,7 +739,6 @@ static int menu_parse_list(file_list_t *list, file_list_t *menu_list,
       {
          char core_path[PATH_MAX], display_name[PATH_MAX];
          const char *path = NULL;
-         unsigned type = 0;
 
          file_list_get_at_offset(list, i, &path, NULL, &type);
          if (type != MENU_FILE_CORE)
