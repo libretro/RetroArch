@@ -806,28 +806,6 @@ static int action_ok_shader_preset(const char *path,
    return 0;
 }
 
-static int action_ok_shader_scale_pass(const char *path,
-      const char *label, unsigned type, size_t index)
-{
-#ifdef HAVE_SHADER_MANAGER
-   unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
-   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-   struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
-      &shader->pass[pass];
-   unsigned current_scale = shader_pass->fbo.scale_x;
-   unsigned delta = 1;
-   current_scale = (current_scale + delta) % 6;
-
-   if (shader_pass)
-   {
-      shader_pass->fbo.valid = current_scale;
-      shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
-   }
-#endif
-
-   return 0;
-}
-
 static int action_toggle_shader_scale_pass(unsigned type, const char *label,
       unsigned action)
 {
@@ -863,23 +841,6 @@ static int action_toggle_shader_scale_pass(unsigned type, const char *label,
          break;
    }
 #endif
-   return 0;
-}
-
-static int action_ok_shader_filter_pass(const char *path,
-      const char *label, unsigned type, size_t index)
-{
-#ifdef HAVE_SHADER_MANAGER
-   unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
-   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-   struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
-      &shader->pass[pass];
-   unsigned delta = 1;
-
-   if (shader_pass)
-      shader_pass->filter = ((shader_pass->filter + delta) % 3);
-#endif
-
    return 0;
 }
 
@@ -2219,10 +2180,6 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_shader_pass;
    else if (!strcmp(label, "video_shader_preset"))
       cbs->action_ok = action_ok_shader_preset;
-   else if (!strcmp(label, "video_shader_scale_pass"))
-      cbs->action_ok = action_ok_shader_scale_pass;
-   else if (!strcmp(label, "video_shader_filter_pass"))
-      cbs->action_ok = action_ok_shader_filter_pass;
    else if ((!strcmp(label, "video_shader_parameters") ||
             !strcmp(label, "video_shader_preset_parameters")))
       cbs->action_ok = action_ok_shader_parameters;
