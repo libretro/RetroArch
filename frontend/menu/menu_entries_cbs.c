@@ -1073,6 +1073,33 @@ static int action_toggle_input_bind_device_type(unsigned type, const char *label
    return 0;
 }
 
+static int action_ok_video_resolution(const char *path,
+      const char *label, unsigned type, size_t index)
+{
+#ifdef GEKKO
+   if (driver.video_data)
+      gx_set_video_mode(driver.video_data, menu_gx_resolutions
+            [menu_current_gx_resolution][0],
+            menu_gx_resolutions[menu_current_gx_resolution][1]);
+#elif defined(__CELLOS_LV2__)
+   if (g_extern.console.screen.resolutions.list[
+         g_extern.console.screen.resolutions.current.idx] == 
+         CELL_VIDEO_OUT_RESOLUTION_576)
+   {
+      if (g_extern.console.screen.pal_enable)
+         g_extern.console.screen.pal60_enable = true;
+   }
+   else
+   {
+      g_extern.console.screen.pal_enable = false;
+      g_extern.console.screen.pal60_enable = false;
+   }
+
+   rarch_main_command(RARCH_CMD_REINIT);
+#endif
+   return 0;
+}
+
 static int action_toggle_video_resolution(unsigned type, const char *label,
       unsigned action)
 {
@@ -1094,12 +1121,6 @@ static int action_toggle_video_resolution(unsigned type, const char *label,
 
             menu_current_gx_resolution++;
          }
-         break;
-      case MENU_ACTION_OK:
-         if (driver.video_data)
-            gx_set_video_mode(driver.video_data, menu_gx_resolutions
-                  [menu_current_gx_resolution][0],
-                  menu_gx_resolutions[menu_current_gx_resolution][1]);
          break;
    }
 #elif defined(__CELLOS_LV2__)
@@ -1123,22 +1144,6 @@ static int action_toggle_video_resolution(unsigned type, const char *label,
                g_extern.console.screen.resolutions.list
                [g_extern.console.screen.resolutions.current.idx];
          }
-         break;
-      case MENU_ACTION_OK:
-         if (g_extern.console.screen.resolutions.list[
-               g_extern.console.screen.resolutions.current.idx] == 
-               CELL_VIDEO_OUT_RESOLUTION_576)
-         {
-            if (g_extern.console.screen.pal_enable)
-               g_extern.console.screen.pal60_enable = true;
-         }
-         else
-         {
-            g_extern.console.screen.pal_enable = false;
-            g_extern.console.screen.pal60_enable = false;
-         }
-
-         rarch_main_command(RARCH_CMD_REINIT);
          break;
    }
 #endif
@@ -2083,6 +2088,9 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
 
    switch (type)
    {
+      case MENU_SETTINGS_VIDEO_RESOLUTION:
+         cbs->action_ok = action_ok_video_resolution;
+         break;
       case MENU_FILE_PLAYLIST_ENTRY:
          cbs->action_ok = action_ok_playlist_entry;
          break;
