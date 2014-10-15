@@ -149,8 +149,6 @@ int push_list(menu_handle_t *menu,
       const char *path, const char *label,
       unsigned menu_type)
 {
-   unsigned i;
-
 #if 0
    RARCH_LOG("Label is: %s\n", label);
    RARCH_LOG("Path is: %s\n", path);
@@ -179,40 +177,10 @@ int push_list(menu_handle_t *menu,
                setting->name, setting_set_flags(setting), 0);
       }
    }
-   else if (menu_type == MENU_FILE_CATEGORY)
-   {
-      settings_list_free(menu->list_settings);
-      menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
-      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
-            label);
-
-      file_list_clear(list);
-
-      if (!strcmp(label, "Video Options"))
-      {
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
-         file_list_push(list, "Screen Resolution", "",
-               MENU_SETTINGS_VIDEO_RESOLUTION, 0);
-#endif
-         file_list_push(list, "Custom Ratio", "",
-               MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
-      }
-
-      for (; setting->type != ST_END_GROUP; setting++)
-      {
-         if (
-               setting->type == ST_GROUP ||
-               setting->type == ST_SUB_GROUP ||
-               setting->type == ST_END_SUB_GROUP
-            )
-            continue;
-
-         file_list_push(list, setting->short_description,
-               setting->name, setting_set_flags(setting), 0);
-      }
-   }
    else if (!strcmp(label, "Input Options"))
    {
+      unsigned i;
+
       settings_list_free(menu->list_settings);
       menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
 

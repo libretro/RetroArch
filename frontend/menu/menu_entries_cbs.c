@@ -1587,7 +1587,40 @@ static int deferred_push_category(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   return push_list(driver.menu, list, path, label, type);
+   settings_list_free(driver.menu->list_settings);
+   driver.menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
+   rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
+         driver.menu->list_settings, label);
+
+   file_list_clear(list);
+
+   if (!strcmp(label, "Video Options"))
+   {
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
+      file_list_push(list, "Screen Resolution", "",
+            MENU_SETTINGS_VIDEO_RESOLUTION, 0);
+#endif
+      file_list_push(list, "Custom Ratio", "",
+            MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
+   }
+
+   for (; setting->type != ST_END_GROUP; setting++)
+   {
+      if (
+            setting->type == ST_GROUP ||
+            setting->type == ST_SUB_GROUP ||
+            setting->type == ST_END_SUB_GROUP
+         )
+         continue;
+
+      file_list_push(list, setting->short_description,
+            setting->name, setting_set_flags(setting), 0);
+   }
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
 }
 
 static int deferred_push_input_options(void *data, void *userdata,
