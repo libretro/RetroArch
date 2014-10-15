@@ -21,6 +21,7 @@
 #include "menu_shader.h"
 #include "backend/menu_backend.h"
 
+#include "../../file_ext.h"
 #include "../../config.def.h"
 #include "../../performance.h"
 
@@ -1309,6 +1310,191 @@ static int action_start_bind(unsigned type, const char *label,
    return 0;
 }
 
+static int deferred_push_core_list(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_entries_parse_list(list, menu_list, path, label,
+         type, MENU_FILE_PLAIN, EXT_EXECUTABLES);
+
+   return 0;
+}
+
+static int deferred_push_configurations(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_entries_parse_list(list, menu_list, path, label,
+         type, MENU_FILE_CONFIG, "cfg");
+
+   return 0;
+}
+
+static int deferred_push_video_shader_preset(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_entries_parse_list(list, menu_list, path, label,
+         type, MENU_FILE_SHADER_PRESET, "cgp|glslp");
+
+   return 0;
+}
+
+static int deferred_push_video_shader_pass(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_entries_parse_list(list, menu_list, path, label,
+         type, MENU_FILE_SHADER, "cg|glsl");
+
+   return 0;
+}
+
+static int deferred_push_video_filter(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_entries_parse_list(list, menu_list, path, label,
+         type, MENU_FILE_VIDEOFILTER, "filt");
+
+   return 0;
+}
+
+static int deferred_push_audio_dsp_plugin(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_entries_parse_list(list, menu_list, path, label,
+         type, MENU_FILE_AUDIOFILTER, "dsp");
+
+   return 0;
+}
+
+static int deferred_push_input_overlay(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_entries_parse_list(list, menu_list, path, label,
+         type, MENU_FILE_OVERLAY, "cfg");
+
+   return 0;
+}
+
+static int deferred_push_video_font_path(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_entries_parse_list(list, menu_list, path, label,
+         type, MENU_FILE_FONT, "ttf");
+
+   return 0;
+}
+
+static int deferred_push_content_history_path(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_entries_parse_list(list, menu_list, path, label,
+         type, MENU_FILE_PLAIN, "cfg");
+
+   return 0;
+}
+
+static int deferred_push_detect_core_list(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   const char *exts = NULL;
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   exts = g_extern.core_info ? core_info_list_get_all_extensions(
+         g_extern.core_info) : "";
+
+   menu_entries_parse_list(list, menu_list, path, label,
+         type, MENU_FILE_PLAIN, exts);
+
+   return 0;
+}
+
+static int deferred_push_default(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   char ext_buf[PATH_MAX];
+   const char *exts = NULL;
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   if (menu_common_type_is(label, type) == MENU_FILE_DIRECTORY)
+      exts = ""; /* we ignore files anyway */
+   else if (g_extern.menu.info.valid_extensions)
+   {
+      exts = ext_buf;
+      if (*g_extern.menu.info.valid_extensions)
+         snprintf(ext_buf, sizeof(ext_buf), "%s",
+               g_extern.menu.info.valid_extensions);
+      else
+         *ext_buf = '\0';
+   }
+   else
+      exts = g_extern.system.valid_extensions;
+
+   menu_entries_parse_list(list, menu_list, path, label,
+         type, MENU_FILE_PLAIN, exts);
+
+   return 0;
+}
+
 /* Bind the OK callback function */
 
 static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
@@ -1516,6 +1702,39 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    }
 }
 
+static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t index)
+{
+   const char *menu_label = NULL;
+   if (!cbs || !driver.menu)
+      return;
+
+   file_list_get_last(driver.menu->menu_stack, NULL, &menu_label, NULL);
+
+   cbs->action_deferred_push = deferred_push_default;
+
+   if (!strcmp(label, "core_list"))
+      cbs->action_deferred_push = deferred_push_core_list;
+   else if (!strcmp(label, "configurations"))
+      cbs->action_deferred_push = deferred_push_configurations;
+   else if (!strcmp(label, "video_shader_preset"))
+      cbs->action_deferred_push = deferred_push_video_shader_preset;
+   else if (!strcmp(label, "video_shader_pass"))
+      cbs->action_deferred_push = deferred_push_video_shader_pass;
+   else if (!strcmp(label, "video_filter"))
+      cbs->action_deferred_push = deferred_push_video_filter;
+   else if (!strcmp(label, "audio_dsp_plugin"))
+      cbs->action_deferred_push = deferred_push_audio_dsp_plugin;
+   else if (!strcmp(label, "input_overlay"))
+      cbs->action_deferred_push = deferred_push_input_overlay;
+   else if (!strcmp(label, "video_font_path"))
+      cbs->action_deferred_push = deferred_push_video_font_path;
+   else if (!strcmp(label, "game_history_path"))
+      cbs->action_deferred_push = deferred_push_content_history_path;
+   else if (!strcmp(label, "detect_core_list"))
+      cbs->action_deferred_push = deferred_push_detect_core_list;
+}
+
 void menu_entries_cbs_init(void *data,
       const char *path, const char *label,
       unsigned type, size_t index)
@@ -1533,5 +1752,6 @@ void menu_entries_cbs_init(void *data,
       menu_entries_cbs_init_bind_ok(cbs, path, label, type, index);
       menu_entries_cbs_init_bind_start(cbs, path, label, type, index);
       menu_entries_cbs_init_bind_toggle(cbs, path, label, type, index);
+      menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, index);
    }
 }

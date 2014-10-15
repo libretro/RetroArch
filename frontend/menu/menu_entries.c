@@ -17,7 +17,6 @@
 #include "menu_entries.h"
 #include "menu_action.h"
 #include "../../settings_data.h"
-#include "../../file_ext.h"
 #include "../../performance.h"
 
 static void entries_refresh(file_list_t *list)
@@ -784,90 +783,24 @@ static int menu_parse_check(const char *label, unsigned menu_type)
    return 0;
 }
 
-
 int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
 {
-   unsigned type = 0, default_type_plain = MENU_FILE_PLAIN;
+   unsigned type = 0;
 
    const char *path = NULL;
    const char *label = NULL;
-   const char *exts = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   char ext_buf[PATH_MAX];
 
    file_list_get_last(menu_list, &path, &label, &type);
 
-#if 0
-   RARCH_LOG("label: %s\n", label);
-#endif
- 
    if (((menu_parse_check(label, type)) == -1))
       return push_list(driver.menu, list, path, label, type);
 
    cbs = (menu_file_list_cbs_t*)
       file_list_get_last_actiondata(menu_list);
 
-   (void)cbs;
-
-   //RARCH_LOG("LABEL: %s\n", label);
-   if (!strcmp(label, "core_list"))
-      exts = EXT_EXECUTABLES;
-   else if (!strcmp(label, "configurations"))
-   {
-      exts = "cfg";
-      default_type_plain = MENU_FILE_CONFIG;
-   }
-   else if (!strcmp(label, "video_shader_preset"))
-   {
-      exts = "cgp|glslp";
-      default_type_plain = MENU_FILE_SHADER_PRESET;
-   }
-   else if (!strcmp(label, "video_shader_pass"))
-   {
-      exts = "cg|glsl";
-      default_type_plain = MENU_FILE_SHADER;
-   }
-   else if (!strcmp(label, "video_filter"))
-   {
-      exts = "filt";
-      default_type_plain = MENU_FILE_VIDEOFILTER;
-   }
-   else if (!strcmp(label, "audio_dsp_plugin"))
-   {
-      exts = "dsp";
-      default_type_plain = MENU_FILE_AUDIOFILTER;
-   }
-   else if (!strcmp(label, "input_overlay"))
-   {
-      exts = "cfg";
-      default_type_plain = MENU_FILE_OVERLAY;
-   }
-   else if (!strcmp(label, "video_font_path"))
-   {
-      exts = "ttf";
-      default_type_plain = MENU_FILE_FONT;
-   }
-   else if (!strcmp(label, "game_history_path"))
-      exts = "cfg";
-   else if (menu_common_type_is(label, type) == MENU_FILE_DIRECTORY)
-      exts = ""; /* we ignore files anyway */
-   else if (!strcmp(label, "detect_core_list"))
-      exts = g_extern.core_info ? core_info_list_get_all_extensions(
-            g_extern.core_info) : "";
-   else if (g_extern.menu.info.valid_extensions)
-   {
-      exts = ext_buf;
-      if (*g_extern.menu.info.valid_extensions)
-         snprintf(ext_buf, sizeof(ext_buf), "%s",
-               g_extern.menu.info.valid_extensions);
-      else
-         *ext_buf = '\0';
-   }
-   else
-      exts = g_extern.system.valid_extensions;
-   
-   menu_entries_parse_list(list, menu_list, path, label,
-         type, default_type_plain, exts);
+   if (cbs->action_deferred_push)
+      return cbs->action_deferred_push(list, menu_list, path, label, type);
 
    return 0;
 }
