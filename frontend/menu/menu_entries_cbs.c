@@ -1760,7 +1760,7 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    if (!strcmp(label, "core_list"))
       cbs->action_deferred_push = deferred_push_core_list;
-   if (!strcmp(label, "history_list"))
+   else if (!strcmp(label, "history_list"))
       cbs->action_deferred_push = deferred_push_history_list;
    else if (!strcmp(label, "configurations"))
       cbs->action_deferred_push = deferred_push_configurations;
