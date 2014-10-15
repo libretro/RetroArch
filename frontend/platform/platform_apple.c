@@ -24,6 +24,10 @@
 #include <stddef.h>
 #include <string.h>
 
+void apple_start_iteration(void);
+
+void apple_stop_iteration(void);
+
 static CFRunLoopObserverRef iterate_observer;
 
 static void do_iteration(void)

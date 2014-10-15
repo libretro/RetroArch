@@ -284,15 +284,20 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
          /* Parse all child nodes. */
          struct rxml_node *list = NULL;
          struct rxml_node *tail = NULL;
+         const char *first_start = NULL, *first_closing = NULL;
 
-         const char *ptr = child_start;
-
-         const char *first_start   = strchr(ptr, '<');
-         const char *first_closing = strstr(ptr, "</");
-         while (first_start && 
-               first_closing && first_start < first_closing)
+         ptr           = child_start;
+         first_start   = strchr(ptr, '<');
+         first_closing = strstr(ptr, "</");
+          
+         while (
+                first_start &&
+                first_closing &&
+                (first_start < first_closing)
+                )
          {
             struct rxml_node *new_node = rxml_parse_node(&ptr);
+             
             if (!new_node)
             {
                free(closing_tag);

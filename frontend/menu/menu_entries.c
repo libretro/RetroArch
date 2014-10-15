@@ -17,10 +17,9 @@
 #include "menu_entries.h"
 #include "menu_action.h"
 #include "../../settings_data.h"
-#include "../../file_ext.h"
 #include "../../performance.h"
 
-static void entries_refresh(file_list_t *list)
+void entries_refresh(file_list_t *list)
 {
    /* Before a refresh, we could have deleted a file on disk, causing
     * selection_ptr to suddendly be out of range.
@@ -75,28 +74,28 @@ static inline int menu_list_get_first_char(file_list_t *buf,
    return ret;
 }
 
-static void menu_build_scroll_indices(file_list_t *buf)
+void menu_build_scroll_indices(file_list_t *list)
 {
    size_t i;
    int current;
    bool current_is_dir;
 
-   if (!driver.menu || !buf)
+   if (!driver.menu || !list)
       return;
 
    driver.menu->scroll_indices_size = 0;
-   if (!buf->size)
+   if (!list->size)
       return;
 
    driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 0;
 
-   current = menu_list_get_first_char(buf, 0);
-   current_is_dir = menu_list_elem_is_dir(buf, 0);
+   current = menu_list_get_first_char(list, 0);
+   current_is_dir = menu_list_elem_is_dir(list, 0);
 
-   for (i = 1; i < buf->size; i++)
+   for (i = 1; i < list->size; i++)
    {
-      int first = menu_list_get_first_char(buf, i);
-      bool is_dir = menu_list_elem_is_dir(buf, i);
+      int first = menu_list_get_first_char(list, i);
+      bool is_dir = menu_list_elem_is_dir(list, i);
 
       if ((current_is_dir && !is_dir) || (first > current))
          driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = i;
@@ -106,7 +105,7 @@ static void menu_build_scroll_indices(file_list_t *buf)
    }
 
    driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 
-      buf->size - 1;
+      list->size - 1;
 }
 
 static void add_setting_entry(menu_handle_t *menu,
@@ -180,7 +179,6 @@ static int push_list(menu_handle_t *menu,
    unsigned i;
    size_t list_size = 0;
    bool do_action = false;
-   bool is_history_list = !strcmp(label, "history_list");
 
 #if 0
    RARCH_LOG("Label is: %s\n", label);
@@ -188,36 +186,7 @@ static int push_list(menu_handle_t *menu,
    RARCH_LOG("Menu type is: %d\n", menu_type);
 #endif
 
-   if (!strcmp(label, "history_list"))
-   {
-      file_list_clear(list);
-      list_size = content_playlist_size(g_defaults.history);
-
-      for (i = 0; i < list_size; i++)
-      {
-         char fill_buf[PATH_MAX];
-         const char *path      = NULL;
-         const char *core_name = NULL;
-
-         content_playlist_get_index(g_defaults.history, i,
-               &path, NULL, &core_name);
-         strlcpy(fill_buf, core_name, sizeof(fill_buf));
-
-         if (path)
-         {
-            char path_short[PATH_MAX];
-            fill_short_pathname_representation(path_short,path,sizeof(path_short));
-            snprintf(fill_buf,sizeof(fill_buf),"%s (%s)",
-               path_short,core_name);
-         }
-
-         file_list_push(list, fill_buf, "",
-               MENU_FILE_PLAYLIST_ENTRY, 0);
-
-         do_action = true;
-      }
-   }
-   else if (!strcmp(label, "Main Menu"))
+   if (!strcmp(label, "Main Menu"))
    {
       settings_list_free(menu->list_mainmenu);
       menu->list_mainmenu = (rarch_setting_t *)setting_data_new(SL_FLAG_MAIN_MENU);
@@ -532,9 +501,6 @@ static int push_list(menu_handle_t *menu,
    if (do_action)
    {
       driver.menu->scroll_indices_size = 0;
-      if (is_history_list)
-         menu_build_scroll_indices(list);
-
       entries_refresh(list);
    }
 
@@ -544,7 +510,7 @@ static int push_list(menu_handle_t *menu,
    return 0;
 }
 
-static int menu_parse_list(file_list_t *list, file_list_t *menu_list,
+int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
       const char *dir, const char *label, unsigned type,
       unsigned default_type_plain, const char *exts)
 {
@@ -740,7 +706,6 @@ static int menu_parse_list(file_list_t *list, file_list_t *menu_list,
       {
          char core_path[PATH_MAX], display_name[PATH_MAX];
          const char *path = NULL;
-         unsigned type = 0;
 
          file_list_get_at_offset(list, i, &path, NULL, &type);
          if (type != MENU_FILE_CORE)
@@ -780,90 +745,33 @@ static int menu_parse_check(const char *label, unsigned menu_type)
             !strcmp(label, "disk_image_append"))));
    if (check)
       return -1;
-   check = !strcmp(label, "history_list") || !strcmp(label, "deferred_core_list");
+   check = !strcmp(label, "deferred_core_list");
    if (check)
       return -1;
    return 0;
 }
 
-
 int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
 {
-   unsigned type = 0, default_type_plain = MENU_FILE_PLAIN;
+   unsigned type = 0;
 
    const char *path = NULL;
    const char *label = NULL;
-   const char *exts = NULL;
-   char ext_buf[PATH_MAX];
+   menu_file_list_cbs_t *cbs = NULL;
 
    file_list_get_last(menu_list, &path, &label, &type);
 
-#if 0
-   RARCH_LOG("label: %s\n", label);
-#endif
- 
    if (((menu_parse_check(label, type)) == -1))
-      return push_list(driver.menu, list, path, label, type);
+   {
+      if (strcmp(label, "history_list") != 0)
+         return push_list(driver.menu, list, path, label, type);
+   }
 
-   //RARCH_LOG("LABEL: %s\n", label);
-   if (!strcmp(label, "core_list"))
-      exts = EXT_EXECUTABLES;
-   else if (!strcmp(label, "configurations"))
-   {
-      exts = "cfg";
-      default_type_plain = MENU_FILE_CONFIG;
-   }
-   else if (!strcmp(label, "video_shader_preset"))
-   {
-      exts = "cgp|glslp";
-      default_type_plain = MENU_FILE_SHADER_PRESET;
-   }
-   else if (!strcmp(label, "video_shader_pass"))
-   {
-      exts = "cg|glsl";
-      default_type_plain = MENU_FILE_SHADER;
-   }
-   else if (!strcmp(label, "video_filter"))
-   {
-      exts = "filt";
-      default_type_plain = MENU_FILE_VIDEOFILTER;
-   }
-   else if (!strcmp(label, "audio_dsp_plugin"))
-   {
-      exts = "dsp";
-      default_type_plain = MENU_FILE_AUDIOFILTER;
-   }
-   else if (!strcmp(label, "input_overlay"))
-   {
-      exts = "cfg";
-      default_type_plain = MENU_FILE_OVERLAY;
-   }
-   else if (!strcmp(label, "video_font_path"))
-   {
-      exts = "ttf";
-      default_type_plain = MENU_FILE_FONT;
-   }
-   else if (!strcmp(label, "game_history_path"))
-      exts = "cfg";
-   else if (menu_common_type_is(label, type) == MENU_FILE_DIRECTORY)
-      exts = ""; /* we ignore files anyway */
-   else if (!strcmp(label, "detect_core_list"))
-      exts = g_extern.core_info ? core_info_list_get_all_extensions(
-            g_extern.core_info) : "";
-   else if (g_extern.menu.info.valid_extensions)
-   {
-      exts = ext_buf;
-      if (*g_extern.menu.info.valid_extensions)
-         snprintf(ext_buf, sizeof(ext_buf), "%s",
-               g_extern.menu.info.valid_extensions);
-      else
-         *ext_buf = '\0';
-   }
-   else
-      exts = g_extern.system.valid_extensions;
-   
-   menu_parse_list(list, menu_list, path, label,
-         type, default_type_plain, exts);
+   cbs = (menu_file_list_cbs_t*)
+      file_list_get_last_actiondata(menu_list);
+
+   if (cbs->action_deferred_push)
+      return cbs->action_deferred_push(list, menu_list, path, label, type);
 
    return 0;
 }
@@ -923,30 +831,6 @@ void menu_flush_stack_label(file_list_t *list,
       file_list_pop(list, &driver.menu->selection_ptr);
       file_list_get_last(list, &path, &label, &type);
    }
-}
-
-
-int menu_entries_set_current_path_selection(
-      rarch_setting_t *setting, const char *start_path,
-      const char *label, unsigned type,
-      unsigned action)
-{
-   switch (action)
-   {
-      case MENU_ACTION_OK:
-         menu_entries_push(driver.menu->menu_stack,
-               start_path, label, type,
-               driver.menu->selection_ptr);
-
-         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-            setting->cmd_trigger.triggered = true;
-         break;
-      case MENU_ACTION_START:
-         *setting->value.string = '\0';
-         break;
-   }
-
-   return menu_action_setting_apply(setting);
 }
 
 bool menu_entries_init(menu_handle_t *menu)

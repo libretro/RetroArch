@@ -14,15 +14,6 @@
  */
 
 #include "fifo_buffer.h"
-#include <stdint.h>
-
-struct fifo_buffer
-{
-   uint8_t *buffer;
-   size_t bufsize;
-   size_t first;
-   size_t end;
-};
 
 fifo_buffer_t *fifo_new(size_t size)
 {

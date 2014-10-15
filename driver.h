@@ -443,13 +443,13 @@ enum rarch_display_type
 /* Flags for init_drivers/uninit_drivers */
 enum
 {
-   DRIVER_AUDIO = 1 << 0,
-   DRIVER_VIDEO = 1 << 1,
-   DRIVER_INPUT = 1 << 2,
-   DRIVER_OSK = 1 << 3,
-   DRIVER_CAMERA = 1 << 4,
-   DRIVER_LOCATION = 1 << 5,
-   DRIVER_MENU = 1 << 6,
+   DRIVER_AUDIO        = 1 << 0,
+   DRIVER_VIDEO        = 1 << 1,
+   DRIVER_INPUT        = 1 << 2,
+   DRIVER_OSK          = 1 << 3,
+   DRIVER_CAMERA       = 1 << 4,
+   DRIVER_LOCATION     = 1 << 5,
+   DRIVER_MENU         = 1 << 6,
    DRIVERS_VIDEO_INPUT = 1 << 7 /* note multiple drivers */
 };
 

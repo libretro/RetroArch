@@ -59,6 +59,9 @@ enum
    XMB_TEXTURE_LOADSTATE,
    XMB_TEXTURE_SCREENSHOT,
    XMB_TEXTURE_RELOAD,
+   XMB_TEXTURE_FILE,
+   XMB_TEXTURE_FOLDER,
+   XMB_TEXTURE_ZIP,
    XMB_TEXTURE_LAST
 };
 
@@ -118,9 +121,10 @@ static const GLfloat rmb_tex_coord[] = {
 };
 
 static void xmb_draw_icon(GLuint texture, float x, float y,
-      float alpha, float rotation, float scale)
+      float alpha, float rotation, float scale_factor)
 {
    struct gl_coords coords;
+   math_matrix mymat, mrot, mscal;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
@@ -160,14 +164,10 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
    coords.color = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   math_matrix mymat;
-
-   math_matrix mrot;
    matrix_rotate_z(&mrot, rotation);
    matrix_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
-   math_matrix mscal;
-   matrix_scale(&mscal, scale, scale, 1);
+   matrix_scale(&mscal, scale_factor, scale_factor, 1);
    matrix_multiply(&mymat, &mscal, &mymat);
 
    gl->shader->set_coords(&coords);
@@ -180,7 +180,7 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
 }
 
 static void xmb_draw_text(const char *str, float x,
-      float y, float scale, float alpha)
+      float y, float scale_factor, float alpha)
 {
    uint8_t a8 = 0;
    struct font_params params = {0};
@@ -209,7 +209,7 @@ static void xmb_draw_text(const char *str, float x,
    params.x = x / gl->win_width;
    params.y = 1.0f - y / gl->win_height;
 
-   params.scale = scale;
+   params.scale = scale_factor;
    params.color = FONT_COLOR_RGBA(255, 255, 255, a8);
    params.full_screen = true;
 
@@ -472,7 +472,24 @@ static void xmb_frame(void)
             entry_label, path,
             path_buf, sizeof(path_buf));
 
-      xmb_draw_icon(xmb->textures[XMB_TEXTURE_SETTING].id,
+      GLuint icon = 0;
+      switch(type)
+      {
+         case MENU_FILE_DIRECTORY:
+            icon = xmb->textures[XMB_TEXTURE_FOLDER].id;
+            break;
+         case MENU_FILE_PLAIN:
+            icon = xmb->textures[XMB_TEXTURE_FILE].id;
+            break;
+         case MENU_FILE_CARCHIVE:
+            icon = xmb->textures[XMB_TEXTURE_ZIP].id;
+            break;
+         default:
+            icon = xmb->textures[XMB_TEXTURE_SETTING].id;
+            break;
+      }
+
+      xmb_draw_icon(icon,
             xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0, 
             xmb->margin_top + node->y + xmb->icon_size/2.0, 
             node->alpha, 
@@ -766,6 +783,12 @@ static void xmb_context_reset(void *data)
          "screenshot.png", sizeof(xmb->textures[XMB_TEXTURE_SCREENSHOT].path));
    fill_pathname_join(xmb->textures[XMB_TEXTURE_RELOAD].path, iconpath,
          "reload.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
+   fill_pathname_join(xmb->textures[XMB_TEXTURE_FILE].path, iconpath,
+         "file.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
+   fill_pathname_join(xmb->textures[XMB_TEXTURE_FOLDER].path, iconpath,
+         "folder.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
+   fill_pathname_join(xmb->textures[XMB_TEXTURE_ZIP].path, iconpath,
+         "zip.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
 
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
       xmb->textures[k].id = xmb_png_texture_load(xmb->textures[k].path);

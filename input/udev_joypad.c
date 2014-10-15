@@ -62,6 +62,8 @@ struct udev_joypad
 
    char *ident;
    char *path;
+   int32_t vid;
+   int32_t pid;
 };
 
 static struct udev *g_udev;
@@ -147,7 +149,7 @@ static bool hotplug_available(void)
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
 
-static void check_device(const char *path, bool hotplugged);
+static void check_device(struct udev_device *dev, const char *path, bool hotplugged);
 static void remove_device(const char *path);
 
 static void handle_hotplug(void)
@@ -166,7 +168,7 @@ static void handle_hotplug(void)
    if (!strcmp(action, "add"))
    {
       RARCH_LOG("[udev]: Hotplug add: %s.\n", devnode);
-      check_device(devnode, true);
+      check_device(dev, devnode, true);
    }
    else if (!strcmp(action, "remove"))
    {
@@ -308,7 +310,7 @@ static void free_pad(unsigned pad, bool hotplug)
            NULL);
 }
 
-static bool add_pad(unsigned p, int fd, const char *path)
+static bool add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
 {
    int i;
    struct udev_joypad *pad = &g_pads[p];
@@ -318,7 +320,22 @@ static bool add_pad(unsigned p, int fd, const char *path)
       return false;
    }
 
-   RARCH_LOG("[udev]: Plugged pad: %s on port #%u.\n", pad->ident, p);
+   const char *buf;
+
+   /* don't worry about unref'ing the parent */
+   struct udev_device *parent =
+         udev_device_get_parent_with_subsystem_devtype(dev, "usb", "usb_device");
+
+   pad->vid = pad->pid = 0;
+
+   if ((buf = udev_device_get_sysattr_value(parent, "idVendor")) != NULL)
+      pad->vid = strtol(buf, NULL, 16);
+
+   if ((buf = udev_device_get_sysattr_value(parent, "idProduct")) != NULL)
+      pad->pid = strtol(buf, NULL, 16);
+
+   RARCH_LOG("[udev]: Plugged pad: %s (%04x:%04x) on port #%u.\n",
+             pad->ident, pad->vid, pad->pid, p);
 
    struct stat st;
    if (fstat(fd, &st) < 0)
@@ -367,10 +384,8 @@ static bool add_pad(unsigned p, int fd, const char *path)
    pad->fd = fd;
    pad->path = strdup(path);
 
-   /* TODO - implement VID/PID? */
    if (*pad->ident)
-      input_config_autoconfigure_joypad(p, pad->ident, 
-            0, 0, "udev");
+      input_config_autoconfigure_joypad(p, pad->ident, pad->vid, pad->pid, "udev");
 
    // Check for rumble features.
    unsigned long ffbit[NBITS(FF_MAX)] = {0};
@@ -387,7 +402,7 @@ static bool add_pad(unsigned p, int fd, const char *path)
    return true;
 }
 
-static void check_device(const char *path, bool hotplugged)
+static void check_device(struct udev_device *dev, const char *path, bool hotplugged)
 {
    unsigned i;
    struct stat st;
@@ -411,7 +426,7 @@ static void check_device(const char *path, bool hotplugged)
    if (fd < 0)
       return;
 
-   if (add_pad(pad, fd, path))
+   if (add_pad(dev, pad, fd, path))
    {
 #ifndef IS_JOYCONFIG
       if (hotplugged)
@@ -501,7 +516,7 @@ static bool udev_joypad_init(void)
       struct udev_device *dev = udev_device_new_from_syspath(g_udev, name);
       const char *devnode = udev_device_get_devnode(dev);
       if (devnode)
-         check_device(devnode, false);
+         check_device(dev, devnode, false);
       udev_device_unref(dev);
    }
 

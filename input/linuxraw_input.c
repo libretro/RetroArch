@@ -61,7 +61,7 @@ static void *linuxraw_input_init(void)
 
    if (driver.stdin_claimed)
    {
-      RARCH_WARN("stdin is already used for ROM loading. Cannot use stdin for input.\n");
+      RARCH_WARN("stdin is already used for content loading. Cannot use stdin for input.\n");
       return NULL;
    }
 
@@ -98,7 +98,9 @@ static void *linuxraw_input_init(void)
    sa.sa_handler = linuxraw_exitGracefully;
    sa.sa_flags = SA_RESTART | SA_RESETHAND;
    sigemptyset(&sa.sa_mask);
-   // trap some standard termination codes so we can restore the keyboard before we lose control
+
+   /* Trap some standard termination codes so we 
+    * can restore the keyboard before we lose control. */
    sigaction(SIGABRT, &sa, NULL);
    sigaction(SIGBUS, &sa, NULL);
    sigaction(SIGFPE, &sa, NULL);
@@ -111,7 +113,9 @@ static void *linuxraw_input_init(void)
    linuxraw->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
    input_init_keyboard_lut(rarch_key_map_linux);
 
-   driver.stdin_claimed = true; // We need to disable use of stdin command interface if stdin is supposed to be used for input.
+   /* We need to disable use of stdin command interface if 
+    * stdin is supposed to be used for input. */
+   driver.stdin_claimed = true; 
    return linuxraw;
 }
 
@@ -121,12 +125,14 @@ static bool linuxraw_key_pressed(linuxraw_input_t *linuxraw, int key)
    return linuxraw->state[sym];
 }
 
-static bool linuxraw_is_pressed(linuxraw_input_t *linuxraw, const struct retro_keybind *binds, unsigned id)
+static bool linuxraw_is_pressed(linuxraw_input_t *linuxraw,
+      const struct retro_keybind *binds, unsigned id)
 {
    if (id < RARCH_BIND_LIST_END)
    {
       const struct retro_keybind *bind = &binds[id];
-      return bind->valid && linuxraw_key_pressed(linuxraw, binds[id].key);
+      if (bind)
+         return bind->valid && linuxraw_key_pressed(linuxraw, binds[id].key);
    }
    return false;
 }
@@ -152,7 +158,9 @@ static bool linuxraw_bind_button_pressed(void *data, int key)
       input_joypad_pressed(linuxraw->joypad, 0, g_settings.input.binds[0], key);
 }
 
-static int16_t linuxraw_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
+static int16_t linuxraw_input_state(void *data,
+      const struct retro_keybind **binds, unsigned port,
+      unsigned device, unsigned index, unsigned id)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
    int16_t ret;
@@ -188,16 +196,21 @@ static void linuxraw_input_free(void *data)
    free(data);
 }
 
-static bool linuxraw_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
+static bool linuxraw_set_rumble(void *data, unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
-   return input_joypad_set_rumble(linuxraw->joypad, port, effect, strength);
+   if (linuxraw)
+      return input_joypad_set_rumble(linuxraw->joypad, port, effect, strength);
+   return false;
 }
 
 static const rarch_joypad_driver_t *linuxraw_get_joypad_driver(void *data)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
-   return linuxraw->joypad;
+   if (linuxraw)
+      return linuxraw->joypad;
+   return NULL;
 }
 
 static void linuxraw_input_poll(void *data)

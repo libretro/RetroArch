@@ -30,6 +30,10 @@ void menu_entries_push(file_list_t *list,
       const char *path, const char *label, unsigned type,
       size_t directory_ptr);
 
+int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
+      const char *dir, const char *label, unsigned type,
+      unsigned default_type_plain, const char *exts);
+
 void menu_entries_pop_list(file_list_t *list);
 
 int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list);
@@ -39,12 +43,11 @@ void menu_entries_pop_stack(file_list_t *list, const char *needle);
 void menu_flush_stack_type(file_list_t *list, unsigned final_type);
 void menu_flush_stack_label(file_list_t *list, const char *needle);
 
-int menu_entries_set_current_path_selection(
-      rarch_setting_t *setting, const char *start_path,
-      const char *label, unsigned type,
-      unsigned action);
-
 bool menu_entries_init(menu_handle_t *menu);
+
+void entries_refresh(file_list_t *list);
+
+void menu_build_scroll_indices(file_list_t *list);
 
 #ifdef __cplusplus
 }

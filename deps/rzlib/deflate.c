@@ -193,6 +193,10 @@ local const config configuration_table[10] = {
     s->head[s->hash_size-1] = NIL; \
     zmemzero((Bytef *)s->head, (unsigned)(s->hash_size-1)*sizeof(*s->head));
 
+int ZEXPORT deflateResetKeep (z_streamp strm);
+
+int ZEXPORT deflatePending (z_streamp strm, unsigned *pending, int *bits);
+
 /* ========================================================================= */
 int ZEXPORT deflateInit_(z_streamp strm, int level, const char *version, int stream_size)
 {

@@ -692,11 +692,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          {
             for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
             {
-               const char *desc = g_extern.system.input_desc_btn[p][id];
-               if (desc)
+               const char *description = g_extern.system.input_desc_btn[p][id];
+               if (description)
                {
                   RARCH_LOG("\tRetroPad, Player %u, Button \"%s\" => \"%s\"\n",
-                        p + 1, libretro_btn_desc[id], desc);
+                        p + 1, libretro_btn_desc[id], description);
                }
             }
          }

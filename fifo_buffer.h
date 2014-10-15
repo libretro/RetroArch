@@ -17,12 +17,20 @@
 #define __FIFO_BUFFER_H
 
 #include <stdlib.h>
-#include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct fifo_buffer
+{
+   uint8_t *buffer;
+   size_t bufsize;
+   size_t first;
+   size_t end;
+};
 
 typedef struct fifo_buffer fifo_buffer_t;
 
