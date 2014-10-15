@@ -32,18 +32,6 @@ void entries_refresh(file_list_t *list)
       menu_clear_navigation(driver.menu, true);
 }
 
-static inline struct gfx_shader *shader_manager_get_current_shader(
-      menu_handle_t *menu, const char *label, unsigned type)
-{
-   if (!strcmp(label, "video_shader_preset_parameters") ||
-         !strcmp(label, "video_shader_parameters"))
-      return menu->shader;
-   else if (driver.video_poke && driver.video_data &&
-         driver.video_poke->get_current_shader)
-      return driver.video_poke->get_current_shader(driver.video_data);
-   return NULL;
-}
-
 static inline bool menu_list_elem_is_dir(file_list_t *buf,
       unsigned offset)
 {
@@ -246,23 +234,6 @@ int push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"osk_enable", 0, menu->list_settings);
       for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_ALL_LAST; i++)
          add_setting_entry(menu, list, input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].base, i, menu->list_settings);
-   }
-   else if (
-         !strcmp(label, "video_shader_preset_parameters") ||
-         !strcmp(label, "video_shader_parameters")
-         )
-   {
-      file_list_clear(list);
-
-      struct gfx_shader *shader = (struct gfx_shader*)
-         shader_manager_get_current_shader(menu, label, menu_type);
-
-      if (shader)
-         for (i = 0; i < shader->num_parameters; i++)
-            file_list_push(list,
-                  shader->parameters[i].desc, label,
-                  MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
-      menu->parameter_shader = shader;
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)

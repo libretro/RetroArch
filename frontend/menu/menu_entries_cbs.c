@@ -1479,28 +1479,74 @@ static int deferred_push_performance_counters(void *data, void *userdata,
    return 0;
 }
 
+static inline struct gfx_shader *shader_manager_get_current_shader(
+      menu_handle_t *menu, const char *label, unsigned type)
+{
+   if (!strcmp(label, "video_shader_preset_parameters") ||
+         !strcmp(label, "video_shader_parameters"))
+      return menu->shader;
+   else if (driver.video_poke && driver.video_data &&
+         driver.video_poke->get_current_shader)
+      return driver.video_poke->get_current_shader(driver.video_data);
+   return NULL;
+}
+
 static int deferred_push_video_shader_preset_parameters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   unsigned i;
+   struct gfx_shader *shader = NULL;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
 
-   return push_list(driver.menu, list, path, label, type);
+   file_list_clear(list);
+
+   shader = (struct gfx_shader*)
+      shader_manager_get_current_shader(driver.menu, label, type);
+
+   if (shader)
+      for (i = 0; i < shader->num_parameters; i++)
+         file_list_push(list,
+               shader->parameters[i].desc, label,
+               MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
+   driver.menu->parameter_shader = shader;
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
 }
 
 static int deferred_push_video_shader_parameters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   unsigned i;
+   struct gfx_shader *shader = NULL;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
 
-   return push_list(driver.menu, list, path, label, type);
+   file_list_clear(list);
+
+   shader = (struct gfx_shader*)
+      shader_manager_get_current_shader(driver.menu, label, type);
+
+   if (shader)
+      for (i = 0; i < shader->num_parameters; i++)
+         file_list_push(list,
+               shader->parameters[i].desc, label,
+               MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
+   driver.menu->parameter_shader = shader;
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
 }
 
 static int deferred_push_settings(void *data, void *userdata,
