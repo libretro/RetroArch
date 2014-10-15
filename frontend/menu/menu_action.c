@@ -172,9 +172,7 @@ static int menu_action_handle_setting(rarch_setting_t *setting,
 
    if (setting->type == ST_STRING)
    {
-      if (
-            (setting->flags & SD_FLAG_ALLOW_INPUT) || 
-            type == MENU_FILE_LINEFEED_SWITCH)
+      if (setting->flags & SD_FLAG_ALLOW_INPUT)
       {
          switch (action)
          {
