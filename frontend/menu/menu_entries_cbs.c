@@ -616,6 +616,51 @@ static int performance_counters_core_toggle(unsigned type, const char *label,
    return 0;
 }
 
+static int shader_action_parameter_toggle(unsigned type, const char *label,
+      unsigned action)
+{
+#ifdef HAVE_SHADER_MANAGER
+   bool apply_changes = false;
+   struct gfx_shader *shader = NULL;
+   struct gfx_shader_parameter *param = NULL;
+
+   if (!(shader = (struct gfx_shader*)driver.menu->parameter_shader))
+      return 0;
+
+   if (!(param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0]))
+      return 0;
+
+   switch (action)
+   {
+      case MENU_ACTION_START:
+         param->current = param->initial;
+         apply_changes = true;
+         break;
+
+      case MENU_ACTION_LEFT:
+         param->current -= param->step;
+         apply_changes = true;
+         break;
+
+      case MENU_ACTION_RIGHT:
+         param->current += param->step;
+         apply_changes = true;
+         break;
+
+      default:
+         break;
+   }
+
+   param->current = min(max(param->minimum, param->current), param->maximum);
+
+   if (apply_changes 
+         && !strcmp(label, "video_shader_parameters"))
+      rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
+
+#endif
+   return 0;
+}
+
 static int performance_counters_frontend_toggle(unsigned type, const char *label,
       unsigned action)
 {
@@ -900,7 +945,10 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
 
    cbs->action_toggle = menu_action_setting_set;
 
-   if ((menu_common_type_is(label, type) == MENU_SETTINGS_SHADER_OPTIONS) ||
+   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+      cbs->action_toggle = shader_action_parameter_toggle;
+   else if ((menu_common_type_is(label, type) == MENU_SETTINGS_SHADER_OPTIONS) ||
          !strcmp(label, "video_shader_parameters") ||
          !strcmp(label, "video_shader_preset_parameters")
       )

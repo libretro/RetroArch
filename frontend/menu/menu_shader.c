@@ -366,46 +366,6 @@ int menu_shader_manager_setting_toggle(
                   driver.menu->list_settings, "video_smooth")))
          menu_action_setting_boolean(current_setting, action);
    }
-   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-   {
-      bool apply_changes = false;
-      struct gfx_shader *shader = NULL;
-      struct gfx_shader_parameter *param = NULL;
-
-      if (!(shader = (struct gfx_shader*)driver.menu->parameter_shader))
-         return 0;
-
-      if (!(param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0]))
-         return 0;
-
-      switch (action)
-      {
-         case MENU_ACTION_START:
-            param->current = param->initial;
-            apply_changes = true;
-            break;
-
-         case MENU_ACTION_LEFT:
-            param->current -= param->step;
-            apply_changes = true;
-            break;
-
-         case MENU_ACTION_RIGHT:
-            param->current += param->step;
-            apply_changes = true;
-            break;
-
-         default:
-            break;
-      }
-
-      param->current = min(max(param->minimum, param->current), param->maximum);
-
-      if (apply_changes 
-       && !strcmp(label, "video_shader_parameters"))
-         rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
-   }
    else if ((!strcmp(label, "video_shader_parameters") ||
             !strcmp(label, "video_shader_preset_parameters"))
          && action == MENU_ACTION_OK)
