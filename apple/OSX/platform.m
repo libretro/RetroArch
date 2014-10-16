@@ -132,7 +132,7 @@ static char** waiting_argv;
 {
    apple_platform = self;
 
-#if 1
+#if 0
    const char* paths = [[NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject] UTF8String];
    fill_pathname_join(g_defaults.core_dir, NSBundle.mainBundle.bundlePath.UTF8String, "Contents/Resources/modules", sizeof(g_defaults.core_dir));
 
@@ -140,14 +140,14 @@ static char** waiting_argv;
    fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
 #else
    char support_path_buf[PATH_MAX + 1];
-   CFArrayRef array = (CFArrayRef)NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-   CFStringRef support_path = (CFStringRef)CFArrayGetValueAtIndex(array, 0);
+   CFArrayRef array = CFBridgingRetain(NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES));
+   CFStringRef support_path = CFBridgingRetain(CFArrayGetValueAtIndex(array, 0));
    CFStringGetCString(support_path, support_path_buf, sizeof(support_path_buf), kCFStringEncodingUTF8);
    
    fill_pathname_join(g_defaults.core_dir, NSBundle.mainBundle.bundlePath.UTF8String, "Contents/Resources/modules", sizeof(g_defaults.core_dir));
    fill_pathname_join(g_defaults.menu_config_dir, support_path_buf, "RetroArch", sizeof(g_defaults.menu_config_dir));
    fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
-   
+
    CFRelease(support_path);
    CFRelease(array);
 #endif
