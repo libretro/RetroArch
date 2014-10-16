@@ -32,7 +32,7 @@
 struct linuxraw_joypad
 {
    int fd;
-   bool buttons[NUM_BUTTONS];
+   uint32_t buttons;
    int16_t axes[NUM_AXES];
 
    char *ident;
@@ -54,7 +54,12 @@ static void poll_pad(struct linuxraw_joypad *pad)
       {
          case JS_EVENT_BUTTON:
             if (event.number < NUM_BUTTONS)
-               pad->buttons[event.number] = event.value;
+            {
+               if (event.value)
+                  BIT32_SET(pad->buttons, event.value);
+               else
+                  BIT32_CLEAR(pad->buttons, event.number);
+            }
             break;
 
          case JS_EVENT_AXIS:
@@ -146,7 +151,7 @@ static void handle_plugged_pad(void)
 
                RARCH_LOG("[Joypad]: Joypad %s disconnected.\n", g_pads[index].ident);
                close(g_pads[index].fd);
-               memset(g_pads[index].buttons, 0, sizeof(g_pads[index].buttons));
+               g_pads[index].buttons = 0;
                memset(g_pads[index].axes, 0, sizeof(g_pads[index].axes));
                g_pads[index].fd = -1;
                *g_pads[index].ident = '\0';
@@ -267,7 +272,7 @@ static bool linuxraw_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct linuxraw_joypad *pad = &g_pads[port];
 
-   return joykey < NUM_BUTTONS && pad->buttons[joykey];
+   return joykey < NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
 }
 
 static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
