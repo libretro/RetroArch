@@ -687,7 +687,7 @@ static int action_ok_help(const char *path,
    return 0;
 }
 
-static int performance_counters_core_toggle(unsigned type, const char *label,
+static int action_start_performance_counters_core(unsigned type, const char *label,
       unsigned action)
 {
    struct retro_perf_counter **counters = (struct retro_perf_counter**)
@@ -696,11 +696,35 @@ static int performance_counters_core_toggle(unsigned type, const char *label,
 
    (void)label;
 
-   if (counters[offset] && action == MENU_ACTION_START)
+   if (counters[offset])
    {
       counters[offset]->total = 0;
       counters[offset]->call_cnt = 0;
    }
+
+   return 0;
+}
+
+static int action_start_shader_action_parameter(unsigned type, const char *label,
+      unsigned action)
+{
+#ifdef HAVE_SHADER_MANAGER
+   struct gfx_shader *shader = NULL;
+   struct gfx_shader_parameter *param = NULL;
+
+   if (!(shader = (struct gfx_shader*)driver.menu->parameter_shader))
+      return 0;
+
+   if (!(param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0]))
+      return 0;
+
+   param->current = param->initial;
+
+   param->current = min(max(param->minimum, param->current), param->maximum);
+
+   if (!strcmp(label, "video_shader_parameters"))
+      rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
+#endif
 
    return 0;
 }
@@ -721,11 +745,6 @@ static int shader_action_parameter_toggle(unsigned type, const char *label,
 
    switch (action)
    {
-      case MENU_ACTION_START:
-         param->current = param->initial;
-         apply_changes = true;
-         break;
-
       case MENU_ACTION_LEFT:
          param->current -= param->step;
          apply_changes = true;
@@ -769,7 +788,7 @@ static int action_ok_shader_pass(const char *path,
    return 0;
 }
 
-static int action_toggle_shader_pass(unsigned type, const char *label,
+static int action_start_shader_pass(unsigned type, const char *label,
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
@@ -780,14 +799,10 @@ static int action_toggle_shader_pass(unsigned type, const char *label,
    if (shader)
       shader_pass = (struct gfx_shader_pass*)&shader->pass[hack_shader_pass];
 
-   switch (action)
-   {
-      case MENU_ACTION_START:
-         if (shader_pass)
-            *shader_pass->source.path = '\0';
-         break;
-   }
+   if (shader_pass)
+      *shader_pass->source.path = '\0';
 #endif
+
    return 0;
 }
 
@@ -806,6 +821,25 @@ static int action_ok_shader_preset(const char *path,
    return 0;
 }
 
+static int action_start_shader_scale_pass(unsigned type, const char *label,
+      unsigned action)
+{
+#ifdef HAVE_SHADER_MANAGER
+   unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
+   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+   struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
+      &shader->pass[pass];
+
+   if (shader)
+   {
+      shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = 0;
+      shader_pass->fbo.valid = false;
+   }
+#endif
+
+   return 0;
+}
+
 static int action_toggle_shader_scale_pass(unsigned type, const char *label,
       unsigned action)
 {
@@ -817,14 +851,6 @@ static int action_toggle_shader_scale_pass(unsigned type, const char *label,
 
    switch (action)
    {
-      case MENU_ACTION_START:
-         if (shader)
-         {
-            shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = 0;
-            shader_pass->fbo.valid = false;
-         }
-         break;
-
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
          {
@@ -844,6 +870,22 @@ static int action_toggle_shader_scale_pass(unsigned type, const char *label,
    return 0;
 }
 
+static int action_start_shader_filter_pass(unsigned type, const char *label,
+      unsigned action)
+{
+#ifdef HAVE_SHADER_MANAGER
+   unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
+   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+   struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
+      &shader->pass[pass];
+
+   if (shader)
+      shader->pass[pass].filter = RARCH_FILTER_UNSPEC;
+#endif
+
+   return 0;
+}
+
 static int action_toggle_shader_filter_pass(unsigned type, const char *label,
       unsigned action)
 {
@@ -855,11 +897,6 @@ static int action_toggle_shader_filter_pass(unsigned type, const char *label,
 
    switch (action)
    {
-      case MENU_ACTION_START:
-         if (shader)
-            shader->pass[pass].filter = RARCH_FILTER_UNSPEC;
-         break;
-
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
          {
@@ -885,6 +922,24 @@ static int action_toggle_shader_filter_default(unsigned type, const char *label,
    return 0;
 }
 
+static int action_start_shader_num_passes(unsigned type, const char *label,
+      unsigned action)
+{
+#ifdef HAVE_SHADER_MANAGER
+   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+
+   if (!shader)
+      return -1;
+
+   if (shader && shader->passes)
+      shader->passes = 0;
+   driver.menu->need_refresh = true;
+
+   gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+#endif
+   return 0;
+}
+
 static int action_toggle_shader_num_passes(unsigned type, const char *label,
       unsigned action)
 {
@@ -896,12 +951,6 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
 
    switch (action)
    {
-      case MENU_ACTION_START:
-         if (shader && shader->passes)
-            shader->passes = 0;
-         driver.menu->need_refresh = true;
-         break;
-
       case MENU_ACTION_LEFT:
          if (shader && shader->passes)
             shader->passes--;
@@ -934,6 +983,21 @@ static int action_ok_shader_parameters(const char *path,
    return 0;
 }
 
+static int action_start_input_bind_analog_dpad_mode(unsigned type, const char *label,
+      unsigned action)
+{
+   unsigned port = 0;
+   
+   if (!driver.menu)
+      return -1;
+
+   port = driver.menu->current_pad;
+
+   g_settings.input.analog_dpad_mode[port] = 0;
+
+   return 0;
+}
+
 static int action_toggle_input_bind_analog_dpad_mode(unsigned type, const char *label,
       unsigned action)
 {
@@ -946,10 +1010,6 @@ static int action_toggle_input_bind_analog_dpad_mode(unsigned type, const char *
 
    switch (action)
    {
-      case MENU_ACTION_START:
-         g_settings.input.analog_dpad_mode[port] = 0;
-         break;
-
       case MENU_ACTION_RIGHT:
          g_settings.input.analog_dpad_mode[port] =
             (g_settings.input.analog_dpad_mode[port] + 1)
@@ -1154,13 +1214,9 @@ static int action_toggle_video_resolution(unsigned type, const char *label,
 static int action_toggle_input_bind_player_no(unsigned type, const char *label,
       unsigned action)
 {
-   unsigned port = 0;
-   
    if (!driver.menu)
       return -1;
    
-   port = driver.menu->current_pad;
-
    switch (action)
    {
       case MENU_ACTION_START:
@@ -1176,14 +1232,12 @@ static int action_toggle_input_bind_player_no(unsigned type, const char *label,
          break;
    }
 
-   if (port != driver.menu->current_pad)
-      driver.menu->need_refresh = true;
-   port = driver.menu->current_pad;
+   driver.menu->need_refresh = true;
 
    return 0;
 }
 
-static int performance_counters_frontend_toggle(unsigned type, const char *label,
+static int action_start_performance_counters_frontend(unsigned type, const char *label,
       unsigned action)
 {
    struct retro_perf_counter **counters = (struct retro_perf_counter**)
@@ -1192,7 +1246,7 @@ static int performance_counters_frontend_toggle(unsigned type, const char *label
 
    (void)label;
 
-   if (counters[offset] && action == MENU_ACTION_START)
+   if (counters[offset])
    {
       counters[offset]->total = 0;
       counters[offset]->call_cnt = 0;
@@ -2167,9 +2221,28 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
 
    cbs->action_start = NULL;
 
-   if (type >= MENU_SETTINGS_BIND_BEGIN &&
+   if (!strcmp(label, "video_shader_pass"))
+      cbs->action_start = action_start_shader_pass;
+   else if (!strcmp(label, "video_shader_scale_pass"))
+      cbs->action_start = action_start_shader_scale_pass;
+   else if (!strcmp(label, "video_shader_filter_pass"))
+      cbs->action_start = action_start_shader_filter_pass;
+   else if (!strcmp(label, "video_shader_num_passes"))
+      cbs->action_start = action_start_shader_num_passes;
+   else if (!strcmp(label, "input_bind_analog_dpad_mode"))
+      cbs->action_start = action_start_input_bind_analog_dpad_mode;
+   else if (type >= MENU_SETTINGS_BIND_BEGIN &&
          type <= MENU_SETTINGS_BIND_ALL_LAST)
       cbs->action_start = action_start_bind;
+   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+      cbs->action_start = action_start_shader_action_parameter;
+   else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
+         type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
+      cbs->action_start = action_start_performance_counters_core;
+   else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
+         type <= MENU_SETTINGS_PERF_COUNTERS_END)
+      cbs->action_start = action_start_performance_counters_frontend;
 }
 
 static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
@@ -2237,8 +2310,6 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_toggle = shader_action_parameter_toggle;
-   else if (!strcmp(label, "video_shader_pass"))
-      cbs->action_toggle = action_toggle_shader_pass;
    else if (!strcmp(label, "video_shader_scale_pass"))
       cbs->action_toggle = action_toggle_shader_scale_pass;
    else if (!strcmp(label, "video_shader_filter_pass"))
@@ -2261,12 +2332,6 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_toggle = action_toggle_video_resolution;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       cbs->action_toggle = core_setting_toggle;
-   else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
-         type <= MENU_SETTINGS_PERF_COUNTERS_END)
-      cbs->action_toggle = performance_counters_frontend_toggle;
-   else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
-         type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
-      cbs->action_toggle = performance_counters_core_toggle;
 
    switch (type)
    {
