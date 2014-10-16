@@ -19,7 +19,6 @@
 #include "msvc/msvc_compat.h"
 #include "compat/posix_string.h"
 #include "boolean.h"
-#include "general.h"
 #include "file.h"
 
 #include <stdio.h>
@@ -134,11 +133,7 @@ static void content_playlist_write_file(content_playlist_t *playlist)
    file = fopen(playlist->conf_path, "w");
 
    if (!file)
-   {
-      RARCH_ERR("Couldn't write to content playlist file: %s.\n",
-            playlist->conf_path);
       return;
-   }
 
    for (i = 0; i < playlist->size; i++)
    {
@@ -189,7 +184,7 @@ size_t content_playlist_size(content_playlist_t *playlist)
 static bool content_playlist_read_file(
       content_playlist_t *playlist, const char *path)
 {
-   char buf[3][PATH_MAX];
+   char buf[3][1024];
    unsigned i;
    struct content_playlist_entry *entry = NULL;
    char *last = NULL;
@@ -197,8 +192,6 @@ static bool content_playlist_read_file(
 
    if (!file || !playlist)
    {
-      RARCH_ERR("Couldn't read content playlist file: %s.\n", path);
-
       if (file)
          fclose(file);
 
@@ -237,14 +230,10 @@ end:
 
 content_playlist_t *content_playlist_init(const char *path, size_t size)
 {
-   RARCH_LOG("Opening playlist: %s.\n", path);
    content_playlist_t *playlist = (content_playlist_t*)
       calloc(1, sizeof(*playlist));
    if (!playlist)
-   {
-       RARCH_ERR("Cannot initialize content playlist.\n");
       return NULL;
-   }
 
    playlist->entries = (struct content_playlist_entry*)calloc(size,
          sizeof(*playlist->entries));
