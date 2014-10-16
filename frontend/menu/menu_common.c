@@ -62,6 +62,9 @@ static void menu_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
+    
+   if (!wrap_args)
+      return;
 
    wrap_args->no_content    = driver.menu->load_no_content;
    if (!g_extern.has_set_verbosity)
