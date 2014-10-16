@@ -98,6 +98,12 @@ static void* const associated_core_key = (void*)&associated_core_key;
 
 @end
 
+CFArrayRef CFSearchPathForDirectoriesInDomains(unsigned flags,
+                                               unsigned domain_mask, BOOL expand_tilde)
+{
+   return CFBridgingRetain(NSSearchPathForDirectoriesInDomains(flags, domain_mask, expand_tilde));
+}
+
 static int waiting_argc;
 static char** waiting_argv;
 
@@ -133,7 +139,7 @@ static char** waiting_argv;
    apple_platform = self;
 
    char support_path_buf[PATH_MAX + 1];
-   CFArrayRef array = CFBridgingRetain(NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES));
+   CFArrayRef array = CFSearchPathForDirectoriesInDomains(CFApplicationSupportDirectory, CFUserDomainMask, YES);
    CFStringRef support_path = CFBridgingRetain(CFArrayGetValueAtIndex(array, 0));
    CFStringGetCString(support_path, support_path_buf, sizeof(support_path_buf), kCFStringEncodingUTF8);
    
