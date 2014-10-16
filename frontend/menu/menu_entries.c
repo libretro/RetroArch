@@ -144,6 +144,9 @@ static int push_main_menu_list(menu_handle_t *menu,
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_mainmenu,
          label);
 
+   if (!setting)
+      return -1;
+
    file_list_clear(list);
 
    for (; setting->type != ST_END_GROUP; setting++)
