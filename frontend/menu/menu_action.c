@@ -151,7 +151,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
          {
             case MENU_ACTION_START:
                if (setting->action_start)
-                  return setting->action_start(setting);
+                  setting->action_start(setting);
                break;
          }
 
@@ -171,15 +171,15 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             case MENU_ACTION_LEFT:
             case MENU_ACTION_RIGHT:
                if (setting->action_toggle)
-                  return setting->action_toggle(setting, action);
+                  setting->action_toggle(setting, action);
                break;
             case MENU_ACTION_START:
                if (setting->action_start)
-                  return setting->action_start(setting);
+                  setting->action_start(setting);
                break;
             case MENU_ACTION_OK:
                if (setting->action_ok)
-                  return setting->action_ok(setting, action);
+                  setting->action_ok(setting, action);
                break;
          }
          break;
