@@ -735,6 +735,18 @@ static int setting_data_bool_action_start_default(void *data)
    return 0;
 }
 
+static int setting_data_string_dir_action_start_default(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.string = '\0';
+
+   return 0;
+}
+
 static int setting_data_bool_action_toggle_default(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1064,6 +1076,9 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
    result.read_handler = read_handler;
    result.value.string = target;
    result.default_value.string = default_value;
+
+   if (type == ST_DIR)
+      result.action_start  = setting_data_string_dir_action_start_default;
 
    return result;
 }

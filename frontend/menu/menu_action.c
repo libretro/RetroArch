@@ -150,18 +150,19 @@ int menu_action_handle_setting(rarch_setting_t *setting,
          switch (action)
          {
             case MENU_ACTION_START:
-               *setting->value.string = '\0';
-
-               if (setting->change_handler)
-                  setting->change_handler(setting);
-
-               if (setting->flags & SD_FLAG_EXIT
-                     && setting->cmd_trigger.triggered)
-               {
-                  setting->cmd_trigger.triggered = false;
-                  return -1;
-               }
+               if (setting->action_start)
+                  return setting->action_start(setting);
                break;
+         }
+
+         if (setting->change_handler)
+            setting->change_handler(setting);
+
+         if (setting->flags & SD_FLAG_EXIT
+               && setting->cmd_trigger.triggered)
+         {
+            setting->cmd_trigger.triggered = false;
+            return -1;
          }
          break;
       case ST_STRING:
