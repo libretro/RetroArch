@@ -654,17 +654,6 @@ int rarch_main_iterate(void)
    if (driver.flushing_input)
       driver.flushing_input = (input) ? input_flush(&input) : false;
 
-   if (g_extern.lifecycle_state != 0)
-   {
-      int key;
-      for (key = 0; key < RARCH_BIND_LIST_END; key++)
-      {
-         if (BIT64_GET(g_extern.lifecycle_state, key))
-            BIT64_SET(input, key);
-      }
-      g_extern.lifecycle_state = 0;
-   }
-
    trigger_input = input & ~old_input;
 
    if (time_to_exit(input))
