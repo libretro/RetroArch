@@ -2230,7 +2230,7 @@ bool rarch_main_command(unsigned cmd)
          g_extern.system.shutdown = false;
          break;
       case RARCH_CMD_QUIT:
-         g_extern.system.shutdown = true;
+         rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
          break;
       case RARCH_CMD_REINIT:
          driver.video_cache_context = 
