@@ -185,95 +185,6 @@ static int menu_start_screen_iterate(unsigned action)
    return 0;
 }
 
-static int menu_settings_iterate(unsigned action,
-      menu_file_list_cbs_t *cbs)
-{
-   const char *path  = NULL;
-   const char *label = NULL;
-   unsigned type = 0;
-   
-   driver.menu->frame_buf_pitch = driver.menu->width * 2;
-
-   file_list_get_at_offset(driver.menu->selection_buf,
-         driver.menu->selection_ptr, &path, &label, &type);
-
-   if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
-      action = MENU_ACTION_REFRESH;
-
-   switch (action)
-   {
-      case MENU_ACTION_UP:
-         if (driver.menu->selection_ptr > 0)
-            menu_decrement_navigation(driver.menu);
-         else
-            menu_set_navigation(driver.menu,
-                  file_list_get_size(driver.menu->selection_buf) - 1);
-         break;
-
-      case MENU_ACTION_DOWN:
-         if ((driver.menu->selection_ptr + 1) <
-               file_list_get_size(driver.menu->selection_buf))
-            menu_increment_navigation(driver.menu);
-         else
-            menu_clear_navigation(driver.menu, false);
-         break;
-
-      case MENU_ACTION_CANCEL:
-         apply_deferred_settings();
-         menu_entries_pop_list(driver.menu->menu_stack);
-         break;
-      case MENU_ACTION_SELECT:
-         file_list_push(driver.menu->menu_stack, "", "info_screen",
-               0, driver.menu->selection_ptr);
-         break;
-      case MENU_ACTION_OK:
-         if (cbs && cbs->action_ok)
-            return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
-         /* fall-through */
-      case MENU_ACTION_START:
-         if (cbs && cbs->action_start)
-            return cbs->action_start(type, label, action);
-         /* fall-through */
-      case MENU_ACTION_LEFT:
-      case MENU_ACTION_RIGHT:
-         {
-            int ret = 0;
-            
-            if (cbs && cbs->action_toggle)
-               ret = cbs->action_toggle(type, label, action);
-
-            if (ret)
-               return ret;
-         }
-         break;
-
-      case MENU_ACTION_REFRESH:
-         menu_entries_deferred_push(driver.menu->selection_buf,
-               driver.menu->menu_stack);
-
-         driver.menu->need_refresh = false;
-         break;
-
-      case MENU_ACTION_MESSAGE:
-         driver.menu->msg_force = true;
-         break;
-
-      default:
-         break;
-   }
-
-   if (driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render();
-
-   /* Have to defer it so we let settings refresh. */
-   if (driver.menu->push_start_screen)
-   {
-      file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
-      driver.menu->push_start_screen = false;
-   }
-
-   return 0;
-}
 
 static int menu_viewport_iterate(unsigned action)
 {
@@ -521,6 +432,100 @@ static int menu_load_or_open_zip_iterate(unsigned action)
    return 0;
 }
 
+static int menu_settings_iterate(unsigned action,
+      menu_file_list_cbs_t *cbs)
+{
+   const char *path  = NULL;
+   const char *label = NULL;
+   unsigned type = 0;
+   unsigned scroll_speed = 0;
+   
+   driver.menu->frame_buf_pitch = driver.menu->width * 2;
+
+   file_list_get_at_offset(driver.menu->selection_buf,
+         driver.menu->selection_ptr, &path, &label, &type);
+
+   if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
+      action = MENU_ACTION_REFRESH;
+
+   scroll_speed = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
+
+   switch (action)
+   {
+      case MENU_ACTION_UP:
+         if (driver.menu->selection_ptr >= scroll_speed)
+            menu_set_navigation(driver.menu,
+                  driver.menu->selection_ptr - scroll_speed);
+         else
+            menu_set_navigation(driver.menu,
+                  file_list_get_size(driver.menu->selection_buf) - 1);
+         break;
+
+      case MENU_ACTION_DOWN:
+         if (driver.menu->selection_ptr + scroll_speed <
+               file_list_get_size(driver.menu->selection_buf))
+            menu_set_navigation(driver.menu,
+                  driver.menu->selection_ptr + scroll_speed);
+         else
+            menu_clear_navigation(driver.menu, false);
+         break;
+
+      case MENU_ACTION_CANCEL:
+         apply_deferred_settings();
+         menu_entries_pop_list(driver.menu->menu_stack);
+         break;
+      case MENU_ACTION_SELECT:
+         file_list_push(driver.menu->menu_stack, "", "info_screen",
+               0, driver.menu->selection_ptr);
+         break;
+      case MENU_ACTION_OK:
+         if (cbs && cbs->action_ok)
+            return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
+         /* fall-through */
+      case MENU_ACTION_START:
+         if (cbs && cbs->action_start)
+            return cbs->action_start(type, label, action);
+         /* fall-through */
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         {
+            int ret = 0;
+            
+            if (cbs && cbs->action_toggle)
+               ret = cbs->action_toggle(type, label, action);
+
+            if (ret)
+               return ret;
+         }
+         break;
+
+      case MENU_ACTION_REFRESH:
+         menu_entries_deferred_push(driver.menu->selection_buf,
+               driver.menu->menu_stack);
+
+         driver.menu->need_refresh = false;
+         break;
+
+      case MENU_ACTION_MESSAGE:
+         driver.menu->msg_force = true;
+         break;
+
+      default:
+         break;
+   }
+
+   if (driver.menu_ctx && driver.menu_ctx->render)
+      driver.menu_ctx->render();
+
+   /* Have to defer it so we let settings refresh. */
+   if (driver.menu->push_start_screen)
+   {
+      file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
+      driver.menu->push_start_screen = false;
+   }
+
+   return 0;
+}
 
 static int menu_common_iterate(unsigned action)
 {
