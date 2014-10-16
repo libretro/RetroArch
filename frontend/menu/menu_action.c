@@ -20,7 +20,7 @@
 #include "menu_entries.h"
 #include "menu_shader.h"
 
-static int setting_handler(
+int setting_handler(
       rarch_setting_t *setting, unsigned action)
 {
    switch (action)
@@ -51,24 +51,6 @@ static int setting_handler(
    }
 
    return 0;
-}
-
-int menu_action_setting_boolean(
-      rarch_setting_t *setting, unsigned action)
-{
-   return setting_handler(setting, action);
-}
-
-int menu_action_setting_unsigned_integer(
-      rarch_setting_t *setting, unsigned action)
-{
-   return setting_handler(setting, action);
-}
-
-int menu_action_setting_fraction(
-      rarch_setting_t *setting, unsigned action)
-{
-   return setting_handler(setting, action);
 }
 
 int menu_action_setting_set_current_string(
@@ -155,58 +137,53 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    if (!setting)
       return -1;
 
-   if (setting->type == ST_BOOL)
-      return menu_action_setting_boolean(setting, action);
-   if (setting->type == ST_UINT)
-      return menu_action_setting_unsigned_integer(setting, action);
-   if (setting->type == ST_FLOAT)
-      return menu_action_setting_fraction(setting, action);
-   if (setting->type == ST_PATH)
-      return menu_entries_set_current_path_selection(setting,
-            setting->default_value.string, setting->name, type, action);
-
-   if (setting->type == ST_DIR)
+   switch (setting->type)
    {
-      switch (action)
-      {
-         case MENU_ACTION_START:
-            *setting->value.string = '\0';
+      case ST_BOOL:
+      case ST_UINT:
+      case ST_FLOAT:
+         return setting_handler(setting, action);
+      case ST_PATH:
+         return menu_entries_set_current_path_selection(setting,
+               setting->default_value.string, setting->name, type, action);
+      case ST_DIR:
+         switch (action)
+         {
+            case MENU_ACTION_START:
+               *setting->value.string = '\0';
 
-            if (setting->change_handler)
-               setting->change_handler(setting);
+               if (setting->change_handler)
+                  setting->change_handler(setting);
 
-            if (setting->flags & SD_FLAG_EXIT
-                  && setting->cmd_trigger.triggered)
-            {
-               setting->cmd_trigger.triggered = false;
-               return -1;
-            }
-            break;
-      }
-
-      return 0;
-   }
-
-   if (setting->type == ST_STRING)
-   {
-      switch (action)
-      {
-         case MENU_ACTION_LEFT:
-         case MENU_ACTION_RIGHT:
-            if (setting->action_toggle)
-               return setting->action_toggle(setting, action);
-            break;
-         case MENU_ACTION_START:
-            if (setting->action_start)
-               return setting->action_start(setting);
-            break;
-         case MENU_ACTION_OK:
-            if (setting->action_ok)
-               return setting->action_ok(setting, action);
-            break;
-      }
-
-      return 0;
+               if (setting->flags & SD_FLAG_EXIT
+                     && setting->cmd_trigger.triggered)
+               {
+                  setting->cmd_trigger.triggered = false;
+                  return -1;
+               }
+               break;
+         }
+         break;
+      case ST_STRING:
+         switch (action)
+         {
+            case MENU_ACTION_LEFT:
+            case MENU_ACTION_RIGHT:
+               if (setting->action_toggle)
+                  return setting->action_toggle(setting, action);
+               break;
+            case MENU_ACTION_START:
+               if (setting->action_start)
+                  return setting->action_start(setting);
+               break;
+            case MENU_ACTION_OK:
+               if (setting->action_ok)
+                  return setting->action_ok(setting, action);
+               break;
+         }
+         break;
+      default:
+         break;
    }
 
    return 0;

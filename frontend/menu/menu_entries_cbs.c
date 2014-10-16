@@ -917,7 +917,7 @@ static int action_toggle_shader_filter_default(unsigned type, const char *label,
    rarch_setting_t *current_setting = NULL;
    if ((current_setting = setting_data_find_setting(
                driver.menu->list_settings, "video_smooth")))
-      menu_action_setting_boolean(current_setting, action);
+      setting_handler(current_setting, action);
 #endif
    return 0;
 }

@@ -23,13 +23,7 @@
 extern "C" {
 #endif
 
-int menu_action_setting_boolean(
-      rarch_setting_t *setting, unsigned action);
-
-int menu_action_setting_fraction(
-      rarch_setting_t *setting, unsigned action);
-
-int menu_action_setting_unsigned_integer(
+int setting_handler(
       rarch_setting_t *setting, unsigned action);
 
 int menu_action_set_current_string_based_on_label(
