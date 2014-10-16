@@ -545,7 +545,7 @@ static int menu_common_iterate(unsigned action)
       return menu_load_or_open_zip_iterate(action);
    else if (!strcmp(label, "info_screen"))
       return menu_info_screen_iterate(action);
-   else if (menu_common_type_is(label, type) == MENU_SETTINGS)
+   else if (type == MENU_SETTINGS || type == MENU_FILE_CATEGORY)
       return menu_settings_iterate(action, cbs);
    else if (
          type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
