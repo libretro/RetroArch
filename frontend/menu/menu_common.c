@@ -308,7 +308,15 @@ static unsigned input_frame(uint64_t trigger_state)
 
 void apply_deferred_settings(void)
 {
-   rarch_setting_t *setting = driver.menu->list_settings;
+   rarch_setting_t *setting = NULL;
+    
+   if (!driver.menu)
+      return;
+    
+   setting = (rarch_setting_t*)driver.menu->list_settings;
+    
+   if (!setting)
+      return;
 
    for (; setting->type != ST_NONE; setting++)
    {
