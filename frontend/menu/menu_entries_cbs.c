@@ -1826,9 +1826,9 @@ static int deferred_push_shader_options(void *data, void *userdata,
    file_list_push(list, "Shader Preset Save As",
          "video_shader_preset_save_as", MENU_FILE_LINEFEED_SWITCH, 0);
    file_list_push(list, "Parameters (Current)",
-         "video_shader_parameters", MENU_FILE_CATEGORY, 0);
+         "video_shader_parameters", MENU_FILE_SWITCH, 0);
    file_list_push(list, "Parameters (Menu)",
-         "video_shader_preset_parameters", MENU_FILE_CATEGORY, 0);
+         "video_shader_preset_parameters", MENU_FILE_SWITCH, 0);
    file_list_push(list, "Shader Passes", "video_shader_num_passes",
          0, 0);
 
@@ -2433,11 +2433,10 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    cbs->action_deferred_push = deferred_push_default;
 
-   if (type == MENU_FILE_CATEGORY)
-      cbs->action_deferred_push = deferred_push_category;
-
    if (!strcmp(label, "history_list"))
       cbs->action_deferred_push = deferred_push_history_list;
+   else if (type == MENU_FILE_CATEGORY)
+      cbs->action_deferred_push = deferred_push_category;
    else if (!strcmp(label, "deferred_core_list"))
       cbs->action_deferred_push = deferred_push_core_list_deferred;
    else if (!strcmp(label, "Input Options"))

@@ -118,17 +118,14 @@ int setting_set_flags(rarch_setting_t *setting)
 
    if (setting->flags & SD_FLAG_ALLOW_INPUT)
       return MENU_FILE_LINEFEED;
-   if (
-         setting->flags & SD_FLAG_IS_CATEGORY ||
-         setting->type == ST_GROUP ||
-         setting->type == ST_SUB_GROUP)
-      return MENU_FILE_CATEGORY;
    if (setting->flags & SD_FLAG_PUSH_ACTION)
       return MENU_FILE_SWITCH;
    if (setting->flags & SD_FLAG_IS_DRIVER)
       return MENU_FILE_DRIVER;
    if (setting->type == ST_PATH)
       return MENU_FILE_PATH;
+   if (setting->flags & SD_FLAG_IS_CATEGORY)
+      return MENU_FILE_CATEGORY;
    return 0;
 }
 
