@@ -143,6 +143,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_BOOL:
       case ST_UINT:
       case ST_FLOAT:
+      case ST_STRING:
          return setting_handler(setting, action);
       case ST_PATH:
          return menu_entries_set_current_path_selection(setting,
@@ -164,24 +165,6 @@ int menu_action_handle_setting(rarch_setting_t *setting,
          {
             setting->cmd_trigger.triggered = false;
             return -1;
-         }
-         break;
-      case ST_STRING:
-         switch (action)
-         {
-            case MENU_ACTION_LEFT:
-            case MENU_ACTION_RIGHT:
-               if (setting->action_toggle)
-                  setting->action_toggle(setting, action);
-               break;
-            case MENU_ACTION_START:
-               if (setting->action_start)
-                  setting->action_start(setting);
-               break;
-            case MENU_ACTION_OK:
-               if (setting->action_ok)
-                  setting->action_ok(setting, action);
-               break;
          }
          break;
       default:
