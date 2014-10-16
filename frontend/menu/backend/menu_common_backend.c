@@ -623,6 +623,11 @@ static int menu_common_iterate(unsigned action)
          ret = menu_action_ok(cbs);
          break;
 
+      case MENU_ACTION_SELECT:
+         file_list_push(driver.menu->menu_stack, "", "info_screen",
+               0, driver.menu->selection_ptr);
+         break;
+
       case MENU_ACTION_REFRESH:
          menu_entries_deferred_push(driver.menu->selection_buf,
                driver.menu->menu_stack);
