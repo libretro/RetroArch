@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <CoreFoundation/CFArray.h>
+#import <Foundation/NSPathUtilities.h>
 #include "CFExtensions.h"
 
 CFArrayRef CFSearchPathForDirectoriesInDomains(unsigned flags,

@@ -10,6 +10,7 @@
 		50351E7D192E5E8900668AB1 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 50351E7C192E5E8900668AB1 /* settings.m */; };
 		50351E7F192E5EC100668AB1 /* platform.m in Sources */ = {isa = PBXBuildFile; fileRef = 50351E7E192E5EC100668AB1 /* platform.m */; };
 		50535530185E0F4000926C26 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5053552F185E0F4000926C26 /* CoreLocation.framework */; };
+		50C374A919F04F7A00984F8D /* CFExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 50C374A819F04F7A00984F8D /* CFExtensions.m */; };
 		50D66298199F344700CF54E3 /* Cg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50D66297199F344700CF54E3 /* Cg.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 962EE0E1178B3DF6004224FF /* IOKit.framework */; };
 		96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96355CE21788E72A0010DBFA /* Cocoa.framework */; };
@@ -32,6 +33,7 @@
 		50351E7C192E5E8900668AB1 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = ../settings.m; sourceTree = "<group>"; };
 		50351E7E192E5EC100668AB1 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = ../platform.m; sourceTree = "<group>"; };
 		5053552F185E0F4000926C26 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
+		50C374A819F04F7A00984F8D /* CFExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CFExtensions.m; path = ../../common/CFExtensions.m; sourceTree = SOURCE_ROOT; };
 		50D66295199F28AC00CF54E3 /* Cg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Cg.framework; sourceTree = "<group>"; };
 		50D66297199F344700CF54E3 /* Cg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cg.framework; path = ../../../../../../../Library/Frameworks/Cg.framework; sourceTree = "<group>"; };
 		962EE0E1178B3DF6004224FF /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../../../../System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
@@ -129,6 +131,7 @@
 		96355CE81788E72A0010DBFA /* common */ = {
 			isa = PBXGroup;
 			children = (
+				50C374A819F04F7A00984F8D /* CFExtensions.m */,
 				98AF92A9192ED645009A8479 /* main.m */,
 				98AF92A3192ED60E009A8479 /* RAGameView.m */,
 				98AF929D192ED5C4009A8479 /* utility.m */,
@@ -231,6 +234,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				50351E7D192E5E8900668AB1 /* settings.m in Sources */,
+				50C374A919F04F7A00984F8D /* CFExtensions.m in Sources */,
 				50351E7F192E5EC100668AB1 /* platform.m in Sources */,
 				98AF929E192ED5C4009A8479 /* utility.m in Sources */,
 				98AF92A4192ED60E009A8479 /* RAGameView.m in Sources */,

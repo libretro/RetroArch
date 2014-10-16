@@ -16,6 +16,8 @@
 #ifndef _CFEXTENSIONS_H
 #define _CFEXTENSIONS_H
 
+#include <CoreFoundation/CFArray.h>
+
 typedef enum
 {
     CFApplicationDirectory = 1,             // supported applications (Applications)
