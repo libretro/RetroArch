@@ -273,6 +273,8 @@ static char** waiting_argv;
 
    if (g_extern.system.shutdown)
       return;
+   
+   /* TODO - rewrite this. */
 
    cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
 #if defined(MAC_OS_X_VERSION_10_6)
@@ -281,7 +283,9 @@ static char** waiting_argv;
 #endif
     
     if (!g_extern.main_is_init)
-        apple_run_core(0, NULL, self.core.UTF8String, g_extern.fullpath);
+    {
+       /* Load core/content here. */
+    }
     else
         g_extern.system.shutdown = true;
 }
