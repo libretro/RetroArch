@@ -45,7 +45,7 @@ struct udev_joypad
    dev_t device;
 
    // Input state polled
-   bool buttons[NUM_BUTTONS];
+   int16_t buttons;
    int16_t axes[NUM_AXES];
    int8_t hats[NUM_HATS][2];
 
@@ -83,12 +83,12 @@ static inline int16_t compute_axis(const struct input_absinfo *info, int value)
 
 static void poll_pad(unsigned p)
 {
-   struct udev_joypad *pad = &g_pads[p];
-   if (pad->fd < 0)
-      return;
-
    int i, len;
    struct input_event events[32];
+   struct udev_joypad *pad = &g_pads[p];
+
+   if (pad->fd < 0)
+      return;
 
    while ((len = read(pad->fd, events, sizeof(events))) > 0)
    {
@@ -100,7 +100,12 @@ static void poll_pad(unsigned p)
          {
             case EV_KEY:
                if (code >= BTN_MISC || (code >= KEY_UP && code <= KEY_DOWN))
-                  pad->buttons[pad->button_bind[code]] = events[i].value;
+               {
+                  if (events[i].value)
+                     BIT16_SET(pad->buttons, pad->button_bind[code]);
+                  else
+                     BIT16_CLEAR(pad->buttons, pad->button_bind[code]);
+               }
                break;
 
             case EV_ABS:
@@ -552,7 +557,7 @@ static bool udev_joypad_button(unsigned port, uint16_t joykey)
 
    if (GET_HAT_DIR(joykey))
       return udev_joypad_hat(pad, joykey);
-   return joykey < NUM_BUTTONS && pad->buttons[joykey];
+   return joykey < NUM_BUTTONS && BIT16_GET(pad->buttons, joykey);
 }
 
 static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
