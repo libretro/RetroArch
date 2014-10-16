@@ -19,8 +19,7 @@
 #include <pulse/pulseaudio.h>
 #include "../boolean.h"
 #include <string.h>
-
-#include <stdio.h>
+#include <stdint.h>
 
 typedef struct
 {

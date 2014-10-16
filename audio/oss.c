@@ -31,7 +31,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <errno.h>
-#include <stdio.h>
+#include <stdint.h>
 
 #ifdef HAVE_OSS_BSD
 #define DEFAULT_OSS_DEV "/dev/audio"

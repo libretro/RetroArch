@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <roaraudio.h>
 #include <errno.h>
-#include <stdio.h>
+#include <stdint.h>
 #include "../boolean.h"
 #include "general.h"
 

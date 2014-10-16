@@ -24,7 +24,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #ifdef _WIN32
 #include "../../msvc/msvc_compat.h"
 #endif
