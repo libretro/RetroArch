@@ -291,7 +291,7 @@ CGprogramGroup rglCgCreateProgramGroup( CGcontext ctx,  const char *name, void *
          group->name = ( char* )malloc( len + 1 );
          if ( !group->name )//out of memory
             break;
-         strcpy( group->name, name );
+         strlcpy( group->name, name, sizeof(group->name));
       }
 
       //copy the default values

@@ -2050,14 +2050,6 @@ static void menu_common_setting_set_label_perf(char *type_str,
 #if defined(GEKKO)
 extern unsigned menu_gx_resolutions[][2];
 extern unsigned menu_current_gx_resolution;
-
-static void gx_strcpy_resolution(char *type_str, size_t type_str_size)
-{
-   snprintf(type_str, type_str_size, "%.3ux%.3u%c",
-      menu_gx_resolutions[menu_current_gx_resolution][0],
-      menu_gx_resolutions[menu_current_gx_resolution][1],
-      menu_gx_resolutions[menu_current_gx_resolution][1] > 300 ? 'i' : 'p');
-}
 #endif
 
 static int get_fallback_label(char *type_str,
@@ -2070,7 +2062,10 @@ static int get_fallback_label(char *type_str,
    {
 #if defined(GEKKO)
       case MENU_SETTINGS_VIDEO_RESOLUTION:
-         gx_strcpy_resolution(type_str, type_str_size);
+         snprintf(type_str, type_str_size, "%.3ux%.3u%c",
+               menu_gx_resolutions[menu_current_gx_resolution][0],
+               menu_gx_resolutions[menu_current_gx_resolution][1],
+               menu_gx_resolutions[menu_current_gx_resolution][1] > 300 ? 'i' : 'p');
          break;
 #elif defined(__CELLOS_LV2__)
       case MENU_SETTINGS_VIDEO_RESOLUTION:
