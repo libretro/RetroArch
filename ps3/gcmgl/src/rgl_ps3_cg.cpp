@@ -1346,15 +1346,14 @@ CG_API CGcontext cgCreateContext( void )
 {
    // create a context out of thin air and add it to the hidden global list.
 
-   _CGcontext* ptr = (_CGcontext*)malloc(sizeof(_CGcontext));
-   if ( NULL == ptr )
+   _CGcontext* ptr = (_CGcontext*)calloc(1, sizeof(_CGcontext));
+
+   if (!ptr)
    {
       rglCgRaiseError( CG_MEMORY_ALLOC_ERROR );
       return ( CGcontext )NULL;
    }
 
-   // initialise member variables
-   memset(ptr, 0, sizeof( *ptr));
    ptr->compileType = CG_UNKNOWN;
 
    // get a new id for the object
@@ -2768,15 +2767,12 @@ CGprogram rglCgCreateProgram( CGcontext ctx, CGprofile profile, const CgProgramH
    // as well as the profile.
    // The parameters and the actual program are generated from the ABI specific calls.
 
-   _CGprogram* prog = ( _CGprogram* )malloc( sizeof( _CGprogram ) );
-   if ( NULL == prog )
+   _CGprogram* prog = ( _CGprogram* )calloc(1, sizeof( _CGprogram));
+   if (!prog)
    {
       rglCgRaiseError( CG_MEMORY_ALLOC_ERROR );
       return NULL;
    }
-
-   // zero out the fields
-   memset( prog, 0, sizeof( _CGprogram ) );
 
    // fill in the fields we know
    prog->parentContext = _cgGetContextPtr( ctx );
@@ -3208,7 +3204,7 @@ CG_API CGprogram cgCopyProgram( CGprogram program )
       newprog = ( _CGprogram* )malloc( sizeof( _CGprogram ) );
    }
 
-   if ( NULL == newprog )
+   if (!newprog)
    {
       rglCgRaiseError( CG_MEMORY_ALLOC_ERROR );
       return ( CGprogram )NULL;

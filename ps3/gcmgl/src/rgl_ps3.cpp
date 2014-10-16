@@ -141,8 +141,7 @@ static void rglTexNameSpaceInit(void *data,
    rglTexNameSpace *ns = (rglTexNameSpace*)data;
 
    ns->capacity = CAPACITY_INCREMENT;
-   ns->data = (void **)malloc( ns->capacity * sizeof( void* ) );
-   memset( ns->data, 0, ns->capacity*sizeof( void* ) );
+   ns->data = (void **)calloc(ns->capacity, sizeof(void*));
    ns->create = create;
    ns->destroy = destroy;
 }
@@ -264,12 +263,10 @@ static GmmFixedAllocData    *pGmmFixedAllocData = NULL;
 static uint32_t gmmInitFixedAllocator(void)
 {
 
-   pGmmFixedAllocData = (GmmFixedAllocData *)malloc(sizeof(GmmFixedAllocData));
+   pGmmFixedAllocData = (GmmFixedAllocData *)calloc(1, sizeof(GmmFixedAllocData));
 
    if (!pGmmFixedAllocData)
       return GMM_ERROR;
-
-   memset(pGmmFixedAllocData, 0, sizeof(GmmFixedAllocData));
 
    for (int i=0; i<2; i++)
    {
@@ -424,12 +421,7 @@ static uint32_t gmmInit(const void *localMemoryBase, const void *localStartAddre
 
    alignedLocalSize = localEndAddress - (uint32_t)localStartAddress;
 
-   pAllocator = (GmmAllocator *)malloc(sizeof(GmmAllocator));
-
-   if (!pAllocator)
-      return GMM_ERROR;
-
-   memset(pAllocator, 0, sizeof(GmmAllocator));
+   pAllocator = (GmmAllocator *)calloc(1, sizeof(GmmAllocator));
 
    if (!pAllocator)
       return GMM_ERROR;
@@ -1683,13 +1675,13 @@ RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceAuto( GLenum colorFormat, GLenum de
 RGL_EXPORT RGLdevice*	rglPlatformCreateDeviceExtended (const void *data)
 {
    RGLdeviceParameters *parameters = (RGLdeviceParameters*)data;
-   RGLdevice *device = (RGLdevice*)malloc( sizeof( RGLdevice ) + sizeof( rglGcmDevice ) );
+   RGLdevice *device = (RGLdevice*)calloc(1, sizeof( RGLdevice ) + sizeof( rglGcmDevice ) );
+
    if ( !device )
    {
       rglSetError( GL_OUT_OF_MEMORY );
       return NULL;
    }
-   memset( device, 0, sizeof( RGLdevice ) + sizeof(rglGcmDevice) );
 
    // initialize fields
    memcpy( &device->deviceParameters, parameters, sizeof( RGLdeviceParameters ) );
@@ -2841,12 +2833,11 @@ GLAPI void RGL_EXPORT psglSwap (void)
 static rglBufferObject *rglCreateBufferObject (void)
 {
    GLuint size = sizeof( rglBufferObject ) + sizeof(rglGcmBufferObject);
-   rglBufferObject *buffer = (rglBufferObject*)malloc(size);
+   rglBufferObject *buffer = (rglBufferObject*)calloc(1, size);
 
    if(!buffer )
       return NULL;
 
-   memset(buffer, 0, size); 
    buffer->refCount = 1;
    new( &buffer->textureReferences ) RGL::Vector<rglTexture *>();
 
@@ -3653,8 +3644,7 @@ static void rglResetContext (void *data)
 
 static rglTexture *rglAllocateTexture(void)
 {
-   rglTexture *texture = (rglTexture*)malloc(sizeof(rglTexture) + sizeof(rglGcmTexture));
-   memset( texture, 0, sizeof(rglTexture) + sizeof(rglGcmTexture));
+   rglTexture *texture = (rglTexture*)calloc(1, sizeof(rglTexture) + sizeof(rglGcmTexture));
    texture->target = 0;
    texture->minFilter = GL_NEAREST_MIPMAP_LINEAR;
    texture->magFilter = GL_LINEAR;
@@ -3701,12 +3691,10 @@ static void rglFreeTexture (void *data)
 
 RGLcontext* psglCreateContext(void)
 {
-   RGLcontext* LContext = (RGLcontext*)malloc(sizeof(RGLcontext));
+   RGLcontext* LContext = (RGLcontext*)calloc(1, sizeof(RGLcontext));
 
    if (!LContext)
       return NULL;
-
-   memset(LContext, 0, sizeof(RGLcontext));
 
    LContext->error = GL_NO_ERROR;
 
@@ -4418,8 +4406,10 @@ void RGL_EXPORT psglMakeCurrent (RGLcontext *context, RGLdevice *device)
          rglGcmSetInvalidateVertexCache(thisContext);
          rglGcmFifoFinish(fifo, ref, offset_bytes);
 
-         rglGcmDriver *driver = (rglGcmDriver*)malloc(sizeof(rglGcmDriver));
-         memset(driver, 0, sizeof(rglGcmDriver));
+         rglGcmDriver *driver = (rglGcmDriver*)calloc(1, sizeof(rglGcmDriver));
+
+         if (!driver)
+            return;
 
          driver->rt.yInverted = true;
          driver->invalidateVertexCache = GL_FALSE;
