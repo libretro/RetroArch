@@ -26,7 +26,7 @@
 
 static void set_volume(float gain)
 {
-   char msg[256];
+   char msg[PATH_MAX];
 
    g_settings.audio.volume += gain;
    g_settings.audio.volume = max(g_settings.audio.volume, -80.0f);
