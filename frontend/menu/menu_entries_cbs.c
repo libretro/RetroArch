@@ -879,8 +879,8 @@ static int action_start_shader_filter_pass(unsigned type, const char *label,
    struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
       &shader->pass[pass];
 
-   if (shader)
-      shader->pass[pass].filter = RARCH_FILTER_UNSPEC;
+   if (shader && shader_pass)
+      shader_pass->filter = RARCH_FILTER_UNSPEC;
 #endif
 
    return 0;
