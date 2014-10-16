@@ -212,7 +212,7 @@ static void disp_set_label(unsigned *w, unsigned type, unsigned i,
             core_option_get_val(g_extern.system.core_options,
                type - MENU_SETTINGS_CORE_OPTION_START),
             type_str_size);
-   else if (type == MENU_FILE_SWITCH || type == MENU_FILE_LINEFEED_SWITCH)
+   else if (type == MENU_FILE_PUSH || type == MENU_FILE_LINEFEED_SWITCH)
       strlcpy(type_str, "...", type_str_size);
    else if (driver.menu_ctx && driver.menu_ctx->backend &&
          driver.menu_ctx->backend->setting_set_label)
