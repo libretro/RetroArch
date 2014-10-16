@@ -479,45 +479,53 @@ static int menu_load_or_open_zip_iterate(unsigned action)
          driver.menu_ctx->render_messagebox(msg);
    }
 
-   if (action == MENU_ACTION_OK || action == MENU_ACTION_CANCEL)
+   switch (action)
    {
-      menu_entries_pop_list(driver.menu->menu_stack);
+      case MENU_ACTION_OK:
+      case MENU_ACTION_CANCEL:
+         menu_entries_pop_list(driver.menu->menu_stack);
 
-      file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label,
-            NULL);
+         file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label,
+               NULL);
 
-      if (file_list_get_size(driver.menu->selection_buf) == 0)
-         return 0;
+         if (file_list_get_size(driver.menu->selection_buf) == 0)
+            return 0;
 
-      file_list_get_at_offset(driver.menu->selection_buf,
-            driver.menu->selection_ptr, &path, NULL, &type);
+         file_list_get_at_offset(driver.menu->selection_buf,
+               driver.menu->selection_ptr, &path, NULL, &type);
+         break;
    }
 
-   if (action == MENU_ACTION_OK)
+   switch (action)
    {
-      char cat_path[PATH_MAX];
+      case MENU_ACTION_OK:
+         {
+            char cat_path[PATH_MAX];
 
-      fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
-      menu_entries_push(driver.menu->menu_stack, cat_path, menu_label, type,
-            driver.menu->selection_ptr);
+            fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
+            menu_entries_push(driver.menu->menu_stack, cat_path, menu_label, type,
+                  driver.menu->selection_ptr);
+         }
+         break;
+      case MENU_ACTION_CANCEL:
+         {
+            int ret = rarch_defer_core(g_extern.core_info, menu_path, path,
+                  driver.menu->deferred_path, sizeof(driver.menu->deferred_path));
+
+            if (ret == -1)
+            {
+               rarch_main_command(RARCH_CMD_LOAD_CORE);
+               menu_common_load_content();
+               return -1;
+            }
+            else if (ret == 0)
+               menu_entries_push(driver.menu->menu_stack,
+                     g_settings.libretro_directory, "deferred_core_list", 0,
+                     driver.menu->selection_ptr);
+         }
+         break;
    }
-   else if (action == MENU_ACTION_CANCEL)
-   {
-      int ret = rarch_defer_core(g_extern.core_info, menu_path, path,
-            driver.menu->deferred_path, sizeof(driver.menu->deferred_path));
 
-      if (ret == -1)
-      {
-         rarch_main_command(RARCH_CMD_LOAD_CORE);
-         menu_common_load_content();
-         return -1;
-      }
-      else if (ret == 0)
-         menu_entries_push(driver.menu->menu_stack,
-               g_settings.libretro_directory, "deferred_core_list", 0,
-               driver.menu->selection_ptr);
-
-   }
    return 0;
 }
 
