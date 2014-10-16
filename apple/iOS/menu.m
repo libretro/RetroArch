@@ -583,7 +583,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                                  nil]];
        [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("Actions"),
                                  [RAMenuItemBasic itemWithDescription:BOXSTRING("Restart Content") action:^{ [weakSelf performBasicAction:RARCH_CMD_RESET]; }],
-                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Close Content") action:^{ [weakSelf performBasicAction:RARCH_CMD_QUIT]; }],
                                  nil]];
    }
    
