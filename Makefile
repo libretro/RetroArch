@@ -11,7 +11,6 @@ endif
 
 OBJ := 
 JOYCONFIG_OBJ :=
-RETROLAUNCH_OBJ :=
 LIBS :=
 DEFINES := -DHAVE_CONFIG_H -DRARCH_INTERNAL -DHAVE_OVERLAY
 DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
@@ -77,12 +76,10 @@ endif
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 RARCH_JOYCONFIG_OBJ := $(addprefix $(OBJDIR)/,$(JOYCONFIG_OBJ))
-RARCH_RETROLAUNCH_OBJ := $(addprefix $(OBJDIR)/,$(RETROLAUNCH_OBJ))
 
 all: $(TARGET) $(JTARGET) config.mk
 
--include $(RARCH_OBJ:.o=.d) $(RARCH_JOYCONFIG_OBJ:.o=.d) $(RARCH_RETROLAUNCH_OBJ:.o=.d)
-
+-include $(RARCH_OBJ:.o=.d) $(RARCH_JOYCONFIG_OBJ:.o=.d)
 config.mk: configure qb/*
 	@echo "config.mk is outdated or non-existing. Run ./configure again."
 	@exit 1
@@ -94,10 +91,6 @@ retroarch: $(RARCH_OBJ)
 $(JTARGET): $(RARCH_JOYCONFIG_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 	$(Q)$(LINK) -o $@ $(RARCH_JOYCONFIG_OBJ) $(JOYCONFIG_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
-
-tools/retrolaunch/retrolaunch: $(RARCH_RETROLAUNCH_OBJ)
-	@$(if $(Q), $(shell echo echo LD $@),)
-	$(Q)$(LINK) -o $@ $(RARCH_RETROLAUNCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 
 $(OBJDIR)/%.o: %.c config.h config.mk
 	@mkdir -p $(dir $@)
@@ -130,11 +123,6 @@ $(OBJDIR)/tools/udev_joypad.o: input/udev_joypad.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_JOYCONFIG -c -o $@ $<
-
-$(OBJDIR)/tools/input_common_launch.o: input/input_common.c
-	@mkdir -p $(dir $@)
-	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_RETROLAUNCH -c -o $@ $<
 
 $(OBJDIR)/tools/input_common_joyconfig.o: input/input_common.c
 	@mkdir -p $(dir $@)
