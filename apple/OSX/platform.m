@@ -201,8 +201,8 @@ static char** waiting_argv;
 
    if (g_extern.main_is_init)
        reply = NSTerminateCancel;
-       
-   g_extern.system.shutdown = true;
+   
+   rarch_main_command(RARCH_CMD_QUIT);
 
    return reply;
 }
@@ -289,7 +289,7 @@ static char** waiting_argv;
       rarch_main_command(RARCH_CMD_LOAD_CONTENT);
     }
     else
-        g_extern.system.shutdown = true;
+       rarch_main_command(RARCH_CMD_QUIT);
 }
 
 #pragma mark RetroArch_Platform
