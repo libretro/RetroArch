@@ -1355,28 +1355,14 @@ static int core_setting_toggle(unsigned type, const char *label,
 static int disk_options_disk_index_toggle(unsigned type, const char *label,
       unsigned action)
 {
-   int step = 0;
-
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         step = -1;
+         rarch_main_command(RARCH_CMD_DISK_PREV);
          break;
       case MENU_ACTION_RIGHT:
-         step = 1;
+         rarch_main_command(RARCH_CMD_DISK_NEXT);
          break;
-   }
-
-   if (step)
-   {
-      const struct retro_disk_control_callback *control =
-         (const struct retro_disk_control_callback*)
-         &g_extern.system.disk_control;
-      unsigned num_disks = control->get_num_images();
-      unsigned current   = control->get_image_index();
-      unsigned next_index = (current + num_disks + 1 + step)
-         % (num_disks + 1);
-      rarch_disk_control_set_index(next_index);
    }
 
    return 0;
