@@ -114,7 +114,8 @@ static int menu_entries_set_current_path_selection(
             setting->cmd_trigger.triggered = true;
          break;
       case MENU_ACTION_START:
-         *setting->value.string = '\0';
+         if (setting->action_start)
+            setting->action_start(setting);
          break;
    }
 

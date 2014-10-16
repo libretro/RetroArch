@@ -1071,14 +1071,24 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
    rarch_setting_t result = { type, name, size, short_description, group,
       subgroup };
 
-   result.dir.empty_path = empty;
-   result.change_handler = change_handler;
-   result.read_handler = read_handler;
-   result.value.string = target;
+   result.dir.empty_path       = empty;
+   result.change_handler       = change_handler;
+   result.read_handler         = read_handler;
+   result.value.string         = target;
    result.default_value.string = default_value;
+   result.action_start         = NULL;
 
-   if (type == ST_DIR)
-      result.action_start  = setting_data_string_dir_action_start_default;
+   switch (type)
+   {
+      case ST_DIR:
+         result.action_start  = setting_data_string_dir_action_start_default;
+         break;
+      case ST_PATH:
+         result.action_start  = setting_data_string_dir_action_start_default;
+         break;
+      default:
+         break;
+   }
 
    return result;
 }
