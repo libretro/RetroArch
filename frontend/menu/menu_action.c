@@ -20,7 +20,7 @@
 #include "menu_entries.h"
 #include "menu_shader.h"
 
-int menu_action_setting_boolean(
+static int setting_handler(
       rarch_setting_t *setting, unsigned action)
 {
    switch (action)
@@ -51,72 +51,24 @@ int menu_action_setting_boolean(
    }
 
    return 0;
+}
+
+int menu_action_setting_boolean(
+      rarch_setting_t *setting, unsigned action)
+{
+   return setting_handler(setting, action);
 }
 
 int menu_action_setting_unsigned_integer(
       rarch_setting_t *setting, unsigned action)
 {
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-      case MENU_ACTION_RIGHT:
-         if (setting->action_toggle)
-            setting->action_toggle(setting, action);
-         break;
-      case MENU_ACTION_OK:
-         if (setting->action_ok)
-            setting->action_ok(setting, action);
-         break;
-      case MENU_ACTION_START:
-         if (setting->action_start)
-            setting->action_start(setting);
-         break;
-   }
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   if (setting->flags & SD_FLAG_EXIT
-         && setting->cmd_trigger.triggered)
-   {
-      setting->cmd_trigger.triggered = false;
-      return -1;
-   }
-
-   return 0;
+   return setting_handler(setting, action);
 }
 
 int menu_action_setting_fraction(
       rarch_setting_t *setting, unsigned action)
 {
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-      case MENU_ACTION_RIGHT:
-         if (setting->action_toggle)
-            setting->action_toggle(setting, action);
-         break;
-      case MENU_ACTION_OK:
-         if (setting->action_ok)
-            setting->action_ok(setting, action);
-         break;
-      case MENU_ACTION_START:
-         if (setting->action_start)
-            setting->action_start(setting);
-         break;
-   }
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   if (setting->flags & SD_FLAG_EXIT
-         && setting->cmd_trigger.triggered)
-   {
-      setting->cmd_trigger.triggered = false;
-      return -1;
-   }
-
-   return 0;
+   return setting_handler(setting, action);
 }
 
 int menu_action_setting_set_current_string(
