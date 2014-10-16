@@ -607,7 +607,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       action: ^(NSString* core)
       {
          if (path)
+         {
+            /* TODO - reimplement this - should no longer use apple_run_core. */
             apple_run_core(0, NULL, core.UTF8String, path.UTF8String);
+         }
          else
          {
             weakSelf.core = core;
@@ -632,7 +635,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          if (item && !item.isDirectory)
          {
             if (weakSelf.core)
+            {
+               /* TODO - reimplement this - should no longer use apple_run_core. */
                apple_run_core(0, NULL, weakSelf.core.UTF8String, item.path.UTF8String);
+            }
             else
                [weakSelf chooseCoreWithPath:item.path];
          }
@@ -708,6 +714,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                    
                    content_playlist_get_index(weakSelf.history, i, &path, &core_path, &core_name);
                    
+                   /* TODO - reimplement this - should no longer use apple_run_core. */
                    apple_run_core(0, NULL, core_path ? core_path : "",
                                   path ? path : "");
                }
