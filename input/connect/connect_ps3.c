@@ -26,7 +26,7 @@ struct hidpad_ps3_data
    send_control_t send_control;
    uint8_t data[512];
    uint32_t slot;
-   uint32_t button_result;
+   uint32_t buttons;
    bool have_led;
    uint16_t motors[2];
 };
@@ -97,7 +97,7 @@ static uint32_t hidpad_ps3_get_buttons(void *data)
 {
    struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
    if (device)
-      return device->button_result;
+      return device->buttons;
    return 0;
 }
 
@@ -151,13 +151,13 @@ static void hidpad_ps3_packet_handler(void *data, uint8_t *packet, uint16_t size
 
    memcpy(device->data, packet, size);
 
-   device->button_result = 0;
+   device->buttons = 0;
 
    pressed_keys = device->data[3] | (device->data[4] << 8) |
     ((device->data[5] & 1) << 16);
 
    for (i = 0; i < 17; i ++)
-      device->button_result |= (pressed_keys & (1 << i)) ?
+      device->buttons |= (pressed_keys & (1 << i)) ?
        (1 << button_mapping[i]) : 0;
 }
 
