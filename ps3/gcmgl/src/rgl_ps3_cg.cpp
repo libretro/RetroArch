@@ -1,4 +1,5 @@
 #include "rgl_cg.h"
+#include "../../../compat/strl.h"
 
 static CGbool rglpSupportsVertexProgram( CGprofile p )
 {
