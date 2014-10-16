@@ -282,11 +282,11 @@ static int menu_viewport_iterate(unsigned action)
    struct retro_game_geometry *geom = NULL;
    const char *base_msg = NULL;
    const char *label = NULL;
-   unsigned menu_type = 0;
+   unsigned type = 0;
    rarch_viewport_t *custom = (rarch_viewport_t*)
       &g_extern.console.screen.viewports.custom_vp;
 
-   file_list_get_last(driver.menu->menu_stack, NULL, &label, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, NULL, &label, &type);
 
    geom = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
 
@@ -299,7 +299,7 @@ static int menu_viewport_iterate(unsigned action)
    switch (action)
    {
       case MENU_ACTION_UP:
-         if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT)
+         if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
          {
             custom->y -= stride_y;
             custom->height += stride_y;
@@ -311,7 +311,7 @@ static int menu_viewport_iterate(unsigned action)
          break;
 
       case MENU_ACTION_DOWN:
-         if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT)
+         if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
          {
             custom->y += stride_y;
             if (custom->height >= (unsigned)stride_y)
@@ -324,7 +324,7 @@ static int menu_viewport_iterate(unsigned action)
          break;
 
       case MENU_ACTION_LEFT:
-         if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT)
+         if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
          {
             custom->x -= stride_x;
             custom->width += stride_x;
@@ -336,7 +336,7 @@ static int menu_viewport_iterate(unsigned action)
          break;
 
       case MENU_ACTION_RIGHT:
-         if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT)
+         if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
          {
             custom->x += stride_x;
             if (custom->width >= (unsigned)stride_x)
@@ -360,7 +360,7 @@ static int menu_viewport_iterate(unsigned action)
 
       case MENU_ACTION_OK:
          menu_entries_pop_list(driver.menu->menu_stack);
-         if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT
+         if (type == MENU_SETTINGS_CUSTOM_VIEWPORT
                && !g_settings.video.scale_integer)
          {
             file_list_push(driver.menu->menu_stack, "",
@@ -377,7 +377,7 @@ static int menu_viewport_iterate(unsigned action)
                   driver.video->viewport_info)
                driver.video->viewport_info(driver.video_data, &vp);
 
-            if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT)
+            if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
             {
                custom->width += custom->x;
                custom->height += custom->y;
@@ -402,7 +402,7 @@ static int menu_viewport_iterate(unsigned action)
          break;
    }
 
-   file_list_get_last(driver.menu->menu_stack, NULL, &label, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, NULL, &label, &type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
@@ -425,7 +425,7 @@ static int menu_viewport_iterate(unsigned action)
    }
    else
    {
-      if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT)
+      if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
          base_msg = "Set Upper-Left Corner";
       else if (!strcmp(label, "custom_viewport_2"))
          base_msg = "Set Bottom-Right Corner";
@@ -464,8 +464,7 @@ static int menu_load_or_open_zip_iterate(unsigned action)
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
    const char* path       = NULL;
-   const char* label      = NULL;
-   unsigned int menu_type = 0, type = 0;
+   unsigned int type = 0;
 
    snprintf(msg, sizeof(msg), "Opening compressed file\n"
          " \n"
@@ -485,13 +484,13 @@ static int menu_load_or_open_zip_iterate(unsigned action)
       menu_entries_pop_list(driver.menu->menu_stack);
 
       file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label,
-            &menu_type);
+            NULL);
 
       if (file_list_get_size(driver.menu->selection_buf) == 0)
          return 0;
 
       file_list_get_at_offset(driver.menu->selection_buf,
-            driver.menu->selection_ptr, &path, &label, &type);
+            driver.menu->selection_ptr, &path, NULL, &type);
    }
 
    if (action == MENU_ACTION_OK)
@@ -526,41 +525,40 @@ static int menu_load_or_open_zip_iterate(unsigned action)
 static int menu_common_iterate(unsigned action)
 {
    int ret = 0;
-   unsigned menu_type = 0;
-   const char *path = NULL;
-   const char *menu_label = NULL;
+   unsigned type = 0;
+   const char *label = NULL;
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       file_list_get_actiondata_at_offset(driver.menu->selection_buf,
             driver.menu->selection_ptr);
 
-   file_list_get_last(driver.menu->menu_stack, &path, &menu_label, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, NULL, &label, &type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
 
-   if (!strcmp(menu_label, "help"))
+   if (!strcmp(label, "help"))
       return menu_start_screen_iterate(action);
-   else if (!strcmp(menu_label, "message"))
+   else if (!strcmp(label, "message"))
       return menu_message_toggle(action);
-   else if (!strcmp(menu_label, "load_open_zip"))
+   else if (!strcmp(label, "load_open_zip"))
       return menu_load_or_open_zip_iterate(action);
-   else if (!strcmp(menu_label, "info_screen"))
+   else if (!strcmp(label, "info_screen"))
       return menu_info_screen_iterate(action);
-   else if (menu_common_type_is(menu_label, menu_type) == MENU_SETTINGS)
+   else if (menu_common_type_is(label, type) == MENU_SETTINGS)
       return menu_settings_iterate(action, cbs);
    else if (
-         menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
-         !strcmp(menu_label, "custom_viewport_2")
+         type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
+         !strcmp(label, "custom_viewport_2")
          )
       return menu_viewport_iterate(action);
-   else if (menu_type == MENU_SETTINGS_CUSTOM_BIND)
+   else if (type == MENU_SETTINGS_CUSTOM_BIND)
    {
       if (menu_input_bind_iterate(driver.menu))
          menu_entries_pop_list(driver.menu->menu_stack);
       return 0;
    }
-   else if (menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
+   else if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
    {
       if (menu_input_bind_iterate_keyboard(driver.menu))
          menu_entries_pop_list(driver.menu->menu_stack);
