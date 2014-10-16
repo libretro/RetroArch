@@ -1,6 +1,6 @@
 include config.mk
 
-TARGET = retroarch tools/retrolaunch/retrolaunch
+TARGET = retroarch
 JTARGET = tools/retroarch-joyconfig 
 
 OBJDIR := obj-unix
@@ -151,7 +151,6 @@ install: $(TARGET)
 	install -m644 docs/retroarch.1 $(DESTDIR)$(MAN_DIR)
 	install -m644 docs/retroarch-cg2glsl.1 $(DESTDIR)$(MAN_DIR)
 	install -m644 docs/retroarch-joyconfig.1 $(DESTDIR)$(MAN_DIR)
-	install -m644 docs/retrolaunch.1 $(DESTDIR)$(MAN_DIR)
 	install -m644 media/retroarch.png $(DESTDIR)$(PREFIX)/share/pixmaps
 	install -m644 media/retroarch.svg $(DESTDIR)$(PREFIX)/share/pixmaps
 
@@ -159,19 +158,16 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-joyconfig
 	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-cg2glsl
-	rm -f $(DESTDIR)$(PREFIX)/bin/retrolaunch
 	rm -f $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch.1
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch-cg2glsl.1
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retroarch-joyconfig.1
-	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/retrolaunch.1
 	rm -f $(DESTDIR)$(PREFIX)/share/pixmaps/retroarch.png
 	rm -f $(DESTDIR)$(PREFIX)/share/pixmaps/retroarch.svg
 
 clean:
 	rm -rf $(OBJDIR)
 	rm -f $(TARGET)
-	rm -f tools/retrolaunch/retrolaunch
 	rm -f $(JTARGET)
 
 .PHONY: all install uninstall clean
