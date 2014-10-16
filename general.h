@@ -18,7 +18,7 @@
 #define __RARCH_GENERAL_H
 
 #include "boolean.h"
-#include <stdio.h>
+#include <stdint.h>
 #include <limits.h>
 #include <setjmp.h>
 #include "driver.h"
