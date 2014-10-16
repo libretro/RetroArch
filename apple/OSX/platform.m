@@ -98,12 +98,6 @@ static void* const associated_core_key = (void*)&associated_core_key;
 
 @end
 
-CFArrayRef CFSearchPathForDirectoriesInDomains(unsigned flags,
-                                               unsigned domain_mask, BOOL expand_tilde)
-{
-   return CFBridgingRetain(NSSearchPathForDirectoriesInDomains(flags, domain_mask, expand_tilde));
-}
-
 static int waiting_argc;
 static char** waiting_argv;
 
