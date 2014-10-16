@@ -2732,6 +2732,9 @@ bool rarch_main_command(unsigned cmd)
                      driver.video_data, !grab_mouse_state);
          }
          break;
+      case RARCH_CMD_PERFCNT_REPORT_FRONTEND_LOG:
+         rarch_perf_log();
+         break;
    }
 
    return true;

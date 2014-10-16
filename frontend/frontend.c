@@ -18,7 +18,6 @@
 #include "../driver.h"
 #include "frontend.h"
 #include "../general.h"
-#include "../performance.h"
 
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
 #include "../config.def.h"
@@ -98,7 +97,7 @@ void main_exit(args_type() args)
       rarch_main_deinit();
    }
 
-   rarch_perf_log();
+   rarch_main_command(RARCH_CMD_PERFCNT_REPORT_FRONTEND_LOG);
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();
