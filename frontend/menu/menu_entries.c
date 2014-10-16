@@ -21,6 +21,9 @@
 
 void entries_refresh(file_list_t *list)
 {
+   if (!list || !driver.menu)
+      return;
+
    /* Before a refresh, we could have deleted a file on disk, causing
     * selection_ptr to suddendly be out of range.
     * Ensure it doesn't overflow. */
@@ -98,6 +101,9 @@ void menu_build_scroll_indices(file_list_t *list)
 
 void menu_entries_pop_list(file_list_t *list)
 {
+   if (!list)
+      return;
+
    if (file_list_get_size(list) > 1)
    {
       file_list_pop(list, &driver.menu->selection_ptr);
@@ -107,6 +113,9 @@ void menu_entries_pop_list(file_list_t *list)
 
 int setting_set_flags(rarch_setting_t *setting)
 {
+   if (!setting)
+      return 0;
+
    if (setting->flags & SD_FLAG_ALLOW_INPUT)
       return MENU_FILE_LINEFEED;
    if (
@@ -416,7 +425,7 @@ void menu_flush_stack_type(file_list_t *list,
    const char *label = NULL;
    unsigned type = 0;
 
-   if (!driver.menu)
+   if (!driver.menu || !list)
       return;
 
    driver.menu->need_refresh = true;
@@ -435,7 +444,7 @@ void menu_entries_pop_stack(file_list_t *list,
    const char *label = NULL;
    unsigned type = 0;
 
-   if (!driver.menu)
+   if (!driver.menu || !list)
       return;
 
    driver.menu->need_refresh = true;
@@ -454,7 +463,7 @@ void menu_flush_stack_label(file_list_t *list,
    const char *label = NULL;
    unsigned type = 0;
 
-   if (!driver.menu)
+   if (!driver.menu || !list)
       return;
 
    driver.menu->need_refresh = true;
