@@ -390,6 +390,9 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
 
    entries_refresh(list);
 
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, dir, label, type);
+
    return 0;
 }
 
