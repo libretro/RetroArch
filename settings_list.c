@@ -66,13 +66,13 @@ void settings_list_current_add_flags(
       rarch_setting_info_t *list_info,
       unsigned values)
 {
-
-   (*list)[list_info->index - 1].flags |= values;
+   unsigned index = list_info->index - 1;
+   (*list)[index].flags |= values;
 
    if (values & SD_FLAG_IS_DEFERRED)
    {
-      (*list)[list_info->index - 1].deferred_handler = (*list)[list_info->index - 1].change_handler;
-      (*list)[list_info->index - 1].change_handler = null_write_handler;
+      (*list)[index].deferred_handler = (*list)[index].change_handler;
+      (*list)[index].change_handler = null_write_handler;
    }
 }
 
@@ -82,11 +82,13 @@ void settings_list_current_add_range(
       float min, float max, float step,
       bool enforce_minrange_enable, bool enforce_maxrange_enable)
 {
-   (*list)[list_info->index - 1].min               = min;
-   (*list)[list_info->index - 1].step              = step;
-   (*list)[list_info->index - 1].max               = max;
-   (*list)[list_info->index - 1].enforce_minrange  = enforce_minrange_enable;
-   (*list)[list_info->index - 1].enforce_maxrange  = enforce_maxrange_enable;
+   unsigned index = list_info->index - 1;
+
+   (*list)[index].min               = min;
+   (*list)[index].step              = step;
+   (*list)[index].max               = max;
+   (*list)[index].enforce_minrange  = enforce_minrange_enable;
+   (*list)[index].enforce_maxrange  = enforce_maxrange_enable;
 
    settings_list_current_add_flags(list, list_info, SD_FLAG_HAS_RANGE);
 }
@@ -96,7 +98,8 @@ void settings_list_current_add_values(
       rarch_setting_info_t *list_info,
       const char *values)
 {
-   (*list)[list_info->index -1].values = values;
+   unsigned index = list_info->index - 1;
+   (*list)[index].values = values;
 }
 
 void settings_list_current_add_cmd(
@@ -104,7 +107,8 @@ void settings_list_current_add_cmd(
       rarch_setting_info_t *list_info,
       unsigned values)
 {
-   (*list)[list_info->index -1].cmd_trigger.idx = values;
+   unsigned index = list_info->index - 1;
+   (*list)[index].cmd_trigger.idx = values;
 }
 
 void settings_list_free(rarch_setting_t *list)
