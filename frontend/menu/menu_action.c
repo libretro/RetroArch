@@ -23,8 +23,22 @@
 int menu_action_setting_boolean(
       rarch_setting_t *setting, unsigned action)
 {
-   if (setting->action_ok)
-      setting->action_ok(setting, action);
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         if (setting->action_toggle)
+            setting->action_toggle(setting, action);
+         break;
+      case MENU_ACTION_OK:
+         if (setting->action_ok)
+            setting->action_ok(setting, action);
+         break;
+      case MENU_ACTION_START:
+         if (setting->action_start)
+            setting->action_start(setting);
+         break;
+   }
 
    if (setting->change_handler)
       setting->change_handler(setting);
@@ -42,8 +56,22 @@ int menu_action_setting_boolean(
 int menu_action_setting_unsigned_integer(
       rarch_setting_t *setting, unsigned action)
 {
-   if (setting->action_ok)
-      setting->action_ok(setting, action);
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         if (setting->action_toggle)
+            setting->action_toggle(setting, action);
+         break;
+      case MENU_ACTION_OK:
+         if (setting->action_ok)
+            setting->action_ok(setting, action);
+         break;
+      case MENU_ACTION_START:
+         if (setting->action_start)
+            setting->action_start(setting);
+         break;
+   }
 
    if (setting->change_handler)
       setting->change_handler(setting);
@@ -61,8 +89,22 @@ int menu_action_setting_unsigned_integer(
 int menu_action_setting_fraction(
       rarch_setting_t *setting, unsigned action)
 {
-   if (setting->action_ok)
-      setting->action_ok(setting, action);
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         if (setting->action_toggle)
+            setting->action_toggle(setting, action);
+         break;
+      case MENU_ACTION_OK:
+         if (setting->action_ok)
+            setting->action_ok(setting, action);
+         break;
+      case MENU_ACTION_START:
+         if (setting->action_start)
+            setting->action_start(setting);
+         break;
+   }
 
    if (setting->change_handler)
       setting->change_handler(setting);
@@ -173,27 +215,46 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 
    if (setting->type == ST_DIR)
    {
-      if (action == MENU_ACTION_START)
+      switch (action)
       {
-         *setting->value.string = '\0';
+         case MENU_ACTION_START:
+            *setting->value.string = '\0';
 
-         if (setting->change_handler)
-            setting->change_handler(setting);
+            if (setting->change_handler)
+               setting->change_handler(setting);
 
-         if (setting->flags & SD_FLAG_EXIT
-               && setting->cmd_trigger.triggered)
-         {
-            setting->cmd_trigger.triggered = false;
-            return -1;
-         }
+            if (setting->flags & SD_FLAG_EXIT
+                  && setting->cmd_trigger.triggered)
+            {
+               setting->cmd_trigger.triggered = false;
+               return -1;
+            }
+            break;
       }
+
       return 0;
    }
 
    if (setting->type == ST_STRING)
    {
-      if (setting->action_toggle)
-         return setting->action_toggle(setting, action);
+      switch (action)
+      {
+         case MENU_ACTION_LEFT:
+         case MENU_ACTION_RIGHT:
+            if (setting->action_toggle)
+               return setting->action_toggle(setting, action);
+            break;
+         case MENU_ACTION_START:
+            if (setting->action_start)
+               return setting->action_start(setting);
+            break;
+         case MENU_ACTION_OK:
+            if (setting->action_ok)
+               return setting->action_ok(setting, action);
+            break;
+      }
+
+      return 0;
    }
 
    return 0;

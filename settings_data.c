@@ -674,7 +674,19 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
    }
 }
 
-static int setting_data_bool_action_ok_savestates(void *data, unsigned action)
+static int setting_data_bool_action_start_savestates(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   g_settings.state_slot = 0;
+
+   return 0;
+}
+
+static int setting_data_bool_action_toggle_savestates(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -683,9 +695,6 @@ static int setting_data_bool_action_ok_savestates(void *data, unsigned action)
 
    switch (action)
    {
-      case MENU_ACTION_START:
-         g_settings.state_slot = 0;
-         break;
       case MENU_ACTION_LEFT:
          // Slot -1 is (auto) slot.
          if (g_settings.state_slot >= 0)
@@ -694,11 +703,50 @@ static int setting_data_bool_action_ok_savestates(void *data, unsigned action)
       case MENU_ACTION_RIGHT:
          g_settings.state_slot++;
          break;
-      case MENU_ACTION_OK:
-         *setting->value.boolean = !(*setting->value.boolean);
+   }
 
-         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-            setting->cmd_trigger.triggered = true;
+   return 0;
+}
+
+static int setting_data_bool_action_ok_savestates(void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.boolean = !(*setting->value.boolean);
+
+   if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+      setting->cmd_trigger.triggered = true;
+
+   return 0;
+}
+
+static int setting_data_bool_action_start_default(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.boolean = setting->default_value.boolean;
+
+   return 0;
+}
+
+static int setting_data_bool_action_toggle_default(void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         *setting->value.boolean = !(*setting->value.boolean);
          break;
    }
 
@@ -712,25 +760,25 @@ static int setting_data_bool_action_ok_default(void *data, unsigned action)
    if (!setting)
       return -1;
 
-   switch (action)
-   {
-      case MENU_ACTION_OK:
-         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-            setting->cmd_trigger.triggered = true;
-         /* fall-through */
-      case MENU_ACTION_LEFT:
-      case MENU_ACTION_RIGHT:
-         *setting->value.boolean = !(*setting->value.boolean);
-         break;
-      case MENU_ACTION_START:
-         *setting->value.boolean = setting->default_value.boolean;
-         break;
-   }
+   if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+      setting->cmd_trigger.triggered = true;
 
    return 0;
 }
 
-static int setting_data_uint_action_ok_default(void *data, unsigned action)
+static int setting_data_uint_action_start_default(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
+
+   return 0;
+}
+
+static int setting_data_uint_action_toggle_default(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -751,10 +799,6 @@ static int setting_data_uint_action_ok_default(void *data, unsigned action)
          }
          break;
 
-      case MENU_ACTION_OK:
-         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-            setting->cmd_trigger.triggered = true;
-         /* fall-through */
       case MENU_ACTION_RIGHT:
          *setting->value.unsigned_integer =
             *setting->value.unsigned_integer + setting->step;
@@ -765,12 +809,33 @@ static int setting_data_uint_action_ok_default(void *data, unsigned action)
                *setting->value.unsigned_integer = setting->max;
          }
          break;
-
-      case MENU_ACTION_START:
-         *setting->value.unsigned_integer =
-            setting->default_value.unsigned_integer;
-         break;
    }
+
+   return 0;
+}
+
+static int setting_data_uint_action_ok_default(void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+      setting->cmd_trigger.triggered = true;
+
+   return 0;
+}
+
+static int setting_data_fraction_action_start_video_refresh_rate_auto(
+      void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   g_extern.measure_data.frame_time_samples_count = 0;
 
    return 0;
 }
@@ -778,39 +843,28 @@ static int setting_data_uint_action_ok_default(void *data, unsigned action)
 static int setting_data_fraction_action_ok_video_refresh_rate_auto(
       void *data, unsigned action)
 {
+   double video_refresh_rate, deviation = 0.0;
+   unsigned sample_points = 0;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;
 
-   switch (action)
+   if (driver_monitor_fps_statistics(&video_refresh_rate,
+            &deviation, &sample_points))
    {
-      case MENU_ACTION_START:
-         g_extern.measure_data.frame_time_samples_count = 0;
-         break;
-      case MENU_ACTION_OK:
-         {
-            double video_refresh_rate, deviation = 0.0;
-            unsigned sample_points = 0;
-
-            if (driver_monitor_fps_statistics(&video_refresh_rate,
-                     &deviation, &sample_points))
-            {
-               driver_set_monitor_refresh_rate(video_refresh_rate);
-               /* Incase refresh rate update forced non-block video. */
-               rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
-            }
-
-            if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-               setting->cmd_trigger.triggered = true;
-         }
-         break;
+      driver_set_monitor_refresh_rate(video_refresh_rate);
+      /* Incase refresh rate update forced non-block video. */
+      rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
    }
+
+   if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+      setting->cmd_trigger.triggered = true;
 
    return 0;
 }
 
-static int setting_data_fraction_action_ok_default(
+static int setting_data_fraction_action_toggle_default(
       void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -831,10 +885,6 @@ static int setting_data_fraction_action_ok_default(
          }
          break;
 
-      case MENU_ACTION_OK:
-         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-            setting->cmd_trigger.triggered = true;
-         /* fall-through */
       case MENU_ACTION_RIGHT:
          *setting->value.fraction = 
             *setting->value.fraction + setting->step;
@@ -845,11 +895,46 @@ static int setting_data_fraction_action_ok_default(
                *setting->value.fraction = setting->max;
          }
          break;
-
-      case MENU_ACTION_START:
-         *setting->value.fraction = setting->default_value.fraction;
-         break;
    }
+
+   return 0;
+}
+
+static int setting_data_fraction_action_start_default(
+      void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.fraction = setting->default_value.fraction;
+
+   return 0;
+}
+
+static int setting_data_fraction_action_ok_default(
+      void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+      setting->cmd_trigger.triggered = true;
+
+   return 0;
+}
+
+static int setting_data_uint_action_start_linefeed(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
 
    return 0;
 }
@@ -861,17 +946,8 @@ static int setting_data_uint_action_ok_linefeed(void *data, unsigned action)
    if (!setting)
       return -1;
 
-   switch (action)
-   {
-      case MENU_ACTION_OK:
-         menu_key_start_line(driver.menu, setting->short_description,
-               setting->name, st_uint_callback);
-         break;
-      case MENU_ACTION_START:
-         *setting->value.unsigned_integer = 
-            setting->default_value.unsigned_integer;
-         break;
-   }
+   menu_key_start_line(driver.menu, setting->short_description,
+         setting->name, st_uint_callback);
 
    return 0;
 }
@@ -909,7 +985,9 @@ rarch_setting_t setting_data_float_setting(const char* name,
    result.original_value.fraction = *target;
    result.default_value.fraction = default_value;
    
-   result.action_ok = setting_data_fraction_action_ok_default;
+   result.action_start     = setting_data_fraction_action_start_default;
+   result.action_toggle    = setting_data_fraction_action_toggle_default;
+   result.action_ok        = setting_data_fraction_action_ok_default;
    return result;
 }
 
@@ -929,7 +1007,9 @@ rarch_setting_t setting_data_bool_setting(const char* name,
    result.boolean.off_label = off;
    result.boolean.on_label = on;
 
-   result.action_ok = setting_data_bool_action_ok_default;
+   result.action_start = setting_data_bool_action_start_default;
+   result.action_toggle= setting_data_bool_action_toggle_default;
+   result.action_ok    = setting_data_bool_action_ok_default;
    return result;
 }
 
@@ -963,7 +1043,9 @@ rarch_setting_t setting_data_uint_setting(const char* name,
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer = default_value;
 
-   result.action_ok = setting_data_uint_action_ok_default;
+   result.action_start  = setting_data_uint_action_start_default;
+   result.action_toggle = setting_data_uint_action_toggle_default;
+   result.action_ok     = setting_data_uint_action_ok_default;
 
    return result;
 }
@@ -2400,7 +2482,19 @@ static int setting_data_string_action_toggle_driver(void *data,
    return 0;
 }
 
-static int setting_data_string_action_toggle_allow_input(void *data,
+static int setting_data_string_action_start_allow_input(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting || !driver.menu)
+      return -1;
+
+   *setting->value.string = '\0';
+
+   return 0;
+}
+
+static int setting_data_string_action_ok_allow_input(void *data,
       unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -2408,16 +2502,8 @@ static int setting_data_string_action_toggle_allow_input(void *data,
    if (!setting || !driver.menu)
       return -1;
 
-   switch (action)
-   {
-      case MENU_ACTION_OK:
-         menu_key_start_line(driver.menu, setting->short_description,
-               setting->name, st_string_callback);
-         break;
-      case MENU_ACTION_START:
-         *setting->value.string = '\0';
-         break;
-   }
+   menu_key_start_line(driver.menu, setting->short_description,
+         setting->name, st_string_callback);
 
    return 0;
 }
@@ -2448,15 +2534,26 @@ static void setting_data_add_special_callbacks(
       rarch_setting_info_t *list_info,
       unsigned values)
 {
-   /* Action OK. */
-   if (values & SD_FLAG_ALLOW_INPUT)
-      (*list)[list_info->index - 1].action_ok = setting_data_uint_action_ok_linefeed;
+   unsigned index = list_info->index - 1;
 
-   /* Action Toggle. */
    if (values & SD_FLAG_ALLOW_INPUT)
-      (*list)[list_info->index - 1].action_toggle = setting_data_string_action_toggle_allow_input;
+   {
+      switch ((*list)[index].type)
+      {
+         case ST_UINT:
+            (*list)[index].action_start  = setting_data_uint_action_start_linefeed;
+            (*list)[index].action_ok     = setting_data_uint_action_ok_linefeed;
+            break;
+         case ST_STRING:
+            (*list)[index].action_start  = setting_data_string_action_start_allow_input;
+            (*list)[index].action_ok     = setting_data_string_action_ok_allow_input;
+            break;
+         default:
+            break;
+      }
+   }
    else if (values & SD_FLAG_IS_DRIVER)
-      (*list)[list_info->index - 1].action_toggle = setting_data_string_action_toggle_driver;
+      (*list)[index].action_toggle = setting_data_string_action_toggle_driver;
 }
 
 static void settings_data_list_current_add_flags(
@@ -2627,6 +2724,8 @@ static bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
+      (*list)[list_info->index - 1].action_toggle = &setting_data_bool_action_toggle_savestates;
+      (*list)[list_info->index - 1].action_start = &setting_data_bool_action_start_savestates;
       (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_savestates;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_SAVE_STATE);
       settings_data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
@@ -2642,6 +2741,8 @@ static bool setting_data_append_list_main_menu_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
+      (*list)[list_info->index - 1].action_toggle = &setting_data_bool_action_toggle_savestates;
+      (*list)[list_info->index - 1].action_start = &setting_data_bool_action_start_savestates;
       (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_savestates;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_LOAD_STATE);
       settings_data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
@@ -3311,6 +3412,8 @@ static bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   (*list)[list_info->index - 1].action_start = 
+      &setting_data_fraction_action_start_video_refresh_rate_auto;
    (*list)[list_info->index - 1].action_ok = 
       &setting_data_fraction_action_ok_video_refresh_rate_auto;
 
