@@ -266,6 +266,7 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
 #endif
 
    bool path_is_compressed = path_is_compressed_file(dir);
+   bool push_dir = menu_common_type_is(label, type) == MENU_FILE_DIRECTORY;
 
    if (path_is_compressed)
       str_list = compressed_file_list_new(dir,exts);
@@ -277,7 +278,7 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
 
    dir_list_sort(str_list, true);
 
-   if (menu_common_type_is(label, type) == MENU_FILE_DIRECTORY)
+   if (push_dir)
       file_list_push(list, "<Use this directory>", "",
             MENU_FILE_USE_DIRECTORY, 0);
 
@@ -314,7 +315,7 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
       }
       bool is_dir = (file_type == MENU_FILE_DIRECTORY);
 
-      if ((menu_common_type_is(label, type) == MENU_FILE_DIRECTORY) && !is_dir)
+      if (push_dir && !is_dir)
          continue;
 
 
