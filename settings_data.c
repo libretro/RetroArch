@@ -1152,7 +1152,7 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
    driver.menu->binds.begin  = setting->bind_type;
    driver.menu->binds.last   = setting->bind_type;
    driver.menu->binds.target = bind;
-   driver.menu->binds.player = setting->index;
+   driver.menu->binds.player = setting->index_offset;
    file_list_push(driver.menu->menu_stack, "", "",
          driver.menu->bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
@@ -4378,6 +4378,7 @@ static bool setting_data_append_list_input_options(
       CONFIG_BIND(g_settings.input.binds[0][i], 0, 0,
             bind->base, bind->desc, &retro_keybinds_1[i],
             group_info.name, subgroup_info.name);
+      settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
    }
    END_SUB_GROUP(list, list_info);
 
