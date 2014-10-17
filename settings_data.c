@@ -1093,6 +1093,44 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
    return result;
 }
 
+static int setting_data_bind_action_ok(void *data, unsigned action)
+{
+   struct retro_keybind *bind = NULL;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   if (!driver.menu)
+      return -1;
+   
+   bind = (struct retro_keybind*)&setting->value.keybind;
+
+   driver.menu->binds.begin  = setting->bind_type;
+   driver.menu->binds.last   = setting->bind_type;
+   driver.menu->binds.target = bind;
+   driver.menu->binds.player = setting->index;
+   file_list_push(driver.menu->menu_stack, "", "",
+         driver.menu->bind_mode_keyboard ?
+         MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
+         driver.menu->selection_ptr);
+
+   if (driver.menu->bind_mode_keyboard)
+   {
+      driver.menu->binds.timeout_end = rarch_get_time_usec() +
+         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+      input_keyboard_wait_keys(driver.menu,
+            menu_custom_bind_keyboard_cb);
+   }
+   else
+   {
+      menu_poll_bind_get_rested_axes(&driver.menu->binds);
+      menu_poll_bind_state(&driver.menu->binds);
+   }
+
+   return 0;
+}
+
 rarch_setting_t setting_data_bind_setting(const char* name,
       const char* short_description, struct retro_keybind* target,
       uint32_t index, const struct retro_keybind* default_value,
@@ -1104,6 +1142,8 @@ rarch_setting_t setting_data_bind_setting(const char* name,
    result.value.keybind = target;
    result.default_value.keybind = default_value;
    result.index = index;
+
+   result.action_ok = setting_data_bind_action_ok;
 
    return result;
 }
@@ -4292,6 +4332,7 @@ static bool setting_data_append_list_input_options(
       CONFIG_BIND(g_settings.input.binds[0][i], 0,
             bind->base, bind->desc, &retro_keybinds_1[i],
             group_info.name, subgroup_info.name);
+      settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
    }
    END_SUB_GROUP(list, list_info);
 

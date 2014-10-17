@@ -61,6 +61,15 @@ static void null_write_handler(void *data)
    (void)data;
 }
 
+void settings_list_current_add_bind_type(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned type)
+{
+   unsigned index = list_info->index - 1;
+   (*list)[index].bind_type = type;
+}
+
 void settings_list_current_add_flags(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
