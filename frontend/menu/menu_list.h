@@ -25,6 +25,12 @@ extern "C" {
 
 void menu_list_free(file_list_t *list);
 
+void menu_list_flush_stack(file_list_t *list,
+      unsigned final_type);
+
+void menu_list_flush_stack_by_needle(file_list_t *list,
+      const char *needle);
+
 void menu_list_pop(file_list_t *list, size_t *directory_ptr);
 
 void menu_list_pop_stack(file_list_t *list);

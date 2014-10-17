@@ -38,6 +38,44 @@ end:
    file_list_free(list);
 }
 
+void menu_list_flush_stack(file_list_t *list,
+      unsigned final_type)
+{
+   const char *path = NULL;
+   const char *label = NULL;
+   unsigned type = 0;
+
+   if (!driver.menu || !list)
+      return;
+
+   driver.menu->need_refresh = true;
+   file_list_get_last(list, &path, &label, &type);
+   while (type != final_type)
+   {
+      menu_list_pop(list, &driver.menu->selection_ptr);
+      file_list_get_last(list, &path, &label, &type);
+   }
+}
+
+void menu_list_flush_stack_by_needle(file_list_t *list,
+      const char *needle)
+{
+   const char *path = NULL;
+   const char *label = NULL;
+   unsigned type = 0;
+
+   if (!driver.menu || !list)
+      return;
+
+   driver.menu->need_refresh = true;
+   file_list_get_last(list, &path, &label, &type);
+   while (strcmp(needle, label) != 0)
+   {
+      menu_list_pop(list, &driver.menu->selection_ptr);
+      file_list_get_last(list, &path, &label, &type);
+   }
+}
+
 void menu_list_pop_stack(file_list_t *list)
 {
    if (!list)

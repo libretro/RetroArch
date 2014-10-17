@@ -455,7 +455,7 @@ static int menu_viewport_iterate(unsigned action)
 static void menu_common_load_content(void)
 {
    rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-   menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+   menu_list_flush_stack(driver.menu->menu_stack, MENU_SETTINGS);
    driver.menu->msg_force = true;
 }
 

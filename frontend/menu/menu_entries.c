@@ -407,44 +407,6 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
    return 0;
 }
 
-void menu_flush_stack_type(file_list_t *list,
-      unsigned final_type)
-{
-   const char *path = NULL;
-   const char *label = NULL;
-   unsigned type = 0;
-
-   if (!driver.menu || !list)
-      return;
-
-   driver.menu->need_refresh = true;
-   file_list_get_last(list, &path, &label, &type);
-   while (type != final_type)
-   {
-      menu_list_pop(list, &driver.menu->selection_ptr);
-      file_list_get_last(list, &path, &label, &type);
-   }
-}
-
-void menu_flush_stack_label(file_list_t *list,
-      const char *needle)
-{
-   const char *path = NULL;
-   const char *label = NULL;
-   unsigned type = 0;
-
-   if (!driver.menu || !list)
-      return;
-
-   driver.menu->need_refresh = true;
-   file_list_get_last(list, &path, &label, &type);
-   while (strcmp(needle, label) != 0)
-   {
-      menu_list_pop(list, &driver.menu->selection_ptr);
-      file_list_get_last(list, &path, &label, &type);
-   }
-}
-
 bool menu_entries_init(menu_handle_t *menu)
 {
    if (!menu)
