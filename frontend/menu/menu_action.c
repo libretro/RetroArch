@@ -108,7 +108,7 @@ static int menu_entries_set_current_path_selection(
    {
       case MENU_ACTION_OK:
          menu_list_push_stack_refresh(
-               driver.menu->menu_stack,
+               driver.menu->menu_list->menu_stack,
                start_path,
                label,
                type,
@@ -164,7 +164,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 int menu_action_setting_set(unsigned type, const char *label,
       unsigned action)
 {
-   const file_list_t *list = (const file_list_t*)driver.menu->selection_buf;
+   const file_list_t *list = (const file_list_t*)driver.menu->menu_list->selection_buf;
 
    /* Check if setting belongs to settings menu. */
 

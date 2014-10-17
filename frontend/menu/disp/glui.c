@@ -254,7 +254,7 @@ static void glui_frame(void)
 
    glui_render_background(false);
 
-   menu_list_get_last_stack(driver.menu->menu_stack, &dir, &label, &menu_type);
+   menu_list_get_last_stack(driver.menu->menu_list->menu_stack, &dir, &label, &menu_type);
 
    get_title(label, dir, menu_type, title, sizeof(title));
 
@@ -295,11 +295,11 @@ static void glui_frame(void)
       unsigned type = 0, w = 0;
       bool selected = false;
 
-      menu_list_get_at_offset(driver.menu->selection_buf, i, &path,
+      menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
             &entry_label, &type);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
             driver.menu->list_settings,
-            driver.menu->selection_buf->list[i].label);
+            driver.menu->menu_list->selection_buf->list[i].label);
       (void)setting;
 
       disp_set_label(&w, type, i, label,

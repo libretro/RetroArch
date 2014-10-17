@@ -42,7 +42,7 @@ static int menu_message_toggle(unsigned action)
       driver.menu_ctx->render_messagebox(driver.menu->message_contents);
 
    if (action == MENU_ACTION_OK)
-      menu_list_pop_stack(driver.menu->menu_stack);
+      menu_list_pop_stack(driver.menu->menu_list->menu_stack);
 
    return 0;
 }
@@ -53,7 +53,7 @@ static int menu_info_screen_iterate(unsigned action)
    char needle[PATH_MAX];
    unsigned info_type = 0;
    rarch_setting_t *current_setting = NULL;
-   file_list_t *list = (file_list_t*)driver.menu->selection_buf;
+   file_list_t *list = (file_list_t*)driver.menu->menu_list->selection_buf;
 
    if (!driver.menu)
       return 0;
@@ -77,7 +77,7 @@ static int menu_info_screen_iterate(unsigned action)
    else
    {
       const char *label = NULL;
-      menu_list_get_at_offset(driver.menu->selection_buf,
+      menu_list_get_at_offset(driver.menu->menu_list->selection_buf,
             driver.menu->selection_ptr, NULL, &label,
             &info_type);
 
@@ -95,7 +95,7 @@ static int menu_info_screen_iterate(unsigned action)
    }
 
    if (action == MENU_ACTION_OK)
-      menu_list_pop_stack(driver.menu->menu_stack);
+      menu_list_pop_stack(driver.menu->menu_list->menu_stack);
 
    return 0;
 }
@@ -109,7 +109,7 @@ static int menu_action_ok(menu_file_list_cbs_t *cbs)
    if (menu_list_get_size() == 0)
       return 0;
 
-   menu_list_get_at_offset(driver.menu->selection_buf,
+   menu_list_get_at_offset(driver.menu->menu_list->selection_buf,
          driver.menu->selection_ptr, &path, &label, &type);
 
    if (cbs && cbs->action_ok)
@@ -181,7 +181,7 @@ static int menu_start_screen_iterate(unsigned action)
       driver.menu_ctx->render_messagebox(msg);
 
    if (action == MENU_ACTION_OK)
-      menu_list_pop_stack(driver.menu->menu_stack);
+      menu_list_pop_stack(driver.menu->menu_list->menu_stack);
 
    return 0;
 }
@@ -195,7 +195,7 @@ static int menu_settings_iterate(unsigned action,
    
    driver.menu->frame_buf_pitch = driver.menu->width * 2;
 
-   menu_list_get_at_offset(driver.menu->selection_buf,
+   menu_list_get_at_offset(driver.menu->menu_list->selection_buf,
          driver.menu->selection_ptr, &path, &label, &type);
 
    if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
@@ -220,10 +220,10 @@ static int menu_settings_iterate(unsigned action,
 
       case MENU_ACTION_CANCEL:
          apply_deferred_settings();
-         menu_list_pop_stack(driver.menu->menu_stack);
+         menu_list_pop_stack(driver.menu->menu_list->menu_stack);
          break;
       case MENU_ACTION_SELECT:
-         menu_list_push_stack(driver.menu->menu_stack, "", "info_screen",
+         menu_list_push_stack(driver.menu->menu_list->menu_stack, "", "info_screen",
                0, driver.menu->selection_ptr);
          break;
       case MENU_ACTION_OK:
@@ -248,8 +248,8 @@ static int menu_settings_iterate(unsigned action,
          break;
 
       case MENU_ACTION_REFRESH:
-         menu_entries_deferred_push(driver.menu->selection_buf,
-               driver.menu->menu_stack);
+         menu_entries_deferred_push(driver.menu->menu_list->selection_buf,
+               driver.menu->menu_list->menu_stack);
 
          driver.menu->need_refresh = false;
          break;
@@ -268,7 +268,7 @@ static int menu_settings_iterate(unsigned action,
    /* Have to defer it so we let settings refresh. */
    if (driver.menu->push_start_screen)
    {
-      menu_list_push_stack(driver.menu->menu_stack, "", "help", 0, 0);
+      menu_list_push_stack(driver.menu->menu_list->menu_stack, "", "help", 0, 0);
       driver.menu->push_start_screen = false;
    }
 
@@ -286,7 +286,7 @@ static int menu_viewport_iterate(unsigned action)
    rarch_viewport_t *custom = (rarch_viewport_t*)
       &g_extern.console.screen.viewports.custom_vp;
 
-   menu_list_get_last_stack(driver.menu->menu_stack, NULL, &label, &type);
+   menu_list_get_last_stack(driver.menu->menu_list->menu_stack, NULL, &label, &type);
 
    geom = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
 
@@ -349,21 +349,21 @@ static int menu_viewport_iterate(unsigned action)
          break;
 
       case MENU_ACTION_CANCEL:
-         menu_list_pop_stack(driver.menu->menu_stack);
+         menu_list_pop_stack(driver.menu->menu_list->menu_stack);
          if (!strcmp(label, "custom_viewport_2"))
          {
-            menu_list_push_stack(driver.menu->menu_stack, "", "",
+            menu_list_push_stack(driver.menu->menu_list->menu_stack, "", "",
                   MENU_SETTINGS_CUSTOM_VIEWPORT,
                   driver.menu->selection_ptr);
          }
          break;
 
       case MENU_ACTION_OK:
-         menu_list_pop_stack(driver.menu->menu_stack);
+         menu_list_pop_stack(driver.menu->menu_list->menu_stack);
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT
                && !g_settings.video.scale_integer)
          {
-            menu_list_push_stack(driver.menu->menu_stack, "",
+            menu_list_push_stack(driver.menu->menu_list->menu_stack, "",
                   "custom_viewport_2", 0, driver.menu->selection_ptr);
          }
          break;
@@ -402,7 +402,7 @@ static int menu_viewport_iterate(unsigned action)
          break;
    }
 
-   menu_list_get_last_stack(driver.menu->menu_stack, NULL, &label, &type);
+   menu_list_get_last_stack(driver.menu->menu_list->menu_stack, NULL, &label, &type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
@@ -454,7 +454,7 @@ static int menu_viewport_iterate(unsigned action)
 static void menu_common_load_content(void)
 {
    rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-   menu_list_flush_stack(driver.menu->menu_stack, MENU_SETTINGS);
+   menu_list_flush_stack(driver.menu->menu_list->menu_stack, MENU_SETTINGS);
    driver.menu->msg_force = true;
 }
 
@@ -483,15 +483,15 @@ static int menu_load_or_open_zip_iterate(unsigned action)
    {
       case MENU_ACTION_OK:
       case MENU_ACTION_CANCEL:
-         menu_list_pop_stack(driver.menu->menu_stack);
+         menu_list_pop_stack(driver.menu->menu_list->menu_stack);
 
-         menu_list_get_last_stack(driver.menu->menu_stack,
+         menu_list_get_last_stack(driver.menu->menu_list->menu_stack,
                &menu_path, &menu_label, NULL);
 
          if (menu_list_get_size() == 0)
             return 0;
 
-         menu_list_get_at_offset(driver.menu->selection_buf,
+         menu_list_get_at_offset(driver.menu->menu_list->selection_buf,
                driver.menu->selection_ptr, &path, NULL, &type);
          break;
    }
@@ -504,7 +504,7 @@ static int menu_load_or_open_zip_iterate(unsigned action)
 
             fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
             menu_list_push_stack_refresh(
-                  driver.menu->menu_stack,
+                  driver.menu->menu_list->menu_stack,
                   cat_path,
                   menu_label,
                   type,
@@ -524,7 +524,7 @@ static int menu_load_or_open_zip_iterate(unsigned action)
             }
             else if (ret == 0)
                menu_list_push_stack_refresh(
-                     driver.menu->menu_stack,
+                     driver.menu->menu_list->menu_stack,
                      g_settings.libretro_directory,
                      "deferred_core_list",
                      0,
@@ -544,10 +544,10 @@ static int menu_common_iterate(unsigned action)
    const char *label = NULL;
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(driver.menu->selection_buf,
+      menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
             driver.menu->selection_ptr);
 
-   menu_list_get_last_stack(driver.menu->menu_stack, NULL, &label, &type);
+   menu_list_get_last_stack(driver.menu->menu_list->menu_stack, NULL, &label, &type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
@@ -570,13 +570,13 @@ static int menu_common_iterate(unsigned action)
    else if (type == MENU_SETTINGS_CUSTOM_BIND)
    {
       if (menu_input_bind_iterate(driver.menu))
-         menu_list_pop_stack(driver.menu->menu_stack);
+         menu_list_pop_stack(driver.menu->menu_list->menu_stack);
       return 0;
    }
    else if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
    {
       if (menu_input_bind_iterate_keyboard(driver.menu))
-         menu_list_pop_stack(driver.menu->menu_stack);
+         menu_list_pop_stack(driver.menu->menu_list->menu_stack);
       return 0;
    }
 
@@ -629,7 +629,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_CANCEL:
-         menu_list_pop_stack(driver.menu->menu_stack);
+         menu_list_pop_stack(driver.menu->menu_list->menu_stack);
          break;
 
       case MENU_ACTION_OK:
@@ -637,13 +637,13 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_SELECT:
-         menu_list_push_stack(driver.menu->menu_stack, "", "info_screen",
+         menu_list_push_stack(driver.menu->menu_list->menu_stack, "", "info_screen",
                0, driver.menu->selection_ptr);
          break;
 
       case MENU_ACTION_REFRESH:
-         menu_entries_deferred_push(driver.menu->selection_buf,
-               driver.menu->menu_stack);
+         menu_entries_deferred_push(driver.menu->menu_list->selection_buf,
+               driver.menu->menu_list->menu_stack);
 
          driver.menu->need_refresh = false;
          break;

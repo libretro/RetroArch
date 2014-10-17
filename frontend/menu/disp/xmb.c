@@ -363,7 +363,7 @@ static void xmb_selection_pointer_changed(void)
       float ia = xmb->i_passive_alpha;
       float iz = xmb->i_passive_zoom;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(
-            driver.menu->selection_buf, i);
+            driver.menu->menu_list->selection_buf, i);
 
       if (!node)
          continue;
@@ -428,7 +428,7 @@ static void xmb_frame(void)
 
    xmb_render_background(false);
 
-   menu_list_get_last_stack(driver.menu->menu_stack, &dir, &label, &menu_type);
+   menu_list_get_last_stack(driver.menu->menu_list->menu_stack, &dir, &label, &menu_type);
 
    get_title(label, dir, menu_type, xmb->title, sizeof(xmb->title));
 
@@ -463,10 +463,10 @@ static void xmb_frame(void)
       unsigned type = 0, w = 0;
       xmb_node_t *node = NULL;
 
-      menu_list_get_at_offset(driver.menu->selection_buf, i, &path,
+      menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
             &entry_label, &type);
       node = (xmb_node_t*)file_list_get_userdata_at_offset(
-            driver.menu->selection_buf, i);
+            driver.menu->menu_list->selection_buf, i);
       
       disp_set_label(&w, type, i, label,
             val_buf, sizeof(val_buf),

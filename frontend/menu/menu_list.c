@@ -71,7 +71,7 @@ size_t menu_list_get_stack_size(void)
 {
    if (!driver.menu)
       return 0;
-   return file_list_get_size(driver.menu->menu_stack);
+   return file_list_get_size(driver.menu->menu_list->menu_stack);
 }
 
 void menu_list_get_at_offset(const file_list_t *list, size_t index,
@@ -84,7 +84,7 @@ size_t menu_list_get_size(void)
 {
    if (!driver.menu)
       return 0;
-   return file_list_get_size(driver.menu->selection_buf);
+   return file_list_get_size(driver.menu->menu_list->selection_buf);
 }
 
 void menu_list_get_last(const file_list_t *list,

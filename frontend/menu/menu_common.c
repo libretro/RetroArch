@@ -156,8 +156,9 @@ void *menu_init(const void *data)
    strlcpy(g_settings.menu.driver, menu_ctx->ident,
          sizeof(g_settings.menu.driver));
 
-   menu->menu_stack = (file_list_t*)calloc(1, sizeof(file_list_t));
-   menu->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
+   if (!(menu->menu_list = (menu_list_t*)menu_list_new()))
+      return NULL;
+
    g_extern.core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
 #ifdef HAVE_SHADER_MANAGER
    menu->shader = (struct gfx_shader*)calloc(1, sizeof(struct gfx_shader));
@@ -223,9 +224,8 @@ void menu_free(void *data)
    libretro_free_system_info(&g_extern.menu.info);
 #endif
 
-   //menu_list_free(menu->menu_list);
-   menu_list_destroy(menu->menu_stack);
-   menu_list_destroy(menu->selection_buf);
+   menu_list_free(menu->menu_list);
+   menu->menu_list = NULL;
 
    rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
 

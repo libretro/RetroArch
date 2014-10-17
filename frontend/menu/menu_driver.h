@@ -20,7 +20,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "../../boolean.h"
-#include "../../file_list.h"
+#include "menu_list.h"
 #include "../../settings_list.h"
 
 #ifdef __cplusplus
@@ -79,8 +79,7 @@ typedef struct
    uint16_t *frame_buf;
    size_t frame_buf_pitch;
 
-   file_list_t *menu_stack;
-   file_list_t *selection_buf;
+   menu_list_t *menu_list;
    size_t selection_ptr;
    bool need_refresh;
    bool msg_force;

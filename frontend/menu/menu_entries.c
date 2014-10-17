@@ -405,9 +405,9 @@ bool menu_entries_init(menu_handle_t *menu)
    menu->list_mainmenu = setting_data_new(SL_FLAG_MAIN_MENU);
    menu->list_settings = setting_data_new(SL_FLAG_ALL_SETTINGS);
 
-   menu_list_push_stack(menu->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
+   menu_list_push_stack(menu->menu_list->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
    menu_navigation_clear(menu, true);
-   entries_push_main_menu_list(menu, menu->selection_buf,
+   entries_push_main_menu_list(menu, menu->menu_list->selection_buf,
          "", "Main Menu", 0);
 
    return true;

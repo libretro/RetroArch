@@ -1142,7 +1142,7 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
    if (!setting)
       return -1;
 
-   if (!driver.menu)
+   if (!driver.menu || !driver.menu->menu_list)
       return -1;
    
    bind = (struct retro_keybind*)setting->value.keybind;
@@ -1154,7 +1154,10 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
    driver.menu->binds.last   = setting->bind_type;
    driver.menu->binds.target = bind;
    driver.menu->binds.player = setting->index_offset;
-   file_list_push(driver.menu->menu_stack, "", "",
+   menu_list_push(
+         driver.menu->menu_list->menu_stack,
+         "",
+         "",
          driver.menu->bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
          driver.menu->selection_ptr);
@@ -2201,10 +2204,15 @@ void setting_data_get_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned index)
 {
-   rarch_setting_t *setting_data = (rarch_setting_t*)
-      driver.menu->list_settings;
-   rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
-         driver.menu->selection_buf->list[index].label);
+   rarch_setting_t *setting_data = NULL;
+   rarch_setting_t *setting      = NULL;
+
+   if (!driver.menu || !driver.menu->menu_list)
+      return;
+
+   setting_data = (rarch_setting_t*)driver.menu->list_settings;
+   setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
+         driver.menu->menu_list->selection_buf->list[index].label);
 
    if ((get_fallback_label(type_str, type_str_size, w, type, menu_label,
          label, index)) == 0)
@@ -2299,10 +2307,13 @@ void setting_data_get_label(char *type_str,
       setting_data_get_string_representation(setting, type_str, type_str_size);
    else
    {
+      if (!driver.menu || !driver.menu->menu_list)
+         return;
+
       setting_data = (rarch_setting_t*)driver.menu->list_mainmenu;
 
       setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
-            driver.menu->selection_buf->list[index].label);
+            driver.menu->menu_list->selection_buf->list[index].label);
 
       if (setting)
       {
@@ -2381,11 +2392,14 @@ static void general_write_handler(void *data)
 
    if (!strcmp(setting->name, "help"))
    {
+      if (!driver.menu || !driver.menu->menu_list)
+         return;
+
       if (*setting->value.boolean)
       {
 #ifdef HAVE_MENU
          menu_list_push_stack_refresh(
-               driver.menu->menu_stack,
+               driver.menu->menu_list->menu_stack,
                "",
                "help",
                0,
