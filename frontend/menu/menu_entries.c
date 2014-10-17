@@ -16,6 +16,7 @@
 
 #include "menu_entries.h"
 #include "menu_action.h"
+#include "menu_list.h"
 #include "../../settings_data.h"
 #include "../../performance.h"
 
@@ -483,7 +484,7 @@ bool menu_entries_init(menu_handle_t *menu)
    menu->list_mainmenu = setting_data_new(SL_FLAG_MAIN_MENU);
    menu->list_settings = setting_data_new(SL_FLAG_ALL_SETTINGS);
 
-   menu_list_push(menu->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
+   menu_list_push_stack(menu->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
    menu_clear_navigation(menu, true);
    push_main_menu_list(menu, menu->selection_buf,
          "", "Main Menu", 0);

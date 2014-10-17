@@ -81,6 +81,7 @@ end:
    file_list_clear(list);
 }
 
+
 void menu_list_push(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr)
@@ -98,4 +99,11 @@ void menu_list_push(file_list_t *list,
    if (driver.menu_ctx->backend->list_insert)
       driver.menu_ctx->backend->list_insert(list, path,
             label, type, list->size - 1);
+}
+
+void menu_list_push_stack(file_list_t *list,
+      const char *path, const char *label,
+      unsigned type, size_t directory_ptr)
+{
+   menu_list_push(list, path, label, type, directory_ptr);
 }
