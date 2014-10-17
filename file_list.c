@@ -152,7 +152,9 @@ void *file_list_get_userdata_at_offset(const file_list_t *list, size_t index)
 
 void *file_list_get_actiondata_at_offset(const file_list_t *list, size_t index)
 {
-   return list->list[index].actiondata;
+   if (list)
+      return list->list[index].actiondata;
+   return NULL;
 }
 
 void *file_list_get_last_actiondata(const file_list_t *list)

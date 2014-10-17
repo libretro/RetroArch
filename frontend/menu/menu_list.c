@@ -75,6 +75,13 @@ void menu_list_get_last_stack(const file_list_t *list,
       file_list_get_last(list, path, label, file_type);
 }
 
+void *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t index)
+{
+   if (list)
+      return file_list_get_actiondata_at_offset(list, index);
+   return NULL;
+}
+
 void *menu_list_get_last_stack_actiondata(const file_list_t *list)
 {
    if (list)

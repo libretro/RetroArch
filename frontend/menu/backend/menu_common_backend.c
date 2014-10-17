@@ -544,7 +544,7 @@ static int menu_common_iterate(unsigned action)
    const char *label = NULL;
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-      file_list_get_actiondata_at_offset(driver.menu->selection_buf,
+      menu_list_get_actiondata_at_offset(driver.menu->selection_buf,
             driver.menu->selection_ptr);
 
    menu_list_get_last_stack(driver.menu->menu_stack, NULL, &label, &type);
