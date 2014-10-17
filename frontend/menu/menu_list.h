@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-void menu_list_free(file_list_t *list);
+void menu_list_destroy(file_list_t *list);
 
 void menu_list_flush_stack(file_list_t *list,
       unsigned final_type);

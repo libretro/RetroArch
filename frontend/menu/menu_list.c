@@ -18,7 +18,7 @@
 #include "menu_navigation.h"
 #include <string.h>
 
-void menu_list_free(file_list_t *list)
+void menu_list_destroy(file_list_t *list)
 {
    unsigned i;
    if (!list)
