@@ -362,7 +362,7 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
                   core_path, display_name, sizeof(display_name)))
             menu_list_set_alt_at_offset(list, i, display_name);
       }
-      file_list_sort_on_alt(list);
+      menu_list_sort_on_alt(list);
    }
 
    driver.menu->scroll_indices_size = 0;

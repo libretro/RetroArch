@@ -1477,7 +1477,7 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
             info[i].display_name);
    }
 
-   file_list_sort_on_alt(list);
+   menu_list_sort_on_alt(list);
 
    driver.menu->scroll_indices_size = 0;
    menu_entries_build_scroll_indices(list);

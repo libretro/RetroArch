@@ -262,3 +262,8 @@ void menu_list_get_alt_at_offset(const file_list_t *list, size_t index,
 {
    file_list_get_alt_at_offset(list, index, alt);
 }
+
+void menu_list_sort_on_alt(file_list_t *list)
+{
+   file_list_sort_on_alt(list);
+}
