@@ -147,23 +147,6 @@ static char** waiting_argv;
 
    self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:BOXSTRING("Settings")] autorelease];
 
-   // Warn if there are no cores present
-   core_info_set_core_path();
-   const core_info_list_t* core_list = (const core_info_list_t*)core_info_list_get();
-
-   // Create core select list
-   NSComboBox* cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
-
-   for (size_t i = 0; core_list && i < core_list->count; i ++)
-   {
-      NSString* desc = (NSString*)BOXSTRING(core_list->list[i].display_name);
-#if defined(MAC_OS_X_VERSION_10_6)
-	  /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
-      objc_setAssociatedObject(desc, associated_core_key, BOXSTRING(core_list->list[i].path), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-#endif
-	   [cb addItemWithObjectValue:desc];
-   }
-
    apple_run_core(waiting_argc, waiting_argv);
 
    waiting_argc = 0;
