@@ -197,7 +197,7 @@ static int action_ok_shader_pass_load(const char *path,
    (void)menu_path;
 
 #ifdef HAVE_SHADER_MANAGER
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack, &menu_path, NULL,
+   menu_list_get_last_stack(driver.menu->menu_list, &menu_path, NULL,
          NULL);
 
    fill_pathname_join(driver.menu->shader->pass[hack_shader_pass].source.path,
@@ -224,7 +224,7 @@ static int action_ok_shader_preset_load(const char *path,
    (void)shader_path;
    (void)menu_path;
 #ifdef HAVE_SHADER_MANAGER
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack, &menu_path, NULL,
+   menu_list_get_last_stack(driver.menu->menu_list, &menu_path, NULL,
          NULL);
 
    fill_pathname_join(shader_path, menu_path, path, sizeof(shader_path));
@@ -259,7 +259,7 @@ static int action_ok_path_use_directory(const char *path,
    if (!driver.menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack,
+   menu_list_get_last_stack(driver.menu->menu_list,
          &menu_path, &menu_label, NULL);
 
    setting = (rarch_setting_t*)
@@ -301,7 +301,7 @@ static int action_ok_core_load(const char *path,
    if (!driver.menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack,
+   menu_list_get_last_stack(driver.menu->menu_list,
          &menu_path, NULL, NULL);
 
    fill_pathname_join(g_settings.libretro, menu_path, path,
@@ -338,7 +338,7 @@ static int action_ok_compressed_archive_push(const char *path,
    if (!driver.menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack,
+   menu_list_get_last_stack(driver.menu->menu_list,
          &menu_path, &menu_label, NULL);
 
    if (!strcmp(menu_label, "detect_core_list"))
@@ -369,7 +369,7 @@ static int action_ok_directory_push(const char *path,
    if (!driver.menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack,
+   menu_list_get_last_stack(driver.menu->menu_list,
          &menu_path, &menu_label, NULL);
 
    fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
@@ -392,7 +392,7 @@ static int action_ok_config_load(const char *path,
    if (!driver.menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack,
+   menu_list_get_last_stack(driver.menu->menu_list,
          &menu_path, NULL, NULL);
 
    fill_pathname_join(config, menu_path, path, sizeof(config));
@@ -416,7 +416,7 @@ static int action_ok_disk_image_append(const char *path,
    if (!driver.menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack,
+   menu_list_get_last_stack(driver.menu->menu_list,
          &menu_path, NULL, NULL);
 
    fill_pathname_join(image, menu_path, path, sizeof(image));
@@ -437,7 +437,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
    if (!driver.menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack,
+   menu_list_get_last_stack(driver.menu->menu_list,
          &menu_path, NULL, NULL);
 
    ret = rarch_defer_core(g_extern.core_info,
@@ -511,7 +511,7 @@ static int action_ok_set_path(const char *path,
    if (!driver.menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack,
+   menu_list_get_last_stack(driver.menu->menu_list,
          &menu_path, &menu_label, NULL);
 
    setting = (rarch_setting_t*)
@@ -2228,7 +2228,7 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
    if (!driver.menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack,
+   menu_list_get_last_stack(driver.menu->menu_list,
          NULL, &menu_label, NULL);
 
    if (type >= MENU_SETTINGS_BIND_BEGIN &&
@@ -2458,7 +2458,7 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
    if (!cbs || !driver.menu)
       return;
 
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack,
+   menu_list_get_last_stack(driver.menu->menu_list,
          NULL, &menu_label, NULL);
 
    cbs->action_deferred_push = deferred_push_default;

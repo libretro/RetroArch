@@ -286,7 +286,7 @@ static int menu_viewport_iterate(unsigned action)
    rarch_viewport_t *custom = (rarch_viewport_t*)
       &g_extern.console.screen.viewports.custom_vp;
 
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack, NULL, &label, &type);
+   menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, &type);
 
    geom = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
 
@@ -404,7 +404,7 @@ static int menu_viewport_iterate(unsigned action)
          break;
    }
 
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack, NULL, &label, &type);
+   menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, &type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
@@ -487,7 +487,7 @@ static int menu_load_or_open_zip_iterate(unsigned action)
       case MENU_ACTION_CANCEL:
          menu_list_pop_stack(driver.menu->menu_list);
 
-         menu_list_get_last_stack(driver.menu->menu_list->menu_stack,
+         menu_list_get_last_stack(driver.menu->menu_list,
                &menu_path, &menu_label, NULL);
 
          if (menu_list_get_size() == 0)
@@ -549,7 +549,7 @@ static int menu_common_iterate(unsigned action)
       menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
             driver.menu->selection_ptr);
 
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack, NULL, &label, &type);
+   menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, &type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);

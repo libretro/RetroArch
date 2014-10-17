@@ -158,7 +158,7 @@ static void rmenu_render(void)
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
-   menu_list_get_last_stack(menu->menu_stack, &dir, &label, &menu_type);
+   menu_list_get_last_stack(driver.menu->menu_list, &dir, &label, &menu_type);
 
    get_title(label, dir, menu_type, title, sizeof(title));
 

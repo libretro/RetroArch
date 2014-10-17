@@ -95,12 +95,12 @@ void menu_list_get_last(const file_list_t *list,
       file_list_get_last(list, path, label, file_type);
 }
 
-void menu_list_get_last_stack(const file_list_t *list,
+void menu_list_get_last_stack(const menu_list_t *list,
       const char **path, const char **label,
       unsigned *file_type)
 {
    if (list)
-      file_list_get_last(list, path, label, file_type);
+      file_list_get_last(list->menu_stack, path, label, file_type);
 }
 
 void *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t index)

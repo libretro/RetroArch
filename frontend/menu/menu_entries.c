@@ -343,7 +343,7 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
 
    if (!strcmp(label, "core_list"))
    {
-      menu_list_get_last_stack(menu_list, &dir, NULL, NULL);
+      menu_list_get_last_stack(driver.menu->menu_list, &dir, NULL, NULL);
       list_size = file_list_get_size(list);
 
       for (i = 0; i < list_size; i++)
@@ -383,7 +383,7 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
    const char *label = NULL;
    menu_file_list_cbs_t *cbs = NULL;
 
-   menu_list_get_last_stack(menu_list, &path, &label, &type);
+   menu_list_get_last_stack(driver.menu->menu_list, &path, &label, &type);
 
    if (!strcmp(label, "Main Menu"))
       return entries_push_main_menu_list(driver.menu, list, path, label, type);

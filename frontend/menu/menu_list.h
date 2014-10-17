@@ -65,7 +65,7 @@ void menu_list_get_last(const file_list_t *list,
       const char **path, const char **label,
       unsigned *file_type);
 
-void menu_list_get_last_stack(const file_list_t *list,
+void menu_list_get_last_stack(const menu_list_t *list,
       const char **path, const char **label,
       unsigned *file_type);
 

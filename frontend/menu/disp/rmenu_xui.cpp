@@ -370,7 +370,7 @@ static void rmenu_xui_render(void)
 
    rmenu_xui_render_background();
 
-   menu_list_get_last_stack(driver.menu->menu_stack, &dir,
+   menu_list_get_last_stack(driver.menu->menu_list, &dir,
          &label, &menu_type);
 
    get_title(label, dir, menu_type,

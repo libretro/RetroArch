@@ -254,7 +254,7 @@ static void glui_frame(void)
 
    glui_render_background(false);
 
-   menu_list_get_last_stack(driver.menu->menu_list->menu_stack, &dir, &label, &menu_type);
+   menu_list_get_last_stack(driver.menu->menu_list, &dir, &label, &menu_type);
 
    get_title(label, dir, menu_type, title, sizeof(title));
 
