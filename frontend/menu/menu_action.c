@@ -18,6 +18,7 @@
 #include "menu_input_line_cb.h"
 #include "menu_action.h"
 #include "menu_entries.h"
+#include "menu_list.h"
 #include "menu_shader.h"
 
 int setting_handler(
@@ -106,8 +107,11 @@ static int menu_entries_set_current_path_selection(
    switch (action)
    {
       case MENU_ACTION_OK:
-         menu_entries_push(driver.menu->menu_stack,
-               start_path, label, type,
+         menu_list_push_refresh(
+               driver.menu->menu_stack,
+               start_path,
+               label,
+               type,
                driver.menu->selection_ptr);
 
          if (setting->cmd_trigger.idx != RARCH_CMD_NONE)

@@ -34,6 +34,7 @@
 #endif
 
 #ifdef HAVE_MENU
+#include "frontend/menu/menu_list.h"
 #include "frontend/menu/menu_entries.h"
 #include "frontend/menu/menu_input_line_cb.h"
 #include "frontend/menu/menu_shader.h"
@@ -2383,7 +2384,12 @@ static void general_write_handler(void *data)
       if (*setting->value.boolean)
       {
 #ifdef HAVE_MENU
-         menu_entries_push(driver.menu->menu_stack, "", "help", 0, 0);
+         menu_list_push_refresh(
+               driver.menu->menu_stack,
+               "",
+               "help",
+               0,
+               0);
 #endif
          *setting->value.boolean = false;
       }

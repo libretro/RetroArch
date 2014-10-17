@@ -118,17 +118,6 @@ int setting_set_flags(rarch_setting_t *setting)
    return 0;
 }
 
-void menu_entries_push(
-      file_list_t *list,
-      const char *path, const char *label,
-      unsigned type,
-      size_t directory_ptr)
-{
-   menu_list_push(list, path, label, type, directory_ptr);
-   menu_navigation_clear(driver.menu, true);
-   driver.menu->need_refresh = true;
-}
-
 static int entries_push_main_menu_list(menu_handle_t *menu,
       file_list_t *list,
       const char *path, const char *label,

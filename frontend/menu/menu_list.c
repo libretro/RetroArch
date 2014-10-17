@@ -15,6 +15,7 @@
 
 #include "../../driver.h"
 #include "menu_list.h"
+#include "menu_navigation.h"
 #include <string.h>
 
 void menu_list_free(file_list_t *list)
@@ -183,6 +184,17 @@ void menu_list_push(file_list_t *list,
    if (driver.menu_ctx->backend->list_insert)
       driver.menu_ctx->backend->list_insert(list, path,
             label, type, list->size - 1);
+}
+
+void menu_list_push_refresh(file_list_t *list,
+      const char *path, const char *label,
+      unsigned type, size_t directory_ptr)
+{
+   if (!list)
+      return;
+   menu_list_push(list, path, label, type, directory_ptr);
+   menu_navigation_clear(driver.menu, true);
+   driver.menu->need_refresh = true;
 }
 
 void menu_list_push_stack(file_list_t *list,
