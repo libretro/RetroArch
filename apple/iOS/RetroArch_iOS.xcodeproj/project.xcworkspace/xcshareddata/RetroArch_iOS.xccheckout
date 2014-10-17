@@ -10,23 +10,23 @@
 	<string>RetroArch_iOS</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
-		<key>49FCA0A2-0FE0-4A7A-9C54-642C68ED726A</key>
-		<string>git://github.com/libretro/common-overlays.git</string>
 		<key>76200F0D6584D865E96F58DE862E738E88B23A3C</key>
 		<string>https://github.com/libretro/libretro-super.git</string>
 		<key>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</key>
 		<string>https://github.com/libretro/RetroArch.git</string>
+		<key>EF363D58F01B3FB341FA6C851870E60E4F080E97</key>
+		<string>git://github.com/libretro/common-overlays.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
 	<string>apple/RetroArch_iOS.xcodeproj/project.xcworkspace</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
-		<key>49FCA0A2-0FE0-4A7A-9C54-642C68ED726A</key>
-		<string>../../../media/overlays</string>
 		<key>76200F0D6584D865E96F58DE862E738E88B23A3C</key>
 		<string>../../../..</string>
 		<key>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</key>
 		<string>../../..</string>
+		<key>EF363D58F01B3FB341FA6C851870E60E4F080E97</key>
+		<string>../../../media/overlays</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
 	<string>https://github.com/libretro/RetroArch.git</string>
@@ -40,7 +40,15 @@
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>
 			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>49FCA0A2-0FE0-4A7A-9C54-642C68ED726A</string>
+			<string>76200F0D6584D865E96F58DE862E738E88B23A3C</string>
+			<key>IDESourceControlWCCName</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>EF363D58F01B3FB341FA6C851870E60E4F080E97</string>
 			<key>IDESourceControlWCCName</key>
 			<string>overlays</string>
 		</dict>

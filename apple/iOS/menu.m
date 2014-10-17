@@ -608,8 +608,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       {
          if (path)
          {
-            /* TODO - reimplement this - should no longer use apple_run_core. */
-            apple_run_core(0, NULL, core.UTF8String, path.UTF8String);
+            strlcpy(g_settings.libretro, core.UTF8String, sizeof(g_settings.libretro));
+            strlcpy(g_extern.fullpath,   path.UTF8String, sizeof(g_extern.fullpath));
+            rarch_main_command(RARCH_CMD_LOAD_CORE);
+            rarch_main_command(RARCH_CMD_LOAD_CONTENT);
          }
          else
          {
@@ -636,8 +638,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          {
             if (weakSelf.core)
             {
-               /* TODO - reimplement this - should no longer use apple_run_core. */
-               apple_run_core(0, NULL, weakSelf.core.UTF8String, item.path.UTF8String);
+               strlcpy(g_settings.libretro, weakSelf.core.UTF8String, sizeof(g_settings.libretro));
+               strlcpy(g_extern.fullpath,   item.path.UTF8String,     sizeof(g_extern.fullpath));
+               rarch_main_command(RARCH_CMD_LOAD_CORE);
+               rarch_main_command(RARCH_CMD_LOAD_CONTENT);
             }
             else
                [weakSelf chooseCoreWithPath:item.path];
@@ -713,10 +717,14 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                    const char *core_name = NULL;
                    
                    content_playlist_get_index(weakSelf.history, i, &path, &core_path, &core_name);
-                   
-                   /* TODO - reimplement this - should no longer use apple_run_core. */
-                   apple_run_core(0, NULL, core_path ? core_path : "",
-                                  path ? path : "");
+                  
+                   if (!path || !core_path)
+                      return;
+                  
+                  strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
+                  strlcpy(g_extern.fullpath,   path,      sizeof(g_extern.fullpath));
+                  rarch_main_command(RARCH_CMD_LOAD_CORE);
+                  rarch_main_command(RARCH_CMD_LOAD_CONTENT);
                }
                detail:
                ^{
