@@ -60,6 +60,6 @@ typedef enum
 } CFDomainMask;
 
 void CFSearchPathForDirectoriesInDomains(unsigned flags,
-      unsigned domain_mask, BOOL expand_tilde, char *buf, size_t sizeof_buf);
+      unsigned domain_mask, unsigned expand_tilde, char *buf, size_t sizeof_buf);
 
 #endif

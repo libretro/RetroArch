@@ -133,13 +133,6 @@ static char** waiting_argv;
 {
    apple_platform = self;
 
-   char support_path_buf[PATH_MAX + 1];
-   CFSearchPathForDirectoriesInDomains(CFApplicationSupportDirectory, CFUserDomainMask, YES, support_path_buf, sizeof(support_path_buf));
-   
-   fill_pathname_join(g_defaults.core_dir, NSBundle.mainBundle.bundlePath.UTF8String, "Contents/Resources/modules", sizeof(g_defaults.core_dir));
-   fill_pathname_join(g_defaults.menu_config_dir, support_path_buf, "RetroArch", sizeof(g_defaults.menu_config_dir));
-   fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
-
    
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
    [self.window setCollectionBehavior:[self.window collectionBehavior] | NSWindowCollectionBehaviorFullScreenPrimary];

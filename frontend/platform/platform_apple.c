@@ -14,6 +14,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../apple/common/CFExtensions.h"
 #include "../menu/menu_common.h"
 #include "../../settings_data.h"
 
@@ -169,6 +170,13 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    }
 
    CFRelease(home_dir);
+#elif defined(OSX)
+    char support_path_buf[PATH_MAX + 1];
+    CFSearchPathForDirectoriesInDomains(CFApplicationSupportDirectory, CFUserDomainMask, 1, support_path_buf, sizeof(support_path_buf));
+    
+    fill_pathname_join(g_defaults.core_dir, bundle_path_buf, "Contents/Resources/modules", sizeof(g_defaults.core_dir));
+    fill_pathname_join(g_defaults.menu_config_dir, support_path_buf, "RetroArch", sizeof(g_defaults.menu_config_dir));
+    fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
 #endif
 
    CFRelease(bundle_path);

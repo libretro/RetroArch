@@ -19,11 +19,11 @@
 #include "CFExtensions.h"
 
 void CFSearchPathForDirectoriesInDomains(unsigned flags,
-                                               unsigned domain_mask, BOOL expand_tilde,
+                                               unsigned domain_mask, unsigned expand_tilde,
                                                char *buf, size_t sizeof_buf)
 {
    CFArrayRef array = CFBridgingRetain(NSSearchPathForDirectoriesInDomains(
-      flags, domain_mask, expand_tilde));
+      flags, domain_mask, (BOOL)expand_tilde));
    CFStringRef path = CFBridgingRetain(CFArrayGetValueAtIndex(array, 0));
    CFStringGetCString(path, buf, sizeof_buf, kCFStringEncodingUTF8);
    CFRelease(path);
