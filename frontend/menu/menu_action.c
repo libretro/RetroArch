@@ -144,29 +144,11 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_UINT:
       case ST_FLOAT:
       case ST_STRING:
+      case ST_DIR:
          return setting_handler(setting, action);
       case ST_PATH:
          return menu_entries_set_current_path_selection(setting,
                setting->default_value.string, setting->name, type, action);
-      case ST_DIR:
-         switch (action)
-         {
-            case MENU_ACTION_START:
-               if (setting->action_start)
-                  setting->action_start(setting);
-               break;
-         }
-
-         if (setting->change_handler)
-            setting->change_handler(setting);
-
-         if (setting->flags & SD_FLAG_EXIT
-               && setting->cmd_trigger.triggered)
-         {
-            setting->cmd_trigger.triggered = false;
-            return -1;
-         }
-         break;
       default:
          break;
    }
