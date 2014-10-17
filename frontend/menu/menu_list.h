@@ -59,7 +59,7 @@ void menu_list_sort_on_alt(file_list_t *list);
 
 size_t menu_list_get_size(void);
 
-void *menu_list_get_last_stack_actiondata(const file_list_t *list);
+void *menu_list_get_last_stack_actiondata(const menu_list_t *list);
 
 void menu_list_get_last(const file_list_t *list,
       const char **path, const char **label,

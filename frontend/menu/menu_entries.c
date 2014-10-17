@@ -389,7 +389,7 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
       return entries_push_main_menu_list(driver.menu, list, path, label, type);
 
    cbs = (menu_file_list_cbs_t*)
-      menu_list_get_last_stack_actiondata(menu_list);
+      menu_list_get_last_stack_actiondata(driver.menu->menu_list);
 
    if (cbs->action_deferred_push)
       return cbs->action_deferred_push(list, menu_list, path, label, type);

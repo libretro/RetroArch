@@ -110,10 +110,10 @@ void *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t index)
    return NULL;
 }
 
-void *menu_list_get_last_stack_actiondata(const file_list_t *list)
+void *menu_list_get_last_stack_actiondata(const menu_list_t *list)
 {
    if (list)
-      return file_list_get_last_actiondata(list);
+      return file_list_get_last_actiondata(list->menu_stack);
    return NULL;
 }
 
