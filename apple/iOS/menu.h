@@ -118,8 +118,7 @@
 /* launching a file from the content history.    */
 /*************************************************/
 @interface RAHistoryMenu : RAMenuBase
-@property (nonatomic) content_playlist_t* history;
-- (id)initWithHistoryPath:(const char*)historyPath;
+- (id)init;
 @end
 
 /*********************************************/

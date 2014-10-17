@@ -653,9 +653,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)loadHistory
 {
-   char history_path[PATH_MAX];
-   fill_pathname_join(history_path, g_defaults.system_dir, "retroarch-content-history.txt", sizeof(history_path));
-   [self.navigationController pushViewController:[[RAHistoryMenu alloc] initWithHistoryPath:history_path] animated:YES];
+   [self.navigationController pushViewController:[[RAHistoryMenu alloc] init] animated:YES];
 }
 
 @end
@@ -669,18 +667,17 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)dealloc
 {
-   if (self.history)
-      content_playlist_free(self.history);
 }
 
-- (id)initWithHistoryPath:(const char*)historyPath
+- (id)init
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
-      self.history = content_playlist_init(historyPath, 100);
-      [self reloadData];
-      self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Clear History")
-                                                style:UIBarButtonItemStyleBordered target:self action:@selector(clearHistory)];
+      if (g_defaults.history)
+      {
+         [self reloadData];
+         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Clear History") style:UIBarButtonItemStyleBordered target:self action:@selector(clearHistory)];
+      }
    }
    
    return self;
@@ -688,25 +685,27 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)clearHistory
 {
-   if (self.history)
-      content_playlist_clear(self.history);
+   if (g_defaults.history)
+      content_playlist_clear(g_defaults.history);
    [self reloadData];
 }
 
 - (void)willReloadData
 {
    size_t i;
-   RAHistoryMenu* __weak weakSelf = self;
    NSMutableArray *section = [NSMutableArray arrayWithObject:BOXSTRING("")];
    
-   for (i = 0; self.history && i < content_playlist_size(self.history); i ++)
+   if (!g_defaults.history)
+      return;
+   
+   for (i = 0; i < content_playlist_size(g_defaults.history); i ++)
    {
        RAMenuItemBasic *item;
        const char *path      = NULL;
        const char *core_path = NULL;
        const char *core_name = NULL;
        
-       content_playlist_get_index(weakSelf.history, i, &path, &core_path, &core_name);
+       content_playlist_get_index(g_defaults.history, i, &path, &core_path, &core_name);
        
        item = [
                RAMenuItemBasic itemWithDescription:BOXSTRING(path_basename(path ? path : ""))
@@ -716,7 +715,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                    const char *core_path = NULL;
                    const char *core_name = NULL;
                    
-                   content_playlist_get_index(weakSelf.history, i, &path, &core_path, &core_name);
+                   content_playlist_get_index(g_defaults.history, i, &path, &core_path, &core_name);
                   
                    if (!path || !core_path)
                       return;
@@ -731,8 +730,9 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                    const char *path       = NULL;
                    const char *core_path  = NULL;
                    const char *core_name  = NULL;
-                   
-                   content_playlist_get_index(weakSelf.history, i, &path, &core_path, &core_name);
+                  
+                   if (g_defaults.history)
+                      content_playlist_get_index(g_defaults.history, i, &path, &core_path, &core_name);
                    
                    if (core_name)
                        return BOXSTRING(core_name);
