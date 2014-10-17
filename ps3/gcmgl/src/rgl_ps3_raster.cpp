@@ -419,27 +419,25 @@ void rglCreatePushBuffer(void *data)
 
    //TODO: this is tmp
    program->samplerCount = samplerCount;
+   program->samplerValuesLocation = NULL;
+   program->samplerIndices = NULL;
+   program->samplerUnits = NULL;
+
    if ( samplerCount )
    {
       program->samplerValuesLocation = ( GLuint* )malloc( samplerCount * sizeof( GLuint ) );
       program->samplerIndices = ( GLuint* )malloc( samplerCount * sizeof( GLuint ) );
       program->samplerUnits = ( GLuint* )malloc( samplerCount * sizeof( GLuint ) );
    }
-   else
-   {
-      program->samplerValuesLocation = NULL;
-      program->samplerIndices = NULL;
-      program->samplerUnits = NULL;
-   }
 
    GLuint *samplerValuesLocation = program->samplerValuesLocation;
    GLuint *samplerIndices = program->samplerIndices;
    GLuint *samplerUnits = program->samplerUnits;
 
+   program->constantPushBufferPointers = NULL;
+
    if ( programPushBufferPointersSize )
       program->constantPushBufferPointers = ( unsigned int** )malloc( programPushBufferPointersSize * 4 );
-   else
-      program->constantPushBufferPointers = NULL;
 
    uint32_t *rglGcmCurrent = (uint32_t*)program->memoryBlock;
    program->constantPushBuffer = ( bufferSize > 0 ) ? ( unsigned int * )rglGcmCurrent : NULL;

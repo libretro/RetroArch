@@ -516,13 +516,12 @@ static GmmBlock *gmmAllocBlock(
       {
          pNewBlock->pPrev = pBlock;
          pBlock->pNext = pNewBlock;
-         pAllocator->pTail = pNewBlock;
       }
       else
       {
          pAllocator->pHead = pNewBlock;
-         pAllocator->pTail = pNewBlock;
       }
+      pAllocator->pTail = pNewBlock;
    }
 
    return pNewBlock;
@@ -610,15 +609,10 @@ static GmmTileBlock *gmmCreateTileBlock(
    pNewBlock->pNext = pAllocator->pTileHead;
 
    if (pAllocator->pTileHead)
-   {
       pAllocator->pTileHead->pPrev = pNewBlock;
-      pAllocator->pTileHead = pNewBlock;
-   }
    else
-   {
-      pAllocator->pTileHead = pNewBlock;
       pAllocator->pTileTail = pNewBlock;
-   }
+   pAllocator->pTileHead = pNewBlock;
 
    return pNewBlock;
 }
@@ -804,20 +798,19 @@ static void gmmAddPendingFree (void *data)
 
    pAllocator = pGmmLocalAllocator;
 
+   pBlock->pNextFree = NULL;
+
    if (pAllocator->pPendingFreeTail)
    {
-      pBlock->pNextFree = NULL;
       pBlock->pPrevFree = pAllocator->pPendingFreeTail;
       pAllocator->pPendingFreeTail->pNextFree = pBlock;
-      pAllocator->pPendingFreeTail = pBlock;
    }
    else
    {
-      pBlock->pNextFree = NULL;
       pBlock->pPrevFree = NULL;
       pAllocator->pPendingFreeHead = pBlock;
-      pAllocator->pPendingFreeTail = pBlock;
    }
+   pAllocator->pPendingFreeTail = pBlock;
 
    pBlock->isPinned = 0;
 
@@ -4211,11 +4204,10 @@ GLAPI void APIENTRY glActiveTexture( GLenum texture )
 
    int unit = texture - GL_TEXTURE0;
    LContext->ActiveTexture = unit;
+   LContext->CurrentImageUnit = NULL;
 
    if(unit < RGL_MAX_TEXTURE_IMAGE_UNITS)
       LContext->CurrentImageUnit = LContext->TextureImageUnits + unit;
-   else
-      LContext->CurrentImageUnit = NULL;
 }
 
 /*============================================================
