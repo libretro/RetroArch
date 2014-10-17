@@ -177,6 +177,10 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
 
 extern void apple_rarch_exited(void);
 
+static void frontend_apple_load_content(void)
+{
+}
+
 static void frontend_apple_shutdown(bool unused)
 {
     apple_rarch_exited();
@@ -200,5 +204,6 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    frontend_apple_shutdown,      /* shutdown */
    NULL,                         /* get_name */
    frontend_apple_get_rating,    /* get_rating */
+   frontend_apple_load_content,  /* load_content */
    "apple",
 };

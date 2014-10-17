@@ -33,5 +33,6 @@ const frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_rating */
+   NULL,                         /* load_content */
    "null",
 };

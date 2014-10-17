@@ -374,5 +374,6 @@ const frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* shutdown */
    NULL,                            /* get_name */
    frontend_gx_get_rating,          /* get_rating */
+   NULL,                            /* load_content */
    "gx",
 };

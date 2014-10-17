@@ -345,5 +345,6 @@ const frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    frontend_xdk_get_rating,      /* get_rating */
+   NULL,                         /* load_content */
    "xdk",
 };

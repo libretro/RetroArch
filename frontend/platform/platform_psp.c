@@ -244,5 +244,6 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_shutdown,        /* shutdown */
    NULL,                         /* get_name */
    frontend_psp_get_rating,      /* get_rating */
+   NULL,                         /* load_content */
    "psp",
 };

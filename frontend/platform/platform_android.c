@@ -893,5 +893,6 @@ const frontend_ctx_driver_t frontend_ctx_android = {
    frontend_android_shutdown,    /* shutdown */
    frontend_android_get_name,    /* get_name */
    frontend_android_get_rating,  /* get_rating */
+   NULL,                         /* load_content */
    "android",
 };
