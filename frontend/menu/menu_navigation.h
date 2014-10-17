@@ -23,19 +23,19 @@
 extern "C" {
 #endif
 
-void menu_clear_navigation(menu_handle_t *menu, bool pending_push);
+void menu_navigation_clear(menu_handle_t *menu, bool pending_push);
 
-void menu_decrement_navigation(menu_handle_t *menu);
+void menu_navigation_decrement(menu_handle_t *menu);
 
-void menu_increment_navigation(menu_handle_t *menu);
+void menu_navigation_increment(menu_handle_t *menu);
 
-void menu_set_navigation(menu_handle_t *menu, size_t i);
+void menu_navigation_set(menu_handle_t *menu, size_t i);
 
-void menu_set_navigation_last(menu_handle_t *menu);
+void menu_navigation_set_last(menu_handle_t *menu);
 
-void menu_descend_alphabet(menu_handle_t *menu, size_t *ptr_out);
+void menu_navigation_descend_alphabet(menu_handle_t *menu, size_t *ptr_out);
 
-void menu_ascend_alphabet(menu_handle_t *menu, size_t *ptr_out);
+void menu_navigation_ascend_alphabet(menu_handle_t *menu, size_t *ptr_out);
 
 #ifdef __cplusplus
 }

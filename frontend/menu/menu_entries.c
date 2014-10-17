@@ -31,9 +31,9 @@ void menu_entries_refresh(file_list_t *list)
 
    if (driver.menu->selection_ptr >= file_list_get_size(list)
          && file_list_get_size(list))
-      menu_set_navigation(driver.menu, file_list_get_size(list) - 1);
+      menu_navigation_set(driver.menu, file_list_get_size(list) - 1);
    else if (!file_list_get_size(list))
-      menu_clear_navigation(driver.menu, true);
+      menu_navigation_clear(driver.menu, true);
 }
 
 static inline bool entries_list_elem_is_dir(file_list_t *buf,
@@ -125,7 +125,7 @@ void menu_entries_push(
       size_t directory_ptr)
 {
    menu_list_push(list, path, label, type, directory_ptr);
-   menu_clear_navigation(driver.menu, true);
+   menu_navigation_clear(driver.menu, true);
    driver.menu->need_refresh = true;
 }
 
@@ -415,7 +415,7 @@ bool menu_entries_init(menu_handle_t *menu)
    menu->list_settings = setting_data_new(SL_FLAG_ALL_SETTINGS);
 
    menu_list_push_stack(menu->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
-   menu_clear_navigation(menu, true);
+   menu_navigation_clear(menu, true);
    entries_push_main_menu_list(menu, menu->selection_buf,
          "", "Main Menu", 0);
 

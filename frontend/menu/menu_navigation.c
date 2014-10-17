@@ -23,7 +23,7 @@
 #include "menu_common.h"
 #include "menu_navigation.h"
 
-void menu_clear_navigation(menu_handle_t *menu, bool pending_push)
+void menu_navigation_clear(menu_handle_t *menu, bool pending_push)
 {
    menu->selection_ptr = 0;
 
@@ -31,7 +31,7 @@ void menu_clear_navigation(menu_handle_t *menu, bool pending_push)
       driver.menu_ctx->navigation_clear(menu, pending_push);
 }
 
-void menu_decrement_navigation(menu_handle_t *menu)
+void menu_navigation_decrement(menu_handle_t *menu)
 {
    menu->selection_ptr--;
 
@@ -39,7 +39,7 @@ void menu_decrement_navigation(menu_handle_t *menu)
       driver.menu_ctx->navigation_decrement(menu);
 }
 
-void menu_increment_navigation(menu_handle_t *menu)
+void menu_navigation_increment(menu_handle_t *menu)
 {
    menu->selection_ptr++;
 
@@ -47,7 +47,7 @@ void menu_increment_navigation(menu_handle_t *menu)
       driver.menu_ctx->navigation_increment(menu);
 }
 
-void menu_set_navigation(menu_handle_t *menu, size_t i)
+void menu_navigation_set(menu_handle_t *menu, size_t i)
 {
    menu->selection_ptr = i; 
 
@@ -55,7 +55,7 @@ void menu_set_navigation(menu_handle_t *menu, size_t i)
       driver.menu_ctx->navigation_set(menu);
 }
 
-void menu_set_navigation_last(menu_handle_t *menu)
+void menu_navigation_set_last(menu_handle_t *menu)
 {
    menu->selection_ptr = file_list_get_size(menu->selection_buf) - 1;
 
@@ -63,7 +63,7 @@ void menu_set_navigation_last(menu_handle_t *menu)
       driver.menu_ctx->navigation_set_last(menu);
 }
 
-void menu_descend_alphabet(menu_handle_t *menu, size_t *ptr_out)
+void menu_navigation_descend_alphabet(menu_handle_t *menu, size_t *ptr_out)
 {
    size_t i   = 0;
    size_t ptr = *ptr_out;
@@ -84,7 +84,7 @@ void menu_descend_alphabet(menu_handle_t *menu, size_t *ptr_out)
       driver.menu_ctx->navigation_descend_alphabet(menu, ptr_out);
 }
 
-void menu_ascend_alphabet(menu_handle_t *menu, size_t *ptr_out)
+void menu_navigation_ascend_alphabet(menu_handle_t *menu, size_t *ptr_out)
 {
    size_t i   = 0;
    size_t ptr = *ptr_out;

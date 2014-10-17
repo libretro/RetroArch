@@ -205,18 +205,18 @@ static int menu_settings_iterate(unsigned action,
    {
       case MENU_ACTION_UP:
          if (driver.menu->selection_ptr > 0)
-            menu_decrement_navigation(driver.menu);
+            menu_navigation_decrement(driver.menu);
          else
-            menu_set_navigation(driver.menu,
+            menu_navigation_set(driver.menu,
                   file_list_get_size(driver.menu->selection_buf) - 1);
          break;
 
       case MENU_ACTION_DOWN:
          if ((driver.menu->selection_ptr + 1) <
                file_list_get_size(driver.menu->selection_buf))
-            menu_increment_navigation(driver.menu);
+            menu_navigation_increment(driver.menu);
          else
-            menu_clear_navigation(driver.menu, false);
+            menu_navigation_clear(driver.menu, false);
          break;
 
       case MENU_ACTION_CANCEL:
@@ -584,44 +584,44 @@ static int menu_common_iterate(unsigned action)
    {
       case MENU_ACTION_UP:
          if (driver.menu->selection_ptr >= scroll_speed)
-            menu_set_navigation(driver.menu,
+            menu_navigation_set(driver.menu,
                   driver.menu->selection_ptr - scroll_speed);
          else
-            menu_set_navigation(driver.menu,
+            menu_navigation_set(driver.menu,
                   file_list_get_size(driver.menu->selection_buf) - 1);
          break;
 
       case MENU_ACTION_DOWN:
          if (driver.menu->selection_ptr + scroll_speed <
                file_list_get_size(driver.menu->selection_buf))
-            menu_set_navigation(driver.menu,
+            menu_navigation_set(driver.menu,
                   driver.menu->selection_ptr + scroll_speed);
          else
-            menu_clear_navigation(driver.menu, false);
+            menu_navigation_clear(driver.menu, false);
          break;
 
       case MENU_ACTION_LEFT:
          if (driver.menu->selection_ptr > fast_scroll_speed)
-            menu_set_navigation(driver.menu,
+            menu_navigation_set(driver.menu,
                   driver.menu->selection_ptr - fast_scroll_speed);
          else
-            menu_clear_navigation(driver.menu, false);
+            menu_navigation_clear(driver.menu, false);
          break;
 
       case MENU_ACTION_RIGHT:
          if (driver.menu->selection_ptr + fast_scroll_speed <
                file_list_get_size(driver.menu->selection_buf))
-            menu_set_navigation(driver.menu,
+            menu_navigation_set(driver.menu,
                   driver.menu->selection_ptr + fast_scroll_speed);
          else
-            menu_set_navigation_last(driver.menu);
+            menu_navigation_set_last(driver.menu);
          break;
 
       case MENU_ACTION_SCROLL_UP:
-         menu_descend_alphabet(driver.menu, &driver.menu->selection_ptr);
+         menu_navigation_descend_alphabet(driver.menu, &driver.menu->selection_ptr);
          break;
       case MENU_ACTION_SCROLL_DOWN:
-         menu_ascend_alphabet(driver.menu, &driver.menu->selection_ptr);
+         menu_navigation_ascend_alphabet(driver.menu, &driver.menu->selection_ptr);
          break;
 
       case MENU_ACTION_CANCEL:

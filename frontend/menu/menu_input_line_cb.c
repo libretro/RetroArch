@@ -66,7 +66,7 @@ static void menu_search_callback(void *userdata, const char *str)
    size_t index;
 
    if (str && *str && file_list_search(menu->selection_buf, str, &index))
-         menu_set_navigation(menu, index);
+         menu_navigation_set(menu, index);
 
    menu_key_end_line(menu);
 }

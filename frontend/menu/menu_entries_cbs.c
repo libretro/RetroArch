@@ -373,7 +373,7 @@ static int action_ok_config_load(const char *path,
    driver.menu->msg_force = true;
    if (rarch_replace_config(config))
    {
-      menu_clear_navigation(driver.menu, false);
+      menu_navigation_clear(driver.menu, false);
       return -1;
    }
 
