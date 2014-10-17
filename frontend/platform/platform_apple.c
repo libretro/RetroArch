@@ -24,9 +24,10 @@
 #include <stddef.h>
 #include <string.h>
 
+/* Forward declarations */
 void apple_start_iteration(void);
-
 void apple_stop_iteration(void);
+void apple_content_loaded(const char *, const char *);
 
 static CFRunLoopObserverRef iterate_observer;
 
@@ -177,8 +178,9 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
 
 extern void apple_rarch_exited(void);
 
-static void frontend_apple_load_content(void)
+static void frontend_apple_content_loaded(void)
 {
+    apple_content_loaded(g_settings.libretro, g_extern.fullpath);
 }
 
 static void frontend_apple_shutdown(bool unused)
@@ -204,6 +206,6 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    frontend_apple_shutdown,      /* shutdown */
    NULL,                         /* get_name */
    frontend_apple_get_rating,    /* get_rating */
-   frontend_apple_load_content,  /* load_content */
+   frontend_apple_content_loaded,  /* load_content */
    "apple",
 };

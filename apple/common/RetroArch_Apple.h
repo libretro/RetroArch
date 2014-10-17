@@ -40,12 +40,15 @@ extern char** apple_argv;
 extern id<RetroArch_Platform> apple_platform;
 
 // main.m
-extern void apple_run_core(int argc, char **argv);
-extern void apple_start_iteration(void);
-extern void apple_stop_iteration(void);
+void apple_run_core(int argc, char **argv);
+void apple_start_iteration(void);
+void apple_stop_iteration(void);
+void apple_content_loaded(const char *core_path, const char *full_path);
+
+void apple_rarch_exited(void);
 
 // utility.m
-extern void apple_display_alert(const char *message, const char *title);
+void apple_display_alert(const char *message, const char *title);
 
 @interface RANumberFormatter : NSNumberFormatter
 #ifdef IOS
