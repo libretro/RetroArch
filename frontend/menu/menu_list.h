@@ -56,6 +56,10 @@ void menu_list_push_stack(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr);
 
+void menu_list_push_stack_refresh(file_list_t *list,
+      const char *path, const char *label,
+      unsigned type, size_t directory_ptr);
+
 #ifdef __cplusplus
 }
 #endif

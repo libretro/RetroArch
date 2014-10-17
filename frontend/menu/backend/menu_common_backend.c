@@ -503,7 +503,7 @@ static int menu_load_or_open_zip_iterate(unsigned action)
             char cat_path[PATH_MAX];
 
             fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
-            menu_list_push_refresh(
+            menu_list_push_stack_refresh(
                   driver.menu->menu_stack,
                   cat_path,
                   menu_label,
@@ -523,7 +523,7 @@ static int menu_load_or_open_zip_iterate(unsigned action)
                return -1;
             }
             else if (ret == 0)
-               menu_list_push_refresh(
+               menu_list_push_stack_refresh(
                      driver.menu->menu_stack,
                      g_settings.libretro_directory,
                      "deferred_core_list",

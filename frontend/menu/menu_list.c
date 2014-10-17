@@ -203,3 +203,14 @@ void menu_list_push_stack(file_list_t *list,
 {
    menu_list_push(list, path, label, type, directory_ptr);
 }
+
+void menu_list_push_stack_refresh(file_list_t *list,
+      const char *path, const char *label,
+      unsigned type, size_t directory_ptr)
+{
+   if (!list)
+      return;
+   menu_list_push_stack(list, path, label, type, directory_ptr);
+   menu_navigation_clear(driver.menu, true);
+   driver.menu->need_refresh = true;
+}

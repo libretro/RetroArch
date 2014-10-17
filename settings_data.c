@@ -2384,7 +2384,7 @@ static void general_write_handler(void *data)
       if (*setting->value.boolean)
       {
 #ifdef HAVE_MENU
-         menu_list_push_refresh(
+         menu_list_push_stack_refresh(
                driver.menu->menu_stack,
                "",
                "help",

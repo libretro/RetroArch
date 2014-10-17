@@ -107,7 +107,7 @@ static int menu_entries_set_current_path_selection(
    switch (action)
    {
       case MENU_ACTION_OK:
-         menu_list_push_refresh(
+         menu_list_push_stack_refresh(
                driver.menu->menu_stack,
                start_path,
                label,
