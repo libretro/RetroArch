@@ -37,6 +37,18 @@ end:
    file_list_free(list);
 }
 
+void menu_list_pop_stack(file_list_t *list)
+{
+   if (!list)
+      return;
+
+   if (file_list_get_size(list) > 1)
+   {
+      menu_list_pop(list, &driver.menu->selection_ptr);
+      driver.menu->need_refresh = true;
+   }
+}
+
 void menu_list_pop(file_list_t *list, size_t *directory_ptr)
 {
    if (!driver.menu_ctx)

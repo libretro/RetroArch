@@ -27,6 +27,8 @@ void menu_list_free(file_list_t *list);
 
 void menu_list_pop(file_list_t *list, size_t *directory_ptr);
 
+void menu_list_pop_stack(file_list_t *list);
+
 void menu_list_clear(file_list_t *list);
 
 void menu_list_push(file_list_t *list,

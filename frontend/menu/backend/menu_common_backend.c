@@ -42,7 +42,7 @@ static int menu_message_toggle(unsigned action)
       driver.menu_ctx->render_messagebox(driver.menu->message_contents);
 
    if (action == MENU_ACTION_OK)
-      menu_entries_pop_list(driver.menu->menu_stack);
+      menu_list_pop_stack(driver.menu->menu_stack);
 
    return 0;
 }
@@ -95,7 +95,7 @@ static int menu_info_screen_iterate(unsigned action)
    }
 
    if (action == MENU_ACTION_OK)
-      menu_entries_pop_list(driver.menu->menu_stack);
+      menu_list_pop_stack(driver.menu->menu_stack);
 
    return 0;
 }
@@ -181,7 +181,7 @@ static int menu_start_screen_iterate(unsigned action)
       driver.menu_ctx->render_messagebox(msg);
 
    if (action == MENU_ACTION_OK)
-      menu_entries_pop_list(driver.menu->menu_stack);
+      menu_list_pop_stack(driver.menu->menu_stack);
 
    return 0;
 }
@@ -221,7 +221,7 @@ static int menu_settings_iterate(unsigned action,
 
       case MENU_ACTION_CANCEL:
          apply_deferred_settings();
-         menu_entries_pop_list(driver.menu->menu_stack);
+         menu_list_pop_stack(driver.menu->menu_stack);
          break;
       case MENU_ACTION_SELECT:
          menu_list_push_stack(driver.menu->menu_stack, "", "info_screen",
@@ -350,7 +350,7 @@ static int menu_viewport_iterate(unsigned action)
          break;
 
       case MENU_ACTION_CANCEL:
-         menu_entries_pop_list(driver.menu->menu_stack);
+         menu_list_pop_stack(driver.menu->menu_stack);
          if (!strcmp(label, "custom_viewport_2"))
          {
             menu_list_push_stack(driver.menu->menu_stack, "", "",
@@ -360,7 +360,7 @@ static int menu_viewport_iterate(unsigned action)
          break;
 
       case MENU_ACTION_OK:
-         menu_entries_pop_list(driver.menu->menu_stack);
+         menu_list_pop_stack(driver.menu->menu_stack);
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT
                && !g_settings.video.scale_integer)
          {
@@ -484,7 +484,7 @@ static int menu_load_or_open_zip_iterate(unsigned action)
    {
       case MENU_ACTION_OK:
       case MENU_ACTION_CANCEL:
-         menu_entries_pop_list(driver.menu->menu_stack);
+         menu_list_pop_stack(driver.menu->menu_stack);
 
          file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label,
                NULL);
@@ -564,13 +564,13 @@ static int menu_common_iterate(unsigned action)
    else if (type == MENU_SETTINGS_CUSTOM_BIND)
    {
       if (menu_input_bind_iterate(driver.menu))
-         menu_entries_pop_list(driver.menu->menu_stack);
+         menu_list_pop_stack(driver.menu->menu_stack);
       return 0;
    }
    else if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
    {
       if (menu_input_bind_iterate_keyboard(driver.menu))
-         menu_entries_pop_list(driver.menu->menu_stack);
+         menu_list_pop_stack(driver.menu->menu_stack);
       return 0;
    }
 
@@ -625,7 +625,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_CANCEL:
-         menu_entries_pop_list(driver.menu->menu_stack);
+         menu_list_pop_stack(driver.menu->menu_stack);
          break;
 
       case MENU_ACTION_OK:

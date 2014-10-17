@@ -100,18 +100,6 @@ void menu_build_scroll_indices(file_list_t *list)
       list->size - 1;
 }
 
-void menu_entries_pop_list(file_list_t *list)
-{
-   if (!list)
-      return;
-
-   if (file_list_get_size(list) > 1)
-   {
-      menu_list_pop(list, &driver.menu->selection_ptr);
-      driver.menu->need_refresh = true;
-   }
-}
-
 int setting_set_flags(rarch_setting_t *setting)
 {
    if (!setting)

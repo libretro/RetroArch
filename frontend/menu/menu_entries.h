@@ -34,8 +34,6 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
       const char *dir, const char *label, unsigned type,
       unsigned default_type_plain, const char *exts);
 
-void menu_entries_pop_list(file_list_t *list);
-
 int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list);
 
 void menu_entries_pop_stack(file_list_t *list, const char *needle);
