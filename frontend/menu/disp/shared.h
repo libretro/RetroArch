@@ -20,6 +20,8 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "INPUT OPTIONS", sizeof_title);
    else if (!strcmp(label, "Overlay Options"))
       strlcpy(title, "OVERLAY OPTIONS", sizeof_title);
+   else if (!strcmp(label, "Playlist Options"))
+      strlcpy(title, "PLAYLIST OPTIONS", sizeof_title);
    else if (!strcmp(label, "Netplay Options"))
       strlcpy(title, "NETPLAY OPTIONS", sizeof_title);
    else if (!strcmp(label, "User Options"))

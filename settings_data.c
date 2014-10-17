@@ -4583,7 +4583,7 @@ static bool setting_data_append_list_playlist_options(
 
    START_GROUP(group_info, "Playlist Options");
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "History", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
          g_settings.history_list_enable,
@@ -4596,6 +4596,17 @@ static bool setting_data_append_list_playlist_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+
+   CONFIG_UINT(
+         g_settings.content_history_size,
+         "game_history_size",
+         "History List Size",
+         default_content_history_size,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_list_current_add_range(list, list_info, 0, 0, 1.0, true, false);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -4661,16 +4672,6 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
-   CONFIG_UINT(
-         g_settings.content_history_size,
-         "game_history_size",
-         "Content History Size",
-         default_content_history_size,
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-   settings_list_current_add_range(list, list_info, 0, 0, 1.0, true, false);
 
    END_SUB_GROUP(list, list_info);
    START_SUB_GROUP(list, list_info, "Paths", group_info.name, subgroup_info);
