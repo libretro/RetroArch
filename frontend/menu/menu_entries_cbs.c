@@ -1473,7 +1473,7 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
    {
       menu_list_push(list, info[i].path, "",
             MENU_FILE_CORE, 0);
-      file_list_set_alt_at_offset(list, i,
+      menu_list_set_alt_at_offset(list, i,
             info[i].display_name);
    }
 

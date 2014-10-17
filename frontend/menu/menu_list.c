@@ -250,3 +250,15 @@ void menu_list_push_stack_refresh(file_list_t *list,
    menu_navigation_clear(driver.menu, true);
    driver.menu->need_refresh = true;
 }
+
+void menu_list_set_alt_at_offset(file_list_t *list, size_t index,
+      const char *alt)
+{
+   file_list_set_alt_at_offset(list, index, alt);
+}
+
+void menu_list_get_alt_at_offset(const file_list_t *list, size_t index,
+      const char **alt)
+{
+   file_list_get_alt_at_offset(list, index, alt);
+}

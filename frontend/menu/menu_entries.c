@@ -56,7 +56,7 @@ static inline int entries_list_get_first_char(file_list_t *buf,
    int ret;
    const char *path = NULL;
 
-   file_list_get_alt_at_offset(buf, offset, &path);
+   menu_list_get_alt_at_offset(buf, offset, &path);
    ret = tolower(*path);
 
    /* "Normalize" non-alphabetical entries so they 
@@ -360,7 +360,7 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
          if (g_extern.core_info &&
                core_info_list_get_display_name(g_extern.core_info,
                   core_path, display_name, sizeof(display_name)))
-            file_list_set_alt_at_offset(list, i, display_name);
+            menu_list_set_alt_at_offset(list, i, display_name);
       }
       file_list_sort_on_alt(list);
    }

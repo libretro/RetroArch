@@ -75,6 +75,12 @@ void menu_list_push_stack_refresh(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr);
 
+void menu_list_get_alt_at_offset(const file_list_t *list, size_t index,
+      const char **alt);
+
+void menu_list_set_alt_at_offset(file_list_t *list, size_t index,
+      const char *alt);
+
 #ifdef __cplusplus
 }
 #endif
