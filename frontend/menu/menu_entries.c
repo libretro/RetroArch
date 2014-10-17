@@ -25,14 +25,16 @@ void menu_entries_refresh(file_list_t *list)
    if (!list || !driver.menu)
       return;
 
+   (void)list;
+
    /* Before a refresh, we could have deleted a file on disk, causing
     * selection_ptr to suddendly be out of range.
     * Ensure it doesn't overflow. */
 
-   if (driver.menu->selection_ptr >= file_list_get_size(list)
-         && file_list_get_size(list))
-      menu_navigation_set(driver.menu, file_list_get_size(list) - 1);
-   else if (!file_list_get_size(list))
+   if (driver.menu->selection_ptr >= menu_list_get_size()
+         && menu_list_get_size())
+      menu_navigation_set(driver.menu, menu_list_get_size() - 1);
+   else if (!menu_list_get_size())
       menu_navigation_clear(driver.menu, true);
 }
 
