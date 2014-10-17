@@ -106,7 +106,7 @@ void menu_entries_pop_list(file_list_t *list)
 
    if (file_list_get_size(list) > 1)
    {
-      file_list_pop(list, &driver.menu->selection_ptr);
+      menu_list_pop(list, &driver.menu->selection_ptr);
       driver.menu->need_refresh = true;
    }
 }
@@ -135,7 +135,7 @@ void menu_entries_push(
       unsigned type,
       size_t directory_ptr)
 {
-   file_list_push(list, path, label, type, directory_ptr);
+   menu_list_push(list, path, label, type, directory_ptr);
    menu_clear_navigation(driver.menu, true);
    driver.menu->need_refresh = true;
 }
@@ -153,7 +153,7 @@ static int push_main_menu_list(menu_handle_t *menu,
    if (!setting)
       return -1;
 
-   file_list_clear(list);
+   menu_list_clear(list);
 
    for (; setting->type != ST_END_GROUP; setting++)
    {
@@ -164,7 +164,7 @@ static int push_main_menu_list(menu_handle_t *menu,
          )
          continue;
 
-      file_list_push(list, setting->short_description,
+      menu_list_push(list, setting->short_description,
             setting->name, setting_set_flags(setting), 0);
    }
 
@@ -181,34 +181,34 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
    size_t i, list_size;
    struct string_list *str_list = NULL;
 
-   file_list_clear(list);
+   menu_list_clear(list);
 
    if (!*dir)
    {
 #if defined(GEKKO)
 #ifdef HW_RVL
-      file_list_push(list,
+      menu_list_push(list,
             "sd:/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "usb:/", "", MENU_FILE_DIRECTORY, 0);
 #endif
-      file_list_push(list,
+      menu_list_push(list,
             "carda:/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "cardb:/", "", MENU_FILE_DIRECTORY, 0);
 #elif defined(_XBOX1)
-      file_list_push(list,
+      menu_list_push(list,
             "C:", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "D:", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "E:", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "F:", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "G:", "", MENU_FILE_DIRECTORY, 0);
 #elif defined(_XBOX360)
-      file_list_push(list,
+      menu_list_push(list,
             "game:", "", MENU_FILE_DIRECTORY, 0);
 #elif defined(_WIN32)
       unsigned drives = GetLogicalDrives();
@@ -217,48 +217,48 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
       {
          drive[0] = 'A' + i;
          if (drives & (1 << i))
-            file_list_push(list,
+            menu_list_push(list,
                   drive, "", MENU_FILE_DIRECTORY, 0);
       }
 #elif defined(__CELLOS_LV2__)
-      file_list_push(list,
+      menu_list_push(list,
             "/app_home/",   "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "/dev_hdd0/",   "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "/dev_hdd1/",   "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "/host_root/",  "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "/dev_usb000/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "/dev_usb001/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "/dev_usb002/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "/dev_usb003/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "/dev_usb004/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "/dev_usb005/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "/dev_usb006/", "", MENU_FILE_DIRECTORY, 0);
 #elif defined(PSP)
-      file_list_push(list,
+      menu_list_push(list,
             "ms0:/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "ef0:/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             "host0:/", "", MENU_FILE_DIRECTORY, 0);
 #elif defined(IOS)
-      file_list_push(list,
+      menu_list_push(list,
             "/var/mobile/", "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list,
+      menu_list_push(list,
             g_defaults.core_dir, "", MENU_FILE_DIRECTORY, 0);
-      file_list_push(list, "/", "",
+      menu_list_push(list, "/", "",
             MENU_FILE_DIRECTORY, 0);
 #else
-      file_list_push(list, "/", "",
+      menu_list_push(list, "/", "",
             MENU_FILE_DIRECTORY, 0);
 #endif
       return 0;
@@ -288,7 +288,7 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
    dir_list_sort(str_list, true);
 
    if (push_dir)
-      file_list_push(list, "<Use this directory>", "",
+      menu_list_push(list, "<Use this directory>", "",
             MENU_FILE_USE_DIRECTORY, 0);
 
    list_size = str_list->size;
@@ -351,11 +351,11 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
          if (file_type == MENU_FILE_CARCHIVE)
             continue;
 
-         file_list_push(list, path, "",
+         menu_list_push(list, path, "",
                is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE, 0);
       }
       else
-      file_list_push(list, path, "",
+      menu_list_push(list, path, "",
             file_type, 0);
    }
 
@@ -432,7 +432,7 @@ void menu_flush_stack_type(file_list_t *list,
    file_list_get_last(list, &path, &label, &type);
    while (type != final_type)
    {
-      file_list_pop(list, &driver.menu->selection_ptr);
+      menu_list_pop(list, &driver.menu->selection_ptr);
       file_list_get_last(list, &path, &label, &type);
    }
 }
@@ -451,7 +451,7 @@ void menu_entries_pop_stack(file_list_t *list,
    file_list_get_last(list, &path, &label, &type);
    while (strcmp(needle, label) == 0)
    {
-      file_list_pop(list, &driver.menu->selection_ptr);
+      menu_list_pop(list, &driver.menu->selection_ptr);
       file_list_get_last(list, &path, &label, &type);
    }
 }
@@ -470,7 +470,7 @@ void menu_flush_stack_label(file_list_t *list,
    file_list_get_last(list, &path, &label, &type);
    while (strcmp(needle, label) != 0)
    {
-      file_list_pop(list, &driver.menu->selection_ptr);
+      menu_list_pop(list, &driver.menu->selection_ptr);
       file_list_get_last(list, &path, &label, &type);
    }
 }
@@ -483,7 +483,7 @@ bool menu_entries_init(menu_handle_t *menu)
    menu->list_mainmenu = setting_data_new(SL_FLAG_MAIN_MENU);
    menu->list_settings = setting_data_new(SL_FLAG_ALL_SETTINGS);
 
-   file_list_push(menu->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
+   menu_list_push(menu->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
    menu_clear_navigation(menu, true);
    push_main_menu_list(menu, menu->selection_buf,
          "", "Main Menu", 0);

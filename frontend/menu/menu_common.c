@@ -222,8 +222,8 @@ void menu_free(void *data)
    libretro_free_system_info(&g_extern.menu.info);
 #endif
 
-   file_list_free(menu->menu_stack);
-   file_list_free(menu->selection_buf);
+   menu_list_free(menu->menu_stack);
+   menu_list_free(menu->selection_buf);
 
    rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
 

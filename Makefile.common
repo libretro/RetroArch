@@ -281,6 +281,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 frontend/menu/menu_shader.o \
 			 frontend/menu/menu_entries.o \
 			 frontend/menu/menu_entries_cbs.o \
+			 frontend/menu/menu_list.o \
 			 frontend/menu/menu_animation.o
 endif
 

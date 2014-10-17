@@ -91,7 +91,7 @@ typedef struct
 
    /* This buffer can be used to display generic OK messages to the user.
     * Fill it and call
-    * file_list_push(driver.menu->menu_stack, "", "message", 0, 0);
+    * menu_list_push(driver.menu->menu_stack, "", "message", 0, 0);
     */
    char message_contents[PATH_MAX];
 

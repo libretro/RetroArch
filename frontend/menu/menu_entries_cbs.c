@@ -325,7 +325,7 @@ static int action_ok_compressed_archive_push(const char *path,
 
    if (!strcmp(menu_label, "detect_core_list"))
    {
-      file_list_push(driver.menu->menu_stack, path, "load_open_zip",
+      menu_list_push(driver.menu->menu_stack, path, "load_open_zip",
             0, driver.menu->selection_ptr);
       return 0;
    }
@@ -504,7 +504,7 @@ static int action_ok_bind_all(const char *path,
    driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
    driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
 
-   file_list_push(driver.menu->menu_stack, "", "",
+   menu_list_push(driver.menu->menu_stack, "", "",
          driver.menu->bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
          MENU_SETTINGS_CUSTOM_BIND,
@@ -567,7 +567,7 @@ static int action_ok_bind_key(const char *path,
    driver.menu->binds.last   = type;
    driver.menu->binds.target = bind;
    driver.menu->binds.player = driver.menu->current_pad;
-   file_list_push(driver.menu->menu_stack, "", "",
+   menu_list_push(driver.menu->menu_stack, "", "",
          driver.menu->bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
          driver.menu->selection_ptr);
@@ -591,7 +591,7 @@ static int action_ok_bind_key(const char *path,
 static int action_ok_custom_viewport(const char *path,
       const char *label, unsigned type, size_t index)
 {
-   file_list_push(driver.menu->menu_stack, "", "",
+   menu_list_push(driver.menu->menu_stack, "", "",
          MENU_SETTINGS_CUSTOM_VIEWPORT,
          driver.menu->selection_ptr);
 
@@ -681,7 +681,7 @@ static int action_ok_help(const char *path,
    if (!driver.menu)
       return -1;
 
-   file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
+   menu_list_push(driver.menu->menu_stack, "", "help", 0, 0);
    driver.menu->push_start_screen = false;
 
    return 0;
@@ -1429,13 +1429,13 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   file_list_clear(list);
+   menu_list_clear(list);
    core_info_list_get_supported_cores(g_extern.core_info,
          driver.menu->deferred_path, &info, &list_size);
 
    for (i = 0; i < list_size; i++)
    {
-      file_list_push(list, info[i].path, "",
+      menu_list_push(list, info[i].path, "",
             MENU_FILE_CORE, 0);
       file_list_set_alt_at_offset(list, i,
             info[i].display_name);
@@ -1464,7 +1464,7 @@ static int deferred_push_core_information(void *data, void *userdata,
       return -1;
 
    info = (core_info_t*)g_extern.core_info_current;
-   file_list_clear(list);
+   menu_list_clear(list);
 
    if (info->data)
    {
@@ -1472,7 +1472,7 @@ static int deferred_push_core_information(void *data, void *userdata,
 
       snprintf(tmp, sizeof(tmp), "Core name: %s",
             info->display_name ? info->display_name : "");
-      file_list_push(list, tmp, "",
+      menu_list_push(list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0);
 
       if (info->authors_list)
@@ -1480,7 +1480,7 @@ static int deferred_push_core_information(void *data, void *userdata,
          strlcpy(tmp, "Authors: ", sizeof(tmp));
          string_list_join_concat(tmp, sizeof(tmp),
                info->authors_list, ", ");
-         file_list_push(list, tmp, "",
+         menu_list_push(list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0);
       }
 
@@ -1489,7 +1489,7 @@ static int deferred_push_core_information(void *data, void *userdata,
          strlcpy(tmp, "Permissions: ", sizeof(tmp));
          string_list_join_concat(tmp, sizeof(tmp),
                info->permissions_list, ", ");
-         file_list_push(list, tmp, "",
+         menu_list_push(list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0);
       }
 
@@ -1498,7 +1498,7 @@ static int deferred_push_core_information(void *data, void *userdata,
          strlcpy(tmp, "License(s): ", sizeof(tmp));
          string_list_join_concat(tmp, sizeof(tmp),
                info->licenses_list, ", ");
-         file_list_push(list, tmp, "",
+         menu_list_push(list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0);
       }
 
@@ -1507,7 +1507,7 @@ static int deferred_push_core_information(void *data, void *userdata,
          strlcpy(tmp, "Supported extensions: ", sizeof(tmp));
          string_list_join_concat(tmp, sizeof(tmp),
                info->supported_extensions_list, ", ");
-         file_list_push(list, tmp, "",
+         menu_list_push(list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0);
       }
 
@@ -1517,7 +1517,7 @@ static int deferred_push_core_information(void *data, void *userdata,
                g_extern.core_info, info->path,
                g_settings.system_directory);
 
-         file_list_push(list, "Firmware: ", "",
+         menu_list_push(list, "Firmware: ", "",
                MENU_SETTINGS_CORE_INFO_NONE, 0);
          for (i = 0; i < info->firmware_count; i++)
          {
@@ -1525,7 +1525,7 @@ static int deferred_push_core_information(void *data, void *userdata,
             {
                snprintf(tmp, sizeof(tmp), "	name: %s",
                      info->firmware[i].desc ? info->firmware[i].desc : "");
-               file_list_push(list, tmp, "",
+               menu_list_push(list, tmp, "",
                      MENU_SETTINGS_CORE_INFO_NONE, 0);
 
                snprintf(tmp, sizeof(tmp), "	status: %s, %s",
@@ -1533,7 +1533,7 @@ static int deferred_push_core_information(void *data, void *userdata,
                      "missing" : "present",
                      info->firmware[i].optional ?
                      "optional" : "required");
-               file_list_push(list, tmp, "",
+               menu_list_push(list, tmp, "",
                      MENU_SETTINGS_CORE_INFO_NONE, 0);
             }
          }
@@ -1542,20 +1542,20 @@ static int deferred_push_core_information(void *data, void *userdata,
       if (info->notes)
       {
          snprintf(tmp, sizeof(tmp), "Core notes: ");
-         file_list_push(list, tmp, "",
+         menu_list_push(list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0);
 
          for (i = 0; i < info->note_list->size; i++)
          {
             snprintf(tmp, sizeof(tmp), " %s",
                   info->note_list->elems[i].data);
-            file_list_push(list, tmp, "",
+            menu_list_push(list, tmp, "",
                   MENU_SETTINGS_CORE_INFO_NONE, 0);
          }
       }
    }
    else
-      file_list_push(list,
+      menu_list_push(list,
             "No information available.", "",
             MENU_SETTINGS_CORE_OPTION_NONE, 0);
 
@@ -1574,10 +1574,10 @@ static int deferred_push_performance_counters(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   file_list_clear(list);
-   file_list_push(list, "Frontend Counters", "frontend_counters",
+   menu_list_clear(list);
+   menu_list_push(list, "Frontend Counters", "frontend_counters",
          MENU_FILE_PUSH, 0);
-   file_list_push(list, "Core Counters", "core_counters",
+   menu_list_push(list, "Core Counters", "core_counters",
          MENU_FILE_PUSH, 0);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
@@ -1609,14 +1609,14 @@ static int deferred_push_video_shader_preset_parameters(void *data, void *userda
    if (!list || !menu_list)
       return -1;
 
-   file_list_clear(list);
+   menu_list_clear(list);
 
    shader = (struct gfx_shader*)
       shader_manager_get_current_shader(driver.menu, label, type);
 
    if (shader)
       for (i = 0; i < shader->num_parameters; i++)
-         file_list_push(list,
+         menu_list_push(list,
                shader->parameters[i].desc, label,
                MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
    driver.menu->parameter_shader = shader;
@@ -1638,14 +1638,14 @@ static int deferred_push_video_shader_parameters(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   file_list_clear(list);
+   menu_list_clear(list);
 
    shader = (struct gfx_shader*)
       shader_manager_get_current_shader(driver.menu, label, type);
 
    if (shader)
       for (i = 0; i < shader->num_parameters; i++)
-         file_list_push(list,
+         menu_list_push(list,
                shader->parameters[i].desc, label,
                MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
    driver.menu->parameter_shader = shader;
@@ -1670,12 +1670,12 @@ static int deferred_push_settings(void *data, void *userdata,
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(driver.menu->list_settings,
          "Driver Options");
 
-   file_list_clear(list);
+   menu_list_clear(list);
 
    for (; setting->type != ST_NONE; setting++)
    {
       if (setting->type == ST_GROUP)
-         file_list_push(list, setting->short_description,
+         menu_list_push(list, setting->short_description,
                setting->name, setting_set_flags(setting), 0);
    }
 
@@ -1699,15 +1699,15 @@ static int deferred_push_category(void *data, void *userdata,
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
          driver.menu->list_settings, label);
 
-   file_list_clear(list);
+   menu_list_clear(list);
 
    if (!strcmp(label, "Video Options"))
    {
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
-      file_list_push(list, "Screen Resolution", "",
+      menu_list_push(list, "Screen Resolution", "",
             MENU_SETTINGS_VIDEO_RESOLUTION, 0);
 #endif
-      file_list_push(list, "Custom Ratio", "",
+      menu_list_push(list, "Custom Ratio", "",
             MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
    }
 
@@ -1720,7 +1720,7 @@ static int deferred_push_category(void *data, void *userdata,
          )
          continue;
 
-      file_list_push(list, setting->short_description,
+      menu_list_push(list, setting->short_description,
             setting->name, setting_set_flags(setting), 0);
    }
 
@@ -1739,7 +1739,7 @@ static void add_setting_entry(menu_handle_t *menu,
       setting_data_find_setting(settings, label);
 
    if (setting)
-      file_list_push(list, setting->short_description,
+      menu_list_push(list, setting->short_description,
             setting->name, id, 0);
 }
 
@@ -1756,20 +1756,20 @@ static int deferred_push_input_options(void *data, void *userdata,
    settings_list_free(driver.menu->list_settings);
    driver.menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
 
-   file_list_clear(list);
-   file_list_push(list, "Player", "input_bind_player_no", 0, 0);
-   file_list_push(list, "Device", "input_bind_device_id", 0, 0);
-   file_list_push(list, "Device Type", "input_bind_device_type", 0, 0);
-   file_list_push(list, "Analog D-pad Mode", "input_bind_analog_dpad_mode", 0, 0);
+   menu_list_clear(list);
+   menu_list_push(list, "Player", "input_bind_player_no", 0, 0);
+   menu_list_push(list, "Device", "input_bind_device_id", 0, 0);
+   menu_list_push(list, "Device Type", "input_bind_device_type", 0, 0);
+   menu_list_push(list, "Analog D-pad Mode", "input_bind_analog_dpad_mode", 0, 0);
    add_setting_entry(driver.menu,list,"input_axis_threshold", 0, driver.menu->list_settings);
    add_setting_entry(driver.menu,list,"input_autodetect_enable", 0, driver.menu->list_settings);
    add_setting_entry(driver.menu,list,"input_turbo_period", 0, driver.menu->list_settings);
    add_setting_entry(driver.menu,list,"input_duty_cycle", 0, driver.menu->list_settings);
-   file_list_push(list, "Bind Mode", "",
+   menu_list_push(list, "Bind Mode", "",
          MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
-   file_list_push(list, "Configure All (RetroPad)", "",
+   menu_list_push(list, "Configure All (RetroPad)", "",
          MENU_SETTINGS_CUSTOM_BIND_ALL, 0);
-   file_list_push(list, "Default All (RetroPad)", "",
+   menu_list_push(list, "Default All (RetroPad)", "",
          MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);
    add_setting_entry(driver.menu,list,"osk_enable", 0, driver.menu->list_settings);
    for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_ALL_LAST; i++)
@@ -1802,20 +1802,20 @@ static int deferred_push_shader_options(void *data, void *userdata,
    if (!shader)
       return -1;
 
-   file_list_clear(list);
-   file_list_push(list, "Apply Shader Changes", "shader_apply_changes",
+   menu_list_clear(list);
+   menu_list_push(list, "Apply Shader Changes", "shader_apply_changes",
          MENU_FILE_PUSH, 0);
-   file_list_push(list, "Default Filter", "video_shader_default_filter",
+   menu_list_push(list, "Default Filter", "video_shader_default_filter",
          0, 0);
-   file_list_push(list, "Load Shader Preset", "video_shader_preset",
+   menu_list_push(list, "Load Shader Preset", "video_shader_preset",
          MENU_FILE_PUSH, 0);
-   file_list_push(list, "Shader Preset Save As",
+   menu_list_push(list, "Shader Preset Save As",
          "video_shader_preset_save_as", MENU_FILE_LINEFEED_SWITCH, 0);
-   file_list_push(list, "Parameters (Current)",
+   menu_list_push(list, "Parameters (Current)",
          "video_shader_parameters", MENU_FILE_PUSH, 0);
-   file_list_push(list, "Parameters (Menu)",
+   menu_list_push(list, "Parameters (Menu)",
          "video_shader_preset_parameters", MENU_FILE_PUSH, 0);
-   file_list_push(list, "Shader Passes", "video_shader_num_passes",
+   menu_list_push(list, "Shader Passes", "video_shader_num_passes",
          0, 0);
 
    for (i = 0; i < shader->passes; i++)
@@ -1823,15 +1823,15 @@ static int deferred_push_shader_options(void *data, void *userdata,
       char buf[64];
 
       snprintf(buf, sizeof(buf), "Shader #%u", i);
-      file_list_push(list, buf, "video_shader_pass",
+      menu_list_push(list, buf, "video_shader_pass",
             MENU_SETTINGS_SHADER_PASS_0 + i, 0);
 
       snprintf(buf, sizeof(buf), "Shader #%u Filter", i);
-      file_list_push(list, buf, "video_shader_filter_pass",
+      menu_list_push(list, buf, "video_shader_filter_pass",
             MENU_SETTINGS_SHADER_PASS_FILTER_0 + i, 0);
 
       snprintf(buf, sizeof(buf), "Shader #%u Scale", i);
-      file_list_push(list, buf, "video_shader_scale_pass",
+      menu_list_push(list, buf, "video_shader_scale_pass",
             MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0);
    }
 
@@ -1852,7 +1852,7 @@ static void push_perfcounter(menu_handle_t *menu,
 
    for (i = 0; i < num; i++)
       if (counters[i] && counters[i]->ident)
-         file_list_push(list, counters[i]->ident, "",
+         menu_list_push(list, counters[i]->ident, "",
                id + i, 0);
 }
 
@@ -1865,7 +1865,7 @@ static int deferred_push_core_counters(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   file_list_clear(list);
+   menu_list_clear(list);
    push_perfcounter(driver.menu, list, perf_counters_libretro,
          perf_ptr_libretro, MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
 
@@ -1884,7 +1884,7 @@ static int deferred_push_frontend_counters(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   file_list_clear(list);
+   menu_list_clear(list);
    push_perfcounter(driver.menu, list, perf_counters_rarch,
          perf_ptr_rarch, MENU_SETTINGS_PERF_COUNTERS_BEGIN);
 
@@ -1904,17 +1904,17 @@ static int deferred_push_core_options(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   file_list_clear(list);
+   menu_list_clear(list);
    if (g_extern.system.core_options)
    {
       size_t opts = core_option_size(g_extern.system.core_options);
       for (i = 0; i < opts; i++)
-         file_list_push(list,
+         menu_list_push(list,
                core_option_get_desc(g_extern.system.core_options, i), "",
                MENU_SETTINGS_CORE_OPTION_START + i, 0);
    }
    else
-      file_list_push(list, "No options available.", "",
+      menu_list_push(list, "No options available.", "",
                MENU_SETTINGS_CORE_OPTION_NONE, 0);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
@@ -1932,12 +1932,12 @@ static int deferred_push_disk_options(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   file_list_clear(list);
-   file_list_push(list, "Disk Index", "disk_index",
+   menu_list_clear(list);
+   menu_list_push(list, "Disk Index", "disk_index",
          MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0);
-   file_list_push(list, "Disk Cycle Tray Status", "disk_cycle_tray_status",
+   menu_list_push(list, "Disk Cycle Tray Status", "disk_cycle_tray_status",
          MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0);
-   file_list_push(list, "Disk Image Append", "disk_image_append",
+   menu_list_push(list, "Disk Image Append", "disk_image_append",
          MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
@@ -1972,7 +1972,7 @@ static int deferred_push_history_list(void *data, void *userdata,
    if (!list || !menu_list || !driver.menu)
       return -1;
 
-   file_list_clear(list);
+   menu_list_clear(list);
    list_size = content_playlist_size(g_defaults.history);
 
    for (i = 0; i < list_size; i++)
@@ -1992,7 +1992,7 @@ static int deferred_push_history_list(void *data, void *userdata,
                path_short,core_name);
       }
 
-      file_list_push(list, fill_buf, "",
+      menu_list_push(list, fill_buf, "",
             MENU_FILE_PLAYLIST_ENTRY, 0);
    }
 

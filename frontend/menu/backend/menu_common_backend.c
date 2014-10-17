@@ -223,7 +223,7 @@ static int menu_settings_iterate(unsigned action,
          menu_entries_pop_list(driver.menu->menu_stack);
          break;
       case MENU_ACTION_SELECT:
-         file_list_push(driver.menu->menu_stack, "", "info_screen",
+         menu_list_push(driver.menu->menu_stack, "", "info_screen",
                0, driver.menu->selection_ptr);
          break;
       case MENU_ACTION_OK:
@@ -268,7 +268,7 @@ static int menu_settings_iterate(unsigned action,
    /* Have to defer it so we let settings refresh. */
    if (driver.menu->push_start_screen)
    {
-      file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
+      menu_list_push(driver.menu->menu_stack, "", "help", 0, 0);
       driver.menu->push_start_screen = false;
    }
 
@@ -352,7 +352,7 @@ static int menu_viewport_iterate(unsigned action)
          menu_entries_pop_list(driver.menu->menu_stack);
          if (!strcmp(label, "custom_viewport_2"))
          {
-            file_list_push(driver.menu->menu_stack, "", "",
+            menu_list_push(driver.menu->menu_stack, "", "",
                   MENU_SETTINGS_CUSTOM_VIEWPORT,
                   driver.menu->selection_ptr);
          }
@@ -363,7 +363,7 @@ static int menu_viewport_iterate(unsigned action)
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT
                && !g_settings.video.scale_integer)
          {
-            file_list_push(driver.menu->menu_stack, "",
+            menu_list_push(driver.menu->menu_stack, "",
                   "custom_viewport_2", 0, driver.menu->selection_ptr);
          }
          break;
@@ -632,7 +632,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_SELECT:
-         file_list_push(driver.menu->menu_stack, "", "info_screen",
+         menu_list_push(driver.menu->menu_stack, "", "info_screen",
                0, driver.menu->selection_ptr);
          break;
 
