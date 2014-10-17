@@ -228,15 +228,16 @@ returntype main_entry(signature())
 
    rarch_main_command(RARCH_CMD_HISTORY_INIT);
 
-#if defined(HAVE_MENU)
+   if (g_settings.history_list_enable)
+   {
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
-   if (ret)
+      if (ret)
 #endif
-      rarch_playlist_push(g_defaults.history,
-            g_extern.fullpath,
-            g_settings.libretro,
-            &g_extern.system.info);
-#endif
+         rarch_playlist_push(g_defaults.history,
+               g_extern.fullpath,
+               g_settings.libretro,
+               &g_extern.system.info);
+   }
 
 #if defined(HAVE_MAIN_LOOP)
    while (main_entry_decide(signature_expand(), args) != -1);

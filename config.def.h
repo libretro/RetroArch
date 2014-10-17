@@ -309,6 +309,10 @@ enum
 #define DEFAULT_ASPECT_RATIO -1.0f
 #endif
 
+static const bool def_history_list_enable = true;
+
+static const unsigned int def_user_language = 0;
+
 /* VIDEO */
 
 #if defined(_XBOX360)
@@ -316,8 +320,6 @@ enum
 #else
 #define DEFAULT_GAMMA 0
 #endif
-
-static const unsigned int def_user_language = 0;
 
 /* Windowed
  * Real x resolution = aspect * base_size * x scale

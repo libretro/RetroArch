@@ -332,6 +332,7 @@ static void config_set_defaults(void)
             def_menu,  sizeof(g_settings.menu.driver));
 #endif
 
+   g_settings.history_list_enable = def_history_list_enable;
    g_settings.load_dummy_on_core_shutdown = load_dummy_on_core_shutdown;
 
    g_settings.video.scale = scale;
@@ -1124,6 +1125,8 @@ static bool config_load_file(const char *path, bool set_defaults)
             g_extern.config_path, "retroarch-content-history.txt",
             sizeof(g_settings.content_history_path));
 
+   CONFIG_GET_BOOL(history_list_enable, "history_list_enable");
+
    CONFIG_GET_PATH(content_history_path, "game_history_path");
    CONFIG_GET_INT(content_history_size, "game_history_size");
 
@@ -1679,6 +1682,8 @@ bool config_save_file(const char *path)
          g_settings.savestate_auto_save);
    config_set_bool(conf, "savestate_auto_load",
          g_settings.savestate_auto_load);
+   config_set_bool(conf, "history_list_enable",
+         g_settings.history_list_enable);
 
    config_set_float(conf, "fastforward_ratio", g_settings.fastforward_ratio);
    config_set_bool(conf, "fastforward_ratio_throttle_enable", g_settings.fastforward_ratio_throttle_enable);

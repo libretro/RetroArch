@@ -3041,6 +3041,18 @@ static bool setting_data_append_list_general_options(
          general_write_handler,
          general_read_handler);
 
+   CONFIG_BOOL(
+         g_settings.history_list_enable,
+         "history_list_enable",
+         "History List Enable",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
    CONFIG_UINT(g_settings.libretro_log_level,
          "libretro_log_level",
          "Libretro Logging Level",

@@ -80,6 +80,9 @@ static void menu_environment_get(int *argc, char *argv[],
 
 static void push_to_history_playlist(void)
 {
+   if (!g_settings.history_list_enable)
+      return;
+
    if (*g_extern.fullpath)
    {
       char tmp[PATH_MAX];

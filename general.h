@@ -388,6 +388,7 @@ struct settings
    char extraction_directory[PATH_MAX];
    char playlist_directory[PATH_MAX];
 
+   bool history_list_enable;
    bool rewind_enable;
    size_t rewind_buffer_size;
    unsigned rewind_granularity;
