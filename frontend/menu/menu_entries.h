@@ -36,8 +36,6 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
 
 int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list);
 
-void menu_entries_pop_stack(file_list_t *list, const char *needle);
-
 void menu_flush_stack_type(file_list_t *list, unsigned final_type);
 void menu_flush_stack_label(file_list_t *list, const char *needle);
 

@@ -29,6 +29,9 @@ void menu_list_pop(file_list_t *list, size_t *directory_ptr);
 
 void menu_list_pop_stack(file_list_t *list);
 
+void menu_list_pop_stack_by_needle(file_list_t *list,
+      const char *needle);
+
 void menu_list_clear(file_list_t *list);
 
 void menu_list_push(file_list_t *list,

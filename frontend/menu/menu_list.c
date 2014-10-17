@@ -15,6 +15,7 @@
 
 #include "../../driver.h"
 #include "menu_list.h"
+#include <string.h>
 
 void menu_list_free(file_list_t *list)
 {
@@ -46,6 +47,25 @@ void menu_list_pop_stack(file_list_t *list)
    {
       menu_list_pop(list, &driver.menu->selection_ptr);
       driver.menu->need_refresh = true;
+   }
+}
+
+void menu_list_pop_stack_by_needle(file_list_t *list,
+      const char *needle)
+{
+   const char *path = NULL;
+   const char *label = NULL;
+   unsigned type = 0;
+
+   if (!driver.menu || !list)
+      return;
+
+   driver.menu->need_refresh = true;
+   file_list_get_last(list, &path, &label, &type);
+   while (strcmp(needle, label) == 0)
+   {
+      menu_list_pop(list, &driver.menu->selection_ptr);
+      file_list_get_last(list, &path, &label, &type);
    }
 }
 

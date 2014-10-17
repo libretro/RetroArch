@@ -256,7 +256,7 @@ static int action_ok_path_use_directory(const char *path,
    if (setting->type == ST_DIR)
    {
       menu_action_setting_set_current_string(setting, menu_path);
-      menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
+      menu_list_pop_stack_by_needle(driver.menu->menu_stack, setting->name);
    }
 
    return 0;
@@ -448,7 +448,7 @@ static int action_ok_file_load(const char *path,
    if (setting && setting->type == ST_PATH)
    {
       menu_action_setting_set_current_string_path(setting, menu_path, path);
-      menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
+      menu_list_pop_stack_by_needle(driver.menu->menu_stack, setting->name);
    }
    else
    {
@@ -489,7 +489,7 @@ static int action_ok_set_path(const char *path,
       return -1;
 
    menu_action_setting_set_current_string_path(setting, menu_path, path);
-   menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
+   menu_list_pop_stack_by_needle(driver.menu->menu_stack, setting->name);
 
    return 0;
 }
