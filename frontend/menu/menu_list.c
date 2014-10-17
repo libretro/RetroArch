@@ -69,6 +69,13 @@ void menu_list_get_last_stack(const file_list_t *list,
       file_list_get_last(list, path, label, file_type);
 }
 
+void *menu_list_get_last_stack_actiondata(const file_list_t *list)
+{
+   if (list)
+      return file_list_get_last_actiondata(list);
+   return NULL;
+}
+
 void menu_list_flush_stack(file_list_t *list,
       unsigned final_type)
 {

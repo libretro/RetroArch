@@ -428,7 +428,7 @@ static void xmb_frame(void)
 
    xmb_render_background(false);
 
-   file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
+   menu_list_get_last_stack(driver.menu->menu_stack, &dir, &label, &menu_type);
 
    get_title(label, dir, menu_type, xmb->title, sizeof(xmb->title));
 

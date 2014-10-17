@@ -296,7 +296,7 @@ static void rgui_render(void)
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
-   file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
+   menu_list_get_last_stack(driver.menu->menu_stack, &dir, &label, &menu_type);
 
 #if 0
    RARCH_LOG("Dir is: %s\n", label);

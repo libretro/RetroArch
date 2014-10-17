@@ -20,6 +20,7 @@
 #include <xuiapp.h>
 
 #include "menu_display.h"
+#include "../menu_list.h"
 #include "../menu_common.h"
 
 #include "../../../gfx/gfx_common.h"
@@ -369,7 +370,7 @@ static void rmenu_xui_render(void)
 
    rmenu_xui_render_background();
 
-   file_list_get_last(driver.menu->menu_stack, &dir,
+   menu_list_get_last_stack(driver.menu->menu_stack, &dir,
          &label, &menu_type);
 
    get_title(label, dir, menu_type,
