@@ -30,39 +30,22 @@ void apple_rarch_exited(void)
    [apple_platform unloadingCore];
 }
 
-void apple_run_core(int argc, char **argv, const char* core,
-      const char* file)
+void apple_run_core(int argc, char **argv)
 {
-   static char core_path[PATH_MAX], file_path[PATH_MAX],
-               config_path[PATH_MAX];
-    NSString *core_to_load = core ? BOXSTRING(core) : nil;
-   [apple_platform loadingCore:core_to_load withFile:file];
-
-   if (file)
-      strlcpy(file_path, file, sizeof(file_path));
-   if (core)
-      strlcpy(core_path, core, sizeof(core_path));
+   static char config_path[PATH_MAX];
+   [apple_platform loadingCore:nil withFile:nil];
 
    strlcpy(config_path, g_defaults.config_path, sizeof(config_path));
-   core_info_get_custom_config(core, config_path, sizeof(config_path));
 
-   static const char* const argv_game[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
    static const char* const argv_menu[] = { "retroarch", "-c", config_path, "--menu", 0 };
 
    if (argc == 0)
-      argc = (file && core) ? 6 : 4;
+      argc = 4;
    if (!argv)
-      argv = (char**)((file && core) ? argv_game : argv_menu);
+      argv = (char**)(argv_menu);
 
    if (rarch_main(argc, argv))
    {
-      char basedir[256];
-      fill_pathname_basedir(basedir, file ? file : "", sizeof(basedir));
-      if (file && access(basedir, R_OK | W_OK | X_OK))
-         apple_display_alert("The directory containing the selected file must have write permissions. This will prevent zipped content from loading, and will cause some cores to not function.", "Warning");
-      else
-         apple_display_alert("Failed to load content.", "Error");
-
       main_exit(NULL);
    }
 }

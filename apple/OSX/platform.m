@@ -175,7 +175,7 @@ static char** waiting_argv;
 	   [cb addItemWithObjectValue:desc];
    }
 
-   apple_run_core(waiting_argc, waiting_argv, nil, 0);
+   apple_run_core(waiting_argc, waiting_argv);
 
    waiting_argc = 0;
 }

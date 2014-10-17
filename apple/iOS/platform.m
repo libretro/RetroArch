@@ -230,7 +230,7 @@ static void handle_touch_event(NSArray* touches)
    // Warn if there are no cores present
    core_info_set_core_path();
 
-   apple_run_core(0, NULL, nil, 0);
+   apple_run_core(0, NULL);
    apple_gamecontroller_init();
 }
 
