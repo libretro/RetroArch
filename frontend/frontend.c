@@ -146,7 +146,7 @@ static void check_defaults_dirs(void)
       path_mkdir(g_defaults.resampler_dir);
 }
 
-static void playlist_push(content_playlist_t *playlist,
+static void history_playlist_push(content_playlist_t *playlist,
       const char *path, const char *core_path,
       struct retro_system_info *info)
 {
@@ -257,7 +257,7 @@ returntype main_entry(signature())
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
       if (ret)
 #endif
-         playlist_push(g_defaults.history,
+         history_playlist_push(g_defaults.history,
                g_extern.fullpath,
                g_settings.libretro,
                &g_extern.system.info);
