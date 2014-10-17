@@ -3041,17 +3041,6 @@ static bool setting_data_append_list_general_options(
          general_write_handler,
          general_read_handler);
 
-   CONFIG_BOOL(
-         g_settings.history_list_enable,
-         "history_list_enable",
-         "History List Enable",
-         true,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
 
    CONFIG_UINT(g_settings.libretro_log_level,
          "libretro_log_level",
@@ -4585,6 +4574,35 @@ static bool setting_data_append_list_netplay_options(
    return true;
 }
 
+static bool setting_data_append_list_playlist_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info)
+{
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+
+   START_GROUP(group_info, "Playlist Options");
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(
+         g_settings.history_list_enable,
+         "history_list_enable",
+         "History List Enable",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   END_SUB_GROUP(list, list_info);
+   END_GROUP(list, list_info);
+
+   return true;
+}
+
 static bool setting_data_append_list_user_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -5078,6 +5096,12 @@ rarch_setting_t *setting_data_new(unsigned mask)
    if (mask & SL_FLAG_MENU_OPTIONS)
    {
       if (!setting_data_append_list_menu_options(&list, list_info))
+         goto error;
+   }
+
+   if (mask & SL_FLAG_PLAYLIST_OPTIONS)
+   {
+      if (!setting_data_append_list_playlist_options(&list, list_info))
          goto error;
    }
 

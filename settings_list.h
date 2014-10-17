@@ -61,21 +61,22 @@ enum setting_flags
 
 enum setting_list_flags
 {
-   SL_FLAG_MAIN_MENU       =  (1 << 0),
-   SL_FLAG_DRIVER_OPTIONS  =  (1 << 1),
-   SL_FLAG_GENERAL_OPTIONS =  (1 << 2),
-   SL_FLAG_VIDEO_OPTIONS   =  (1 << 3),
-   SL_FLAG_SHADER_OPTIONS  =  (1 << 4),
-   SL_FLAG_FONT_OPTIONS    =  (1 << 5),
-   SL_FLAG_AUDIO_OPTIONS   =  (1 << 6),
-   SL_FLAG_INPUT_OPTIONS   =  (1 << 7),
-   SL_FLAG_OVERLAY_OPTIONS =  (1 << 8),
-   SL_FLAG_MENU_OPTIONS    =  (1 << 9),
-   SL_FLAG_NETPLAY_OPTIONS =  (1 << 10),
-   SL_FLAG_USER_OPTIONS    =  (1 << 11),
-   SL_FLAG_PATH_OPTIONS    =  (1 << 12),
-   SL_FLAG_PRIVACY_OPTIONS =  (1 << 13),
-   SL_FLAG_ALL             =  (1 << 14),
+   SL_FLAG_MAIN_MENU        =  (1 << 0),
+   SL_FLAG_DRIVER_OPTIONS   =  (1 << 1),
+   SL_FLAG_GENERAL_OPTIONS  =  (1 << 2),
+   SL_FLAG_VIDEO_OPTIONS    =  (1 << 3),
+   SL_FLAG_SHADER_OPTIONS   =  (1 << 4),
+   SL_FLAG_FONT_OPTIONS     =  (1 << 5),
+   SL_FLAG_AUDIO_OPTIONS    =  (1 << 6),
+   SL_FLAG_INPUT_OPTIONS    =  (1 << 7),
+   SL_FLAG_OVERLAY_OPTIONS  =  (1 << 8),
+   SL_FLAG_MENU_OPTIONS     =  (1 << 9),
+   SL_FLAG_NETPLAY_OPTIONS  =  (1 << 10),
+   SL_FLAG_USER_OPTIONS     =  (1 << 11),
+   SL_FLAG_PATH_OPTIONS     =  (1 << 12),
+   SL_FLAG_PRIVACY_OPTIONS  =  (1 << 13),
+   SL_FLAG_PLAYLIST_OPTIONS =  (1 << 14),
+   SL_FLAG_ALL              =  (1 << 15),
 };
 
 #define SL_FLAG_ALL_SETTINGS (SL_FLAG_ALL - SL_FLAG_MAIN_MENU)
