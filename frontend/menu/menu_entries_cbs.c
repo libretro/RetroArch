@@ -1030,20 +1030,19 @@ static int action_toggle_input_bind_analog_dpad_mode(unsigned type, const char *
 static int action_start_input_bind_device_id(unsigned type, const char *label,
       unsigned action)
 {
-   int *p = NULL;
-   unsigned port = 0;
+   int p;
    
    if (!driver.menu)
       return -1;
 
-   port = driver.menu->current_pad;
-   p = (int*)&g_settings.input.joypad_map[port];
-   *p = port;
+   p = driver.menu->current_pad;
 
-   if (*p < -1)
-      *p = -1;
-   else if (*p >= MAX_PLAYERS)
-      *p = MAX_PLAYERS - 1;
+   if (p < -1)
+      p = -1;
+   else if (p >= MAX_PLAYERS)
+      p = MAX_PLAYERS - 1;
+
+   g_settings.input.joypad_map[driver.menu->current_pad] = p;
 
    return 0;
 }
