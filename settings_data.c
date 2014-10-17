@@ -1104,7 +1104,10 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
    if (!driver.menu)
       return -1;
    
-   bind = (struct retro_keybind*)&setting->value.keybind;
+   bind = (struct retro_keybind*)setting->value.keybind;
+
+   if (!bind)
+      return -1;
 
    driver.menu->binds.begin  = setting->bind_type;
    driver.menu->binds.last   = setting->bind_type;
@@ -4332,7 +4335,6 @@ static bool setting_data_append_list_input_options(
       CONFIG_BIND(g_settings.input.binds[0][i], 0,
             bind->base, bind->desc, &retro_keybinds_1[i],
             group_info.name, subgroup_info.name);
-      settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
    }
    END_SUB_GROUP(list, list_info);
 
@@ -4374,6 +4376,7 @@ static bool setting_data_append_list_input_options(
                &defaults[i],
                group_info.name,
                subgroup_info.name);
+         settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
       }
       END_SUB_GROUP(list, list_info);
    }
