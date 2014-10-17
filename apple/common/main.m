@@ -23,10 +23,7 @@
 
 id<RetroArch_Platform> apple_platform;
 
-void apple_content_loaded(const char *core_path, const char  *full_path)
-{
-   [apple_platform loadingCore:BOXSTRING(core_path) withFile:full_path];
-}
+void apple_rarch_exited(void);
 
 void apple_rarch_exited(void)
 {
@@ -36,6 +33,7 @@ void apple_rarch_exited(void)
 void apple_run_core(int argc, char **argv)
 {
    static char config_path[PATH_MAX];
+   [apple_platform loadingCore:nil withFile:nil];
 
    strlcpy(config_path, g_defaults.config_path, sizeof(config_path));
 
