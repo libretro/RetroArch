@@ -46,6 +46,12 @@ size_t menu_list_get_stack_size(void)
    return file_list_get_size(driver.menu->menu_stack);
 }
 
+void menu_list_get_at_offset(const file_list_t *list, size_t index,
+      const char **path, const char **label, unsigned *file_type)
+{
+   file_list_get_at_offset(list, index, path, label, file_type);
+}
+
 size_t menu_list_get_size(void)
 {
    if (!driver.menu)

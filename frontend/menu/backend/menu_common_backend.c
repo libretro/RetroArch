@@ -77,7 +77,7 @@ static int menu_info_screen_iterate(unsigned action)
    else
    {
       const char *label = NULL;
-      file_list_get_at_offset(driver.menu->selection_buf,
+      menu_list_get_at_offset(driver.menu->selection_buf,
             driver.menu->selection_ptr, NULL, &label,
             &info_type);
 
@@ -109,7 +109,7 @@ static int menu_action_ok(menu_file_list_cbs_t *cbs)
    if (menu_list_get_size() == 0)
       return 0;
 
-   file_list_get_at_offset(driver.menu->selection_buf,
+   menu_list_get_at_offset(driver.menu->selection_buf,
          driver.menu->selection_ptr, &path, &label, &type);
 
    if (cbs && cbs->action_ok)
@@ -195,7 +195,7 @@ static int menu_settings_iterate(unsigned action,
    
    driver.menu->frame_buf_pitch = driver.menu->width * 2;
 
-   file_list_get_at_offset(driver.menu->selection_buf,
+   menu_list_get_at_offset(driver.menu->selection_buf,
          driver.menu->selection_ptr, &path, &label, &type);
 
    if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
@@ -491,7 +491,7 @@ static int menu_load_or_open_zip_iterate(unsigned action)
          if (menu_list_get_size() == 0)
             return 0;
 
-         file_list_get_at_offset(driver.menu->selection_buf,
+         menu_list_get_at_offset(driver.menu->selection_buf,
                driver.menu->selection_ptr, &path, NULL, &type);
          break;
    }

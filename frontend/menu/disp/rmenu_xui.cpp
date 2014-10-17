@@ -418,7 +418,7 @@ static void rmenu_xui_render(void)
       unsigned type = 0, w = 0;
       bool selected = false;
 
-      file_list_get_at_offset(driver.menu->selection_buf, i, &path,
+      menu_list_get_at_offset(driver.menu->selection_buf, i, &path,
             &entry_label, &type);
 
       disp_set_label(&w, type, i, label,

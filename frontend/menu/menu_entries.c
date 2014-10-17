@@ -43,7 +43,7 @@ static inline bool entries_list_elem_is_dir(file_list_t *buf,
    const char *label = NULL;
    unsigned type = 0;
 
-   file_list_get_at_offset(buf, offset, &path, &label, &type);
+   menu_list_get_at_offset(buf, offset, &path, &label, &type);
 
    return type != MENU_FILE_PLAIN;
 }
@@ -349,7 +349,7 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
          char core_path[PATH_MAX], display_name[PATH_MAX];
          const char *path = NULL;
 
-         file_list_get_at_offset(list, i, &path, NULL, &type);
+         menu_list_get_at_offset(list, i, &path, NULL, &type);
          if (type != MENU_FILE_CORE)
             continue;
 

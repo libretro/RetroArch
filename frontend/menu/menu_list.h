@@ -38,6 +38,9 @@ void menu_list_pop_stack(file_list_t *list);
 void menu_list_pop_stack_by_needle(file_list_t *list,
       const char *needle);
 
+void menu_list_get_at_offset(const file_list_t *list, size_t index,
+      const char **path, const char **label, unsigned *file_type);
+
 size_t menu_list_get_stack_size(void);
 
 size_t menu_list_get_size(void);

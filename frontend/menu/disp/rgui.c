@@ -344,7 +344,7 @@ static void rgui_render(void)
       unsigned type = 0, w = 0;
       bool selected = false;
 
-      file_list_get_at_offset(driver.menu->selection_buf, i, &path,
+      menu_list_get_at_offset(driver.menu->selection_buf, i, &path,
             &entry_label, &type);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
             driver.menu->list_settings,

@@ -463,7 +463,7 @@ static void xmb_frame(void)
       unsigned type = 0, w = 0;
       xmb_node_t *node = NULL;
 
-      file_list_get_at_offset(driver.menu->selection_buf, i, &path,
+      menu_list_get_at_offset(driver.menu->selection_buf, i, &path,
             &entry_label, &type);
       node = (xmb_node_t*)file_list_get_userdata_at_offset(
             driver.menu->selection_buf, i);
