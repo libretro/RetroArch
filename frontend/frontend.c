@@ -146,6 +146,30 @@ static void check_defaults_dirs(void)
       path_mkdir(g_defaults.resampler_dir);
 }
 
+static void playlist_push(content_playlist_t *playlist,
+      const char *path, const char *core_path,
+      struct retro_system_info *info)
+{
+   char tmp[PATH_MAX];
+
+   if (!playlist || !g_extern.libretro_dummy || !info)
+      return;
+
+   /* path can be relative here.
+    * Ensure we're pushing absolute path. */
+
+   strlcpy(tmp, path, sizeof(tmp));
+
+   if (*tmp)
+      path_resolve_realpath(tmp, sizeof(tmp));
+
+   if (g_extern.system.no_content || *tmp)
+      content_playlist_push(playlist,
+            *tmp ? tmp : NULL,
+            core_path,
+            info->library_name);
+}
+
 bool main_load_content(int argc, char **argv, args_type() args,
       environment_get_t environ_get,
       process_args_t process_args)
@@ -233,7 +257,7 @@ returntype main_entry(signature())
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
       if (ret)
 #endif
-         rarch_playlist_push(g_defaults.history,
+         playlist_push(g_defaults.history,
                g_extern.fullpath,
                g_settings.libretro,
                &g_extern.system.info);

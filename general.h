@@ -829,10 +829,6 @@ void rarch_disk_control_set_eject(bool state, bool log);
 void rarch_disk_control_set_index(unsigned index);
 void rarch_disk_control_append_image(const char *path);
 
-void rarch_playlist_push(content_playlist_t *playlist,
-      const char *path, const char *core_path,
-      struct retro_system_info *info);
-
 void rarch_playlist_load_content(content_playlist_t *playlist,
       unsigned index);
 
