@@ -117,7 +117,7 @@ unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 static void common_load_content(void)
 {
    rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-   menu_list_flush_stack(driver.menu->menu_list->menu_stack, MENU_SETTINGS);
+   menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
    driver.menu->msg_force = true;
 }
 
@@ -144,7 +144,7 @@ static int action_ok_playlist_entry(const char *path,
 
    rarch_playlist_load_content(g_defaults.history,
          driver.menu->selection_ptr);
-   menu_list_flush_stack(driver.menu->menu_list->menu_stack, MENU_SETTINGS);
+   menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
    return -1;
 }
 
@@ -206,7 +206,7 @@ static int action_ok_shader_pass_load(const char *path,
 
    /* This will reset any changed parameters. */
    gfx_shader_resolve_parameters(NULL, driver.menu->shader);
-   menu_list_flush_stack_by_needle(driver.menu->menu_list->menu_stack, "Shader Options");
+   menu_list_flush_stack_by_needle(driver.menu->menu_list, "Shader Options");
    return 0;
 #else
    return -1;
@@ -231,7 +231,7 @@ static int action_ok_shader_preset_load(const char *path,
    menu_shader_manager_set_preset(driver.menu->shader,
          gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
          shader_path);
-   menu_list_flush_stack_by_needle(driver.menu->menu_list->menu_stack, "Shader Options");
+   menu_list_flush_stack_by_needle(driver.menu->menu_list, "Shader Options");
    return 0;
 #else
    return -1;
@@ -288,7 +288,7 @@ static int action_ok_core_load_deferred(const char *path,
          sizeof(g_extern.fullpath));
 
    rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-   menu_list_flush_stack(driver.menu->menu_list->menu_stack, MENU_SETTINGS);
+   menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
    driver.menu->msg_force = true;
 
    return -1;
@@ -307,14 +307,14 @@ static int action_ok_core_load(const char *path,
    fill_pathname_join(g_settings.libretro, menu_path, path,
          sizeof(g_settings.libretro));
    rarch_main_command(RARCH_CMD_LOAD_CORE);
-   menu_list_flush_stack(driver.menu->menu_list->menu_stack, MENU_SETTINGS);
+   menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
 #if defined(HAVE_DYNAMIC)
    /* No content needed for this core, load core immediately. */
    if (driver.menu->load_no_content)
    {
       *g_extern.fullpath = '\0';
       rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-      menu_list_flush_stack(driver.menu->menu_list->menu_stack, MENU_SETTINGS);
+      menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
       driver.menu->msg_force = true;
       return -1;
    }
@@ -396,7 +396,7 @@ static int action_ok_config_load(const char *path,
          &menu_path, NULL, NULL);
 
    fill_pathname_join(config, menu_path, path, sizeof(config));
-   menu_list_flush_stack(driver.menu->menu_list->menu_stack, MENU_SETTINGS);
+   menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
    driver.menu->msg_force = true;
    if (rarch_replace_config(config))
    {
@@ -424,7 +424,7 @@ static int action_ok_disk_image_append(const char *path,
 
    rarch_main_command(RARCH_CMD_RESUME);
 
-   menu_list_flush_stack(driver.menu->menu_list->menu_stack, MENU_SETTINGS);
+   menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
    return -1;
 }
 
@@ -492,7 +492,7 @@ static int action_ok_file_load(const char *path,
 
       common_load_content();
       rarch_main_command(RARCH_CMD_LOAD_CONTENT_PERSIST);
-      menu_list_flush_stack(driver.menu->menu_list->menu_stack, MENU_SETTINGS);
+      menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
       driver.menu->msg_force = true;
 
       return -1;

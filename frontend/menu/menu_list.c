@@ -117,7 +117,7 @@ void *menu_list_get_last_stack_actiondata(const file_list_t *list)
    return NULL;
 }
 
-void menu_list_flush_stack(file_list_t *list,
+void menu_list_flush_stack(menu_list_t *list,
       unsigned final_type)
 {
    const char *path = NULL;
@@ -128,15 +128,15 @@ void menu_list_flush_stack(file_list_t *list,
       return;
 
    driver.menu->need_refresh = true;
-   file_list_get_last(list, &path, &label, &type);
+   file_list_get_last(list->menu_stack, &path, &label, &type);
    while (type != final_type)
    {
-      menu_list_pop(list, &driver.menu->selection_ptr);
-      file_list_get_last(list, &path, &label, &type);
+      menu_list_pop(list->menu_stack, &driver.menu->selection_ptr);
+      file_list_get_last(list->menu_stack, &path, &label, &type);
    }
 }
 
-void menu_list_flush_stack_by_needle(file_list_t *list,
+void menu_list_flush_stack_by_needle(menu_list_t *list,
       const char *needle)
 {
    const char *path = NULL;
@@ -147,11 +147,11 @@ void menu_list_flush_stack_by_needle(file_list_t *list,
       return;
 
    driver.menu->need_refresh = true;
-   file_list_get_last(list, &path, &label, &type);
+   file_list_get_last(list->menu_stack, &path, &label, &type);
    while (strcmp(needle, label) != 0)
    {
-      menu_list_pop(list, &driver.menu->selection_ptr);
-      file_list_get_last(list, &path, &label, &type);
+      menu_list_pop(list->menu_stack, &driver.menu->selection_ptr);
+      file_list_get_last(list->menu_stack, &path, &label, &type);
    }
 }
 
