@@ -220,7 +220,7 @@ void file_list_get_at_offset(const file_list_t *list, size_t index,
       *file_type = list->list[index].type;
 }
 
-bool file_list_get_last_previous_stack(const file_list_t *list,
+bool file_list_get_previous_stack(const file_list_t *list,
       const char **path, const char **label,
       unsigned *file_type)
 {
