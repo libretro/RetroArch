@@ -220,18 +220,6 @@ void file_list_get_at_offset(const file_list_t *list, size_t index,
       *file_type = list->list[index].type;
 }
 
-bool file_list_get_previous_stack(const file_list_t *list,
-      const char **path, const char **label,
-      unsigned *file_type)
-{
-   if (list->size > 1)
-   {
-      file_list_get_at_offset(list, list->size - 2, path, label, file_type);
-      return true;
-   }
-   return false;
-}
-
 void file_list_get_last(const file_list_t *list,
       const char **path, const char **label,
       unsigned *file_type)
