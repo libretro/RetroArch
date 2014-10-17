@@ -14,11 +14,18 @@
  */
 
 #include <CoreFoundation/CFArray.h>
+#include <CoreFoundation/CFString.h>
 #import <Foundation/NSPathUtilities.h>
 #include "CFExtensions.h"
 
-CFArrayRef CFSearchPathForDirectoriesInDomains(unsigned flags,
-                                               unsigned domain_mask, BOOL expand_tilde)
+void CFSearchPathForDirectoriesInDomains(unsigned flags,
+                                               unsigned domain_mask, BOOL expand_tilde,
+                                               char *buf, size_t sizeof_buf)
 {
-   return CFBridgingRetain(NSSearchPathForDirectoriesInDomains(flags, domain_mask, expand_tilde));
+   CFArrayRef array = CFBridgingRetain(NSSearchPathForDirectoriesInDomains(
+      flags, domain_mask, expand_tilde));
+   CFStringRef path = CFBridgingRetain(CFArrayGetValueAtIndex(array, 0));
+   CFStringGetCString(path, buf, sizeof_buf, kCFStringEncodingUTF8);
+   CFRelease(path);
+   CFRelease(array);
 }

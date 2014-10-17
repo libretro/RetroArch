@@ -59,7 +59,7 @@ typedef enum
     CFAllDomainsMask = 0x0ffff  // all domains: all of the above and future items
 } CFDomainMask;
 
-CFArrayRef CFSearchPathForDirectoriesInDomains(unsigned flags,
-      unsigned domain_mask, BOOL expand_tilde);
+void CFSearchPathForDirectoriesInDomains(unsigned flags,
+      unsigned domain_mask, BOOL expand_tilde, char *buf, size_t sizeof_buf);
 
 #endif
