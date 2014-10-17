@@ -53,6 +53,22 @@ size_t menu_list_get_size(void)
    return file_list_get_size(driver.menu->selection_buf);
 }
 
+void menu_list_get_last(const file_list_t *list,
+      const char **path, const char **label,
+      unsigned *file_type)
+{
+   if (list)
+      file_list_get_last(list, path, label, file_type);
+}
+
+void menu_list_get_last_stack(const file_list_t *list,
+      const char **path, const char **label,
+      unsigned *file_type)
+{
+   if (list)
+      file_list_get_last(list, path, label, file_type);
+}
+
 void menu_list_flush_stack(file_list_t *list,
       unsigned final_type)
 {
