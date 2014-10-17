@@ -386,8 +386,9 @@ static void xmb_selection_pointer_changed(void)
 }
 
 static void xmb_populate_entries(void *data, const char *path,
-      const char *label, unsigned i)
+      const char *label, unsigned j)
 {
+   int i, current, end;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
@@ -402,6 +403,32 @@ static void xmb_populate_entries(void *data, const char *path,
    else if (xmb->depth < xmb->old_depth)
    {
       add_tween(XMB_DELAY, xmb->x+20, &xmb->x, &inOutQuad, NULL);
+   }
+
+
+   current = driver.menu->selection_ptr;
+   end = menu_list_get_size();
+
+   for (i = 0; i < end; i++)
+   {
+      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(
+            driver.menu->selection_buf, i);
+
+      if (!node)
+         continue;
+
+      node->alpha = xmb->i_passive_alpha;
+      node->zoom = xmb->i_passive_zoom;
+      node->y = (i < current) ? xmb->vspacing *
+         (i - current + xmb->above_item_offset) :
+         xmb->vspacing * (i - current + xmb->under_item_offset);
+
+      if (i == current)
+      {
+         node->alpha = xmb->i_active_alpha;
+         node->zoom = xmb->i_active_zoom;
+         node->y = xmb->vspacing * xmb->active_item_factor;
+      }
    }
 
    xmb->old_depth = xmb->depth;
@@ -878,7 +905,6 @@ static void xmb_list_insert(void *data,
 
    if (i == current)
       iy = xmb->vspacing * xmb->active_item_factor;
-
 
    node->alpha = (i == current) ? xmb->i_active_alpha : xmb->i_passive_alpha;
    node->zoom  = (i == current) ? xmb->i_active_zoom : xmb->i_passive_zoom;
