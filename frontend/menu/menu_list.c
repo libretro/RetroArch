@@ -48,6 +48,25 @@ void menu_list_free(menu_list_t *menu_list)
    menu_list_destroy(menu_list->selection_buf);
 }
 
+void *menu_list_new(void)
+{
+   menu_list_t *list = (menu_list_t*)calloc(1, sizeof(*list));
+
+   if (!list)
+      return NULL;
+
+   list->menu_stack    = (file_list_t*)calloc(1, sizeof(file_list_t));
+   list->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
+
+   if (!list->menu_stack || !list->selection_buf)
+   {
+      free(list);
+      return NULL;
+   }
+
+   return list;
+}
+
 size_t menu_list_get_stack_size(void)
 {
    if (!driver.menu)

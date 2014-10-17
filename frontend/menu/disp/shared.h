@@ -148,7 +148,7 @@ static void disp_set_label(unsigned *w, unsigned type, unsigned i,
    if (type == MENU_FILE_CORE)
    {
       strlcpy(type_str, "(CORE)", type_str_size);
-      file_list_get_alt_at_offset(driver.menu->selection_buf, i, &path);
+      menu_list_get_alt_at_offset(driver.menu->selection_buf, i, &path);
       *w = 6;
    }
    else if (type == MENU_FILE_PLAIN)
