@@ -20,7 +20,7 @@
 #include "../../settings_data.h"
 #include "../../performance.h"
 
-void entries_refresh(file_list_t *list)
+void menu_entries_refresh(file_list_t *list)
 {
    if (!list || !driver.menu)
       return;
@@ -36,7 +36,7 @@ void entries_refresh(file_list_t *list)
       menu_clear_navigation(driver.menu, true);
 }
 
-static inline bool menu_list_elem_is_dir(file_list_t *buf,
+static inline bool entries_list_elem_is_dir(file_list_t *buf,
       unsigned offset)
 {
    const char *path = NULL;
@@ -48,7 +48,7 @@ static inline bool menu_list_elem_is_dir(file_list_t *buf,
    return type != MENU_FILE_PLAIN;
 }
 
-static inline int menu_list_get_first_char(file_list_t *buf,
+static inline int entries_list_get_first_char(file_list_t *buf,
       unsigned offset)
 {
    int ret;
@@ -66,7 +66,7 @@ static inline int menu_list_get_first_char(file_list_t *buf,
    return ret;
 }
 
-void menu_build_scroll_indices(file_list_t *list)
+void menu_entries_build_scroll_indices(file_list_t *list)
 {
    size_t i;
    int current;
@@ -81,13 +81,13 @@ void menu_build_scroll_indices(file_list_t *list)
 
    driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 0;
 
-   current = menu_list_get_first_char(list, 0);
-   current_is_dir = menu_list_elem_is_dir(list, 0);
+   current        = entries_list_get_first_char(list, 0);
+   current_is_dir = entries_list_elem_is_dir(list, 0);
 
    for (i = 1; i < list->size; i++)
    {
-      int first = menu_list_get_first_char(list, i);
-      bool is_dir = menu_list_elem_is_dir(list, i);
+      int first   = entries_list_get_first_char(list, i);
+      bool is_dir = entries_list_elem_is_dir(list, i);
 
       if ((current_is_dir && !is_dir) || (first > current))
          driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = i;
@@ -129,7 +129,7 @@ void menu_entries_push(
    driver.menu->need_refresh = true;
 }
 
-static int push_main_menu_list(menu_handle_t *menu,
+static int entries_push_main_menu_list(menu_handle_t *menu,
       file_list_t *list,
       const char *path, const char *label,
       unsigned menu_type)
@@ -375,9 +375,8 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
    }
 
    driver.menu->scroll_indices_size = 0;
-   menu_build_scroll_indices(list);
-
-   entries_refresh(list);
+   menu_entries_build_scroll_indices(list);
+   menu_entries_refresh(list);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(driver.menu, dir, label, type);
@@ -396,7 +395,7 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
    file_list_get_last(menu_list, &path, &label, &type);
 
    if (!strcmp(label, "Main Menu"))
-      return push_main_menu_list(driver.menu, list, path, label, type);
+      return entries_push_main_menu_list(driver.menu, list, path, label, type);
 
    cbs = (menu_file_list_cbs_t*)
       file_list_get_last_actiondata(menu_list);
@@ -417,7 +416,7 @@ bool menu_entries_init(menu_handle_t *menu)
 
    menu_list_push_stack(menu->menu_stack, "", "Main Menu", MENU_SETTINGS, 0);
    menu_clear_navigation(menu, true);
-   push_main_menu_list(menu, menu->selection_buf,
+   entries_push_main_menu_list(menu, menu->selection_buf,
          "", "Main Menu", 0);
 
    return true;

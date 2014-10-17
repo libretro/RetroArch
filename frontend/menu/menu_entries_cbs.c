@@ -1445,7 +1445,8 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
    file_list_sort_on_alt(list);
 
    driver.menu->scroll_indices_size = 0;
-   entries_refresh(list);
+   menu_entries_build_scroll_indices(list);
+   menu_entries_refresh(list);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(driver.menu, path, label, type);
@@ -1998,8 +1999,8 @@ static int deferred_push_history_list(void *data, void *userdata,
    }
 
    driver.menu->scroll_indices_size = 0;
-   menu_build_scroll_indices(list);
-   entries_refresh(list);
+   menu_entries_build_scroll_indices(list);
+   menu_entries_refresh(list);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(driver.menu, path, label, type);
