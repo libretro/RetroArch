@@ -109,6 +109,7 @@ typedef struct rarch_setting
    const char* subgroup;
 
    uint32_t index;
+   uint32_t index_offset;
 
    double min;
    double max;

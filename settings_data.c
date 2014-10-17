@@ -641,7 +641,8 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
             get_key_name(key_name, sizeof(key_name), setting);
 #endif
             snprintf(buf, sizeof_buf, "[KB:%s] [JS:%s] [AX:%s]", key_name, button_name, axis_name);
-#else
+#endif
+#if 1
 #ifdef HAVE_MENU
             if (driver.menu != NULL)
             {
@@ -653,6 +654,14 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
                input_get_bind_string(buf, bind, auto_bind, sizeof_buf);
             }
 #endif
+#else
+            const struct retro_keybind* bind = (const struct retro_keybind*)
+               &setting->value.keybind[setting->index_offset];
+            const struct retro_keybind* auto_bind = 
+               (const struct retro_keybind*)
+               input_get_auto_bind(setting->index_offset, bind->id);
+
+            input_get_bind_string(buf, bind, auto_bind, sizeof_buf);
 #endif
          }
          break;
@@ -1093,6 +1102,37 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
    return result;
 }
 
+static int setting_data_bind_action_start(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting || !driver.menu)
+      return -1;
+
+   struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
+   struct retro_keybind *bind = (struct retro_keybind*)setting->value.keybind;
+
+   if (!bind)
+      return -1;
+
+   if (!driver.menu->bind_mode_keyboard)
+   {
+      bind->joykey = NO_BTN;
+      bind->joyaxis = AXIS_NONE;
+      return 0;
+   }
+
+   if (setting->index_offset)
+      def_binds = (struct retro_keybind*)retro_keybinds_rest;
+
+   if (!def_binds)
+      return -1;
+
+   bind->key = def_binds[setting->bind_type - MENU_SETTINGS_BIND_BEGIN].key;
+
+   return 0;
+}
+
 static int setting_data_bind_action_ok(void *data, unsigned action)
 {
    struct retro_keybind *bind = NULL;
@@ -1136,7 +1176,8 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
 
 rarch_setting_t setting_data_bind_setting(const char* name,
       const char* short_description, struct retro_keybind* target,
-      uint32_t index, const struct retro_keybind* default_value,
+      uint32_t index, uint32_t index_offset,
+      const struct retro_keybind* default_value,
       const char *group, const char *subgroup)
 {
    rarch_setting_t result = { ST_BIND, name, 0, short_description, group,
@@ -1144,9 +1185,11 @@ rarch_setting_t setting_data_bind_setting(const char* name,
 
    result.value.keybind = target;
    result.default_value.keybind = default_value;
-   result.index = index;
+   result.index        = index;
+   result.index_offset = index_offset;
 
-   result.action_ok = setting_data_bind_action_ok;
+   result.action_start = setting_data_bind_action_start;
+   result.action_ok    = setting_data_bind_action_ok;
 
    return result;
 }
@@ -2511,9 +2554,9 @@ static void general_write_handler(void *data)
 
 #define CONFIG_HEX(TARGET, NAME, SHORT, group_info, subgroup_info)
 
-#define CONFIG_BIND(TARGET, PLAYER, NAME, SHORT, DEF, group_info, subgroup_info) \
+#define CONFIG_BIND(TARGET, PLAYER, PLAYER_OFFSET, NAME, SHORT, DEF, group_info, subgroup_info) \
 { \
-   if (!(settings_list_append(list, list_info, setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF, group_info, subgroup_info)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, PLAYER_OFFSET, DEF, group_info, subgroup_info)))) return false; \
 }
 
 
@@ -4332,7 +4375,7 @@ static bool setting_data_append_list_input_options(
       if (!bind || !bind->meta)
          continue;
 
-      CONFIG_BIND(g_settings.input.binds[0][i], 0,
+      CONFIG_BIND(g_settings.input.binds[0][i], 0, 0,
             bind->base, bind->desc, &retro_keybinds_1[i],
             group_info.name, subgroup_info.name);
    }
@@ -4371,6 +4414,7 @@ static bool setting_data_append_list_input_options(
          CONFIG_BIND(
                g_settings.input.binds[player][i],
                player + 1,
+               player,
                bind->base,
                strdup(label), /* TODO: Find a way to fix this memleak. */
                &defaults[i],

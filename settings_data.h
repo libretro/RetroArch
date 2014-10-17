@@ -80,6 +80,7 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
 
 rarch_setting_t setting_data_bind_setting(const char* name,
       const char* description, struct retro_keybind* target, uint32_t index,
+      uint32_t index_offset,
       const struct retro_keybind* default_value, const char *group,
       const char *subgroup);
 
