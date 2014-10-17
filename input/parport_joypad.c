@@ -33,7 +33,7 @@
 struct parport_joypad
 {
    int fd;
-   bool buttons[NUM_BUTTONS];
+   uint32_t buttons;
    bool button_enable[NUM_BUTTONS];
    char saved_data;
    char saved_control;
@@ -87,13 +87,23 @@ static void poll_pad(struct parport_joypad *pad)
 
    for (i = 0; i < 8; i++)
    {
-      pad->buttons[i] = !(data & UINT8_C(1 << i)) && pad->button_enable[i];
+      if (!(data & UINT8_C(1 << i)) && pad->button_enable[i])
+         BIT32_SET(pad->buttons, i);
+      else
+         BIT32_CLEAR(pad->buttons, i);
    }
    for (i = 3; i < 8; i++)
    {
-      pad->buttons[i + 5] = !(status & UINT8_C(1 << i)) && pad->button_enable[i + 5];
+      if (!(status & UINT8_C(1 << i)) && pad->button_enable[i + 5])
+         BIT32_SET(pad->buttons, i + 5);
+      else
+         BIT32_CLEAR(pad->buttons, i + 5);
    }
-   pad->buttons[12] = pad->buttons[12] ? false : true && pad->button_enable[12];
+
+   if (pad->buttons[12] && pad->button_enable[12])
+      BIT32_SET(pad->buttons, 12);
+   else
+      BIT32_CLEAR(pad->buttons, 12);
 }
 
 static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad)
@@ -249,7 +259,7 @@ static bool parport_joypad_init(void)
 
          for (j = 0; j < NUM_BUTTONS; j++)
          {
-            if (!pad->buttons[j])
+            if (!(BIT32_GET(pad->buttons, j)))
             {
                pad->button_enable[j] = true;
                found_enabled_button = true;
@@ -315,7 +325,7 @@ static bool parport_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct parport_joypad *pad = &g_pads[port];
 
-   return joykey < NUM_BUTTONS && pad->buttons[joykey];
+   return joykey < NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
 }
 
 static int16_t parport_joypad_axis(unsigned port, uint32_t joyaxis)
