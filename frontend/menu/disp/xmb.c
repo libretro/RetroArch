@@ -412,7 +412,7 @@ static void xmb_populate_entries(void *data, const char *path,
    for (i = 0; i < end; i++)
    {
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(
-            driver.menu->selection_buf, i);
+            driver.menu->menu_list->selection_buf, i);
 
       if (!node)
          continue;
