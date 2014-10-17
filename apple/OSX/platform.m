@@ -19,6 +19,7 @@
 
 #import "../common/RetroArch_Apple.h"
 #include "../../input/apple_input.h"
+#include "../../frontend/frontend.h"
 #include "../../frontend/menu/menu_common.h"
 
 #include "../../file.h"

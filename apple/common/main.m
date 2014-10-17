@@ -47,7 +47,5 @@ void apple_run_core(int argc, char **argv)
       argv = (char**)(argv_menu);
 
    if (rarch_main(argc, argv))
-   {
-      main_exit(NULL);
-   }
+      apple_rarch_exited();
 }
