@@ -223,6 +223,7 @@ void menu_free(void *data)
    libretro_free_system_info(&g_extern.menu.info);
 #endif
 
+   //menu_list_free(menu->menu_list);
    menu_list_destroy(menu->menu_stack);
    menu_list_destroy(menu->selection_buf);
 

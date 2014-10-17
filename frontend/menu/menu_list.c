@@ -39,6 +39,15 @@ end:
    file_list_free(list);
 }
 
+void menu_list_free(menu_list_t *menu_list)
+{
+   if (!menu_list)
+      return;
+
+   menu_list_destroy(menu_list->menu_stack);
+   menu_list_destroy(menu_list->selection_buf);
+}
+
 size_t menu_list_get_stack_size(void)
 {
    if (!driver.menu)
