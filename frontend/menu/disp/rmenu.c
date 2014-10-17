@@ -142,11 +142,11 @@ static void rmenu_render(void)
    begin = (menu->selection_ptr >= (ENTRIES_HEIGHT / 2)) ? 
       (menu->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
    end = ((menu->selection_ptr + ENTRIES_HEIGHT) <= 
-         file_list_get_size(menu->selection_buf)) ?
+         menu_list_get_size()) ?
       menu->selection_ptr + ENTRIES_HEIGHT :
-      file_list_get_size(menu->selection_buf);
+      menu_list_get_size();
 
-   if (file_list_get_size(menu->selection_buf) <= ENTRIES_HEIGHT)
+   if (menu_list_get_size() <= ENTRIES_HEIGHT)
       begin = 0;
 
    if (end - begin > ENTRIES_HEIGHT)

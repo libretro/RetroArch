@@ -365,7 +365,7 @@ static void rmenu_xui_render(void)
       return;
 
    begin = driver.menu->selection_ptr;
-   end   = file_list_get_size(driver.menu->selection_buf);
+   end   = menu_list_get_size();
 
    rmenu_xui_render_background();
 

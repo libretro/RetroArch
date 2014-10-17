@@ -38,6 +38,20 @@ end:
    file_list_free(list);
 }
 
+size_t menu_list_get_stack_size(void)
+{
+   if (!driver.menu)
+      return 0;
+   return file_list_get_size(driver.menu->menu_stack);
+}
+
+size_t menu_list_get_size(void)
+{
+   if (!driver.menu)
+      return 0;
+   return file_list_get_size(driver.menu->selection_buf);
+}
+
 void menu_list_flush_stack(file_list_t *list,
       unsigned final_type)
 {

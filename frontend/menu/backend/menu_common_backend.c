@@ -106,7 +106,7 @@ static int menu_action_ok(menu_file_list_cbs_t *cbs)
    const char *path              = NULL;
    unsigned type                 = 0;
 
-   if (file_list_get_size(driver.menu->selection_buf) == 0)
+   if (menu_list_get_size() == 0)
       return 0;
 
    file_list_get_at_offset(driver.menu->selection_buf,
@@ -208,12 +208,11 @@ static int menu_settings_iterate(unsigned action,
             menu_navigation_decrement(driver.menu);
          else
             menu_navigation_set(driver.menu,
-                  file_list_get_size(driver.menu->selection_buf) - 1);
+                  menu_list_get_size() - 1);
          break;
 
       case MENU_ACTION_DOWN:
-         if ((driver.menu->selection_ptr + 1) <
-               file_list_get_size(driver.menu->selection_buf))
+         if ((driver.menu->selection_ptr + 1) < (menu_list_get_size()))
             menu_navigation_increment(driver.menu);
          else
             menu_navigation_clear(driver.menu, false);
@@ -489,7 +488,7 @@ static int menu_load_or_open_zip_iterate(unsigned action)
          file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label,
                NULL);
 
-         if (file_list_get_size(driver.menu->selection_buf) == 0)
+         if (menu_list_get_size() == 0)
             return 0;
 
          file_list_get_at_offset(driver.menu->selection_buf,
@@ -588,12 +587,11 @@ static int menu_common_iterate(unsigned action)
                   driver.menu->selection_ptr - scroll_speed);
          else
             menu_navigation_set(driver.menu,
-                  file_list_get_size(driver.menu->selection_buf) - 1);
+                  menu_list_get_size() - 1);
          break;
 
       case MENU_ACTION_DOWN:
-         if (driver.menu->selection_ptr + scroll_speed <
-               file_list_get_size(driver.menu->selection_buf))
+         if (driver.menu->selection_ptr + scroll_speed < (menu_list_get_size()))
             menu_navigation_set(driver.menu,
                   driver.menu->selection_ptr + scroll_speed);
          else
@@ -609,8 +607,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_RIGHT:
-         if (driver.menu->selection_ptr + fast_scroll_speed <
-               file_list_get_size(driver.menu->selection_buf))
+         if (driver.menu->selection_ptr + fast_scroll_speed < (menu_list_get_size()))
             menu_navigation_set(driver.menu,
                   driver.menu->selection_ptr + fast_scroll_speed);
          else

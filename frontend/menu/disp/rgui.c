@@ -22,6 +22,7 @@
 #include <limits.h>
 
 #include "../menu_driver.h"
+#include "../menu_list.h"
 #include "../menu_common.h"
 #include "../../../general.h"
 #include "../../../config.def.h"
@@ -278,12 +279,12 @@ static void rgui_render(void)
    if (driver.menu->selection_ptr >= RGUI_TERM_HEIGHT / 2)
       begin = driver.menu->selection_ptr - RGUI_TERM_HEIGHT / 2;
    end   = (driver.menu->selection_ptr + RGUI_TERM_HEIGHT <=
-         file_list_get_size(driver.menu->selection_buf)) ?
+         menu_list_get_size()) ?
       driver.menu->selection_ptr + RGUI_TERM_HEIGHT :
-      file_list_get_size(driver.menu->selection_buf);
+      menu_list_get_size();
 
    /* Do not scroll if all items are visible. */
-   if (file_list_get_size(driver.menu->selection_buf) <= RGUI_TERM_HEIGHT)
+   if (menu_list_get_size() <= RGUI_TERM_HEIGHT)
       begin = 0;
 
    if (end - begin > RGUI_TERM_HEIGHT)

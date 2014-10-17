@@ -20,6 +20,7 @@
 #include <string.h>
 #include <limits.h>
 
+#include "../menu_list.h"
 #include "../menu_common.h"
 #include "../menu_driver.h"
 #include "menu_display.h"
@@ -354,7 +355,7 @@ static void xmb_selection_pointer_changed(void)
       return;
 
    current = driver.menu->selection_ptr;
-   end = file_list_get_size(driver.menu->selection_buf);
+   end = menu_list_get_size();
 
    for (i = 0; i < end; i++)
    {
@@ -392,7 +393,7 @@ static void xmb_populate_entries(void *data, const char *path,
    if (!xmb)
       return;
 
-   xmb->depth = file_list_get_size(driver.menu->menu_stack);
+   xmb->depth = menu_list_get_stack_size();
 
    if (xmb->depth > xmb->old_depth)
    {
@@ -451,7 +452,7 @@ static void xmb_frame(void)
    xmb_draw_text(title_msg, xmb->title_margin_left, 
          gl->win_height - xmb->title_margin_top/2, 1, 1);
 
-   end = file_list_get_size(driver.menu->selection_buf);
+   end = menu_list_get_size();
    current = driver.menu->selection_ptr;
 
    for (i = 0; i < end; i++)

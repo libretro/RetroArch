@@ -20,6 +20,7 @@
 #include <string.h>
 #include <limits.h>
 
+#include "../menu_list.h"
 #include "../menu_common.h"
 #include "../menu_driver.h"
 #include "menu_display.h"
@@ -240,12 +241,12 @@ static void glui_frame(void)
    if (driver.menu->selection_ptr >= glui->term_height / 2)
       begin = driver.menu->selection_ptr - glui->term_height / 2;
    end   = (driver.menu->selection_ptr + glui->term_height <=
-         file_list_get_size(driver.menu->selection_buf)) ?
+         menu_list_get_size()) ?
       driver.menu->selection_ptr + glui->term_height :
-      file_list_get_size(driver.menu->selection_buf);
+      menu_list_get_size();
 
    /* Do not scroll if all items are visible. */
-   if (file_list_get_size(driver.menu->selection_buf) <= glui->term_height)
+   if (menu_list_get_size() <= glui->term_height)
       begin = 0;
 
    if (end - begin > glui->term_height)

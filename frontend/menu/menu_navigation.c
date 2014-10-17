@@ -21,6 +21,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include "menu_common.h"
+#include "menu_list.h"
 #include "menu_navigation.h"
 
 void menu_navigation_clear(menu_handle_t *menu, bool pending_push)
@@ -57,7 +58,7 @@ void menu_navigation_set(menu_handle_t *menu, size_t i)
 
 void menu_navigation_set_last(menu_handle_t *menu)
 {
-   menu->selection_ptr = file_list_get_size(menu->selection_buf) - 1;
+   menu->selection_ptr = menu_list_get_size() - 1;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_set_last)
       driver.menu_ctx->navigation_set_last(menu);
