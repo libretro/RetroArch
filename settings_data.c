@@ -2399,7 +2399,7 @@ static void general_write_handler(void *data)
       {
 #ifdef HAVE_MENU
          menu_list_push_stack_refresh(
-               driver.menu->menu_list->menu_stack,
+               driver.menu->menu_list,
                "",
                "help",
                0,

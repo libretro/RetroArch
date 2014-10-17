@@ -261,14 +261,16 @@ void menu_list_push_refresh(file_list_t *list,
    driver.menu->need_refresh = true;
 }
 
-void menu_list_push_stack(file_list_t *list,
+void menu_list_push_stack(menu_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr)
 {
-   menu_list_push(list, path, label, type, directory_ptr);
+   if (!list)
+      return;
+   menu_list_push(list->menu_stack, path, label, type, directory_ptr);
 }
 
-void menu_list_push_stack_refresh(file_list_t *list,
+void menu_list_push_stack_refresh(menu_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr)
 {

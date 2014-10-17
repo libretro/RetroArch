@@ -223,7 +223,7 @@ static int menu_settings_iterate(unsigned action,
          menu_list_pop_stack(driver.menu->menu_list->menu_stack);
          break;
       case MENU_ACTION_SELECT:
-         menu_list_push_stack(driver.menu->menu_list->menu_stack, "", "info_screen",
+         menu_list_push_stack(driver.menu->menu_list, "", "info_screen",
                0, driver.menu->selection_ptr);
          break;
       case MENU_ACTION_OK:
@@ -268,7 +268,7 @@ static int menu_settings_iterate(unsigned action,
    /* Have to defer it so we let settings refresh. */
    if (driver.menu->push_start_screen)
    {
-      menu_list_push_stack(driver.menu->menu_list->menu_stack, "", "help", 0, 0);
+      menu_list_push_stack(driver.menu->menu_list, "", "help", 0, 0);
       driver.menu->push_start_screen = false;
    }
 
@@ -352,7 +352,7 @@ static int menu_viewport_iterate(unsigned action)
          menu_list_pop_stack(driver.menu->menu_list->menu_stack);
          if (!strcmp(label, "custom_viewport_2"))
          {
-            menu_list_push_stack(driver.menu->menu_list->menu_stack, "", "",
+            menu_list_push_stack(driver.menu->menu_list, "", "",
                   MENU_SETTINGS_CUSTOM_VIEWPORT,
                   driver.menu->selection_ptr);
          }
@@ -363,7 +363,7 @@ static int menu_viewport_iterate(unsigned action)
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT
                && !g_settings.video.scale_integer)
          {
-            menu_list_push_stack(driver.menu->menu_list->menu_stack, "",
+            menu_list_push_stack(driver.menu->menu_list, "",
                   "custom_viewport_2", 0, driver.menu->selection_ptr);
          }
          break;
@@ -504,7 +504,7 @@ static int menu_load_or_open_zip_iterate(unsigned action)
 
             fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
             menu_list_push_stack_refresh(
-                  driver.menu->menu_list->menu_stack,
+                  driver.menu->menu_list,
                   cat_path,
                   menu_label,
                   type,
@@ -524,7 +524,7 @@ static int menu_load_or_open_zip_iterate(unsigned action)
             }
             else if (ret == 0)
                menu_list_push_stack_refresh(
-                     driver.menu->menu_list->menu_stack,
+                     driver.menu->menu_list,
                      g_settings.libretro_directory,
                      "deferred_core_list",
                      0,
@@ -637,7 +637,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_SELECT:
-         menu_list_push_stack(driver.menu->menu_list->menu_stack, "", "info_screen",
+         menu_list_push_stack(driver.menu->menu_list, "", "info_screen",
                0, driver.menu->selection_ptr);
          break;
 
