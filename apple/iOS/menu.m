@@ -549,6 +549,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                               [RAMenuItemBasic itemWithDescription:BOXSTRING("Core")
                                                             action:^{ [weakSelf chooseCoreWithPath:nil]; }
                                                             detail:^{
+                                                               
                                                                 const core_info_t *core = (const core_info_t*)core_info_list_get_by_id(weakSelf.core.UTF8String);
                                                                 
                                                                 if (weakSelf.core)
@@ -798,7 +799,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (id)initWithCore:(NSString*)core
 {
-   char buffer[PATH_MAX];
 
    RACoreSettingsMenu* __weak weakSelf = self;
 
@@ -808,6 +808,9 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       rarch_setting_t *setting_data, *setting;
       NSMutableArray* settings;
 
+#if 0
+      char buffer[PATH_MAX];
+      /* TODO - reimplement or get rid of it. */
       _isCustom = core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer));
       if (_isCustom)
       {
@@ -817,6 +820,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(deleteCustom)];
       }
       else
+#endif
       {
          self.title = BOXSTRING("Global Core Config");
          _pathToSave = BOXSTRING(g_defaults.config_path);
