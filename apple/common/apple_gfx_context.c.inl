@@ -109,12 +109,8 @@ static bool apple_gfx_ctx_init(void *data)
     if (g_use_hw_ctx)
     {
         //g_hw_ctx  = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
-        g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:g_hw_ctx];
     }
-    else
-    {
-       g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
-    }
+    g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:(g_use_hw_ctx) ? g_hw_ctx : nil];
     [g_context setView:g_view];
 #else
     g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
