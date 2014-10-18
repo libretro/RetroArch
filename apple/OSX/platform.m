@@ -45,6 +45,9 @@ void apple_rarch_exited(void)
 
 	apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
    NSEventType event_type = event.type;
+   
+   if (!apple)
+      return;
 
    switch ((NSInteger)event_type)
    {
