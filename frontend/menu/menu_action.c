@@ -145,6 +145,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    switch (setting->type)
    {
       case ST_BOOL:
+      case ST_INT:
       case ST_UINT:
       case ST_FLOAT:
       case ST_STRING:
