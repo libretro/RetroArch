@@ -70,17 +70,12 @@ static void gx_input_free_input(void *data)
 
 static void *gx_input_init(void)
 {
-   if (driver.input_data)
-      return driver.input_data;
-
    gx_input_t *gx = (gx_input_t*)calloc(1, sizeof(*gx));
    if (!gx)
       return NULL;
 
    gx->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
 
-
-   driver.input_data_own = true;
    return gx;
 }
 
@@ -94,8 +89,9 @@ static void gx_input_poll(void *data)
 
 static bool gx_input_key_pressed(void *data, int key)
 {
+   gx_input_t *gx = (gx_input_t*)data;
    return (g_extern.lifecycle_state & (1ULL << key)) || 
-      input_joypad_pressed(&gx_joypad, 0, g_settings.input.binds[0], key);
+      input_joypad_pressed(gx->joypad, 0, g_settings.input.binds[0], key);
 }
 
 static uint64_t gx_input_get_capabilities(void *data)
@@ -107,7 +103,8 @@ static uint64_t gx_input_get_capabilities(void *data)
 
 static const rarch_joypad_driver_t *gx_input_get_joypad_driver(void *data)
 {
-   return &gx_joypad;
+   gx_input_t *gx = (gx_input_t*)data;
+   return gx->joypad;
 }
 
 input_driver_t input_gx = {
