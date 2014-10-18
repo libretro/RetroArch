@@ -808,10 +808,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       NSMutableArray* settings;
 
       char buffer[PATH_MAX];
+      /* TODO - reimplement or get rid of it. */
       _isCustom = core_info_get_first_custom_config(core.UTF8String, buffer, sizeof(buffer));
       if (_isCustom)
       {
-         core_info_list_get_by_id(g_extern.core_info, g_extern.core_info_current, core.UTF8String);
+          core_info_list_get_by_id(g_extern.core_info, g_extern.core_info_current, core.UTF8String);
           self.title = g_extern.core_info_current ? BOXSTRING(g_extern.core_info_current->display_name) : BOXSTRING(core.UTF8String);
          _pathToSave = BOXSTRING(buffer);
          self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(deleteCustom)];
@@ -945,6 +946,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                                                   action: ^{ [weakSelf createNewConfig]; }]];
 
    size_t i;
+
    if (!g_extern.core_info)
       return;
 
@@ -1106,7 +1108,7 @@ static bool copy_config(const char *src_path, const char *dst_path)
    if (!(result = [tableView dequeueReusableCellWithIdentifier:cell_id]))
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
 
-    result.textLabel.text = g_extern.core_info_current? BOXSTRING(g_extern.core_info_current->display_name) : BOXSTRING(self.core.UTF8String);
+    result.textLabel.text = g_extern.core_info_current ? BOXSTRING(g_extern.core_info_current->display_name) : BOXSTRING(self.core.UTF8String);
    return result;
 }
 
