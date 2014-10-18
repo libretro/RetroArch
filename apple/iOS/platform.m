@@ -28,6 +28,15 @@
 
 #include "../../file.h"
 
+id<RetroArch_Platform> apple_platform;
+
+void apple_rarch_exited(void);
+
+void apple_rarch_exited(void)
+{
+   [apple_platform unloadingCore];
+}
+
 apple_frontend_settings_t apple_frontend_settings;
 
 int get_ios_version_major(void)
@@ -193,7 +202,11 @@ static void handle_touch_event(NSArray* touches)
    // Warn if there are no cores present
    core_info_set_core_path();
 
-   apple_run_core(0, NULL);
+   [apple_platform loadingCore:nil withFile:nil];
+   
+   if (rarch_main(0, NULL))
+      apple_rarch_exited();
+   
    apple_gamecontroller_init();
 }
 

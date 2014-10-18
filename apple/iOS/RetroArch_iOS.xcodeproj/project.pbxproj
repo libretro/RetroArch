@@ -16,7 +16,6 @@
 		501232DA192E606D0063A359 /* menu.m in Sources */ = {isa = PBXBuildFile; fileRef = 501232D9192E606D0063A359 /* menu.m */; };
 		501881EC184BAD6D006F665D /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 501881EB184BAD6D006F665D /* AVFoundation.framework */; };
 		501881EE184BB54C006F665D /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 501881ED184BB54C006F665D /* CoreMedia.framework */; };
-		5073C589196C0BA40026E146 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5073C586196C0BA40026E146 /* main.m */; };
 		5073C58A196C0BA40026E146 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 5073C587196C0BA40026E146 /* RAGameView.m */; };
 		5073C58B196C0BA40026E146 /* utility.m in Sources */ = {isa = PBXBuildFile; fileRef = 5073C588196C0BA40026E146 /* utility.m */; };
 		50CCC828185E0E7D001F5BC8 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */; };
@@ -52,7 +51,6 @@
 		501232D9192E606D0063A359 /* menu.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = menu.m; sourceTree = "<group>"; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
-		5073C586196C0BA40026E146 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = ../common/main.m; sourceTree = SOURCE_ROOT; };
 		5073C587196C0BA40026E146 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RAGameView.m; path = ../common/RAGameView.m; sourceTree = SOURCE_ROOT; };
 		5073C588196C0BA40026E146 /* utility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = utility.m; path = ../common/utility.m; sourceTree = SOURCE_ROOT; };
 		50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
@@ -179,7 +177,6 @@
 		96AFAE3316C1D4EA009DE44C /* common */ = {
 			isa = PBXGroup;
 			children = (
-				5073C586196C0BA40026E146 /* main.m */,
 				5073C587196C0BA40026E146 /* RAGameView.m */,
 				5073C588196C0BA40026E146 /* utility.m */,
 			);
@@ -322,7 +319,6 @@
 				501232C8192E5FB00063A359 /* apple_gamecontroller.m in Sources */,
 				5073C58A196C0BA40026E146 /* RAGameView.m in Sources */,
 				501232CC192E5FDC0063A359 /* sinc_neon.S in Sources */,
-				5073C589196C0BA40026E146 /* main.m in Sources */,
 				501232CA192E5FC40063A359 /* griffin.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
