@@ -225,9 +225,6 @@ enum
 
    [self pushViewController:[RAMainMenu new] animated:YES];
 
-   // Warn if there are no cores present
-   core_info_set_core_path();
-
    [apple_platform loadingCore:nil withFile:nil];
    
    if (rarch_main(0, NULL))
