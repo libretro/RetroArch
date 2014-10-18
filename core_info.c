@@ -24,8 +24,6 @@
 #include "config.h"
 #endif
 
-static core_info_list_t *global_core_list;
-
 static void core_info_list_resolve_all_extensions(
       core_info_list_t *core_info_list)
 {
@@ -466,47 +464,4 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
 
    qsort(info->firmware, info->firmware_count, sizeof(*info->firmware),
          core_info_firmware_cmp);
-}
-
-/* TODO - remove all of the functions below */
-
-void core_info_set_core_path(void)
-{
-   global_core_list = core_info_list_new(g_defaults.core_dir);
-}
-
-core_info_list_t *core_info_list_get(void)
-{
-   return global_core_list;
-}
-
-const core_info_t *core_info_list_get_by_id(const char *core_id)
-{
-   unsigned i;
-   const core_info_list_t* cores = core_info_list_get();
-
-   if (!core_id || !cores)
-      return NULL;
-
-   for (i = 0; i < cores->count; i ++)
-      if (cores->list[i].path && strcmp(core_id, cores->list[i].path) == 0)
-         return &cores->list[i];
-
-   return NULL;
-}
-
-bool core_info_get_custom_config(const char *core_id,
-      char *buf, size_t sizeof_buf)
-{
-   if (!core_id || !buf || !sizeof_buf)
-      return false;
-
-   fill_pathname_join(buf, g_defaults.menu_config_dir,
-         path_basename(core_id), sizeof_buf);
-   fill_pathname(buf, buf, ".cfg", sizeof_buf);
-
-   if (buf[0] == '\0')
-      return false;
-
-   return path_file_exists(buf);
 }
