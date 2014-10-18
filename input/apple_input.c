@@ -249,26 +249,12 @@ void apple_input_reset_icade_buttons(void)
    icade_buttons = 0;
 }
 
-/* This is copied here as it isn't 
- * defined in any standard iOS header */
-enum
-{
-   NSAlphaShiftKeyMask = 1 << 16,
-   NSShiftKeyMask      = 1 << 17,
-   NSControlKeyMask    = 1 << 18,
-   NSAlternateKeyMask  = 1 << 19,
-   NSCommandKeyMask    = 1 << 20,
-   NSNumericPadKeyMask = 1 << 21,
-   NSHelpKeyMask       = 1 << 22,
-   NSFunctionKeyMask   = 1 << 23,
-   NSDeviceIndependentModifierFlagsMask = 0xffff0000U
-};
+
 
 void apple_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod)
 {
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-   enum retro_mod mods = RETROKMOD_NONE;
 
    code = HIDKEY(code);
 
@@ -286,16 +272,9 @@ void apple_input_keyboard_event(bool down,
 
    if (apple)
       apple->key_state[code] = down;
-
-   mods |= (mod & NSAlphaShiftKeyMask) ? RETROKMOD_CAPSLOCK : 0;
-   mods |= (mod & NSShiftKeyMask)      ? RETROKMOD_SHIFT : 0;
-   mods |= (mod & NSControlKeyMask)    ? RETROKMOD_CTRL : 0;
-   mods |= (mod & NSAlternateKeyMask)  ? RETROKMOD_ALT : 0;
-   mods |= (mod & NSCommandKeyMask)    ? RETROKMOD_META : 0;
-   mods |= (mod & NSNumericPadKeyMask) ? RETROKMOD_NUMLOCK : 0;
-
+    
    input_keyboard_event(down,
-         input_translate_keysym_to_rk(code), character, mods);
+         input_translate_keysym_to_rk(code), character, (enum retro_mod)mod);
 }
 
 

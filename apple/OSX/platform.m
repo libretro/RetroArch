@@ -61,10 +61,15 @@ void apple_rarch_exited(void)
          if (ch && ch.length != 0)
          {
             character = [ch characterAtIndex:0];
-            mod       = event.modifierFlags;
+            mod |= (event.modifierFlags & NSAlphaShiftKeyMask) ? RETROKMOD_CAPSLOCK : 0;
+            mod |= (event.modifierFlags & NSShiftKeyMask     ) ? RETROKMOD_SHIFT    : 0;
+            mod |= (event.modifierFlags & NSControlKeyMask   ) ? RETROKMOD_CTRL     : 0;
+            mod |= (event.modifierFlags & NSAlternateKeyMask ) ? RETROKMOD_ALT      : 0;
+            mod |= (event.modifierFlags & NSCommandKeyMask   ) ? RETROKMOD_META     : 0;
+            mod |= (event.modifierFlags & NSNumericPadKeyMask) ? RETROKMOD_NUMLOCK  : 0;
             
             for (NSUInteger i = 1; i < ch.length; i ++)
-               apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:i], event.modifierFlags);
+               apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:i], mod);
          }
          
          apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, character, mod);

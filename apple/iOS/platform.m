@@ -126,7 +126,23 @@ static void handle_touch_event(NSArray* touches)
 
 @implementation RApplication
 
-// Keyboard handler for iOS 7
+/* Keyboard handler for iOS 7. */
+
+/* This is copied here as it isn't
+ * defined in any standard iOS header */
+enum
+{
+   NSAlphaShiftKeyMask = 1 << 16,
+   NSShiftKeyMask      = 1 << 17,
+   NSControlKeyMask    = 1 << 18,
+   NSAlternateKeyMask  = 1 << 19,
+   NSCommandKeyMask    = 1 << 20,
+   NSNumericPadKeyMask = 1 << 21,
+   NSHelpKeyMask       = 1 << 22,
+   NSFunctionKeyMask   = 1 << 23,
+   NSDeviceIndependentModifierFlagsMask = 0xffff0000U
+};
+
 - (id)_keyCommandForEvent:(UIEvent*)event
 {
    NSUInteger i;
@@ -143,17 +159,25 @@ static void handle_touch_event(NSArray* touches)
    {
       NSString* ch = (NSString*)event._privateInput;
       uint32_t character = 0;
+      uint32_t mod       = 0;
+      
+      mod |= (event._modifierFlags & NSAlphaShiftKeyMask) ? RETROKMOD_CAPSLOCK : 0;
+      mod |= (event._modifierFlags & NSShiftKeyMask     ) ? RETROKMOD_SHIFT    : 0;
+      mod |= (event._modifierFlags & NSControlKeyMask   ) ? RETROKMOD_CTRL     : 0;
+      mod |= (event._modifierFlags & NSAlternateKeyMask ) ? RETROKMOD_ALT      : 0;
+      mod |= (event._modifierFlags & NSCommandKeyMask   ) ? RETROKMOD_META     : 0;
+      mod |= (event._modifierFlags & NSNumericPadKeyMask) ? RETROKMOD_NUMLOCK  : 0;
       
       if (ch && ch.length != 0)
       {
          character = [ch characterAtIndex:0];
-         apple_input_keyboard_event(event._isKeyDown, (uint32_t)event._keyCode, 0, (uint32_t)event._modifierFlags);
+         apple_input_keyboard_event(event._isKeyDown, (uint32_t)event._keyCode, 0, mod);
          
          for (i = 1; i < ch.length; i++)
-            apple_input_keyboard_event(event._isKeyDown, 0, [ch characterAtIndex:i], (uint32_t)event._modifierFlags);
+            apple_input_keyboard_event(event._isKeyDown, 0, [ch characterAtIndex:i], mod);
       }
       
-      apple_input_keyboard_event(event._isKeyDown, (uint32_t)event._keyCode, character, (uint32_t)event._modifierFlags);
+      apple_input_keyboard_event(event._isKeyDown, (uint32_t)event._keyCode, character, mod);
    }
 
    return [super _keyCommandForEvent:event];
