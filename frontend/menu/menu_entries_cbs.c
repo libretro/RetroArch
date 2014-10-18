@@ -343,8 +343,12 @@ static int action_ok_compressed_archive_push(const char *path,
 
    if (!strcmp(menu_label, "detect_core_list"))
    {
-      menu_list_push(driver.menu->menu_list->menu_stack, path, "load_open_zip",
-            0, driver.menu->selection_ptr);
+      menu_list_push_stack(
+            driver.menu->menu_list,
+            path,
+            "load_open_zip",
+            0,
+            driver.menu->selection_ptr);
       return 0;
    }
 
@@ -537,7 +541,10 @@ static int action_ok_bind_all(const char *path,
    driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
    driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
 
-   menu_list_push(driver.menu->menu_list->menu_stack, "", "",
+   menu_list_push_stack(
+         driver.menu->menu_list,
+         "",
+         "",
          driver.menu->bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
          MENU_SETTINGS_CUSTOM_BIND,
@@ -600,7 +607,10 @@ static int action_ok_bind_key(const char *path,
    driver.menu->binds.last   = type;
    driver.menu->binds.target = bind;
    driver.menu->binds.player = driver.menu->current_pad;
-   menu_list_push(driver.menu->menu_list->menu_stack, "", "",
+   menu_list_push_stack(
+         driver.menu->menu_list,
+         "",
+         "",
          driver.menu->bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
          driver.menu->selection_ptr);
@@ -624,7 +634,10 @@ static int action_ok_bind_key(const char *path,
 static int action_ok_custom_viewport(const char *path,
       const char *label, unsigned type, size_t index)
 {
-   menu_list_push(driver.menu->menu_list->menu_stack, "", "",
+   menu_list_push_stack(
+         driver.menu->menu_list,
+         "",
+         "",
          MENU_SETTINGS_CUSTOM_VIEWPORT,
          driver.menu->selection_ptr);
 
@@ -718,7 +731,12 @@ static int action_ok_help(const char *path,
    if (!driver.menu)
       return -1;
 
-   menu_list_push(driver.menu->menu_list->menu_stack, "", "help", 0, 0);
+   menu_list_push_stack(
+         driver.menu->menu_list,
+         "",
+         "help",
+         0,
+         0);
    driver.menu->push_start_screen = false;
 
    return 0;
