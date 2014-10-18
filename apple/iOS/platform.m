@@ -142,16 +142,18 @@ static void handle_touch_event(NSArray* touches)
    if (event._hidEvent)
    {
       NSString* ch = (NSString*)event._privateInput;
+      uint32_t character = 0;
       
-      if (!ch || ch.length == 0)
-         apple_input_keyboard_event(event._isKeyDown, (uint32_t)event._keyCode, 0, (uint32_t)event._modifierFlags);
-      else
+      if (ch && ch.length != 0)
       {
-         apple_input_keyboard_event(event._isKeyDown, (uint32_t)event._keyCode, [ch characterAtIndex:0], (uint32_t)event._modifierFlags);
+         character = [ch characterAtIndex:0];
+         apple_input_keyboard_event(event._isKeyDown, (uint32_t)event._keyCode, 0, (uint32_t)event._modifierFlags);
          
          for (i = 1; i < ch.length; i++)
             apple_input_keyboard_event(event._isKeyDown, 0, [ch characterAtIndex:i], (uint32_t)event._modifierFlags);
       }
+      
+      apple_input_keyboard_event(event._isKeyDown, (uint32_t)event._keyCode, character, (uint32_t)event._modifierFlags);
    }
 
    return [super _keyCommandForEvent:event];
