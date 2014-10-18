@@ -549,12 +549,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                               [RAMenuItemBasic itemWithDescription:BOXSTRING("Core")
                                                             action:^{ [weakSelf chooseCoreWithPath:nil]; }
                                                             detail:^{
-                                                               
-                                                                const core_info_t *core = (const core_info_t*)core_info_list_get_by_id(weakSelf.core.UTF8String);
+                                                               core_info_list_get_by_id(g_extern.core_info, g_extern.core_info_current, weakSelf.core.UTF8String);
                                                                 
                                                                 if (weakSelf.core)
                                                                 {
-                                                                    return core ? BOXSTRING(core->display_name) : BOXSTRING(weakSelf.core.UTF8String);
+                                                                    return g_extern.core_info_current ? BOXSTRING(g_extern.core_info_current->display_name) : BOXSTRING(weakSelf.core.UTF8String);
                                                                 }
                                                                 else
                                                                     return BOXSTRING("Auto Detect");
@@ -808,19 +807,16 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       rarch_setting_t *setting_data, *setting;
       NSMutableArray* settings;
 
-#if 0
       char buffer[PATH_MAX];
-      /* TODO - reimplement or get rid of it. */
-      _isCustom = core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer));
+      _isCustom = core_info_get_first_custom_config(core.UTF8String, buffer, sizeof(buffer));
       if (_isCustom)
       {
-          const core_info_t *tmp = (const core_info_t*)core_info_list_get_by_id(core.UTF8String);
-          self.title = tmp ? BOXSTRING(tmp->display_name) : BOXSTRING(core.UTF8String);
+         core_info_list_get_by_id(g_extern.core_info, g_extern.core_info_current, core.UTF8String);
+          self.title = g_extern.core_info_current ? BOXSTRING(g_extern.core_info_current->display_name) : BOXSTRING(core.UTF8String);
          _pathToSave = BOXSTRING(buffer);
          self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(deleteCustom)];
       }
       else
-#endif
       {
          self.title = BOXSTRING("Global Core Config");
          _pathToSave = BOXSTRING(g_defaults.config_path);
@@ -948,28 +944,23 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("New Config for Core")
                                                   action: ^{ [weakSelf createNewConfig]; }]];
 
-#if 0
    size_t i;
-   const core_info_list_t* core_list = NULL;
-   
-   /* TODO - reimplement or get rid of it. */
-   if (!(core_list = (const core_info_list_t*)core_info_list_get()))
+   if (!g_extern.core_info)
       return;
 
-   for (i = 0; i < core_list->count; i ++)
+   for (i = 0; i < g_extern.core_info->count; i ++)
    {
        char path[PATH_MAX];
-       NSString* core_id = BOXSTRING(core_list->list[i].path);
+       NSString* core_id = BOXSTRING(g_extern.core_info->list[i].path);
 
-      if (core_info_get_custom_config(core_id.UTF8String, path, sizeof(path)))
+      if (core_info_get_first_custom_config(core_id.UTF8String, path, sizeof(path)))
       {
-         [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(core_list->list[i].display_name)
+         [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(g_extern.core_info->list[i].display_name)
                                                    association:core_id
                                                         action: ^(id userdata) { [weakSelf showCoreConfigFor:userdata]; }
                                                         detail: ^(id userdata) { return BOXSTRING(""); }]];
       }
    }
-#endif
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -1016,10 +1007,8 @@ static bool copy_config(const char *src_path, const char *dst_path)
       action:^(NSString* core)
       {
          char path[PATH_MAX];
-#if 0
          /* TODO - reimplement or get rid of it. */
-         if (!core_info_get_custom_config(core.UTF8String, path, sizeof(path)))
-#endif
+         if (!core_info_get_first_custom_config(core.UTF8String, path, sizeof(path)))
          {
             if (g_defaults.config_path[0] != '\0' && path[0] != '\0')
             {
@@ -1111,13 +1100,13 @@ static bool copy_config(const char *src_path, const char *dst_path)
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
    UITableViewCell *result;
-   const core_info_t *core = (const core_info_t*)core_info_list_get_by_id(self.core.UTF8String);
+   core_info_list_get_by_id(g_extern.core_info, g_extern.core_info_current, self.core.UTF8String);
    static NSString* const cell_id = @"RAMenuItemCoreList";
 
    if (!(result = [tableView dequeueReusableCellWithIdentifier:cell_id]))
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
 
-    result.textLabel.text = core ? BOXSTRING(core->display_name) : BOXSTRING(self.core.UTF8String);
+    result.textLabel.text = g_extern.core_info_current? BOXSTRING(g_extern.core_info_current->display_name) : BOXSTRING(self.core.UTF8String);
    return result;
 }
 
@@ -1146,7 +1135,6 @@ static bool copy_config(const char *src_path, const char *dst_path)
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
       NSMutableArray* core_section;
-      core_info_list_t* core_list = NULL;
 
       self.title = BOXSTRING("Choose Core");
       _action = action;
@@ -1163,14 +1151,14 @@ static bool copy_config(const char *src_path, const char *dst_path)
 
       [self.sections addObject:core_section];
 
-      if ((core_list = (core_info_list_t*)core_info_list_get()))
+      if (g_extern.core_info)
       {
          if (_path)
          {
             const core_info_t* core_support = NULL;
             size_t core_count = 0;
 
-            core_info_list_get_supported_cores(core_list, _path.UTF8String, &core_support, &core_count);
+            core_info_list_get_supported_cores(g_extern.core_info, _path.UTF8String, &core_support, &core_count);
             
             if (core_count == 1 && _action)
                [self runAction:BOXSTRING(core_support[0].path)];
@@ -1179,7 +1167,7 @@ static bool copy_config(const char *src_path, const char *dst_path)
          }
          
          if (!_path || [core_section count] == 1)
-            [self load:(uint32_t)core_list->count coresFromList:core_list->list toSection:core_section];
+            [self load:(uint32_t)g_extern.core_info->count coresFromList:g_extern.core_info->list toSection:core_section];
       }
    }
 
