@@ -936,8 +936,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)willReloadData
 {
-   size_t i;
-   const core_info_list_t* core_list;
    RAFrontendSettingsMenu* __weak weakSelf = self;
    NSMutableArray* cores = (NSMutableArray*)self.coreConfigOptions;
    
@@ -950,6 +948,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("New Config for Core")
                                                   action: ^{ [weakSelf createNewConfig]; }]];
 
+#if 0
+   size_t i;
+   const core_info_list_t* core_list = NULL;
+   
+   /* TODO - reimplement or get rid of it. */
    if (!(core_list = (const core_info_list_t*)core_info_list_get()))
       return;
 
@@ -966,6 +969,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                                                         detail: ^(id userdata) { return BOXSTRING(""); }]];
       }
    }
+#endif
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -1012,7 +1016,10 @@ static bool copy_config(const char *src_path, const char *dst_path)
       action:^(NSString* core)
       {
          char path[PATH_MAX];
+#if 0
+         /* TODO - reimplement or get rid of it. */
          if (!core_info_get_custom_config(core.UTF8String, path, sizeof(path)))
+#endif
          {
             if (g_defaults.config_path[0] != '\0' && path[0] != '\0')
             {
