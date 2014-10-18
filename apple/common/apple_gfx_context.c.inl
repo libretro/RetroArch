@@ -72,16 +72,18 @@ static RAScreen* get_chosen_screen(void)
 static void apple_gfx_ctx_update(void)
 {
 #ifdef OSX
-    if (g_context)
-        [g_context update];
+    CGLContextObj context = (CGLContextObj)g_context.CGLContextObj;
+    if (context)
+       CGLUpdateContext(context);
 #endif
 }
 
 static void apple_gfx_ctx_flush_buffer(void)
 {
 #ifdef OSX
-    if (g_context)
-        [g_context flushBuffer];
+    CGLContextObj context = (CGLContextObj)g_context.CGLContextObj;
+    if (context)
+       CGLFlushDrawable(context);
 #endif
 }
 
