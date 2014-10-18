@@ -98,6 +98,9 @@ const char *core_info_list_get_all_extensions(core_info_list_t *list);
 bool core_info_list_get_display_name(core_info_list_t *list,
       const char *path, char *buf, size_t size);
 
+bool core_info_list_get_by_id(core_info_list_t *core_info_list,
+      core_info_t *out_info, const char *core_id);
+
 #ifdef __cplusplus
 }
 #endif

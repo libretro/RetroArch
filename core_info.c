@@ -296,6 +296,30 @@ bool core_info_list_get_info(core_info_list_t *core_info_list,
    return false;
 }
 
+bool core_info_list_get_by_id(core_info_list_t *core_info_list,
+      core_info_t *out_info, const char *core_id)
+{
+   unsigned i;
+
+   if (!core_id || !core_info_list || !out_info)
+      return NULL;
+
+   memset(out_info, 0, sizeof(*out_info));
+
+   for (i = 0; i < core_info_list->count; i ++)
+   {
+      core_info_t *info = (core_info_t*)&core_info_list->list[i];
+
+      if (info && info->path && strcmp(core_id, info->path) == 0)
+      {
+         *out_info = *info;
+         return true;
+      }
+   }
+
+   return false;
+}
+
 bool core_info_does_support_any_file(const core_info_t *core,
       const struct string_list *list)
 {
@@ -465,3 +489,4 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
    qsort(info->firmware, info->firmware_count, sizeof(*info->firmware),
          core_info_firmware_cmp);
 }
+
