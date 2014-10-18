@@ -130,7 +130,7 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    bundle_url = CFBundleCopyBundleURL(bundle);
    CFStringRef bundle_path = CFURLCopyPath(bundle_url);
     
-   (void)bundle_path_buf;
+   CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
    (void)home_dir_buf;
    
 #ifdef IOS
@@ -146,7 +146,6 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    CFStringRef home_dir_ref = CFURLCopyPath(home_dir);
 
    CFStringGetCString(home_dir_ref,    home_dir_buf,    sizeof(home_dir_buf),    kCFStringEncodingUTF8);
-   CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
 
    fill_pathname_join(g_defaults.system_dir, home_dir_buf, ".RetroArch", sizeof(g_defaults.system_dir));
    fill_pathname_join(g_defaults.core_dir, bundle_path_buf, "modules", sizeof(g_defaults.core_dir));
