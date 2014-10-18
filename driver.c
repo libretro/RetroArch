@@ -1118,7 +1118,7 @@ static void init_video_input(void)
    const input_driver_t *tmp = NULL;
    const struct retro_game_geometry *geom = NULL;
    video_info_t video = {0};
-   static uint16_t dummy_pixels[16] = {0};
+   static uint16_t dummy_pixels[32] = {0};
 
    init_video_filter(g_extern.system.pix_fmt);
    rarch_main_command(RARCH_CMD_SHADER_DIR_INIT);
