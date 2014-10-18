@@ -490,3 +490,18 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
          core_info_firmware_cmp);
 }
 
+bool core_info_get_first_custom_config(const char *core_id,
+      char *buf, size_t sizeof_buf)
+{
+   if (!core_id || !buf || !sizeof_buf)
+      return false;
+
+   fill_pathname_join(buf, g_defaults.menu_config_dir,
+         path_basename(core_id), sizeof_buf);
+   fill_pathname(buf, buf, ".cfg", sizeof_buf);
+
+   if (buf[0] == '\0')
+      return false;
+
+   return path_file_exists(buf);
+}
