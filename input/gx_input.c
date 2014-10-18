@@ -104,7 +104,9 @@ static uint64_t gx_input_get_capabilities(void *data)
 static const rarch_joypad_driver_t *gx_input_get_joypad_driver(void *data)
 {
    gx_input_t *gx = (gx_input_t*)data;
-   return gx->joypad;
+   if (gx)
+      return gx->joypad;
+   return NULL;
 }
 
 input_driver_t input_gx = {
