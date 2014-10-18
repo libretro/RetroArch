@@ -32,17 +32,7 @@ void apple_rarch_exited(void)
 
 void apple_run_core(int argc, char **argv)
 {
-   static char config_path[PATH_MAX];
    [apple_platform loadingCore:nil withFile:nil];
-
-   strlcpy(config_path, g_defaults.config_path, sizeof(config_path));
-
-   static const char* const argv_menu[] = { "retroarch", "-c", config_path, "--menu", 0 };
-
-   if (argc == 0)
-      argc = 4;
-   if (!argv)
-      argv = (char**)(argv_menu);
 
    if (rarch_main(argc, argv))
       apple_rarch_exited();
