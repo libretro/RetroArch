@@ -52,16 +52,19 @@ void apple_rarch_exited(void)
       case NSKeyUp:
       {
          NSString* ch = (NSString*)event.characters;
-
-         if (!ch || ch.length == 0)
-            apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, 0, 0);
-         else
+         uint32_t character = 0;
+         uint32_t mod = 0;
+         
+         if (ch && ch.length != 0)
          {
-            apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, [ch characterAtIndex:0], event.modifierFlags);
-
+            character = [ch characterAtIndex:0];
+            mod       = event.modifierFlags;
+            
             for (NSUInteger i = 1; i < ch.length; i ++)
                apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:i], event.modifierFlags);
          }
+         
+         apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, character, mod);
       }
          break;
       case NSFlagsChanged:

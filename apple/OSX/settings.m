@@ -244,7 +244,7 @@ NSWindowDelegate>
    else
    {
        char buffer[PATH_MAX];
-       rarch_setting_t* setting_data, *setting = NULL;
+       rarch_setting_t *setting_data = NULL, *setting = NULL;
        setting_data = (rarch_setting_t*)driver.menu->list_settings;
        setting = (rarch_setting_t*)&setting_data[[item intValue]];
        
