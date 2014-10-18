@@ -1154,8 +1154,8 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
    driver.menu->binds.last   = setting->bind_type;
    driver.menu->binds.target = bind;
    driver.menu->binds.player = setting->index_offset;
-   menu_list_push(
-         driver.menu->menu_list->menu_stack,
+   menu_list_push_stack(
+         driver.menu->menu_list,
          "",
          "",
          driver.menu->bind_mode_keyboard ?
