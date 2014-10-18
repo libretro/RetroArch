@@ -1153,8 +1153,8 @@ static void *lakka_init(void)
 
    lakka->above_subitem_offset = 1.5;
    lakka->above_item_offset    = -1.0;
-   lakka->active_item_factor   = 2.75;
-   lakka->under_item_offset    = 4.0;
+   lakka->active_item_factor   = 3.0;
+   lakka->under_item_offset    = 5.0;
 
    float scale_factor;
 
@@ -1188,9 +1188,9 @@ static void *lakka_init(void)
    lakka->hspacing = 200.0 * scale_factor;
    lakka->vspacing = 64.0 * scale_factor;
    lakka->margin_left = 336.0 * scale_factor;
-   lakka->margin_top = 256 * scale_factor;
-   lakka->title_margin_left = 15.0 * scale_factor;
-   lakka->title_margin_top = 20.0 * scale_factor + g_settings.video.font_size/3.0;
+   lakka->margin_top = (256+32) * scale_factor;
+   lakka->title_margin_left = 60 * scale_factor;
+   lakka->title_margin_top = 60 * scale_factor + g_settings.video.font_size/3;
    lakka->label_margin_left = 85.0 * scale_factor;
    lakka->label_margin_top = g_settings.video.font_size/3.0;
    lakka->setting_margin_left = 600.0 * scale_factor;

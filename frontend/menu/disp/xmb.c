@@ -63,6 +63,7 @@ enum
    XMB_TEXTURE_FILE,
    XMB_TEXTURE_FOLDER,
    XMB_TEXTURE_ZIP,
+   XMB_TEXTURE_CORE,
    XMB_TEXTURE_LAST
 };
 
@@ -90,6 +91,7 @@ typedef struct xmb_handle
    float margin_top;
    float title_margin_left;
    float title_margin_top;
+   float title_margin_bottom;
    float label_margin_left;
    float label_margin_top;
    float setting_margin_left;
@@ -394,17 +396,16 @@ static void xmb_populate_entries(void *data, const char *path,
    if (!xmb)
       return;
 
-   xmb->depth = menu_list_get_stack_size(driver.menu->menu_list);
-
-   if (xmb->depth > xmb->old_depth)
+   size_t depth = menu_list_get_stack_size(driver.menu->menu_list);
+   if (xmb->depth != depth)
    {
-      add_tween(XMB_DELAY, xmb->x-20, &xmb->x, &inOutQuad, NULL);
-   }
-   else if (xmb->depth < xmb->old_depth)
-   {
-      add_tween(XMB_DELAY, xmb->x+20, &xmb->x, &inOutQuad, NULL);
+      xmb->old_depth = xmb->depth;
+      xmb->depth = depth;
    }
 
+   if (xmb->depth != xmb->old_depth)
+      add_tween(XMB_DELAY, xmb->x + (xmb->depth-xmb->old_depth)*-20,
+            &xmb->x, &inOutQuad, NULL);
 
    current = driver.menu->selection_ptr;
    end = menu_list_get_size(driver.menu->menu_list);
@@ -430,8 +431,6 @@ static void xmb_populate_entries(void *data, const char *path,
          node->y = xmb->vspacing * xmb->active_item_factor;
       }
    }
-
-   xmb->old_depth = xmb->depth;
 }
 
 static void xmb_frame(void)
@@ -477,7 +476,7 @@ static void xmb_frame(void)
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
    xmb_draw_text(title_msg, xmb->title_margin_left, 
-         gl->win_height - xmb->title_margin_top/2, 1, 1);
+         gl->win_height - xmb->title_margin_bottom, 1, 1);
 
    end = menu_list_get_size(driver.menu->menu_list);
    current = driver.menu->selection_ptr;
@@ -511,6 +510,9 @@ static void xmb_frame(void)
             break;
          case MENU_FILE_CARCHIVE:
             icon = xmb->textures[XMB_TEXTURE_ZIP].id;
+            break;
+         case MENU_FILE_CORE:
+            icon = xmb->textures[XMB_TEXTURE_CORE].id;
             break;
          default:
             icon = xmb->textures[XMB_TEXTURE_SETTING].id;
@@ -644,8 +646,8 @@ static void *xmb_init(void)
 
    xmb->above_subitem_offset = 1.5;
    xmb->above_item_offset    = -1.0;
-   xmb->active_item_factor   = 2.75;
-   xmb->under_item_offset    = 4.0;
+   xmb->active_item_factor   = 3.0;
+   xmb->under_item_offset    = 5.0;
 
    float scale_factor;
 
@@ -679,9 +681,10 @@ static void *xmb_init(void)
    xmb->hspacing = 200.0 * scale_factor;
    xmb->vspacing = 64.0 * scale_factor;
    xmb->margin_left = 336.0 * scale_factor;
-   xmb->margin_top = 256 * scale_factor;
-   xmb->title_margin_left = 15.0 * scale_factor;
-   xmb->title_margin_top = 20.0 * scale_factor + g_settings.video.font_size/3.0;
+   xmb->margin_top = (256+32) * scale_factor;
+   xmb->title_margin_left = 60 * scale_factor;
+   xmb->title_margin_top = 60 * scale_factor + g_settings.video.font_size/3;
+   xmb->title_margin_bottom = 60 * scale_factor - g_settings.video.font_size/3;
    xmb->label_margin_left = 85.0 * scale_factor;
    xmb->label_margin_top = g_settings.video.font_size/3.0;
    xmb->setting_margin_left = 600.0 * scale_factor;
@@ -812,11 +815,13 @@ static void xmb_context_reset(void *data)
    fill_pathname_join(xmb->textures[XMB_TEXTURE_RELOAD].path, iconpath,
          "reload.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
    fill_pathname_join(xmb->textures[XMB_TEXTURE_FILE].path, iconpath,
-         "file.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
+         "file.png", sizeof(xmb->textures[XMB_TEXTURE_FILE].path));
    fill_pathname_join(xmb->textures[XMB_TEXTURE_FOLDER].path, iconpath,
-         "folder.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
+         "folder.png", sizeof(xmb->textures[XMB_TEXTURE_FOLDER].path));
    fill_pathname_join(xmb->textures[XMB_TEXTURE_ZIP].path, iconpath,
-         "zip.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
+         "zip.png", sizeof(xmb->textures[XMB_TEXTURE_ZIP].path));
+   fill_pathname_join(xmb->textures[XMB_TEXTURE_CORE].path, iconpath,
+         "core.png", sizeof(xmb->textures[XMB_TEXTURE_CORE].path));
 
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
       xmb->textures[k].id = xmb_png_texture_load(xmb->textures[k].path);
