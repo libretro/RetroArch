@@ -814,11 +814,11 @@ static void xmb_context_reset(void *data)
    fill_pathname_join(xmb->textures[XMB_TEXTURE_RELOAD].path, iconpath,
          "reload.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
    fill_pathname_join(xmb->textures[XMB_TEXTURE_FILE].path, iconpath,
-         "file.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
+         "file.png", sizeof(xmb->textures[XMB_TEXTURE_FILE].path));
    fill_pathname_join(xmb->textures[XMB_TEXTURE_FOLDER].path, iconpath,
-         "folder.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
+         "folder.png", sizeof(xmb->textures[XMB_TEXTURE_FOLDER].path));
    fill_pathname_join(xmb->textures[XMB_TEXTURE_ZIP].path, iconpath,
-         "zip.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
+         "zip.png", sizeof(xmb->textures[XMB_TEXTURE_ZIP].path));
 
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
       xmb->textures[k].id = xmb_png_texture_load(xmb->textures[k].path);
