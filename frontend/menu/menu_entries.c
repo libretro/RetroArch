@@ -241,6 +241,8 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
       menu_list_push(list, "/", "",
             MENU_FILE_DIRECTORY, 0);
 #endif
+      if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+         driver.menu_ctx->populate_entries(driver.menu, dir, label, type);
       return 0;
    }
 #if defined(GEKKO) && defined(HW_RVL)
