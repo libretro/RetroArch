@@ -279,12 +279,12 @@ static void rgui_render(void)
    if (driver.menu->selection_ptr >= RGUI_TERM_HEIGHT / 2)
       begin = driver.menu->selection_ptr - RGUI_TERM_HEIGHT / 2;
    end   = (driver.menu->selection_ptr + RGUI_TERM_HEIGHT <=
-         menu_list_get_size()) ?
+         menu_list_get_size(driver.menu->menu_list)) ?
       driver.menu->selection_ptr + RGUI_TERM_HEIGHT :
-      menu_list_get_size();
+      menu_list_get_size(driver.menu->menu_list);
 
    /* Do not scroll if all items are visible. */
-   if (menu_list_get_size() <= RGUI_TERM_HEIGHT)
+   if (menu_list_get_size(driver.menu->menu_list) <= RGUI_TERM_HEIGHT)
       begin = 0;
 
    if (end - begin > RGUI_TERM_HEIGHT)

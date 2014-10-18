@@ -355,7 +355,7 @@ static void xmb_selection_pointer_changed(void)
       return;
 
    current = driver.menu->selection_ptr;
-   end = menu_list_get_size();
+   end = menu_list_get_size(driver.menu->menu_list);
 
    for (i = 0; i < end; i++)
    {
@@ -394,7 +394,7 @@ static void xmb_populate_entries(void *data, const char *path,
    if (!xmb)
       return;
 
-   xmb->depth = menu_list_get_stack_size();
+   xmb->depth = menu_list_get_stack_size(driver.menu->menu_list);
 
    if (xmb->depth > xmb->old_depth)
    {
@@ -407,7 +407,7 @@ static void xmb_populate_entries(void *data, const char *path,
 
 
    current = driver.menu->selection_ptr;
-   end = menu_list_get_size();
+   end = menu_list_get_size(driver.menu->menu_list);
 
    for (i = 0; i < end; i++)
    {
@@ -479,7 +479,7 @@ static void xmb_frame(void)
    xmb_draw_text(title_msg, xmb->title_margin_left, 
          gl->win_height - xmb->title_margin_top/2, 1, 1);
 
-   end = menu_list_get_size();
+   end = menu_list_get_size(driver.menu->menu_list);
    current = driver.menu->selection_ptr;
 
    for (i = 0; i < end; i++)

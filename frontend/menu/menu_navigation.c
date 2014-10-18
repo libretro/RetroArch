@@ -58,7 +58,7 @@ void menu_navigation_set(menu_handle_t *menu, size_t i)
 
 void menu_navigation_set_last(menu_handle_t *menu)
 {
-   menu->selection_ptr = menu_list_get_size() - 1;
+   menu->selection_ptr = menu_list_get_size(driver.menu->menu_list) - 1;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_set_last)
       driver.menu_ctx->navigation_set_last(menu);

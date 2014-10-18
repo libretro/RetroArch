@@ -53,11 +53,11 @@ void menu_list_get_at_offset(const file_list_t *list, size_t index,
 
 void *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t index);
 
-size_t menu_list_get_stack_size(void);
+size_t menu_list_get_stack_size(menu_list_t *list);
 
 void menu_list_sort_on_alt(file_list_t *list);
 
-size_t menu_list_get_size(void);
+size_t menu_list_get_size(menu_list_t *list);
 
 void *menu_list_get_last_stack_actiondata(const menu_list_t *list);
 

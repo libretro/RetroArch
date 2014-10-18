@@ -241,12 +241,12 @@ static void glui_frame(void)
    if (driver.menu->selection_ptr >= glui->term_height / 2)
       begin = driver.menu->selection_ptr - glui->term_height / 2;
    end   = (driver.menu->selection_ptr + glui->term_height <=
-         menu_list_get_size()) ?
+         menu_list_get_size(driver.menu->menu_list)) ?
       driver.menu->selection_ptr + glui->term_height :
-      menu_list_get_size();
+      menu_list_get_size(driver.menu->menu_list);
 
    /* Do not scroll if all items are visible. */
-   if (menu_list_get_size() <= glui->term_height)
+   if (menu_list_get_size(driver.menu->menu_list) <= glui->term_height)
       begin = 0;
 
    if (end - begin > glui->term_height)

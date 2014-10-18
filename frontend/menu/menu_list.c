@@ -67,11 +67,11 @@ void *menu_list_new(void)
    return list;
 }
 
-size_t menu_list_get_stack_size(void)
+size_t menu_list_get_stack_size(menu_list_t *list)
 {
-   if (!driver.menu)
+   if (!list)
       return 0;
-   return file_list_get_size(driver.menu->menu_list->menu_stack);
+   return file_list_get_size(list->menu_stack);
 }
 
 void menu_list_get_at_offset(const file_list_t *list, size_t index,
@@ -80,11 +80,11 @@ void menu_list_get_at_offset(const file_list_t *list, size_t index,
    file_list_get_at_offset(list, index, path, label, file_type);
 }
 
-size_t menu_list_get_size(void)
+size_t menu_list_get_size(menu_list_t *list)
 {
-   if (!driver.menu)
+   if (!list)
       return 0;
-   return file_list_get_size(driver.menu->menu_list->selection_buf);
+   return file_list_get_size(list->selection_buf);
 }
 
 void menu_list_get_last(const file_list_t *list,

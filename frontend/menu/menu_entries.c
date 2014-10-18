@@ -31,10 +31,10 @@ void menu_entries_refresh(file_list_t *list)
     * selection_ptr to suddendly be out of range.
     * Ensure it doesn't overflow. */
 
-   if (driver.menu->selection_ptr >= menu_list_get_size()
-         && menu_list_get_size())
-      menu_navigation_set(driver.menu, menu_list_get_size() - 1);
-   else if (!menu_list_get_size())
+   if (driver.menu->selection_ptr >= menu_list_get_size(driver.menu->menu_list)
+         && menu_list_get_size(driver.menu->menu_list))
+      menu_navigation_set(driver.menu, menu_list_get_size(driver.menu->menu_list) - 1);
+   else if (!menu_list_get_size(driver.menu->menu_list))
       menu_navigation_clear(driver.menu, true);
 }
 
