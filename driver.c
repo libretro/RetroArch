@@ -1118,7 +1118,7 @@ static void init_video_input(void)
    const input_driver_t *tmp = NULL;
    const struct retro_game_geometry *geom = NULL;
    video_info_t video = {0};
-   static int dummy_pixel=0;
+   static uint16_t dummy_pixels[16] = {0};
 
    init_video_filter(g_extern.system.pix_fmt);
    rarch_main_command(RARCH_CMD_SHADER_DIR_INIT);
@@ -1288,14 +1288,14 @@ static void init_video_input(void)
 
    g_extern.measure_data.frame_time_samples_count = 0;
 
-   g_extern.frame_cache.width = 1;
-   g_extern.frame_cache.height = 1;
-   g_extern.frame_cache.pitch = 4;
-   g_extern.frame_cache.data = &dummy_pixel;
+   g_extern.frame_cache.width = 4;
+   g_extern.frame_cache.height = 4;
+   g_extern.frame_cache.pitch = 8;
+   g_extern.frame_cache.data = &dummy_pixels;
 
    if (driver.video_poke && driver.video_poke->set_texture_frame)
       driver.video_poke->set_texture_frame(driver.video_data,
-               &dummy_pixel, false, 1, 1, 1.0f);
+               &dummy_pixels, false, 1, 1, 1.0f);
 
 }
 
