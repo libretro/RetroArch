@@ -25,6 +25,14 @@
 #include "../../file.h"
 
 static void* const associated_core_key = (void*)&associated_core_key;
+id<RetroArch_Platform> apple_platform;
+
+void apple_rarch_exited(void);
+
+void apple_rarch_exited(void)
+{
+   [apple_platform unloadingCore];
+}
 
 @interface RApplication : NSApplication
 @end
@@ -147,7 +155,10 @@ static char** waiting_argv;
 
    self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:BOXSTRING("Settings")] autorelease];
 
-   apple_run_core(waiting_argc, waiting_argv);
+   [apple_platform loadingCore:nil withFile:nil];
+   
+   if (rarch_main(waiting_argc, waiting_argv))
+      apple_rarch_exited();
 
    waiting_argc = 0;
 }

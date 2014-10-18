@@ -24,7 +24,6 @@
 		967894E9178A2EB400D6CA69 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 967894E8178A2EB400D6CA69 /* modules */; };
 		98AF929E192ED5C4009A8479 /* utility.m in Sources */ = {isa = PBXBuildFile; fileRef = 98AF929D192ED5C4009A8479 /* utility.m */; };
 		98AF92A4192ED60E009A8479 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 98AF92A3192ED60E009A8479 /* RAGameView.m */; };
-		98AF92AA192ED645009A8479 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 98AF92A9192ED645009A8479 /* main.m */; };
 		98AF92B1192ED685009A8479 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 98AF92B0192ED685009A8479 /* griffin.c */; };
 		C15874EF178F2094001171D4 /* RetroArch.icns in Resources */ = {isa = PBXBuildFile; fileRef = C15874EE178F2094001171D4 /* RetroArch.icns */; };
 /* End PBXBuildFile section */
@@ -53,7 +52,6 @@
 		967894E8178A2EB400D6CA69 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = "<group>"; };
 		98AF929D192ED5C4009A8479 /* utility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = utility.m; path = ../../common/utility.m; sourceTree = SOURCE_ROOT; };
 		98AF92A3192ED60E009A8479 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RAGameView.m; path = ../../common/RAGameView.m; sourceTree = SOURCE_ROOT; };
-		98AF92A9192ED645009A8479 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = ../../common/main.m; sourceTree = SOURCE_ROOT; };
 		98AF92B0192ED685009A8479 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		C15874EE178F2094001171D4 /* RetroArch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = RetroArch.icns; path = OSX/RetroArch.icns; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -132,7 +130,6 @@
 			isa = PBXGroup;
 			children = (
 				50C374A819F04F7A00984F8D /* CFExtensions.m */,
-				98AF92A9192ED645009A8479 /* main.m */,
 				98AF92A3192ED60E009A8479 /* RAGameView.m */,
 				98AF929D192ED5C4009A8479 /* utility.m */,
 			);
@@ -238,7 +235,6 @@
 				50351E7F192E5EC100668AB1 /* platform.m in Sources */,
 				98AF929E192ED5C4009A8479 /* utility.m in Sources */,
 				98AF92A4192ED60E009A8479 /* RAGameView.m in Sources */,
-				98AF92AA192ED645009A8479 /* main.m in Sources */,
 				98AF92B1192ED685009A8479 /* griffin.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
