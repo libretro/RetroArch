@@ -122,7 +122,7 @@ static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad
    if (access(path, R_OK | W_OK) < 0)
       return false;
 
-   pad->fd = open(path, O_RDWR);
+   pad->fd = open(path, O_RDWR | O_NONBLOCK);
 
    *pad->ident = '\0';
    if (pad->fd >= 0)
