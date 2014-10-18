@@ -90,6 +90,7 @@ typedef struct xmb_handle
    float margin_top;
    float title_margin_left;
    float title_margin_top;
+   float title_margin_bottom;
    float label_margin_left;
    float label_margin_top;
    float setting_margin_left;
@@ -477,7 +478,7 @@ static void xmb_frame(void)
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
    xmb_draw_text(title_msg, xmb->title_margin_left, 
-         gl->win_height - xmb->title_margin_top/2, 1, 1);
+         gl->win_height - xmb->title_margin_bottom, 1, 1);
 
    end = menu_list_get_size(driver.menu->menu_list);
    current = driver.menu->selection_ptr;
@@ -644,8 +645,8 @@ static void *xmb_init(void)
 
    xmb->above_subitem_offset = 1.5;
    xmb->above_item_offset    = -1.0;
-   xmb->active_item_factor   = 2.75;
-   xmb->under_item_offset    = 4.0;
+   xmb->active_item_factor   = 3.0;
+   xmb->under_item_offset    = 5.0;
 
    float scale_factor;
 
@@ -679,9 +680,10 @@ static void *xmb_init(void)
    xmb->hspacing = 200.0 * scale_factor;
    xmb->vspacing = 64.0 * scale_factor;
    xmb->margin_left = 336.0 * scale_factor;
-   xmb->margin_top = 256 * scale_factor;
-   xmb->title_margin_left = 15.0 * scale_factor;
-   xmb->title_margin_top = 20.0 * scale_factor + g_settings.video.font_size/3.0;
+   xmb->margin_top = (256+32) * scale_factor;
+   xmb->title_margin_left = 60 * scale_factor;
+   xmb->title_margin_top = 60 * scale_factor + g_settings.video.font_size/3;
+   xmb->title_margin_bottom = 60 * scale_factor - g_settings.video.font_size/3;
    xmb->label_margin_left = 85.0 * scale_factor;
    xmb->label_margin_top = g_settings.video.font_size/3.0;
    xmb->setting_margin_left = 600.0 * scale_factor;
