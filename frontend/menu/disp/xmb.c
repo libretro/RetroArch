@@ -63,6 +63,7 @@ enum
    XMB_TEXTURE_FILE,
    XMB_TEXTURE_FOLDER,
    XMB_TEXTURE_ZIP,
+   XMB_TEXTURE_CORE,
    XMB_TEXTURE_LAST
 };
 
@@ -513,6 +514,9 @@ static void xmb_frame(void)
          case MENU_FILE_CARCHIVE:
             icon = xmb->textures[XMB_TEXTURE_ZIP].id;
             break;
+         case MENU_FILE_CORE:
+            icon = xmb->textures[XMB_TEXTURE_CORE].id;
+            break;
          default:
             icon = xmb->textures[XMB_TEXTURE_SETTING].id;
             break;
@@ -819,6 +823,8 @@ static void xmb_context_reset(void *data)
          "folder.png", sizeof(xmb->textures[XMB_TEXTURE_FOLDER].path));
    fill_pathname_join(xmb->textures[XMB_TEXTURE_ZIP].path, iconpath,
          "zip.png", sizeof(xmb->textures[XMB_TEXTURE_ZIP].path));
+   fill_pathname_join(xmb->textures[XMB_TEXTURE_CORE].path, iconpath,
+         "core.png", sizeof(xmb->textures[XMB_TEXTURE_CORE].path));
 
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
       xmb->textures[k].id = xmb_png_texture_load(xmb->textures[k].path);
