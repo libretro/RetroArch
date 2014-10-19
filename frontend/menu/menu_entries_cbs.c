@@ -1086,56 +1086,6 @@ static int action_toggle_input_bind_analog_dpad_mode(unsigned type, const char *
    return 0;
 }
 
-static int action_start_input_bind_device_id(unsigned type, const char *label,
-      unsigned action)
-{
-   int p;
-   
-   if (!driver.menu)
-      return -1;
-
-   p = driver.menu->current_pad;
-
-   if (p < -1)
-      p = -1;
-   else if (p >= MAX_PLAYERS)
-      p = MAX_PLAYERS - 1;
-
-   g_settings.input.joypad_map[driver.menu->current_pad] = p;
-
-   return 0;
-}
-
-static int action_toggle_input_bind_device_id(unsigned type, const char *label,
-      unsigned action)
-{
-   int *p = NULL;
-   unsigned port = 0;
-   
-   if (!driver.menu)
-      return -1;
-
-   port = driver.menu->current_pad;
-   p = (int*)&g_settings.input.joypad_map[port];
-
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         (*p)--;
-         break;
-      case MENU_ACTION_RIGHT:
-         (*p)++;
-         break;
-   }
-
-   if (*p < -1)
-      *p = -1;
-   else if (*p >= MAX_PLAYERS)
-      *p = MAX_PLAYERS - 1;
-
-   return 0;
-}
-
 static int action_start_input_bind_device_type(unsigned type, const char *label,
       unsigned action)
 {
@@ -1769,7 +1719,6 @@ static int deferred_push_input_options(void *data, void *userdata,
    driver.menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
 
    menu_list_clear(list);
-   menu_list_push(list, "Device", "input_bind_device_id", 0, 0);
    menu_list_push(list, "Device Type", "input_bind_device_type", 0, 0);
    menu_list_push(list, "Analog D-pad Mode", "input_bind_analog_dpad_mode", 0, 0);
    menu_list_push(list, "Bind Mode", "",
@@ -2286,8 +2235,6 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       cbs->action_start = action_start_shader_num_passes;
    else if (!strcmp(label, "input_bind_analog_dpad_mode"))
       cbs->action_start = action_start_input_bind_analog_dpad_mode;
-   else if (!strcmp(label, "input_bind_device_id"))
-      cbs->action_start = action_start_input_bind_device_id;
    else if (!strcmp(label, "input_bind_device_type"))
       cbs->action_start = action_start_input_bind_device_type;
    else if (type >= MENU_SETTINGS_BIND_BEGIN &&
@@ -2383,8 +2330,6 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_toggle = menu_action_setting_set;
    else if (!strcmp(label, "input_bind_analog_dpad_mode"))
       cbs->action_toggle = action_toggle_input_bind_analog_dpad_mode;
-   else if (!strcmp(label, "input_bind_device_id"))
-      cbs->action_toggle = action_toggle_input_bind_device_id;
    else if (!strcmp(label, "input_bind_device_type"))
       cbs->action_toggle = action_toggle_input_bind_device_type;
    else if (type == MENU_SETTINGS_VIDEO_RESOLUTION)
