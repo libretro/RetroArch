@@ -657,7 +657,7 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
 #endif
 #else
             const struct retro_keybind* bind = (const struct retro_keybind*)
-               &setting->value.keybind[setting->index_offset];
+               setting->value.keybind;
             const struct retro_keybind* auto_bind = 
                (const struct retro_keybind*)
                input_get_auto_bind(setting->index_offset, bind->id);
