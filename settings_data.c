@@ -629,33 +629,6 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
          break;
       case ST_BIND:
          {
-#if 0
-            char button_name[32], axis_name[32], key_name[32];
-
-            strlcpy(button_name, "nul", sizeof(button_name));
-            strlcpy(axis_name,   "nul", sizeof(axis_name));
-            strlcpy(key_name,    "nul", sizeof(key_name));
-
-            get_button_name(button_name, sizeof(button_name), setting);
-            get_axis_name(axis_name, sizeof(axis_name), setting);
-#ifdef APPLE
-            get_key_name(key_name, sizeof(key_name), setting);
-#endif
-            snprintf(buf, sizeof_buf, "[KB:%s] [JS:%s] [AX:%s]", key_name, button_name, axis_name);
-#endif
-#if 0
-#ifdef HAVE_MENU
-            if (driver.menu != NULL)
-            {
-               const struct retro_keybind* bind = (const struct retro_keybind*)
-                  &setting->value.keybind[driver.menu->current_pad];
-               const struct retro_keybind* auto_bind = 
-                  (const struct retro_keybind*)
-                  input_get_auto_bind(driver.menu->current_pad, bind->id);
-               input_get_bind_string(buf, bind, auto_bind, sizeof_buf);
-            }
-#endif
-#else
             const struct retro_keybind* bind = (const struct retro_keybind*)
                setting->value.keybind;
             const struct retro_keybind* auto_bind = 
@@ -663,7 +636,6 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
                input_get_auto_bind(setting->index_offset, bind->id);
 
             input_get_bind_string(buf, bind, auto_bind, sizeof_buf);
-#endif
          }
          break;
          /* TODO */
