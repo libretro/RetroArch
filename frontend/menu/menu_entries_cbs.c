@@ -1786,9 +1786,6 @@ static int deferred_push_input_options(void *data, void *userdata,
    menu_list_push(list, "Device Type", "input_bind_device_type", 0, 0);
    menu_list_push(list, "Analog D-pad Mode", "input_bind_analog_dpad_mode", 0, 0);
    add_setting_entry(driver.menu,list,"input_axis_threshold", 0, driver.menu->list_settings);
-   add_setting_entry(driver.menu,list,"input_autodetect_enable", 0, driver.menu->list_settings);
-   add_setting_entry(driver.menu,list,"input_turbo_period", 0, driver.menu->list_settings);
-   add_setting_entry(driver.menu,list,"input_duty_cycle", 0, driver.menu->list_settings);
    menu_list_push(list, "Bind Mode", "",
          MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
    menu_list_push(list, "Configure All (RetroPad)", "",
