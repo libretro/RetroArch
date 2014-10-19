@@ -397,12 +397,7 @@ static void xmb_populate_entries(void *data, const char *path,
    if (!xmb)
       return;
 
-   size_t depth = menu_list_get_stack_size(driver.menu->menu_list);
-   if (xmb->depth != depth)
-   {
-      xmb->old_depth = xmb->depth;
-      xmb->depth = depth;
-   }
+   xmb->depth = menu_list_get_stack_size(driver.menu->menu_list);
 
    if (xmb->depth != xmb->old_depth)
       add_tween(XMB_DELAY, xmb->x + (xmb->depth-xmb->old_depth)*-20,
@@ -432,6 +427,8 @@ static void xmb_populate_entries(void *data, const char *path,
          node->y = xmb->vspacing * xmb->active_item_factor;
       }
    }
+
+   xmb->old_depth = xmb->depth;
 }
 
 static void xmb_frame(void)
