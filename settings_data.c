@@ -643,7 +643,7 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
 #endif
             snprintf(buf, sizeof_buf, "[KB:%s] [JS:%s] [AX:%s]", key_name, button_name, axis_name);
 #endif
-#if 1
+#if 0
 #ifdef HAVE_MENU
             if (driver.menu != NULL)
             {
@@ -4288,7 +4288,7 @@ static bool setting_data_append_list_input_options(
    unsigned i, player;
 
    START_GROUP(group_info, "Input Options");
-   //settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_CATEGORY);
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -4424,6 +4424,7 @@ static bool setting_data_append_list_input_options(
       for (i = 0; i < RARCH_BIND_LIST_END; i ++)
       {
          char label[PATH_MAX];
+         char name[PATH_MAX];
          const struct input_bind_map* bind = 
             (const struct input_bind_map*)&input_config_bind_map[i];
 
@@ -4431,13 +4432,14 @@ static bool setting_data_append_list_input_options(
             continue;
 
          snprintf(label, sizeof(label), "%s %s", buffer[player], bind->desc);
+         snprintf(name, sizeof(name), "p%u_%s", player + 1, bind->base);
 
          CONFIG_BIND(
                g_settings.input.binds[player][i],
                player + 1,
                player,
-               bind->base,
-               strdup(label), /* TODO: Find a way to fix this memleak. */
+               strdup(name), /* TODO: Find a way to fix these memleaks. */
+               strdup(label),
                &defaults[i],
                group_info.name,
                subgroup_info.name);
