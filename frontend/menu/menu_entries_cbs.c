@@ -592,45 +592,6 @@ static int action_ok_bind_default_all(const char *path,
    return 0;
 }
 
-static int action_ok_bind_key(const char *path,
-      const char *label, unsigned type, size_t index)
-{
-   struct retro_keybind *bind = NULL;
-
-   if (!driver.menu)
-      return -1;
-   
-   bind = (struct retro_keybind*)&g_settings.input.binds
-      [driver.menu->current_pad][type - MENU_SETTINGS_BIND_BEGIN];
-
-   driver.menu->binds.begin  = type;
-   driver.menu->binds.last   = type;
-   driver.menu->binds.target = bind;
-   driver.menu->binds.player = driver.menu->current_pad;
-   menu_list_push_stack(
-         driver.menu->menu_list,
-         "",
-         "",
-         driver.menu->bind_mode_keyboard ?
-         MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
-         driver.menu->selection_ptr);
-
-   if (driver.menu->bind_mode_keyboard)
-   {
-      driver.menu->binds.timeout_end = rarch_get_time_usec() +
-         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-      input_keyboard_wait_keys(driver.menu,
-            menu_custom_bind_keyboard_cb);
-   }
-   else
-   {
-      menu_poll_bind_get_rested_axes(&driver.menu->binds);
-      menu_poll_bind_state(&driver.menu->binds);
-   }
-
-   return 0;
-}
-
 static int action_ok_custom_viewport(const char *path,
       const char *label, unsigned type, size_t index)
 {
@@ -2136,13 +2097,6 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
 
    menu_list_get_last_stack(driver.menu->menu_list,
          NULL, &menu_label, NULL);
-
-   if (type >= MENU_SETTINGS_BIND_BEGIN &&
-         type <= MENU_SETTINGS_BIND_ALL_LAST)
-   {
-      cbs->action_ok = action_ok_bind_key;
-      return 0;
-   }
 
    switch (type)
    {
