@@ -259,6 +259,10 @@ FONTS
 #include "../gfx/fonts/freetype.c"
 #endif
 
+#if defined(__APPLE__)
+#include "../gfx/fonts/coretext.c"
+#endif
+
 #ifdef HAVE_OPENGL
 #include "../gfx/fonts/gl_font.c"
 #endif

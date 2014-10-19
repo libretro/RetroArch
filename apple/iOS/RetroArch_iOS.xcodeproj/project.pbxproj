@@ -21,6 +21,7 @@
 		50CCC828185E0E7D001F5BC8 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */; };
 		50D00E8E19D117C400EBA71E /* cc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */; };
 		50E7189F184B88AA001956CE /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50E7189E184B88AA001956CE /* CoreVideo.framework */; };
+		696012F219F3389A006A1088 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 696012F119F3389A006A1088 /* CoreText.framework */; };
 		83D632DF19ECFCC4009E3161 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632D819ECFCC4009E3161 /* Default-568h@2x.png */; };
 		83D632E019ECFCC4009E3161 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632D919ECFCC4009E3161 /* Default.png */; };
 		83D632E119ECFCC4009E3161 /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DA19ECFCC4009E3161 /* Default@2x.png */; };
@@ -56,6 +57,7 @@
 		50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; name = cc_resampler_neon.S; path = ../../audio/resamplers/cc_resampler_neon.S; sourceTree = "<group>"; };
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 		83D632D819ECFCC4009E3161 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
 		83D632D919ECFCC4009E3161 /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
 		83D632DA19ECFCC4009E3161 /* Default@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default@2x.png"; sourceTree = "<group>"; };
@@ -85,6 +87,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				696012F219F3389A006A1088 /* CoreText.framework in Frameworks */,
 				963C3C34186E3DED00A6EB1E /* GameController.framework in Frameworks */,
 				50CCC828185E0E7D001F5BC8 /* CoreLocation.framework in Frameworks */,
 				501881EE184BB54C006F665D /* CoreMedia.framework in Frameworks */,
@@ -158,6 +161,7 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				696012F119F3389A006A1088 /* CoreText.framework */,
 				963C3C33186E3DED00A6EB1E /* GameController.framework */,
 				50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */,
 				501881ED184BB54C006F665D /* CoreMedia.framework */,
@@ -347,7 +351,7 @@
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_IDENTITY = "";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
+                "CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -404,8 +408,8 @@
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
+                CODE_SIGN_IDENTITY = "";
+                "CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
 				COPY_PHASE_STRIP = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_OPTIMIZATION_LEVEL = 2;
@@ -452,10 +456,10 @@
 		96AFAE5516C1D4EA009DE44C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					armv7s,
-					armv7,
-				);
+                ARCHS = (
+                        armv7s,
+                        armv7,
+                );
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
@@ -505,13 +509,12 @@
 		96AFAE5616C1D4EA009DE44C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					armv7s,
-					armv7,
-				);
+                ARCHS = (
+                        armv7s,
+                        armv7,
+                );
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CODE_SIGN_IDENTITY = "";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -587,7 +590,7 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
+                "PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
 				VALID_ARCHS = "armv7 armv7s";
 				WRAPPER_EXTENSION = app;
 			};
