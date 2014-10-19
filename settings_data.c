@@ -4296,11 +4296,11 @@ static bool setting_data_append_list_input_options(
                "input_player%d_joypad_index", player + 1);
       snprintf(label[player], sizeof(label[player]),
                "Player %d Pad Index", player + 1);
-      CONFIG_INT(
+      CONFIG_UINT(
             g_settings.input.joypad_map[player],
             key[player],
             label[player],
-            0,
+            player,
             group_info.name,
             subgroup_info.name,
             general_write_handler,
