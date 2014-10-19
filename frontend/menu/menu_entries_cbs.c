@@ -1788,9 +1788,8 @@ static int deferred_push_frontend_counters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
    file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
 
-   if (!list || !menu_list)
+   if (!list)
       return -1;
 
    menu_list_clear(list);
@@ -1808,9 +1807,8 @@ static int deferred_push_core_options(void *data, void *userdata,
 {
    int i;
    file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
 
-   if (!list || !menu_list)
+   if (!list)
       return -1;
 
    menu_list_clear(list);
@@ -1836,9 +1834,8 @@ static int deferred_push_disk_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
    file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
 
-   if (!list || !menu_list)
+   if (!list)
       return -1;
 
    menu_list_clear(list);
@@ -1876,9 +1873,8 @@ static int deferred_push_history_list(void *data, void *userdata,
    unsigned i;
    size_t list_size = 0;
    file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
 
-   if (!list || !menu_list || !driver.menu)
+   if (!list || !driver.menu)
       return -1;
 
    menu_list_clear(list);
