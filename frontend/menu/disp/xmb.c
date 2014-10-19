@@ -294,6 +294,7 @@ static void xmb_render_background(bool force_transparency)
       glBindTexture(GL_TEXTURE_2D, 0);
    }
 
+   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
    gl->shader->set_coords(&coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
 
