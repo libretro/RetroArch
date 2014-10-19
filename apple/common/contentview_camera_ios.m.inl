@@ -60,18 +60,23 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     event_process_camera_frame(pixelBuffer);
 }
 
+/* TODO - add void param to onCameraInit so we can pass g_context. */
 - (void) onCameraInit
 {
     NSError *error;
     AVCaptureVideoDataOutput * dataOutput;
     AVCaptureDeviceInput *input;
     AVCaptureDevice *videoDevice;
+    CVEAGLContext egl_context = (CVEAGLContext)g_context;
+    
+    if (!egl_context)
+        return;
     
 #if COREVIDEO_USE_EAGLCONTEXT_CLASS_IN_API
-    CVReturn ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, g_context, NULL, &textureCache);
+    CVReturn ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, (CVEAGLContext)egl_context, NULL, &textureCache);
     
 #else
-    CVReturn ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, (__bridge void *)g_context, NULL, &textureCache);
+    CVReturn ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, (__bridge void *)egl_context, NULL, &textureCache);
 #endif
     (void)ret;
     
