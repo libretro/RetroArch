@@ -1755,19 +1755,6 @@ static int deferred_push_category(void *data, void *userdata,
    return 0;
 }
 
-static void add_setting_entry(menu_handle_t *menu,
-      file_list_t *list,
-      const char *label, unsigned id,
-      rarch_setting_t *settings)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)
-      setting_data_find_setting(settings, label);
-
-   if (setting)
-      menu_list_push(list, setting->short_description,
-            setting->name, id, 0);
-}
-
 static int deferred_push_input_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -1785,21 +1772,12 @@ static int deferred_push_input_options(void *data, void *userdata,
    menu_list_push(list, "Device", "input_bind_device_id", 0, 0);
    menu_list_push(list, "Device Type", "input_bind_device_type", 0, 0);
    menu_list_push(list, "Analog D-pad Mode", "input_bind_analog_dpad_mode", 0, 0);
-   add_setting_entry(driver.menu,list,"input_axis_threshold", 0, driver.menu->list_settings);
    menu_list_push(list, "Bind Mode", "",
          MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
    menu_list_push(list, "Configure All (RetroPad)", "",
          MENU_SETTINGS_CUSTOM_BIND_ALL, 0);
    menu_list_push(list, "Default All (RetroPad)", "",
          MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);
-   add_setting_entry(driver.menu,list,"osk_enable", 0, driver.menu->list_settings);
-   for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_ALL_LAST; i++)
-      add_setting_entry(
-            driver.menu,
-            list,
-            input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].base,
-            i,
-            driver.menu->list_settings);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(driver.menu, path, label, type);
