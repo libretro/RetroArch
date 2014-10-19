@@ -12,6 +12,8 @@
 		50535530185E0F4000926C26 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5053552F185E0F4000926C26 /* CoreLocation.framework */; };
 		50C374A919F04F7A00984F8D /* CFExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 50C374A819F04F7A00984F8D /* CFExtensions.m */; };
 		50D66298199F344700CF54E3 /* Cg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50D66297199F344700CF54E3 /* Cg.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		696012EE19F2B7C0006A1088 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 696012ED19F2B7C0006A1088 /* CoreText.framework */; };
+		696012F019F2B7D8006A1088 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 696012EF19F2B7D8006A1088 /* CoreGraphics.framework */; };
 		962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 962EE0E1178B3DF6004224FF /* IOKit.framework */; };
 		96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96355CE21788E72A0010DBFA /* Cocoa.framework */; };
 		964DE7C417D84B57001CBB6C /* Settings.xib in Resources */ = {isa = PBXBuildFile; fileRef = 964DE7C617D84B57001CBB6C /* Settings.xib */; };
@@ -35,6 +37,8 @@
 		50C374A819F04F7A00984F8D /* CFExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CFExtensions.m; path = ../../common/CFExtensions.m; sourceTree = SOURCE_ROOT; };
 		50D66295199F28AC00CF54E3 /* Cg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Cg.framework; sourceTree = "<group>"; };
 		50D66297199F344700CF54E3 /* Cg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cg.framework; path = ../../../../../../../Library/Frameworks/Cg.framework; sourceTree = "<group>"; };
+		696012ED19F2B7C0006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
+		696012EF19F2B7D8006A1088 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		962EE0E1178B3DF6004224FF /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../../../../System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
 		96355CDF1788E72A0010DBFA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96355CE21788E72A0010DBFA /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -61,6 +65,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				696012F019F2B7D8006A1088 /* CoreGraphics.framework in Frameworks */,
+				696012EE19F2B7C0006A1088 /* CoreText.framework in Frameworks */,
 				50D66298199F344700CF54E3 /* Cg.framework in Frameworks */,
 				50535530185E0F4000926C26 /* CoreLocation.framework in Frameworks */,
 				962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */,
@@ -111,6 +117,8 @@
 		96355CE11788E72A0010DBFA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				696012EF19F2B7D8006A1088 /* CoreGraphics.framework */,
+				696012ED19F2B7C0006A1088 /* CoreText.framework */,
 				50D66297199F344700CF54E3 /* Cg.framework */,
 				50D66295199F28AC00CF54E3 /* Cg.framework */,
 				5053552F185E0F4000926C26 /* CoreLocation.framework */,
