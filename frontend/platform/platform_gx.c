@@ -22,6 +22,7 @@
 #include "../../gfx/gx/sdk_defines.h"
 
 #include "../../file.h"
+#include "../../file_path.h"
 
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
 #include "../../wii/mem2_manager.h"
