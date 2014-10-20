@@ -285,9 +285,9 @@ bool setting_data_load_config_path(rarch_setting_t* settings,
 }
 
 bool setting_data_save_config(rarch_setting_t* settings,
-      config_file_t* config)
+      config_file_t* cfg)
 {
-   if (!settings || !config)
+   if (!settings || !cfg)
       return false;
 
    for (; settings->type != ST_NONE; settings++)
@@ -295,16 +295,16 @@ bool setting_data_save_config(rarch_setting_t* settings,
       switch (settings->type)
       {
          case ST_BOOL:
-            config_set_bool(config, settings->name,
+            config_set_bool(cfg, settings->name,
                   *settings->value.boolean);
             break;
          case ST_PATH:
          case ST_DIR:
-            config_set_path(config, settings->name,
+            config_set_path(cfg, settings->name,
                   settings->value.string);
             break;
          case ST_STRING:
-            config_set_string(config, settings->name,
+            config_set_string(cfg, settings->name,
                   settings->value.string);
             break;
          case ST_INT:
@@ -315,7 +315,7 @@ bool setting_data_save_config(rarch_setting_t* settings,
                if (*settings->value.integer > settings->max)
                   *settings->value.integer = settings->max;
             }
-            config_set_int(config, settings->name, *settings->value.integer);
+            config_set_int(cfg, settings->name, *settings->value.integer);
             break;
          case ST_UINT:
             if (settings->flags & SD_FLAG_HAS_RANGE)
@@ -325,7 +325,7 @@ bool setting_data_save_config(rarch_setting_t* settings,
                if (*settings->value.unsigned_integer > settings->max)
                   *settings->value.unsigned_integer = settings->max;
             }
-            config_set_uint64(config, settings->name,
+            config_set_uint64(cfg, settings->name,
                   *settings->value.unsigned_integer);
             break;
          case ST_FLOAT:
@@ -336,7 +336,7 @@ bool setting_data_save_config(rarch_setting_t* settings,
                if (*settings->value.fraction > settings->max)
                   *settings->value.fraction = settings->max;
             }
-            config_set_float(config, settings->name, *settings->value.fraction);
+            config_set_float(cfg, settings->name, *settings->value.fraction);
             break;
          case ST_BIND:
             {
@@ -354,13 +354,13 @@ bool setting_data_save_config(rarch_setting_t* settings,
 #endif
                get_input_config_key(input_config_key,
                      sizeof(input_config_key), settings, 0);
-               config_set_string(config, input_config_key, key_name);
+               config_set_string(cfg, input_config_key, key_name);
                get_input_config_key(input_config_key,
                      sizeof(input_config_key), settings, "btn");
-               config_set_string(config, input_config_key, button_name);
+               config_set_string(cfg, input_config_key, button_name);
                get_input_config_key(input_config_key,
                      sizeof(input_config_key), settings, "axis");
-               config_set_string(config, input_config_key, axis_name);
+               config_set_string(cfg, input_config_key, axis_name);
             }
             break;
             /* TODO */
