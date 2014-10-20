@@ -43,7 +43,9 @@
 typedef struct
 {
    float alpha;
+   float label_alpha;
    float zoom;
+   float x;
    float y;
 } xmb_node_t;
 
@@ -84,6 +86,7 @@ typedef struct xmb_handle
    int icon_size;
    float x;
    float alpha;
+   float arrow_alpha;
    float hspacing;
    float vspacing;
    float font_size;
@@ -371,9 +374,13 @@ static void xmb_selection_pointer_changed(void)
       if (!node)
          continue;
 
-      iy = (i < current) ? xmb->vspacing *
-         (i - current + xmb->above_item_offset) :
-         xmb->vspacing * (i - current + xmb->under_item_offset);
+      if (i < current)
+         if (xmb->depth > 1)
+            iy = xmb->vspacing * (i - (int)current + xmb->above_subitem_offset);
+         else
+            iy = xmb->vspacing * (i - (int)current + xmb->above_item_offset);
+      else
+         iy = xmb->vspacing * (i - (int)current + xmb->under_item_offset);
 
       if (i == current)
       {
@@ -383,9 +390,84 @@ static void xmb_selection_pointer_changed(void)
       }
 
       add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
+      add_tween(XMB_DELAY, ia, &node->label_alpha, &inOutQuad, NULL);
       add_tween(XMB_DELAY, iz, &node->zoom,  &inOutQuad, NULL);
       add_tween(XMB_DELAY, iy, &node->y,     &inOutQuad, NULL);
    }
+}
+
+static void xmb_list_open_old(file_list_t *list, int dir, size_t current)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+
+   if (!xmb)
+      return;
+
+   int i;
+   for (i = 0; i < file_list_get_size(list); i++)
+   {
+      xmb_node_t *node = NULL;
+      node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+      float ia = i == current ? xmb->i_active_alpha : 0;
+      if (dir == -1) ia = 0;
+      add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
+      add_tween(XMB_DELAY, 0, &node->label_alpha, &inOutQuad, NULL);
+      //if (i == current)
+         add_tween(XMB_DELAY, xmb->icon_size*dir*-2, &node->x, &inOutQuad, NULL);
+      //else
+      //   add_tween(XMB_DELAY, xmb->icon_size*dir*-1, &node->x, &inOutQuad, NULL);
+   }
+}
+
+static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+
+   if (!xmb)
+      return;
+
+   int i;
+   for (i = 0; i < file_list_get_size(list); i++)
+   {
+      xmb_node_t *node = NULL;
+      node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+      node->label_alpha = 0;
+      if (dir == 1 || (dir == -1 && i != current))
+         node->alpha = 0;
+      //if (dir == 1 || (dir == -1 && i == current))
+         node->x = xmb->icon_size*dir*2;
+      //else
+      //   node->x = xmb->icon_size*dir;
+
+      float iy = 0;
+
+      if (i < current)
+         if (xmb->depth > 1)
+            iy = xmb->vspacing * (i - (int)current + xmb->above_subitem_offset);
+         else
+            iy = xmb->vspacing * (i - (int)current + xmb->above_item_offset);
+      else
+         iy = xmb->vspacing * (i - (int)current + xmb->under_item_offset);
+
+      if (i == current)
+         iy = xmb->vspacing * xmb->active_item_factor;
+
+      node->y = iy;
+
+      if (i == current)
+         node->zoom = 1;
+   }
+   for (i = 0; i < file_list_get_size(list); i++)
+   {
+      xmb_node_t *node = NULL;
+      node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+      float ia = i == current ? 1.0 : 0.5;
+      add_tween(XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
+      add_tween(XMB_DELAY, ia, &node->label_alpha,  &inOutQuad, NULL);
+      add_tween(XMB_DELAY, 0, &node->x, &inOutQuad, NULL);
+   }
+
+   xmb->old_depth = xmb->depth;
 }
 
 static void xmb_populate_entries(void *data, const char *path,
@@ -397,45 +479,110 @@ static void xmb_populate_entries(void *data, const char *path,
    if (!xmb)
       return;
 
-   xmb->depth = menu_list_get_stack_size(driver.menu->menu_list);
+   xmb->depth = file_list_get_size(driver.menu->menu_list->menu_stack);
 
-   if (xmb->depth != xmb->old_depth)
-      add_tween(XMB_DELAY, xmb->x + (xmb->depth-xmb->old_depth)*-20,
-            &xmb->x, &inOutQuad, NULL);
+   int dir = 0;
+   if (xmb->depth > xmb->old_depth)
+      dir = 1;
+   else if (xmb->depth < xmb->old_depth)
+      dir = -1;
 
-   current = driver.menu->selection_ptr;
-   end = menu_list_get_size(driver.menu->menu_list);
+   xmb_list_open_old(driver.menu->menu_list->selection_buf_old, dir, driver.menu->selection_ptr_old);
+   xmb_list_open_new(driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
 
-   for (i = 0; i < end; i++)
-   {
-      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(
-            driver.menu->menu_list->selection_buf, i);
+   if (xmb->depth == 1 || xmb->depth == 2)
+      add_tween(XMB_DELAY, xmb->icon_size*-(xmb->depth*2-2), &xmb->x, &inOutQuad, NULL);
 
-      if (!node)
-         continue;
+   if (xmb->depth == 1)
+      add_tween(XMB_DELAY, 0, &xmb->arrow_alpha, &inOutQuad, NULL);
 
-      node->alpha = xmb->i_passive_alpha;
-      node->zoom = xmb->i_passive_zoom;
-      node->y = (i < current) ? xmb->vspacing *
-         (i - current + xmb->above_item_offset) :
-         xmb->vspacing * (i - current + xmb->under_item_offset);
-
-      if (i == current)
-      {
-         node->alpha = xmb->i_active_alpha;
-         node->zoom = xmb->i_active_zoom;
-         node->y = xmb->vspacing * xmb->active_item_factor;
-      }
-   }
+   if (xmb->depth == 2)
+      add_tween(XMB_DELAY, 1, &xmb->arrow_alpha, &inOutQuad, NULL);
 
    xmb->old_depth = xmb->depth;
 }
 
+static void xmb_draw_items(file_list_t *list, file_list_t *stack, size_t current)
+{
+   int i;
+   const char *dir = NULL;
+   const char *label = NULL;
+   unsigned menu_type = 0;
+   size_t end = file_list_get_size(list);
+
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+   if (!xmb || !list->size)
+      return;
+
+   file_list_get_last(stack, &dir, &label, &menu_type);
+
+   for (i = 0; i < end; i++)
+   {
+      char val_buf[PATH_MAX], path_buf[PATH_MAX];
+      char name[256], value[256];
+      const char *path = NULL, *entry_label = NULL;
+      unsigned type = 0, w = 0;
+      xmb_node_t *node = NULL;
+
+      menu_list_get_at_offset(list, i, &path, &entry_label, &type);
+      node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+
+      disp_set_label(list, &w, type, i, label,
+            val_buf, sizeof(val_buf),
+            entry_label, path,
+            path_buf, sizeof(path_buf));
+
+      GLuint icon = 0;
+      switch(type)
+      {
+         case MENU_FILE_DIRECTORY:
+            icon = xmb->textures[XMB_TEXTURE_FOLDER].id;
+            break;
+         case MENU_FILE_PLAIN:
+            icon = xmb->textures[XMB_TEXTURE_FILE].id;
+            break;
+         case MENU_FILE_CARCHIVE:
+            icon = xmb->textures[XMB_TEXTURE_ZIP].id;
+            break;
+         case MENU_FILE_CORE:
+            icon = xmb->textures[XMB_TEXTURE_CORE].id;
+            break;
+         default:
+            icon = xmb->textures[XMB_TEXTURE_SETTING].id;
+            break;
+      }
+
+      xmb_draw_icon(icon,
+            node->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0, 
+            xmb->margin_top + node->y + xmb->icon_size/2.0, 
+            node->alpha, 
+            0, 
+            node->zoom);
+
+      menu_ticker_line(name, 35, g_extern.frame_count / 20, path_buf,
+         (i == current));
+
+      xmb_draw_text(name,
+            node->x + xmb->margin_left + xmb->hspacing + xmb->label_margin_left, 
+            xmb->margin_top + node->y + xmb->label_margin_top, 
+            1, 
+            node->label_alpha);
+
+      menu_ticker_line(value, 35, g_extern.frame_count / 20, val_buf,
+            (i == current));
+
+      xmb_draw_text(value,
+            node->x + xmb->margin_left + xmb->hspacing + 
+            xmb->label_margin_left + xmb->setting_margin_left, 
+            xmb->margin_top + node->y + xmb->label_margin_top, 
+            1, 
+            node->label_alpha);
+   }
+}
+
 static void xmb_frame(void)
 {
-   int i, current;
    char title_msg[64];
-   size_t end;
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
@@ -476,73 +623,21 @@ static void xmb_frame(void)
    xmb_draw_text(title_msg, xmb->title_margin_left, 
          gl->win_height - xmb->title_margin_bottom, 1, 1);
 
-   end = menu_list_get_size(driver.menu->menu_list);
-   current = driver.menu->selection_ptr;
+   xmb_draw_icon(xmb->textures[XMB_TEXTURE_ARROW].id,
+         xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0 + xmb->icon_size,
+         xmb->margin_top + xmb->icon_size/2.0 + xmb->vspacing * xmb->active_item_factor,
+         xmb->arrow_alpha,
+         0,
+         1);
 
-   for (i = 0; i < end; i++)
-   {
-      char val_buf[PATH_MAX], path_buf[PATH_MAX];
-      char name[256], value[256];
-      const char *path = NULL, *entry_label = NULL;
-      unsigned type = 0, w = 0;
-      xmb_node_t *node = NULL;
-
-      menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
-            &entry_label, &type);
-      node = (xmb_node_t*)file_list_get_userdata_at_offset(
-            driver.menu->menu_list->selection_buf, i);
-      
-      disp_set_label(&w, type, i, label,
-            val_buf, sizeof(val_buf),
-            entry_label, path,
-            path_buf, sizeof(path_buf));
-
-      GLuint icon = 0;
-      switch(type)
-      {
-         case MENU_FILE_DIRECTORY:
-            icon = xmb->textures[XMB_TEXTURE_FOLDER].id;
-            break;
-         case MENU_FILE_PLAIN:
-            icon = xmb->textures[XMB_TEXTURE_FILE].id;
-            break;
-         case MENU_FILE_CARCHIVE:
-            icon = xmb->textures[XMB_TEXTURE_ZIP].id;
-            break;
-         case MENU_FILE_CORE:
-            icon = xmb->textures[XMB_TEXTURE_CORE].id;
-            break;
-         default:
-            icon = xmb->textures[XMB_TEXTURE_SETTING].id;
-            break;
-      }
-
-      xmb_draw_icon(icon,
-            xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0, 
-            xmb->margin_top + node->y + xmb->icon_size/2.0, 
-            node->alpha, 
-            0, 
-            node->zoom);
-
-      menu_ticker_line(name, 35, g_extern.frame_count / 20, path_buf,
-            (i == current));
-
-      xmb_draw_text(name,
-            xmb->x + xmb->margin_left + xmb->hspacing + xmb->label_margin_left, 
-            xmb->margin_top + node->y + xmb->label_margin_top, 
-            1, 
-            node->alpha);
-
-      menu_ticker_line(value, 35, g_extern.frame_count / 20, val_buf,
-            (i == current));
-
-      xmb_draw_text(value,
-            xmb->x + xmb->margin_left + xmb->hspacing + 
-            xmb->label_margin_left + xmb->setting_margin_left, 
-            xmb->margin_top + node->y + xmb->label_margin_top, 
-            1, 
-            node->alpha);
-   }
+   xmb_draw_items(
+         driver.menu->menu_list->selection_buf_old,
+         driver.menu->menu_list->menu_stack_old,
+         driver.menu->selection_ptr_old);
+   xmb_draw_items(
+         driver.menu->menu_list->selection_buf,
+         driver.menu->menu_list->menu_stack,
+         driver.menu->selection_ptr);
 
    xmb_draw_icon(xmb->textures[XMB_TEXTURE_SETTINGS].id, 
          xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size / 2.0,
@@ -629,6 +724,7 @@ static void *xmb_init(void)
 
    xmb->x               = 0;
    xmb->alpha           = 1.0f;
+   xmb->arrow_alpha     = 0;
    xmb->depth           = 1;
    xmb->old_depth       = 1;
 
@@ -910,8 +1006,10 @@ static void xmb_list_insert(void *data,
       iy = xmb->vspacing * xmb->active_item_factor;
 
    node->alpha = (i == current) ? xmb->i_active_alpha : xmb->i_passive_alpha;
+   node->label_alpha = node->alpha;
    node->zoom  = (i == current) ? xmb->i_active_zoom : xmb->i_passive_zoom;
    node->y = iy;
+   node->x = 0;
 }
 
 static void xmb_list_delete(void *data, size_t index,
