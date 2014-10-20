@@ -303,7 +303,7 @@ static void glui_frame(void)
             driver.menu->menu_list->selection_buf->list[i].label);
       (void)setting;
 
-      disp_set_label(&w, type, i, label,
+      disp_set_label(driver.menu->menu_list->selection_buf, &w, type, i, label,
             type_str, sizeof(type_str), 
             entry_label, path,
             path_buf, sizeof(path_buf));
