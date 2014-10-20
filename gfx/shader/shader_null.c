@@ -78,8 +78,10 @@ static bool shader_null_set_coords(const void *data)
    return false;
 }
 
-static void shader_null_use(void *data, unsigned index)
+static void shader_null_use(void *data, unsigned idx)
 {
+   (void)data;
+   (void)idx;
 }
 
 static unsigned shader_null_num(void)
@@ -87,19 +89,24 @@ static unsigned shader_null_num(void)
    return 0;
 }
 
-static bool shader_null_filter_type(unsigned index, bool *smooth)
+static bool shader_null_filter_type(unsigned idx, bool *smooth)
 {
+   (void)idx;
+   (void)smooth;
    return false;
 }
 
-static enum gfx_wrap_type shader_null_wrap_type(unsigned index)
+static enum gfx_wrap_type shader_null_wrap_type(unsigned idx)
 {
+   (void)idx;
    return RARCH_WRAP_BORDER;
 }
 
-static void shader_null_shader_scale(unsigned index,
+static void shader_null_shader_scale(unsigned idx,
       struct gfx_fbo_scale *scale)
 {
+   (void)idx;
+   (void)scale;
 }
 
 static unsigned shader_null_get_prev_textures(void)
@@ -107,8 +114,9 @@ static unsigned shader_null_get_prev_textures(void)
    return 0;
 }
 
-static bool shader_null_mipmap_input(unsigned index)
+static bool shader_null_mipmap_input(unsigned idx)
 {
+   (void)idx;
    return false;
 }
 

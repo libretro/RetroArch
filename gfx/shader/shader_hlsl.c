@@ -82,14 +82,14 @@ struct hlsl_program
 
 static struct hlsl_program prg[RARCH_HLSL_MAX_SHADERS] = {0};
 static bool hlsl_active = false;
-static unsigned active_index = 0;
+static unsigned active_idx = 0;
 
 static struct gfx_shader *cg_shader;
 
 void hlsl_set_proj_matrix(XMMATRIX rotation_value)
 {
    if (hlsl_active)
-      prg[active_index].mvp_val = rotation_value;
+      prg[active_idx].mvp_val = rotation_value;
 }
 
 #define set_param_2f(param, xy, constanttable) \
@@ -119,26 +119,26 @@ static void hlsl_set_params(void *data, unsigned width, unsigned height,
    const float out_size[2] = { (float)out_width, (float)out_height };
    float frame_cnt = frame_counter;
 
-   prg[active_index].f_ctable->SetDefaults(d3d_device_ptr);
-   prg[active_index].v_ctable->SetDefaults(d3d_device_ptr);
+   prg[active_idx].f_ctable->SetDefaults(d3d_device_ptr);
+   prg[active_idx].v_ctable->SetDefaults(d3d_device_ptr);
 
-   set_param_2f(prg[active_index].vid_size_f, ori_size, prg[active_index].f_ctable);
-   set_param_2f(prg[active_index].tex_size_f, tex_size, prg[active_index].f_ctable);
-   set_param_2f(prg[active_index].out_size_f, out_size, prg[active_index].f_ctable);
-   set_param_1f(prg[active_index].frame_cnt_f, frame_cnt, prg[active_index].f_ctable);
-   set_param_1f(prg[active_index].frame_dir_f, g_extern.frame_is_reverse ? -1.0 : 1.0,prg[active_index].f_ctable);
+   set_param_2f(prg[active_idx].vid_size_f, ori_size, prg[active_idx].f_ctable);
+   set_param_2f(prg[active_idx].tex_size_f, tex_size, prg[active_idx].f_ctable);
+   set_param_2f(prg[active_idx].out_size_f, out_size, prg[active_idx].f_ctable);
+   set_param_1f(prg[active_idx].frame_cnt_f, frame_cnt, prg[active_idx].f_ctable);
+   set_param_1f(prg[active_idx].frame_dir_f, g_extern.frame_is_reverse ? -1.0 : 1.0,prg[active_idx].f_ctable);
 
-   set_param_2f(prg[active_index].vid_size_v, ori_size, prg[active_index].v_ctable);
-   set_param_2f(prg[active_index].tex_size_v, tex_size, prg[active_index].v_ctable);
-   set_param_2f(prg[active_index].out_size_v, out_size, prg[active_index].v_ctable);
-   set_param_1f(prg[active_index].frame_cnt_v, frame_cnt, prg[active_index].v_ctable);
-   set_param_1f(prg[active_index].frame_dir_v, g_extern.frame_is_reverse ? -1.0 : 1.0,prg[active_index].v_ctable);
+   set_param_2f(prg[active_idx].vid_size_v, ori_size, prg[active_idx].v_ctable);
+   set_param_2f(prg[active_idx].tex_size_v, tex_size, prg[active_idx].v_ctable);
+   set_param_2f(prg[active_idx].out_size_v, out_size, prg[active_idx].v_ctable);
+   set_param_1f(prg[active_idx].frame_cnt_v, frame_cnt, prg[active_idx].v_ctable);
+   set_param_1f(prg[active_idx].frame_dir_v, g_extern.frame_is_reverse ? -1.0 : 1.0,prg[active_idx].v_ctable);
 
 
    /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
 
-static bool load_program(void *data, unsigned index, const char *prog, bool path_is_file)
+static bool load_program(void *data, unsigned idx, const char *prog, bool path_is_file)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
@@ -151,17 +151,17 @@ static bool load_program(void *data, unsigned index, const char *prog, bool path
    if (path_is_file)
    {
       ret_fp = D3DXCompileShaderFromFile(prog, NULL, NULL,
-            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &prg[index].f_ctable); 
+            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &prg[idx].f_ctable); 
       ret_vp = D3DXCompileShaderFromFile(prog, NULL, NULL,
-            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &prg[index].v_ctable); 
+            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &prg[idx].v_ctable); 
    }
    else
    {
       /* TODO - crashes currently - to do with 'end of line' of stock shader */
       ret_fp = D3DXCompileShader(prog, strlen(prog), NULL, NULL,
-            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &prg[index].f_ctable );
+            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &prg[idx].f_ctable );
       ret_vp = D3DXCompileShader(prog, strlen(prog), NULL, NULL,
-            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &prg[index].v_ctable );
+            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &prg[idx].v_ctable );
    }
 
    if (ret_fp < 0 || ret_vp < 0 || listing_v || listing_f)
@@ -176,8 +176,8 @@ static bool load_program(void *data, unsigned index, const char *prog, bool path
       goto end;
    }
 
-   d3d_device_ptr->CreatePixelShader((const DWORD*)code_f->GetBufferPointer(), &prg[index].fprg);
-   d3d_device_ptr->CreateVertexShader((const DWORD*)code_v->GetBufferPointer(), &prg[index].vprg);
+   d3d_device_ptr->CreatePixelShader((const DWORD*)code_f->GetBufferPointer(), &prg[idx].fprg);
+   d3d_device_ptr->CreateVertexShader((const DWORD*)code_v->GetBufferPointer(), &prg[idx].vprg);
    code_f->Release();
    code_v->Release();
 
@@ -370,18 +370,18 @@ static void hlsl_deinit(void)
    hlsl_deinit_state();
 }
 
-static void hlsl_use(void *data, unsigned index)
+static void hlsl_use(void *data, unsigned idx)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-   if (hlsl_active && prg[index].vprg && prg[index].fprg)
+   if (hlsl_active && prg[idx].vprg && prg[idx].fprg)
    {
-      active_index = index;
-      d3d_set_vertex_shader(d3dr, index, prg[index].vprg);
+      active_idx = idx;
+      d3d_set_vertex_shader(d3dr, idx, prg[idx].vprg);
 #ifdef _XBOX
-      D3DDevice_SetPixelShader(d3dr, prg[index].fprg);
+      D3DDevice_SetPixelShader(d3dr, prg[idx].fprg);
 #else
-      d3dr->SetPixelShader(prg[index].fprg);
+      d3dr->SetPixelShader(prg[idx].fprg);
 #endif
    }
 }
@@ -393,21 +393,21 @@ static unsigned hlsl_num(void)
    return 0;
 }
 
-static bool hlsl_filter_type(unsigned index, bool *smooth)
+static bool hlsl_filter_type(unsigned idx, bool *smooth)
 {
-   if (hlsl_active && index
-         && (cg_shader->pass[index - 1].filter != RARCH_FILTER_UNSPEC))
+   if (hlsl_active && idx
+         && (cg_shader->pass[idx - 1].filter != RARCH_FILTER_UNSPEC))
    {
-      *smooth = cg_shader->pass[index - 1].filter = RARCH_FILTER_LINEAR;
+      *smooth = cg_shader->pass[idx - 1].filter = RARCH_FILTER_LINEAR;
       return true;
    }
    return false;
 }
 
-static void hlsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
+static void hlsl_shader_scale(unsigned idx, struct gfx_fbo_scale *scale)
 {
-   if (hlsl_active && index)
-      *scale = cg_shader->pass[index - 1].fbo;
+   if (hlsl_active && idx)
+      *scale = cg_shader->pass[idx - 1].fbo;
    else
       scale->valid = false;
 }
@@ -417,17 +417,17 @@ static bool hlsl_set_mvp(void *data, const math_matrix *mat)
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
 
-   if(hlsl_active && prg[active_index].mvp)
+   if(hlsl_active && prg[active_idx].mvp)
    {
-      prg[active_index].v_ctable->SetMatrix(d3d_device_ptr, prg[active_index].mvp, (D3DXMATRIX*)&prg[active_index].mvp_val);
+      prg[active_idx].v_ctable->SetMatrix(d3d_device_ptr, prg[active_idx].mvp, (D3DXMATRIX*)&prg[active_idx].mvp_val);
       return true;
    }
    return false;
 }
 
-static bool hlsl_mipmap_input(unsigned index)
+static bool hlsl_mipmap_input(unsigned idx)
 {
-   (void)index;
+   (void)idx;
    return false;
 }
 

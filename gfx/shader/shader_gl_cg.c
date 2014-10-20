@@ -144,7 +144,7 @@ struct cg_program
 static struct cg_program prg[GFX_MAX_SHADERS];
 static bool cg_active;
 static CGprofile cgVProf, cgFProf;
-static unsigned active_index;
+static unsigned active_idx;
 
 static struct gfx_shader *cg_shader;
 
@@ -152,7 +152,7 @@ static state_tracker_t *state_tracker;
 static GLuint lut_textures[GFX_MAX_TEXTURES];
 
 static CGparameter cg_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
-static unsigned cg_attrib_index;
+static unsigned cg_attrib_idx;
 
 static char cg_alias_define[GFX_MAX_SHADERS][128];
 
@@ -160,19 +160,19 @@ static void gl_cg_reset_attrib(void)
 {
    unsigned i;
    /* Add sanity check that we did not overflow. */
-   rarch_assert(cg_attrib_index <= ARRAY_SIZE(cg_attribs));
+   rarch_assert(cg_attrib_idx <= ARRAY_SIZE(cg_attribs));
 
-   for (i = 0; i < cg_attrib_index; i++)
+   for (i = 0; i < cg_attrib_idx; i++)
       cgGLDisableClientState(cg_attribs[i]);
-   cg_attrib_index = 0;
+   cg_attrib_idx = 0;
 }
 
 static bool gl_cg_set_mvp(void *data, const math_matrix *mat)
 {
    (void)data;
-   if (cg_active && prg[active_index].mvp)
+   if (cg_active && prg[active_idx].mvp)
    {
-      cgGLSetMatrixParameterfc(prg[active_index].mvp, mat->data);
+      cgGLSetMatrixParameterfc(prg[active_idx].mvp, mat->data);
       return true;
    }
 
@@ -183,11 +183,11 @@ static bool gl_cg_set_mvp(void *data, const math_matrix *mat)
 }
 
 #define SET_COORD(name, coords_name, len) do { \
-   if (prg[active_index].name) \
+   if (prg[active_idx].name) \
    { \
-      cgGLSetParameterPointer(prg[active_index].name, len, GL_FLOAT, 0, coords->coords_name); \
-      cgGLEnableClientState(prg[active_index].name); \
-      cg_attribs[cg_attrib_index++] = prg[active_index].name; \
+      cgGLSetParameterPointer(prg[active_idx].name, len, GL_FLOAT, 0, coords->coords_name); \
+      cgGLEnableClientState(prg[active_idx].name); \
+      cg_attribs[cg_attrib_idx++] = prg[active_idx].name; \
    } \
 } while(0)
 
@@ -230,82 +230,82 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    unsigned i;
 
    (void)data;
-   if (!cg_active || (active_index == 0) ||
-         (active_index == GL_SHADER_STOCK_BLEND))
+   if (!cg_active || (active_idx == 0) ||
+         (active_idx == GL_SHADER_STOCK_BLEND))
       return;
 
    /* Set frame. */
-   set_param_2f(prg[active_index].vid_size_f, width, height);
-   set_param_2f(prg[active_index].tex_size_f, tex_width, tex_height);
-   set_param_2f(prg[active_index].out_size_f, out_width, out_height);
-   set_param_1f(prg[active_index].frame_dir_f,
+   set_param_2f(prg[active_idx].vid_size_f, width, height);
+   set_param_2f(prg[active_idx].tex_size_f, tex_width, tex_height);
+   set_param_2f(prg[active_idx].out_size_f, out_width, out_height);
+   set_param_1f(prg[active_idx].frame_dir_f,
          g_extern.frame_is_reverse ? -1.0 : 1.0);
 
-   set_param_2f(prg[active_index].vid_size_v, width, height);
-   set_param_2f(prg[active_index].tex_size_v, tex_width, tex_height);
-   set_param_2f(prg[active_index].out_size_v, out_width, out_height);
-   set_param_1f(prg[active_index].frame_dir_v,
+   set_param_2f(prg[active_idx].vid_size_v, width, height);
+   set_param_2f(prg[active_idx].tex_size_v, tex_width, tex_height);
+   set_param_2f(prg[active_idx].out_size_v, out_width, out_height);
+   set_param_1f(prg[active_idx].frame_dir_v,
          g_extern.frame_is_reverse ? -1.0 : 1.0);
 
-   if (prg[active_index].frame_cnt_f || prg[active_index].frame_cnt_v)
+   if (prg[active_idx].frame_cnt_f || prg[active_idx].frame_cnt_v)
    {
-      unsigned modulo = cg_shader->pass[active_index - 1].frame_count_mod;
+      unsigned modulo = cg_shader->pass[active_idx - 1].frame_count_mod;
       if (modulo)
          frame_count %= modulo;
 
-      set_param_1f(prg[active_index].frame_cnt_f, (float)frame_count);
-      set_param_1f(prg[active_index].frame_cnt_v, (float)frame_count);
+      set_param_1f(prg[active_idx].frame_cnt_f, (float)frame_count);
+      set_param_1f(prg[active_idx].frame_cnt_v, (float)frame_count);
    }
 
    /* Set orig texture. */
-   CGparameter param = prg[active_index].orig.tex;
+   CGparameter param = prg[active_idx].orig.tex;
    if (param)
    {
       cgGLSetTextureParameter(param, info->tex);
       cgGLEnableTextureParameter(param);
    }
 
-   set_param_2f(prg[active_index].orig.vid_size_v,
+   set_param_2f(prg[active_idx].orig.vid_size_v,
          info->input_size[0], info->input_size[1]);
-   set_param_2f(prg[active_index].orig.vid_size_f,
+   set_param_2f(prg[active_idx].orig.vid_size_f,
          info->input_size[0], info->input_size[1]);
-   set_param_2f(prg[active_index].orig.tex_size_v,
+   set_param_2f(prg[active_idx].orig.tex_size_v,
          info->tex_size[0],   info->tex_size[1]);
-   set_param_2f(prg[active_index].orig.tex_size_f,
+   set_param_2f(prg[active_idx].orig.tex_size_f,
          info->tex_size[0],   info->tex_size[1]);
-   if (prg[active_index].orig.coord)
+   if (prg[active_idx].orig.coord)
    {
-      cgGLSetParameterPointer(prg[active_index].orig.coord, 2,
+      cgGLSetParameterPointer(prg[active_idx].orig.coord, 2,
             GL_FLOAT, 0, info->coord);
-      cgGLEnableClientState(prg[active_index].orig.coord);
-      cg_attribs[cg_attrib_index++] = prg[active_index].orig.coord;
+      cgGLEnableClientState(prg[active_idx].orig.coord);
+      cg_attribs[cg_attrib_idx++] = prg[active_idx].orig.coord;
    }
 
    /* Set prev textures. */
    for (i = 0; i < PREV_TEXTURES; i++)
    {
-      param = prg[active_index].prev[i].tex;
+      param = prg[active_idx].prev[i].tex;
       if (param)
       {
          cgGLSetTextureParameter(param, prev_info[i].tex);
          cgGLEnableTextureParameter(param);
       }
 
-      set_param_2f(prg[active_index].prev[i].vid_size_v,
+      set_param_2f(prg[active_idx].prev[i].vid_size_v,
             prev_info[i].input_size[0], prev_info[i].input_size[1]);
-      set_param_2f(prg[active_index].prev[i].vid_size_f,
+      set_param_2f(prg[active_idx].prev[i].vid_size_f,
             prev_info[i].input_size[0], prev_info[i].input_size[1]);
-      set_param_2f(prg[active_index].prev[i].tex_size_v,
+      set_param_2f(prg[active_idx].prev[i].tex_size_v,
             prev_info[i].tex_size[0],   prev_info[i].tex_size[1]);
-      set_param_2f(prg[active_index].prev[i].tex_size_f,
+      set_param_2f(prg[active_idx].prev[i].tex_size_f,
             prev_info[i].tex_size[0],   prev_info[i].tex_size[1]);
 
-      if (prg[active_index].prev[i].coord)
+      if (prg[active_idx].prev[i].coord)
       {
-         cgGLSetParameterPointer(prg[active_index].prev[i].coord, 
+         cgGLSetParameterPointer(prg[active_idx].prev[i].coord, 
                2, GL_FLOAT, 0, prev_info[i].coord);
-         cgGLEnableClientState(prg[active_index].prev[i].coord);
-         cg_attribs[cg_attrib_index++] = prg[active_index].prev[i].coord;
+         cgGLEnableClientState(prg[active_idx].prev[i].coord);
+         cg_attribs[cg_attrib_idx++] = prg[active_idx].prev[i].coord;
       }
    }
 
@@ -313,7 +313,7 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    for (i = 0; i < cg_shader->luts; i++)
    {
       CGparameter fparam = cgGetNamedParameter(
-            prg[active_index].fprg, cg_shader->lut[i].id);
+            prg[active_idx].fprg, cg_shader->lut[i].id);
 
       if (fparam)
       {
@@ -322,7 +322,7 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
       }
 
       CGparameter vparam = cgGetNamedParameter(
-            prg[active_index].vprg, cg_shader->lut[i].id);
+            prg[active_idx].vprg, cg_shader->lut[i].id);
       if (vparam)
       {
          cgGLSetTextureParameter(vparam, lut_textures[i]);
@@ -331,33 +331,33 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    }
 
    /* Set FBO textures. */
-   if (active_index)
+   if (active_idx)
    {
       for (i = 0; i < fbo_info_cnt; i++)
       {
-         if (prg[active_index].fbo[i].tex)
+         if (prg[active_idx].fbo[i].tex)
          {
             cgGLSetTextureParameter(
-                  prg[active_index].fbo[i].tex, fbo_info[i].tex);
-            cgGLEnableTextureParameter(prg[active_index].fbo[i].tex);
+                  prg[active_idx].fbo[i].tex, fbo_info[i].tex);
+            cgGLEnableTextureParameter(prg[active_idx].fbo[i].tex);
          }
 
-         set_param_2f(prg[active_index].fbo[i].vid_size_v,
+         set_param_2f(prg[active_idx].fbo[i].vid_size_v,
                fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
-         set_param_2f(prg[active_index].fbo[i].vid_size_f,
+         set_param_2f(prg[active_idx].fbo[i].vid_size_f,
                fbo_info[i].input_size[0], fbo_info[i].input_size[1]);
 
-         set_param_2f(prg[active_index].fbo[i].tex_size_v,
+         set_param_2f(prg[active_idx].fbo[i].tex_size_v,
                fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
-         set_param_2f(prg[active_index].fbo[i].tex_size_f,
+         set_param_2f(prg[active_idx].fbo[i].tex_size_f,
                fbo_info[i].tex_size[0], fbo_info[i].tex_size[1]);
 
-         if (prg[active_index].fbo[i].coord)
+         if (prg[active_idx].fbo[i].coord)
          {
-            cgGLSetParameterPointer(prg[active_index].fbo[i].coord,
+            cgGLSetParameterPointer(prg[active_idx].fbo[i].coord,
                   2, GL_FLOAT, 0, fbo_info[i].coord);
-            cgGLEnableClientState(prg[active_index].fbo[i].coord);
-            cg_attribs[cg_attrib_index++] = prg[active_index].fbo[i].coord;
+            cgGLEnableClientState(prg[active_idx].fbo[i].coord);
+            cg_attribs[cg_attrib_idx++] = prg[active_idx].fbo[i].coord;
          }
       }
    }
@@ -366,9 +366,9 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    for (i = 0; i < cg_shader->num_parameters; i++)
    {
       CGparameter param_v = cgGetNamedParameter(
-            prg[active_index].vprg, cg_shader->parameters[i].id);
+            prg[active_idx].vprg, cg_shader->parameters[i].id);
       CGparameter param_f = cgGetNamedParameter(
-            prg[active_index].fprg, cg_shader->parameters[i].id);
+            prg[active_idx].fprg, cg_shader->parameters[i].id);
       set_param_1f(param_v, cg_shader->parameters[i].current);
       set_param_1f(param_f, cg_shader->parameters[i].current);
    }
@@ -380,16 +380,16 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
       static struct state_tracker_uniform info[MAX_VARIABLES];
       static unsigned cnt = 0;
 
-      if (active_index == 1)
+      if (active_idx == 1)
          cnt = state_get_uniform(state_tracker, info,
                MAX_VARIABLES, frame_count);
 
       for (i = 0; i < cnt; i++)
       {
          CGparameter param_v = cgGetNamedParameter(
-               prg[active_index].vprg, info[i].id);
+               prg[active_idx].vprg, info[i].id);
          CGparameter param_f = cgGetNamedParameter(
-               prg[active_index].fprg, info[i].id);
+               prg[active_idx].fprg, info[i].id);
          set_param_1f(param_v, info[i].value);
          set_param_1f(param_f, info[i].value);
       }
@@ -468,7 +468,7 @@ static void gl_cg_deinit(void)
       listing_##type = strdup(list); \
 }
 
-static bool load_program(unsigned index,
+static bool load_program(unsigned idx,
       const char *prog, bool path_is_file)
 {
    bool ret = true;
@@ -489,24 +489,24 @@ static bool load_program(unsigned index,
 
    if (path_is_file)
    {
-      prg[index].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
+      prg[idx].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
             prog, cgFProf, "main_fragment", argv);
       SET_LISTING(f);
-      prg[index].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
+      prg[idx].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
             prog, cgVProf, "main_vertex", argv);
       SET_LISTING(v);
    }
    else
    {
-      prg[index].fprg = cgCreateProgram(cgCtx, CG_SOURCE,
+      prg[idx].fprg = cgCreateProgram(cgCtx, CG_SOURCE,
             prog, cgFProf, "main_fragment", argv);
       SET_LISTING(f);
-      prg[index].vprg = cgCreateProgram(cgCtx, CG_SOURCE,
+      prg[idx].vprg = cgCreateProgram(cgCtx, CG_SOURCE,
             prog, cgVProf, "main_vertex", argv);
       SET_LISTING(v);
    }
 
-   if (!prg[index].fprg || !prg[index].vprg)
+   if (!prg[idx].fprg || !prg[idx].vprg)
    {
       RARCH_ERR("CG error: %s\n", cgGetErrorString(cgGetError()));
       if (listing_f)
@@ -518,8 +518,8 @@ static bool load_program(unsigned index,
       goto end;
    }
 
-   cgGLLoadProgram(prg[index].fprg);
-   cgGLLoadProgram(prg[index].vprg);
+   cgGLLoadProgram(prg[idx].fprg);
+   cgGLLoadProgram(prg[idx].vprg);
 
 end:
    free(listing_f);
@@ -929,17 +929,17 @@ error:
    return false;
 }
 
-static void gl_cg_use(void *data, unsigned index)
+static void gl_cg_use(void *data, unsigned idx)
 {
    (void)data;
 
-   if (cg_active && prg[index].vprg && prg[index].fprg)
+   if (cg_active && prg[idx].vprg && prg[idx].fprg)
    {
       gl_cg_reset_attrib();
 
-      active_index = index;
-      cgGLBindProgram(prg[index].vprg);
-      cgGLBindProgram(prg[index].fprg);
+      active_idx = idx;
+      cgGLBindProgram(prg[idx].vprg);
+      cgGLBindProgram(prg[idx].fprg);
    }
 }
 
@@ -950,30 +950,30 @@ static unsigned gl_cg_num(void)
    return 0;
 }
 
-static bool gl_cg_filter_type(unsigned index, bool *smooth)
+static bool gl_cg_filter_type(unsigned idx, bool *smooth)
 {
-   if (cg_active && index &&
-         (cg_shader->pass[index - 1].filter != RARCH_FILTER_UNSPEC)
+   if (cg_active && idx &&
+         (cg_shader->pass[idx - 1].filter != RARCH_FILTER_UNSPEC)
       )
    {
-      *smooth = (cg_shader->pass[index - 1].filter == RARCH_FILTER_LINEAR);
+      *smooth = (cg_shader->pass[idx - 1].filter == RARCH_FILTER_LINEAR);
       return true;
    }
 
    return false;
 }
 
-static enum gfx_wrap_type gl_cg_wrap_type(unsigned index)
+static enum gfx_wrap_type gl_cg_wrap_type(unsigned idx)
 {
-   if (cg_active && index)
-      return cg_shader->pass[index - 1].wrap;
+   if (cg_active && idx)
+      return cg_shader->pass[idx - 1].wrap;
    return RARCH_WRAP_BORDER;
 }
 
-static void gl_cg_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
+static void gl_cg_shader_scale(unsigned idx, struct gfx_fbo_scale *scale)
 {
-   if (cg_active && index)
-      *scale = cg_shader->pass[index - 1].fbo;
+   if (cg_active && idx)
+      *scale = cg_shader->pass[idx - 1].fbo;
    else
       scale->valid = false;
 }
@@ -993,11 +993,11 @@ static unsigned gl_cg_get_prev_textures(void)
    return max_prev;
 }
 
-static bool gl_cg_mipmap_input(unsigned index)
+static bool gl_cg_mipmap_input(unsigned idx)
 {
 #ifndef HAVE_GCMGL
-   if (cg_active && index)
-      return cg_shader->pass[index - 1].mipmap;
+   if (cg_active && idx)
+      return cg_shader->pass[idx - 1].mipmap;
 #endif
    return false;
 }
