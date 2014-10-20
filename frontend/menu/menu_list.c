@@ -57,6 +57,8 @@ void *menu_list_new(void)
 
    list->menu_stack    = (file_list_t*)calloc(1, sizeof(file_list_t));
    list->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
+   list->menu_stack_old = (file_list_t*)calloc(1, sizeof(file_list_t));
+   list->selection_buf_old = (file_list_t*)calloc(1, sizeof(file_list_t));
 
    if (!list->menu_stack || !list->selection_buf)
    {

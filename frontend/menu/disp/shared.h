@@ -129,7 +129,8 @@ static void get_title(const char *label, const char *dir,
    }
 }
 
-static void disp_set_label(unsigned *w, unsigned type, unsigned i,
+static void disp_set_label(file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *type_str, size_t type_str_size,
       const char *entry_label,
@@ -148,7 +149,7 @@ static void disp_set_label(unsigned *w, unsigned type, unsigned i,
    if (type == MENU_FILE_CORE)
    {
       strlcpy(type_str, "(CORE)", type_str_size);
-      menu_list_get_alt_at_offset(driver.menu->menu_list->selection_buf, i, &path);
+      menu_list_get_alt_at_offset(list, i, &path);
       *w = 6;
    }
    else if (type == MENU_FILE_PLAIN)

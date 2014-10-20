@@ -100,6 +100,29 @@ void file_list_clear(file_list_t *list)
    list->size = 0;
 }
 
+void file_list_copy(file_list_t *list, file_list_t *list_old)
+{
+   size_t i;
+
+   list_old->size = list->size;
+   list_old->capacity = list->capacity;
+
+   list_old->list = (struct item_file*)realloc(list_old->list,
+            list_old->capacity * sizeof(struct item_file));
+
+   for (i = 0; i < list->size; i++)
+   {
+      list_old->list[i].path = strdup(list->list[i].path);
+      list_old->list[i].label = strdup(list->list[i].label);
+      if (list->list[i].alt)
+         list_old->list[i].alt = strdup(list->list[i].alt);
+      list_old->list[i].type = list->list[i].type;
+      list_old->list[i].directory_ptr = list->list[i].directory_ptr;
+      list_old->list[i].userdata = list->list[i].userdata;
+      list_old->list[i].actiondata = list->list[i].actiondata;
+   }
+}
+
 void file_list_set_label_at_offset(file_list_t *list, size_t index,
       const char *label)
 {
