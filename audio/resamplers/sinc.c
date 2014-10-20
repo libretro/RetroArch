@@ -371,13 +371,13 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
 
 #if SINC_COEFF_LERP
       __m128 deltas = _mm_load_ps(delta_table + i);
-      __m128 sinc = _mm_add_ps(_mm_load_ps(phase_table + i),
+      __m128 _sinc = _mm_add_ps(_mm_load_ps(phase_table + i),
             _mm_mul_ps(deltas, delta));
 #else
-      __m128 sinc = _mm_load_ps(phase_table + i);
+      __m128 _sinc = _mm_load_ps(phase_table + i);
 #endif
-      sum_l       = _mm_add_ps(sum_l, _mm_mul_ps(buf_l, sinc));
-      sum_r       = _mm_add_ps(sum_r, _mm_mul_ps(buf_r, sinc));
+      sum_l       = _mm_add_ps(sum_l, _mm_mul_ps(buf_l, _sinc));
+      sum_r       = _mm_add_ps(sum_r, _mm_mul_ps(buf_r, _sinc));
    }
 
    /* Them annoying shuffles.
