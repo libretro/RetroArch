@@ -10,7 +10,7 @@ EXTERN_C_BEGIN
 
 #define k7zStartHeaderSize 0x20
 #define k7zSignatureSize 6
-extern Byte k7zSignature[k7zSignatureSize];
+extern uint8_t k7zSignature[k7zSignatureSize];
 #define k7zMajorVersion 0
 
 enum EIdEnum
@@ -45,9 +45,9 @@ enum EIdEnum
 
 typedef struct
 {
-  UInt32 NumInStreams;
-  UInt32 NumOutStreams;
-  UInt64 MethodID;
+  uint32_t NumInStreams;
+  uint32_t NumOutStreams;
+  uint64_t MethodID;
   CBuf Props;
 } CSzCoderInfo;
 
@@ -56,67 +56,67 @@ void SzCoderInfo_Free(CSzCoderInfo *p, ISzAlloc *alloc);
 
 typedef struct
 {
-  UInt32 InIndex;
-  UInt32 OutIndex;
+  uint32_t InIndex;
+  uint32_t OutIndex;
 } CSzBindPair;
 
 typedef struct
 {
   CSzCoderInfo *Coders;
   CSzBindPair *BindPairs;
-  UInt32 *PackStreams;
-  UInt64 *UnpackSizes;
-  UInt32 NumCoders;
-  UInt32 NumBindPairs;
-  UInt32 NumPackStreams;
+  uint32_t *PackStreams;
+  uint64_t *UnpackSizes;
+  uint32_t NumCoders;
+  uint32_t NumBindPairs;
+  uint32_t NumPackStreams;
   int UnpackCRCDefined;
-  UInt32 UnpackCRC;
+  uint32_t UnpackCRC;
 
-  UInt32 NumUnpackStreams;
+  uint32_t NumUnpackStreams;
 } CSzFolder;
 
 void SzFolder_Init(CSzFolder *p);
-UInt64 SzFolder_GetUnpackSize(CSzFolder *p);
-int SzFolder_FindBindPairForInStream(CSzFolder *p, UInt32 inStreamIndex);
-UInt32 SzFolder_GetNumOutStreams(CSzFolder *p);
-UInt64 SzFolder_GetUnpackSize(CSzFolder *p);
+uint64_t SzFolder_GetUnpackSize(CSzFolder *p);
+int SzFolder_FindBindPairForInStream(CSzFolder *p, uint32_t inStreamIndex);
+uint32_t SzFolder_GetNumOutStreams(CSzFolder *p);
+uint64_t SzFolder_GetUnpackSize(CSzFolder *p);
 
-SRes SzFolder_Decode(const CSzFolder *folder, const UInt64 *packSizes,
-    ILookInStream *stream, UInt64 startPos,
-    Byte *outBuffer, size_t outSize, ISzAlloc *allocMain);
+SRes SzFolder_Decode(const CSzFolder *folder, const uint64_t *packSizes,
+    ILookInStream *stream, uint64_t startPos,
+    uint8_t *outBuffer, size_t outSize, ISzAlloc *allocMain);
 
 typedef struct
 {
-  UInt32 Low;
-  UInt32 High;
+  uint32_t Low;
+  uint32_t High;
 } CNtfsFileTime;
 
 typedef struct
 {
   CNtfsFileTime MTime;
-  UInt64 Size;
-  UInt32 Crc;
-  UInt32 Attrib;
-  Byte HasStream;
-  Byte IsDir;
-  Byte IsAnti;
-  Byte CrcDefined;
-  Byte MTimeDefined;
-  Byte AttribDefined;
+  uint64_t Size;
+  uint32_t Crc;
+  uint32_t Attrib;
+  uint8_t HasStream;
+  uint8_t IsDir;
+  uint8_t IsAnti;
+  uint8_t CrcDefined;
+  uint8_t MTimeDefined;
+  uint8_t AttribDefined;
 } CSzFileItem;
 
 void SzFile_Init(CSzFileItem *p);
 
 typedef struct
 {
-  UInt64 *PackSizes;
-  Byte *PackCRCsDefined;
-  UInt32 *PackCRCs;
+  uint64_t *PackSizes;
+  uint8_t *PackCRCsDefined;
+  uint32_t *PackCRCs;
   CSzFolder *Folders;
   CSzFileItem *Files;
-  UInt32 NumPackStreams;
-  UInt32 NumFolders;
-  UInt32 NumFiles;
+  uint32_t NumPackStreams;
+  uint32_t NumFolders;
+  uint32_t NumFiles;
 } CSzAr;
 
 void SzAr_Init(CSzAr *p);
@@ -147,13 +147,13 @@ typedef struct
 {
   CSzAr db;
   
-  UInt64 startPosAfterHeader;
-  UInt64 dataPos;
+  uint64_t startPosAfterHeader;
+  uint64_t dataPos;
 
-  UInt32 *FolderStartPackStreamIndex;
-  UInt64 *PackStreamStartPositions;
-  UInt32 *FolderStartFileIndex;
-  UInt32 *FileIndexToFolderIndexMap;
+  uint32_t *FolderStartPackStreamIndex;
+  uint64_t *PackStreamStartPositions;
+  uint32_t *FolderStartFileIndex;
+  uint32_t *FileIndexToFolderIndexMap;
 
   size_t *FileNameOffsets; /* in 2-byte steps */
   CBuf FileNames;  /* UTF-16-LE */
@@ -161,8 +161,8 @@ typedef struct
 
 void SzArEx_Init(CSzArEx *p);
 void SzArEx_Free(CSzArEx *p, ISzAlloc *alloc);
-UInt64 SzArEx_GetFolderStreamPos(const CSzArEx *p, UInt32 folderIndex, UInt32 indexInFolder);
-int SzArEx_GetFolderFullPackSize(const CSzArEx *p, UInt32 folderIndex, UInt64 *resSize);
+uint64_t SzArEx_GetFolderStreamPos(const CSzArEx *p, uint32_t folderIndex, uint32_t indexInFolder);
+int SzArEx_GetFolderFullPackSize(const CSzArEx *p, uint32_t folderIndex, uint64_t *resSize);
 
 /*
 if dest == NULL, the return value specifies the required size of the buffer,
@@ -170,14 +170,14 @@ if dest == NULL, the return value specifies the required size of the buffer,
 if dest != NULL, the return value specifies the number of 16-bit characters that
   are written to the dest, including the null-terminating character. */
 
-size_t SzArEx_GetFileNameUtf16(const CSzArEx *p, size_t fileIndex, UInt16 *dest);
+size_t SzArEx_GetFileNameUtf16(const CSzArEx *p, size_t fileIndex, uint16_t *dest);
 
 SRes SzArEx_Extract(
     const CSzArEx *db,
     ILookInStream *inStream,
-    UInt32 fileIndex,         /* index of file */
-    UInt32 *blockIndex,       /* index of solid block */
-    Byte **outBuffer,         /* pointer to pointer to output buffer (allocated with allocMain) */
+    uint32_t fileIndex,         /* index of file */
+    uint32_t *blockIndex,       /* index of solid block */
+    uint8_t **outBuffer,         /* pointer to pointer to output buffer (allocated with allocMain) */
     size_t *outBufferSize,    /* buffer size for output buffer */
     size_t *offset,           /* offset of stream for required file in *outBuffer */
     size_t *outSizeProcessed, /* size of file in *outBuffer */

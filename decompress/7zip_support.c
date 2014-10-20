@@ -47,16 +47,16 @@ static int Buf_EnsureSize(CBuf *dest, size_t size)
 
 #ifndef _WIN32
 
-static Byte kUtf8Limits[5] = { 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
+static uint8_t kUtf8Limits[5] = { 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
 
-static Bool Utf16_To_Utf8(Byte *dest, size_t *destLen,
-      const UInt16 *src, size_t srcLen)
+static Bool Utf16_To_Utf8(uint8_t *dest, size_t *destLen,
+      const uint16_t *src, size_t srcLen)
 {
    size_t destPos = 0, srcPos = 0;
    for (;;)
    {
       unsigned numAdds;
-      UInt32 value;
+      uint32_t value;
       if (srcPos == srcLen)
       {
          *destLen = destPos;
@@ -72,7 +72,7 @@ static Bool Utf16_To_Utf8(Byte *dest, size_t *destLen,
       }
       if (value >= 0xD800 && value < 0xE000)
       {
-         UInt32 c2;
+         uint32_t c2;
          if (value >= 0xDC00 || srcPos == srcLen)
             break;
          c2 = src[srcPos++];
@@ -81,7 +81,7 @@ static Bool Utf16_To_Utf8(Byte *dest, size_t *destLen,
          value = (((value - 0xD800) << 10) | (c2 - 0xDC00)) + 0x10000;
       }
       for (numAdds = 1; numAdds < 5; numAdds++)
-         if (value < (((UInt32)1) << (numAdds * 5 + 6)))
+         if (value < (((uint32_t)1) << (numAdds * 5 + 6)))
             break;
       if (dest)
          dest[destPos] = (char)(kUtf8Limits[numAdds - 1] 
@@ -102,7 +102,7 @@ static Bool Utf16_To_Utf8(Byte *dest, size_t *destLen,
 }
 
 static SRes Utf16_To_Utf8Buf(CBuf *dest,
-      const UInt16 *src, size_t srcLen)
+      const uint16_t *src, size_t srcLen)
 {
    size_t destLen = 0;
    Bool res;
@@ -116,7 +116,7 @@ static SRes Utf16_To_Utf8Buf(CBuf *dest,
 }
 #endif
 
-static SRes Utf16_To_Char(CBuf *buf, const UInt16 *s, int fileMode)
+static SRes Utf16_To_Char(CBuf *buf, const uint16_t *s, int fileMode)
 {
    int len = 0;
    for (len = 0; s[len] != '\0'; len++);
@@ -152,7 +152,7 @@ static SRes Utf16_To_Char(CBuf *buf, const UInt16 *s, int fileMode)
 }
 
 
-static SRes ConvertUtf16toCharString(const UInt16 *s, char *outstring)
+static SRes ConvertUtf16toCharString(const uint16_t *s, char *outstring)
 {
    CBuf buf;
    SRes res;
@@ -179,7 +179,7 @@ int read_7zip_file(const char * archive_path,
    SRes res;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
-   UInt16 *temp = NULL;
+   uint16_t *temp = NULL;
    size_t tempSize = 0;
    long outsize = -1;
    bool file_found = false;
@@ -210,9 +210,9 @@ int read_7zip_file(const char * archive_path,
    res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
    if (res == SZ_OK)
    {
-      UInt32 i;
-      UInt32 blockIndex = 0xFFFFFFFF;
-      Byte *outBuffer = 0;
+      uint32_t i;
+      uint32_t blockIndex = 0xFFFFFFFF;
+      uint8_t *outBuffer = 0;
       size_t outBufferSize = 0;
 
       for (i = 0; i < db.db.NumFiles; i++)
@@ -233,7 +233,7 @@ int read_7zip_file(const char * archive_path,
          {
             SzFree(NULL, temp);
             tempSize = len;
-            temp = (UInt16 *)SzAlloc(NULL, tempSize * sizeof(temp[0]));
+            temp = (uint16_t *)SzAlloc(NULL, tempSize * sizeof(temp[0]));
             if (temp == 0)
             {
                res = SZ_ERROR_MEM;
@@ -244,7 +244,7 @@ int read_7zip_file(const char * archive_path,
          char infile[PATH_MAX];
          res = ConvertUtf16toCharString(temp,infile);
 
-         UInt64 filesize = f->Size;
+         uint64_t filesize = f->Size;
 
          (void)filesize;
 
@@ -338,7 +338,7 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
    SRes res;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
-   UInt16 *temp = NULL;
+   uint16_t *temp = NULL;
    size_t tempSize = 0;
    long outsize = -1;
 
@@ -365,9 +365,9 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
    res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
    if (res == SZ_OK)
    {
-      UInt32 i;
-      UInt32 blockIndex = 0xFFFFFFFF;
-      Byte *outBuffer = 0;
+      uint32_t i;
+      uint32_t blockIndex = 0xFFFFFFFF;
+      uint8_t *outBuffer = 0;
       size_t outBufferSize = 0;
 
       (void)blockIndex;
@@ -394,7 +394,7 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
          {
             SzFree(NULL, temp);
             tempSize = len;
-            temp = (UInt16 *) SzAlloc(NULL, tempSize * sizeof(temp[0]));
+            temp = (uint16_t *) SzAlloc(NULL, tempSize * sizeof(temp[0]));
             if (temp == 0)
             {
                res = SZ_ERROR_MEM;

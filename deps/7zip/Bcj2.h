@@ -25,11 +25,11 @@ Returns:
 */
 
 int Bcj2_Decode(
-    const Byte *buf0, SizeT size0,
-    const Byte *buf1, SizeT size1,
-    const Byte *buf2, SizeT size2,
-    const Byte *buf3, SizeT size3,
-    Byte *outBuf, SizeT outSize);
+    const uint8_t *buf0, size_t size0,
+    const uint8_t *buf1, size_t size1,
+    const uint8_t *buf2, size_t size2,
+    const uint8_t *buf3, size_t size3,
+    uint8_t *outBuf, size_t outSize);
 
 #ifdef __cplusplus
 }

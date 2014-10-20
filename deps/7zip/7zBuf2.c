@@ -1,6 +1,7 @@
-/* 7zBuf2.c -- Byte Buffer
+/* 7zBuf2.c -- uint8_t Buffer
    2008-10-04 : Igor Pavlov : Public domain */
 
+#include <stdint.h>
 #include <string.h>
 #include "7zBuf.h"
 
@@ -16,14 +17,14 @@ void DynBuf_SeekToBeg(CDynBuf *p)
    p->pos = 0;
 }
 
-int DynBuf_Write(CDynBuf *p, const Byte *buf, size_t size, ISzAlloc *alloc)
+int DynBuf_Write(CDynBuf *p, const uint8_t *buf, size_t size, ISzAlloc *alloc)
 {
    if (size > p->size - p->pos)
    {
       size_t newSize = p->pos + size;
-      Byte *data;
+      uint8_t *data;
       newSize += newSize / 4;
-      data = (Byte *)alloc->Alloc(alloc, newSize);
+      data = (uint8_t *)alloc->Alloc(alloc, newSize);
       if (data == 0)
          return 0;
       p->size = newSize;

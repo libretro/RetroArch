@@ -15,10 +15,10 @@ extern "C" {
 typedef struct
 {
   CLzmaDec decoder;
-  UInt32 packSize;
-  UInt32 unpackSize;
+  uint32_t packSize;
+  uint32_t unpackSize;
   int state;
-  Byte control;
+  uint8_t control;
   Bool needInitDic;
   Bool needInitState;
   Bool needInitProp;
@@ -28,8 +28,8 @@ typedef struct
 #define Lzma2Dec_FreeProbs(p, alloc) LzmaDec_FreeProbs(&(p)->decoder, alloc);
 #define Lzma2Dec_Free(p, alloc) LzmaDec_Free(&(p)->decoder, alloc);
 
-SRes Lzma2Dec_AllocateProbs(CLzma2Dec *p, Byte prop, ISzAlloc *alloc);
-SRes Lzma2Dec_Allocate(CLzma2Dec *p, Byte prop, ISzAlloc *alloc);
+SRes Lzma2Dec_AllocateProbs(CLzma2Dec *p, uint8_t prop, ISzAlloc *alloc);
+SRes Lzma2Dec_Allocate(CLzma2Dec *p, uint8_t prop, ISzAlloc *alloc);
 void Lzma2Dec_Init(CLzma2Dec *p);
 
 
@@ -48,11 +48,11 @@ Returns:
   SZ_ERROR_DATA - Data error
 */
 
-SRes Lzma2Dec_DecodeToDic(CLzma2Dec *p, SizeT dicLimit,
-    const Byte *src, SizeT *srcLen, ELzmaFinishMode finishMode, ELzmaStatus *status);
+SRes Lzma2Dec_DecodeToDic(CLzma2Dec *p, size_t dicLimit,
+    const uint8_t *src, size_t *srcLen, ELzmaFinishMode finishMode, ELzmaStatus *status);
 
-SRes Lzma2Dec_DecodeToBuf(CLzma2Dec *p, Byte *dest, SizeT *destLen,
-    const Byte *src, SizeT *srcLen, ELzmaFinishMode finishMode, ELzmaStatus *status);
+SRes Lzma2Dec_DecodeToBuf(CLzma2Dec *p, uint8_t *dest, size_t *destLen,
+    const uint8_t *src, size_t *srcLen, ELzmaFinishMode finishMode, ELzmaStatus *status);
 
 
 /* ---------- One Call Interface ---------- */
@@ -74,8 +74,8 @@ Returns:
   SZ_ERROR_INPUT_EOF - It needs more bytes in input buffer (src).
 */
 
-SRes Lzma2Decode(Byte *dest, SizeT *destLen, const Byte *src, SizeT *srcLen,
-    Byte prop, ELzmaFinishMode finishMode, ELzmaStatus *status, ISzAlloc *alloc);
+SRes Lzma2Decode(uint8_t *dest, size_t *destLen, const uint8_t *src, size_t *srcLen,
+    uint8_t prop, ELzmaFinishMode finishMode, ELzmaStatus *status, ISzAlloc *alloc);
 
 #ifdef __cplusplus
 }

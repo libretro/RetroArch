@@ -1,30 +1,31 @@
 /* Bra86.c -- Converter for x86 code (BCJ)
    2008-10-04 : Igor Pavlov : Public domain */
 
+#include <stdint.h>
 #include "Bra.h"
 
-#define Test86MSByte(b) ((b) == 0 || (b) == 0xFF)
+#define Test86MSuint8_t(b) ((b) == 0 || (b) == 0xFF)
 
-const Byte kMaskToAllowedStatus[8] = {1, 1, 1, 0, 1, 0, 0, 0};
-const Byte kMaskToBitNumber[8] = {0, 1, 2, 2, 3, 3, 3, 3};
+const uint8_t kMaskToAllowedStatus[8] = {1, 1, 1, 0, 1, 0, 0, 0};
+const uint8_t kMaskToBitNumber[8] = {0, 1, 2, 2, 3, 3, 3, 3};
 
-SizeT x86_Convert(Byte *data, SizeT size, UInt32 ip, UInt32 *state, int encoding)
+size_t x86_Convert(uint8_t *data, size_t size, uint32_t ip, uint32_t *state, int encoding)
 {
-   SizeT bufferPos = 0, prevPosT;
-   UInt32 prevMask = *state & 0x7;
+   size_t bufferPos = 0, prevPosT;
+   uint32_t prevMask = *state & 0x7;
    if (size < 5)
       return 0;
    ip += 5;
-   prevPosT = (SizeT)0 - 1;
+   prevPosT = (size_t)0 - 1;
 
    for (;;)
    {
-      Byte *p = data + bufferPos;
-      Byte *limit = data + size - 4;
+      uint8_t *p = data + bufferPos;
+      uint8_t *limit = data + size - 4;
       for (; p < limit; p++)
          if ((*p & 0xFE) == 0xE8)
             break;
-      bufferPos = (SizeT)(p - data);
+      bufferPos = (size_t)(p - data);
       if (p >= limit)
          break;
       prevPosT = bufferPos - prevPosT;
@@ -35,8 +36,8 @@ SizeT x86_Convert(Byte *data, SizeT size, UInt32 ip, UInt32 *state, int encoding
          prevMask = (prevMask << ((int)prevPosT - 1)) & 0x7;
          if (prevMask != 0)
          {
-            Byte b = p[4 - kMaskToBitNumber[prevMask]];
-            if (!kMaskToAllowedStatus[prevMask] || Test86MSByte(b))
+            uint8_t b = p[4 - kMaskToBitNumber[prevMask]];
+            if (!kMaskToAllowedStatus[prevMask] || Test86MSuint8_t(b))
             {
                prevPosT = bufferPos;
                prevMask = ((prevMask << 1) & 0x7) | 1;
@@ -47,30 +48,30 @@ SizeT x86_Convert(Byte *data, SizeT size, UInt32 ip, UInt32 *state, int encoding
       }
       prevPosT = bufferPos;
 
-      if (Test86MSByte(p[4]))
+      if (Test86MSuint8_t(p[4]))
       {
-         UInt32 src = ((UInt32)p[4] << 24) | ((UInt32)p[3] << 16) | ((UInt32)p[2] << 8) | ((UInt32)p[1]);
-         UInt32 dest;
+         uint32_t src = ((uint32_t)p[4] << 24) | ((uint32_t)p[3] << 16) | ((uint32_t)p[2] << 8) | ((uint32_t)p[1]);
+         uint32_t dest;
          for (;;)
          {
-            Byte b;
+            uint8_t b;
             int index;
             if (encoding)
-               dest = (ip + (UInt32)bufferPos) + src;
+               dest = (ip + (uint32_t)bufferPos) + src;
             else
-               dest = src - (ip + (UInt32)bufferPos);
+               dest = src - (ip + (uint32_t)bufferPos);
             if (prevMask == 0)
                break;
             index = kMaskToBitNumber[prevMask] * 8;
-            b = (Byte)(dest >> (24 - index));
-            if (!Test86MSByte(b))
+            b = (uint8_t)(dest >> (24 - index));
+            if (!Test86MSuint8_t(b))
                break;
             src = dest ^ ((1 << (32 - index)) - 1);
          }
-         p[4] = (Byte)(~(((dest >> 24) & 1) - 1));
-         p[3] = (Byte)(dest >> 16);
-         p[2] = (Byte)(dest >> 8);
-         p[1] = (Byte)dest;
+         p[4] = (uint8_t)(~(((dest >> 24) & 1) - 1));
+         p[3] = (uint8_t)(dest >> 16);
+         p[2] = (uint8_t)(dest >> 8);
+         p[1] = (uint8_t)dest;
          bufferPos += 5;
       }
       else

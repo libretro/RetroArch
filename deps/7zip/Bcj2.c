@@ -1,19 +1,14 @@
 /* Bcj2.c -- Converter for x86 code (BCJ2)
    2008-10-04 : Igor Pavlov : Public domain */
 
+#include <stdint.h>
 #include "Bcj2.h"
-
-#ifdef _LZMA_PROB32
-#define CProb UInt32
-#else
-#define CProb UInt16
-#endif
 
 #define IsJcc(b0, b1) ((b0) == 0x0F && ((b1) & 0xF0) == 0x80)
 #define IsJ(b0, b1) ((b1 & 0xFE) == 0xE8 || IsJcc(b0, b1))
 
 #define kNumTopBits 24
-#define kTopValue ((UInt32)1 << kNumTopBits)
+#define kTopValue ((uint32_t)1 << kNumTopBits)
 
 #define kNumBitModelTotalBits 11
 #define kBitModelTotal (1 << kNumBitModelTotalBits)
@@ -27,22 +22,22 @@
 #define BCJ2_NORMALIZE if (range < kTopValue) { RC_TEST; range <<= 8; code = (code << 8) | RC_READ_BYTE; }
 
 #define BCJ2_IF_BIT_0(p) ttt = *(p); bound = (range >> kNumBitModelTotalBits) * ttt; if (code < bound)
-#define BCJ2_UPDATE_0(p) range = bound; *(p) = (CProb)(ttt + ((kBitModelTotal - ttt) >> kNumMoveBits)); BCJ2_NORMALIZE;
-#define BCJ2_UPDATE_1(p) range -= bound; code -= bound; *(p) = (CProb)(ttt - (ttt >> kNumMoveBits)); BCJ2_NORMALIZE;
+#define BCJ2_UPDATE_0(p) range = bound; *(p) = (uint16_t)(ttt + ((kBitModelTotal - ttt) >> kNumMoveBits)); BCJ2_NORMALIZE;
+#define BCJ2_UPDATE_1(p) range -= bound; code -= bound; *(p) = (uint16_t)(ttt - (ttt >> kNumMoveBits)); BCJ2_NORMALIZE;
 
 int Bcj2_Decode(
-      const Byte *buf0, SizeT size0,
-      const Byte *buf1, SizeT size1,
-      const Byte *buf2, SizeT size2,
-      const Byte *buf3, SizeT size3,
-      Byte *outBuf, SizeT outSize)
+      const uint8_t *buf0, size_t size0,
+      const uint8_t *buf1, size_t size1,
+      const uint8_t *buf2, size_t size2,
+      const uint8_t *buf3, size_t size3,
+      uint8_t *outBuf, size_t outSize)
 {
-   CProb p[256 + 2];
-   SizeT inPos = 0, outPos = 0;
+   uint16_t p[256 + 2];
+   size_t inPos = 0, outPos = 0;
 
-   const Byte *buffer, *bufferLim;
-   UInt32 range, code;
-   Byte prevByte = 0;
+   const uint8_t *buffer, *bufferLim;
+   uint32_t range, code;
+   uint8_t prevuint8_t = 0;
 
    unsigned int i;
    for (i = 0; i < sizeof(p) / sizeof(p[0]); i++)
@@ -57,22 +52,22 @@ int Bcj2_Decode(
 
    for (;;)
    {
-      Byte b;
-      CProb *prob;
-      UInt32 bound;
-      UInt32 ttt;
+      uint8_t b;
+      uint16_t *prob;
+      uint32_t bound;
+      uint32_t ttt;
 
-      SizeT limit = size0 - inPos;
+      size_t limit = size0 - inPos;
       if (outSize - outPos < limit)
          limit = outSize - outPos;
       while (limit != 0)
       {
-         Byte b = buf0[inPos];
+         uint8_t b = buf0[inPos];
          outBuf[outPos++] = b;
-         if (IsJ(prevByte, b))
+         if (IsJ(prevuint8_t, b))
             break;
          inPos++;
-         prevByte = b;
+         prevuint8_t = b;
          limit--;
       }
 
@@ -82,7 +77,7 @@ int Bcj2_Decode(
       b = buf0[inPos++];
 
       if (b == 0xE8)
-         prob = p + prevByte;
+         prob = p + prevuint8_t;
       else if (b == 0xE9)
          prob = p + 256;
       else
@@ -91,12 +86,12 @@ int Bcj2_Decode(
       BCJ2_IF_BIT_0(prob)
       {
          BCJ2_UPDATE_0(prob)
-            prevByte = b;
+            prevuint8_t = b;
       }
       else
       {
-         UInt32 dest;
-         const Byte *v;
+         uint32_t dest;
+         const uint8_t *v;
          BCJ2_UPDATE_1(prob)
             if (b == 0xE8)
             {
@@ -114,18 +109,18 @@ int Bcj2_Decode(
                buf2 += 4;
                size2 -= 4;
             }
-         dest = (((UInt32)v[0] << 24) | ((UInt32)v[1] << 16) |
-               ((UInt32)v[2] << 8) | ((UInt32)v[3])) - ((UInt32)outPos + 4);
-         outBuf[outPos++] = (Byte)dest;
+         dest = (((uint32_t)v[0] << 24) | ((uint32_t)v[1] << 16) |
+               ((uint32_t)v[2] << 8) | ((uint32_t)v[3])) - ((uint32_t)outPos + 4);
+         outBuf[outPos++] = (uint8_t)dest;
          if (outPos == outSize)
             break;
-         outBuf[outPos++] = (Byte)(dest >> 8);
+         outBuf[outPos++] = (uint8_t)(dest >> 8);
          if (outPos == outSize)
             break;
-         outBuf[outPos++] = (Byte)(dest >> 16);
+         outBuf[outPos++] = (uint8_t)(dest >> 16);
          if (outPos == outSize)
             break;
-         outBuf[outPos++] = prevByte = (Byte)(dest >> 24);
+         outBuf[outPos++] = prevuint8_t = (uint8_t)(dest >> 24);
       }
    }
    return (outPos == outSize) ? SZ_OK : SZ_ERROR_DATA;

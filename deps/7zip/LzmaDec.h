@@ -10,25 +10,14 @@
 extern "C" {
 #endif
 
-   /* #define _LZMA_PROB32 */
-   /* _LZMA_PROB32 can increase the speed on some CPUs,
-      but memory usage for CLzmaDec::probs will be doubled in that case */
-
-#ifdef _LZMA_PROB32
-#define CLzmaProb UInt32
-#else
-#define CLzmaProb UInt16
-#endif
-
-
-   /* ---------- LZMA Properties ---------- */
+/* ---------- LZMA Properties ---------- */
 
 #define LZMA_PROPS_SIZE 5
 
    typedef struct _CLzmaProps
    {
       unsigned lc, lp, pb;
-      UInt32 dicSize;
+      uint32_t dicSize;
    } CLzmaProps;
 
    /* LzmaProps_Decode - decodes properties
@@ -37,7 +26,7 @@ SZ_OK
 SZ_ERROR_UNSUPPORTED - Unsupported properties
 */
 
-   SRes LzmaProps_Decode(CLzmaProps *p, const Byte *data, unsigned size);
+   SRes LzmaProps_Decode(CLzmaProps *p, const uint8_t *data, unsigned size);
 
 
    /* ---------- LZMA Decoder state ---------- */
@@ -50,22 +39,22 @@ SZ_ERROR_UNSUPPORTED - Unsupported properties
    typedef struct
    {
       CLzmaProps prop;
-      CLzmaProb *probs;
-      Byte *dic;
-      const Byte *buf;
-      UInt32 range, code;
-      SizeT dicPos;
-      SizeT dicBufSize;
-      UInt32 processedPos;
-      UInt32 checkDicSize;
+      uint16_t *probs;
+      uint8_t *dic;
+      const uint8_t *buf;
+      uint32_t range, code;
+      size_t dicPos;
+      size_t dicBufSize;
+      uint32_t processedPos;
+      uint32_t checkDicSize;
       unsigned state;
-      UInt32 reps[4];
+      uint32_t reps[4];
       unsigned remainLen;
       int needFlush;
       int needInitState;
-      UInt32 numProbs;
+      uint32_t numProbs;
       unsigned tempBufSize;
-      Byte tempBuf[LZMA_REQUIRED_INPUT_MAX];
+      uint8_t tempBuf[LZMA_REQUIRED_INPUT_MAX];
    } CLzmaDec;
 
 #define LzmaDec_Construct(p) { (p)->dic = 0; (p)->probs = 0; }
@@ -131,10 +120,10 @@ SZ_ERROR_UNSUPPORTED - Unsupported properties
       SZ_ERROR_UNSUPPORTED - Unsupported properties
       */
 
-   SRes LzmaDec_AllocateProbs(CLzmaDec *p, const Byte *props, unsigned propsSize, ISzAlloc *alloc);
+   SRes LzmaDec_AllocateProbs(CLzmaDec *p, const uint8_t *props, unsigned propsSize, ISzAlloc *alloc);
    void LzmaDec_FreeProbs(CLzmaDec *p, ISzAlloc *alloc);
 
-   SRes LzmaDec_Allocate(CLzmaDec *state, const Byte *prop, unsigned propsSize, ISzAlloc *alloc);
+   SRes LzmaDec_Allocate(CLzmaDec *state, const uint8_t *prop, unsigned propsSize, ISzAlloc *alloc);
    void LzmaDec_Free(CLzmaDec *state, ISzAlloc *alloc);
 
    /* ---------- Dictionary Interface ---------- */
@@ -178,8 +167,8 @@ LZMA_STATUS_MAYBE_FINISHED_WITHOUT_MARK
 SZ_ERROR_DATA - Data error
 */
 
-   SRes LzmaDec_DecodeToDic(CLzmaDec *p, SizeT dicLimit,
-         const Byte *src, SizeT *srcLen, ELzmaFinishMode finishMode, ELzmaStatus *status);
+   SRes LzmaDec_DecodeToDic(CLzmaDec *p, size_t dicLimit,
+         const uint8_t *src, size_t *srcLen, ELzmaFinishMode finishMode, ELzmaStatus *status);
 
 
 /* ---------- Buffer Interface ---------- */
@@ -195,8 +184,8 @@ LZMA_FINISH_ANY - Decode just destLen bytes.
 LZMA_FINISH_END - Stream must be finished after (*destLen).
 */
 
-SRes LzmaDec_DecodeToBuf(CLzmaDec *p, Byte *dest, SizeT *destLen,
-      const Byte *src, SizeT *srcLen, ELzmaFinishMode finishMode, ELzmaStatus *status);
+SRes LzmaDec_DecodeToBuf(CLzmaDec *p, uint8_t *dest, size_t *destLen,
+      const uint8_t *src, size_t *srcLen, ELzmaFinishMode finishMode, ELzmaStatus *status);
 
 
 /* ---------- One Call Interface ---------- */
@@ -220,8 +209,8 @@ SZ_ERROR_UNSUPPORTED - Unsupported properties
 SZ_ERROR_INPUT_EOF - It needs more bytes in input buffer (src).
 */
 
-SRes LzmaDecode(Byte *dest, SizeT *destLen, const Byte *src, SizeT *srcLen,
-      const Byte *propData, unsigned propSize, ELzmaFinishMode finishMode,
+SRes LzmaDecode(uint8_t *dest, size_t *destLen, const uint8_t *src, size_t *srcLen,
+      const uint8_t *propData, unsigned propSize, ELzmaFinishMode finishMode,
       ELzmaStatus *status, ISzAlloc *alloc);
 
 #ifdef __cplusplus

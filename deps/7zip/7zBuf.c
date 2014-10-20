@@ -3,6 +3,7 @@
    Igor Pavlov
    Public domain */
 
+#include <stdint.h>
 #include "7zBuf.h"
 
 void Buf_Init(CBuf *p)
@@ -19,7 +20,7 @@ int Buf_Create(CBuf *p, size_t size, ISzAlloc *alloc)
       p->data = 0;
       return 1;
    }
-   p->data = (Byte *)alloc->Alloc(alloc, size);
+   p->data = (uint8_t *)alloc->Alloc(alloc, size);
    if (p->data != 0)
    {
       p->size = size;

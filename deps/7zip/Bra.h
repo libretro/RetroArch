@@ -42,11 +42,11 @@ If (size < Alignment + LookAhead), converter returns 0.
 
 Example:
 
-UInt32 ip = 0;
+uint32_t ip = 0;
 for ()
 {
 ; size must be >= Alignment + LookAhead, if it's not last block
-SizeT processed = Convert(data, size, ip, 1);
+size_t processed = Convert(data, size, ip, 1);
 data += processed;
 size -= processed;
 ip += processed;
@@ -54,12 +54,12 @@ ip += processed;
 */
 
 #define x86_Convert_Init(state) { state = 0; }
-SizeT x86_Convert(Byte *data, SizeT size, UInt32 ip, UInt32 *state, int encoding);
-SizeT ARM_Convert(Byte *data, SizeT size, UInt32 ip, int encoding);
-SizeT ARMT_Convert(Byte *data, SizeT size, UInt32 ip, int encoding);
-SizeT PPC_Convert(Byte *data, SizeT size, UInt32 ip, int encoding);
-SizeT SPARC_Convert(Byte *data, SizeT size, UInt32 ip, int encoding);
-SizeT IA64_Convert(Byte *data, SizeT size, UInt32 ip, int encoding);
+size_t x86_Convert(uint8_t *data, size_t size, uint32_t ip, uint32_t *state, int encoding);
+size_t ARM_Convert(uint8_t *data, size_t size, uint32_t ip, int encoding);
+size_t ARMT_Convert(uint8_t *data, size_t size, uint32_t ip, int encoding);
+size_t PPC_Convert(uint8_t *data, size_t size, uint32_t ip, int encoding);
+size_t SPARC_Convert(uint8_t *data, size_t size, uint32_t ip, int encoding);
+size_t IA64_Convert(uint8_t *data, size_t size, uint32_t ip, int encoding);
 
 #ifdef __cplusplus
 }
