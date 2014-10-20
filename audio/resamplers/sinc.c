@@ -133,9 +133,9 @@ static inline double sinc(double val)
 }
 
 #if defined(SINC_WINDOW_LANCZOS)
-static inline double window_function(double index)
+static inline double window_function(double idx)
 {
-   return sinc(M_PI * index);
+   return sinc(M_PI * idx);
 }
 #elif defined(SINC_WINDOW_KAISER)
 /* Modified Bessel function of first order.
@@ -166,9 +166,9 @@ static inline double besseli0(double x)
    return sum;
 }
 
-static inline double window_function(double index)
+static inline double window_function(double idx)
 {
-   return besseli0(SINC_WINDOW_KAISER_BETA * sqrt(1 - index * index));
+   return besseli0(SINC_WINDOW_KAISER_BETA * sqrt(1 - idx * idx));
 }
 #else
 #error "No SINC window function defined."
