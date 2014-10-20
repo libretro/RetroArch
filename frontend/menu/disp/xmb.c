@@ -479,6 +479,10 @@ static void xmb_populate_entries(void *data, const char *path,
 
    if (!xmb)
       return;
+    
+   (void)current;
+   (void)end;
+   (void)i;
 
    xmb->depth = file_list_get_size(driver.menu->menu_list->menu_stack);
 
