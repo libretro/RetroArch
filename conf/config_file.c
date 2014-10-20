@@ -72,7 +72,7 @@ static char *getaline(FILE *file)
    char* newline = (char*)malloc(9);
    char* newline_tmp = NULL;
    size_t cur_size = 8;
-   size_t index = 0;
+   size_t idx = 0;
    int in = getc(file);
 
    if (!newline)
@@ -80,7 +80,7 @@ static char *getaline(FILE *file)
 
    while (in != EOF && in != '\n')
    {
-      if (index == cur_size)
+      if (idx == cur_size)
       {
          cur_size *= 2;
          newline_tmp = (char*)realloc(newline, cur_size + 1);
@@ -94,10 +94,10 @@ static char *getaline(FILE *file)
          newline = newline_tmp;
       }
 
-      newline[index++] = in;
+      newline[idx++] = in;
       in = getc(file);
    }
-   newline[index] = '\0';
+   newline[idx] = '\0';
    return newline; 
 }
 
@@ -290,7 +290,7 @@ static bool parse_line(config_file_t *conf,
    char* key = (char*)malloc(9);
    char* key_tmp = NULL;
    size_t cur_size = 8;
-   size_t index = 0;
+   size_t idx = 0;
 
    if (!key)
       return false;
@@ -325,7 +325,7 @@ static bool parse_line(config_file_t *conf,
 
    while (isgraph(*line))
    {
-      if (index == cur_size)
+      if (idx == cur_size)
       {
          cur_size *= 2;
          key_tmp = (char*)realloc(key, cur_size + 1);
@@ -339,9 +339,9 @@ static bool parse_line(config_file_t *conf,
          key = key_tmp;
       }
 
-      key[index++] = *line++;
+      key[idx++] = *line++;
    }
-   key[index] = '\0';
+   key[idx] = '\0';
    list->key = key;
 
    list->value = extract_value(line, true);
