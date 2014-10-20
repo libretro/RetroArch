@@ -1290,41 +1290,41 @@ static void parse_config_file(void)
 
 
 static void read_keybinds_keyboard(config_file_t *conf, unsigned player,
-      unsigned index, struct retro_keybind *bind)
+      unsigned idx, struct retro_keybind *bind)
 {
-   if (input_config_bind_map[index].valid && input_config_bind_map[index].base)
+   if (input_config_bind_map[idx].valid && input_config_bind_map[idx].base)
    {
       const char *prefix = input_config_get_prefix(player,
-            input_config_bind_map[index].meta);
+            input_config_bind_map[idx].meta);
       if (prefix)
          input_config_parse_key(conf, prefix,
-               input_config_bind_map[index].base, bind);
+               input_config_bind_map[idx].base, bind);
    }
 }
 
 static void read_keybinds_button(config_file_t *conf, unsigned player,
-      unsigned index, struct retro_keybind *bind)
+      unsigned idx, struct retro_keybind *bind)
 {
-   if (input_config_bind_map[index].valid && input_config_bind_map[index].base)
+   if (input_config_bind_map[idx].valid && input_config_bind_map[idx].base)
    {
       const char *prefix = input_config_get_prefix(player,
-            input_config_bind_map[index].meta);
+            input_config_bind_map[idx].meta);
       if (prefix)
          input_config_parse_joy_button(conf, prefix,
-               input_config_bind_map[index].base, bind);
+               input_config_bind_map[idx].base, bind);
    }
 }
 
 static void read_keybinds_axis(config_file_t *conf, unsigned player,
-      unsigned index, struct retro_keybind *bind)
+      unsigned idx, struct retro_keybind *bind)
 {
-   if (input_config_bind_map[index].valid && input_config_bind_map[index].base)
+   if (input_config_bind_map[idx].valid && input_config_bind_map[idx].base)
    {
       const char *prefix = input_config_get_prefix(player,
-            input_config_bind_map[index].meta);
+            input_config_bind_map[idx].meta);
       if (prefix)
          input_config_parse_joy_axis(conf, prefix,
-               input_config_bind_map[index].base, bind);
+               input_config_bind_map[idx].base, bind);
    }
 }
 
