@@ -1152,7 +1152,7 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
 
 rarch_setting_t setting_data_bind_setting(const char* name,
       const char* short_description, struct retro_keybind* target,
-      uint32_t index, uint32_t index_offset,
+      uint32_t idx, uint32_t idx_offset,
       const struct retro_keybind* default_value,
       const char *group, const char *subgroup)
 {
@@ -1161,8 +1161,8 @@ rarch_setting_t setting_data_bind_setting(const char* name,
 
    result.value.keybind = target;
    result.default_value.keybind = default_value;
-   result.index        = index;
-   result.index_offset = index_offset;
+   result.index        = idx;
+   result.index_offset = idx_offset;
 
    result.action_start = setting_data_bind_action_start;
    result.action_ok    = setting_data_bind_action_ok;
@@ -2174,7 +2174,7 @@ static int get_fallback_label(char *type_str,
 
 void setting_data_get_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
-      const char *menu_label, const char *label, unsigned index)
+      const char *menu_label, const char *label, unsigned idx)
 {
    rarch_setting_t *setting_data = NULL;
    rarch_setting_t *setting      = NULL;
@@ -2184,10 +2184,10 @@ void setting_data_get_label(char *type_str,
 
    setting_data = (rarch_setting_t*)driver.menu->list_settings;
    setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
-         driver.menu->menu_list->selection_buf->list[index].label);
+         driver.menu->menu_list->selection_buf->list[idx].label);
 
    if ((get_fallback_label(type_str, type_str_size, w, type, menu_label,
-         label, index)) == 0)
+         label, idx)) == 0)
       return;
 
    if ((!strcmp(menu_label, "Shader Options") ||
@@ -2285,7 +2285,7 @@ void setting_data_get_label(char *type_str,
       setting_data = (rarch_setting_t*)driver.menu->list_mainmenu;
 
       setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
-            driver.menu->menu_list->selection_buf->list[index].label);
+            driver.menu->menu_list->selection_buf->list[idx].label);
 
       if (setting)
       {
@@ -2632,26 +2632,26 @@ static void setting_data_add_special_callbacks(
       rarch_setting_info_t *list_info,
       unsigned values)
 {
-   unsigned index = list_info->index - 1;
+   unsigned idx = list_info->index - 1;
 
    if (values & SD_FLAG_ALLOW_INPUT)
    {
-      switch ((*list)[index].type)
+      switch ((*list)[idx].type)
       {
          case ST_UINT:
-            (*list)[index].action_start  = setting_data_uint_action_start_linefeed;
-            (*list)[index].action_ok     = setting_data_uint_action_ok_linefeed;
+            (*list)[idx].action_start  = setting_data_uint_action_start_linefeed;
+            (*list)[idx].action_ok     = setting_data_uint_action_ok_linefeed;
             break;
          case ST_STRING:
-            (*list)[index].action_start  = setting_data_string_action_start_allow_input;
-            (*list)[index].action_ok     = setting_data_string_action_ok_allow_input;
+            (*list)[idx].action_start  = setting_data_string_action_start_allow_input;
+            (*list)[idx].action_ok     = setting_data_string_action_ok_allow_input;
             break;
          default:
             break;
       }
    }
    else if (values & SD_FLAG_IS_DRIVER)
-      (*list)[index].action_toggle = setting_data_string_action_toggle_driver;
+      (*list)[idx].action_toggle = setting_data_string_action_toggle_driver;
 }
 
 static void settings_data_list_current_add_flags(
