@@ -182,10 +182,10 @@ size_t libretro_dummy_retro_get_memory_size(unsigned id)
 void libretro_dummy_retro_cheat_reset(void)
 {}
 
-void libretro_dummy_retro_cheat_set(unsigned index,
+void libretro_dummy_retro_cheat_set(unsigned idx,
       bool enabled, const char *code)
 {
-   (void)index;
+   (void)idx;
    (void)enabled;
    (void)code;
 }
