@@ -1253,23 +1253,19 @@ static bool netplay_flip_port(netplay_t *netplay, bool port)
 int16_t netplay_input_state(netplay_t *netplay, bool port, unsigned device,
       unsigned idx, unsigned id)
 {
-   uint16_t input_state = 0;
    size_t ptr = netplay->is_replay ? 
       netplay->tmp_ptr : PREV_PTR(netplay->self_ptr);
+   uint16_t curr_input_state = netplay->buffer[ptr].self_state;
 
-   port = netplay_flip_port(netplay, port);
-
-   if ((port ? 1 : 0) == netplay->port)
+   if (netplay->port == (netplay_flip_port(netplay, port) ? 1 : 0))
    {
       if (netplay->buffer[ptr].is_simulated)
-         input_state = netplay->buffer[ptr].simulated_input_state;
+         curr_input_state = netplay->buffer[ptr].simulated_input_state;
       else
-         input_state = netplay->buffer[ptr].real_input_state;
+         curr_input_state = netplay->buffer[ptr].real_input_state;
    }
-   else
-      input_state = netplay->buffer[ptr].self_state;
 
-   return ((1 << id) & input_state) ? 1 : 0;
+   return ((1 << id) & curr_input_state) ? 1 : 0;
 }
 
 void netplay_free(netplay_t *netplay)
