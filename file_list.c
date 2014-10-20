@@ -123,34 +123,34 @@ void file_list_copy(file_list_t *list, file_list_t *list_old)
    }
 }
 
-void file_list_set_label_at_offset(file_list_t *list, size_t index,
+void file_list_set_label_at_offset(file_list_t *list, size_t idx,
       const char *label)
 {
-   free(list->list[index].label);
-   list->list[index].label = strdup(label);
+   free(list->list[idx].label);
+   list->list[idx].label = strdup(label);
 }
 
-void file_list_get_label_at_offset(const file_list_t *list, size_t index,
+void file_list_get_label_at_offset(const file_list_t *list, size_t idx,
       const char **label)
 {
    if (label)
-      *label = list->list[index].label ?
-         list->list[index].label : list->list[index].path;
+      *label = list->list[idx].label ?
+         list->list[idx].label : list->list[idx].path;
 }
 
-void file_list_set_alt_at_offset(file_list_t *list, size_t index,
+void file_list_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt)
 {
-   free(list->list[index].alt);
-   list->list[index].alt = strdup(alt);
+   free(list->list[idx].alt);
+   list->list[idx].alt = strdup(alt);
 }
 
-void file_list_get_alt_at_offset(const file_list_t *list, size_t index,
+void file_list_get_alt_at_offset(const file_list_t *list, size_t idx,
       const char **alt)
 {
    if (alt)
-      *alt = list->list[index].alt ?
-         list->list[index].alt : list->list[index].path;
+      *alt = list->list[idx].alt ?
+         list->list[idx].alt : list->list[idx].path;
 }
 
 static int file_list_alt_cmp(const void *a_, const void *b_)
@@ -167,15 +167,15 @@ void file_list_sort_on_alt(file_list_t *list)
    qsort(list->list, list->size, sizeof(list->list[0]), file_list_alt_cmp);
 }
 
-void *file_list_get_userdata_at_offset(const file_list_t *list, size_t index)
+void *file_list_get_userdata_at_offset(const file_list_t *list, size_t idx)
 {
-   return list->list[index].userdata;
+   return list->list[idx].userdata;
 }
 
-void *file_list_get_actiondata_at_offset(const file_list_t *list, size_t index)
+void *file_list_get_actiondata_at_offset(const file_list_t *list, size_t idx)
 {
    if (list)
-      return list->list[index].actiondata;
+      return list->list[idx].actiondata;
    return NULL;
 }
 
@@ -186,15 +186,15 @@ void *file_list_get_last_actiondata(const file_list_t *list)
    return NULL;
 }
 
-void file_list_get_at_offset(const file_list_t *list, size_t index,
+void file_list_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type)
 {
    if (path)
-      *path      = list->list[index].path;
+      *path      = list->list[idx].path;
    if (label)
-      *label     = list->list[index].label;
+      *label     = list->list[idx].label;
    if (file_type)
-      *file_type = list->list[index].type;
+      *file_type = list->list[idx].type;
 }
 
 void file_list_get_last(const file_list_t *list,
@@ -205,7 +205,7 @@ void file_list_get_last(const file_list_t *list,
       file_list_get_at_offset(list, list->size - 1, path, label, file_type);
 }
 
-bool file_list_search(const file_list_t *list, const char *needle, size_t *index)
+bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)
 {
    size_t i;
    const char *alt;
@@ -226,7 +226,7 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *index
       if (str == alt)
       {
          /* Found match with first chars, best possible match. */
-         *index = i;
+         *idx = i;
          ret = true;
          break;
       }
@@ -234,7 +234,7 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *index
       {
          /* Found mid-string match, but try to find a match with 
           * first characters before we settle. */
-         *index = i;
+         *idx = i;
          ret = true;
       }
    }
