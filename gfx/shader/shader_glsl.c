@@ -1172,15 +1172,15 @@ fallback:
    return false;
 }
 
-static void gl_glsl_use(void *data, unsigned index)
+static void gl_glsl_use(void *data, unsigned idx)
 {
    (void)data;
    if (glsl_enable)
    {
       gl_glsl_reset_attrib();
 
-      glsl_active_index = index;
-      glUseProgram(gl_program[index]);
+      glsl_active_index = idx;
+      glUseProgram(gl_program[idx]);
    }
 }
 
@@ -1191,29 +1191,29 @@ static unsigned gl_glsl_num(void)
    return 0;
 }
 
-static bool gl_glsl_filter_type(unsigned index, bool *smooth)
+static bool gl_glsl_filter_type(unsigned idx, bool *smooth)
 {
-   if (glsl_enable && index 
-         && (glsl_shader->pass[index - 1].filter != RARCH_FILTER_UNSPEC)
+   if (glsl_enable && idx 
+         && (glsl_shader->pass[idx - 1].filter != RARCH_FILTER_UNSPEC)
       )
    {
-      *smooth = (glsl_shader->pass[index - 1].filter == RARCH_FILTER_LINEAR);
+      *smooth = (glsl_shader->pass[idx - 1].filter == RARCH_FILTER_LINEAR);
       return true;
    }
    return false;
 }
 
-static enum gfx_wrap_type gl_glsl_wrap_type(unsigned index)
+static enum gfx_wrap_type gl_glsl_wrap_type(unsigned idx)
 {
-   if (glsl_enable && index)
-      return glsl_shader->pass[index - 1].wrap;
+   if (glsl_enable && idx)
+      return glsl_shader->pass[idx - 1].wrap;
    return RARCH_WRAP_BORDER;
 }
 
-static void gl_glsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
+static void gl_glsl_shader_scale(unsigned idx, struct gfx_fbo_scale *scale)
 {
-   if (glsl_enable && index)
-      *scale = glsl_shader->pass[index - 1].fbo;
+   if (glsl_enable && idx)
+      *scale = glsl_shader->pass[idx - 1].fbo;
    else
       scale->valid = false;
 }
@@ -1233,10 +1233,10 @@ static unsigned gl_glsl_get_prev_textures(void)
    return max_prev;
 }
 
-static bool gl_glsl_mipmap_input(unsigned index)
+static bool gl_glsl_mipmap_input(unsigned idx)
 {
-   if (glsl_enable && index)
-      return glsl_shader->pass[index - 1].mipmap;
+   if (glsl_enable && idx)
+      return glsl_shader->pass[idx - 1].mipmap;
    return false;
 }
 
