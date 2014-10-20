@@ -1,5 +1,6 @@
 #include "file_extract.h"
 #include "file.h"
+#include "file_path.h"
 
 #include <stdio.h>
 #include <string.h>

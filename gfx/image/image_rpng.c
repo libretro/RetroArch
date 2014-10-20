@@ -19,6 +19,7 @@
 
 #include "image.h"
 #include "../../file.h"
+#include "../../file_path.h"
 
 #include <stdlib.h>
 #include <string.h>

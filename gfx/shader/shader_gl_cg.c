@@ -36,6 +36,7 @@
 #include "../../dynamic.h"
 #include "../../compat/posix_string.h"
 #include "../../file.h"
+#include "../../file_path.h"
 
 #include "../state_tracker.h"
 

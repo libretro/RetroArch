@@ -27,6 +27,7 @@
 #include "../../compat/posix_string.h"
 #include "../../input/input_common.h"
 #include "../../file.h"
+#include "../../file_path.h"
 
 static PyObject* py_read_wram(PyObject *self, PyObject *args)
 {

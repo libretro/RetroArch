@@ -23,6 +23,7 @@
 #include "../compat/posix_string.h"
 #include "../msvc/msvc_compat.h"
 #include "../file.h"
+#include "../file_path.h"
 #include "../miscellaneous.h"
 #include "../general.h"
 

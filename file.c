@@ -14,6 +14,7 @@
  */
 
 #include "file.h"
+#include "file_path.h"
 #include "general.h"
 #include <stdlib.h>
 #include "boolean.h"

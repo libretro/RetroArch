@@ -15,9 +15,10 @@
 
 #include "core_info.h"
 #include "general.h"
-#include "file.h"
+#include "file_path.h"
 #include "file_ext.h"
 #include "file_extract.h"
+#include "dir_list.h"
 #include "config.def.h"
 
 #ifdef HAVE_CONFIG_H

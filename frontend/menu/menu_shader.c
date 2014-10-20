@@ -18,6 +18,7 @@
 #include "menu_action.h"
 #include "menu_common.h"
 #include "menu_entries.h"
+#include "../../file_path.h"
 #include "../../settings_data.h"
 
 #ifdef HAVE_SHADER_MANAGER

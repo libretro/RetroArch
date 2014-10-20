@@ -15,6 +15,8 @@
 
 #include "file_extract.h"
 #include "file.h"
+#include "file_path.h"
+#include "string_list.h"
 #include "compat/strl.h"
 #include "general.h"
 #include <stdio.h>

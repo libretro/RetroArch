@@ -20,6 +20,7 @@
 #include "menu_entries.h"
 #include "menu_list.h"
 #include "menu_shader.h"
+#include "../../file_path.h"
 
 int setting_handler(
       rarch_setting_t *setting, unsigned action)

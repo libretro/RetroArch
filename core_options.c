@@ -16,6 +16,7 @@
 #include "core_options.h"
 #include "general.h"
 #include "file.h"
+#include "dir_list.h"
 #include "compat/posix_string.h"
 
 struct core_option

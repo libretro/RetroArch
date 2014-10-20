@@ -20,6 +20,7 @@
 #include "menu_list.h"
 #include "menu_shader.h"
 #include "../frontend.h"
+#include "../../file_path.h"
 
 static void draw_frame(void)
 {

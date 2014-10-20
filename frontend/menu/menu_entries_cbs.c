@@ -23,6 +23,7 @@
 #include "backend/menu_backend.h"
 
 #include "../../file_ext.h"
+#include "../../file_path.h"
 #include "../../config.def.h"
 #include "../../performance.h"
 

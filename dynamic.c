@@ -20,6 +20,7 @@
 #include "retroarch_logger.h"
 #include "performance.h"
 #include "file.h"
+#include "file_path.h"
 #include <string.h>
 #include <ctype.h>
 

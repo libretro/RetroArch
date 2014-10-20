@@ -18,6 +18,7 @@
 #include "../driver.h"
 #include "frontend.h"
 #include "../general.h"
+#include "../file_path.h"
 
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
 #include "../config.def.h"
