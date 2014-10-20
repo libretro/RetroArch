@@ -572,8 +572,6 @@ static bool load_plain(const char *path)
    return true;
 }
 
-#define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
-
 static bool load_imports(void)
 {
    unsigned i;
