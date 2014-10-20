@@ -395,8 +395,8 @@ static bool thread_frame(void *data, const void *frame_,
       return false;
    }
 
-   RARCH_PERFORMANCE_INIT(thread_frame);
-   RARCH_PERFORMANCE_START(thread_frame);
+   RARCH_PERFORMANCE_INIT(thr_frame);
+   RARCH_PERFORMANCE_START(thr_frame);
 
    unsigned copy_stride = width * (thr->info.rgb32 ?
          sizeof(uint32_t) : sizeof(uint16_t));
@@ -463,7 +463,7 @@ static bool thread_frame(void *data, const void *frame_,
 
    slock_unlock(thr->lock);
 
-   RARCH_PERFORMANCE_STOP(thread_frame);
+   RARCH_PERFORMANCE_STOP(thr_frame);
 
    thr->last_time = rarch_get_time_usec();
    return true;
