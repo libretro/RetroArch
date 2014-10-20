@@ -193,14 +193,14 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
 }
 
 bool zlib_inflate_data_to_file(const char *path, const uint8_t *cdata,
-      uint32_t csize, uint32_t size, uint32_t crc32)
+      uint32_t csize, uint32_t size, uint32_t checksum)
 {
    bool ret = true;
    uint8_t *out_data = (uint8_t*)malloc(size);
    if (!out_data)
       return false;
 
-   uint32_t real_crc32 = 0;
+   uint32_t real_checksum = 0;
    z_stream stream = {0};
 
    if (inflateInit2(&stream, -MAX_WBITS) != Z_OK)
@@ -218,10 +218,10 @@ bool zlib_inflate_data_to_file(const char *path, const uint8_t *cdata,
    }
    inflateEnd(&stream);
 
-   real_crc32 = crc32_calculate(out_data, size);
-   if (real_crc32 != crc32)
+   real_checksum = crc32_calculate(out_data, size);
+   if (real_checksum != checksum)
       RARCH_WARN("File CRC differs from ZIP CRC. File: 0x%x, ZIP: 0x%x.\n",
-            (unsigned)real_crc32, (unsigned)crc32);
+            (unsigned)real_checksum, (unsigned)checksum);
 
    if (!write_file(path, out_data, size))
       GOTO_END_ERROR();
@@ -275,10 +275,10 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
       if (signature != 0x02014b50)
          break;
 
-      unsigned cmode = read_le(directory + 10, 2);
-      uint32_t crc32 = read_le(directory + 16, 4);
-      uint32_t csize = read_le(directory + 20, 4);
-      uint32_t size  = read_le(directory + 24, 4);
+      unsigned cmode    = read_le(directory + 10, 2);
+      uint32_t checksum = read_le(directory + 16, 4);
+      uint32_t csize    = read_le(directory + 20, 4);
+      uint32_t size     = read_le(directory + 24, 4);
 
       unsigned namelength    = read_le(directory + 28, 2);
       unsigned extralength   = read_le(directory + 30, 2);
@@ -301,7 +301,7 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
       offsetNL + offsetEL, csize, size);
 #endif
 
-      if (!file_cb(filename, cdata, cmode, csize, size, crc32, userdata))
+      if (!file_cb(filename, cdata, cmode, csize, size, checksum, userdata))
          break;
 
       directory += 46 + namelength + extralength + commentlength;
@@ -324,7 +324,7 @@ struct zip_extract_userdata
 
 static bool zip_extract_cb(const char *name, const uint8_t *cdata,
       unsigned cmode, uint32_t csize, uint32_t size,
-      uint32_t crc32, void *userdata)
+      uint32_t checksum, void *userdata)
 {
    struct zip_extract_userdata *data = (struct zip_extract_userdata*)userdata;
 
@@ -349,7 +349,7 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata,
             return false;
          /* Deflate. */
          case 8:
-            if (zlib_inflate_data_to_file(new_path, cdata, csize, size, crc32))
+            if (zlib_inflate_data_to_file(new_path, cdata, csize, size, checksum))
             {
                strlcpy(data->zip_path, new_path, data->zip_path_size);
                data->found_content = true;
@@ -407,14 +407,14 @@ end:
 }
 
 static bool zlib_get_file_list_cb(const char *path, const uint8_t *cdata,
-      unsigned cmode, uint32_t csize, uint32_t size, uint32_t crc32,
+      unsigned cmode, uint32_t csize, uint32_t size, uint32_t checksum,
       void *userdata)
 {
    (void)cdata;
    (void)cmode;
    (void)csize;
    (void)size;
-   (void)crc32;
+   (void)checksum;
    struct string_list *list = (struct string_list*)userdata;
    union string_list_elem_attr attr;
    memset(&attr, 0, sizeof(attr));
