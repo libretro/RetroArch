@@ -96,6 +96,7 @@
 #endif
 
    /* function prototypes */
+int ZEXPORT inflateReset2(z_streamp strm, int windowBits);
    local void fixedtables OF((struct inflate_state FAR *state));
    local int updatewindow OF((z_streamp strm, const unsigned char FAR *end,
             unsigned copy));
@@ -105,7 +106,11 @@ void makefixed OF((void));
 local unsigned syncsearch OF((unsigned FAR *have, const unsigned char FAR *buf,
          unsigned len));
 
+long ZEXPORT inflateMark(z_streamp strm);
+
 int ZEXPORT inflateResetKeep(z_streamp strm);
+
+int ZEXPORT inflateUndermine(z_streamp strm, int subvert);
 
 int ZEXPORT inflateGetDictionary(z_streamp strm, Bytef *dictionary, uInt *dictLength);
 
@@ -148,10 +153,11 @@ int ZEXPORT inflateReset(z_streamp strm)
 int ZEXPORT inflateReset2(z_streamp strm, int windowBits)
 {
    int wrap;
-   struct inflate_state FAR *state;
+   struct inflate_state FAR *state = NULL;
 
    /* get the state */
-   if (strm == Z_NULL || strm->state == Z_NULL) return Z_STREAM_ERROR;
+   if (strm == Z_NULL || strm->state == Z_NULL)
+	   return Z_STREAM_ERROR;
    state = (struct inflate_state FAR *)strm->state;
 
    /* extract wrap request from windowBits parameter */
@@ -1456,9 +1462,10 @@ int ZEXPORT inflateCopy(z_streamp dest, z_streamp source)
 
 int ZEXPORT inflateUndermine(z_streamp strm, int subvert)
 {
-   struct inflate_state FAR *state;
+   struct inflate_state FAR *state = NULL;
 
-   if (strm == Z_NULL || strm->state == Z_NULL) return Z_STREAM_ERROR;
+   if (strm == Z_NULL || strm->state == Z_NULL)
+	   return Z_STREAM_ERROR;
    state = (struct inflate_state FAR *)strm->state;
    state->sane = !subvert;
 #ifdef INFLATE_ALLOW_INVALID_DISTANCE_TOOFAR_ARRR
@@ -1471,9 +1478,10 @@ int ZEXPORT inflateUndermine(z_streamp strm, int subvert)
 
 long ZEXPORT inflateMark(z_streamp strm)
 {
-   struct inflate_state FAR *state;
+   struct inflate_state FAR *state = NULL;
 
-   if (strm == Z_NULL || strm->state == Z_NULL) return -1L << 16;
+   if (strm == Z_NULL || strm->state == Z_NULL)
+	   return -1L << 16;
    state = (struct inflate_state FAR *)strm->state;
    return ((long)(state->back) << 16) +
       (state->mode == COPY ? state->length :

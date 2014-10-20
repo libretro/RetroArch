@@ -15,6 +15,10 @@
 #endif
 #endif
 
+/* Forward declarations */
+z_off_t ZEXPORT gzoffset(gzFile file);
+int ZEXPORT gzbuffer(gzFile file, unsigned size);
+
 /* Local functions */
 local void gz_reset OF((gz_statep));
 local gzFile gz_open OF((const void *, int, const char *));
@@ -476,9 +480,7 @@ z_off64_t ZEXPORT gzoffset64(gzFile file)
 /* -- see zlib.h -- */
 z_off_t ZEXPORT gzoffset(gzFile file)
 {
-   z_off64_t ret;
-
-   ret = gzoffset64(file);
+   z_off64_t ret = gzoffset64(file);
    return ret == (z_off_t)ret ? (z_off_t)ret : -1;
 }
 
