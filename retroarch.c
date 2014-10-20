@@ -1614,7 +1614,7 @@ void rarch_disk_control_append_image(const char *path)
    rarch_disk_control_set_eject(false, false);
 }
 
-void rarch_disk_control_set_eject(bool new_state, bool log)
+void rarch_disk_control_set_eject(bool new_state, bool print_log)
 {
    char msg[PATH_MAX];
    const struct retro_disk_control_callback *control = 
@@ -1644,7 +1644,7 @@ void rarch_disk_control_set_eject(bool new_state, bool log)
          RARCH_LOG("%s\n", msg);
 
       /* Only noise in menu. */
-      if (log)
+      if (print_log)
       {
          msg_queue_clear(g_extern.msg_queue);
          msg_queue_push(g_extern.msg_queue, msg, 1, 180);
