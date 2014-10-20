@@ -1325,11 +1325,11 @@ static int action_start_bind(unsigned type, const char *label,
       unsigned action)
 {
    struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
-   struct retro_keybind *bind = (struct retro_keybind*)
+   struct retro_keybind *keybind = (struct retro_keybind*)
       &g_settings.input.binds[driver.menu->current_pad]
       [type - MENU_SETTINGS_BIND_BEGIN];
 
-   if (!bind)
+   if (!keybind)
       return -1;
 
    (void)label;
@@ -1337,8 +1337,8 @@ static int action_start_bind(unsigned type, const char *label,
 
    if (!driver.menu->bind_mode_keyboard)
    {
-      bind->joykey = NO_BTN;
-      bind->joyaxis = AXIS_NONE;
+      keybind->joykey = NO_BTN;
+      keybind->joyaxis = AXIS_NONE;
       return 0;
    }
 
@@ -1348,7 +1348,7 @@ static int action_start_bind(unsigned type, const char *label,
    if (!def_binds)
       return -1;
 
-   bind->key = def_binds[type - MENU_SETTINGS_BIND_BEGIN].key;
+   keybind->key = def_binds[type - MENU_SETTINGS_BIND_BEGIN].key;
 
    return 0;
 }

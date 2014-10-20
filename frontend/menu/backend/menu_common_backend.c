@@ -144,12 +144,12 @@ static int menu_start_screen_iterate(unsigned action)
 
    for (i = 0; i < ARRAY_SIZE(binds); i++)
    {
-      const struct retro_keybind *bind = (const struct retro_keybind*)
+      const struct retro_keybind *keybind = (const struct retro_keybind*)
          &g_settings.input.binds[0][binds[i]];
       const struct retro_keybind *auto_bind = (const struct retro_keybind*)
          input_get_auto_bind(0, binds[i]);
 
-      input_get_bind_string(desc[i], bind, auto_bind, sizeof(desc[i]));
+      input_get_bind_string(desc[i], keybind, auto_bind, sizeof(desc[i]));
    }
 
    snprintf(msg, sizeof(msg),
