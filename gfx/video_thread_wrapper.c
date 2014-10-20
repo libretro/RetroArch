@@ -606,10 +606,10 @@ static bool thread_overlay_load(void *data,
 }
 
 static void thread_overlay_tex_geom(void *data,
-      unsigned index, float x, float y, float w, float h)
+      unsigned idx, float x, float y, float w, float h)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   thr->cmd_data.rect.index = index;
+   thr->cmd_data.rect.index = idx;
    thr->cmd_data.rect.x = x;
    thr->cmd_data.rect.y = y;
    thr->cmd_data.rect.w = w;
@@ -619,10 +619,10 @@ static void thread_overlay_tex_geom(void *data,
 }
 
 static void thread_overlay_vertex_geom(void *data,
-      unsigned index, float x, float y, float w, float h)
+      unsigned idx, float x, float y, float w, float h)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   thr->cmd_data.rect.index = index;
+   thr->cmd_data.rect.index = idx;
    thr->cmd_data.rect.x = x;
    thr->cmd_data.rect.y = y;
    thr->cmd_data.rect.w = w;
@@ -640,11 +640,11 @@ static void thread_overlay_full_screen(void *data, bool enable)
 }
 
 /* We cannot wait for this to complete. Totally blocks the main thread. */
-static void thread_overlay_set_alpha(void *data, unsigned index, float mod)
+static void thread_overlay_set_alpha(void *data, unsigned idx, float mod)
 {
    thread_video_t *thr = (thread_video_t*)data;
    slock_lock(thr->alpha_lock);
-   thr->alpha_mod[index] = mod;
+   thr->alpha_mod[idx] = mod;
    thr->alpha_update = true;
    slock_unlock(thr->alpha_lock);
 }
@@ -667,19 +667,19 @@ static void thread_get_overlay_interface(void *data,
 }
 #endif
 
-static void thread_set_filtering(void *data, unsigned index, bool smooth)
+static void thread_set_filtering(void *data, unsigned idx, bool smooth)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   thr->cmd_data.filtering.index = index;
+   thr->cmd_data.filtering.index = idx;
    thr->cmd_data.filtering.smooth = smooth;
    thread_send_cmd(thr, CMD_POKE_SET_FILTERING);
    thread_wait_reply(thr, CMD_POKE_SET_FILTERING);
 }
 
-static void thread_set_aspect_ratio(void *data, unsigned aspectratio_index)
+static void thread_set_aspect_ratio(void *data, unsigned aspectratio_idx)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   thr->cmd_data.i = aspectratio_index;
+   thr->cmd_data.i = aspectratio_idx;
    thread_send_cmd(thr, CMD_POKE_SET_ASPECT_RATIO);
    thread_wait_reply(thr, CMD_POKE_SET_ASPECT_RATIO);
 }
