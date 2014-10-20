@@ -144,13 +144,14 @@ static bool xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
 
 static void cheat_manager_apply_cheats(cheat_manager_t *handle)
 {
-   unsigned i, index;
-   index = 0;
+   unsigned i;
+   unsigned idx = 0;
+
    pretro_cheat_reset();
    for (i = 0; i < handle->size; i++)
    {
       if (handle->cheats[i].state)
-         pretro_cheat_set(index++, true, handle->cheats[i].code);
+         pretro_cheat_set(idx++, true, handle->cheats[i].code);
    }
 }
 
@@ -180,9 +181,9 @@ static void cheat_manager_load_config(cheat_manager_t *handle,
 
    while (num)
    {
-      unsigned index = strtoul(num, NULL, 0);
-      if (index < handle->size)
-         handle->cheats[index].state = true;
+      unsigned idx = strtoul(num, NULL, 0);
+      if (idx < handle->size)
+         handle->cheats[idx].state = true;
 
       num = strtok_r(NULL, ";", &save);
    }
