@@ -7,6 +7,8 @@
 
 #include "Types.h"
 
+SRes SeqInStream_Readuint8_t(ISeqInStream *stream, uint8_t *buf);
+
 SRes SeqInStream_Read2(ISeqInStream *stream, void *buf, size_t size, SRes errorType)
 {
    while (size != 0)
