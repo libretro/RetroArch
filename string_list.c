@@ -69,16 +69,16 @@ struct string_list *string_list_new(void)
 bool string_list_append(struct string_list *list, const char *elem,
       union string_list_elem_attr attr)
 {
-   char *dup;
+   char *data_dup;
    if (list->size >= list->cap &&
          !string_list_capacity(list, list->cap * 2))
       return false;
 
-   dup = strdup(elem);
-   if (!dup)
+   data_dup = strdup(elem);
+   if (!data_dup)
       return false;
 
-   list->elems[list->size].data = dup;
+   list->elems[list->size].data = data_dup;
    list->elems[list->size].attr = attr;
 
    list->size++;
