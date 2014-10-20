@@ -189,7 +189,7 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *drv,
 }
 
 int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
-      unsigned port, unsigned index, unsigned id,
+      unsigned port, unsigned idx, unsigned id,
       const struct retro_keybind *binds)
 {
    if (!drv)
@@ -205,7 +205,7 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
 
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
-   input_conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
    const struct retro_keybind *bind_minus = &binds[id_minus];
    const struct retro_keybind *bind_plus  = &binds[id_plus];
