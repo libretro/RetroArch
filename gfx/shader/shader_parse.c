@@ -522,7 +522,7 @@ static const char *scale_type_to_str(enum gfx_scale_type type)
 }
 
 static void shader_write_scale_dim(config_file_t *conf, const char *dim,
-      enum gfx_scale_type type, float scale, unsigned abs, unsigned i)
+      enum gfx_scale_type type, float scale, unsigned absolute, unsigned i)
 {
    char key[64];
    print_buf(key, "scale_type_%s%u", dim, i);
@@ -530,7 +530,7 @@ static void shader_write_scale_dim(config_file_t *conf, const char *dim,
 
    print_buf(key, "scale_%s%u", dim, i);
    if (type == RARCH_SCALE_ABSOLUTE)
-      config_set_int(conf, key, abs);
+      config_set_int(conf, key, absolute);
    else
       config_set_float(conf, key, scale);
 }
