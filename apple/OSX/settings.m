@@ -60,13 +60,13 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 - (void)checkBind:(NSTimer*)send
 {
    int32_t value = 0;
-   int32_t index = self.setting->index ? self.setting->index - 1 : 0;
+   int32_t idx = self.setting->index ? self.setting->index - 1 : 0;
 
    if ((value = apple_input_find_any_key()))
       BINDFOR(*[self setting]).key = input_translate_keysym_to_rk(value);
-   else if ((value = apple_input_find_any_button(index)) >= 0)
+   else if ((value = apple_input_find_any_button(idx)) >= 0)
       BINDFOR(*[self setting]).joykey = value;
-   else if ((value = apple_input_find_any_axis(index)))
+   else if ((value = apple_input_find_any_axis(idx)))
       BINDFOR(*[self setting]).joyaxis = (value > 0) ? AXIS_POS(value - 1) : AXIS_NEG(abs(value) - 1);
    else
       return;
@@ -211,9 +211,9 @@ NSWindowDelegate>
    return (item == nil) ? [self.currentGroup count] : [item count];
 }
 
-- (id)outlineView:(NSOutlineView *)outlineView child:(NSInteger)index ofItem:(id)item
+- (id)outlineView:(NSOutlineView *)outlineView child:(NSInteger)idx ofItem:(id)item
 {
-   return (item == nil) ? [self.currentGroup objectAtIndex:index] : [item objectAtIndex:index];
+   return (item == nil) ? [self.currentGroup objectAtIndex:idx] : [item objectAtIndex:idx];
 }
 
 - (BOOL)outlineView:(NSOutlineView *)outlineView isItemExpandable:(id)item

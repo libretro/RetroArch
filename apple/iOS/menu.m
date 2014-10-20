@@ -501,16 +501,16 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)checkBind:(NSTimer*)send
 {
    int32_t value = 0;
-   int32_t index = 0;
+   int32_t idx = 0;
 
    if (self.setting->index)
-      index = self.setting->index - 1;
+      idx = self.setting->index - 1;
 
    if ((value = apple_input_find_any_key()))
       BINDFOR(*self.setting).key = input_translate_keysym_to_rk(value);
-   else if ((value = apple_input_find_any_button(index)) >= 0)
+   else if ((value = apple_input_find_any_button(idx)) >= 0)
       BINDFOR(*self.setting).joykey = value;
-   else if ((value = apple_input_find_any_axis(index)))
+   else if ((value = apple_input_find_any_axis(idx)))
       BINDFOR(*self.setting).joyaxis = (value > 0) ? AXIS_POS(value - 1) : AXIS_NEG(abs(value) - 1);
    else
       return;
@@ -1062,12 +1062,12 @@ static bool copy_config(const char *src_path, const char *dst_path)
    return self;
 }
 
-- (void)editValue:(uint32_t)index
+- (void)editValue:(uint32_t)idx
 {
    RACoreOptionsMenu __weak* weakSelf = self;
-   self.currentIndex = index;
+   self.currentIndex = idx;
 
-   RunActionSheet(core_option_get_desc(g_extern.system.core_options, index), core_option_get_vals(g_extern.system.core_options, index), self.tableView,
+   RunActionSheet(core_option_get_desc(g_extern.system.core_options, idx), core_option_get_vals(g_extern.system.core_options, idx), self.tableView,
    ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
    {
       if (buttonIndex != actionSheet.cancelButtonIndex)

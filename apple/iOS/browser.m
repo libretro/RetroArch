@@ -306,11 +306,11 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    if (gesture.state == UIGestureRecognizerStateBegan)
    {
       CGPoint point = [gesture locationInView:self.tableView];
-      NSIndexPath* indexPath = [self.tableView indexPathForRowAtPoint:point];
+      NSIndexPath* idx_path = [self.tableView indexPathForRowAtPoint:point];
 
-      if (indexPath)
+      if (idx_path)
       {
-         self.selectedItem = [self itemForIndexPath:indexPath];
+         self.selectedItem = [self itemForIndexPath:idx_path];
          bool is_zip = [[self.selectedItem.path pathExtension] isEqualToString:@"zip"];
 
          NSString* button4_name = (IOS_IS_VERSION_7_OR_HIGHER()) ? @"AirDrop" : @"Delete";
