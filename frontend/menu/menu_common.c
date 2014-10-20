@@ -238,7 +238,7 @@ void menu_free(void *data)
    free(data);
 }
 
-void menu_ticker_line(char *buf, size_t len, unsigned index,
+void menu_ticker_line(char *buf, size_t len, unsigned idx,
       const char *str, bool selected)
 {
    size_t str_len = strlen(str);
@@ -259,7 +259,7 @@ void menu_ticker_line(char *buf, size_t len, unsigned index,
    {
       /* Wrap long strings in options with some kind of ticker line. */
       unsigned ticker_period = 2 * (str_len - len) + 4;
-      unsigned phase = index % ticker_period;
+      unsigned phase = idx % ticker_period;
 
       unsigned phase_left_stop = 2;
       unsigned phase_left_moving = phase_left_stop + (str_len - len);

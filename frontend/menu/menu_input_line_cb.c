@@ -63,10 +63,10 @@ static void menu_key_end_line(void *data)
 static void menu_search_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
-   size_t index;
+   size_t idx;
 
-   if (str && *str && file_list_search(menu->menu_list->selection_buf, str, &index))
-         menu_navigation_set(menu, index);
+   if (str && *str && file_list_search(menu->menu_list->selection_buf, str, &idx))
+         menu_navigation_set(menu, idx);
 
    menu_key_end_line(menu);
 }

@@ -914,7 +914,7 @@ static void xmb_list_insert(void *data,
    node->y = iy;
 }
 
-static void xmb_list_delete(void *data, size_t index,
+static void xmb_list_delete(void *data, size_t idx,
       size_t list_size)
 {
    file_list_t *list = (file_list_t*)data;
@@ -922,9 +922,9 @@ static void xmb_list_delete(void *data, size_t index,
    if (!list)
       return;
 
-   if (list->list[index].userdata)
-      free(list->list[index].userdata);
-   list->list[index].userdata = NULL;
+   if (list->list[idx].userdata)
+      free(list->list[idx].userdata);
+   list->list[idx].userdata = NULL;
 }
 
 static void xmb_list_clear(void *data)

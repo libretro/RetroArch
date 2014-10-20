@@ -24,7 +24,7 @@ extern "C" {
 
 void menu_entries_cbs_init(void *data,
       const char *path, const char *label,
-      unsigned type, size_t index);
+      unsigned type, size_t idx);
 
 #ifdef __cplusplus
 }

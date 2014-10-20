@@ -674,34 +674,34 @@ static int menu_common_iterate(unsigned action)
 
 static void menu_common_setting_set_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
-      const char *menu_label, const char *label, unsigned index)
+      const char *menu_label, const char *label, unsigned idx)
 {
    setting_data_get_label(type_str, type_str_size, w, 
-         type, menu_label, label, index);
+         type, menu_label, label, idx);
 }
 
 static void menu_common_list_insert(void *data,
       const char *path, const char *label,
-      unsigned type, size_t index)
+      unsigned type, size_t idx)
 {
    file_list_t *list = (file_list_t*)data;
 
    if (!list)
       return;
 
-   list->list[index].actiondata = (menu_file_list_cbs_t*)
+   list->list[idx].actiondata = (menu_file_list_cbs_t*)
       calloc(1, sizeof(menu_file_list_cbs_t));
 
-   if (!list->list[index].actiondata)
+   if (!list->list[idx].actiondata)
    {
       RARCH_ERR("Action data could not be allocated.\n");
       return;
    }
 
-   menu_entries_cbs_init(list, path, label, type, index);
+   menu_entries_cbs_init(list, path, label, type, idx);
 }
 
-static void menu_common_list_delete(void *data, size_t index,
+static void menu_common_list_delete(void *data, size_t idx,
       size_t list_size)
 {
    menu_file_list_cbs_t *cbs = NULL;
@@ -710,7 +710,7 @@ static void menu_common_list_delete(void *data, size_t index,
    if (!list)
       return;
 
-   cbs = (menu_file_list_cbs_t*)list->list[index].actiondata;
+   cbs = (menu_file_list_cbs_t*)list->list[idx].actiondata;
 
    if (cbs)
    {
@@ -718,9 +718,9 @@ static void menu_common_list_delete(void *data, size_t index,
       cbs->action_ok            = NULL;
       cbs->action_toggle        = NULL;
       cbs->action_deferred_push = NULL;
-      free(list->list[index].actiondata);
+      free(list->list[idx].actiondata);
    }
-   list->list[index].actiondata = NULL;
+   list->list[idx].actiondata = NULL;
 }
 
 static void menu_common_list_clear(void *data)

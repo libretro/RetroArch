@@ -74,10 +74,10 @@ size_t menu_list_get_stack_size(menu_list_t *list)
    return file_list_get_size(list->menu_stack);
 }
 
-void menu_list_get_at_offset(const file_list_t *list, size_t index,
+void menu_list_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type)
 {
-   file_list_get_at_offset(list, index, path, label, file_type);
+   file_list_get_at_offset(list, idx, path, label, file_type);
 }
 
 size_t menu_list_get_size(menu_list_t *list)
@@ -103,10 +103,10 @@ void menu_list_get_last_stack(const menu_list_t *list,
       file_list_get_last(list->menu_stack, path, label, file_type);
 }
 
-void *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t index)
+void *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t idx)
 {
    if (list)
-      return file_list_get_actiondata_at_offset(list, index);
+      return file_list_get_actiondata_at_offset(list, idx);
    return NULL;
 }
 
@@ -281,16 +281,16 @@ void menu_list_push_stack_refresh(menu_list_t *list,
    driver.menu->need_refresh = true;
 }
 
-void menu_list_set_alt_at_offset(file_list_t *list, size_t index,
+void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt)
 {
-   file_list_set_alt_at_offset(list, index, alt);
+   file_list_set_alt_at_offset(list, idx, alt);
 }
 
-void menu_list_get_alt_at_offset(const file_list_t *list, size_t index,
+void menu_list_get_alt_at_offset(const file_list_t *list, size_t idx,
       const char **alt)
 {
-   file_list_get_alt_at_offset(list, index, alt);
+   file_list_get_alt_at_offset(list, idx, alt);
 }
 
 void menu_list_sort_on_alt(file_list_t *list)
