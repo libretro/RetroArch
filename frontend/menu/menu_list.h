@@ -26,7 +26,9 @@ extern "C" {
 typedef struct menu_list
 {
    file_list_t *menu_stack;
+   file_list_t *menu_stack_old;
    file_list_t *selection_buf;
+   file_list_t *selection_buf_old;
 } menu_list_t;
 
 void menu_list_free(menu_list_t *menu_list);
