@@ -117,7 +117,7 @@ static void readjust_audio_input_rate(void)
    //RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
    //      (unsigned)(100 - (avail * 100) / g_extern.audio_data.driver_buffer_size));
 
-   unsigned write_index = g_extern.measure_data.buffer_free_samples_count++ &
+   unsigned write_idx = g_extern.measure_data.buffer_free_samples_count++ &
       (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
    int      half_size   = g_extern.audio_data.driver_buffer_size / 2;
    int      delta_mid   = avail - half_size;
@@ -125,7 +125,7 @@ static void readjust_audio_input_rate(void)
    double   adjust      = 1.0 + g_settings.audio.rate_control_delta *
       direction;
 
-   g_extern.measure_data.buffer_free_samples[write_index] = avail;
+   g_extern.measure_data.buffer_free_samples[write_idx] = avail;
    g_extern.audio_data.src_ratio = g_extern.audio_data.orig_src_ratio * adjust;
 
    //RARCH_LOG_OUTPUT("New rate: %lf, Orig rate: %lf\n",
@@ -266,7 +266,7 @@ static bool input_apply_turbo(unsigned port, unsigned id, bool res)
 }
 
 static int16_t input_state(unsigned port, unsigned device,
-      unsigned index, unsigned id)
+      unsigned idx, unsigned id)
 {
    int16_t res = 0;
 
@@ -305,7 +305,7 @@ static int16_t input_state(unsigned port, unsigned device,
             device == RETRO_DEVICE_KEYBOARD))
          )
       res = driver.input->input_state(driver.input_data, binds, port,
-            device, index, id);
+            device, idx, id);
 
 #ifdef HAVE_OVERLAY
    if (device == RETRO_DEVICE_JOYPAD && port == 0)
@@ -314,7 +314,7 @@ static int16_t input_state(unsigned port, unsigned device,
       res |= OVERLAY_GET_KEY(&driver.overlay_state, id) ? 1 : 0;
    else if (device == RETRO_DEVICE_ANALOG && port == 0)
    {
-      unsigned base = (index == RETRO_DEVICE_INDEX_ANALOG_RIGHT) ? 2 : 0;
+      unsigned base = (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT) ? 2 : 0;
       base += (id == RETRO_DEVICE_ID_ANALOG_Y) ? 1 : 0;
       if (driver.overlay_state.analog[base])
          res = driver.overlay_state.analog[base];
