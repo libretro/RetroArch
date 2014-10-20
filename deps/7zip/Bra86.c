@@ -55,18 +55,18 @@ size_t x86_Convert(uint8_t *data, size_t size, uint32_t ip, uint32_t *state, int
          for (;;)
          {
             uint8_t b;
-            int index;
+            int idx;
             if (encoding)
                dest = (ip + (uint32_t)bufferPos) + src;
             else
                dest = src - (ip + (uint32_t)bufferPos);
             if (prevMask == 0)
                break;
-            index = kMaskToBitNumber[prevMask] * 8;
-            b = (uint8_t)(dest >> (24 - index));
+            idx = kMaskToBitNumber[prevMask] * 8;
+            b = (uint8_t)(dest >> (24 - idx));
             if (!Test86MSuint8_t(b))
                break;
-            src = dest ^ ((1 << (32 - index)) - 1);
+            src = dest ^ ((1 << (32 - idx)) - 1);
          }
          p[4] = (uint8_t)(~(((dest >> 24) & 1) - 1));
          p[3] = (uint8_t)(dest >> 16);

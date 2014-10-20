@@ -322,11 +322,11 @@ static SRes CheckSupportedFolder(const CSzFolder *f)
   return SZ_ERROR_UNSUPPORTED;
 }
 
-static uint64_t GetSum(const uint64_t *values, uint32_t index)
+static uint64_t GetSum(const uint64_t *values, uint32_t idx)
 {
   uint64_t sum = 0;
   uint32_t i;
-  for (i = 0; i < index; i++)
+  for (i = 0; i < idx; i++)
     sum += values[i];
   return sum;
 }
