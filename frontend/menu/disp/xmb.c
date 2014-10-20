@@ -430,8 +430,11 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
    int i;
    for (i = 0; i < file_list_get_size(list); i++)
    {
-      xmb_node_t *node = NULL;
-      node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+       
+      if (!xmb)
+          continue;
+       
       node->label_alpha = 0;
       if (dir == 1 || (dir == -1 && i != current))
          node->alpha = 0;
@@ -460,9 +463,12 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
    }
    for (i = 0; i < file_list_get_size(list); i++)
    {
-      xmb_node_t *node = NULL;
-      node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
-      float ia = i == current ? 1.0 : 0.5;
+      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+       
+      if (!xmb)
+          continue;
+       
+      float ia = (i == current) ? 1.0 : 0.5;
       add_tween(XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
       add_tween(XMB_DELAY, ia, &node->label_alpha,  &inOutQuad, NULL);
       add_tween(XMB_DELAY, 0, &node->x, &inOutQuad, NULL);
