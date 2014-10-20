@@ -30,6 +30,10 @@
 #include "retroarch_logger.h"
 #include "intl/intl.h"
 
+#ifdef HAVE_NETPLAY
+#include "netplay.h"
+#endif
+
 static void video_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {

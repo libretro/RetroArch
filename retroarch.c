@@ -44,6 +44,10 @@
 #include "frontend/menu/menu_input_line_cb.h"
 #endif
 
+#ifdef HAVE_NETPLAY
+#include "netplay.h"
+#endif
+
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>

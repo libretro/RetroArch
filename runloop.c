@@ -24,6 +24,10 @@
 #include "frontend/menu/menu_common.h"
 #endif
 
+#ifdef HAVE_NETPLAY
+#include "netplay.h"
+#endif
+
 static void set_volume(float gain)
 {
    char msg[PATH_MAX];

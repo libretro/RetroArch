@@ -73,10 +73,6 @@
 #include <pspthreadman.h>
 #endif
 
-#ifdef HAVE_NETPLAY
-#include "netplay.h"
-#endif
-
 #ifdef HAVE_COMMAND
 #include "command.h"
 #endif
