@@ -178,9 +178,9 @@ void setting_data_reset(rarch_setting_t* settings)
 }
 
 static bool setting_data_load_config(
-      rarch_setting_t* settings, config_file_t* config)
+      rarch_setting_t* settings, config_file_t* cfg)
 {
-   if (!settings || !config)
+   if (!settings || !cfg)
       return false;
 
    for (; settings->type != ST_NONE; settings++)
@@ -188,20 +188,20 @@ static bool setting_data_load_config(
       switch (settings->type)
       {
          case ST_BOOL:
-            config_get_bool(config, settings->name,
+            config_get_bool(cfg, settings->name,
                   settings->value.boolean);
             break;
          case ST_PATH:
          case ST_DIR:
-            config_get_path(config, settings->name,
+            config_get_path(cfg, settings->name,
                   settings->value.string, settings->size);
             break;
          case ST_STRING:
-            config_get_array(config, settings->name,
+            config_get_array(cfg, settings->name,
                   settings->value.string, settings->size);
             break;
          case ST_INT:
-            config_get_int(config, settings->name,
+            config_get_int(cfg, settings->name,
                   settings->value.integer);
 
             if (settings->flags & SD_FLAG_HAS_RANGE)
@@ -213,7 +213,7 @@ static bool setting_data_load_config(
             }
             break;
          case ST_UINT:
-            config_get_uint(config, settings->name,
+            config_get_uint(cfg, settings->name,
                   settings->value.unsigned_integer);
 
             if (settings->flags & SD_FLAG_HAS_RANGE)
@@ -225,7 +225,7 @@ static bool setting_data_load_config(
             }
             break;
          case ST_FLOAT:
-            config_get_float(config, settings->name,
+            config_get_float(cfg, settings->name,
                   settings->value.fraction);
 
             if (settings->flags & SD_FLAG_HAS_RANGE)
@@ -240,11 +240,11 @@ static bool setting_data_load_config(
             {
                char prefix[32];
                get_input_config_prefix(prefix, sizeof(prefix), settings);
-               input_config_parse_key(config, prefix, settings->name,
+               input_config_parse_key(cfg, prefix, settings->name,
                      settings->value.keybind);
-               input_config_parse_joy_button(config, prefix, settings->name,
+               input_config_parse_joy_button(cfg, prefix, settings->name,
                      settings->value.keybind);
-               input_config_parse_joy_axis(config, prefix, settings->name,
+               input_config_parse_joy_axis(cfg, prefix, settings->name,
                      settings->value.keybind);
             }
             break;
@@ -273,15 +273,15 @@ static bool setting_data_load_config(
 bool setting_data_load_config_path(rarch_setting_t* settings,
       const char* path)
 {
-   config_file_t *config = (config_file_t*)config_file_new(path);
+   config_file_t *cfg = (config_file_t*)config_file_new(path);
 
-   if (!config)
+   if (!cfg)
       return NULL;
 
-   setting_data_load_config(settings, config);
-   config_file_free(config);
+   setting_data_load_config(settings, cfg);
+   config_file_free(cfg);
 
-   return config;
+   return cfg;
 }
 
 bool setting_data_save_config(rarch_setting_t* settings,
