@@ -32,7 +32,7 @@ static bool netplay_is_alive(netplay_t *netplay);
 static bool netplay_poll(netplay_t *netplay);
 
 static int16_t netplay_input_state(netplay_t *netplay, bool port,
-      unsigned device, unsigned index, unsigned id);
+      unsigned device, unsigned idx, unsigned id);
 
 /* If we're fast-forward replaying to resync, check if we 
  * should actually show frame. */
@@ -204,12 +204,12 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames)
 }
 
 int16_t input_state_net(unsigned port, unsigned device,
-      unsigned index, unsigned id)
+      unsigned idx, unsigned id)
 {
    netplay_t *netplay = (netplay_t*)driver.netplay_data;
    if (netplay_is_alive(netplay))
-      return netplay_input_state(netplay, port, device, index, id);
-   return netplay->cbs.state_cb(port, device, index, id);
+      return netplay_input_state(netplay, port, device, idx, id);
+   return netplay->cbs.state_cb(port, device, idx, id);
 }
 
 #ifndef HAVE_SOCKET_LEGACY
@@ -1251,7 +1251,7 @@ static bool netplay_flip_port(netplay_t *netplay, bool port)
 }
 
 int16_t netplay_input_state(netplay_t *netplay, bool port, unsigned device,
-      unsigned index, unsigned id)
+      unsigned idx, unsigned id)
 {
    uint16_t input_state = 0;
    size_t ptr = netplay->is_replay ? 
@@ -1331,16 +1331,16 @@ static void netplay_set_spectate_input(netplay_t *netplay, int16_t input)
 }
 
 int16_t input_state_spectate(unsigned port, unsigned device,
-      unsigned index, unsigned id)
+      unsigned idx, unsigned id)
 {
    netplay_t *netplay = (netplay_t*)driver.netplay_data;
-   int16_t res = netplay->cbs.state_cb(port, device, index, id);
+   int16_t res = netplay->cbs.state_cb(port, device, idx, id);
    netplay_set_spectate_input(netplay, res);
    return res;
 }
 
 static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
-      unsigned device, unsigned index, unsigned id)
+      unsigned device, unsigned idx, unsigned id)
 {
    int16_t inp;
 
@@ -1354,15 +1354,15 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
             "Connection with host was cut.", 1, 180);
 
       pretro_set_input_state(netplay->cbs.state_cb);
-      return netplay->cbs.state_cb(port, device, index, id);
+      return netplay->cbs.state_cb(port, device, idx, id);
    }
 }
 
 int16_t input_state_spectate_client(unsigned port, unsigned device,
-      unsigned index, unsigned id)
+      unsigned idx, unsigned id)
 {
    return netplay_get_spectate_input((netplay_t*)driver.netplay_data, port,
-         device, index, id);
+         device, idx, id);
 }
 
 static void netplay_pre_frame_spectate(netplay_t *netplay)
@@ -1391,18 +1391,18 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
       return;
    }
 
-   int index = -1;
+   int idx = -1;
    for (i = 0; i < MAX_SPECTATORS; i++)
    {
       if (netplay->spectate_fds[i] == -1)
       {
-         index = i;
+         idx = i;
          break;
       }
    }
 
    /* No vacant client streams :( */
-   if (index == -1)
+   if (idx == -1)
    {
       close(new_fd);
       return;
@@ -1446,10 +1446,10 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
    }
 
    free(header);
-   netplay->spectate_fds[index] = new_fd;
+   netplay->spectate_fds[idx] = new_fd;
 
 #ifndef HAVE_SOCKET_LEGACY
-   log_connection(&their_addr, index, netplay->other_nick);
+   log_connection(&their_addr, idx, netplay->other_nick);
 #endif
 }
 

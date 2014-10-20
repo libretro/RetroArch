@@ -26,7 +26,7 @@
 void input_poll_net(void);
 
 int16_t input_state_net(unsigned port, unsigned device,
-      unsigned index, unsigned id);
+      unsigned idx, unsigned id);
 
 void video_frame_net(const void *data, unsigned width,
       unsigned height, size_t pitch);
@@ -36,10 +36,10 @@ void audio_sample_net(int16_t left, int16_t right);
 size_t audio_sample_batch_net(const int16_t *data, size_t frames);
 
 int16_t input_state_spectate(unsigned port, unsigned device,
-      unsigned index, unsigned id);
+      unsigned idx, unsigned id);
 
 int16_t input_state_spectate_client(unsigned port, unsigned device,
-      unsigned index, unsigned id);
+      unsigned idx, unsigned id);
 
 typedef struct netplay netplay_t;
 
