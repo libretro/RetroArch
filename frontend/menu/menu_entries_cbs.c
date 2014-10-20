@@ -122,7 +122,7 @@ static void common_load_content(void)
 }
 
 static int action_ok_push_content_list(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    if (!driver.menu)
       return -1;
@@ -137,7 +137,7 @@ static int action_ok_push_content_list(const char *path,
 }
 
 static int action_ok_playlist_entry(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    if (!driver.menu)
       return -1;
@@ -149,7 +149,7 @@ static int action_ok_playlist_entry(const char *path,
 }
 
 static int action_ok_push_history_list(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    if (!driver.menu)
       return -1;
@@ -164,7 +164,7 @@ static int action_ok_push_history_list(const char *path,
 }
 
 static int action_ok_push_path_list(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    if (!driver.menu)
       return -1;
@@ -179,7 +179,7 @@ static int action_ok_push_path_list(const char *path,
 }
 
 static int action_ok_shader_apply_changes(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
    return 0;
@@ -189,7 +189,7 @@ static int action_ok_shader_apply_changes(const char *path,
 size_t hack_shader_pass = 0;
 
 static int action_ok_shader_pass_load(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    const char *menu_path = NULL;
    if (!driver.menu)
@@ -214,7 +214,7 @@ static int action_ok_shader_pass_load(const char *path,
 }
 
 static int action_ok_shader_preset_load(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    const char *menu_path = NULL;
    char shader_path[PATH_MAX];
@@ -239,7 +239,7 @@ static int action_ok_shader_preset_load(const char *path,
 }
 
 static int action_ok_shader_preset_save_as(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    if (!driver.menu)
       return -1;
@@ -250,7 +250,7 @@ static int action_ok_shader_preset_save_as(const char *path,
 }
 
 static int action_ok_path_use_directory(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    const char *menu_label   = NULL;
    const char *menu_path    = NULL;
@@ -278,7 +278,7 @@ static int action_ok_path_use_directory(const char *path,
 }
 
 static int action_ok_core_load_deferred(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    if (!driver.menu)
       return -1;
@@ -295,7 +295,7 @@ static int action_ok_core_load_deferred(const char *path,
 }
 
 static int action_ok_core_load(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    const char *menu_path    = NULL;
    if (!driver.menu)
@@ -329,7 +329,7 @@ static int action_ok_core_load(const char *path,
 }
 
 static int action_ok_compressed_archive_push(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
@@ -364,7 +364,7 @@ static int action_ok_compressed_archive_push(const char *path,
 }
 
 static int action_ok_directory_push(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
@@ -388,7 +388,7 @@ static int action_ok_directory_push(const char *path,
 }
 
 static int action_ok_config_load(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    const char *menu_path  = NULL;
    char config[PATH_MAX];
@@ -412,7 +412,7 @@ static int action_ok_config_load(const char *path,
 }
 
 static int action_ok_disk_image_append(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    const char *menu_path    = NULL;
    char image[PATH_MAX];
@@ -433,7 +433,7 @@ static int action_ok_disk_image_append(const char *path,
 }
 
 static int action_ok_file_load_with_detect_core(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    const char *menu_path    = NULL;
    int ret;
@@ -465,7 +465,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
 }
 
 static int action_ok_file_load(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    const char *menu_label   = NULL;
    const char *menu_path    = NULL;
@@ -506,7 +506,7 @@ static int action_ok_file_load(const char *path,
 }
 
 static int action_ok_set_path(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    const char *menu_path    = NULL;
    const char *menu_label   = NULL;
@@ -531,7 +531,7 @@ static int action_ok_set_path(const char *path,
 }
 
 static int action_ok_bind_all(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    if (!driver.menu)
       return -1;
@@ -566,7 +566,7 @@ static int action_ok_bind_all(const char *path,
 }
 
 static int action_ok_bind_default_all(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    unsigned i;
    const struct retro_keybind *def_binds;
@@ -593,7 +593,7 @@ static int action_ok_bind_default_all(const char *path,
 }
 
 static int action_ok_custom_viewport(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    menu_list_push_stack(
          driver.menu->menu_list,
@@ -619,7 +619,7 @@ static int action_ok_custom_viewport(const char *path,
 }
 
 static int action_ok_core_list(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    const char *dir = g_settings.libretro_directory;
 
@@ -635,7 +635,7 @@ static int action_ok_core_list(const char *path,
 }
 
 static int action_ok_disk_image_append_list(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    const char *dir = g_settings.menu_content_directory;
 
@@ -650,7 +650,7 @@ static int action_ok_disk_image_append_list(const char *path,
 }
 
 static int action_ok_configurations_list(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    const char *dir = g_settings.menu_config_directory;
    if (!driver.menu)
@@ -664,7 +664,7 @@ static int action_ok_configurations_list(const char *path,
 }
 
 static int action_ok_push_default(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    if (!driver.menu)
       return -1;
@@ -677,7 +677,7 @@ static int action_ok_push_default(const char *path,
 }
 
 static int action_ok_disk_cycle_tray_status(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    if (!driver.menu)
       return -1;
@@ -687,7 +687,7 @@ static int action_ok_disk_cycle_tray_status(const char *path,
 }
 
 static int action_ok_help(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    if (!driver.menu)
       return -1;
@@ -790,7 +790,7 @@ extern size_t hack_shader_pass;
 #endif
 
 static int action_ok_shader_pass(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    if (!driver.menu)
       return -1;
@@ -824,7 +824,7 @@ static int action_start_shader_pass(unsigned type, const char *label,
 }
 
 static int action_ok_shader_preset(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
    if (!driver.menu)
       return -1;
@@ -990,7 +990,7 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
 }
 
 static int action_ok_shader_parameters(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
 #ifdef HAVE_SHADER_MANAGER
    menu_list_push_stack_refresh(
@@ -1094,7 +1094,7 @@ static int action_start_input_bind_device_type(unsigned type, const char *label,
 static int action_toggle_input_bind_device_type(unsigned type, const char *label,
       unsigned action)
 {
-   unsigned current_device, current_index, i, devices[128];
+   unsigned current_device, current_idx, i, devices[128];
    const struct retro_controller_info *desc;
    unsigned types = 0, port = 0;
 
@@ -1126,12 +1126,12 @@ static int action_toggle_input_bind_device_type(unsigned type, const char *label
    }
 
    current_device = g_settings.input.libretro_device[port];
-   current_index = 0;
+   current_idx = 0;
    for (i = 0; i < types; i++)
    {
       if (current_device == devices[i])
       {
-         current_index = i;
+         current_idx = i;
          break;
       }
    }
@@ -1140,7 +1140,7 @@ static int action_toggle_input_bind_device_type(unsigned type, const char *label
    {
       case MENU_ACTION_LEFT:
          current_device = devices
-            [(current_index + types - 1) % types];
+            [(current_idx + types - 1) % types];
 
          g_settings.input.libretro_device[port] = current_device;
          pretro_set_controller_port_device(port, current_device);
@@ -1148,7 +1148,7 @@ static int action_toggle_input_bind_device_type(unsigned type, const char *label
 
       case MENU_ACTION_RIGHT:
          current_device = devices
-            [(current_index + 1) % types];
+            [(current_idx + 1) % types];
 
          g_settings.input.libretro_device[port] = current_device;
          pretro_set_controller_port_device(port, current_device);
@@ -1159,7 +1159,7 @@ static int action_toggle_input_bind_device_type(unsigned type, const char *label
 }
 
 static int action_ok_video_resolution(const char *path,
-      const char *label, unsigned type, size_t index)
+      const char *label, unsigned type, size_t idx)
 {
 #ifdef GEKKO
    if (driver.video_data)
@@ -1257,11 +1257,11 @@ static int action_start_performance_counters_frontend(unsigned type, const char 
 static int action_start_core_setting(unsigned type,
       const char *label, unsigned action)
 {
-   unsigned index = type - MENU_SETTINGS_CORE_OPTION_START;
+   unsigned idx = type - MENU_SETTINGS_CORE_OPTION_START;
 
    (void)label;
 
-   core_option_set_default(g_extern.system.core_options, index);
+   core_option_set_default(g_extern.system.core_options, idx);
 
    return 0;
 }
@@ -1269,25 +1269,25 @@ static int action_start_core_setting(unsigned type,
 static int core_setting_toggle(unsigned type, const char *label,
       unsigned action)
 {
-   unsigned index = type - MENU_SETTINGS_CORE_OPTION_START;
+   unsigned idx = type - MENU_SETTINGS_CORE_OPTION_START;
 
    (void)label;
 
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         core_option_prev(g_extern.system.core_options, index);
+         core_option_prev(g_extern.system.core_options, idx);
          break;
 
       case MENU_ACTION_RIGHT:
-         core_option_next(g_extern.system.core_options, index);
+         core_option_next(g_extern.system.core_options, idx);
          break;
    }
 
    return 0;
 }
 
-static int disk_options_disk_index_toggle(unsigned type, const char *label,
+static int disk_options_disk_idx_toggle(unsigned type, const char *label,
       unsigned action)
 {
    switch (action)
@@ -1838,7 +1838,7 @@ static int deferred_push_disk_options(void *data, void *userdata,
       return -1;
 
    menu_list_clear(list);
-   menu_list_push(list, "Disk Index", "disk_index",
+   menu_list_push(list, "Disk Index", "disk_idx",
          MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0);
    menu_list_push(list, "Disk Cycle Tray Status", "disk_cycle_tray_status",
          MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0);
@@ -2083,7 +2083,7 @@ static int deferred_push_default(void *data, void *userdata,
 /* Bind the OK callback function */
 
 static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t index)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    const char *menu_label = NULL;
 
@@ -2167,7 +2167,7 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
 }
 
 static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t index)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    if (!cbs)
       return;
@@ -2203,14 +2203,14 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
 }
 
 static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t index)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    if (!cbs)
       return;
 
    cbs->action_ok = NULL;
 
-   if (menu_entries_cbs_init_bind_ok_first(cbs, path, label, type, index) == 0)
+   if (menu_entries_cbs_init_bind_ok_first(cbs, path, label, type, idx) == 0)
       return;
    else if (!strcmp(label, "help"))
       cbs->action_ok = action_ok_help;
@@ -2257,7 +2257,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 }
 
 static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t index)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    if (!cbs)
       return;
@@ -2289,7 +2289,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    switch (type)
    {
       case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
-         cbs->action_toggle = disk_options_disk_index_toggle;
+         cbs->action_toggle = disk_options_disk_idx_toggle;
          break;
       case MENU_SETTINGS_CUSTOM_BIND_MODE:
          cbs->action_toggle = custom_bind_mode_toggle;
@@ -2299,7 +2299,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
 }
 
 static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t index)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    const char *menu_label = NULL;
    if (!cbs || !driver.menu)
@@ -2362,7 +2362,7 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
 void menu_entries_cbs_init(void *data,
       const char *path, const char *label,
-      unsigned type, size_t index)
+      unsigned type, size_t idx)
 {
    menu_file_list_cbs_t *cbs = NULL;
    file_list_t *list = (file_list_t*)data;
@@ -2370,13 +2370,13 @@ void menu_entries_cbs_init(void *data,
    if (!list)
       return;
 
-   cbs = (menu_file_list_cbs_t*)list->list[index].actiondata;
+   cbs = (menu_file_list_cbs_t*)list->list[idx].actiondata;
 
    if (cbs)
    {
-      menu_entries_cbs_init_bind_ok(cbs, path, label, type, index);
-      menu_entries_cbs_init_bind_start(cbs, path, label, type, index);
-      menu_entries_cbs_init_bind_toggle(cbs, path, label, type, index);
-      menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, index);
+      menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx);
+      menu_entries_cbs_init_bind_start(cbs, path, label, type, idx);
+      menu_entries_cbs_init_bind_toggle(cbs, path, label, type, idx);
+      menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx);
    }
 }
