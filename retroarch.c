@@ -1310,7 +1310,7 @@ static void set_savestate_auto_index(void)
    char state_dir[PATH_MAX], state_base[PATH_MAX];
    size_t i;
    struct string_list *dir_list = NULL;
-   unsigned max_index = 0;
+   unsigned max_idx = 0;
 
    if (!g_settings.savestate_auto_index)
       return;
@@ -1343,14 +1343,14 @@ static void set_savestate_auto_index(void)
       const char *end = dir_elem + strlen(dir_elem);
       while ((end > dir_elem) && isdigit(end[-1])) end--;
 
-      unsigned index = strtoul(end, NULL, 0);
-      if (index > max_index)
-         max_index = index;
+      unsigned idx = strtoul(end, NULL, 0);
+      if (idx > max_idx)
+         max_idx = idx;
    }
 
    dir_list_free(dir_list);
 
-   g_settings.state_slot = max_index;
+   g_settings.state_slot = max_idx;
    RARCH_LOG("Found last state slot: #%d\n", g_settings.state_slot);
 }
 
@@ -1571,20 +1571,20 @@ static void main_state(unsigned cmd)
 void rarch_disk_control_append_image(const char *path)
 {
    char msg[PATH_MAX];
-   unsigned new_index;
+   unsigned new_idx;
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
    struct retro_game_info info = {0};
    rarch_disk_control_set_eject(true, false);
 
    control->add_image_index();
-   new_index = control->get_num_images();
-   if (!new_index)
+   new_idx = control->get_num_images();
+   if (!new_idx)
       return;
-   new_index--;
+   new_idx--;
 
    info.path = path;
-   control->replace_image_index(new_index, &info);
+   control->replace_image_index(new_idx, &info);
 
    snprintf(msg, sizeof(msg), "Appended disk: %s", path);
    RARCH_LOG("%s\n", msg);
@@ -1647,7 +1647,7 @@ void rarch_disk_control_set_eject(bool new_state, bool log)
    }
 }
 
-void rarch_disk_control_set_index(unsigned next_index)
+void rarch_disk_control_set_index(unsigned next_idx)
 {
    char msg[PATH_MAX];
    unsigned num_disks;
@@ -1662,19 +1662,19 @@ void rarch_disk_control_set_index(unsigned next_index)
 
    num_disks = control->get_num_images();
 
-   if (control->set_image_index(next_index))
+   if (control->set_image_index(next_idx))
    {
-      if (next_index < num_disks)
+      if (next_idx < num_disks)
          snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.",
-               next_index + 1, num_disks);
+               next_idx + 1, num_disks);
       else
          strlcpy(msg, "Removed disk from tray.", sizeof(msg));
    }
    else
    {
-      if (next_index < num_disks)
+      if (next_idx < num_disks)
          snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.",
-               next_index + 1, num_disks);
+               next_idx + 1, num_disks);
       else
          strlcpy(msg, "Failed to remove disk from tray.", sizeof(msg));
       error = true;
@@ -1706,9 +1706,9 @@ static void check_disk_next(
 
    if (num_disks && num_disks != UINT_MAX)
    {
-      unsigned new_index = current;
-      current < num_disks - 1 ? new_index++ : new_index;
-      rarch_disk_control_set_index(new_index);
+      unsigned new_idx = current;
+      current < num_disks - 1 ? new_idx++ : new_idx;
+      rarch_disk_control_set_index(new_idx);
    }
    else
       RARCH_ERR("Got invalid disk index from libretro.\n");
@@ -1721,9 +1721,9 @@ static void check_disk_prev(
    unsigned current   = control->get_image_index();
    if (num_disks && num_disks != UINT_MAX)
    {
-      unsigned new_index = current;
-      current > 0 ? new_index-- : new_index;
-      rarch_disk_control_set_index(new_index);
+      unsigned new_idx = current;
+      current > 0 ? new_idx-- : new_idx;
+      rarch_disk_control_set_index(new_idx);
    }
    else
       RARCH_ERR("Got invalid disk index from libretro.\n");
