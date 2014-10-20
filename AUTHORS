@@ -67,3 +67,7 @@ Timo Strunk - <Timo.Strunk@gmail.com>
 
 Higor Euripedes - <TBA>
    - SDL2 drivers
+
+Jay McCarthy - <jay.mccarthy@gmail.com>
+   - CoreText font driver
+   - (Apple) CFRunLoop improvements
