@@ -93,18 +93,20 @@ static int16_t rwebinput_mouse_state(rwebinput_input_t *rwebinput, unsigned id)
    }
 }
 
-static int16_t rwebinput_analog_pressed(rwebinput_input_t *rwebinput, const struct retro_keybind *binds, unsigned index, unsigned id)
+static int16_t rwebinput_analog_pressed(rwebinput_input_t *rwebinput,
+      const struct retro_keybind *binds, unsigned idx, unsigned id)
 {
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
-   input_conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
    int16_t pressed_minus = rwebinput_is_pressed(rwebinput, binds, id_minus) ? -0x7fff : 0;
    int16_t pressed_plus = rwebinput_is_pressed(rwebinput, binds, id_plus) ? 0x7fff : 0;
    return pressed_plus + pressed_minus;
 }
 
-static int16_t rwebinput_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
+static int16_t rwebinput_input_state(void *data, const struct retro_keybind **binds,
+      unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
 
@@ -114,7 +116,7 @@ static int16_t rwebinput_input_state(void *data, const struct retro_keybind **bi
          return rwebinput_is_pressed(rwebinput, binds[port], id);
 
       case RETRO_DEVICE_ANALOG:
-         return rwebinput_analog_pressed(rwebinput, binds[port], index, id);
+         return rwebinput_analog_pressed(rwebinput, binds[port], idx, id);
 
       case RETRO_DEVICE_KEYBOARD:
          return rwebinput_key_pressed(rwebinput, id);

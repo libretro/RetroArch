@@ -38,7 +38,7 @@ typedef struct gx_input
 
 static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
-      unsigned index, unsigned id)
+      unsigned idx, unsigned id)
 {
    gx_input_t *gx = (gx_input_t*)data;
    if (port >= MAX_PADS || !gx)
@@ -49,7 +49,7 @@ static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
       case RETRO_DEVICE_JOYPAD:
          return input_joypad_pressed(gx->joypad, port, binds[port], id);;
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(gx->joypad, port, index, id, binds[port]);
+         return input_joypad_analog(gx->joypad, port, idx, id, binds[port]);
    }
 
    return 0;

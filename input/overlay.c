@@ -196,18 +196,18 @@ static void input_overlay_free_overlays(input_overlay_t *ol)
 
 static bool input_overlay_load_desc(input_overlay_t *ol,
       config_file_t *conf, struct overlay_desc *desc,
-      unsigned ol_index, unsigned desc_index,
+      unsigned ol_idx, unsigned desc_idx,
       unsigned width, unsigned height,
       bool normalized, float alpha_mod, float range_mod)
 {
    bool ret = true;
    char overlay_desc_key[64];
    snprintf(overlay_desc_key, sizeof(overlay_desc_key),
-         "overlay%u_desc%u", ol_index, desc_index);
+         "overlay%u_desc%u", ol_idx, desc_idx);
 
    char overlay_desc_image_key[64];
    snprintf(overlay_desc_image_key, sizeof(overlay_desc_image_key),
-         "overlay%u_desc%u_overlay", ol_index, desc_index);
+         "overlay%u_desc%u_overlay", ol_idx, desc_idx);
 
    char image_path[PATH_MAX];
    if (config_get_path(conf, overlay_desc_image_key,
@@ -224,7 +224,7 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
 
    char overlay_desc_normalized_key[64];
    snprintf(overlay_desc_normalized_key, sizeof(overlay_desc_normalized_key),
-         "overlay%u_desc%u_normalized", ol_index, desc_index);
+         "overlay%u_desc%u_normalized", ol_idx, desc_idx);
    config_get_bool(conf, overlay_desc_normalized_key, &normalized);
    bool by_pixel = !normalized;
 
@@ -286,7 +286,7 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
       {
          char overlay_target_key[64];
          snprintf(overlay_target_key, sizeof(overlay_target_key),
-               "overlay%u_desc%u_next_target", ol_index, desc_index);
+               "overlay%u_desc%u_next_target", ol_idx, desc_idx);
          config_get_array(conf, overlay_target_key,
                desc->next_index_name, sizeof(desc->next_index_name));
       }
@@ -322,7 +322,7 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
 
       char overlay_analog_saturate_key[64];
       snprintf(overlay_analog_saturate_key, sizeof(overlay_analog_saturate_key),
-            "overlay%u_desc%u_saturate_pct", ol_index, desc_index);
+            "overlay%u_desc%u_saturate_pct", ol_idx, desc_idx);
       if (!config_get_float(conf, overlay_analog_saturate_key,
                &desc->analog_saturate_pct))
          desc->analog_saturate_pct = 1.0f;
@@ -338,17 +338,17 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
 
    char conf_key[64];
    snprintf(conf_key, sizeof(conf_key),
-         "overlay%u_desc%u_alpha_mod", ol_index, desc_index);
+         "overlay%u_desc%u_alpha_mod", ol_idx, desc_idx);
    desc->alpha_mod = alpha_mod;
    config_get_float(conf, conf_key, &desc->alpha_mod);
 
    snprintf(conf_key, sizeof(conf_key),
-         "overlay%u_desc%u_range_mod", ol_index, desc_index);
+         "overlay%u_desc%u_range_mod", ol_idx, desc_idx);
    desc->range_mod = range_mod;
    config_get_float(conf, conf_key, &desc->range_mod);
 
    snprintf(conf_key, sizeof(conf_key),
-         "overlay%u_desc%u_movable", ol_index, desc_index);
+         "overlay%u_desc%u_movable", ol_idx, desc_idx);
    desc->movable = false;
    desc->delta_x = 0.0f;
    desc->delta_y = 0.0f;
@@ -365,7 +365,7 @@ end:
 
 static bool input_overlay_load_overlay(input_overlay_t *ol,
       config_file_t *conf, const char *config_path,
-      struct overlay *overlay, unsigned index)
+      struct overlay *overlay, unsigned idx)
 {
    size_t i;
    char overlay_path_key[64];
@@ -374,7 +374,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
    char overlay_resolved_path[PATH_MAX];
 
    snprintf(overlay_path_key, sizeof(overlay_path_key),
-         "overlay%u_overlay", index);
+         "overlay%u_overlay", idx);
     
    if (config_get_path(conf, overlay_path_key,
             overlay_path, sizeof(overlay_path)))
@@ -395,7 +395,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
    }
 
    snprintf(overlay_name_key, sizeof(overlay_name_key),
-         "overlay%u_name", index);
+         "overlay%u_name", idx);
    config_get_array(conf, overlay_name_key,
          overlay->name, sizeof(overlay->name));
 
@@ -405,7 +405,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
 
    char overlay_rect_key[64];
    snprintf(overlay_rect_key, sizeof(overlay_rect_key),
-         "overlay%u_rect", index);
+         "overlay%u_rect", idx);
    char overlay_rect[256];
 
    if (config_get_array(conf, overlay_rect_key,
@@ -428,12 +428,12 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
 
    char overlay_full_screen_key[64];
    snprintf(overlay_full_screen_key, sizeof(overlay_full_screen_key),
-         "overlay%u_full_screen", index);
+         "overlay%u_full_screen", idx);
    overlay->full_screen = false;
    config_get_bool(conf, overlay_full_screen_key, &overlay->full_screen);
 
    char overlay_descs_key[64];
-   snprintf(overlay_descs_key, sizeof(overlay_descs_key), "overlay%u_descs", index);
+   snprintf(overlay_descs_key, sizeof(overlay_descs_key), "overlay%u_descs", idx);
 
    unsigned descs = 0;
    if (!config_get_uint(conf, overlay_descs_key, &descs))
@@ -457,20 +457,20 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
    char conf_key[64];
    bool normalized = false;
    snprintf(conf_key, sizeof(conf_key),
-         "overlay%u_normalized", index);
+         "overlay%u_normalized", idx);
    config_get_bool(conf, conf_key, &normalized);
 
    float alpha_mod = 1.0f;
-   snprintf(conf_key, sizeof(conf_key), "overlay%u_alpha_mod", index);
+   snprintf(conf_key, sizeof(conf_key), "overlay%u_alpha_mod", idx);
    config_get_float(conf, conf_key, &alpha_mod);
 
    float range_mod = 1.0f;
-   snprintf(conf_key, sizeof(conf_key), "overlay%u_range_mod", index);
+   snprintf(conf_key, sizeof(conf_key), "overlay%u_range_mod", idx);
    config_get_float(conf, conf_key, &range_mod);
 
    for (i = 0; i < overlay->size; i++)
    {
-      if (!input_overlay_load_desc(ol, conf, &overlay->descs[i], index, i,
+      if (!input_overlay_load_desc(ol, conf, &overlay->descs[i], idx, i,
                overlay->image.width, overlay->image.height,
                normalized, alpha_mod, range_mod))
       {
@@ -525,10 +525,10 @@ static ssize_t input_overlay_find_index(const struct overlay *ol,
 }
 
 static bool input_overlay_resolve_targets(struct overlay *ol,
-      size_t index, size_t size)
+      size_t idx, size_t size)
 {
    size_t i;
-   struct overlay *current = (struct overlay*)&ol[index];
+   struct overlay *current = (struct overlay*)&ol[idx];
 
    for (i = 0; i < current->size; i++)
    {
@@ -546,7 +546,7 @@ static bool input_overlay_resolve_targets(struct overlay *ol,
          current->descs[i].next_index = idx;
       }
       else
-         current->descs[i].next_index = (index + 1) % size;
+         current->descs[i].next_index = (idx + 1) % size;
    }
 
    return true;

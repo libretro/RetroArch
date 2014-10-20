@@ -86,11 +86,11 @@ static bool x_is_pressed(x11_input_t *x11,
 }
 
 static int16_t x_pressed_analog(x11_input_t *x11,
-      const struct retro_keybind *binds, unsigned index, unsigned id)
+      const struct retro_keybind *binds, unsigned idx, unsigned id)
 {
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
-   input_conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
    int16_t pressed_minus = x_is_pressed(x11, binds, id_minus) ? -0x7fff : 0;
    int16_t pressed_plus = x_is_pressed(x11, binds, id_plus) ? 0x7fff : 0;
@@ -128,9 +128,9 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
 }
 
 static int16_t x_pointer_state(x11_input_t *x11,
-      unsigned index, unsigned id, bool screen)
+      unsigned idx, unsigned id, bool screen)
 {
-   if (index != 0)
+   if (idx != 0)
       return 0;
 
    int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
@@ -189,7 +189,7 @@ static int16_t x_lightgun_state(x11_input_t *x11, unsigned id)
 
 static int16_t x_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
-      unsigned device, unsigned index, unsigned id)
+      unsigned device, unsigned idx, unsigned id)
 {
    x11_input_t *x11 = (x11_input_t*)data;
    int16_t ret;
@@ -204,9 +204,9 @@ static int16_t x_input_state(void *data,
          return x_key_pressed(x11, id);
 
       case RETRO_DEVICE_ANALOG:
-         ret = x_pressed_analog(x11, binds[port], index, id);
+         ret = x_pressed_analog(x11, binds[port], idx, id);
          if (!ret)
-            ret = input_joypad_analog(x11->joypad, port, index,
+            ret = input_joypad_analog(x11->joypad, port, idx,
                   id, binds[port]);
          return ret;
 
@@ -215,7 +215,7 @@ static int16_t x_input_state(void *data,
 
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         return x_pointer_state(x11, index, id,
+         return x_pointer_state(x11, idx, id,
                device == RARCH_DEVICE_POINTER_SCREEN);
 
       case RETRO_DEVICE_LIGHTGUN:

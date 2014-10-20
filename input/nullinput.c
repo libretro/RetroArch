@@ -28,13 +28,13 @@ static void nullinput_input_poll(void *data)
 
 static int16_t nullinput_input_state(void *data,
       const struct retro_keybind **retro_keybinds, unsigned port,
-      unsigned device, unsigned index, unsigned id)
+      unsigned device, unsigned idx, unsigned id)
 {
    (void)data;
    (void)retro_keybinds;
    (void)port;
    (void)device;
-   (void)index;
+   (void)idx;
    (void)id;
 
    return 0;

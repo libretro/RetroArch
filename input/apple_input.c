@@ -412,14 +412,14 @@ static int16_t apple_mouse_state(apple_input_data_t *apple,
 }
 
 static int16_t apple_pointer_state(apple_input_data_t *apple,
-      unsigned device, unsigned index, unsigned id)
+      unsigned device, unsigned idx, unsigned id)
 {
    const bool want_full = (device == RARCH_DEVICE_POINTER_SCREEN);
 
-   if (index < apple->touch_count && index < MAX_TOUCHES)
+   if (idx < apple->touch_count && (idx < MAX_TOUCHES))
    {
       const apple_touch_data_t *touch = (const apple_touch_data_t *)
-         &apple->touches[index];
+         &apple->touches[idx];
       int16_t x = want_full ? touch->full_x : touch->fixed_x;
       int16_t y = want_full ? touch->full_y : touch->fixed_y;
 
@@ -439,7 +439,7 @@ static int16_t apple_pointer_state(apple_input_data_t *apple,
 
 static int16_t apple_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
-      unsigned device, unsigned index, unsigned id)
+      unsigned device, unsigned idx, unsigned id)
 {
    apple_input_data_t *apple = (apple_input_data_t*)data;
 
@@ -453,7 +453,7 @@ static int16_t apple_input_state(void *data,
             input_joypad_pressed(apple->joypad, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
          return input_joypad_analog(apple->joypad, port,
-               index, id, binds[port]);
+               idx, id, binds[port]);
       case RETRO_DEVICE_KEYBOARD:
        {
            unsigned bit = input_translate_rk_to_keysym((enum retro_key)id);
@@ -463,7 +463,7 @@ static int16_t apple_input_state(void *data,
          return apple_mouse_state(apple, id);
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         return apple_pointer_state(apple, device, index, id);
+         return apple_pointer_state(apple, device, idx, id);
    }
 
    return 0;

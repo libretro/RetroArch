@@ -148,11 +148,11 @@ bool input_joypad_set_rumble(const rarch_joypad_driver_t *drv,
    if (!drv || !drv->set_rumble)
       return false;
 
-   int joy_index = g_settings.input.joypad_map[port];
-   if (joy_index < 0 || joy_index >= MAX_PLAYERS)
+   int joy_idx = g_settings.input.joypad_map[port];
+   if (joy_idx < 0 || joy_idx >= MAX_PLAYERS)
       return false;
 
-   return drv->set_rumble(joy_index, effect, strength);
+   return drv->set_rumble(joy_idx, effect, strength);
 }
 
 bool input_joypad_pressed(const rarch_joypad_driver_t *drv,
@@ -161,13 +161,13 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *drv,
    if (!drv)
       return false;
 
-   int joy_index = g_settings.input.joypad_map[port];
-   if (joy_index < 0 || joy_index >= MAX_PLAYERS)
+   int joy_idx = g_settings.input.joypad_map[port];
+   if (joy_idx < 0 || joy_idx >= MAX_PLAYERS)
       return false;
 
    /* Auto-binds are per joypad, not per player. */
    const struct retro_keybind *auto_binds = 
-      g_settings.input.autoconf_binds[joy_index];
+      g_settings.input.autoconf_binds[joy_idx];
 
    if (!binds[key].valid)
       return false;
@@ -176,14 +176,14 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *drv,
    if (joykey == NO_BTN)
       joykey = auto_binds[key].joykey;
 
-   if (drv->button(joy_index, (uint16_t)joykey))
+   if (drv->button(joy_idx, (uint16_t)joykey))
       return true;
 
    uint32_t joyaxis = binds[key].joyaxis;
    if (joyaxis == AXIS_NONE)
       joyaxis = auto_binds[key].joyaxis;
 
-   int16_t axis = drv->axis(joy_index, joyaxis);
+   int16_t axis = drv->axis(joy_idx, joyaxis);
    float scaled_axis = (float)abs(axis) / 0x8000;
    return scaled_axis > g_settings.input.axis_threshold;
 }
@@ -195,13 +195,13 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
    if (!drv)
       return 0;
 
-   int joy_index = g_settings.input.joypad_map[port];
-   if (joy_index < 0 || joy_index >= MAX_PLAYERS)
+   int joy_idx = g_settings.input.joypad_map[port];
+   if (joy_idx < 0 || joy_idx >= MAX_PLAYERS)
       return 0;
 
    /* Auto-binds are per joypad, not per player. */
    const struct retro_keybind *auto_binds =
-      g_settings.input.autoconf_binds[joy_index];
+      g_settings.input.autoconf_binds[joy_idx];
 
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
@@ -219,8 +219,8 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
    if (axis_plus == AXIS_NONE)
       axis_plus = auto_binds[id_plus].joyaxis;
 
-   int16_t pressed_minus = abs(drv->axis(joy_index, axis_minus));
-   int16_t pressed_plus  = abs(drv->axis(joy_index, axis_plus));
+   int16_t pressed_minus = abs(drv->axis(joy_idx, axis_minus));
+   int16_t pressed_plus  = abs(drv->axis(joy_idx, axis_plus));
 
    int16_t res = pressed_plus - pressed_minus;
 
@@ -234,9 +234,9 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
    if (key_plus == NO_BTN)
       key_plus = auto_binds[id_plus].joykey;
 
-   int16_t digital_left  = drv->button(joy_index,
+   int16_t digital_left  = drv->button(joy_idx,
          (uint16_t)key_minus) ? -0x7fff : 0;
-   int16_t digital_right = drv->button(joy_index,
+   int16_t digital_right = drv->button(joy_idx,
          (uint16_t)key_plus)  ?  0x7fff : 0;
    return digital_right + digital_left;
 }

@@ -22,7 +22,7 @@
 const struct retro_keybind *input_get_auto_bind(unsigned port,
       unsigned id);
 
-void input_config_autoconfigure_joypad(unsigned index,
+void input_config_autoconfigure_joypad(unsigned idx,
       const char *name, int32_t vid, int32_t pid,
       const char *driver);
 

@@ -51,7 +51,7 @@ static void psp_input_poll(void *data)
 
 static int16_t psp_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
-      unsigned index, unsigned id)
+      unsigned idx, unsigned id)
 {
    psp_input_t *psp = (psp_input_t*)data;
 
@@ -63,7 +63,7 @@ static int16_t psp_input_state(void *data, const struct retro_keybind **binds,
       case RETRO_DEVICE_JOYPAD:
          return input_joypad_pressed(psp->joypad, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(psp->joypad, port, index, id, binds[port]);
+         return input_joypad_analog(psp->joypad, port, idx, id, binds[port]);
    }
 
    return 0;

@@ -36,7 +36,7 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
 }
 
 static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
-      unsigned index, const char *name, const char *drv,
+      unsigned idx, const char *name, const char *drv,
       int32_t vid, int32_t pid, bool block_osd_spam)
 {
    if (!conf)
@@ -54,7 +54,7 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    config_get_int(conf, "input_vendor_id", &input_vid);
    config_get_int(conf, "input_product_id", &input_pid);
 
-   snprintf(ident_idx, sizeof(ident_idx), "%s_p%u", ident, index);
+   snprintf(ident_idx, sizeof(ident_idx), "%s_p%u", ident, idx);
 
    //RARCH_LOG("ident_idx: %s\n", ident_idx);
 
@@ -79,12 +79,12 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    return false;
 
 found:
-   g_settings.input.autoconfigured[index] = true;
-   input_autoconfigure_joypad_conf(conf, g_settings.input.autoconf_binds[index]);
+   g_settings.input.autoconfigured[idx] = true;
+   input_autoconfigure_joypad_conf(conf, g_settings.input.autoconf_binds[idx]);
 
    char msg[512];
    snprintf(msg, sizeof(msg), "Joypad port #%u (%s) configured.",
-         index, name);
+         idx, name);
 
    if (!block_osd_spam)
       msg_queue_push(g_extern.msg_queue, msg, 0, 60);
@@ -93,7 +93,7 @@ found:
    return true;
 }
 
-void input_config_autoconfigure_joypad(unsigned index,
+void input_config_autoconfigure_joypad(unsigned idx,
       const char *name, int32_t vid, int32_t pid,
       const char *drv)
 {
@@ -105,14 +105,14 @@ void input_config_autoconfigure_joypad(unsigned index,
    /* This will be the case if input driver is reinit.
     * No reason to spam autoconfigure messages
     * every time (fine in log). */
-   bool block_osd_spam = g_settings.input.autoconfigured[index] && name;
+   bool block_osd_spam = g_settings.input.autoconfigured[idx] && name;
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      g_settings.input.autoconf_binds[index][i].joykey = NO_BTN;
-      g_settings.input.autoconf_binds[index][i].joyaxis = AXIS_NONE;
+      g_settings.input.autoconf_binds[idx][i].joykey = NO_BTN;
+      g_settings.input.autoconf_binds[idx][i].joyaxis = AXIS_NONE;
    }
-   g_settings.input.autoconfigured[index] = false;
+   g_settings.input.autoconfigured[idx] = false;
 
    if (!name)
       return;
@@ -127,7 +127,7 @@ void input_config_autoconfigure_joypad(unsigned index,
       config_file_t *conf = (config_file_t*)
          config_file_new_from_string(input_builtin_autoconfs[i]);
       bool success = input_try_autoconfigure_joypad_from_conf(conf,
-            index, name, drv, vid, pid, block_osd_spam);
+            idx, name, drv, vid, pid, block_osd_spam);
       config_file_free(conf);
       if (success)
          break;
@@ -148,7 +148,7 @@ void input_config_autoconfigure_joypad(unsigned index,
          if (!conf)
             continue;
          bool success = input_try_autoconfigure_joypad_from_conf(conf,
-               index, name, drv, vid, pid, block_osd_spam);
+               idx, name, drv, vid, pid, block_osd_spam);
          config_file_free(conf);
          if (success)
             break;
@@ -160,8 +160,8 @@ void input_config_autoconfigure_joypad(unsigned index,
 
 const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
 {
-   int joy_index = g_settings.input.joypad_map[port];
-   if (joy_index < 0)
+   int joy_idx = g_settings.input.joypad_map[port];
+   if (joy_idx < 0)
       return NULL;
-   return &g_settings.input.autoconf_binds[joy_index][id];
+   return &g_settings.input.autoconf_binds[joy_idx][id];
 }

@@ -704,12 +704,12 @@ static void qnx_input_poll(void *data)
  */
 
 static int16_t qnx_analog_input_state(qnx_input_t *qnx,
-      unsigned port, unsigned index, unsigned id)
+      unsigned port, unsigned idx, unsigned id)
 {
 #ifdef HAVE_BB10
    if(qnx->port_device[port])
    {
-      switch ((index << 1) | id)
+      switch ((idx << 1) | id)
       {
          case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
             return qnx->port_device[port]->analog0[0] * 256;
@@ -727,38 +727,38 @@ static int16_t qnx_analog_input_state(qnx_input_t *qnx,
 }
 
 static int16_t qnx_pointer_screen_input_state(qnx_input_t *qnx,
-      unsigned index, unsigned id)
+      unsigned idx, unsigned id)
 {
    switch (id)
    {
       case RETRO_DEVICE_ID_POINTER_X:
-         return qnx->pointer[qnx->touch_map[index]].full_x;
+         return qnx->pointer[qnx->touch_map[idx]].full_x;
       case RETRO_DEVICE_ID_POINTER_Y:
-         return qnx->pointer[qnx->touch_map[index]].full_y;
+         return qnx->pointer[qnx->touch_map[idx]].full_y;
       case RETRO_DEVICE_ID_POINTER_PRESSED:
          return (
-               index < qnx->pointer_count)
-            && (qnx->pointer[index].full_x != -0x8000) 
-            && (qnx->pointer[index].full_y != -0x8000);
+               idx < qnx->pointer_count)
+            && (qnx->pointer[idx].full_x != -0x8000) 
+            && (qnx->pointer[idx].full_y != -0x8000);
    }
 
    return 0;
 }
 
 static int16_t qnx_pointer_input_state(qnx_input_t *qnx,
-      unsigned index, unsigned id)
+      unsigned idx, unsigned id)
 {
    switch (id)
    {
       case RETRO_DEVICE_ID_POINTER_X:
-         return qnx->pointer[qnx->touch_map[index]].x;
+         return qnx->pointer[qnx->touch_map[idx]].x;
       case RETRO_DEVICE_ID_POINTER_Y:
-         return qnx->pointer[qnx->touch_map[index]].y;
+         return qnx->pointer[qnx->touch_map[idx]].y;
       case RETRO_DEVICE_ID_POINTER_PRESSED:
          return (
-               index < qnx->pointer_count)
-            && (qnx->pointer[index].x != -0x8000)
-            && (qnx->pointer[index].y != -0x8000);
+               idx < qnx->pointer_count)
+            && (qnx->pointer[idx].x != -0x8000)
+            && (qnx->pointer[idx].y != -0x8000);
    }
 
    return 0;
@@ -766,7 +766,7 @@ static int16_t qnx_pointer_input_state(qnx_input_t *qnx,
 
 static int16_t qnx_input_state(void *data,
       const struct retro_keybind **retro_keybinds,
-      unsigned port, unsigned device, unsigned index, unsigned id)
+      unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    qnx_input_t *qnx = (qnx_input_t*)data;
 
@@ -776,11 +776,11 @@ static int16_t qnx_input_state(void *data,
          return input_joypad_pressed(qnx->joypad, port,
                (unsigned int)g_settings.input.binds[port], id);
       case RETRO_DEVICE_ANALOG:
-         return qnx_analog_input_state(qnx, port, index, id);
+         return qnx_analog_input_state(qnx, port, idx, id);
       case RARCH_DEVICE_POINTER_SCREEN:
-         return qnx_pointer_screen_input_state(qnx, index, id);
+         return qnx_pointer_screen_input_state(qnx, idx, id);
       case RETRO_DEVICE_POINTER:
-         return qnx_pointer_input_state(qnx, index, id);
+         return qnx_pointer_input_state(qnx, idx, id);
    }
 
    return 0;

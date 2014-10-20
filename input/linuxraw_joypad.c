@@ -132,32 +132,32 @@ static void handle_plugged_pad(void)
          if (strstr(event->name, "js") != event->name)
             continue;
 
-         unsigned index = strtoul(event->name + 2, NULL, 0);
-         if (index >= MAX_PLAYERS)
+         unsigned idx = strtoul(event->name + 2, NULL, 0);
+         if (idx >= MAX_PLAYERS)
             continue;
 
          if (event->mask & IN_DELETE)
          {
-            if (g_pads[index].fd >= 0)
+            if (g_pads[idx].fd >= 0)
             {
 #ifndef IS_JOYCONFIG
                if (g_hotplug)
                {
                   char msg[512];
-                  snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", index, g_pads[index].ident);
+                  snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", idx, g_pads[idx].ident);
                   msg_queue_push(g_extern.msg_queue, msg, 0, 60);
                }
 #endif
 
-               RARCH_LOG("[Joypad]: Joypad %s disconnected.\n", g_pads[index].ident);
-               close(g_pads[index].fd);
-               g_pads[index].buttons = 0;
-               memset(g_pads[index].axes, 0, sizeof(g_pads[index].axes));
-               g_pads[index].fd = -1;
-               *g_pads[index].ident = '\0';
+               RARCH_LOG("[Joypad]: Joypad %s disconnected.\n", g_pads[idx].ident);
+               close(g_pads[idx].fd);
+               g_pads[idx].buttons = 0;
+               memset(g_pads[idx].axes, 0, sizeof(g_pads[idx].axes));
+               g_pads[idx].fd = -1;
+               *g_pads[idx].ident = '\0';
 
                /* TODO - implement VID/PID? */
-               input_config_autoconfigure_joypad(index, NULL, 0, 0, NULL);
+               input_config_autoconfigure_joypad(idx, NULL, 0, 0, NULL);
             }
          }
          // Sometimes, device will be created before acess to it is established.
@@ -165,11 +165,11 @@ static void handle_plugged_pad(void)
          {
             char path[PATH_MAX];
             snprintf(path, sizeof(path), "/dev/input/%s", event->name);
-            bool ret = linuxraw_joypad_init_pad(path, &g_pads[index]);
+            bool ret = linuxraw_joypad_init_pad(path, &g_pads[idx]);
 
-            if (*g_pads[index].ident && ret)
+            if (*g_pads[idx].ident && ret)
                /* TODO - implement VID/PID? */
-               input_config_autoconfigure_joypad(index, g_pads[index].ident, 0, 0, "linuxraw");
+               input_config_autoconfigure_joypad(idx, g_pads[idx].ident, 0, 0, "linuxraw");
          }
       }
    }

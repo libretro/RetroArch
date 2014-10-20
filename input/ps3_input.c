@@ -96,7 +96,7 @@ static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
 static int16_t ps3_input_state(void *data,
       const struct retro_keybind **binds,
       unsigned port, unsigned device,
-      unsigned index, unsigned id)
+      unsigned idx, unsigned id)
 {
    ps3_input_t *ps3 = (ps3_input_t*)data;
 
@@ -108,7 +108,7 @@ static int16_t ps3_input_state(void *data,
       case RETRO_DEVICE_JOYPAD:
          return input_joypad_pressed(ps3->joypad, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(ps3->joypad, port, index, id, binds[port]);
+         return input_joypad_analog(ps3->joypad, port, idx, id, binds[port]);
 #if 0
       case RETRO_DEVICE_SENSOR_ACCELEROMETER:
          switch (id)

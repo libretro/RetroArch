@@ -94,7 +94,7 @@ static bool android_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate);
 
 extern float AMotionEvent_getAxisValue(const AInputEvent* motion_event,
-      int32_t axis, size_t pointer_index);
+      int32_t axis, size_t pointer_idx);
 
 static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 
@@ -614,7 +614,7 @@ static void android_input_poll(void *data)
 
 static int16_t android_input_state(void *data,
       const struct retro_keybind **binds, unsigned port, unsigned device,
-      unsigned index, unsigned id)
+      unsigned idx, unsigned id)
 {
    android_input_t *android = (android_input_t*)data;
 
@@ -623,32 +623,32 @@ static int16_t android_input_state(void *data,
       case RETRO_DEVICE_JOYPAD:
          return input_joypad_pressed(android->joypad, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(android->joypad, port, index, id,
+         return input_joypad_analog(android->joypad, port, idx, id,
                binds[port]);
       case RETRO_DEVICE_POINTER:
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
-               return android->pointer[index].x;
+               return android->pointer[idx].x;
             case RETRO_DEVICE_ID_POINTER_Y:
-               return android->pointer[index].y;
+               return android->pointer[idx].y;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return (index < android->pointer_count) &&
-                  (android->pointer[index].x != -0x8000) &&
-                  (android->pointer[index].y != -0x8000);
+               return (idx < android->pointer_count) &&
+                  (android->pointer[idx].x != -0x8000) &&
+                  (android->pointer[idx].y != -0x8000);
          }
          break;
       case RARCH_DEVICE_POINTER_SCREEN:
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
-               return android->pointer[index].full_x;
+               return android->pointer[idx].full_x;
             case RETRO_DEVICE_ID_POINTER_Y:
-               return android->pointer[index].full_y;
+               return android->pointer[idx].full_y;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return (index < android->pointer_count) &&
-                  (android->pointer[index].full_x != -0x8000) &&
-                  (android->pointer[index].full_y != -0x8000);
+               return (idx < android->pointer_count) &&
+                  (android->pointer[idx].full_x != -0x8000) &&
+                  (android->pointer[idx].full_y != -0x8000);
          }
          break;
    }

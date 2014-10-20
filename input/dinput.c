@@ -234,11 +234,11 @@ static bool dinput_is_pressed(struct dinput_input *di,
 
 static int16_t dinput_pressed_analog(struct dinput_input *di,
       const struct retro_keybind *binds,
-      unsigned index, unsigned id)
+      unsigned idx, unsigned id)
 {
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
-   input_conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
+   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
    const struct retro_keybind *bind_minus = &binds[id_minus];
    const struct retro_keybind *bind_plus  = &binds[id_plus];
@@ -305,17 +305,17 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
 }
 
 static int16_t dinput_pointer_state(struct dinput_input *di,
-      unsigned index, unsigned id, bool screen)
+      unsigned idx, unsigned id, bool screen)
 {
    int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
    unsigned num = 0;
    struct pointer_status *check_pos = di->pointer_head.next;
-   while (check_pos && num < index)
+   while (check_pos && num < idx)
    {
       num++;
       check_pos = check_pos->next;
    }
-   if (!check_pos && index > 0) /* index = 0 has mouse fallback. */
+   if (!check_pos && idx > 0) /* idx = 0 has mouse fallback. */
       return 0;
 
    int x = check_pos ? check_pos->pointer_x : di->mouse_x;
@@ -354,7 +354,7 @@ static int16_t dinput_pointer_state(struct dinput_input *di,
 
 static int16_t dinput_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
-      unsigned device, unsigned index, unsigned id)
+      unsigned device, unsigned idx, unsigned id)
 {
    struct dinput_input *di = (struct dinput_input*)data;
    int16_t ret;
@@ -368,10 +368,10 @@ static int16_t dinput_input_state(void *data,
          return dinput_keyboard_pressed(di, id);
 
       case RETRO_DEVICE_ANALOG:
-         ret = dinput_pressed_analog(di, binds[port], index, id);
+         ret = dinput_pressed_analog(di, binds[port], idx, id);
          if (!ret)
             ret = input_joypad_analog(di->joypad, port,
-                  index, id, g_settings.input.binds[port]);
+                  idx, id, g_settings.input.binds[port]);
          return ret;
 
       case RETRO_DEVICE_MOUSE:
@@ -379,7 +379,7 @@ static int16_t dinput_input_state(void *data,
 
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         return dinput_pointer_state(di, index, id,
+         return dinput_pointer_state(di, idx, id,
                device == RARCH_DEVICE_POINTER_SCREEN);
 
       case RETRO_DEVICE_LIGHTGUN:
@@ -727,7 +727,7 @@ static bool guid_is_xinput_device(const GUID* product_guid)
 /* Forward declaration */
 static const char *dinput_joypad_name(unsigned pad);
 
-static unsigned g_last_xinput_pad_index;
+static unsigned g_last_xinput_pad_idx;
 
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
@@ -758,8 +758,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    
    if (is_xinput_pad)
    {
-      if (g_last_xinput_pad_index < 4)
-         g_xinput_pad_indexes[g_joypad_cnt] = g_last_xinput_pad_index++;
+      if (g_last_xinput_pad_idx < 4)
+         g_xinput_pad_indexes[g_joypad_cnt] = g_last_xinput_pad_idx++;
       goto enum_iteration_done;
    }
 #endif
@@ -795,7 +795,7 @@ static bool dinput_joypad_init(void)
    if (!dinput_init_context())
       return false;
    
-   g_last_xinput_pad_index = 0;
+   g_last_xinput_pad_idx = 0;
    
    for (i = 0; i < MAX_PLAYERS; ++i)
    {

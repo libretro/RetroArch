@@ -56,10 +56,10 @@ static void xenon360_input_poll(void *data)
 
 static int16_t xenon360_input_state(void *data, const struct retro_keybind **binds,
       bool port, unsigned device,
-      unsigned index, unsigned id)
+      unsigned idx, unsigned id)
 {
    (void)data;
-   (void)index;
+   (void)idx;
    unsigned player = port;
    uint64_t button = binds[player][id].joykey;
    int16_t retval = 0;
