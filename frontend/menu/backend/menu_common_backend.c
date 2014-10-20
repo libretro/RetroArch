@@ -223,6 +223,11 @@ static int menu_settings_iterate(unsigned action,
          break;
 
       case MENU_ACTION_CANCEL:
+#ifdef HAVE_XMB
+         file_list_copy(driver.menu->menu_list->selection_buf, driver.menu->menu_list->selection_buf_old);
+         file_list_copy(driver.menu->menu_list->menu_stack, driver.menu->menu_list->menu_stack_old);
+         driver.menu->selection_ptr_old = driver.menu->selection_ptr;
+#endif
          apply_deferred_settings();
          menu_list_pop_stack(driver.menu->menu_list);
          break;
@@ -231,6 +236,11 @@ static int menu_settings_iterate(unsigned action,
                0, driver.menu->selection_ptr);
          break;
       case MENU_ACTION_OK:
+#ifdef HAVE_XMB
+         file_list_copy(driver.menu->menu_list->selection_buf, driver.menu->menu_list->selection_buf_old);
+         file_list_copy(driver.menu->menu_list->menu_stack, driver.menu->menu_list->menu_stack_old);
+         driver.menu->selection_ptr_old = driver.menu->selection_ptr;
+#endif
          if (cbs && cbs->action_ok)
             return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
          /* fall-through */
@@ -635,10 +645,20 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_CANCEL:
+#ifdef HAVE_XMB
+         file_list_copy(driver.menu->menu_list->selection_buf, driver.menu->menu_list->selection_buf_old);
+         file_list_copy(driver.menu->menu_list->menu_stack, driver.menu->menu_list->menu_stack_old);
+         driver.menu->selection_ptr_old = driver.menu->selection_ptr;
+#endif
          menu_list_pop_stack(driver.menu->menu_list);
          break;
 
       case MENU_ACTION_OK:
+#ifdef HAVE_XMB
+         file_list_copy(driver.menu->menu_list->selection_buf, driver.menu->menu_list->selection_buf_old);
+         file_list_copy(driver.menu->menu_list->menu_stack, driver.menu->menu_list->menu_stack_old);
+         driver.menu->selection_ptr_old = driver.menu->selection_ptr;
+#endif
          ret = menu_action_ok(cbs);
          break;
 
