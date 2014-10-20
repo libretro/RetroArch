@@ -21,7 +21,12 @@
 #include <stdlib.h>
 
 #include <CoreFoundation/CFString.h>
+#ifdef IOS
+#include <CoreText/CoreText.h>
+#include <CoreGraphics/CoreGraphics.h>
+#else
 #include <ApplicationServices/ApplicationServices.h>
+#endif
 
 #define CT_ATLAS_ROWS 8
 #define CT_ATLAS_COLS 16
