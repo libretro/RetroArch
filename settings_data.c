@@ -629,13 +629,13 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
          break;
       case ST_BIND:
          {
-            const struct retro_keybind* bind = (const struct retro_keybind*)
+            const struct retro_keybind* keybind = (const struct retro_keybind*)
                setting->value.keybind;
             const struct retro_keybind* auto_bind = 
                (const struct retro_keybind*)
-               input_get_auto_bind(setting->index_offset, bind->id);
+               input_get_auto_bind(setting->index_offset, keybind->id);
 
-            input_get_bind_string(buf, bind, auto_bind, sizeof_buf);
+            input_get_bind_string(buf, keybind, auto_bind, sizeof_buf);
          }
          break;
          /* TODO */
@@ -1083,15 +1083,15 @@ static int setting_data_bind_action_start(void *data)
       return -1;
 
    struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
-   struct retro_keybind *bind = (struct retro_keybind*)setting->value.keybind;
+   struct retro_keybind *keybind = (struct retro_keybind*)setting->value.keybind;
 
-   if (!bind)
+   if (!keybind)
       return -1;
 
    if (!driver.menu->bind_mode_keyboard)
    {
-      bind->joykey = NO_BTN;
-      bind->joyaxis = AXIS_NONE;
+      keybind->joykey = NO_BTN;
+      keybind->joyaxis = AXIS_NONE;
       return 0;
    }
 
@@ -1101,14 +1101,14 @@ static int setting_data_bind_action_start(void *data)
    if (!def_binds)
       return -1;
 
-   bind->key = def_binds[setting->bind_type - MENU_SETTINGS_BIND_BEGIN].key;
+   keybind->key = def_binds[setting->bind_type - MENU_SETTINGS_BIND_BEGIN].key;
 
    return 0;
 }
 
 static int setting_data_bind_action_ok(void *data, unsigned action)
 {
-   struct retro_keybind *bind = NULL;
+   struct retro_keybind *keybind = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
@@ -1117,14 +1117,14 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
    if (!driver.menu || !driver.menu->menu_list)
       return -1;
    
-   bind = (struct retro_keybind*)setting->value.keybind;
+   keybind = (struct retro_keybind*)setting->value.keybind;
 
-   if (!bind)
+   if (!keybind)
       return -1;
 
    driver.menu->binds.begin  = setting->bind_type;
    driver.menu->binds.last   = setting->bind_type;
-   driver.menu->binds.target = bind;
+   driver.menu->binds.target = keybind;
    driver.menu->binds.player = setting->index_offset;
    menu_list_push_stack(
          driver.menu->menu_list,
@@ -4361,14 +4361,14 @@ static bool setting_data_append_list_input_options(
 
    for (i = 0; i < RARCH_BIND_LIST_END; i ++)
    {
-      const struct input_bind_map* bind = (const struct input_bind_map*)
+      const struct input_bind_map* keybind = (const struct input_bind_map*)
          &input_config_bind_map[i];
 
-      if (!bind || !bind->meta)
+      if (!keybind || !keybind->meta)
          continue;
 
       CONFIG_BIND(g_settings.input.binds[0][i], 0, 0,
-            bind->base, bind->desc, &retro_keybinds_1[i],
+            keybind->base, keybind->desc, &retro_keybinds_1[i],
             group_info.name, subgroup_info.name);
       settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
    }
@@ -4397,14 +4397,14 @@ static bool setting_data_append_list_input_options(
       {
          char label[PATH_MAX];
          char name[PATH_MAX];
-         const struct input_bind_map* bind = 
+         const struct input_bind_map* keybind = 
             (const struct input_bind_map*)&input_config_bind_map[i];
 
-         if (!bind || bind->meta)
+         if (!keybind || keybind->meta)
             continue;
 
-         snprintf(label, sizeof(label), "%s %s", buffer[player], bind->desc);
-         snprintf(name, sizeof(name), "p%u_%s", player + 1, bind->base);
+         snprintf(label, sizeof(label), "%s %s", buffer[player], keybind->desc);
+         snprintf(name, sizeof(name), "p%u_%s", player + 1, keybind->base);
 
          CONFIG_BIND(
                g_settings.input.binds[player][i],
