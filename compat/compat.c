@@ -45,11 +45,11 @@ static bool is_long_option(const char *str)
 
 static int find_short_index(char * const *argv)
 {
-   int index;
-   for (index = 0; argv[index]; index++)
+   int idx;
+   for (idx = 0; argv[idx]; idx++)
    {
-      if (is_short_option(argv[index]))
-         return index;
+      if (is_short_option(argv[idx]))
+         return idx;
    }
 
    return -1;
@@ -57,11 +57,11 @@ static int find_short_index(char * const *argv)
 
 static int find_long_index(char * const *argv)
 {
-   int index;
-   for (index = 0; argv[index]; index++)
+   int idx;
+   for (idx = 0; argv[idx]; idx++)
    {
-      if (is_long_option(argv[index]))
-         return index;
+      if (is_long_option(argv[idx]))
+         return idx;
    }
 
    return -1;

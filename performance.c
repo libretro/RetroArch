@@ -272,7 +272,7 @@ static void x86_cpuid(int func, int flags[4])
 }
 
 /* Only runs on i686 and above. Needs to be conditionally run. */
-static uint64_t xgetbv_x86(uint32_t index)
+static uint64_t xgetbv_x86(uint32_t idx)
 {
 #if defined(__GNUC__)
    uint32_t eax, edx;
@@ -282,11 +282,11 @@ static uint64_t xgetbv_x86(uint32_t index)
           * Stamp out the machine code directly.
           */
          ".byte 0x0f, 0x01, 0xd0\n"
-         : "=a"(eax), "=d"(edx) : "c"(index));
+         : "=a"(eax), "=d"(edx) : "c"(idx));
    return ((uint64_t)edx << 32) | eax;
 #elif _MSC_FULL_VER >= 160040219
    /* Intrinsic only works on 2010 SP1 and above. */
-   return _xgetbv(index);
+   return _xgetbv(idx);
 #else
    RARCH_WARN("Unknown compiler. Cannot check xgetbv bits.\n");
    return 0;
