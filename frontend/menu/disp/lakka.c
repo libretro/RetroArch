@@ -709,12 +709,11 @@ static bool lakka_init_settings(menu_handle_t *menu)
    category->items       = (menu_item_t*)
       calloc(category->num_items, sizeof(menu_item_t));
 
-   for (j = 0; j <= 512; j++)
-   {
-      rarch_setting_t *group = (rarch_setting_t*)&setting_data[j];
+   rarch_setting_t *group = (rarch_setting_t*)setting_data_find_setting(driver.menu->list_settings,
+         "Driver Options");
 
-      if (!group)
-         continue;
+   for (; group->type != ST_NONE; group++)
+   {
       if (group->type != ST_GROUP)
          continue;
 
