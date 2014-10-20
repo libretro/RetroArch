@@ -536,15 +536,15 @@ static bool input_overlay_resolve_targets(struct overlay *ol,
       const char *next = current->descs[i].next_index_name;
       if (*next)
       {
-         ssize_t idx = input_overlay_find_index(ol, next, size);
-         if (idx < 0)
+         ssize_t next_idx = input_overlay_find_index(ol, next, size);
+         if (next_idx < 0)
          {
             RARCH_ERR("[Overlay]: Couldn't find overlay called: \"%s\".\n",
                   next);
             return false;
          }
 
-         current->descs[i].next_index = idx;
+         current->descs[i].next_index = next_idx;
       }
       else
          current->descs[i].next_index = (idx + 1) % size;
