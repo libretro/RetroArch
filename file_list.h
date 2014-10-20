@@ -55,6 +55,7 @@ void file_list_push(file_list_t *userdata, const char *path,
       const char *label, unsigned type, size_t current_directory_ptr);
 void file_list_pop(file_list_t *list, size_t *directory_ptr);
 void file_list_clear(file_list_t *list);
+void file_list_copy(file_list_t *list, file_list_t *list_old);
 
 void file_list_get_last(const file_list_t *list,
       const char **path, const char **label,
