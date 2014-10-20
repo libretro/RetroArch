@@ -320,10 +320,11 @@ static inline GLenum min_filter_to_mag(GLenum type)
 }
 
 #ifdef HAVE_FBO
-static void gl_shader_scale(gl_t *gl, unsigned index, struct gfx_fbo_scale *scale)
+static void gl_shader_scale(gl_t *gl, unsigned idx,
+      struct gfx_fbo_scale *scale)
 {
    scale->valid = false;
-   gl->shader->shader_scale(index, scale);
+   gl->shader->shader_scale(idx, scale);
 }
 
 /* Compute FBO geometry.
