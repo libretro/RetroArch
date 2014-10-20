@@ -17,6 +17,7 @@
 #include "../common/RetroArch_Apple.h"
 #include "../../input/input_common.h"
 #include "../../input/apple_input.h"
+#include "../../file_path.h"
 #include "menu.h"
 
 /*********************************************/

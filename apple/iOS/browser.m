@@ -23,6 +23,7 @@
 
 #include "../../conf/config_file.h"
 #include "../../file.h"
+#include "../../file_path.h"
 #include "../../general.h"
 
 static const void* const associated_module_key = &associated_module_key;
