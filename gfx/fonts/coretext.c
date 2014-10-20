@@ -20,6 +20,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#include <CoreFoundation/CFString.h>
 #include <CoreText/CoreText.h>
 #include <CoreGraphics/CoreGraphics.h>
 
