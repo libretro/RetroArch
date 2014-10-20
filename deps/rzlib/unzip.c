@@ -209,13 +209,14 @@ local int unz64local_getByte OF((
          voidpf filestream,
          int *pi));
 
-local int unz64local_getByte(const zlib_filefunc64_32_def* pzlib_filefunc_def, voidpf filestream, int *pi)
+local int unz64local_getByte(const zlib_filefunc64_32_def* pzlib_filefunc_def,
+                             voidpf filestream, int *_pi)
 {
    unsigned char c;
    int err = (int)ZREAD64(*pzlib_filefunc_def,filestream,&c,1);
    if (err==1)
    {
-      *pi = (int)c;
+      *_pi = (int)c;
       return UNZ_OK;
    }
    else
