@@ -776,10 +776,10 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
          __m128i yuv0 = _mm_loadu_si128((const __m128i*)(src +  0)); /* [Y0, U0, Y1, V0, Y2, U1, Y3, V1, ...] */
          __m128i yuv1 = _mm_loadu_si128((const __m128i*)(src + 16)); /* [Y0, U0, Y1, V0, Y2, U1, Y3, V1, ...] */
 
-         __m128i y0 = _mm_and_si128(yuv0, mask_y); /* [Y0, Y1, Y2, ...] (16-bit) */
+         __m128i _y0 = _mm_and_si128(yuv0, mask_y); /* [Y0, Y1, Y2, ...] (16-bit) */
          __m128i u0 = _mm_and_si128(yuv0, mask_u); /* [0, U0, 0, 0, 0, U1, 0, 0, ...] */
          __m128i v0 = _mm_and_si128(yuv0, mask_v); /* [0, 0, 0, V1, 0, , 0, V1, ...] */
-         __m128i y1 = _mm_and_si128(yuv1, mask_y); /* [Y0, Y1, Y2, ...] (16-bit) */
+         __m128i _y1 = _mm_and_si128(yuv1, mask_y); /* [Y0, Y1, Y2, ...] (16-bit) */
          __m128i u1 = _mm_and_si128(yuv1, mask_u); /* [0, U0, 0, 0, 0, U1, 0, 0, ...] */
          __m128i v1 = _mm_and_si128(yuv1, mask_v); /* [0, 0, 0, V1, 0, , 0, V1, ...] */
 
@@ -802,8 +802,8 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
          v1 = _mm_unpackhi_epi16(v, v);
 
          /* Apply transformations. */
-         y0 = _mm_mullo_epi16(y0, yuv_mul);
-         y1 = _mm_mullo_epi16(y1, yuv_mul);
+         _y0 = _mm_mullo_epi16(_y0, yuv_mul);
+         _y1 = _mm_mullo_epi16(_y1, yuv_mul);
          __m128i u0_g   = _mm_mullo_epi16(u0, u_g_mul);
          __m128i u1_g   = _mm_mullo_epi16(u1, u_g_mul);
          __m128i u0_b   = _mm_mullo_epi16(u0, u_b_mul);
@@ -814,19 +814,19 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
          __m128i v1_g   = _mm_mullo_epi16(v1, v_g_mul);
 
          /* Add contibutions from the transformed components. */
-         __m128i r0 = _mm_srai_epi16(_mm_adds_epi16(_mm_adds_epi16(y0, v0_r),
+         __m128i r0 = _mm_srai_epi16(_mm_adds_epi16(_mm_adds_epi16(_y0, v0_r),
                   round_offset), YUV_SHIFT);
          __m128i g0 = _mm_srai_epi16(_mm_adds_epi16(
-                  _mm_adds_epi16(_mm_adds_epi16(y0, v0_g), u0_g), round_offset), YUV_SHIFT);
+                  _mm_adds_epi16(_mm_adds_epi16(_y0, v0_g), u0_g), round_offset), YUV_SHIFT);
          __m128i b0 = _mm_srai_epi16(_mm_adds_epi16(
-                  _mm_adds_epi16(y0, u0_b), round_offset), YUV_SHIFT);
+                  _mm_adds_epi16(_y0, u0_b), round_offset), YUV_SHIFT);
 
          __m128i r1 = _mm_srai_epi16(_mm_adds_epi16(
-                  _mm_adds_epi16(y1, v1_r), round_offset), YUV_SHIFT);
+                  _mm_adds_epi16(_y1, v1_r), round_offset), YUV_SHIFT);
          __m128i g1 = _mm_srai_epi16(_mm_adds_epi16(
-                  _mm_adds_epi16(_mm_adds_epi16(y1, v1_g), u1_g), round_offset), YUV_SHIFT);
+                  _mm_adds_epi16(_mm_adds_epi16(_y1, v1_g), u1_g), round_offset), YUV_SHIFT);
          __m128i b1 = _mm_srai_epi16(_mm_adds_epi16(
-                  _mm_adds_epi16(y1, u1_b), round_offset), YUV_SHIFT);
+                  _mm_adds_epi16(_y1, u1_b), round_offset), YUV_SHIFT);
 
          /* Saturate into 8-bit. */
          r0 = _mm_packus_epi16(r0, r1);
@@ -852,18 +852,18 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
       /* Finish off the rest (if any) in C. */
       for (; w < width; w += 2, src += 4, dst += 2)
       {
-         int y0 = src[0];
+         int _y0 = src[0];
          int  u = src[1] - 128;
-         int y1 = src[2];
+         int _y1 = src[2];
          int  v = src[3] - 128;
 
-         uint8_t r0 = clamp_8bit((YUV_MAT_Y * y0 +                   YUV_MAT_V_R * v + YUV_OFFSET) >> YUV_SHIFT);
-         uint8_t g0 = clamp_8bit((YUV_MAT_Y * y0 + YUV_MAT_U_G * u + YUV_MAT_V_G * v + YUV_OFFSET) >> YUV_SHIFT);
-         uint8_t b0 = clamp_8bit((YUV_MAT_Y * y0 + YUV_MAT_U_B * u                   + YUV_OFFSET) >> YUV_SHIFT);
+         uint8_t r0 = clamp_8bit((YUV_MAT_Y * _y0 +                   YUV_MAT_V_R * v + YUV_OFFSET) >> YUV_SHIFT);
+         uint8_t g0 = clamp_8bit((YUV_MAT_Y * _y0 + YUV_MAT_U_G * u + YUV_MAT_V_G * v + YUV_OFFSET) >> YUV_SHIFT);
+         uint8_t b0 = clamp_8bit((YUV_MAT_Y * _y0 + YUV_MAT_U_B * u                   + YUV_OFFSET) >> YUV_SHIFT);
 
-         uint8_t r1 = clamp_8bit((YUV_MAT_Y * y1 +                   YUV_MAT_V_R * v + YUV_OFFSET) >> YUV_SHIFT);
-         uint8_t g1 = clamp_8bit((YUV_MAT_Y * y1 + YUV_MAT_U_G * u + YUV_MAT_V_G * v + YUV_OFFSET) >> YUV_SHIFT);
-         uint8_t b1 = clamp_8bit((YUV_MAT_Y * y1 + YUV_MAT_U_B * u                   + YUV_OFFSET) >> YUV_SHIFT);
+         uint8_t r1 = clamp_8bit((YUV_MAT_Y * _y1 +                   YUV_MAT_V_R * v + YUV_OFFSET) >> YUV_SHIFT);
+         uint8_t g1 = clamp_8bit((YUV_MAT_Y * _y1 + YUV_MAT_U_G * u + YUV_MAT_V_G * v + YUV_OFFSET) >> YUV_SHIFT);
+         uint8_t b1 = clamp_8bit((YUV_MAT_Y * _y1 + YUV_MAT_U_B * u                   + YUV_OFFSET) >> YUV_SHIFT);
 
          dst[0] = 0xff000000u | (r0 << 16) | (g0 << 8) | (b0 << 0);
          dst[1] = 0xff000000u | (r1 << 16) | (g1 << 8) | (b1 << 0);
@@ -887,18 +887,18 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
 
       for (w = 0; w < width; w += 2, src += 4, dst += 2)
       {
-         int y0 = src[0];
+         int _y0 = src[0];
          int  u = src[1] - 128;
-         int y1 = src[2];
+         int _y1 = src[2];
          int  v = src[3] - 128;
 
-         uint8_t r0 = clamp_8bit((YUV_MAT_Y * y0 +                   YUV_MAT_V_R * v + YUV_OFFSET) >> YUV_SHIFT);
-         uint8_t g0 = clamp_8bit((YUV_MAT_Y * y0 + YUV_MAT_U_G * u + YUV_MAT_V_G * v + YUV_OFFSET) >> YUV_SHIFT);
-         uint8_t b0 = clamp_8bit((YUV_MAT_Y * y0 + YUV_MAT_U_B * u                   + YUV_OFFSET) >> YUV_SHIFT);
+         uint8_t r0 = clamp_8bit((YUV_MAT_Y * _y0 +                   YUV_MAT_V_R * v + YUV_OFFSET) >> YUV_SHIFT);
+         uint8_t g0 = clamp_8bit((YUV_MAT_Y * _y0 + YUV_MAT_U_G * u + YUV_MAT_V_G * v + YUV_OFFSET) >> YUV_SHIFT);
+         uint8_t b0 = clamp_8bit((YUV_MAT_Y * _y0 + YUV_MAT_U_B * u                   + YUV_OFFSET) >> YUV_SHIFT);
 
-         uint8_t r1 = clamp_8bit((YUV_MAT_Y * y1 +                   YUV_MAT_V_R * v + YUV_OFFSET) >> YUV_SHIFT);
-         uint8_t g1 = clamp_8bit((YUV_MAT_Y * y1 + YUV_MAT_U_G * u + YUV_MAT_V_G * v + YUV_OFFSET) >> YUV_SHIFT);
-         uint8_t b1 = clamp_8bit((YUV_MAT_Y * y1 + YUV_MAT_U_B * u                   + YUV_OFFSET) >> YUV_SHIFT);
+         uint8_t r1 = clamp_8bit((YUV_MAT_Y * _y1 +                   YUV_MAT_V_R * v + YUV_OFFSET) >> YUV_SHIFT);
+         uint8_t g1 = clamp_8bit((YUV_MAT_Y * _y1 + YUV_MAT_U_G * u + YUV_MAT_V_G * v + YUV_OFFSET) >> YUV_SHIFT);
+         uint8_t b1 = clamp_8bit((YUV_MAT_Y * _y1 + YUV_MAT_U_B * u                   + YUV_OFFSET) >> YUV_SHIFT);
 
          dst[0] = 0xff000000u | (r0 << 16) | (g0 << 8) | (b0 << 0);
          dst[1] = 0xff000000u | (r1 << 16) | (g1 << 8) | (b1 << 0);
