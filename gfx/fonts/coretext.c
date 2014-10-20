@@ -21,8 +21,7 @@
 #include <stdlib.h>
 
 #include <CoreFoundation/CFString.h>
-#include <CoreText/CoreText.h>
-#include <CoreGraphics/CoreGraphics.h>
+#include <ApplicationServices/ApplicationServices.h>
 
 #define CT_ATLAS_ROWS 8
 #define CT_ATLAS_COLS 16
