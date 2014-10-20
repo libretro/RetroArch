@@ -136,17 +136,17 @@ static void rmenu_render(void)
          && !menu->msg_force)
       return;
 
-   if (!menu->selection_buf)
+   if (!driver.menu->menu_list->selection_buf)
       return;
 
    begin = (menu->selection_ptr >= (ENTRIES_HEIGHT / 2)) ? 
       (menu->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
    end = ((menu->selection_ptr + ENTRIES_HEIGHT) <= 
-         menu_list_get_size()) ?
+         menu_list_get_size(driver.menu->menu_list)) ?
       menu->selection_ptr + ENTRIES_HEIGHT :
-      menu_list_get_size();
+      menu_list_get_size(driver.menu->menu_list);
 
-   if (menu_list_get_size() <= ENTRIES_HEIGHT)
+   if (menu_list_get_size(driver.menu->menu_list) <= ENTRIES_HEIGHT)
       begin = 0;
 
    if (end - begin > ENTRIES_HEIGHT)
@@ -216,10 +216,10 @@ static void rmenu_render(void)
       unsigned type = 0, w = 0;
       bool selected = false;
 
-      menu_list_get_at_offset(menu->selection_buf, i,
+      menu_list_get_at_offset(menu->menu_list->selection_buf, i,
             &path, &entry_label, &type);
 
-      disp_set_label(&w, type, i, label,
+      disp_set_label(menu->menu_list->selection_buf, &w, type, i, label,
             type_str, sizeof(type_str), 
             entry_label, path,
             path_buf, sizeof(path_buf));
