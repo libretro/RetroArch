@@ -141,7 +141,7 @@ uint32_t pad_connection_get_buttons(joypad_connection_t *s, unsigned pad)
 }
 
 int16_t pad_connection_get_axis(joypad_connection_t *s,
-   unsigned index, unsigned i)
+   unsigned idx, unsigned i)
 {
    if (s->iface)
       return s->iface->get_axis(s->data, i);

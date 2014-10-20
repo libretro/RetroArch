@@ -165,11 +165,11 @@ static void hidpad_ps3_set_rumble(void *data,
    enum retro_rumble_effect effect, uint16_t strength)
 {
    struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
-   unsigned index = (effect == RETRO_RUMBLE_STRONG) ? 0 : 1;
+   unsigned idx = (effect == RETRO_RUMBLE_STRONG) ? 0 : 1;
 
-   if (device && (device->motors[index] != strength))
+   if (device && (device->motors[idx] != strength))
    {
-      device->motors[index] = strength;
+      device->motors[idx] = strength;
       hidpad_ps3_send_control(device);
    }
 }

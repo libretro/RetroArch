@@ -56,22 +56,22 @@ void *pad_connection_init(unsigned pads);
 void pad_connection_destroy(joypad_connection_t *joyconn);
 
 void pad_connection_disconnect(joypad_connection_t *joyconn,
-   unsigned index);
+   unsigned idx);
 
 void pad_connection_packet(joypad_connection_t *joyconn,
-   unsigned index, uint8_t* data, uint32_t length);
+   unsigned idx, uint8_t* data, uint32_t length);
 
 uint32_t pad_connection_get_buttons(joypad_connection_t *joyconn,
-   unsigned index);
+   unsigned idx);
 
 int16_t pad_connection_get_axis(joypad_connection_t *joyconn,
-   unsigned index, unsigned i);
+   unsigned idx, unsigned i);
 
 /* Determine if connected joypad is a hidpad backed device.
  * If false, pad_connection_packet cannot be used */
 
 bool pad_connection_has_interface(joypad_connection_t *joyconn,
-   unsigned index);
+   unsigned idx);
 
 bool pad_connection_rumble(joypad_connection_t *s,
    unsigned pad, enum retro_rumble_effect effect, uint16_t strength);
