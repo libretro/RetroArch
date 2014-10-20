@@ -79,8 +79,8 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
       change_handler_t change_handler, change_handler_t read_handler);
 
 rarch_setting_t setting_data_bind_setting(const char* name,
-      const char* description, struct retro_keybind* target, uint32_t index,
-      uint32_t index_offset,
+      const char* description, struct retro_keybind* target, uint32_t idx,
+      uint32_t idx_offset,
       const struct retro_keybind* default_value, const char *group,
       const char *subgroup);
 
@@ -90,7 +90,7 @@ int setting_data_get_description(const char *label, char *msg,
 #ifdef HAVE_MENU
 void setting_data_get_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
-      const char *menu_label, const char *label, unsigned index);
+      const char *menu_label, const char *label, unsigned idx);
 #endif
 
 rarch_setting_t* setting_data_new(unsigned mask);

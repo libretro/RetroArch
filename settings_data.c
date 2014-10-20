@@ -2116,7 +2116,7 @@ extern unsigned menu_current_gx_resolution;
 
 static int get_fallback_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
-      const char *menu_label, const char *label, unsigned index)
+      const char *menu_label, const char *label, unsigned idx)
 {
    int ret = 0;
 

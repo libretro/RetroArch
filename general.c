@@ -18,13 +18,13 @@
 #include "general.h"
 
 void rarch_playlist_load_content(content_playlist_t *playlist,
-      unsigned index)
+      unsigned idx)
 {
    const char *path      = NULL;
    const char *core_path = NULL;
 
    content_playlist_get_index(playlist,
-         index, &path, &core_path, NULL);
+         idx, &path, &core_path, NULL);
 
    strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
 

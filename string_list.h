@@ -62,7 +62,7 @@ void string_list_free(struct string_list *list);
 void string_list_join_concat(char *buffer, size_t size,
       const struct string_list *list, const char *sep);
 
-void string_list_set(struct string_list *list, unsigned index,
+void string_list_set(struct string_list *list, unsigned idx,
       const char *str);
 
 #ifdef __cplusplus

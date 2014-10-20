@@ -42,7 +42,7 @@ struct content_playlist
 };
 
 void content_playlist_get_index(content_playlist_t *playlist,
-      size_t index,
+      size_t idx,
       const char **path, const char **core_path,
       const char **core_name)
 {
@@ -50,11 +50,11 @@ void content_playlist_get_index(content_playlist_t *playlist,
       return;
 
    if (path)
-      *path      = playlist->entries[index].path;
+      *path      = playlist->entries[idx].path;
    if (core_path)
-      *core_path = playlist->entries[index].core_path;
+      *core_path = playlist->entries[idx].core_path;
    if (core_name)
-      *core_name = playlist->entries[index].core_name;
+      *core_name = playlist->entries[idx].core_name;
 }
 
 static void content_playlist_free_entry(
