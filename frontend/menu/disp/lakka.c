@@ -686,7 +686,7 @@ static void lakka_context_destroy(void *data)
 
 static bool lakka_init_settings(menu_handle_t *menu)
 {
-   int j, k, jj = 0, kk;
+   int k, jj = 0, kk;
    lakka_handle_t *lakka = NULL;
    menu_category_t *category = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t*)menu->list_settings;
