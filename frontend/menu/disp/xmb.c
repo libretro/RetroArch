@@ -355,7 +355,8 @@ static void xmb_render_messagebox(const char *message)
 
 static void xmb_selection_pointer_changed(void)
 {
-   unsigned i, current, end;
+   int i;
+   unsigned current, end;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
