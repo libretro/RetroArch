@@ -14,12 +14,10 @@
  */
 
 #include "dynamic.h"
-#include "general.h"
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include "retroarch_logger.h"
 #include "performance.h"
-#include "file.h"
 #include "file_path.h"
 #include <string.h>
 #include <ctype.h>

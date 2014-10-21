@@ -14,8 +14,6 @@
  */
 
 #include "cheats.h"
-#include "hash.h"
-#include "dynamic.h"
 #include "general.h"
 #include <compat/strl.h>
 #include <compat/posix_string.h>
@@ -23,8 +21,6 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include "conf/config_file.h"
 
 #include <stdlib.h>
 #include <stddef.h>
