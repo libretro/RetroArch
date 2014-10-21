@@ -15,6 +15,7 @@
 
 #include "video_thread_wrapper.h"
 #include "../performance.h"
+#include "../dir_list.h"
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>

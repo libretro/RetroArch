@@ -26,6 +26,7 @@
 #include "driver.h"
 #include "file.h"
 #include "file_path.h"
+#include "dir_list.h"
 #include "general.h"
 #include "dynamic.h"
 #include <compat/strl.h>

@@ -16,6 +16,7 @@
 #include "file_extract.h"
 #include "file_path.h"
 #include <compat/strl.h>
+#include <retro_miscellaneous.h>
 #include "retroarch_logger.h"
 #include <stdio.h>
 #include <stdlib.h>
