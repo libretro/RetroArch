@@ -17,7 +17,7 @@
 #include "keyboard_line.h"
 #include "../general.h"
 #include "../conf/config_file.h"
-#include "../file_path.h"
+#include <file/file_path.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>

@@ -23,7 +23,7 @@
 #include "../general.h"
 #include "../file.h"
 #include "../file_ext.h"
-#include "../file_path.h"
+#include <file/file_path.h>
 #include "../dir_list.h"
 #include "frontend_context.h"
 

@@ -21,7 +21,7 @@
 
 #include <string.h>
 #include <retro_miscellaneous.h>
-#include "../file_path.h"
+#include <file/file_path.h>
 #include "7zip_support.h"
 
 #include "../deps/7zip/7z.h"

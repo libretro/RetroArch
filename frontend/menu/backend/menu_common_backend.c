@@ -21,7 +21,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include "../menu_common.h"
-#include "../../../file_path.h"
+#include <file/file_path.h>
 #include "../../../settings_data.h"
 #include "menu_backend.h"
 #include "../menu_list.h"

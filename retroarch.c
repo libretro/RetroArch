@@ -24,7 +24,7 @@
 #include <errno.h>
 #include "content.h"
 #include "file_ops.h"
-#include "file_path.h"
+#include <file/file_path.h>
 #include "dir_list.h"
 #include "general.h"
 #include <compat/strl.h>

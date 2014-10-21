@@ -15,7 +15,7 @@
  */
 
 #include "dir_list.h"
-#include "file_path.h"
+#include <file/file_path.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 

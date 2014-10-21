@@ -15,7 +15,7 @@
 
 #include "core_info.h"
 #include "general.h"
-#include "file_path.h"
+#include <file/file_path.h>
 #include "file_ext.h"
 #include "file_extract.h"
 #include "dir_list.h"

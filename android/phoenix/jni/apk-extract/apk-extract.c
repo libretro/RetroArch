@@ -1,6 +1,6 @@
 #include "../../../../file_extract.h"
-#include "../../../../file.h"
-#include "../../../../file_path.h"
+#include "../../../../content.h"
+#include <file/file_path.h>
 
 #include <stdio.h>
 #include <string.h>

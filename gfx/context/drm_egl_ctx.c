@@ -22,7 +22,6 @@
 #include "../gl_common.h"
 #include "../gfx_common.h"
 #include "../../dir_list.h"
-#include "../../file_path.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

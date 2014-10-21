@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "file_path.h"
+#include <file/file_path.h>
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
@@ -23,6 +23,8 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <retro_miscellaneous.h>
+
+#include "rarch_compr_file_path.h"
 
 #ifdef __HAIKU__
 #include <kernel/image.h>
@@ -60,12 +62,6 @@
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_7ZIP
-#include "decompress/7zip_support.h"
-#endif
-#ifdef HAVE_ZLIB
-#include "decompress/zip_support.h"
-#endif
 
 /* Generic compressed file loader.
  * Extracts to buf, unless optional_filename != 0

@@ -18,7 +18,7 @@
 #include <compat/posix_string.h>
 #include "retroarch_logger.h"
 #include "performance.h"
-#include "file_path.h"
+#include <file/file_path.h>
 #include <string.h>
 #include <ctype.h>
 

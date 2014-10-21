@@ -25,7 +25,7 @@
 #include "../../content.h"
 #include "../../dir_list.h"
 #include "../../file_ops.h"
-#include "../../file_path.h"
+#include <file/file_path.h>
 
 static const void* const associated_module_key = &associated_module_key;
 

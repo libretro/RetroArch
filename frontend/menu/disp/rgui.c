@@ -28,7 +28,7 @@
 #include "../../../config.def.h"
 #include "../../../dynamic.h"
 #include <compat/posix_string.h>
-#include "../../../file_path.h"
+#include <file/file_path.h>
 
 #include "../../../settings_data.h"
 #include "../../../gfx/fonts/bitmap.h"

@@ -18,7 +18,7 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include "config.def.h"
-#include "file_path.h"
+#include <file/file_path.h>
 #include "input/input_common.h"
 
 #ifdef HAVE_CONFIG_H

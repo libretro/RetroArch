@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "general.h"
-#include "file_path.h"
+#include <file/file_path.h>
 #include "gfx/scaler/scaler.h"
 
 #ifdef HAVE_CONFIG_H

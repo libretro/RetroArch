@@ -15,7 +15,7 @@
 
 #include "content.h"
 #include "file_ops.h"
-#include "file_path.h"
+#include <file/file_path.h>
 #include "general.h"
 #include <stdlib.h>
 #include <boolean.h>

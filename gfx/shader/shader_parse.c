@@ -19,7 +19,7 @@
 #include <compat/posix_string.h>
 #include <compat/msvc.h>
 #include <compat/strl.h>
-#include "../../file_path.h"
+#include <file/file_path.h>
 #include "../../general.h"
 
 #define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)

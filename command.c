@@ -24,7 +24,7 @@
 #include "general.h"
 #include "compat/strl.h"
 #include "compat/posix_string.h"
-#include "file_path.h"
+#include <file/file_path.h>
 #include <stdio.h>
 #include <string.h>
 

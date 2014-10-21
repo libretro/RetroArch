@@ -22,7 +22,7 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <compat/msvc.h>
-#include "../file_path.h"
+#include <file/file_path.h>
 #include "../general.h"
 
 #if !defined(_WIN32) && !defined(__CELLOS_LV2__) && !defined(_XBOX)

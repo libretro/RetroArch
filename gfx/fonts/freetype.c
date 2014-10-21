@@ -14,7 +14,7 @@
  */
 
 #include "fonts.h"
-#include "../../file_path.h"
+#include <file/file_path.h>
 #include "../../general.h"
 #include <string.h>
 #include <stddef.h>

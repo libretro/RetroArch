@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <file/file_path.h>
 #include "menu_entries_cbs.h"
 #include "menu_action.h"
 #include "menu_common.h"
@@ -23,7 +24,6 @@
 #include "backend/menu_backend.h"
 
 #include "../../file_ext.h"
-#include "../../file_path.h"
 #include "../../config.def.h"
 #include "../../performance.h"
 

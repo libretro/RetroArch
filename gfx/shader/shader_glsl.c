@@ -14,6 +14,7 @@
  */
 
 #include <string.h>
+#include <file/file_path.h>
 #include "../../general.h"
 #include "shader_glsl.h"
 #include <compat/strl.h>

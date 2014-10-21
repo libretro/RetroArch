@@ -15,6 +15,7 @@
  */
 
 #include "file_ops.h"
+#include <file/file_path.h>
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>

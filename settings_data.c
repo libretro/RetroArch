@@ -15,7 +15,7 @@
  */
 
 #include "settings_data.h"
-#include "file_path.h"
+#include <file/file_path.h>
 #include "input/input_common.h"
 #include "config.def.h"
 #include "retroarch_logger.h"

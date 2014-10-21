@@ -29,13 +29,12 @@
 
 #endif
 
-#include "../../general.h"
 #include <string.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include "../../conf/config_file.h"
 #include "../../dynamic.h"
-#include "../../file_path.h"
+#include <file/file_path.h>
 
 #include "../state_tracker.h"
 

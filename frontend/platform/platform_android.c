@@ -27,7 +27,6 @@
 
 #include "../../conf/config_file.h"
 #include "../../general.h"
-#include "../../file.h"
 
 struct android_app *g_android;
 static pthread_key_t thread_key;
