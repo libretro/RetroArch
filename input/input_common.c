@@ -189,7 +189,7 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *drv,
 }
 
 int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
-      unsigned port, unsigned idx, unsigned id,
+      unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds)
 {
    if (!drv)
@@ -203,21 +203,21 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
    const struct retro_keybind *auto_binds =
       g_settings.input.autoconf_binds[joy_idx];
 
-   unsigned id_minus = 0;
-   unsigned id_plus  = 0;
-   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
+   unsigned ident_minus = 0;
+   unsigned ident_plus  = 0;
+   input_conv_analog_id_to_bind_id(idx, ident, &ident_minus, &ident_plus);
 
-   const struct retro_keybind *bind_minus = &binds[id_minus];
-   const struct retro_keybind *bind_plus  = &binds[id_plus];
+   const struct retro_keybind *bind_minus = &binds[ident_minus];
+   const struct retro_keybind *bind_plus  = &binds[ident_plus];
    if (!bind_minus->valid || !bind_plus->valid)
       return 0;
 
    uint32_t axis_minus = bind_minus->joyaxis;
    uint32_t axis_plus  = bind_plus->joyaxis;
    if (axis_minus == AXIS_NONE)
-      axis_minus = auto_binds[id_minus].joyaxis;
+      axis_minus = auto_binds[ident_minus].joyaxis;
    if (axis_plus == AXIS_NONE)
-      axis_plus = auto_binds[id_plus].joyaxis;
+      axis_plus = auto_binds[ident_plus].joyaxis;
 
    int16_t pressed_minus = abs(drv->axis(joy_idx, axis_minus));
    int16_t pressed_plus  = abs(drv->axis(joy_idx, axis_plus));
@@ -230,9 +230,9 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
    uint64_t key_minus = bind_minus->joykey;
    uint64_t key_plus  = bind_plus->joykey;
    if (key_minus == NO_BTN)
-      key_minus = auto_binds[id_minus].joykey;
+      key_minus = auto_binds[ident_minus].joykey;
    if (key_plus == NO_BTN)
-      key_plus = auto_binds[id_plus].joykey;
+      key_plus = auto_binds[ident_plus].joykey;
 
    int16_t digital_left  = drv->button(joy_idx,
          (uint16_t)key_minus) ? -0x7fff : 0;

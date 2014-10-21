@@ -28,29 +28,29 @@ extern "C" {
 
 typedef uint64_t retro_input_t ;
 
-static inline void input_conv_analog_id_to_bind_id(unsigned idx, unsigned id,
-      unsigned *id_minus, unsigned *id_plus)
+static inline void input_conv_analog_id_to_bind_id(unsigned idx, unsigned ident,
+      unsigned *ident_minus, unsigned *ident_plus)
 {
-   switch ((idx << 1) | id)
+   switch ((idx << 1) | ident)
    {
       case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-         *id_minus = RARCH_ANALOG_LEFT_X_MINUS;
-         *id_plus  = RARCH_ANALOG_LEFT_X_PLUS;
+         *ident_minus = RARCH_ANALOG_LEFT_X_MINUS;
+         *ident_plus  = RARCH_ANALOG_LEFT_X_PLUS;
          break;
 
       case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-         *id_minus = RARCH_ANALOG_LEFT_Y_MINUS;
-         *id_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
+         *ident_minus = RARCH_ANALOG_LEFT_Y_MINUS;
+         *ident_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
          break;
 
       case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-         *id_minus = RARCH_ANALOG_RIGHT_X_MINUS;
-         *id_plus  = RARCH_ANALOG_RIGHT_X_PLUS;
+         *ident_minus = RARCH_ANALOG_RIGHT_X_MINUS;
+         *ident_plus  = RARCH_ANALOG_RIGHT_X_PLUS;
          break;
 
       case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-         *id_minus = RARCH_ANALOG_RIGHT_Y_MINUS;
-         *id_plus  = RARCH_ANALOG_RIGHT_Y_PLUS;
+         *ident_minus = RARCH_ANALOG_RIGHT_Y_MINUS;
+         *ident_plus  = RARCH_ANALOG_RIGHT_Y_PLUS;
          break;
    }
 }
@@ -109,7 +109,7 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
       unsigned port, const struct retro_keybind *binds, unsigned key);
 
 int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
-      unsigned port, unsigned idx, unsigned id,
+      unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds);
 
 bool input_joypad_set_rumble(const rarch_joypad_driver_t *driver,
