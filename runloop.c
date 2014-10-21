@@ -15,10 +15,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "general.h"
 #include "file_path.h"
-#include "dir_list.h"
 #include "performance.h"
+#include "retroarch_logger.h"
 #include "input/input_common.h"
 #include "intl/intl.h"
 
