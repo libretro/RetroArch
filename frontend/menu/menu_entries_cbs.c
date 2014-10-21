@@ -1356,7 +1356,7 @@ static int action_start_bind(unsigned type, const char *label,
 static int deferred_push_core_list_deferred(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   int i;
+   unsigned i;
    size_t list_size = 0;
    const core_info_t *info = NULL;
    file_list_t *list      = (file_list_t*)data;
@@ -1392,7 +1392,7 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
 static int deferred_push_core_information(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   int i;
+   unsigned i;
    core_info_t *info      = NULL;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
@@ -1698,7 +1698,7 @@ static int deferred_push_input_options(void *data, void *userdata,
 static int deferred_push_shader_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   int i;
+   unsigned i;
    struct gfx_shader *shader = NULL;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
@@ -1805,7 +1805,7 @@ static int deferred_push_frontend_counters(void *data, void *userdata,
 static int deferred_push_core_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   int i;
+   unsigned i;
    file_list_t *list      = (file_list_t*)data;
 
    if (!list)
