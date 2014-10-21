@@ -48,20 +48,6 @@ CONSOLE EXTENSIONS
 #include "../decompress/zip_support.c"
 #endif
 
-
-
-/*============================================================
-RLAUNCH
-============================================================ */
-
-#ifdef HAVE_RLAUNCH
-#include "../tools/retrolaunch/rl_fnmatch.c"
-#include "../tools/retrolaunch/sha1.c"
-#include "../tools/retrolaunch/cd_detect.c"
-#include "../tools/retrolaunch/parser.c"
-#include "../tools/retrolaunch/main.c"
-#endif
-
 /*============================================================
 PERFORMANCE
 ============================================================ */

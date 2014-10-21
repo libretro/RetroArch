@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2014 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (strl.h).
+ * The following license statement only applies to this file (compat_getopt.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,31 +20,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __LIBRETRO_SDK_COMPAT_STRL_H
-#define __LIBRETRO_SDK_COMPAT_STRL_H
-
-#include <string.h>
-#include <stddef.h>
+#ifndef __LIBRETRO_SDK_COMPAT_GETOPT_H
+#define __LIBRETRO_SDK_COMPAT_GETOPT_H
 
 #ifdef HAVE_CONFIG_H
-#include "../config.h"
+#include "config.h"
 #endif
 
-#ifndef HAVE_STRL
+/* Custom implementation of the GNU getopt_long for portability.
+ * Not designed to be fully compatible, but compatible with 
+ * the features RetroArch uses. */
+
+#ifdef HAVE_GETOPT_LONG
+#include <getopt.h>
+#else
+/* Avoid possible naming collisions during link since we 
+ * prefer to use the actual name. */
+#define getopt_long(argc, argv, optstring, longopts, longindex) __getopt_long_rarch(argc, argv, optstring, longopts, longindex)
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-/* Avoid possible naming collisions during link since 
- * we prefer to use the actual name. */
-#define strlcpy(dst, src, size) strlcpy_rarch__(dst, src, size)
-#define strlcat(dst, src, size) strlcat_rarch__(dst, src, size)
 
-size_t strlcpy(char *dest, const char *source, size_t size);
-size_t strlcat(char *dest, const char *source, size_t size);
+struct option
+{
+   const char *name;
+   int has_arg;
+   int *flag;
+   int val;
+};
+
+/* argv[] is declared with char * const argv[] in GNU,
+ * but this makes no sense, as non-POSIX getopt_long 
+ * mutates argv (non-opts are moved to the end). */
+int getopt_long(int argc, char *argv[],
+      const char *optstring, const struct option *longopts, int *longindex);
+extern char *optarg;
+extern int optind, opterr, optopt;
 #ifdef __cplusplus
 }
 #endif
 #endif
+
 #endif
 

@@ -20,7 +20,7 @@
 #include "conf/config_file.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "../compat/getopt_rarch.h"
+#include "../compat/compat_getopt.h"
 #include <boolean.h>
 #include "../input/input_common.h"
 #include "../general.h"

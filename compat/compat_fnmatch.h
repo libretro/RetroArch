@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2014 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (strl.h).
+ * The following license statement only applies to this file (compat_fnmatch.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,31 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __LIBRETRO_SDK_COMPAT_STRL_H
-#define __LIBRETRO_SDK_COMPAT_STRL_H
+#ifndef __LIBRETRO_SDK_COMPAT_FNMATCH_H__
+#define __LIBRETRO_SDK_COMPAT_FNMATCH_H__
 
-#include <string.h>
-#include <stddef.h>
+#define	FNM_NOMATCH	1
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
+int rl_fnmatch(const char *pattern, const char *string, int flags);
+
 #endif
-
-#ifndef HAVE_STRL
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-/* Avoid possible naming collisions during link since 
- * we prefer to use the actual name. */
-#define strlcpy(dst, src, size) strlcpy_rarch__(dst, src, size)
-#define strlcat(dst, src, size) strlcat_rarch__(dst, src, size)
-
-size_t strlcpy(char *dest, const char *source, size_t size);
-size_t strlcat(char *dest, const char *source, size_t size);
-#ifdef __cplusplus
-}
-#endif
-#endif
-#endif
-
