@@ -22,8 +22,6 @@
 #include "../../frontend/frontend.h"
 #include "../../frontend/menu/menu_common.h"
 
-#include "../../file.h"
-
 static void* const associated_core_key = (void*)&associated_core_key;
 id<RetroArch_Platform> apple_platform;
 

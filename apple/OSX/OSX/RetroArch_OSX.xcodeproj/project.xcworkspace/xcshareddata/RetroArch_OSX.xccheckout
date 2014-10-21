@@ -16,13 +16,13 @@
 		<string>https://github.com/libretro/RetroArch.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>apple/RetroArch_OSX.xcodeproj/project.xcworkspace</string>
+	<string>apple/OSX/OSX/RetroArch_OSX.xcodeproj</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>76200F0D6584D865E96F58DE862E738E88B23A3C</key>
-		<string>../../../..</string>
+		<string>../../../../../..</string>
 		<key>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</key>
-		<string>../../..</string>
+		<string>../../../../..</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
 	<string>https://github.com/libretro/RetroArch.git</string>
