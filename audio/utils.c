@@ -17,7 +17,6 @@
 #include "../boolean.h"
 #include "utils.h"
 
-#include "../general.h"
 #include "../performance.h"
 
 #if defined(__SSE2__)

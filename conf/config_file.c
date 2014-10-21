@@ -24,7 +24,6 @@
 #include "../msvc/msvc_compat.h"
 #include "../file.h"
 #include "../file_path.h"
-#include "../miscellaneous.h"
 #include "../general.h"
 
 #if !defined(_WIN32) && !defined(__CELLOS_LV2__) && !defined(_XBOX)
