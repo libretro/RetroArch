@@ -148,8 +148,8 @@ bool input_joypad_set_rumble(const rarch_joypad_driver_t *drv,
    if (!drv || !drv->set_rumble)
       return false;
 
-   int joy_idx = g_settings.input.joypad_map[port];
-   if (joy_idx < 0 || joy_idx >= MAX_PLAYERS)
+   unsigned int joy_idx = g_settings.input.joypad_map[port];
+   if (joy_idx >= MAX_PLAYERS)
       return false;
 
    return drv->set_rumble(joy_idx, effect, strength);
@@ -161,8 +161,8 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *drv,
    if (!drv)
       return false;
 
-   int joy_idx = g_settings.input.joypad_map[port];
-   if (joy_idx < 0 || joy_idx >= MAX_PLAYERS)
+   unsigned int joy_idx = g_settings.input.joypad_map[port];
+   if (joy_idx >= MAX_PLAYERS)
       return false;
 
    /* Auto-binds are per joypad, not per player. */
@@ -195,8 +195,8 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
    if (!drv)
       return 0;
 
-   int joy_idx = g_settings.input.joypad_map[port];
-   if (joy_idx < 0 || joy_idx >= MAX_PLAYERS)
+   unsigned int joy_idx = g_settings.input.joypad_map[port];
+   if (joy_idx >= MAX_PLAYERS)
       return 0;
 
    /* Auto-binds are per joypad, not per player. */

@@ -161,8 +161,6 @@ void input_config_autoconfigure_joypad(unsigned idx,
 
 const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
 {
-   int joy_idx = g_settings.input.joypad_map[port];
-   if (joy_idx < 0)
-      return NULL;
+   unsigned int joy_idx = g_settings.input.joypad_map[port];
    return &g_settings.input.autoconf_binds[joy_idx][id];
 }
