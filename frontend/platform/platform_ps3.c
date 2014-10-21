@@ -21,7 +21,6 @@
 
 #include "../../conf/config_file.h"
 #include "../../general.h"
-#include "../../file.h"
 #include <file/file_path.h>
 
 #define EMULATOR_CONTENT_DIR "SSNE10000"

@@ -26,11 +26,8 @@
 #include "../../../general.h"
 #include "../../../gfx/gfx_common.h"
 #include "../../../config.def.h"
-#include "../../../file.h"
-#include "../../../dynamic.h"
 #include <compat/posix_string.h>
 #include "../../../performance.h"
-#include "../../../input/input_common.h"
 
 #include "../../../settings_data.h"
 #include "../../../screenshot.h"

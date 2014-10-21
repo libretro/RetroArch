@@ -41,7 +41,6 @@ extern uint8_t _binary_wii_app_booter_app_booter_bin_end[];
 #define booter_end _binary_wii_app_booter_app_booter_bin_end
 
 #include "../../retroarch_logger.h"
-#include "../../file.h"
 
 #ifdef IS_SALAMANDER
 char gx_rom_path[PATH_MAX];
