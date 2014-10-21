@@ -875,6 +875,7 @@ void config_file_dump(config_file_t *conf, FILE *file)
    }
 }
 
+#ifdef RARCH_INTERNAL
 void config_file_dump_all(config_file_t *conf)
 {
    struct include_list *includes = conf->includes;
@@ -892,6 +893,7 @@ void config_file_dump_all(config_file_t *conf)
       list = list->next;
    }
 }
+#endif
 
 bool config_entry_exists(config_file_t *conf, const char *entry)
 {

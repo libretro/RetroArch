@@ -126,8 +126,10 @@ bool config_file_write(config_file_t *conf, const char *path);
  * Does not close the file. */
 void config_file_dump(config_file_t *conf, FILE *file);
 
+#ifdef RARCH_INTERNAL
 /* Also dumps inherited values, useful for logging. */
 void config_file_dump_all(config_file_t *conf);
+#endif
 
 #ifdef __cplusplus
 }
