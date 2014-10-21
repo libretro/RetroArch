@@ -20,8 +20,8 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
-#include "compat/strl.h"
-#include "compat/posix_string.h"
+#include <compat/strl.h>
+#include <compat/posix_string.h>
 #include "miscellaneous.h"
 
 #ifdef __HAIKU__

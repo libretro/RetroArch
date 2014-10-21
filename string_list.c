@@ -18,8 +18,8 @@
 #include "string_list.h"
 #include <string.h>
 #include "miscellaneous.h"
-#include "compat/strl.h"
-#include "compat/posix_string.h"
+#include <compat/strl.h>
+#include <compat/posix_string.h>
 
 void string_list_free(struct string_list *list)
 {

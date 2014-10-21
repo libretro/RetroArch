@@ -24,9 +24,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef _WIN32
-#include "../../compat/msvc_compat.h"
-#endif
+#include <compat/posix_string.h>
 
 #if !defined(RESAMPLER_TEST) && defined(RARCH_INTERNAL)
 #include "../../general.h"

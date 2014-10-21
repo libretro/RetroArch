@@ -20,12 +20,12 @@
 #include "conf/config_file.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "../compat/compat_getopt.h"
+#include <compat/getopt.h>
+#include <compat/posix_string.h>
 #include <boolean.h>
 #include "../input/input_common.h"
 #include "../general.h"
 #include <assert.h>
-#include "../compat/posix_string.h"
 
 /* Need to be present for build to work, but it's not *really* used.
  * Better than having to build special versions of lots of objects 

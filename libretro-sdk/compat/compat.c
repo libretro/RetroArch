@@ -20,10 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "compat_getopt.h"
-#include "strl.h"
-#include "strcasestr.h"
-#include "posix_string.h"
+#include <compat/getopt.h>
+#include <compat/strl.h>
+#include <compat/strcasestr.h>
+#include <compat/posix_string.h>
 
 #ifndef HAVE_GETOPT_LONG
 
@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #ifdef _MSC_VER
-#include "msvc_compat.h"
+#include <compat/msvc.h>
 #endif
 
 char *optarg;

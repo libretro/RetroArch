@@ -16,13 +16,13 @@
 
 #include "dir_list.h"
 #include "file_path.h"
-#include "compat/strl.h"
+#include <compat/strl.h>
+#include <compat/posix_string.h>
 
 #if defined(_WIN32)
 #ifdef _MSC_VER
 #define setmode _setmode
 #endif
-#include "compat/msvc_compat.h"
 #ifdef _XBOX
 #include <xtl.h>
 #define INVALID_FILE_ATTRIBUTES -1

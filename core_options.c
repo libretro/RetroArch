@@ -18,8 +18,8 @@
 #include "conf/config_file.h"
 #include "file.h"
 #include "dir_list.h"
-#include "compat/posix_string.h"
-#include "compat/strl.h"
+#include <compat/posix_string.h>
+#include <compat/strl.h>
 
 struct core_option
 {

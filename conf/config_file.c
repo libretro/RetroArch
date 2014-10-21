@@ -19,9 +19,9 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
-#include "../compat/strl.h"
-#include "../compat/posix_string.h"
-#include "../compat/msvc_compat.h"
+#include <compat/strl.h>
+#include <compat/posix_string.h>
+#include <compat/msvc.h>
 #include "../file.h"
 #include "../file_path.h"
 #include "../general.h"

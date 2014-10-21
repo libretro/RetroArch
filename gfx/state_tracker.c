@@ -15,7 +15,7 @@
 
 #include "state_tracker.h"
 #include <stdlib.h>
-#include "../compat/strl.h"
+#include <compat/strl.h>
 #include "../general.h"
 #include "../libretro.h"
 #include "../input/input_common.h"

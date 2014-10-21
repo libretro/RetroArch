@@ -24,7 +24,7 @@
 #include <assert.h>
 #endif
 
-#include "compat_fnmatch.h"
+#include <compat/fnmatch.h>
 
 /* Implemnentation of fnmatch(3) so it can be 
  * distributed to non *nix platforms.

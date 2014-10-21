@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "compat/strl.h"
+#include <compat/strl.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <time.h>

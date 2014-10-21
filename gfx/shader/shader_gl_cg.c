@@ -31,10 +31,10 @@
 
 #include "../../general.h"
 #include <string.h>
-#include "../../compat/strl.h"
+#include <compat/strl.h>
+#include <compat/posix_string.h>
 #include "../../conf/config_file.h"
 #include "../../dynamic.h"
-#include "../../compat/posix_string.h"
 #include "../../file.h"
 #include "../../file_path.h"
 

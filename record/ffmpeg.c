@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../compat/msvc_compat.h"
+#include <compat/msvc.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

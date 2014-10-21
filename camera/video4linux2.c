@@ -34,7 +34,7 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
-#include "../compat/strl.h"
+#include <compat/strl.h>
 
 #include <asm/types.h>
 #include <linux/videodev2.h>

@@ -28,12 +28,12 @@
 #include "file_path.h"
 #include "general.h"
 #include "dynamic.h"
-#include "compat/strl.h"
+#include <compat/strl.h>
 #include "screenshot.h"
 #include "performance.h"
 #include "cheats.h"
-#include "compat/compat_getopt.h"
-#include "compat/posix_string.h"
+#include <compat/getopt.h>
+#include <compat/posix_string.h>
 #include "input/keyboard_line.h"
 #include "input/input_common.h"
 #include "git_version.h"

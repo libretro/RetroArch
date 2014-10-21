@@ -43,7 +43,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "compat/msvc_compat.h"
+#include <compat/msvc.h>
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

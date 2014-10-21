@@ -22,8 +22,8 @@
 #include "../../dynamic.h"
 #include "../../libretro.h"
 #include "../../general.h"
-#include "../../compat/strl.h"
-#include "../../compat/posix_string.h"
+#include <compat/strl.h>
+#include <compat/posix_string.h>
 #include "../../input/input_common.h"
 #include "../../file.h"
 #include "../../file_path.h"

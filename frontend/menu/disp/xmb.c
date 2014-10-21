@@ -28,7 +28,7 @@
 #include "../../../file_path.h"
 #include "../../../gfx/gl_common.h"
 #include "../../../gfx/video_thread_wrapper.h"
-#include "../../../compat/posix_string.h"
+#include <compat/posix_string.h>
 
 #include "shared.h"
 #include "../menu_animation.h"

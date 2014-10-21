@@ -19,7 +19,7 @@
 #include "patch.h"
 #include "hash.h"
 #include <boolean.h>
-#include "compat/msvc_compat.h"
+#include <compat/msvc.h>
 #include <stdint.h>
 #include <string.h>
 
