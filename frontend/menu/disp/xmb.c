@@ -583,12 +583,19 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack, size_t current
       menu_ticker_line(value, 35, g_extern.frame_count / 20, val_buf,
             (i == current));
 
-      xmb_draw_text(value,
-            node->x + xmb->margin_left + xmb->hspacing + 
-            xmb->label_margin_left + xmb->setting_margin_left, 
-            xmb->margin_top + node->y + xmb->label_margin_top, 
-            1, 
-            node->label_alpha);
+      if(
+         strcmp(val_buf, "...")
+      && strcmp(val_buf, "(CORE)")
+      && strcmp(val_buf, "(FILE)")
+      && strcmp(val_buf, "(DIR)")
+      && strcmp(val_buf, "(COMP)")
+      )
+         xmb_draw_text(value,
+               node->x + xmb->margin_left + xmb->hspacing + 
+               xmb->label_margin_left + xmb->setting_margin_left, 
+               xmb->margin_top + node->y + xmb->label_margin_top, 
+               1, 
+               node->label_alpha);
    }
 }
 
