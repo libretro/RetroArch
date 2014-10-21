@@ -29,7 +29,7 @@ ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
 DOL_TARGET := retroarch-salamander_wii.dol
 ELF_TARGET := retroarch-salamander_wii.elf
 
-INCLUDE := -I. -I$(DEVKITPRO)/libogc/include
+INCLUDE := -I. -I$(DEVKITPRO)/libogc/include -Ilibretro-sdk/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
@@ -39,7 +39,7 @@ LIBS := -lfat -lwiiuse -logc -lbte
 
 APP_BOOTER_DIR = wii/app_booter
 
-OBJ = frontend/frontend_salamander.o frontend/frontend_context.o frontend/platform/platform_gx.o frontend/platform/platform_wii.o frontend/platform/platform_null.o file_path.o string_list.o dir_list.o compat/compat.o conf/config_file.o $(APP_BOOTER_DIR)/app_booter.binobj
+OBJ = frontend/frontend_salamander.o frontend/frontend_context.o frontend/platform/platform_gx.o frontend/platform/platform_wii.o frontend/platform/platform_null.o file_path.o string_list.o dir_list.o libretro-sdk/compat/compat.o conf/config_file.o $(APP_BOOTER_DIR)/app_booter.binobj
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER

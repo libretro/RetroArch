@@ -23,7 +23,7 @@
 #include "libretro_private.h"
 #include <stdlib.h>
 #include <stdint.h>
-#include <compat/msvc.h>
+#include <compat/posix_string.h>
 #include "gfx/scaler/scaler.h"
 #include "gfx/image/image.h"
 #include "gfx/filters/softfilter.h"
