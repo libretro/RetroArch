@@ -21,7 +21,7 @@
 #include "../state_tracker.h"
 #include "../../dynamic.h"
 #include "../../file.h"
-#include "../../file_path.h"
+#include "../../rarch_file_path.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

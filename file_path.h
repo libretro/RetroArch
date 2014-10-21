@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_FILE_PATH_H
-#define __RARCH_FILE_PATH_H
+#ifndef __LIBRETRO_SDK_FILE_PATH_H
+#define __LIBRETRO_SDK_FILE_PATH_H
 
 #include <boolean.h>
 #include <stdio.h>
@@ -40,22 +40,6 @@ enum
    RARCH_FILE_UNSUPPORTED,
 };
 
-
-#ifdef HAVE_COMPRESSION
-long read_compressed_file(const char * path, void **buf,
-      const char* optional_filename);
-#endif
-
-long read_file(const char *path, void **buf);
-
-bool read_file_string(const char *path, char **buf);
-
-bool write_file(const char *path, const void *buf, size_t size);
-
-bool write_empty_file(const char *path);
-
-struct string_list *compressed_file_list_new(const char *filename,
-      const char* ext);
 
 /* path_is_compressed_file also means: The compressed file is supported */
 bool path_is_compressed_file(const char *path);

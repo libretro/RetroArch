@@ -96,6 +96,7 @@ OBJ += frontend/frontend.o \
 		dir_list.o \
 		libretro-sdk/string/string_list.o \
 		rarch_file_path.o \
+		file_path.o \
 		rarch_compr_file_path.o \
 		hash.o \
 		driver.o \
@@ -632,8 +633,7 @@ endif
 
 JOYCONFIG_OBJ += tools/retroarch-joyconfig.o \
 	conf/config_file.o \
-	rarch_file_path.o \
-	rarch_compr_file_path.o \
+	file_path.o \
 	libretro-sdk/string/string_list.o \
 	libretro-sdk/compat/compat.o \
 	tools/input_common_joyconfig.o

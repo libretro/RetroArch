@@ -520,6 +520,7 @@ DYNAMIC
 FILE
 ============================================================ */
 #include "../file.c"
+#include "../file_path.c"
 #include "../dir_list.c"
 #include "../libretro-sdk/string/string_list.c"
 #include "../rarch_file_path.c"

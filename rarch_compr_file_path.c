@@ -137,29 +137,3 @@ struct string_list *compressed_file_list_new(const char *path,
 #endif
    return NULL;
 }
-
-bool path_is_compressed_file(const char* path)
-{
-#ifdef HAVE_COMPRESSION
-   const char* file_ext = path_get_extension(path);
-#ifdef HAVE_7ZIP
-   if (strcmp(file_ext,"7z") == 0)
-      return true;
-#endif
-#ifdef HAVE_ZLIB
-   if (strcmp(file_ext,"zip") == 0)
-      return true;
-#endif
-
-#endif
-   return false;
-}
-
-bool path_contains_compressed_file(const char *path)
-{
-   /*
-    * Currently we only check for hash symbol inside the pathname.
-    * If path is ever expanded to a general URI, we should check for that here.
-    */
-   return (strchr(path,'#') != NULL);
-}
