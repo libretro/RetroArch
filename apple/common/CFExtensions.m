@@ -18,13 +18,18 @@
 #import <Foundation/NSPathUtilities.h>
 #include "CFExtensions.h"
 
+static CFTypeRef BRIDGING_RETAIN(id X)
+{
+	return X ? CFRetain((CFTypeRef)X) : NULL;
+}
+
 void CFSearchPathForDirectoriesInDomains(unsigned flags,
                                                unsigned domain_mask, unsigned expand_tilde,
                                                char *buf, size_t sizeof_buf)
 {
-   CFArrayRef array = CFBridgingRetain(NSSearchPathForDirectoriesInDomains(
+   CFArrayRef array = BRIDGING_RETAIN(NSSearchPathForDirectoriesInDomains(
       flags, domain_mask, (BOOL)expand_tilde));
-   CFStringRef path = CFBridgingRetain(CFArrayGetValueAtIndex(array, 0));
+   CFStringRef path = BRIDGING_RETAIN((id)CFArrayGetValueAtIndex(array, 0));
    CFStringGetCString(path, buf, sizeof_buf, kCFStringEncodingUTF8);
    CFRelease(path);
    CFRelease(array);
