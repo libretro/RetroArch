@@ -28,7 +28,6 @@
 #ifdef _MSC_VER
 #include "../msvc/msvc_compat.h"
 #endif
-#include "../general.h"
 
 char *optarg;
 int optind, opterr, optopt;
