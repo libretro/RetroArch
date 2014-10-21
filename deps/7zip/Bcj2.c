@@ -61,7 +61,7 @@ int Bcj2_Decode(
          limit = outSize - outPos;
       while (limit != 0)
       {
-         uint8_t b = buf0[inPos];
+         b = buf0[inPos];
          outBuf[outPos++] = b;
          if (IsJ(prevuint8_t, b))
             break;
