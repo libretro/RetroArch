@@ -38,7 +38,7 @@
 #include <compat/msvc.h>
 
 #include "retroarch_logger.h"
-#include "endianness.h"
+#include <retro_endianness.h>
 #include <limits.h>
 
 /* Some platforms do not set this value.
