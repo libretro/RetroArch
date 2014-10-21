@@ -15,15 +15,6 @@
 #define kNumMoveBits 5
 
 #define RC_READ_BYTE (*buffer++)
-#define RC_TEST { if (buffer == bufferLim) return SZ_ERROR_DATA; }
-#define RC_INIT2 code = 0; range = 0xFFFFFFFF; \
-{ int i; for (i = 0; i < 5; i++) { RC_TEST; code = (code << 8) | RC_READ_BYTE; }}
-
-#define BCJ2_NORMALIZE if (range < kTopValue) { RC_TEST; range <<= 8; code = (code << 8) | RC_READ_BYTE; }
-
-#define BCJ2_IF_BIT_0(p) ttt = *(p); bound = (range >> kNumBitModelTotalBits) * ttt; if (code < bound)
-#define BCJ2_UPDATE_0(p) range = bound; *(p) = (uint16_t)(ttt + ((kBitModelTotal - ttt) >> kNumMoveBits)); BCJ2_NORMALIZE;
-#define BCJ2_UPDATE_1(p) range -= bound; code -= bound; *(p) = (uint16_t)(ttt - (ttt >> kNumMoveBits)); BCJ2_NORMALIZE;
 
 int Bcj2_Decode(
       const uint8_t *buf0, size_t size0,
@@ -45,7 +36,15 @@ int Bcj2_Decode(
 
    buffer = buf3;
    bufferLim = buffer + size3;
-   RC_INIT2
+   code = 0;
+   range = 0xFFFFFFFF;
+
+   for (i = 0; i < 5; i++)
+   {
+      if (buffer == bufferLim)
+         return SZ_ERROR_DATA;
+      code = (code << 8) | RC_READ_BYTE;
+   }
 
       if (outSize == 0)
          return SZ_OK;
@@ -83,16 +82,40 @@ int Bcj2_Decode(
       else
          prob = p + 257;
 
-      BCJ2_IF_BIT_0(prob)
+      ttt = *(prob);
+      bound = (range >> kNumBitModelTotalBits) * ttt;
+
+      if (code < bound)
       {
-         BCJ2_UPDATE_0(prob)
-            prevuint8_t = b;
+         range = bound;
+         *(prob) = (uint16_t)(ttt + ((kBitModelTotal - ttt) >> kNumMoveBits));
+
+         if (range < kTopValue)
+         {
+            if (buffer == bufferLim)
+               return SZ_ERROR_DATA;
+            range <<= 8;
+            code = (code << 8) | RC_READ_BYTE;
+         }
+         prevuint8_t = b;
       }
       else
       {
          uint32_t dest;
          const uint8_t *v;
-         BCJ2_UPDATE_1(prob)
+
+         range -= bound;
+         code -= bound;
+         *(prob) = (uint16_t)(ttt - (ttt >> kNumMoveBits));
+
+         if (range < kTopValue)
+         {
+            if (buffer == bufferLim)
+               return SZ_ERROR_DATA;
+            range <<= 8;
+            code = (code << 8) | RC_READ_BYTE;
+         }
+
             if (b == 0xE8)
             {
                v = buf1;
