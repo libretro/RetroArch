@@ -14,10 +14,12 @@
  */
 
 #include "core_options.h"
-#include "general.h"
+#include <string.h>
+#include "conf/config_file.h"
 #include "file.h"
 #include "dir_list.h"
 #include "compat/posix_string.h"
+#include "compat/strl.h"
 
 struct core_option
 {
@@ -116,14 +118,6 @@ static bool parse_variable(core_option_manager_t *opt, size_t idx,
    }
 
    free(value);
-
-   RARCH_LOG("Core option:\n");
-   RARCH_LOG("\tDescription: %s\n", option->desc);
-   RARCH_LOG("\tKey: %s\n", option->key);
-   RARCH_LOG("\tCurrent value: %s\n", core_option_get_val(opt, idx));
-   RARCH_LOG("\tPossible values:\n");
-   for (i = 0; i < option->vals->size; i++)
-      RARCH_LOG("\t\t%s\n", option->vals->elems[i].data);
 
    return true;
 }
