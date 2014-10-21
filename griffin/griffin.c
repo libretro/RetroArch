@@ -67,8 +67,8 @@ COMPATIBILITY
 CONFIG FILE
 ============================================================ */
 #if defined(_MSC_VER)
-#undef __RARCH_POSIX_STRING_H
-#undef __RARCH_MSVC_COMPAT_H
+#undef __LIBRETRO_SDK_COMPAT_POSIX_STRING_H
+#undef __LIBRETRO_SDK_COMPAT_MSVC_H
 #undef strcasecmp
 #endif
 
