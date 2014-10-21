@@ -16,7 +16,6 @@
  */
 
 #include <boolean.h>
-#include "libretro.h"
 #include "retro.h"
 #include <stdlib.h>
 #include <stdint.h>
