@@ -22,10 +22,11 @@
 #endif
 #include <stdarg.h>
 
+#include <retro_inline.h>
 #include <compat/posix_string.h>
 
 // FIXME: Using arbitrary string as fmt argument is unsafe.
-static inline void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
+static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
    char msg_new[1024], buffer[1024];
 #ifdef IS_SALAMANDER
@@ -39,7 +40,7 @@ static inline void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    OutputDebugStringA(buffer);
 }
 
-static inline void RARCH_LOG(const char *fmt, ...)
+static INLINE void RARCH_LOG(const char *fmt, ...)
 {
    char buffer[1024];
    va_list ap;
@@ -49,13 +50,13 @@ static inline void RARCH_LOG(const char *fmt, ...)
    va_end(ap);
 }
 
-static inline void RARCH_LOG_OUTPUT_V(const char *tag,
+static INLINE void RARCH_LOG_OUTPUT_V(const char *tag,
       const char *msg, va_list ap)
 {
    RARCH_LOG_V(tag, msg, ap);
 }
 
-static inline void RARCH_LOG_OUTPUT(const char *msg, ...)
+static INLINE void RARCH_LOG_OUTPUT(const char *msg, ...)
 {
    va_list ap;
    va_start(ap, msg);
@@ -63,7 +64,7 @@ static inline void RARCH_LOG_OUTPUT(const char *msg, ...)
    va_end(ap);
 }
 
-static inline void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap)
+static INLINE void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap)
 {
    char msg_new[1024], buffer[1024];
 #ifdef IS_SALAMANDER
@@ -77,7 +78,7 @@ static inline void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap)
    OutputDebugStringA(buffer);
 }
 
-static inline void RARCH_WARN(const char *fmt, ...)
+static INLINE void RARCH_WARN(const char *fmt, ...)
 {
    char buffer[1024];
    va_list ap;
@@ -87,7 +88,7 @@ static inline void RARCH_WARN(const char *fmt, ...)
    va_end(ap);
 }
 
-static inline void RARCH_ERR_V(const char *tag, const char *fmt, ...)
+static INLINE void RARCH_ERR_V(const char *tag, const char *fmt, ...)
 {
    char msg_new[1024];
 #ifdef IS_SALAMANDER
@@ -100,7 +101,7 @@ static inline void RARCH_ERR_V(const char *tag, const char *fmt, ...)
    OutputDebugStringA(fmt);
 }
 
-static inline void RARCH_ERR(const char *fmt, ...)
+static INLINE void RARCH_ERR(const char *fmt, ...)
 {
    char buffer[1024];
    va_list ap;

@@ -26,6 +26,7 @@
 #include "../../conf/config_file.h"
 #include "../../conf/config_file_macros.h"
 #include "../../general.h"
+#include <file/file_path.h>
 
 static bool exit_spawn;
 static bool exitspawn_start_game;
