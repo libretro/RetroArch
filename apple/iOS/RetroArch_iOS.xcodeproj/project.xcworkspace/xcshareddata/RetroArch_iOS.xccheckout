@@ -26,7 +26,7 @@
 		<key>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</key>
 		<string>../../../..</string>
 		<key>EF363D58F01B3FB341FA6C851870E60E4F080E97</key>
-		<string>../../../..media/overlays/</string>
+		<string>../../../..media/overlays</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
 	<string>https://github.com/libretro/RetroArch.git</string>

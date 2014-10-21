@@ -22,9 +22,10 @@
 #import "views.h"
 
 #include "../../conf/config_file.h"
-#include "../../file.h"
+#include "../../content.h"
+#include "../../dir_list.h"
+#include "../../file_ops.h"
 #include "../../file_path.h"
-#include "../../general.h"
 
 static const void* const associated_module_key = &associated_module_key;
 

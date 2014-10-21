@@ -26,8 +26,6 @@
 #include "bluetooth/btdynamic.h"
 #include "bluetooth/btpad.h"
 
-#include "../../file.h"
-
 id<RetroArch_Platform> apple_platform;
 
 void apple_rarch_exited(void);
