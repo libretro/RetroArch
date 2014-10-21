@@ -18,7 +18,7 @@
 #endif
 
 #include "image.h"
-#include "../../rarch_file_path.h"
+#include "../../file_ops.h"
 
 #include <stdlib.h>
 #include <string.h>

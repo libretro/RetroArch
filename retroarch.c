@@ -23,7 +23,8 @@
 #include <ctype.h>
 #include <errno.h>
 #include "content.h"
-#include "rarch_file_path.h"
+#include "file_ops.h"
+#include "file_path.h"
 #include "dir_list.h"
 #include "general.h"
 #include <compat/strl.h>

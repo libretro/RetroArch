@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "rarch_file_path.h"
+#include "file_ops.h"
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>

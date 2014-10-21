@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_FILE_PATH_H
-#define __RARCH_FILE_PATH_H
+#ifndef __LIBRETRO_SDK_FILE_OPS_H
+#define __LIBRETRO_SDK_FILE_OPS_H
 
 #include <boolean.h>
 #include <stdio.h>

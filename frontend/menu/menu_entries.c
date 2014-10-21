@@ -17,7 +17,7 @@
 #include "menu_entries.h"
 #include "menu_action.h"
 #include "menu_list.h"
-#include "../../rarch_file_path.h"
+#include "../../file_ops.h"
 #include "../../dir_list.h"
 #include "../../settings_data.h"
 #include "../../performance.h"

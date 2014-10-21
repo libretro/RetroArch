@@ -14,7 +14,7 @@
  */
 
 #include "file_extract.h"
-#include "rarch_file_path.h"
+#include "file_ops.h"
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include "retroarch_logger.h"
