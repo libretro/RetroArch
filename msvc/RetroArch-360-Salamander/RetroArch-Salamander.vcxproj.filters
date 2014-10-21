@@ -23,13 +23,7 @@
     <ClCompile Include="..\..\conf\config_file.c">
       <Filter>Source Files\conf</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\file_path.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\dir_list.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\string_list.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\frontend\frontend_salamander.c">
@@ -46,6 +40,12 @@
     </ClCompile>
     <ClCompile Include="..\..\libretro-sdk\compat\compat.c">
       <Filter>Source Files\libretro-sdk\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libretro-sdk\file\file_path.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libretro-sdk\string\string_list.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
