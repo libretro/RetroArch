@@ -43,7 +43,7 @@
 #endif
 #include <compat/msvc.h>
 
-#ifdef RARCH_INTERNAL
+#if defined(RARCH_INTERNAL) || defined(IS_SALAMANDER)
 /* TODO/FIXME - dirty hack */
 #include "../../retroarch_logger.h"
 #endif
