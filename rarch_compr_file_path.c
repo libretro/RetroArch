@@ -75,6 +75,8 @@
 long read_compressed_file(const char * path, void **buf,
       const char* optional_filename)
 {
+   char archive_path[PATH_MAX], *archive_found = NULL;
+
    /* Safety check.
     * If optional_filename and optional_filename exists, we simply return 0,
     * hoping that optional_filename is the same as requested.
@@ -84,9 +86,8 @@ long read_compressed_file(const char * path, void **buf,
          return 0;
 
    //We split carchive path and relative path:
-   char archive_path[PATH_MAX];
    strlcpy(archive_path,path,sizeof(archive_path));
-   char* archive_found = strchr(archive_path,'#');
+   archive_found = (char*)strchr(archive_path,'#');
    rarch_assert(archive_found != NULL);
 
    //We assure that there is something after the '#' symbol
