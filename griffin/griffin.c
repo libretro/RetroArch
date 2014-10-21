@@ -616,7 +616,7 @@ THREAD
 #if defined(HAVE_THREADS) && defined(XENON)
 #include "../thread/xenon_sdl_threads.c"
 #elif defined(HAVE_THREADS)
-#include "../thread.c"
+#include "../rthreads/rthreads.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
 #include "../autosave.c"

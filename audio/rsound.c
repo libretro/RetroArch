@@ -19,7 +19,7 @@
 #include "rsound.h"
 #include "../fifo_buffer.h"
 #include "../boolean.h"
-#include "../thread.h"
+#include "../rthreads/rthreads.h"
 
 typedef struct rsd
 {

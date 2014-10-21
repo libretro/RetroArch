@@ -25,9 +25,9 @@ extern "C" {
 #include <sys/types.h>
 #include <unistd.h>
 #ifdef STANDALONE
-#include "thread.h"
+#include "rthreads.h"
 #else
-#include "../thread.h"
+#include "../rthreads/rthreads.h"
 #endif
 #include <sys/time.h>
 #include <time.h>

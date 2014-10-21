@@ -18,7 +18,7 @@
 
 #include "../driver.h"
 #include "../boolean.h"
-#include "../thread.h"
+#include "../rthreads/rthreads.h"
 #include "../general.h"
 
 /* Starts a video driver in a new thread.

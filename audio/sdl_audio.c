@@ -23,7 +23,7 @@
 
 #include "SDL.h"
 #include "SDL_audio.h"
-#include "../thread.h"
+#include "../rthreads/rthreads.h"
 
 #include "../general.h"
 #include "../fifo_buffer.h"

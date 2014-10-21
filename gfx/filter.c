@@ -32,7 +32,7 @@ struct rarch_soft_plug
 };
 
 #ifdef HAVE_THREADS
-#include "../thread.h"
+#include "../rthreads/rthreads.h"
 
 struct filter_thread_data
 {
