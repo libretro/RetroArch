@@ -17,8 +17,7 @@
 
 #include "playlist.h"
 #include <compat/posix_string.h>
-#include "boolean.h"
-#include "file.h"
+#include <boolean.h>
 
 #include <stdio.h>
 #include <stdlib.h>

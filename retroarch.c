@@ -22,12 +22,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
-#include "driver.h"
-#include "file.h"
 #include "file_path.h"
 #include "dir_list.h"
 #include "general.h"
-#include "dynamic.h"
 #include <compat/strl.h>
 #include "screenshot.h"
 #include "performance.h"
@@ -35,7 +32,6 @@
 #include <compat/getopt.h>
 #include <compat/posix_string.h>
 #include "input/keyboard_line.h"
-#include "input/input_common.h"
 #include "git_version.h"
 #include "intl/intl.h"
 

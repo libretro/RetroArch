@@ -13,16 +13,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "general.h"
 #include "conf/config_file.h"
 #include "conf/config_file_macros.h"
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include "config.def.h"
-#include "file.h"
 #include "file_path.h"
 #include "input/input_common.h"
-#include "frontend/frontend.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
