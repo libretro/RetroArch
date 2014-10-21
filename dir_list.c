@@ -17,7 +17,6 @@
 #include "dir_list.h"
 #include "file_path.h"
 #include "compat/strl.h"
-#include "miscellaneous.h"
 
 #if defined(_WIN32)
 #ifdef _MSC_VER
@@ -151,7 +150,6 @@ struct string_list *dir_list_new(const char *dir,
    return list;
 
 error:
-   RARCH_ERR("Failed to open directory: \"%s\"\n", dir);
    if (hFind != INVALID_HANDLE_VALUE)
       FindClose(hFind);
    
@@ -251,7 +249,6 @@ struct string_list *dir_list_new(const char *dir,
    return list;
 
 error:
-   RARCH_ERR("Failed to open directory: \"%s\"\n", dir);
 
    if (directory)
       closedir(directory);
