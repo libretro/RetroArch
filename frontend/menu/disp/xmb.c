@@ -755,33 +755,15 @@ static void *xmb_init(void)
    xmb->active_item_factor   = 3.0;
    xmb->under_item_offset    = 5.0;
 
-   float scale_factor;
+   float scale_factor = 1;
+   if      (gl->win_width >= 3840) scale_factor = 2.0;
+   else if (gl->win_width >= 2560) scale_factor = 1.5;
+   else if (gl->win_width >= 1920) scale_factor = 1.0;
+   else if (gl->win_width >= 1280) scale_factor = 0.75;
+   else if (gl->win_width >=  640) scale_factor = 0.5;
+   else if (gl->win_width >=  320) scale_factor = 0.25;
 
-   if (gl->win_width >= 3840)
-   {
-      scale_factor = 2.0;
-      strlcpy(xmb->icon_dir, "256", sizeof(xmb->icon_dir));
-   }
-   else if (gl->win_width >= 2560)
-   {
-      scale_factor = 1.5;
-      strlcpy(xmb->icon_dir, "192", sizeof(xmb->icon_dir));
-   }
-   else if (gl->win_width >= 1920)
-   {
-      scale_factor = 1.0;
-      strlcpy(xmb->icon_dir, "128", sizeof(xmb->icon_dir));
-   }
-   else if (gl->win_width <= 640)
-   {
-      scale_factor = 0.5;
-      strlcpy(xmb->icon_dir, "64", sizeof(xmb->icon_dir));
-   }
-   else
-   {
-      scale_factor = 3.0f/4.0f;
-      strlcpy(xmb->icon_dir, "96", sizeof(xmb->icon_dir));
-   }
+   strlcpy(xmb->icon_dir, "256", sizeof(xmb->icon_dir));
 
    xmb->icon_size = 128.0 * scale_factor;
    xmb->hspacing = 200.0 * scale_factor;
@@ -828,8 +810,9 @@ static GLuint xmb_png_texture_load_(const char * file_name)
    glBindTexture(GL_TEXTURE_2D, texture);
    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ti.width, ti.height, 0,
          GL_RGBA, GL_UNSIGNED_BYTE, ti.pixels);
-   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glGenerateMipmap(GL_TEXTURE_2D);
 
    free(ti.pixels);
 
