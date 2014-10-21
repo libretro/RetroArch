@@ -355,7 +355,7 @@ static void xmb_render_messagebox(const char *message)
 
 static void xmb_selection_pointer_changed(void)
 {
-   int i, current, end;
+   unsigned i, current, end;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
@@ -399,12 +399,12 @@ static void xmb_selection_pointer_changed(void)
 
 static void xmb_list_open_old(file_list_t *list, int dir, size_t current)
 {
+   unsigned i;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
       return;
 
-   int i;
    for (i = 0; i < file_list_get_size(list); i++)
    {
       xmb_node_t *node = NULL;
@@ -422,12 +422,12 @@ static void xmb_list_open_old(file_list_t *list, int dir, size_t current)
 
 static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
 {
+   unsigned i;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
       return;
 
-   int i;
    for (i = 0; i < file_list_get_size(list); i++)
    {
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
@@ -480,7 +480,7 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
 static void xmb_populate_entries(void *data, const char *path,
       const char *label, unsigned j)
 {
-   int i, current, end;
+   unsigned i, current, end;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
@@ -515,7 +515,7 @@ static void xmb_populate_entries(void *data, const char *path,
 
 static void xmb_draw_items(file_list_t *list, file_list_t *stack, size_t current)
 {
-   int i;
+   unsigned i;
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
@@ -1049,7 +1049,7 @@ static void xmb_list_set_selection(void *data)
 
 static void xmb_context_destroy(void *data)
 {
-   int i;
+   unsigned i;
    xmb_handle_t *xmb = NULL;
    menu_handle_t *menu = (menu_handle_t*)driver.menu;
 
