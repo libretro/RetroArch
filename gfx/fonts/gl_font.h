@@ -17,7 +17,7 @@
 #define GL_FONT_H__
 
 #include "../../driver.h"
-#include "../../boolean.h"
+#include <boolean.h>
 
 struct font_glyph;
 

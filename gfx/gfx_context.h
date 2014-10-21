@@ -16,7 +16,7 @@
 #ifndef __GFX_CONTEXT_H
 #define __GFX_CONTEXT_H
 
-#include "../boolean.h"
+#include <boolean.h>
 #include "../driver.h"
 
 #ifdef HAVE_CONFIG_H

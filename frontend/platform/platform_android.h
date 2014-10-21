@@ -27,7 +27,7 @@
 #include <android/window.h>
 #include <android/sensor.h>
 
-#include "../../thread.h"
+#include <rthreads/rthreads.h>
 
 struct android_app
 {

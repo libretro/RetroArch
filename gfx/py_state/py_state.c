@@ -14,14 +14,13 @@
  */
 
 #include <Python.h>
-#include "../../boolean.h"
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 
+#include "py_state.h"
 #include "../../dynamic.h"
 #include "../../libretro.h"
-#include "py_state.h"
 #include "../../general.h"
 #include "../../compat/strl.h"
 #include "../../compat/posix_string.h"

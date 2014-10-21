@@ -19,7 +19,7 @@
 #include <roaraudio.h>
 #include <errno.h>
 #include <stdint.h>
-#include "../boolean.h"
+#include <boolean.h>
 #include "general.h"
 
 typedef struct

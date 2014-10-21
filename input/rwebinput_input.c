@@ -17,7 +17,7 @@
 
 #include "../driver.h"
 
-#include "../boolean.h"
+#include <boolean.h>
 #include "../general.h"
 #include "keyboard_line.h"
 

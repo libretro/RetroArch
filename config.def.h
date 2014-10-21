@@ -17,7 +17,7 @@
 #ifndef __CONFIG_DEF_H
 #define __CONFIG_DEF_H
 
-#include "boolean.h"
+#include <boolean.h>
 #include "libretro.h"
 #include "driver.h"
 #include "gfx/gfx_common.h"

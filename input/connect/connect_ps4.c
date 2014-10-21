@@ -17,7 +17,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "../../boolean.h"
+#include <boolean.h>
 #include "joypad_connection.h"
 
 struct hidpad_ps4_data

@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#include "boolean.h"
+#include <boolean.h>
 
 struct item_file
 {

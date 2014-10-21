@@ -23,7 +23,7 @@
 #include <jack/ringbuffer.h>
 #include <pthread.h>
 #include <stdint.h>
-#include "../boolean.h"
+#include <boolean.h>
 #include <string.h>
 #include <assert.h>
 

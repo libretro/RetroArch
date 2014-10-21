@@ -42,9 +42,9 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "../boolean.h"
+#include <boolean.h>
 #include "../fifo_buffer.h"
-#include "../rthreads/rthreads.h"
+#include <rthreads/rthreads.h>
 #include "../general.h"
 #include "../gfx/scaler/scaler.h"
 #include "../conf/config_file.h"

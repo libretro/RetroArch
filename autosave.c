@@ -16,7 +16,7 @@
 #include "autosave.h"
 #include "rthreads/rthreads.h"
 #include <stdlib.h>
-#include "boolean.h"
+#include <boolean.h>
 #include <string.h>
 #include <stdio.h>
 #include "general.h"

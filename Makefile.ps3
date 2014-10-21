@@ -34,7 +34,7 @@ EBOOT_PATH		= ps3/pkg/USRDIR/EBOOT.BIN
 CORE_PATH		= ps3/pkg/USRDIR/cores/CORE.SELF
 
 LDDIRS = -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt
-INCDIRS = -I. -Ips3 -Icommon -Ideps/rzlib
+INCDIRS = -I. -Ips3 -Icommon -Ideps/rzlib -Ilibretro-sdk/include
 
 # system platform
 system_platform = unix

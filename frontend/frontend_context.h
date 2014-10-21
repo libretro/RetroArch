@@ -18,7 +18,7 @@
 #define __FRONTEND_CONTEXT_H
 
 #include <stddef.h>
-#include "../boolean.h"
+#include <boolean.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

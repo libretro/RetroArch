@@ -25,7 +25,7 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 #include <math.h>
-#include "../../boolean.h"
+#include <boolean.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327

@@ -16,7 +16,7 @@
 #ifndef __DYNAMIC_H
 #define __DYNAMIC_H
 
-#include "boolean.h"
+#include <boolean.h>
 #include "libretro.h"
 
 #ifdef HAVE_CONFIG_H

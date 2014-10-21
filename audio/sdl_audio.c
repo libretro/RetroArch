@@ -16,14 +16,14 @@
 
 #include "../driver.h"
 #include <stdlib.h>
-#include "../boolean.h"
+#include <boolean.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
 #include "SDL.h"
 #include "SDL_audio.h"
-#include "../rthreads/rthreads.h"
+#include <rthreads/rthreads.h>
 
 #include "../general.h"
 #include "../fifo_buffer.h"

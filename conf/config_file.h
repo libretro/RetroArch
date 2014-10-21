@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "../boolean.h"
+#include <boolean.h>
 #include <stdio.h>
 #include <stddef.h>
 

@@ -17,8 +17,8 @@
 #define RARCH_VIDEO_THREAD_H__
 
 #include "../driver.h"
-#include "../boolean.h"
-#include "../rthreads/rthreads.h"
+#include <boolean.h>
+#include <rthreads/rthreads.h>
 #include "../general.h"
 
 /* Starts a video driver in a new thread.

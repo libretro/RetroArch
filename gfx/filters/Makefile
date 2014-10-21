@@ -57,7 +57,7 @@ endif
 
 CC      := $(compiler)
 CXX     := $(subst CC,++,$(compiler)) -std=gnu++0x
-flags   := -fPIC $(extra_flags)
+flags   := -fPIC $(extra_flags) -I../../libretro-sdk/include
 asflags := -fPIC  $(extra_flags)
 objects :=
 flags   += -std=c99

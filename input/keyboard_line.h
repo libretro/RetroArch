@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-#include "../boolean.h"
+#include <boolean.h>
 #include "../libretro.h"
 #include <stdint.h>
 

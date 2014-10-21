@@ -17,7 +17,7 @@
 #ifndef __RARCH_STRING_LIST_H
 #define __RARCH_STRING_LIST_H
 
-#include "boolean.h"
+#include <boolean.h>
 #include <stdlib.h>
 #include <stddef.h>
 

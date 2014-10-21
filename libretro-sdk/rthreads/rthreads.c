@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "rthreads.h"
+#include <rthreads/rthreads.h>
 #include <stdlib.h>
 
 #if defined(_WIN32)

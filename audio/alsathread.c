@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <alsa/asoundlib.h>
 #include "../general.h"
-#include "../rthreads/rthreads.h"
+#include <rthreads/rthreads.h>
 #include "../fifo_buffer.h"
 
 #define TRY_ALSA(x) if (x < 0) { \

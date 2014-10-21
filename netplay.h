@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "boolean.h"
+#include <boolean.h>
 #include "libretro.h"
 #include "retro.h"
 

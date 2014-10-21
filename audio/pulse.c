@@ -17,7 +17,7 @@
 #include "driver.h"
 #include "general.h"
 #include <pulse/pulseaudio.h>
-#include "../boolean.h"
+#include <boolean.h>
 #include <string.h>
 #include <stdint.h>
 

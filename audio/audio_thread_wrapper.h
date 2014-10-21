@@ -17,7 +17,7 @@
 #define RARCH_AUDIO_THREAD_H__
 
 #include "../driver.h"
-#include "../boolean.h"
+#include <boolean.h>
 
 // Starts a audio driver in a new thread.
 // Access to audio driver will be mediated through this driver.

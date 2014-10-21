@@ -20,10 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef THREAD_H__
-#define THREAD_H__
+#ifndef __LIBRETRO_SDK_RTHREADS_H__
+#define __LIBRETRO_SDK_RTHREADS_H__
 
-#include "../boolean.h"
+#include <boolean.h>
 #include <stdint.h>
 
 #if defined(__cplusplus) && !defined(MSC_VER)

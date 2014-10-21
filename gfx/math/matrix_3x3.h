@@ -17,7 +17,7 @@
 #ifndef MATH_MATRIX_3X3_H__
 #define MATH_MATRIX_3X3_H__
 
-#include "boolean.h"
+#include <boolean.h>
 
 typedef struct math_matrix_3x3
 {

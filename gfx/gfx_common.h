@@ -23,7 +23,7 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 #include "../general.h"
-#include "../boolean.h"
+#include <boolean.h>
 #include "../performance.h"
 
 #ifdef HAVE_CONFIG_H

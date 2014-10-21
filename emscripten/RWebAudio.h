@@ -15,7 +15,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
-#include "../boolean.h"
+#include <boolean.h>
 
 unsigned RWebAudioSampleRate(void);
 void *RWebAudioInit(unsigned latency);

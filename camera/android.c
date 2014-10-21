@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../gfx/glsym/glsym.h"
+#include <glsym/glsym.h>
 #include "../driver.h"
 
 typedef struct android_camera

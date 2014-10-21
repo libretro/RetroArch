@@ -17,7 +17,7 @@
 #define __RARCH_IMAGE_CONTEXT_H
 
 #include <stdint.h>
-#include "../../boolean.h"
+#include <boolean.h>
 
 #ifdef _WIN32
 #include "../context/win32_common.h"

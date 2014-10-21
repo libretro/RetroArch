@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../boolean.h"
 #include <string.h>
 #include "../../general.h"
 #include "shader_glsl.h"
@@ -27,8 +26,6 @@
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
-
-#include "../glsym/glsym.h"
 
 #include "../gfx_context.h"
 #include <stdlib.h>

@@ -24,11 +24,7 @@ extern "C" {
 
 #include <sys/types.h>
 #include <unistd.h>
-#ifdef STANDALONE
-#include "rthreads.h"
-#else
-#include "../rthreads/rthreads.h"
-#endif
+#include <rthreads/rthreads.h>
 #include <sys/time.h>
 #include <time.h>
 #include <stdint.h>

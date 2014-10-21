@@ -19,7 +19,7 @@
 #define __DRIVER__H
 
 #include <sys/types.h>
-#include "boolean.h"
+#include <boolean.h>
 #include "libretro_private.h"
 #include <stdlib.h>
 #include <stdint.h>

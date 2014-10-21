@@ -17,7 +17,7 @@
 #define __RARCH_REWIND_H
 
 #include <stddef.h>
-#include "boolean.h"
+#include <boolean.h>
 
 typedef struct state_manager state_manager_t;
 

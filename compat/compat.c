@@ -21,7 +21,7 @@
 #ifndef HAVE_GETOPT_LONG
 
 #include <string.h>
-#include "../boolean.h"
+#include <boolean.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <ctype.h>

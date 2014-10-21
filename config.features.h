@@ -2,7 +2,7 @@
 #define __RARCH_FEATURES_H
 
 #include <stddef.h>
-#include "boolean.h"
+#include <boolean.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

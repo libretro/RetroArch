@@ -17,7 +17,7 @@
 #ifndef SHADER_CONTEXT_H__
 #define SHADER_CONTEXT_H__
 
-#include "../../boolean.h"
+#include <boolean.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

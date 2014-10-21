@@ -17,7 +17,7 @@
 #define D3D_FONT_H__
 
 #include <stdint.h>
-#include "../../boolean.h"
+#include <boolean.h>
 #include "../../driver.h"
 
 #ifdef __cplusplus

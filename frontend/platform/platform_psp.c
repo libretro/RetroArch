@@ -21,12 +21,13 @@
 #include <pspsdk.h>
 
 #include <stdint.h>
-#include "../../boolean.h"
+#include <boolean.h>
 #include <stddef.h>
 #include <string.h>
 
 #include "../../gfx/psp/sdk_defines.h"
 #include "../../file.h"
+#include "../../file_path.h"
 #include "../../general.h"
 
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)

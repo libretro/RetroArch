@@ -216,11 +216,11 @@ VIDEO DRIVER
 #include "../gfx/gl_common.c"
 
 #ifndef HAVE_PSGL
-#include "../gfx/glsym/rglgen.c"
+#include "../libretro-sdk/glsym/rglgen.c"
 #ifdef HAVE_OPENGLES2
-#include "../gfx/glsym/glsym_es2.c"
+#include "../libretro-sdk/glsym/glsym_es2.c"
 #else
-#include "../gfx/glsym/glsym_gl.c"
+#include "../libretro-sdk/glsym/glsym_gl.c"
 #endif
 #endif
 
@@ -616,7 +616,7 @@ THREAD
 #if defined(HAVE_THREADS) && defined(XENON)
 #include "../thread/xenon_sdl_threads.c"
 #elif defined(HAVE_THREADS)
-#include "../rthreads/rthreads.c"
+#include "../libretro-sdk/rthreads/rthreads.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
 #include "../autosave.c"

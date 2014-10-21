@@ -23,7 +23,7 @@
 #include "input_common.h"
 
 #include "../general.h"
-#include "../boolean.h"
+#include <boolean.h>
 
 #include <stdlib.h>
 #include <stddef.h>

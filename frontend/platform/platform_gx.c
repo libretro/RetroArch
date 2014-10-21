@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../boolean.h"
+#include <boolean.h>
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../libretro_private.h"

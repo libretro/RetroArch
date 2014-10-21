@@ -14,7 +14,7 @@
  */
 
 #include "audio_thread_wrapper.h"
-#include "../rthreads/rthreads.h"
+#include <rthreads/rthreads.h>
 #include "../general.h"
 #include "../performance.h"
 #include "../fifo_buffer.h"

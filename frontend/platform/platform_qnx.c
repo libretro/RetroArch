@@ -17,7 +17,7 @@
 #include <bps/bps.h>
 
 #include <stdint.h>
-#include "../../boolean.h"
+#include <boolean.h>
 #include <stddef.h>
 #include <string.h>
 #include "../../dynamic.h"

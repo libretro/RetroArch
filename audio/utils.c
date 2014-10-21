@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../boolean.h"
+#include <boolean.h>
 #include "utils.h"
 
 #include "../performance.h"

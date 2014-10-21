@@ -15,7 +15,7 @@
  */
 
 #include "softfilter.h"
-#include "boolean.h"
+#include <boolean.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>

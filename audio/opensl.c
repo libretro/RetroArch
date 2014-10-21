@@ -16,7 +16,7 @@
 
 #include "../driver.h"
 #include "../general.h"
-#include "../rthreads/rthreads.h"
+#include <rthreads/rthreads.h>
 
 #include <SLES/OpenSLES.h>
 #ifdef ANDROID

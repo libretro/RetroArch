@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "boolean.h"
+#include <boolean.h>
 #include "libretro.h"
 #include "retro.h"
 #include <stdio.h>

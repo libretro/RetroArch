@@ -33,6 +33,8 @@ ifeq ($(REENTRANT_TEST), 1)
    OBJ += console/test.o
 endif
 
+CFLAGS += -I./libretro-sdk/include
+
 # Switches
 
 # Extra menu drivers if GL supported
@@ -292,7 +294,7 @@ ifeq ($(HAVE_FREETYPE), 1)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o rthreads/rthreads.o gfx/video_thread_wrapper.o audio/audio_thread_wrapper.o
+   OBJ += autosave.o libretro-sdk/rthreads/rthreads.o gfx/video_thread_wrapper.o audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
    ifeq ($(findstring Haiku,$(OS)),)
       LIBS += -lpthread
@@ -362,7 +364,7 @@ ifeq ($(HAVE_OPENGL), 1)
 			 gfx/fonts/gl_raster_font.o \
 			 gfx/math/matrix.o \
 			 gfx/state_tracker.o \
-			 gfx/glsym/rglgen.o
+			 libretro-sdk/glsym/rglgen.o
 
    ifeq ($(HAVE_KMS), 1)
       OBJ += gfx/context/drm_egl_ctx.o
@@ -415,10 +417,10 @@ ifeq ($(HAVE_OPENGL), 1)
       ifeq ($(HAVE_GLES3), 1)
          DEFINES += -DHAVE_OPENGLES3
       endif
-      OBJ += gfx/glsym/glsym_es2.o
+      OBJ += libretro-sdk/glsym/glsym_es2.o
    else
       DEFINES += -DHAVE_GL_SYNC
-      OBJ += gfx/glsym/glsym_gl.o
+      OBJ += libretro-sdk/glsym/glsym_gl.o
       ifeq ($(OSX), 1)
          LIBS += -framework OpenGL
       else ifneq ($(findstring Win32,$(OS)),)

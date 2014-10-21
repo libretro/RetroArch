@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "../../msvc/msvc_compat.h"
-#include "../../boolean.h"
+#include <boolean.h>
 
 #define ATLAS_COLS 16
 #define ATLAS_ROWS 16

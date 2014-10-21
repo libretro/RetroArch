@@ -17,7 +17,7 @@
 #include "../frontend_context.h"
 
 #include <stdint.h>
-#include "../../boolean.h"
+#include <boolean.h>
 #include <stddef.h>
 #include <string.h>
 

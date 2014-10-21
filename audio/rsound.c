@@ -18,8 +18,8 @@
 #include <stdlib.h>
 #include "rsound.h"
 #include "../fifo_buffer.h"
-#include "../boolean.h"
-#include "../rthreads/rthreads.h"
+#include <boolean.h>
+#include <rthreads/rthreads.h>
 
 typedef struct rsd
 {

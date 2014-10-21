@@ -18,7 +18,7 @@
 #include <stdlib.h>
 
 #include <sdk_version.h>
-#include "../boolean.h"
+#include <boolean.h>
 
 #include "../ps3/sdk_defines.h"
 

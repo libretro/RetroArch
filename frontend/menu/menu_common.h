@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "../../boolean.h"
+#include <boolean.h>
 #include "../../general.h"
 #include "menu_navigation.h"
 #include "../../core_info.h"

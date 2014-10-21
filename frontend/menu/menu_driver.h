@@ -19,7 +19,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "../../boolean.h"
+#include <boolean.h>
 #include "menu_list.h"
 #include "../../settings_list.h"
 

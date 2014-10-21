@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef GLSYM_H__
-#define GLSYM_H__
+#ifndef __LIBRETRO_SDK_GLSYM_H__
+#define __LIBRETRO_SDK_GLSYM_H__
 
 #include "rglgen.h"
 
