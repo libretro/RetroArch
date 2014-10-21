@@ -18,16 +18,15 @@
 #include "../general.h"
 #include "../performance.h"
 
-static inline float time_to_fps(retro_time_t last_time,
-      retro_time_t new_time, int frames)
-{
-   return (1000000.0f * frames) / (new_time - last_time);
-}
+#ifndef TIME_TO_FPS
+#define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
+#endif
 
 #define FPS_UPDATE_INTERVAL 256
+
 bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps)
 {
-   static retro_time_t time;
+   static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps;
    bool ret = false;
@@ -45,8 +44,8 @@ bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps)
 
       if ((g_extern.frame_count % FPS_UPDATE_INTERVAL) == 0)
       {
-         last_fps = time_to_fps(time, new_time, FPS_UPDATE_INTERVAL);
-         time = new_time;
+         last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
+         curr_time = new_time;
 
          snprintf(buf, size, "%s || FPS: %6.1f || Frames: %u",
                g_extern.title_buf, last_fps, g_extern.frame_count);
@@ -59,7 +58,7 @@ bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps)
    }
    else
    {
-      time = fps_time = new_time;
+      curr_time = fps_time = new_time;
       strlcpy(buf, g_extern.title_buf, size);
       if (buf_fps)
          strlcpy(buf_fps, "N/A", size_fps);

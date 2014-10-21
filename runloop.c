@@ -468,8 +468,8 @@ static inline int time_to_exit(retro_input_t input)
 
 static void update_frame_time(void)
 {
-   retro_time_t time = rarch_get_time_usec();
-   retro_time_t delta = time - g_extern.system.frame_time_last;
+   retro_time_t curr_time = rarch_get_time_usec();
+   retro_time_t delta = curr_time - g_extern.system.frame_time_last;
    bool is_locked_fps = g_extern.is_paused || driver.nonblock_state;
    is_locked_fps |= !!driver.recording_data;
 
@@ -479,7 +479,7 @@ static void update_frame_time(void)
    if (!is_locked_fps && g_extern.is_slowmotion)
       delta /= g_settings.slowmotion_ratio;
 
-   g_extern.system.frame_time_last = is_locked_fps ? 0 : time;
+   g_extern.system.frame_time_last = is_locked_fps ? 0 : curr_time;
    g_extern.system.frame_time.callback(delta);
 }
 
