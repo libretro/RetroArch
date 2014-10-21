@@ -94,17 +94,16 @@ void dir_list_free(struct string_list *list)
 struct string_list *dir_list_new(const char *dir,
       const char *ext, bool include_dirs)
 {
-   struct string_list *list = string_list_new();
+   char path_buf[PATH_MAX];
+   WIN32_FIND_DATA ffd;
+   struct string_list *ext_list = NULL, *list = NULL;
+   HANDLE hFind = INVALID_HANDLE_VALUE;
+   list = string_list_new();
    if (!list)
       return NULL;
 
-   HANDLE hFind = INVALID_HANDLE_VALUE;
-   WIN32_FIND_DATA ffd;
-
-   char path_buf[PATH_MAX];
    snprintf(path_buf, sizeof(path_buf), "%s\\*", dir);
 
-   struct string_list *ext_list = NULL;
    if (ext)
       ext_list = string_split(ext, "|");
 
