@@ -92,7 +92,7 @@ OBJ += frontend/frontend.o \
 		retroarch.o \
 		runloop.o \
 		file.o \
-		file_list.o \
+		libretro-sdk/file/file_list.o \
 		dir_list.o \
 		string_list.o \
 		file_path.o \

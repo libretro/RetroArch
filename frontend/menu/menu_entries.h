@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 #include "menu_common.h"
-#include "../../file_list.h"
+#include <file/file_list.h>
 #include "../../settings_data.h"
 
 #ifdef __cplusplus

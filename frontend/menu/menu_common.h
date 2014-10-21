@@ -26,7 +26,6 @@
 #include "../../general.h"
 #include "menu_navigation.h"
 #include "../../core_info.h"
-#include "../../file_list.h"
 #include "../../playlist.h"
 #include "../../input/input_common.h"
 #include "../../input/keyboard_line.h"
