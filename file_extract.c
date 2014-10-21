@@ -14,11 +14,9 @@
  */
 
 #include "file_extract.h"
-#include "file.h"
 #include "file_path.h"
-#include "string_list.h"
 #include <compat/strl.h>
-#include "general.h"
+#include "retroarch_logger.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,6 +29,7 @@
  * The file is mapped to memory directly (via mmap() or just 
  * plain read_file()).
  */
+
 struct zlib_file_backend
 {
    void *(*open)(const char *path);
