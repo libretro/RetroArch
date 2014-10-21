@@ -19,7 +19,6 @@
 #include <compat/posix_string.h>
 #include <compat/msvc.h>
 #include <compat/strl.h>
-#include "../../file.h"
 #include "../../file_path.h"
 #include "../../general.h"
 

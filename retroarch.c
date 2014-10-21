@@ -22,6 +22,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include "content.h"
 #include "rarch_file_path.h"
 #include "dir_list.h"
 #include "general.h"

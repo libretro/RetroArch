@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "file.h"
+#include "content.h"
 #include "file_path.h"
 #include "rarch_file_path.h"
 #include "general.h"

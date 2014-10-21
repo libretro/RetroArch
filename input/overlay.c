@@ -21,7 +21,6 @@
 #include "../conf/config_file.h"
 #include <compat/posix_string.h>
 #include "input_common.h"
-#include "../file.h"
 #include "../file_path.h"
 #include <stddef.h>
 #include <math.h>

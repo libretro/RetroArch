@@ -35,7 +35,6 @@
 #include <compat/posix_string.h>
 #include "../../conf/config_file.h"
 #include "../../dynamic.h"
-#include "../../file.h"
 #include "../../file_path.h"
 
 #include "../state_tracker.h"

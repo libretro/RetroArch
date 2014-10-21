@@ -519,7 +519,7 @@ DYNAMIC
 /*============================================================
 FILE
 ============================================================ */
-#include "../file.c"
+#include "../content.c"
 #include "../file_path.c"
 #include "../dir_list.c"
 #include "../libretro-sdk/string/string_list.c"

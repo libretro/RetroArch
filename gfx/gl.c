@@ -23,7 +23,6 @@
 #include "../performance.h"
 #include "scaler/scaler.h"
 #include "image/image.h"
-#include "../file.h"
 
 #include <stdint.h>
 #include "../libretro.h"

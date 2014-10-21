@@ -48,7 +48,6 @@
 #include <linux/kd.h>
 #endif
 
-#include "../file.h"
 
 rarch_joypad_driver_t *joypad_drivers[] = {
 #ifdef __CELLOS_LV2__

@@ -18,7 +18,6 @@
 #endif
 
 #include "image.h"
-#include "../../file.h"
 #include "../../rarch_file_path.h"
 
 #include <stdlib.h>

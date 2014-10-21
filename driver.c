@@ -17,7 +17,6 @@
 
 #include "driver.h"
 #include "general.h"
-#include "file.h"
 #include "libretro.h"
 #include <stdint.h>
 #include <string.h>

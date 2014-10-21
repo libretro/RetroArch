@@ -20,7 +20,6 @@
 #include <compat/posix_string.h>
 #include "../state_tracker.h"
 #include "../../dynamic.h"
-#include "../../file.h"
 #include "../../rarch_file_path.h"
 
 #ifdef HAVE_CONFIG_H
