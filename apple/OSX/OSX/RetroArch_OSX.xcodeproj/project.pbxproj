@@ -351,6 +351,7 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/..",
 					"$(SRCROOT)/../../../gfx/inc",
+					"$(SRCROOT)/../../../libretro-sdk/include",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/RetroArch-Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
@@ -419,6 +420,7 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/..",
 					"$(SRCROOT)/../../../gfx/inc",
+					"$(SRCROOT)/../../../libretro-sdk/include",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/RetroArch-Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
