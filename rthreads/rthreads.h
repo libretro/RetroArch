@@ -23,7 +23,7 @@
 #ifndef THREAD_H__
 #define THREAD_H__
 
-#include "boolean.h"
+#include "../boolean.h"
 #include <stdint.h>
 
 #if defined(__cplusplus) && !defined(MSC_VER)
