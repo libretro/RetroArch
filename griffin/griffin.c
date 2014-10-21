@@ -521,7 +521,7 @@ FILE
 ============================================================ */
 #include "../file.c"
 #include "../dir_list.c"
-#include "../string_list.c"
+#include "../libretro-sdk/string/string_list.c"
 #include "../file_path.c"
 #include "../libretro-sdk/file/file_list.c"
 
