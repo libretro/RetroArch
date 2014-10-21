@@ -23,7 +23,7 @@
 #include "../general.h"
 #include "../driver.h"
 #include "../performance.h"
-#include "../miscellaneous.h"
+#include <retro_miscellaneous.h>
 #include "../gfx/scaler/scaler.h"
 #include <stdlib.h>
 #include <fcntl.h>

@@ -28,7 +28,7 @@
 #include "../../../config.def.h"
 #include "../../../file.h"
 #include "../../../dynamic.h"
-#include "../../../compat/posix_string.h"
+#include <compat/posix_string.h>
 #include "../../../performance.h"
 #include "../../../input/input_common.h"
 

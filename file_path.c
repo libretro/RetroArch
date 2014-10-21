@@ -22,7 +22,7 @@
 #include <errno.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
-#include "miscellaneous.h"
+#include <retro_miscellaneous.h>
 
 #ifdef __HAIKU__
 #include <kernel/image.h>

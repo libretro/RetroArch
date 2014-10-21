@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2014 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (boolean.h).
+ * The following license statement only applies to this file (retro_endianness.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,

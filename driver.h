@@ -31,9 +31,7 @@
 #include "audio/dsp_filter.h"
 #include "input/overlay.h"
 #include "frontend/frontend_context.h"
-#ifndef _WIN32
-#include "miscellaneous.h"
-#endif
+#include <retro_miscellaneous.h>
 
 #include "frontend/menu/menu_driver.h"
 #include "frontend/menu/backend/menu_backend.h"

@@ -32,9 +32,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <ctype.h>
-#ifdef _MSC_VER
-#include <compat/msvc.h>
-#endif
+
+#include <retro_miscellaneous.h>
 
 char *optarg;
 int optind, opterr, optopt;

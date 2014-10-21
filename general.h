@@ -32,7 +32,7 @@
 #include <compat/strl.h>
 #include "core_options.h"
 #include "core_info.h"
-#include "miscellaneous.h"
+#include <retro_miscellaneous.h>
 #include "gfx/filter.h"
 
 #include "playlist.h"

@@ -57,7 +57,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "hash.h"
-#include "miscellaneous.h"
+#include <retro_miscellaneous.h>
 #include <retro_endianness.h>
 
 #define LSL32(x, n) ((uint32_t)(x) << (n))

@@ -17,7 +17,7 @@
 #include <stdint.h>
 #include "string_list.h"
 #include <string.h>
-#include "miscellaneous.h"
+#include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 

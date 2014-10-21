@@ -16,7 +16,7 @@ include $(CELL_MK_DIR)/sdk.makedef.mk
 PPU_LIB_TARGET		= librgl_ps3.a
 
 LDDIRS = -L.
-INCDIRS = -I. -Ips3/gcmgl/include
+INCDIRS = -I. -Ips3/gcmgl/include -Ilibretro-sdk/include
 
 RGL_DIR = ps3/gcmgl/src
 

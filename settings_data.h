@@ -18,7 +18,7 @@
 
 #include <stdint.h>
 #include "conf/config_file.h"
-#include "miscellaneous.h"
+#include <retro_miscellaneous.h>
 #include "settings_list.h"
 
 #ifdef __cplusplus

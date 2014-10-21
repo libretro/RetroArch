@@ -20,7 +20,7 @@
 #include <sys/types.h>
 
 #include <string.h>
-#include "../miscellaneous.h"
+#include <retro_miscellaneous.h>
 #include "../file_path.h"
 #include "7zip_support.h"
 
