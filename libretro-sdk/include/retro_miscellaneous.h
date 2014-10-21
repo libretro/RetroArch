@@ -44,7 +44,8 @@
 #include <compat/msvc.h>
 
 #ifdef RARCH_INTERNAL
-#include "retroarch_logger.h"
+/* TODO/FIXME - dirty hack */
+#include "../../retroarch_logger.h"
 #endif
 #include <retro_endianness.h>
 #include <limits.h>
