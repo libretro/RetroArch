@@ -47,6 +47,7 @@
 /* TODO/FIXME - dirty hack */
 #include "../../retroarch_logger.h"
 #endif
+#include <retro_inline.h>
 #include <retro_endianness.h>
 #include <limits.h>
 
@@ -75,7 +76,7 @@
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define RARCH_SCALE_BASE 256
 
-static inline void rarch_sleep(unsigned msec)
+static INLINE void rarch_sleep(unsigned msec)
 {
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    sys_timer_usleep(1000 * msec);
@@ -95,7 +96,7 @@ static inline void rarch_sleep(unsigned msec)
 #endif
 }
 
-static inline uint32_t next_pow2(uint32_t v)
+static INLINE uint32_t next_pow2(uint32_t v)
 {
    v--;
    v |= v >> 1;
@@ -107,7 +108,7 @@ static inline uint32_t next_pow2(uint32_t v)
    return v;
 }
 
-static inline uint32_t prev_pow2(uint32_t v)
+static INLINE uint32_t prev_pow2(uint32_t v)
 {
    v |= v >> 1;
    v |= v >> 2;

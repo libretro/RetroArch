@@ -23,6 +23,7 @@
 #ifndef __LIBRETRO_SDK_ENDIANNESS_H
 #define __LIBRETRO_SDK_ENDIANNESS_H
 
+#include <retro_inline.h>
 #include <stdint.h>
 
 #define SWAP32(x) ((uint32_t)(           \
@@ -32,7 +33,7 @@
          (((uint32_t)(x) & 0xff000000) >> 24)   \
          ))
 
-static inline uint8_t is_little_endian(void)
+static INLINE uint8_t is_little_endian(void)
 {
    union
    {
@@ -44,7 +45,7 @@ static inline uint8_t is_little_endian(void)
    return u.y[0];
 }
 
-static inline uint32_t swap_if_big32(uint32_t val)
+static INLINE uint32_t swap_if_big32(uint32_t val)
 {
    if (is_little_endian())
       return val;
@@ -52,7 +53,7 @@ static inline uint32_t swap_if_big32(uint32_t val)
       ((val << 8) & 0xFF0000) | (val << 24);
 }
 
-static inline uint32_t swap_if_little32(uint32_t val)
+static INLINE uint32_t swap_if_little32(uint32_t val)
 {
    if (is_little_endian())
       return (val >> 24) | ((val >> 8) & 0xFF00) |
@@ -60,26 +61,26 @@ static inline uint32_t swap_if_little32(uint32_t val)
    return val;
 }
 
-static inline uint16_t swap_if_big16(uint16_t val)
+static INLINE uint16_t swap_if_big16(uint16_t val)
 {
    if (is_little_endian())
       return val;
    return (val >> 8) | (val << 8);
 }
 
-static inline uint16_t swap_if_little16(uint16_t val)
+static INLINE uint16_t swap_if_little16(uint16_t val)
 {
    if (is_little_endian())
       return (val >> 8) | (val << 8);
    return val;
 }
 
-static inline void store32be(uint32_t *addr, uint32_t data)
+static INLINE void store32be(uint32_t *addr, uint32_t data)
 {
    *addr = is_little_endian() ? SWAP32(data) : data;
 }
 
-static inline uint32_t load32be(const uint32_t *addr)
+static INLINE uint32_t load32be(const uint32_t *addr)
 {
    return is_little_endian() ? SWAP32(*addr) : *addr;
 }
