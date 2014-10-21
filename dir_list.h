@@ -17,7 +17,7 @@
 #ifndef _DIR_LIST_H
 #define _DIR_LIST_H
 
-#include "string_list.h"
+#include <string/string_list.h>
 
 #ifdef __cplusplus
 extern "C" {

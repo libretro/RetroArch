@@ -24,7 +24,6 @@
 #include "../menu_common.h"
 #include "../menu_driver.h"
 #include "menu_display.h"
-#include "../../../string_list.h"
 #include "../../../general.h"
 #include "../../../file_path.h"
 #include "../../../gfx/gl_common.h"

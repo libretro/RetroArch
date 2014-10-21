@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
-#include "string_list.h"
+#include <string/string_list.h>
 
 #ifdef __cplusplus
 extern "C" {

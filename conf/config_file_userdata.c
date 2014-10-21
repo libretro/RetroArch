@@ -15,7 +15,7 @@
  */
 
 #include "config_file_userdata.h"
-#include "../string_list.h"
+#include <string/string_list.h>
 
 #define get_array_setup() \
    struct config_file_userdata *dsp = (struct config_file_userdata*)userdata; \
