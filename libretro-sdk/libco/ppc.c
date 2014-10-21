@@ -8,7 +8,7 @@
 floating-point and AltiVec save/restore */
 
 #define LIBCO_C
-#include "libco.h"
+#include <libco.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>

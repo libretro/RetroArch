@@ -17,7 +17,7 @@
  */
 
 #define LIBCO_C
-#include "libco.h"
+#include <libco.h>
 #include <stdlib.h>
 #include <ucontext.h>
 
