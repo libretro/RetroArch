@@ -60,13 +60,6 @@
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_7ZIP
-#include "decompress/7zip_support.h"
-#endif
-#ifdef HAVE_ZLIB
-#include "decompress/zip_support.h"
-#endif
-
 /* Dump to file. */
 bool write_file(const char *path, const void *data, size_t size)
 {
@@ -90,59 +83,6 @@ bool write_empty_file(const char *path)
 
    return true;
 }
-
-/* Generic compressed file loader.
- * Extracts to buf, unless optional_filename != 0
- * Then extracts to optional_filename and leaves buf alone.
- */
-#ifdef HAVE_COMPRESSION
-long read_compressed_file(const char * path, void **buf,
-      const char* optional_filename)
-{
-   /* Safety check.
-    * If optional_filename and optional_filename exists, we simply return 0,
-    * hoping that optional_filename is the same as requested.
-   */
-   if (optional_filename)
-      if(path_file_exists(optional_filename))
-         return 0;
-
-   //We split carchive path and relative path:
-   char archive_path[PATH_MAX];
-   strlcpy(archive_path,path,sizeof(archive_path));
-   char* archive_found = strchr(archive_path,'#');
-   rarch_assert(archive_found != NULL);
-
-   //We assure that there is something after the '#' symbol
-   if (strlen(archive_found) <= 1)
-   {
-      /*
-       * This error condition happens for example, when
-       * path = /path/to/file.7z, or
-       * path = /path/to/file.7z#
-       */
-      RARCH_ERR("Could not extract image path and carchive path from "
-            "path: %s.\n", path);
-      return -1;
-   }
-
-   //We split the string in two, by putting a \0, where the hash was:
-   *archive_found = '\0';
-   archive_found+=1;
-
-
-   const char* file_ext = path_get_extension(archive_path);
-#ifdef HAVE_7ZIP
-   if (strcasecmp(file_ext,"7z") == 0)
-      return read_7zip_file(archive_path,archive_found,buf,optional_filename);
-#endif
-#ifdef HAVE_ZLIB
-   if (strcasecmp(file_ext,"zip") == 0)
-      return read_zip_file(archive_path,archive_found,buf,optional_filename);
-#endif
-   return -1;
-}
-#endif
 
 static long read_generic_file(const char *path, void **buf)
 {
@@ -269,24 +209,6 @@ char *path_remove_extension(char *path)
    return last;
 }
 
-struct string_list *compressed_file_list_new(const char *path,
-      const char* ext)
-{
-#ifdef HAVE_COMPRESSION
-   const char* file_ext = path_get_extension(path);
-#ifdef HAVE_7ZIP
-   if (strcasecmp(file_ext,"7z") == 0)
-      return compressed_7zip_file_list_new(path,ext);
-#endif
-#ifdef HAVE_ZLIB
-   if (strcasecmp(file_ext,"zip") == 0)
-      return compressed_zip_file_list_new(path,ext);
-#endif
-
-#endif
-   return NULL;
-}
-
 static bool path_char_is_slash(char c)
 {
 #ifdef _WIN32
@@ -303,32 +225,6 @@ static const char *path_default_slash(void)
 #else
    return "/";
 #endif
-}
-
-bool path_contains_compressed_file(const char *path)
-{
-   /*
-    * Currently we only check for hash symbol inside the pathname.
-    * If path is ever expanded to a general URI, we should check for that here.
-    */
-   return (strchr(path,'#') != NULL);
-}
-
-bool path_is_compressed_file(const char* path)
-{
-#ifdef HAVE_COMPRESSION
-   const char* file_ext = path_get_extension(path);
-#ifdef HAVE_7ZIP
-   if (strcmp(file_ext,"7z") == 0)
-      return true;
-#endif
-#ifdef HAVE_ZLIB
-   if (strcmp(file_ext,"zip") == 0)
-      return true;
-#endif
-
-#endif
-   return false;
 }
 
 bool path_is_directory(const char *path)
@@ -428,6 +324,7 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
    else
       ptr = in_path;
 
+#ifdef HAVE_COMPRESSION
    /* In case of compression, we also have to consider paths like
     *   /path/to/archive.7z#mygame.img
     *   and
@@ -435,7 +332,6 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
     *   basename would be mygame.img in both cases
     */
 
-#ifdef HAVE_COMPRESSION
    const char *ptr_bak = ptr;
    ptr = strchr(ptr_bak,'#');
    if (ptr)

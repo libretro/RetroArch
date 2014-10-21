@@ -523,6 +523,7 @@ FILE
 #include "../dir_list.c"
 #include "../libretro-sdk/string/string_list.c"
 #include "../rarch_file_path.c"
+#include "../rarch_compr_file_path.c"
 #include "../libretro-sdk/file/file_list.c"
 
 /*============================================================
