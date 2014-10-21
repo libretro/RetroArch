@@ -400,7 +400,7 @@ static void xmb_selection_pointer_changed(void)
 
 static void xmb_list_open_old(file_list_t *list, int dir, size_t current)
 {
-   unsigned i;
+   int i;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
@@ -423,7 +423,7 @@ static void xmb_list_open_old(file_list_t *list, int dir, size_t current)
 
 static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
 {
-   unsigned i;
+   int i;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
