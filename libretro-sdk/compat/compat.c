@@ -75,20 +75,22 @@ static int find_long_index(char * const *argv)
 
 static int parse_short(const char *optstring, char * const *argv)
 {
+   bool extra_opt, takes_arg, embedded_arg;
+   const char *opt = NULL;
    char arg = argv[0][1];
    if (arg == ':')
       return '?';
 
-   const char *opt = strchr(optstring, arg);
+   opt = strchr(optstring, arg);
    if (!opt)
       return '?';
 
-   bool extra_opt = argv[0][2];
-   bool takes_arg = opt[1] == ':';
+   extra_opt = argv[0][2];
+   takes_arg = opt[1] == ':';
 
    /* If we take an argument, and we see additional characters,
     * this is in fact the argument (i.e. -cfoo is same as -c foo). */
-   bool embedded_arg = extra_opt && takes_arg;
+   embedded_arg = extra_opt && takes_arg;
 
    if (takes_arg)
    {
@@ -173,6 +175,7 @@ static void shuffle_block(char **begin, char **last, char **end)
 int getopt_long(int argc, char *argv[],
       const char *optstring, const struct option *longopts, int *longindex)
 {
+   int short_index, long_index;
    (void)longindex;
 
    if (optind == 0)
@@ -181,8 +184,8 @@ int getopt_long(int argc, char *argv[],
    if (argc == 1)
       return -1;
 
-   int short_index = find_short_index(&argv[optind]);
-   int long_index  = find_long_index(&argv[optind]);
+   short_index = find_short_index(&argv[optind]);
+   long_index  = find_long_index(&argv[optind]);
 
    /* We're done here. */
    if (short_index == -1 && long_index == -1)
@@ -232,13 +235,14 @@ static int casencmp(const char *a, const char *b, size_t n)
 
 char *strcasestr_rarch__(const char *haystack, const char *needle)
 {
-   size_t i;
-   size_t hay_len = strlen(haystack);
-   size_t needle_len = strlen(needle);
+   size_t i, hay_len, needle_len, search_off;
+
+   hay_len = strlen(haystack);
+   needle_len = strlen(needle);
    if (needle_len > hay_len)
       return NULL;
 
-   size_t search_off = hay_len - needle_len;
+   search_off = hay_len - needle_len;
    for (i = 0; i <= search_off; i++)
       if (!casencmp(haystack + i, needle, needle_len))
          return (char*)haystack + i;
@@ -330,16 +334,16 @@ int rarch_isblank__(int c)
 
 char *rarch_strtok_r__(char *str, const char *delim, char **saveptr)
 {
+   char *first = NULL;
    if (!saveptr || !delim)
       return NULL;
 
    if (str)
       *saveptr = str;
 
-   char *first = NULL;
-
    do
    {
+      char *ptr = NULL;
       first = *saveptr;
       while (*first && strchr(delim, *first))
          *first++ = '\0';
@@ -347,7 +351,7 @@ char *rarch_strtok_r__(char *str, const char *delim, char **saveptr)
       if (*first == '\0')
          return NULL;
 
-      char *ptr = first + 1;
+      ptr = first + 1;
 
       while (*ptr && !strchr(delim, *ptr))
          ptr++;

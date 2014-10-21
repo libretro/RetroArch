@@ -9,19 +9,19 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Source Files\compat">
-      <UniqueIdentifier>{442ff913-d338-430f-8b84-57bd7d4117db}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\conf">
       <UniqueIdentifier>{7ffc19c2-b69a-4272-b986-4fafee630f77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\libretro-sdk">
+      <UniqueIdentifier>{f4a792cf-e151-4c18-90e8-937df3d3562a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\libretro-sdk\compat">
+      <UniqueIdentifier>{442ff913-d338-430f-8b84-57bd7d4117db}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\conf\config_file.c">
       <Filter>Source Files\conf</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\compat\compat.c">
-      <Filter>Source Files\compat</Filter>
     </ClCompile>
     <ClCompile Include="..\..\file_path.c">
       <Filter>Source Files</Filter>
@@ -43,6 +43,9 @@
     </ClCompile>
     <ClCompile Include="..\..\frontend\platform\platform_xdk.c">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libretro-sdk\compat\compat.c">
+      <Filter>Source Files\libretro-sdk\compat</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

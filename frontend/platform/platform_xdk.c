@@ -26,10 +26,7 @@
 #include "../../conf/config_file.h"
 #include "../../conf/config_file_macros.h"
 #include "../../file.h"
-
-#ifndef IS_SALAMANDER
 #include "../../general.h"
-#endif
 
 static bool exit_spawn;
 static bool exitspawn_start_game;
@@ -239,8 +236,8 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    }
 #endif
 
-exit:
 #ifndef IS_SALAMANDER
+exit:
    g_extern.verbosity = original_verbose;
 #endif
 }
@@ -279,12 +276,6 @@ static void frontend_xdk_exitspawn(char *core_path,
 #endif
    frontend_xdk_exec(core_path, should_load_game);
 }
-
-#include <stdio.h>
-
-#include <xtl.h>
-
-#include "../../retroarch_logger.h"
 
 static void frontend_xdk_exec(const char *path, bool should_load_game)
 {
