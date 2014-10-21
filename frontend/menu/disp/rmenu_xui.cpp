@@ -366,7 +366,7 @@ static void rmenu_xui_render(void)
       return;
 
    begin = driver.menu->selection_ptr;
-   end   = menu_list_get_size();
+   end   = menu_list_get_size(driver.menu->menu_list);
 
    rmenu_xui_render_background();
 
@@ -418,10 +418,11 @@ static void rmenu_xui_render(void)
       unsigned type = 0, w = 0;
       bool selected = false;
 
-      menu_list_get_at_offset(driver.menu->selection_buf, i, &path,
+      menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
             &entry_label, &type);
 
-      disp_set_label(&w, type, i, label,
+      disp_set_label(driver.menu->menu_list->selection_buf,
+		  &w, type, i, label,
             type_str, sizeof(type_str), 
             entry_label, path,
             path_buf, sizeof(path_buf));

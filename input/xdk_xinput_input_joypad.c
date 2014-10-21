@@ -129,6 +129,7 @@ static int16_t xdk_joypad_axis(unsigned port, uint32_t joyaxis)
 static void xdk_joypad_poll(void)
 {
    uint64_t *state_p1, *lifecycle_state;
+   unsigned port;
 #if defined(_XBOX1)
    unsigned int dwInsertions, dwRemovals, port;
 
