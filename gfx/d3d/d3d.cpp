@@ -24,7 +24,6 @@
 #ifndef _XBOX
 #include "render_chain.hpp"
 #endif
-#include "../../file.h"
 #include "../gfx_common.h"
 
 #include "../context/win32_common.h"
