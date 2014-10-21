@@ -378,21 +378,21 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    if (state_tracker)
    {
       /* Only query uniforms in first pass. */
-      static struct state_tracker_uniform info[MAX_VARIABLES];
+      static struct state_tracker_uniform tracker_info[MAX_VARIABLES];
       static unsigned cnt = 0;
 
       if (active_idx == 1)
-         cnt = state_get_uniform(state_tracker, info,
+         cnt = state_get_uniform(state_tracker, tracker_info,
                MAX_VARIABLES, frame_count);
 
       for (i = 0; i < cnt; i++)
       {
          CGparameter param_v = cgGetNamedParameter(
-               prg[active_idx].vprg, info[i].id);
+               prg[active_idx].vprg, tracker_info[i].id);
          CGparameter param_f = cgGetNamedParameter(
-               prg[active_idx].fprg, info[i].id);
-         set_param_1f(param_v, info[i].value);
-         set_param_1f(param_f, info[i].value);
+               prg[active_idx].fprg, tracker_info[i].id);
+         set_param_1f(param_v, tracker_info[i].value);
+         set_param_1f(param_f, tracker_info[i].value);
       }
    }
 }
