@@ -44,7 +44,6 @@
 #ifdef _MSC_VER
 #define setmode _setmode
 #endif
-#include "msvc/msvc_compat.h"
 #ifdef _XBOX
 #include <xtl.h>
 #define INVALID_FILE_ATTRIBUTES -1

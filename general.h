@@ -60,7 +60,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
-#include "msvc/msvc_compat.h"
+#include "compat/msvc_compat.h"
 #endif
 
 /* Wii and PSL1GHT - for usleep (among others) */

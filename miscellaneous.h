@@ -35,7 +35,7 @@
 #elif defined(_WIN32) && defined(_XBOX)
 #include <Xtl.h>
 #endif
-#include "msvc/msvc_compat.h"
+#include "compat/msvc_compat.h"
 
 #include "retroarch_logger.h"
 #include "endianness.h"

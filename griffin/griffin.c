@@ -23,7 +23,7 @@
 #endif
 
 #if defined(_MSC_VER)
-#include "../msvc/msvc_compat.h"
+#include "../compat/msvc_compat.h"
 #endif
 
 /*============================================================

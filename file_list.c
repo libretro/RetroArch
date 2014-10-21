@@ -18,7 +18,7 @@
 #include <string.h>
 #include "file_list.h"
 #include "compat/strcasestr.h"
-#include "msvc/msvc_compat.h"
+#include "compat/msvc_compat.h"
 
 void file_list_push(file_list_t *list,
       const char *path, const char *label,

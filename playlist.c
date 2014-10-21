@@ -16,7 +16,6 @@
  */
 
 #include "playlist.h"
-#include "msvc/msvc_compat.h"
 #include "compat/posix_string.h"
 #include "boolean.h"
 #include "file.h"
