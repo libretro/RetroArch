@@ -268,40 +268,6 @@ int SzArEx_GetFolderFullPackSize(const CSzArEx *p, uint32_t folderIndex, uint64_
 }
 
 
-/*
-   SRes SzReadTime(const CObjectVector<CBuf> &dataVector,
-   CObjectVector<CSzFileItem> &files, uint64_t type)
-   {
-   CBoolVector boolVector;
-   RINOK(ReadBoolVector2(files.Size(), boolVector))
-
-   CStreamSwitch streamSwitch;
-   RINOK(streamSwitch.Set(this, &dataVector));
-
-   for (int i = 0; i < files.Size(); i++)
-   {
-   CSzFileItem &file = files[i];
-   CArchiveFileTime fileTime;
-   bool defined = boolVector[i];
-   if (defined)
-   {
-   uint32_t low, high;
-   RINOK(SzReaduint32_t(low));
-   RINOK(SzReaduint32_t(high));
-   fileTime.dwLowDateTime = low;
-   fileTime.dwHighDateTime = high;
-   }
-   switch(type)
-   {
-   case k7zIdCTime: file.IsCTimeDefined = defined; if (defined) file.CTime = fileTime; break;
-   case k7zIdATime: file.IsATimeDefined = defined; if (defined) file.ATime = fileTime; break;
-   case k7zIdMTime: file.IsMTimeDefined = defined; if (defined) file.MTime = fileTime; break;
-   }
-   }
-   return SZ_OK;
-   }
-   */
-
 static int TestSignatureCandidate(uint8_t *testuint8_ts)
 {
    size_t i;
@@ -998,7 +964,6 @@ static SRes SzReadHeader2(
 
    for (;;)
    {
-      uint64_t type;
       uint64_t size;
       RINOK(SzReadID(sd, &type));
       if (type == k7zIdEnd)
