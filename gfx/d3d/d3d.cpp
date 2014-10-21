@@ -34,7 +34,7 @@
 #define HAVE_WINDOW
 #endif
 
-#include "../../compat/posix_string.h"
+#include <compat/posix_string.h>
 #include "../../performance.h"
 
 #if defined(HAVE_CG)

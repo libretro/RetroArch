@@ -29,7 +29,7 @@
 #include "dynamic.h"
 #include "cheats.h"
 #include "audio/dsp_filter.h"
-#include "compat/strl.h"
+#include <compat/strl.h>
 #include "core_options.h"
 #include "core_info.h"
 #include "miscellaneous.h"
@@ -60,7 +60,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
-#include "compat/msvc_compat.h"
+#include <compat/posix_string.h>
 #endif
 
 /* Wii and PSL1GHT - for usleep (among others) */

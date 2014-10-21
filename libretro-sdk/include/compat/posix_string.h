@@ -25,7 +25,7 @@
 
 #ifdef _WIN32
 
-#include "msvc_compat.h"
+#include <compat/msvc.h>
 
 #ifdef __cplusplus
 extern "C" {

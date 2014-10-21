@@ -292,7 +292,7 @@ size_t strlcat(char *dest, const char *source, size_t size)
 #include <ctype.h>
 #include <stdlib.h>
 #include <stddef.h>
-#include "strl.h"
+#include <compat/strl.h>
 
 #include <string.h>
 
