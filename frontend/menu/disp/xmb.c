@@ -834,9 +834,10 @@ static GLuint xmb_png_texture_load_(const char * file_name)
 
    return texture;
 }
-static int xmb_png_texture_load_wrap(void * file_name)
+static int xmb_png_texture_load_wrap(void *data)
 {
-   return xmb_png_texture_load_(file_name);
+   const char *filename = (const char*)data;
+   return xmb_png_texture_load_(filename);
 }
 
 static GLuint xmb_png_texture_load(const char* file_name)
