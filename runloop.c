@@ -15,7 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "dir_list.h"
 #include <file/file_path.h>
 #include "performance.h"
 #include "retroarch_logger.h"

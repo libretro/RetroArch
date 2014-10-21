@@ -23,7 +23,7 @@
 #include "../general.h"
 #include "../file_ext.h"
 #include <file/file_path.h>
-#include "../dir_list.h"
+#include <file/dir_list.h>
 #include "frontend_context.h"
 
 struct defaults g_defaults;

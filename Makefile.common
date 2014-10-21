@@ -93,7 +93,7 @@ OBJ += frontend/frontend.o \
 		runloop.o \
 		content.o \
 		libretro-sdk/file/file_list.o \
-		dir_list.o \
+		libretro-sdk/file/dir_list.o \
 		libretro-sdk/string/string_list.o \
 		file_ops.o \
 		libretro-sdk/file/file_path.o \

@@ -20,7 +20,7 @@
 #include "../general.h"
 #include <file/file_path.h>
 #include "../file_ext.h"
-#include "../dir_list.h"
+#include <file/dir_list.h>
 #include "../performance.h"
 #include <stdlib.h>
 

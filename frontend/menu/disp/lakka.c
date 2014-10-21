@@ -27,7 +27,7 @@
 #include "menu_display.h"
 #include "../../../general.h"
 #include <file/file_path.h>
-#include "../../../dir_list.h"
+#include <file/dir_list.h>
 #include "../../../gfx/gl_common.h"
 #include "../../../gfx/video_thread_wrapper.h"
 #include <compat/posix_string.h>

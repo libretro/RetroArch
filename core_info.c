@@ -18,7 +18,7 @@
 #include <file/file_path.h>
 #include "file_ext.h"
 #include "file_extract.h"
-#include "dir_list.h"
+#include <file/dir_list.h>
 #include "config.def.h"
 
 #ifdef HAVE_CONFIG_H

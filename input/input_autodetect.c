@@ -16,7 +16,7 @@
 
 #include "input_common.h"
 #include "input_autodetect.h"
-#include "../dir_list.h"
+#include <file/dir_list.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>

@@ -23,7 +23,7 @@
 
 #include "../../conf/config_file.h"
 #include "../../content.h"
-#include "../../dir_list.h"
+#include <file/dir_list.h>
 #include "../../file_ops.h"
 #include <file/file_path.h>
 

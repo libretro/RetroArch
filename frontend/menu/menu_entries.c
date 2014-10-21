@@ -20,7 +20,7 @@
 #include <file/file_list.h>
 #include <file/file_path.h>
 #include "../../file_ops.h"
-#include "../../dir_list.h"
+#include <file/dir_list.h>
 #include "../../settings_data.h"
 #include "../../performance.h"
 

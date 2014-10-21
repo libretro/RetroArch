@@ -25,7 +25,7 @@
 #include "content.h"
 #include "file_ops.h"
 #include <file/file_path.h>
-#include "dir_list.h"
+#include <file/dir_list.h>
 #include "general.h"
 #include <compat/strl.h>
 #include "screenshot.h"
