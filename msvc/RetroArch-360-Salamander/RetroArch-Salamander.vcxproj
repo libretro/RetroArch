@@ -285,7 +285,7 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
-      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\frontend\frontend_salamander.c" />
     <ClCompile Include="..\..\frontend\frontend_context.c" />
@@ -297,7 +297,7 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Profile_FastCap|Xbox 360'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Xbox 360'">CompileAsC</CompileAs>
-      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsC</CompileAs>
     </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

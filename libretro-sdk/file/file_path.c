@@ -208,8 +208,9 @@ void fill_pathname_slash(char *path, size_t size)
 void fill_pathname_dir(char *in_dir, const char *in_basename,
       const char *replace, size_t size)
 {
+   const char *base = NULL;
    fill_pathname_slash(in_dir, size);
-   const char *base = path_basename(in_basename);
+   base = path_basename(in_basename);
    rarch_assert(strlcat(in_dir, base, size) < size);
    rarch_assert(strlcat(in_dir, replace, size) < size);
 }
@@ -269,10 +270,9 @@ void fill_dated_filename(char *out_filename,
 
 void path_basedir(char *path)
 {
+   char *last = NULL;
    if (strlen(path) < 2)
       return;
-
-   char *last;
 
 #ifdef HAVE_COMPRESSION
    /* We want to find the directory with the zipfile in basedir. */
@@ -490,11 +490,11 @@ void fill_pathname_expand_special(char *out_path,
 void fill_short_pathname_representation(char* out_rep,
       const char *in_path, size_t size)
 {
-   char path_short[PATH_MAX];
+   char path_short[PATH_MAX], *last_hash = NULL;
    fill_pathname(path_short, path_basename(in_path), "",
             sizeof(path_short));
 
-   char* last_hash = strchr(path_short,'#');
+   last_hash = (char*)strchr(path_short,'#');
    /* We handle paths like:
     * /path/to/file.7z#mygame.img
     * short_name: mygame.img:
