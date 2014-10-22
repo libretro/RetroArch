@@ -19,7 +19,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "../conf/config_file.h"
+#include <file/config_file.h>
 #include "../general.h"
 #include "../file_ext.h"
 #include <file/file_path.h>

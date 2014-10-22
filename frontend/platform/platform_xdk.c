@@ -23,8 +23,6 @@
 
 #include <xbdm.h>
 
-#include "../../conf/config_file.h"
-#include "../../conf/config_file_macros.h"
 #include "../../general.h"
 #include <file/file_path.h>
 

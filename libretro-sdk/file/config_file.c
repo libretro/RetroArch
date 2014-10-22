@@ -82,6 +82,8 @@ static char *getaline(FILE *file)
 
 static char *extract_value(char *line, bool is_value)
 {
+   char *save = NULL, *tok = NULL;
+
    if (is_value)
    {
       while (isspace(*line))
@@ -97,9 +99,6 @@ static char *extract_value(char *line, bool is_value)
 
    while (isspace(*line))
       line++;
-
-   char *save;
-   char *tok;
 
    /* We have a full string. Read until next ". */
    if (*line == '"')
@@ -186,12 +185,13 @@ static void add_include_list(config_file_t *conf, const char *path)
 
 static void add_sub_conf(config_file_t *conf, char *line)
 {
+   char real_path[PATH_MAX];
+   config_file_t *sub_conf = NULL;
    char *path = extract_value(line, false);
    if (!path)
       return;
 
    add_include_list(conf, path);
-   char real_path[PATH_MAX];
 
 #ifdef _WIN32
    fill_pathname_resolve_relative(real_path, conf->path,
@@ -210,7 +210,7 @@ static void add_sub_conf(config_file_t *conf, char *line)
             path, sizeof(real_path));
 #endif
 
-   config_file_t *sub_conf = (config_file_t*)
+   sub_conf = (config_file_t*)
       config_file_new_internal(real_path, conf->include_depth + 1);
    if (!sub_conf)
    {
@@ -233,10 +233,11 @@ static char *strip_comment(char *str)
 
    while (*str)
    {
+      char *comment = NULL;
       char *literal = strchr(str, '\"');
       if (!literal)
          literal = strend;
-      char *comment = strchr(str, '#');
+      comment = (char*)strchr(str, '#');
       if (!comment)
          comment = strend;
 
@@ -354,6 +355,7 @@ bool config_append_file(config_file_t *conf, const char *path)
 static config_file_t *config_file_new_internal(
       const char *path, unsigned depth)
 {
+   FILE *file = NULL;
    struct config_file *conf = (struct config_file*)calloc(1, sizeof(*conf));
    if (!conf)
       return NULL;
@@ -369,7 +371,7 @@ static config_file_t *config_file_new_internal(
    }
 
    conf->include_depth = depth;
-   FILE *file = fopen(path, "r");
+   file = fopen(path, "r");
 
    if (!file)
    {
@@ -419,6 +421,7 @@ static config_file_t *config_file_new_internal(
 config_file_t *config_file_new_from_string(const char *from_string)
 {
    size_t i;
+   struct string_list *lines = NULL;
    struct config_file *conf = (struct config_file*)calloc(1, sizeof(*conf));
    if (!conf)
       return NULL;
@@ -429,7 +432,7 @@ config_file_t *config_file_new_from_string(const char *from_string)
    conf->path = NULL;
    conf->include_depth = 0;
    
-   struct string_list *lines = string_split(from_string, "\n");
+   lines = string_split(from_string, "\n");
    if (!lines)
       return conf;
 
@@ -475,24 +478,27 @@ config_file_t *config_file_new(const char *path)
 
 void config_file_free(config_file_t *conf)
 {
+   struct config_include_list *inc_tmp = NULL, *hold = NULL;
+   struct config_entry_list *tmp = NULL;
    if (!conf)
       return;
 
-   struct config_entry_list *tmp = conf->entries;
+   tmp = conf->entries;
    while (tmp)
    {
+      struct config_entry_list *hold = NULL;
       free(tmp->key);
       free(tmp->value);
-      struct config_entry_list *hold = tmp;
+      hold = tmp;
       tmp = tmp->next;
       free(hold);
    }
 
-   struct config_include_list *inc_tmp = conf->includes;
+   inc_tmp = (struct config_include_list*)conf->includes;
    while (inc_tmp)
    {
       free(inc_tmp->path);
-      struct config_include_list *hold = inc_tmp;
+      hold = (struct config_include_list*)inc_tmp;
       inc_tmp = inc_tmp->next;
       free(hold);
    }
@@ -542,8 +548,9 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
    {
       if (strcmp(key, list->key) == 0)
       {
+         int val;
          errno = 0;
-         int val = strtol(list->value, NULL, 0);
+         val = strtol(list->value, NULL, 0);
          if (errno == 0)
          {
             *in = val;
@@ -564,8 +571,9 @@ bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
    {
       if (strcmp(key, list->key) == 0)
       {
+         uint64_t val;
          errno = 0;
-         uint64_t val = strtoull(list->value, NULL, 0);
+         val = strtoull(list->value, NULL, 0);
          if (errno == 0)
          {
             *in = val;
@@ -586,8 +594,9 @@ bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
    {
       if (strcmp(key, list->key) == 0)
       {
+         unsigned val;
          errno = 0;
-         unsigned val = strtoul(list->value, NULL, 0);
+         val = strtoul(list->value, NULL, 0);
          if (errno == 0)
          {
             *in = val;
@@ -609,8 +618,9 @@ bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
    {
       if (strcmp(key, list->key) == 0)
       {
+         unsigned val;
          errno = 0;
-         unsigned val = strtoul(list->value, NULL, 16);
+         val = strtoul(list->value, NULL, 16);
          if (errno == 0)
          {
             *in = val;
@@ -720,6 +730,7 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 
 void config_set_string(config_file_t *conf, const char *key, const char *val)
 {
+   struct config_entry_list *elem = NULL;
    struct config_entry_list *list = conf->entries;
    struct config_entry_list *last = list;
    while (list)
@@ -735,8 +746,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       list = list->next;
    }
 
-   struct config_entry_list *elem = (struct config_entry_list*)
-      calloc(1, sizeof(*elem));
+   elem = (struct config_entry_list*)calloc(1, sizeof(*elem));
 
    if (!elem)
       return;
@@ -839,6 +849,7 @@ bool config_file_write(config_file_t *conf, const char *path)
 
 void config_file_dump(config_file_t *conf, FILE *file)
 {
+   struct config_entry_list *list = NULL;
    struct config_include_list *includes = conf->includes;
    while (includes)
    {
@@ -846,7 +857,7 @@ void config_file_dump(config_file_t *conf, FILE *file)
       includes = includes->next;
    }
 
-   struct config_entry_list *list = conf->entries;
+   list = (struct config_entry_list*)conf->entries;
    while (list)
    {
       if (!list->readonly)
