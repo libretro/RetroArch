@@ -131,7 +131,7 @@ static void xdk_joypad_poll(void)
    uint64_t *state_p1, *lifecycle_state;
    unsigned port;
 #if defined(_XBOX1)
-   unsigned int dwInsertions, dwRemovals, port;
+   unsigned int dwInsertions, dwRemovals;
 
    XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD,
          reinterpret_cast<PDWORD>(&dwInsertions),

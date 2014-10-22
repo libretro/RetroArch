@@ -248,14 +248,14 @@ float inExpo(float t, float b, float c, float d)
 {
    if (t == 0)
       return b;
-   return c * pow(2, 10 * (t / d - 1)) + b - c * 0.001;
+   return c * powf(2, 10 * (t / d - 1)) + b - c * 0.001;
 }
 
 float outExpo(float t, float b, float c, float d)
 {
    if (t == d)
       return b + c;
-   return c * 1.001 * (-pow(2, -10 * t / d) + 1) + b;
+   return c * 1.001 * (-powf(2, -10 * t / d) + 1) + b;
 }
 
 float inOutExpo(float t, float b, float c, float d)
@@ -266,8 +266,8 @@ float inOutExpo(float t, float b, float c, float d)
       return b + c;
    t = t / d * 2;
    if (t < 1)
-      return c / 2 * pow(2, 10 * (t - 1)) + b - c * 0.0005;
-   return c / 2 * 1.0005 * (-pow(2, -10 * (t - 1)) + 2) + b;
+      return c / 2 * powf(2, 10 * (t - 1)) + b - c * 0.0005;
+   return c / 2 * 1.0005 * (-powf(2, -10 * (t - 1)) + 2) + b;
 }
 
 float outInExpo(float t, float b, float c, float d)
@@ -281,12 +281,12 @@ float outInExpo(float t, float b, float c, float d)
 
 float inCirc(float t, float b, float c, float d)
 {
-   return(-c * (sqrt(1 - pow(t / d, 2)) - 1) + b);
+   return(-c * (sqrt(1 - powf(t / d, 2)) - 1) + b);
 }
 
 float outCirc(float t, float b, float c, float d)
 {
-   return(c * sqrt(1 - pow(t / d - 1, 2)) + b);
+   return(c * sqrt(1 - powf(t / d - 1, 2)) + b);
 }
 
 float inOutCirc(float t, float b, float c, float d)
