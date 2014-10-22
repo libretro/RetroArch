@@ -289,7 +289,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
             prob = probs + RepLenCoder;
          }
          {
-            unsigned limit, offset;
+            unsigned _limit, offset;
             uint16_t *probLen = prob + LenChoice;
                
             ttt = *(probLen);
@@ -300,7 +300,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
                UPDATE_0(probLen);
                probLen = prob + LenLow + (posState << kLenNumLowBits);
                offset = 0;
-               limit = (1 << kLenNumLowBits);
+               _limit = (1 << kLenNumLowBits);
             }
             else
             {
@@ -315,17 +315,17 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
                   UPDATE_0(probLen);
                   probLen = prob + LenMid + (posState << kLenNumMidBits);
                   offset = kLenNumLowSymbols;
-                  limit = (1 << kLenNumMidBits);
+                  _limit = (1 << kLenNumMidBits);
                }
                else
                {
                   LZMADEC_UPDATE_1(probLen);
                   probLen = prob + LenHigh;
                   offset = kLenNumLowSymbols + kLenNumMidSymbols;
-                  limit = (1 << kLenNumHighBits);
+                  _limit = (1 << kLenNumHighBits);
                }
             }
-            TREE_DECODE(probLen, limit, len);
+            TREE_DECODE(probLen, _limit, len);
             len += offset;
          }
 
