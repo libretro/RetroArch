@@ -235,7 +235,7 @@ local void tr_static_init(void)
    int n;        /* iterates over tree elements */
    int bits;     /* bit counter */
    int length;   /* length value */
-   int code;     /* code value */
+   int codes;    /* code value */
    int dist;     /* distance index */
    ush bl_count[MAX_BITS+1];
    /* number of codes at each bit length for an optimal tree */
@@ -253,10 +253,10 @@ local void tr_static_init(void)
 
    /* Initialize the mapping length (0..255) -> length code (0..28) */
    length = 0;
-   for (code = 0; code < LENGTH_CODES-1; code++) {
-      base_length[code] = length;
-      for (n = 0; n < (1<<extra_lbits[code]); n++) {
-         _length_code[length++] = (uch)code;
+   for (codes = 0; codes < LENGTH_CODES-1; codes++) {
+      base_length[codes] = length;
+      for (n = 0; n < (1<<extra_lbits[codes]); n++) {
+         _length_code[length++] = (uch)codes;
       }
    }
    Assert (length == 256, "tr_static_init: length != 256");
@@ -264,22 +264,22 @@ local void tr_static_init(void)
     * in two different ways: code 284 + 5 bits or code 285, so we
     * overwrite length_code[255] to use the best encoding:
     */
-   _length_code[length-1] = (uch)code;
+   _length_code[length-1] = (uch)codes;
 
    /* Initialize the mapping dist (0..32K) -> dist code (0..29) */
    dist = 0;
-   for (code = 0 ; code < 16; code++) {
-      base_dist[code] = dist;
-      for (n = 0; n < (1<<extra_dbits[code]); n++) {
-         _dist_code[dist++] = (uch)code;
+   for (codes = 0 ; codes < 16; codes++) {
+      base_dist[codes] = dist;
+      for (n = 0; n < (1<<extra_dbits[codes]); n++) {
+         _dist_code[dist++] = (uch)codes;
       }
    }
    Assert (dist == 256, "tr_static_init: dist != 256");
    dist >>= 7; /* from now on, all distances are divided by 128 */
-   for ( ; code < D_CODES; code++) {
-      base_dist[code] = dist << 7;
-      for (n = 0; n < (1<<(extra_dbits[code]-7)); n++) {
-         _dist_code[256 + dist++] = (uch)code;
+   for ( ; codes < D_CODES; codes++) {
+      base_dist[codes] = dist << 7;
+      for (n = 0; n < (1<<(extra_dbits[codes]-7)); n++) {
+         _dist_code[256 + dist++] = (uch)codes;
       }
    }
    Assert (dist == 256, "tr_static_init: 256+dist != 512");
@@ -565,7 +565,7 @@ local void gen_bitlen(deflate_state *s, tree_desc *desc)
 local void gen_codes (ct_data *tree, int max_code, ushf *bl_count)
 {
    ush next_code[MAX_BITS+1]; /* next code value for each bit length */
-   ush code = 0;              /* running code value */
+   ush codes = 0;              /* running code value */
    int bits;                  /* bit index */
    int n;                     /* code index */
 
@@ -573,12 +573,12 @@ local void gen_codes (ct_data *tree, int max_code, ushf *bl_count)
     * without bit reversal.
     */
    for (bits = 1; bits <= MAX_BITS; bits++) {
-      next_code[bits] = code = (code + bl_count[bits-1]) << 1;
+      next_code[bits] = codes = (codes + bl_count[bits-1]) << 1;
    }
    /* Check that the bit counts in bl_count are consistent. The last code
     * must be all ones.
     */
-   Assert (code + bl_count[MAX_BITS]-1 == (1<<MAX_BITS)-1,
+   Assert (codes + bl_count[MAX_BITS]-1 == (1<<MAX_BITS)-1,
          "inconsistent bit counts");
    Tracev((stderr,"\ngen_codes: max_code %d ", max_code));
 
@@ -1025,7 +1025,7 @@ void ZLIB_INTERNAL _tr_flush_block(deflate_state *s, charf *buf, ulg stored_len,
       unsigned dist;      /* distance of matched string */
       int lc;             /* match length or unmatched char (if dist == 0) */
       unsigned lx = 0;    /* running index in l_buf */
-      unsigned code;      /* the code to send */
+      unsigned codes;      /* the code to send */
       int extra;          /* number of extra bits to send */
 
       if (s->last_lit != 0) do {
@@ -1036,21 +1036,21 @@ void ZLIB_INTERNAL _tr_flush_block(deflate_state *s, charf *buf, ulg stored_len,
             Tracecv(isgraph(lc), (stderr," '%c' ", lc));
          } else {
             /* Here, lc is the match length - MIN_MATCH */
-            code = _length_code[lc];
-            send_code(s, code+LITERALS+1, ltree); /* send the length code */
-            extra = extra_lbits[code];
+            codes = _length_code[lc];
+            send_code(s, codes + LITERALS+1, ltree); /* send the length code */
+            extra = extra_lbits[codes];
             if (extra != 0) {
-               lc -= base_length[code];
+               lc -= base_length[codes];
                send_bits(s, lc, extra);       /* send the extra length bits */
             }
             dist--; /* dist is now the match distance - 1 */
-            code = d_code(dist);
-            Assert (code < D_CODES, "bad d_code");
+            codes = d_code(dist);
+            Assert (codes < D_CODES, "bad d_code");
 
-            send_code(s, code, dtree);       /* send the distance code */
-            extra = extra_dbits[code];
+            send_code(s, codes, dtree);       /* send the distance code */
+            extra = extra_dbits[codes];
             if (extra != 0) {
-               dist -= base_dist[code];
+               dist -= base_dist[codes];
                send_bits(s, dist, extra);   /* send the extra distance bits */
             }
          } /* literal or match pair ? */
@@ -1110,12 +1110,12 @@ void ZLIB_INTERNAL _tr_flush_block(deflate_state *s, charf *buf, ulg stored_len,
     * method would use a table)
     * IN assertion: 1 <= len <= 15
     */
-   local unsigned bi_reverse(unsigned code, int len)
+   local unsigned bi_reverse(unsigned codes, int len)
    {
       register unsigned res = 0;
       do {
-         res |= code & 1;
-         code >>= 1, res <<= 1;
+         res |= codes & 1;
+         codes >>= 1, res <<= 1;
       } while (--len > 0);
       return res >> 1;
    }
