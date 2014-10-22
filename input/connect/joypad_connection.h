@@ -25,8 +25,8 @@ typedef void (*send_control_t)(void *data, uint8_t *buf, size_t size);
 
 typedef struct pad_connection_interface
 {
-   void*    (*connect)(void *data, uint32_t slot, send_control_t ptr);
-   void     (*disconnect)(void* device);
+   void*    (*init)(void *data, uint32_t slot, send_control_t ptr);
+   void     (*deinit)(void* device);
    void     (*packet_handler)(void* device, uint8_t *packet, uint16_t size);
    void     (*set_rumble)(void* device, enum retro_rumble_effect effect,
          uint16_t strength);
@@ -46,7 +46,7 @@ typedef struct
     bool is_gcapi;
 } joypad_connection_t;
 
-int32_t pad_connection_connect(joypad_connection_t *joyconn,
+int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, void *data, send_control_t ptr);
 
 int32_t apple_joypad_connect_gcapi(joypad_connection_t *joyconn);
@@ -55,7 +55,7 @@ void *pad_connection_init(unsigned pads);
 
 void pad_connection_destroy(joypad_connection_t *joyconn);
 
-void pad_connection_disconnect(joypad_connection_t *joyconn,
+void pad_connection_pad_deinit(joypad_connection_t *joyconn,
    unsigned idx);
 
 void pad_connection_packet(joypad_connection_t *joyconn,

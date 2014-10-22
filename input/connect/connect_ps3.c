@@ -54,9 +54,9 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
    device->send_control(device->connection, report_buffer, sizeof(report_buffer));
 }
 
-static void* hidpad_ps3_connect(void *connect_data, uint32_t slot, send_control_t ptr)
+static void* hidpad_ps3_init(void *data, uint32_t slot, send_control_t ptr)
 {
-   struct pad_connection* connection = (struct pad_connection*)connect_data;
+   struct pad_connection* connection = (struct pad_connection*)data;
    struct hidpad_ps3_data* device = (struct hidpad_ps3_data*)
     calloc(1, sizeof(struct hidpad_ps3_data));
 
@@ -75,8 +75,8 @@ static void* hidpad_ps3_connect(void *connect_data, uint32_t slot, send_control_
    
 #ifdef IOS
    /* Magic packet to start reports. */
-   static uint8_t data[] = {0x53, 0xF4, 0x42, 0x03, 0x00, 0x00};
-   device->send_control(device->connection, data, 6);
+   static uint8_t magic_data[] = {0x53, 0xF4, 0x42, 0x03, 0x00, 0x00};
+   device->send_control(device->connection, magic_data, 6);
 #endif
 
    /* Without this, the digital buttons won't be reported. */
@@ -85,7 +85,7 @@ static void* hidpad_ps3_connect(void *connect_data, uint32_t slot, send_control_
    return device;
 }
 
-static void hidpad_ps3_disconnect(void *data)
+static void hidpad_ps3_deinit(void *data)
 {
    struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
     
@@ -175,8 +175,8 @@ static void hidpad_ps3_set_rumble(void *data,
 }
 
 pad_connection_interface_t pad_connection_ps3 = {
-   hidpad_ps3_connect,
-   hidpad_ps3_disconnect,
+   hidpad_ps3_init,
+   hidpad_ps3_deinit,
    hidpad_ps3_packet_handler,
    hidpad_ps3_set_rumble,
    hidpad_ps3_get_buttons,

@@ -456,7 +456,7 @@ static int wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data,
 
 #endif
 
-static void* hidpad_wii_connect(void *data, uint32_t slot,
+static void* hidpad_wii_init(void *data, uint32_t slot,
                                 send_control_t ptr)
 {
    struct pad_connection *connection = (struct pad_connection*)data;
@@ -483,7 +483,7 @@ static void* hidpad_wii_connect(void *data, uint32_t slot,
    return device;
 }
 
-static void hidpad_wii_disconnect(void *data)
+static void hidpad_wii_deinit(void *data)
 {
    struct wiimote_t* device = (struct wiimote_t*)data;
 
@@ -561,8 +561,8 @@ static void hidpad_wii_set_rumble(void *data,
 }
 
 pad_connection_interface_t pad_connection_wii = {
-   hidpad_wii_connect,
-   hidpad_wii_disconnect,
+   hidpad_wii_init,
+   hidpad_wii_deinit,
    hidpad_wii_packet_handler,
    hidpad_wii_set_rumble,
    hidpad_wii_get_buttons,

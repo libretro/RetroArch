@@ -49,7 +49,7 @@ void *pad_connection_init(unsigned pads)
     return joyconn;
 }
 
-int32_t pad_connection_connect(joypad_connection_t *joyconn,
+int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, void *data, send_control_t ptr)
 {
    int pad = find_vacant_pad(joyconn);
@@ -80,7 +80,7 @@ int32_t pad_connection_connect(joypad_connection_t *joyconn,
          if (strstr(name, pad_map[i].name))
          {
             s->iface = pad_map[i].iface;
-            s->data = s->iface->connect(data, pad, ptr);
+            s->data = s->iface->init(data, pad, ptr);
          }
    }
 
@@ -105,7 +105,7 @@ int32_t apple_joypad_connect_gcapi(joypad_connection_t *joyconn)
    return pad;
 }
 
-void pad_connection_disconnect(joypad_connection_t *s, uint32_t pad)
+void pad_connection_pad_deinit(joypad_connection_t *s, uint32_t pad)
 {
    if (!s || !s->used)
        return;
@@ -114,8 +114,8 @@ void pad_connection_disconnect(joypad_connection_t *s, uint32_t pad)
       {
           s->iface->set_rumble(s->data, RETRO_RUMBLE_STRONG, 0);
           s->iface->set_rumble(s->data, RETRO_RUMBLE_WEAK, 0);
-          if (s->iface->disconnect)
-              s->iface->disconnect(s->data);
+          if (s->iface->deinit)
+              s->iface->deinit(s->data);
       }
        
        s->iface    = NULL;
@@ -162,7 +162,7 @@ void pad_connection_destroy(joypad_connection_t *joyconn)
    for (i = 0; i < MAX_PLAYERS; i ++)
    {
       joypad_connection_t *s = (joypad_connection_t*)&joyconn[i];
-      pad_connection_disconnect(s, i);
+      pad_connection_pad_deinit(s, i);
    }
 }
 

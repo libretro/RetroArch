@@ -133,7 +133,7 @@ static void remove_device(void* context, IOReturn result, void* sender)
       apple->buttons[connection->slot] = 0;
       memset(apple->axes[connection->slot], 0, sizeof(apple->axes));
 
-      pad_connection_disconnect(&slots[connection->slot], connection->slot);
+      pad_connection_pad_deinit(&slots[connection->slot], connection->slot);
       free(connection);
    }
 
@@ -182,7 +182,7 @@ static void add_device(void* context, IOReturn result,
    productID = (CFNumberRef)IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductIDKey));
    CFNumberGetValue(productID, kCFNumberIntType, &connection->p_id);
 
-   connection->slot = pad_connection_connect(slots, device_name,
+   connection->slot = pad_connection_pad_init(slots, device_name,
          connection, &hid_pad_connection_send_control);
 
    if (pad_connection_has_interface(slots, connection->slot))
