@@ -21,12 +21,13 @@ int DynBuf_Write(CDynBuf *p, const uint8_t *buf, size_t size, ISzAlloc *alloc)
 {
    if (size > p->size - p->pos)
    {
-      size_t newSize = p->pos + size;
-      uint8_t *data;
-      newSize += newSize / 4;
-      data = (uint8_t *)alloc->Alloc(alloc, newSize);
+      size_t current_size = p->pos + size;
+      size_t newSize = (current_size) + (current_size / 4);
+      uint8_t *data = (uint8_t *)alloc->Alloc(alloc, newSize);
+
       if (data == 0)
          return 0;
+
       p->size = newSize;
       memcpy(data, p->data, p->pos);
       alloc->Free(alloc, p->data);
