@@ -28,6 +28,7 @@ extern "C" {
 enum setting_type
 {
    ST_NONE = 0,
+   ST_ACTION,
    ST_BOOL,
    ST_INT,
    ST_UINT,

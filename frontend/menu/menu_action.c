@@ -152,6 +152,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_STRING:
       case ST_DIR:
       case ST_BIND:
+      case ST_ACTION:
          return setting_handler(setting, action);
       case ST_PATH:
          return menu_entries_set_current_path_selection(setting,

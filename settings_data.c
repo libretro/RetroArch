@@ -154,6 +154,8 @@ void setting_data_reset_setting(rarch_setting_t* setting)
          }
          break;
          /* TODO */
+      case ST_ACTION:
+         break;
       case ST_HEX:
          break;
       case ST_GROUP:
@@ -248,6 +250,8 @@ static bool setting_data_load_config(
                input_config_parse_joy_axis(cfg, prefix, settings->name,
                      settings->value.keybind);
             }
+            break;
+         case ST_ACTION:
             break;
             /* TODO */
          case ST_HEX:
@@ -365,6 +369,7 @@ bool setting_data_save_config(rarch_setting_t* settings,
             }
             break;
             /* TODO */
+         case ST_ACTION:
          case ST_HEX:
             break;
          case ST_GROUP:
@@ -457,6 +462,8 @@ void setting_data_set_with_string_representation(rarch_setting_t* setting,
          break;
 
          /* TODO */
+      case ST_ACTION:
+         break;
       case ST_HEX:
          break;
       case ST_GROUP:
@@ -674,6 +681,7 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
          }
          break;
          /* TODO */
+      case ST_ACTION:
       case ST_HEX:
          break;
       case ST_GROUP:
@@ -1093,6 +1101,14 @@ static int setting_data_uint_action_ok_linefeed(void *data, unsigned action)
          setting->name, st_uint_callback);
 
    return 0;
+}
+
+rarch_setting_t setting_data_action_setting(enum setting_type type, const char* name)
+{
+   rarch_setting_t result = { type, name };
+
+   result.short_description = name;
+   return result;
 }
 
 rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name)
@@ -2622,6 +2638,11 @@ static void general_write_handler(void *data)
 #define END_SUB_GROUP(list, list_info) \
 { \
    if (!(settings_list_append(list, list_info, setting_data_group_setting (ST_END_SUB_GROUP, 0)))) return false; \
+}
+
+#define CONFIG_ACTION(NAME, SHORT) \
+{ \
+   if (!settings_list_append(list, list_info, setting_data_action_setting  (NAME, SHORT))) return false; \
 }
 
 #define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
