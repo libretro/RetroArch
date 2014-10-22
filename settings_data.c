@@ -1103,11 +1103,33 @@ static int setting_data_uint_action_ok_linefeed(void *data, unsigned action)
    return 0;
 }
 
-rarch_setting_t setting_data_action_setting(enum setting_type type, const char* name)
+static int setting_data_action_action_ok(void *data, unsigned action)
 {
-   rarch_setting_t result = { type, name };
+   rarch_setting_t *setting = (rarch_setting_t*)data;
 
-   result.short_description = name;
+   if (!setting)
+      return -1;
+
+   return 0;
+}
+
+rarch_setting_t setting_data_action_setting(const char* name,
+      const char* short_description,
+      const char *group, const char *subgroup)
+{
+   rarch_setting_t result;
+   result.type                  = ST_ACTION;
+   result.name                  = name;
+   result.short_description     = short_description;
+   result.group                 = group;
+   result.subgroup              = subgroup;
+   result.change_handler        = NULL;
+   result.deferred_handler      = NULL;
+   result.read_handler          = NULL;
+   
+   result.action_start          = NULL;
+   result.action_toggle         = NULL;
+   result.action_ok             = setting_data_action_action_ok;
    return result;
 }
 
@@ -2640,9 +2662,9 @@ static void general_write_handler(void *data)
    if (!(settings_list_append(list, list_info, setting_data_group_setting (ST_END_SUB_GROUP, 0)))) return false; \
 }
 
-#define CONFIG_ACTION(NAME, SHORT) \
+#define CONFIG_ACTION(NAME, SHORT, group_info, subgroup_info) \
 { \
-   if (!settings_list_append(list, list_info, setting_data_action_setting  (NAME, SHORT))) return false; \
+   if (!settings_list_append(list, list_info, setting_data_action_setting  (NAME, SHORT, group_info, subgroup_info))) return false; \
 }
 
 #define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
@@ -2813,17 +2835,11 @@ static bool setting_data_append_list_main_menu_options(
    START_GROUP(group_info, "Main Menu");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
-   CONFIG_BOOL(
-         lists[0],
+   CONFIG_ACTION(
          "core_list",
          "Core",
-         false,
-         "",
-         "",
          group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
+         subgroup_info.name);
    settings_data_list_current_add_flags(
          list,
          list_info,
@@ -2831,17 +2847,11 @@ static bool setting_data_append_list_main_menu_options(
 #endif
    if (g_defaults.history)
    {
-      CONFIG_BOOL(
-            lists[1],
+      CONFIG_ACTION(
             "history_list",
             "Load Content (History)",
-            false,
-            "",
-            "",
             group_info.name,
-            subgroup_info.name,
-            general_write_handler,
-            general_read_handler);
+            subgroup_info.name);
       settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    if (
@@ -2849,100 +2859,58 @@ static bool setting_data_append_list_main_menu_options(
          && g_extern.core_info 
          && core_info_list_num_info_files(g_extern.core_info))
    {
-      CONFIG_BOOL(
-            lists[2],
+      CONFIG_ACTION(
             "detect_core_list",
             "Load Content (Detect Core)",
-            false,
-            "",
-            "",
             group_info.name,
-            subgroup_info.name,
-            general_write_handler,
-            general_read_handler);
+            subgroup_info.name);
       settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
-   CONFIG_BOOL(
-         lists[3],
+   CONFIG_ACTION(
          "load_content",
          "Load Content",
-         false,
-         "",
-         "",
          group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
+         subgroup_info.name);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
-   CONFIG_BOOL(
-         lists[4],
+   CONFIG_ACTION(
          "core_options",
          "Core Options",
-         false,
-         "",
-         "",
          group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
+         subgroup_info.name);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
-   CONFIG_BOOL(
-         lists[5],
+   CONFIG_ACTION(
          "core_information",
          "Core Information",
-         false,
-         "",
-         "",
          group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
+         subgroup_info.name);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    if (g_extern.main_is_init
          && !g_extern.libretro_dummy
          && g_extern.system.disk_control.get_num_images)
    {
-      CONFIG_BOOL(
-            lists[6],
+      CONFIG_ACTION(
             "disk_options",
             "Core Disk Options",
-            false,
-            "",
-            "",
             group_info.name,
-            subgroup_info.name,
-            general_write_handler,
-            general_read_handler);
+            subgroup_info.name);
       settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
-   CONFIG_BOOL(
-         lists[7],
+   CONFIG_ACTION(
          "settings",
          "Settings",
-         false,
-         "",
-         "",
          group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
+         subgroup_info.name);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    if (g_extern.perfcnt_enable)
    {
-      CONFIG_BOOL(
-            lists[8],
+      CONFIG_ACTION(
             "performance_counters",
             "Performance Counters",
-            false,
-            "",
-            "",
             group_info.name,
-            subgroup_info.name,
-            general_write_handler,
-            general_read_handler);
+            subgroup_info.name);
       settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
@@ -3039,17 +3007,11 @@ static bool setting_data_append_list_main_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 #endif
 
-   CONFIG_BOOL(
-         lists[15],
+   CONFIG_ACTION(
          "configurations",
          "Configurations",
-         false,
-         "",
-         "",
          group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
+         subgroup_info.name);
 
    CONFIG_BOOL(
          lists[16],
@@ -3065,17 +3027,11 @@ static bool setting_data_append_list_main_menu_options(
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_MENU_SAVE_CONFIG);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
-   CONFIG_BOOL(
-         lists[17],
+   CONFIG_ACTION(
          "help",
          "Help",
-         false,
-         "",
-         "",
          group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
+         subgroup_info.name);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    /* Apple rejects iOS apps that lets you forcibly quit an application. */

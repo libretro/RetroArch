@@ -44,8 +44,10 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
       char* buf, size_t sizeof_buf);
 
 /* List building helper functions. */
-rarch_setting_t setting_data_action_setting(enum setting_type type,
-      const char* name);
+rarch_setting_t setting_data_action_setting(const char *name,
+      const char *short_description,
+      const char *group,
+      const char *subgroup);
 
 rarch_setting_t setting_data_group_setting(enum setting_type type,
       const char* name);
