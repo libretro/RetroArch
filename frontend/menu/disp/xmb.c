@@ -67,6 +67,8 @@ enum
    XMB_TEXTURE_FOLDER,
    XMB_TEXTURE_ZIP,
    XMB_TEXTURE_CORE,
+   XMB_TEXTURE_SWITCH_ON,
+   XMB_TEXTURE_SWITCH_OFF,
    XMB_TEXTURE_LAST
 };
 
@@ -583,19 +585,41 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack, size_t current
       menu_ticker_line(value, 35, g_extern.frame_count / 20, val_buf,
             (i == current));
 
-      if(
-         strcmp(val_buf, "...")
-      && strcmp(val_buf, "(CORE)")
-      && strcmp(val_buf, "(FILE)")
-      && strcmp(val_buf, "(DIR)")
-      && strcmp(val_buf, "(COMP)")
-      )
+      if((     strcmp(val_buf, "...")
+            && strcmp(val_buf, "(CORE)")
+            && strcmp(val_buf, "(FILE)")
+            && strcmp(val_buf, "(DIR)")
+            && strcmp(val_buf, "(COMP)")
+            && strcmp(val_buf, "ON")
+            && strcmp(val_buf, "OFF"))
+            || ((!strcmp(val_buf, "ON")
+            && !xmb->textures[XMB_TEXTURE_SWITCH_ON].id)
+            || (!strcmp(val_buf, "OFF")
+            && !xmb->textures[XMB_TEXTURE_SWITCH_OFF].id)))
          xmb_draw_text(value,
                node->x + xmb->margin_left + xmb->hspacing + 
                xmb->label_margin_left + xmb->setting_margin_left, 
                xmb->margin_top + node->y + xmb->label_margin_top, 
                1, 
                node->label_alpha);
+
+      if (!strcmp(val_buf, "ON") && xmb->textures[XMB_TEXTURE_SWITCH_ON].id)
+         xmb_draw_icon(xmb->textures[XMB_TEXTURE_SWITCH_ON].id,
+               node->x + xmb->margin_left + xmb->hspacing
+               + xmb->icon_size/2.0 + xmb->setting_margin_left,
+               xmb->margin_top + node->y + xmb->icon_size/2.0,
+               node->alpha,
+               0,
+               1);
+
+      if (!strcmp(val_buf, "OFF") && xmb->textures[XMB_TEXTURE_SWITCH_OFF].id)
+         xmb_draw_icon(xmb->textures[XMB_TEXTURE_SWITCH_OFF].id,
+               node->x + xmb->margin_left + xmb->hspacing
+               + xmb->icon_size/2.0 + xmb->setting_margin_left,
+               xmb->margin_top + node->y + xmb->icon_size/2.0,
+               node->alpha,
+               0,
+               1);
    }
 }
 
@@ -919,6 +943,10 @@ static void xmb_context_reset(void *data)
          "zip.png", sizeof(xmb->textures[XMB_TEXTURE_ZIP].path));
    fill_pathname_join(xmb->textures[XMB_TEXTURE_CORE].path, iconpath,
          "core.png", sizeof(xmb->textures[XMB_TEXTURE_CORE].path));
+   fill_pathname_join(xmb->textures[XMB_TEXTURE_SWITCH_ON].path, iconpath,
+         "on.png", sizeof(xmb->textures[XMB_TEXTURE_SWITCH_ON].path));
+   fill_pathname_join(xmb->textures[XMB_TEXTURE_SWITCH_OFF].path, iconpath,
+         "off.png", sizeof(xmb->textures[XMB_TEXTURE_SWITCH_OFF].path));
 
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
       xmb->textures[k].id = xmb_png_texture_load(xmb->textures[k].path);
