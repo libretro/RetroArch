@@ -21,7 +21,7 @@
 #import "../common/RetroArch_Apple.h"
 #import "views.h"
 
-#include "../../conf/config_file.h"
+#include <file/config_file.h>
 #include "../../content.h"
 #include <file/dir_list.h>
 #include "../../file_ops.h"
