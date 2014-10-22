@@ -26,6 +26,32 @@ extern "C" {
 #include <stdio.h>
 #include <stddef.h>
 
+struct config_entry_list
+{
+   /* If we got this from an #include,
+    * do not allow overwrite. */
+   bool readonly;
+   char *key;
+   char *value;
+   struct config_entry_list *next;
+};
+
+struct config_include_list
+{
+   char *path;
+   struct config_include_list *next;
+};
+
+struct config_file
+{
+   char *path;
+   struct config_entry_list *entries;
+   struct config_entry_list *tail;
+   unsigned include_depth;
+
+   struct config_include_list *includes;
+};
+
 typedef struct config_file config_file_t;
 
 /* Config file format
@@ -125,11 +151,6 @@ bool config_file_write(config_file_t *conf, const char *path);
 /* Dump the current config to an already opened file.
  * Does not close the file. */
 void config_file_dump(config_file_t *conf, FILE *file);
-
-#ifdef RARCH_INTERNAL
-/* Also dumps inherited values, useful for logging. */
-void config_file_dump_all(config_file_t *conf);
-#endif
 
 #ifdef __cplusplus
 }

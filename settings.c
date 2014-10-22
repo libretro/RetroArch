@@ -801,6 +801,26 @@ static config_file_t *open_default_config_file(void)
 
 static void config_read_keybinds_conf(config_file_t *conf);
 
+/* Also dumps inherited values, useful for logging. */
+
+static void config_file_dump_all(config_file_t *conf)
+{
+   struct config_include_list *includes = conf->includes;
+   while (includes)
+   {
+      RARCH_LOG("#include \"%s\"\n", includes->path);
+      includes = includes->next;
+   }
+
+   struct config_entry_list *list = conf->entries;
+   while (list)
+   {
+      RARCH_LOG("%s = \"%s\" %s\n", list->key,
+            list->value, list->readonly ? "(included)" : "");
+      list = list->next;
+   }
+}
+
 static bool config_load_file(const char *path, bool set_defaults)
 {
    unsigned i;
