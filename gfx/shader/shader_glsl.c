@@ -1040,18 +1040,18 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    /* Set state parameters. */
    if (gl_state_tracker)
    {
-      static struct state_tracker_uniform info[GFX_MAX_VARIABLES];
+      static struct state_tracker_uniform state_info[GFX_MAX_VARIABLES];
       static unsigned cnt = 0;
 
       if (glsl_active_index == 1)
-         cnt = state_get_uniform(gl_state_tracker, info,
+         cnt = state_get_uniform(gl_state_tracker, state_info,
                GFX_MAX_VARIABLES, frame_count);
 
       for (i = 0; i < cnt; i++)
       {
          int location = glGetUniformLocation(gl_program[glsl_active_index],
-               info[i].id);
-         glUniform1f(location, info[i].value);
+               state_info[i].id);
+         glUniform1f(location, state_info[i].value);
       }
    }
 }
