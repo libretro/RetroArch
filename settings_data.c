@@ -4415,9 +4415,9 @@ static bool setting_data_append_list_input_options(
       snprintf(type_key[player], sizeof(key[player]),
                "input_libretro_device_p%u", player + 1);
       snprintf(label[player], sizeof(label[player]),
-               "Player %d Device Index", player + 1);
+               "User %d Device Index", player + 1);
       snprintf(type_label[player], sizeof(type_label[player]),
-               "Player %d Device Type", player + 1);
+               "User %d Device Type", player + 1);
       CONFIG_UINT(
             g_settings.input.libretro_device[player],
             type_key[player],
@@ -4520,7 +4520,7 @@ static bool setting_data_append_list_input_options(
       const struct retro_keybind* const defaults =
          (player == 0) ? retro_keybinds_1 : retro_keybinds_rest;
 
-      snprintf(buffer[player], sizeof(buffer[player]), "Player %d", player + 1);
+      snprintf(buffer[player], sizeof(buffer[player]), "User %d", player + 1);
 
       START_SUB_GROUP(
             list,
