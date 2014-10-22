@@ -1049,117 +1049,6 @@ static int action_toggle_input_bind_analog_dpad_mode(unsigned type, const char *
    return 0;
 }
 
-static int action_start_input_bind_device_type(unsigned type, const char *label,
-      unsigned action)
-{
-   unsigned current_device, i, devices[128];
-   const struct retro_controller_info *desc;
-   unsigned types = 0, port = 0;
-
-   if (!driver.menu)
-      return -1;
-
-   port = driver.menu->current_pad;
-
-   devices[types++] = RETRO_DEVICE_NONE;
-   devices[types++] = RETRO_DEVICE_JOYPAD;
-
-   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
-    * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!g_extern.system.num_ports)
-      devices[types++] = RETRO_DEVICE_ANALOG;
-
-   desc = port < g_extern.system.num_ports ?
-      &g_extern.system.ports[port] : NULL;
-   if (desc)
-   {
-      for (i = 0; i < desc->num_types; i++)
-      {
-         unsigned id = desc->types[i].id;
-         if (types < ARRAY_SIZE(devices) &&
-               id != RETRO_DEVICE_NONE &&
-               id != RETRO_DEVICE_JOYPAD)
-            devices[types++] = id;
-      }
-   }
-
-   current_device = g_settings.input.libretro_device[port];
-
-   current_device = RETRO_DEVICE_JOYPAD;
-
-   g_settings.input.libretro_device[port] = current_device;
-   pretro_set_controller_port_device(port, current_device);
-
-   return 0;
-}
-
-static int action_toggle_input_bind_device_type(unsigned type, const char *label,
-      unsigned action)
-{
-   unsigned current_device, current_idx, i, devices[128];
-   const struct retro_controller_info *desc;
-   unsigned types = 0, port = 0;
-
-   if (!driver.menu)
-      return -1;
-
-   port = driver.menu->current_pad;
-
-   devices[types++] = RETRO_DEVICE_NONE;
-   devices[types++] = RETRO_DEVICE_JOYPAD;
-
-   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
-    * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!g_extern.system.num_ports)
-      devices[types++] = RETRO_DEVICE_ANALOG;
-
-   desc = port < g_extern.system.num_ports ?
-      &g_extern.system.ports[port] : NULL;
-   if (desc)
-   {
-      for (i = 0; i < desc->num_types; i++)
-      {
-         unsigned id = desc->types[i].id;
-         if (types < ARRAY_SIZE(devices) &&
-               id != RETRO_DEVICE_NONE &&
-               id != RETRO_DEVICE_JOYPAD)
-            devices[types++] = id;
-      }
-   }
-
-   current_device = g_settings.input.libretro_device[port];
-   current_idx = 0;
-   for (i = 0; i < types; i++)
-   {
-      if (current_device == devices[i])
-      {
-         current_idx = i;
-         break;
-      }
-   }
-
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         current_device = devices
-            [(current_idx + types - 1) % types];
-
-         g_settings.input.libretro_device[port] = current_device;
-         pretro_set_controller_port_device(port, current_device);
-         break;
-
-      case MENU_ACTION_RIGHT:
-         current_device = devices
-            [(current_idx + 1) % types];
-
-         g_settings.input.libretro_device[port] = current_device;
-         pretro_set_controller_port_device(port, current_device);
-         break;
-   }
-
-   return 0;
-}
-
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -1681,7 +1570,6 @@ static int deferred_push_input_options(void *data, void *userdata,
    driver.menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
 
    menu_list_clear(list);
-   menu_list_push(list, "Device Type", "input_bind_device_type", 0, 0);
    menu_list_push(list, "Analog D-pad Mode", "input_bind_analog_dpad_mode", 0, 0);
    menu_list_push(list, "Bind Mode", "",
          MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
@@ -2186,8 +2074,6 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       cbs->action_start = action_start_shader_num_passes;
    else if (!strcmp(label, "input_bind_analog_dpad_mode"))
       cbs->action_start = action_start_input_bind_analog_dpad_mode;
-   else if (!strcmp(label, "input_bind_device_type"))
-      cbs->action_start = action_start_input_bind_device_type;
    else if (type >= MENU_SETTINGS_BIND_BEGIN &&
          type <= MENU_SETTINGS_BIND_ALL_LAST)
       cbs->action_start = action_start_bind;
@@ -2281,8 +2167,6 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_toggle = menu_action_setting_set;
    else if (!strcmp(label, "input_bind_analog_dpad_mode"))
       cbs->action_toggle = action_toggle_input_bind_analog_dpad_mode;
-   else if (!strcmp(label, "input_bind_device_type"))
-      cbs->action_toggle = action_toggle_input_bind_device_type;
    else if (type == MENU_SETTINGS_VIDEO_RESOLUTION)
       cbs->action_toggle = action_toggle_video_resolution;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))

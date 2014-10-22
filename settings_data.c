@@ -669,6 +669,73 @@ static int setting_data_bool_action_start_savestates(void *data)
    return 0;
 }
 
+static int setting_data_uint_action_toggle_libretro_device_type(void *data, unsigned action)
+{
+   unsigned current_device, current_idx, i, devices[128];
+   const struct retro_controller_info *desc;
+   unsigned types = 0, port = 0;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   port = setting->index_offset;
+
+   devices[types++] = RETRO_DEVICE_NONE;
+   devices[types++] = RETRO_DEVICE_JOYPAD;
+
+   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+    * older core which doesn't use SET_CONTROLLER_INFO. */
+   if (!g_extern.system.num_ports)
+      devices[types++] = RETRO_DEVICE_ANALOG;
+
+   desc = port < g_extern.system.num_ports ?
+      &g_extern.system.ports[port] : NULL;
+   if (desc)
+   {
+      for (i = 0; i < desc->num_types; i++)
+      {
+         unsigned id = desc->types[i].id;
+         if (types < ARRAY_SIZE(devices) &&
+               id != RETRO_DEVICE_NONE &&
+               id != RETRO_DEVICE_JOYPAD)
+            devices[types++] = id;
+      }
+   }
+
+   current_device = g_settings.input.libretro_device[port];
+   current_idx = 0;
+   for (i = 0; i < types; i++)
+   {
+      if (current_device == devices[i])
+      {
+         current_idx = i;
+         break;
+      }
+   }
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         current_device = devices
+            [(current_idx + types - 1) % types];
+
+         g_settings.input.libretro_device[port] = current_device;
+         pretro_set_controller_port_device(port, current_device);
+         break;
+
+      case MENU_ACTION_RIGHT:
+         current_device = devices
+            [(current_idx + 1) % types];
+
+         g_settings.input.libretro_device[port] = current_device;
+         pretro_set_controller_port_device(port, current_device);
+         break;
+   }
+
+   return 0;
+}
+
 static int setting_data_bool_action_toggle_savestates(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -769,6 +836,53 @@ static int setting_data_uint_action_start_default(void *data)
       return -1;
 
    *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
+
+   return 0;
+}
+
+static int setting_data_uint_action_start_libretro_device_type(void *data)
+{
+   unsigned current_device, i, devices[128];
+   const struct retro_controller_info *desc;
+   unsigned types = 0;
+   unsigned port = 0;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
+
+   port = setting->index_offset;
+
+   devices[types++] = RETRO_DEVICE_NONE;
+   devices[types++] = RETRO_DEVICE_JOYPAD;
+
+   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+    * older core which doesn't use SET_CONTROLLER_INFO. */
+   if (!g_extern.system.num_ports)
+      devices[types++] = RETRO_DEVICE_ANALOG;
+
+   desc = port < g_extern.system.num_ports ?
+      &g_extern.system.ports[port] : NULL;
+   if (desc)
+   {
+      for (i = 0; i < desc->num_types; i++)
+      {
+         unsigned id = desc->types[i].id;
+         if (types < ARRAY_SIZE(devices) &&
+               id != RETRO_DEVICE_NONE &&
+               id != RETRO_DEVICE_JOYPAD)
+            devices[types++] = id;
+      }
+   }
+
+   current_device = g_settings.input.libretro_device[port];
+
+   current_device = RETRO_DEVICE_JOYPAD;
+
+   g_settings.input.libretro_device[port] = current_device;
+   pretro_set_controller_port_device(port, current_device);
 
    return 0;
 }
@@ -4292,11 +4406,31 @@ static bool setting_data_append_list_input_options(
        * 2 is the length of '99'; we don't need more players than that.
        */
       static char key[MAX_PLAYERS][25+2+1];
+      static char type_key[MAX_PLAYERS][25+2+1];
       static char label[MAX_PLAYERS][17+2+1];
+      static char type_label[MAX_PLAYERS][17+2+1];
       snprintf(key[player], sizeof(key[player]),
                "input_player%d_joypad_index", player + 1);
+      snprintf(type_key[player], sizeof(key[player]),
+               "input_libretro_device_p%u", player + 1);
       snprintf(label[player], sizeof(label[player]),
                "Player %d Pad Index", player + 1);
+      snprintf(type_label[player], sizeof(type_label[player]),
+               "Player %d Pad Type", player + 1);
+      CONFIG_UINT(
+            g_settings.input.libretro_device[player],
+            type_key[player],
+            type_label[player],
+            player,
+            group_info.name,
+            subgroup_info.name,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index = player + 1;
+      (*list)[list_info->index - 1].index_offset = player;
+      (*list)[list_info->index - 1].action_toggle = &setting_data_uint_action_toggle_libretro_device_type;
+      (*list)[list_info->index - 1].action_start = &setting_data_uint_action_start_libretro_device_type;
+
       CONFIG_UINT(
             g_settings.input.joypad_map[player],
             key[player],
