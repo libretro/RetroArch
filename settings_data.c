@@ -4405,10 +4405,11 @@ static bool setting_data_append_list_input_options(
        * Keep them up to date or you'll get some really obvious bugs.
        * 2 is the length of '99'; we don't need more players than that.
        */
-      static char key[MAX_PLAYERS][25+2+1];
-      static char type_key[MAX_PLAYERS][25+2+1];
-      static char label[MAX_PLAYERS][17+2+1];
-      static char type_label[MAX_PLAYERS][17+2+1];
+      /* FIXME/TODO - really need to clean up this mess in some way. */
+      static char key[MAX_PLAYERS][64];
+      static char type_key[MAX_PLAYERS][64];
+      static char label[MAX_PLAYERS][64];
+      static char type_label[MAX_PLAYERS][64];
       snprintf(key[player], sizeof(key[player]),
                "input_player%d_joypad_index", player + 1);
       snprintf(type_key[player], sizeof(key[player]),
