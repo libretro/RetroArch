@@ -143,37 +143,35 @@ void retro_perf_log(void)
 
 retro_perf_tick_t rarch_get_perf_counter(void)
 {
-   retro_perf_tick_t time = 0;
+   retro_perf_tick_t time_ticks = 0;
 #if defined(__MACH__) && defined(__APPLE__)
     struct mach_timebase_info convfact;
     mach_timebase_info(&convfact);
-    time = mach_absolute_time();
+    time_ticks = mach_absolute_time();
 #elif defined(__linux__) || defined(__QNX__)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
-      time = (retro_perf_tick_t)tv.tv_sec * 1000000000 + 
+      time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 + 
          (retro_perf_tick_t)tv.tv_nsec;
-   else
-      time = 0;
 
 #elif defined(__GNUC__) && !defined(RARCH_CONSOLE) 
 
 #if defined(__i386__) || defined(__i486__) || defined(__i686__)
-   asm volatile ("rdtsc" : "=A" (time));
+   asm volatile ("rdtsc" : "=A" (time_ticks));
 #elif defined(__x86_64__)
    unsigned a, d;
    asm volatile ("rdtsc" : "=a" (a), "=d" (d));
-   time = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
+   time_ticks = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
 #endif
 
 #elif defined(__ARM_ARCH_6__)
-   asm volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time) );
+   asm volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time_ticks) );
 #elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
-   time = __mftb();
+   time_ticks = __mftb();
 #elif defined(__mips__)
    struct timeval tv;
    gettimeofday(&tv,NULL);
-   time = (1000000 * tv.tv_sec + tv.tv_usec);
+   time_ticks = (1000000 * tv.tv_sec + tv.tv_usec);
 #elif defined(_WIN32)
    long tv_sec, tv_usec;
    static const unsigned __int64 epoch = 11644473600000000Ui64;
@@ -189,10 +187,10 @@ retro_perf_tick_t rarch_get_perf_counter(void)
    tv_sec = (long)((ularge.QuadPart - epoch) / 10000000L);
    tv_usec = (long)(system_time.wMilliseconds * 1000);
 
-   time = (1000000 * tv_sec + tv_usec);
+   time_ticks = (1000000 * tv_sec + tv_usec);
 #endif
 
-   return time;
+   return time_ticks;
 }
 
 retro_time_t rarch_get_time_usec(void)
