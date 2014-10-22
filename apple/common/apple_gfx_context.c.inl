@@ -73,9 +73,7 @@ static RAScreen* get_chosen_screen(void)
 static void apple_gfx_ctx_update(void)
 {
 #ifdef OSX
-    CGLContextObj context = (CGLContextObj)g_context.CGLContextObj;
-    if (context)
-       CGLUpdateContext(context);
+	[g_context update];
 #endif
 }
 
