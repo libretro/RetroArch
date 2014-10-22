@@ -479,7 +479,7 @@ config_file_t *config_file_new(const char *path)
 
 void config_file_free(config_file_t *conf)
 {
-   struct config_include_list *inc_tmp = NULL, *hold = NULL;
+   struct config_include_list *inc_tmp = NULL;
    struct config_entry_list *tmp = NULL;
    if (!conf)
       return;
@@ -498,6 +498,7 @@ void config_file_free(config_file_t *conf)
    inc_tmp = (struct config_include_list*)conf->includes;
    while (inc_tmp)
    {
+      struct config_include_list *hold = NULL;
       free(inc_tmp->path);
       hold = (struct config_include_list*)inc_tmp;
       inc_tmp = inc_tmp->next;
