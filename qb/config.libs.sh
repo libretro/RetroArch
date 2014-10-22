@@ -204,6 +204,8 @@ if [ "$OS" = 'Win32' ]; then
    fi
 
    HAVE_XAUDIO=yes
+else
+   HAVE_D3D9=no
 fi
 
 if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_GLES" != 'yes' ]; then
