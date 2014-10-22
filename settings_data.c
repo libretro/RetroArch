@@ -525,6 +525,40 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
             aspectratio_lut[*setting->value.unsigned_integer].name,
             type_str_size);
    }
+   else if (!strncmp(setting->name, "input_libretro_device_p", 23))
+   {
+      const struct retro_controller_description *desc = NULL;
+      if (setting->index_offset < g_extern.system.num_ports)
+         desc = libretro_find_controller_description(
+               &g_extern.system.ports[setting->index_offset],
+               g_settings.input.libretro_device
+               [setting->index_offset]);
+
+      const char *name = desc ? desc->desc : NULL;
+      if (!name)
+      {
+         /* Find generic name. */
+
+         switch (g_settings.input.libretro_device
+               [setting->index_offset])
+         {
+            case RETRO_DEVICE_NONE:
+               name = "None";
+               break;
+            case RETRO_DEVICE_JOYPAD:
+               name = "RetroPad";
+               break;
+            case RETRO_DEVICE_ANALOG:
+               name = "RetroPad w/ Analog";
+               break;
+            default:
+               name = "Unknown";
+               break;
+         }
+      }
+
+      strlcpy(type_str, name, type_str_size);
+   }
    else if (!strcmp(setting->name, "autosave_interval"))
    {
       if (*setting->value.unsigned_integer)
@@ -2330,40 +2364,6 @@ void setting_data_get_label(char *type_str,
       }
       else
          strlcpy(type_str, "Disabled", type_str_size);
-   }
-   else if (!strcmp(label, "input_bind_device_type"))
-   {
-      const struct retro_controller_description *desc = NULL;
-      if (driver.menu->current_pad < g_extern.system.num_ports)
-         desc = libretro_find_controller_description(
-               &g_extern.system.ports[driver.menu->current_pad],
-               g_settings.input.libretro_device
-               [driver.menu->current_pad]);
-
-      const char *name = desc ? desc->desc : NULL;
-      if (!name)
-      {
-         /* Find generic name. */
-
-         switch (g_settings.input.libretro_device
-               [driver.menu->current_pad])
-         {
-            case RETRO_DEVICE_NONE:
-               name = "None";
-               break;
-            case RETRO_DEVICE_JOYPAD:
-               name = "RetroPad";
-               break;
-            case RETRO_DEVICE_ANALOG:
-               name = "RetroPad w/ Analog";
-               break;
-            default:
-               name = "Unknown";
-               break;
-         }
-      }
-
-      strlcpy(type_str, name, type_str_size);
    }
    else if (!strcmp(label, "input_bind_player_no"))
       snprintf(type_str, type_str_size, "#%u",
