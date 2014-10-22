@@ -120,8 +120,8 @@ OBJ += frontend/frontend.o \
 		libretro-sdk/compat/compat.o \
 		cheats.o \
 		core_info.o \
-		conf/config_file.o \
-		conf/config_file_userdata.o \
+		libretro-sdk/file/config_file.o \
+		libretro-sdk/file/config_file_userdata.o \
 		screenshot.o \
 		gfx/scaler/scaler.o \
 		gfx/shader/shader_null.o \
@@ -632,7 +632,7 @@ endif
 # Joyconfig binary
 
 JOYCONFIG_OBJ += tools/retroarch-joyconfig.o \
-	conf/config_file.o \
+	libretro-sdk/file/config_file.o \
 	libretro-sdk/file/file_path.o \
 	libretro-sdk/string/string_list.o \
 	libretro-sdk/compat/compat.o \

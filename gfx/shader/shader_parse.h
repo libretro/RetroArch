@@ -17,8 +17,8 @@
 #define SHADER_PARSE_H
 
 #include <boolean.h>
+#include <file/config_file.h>
 #include "../state_tracker.h"
-#include "../../conf/config_file.h"
 #include <retro_miscellaneous.h>
 
 #ifdef __cplusplus

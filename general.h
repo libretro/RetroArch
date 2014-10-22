@@ -805,7 +805,6 @@ const char *config_get_default_joypad(void);
 const char *config_get_default_menu(void);
 #endif
 
-#include "conf/config_file.h"
 bool config_save_file(const char *path);
 
 void rarch_main_state_new(void);

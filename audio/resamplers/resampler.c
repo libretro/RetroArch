@@ -17,7 +17,7 @@
 #ifdef RARCH_INTERNAL
 #include "../../performance.h"
 #endif
-#include "../../conf/config_file_userdata.h"
+#include <file/config_file_userdata.h>
 #include <string.h>
 
 static const rarch_resampler_t *resampler_drivers[] = {

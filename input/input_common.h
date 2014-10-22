@@ -18,7 +18,7 @@
 
 #include "input_autodetect.h"
 #include "../driver.h"
-#include "../conf/config_file.h"
+#include <file/config_file.h>
 #include "../general.h"
 #include <stdint.h>
 

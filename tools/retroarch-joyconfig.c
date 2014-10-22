@@ -17,7 +17,7 @@
 #include "config.h"
 #endif
 
-#include "conf/config_file.h"
+#include <file/config_file.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <compat/getopt.h>

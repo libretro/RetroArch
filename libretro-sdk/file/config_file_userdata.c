@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config_file_userdata.h"
+#include <file/config_file_userdata.h>
 #include <string/string_list.h>
 
 #define get_array_setup() \

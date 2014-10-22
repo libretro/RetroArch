@@ -18,7 +18,7 @@
 
 #include "dsp_filter.h"
 #include "../dynamic.h"
-#include "../conf/config_file_userdata.h"
+#include <file/config_file_userdata.h>
 #include "filters/dspfilter.h"
 #include <file/file_path.h>
 #include "../file_ext.h"

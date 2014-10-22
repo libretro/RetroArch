@@ -16,7 +16,7 @@
 #include "filter.h"
 #include "filters/softfilter.h"
 #include "../dynamic.h"
-#include "../conf/config_file_userdata.h"
+#include <file/config_file_userdata.h>
 #include "../general.h"
 #include <file/file_path.h>
 #include "../file_ext.h"

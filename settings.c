@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "conf/config_file.h"
-#include "conf/config_file_macros.h"
+#include <file/config_file.h>
+#include <file/config_file_macros.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include "config.def.h"

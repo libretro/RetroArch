@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config_file.h"
+#include <file/config_file.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

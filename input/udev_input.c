@@ -16,7 +16,6 @@
 #include "input_common.h"
 #include "keyboard_line.h"
 #include "../general.h"
-#include "../conf/config_file.h"
 #include <file/file_path.h>
 #include <unistd.h>
 #include <stdint.h>

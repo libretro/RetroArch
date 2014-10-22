@@ -47,7 +47,7 @@ extern "C" {
 #include <rthreads/rthreads.h>
 #include "../general.h"
 #include "../gfx/scaler/scaler.h"
-#include "../conf/config_file.h"
+#include <file/config_file.h>
 #include "../audio/utils.h"
 #include "ffemu.h"
 #include <assert.h>

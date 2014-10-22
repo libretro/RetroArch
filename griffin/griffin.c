@@ -72,8 +72,8 @@ CONFIG FILE
 #undef strcasecmp
 #endif
 
-#include "../conf/config_file.c"
-#include "../conf/config_file_userdata.c"
+#include "../libretro-sdk/file/config_file.c"
+#include "../libretro-sdk/file/config_file_userdata.c"
 #include "../core_options.c"
 
 /*============================================================
