@@ -4414,9 +4414,9 @@ static bool setting_data_append_list_input_options(
       snprintf(type_key[player], sizeof(key[player]),
                "input_libretro_device_p%u", player + 1);
       snprintf(label[player], sizeof(label[player]),
-               "Player %d Pad Index", player + 1);
+               "Player %d Device Index", player + 1);
       snprintf(type_label[player], sizeof(type_label[player]),
-               "Player %d Pad Type", player + 1);
+               "Player %d Device Type", player + 1);
       CONFIG_UINT(
             g_settings.input.libretro_device[player],
             type_key[player],
