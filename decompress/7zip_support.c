@@ -231,9 +231,9 @@ int read_7zip_file(const char * archive_path,
          len = SzArEx_GetFileNameUtf16(&db, i, NULL);
          if (len > tempSize)
          {
-            SzFree(NULL, temp);
+            free(temp);
             tempSize = len;
-            temp = (uint16_t *)SzAlloc(NULL, tempSize * sizeof(temp[0]));
+            temp = (uint16_t *)malloc(tempSize * sizeof(temp[0]));
             if (temp == 0)
             {
                res = SZ_ERROR_MEM;
@@ -271,7 +271,7 @@ int read_7zip_file(const char * archive_path,
                         optional_outfile);
                   IAlloc_Free(&allocImp, outBuffer);
                   SzArEx_Free(&db, &allocImp);
-                  SzFree(NULL, temp);
+                  free(temp);
                   File_Close(&archiveStream.file);
                   return -1;
                }
@@ -295,7 +295,7 @@ int read_7zip_file(const char * archive_path,
       }
    }
    SzArEx_Free(&db, &allocImp);
-   SzFree(NULL, temp);
+   free(temp);
 
    File_Close(&archiveStream.file);
 
@@ -392,9 +392,9 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
          len = SzArEx_GetFileNameUtf16(&db, i, NULL);
          if (len > tempSize)
          {
-            SzFree(NULL, temp);
+            free(temp);
             tempSize = len;
-            temp = (uint16_t *) SzAlloc(NULL, tempSize * sizeof(temp[0]));
+            temp = (uint16_t *)malloc(tempSize * sizeof(temp[0]));
             if (temp == 0)
             {
                res = SZ_ERROR_MEM;
@@ -430,7 +430,7 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
       }
    }
    SzArEx_Free(&db, &allocImp);
-   SzFree(NULL, temp);
+   free(temp);
    File_Close(&archiveStream.file);
 
    if (res != SZ_OK)
@@ -455,7 +455,7 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
 error:
    RARCH_ERR("Failed to open compressed_file: \"%s\"\n", path);
    SzArEx_Free(&db, &allocImp);
-   SzFree(NULL, temp);
+   free(temp);
    File_Close(&archiveStream.file);
    string_list_free(list);
    string_list_free(ext_list);
