@@ -20,7 +20,6 @@
 #include "netplay.h"
 #endif
 
-#include "driver.h"
 #include "general.h"
 #include "compat/strl.h"
 #include "compat/posix_string.h"
