@@ -25,7 +25,6 @@
 #include "platform_android.h"
 #include "../menu/menu_common.h"
 
-#include "../../conf/config_file.h"
 #include "../../general.h"
 
 struct android_app *g_android;
