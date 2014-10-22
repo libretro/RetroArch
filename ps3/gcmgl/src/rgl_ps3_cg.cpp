@@ -3062,90 +3062,76 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
    FILE* fp = NULL;
    if ( RGL_LIKELY( program_type == CG_BINARY ) )
    {
+      unsigned int filetag = 0;
+      const unsigned int ElfTag = 0x7F454C46; // == MAKEFOURCC(0x7F,'E','L','F');
       CGprogram ret = NULL;
-
       _CGcontext *context = _cgGetContextPtr( ctx );
-      CGprogramGroup group = NULL;
+      /* can we find it in the groups already loaded ? */
+      CGprogramGroup group = context->groupList;
 
-      //can we find it in the groups already loaded ?
-      group = context->groupList;
       while ( group )
       {
          //check the group name
          const char *groupName = rglCgGetProgramGroupName( group );
          if ( groupName && !strcmp( groupName, program_file ) )
          {
-            int index;
-            if (!entry)
-               index = 0;
-            else
+            int index = 0;
+
+            if (entry)
                index = rglCgGetProgramIndex( group, entry );
+
             if ( index >= 0 )
             {
                ret = rglpCgUpdateProgramAtIndex( group, index, 1 );
                break;
             }
-            else
-            {
-               //we couldn't find the entry in the group which has the right name
-               return ( CGprogram )NULL;
-            }
+
+            //we couldn't find the entry in the group which has the right name
+            return ( CGprogram )NULL;
          }
          group = group->next;
       }
 
       if ( ret )
          return ret;
-      else
+
+      //do we have an elf file ?
+      //read file tag:
+      // check that file exists
+      fp = fopen( program_file, "rb" );
+
+      if (!fp)
+         return ( CGprogram )NULL;
+
+      int res = fread( &filetag, sizeof( filetag ), 1, fp );
+      if ( !res )
       {
-         //do we have an elf file ?
-         //read file tag:
-         // check that file exists
-         fp = fopen( program_file, "rb" );
+         fclose( fp );
+         rglCgRaiseError( CG_FILE_READ_ERROR );
+         return ( CGprogram )NULL;
+      }
+      if ( filetag == ElfTag )
+      {
+         fclose( fp );
 
-         if (!fp)
-            return ( CGprogram )NULL;
-
-         unsigned int filetag = 0;
-         int res = fread( &filetag, sizeof( filetag ), 1, fp );
-         if ( !res )
+         group = rglCgCreateProgramGroupFromFile( ctx, program_file );
+         if ( group )
          {
-            fclose( fp );
-            rglCgRaiseError( CG_FILE_READ_ERROR );
-            return ( CGprogram )NULL;
-         }
-         const unsigned int ElfTag = 0x7F454C46; // == MAKEFOURCC(0x7F,'E','L','F');
-         if ( filetag == ElfTag )
-         {
-            fclose( fp );
-
-            group = rglCgCreateProgramGroupFromFile( ctx, program_file );
-            if ( group )
+            _CGprogramGroup *_group = ( _CGprogramGroup * )group;
+            _group->userCreated = false;
+            if (!entry)
             {
-               _CGprogramGroup *_group = ( _CGprogramGroup * )group;
-               _group->userCreated = false;
-               if (!entry)
-               {
-                  if ( group->programCount == 1 )
-                  {
-                     ret = rglpCgUpdateProgramAtIndex( group, 0, 1 );
-                  }
-               }
-               else
-               {
-                  int index = rglCgGetProgramIndex( group, entry );
-                  if ( index == -1 )
-                  {
-                     //_RGL_REPORT_EXTRA( RGL_REPORT_CG_ERROR, "couldn't find the shader entry in the CG binary" );
-                  }
-                  else
-                  {
-                     ret = rglpCgUpdateProgramAtIndex( group, index, 1 );
-                  }
-               }
+               if ( group->programCount == 1)
+                  ret = rglpCgUpdateProgramAtIndex( group, 0, 1 );
             }
-            return ret;
+            else
+            {
+               int index = rglCgGetProgramIndex( group, entry );
+               if ( index != -1 )
+                  ret = rglpCgUpdateProgramAtIndex( group, index, 1 );
+            }
          }
+         return ret;
       }
    }
 
@@ -3164,7 +3150,7 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
    rewind( fp );
 
    // alloc memory for the file
-   char* ptr = ( char* )malloc( file_size + 1 );
+   char* ptr = (char*)malloc(file_size + 1);
    if (!ptr)
    {
       fclose(fp);
@@ -3177,33 +3163,32 @@ CG_API CGprogram cgCreateProgramFromFile( CGcontext ctx,
    fclose( fp );
 
    if ( program_type == CG_SOURCE )
-   {
       ptr[file_size] = '\0';
-   }
 
    // call the CreateProgram API to do the rest of the job.
    CGprogram ret = cgCreateProgram( ctx, program_type, ptr, profile, entry, args );
 
    // free the memory for the file, we're done with it
-   free( ptr );
+   free(ptr);
 
    return ret;
 }
 
 CG_API CGprogram cgCopyProgram( CGprogram program )
 {
+   _CGprogram* prog = NULL;
+   _CGprogram* newprog = NULL;
+   size_t paddedProgramSize = 0, ucodeSize = 0;
+   int success = 0;
    // check input parameter
 
    if ( !CG_IS_PROGRAM( program ) )
       return NULL;
 
-   _CGprogram* prog = _cgGetProgPtr( program );
+   prog = (_CGprogram*)_cgGetProgPtr( program );
+
    if (!prog)
       return ( CGprogram )NULL;
-
-   _CGprogram* newprog;
-   size_t paddedProgramSize = 0;
-   size_t ucodeSize = 0;
 
    if (prog->header.profile == CG_PROFILE_SCE_FP_RSX)
    {
@@ -3232,10 +3217,8 @@ CG_API CGprogram cgCopyProgram( CGprogram program )
 
    // copy all the parameter information
 
-
    // copy the binary program information
    // TODO ******** copy the entire elf here, not just the executable.
-   int success = 0;
    switch ( prog->header.profile )
    {
       case CG_PROFILE_SCE_VP_RSX:
@@ -3244,7 +3227,6 @@ CG_API CGprogram cgCopyProgram( CGprogram program )
          break;
       default:
          rglCgRaiseError( CG_UNKNOWN_PROFILE_ERROR );
-         success = 0;
          break;
    }
 
@@ -3274,14 +3256,17 @@ CG_API CGprogram cgCopyProgram( CGprogram program )
    // add the new program object to the program list in the context
    rglCgProgramPushFront( newprog->parentContext, newprog );
 
-   if ( _cgProgramCopyHook ) _cgProgramCopyHook( newprog, prog );
+   if ( _cgProgramCopyHook )
+      _cgProgramCopyHook( newprog, prog );
 
    return newprog->id;
 }
 
 CG_API void cgDestroyProgram( CGprogram program )
 {
-   // remove the program from the program list
+   _CGprogram* ptr = NULL;
+   _CGcontext* ctx = NULL;
+   _CGprogram* p   = NULL;
 
    // check the program input
    if ( !CG_IS_PROGRAM( program ) )
@@ -3289,8 +3274,9 @@ CG_API void cgDestroyProgram( CGprogram program )
       rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
       return;
    }
-   _CGprogram* ptr = _cgGetProgPtr( program );
-   if ( NULL == ptr )
+   ptr = (_CGprogram*)_cgGetProgPtr( program );
+
+   if (!ptr)
    {
       rglCgRaiseError( CG_INVALID_PROGRAM_HANDLE_ERROR );
       return;
@@ -3321,25 +3307,24 @@ CG_API void cgDestroyProgram( CGprogram program )
    }
 
    // get the context that this program belongs to.
-   _CGcontext* ctx = ptr->parentContext;
+   ctx = (_CGcontext*)ptr->parentContext;
 
    // find and unlink the program from the program list
    if ( ptr == ctx->programList )
    {
       // node is the head of the list, so unlink it.
-      _CGprogram* p = ctx->programList;
+      p = ctx->programList;
       ctx->programList = p->next;
       // erase the program
-      rglCgProgramEraseAndFree( p );
+      rglCgProgramEraseAndFree(p);
+
+      return;
    }
-   else
-   {
-      // node not the head, so use find_previous and delete_after
-      // NOTE: if the program is not found in the list, returns silently.
-      _CGprogram* p = rglCgProgramFindPrev( ctx, ptr );
-      rglCgProgramEraseAfter( p );
-   }
-   return;
+
+   // node not the head, so use find_previous and delete_after
+   // NOTE: if the program is not found in the list, returns silently.
+   p = rglCgProgramFindPrev(ctx, ptr);
+   rglCgProgramEraseAfter(p);
 }
 
 
@@ -3356,18 +3341,19 @@ CGGL_API CGbool cgGLIsProfileSupported( CGprofile profile )
    switch ( profile )
    {
       case CG_PROFILE_SCE_VP_RSX:
-         return ( CGbool ) rglpSupportsVertexProgram( profile );
+         return (CGbool)rglpSupportsVertexProgram( profile );
       case CG_PROFILE_SCE_FP_RSX:
-         return ( CGbool ) rglpSupportsFragmentProgram( profile );
-      default:
-         return CG_FALSE;
+         return (CGbool)rglpSupportsFragmentProgram( profile );
    }
+
+   return CG_FALSE;
 }
 
 CGGL_API void cgGLEnableProfile( CGprofile profile )
 {
    // this is a logical extension to glEnable
    RGLcontext* LContext = _CurrentContext;
+
    switch ( profile )
    {
       case CG_PROFILE_SCE_VP_RSX:
@@ -3376,8 +3362,10 @@ CGGL_API void cgGLEnableProfile( CGprofile profile )
          break;
       case CG_PROFILE_SCE_FP_RSX:
          {
+            struct _CGprogram* current = (struct _CGprogram*)LContext->BoundFragmentProgram;
+
             LContext->FragmentProgram = GL_TRUE;
-            struct _CGprogram* current = LContext->BoundFragmentProgram;
+
             if ( current )
             {
                for ( GLuint i = 0; i < current->samplerCount; ++i )
@@ -3424,10 +3412,10 @@ CGGL_API CGprofile cgGLGetLatestProfile( CGGLenum profile_type )
       case CG_GL_VERTEX:
       case CG_GL_FRAGMENT:
          return rglpGetLatestProfile( profile_type );
-      default:
-         rglCgRaiseError( CG_INVALID_ENUMERANT_ERROR );
-         return CG_PROFILE_UNKNOWN;
    }
+
+   rglCgRaiseError( CG_INVALID_ENUMERANT_ERROR );
+   return CG_PROFILE_UNKNOWN;
 }
 
 CGGL_API void cgGLSetOptimalOptions( CGprofile profile )
@@ -3523,21 +3511,20 @@ CGGL_API void cgGLUnbindProgram( CGprofile profile )
 
 CGGL_API void cgGLSetParameter1f( CGparameter param, float x )
 {
-   // check to see if the parameter is a good one
+   float v[4] = {x, x, x, x};
    CgRuntimeParameter *ptr = rglCgGLTestParameter( param );
 
-   // otherwise apply the values to the parameter
-   float v[4] = {x, x, x, x};
-   ptr->setterIndex( ptr, v, CG_GETINDEX( param ) );
+   if (ptr)
+      ptr->setterIndex( ptr, v, CG_GETINDEX( param ) );
 }
 
 CGGL_API void cgGLSetParameter2f( CGparameter param, float x, float y )
 {
+   float v[4] = {x, y, y, y};
    CgRuntimeParameter *ptr = rglCgGLTestParameter( param );
 
-   // otherwise apply the values to the parameter
-   float v[4] = {x, y, y, y};
-   ptr->setterIndex( ptr, v, CG_GETINDEX( param ) );
+   if (ptr)
+      ptr->setterIndex( ptr, v, CG_GETINDEX( param ) );
 }
 
 CGGL_API void cgGLSetParameterPointer( CGparameter param,
@@ -3594,7 +3581,8 @@ CGGL_API void cgGLSetMatrixParameterfc( CGparameter param, const float *matrix )
 {
 
    CgRuntimeParameter* ptr = rglCgGLTestParameter( param );
-   ptr->settercIndex( ptr, matrix, CG_GETINDEX( param ) );
+   if (ptr)
+      ptr->settercIndex( ptr, matrix, CG_GETINDEX( param ) );
 }
 
 CGGL_API void cgGLSetTextureParameter( CGparameter param, GLuint texobj )
@@ -3602,8 +3590,8 @@ CGGL_API void cgGLSetTextureParameter( CGparameter param, GLuint texobj )
    // According to the cg implementation from nvidia, set just stores the obj.
    // Enable does the actual work.
    CgRuntimeParameter* ptr = _cgGLTestTextureParameter( param );
-
-   ptr->samplerSetter( ptr, &texobj, 0 );
+   if (ptr)
+      ptr->samplerSetter( ptr, &texobj, 0 );
 }
 
 CGGL_API GLuint cgGLGetTextureParameter( CGparameter param )
@@ -3627,10 +3615,7 @@ CGGL_API void cgGLEnableTextureParameter( CGparameter param )
 
 CGGL_API void cgGLDisableTextureParameter( CGparameter param )
 {
-   if ( _cgGLTestTextureParameter( param ) )
-   {
-      // this does not do anything on nvidia's implementation
-   }
+   /* Should remain stub. */
 }
 
 /*============================================================
@@ -3752,16 +3737,19 @@ static int getSizeofSubArray(_CGNVCONTAINERS &containers, int dimensionIndex, in
 
 static unsigned int stringTableFind( std::vector<char> &stringTable, const char* str  )
 {
+   const char *p;
    const char* data = &stringTable[0];
    size_t size = stringTable.size();
    const char *end = data + size;
-
    size_t length = strlen(str);
+
    if (length+1 > size)
       return 0;
+
    data += length;
 
-   const char *p = (char*)memchr(data,'\0',end-data);
+   p = (char*)memchr(data,'\0',end-data);
+
    while (p && (end-data)>0)
    {
       if (!memcmp(p - length, str, length))
@@ -3813,14 +3801,14 @@ static void fillStructureItems(_CGNVCONTAINERS &containers, CgStructureType *str
 
 #define swap16(v) ((v>>16) | (v<<16))
 
-int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness, int constTableOffset, void **binaryShader, int *binarySize,
+int convertNvToElfFromMemory(const void *sourceData, size_t size,
+      int endianness, int constTableOffset, void **binaryShader, int *binarySize,
       std::vector<char> &stringTable, std::vector<float> &defaultValues)
 {
    _CGNVCONTAINERS containers;
-
    unsigned char elfEndianness = endianness; //used in the macro CNVEND
-
    nvb_reader* nvbr = 0;
+
    bin_io::instance()->new_nvb_reader( &nvbr );
    CGBIO_ERROR err = nvbr->loadFromString((const char*)sourceData,size);
    if (err != CGBIO_ERROR_NO_ERROR)
@@ -3836,16 +3824,14 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
    else if (NVProfile == CG_PROFILE_SCE_FP_RSX)
       bIsVertexProgram = false;
    else
-   {
-      //RGL_ASSERT2(0,("error: unknown shader profile\n"));
       return -1;
-   }
 
    //Fill the shader header structure and save it into the shadertab
    CgProgramHeader cgShader;
    memset(&cgShader,0,sizeof(CgProgramHeader));
    cgShader.profile = CNV2END((unsigned short) NVProfile); //ok cnv2end here we go from platform endiannes to elf endiannes
    cgShader.compilerVersion = 0;//TODO
+
    if (bIsVertexProgram)
    {
       const CgBinaryVertexProgram *nvVertex = nvbr->vertex_program();
@@ -3910,13 +3896,15 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
    //ucode
    uint32_t *tmp = (uint32_t *)nvbr->ucode();
    const char *ucode;
+   int i;
    uint32_t *buffer = NULL;
+
    if (doSwap)
    {
       int size = (int)nvbr->ucode_size()/sizeof(uint32_t);
       buffer = (uint32_t*)malloc(size * sizeof(uint32_t));
 
-      for (int i = 0; i < size; i++)
+      for (i = 0; i < size; i++)
       {
          uint32_t val = ENDSWAP(tmp[i]);
          if (!bIsVertexProgram)
@@ -3933,7 +3921,7 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
       int size = (int)nvbr->ucode_size()/sizeof(uint32_t);
       buffer = (uint32_t*)malloc(size * sizeof(uint32_t));
 
-      for (int i = 0; i < size; i++)
+      for (i = 0; i < size; i++)
          buffer[i] = tmp[i];
       ucode = (const char*)buffer;
       // end workaround
@@ -3967,7 +3955,6 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
    char currentRefStructureName[256];
    currentRefStructureName[0] = '\0';
 
-   int i;
    for (i = 0; i < (int)nvbr->number_of_params(); i++)
    {
       CGtype type;
@@ -4129,9 +4116,7 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
                   {
                      //TODO, Cedric: for vertexprogram assume the matrices are always fully allocated and that they have consecuttive assignements
                      if (bIsVertexProgram)
-                     {
                         structuralElement->_type->_resourceIndex = (short)rin;
-                     }
                      else
                         structuralElement->_type->_resourceIndex = (int)containers._resources.size();
                   }
@@ -4149,11 +4134,12 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
                               structuralElement->_type->_resourceIndex = -1;
                            else
                            {
+                              int k, size;
                               structuralElement->_type->_resourceIndex = (int)containers._resources.size();
                               containers._resources.push_back(CNV2END((unsigned short)rin));
-                              int size = (int)ec.size();
+                              size = (int)ec.size();
                               containers._resources.push_back(CNV2END((unsigned short)size));
-                              int k;
+
                               for (k=0;k<size;k++)
                                  containers._resources.push_back(CNV2END((unsigned short)ec[k]));
                            }
@@ -4180,10 +4166,6 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
                CgArrayType *arrayType = (CgArrayType *)structuralElement->_type;
                if (arrayType->_elementType->_type >128 )
                {
-                  if (arrayType->_elementType->_type != CG_STRUCT+128) //we can't have arrays of arrays
-                  {
-                     //RGL_ASSERT2(0,("arrays of arrays not supported"));
-                  }
                   container = (CgStructureType*)arrayType->_elementType;
                }
             }
@@ -4219,9 +4201,8 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
             //the reason of the reset of the flag is because the first item of the array might unreferenced
             //so it doesn't has the correct resource type
             if (is_referenced)
-            {
                structuralElement->_flags = getFlags(var,dir,no,is_referenced,is_shared,paramIndex);
-            }
+
             if (bIsVertexProgram)
                containers._resources.push_back(CNV2END((unsigned short)rin));
             else
@@ -4231,11 +4212,12 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
                   containers._resources.push_back(CNV2END((unsigned short)rin));
                else
                {
+                  int k, size;
                   containers._resources.push_back(CNV2END((unsigned short)rin));
-                  int size = (int)ec.size();
+                  size = (int)ec.size();
                   containers._resources.push_back(CNV2END((unsigned short)size));
-                  int k;
-                  for (k=0;k<size;k++)
+
+                  for (k = 0; k < size; k++)
                      containers._resources.push_back(CNV2END((unsigned short)ec[k]));
                }
             }
@@ -4293,9 +4275,7 @@ int convertNvToElfFromMemory(const void *sourceData, size_t size, int endianness
                }
 
                if (*arrayStart == '\0')
-               {
                   done = 1;
-               }
             }
 
             //if we still have some [ , it means we have a matrix
@@ -4488,12 +4468,12 @@ static void fillStructureItems(_CGNVCONTAINERS &containers, CgStructureType *str
       std::vector<CgParameterEntry> &parameterEntries,std::vector<char> &parameterResources,
       std::vector<char> &stringTable, unsigned short *arrayResourceIndex, unsigned short *arrayDefaultValueIndex)
 {
+   int i;
    unsigned char elfEndianness = endianness; //used in the macro CNVEND
-
    int currentDefaultIndex = 0;
    int count = (int)structure->_elements.size();
-   int i;
-   for (i=0;i<count;i++)
+
+   for (i = 0; i < count; i++)
    {
       CgStructureType::CgStructuralElement *structuralElement = &structure->_elements[i];
       size_t size = parameterEntries.size();
@@ -4774,17 +4754,19 @@ static int getStride(CgBaseType *type)
          return rows[type->_type-1];
       return 1;
    }
+
    if (type->_type == CG_STRUCT + 128)
    {
+      int i;
       CgStructureType *structureType = (CgStructureType *)type;
       int res = 0;
-      int i;
       int count = (int)structureType->_elements.size();
-      for (i=0;i<count;i++)
+
+      for (i = 0; i < count; i++)
          res += getStride(structureType->_elements[i]._type);
       return res;
    }
-   //RGL_ASSERT2(0,("arrays of arrays not supported"));
+
    return -9999999;
 }
 

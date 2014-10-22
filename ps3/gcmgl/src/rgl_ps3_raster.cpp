@@ -1679,23 +1679,13 @@ GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count)
             rglGcmEnum       type = (rglGcmEnum)attrib->clientType;
             GLint           size = attrib->clientSize;
 
-            // syntax check
-            switch ( size )
+            if (size == 0)
             {
-               case 0: // disable
-                  stride = 0;
-                  attrib->normalized = 0;
-                  type = RGLGCM_FLOAT;
-                  gpuOffset = 0;
-                  break;
-               case 1:
-               case 2:
-               case 3:
-               case 4:
-                  // valid
-                  break;
-               default:
-                  break;
+               /* Disable */
+               stride = 0;
+               attrib->normalized = 0;
+               type = RGLGCM_FLOAT;
+               gpuOffset = 0;
             }
 
             // mapping to native types
