@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _CONFIG_FILE_USERDATA_H
-#define _CONFIG_FILE_USERDATA_H
+#ifndef _LIBRETRO_SDK_CONFIG_FILE_USERDATA_H
+#define _LIBRETRO_SDK_CONFIG_FILE_USERDATA_H
 
 #include <string.h>
 #include "config_file.h"

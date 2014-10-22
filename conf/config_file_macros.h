@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CONFIG_FILE_MACROS_H__
-#define CONFIG_FILE_MACROS_H__
+#ifndef __LIBRETRO_SDK_CONFIG_FILE_MACROS_H__
+#define __LIBRETRO_SDK_CONFIG_FILE_MACROS_H__
 
 /* Macros to ease config getting. */
 #include <stdint.h>
