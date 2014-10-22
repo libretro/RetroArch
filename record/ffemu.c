@@ -13,8 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ffemu.h"
 #include <string.h>
+#include "ffemu.h"
+
+#include "../dynamic.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

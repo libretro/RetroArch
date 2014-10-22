@@ -15,13 +15,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <boolean.h>
-#include "retro.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <boolean.h>
+#include "retro.h"
+#include "dynamic.h"
 #include "content.h"
 #include "file_ops.h"
 #include <file/file_path.h>

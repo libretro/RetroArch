@@ -15,6 +15,7 @@
 
 #include "cheats.h"
 #include "general.h"
+#include "dynamic.h"
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 

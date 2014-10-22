@@ -16,6 +16,7 @@
  */
 
 #include "general.h"
+#include "dynamic.h"
 #include <file/file_path.h>
 
 void rarch_playlist_load_content(content_playlist_t *playlist,

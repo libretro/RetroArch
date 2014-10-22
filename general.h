@@ -26,7 +26,6 @@
 #include "rewind.h"
 #include "movie.h"
 #include "autosave.h"
-#include "dynamic.h"
 #include "cheats.h"
 #include "audio/dsp_filter.h"
 #include <compat/strl.h>

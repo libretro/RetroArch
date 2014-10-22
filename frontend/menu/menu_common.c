@@ -19,6 +19,7 @@
 #include "menu_entries.h"
 #include "menu_list.h"
 #include "menu_shader.h"
+#include "../../dynamic.h"
 #include "../frontend.h"
 #include <file/file_path.h>
 

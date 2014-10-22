@@ -16,6 +16,7 @@
  */
 
 #include <file/file_path.h>
+#include "dynamic.h"
 #include "performance.h"
 #include "retroarch_logger.h"
 #include "input/input_common.h"
