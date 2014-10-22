@@ -13,8 +13,10 @@
 #define EXECUTABLE_MEM_ADDR 0x91800000
 #define SYSTEM_ARGV	((struct __argv *) 0x93200000)
 
-// if we name this main, GCC inserts the __eabi symbol, even when we specify -mno-eabi
-// what a lovely "feature"
+/* if we name this main, GCC inserts the __eabi symbol, 
+ * even when we specify -mno-eabi.
+ */
+
 void app_booter_main(void)
 {
 	void *exeBuffer = (void *) EXECUTABLE_MEM_ADDR;
@@ -27,6 +29,7 @@ void app_booter_main(void)
 		exeEntryPointAddress = load_dol_image(exeBuffer);
 
 	exeEntryPoint = (entrypoint) exeEntryPointAddress;
+
 	if (!exeEntryPoint)
 		return;
 

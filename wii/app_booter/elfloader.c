@@ -27,9 +27,7 @@
  * ====================================================================== */
 s32 valid_elf_image (void *addr)
 {
-   Elf32_Ehdr *ehdr; /* Elf header structure pointer */
-
-   ehdr = (Elf32_Ehdr *) addr;
+   Elf32_Ehdr *ehdr = (Elf32_Ehdr *)addr;
 
    if (!IS_ELF (*ehdr))
       return 0;
@@ -49,13 +47,12 @@ s32 valid_elf_image (void *addr)
  * entry point address.
  * ====================================================================== */
 
-u32 load_elf_image (void *elfstart) {
-   Elf32_Ehdr *ehdr;
-   Elf32_Phdr *phdrs;
+u32 load_elf_image (void *elfstart)
+{
    u8 *image;
    int i;
-
-   ehdr = (Elf32_Ehdr *) elfstart;
+   Elf32_Phdr *phdrs = NULL;
+   Elf32_Ehdr *ehdr  = (Elf32_Ehdr *) elfstart;
 
    if(ehdr->e_phoff == 0 || ehdr->e_phnum == 0)
       return 0;
@@ -65,8 +62,8 @@ u32 load_elf_image (void *elfstart) {
 
    phdrs = (Elf32_Phdr*)(elfstart + ehdr->e_phoff);
 
-   for(i=0;i<ehdr->e_phnum;i++) {
-
+   for(i=0;i<ehdr->e_phnum;i++)
+   {
       if(phdrs[i].p_type != PT_LOAD)
          continue;
 
