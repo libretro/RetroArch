@@ -210,29 +210,26 @@ CGprogram rglpCgUpdateProgramAtIndex( CGprogramGroup group, int index, int refco
 
 static CGprogramGroup rglCgCreateProgramGroupFromFile( CGcontext ctx, const char *group_file )
 {
-   // check that file exists
-   FILE* fp = fopen( group_file, "rb" );
+   char *ptr = NULL;
+   size_t file_size = 0;
+   FILE* fp = fopen(group_file, "rb");
 
    if (!fp)
-      return ( CGprogramGroup )NULL;
+      return (CGprogramGroup)NULL;
 
-   // find the file length
-   size_t file_size = 0;
    fseek( fp, 0, SEEK_END );
-   file_size = ftell( fp );
+   file_size = ftell(fp);
    rewind( fp );
 
    // alloc memory for new binary program and read the data
-   char* ptr = ( char* )malloc( file_size + 1 );
-   if ( NULL == ptr )
+   ptr = (char*)malloc(file_size + 1);
+   if (!ptr)
    {
       rglCgRaiseError( CG_MEMORY_ALLOC_ERROR );
       fclose(fp);
       return ( CGprogramGroup )NULL;
    }
 
-   // read the entire file into memory then close the file
-   // TODO ********* just loading the file is a bit lame really. We can do better.
    fread( ptr, file_size, 1, fp );
    fclose( fp );
 
@@ -351,8 +348,9 @@ CGprogramGroup rglCgCreateProgramGroup( CGcontext ctx,  const char *name, void *
 
 void rglCgDestroyProgramGroup( CGprogramGroup group )
 {
+   int i;
    _CGprogramGroup *_group = ( _CGprogramGroup * )group;
-   for ( int i = 0;i < ( int )_group->programCount;i++ )
+   for (i = 0;i < (int)_group->programCount;i++ )
    {
       //unlink the program
       _CGprogram *cgProgram = _cgGetProgPtr( group->programs[i].program );
@@ -367,11 +365,13 @@ void rglCgDestroyProgramGroup( CGprogramGroup group )
    _CGcontext *context = _cgGetContextPtr( group->ctx );
    _CGprogramGroup *current = context->groupList;
    _CGprogramGroup *previous = NULL;
-   while ( current && current != group )
+
+   while ( current && current != group)
    {
       previous = current;
       current = current->next;
    }
+
    if ( current )
    {
       if ( !previous )
@@ -385,7 +385,9 @@ void rglCgDestroyProgramGroup( CGprogramGroup group )
 const char *rglCgGetProgramGroupName (CGprogramGroup group)
 {
    _CGprogramGroup *_group = ( _CGprogramGroup * )group;
-   return _group->name;
+   if (_group)
+      return _group->name;
+   return NULL;
 }
 
 int rglCgGetProgramIndex (CGprogramGroup group, const char *name)
@@ -403,7 +405,10 @@ void rglpProgramErase (void *data)
    _CGprogram* platformProgram = (_CGprogram*)data;
    _CGprogram* program = (_CGprogram*)platformProgram;
 
-   if ( program->loadProgramId != GMM_ERROR )
+   if (!program)
+      return;
+
+   if (program->loadProgramId != GMM_ERROR )
    {
       gmmFree( program->loadProgramId );
       program->loadProgramId = GMM_ERROR;
@@ -448,11 +453,11 @@ int rglpCopyProgram (void *src_data, void *dst_data)
    //extract the layout of the parameter buffers from the source
    CgParameterTableHeader parameterHeader;
    parameterHeader.entryCount = source->rtParametersCount;
-   parameterHeader.resourceTableOffset = ( uintptr_t )(( char* )source->resources - ( char* )source->parametersEntries + sizeof( CgParameterTableHeader ) );
+   parameterHeader.resourceTableOffset = (uintptr_t)((char*)source->resources - ( char* )source->parametersEntries + sizeof( CgParameterTableHeader ) );
    parameterHeader.defaultValueIndexCount = source->defaultValuesIndexCount;
-   parameterHeader.defaultValueIndexTableOffset = ( uintptr_t )(( char* )source->defaultValuesIndices - ( char* )source->parametersEntries + sizeof( CgParameterTableHeader ) );
+   parameterHeader.defaultValueIndexTableOffset = (uintptr_t)(( char* )source->defaultValuesIndices - ( char* )source->parametersEntries + sizeof( CgParameterTableHeader ) );
    parameterHeader.semanticIndexCount = source->semanticCount;
-   parameterHeader.semanticIndexTableOffset = ( uintptr_t )(( char* )source->defaultValuesIndices - ( char* )source->parametersEntries + sizeof( CgParameterTableHeader ) );
+   parameterHeader.semanticIndexTableOffset = (uintptr_t)(( char* )source->defaultValuesIndices - ( char* )source->parametersEntries + sizeof( CgParameterTableHeader ) );
 
    int profileIndex;
 
@@ -468,7 +473,11 @@ int rglpCopyProgram (void *src_data, void *dst_data)
       default:
          return 0;
    }
-   return rglGcmGenerateProgram( destination, profileIndex, &source->header, source->ucode, &parameterHeader, source->parametersEntries, source->stringTable, source->defaultValues );
+   return rglGcmGenerateProgram( destination,
+         profileIndex, &source->header,
+         source->ucode, &parameterHeader,
+         source->parametersEntries,
+         source->stringTable, source->defaultValues );
 }
 
 int rglpGenerateVertexProgram (void *data, const CgProgramHeader *programHeader,
@@ -480,11 +489,14 @@ int rglpGenerateVertexProgram (void *data, const CgProgramHeader *programHeader,
 
 }
 
-int rglpGenerateFragmentProgram (void *data, const CgProgramHeader *programHeader, const void *ucode,
-      const CgParameterTableHeader *parameterHeader, const char *stringTable, const float *defaultValues )
+int rglpGenerateFragmentProgram (void *data,
+      const CgProgramHeader *programHeader, const void *ucode,
+      const CgParameterTableHeader *parameterHeader, const char *stringTable,
+      const float *defaultValues )
 {
-   return rglGcmGenerateProgram( (_CGprogram*)data, FRAGMENT_PROFILE_INDEX, programHeader, ucode, parameterHeader, NULL, stringTable, defaultValues );
-
+   return rglGcmGenerateProgram( (_CGprogram*)data,
+         FRAGMENT_PROFILE_INDEX, programHeader, ucode, parameterHeader,
+         NULL, stringTable, defaultValues );
 }
 
 /*============================================================
@@ -510,8 +522,6 @@ void cgRTCgcFree( void )
 void rglCgRaiseError( CGerror error )
 {
    _CurrentContext->RGLcgLastError = error;
-
-   //_RGL_REPORT_EXTRA( RGL_REPORT_CG_ERROR, "Cg error:%s", cgGetErrorString( error ) );
 
    if ( _CurrentContext->RGLcgErrorCallbackFunction )
       _CurrentContext->RGLcgErrorCallbackFunction();
@@ -817,7 +827,9 @@ static int rglGetSizeofSubArray( const short *dimensions, int count )
 }
 
 
-static _CGparameter *_cgGetNamedParameter( _CGprogram* progPtr, const char* name, CGenum name_space, int *arrayIndex, const CgParameterEntry *_startEntry = NULL, int _entryCount = -1 )
+static _CGparameter *_cgGetNamedParameter(_CGprogram* progPtr,
+      const char* name, CGenum name_space, int *arrayIndex,
+      const CgParameterEntry *_startEntry = NULL, int _entryCount = -1)
 {
    if (!name)
       return NULL;
