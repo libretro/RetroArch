@@ -27,7 +27,7 @@ int Bcj2_Decode(
    size_t inPos = 0, outPos = 0;
 
    const uint8_t *buffer, *bufferLim;
-   uint32_t range, code;
+   uint32_t range, codes = 0;
    uint8_t prevuint8_t = 0;
 
    unsigned int i;
@@ -36,14 +36,13 @@ int Bcj2_Decode(
 
    buffer = buf3;
    bufferLim = buffer + size3;
-   code = 0;
    range = 0xFFFFFFFF;
 
    for (i = 0; i < 5; i++)
    {
       if (buffer == bufferLim)
          return SZ_ERROR_DATA;
-      code = (code << 8) | RC_READ_BYTE;
+      codes = (codes << 8) | RC_READ_BYTE;
    }
 
       if (outSize == 0)
@@ -85,7 +84,7 @@ int Bcj2_Decode(
       ttt = *(prob);
       bound = (range >> kNumBitModelTotalBits) * ttt;
 
-      if (code < bound)
+      if (codes < bound)
       {
          range = bound;
          *(prob) = (uint16_t)(ttt + ((kBitModelTotal - ttt) >> kNumMoveBits));
@@ -95,7 +94,7 @@ int Bcj2_Decode(
             if (buffer == bufferLim)
                return SZ_ERROR_DATA;
             range <<= 8;
-            code = (code << 8) | RC_READ_BYTE;
+            codes = (codes << 8) | RC_READ_BYTE;
          }
          prevuint8_t = b;
       }
@@ -105,7 +104,7 @@ int Bcj2_Decode(
          const uint8_t *v;
 
          range -= bound;
-         code -= bound;
+         codes -= bound;
          *(prob) = (uint16_t)(ttt - (ttt >> kNumMoveBits));
 
          if (range < kTopValue)
@@ -113,7 +112,7 @@ int Bcj2_Decode(
             if (buffer == bufferLim)
                return SZ_ERROR_DATA;
             range <<= 8;
-            code = (code << 8) | RC_READ_BYTE;
+            codes = (codes << 8) | RC_READ_BYTE;
          }
 
             if (b == 0xE8)

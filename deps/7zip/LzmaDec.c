@@ -15,11 +15,11 @@
 
 #define RC_INIT_SIZE 5
 
-#define LZMADEC_NORMALIZE if (range < kTopValue) { range <<= 8; code = (code << 8) | (*buf++); }
+#define LZMADEC_NORMALIZE if (range < kTopValue) { range <<= 8; codes = (codes << 8) | (*buf++); }
 
-#define LZMADEC_IF_BIT_0(prob) ttt = *(prob); LZMADEC_NORMALIZE; bound = (range >> kNumBitModelTotalBits) * ttt; if (code < bound)
+#define LZMADEC_IF_BIT_0(prob) ttt = *(prob); LZMADEC_NORMALIZE; bound = (range >> kNumBitModelTotalBits) * ttt; if (codes < bound)
 #define UPDATE_0(p) range = bound; *(p) = (uint16_t)(ttt + ((kBitModelTotal - ttt) >> kNumMoveBits));
-#define LZMADEC_UPDATE_1(p) range -= bound; code -= bound; *(p) = (uint16_t)(ttt - (ttt >> kNumMoveBits));
+#define LZMADEC_UPDATE_1(p) range -= bound; codes -= bound; *(p) = (uint16_t)(ttt - (ttt >> kNumMoveBits));
 #define GET_BIT2(p, i, A0, A1) LZMADEC_IF_BIT_0(p) \
 { UPDATE_0(p); i = (i + i); A0; } else \
 { LZMADEC_UPDATE_1(p); i = (i + i) + 1; A1; }
@@ -45,11 +45,11 @@
    i -= 0x40; }
 #endif
 
-#define NORMALIZE_CHECK if (range < kTopValue) { if (buf >= bufLimit) return DUMMY_ERROR; range <<= 8; code = (code << 8) | (*buf++); }
+#define NORMALIZE_CHECK if (range < kTopValue) { if (buf >= bufLimit) return DUMMY_ERROR; range <<= 8; codes = (codes << 8) | (*buf++); }
 
-#define IF_BIT_0_CHECK(p) ttt = *(p); NORMALIZE_CHECK; bound = (range >> kNumBitModelTotalBits) * ttt; if (code < bound)
+#define IF_BIT_0_CHECK(p) ttt = *(p); NORMALIZE_CHECK; bound = (range >> kNumBitModelTotalBits) * ttt; if (codes < bound)
 #define UPDATE_0_CHECK range = bound;
-#define UPDATE_1_CHECK range -= bound; code -= bound;
+#define UPDATE_1_CHECK range -= bound; codes -= bound;
 #define GET_BIT2_CHECK(p, i, A0, A1) IF_BIT_0_CHECK(p) \
 { UPDATE_0_CHECK; i = (i + i); A0; } else \
 { UPDATE_1_CHECK; i = (i + i) + 1; A1; }
@@ -149,7 +149,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
 
    const uint8_t *buf = p->buf;
    uint32_t range = p->range;
-   uint32_t code = p->code;
+   uint32_t codes = p->code;
 
    do
    {
@@ -163,7 +163,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
       LZMADEC_NORMALIZE;
       bound = (range >> kNumBitModelTotalBits) * ttt;
       
-      if (code < bound)
+      if (codes < bound)
       {
          unsigned symbol;
          UPDATE_0(prob);
@@ -208,7 +208,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
          LZMADEC_NORMALIZE;
          bound = (range >> kNumBitModelTotalBits) * ttt;
 
-         if (code < bound)
+         if (codes < bound)
          {
             UPDATE_0(prob);
             state += kNumStates;
@@ -225,7 +225,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
             LZMADEC_NORMALIZE;
             bound = (range >> kNumBitModelTotalBits) * ttt;
 
-            if (code < bound)
+            if (codes < bound)
             {
                UPDATE_0(prob);
                prob = probs + IsRep0Long + (state << kNumPosBitsMax) + posState;
@@ -234,7 +234,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
                LZMADEC_NORMALIZE;
                bound = (range >> kNumBitModelTotalBits) * ttt;
 
-               if (code < bound)
+               if (codes < bound)
                {
                   UPDATE_0(prob);
                   dic[dicPos] = dic[(dicPos - rep0) + ((dicPos < rep0) ? dicBufSize : 0)];
@@ -255,7 +255,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
                LZMADEC_NORMALIZE;
                bound = (range >> kNumBitModelTotalBits) * ttt;
 
-               if (code < bound)
+               if (codes < bound)
                {
                   UPDATE_0(prob);
                   distance = rep1;
@@ -269,7 +269,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
                   LZMADEC_NORMALIZE;
                   bound = (range >> kNumBitModelTotalBits) * ttt;
 
-                  if (code < bound)
+                  if (codes < bound)
                   {
                      UPDATE_0(prob);
                      distance = rep2;
@@ -295,7 +295,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
             ttt = *(probLen);
             LZMADEC_NORMALIZE;
             bound = (range >> kNumBitModelTotalBits) * ttt;
-            if (code < bound)
+            if (codes < bound)
             {
                UPDATE_0(probLen);
                probLen = prob + LenLow + (posState << kLenNumLowBits);
@@ -310,7 +310,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
                ttt = *(probLen);
                LZMADEC_NORMALIZE;
                bound = (range >> kNumBitModelTotalBits) * ttt;
-               if (code < bound)
+               if (codes < bound)
                {
                   UPDATE_0(probLen);
                   probLen = prob + LenMid + (posState << kLenNumMidBits);
@@ -365,16 +365,16 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
 
                      {
                         uint32_t t;
-                        code -= range;
-                        t = (0 - ((uint32_t)code >> 31)); /* (uint32_t)((Int32)code >> 31) */
+                        codes -= range;
+                        t = (0 - ((uint32_t)codes >> 31)); /* (uint32_t)((Int32)codes >> 31) */
                         distance = (distance << 1) + (t + 1);
-                        code += range & t;
+                        codes += range & t;
                      }
                      /*
                         distance <<= 1;
-                        if (code >= range)
+                        if (codes >= range)
                         {
-                        code -= range;
+                        codes -= range;
                         distance |= 1;
                         }
                         */
@@ -451,7 +451,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
 
    p->buf = buf;
    p->range = range;
-   p->code = code;
+   p->code = codes;
    p->remainLen = len;
    p->dicPos = dicPos;
    p->processedPos = processedPos;
@@ -526,7 +526,7 @@ typedef enum
 static ELzmaDummy LzmaDec_TryDummy(const CLzmaDec *p, const uint8_t *buf, size_t inSize)
 {
    uint32_t range = p->range;
-   uint32_t code = p->code;
+   uint32_t codes = p->code;
    const uint8_t *bufLimit = buf + inSize;
    uint16_t *probs = p->probs;
    unsigned state = p->state;
@@ -690,8 +690,8 @@ static ELzmaDummy LzmaDec_TryDummy(const CLzmaDec *p, const uint8_t *buf, size_t
                   {
                      NORMALIZE_CHECK
                         range >>= 1;
-                     code -= range & (((code - range) >> 31) - 1);
-                     /* if (code >= range) code -= range; */
+                     codes -= range & (((codes - range) >> 31) - 1);
+                     /* if (codes >= range) codes -= range; */
                   }
                   while (--numDirectBits != 0);
                   prob = probs + Align;
