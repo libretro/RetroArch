@@ -6,13 +6,11 @@
 
 void sync_before_exec(const void *p, u32 len)
 {
-	u32 a, b;
+   u32 a = (u32)p & ~0x1f;
+   u32 b = ((u32)p + len + 0x1f) & ~0x1f;
 
-	a = (u32)p & ~0x1f;
-	b = ((u32)p + len + 0x1f) & ~0x1f;
+   for ( ; a < b; a += 32)
+      asm("dcbst 0,%0 ; sync ; icbi 0,%0" : : "b"(a));
 
-	for ( ; a < b; a += 32)
-		asm("dcbst 0,%0 ; sync ; icbi 0,%0" : : "b"(a));
-
-	asm("sync ; isync");
+   asm("sync ; isync");
 }

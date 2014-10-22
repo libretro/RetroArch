@@ -62,7 +62,7 @@ u32 load_elf_image (void *elfstart)
 
    phdrs = (Elf32_Phdr*)(elfstart + ehdr->e_phoff);
 
-   for(i=0;i<ehdr->e_phnum;i++)
+   for (i = 0; i < ehdr->e_phnum; i++)
    {
       if(phdrs[i].p_type != PT_LOAD)
          continue;
@@ -80,9 +80,6 @@ u32 load_elf_image (void *elfstart)
       memcpy ((void *) phdrs[i].p_paddr, (const void *) image, phdrs[i].p_filesz);
 
       sync_before_exec ((void *) phdrs[i].p_paddr, phdrs[i].p_memsz);
-
-      //if(phdrs[i].p_flags & PF_X)
-      //ICInvalidateRange ((void *) phdrs[i].p_paddr, phdrs[i].p_memsz);
    }
 
    return ((ehdr->e_entry & 0x3FFFFFFF) | 0x80000000);
