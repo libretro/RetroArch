@@ -289,6 +289,15 @@
 									<reference key="NSMixedImage" ref="502551668"/>
 									<int key="NSTag">3</int>
 								</object>
+								<object class="NSMenuItem" id="555841229">
+									<reference key="NSMenu" ref="604031057"/>
+									<string key="NSTitle">Unload</string>
+									<string key="NSKeyEquiv"/>
+									<int key="NSMnemonicLoc">2147483647</int>
+									<reference key="NSOnImage" ref="35465992"/>
+									<reference key="NSMixedImage" ref="502551668"/>
+									<int key="NSTag">4</int>
+								</object>
 							</object>
 						</object>
 					</object>
