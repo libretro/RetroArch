@@ -109,7 +109,7 @@ WRes File_Read(CSzFile *p, void *data, size_t *size)
       DWORD curSize = (originalSize > kChunkSizeMax) ? kChunkSizeMax : (DWORD)originalSize;
       DWORD processed = 0;
       BOOL res = ReadFile(p->handle, data, curSize, &processed, NULL);
-      data = (void *)((Byte *)data + processed);
+      data = (void *)((uint8_t*)data + processed);
       originalSize -= processed;
       *size += processed;
       if (!res)
@@ -144,7 +144,7 @@ WRes File_Write(CSzFile *p, const void *data, size_t *size)
       DWORD curSize = (originalSize > kChunkSizeMax) ? kChunkSizeMax : (DWORD)originalSize;
       DWORD processed = 0;
       BOOL res = WriteFile(p->handle, data, curSize, &processed, NULL);
-      data = (void *)((Byte *)data + processed);
+      data = (void *)((uint8_t*)data + processed);
       originalSize -= processed;
       *size += processed;
       if (!res)
