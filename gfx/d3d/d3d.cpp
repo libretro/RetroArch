@@ -34,6 +34,7 @@
 #endif
 
 #include <compat/posix_string.h>
+#include <file/file_path.h>
 #include "../../performance.h"
 
 #if defined(HAVE_CG)
