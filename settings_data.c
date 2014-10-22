@@ -489,22 +489,9 @@ void setting_data_set_with_string_representation(rarch_setting_t* setting,
 static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
       char *type_str, size_t type_str_size)
 {
-   if (!setting)
-      return;
-
-   if (!strcmp(setting->name, "savestate") ||
-         !strcmp(setting->name, "loadstate"))
-   {
-      if (g_settings.state_slot < 0)
-         strlcpy(type_str, "-1 (auto)", type_str_size);
-      else
-         snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
-
-      return;
-   }
-
-   strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label :
-         setting->boolean.off_label, type_str_size);
+   if (setting)
+      strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label :
+            setting->boolean.off_label, type_str_size);
 }
 
 static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
@@ -680,8 +667,11 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
             input_get_bind_string(buf, keybind, auto_bind, sizeof_buf);
          }
          break;
-         /* TODO */
       case ST_ACTION:
+         if (setting->get_string_representation)
+            setting->get_string_representation(setting, buf, sizeof_buf);
+         break;
+         /* TODO */
       case ST_HEX:
          break;
       case ST_GROUP:
@@ -802,15 +792,15 @@ static int setting_data_bool_action_toggle_savestates(void *data, unsigned actio
 
 static int setting_data_bool_action_ok_savestates(void *data, unsigned action)
 {
+   unsigned rarch_cmd = RARCH_CMD_NONE;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;
 
-   *setting->value.boolean = !(*setting->value.boolean);
-
-   if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-      setting->cmd_trigger.triggered = true;
+   rarch_cmd = setting->cmd_trigger.idx;
+   rarch_main_command(rarch_cmd);
+   rarch_main_command(RARCH_CMD_RESUME);
 
    return 0;
 }
@@ -1127,9 +1117,10 @@ rarch_setting_t setting_data_action_setting(const char* name,
    result.deferred_handler      = NULL;
    result.read_handler          = NULL;
    
-   result.action_start          = NULL;
-   result.action_toggle         = NULL;
-   result.action_ok             = setting_data_action_action_ok;
+   result.get_string_representation = NULL;
+   result.action_start              = NULL;
+   result.action_toggle             = NULL;
+   result.action_ok                 = setting_data_action_action_ok;
    return result;
 }
 
@@ -2359,6 +2350,19 @@ static int get_fallback_label(char *type_str,
    return ret;
 }
 
+static void get_string_representation_savestate(void * data, char *type_str,
+      size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting || !type_str || !type_str_size)
+      return;
+
+   snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
+   if (g_settings.state_slot == -1)
+      strlcat(type_str, " (Auto)", type_str_size);
+}
+
 void setting_data_get_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx)
@@ -2915,39 +2919,27 @@ static bool setting_data_append_list_main_menu_options(
    }
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
-      CONFIG_BOOL(
-            lists[9],
+      CONFIG_ACTION(
             "savestate",
             "Save State",
-            false,
-            "",
-            "",
             group_info.name,
-            subgroup_info.name,
-            general_write_handler,
-            general_read_handler);
+            subgroup_info.name);
       (*list)[list_info->index - 1].action_toggle = &setting_data_bool_action_toggle_savestates;
       (*list)[list_info->index - 1].action_start = &setting_data_bool_action_start_savestates;
       (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_savestates;
+      (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_SAVE_STATE);
-      settings_data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
 
-      CONFIG_BOOL(
-            lists[10],
+      CONFIG_ACTION(
             "loadstate",
             "Load State",
-            false,
-            "",
-            "",
             group_info.name,
-            subgroup_info.name,
-            general_write_handler,
-            general_read_handler);
+            subgroup_info.name);
       (*list)[list_info->index - 1].action_toggle = &setting_data_bool_action_toggle_savestates;
       (*list)[list_info->index - 1].action_start = &setting_data_bool_action_start_savestates;
       (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_savestates;
+      (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_LOAD_STATE);
-      settings_data_list_current_add_flags(list, list_info, SD_FLAG_EXIT);
 
       CONFIG_BOOL(
             lists[11],
