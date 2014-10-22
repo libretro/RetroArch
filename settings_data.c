@@ -2407,9 +2407,6 @@ void setting_data_get_label(char *type_str,
       else
          strlcpy(type_str, "Disabled", type_str_size);
    }
-   else if (!strcmp(label, "input_bind_player_no"))
-      snprintf(type_str, type_str_size, "#%u",
-            driver.menu->current_pad + 1);
    else if (!strcmp(label, "input_bind_analog_dpad_mode"))
    {
       static const char *modes[] = {
