@@ -16,10 +16,6 @@
 /* Bog-standard windowed SINC implementation. */
 
 #include "resampler.h"
-#ifdef RARCH_INTERNAL
-#include "../../libretro.h"
-#include "../../performance.h"
-#endif
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
