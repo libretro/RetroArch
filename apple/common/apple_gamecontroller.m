@@ -128,7 +128,7 @@ static void apple_gamecontroller_disconnect(GCController* controller)
     if (pad == GCControllerPlayerIndexUnset)
         return;
     
-    pad_connection_disconnect(&slots[pad], pad);
+    pad_connection_pad_deinit(&slots[pad], pad);
 }
 
 void apple_gamecontroller_init(void)
