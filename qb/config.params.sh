@@ -14,6 +14,7 @@ HAVE_THREADS=auto       # Threading support
 HAVE_FFMPEG=auto        # Enable FFmpeg recording support
 HAVE_DYLIB=auto         # Enable dynamic loading support
 HAVE_NETPLAY=auto       # Enable netplay support
+HAVE_D3D9=yes           # Disable Direct3D 9 support
 HAVE_OPENGL=yes         # Disable OpenGL support
 HAVE_GLES=no            # Use GLESv2 instead of desktop GL
 HAVE_MALI_FBDEV=no      # Enable Mali fbdev context support
