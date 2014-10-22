@@ -353,7 +353,7 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
 
    if (InFile_Open(&archiveStream.file, path))
    {
-      RARCH_ERR("Could not open %s as 7z archive\n.",path);
+      RARCH_ERR("Could not open %s as 7z archive.\n",path);
       goto error;
    }
    FileInStream_CreateVTable(&archiveStream);
@@ -437,14 +437,14 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
    {
       /* Error handling */
       if (res == SZ_ERROR_UNSUPPORTED)
-         RARCH_ERR("7Zip decoder doesn't support this archive\n");
+         RARCH_ERR("7Zip decoder doesn't support this archive. \n");
       else if (res == SZ_ERROR_MEM)
-         RARCH_ERR("7Zip decoder could not allocate memory\n");
+         RARCH_ERR("7Zip decoder could not allocate memory. \n");
       else if (res == SZ_ERROR_CRC)
-         RARCH_ERR("7Zip decoder encountered a CRC error in the archive\n");
+         RARCH_ERR("7Zip decoder encountered a CRC error in the archive. \n");
       else
          RARCH_ERR(
-               "\nUnspecified error in 7-ZIP archive, error number was: #%d\n",
+               "\nUnspecified error in 7-ZIP archive, error number was: #%d. \n",
                res);
       goto error;
    }
