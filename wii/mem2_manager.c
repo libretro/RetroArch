@@ -70,7 +70,8 @@ static heap_cntrl gx_mem2_heap;
 
 bool gx_init_mem2(void)  
 {
-   u32 level;
+   void *heap_ptr;
+   u32 level, size;
    _CPU_ISR_Disable(level);
 
    /* BIG NOTE: MEM2 on the Wii is 64MB, but a portion 
@@ -87,21 +88,22 @@ bool gx_init_mem2(void)
     * has shown some stuff being iffy with only 128KB, mainly Wiimote stuff.
     * If some stuff mysteriously stops working, try fiddling with this size.
     */
-   u32 size = SYS_GetArena2Size() - 1024 * 256;
+   size = SYS_GetArena2Size() - 1024 * 256;
 
-   void *heap_ptr = (void *) ROUNDUP32(((u32) SYS_GetArena2Hi() - size));
+   heap_ptr = (void *) ROUNDUP32(((u32) SYS_GetArena2Hi() - size));
 
    SYS_SetArena2Hi(heap_ptr);
    __lwp_heap_init(&gx_mem2_heap, heap_ptr, size, 32);
    _CPU_ISR_Restore(level);
+
    return true;
 }
 
 void *_mem2_memalign(u8 align, u32 size)
 {
-   if(size != 0)
-      return __lwp_heap_allocate(&gx_mem2_heap, size); 
-   return NULL;
+   if(size == 0)
+      return NULL;
+   return __lwp_heap_allocate(&gx_mem2_heap, size); 
 }
 
 void *_mem2_malloc(u32 size)
@@ -111,15 +113,16 @@ void *_mem2_malloc(u32 size)
 
 void _mem2_free(void *ptr)
 { 
-   if(ptr)
+   if (ptr)
       __lwp_heap_free(&gx_mem2_heap, ptr);
- }
+}
 
 void *_mem2_realloc(void *ptr, u32 newsize)
 {
+   u32 size;
    void *newptr = NULL;
 
-   if (ptr == NULL)
+   if (!ptr)
       return _mem2_malloc(newsize);
 
    if (newsize == 0)
@@ -128,18 +131,19 @@ void *_mem2_realloc(void *ptr, u32 newsize)
       return NULL;
    }
 
-   u32 size = __lwp_heap_block_size(&gx_mem2_heap, ptr);
+   size = __lwp_heap_block_size(&gx_mem2_heap, ptr);
 
    if (size > newsize)
       size = newsize;
    
    newptr = _mem2_malloc(newsize);
    
-   if (newptr == NULL)
+   if (!newptr)
       return NULL;
 
    memcpy(newptr, ptr, size);
    _mem2_free(ptr);
+
    return newptr;
 }
 
@@ -147,7 +151,7 @@ void *_mem2_calloc(u32 num, u32 size)
 {
    void *ptr = _mem2_malloc(num * size);
 
-   if (ptr == NULL)
+   if (!ptr)
       return NULL;
 
    memset(ptr, 0, num * size);
@@ -157,23 +161,29 @@ void *_mem2_calloc(u32 num, u32 size)
 char *_mem2_strdup(const char *s)
 {
     char *ptr = NULL;
+
     if (s)
     {
         int len = strlen(s) + 1;
+
         ptr = _mem2_calloc(1, len);
+
         if (ptr)
             memcpy(ptr, s, len);
     }
+
     return ptr;
 }
 
 char *_mem2_strndup(const char *s, size_t n)
 {
     char *ptr = NULL;
+
     if (s)
     {
         int len = n + 1;
         ptr = _mem2_calloc(1, len);
+
         if (ptr)
             memcpy(ptr, s, len);
     }
@@ -206,25 +216,25 @@ size_t __real_malloc_usable_size(void *p);
 __attribute__ ((used)) void *__wrap_malloc(size_t size)
 {
    void *p = __real_malloc(size);
-   if (p != 0)
-      return p;
-   return _mem2_malloc(size);
+   if (p == 0)
+      return _mem2_malloc(size);
+   return p;
 }
 
 __attribute__ ((used)) void *__wrap_calloc(size_t n, size_t size)
 {
    void *p = __real_calloc(n, size);
-   if (p != 0)
-      return p;
-   return _mem2_calloc(n, size);
+   if (p == 0)
+      return _mem2_calloc(n, size);
+   return p;
 }
 
 __attribute__ ((used)) void *__wrap_memalign(size_t a, size_t size)
 {
    void *p = __real_memalign(a, size);
-   if (p != 0)
-      return p;
-   return _mem2_memalign(a, size);
+   if (p == 0)
+      return _mem2_memalign(a, size);
+   return p;
 }
 
 __attribute__ ((used)) void __wrap_free(void *p)
@@ -232,7 +242,7 @@ __attribute__ ((used)) void __wrap_free(void *p)
    if (!p)
       return;
 
-   if (((u32) p & 0x10000000) != 0)
+   if (((u32)p & 0x10000000) != 0)
       _mem2_free(p);
    else
       __real_free(p);
@@ -277,17 +287,17 @@ __attribute__ ((used)) void *__wrap_realloc(void *p, size_t size)
 __attribute__ ((used)) void *__wrap_strdup(const char *s)
 {
    void *p = __real_strdup(s);
-   if (p != 0)
-      return p;
-   return _mem2_strdup(s);
+   if (p == 0)
+      return _mem2_strdup(s);
+   return p;
 }
 
 __attribute__ ((used)) void *__wrap_strndup(const char *s, size_t n)
 {
    void *p = __real_strndup(s, n);
-   if (p != 0)
-      return p;
-   return _mem2_strndup(s, n);
+   if (p == 0)
+      return _mem2_strndup(s, n);
+   return p;
 }
 
 __attribute__ ((used)) size_t __wrap_malloc_usable_size(void *p)

@@ -10,8 +10,10 @@
 #ifndef _MEM2_MANAGER_H
 #define _MEM2_MANAGER_H
  
-bool gx_init_mem2();
-u32 gx_mem2_used();
-u32 gx_mem2_total();
+bool gx_init_mem2(void);
+
+u32 gx_mem2_used(void);
+
+u32 gx_mem2_total(void);
 
 #endif
