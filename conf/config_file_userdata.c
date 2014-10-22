@@ -18,15 +18,15 @@
 #include <string/string_list.h>
 
 #define get_array_setup() \
-   struct config_file_userdata *dsp = (struct config_file_userdata*)userdata; \
+   struct config_file_userdata *usr = (struct config_file_userdata*)userdata; \
  \
    char key[2][256]; \
-   snprintf(key[0], sizeof(key[0]), "%s_%s", dsp->prefix[0], key_str); \
-   snprintf(key[1], sizeof(key[1]), "%s_%s", dsp->prefix[1], key_str); \
+   snprintf(key[0], sizeof(key[0]), "%s_%s", usr->prefix[0], key_str); \
+   snprintf(key[1], sizeof(key[1]), "%s_%s", usr->prefix[1], key_str); \
  \
    char *str = NULL; \
-   bool got = config_get_string(dsp->conf, key[0], &str); \
-   got = got || config_get_string(dsp->conf, key[1], &str);
+   bool got = config_get_string  (usr->conf, key[0], &str); \
+   got = got || config_get_string(usr->conf, key[1], &str);
 
 #define get_array_body(T) \
    if (got) \
@@ -51,14 +51,14 @@
 int config_userdata_get_float(void *userdata, const char *key_str,
       float *value, float default_value)
 {
-   struct config_file_userdata *dsp = (struct config_file_userdata*)userdata;
+   struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
 
    char key[2][256];
-   snprintf(key[0], sizeof(key[0]), "%s_%s", dsp->prefix[0], key_str);
-   snprintf(key[1], sizeof(key[1]), "%s_%s", dsp->prefix[1], key_str);
+   snprintf(key[0], sizeof(key[0]), "%s_%s", usr->prefix[0], key_str);
+   snprintf(key[1], sizeof(key[1]), "%s_%s", usr->prefix[1], key_str);
 
-   bool got = config_get_float(dsp->conf, key[0], value);
-   got = got || config_get_float(dsp->conf, key[1], value);
+   bool got = config_get_float  (usr->conf, key[0], value);
+   got = got || config_get_float(usr->conf, key[1], value);
 
    if (!got)
       *value = default_value;
@@ -68,14 +68,14 @@ int config_userdata_get_float(void *userdata, const char *key_str,
 int config_userdata_get_int(void *userdata, const char *key_str,
       int *value, int default_value)
 {
-   struct config_file_userdata *dsp = (struct config_file_userdata*)userdata;
+   struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
 
    char key[2][256];
-   snprintf(key[0], sizeof(key[0]), "%s_%s", dsp->prefix[0], key_str);
-   snprintf(key[1], sizeof(key[1]), "%s_%s", dsp->prefix[1], key_str);
+   snprintf(key[0], sizeof(key[0]), "%s_%s", usr->prefix[0], key_str);
+   snprintf(key[1], sizeof(key[1]), "%s_%s", usr->prefix[1], key_str);
 
-   bool got = config_get_int(dsp->conf, key[0], value);
-   got = got || config_get_int(dsp->conf, key[1], value);
+   bool got = config_get_int  (usr->conf, key[0], value);
+   got = got || config_get_int(usr->conf, key[1], value);
 
    if (!got)
       *value = default_value;
