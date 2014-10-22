@@ -26,7 +26,6 @@
 
 #if defined(ANDROID)
 
-#define returntype void
 #define returnfunc() exit(0)
 #define return_var(var) return
 #define declare_argc() int argc = 0;
@@ -34,7 +33,6 @@
 #define args_initial_ptr() data
 #else
 
-#define returntype int
 #define returnfunc() return 0
 #define return_var(var) return var
 #define declare_argc()
