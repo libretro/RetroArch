@@ -100,7 +100,7 @@ NSWindowDelegate>
    RAInputBinder* _binderWindow;
    NSButtonCell* _booleanCell;
    NSTextFieldCell* _binderCell;
-   NSTableView* _table
+   NSTableView* _table;
    NSOutlineView* _outline;
    NSMutableArray* _settings;
    NSMutableArray* _currentGroup;

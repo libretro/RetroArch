@@ -65,7 +65,8 @@ static RAScreen* get_chosen_screen(void)
       return RAScreen.mainScreen;
    }
 	
-   return (RAScreen*)[RAScreen.screens objectAtIndex:g_settings.video.monitor_index];
+   NSArray *screens = [RAScreen screens];
+   return (RAScreen*)[screens objectAtIndex:g_settings.video.monitor_index];
 #endif
 }
 
