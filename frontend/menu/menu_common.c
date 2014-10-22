@@ -28,7 +28,7 @@ static void draw_frame(void)
    if (driver.video_data && driver.video_poke &&
          driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data,
-            driver.menu_ctx && driver.menu_ctx->set_texture, MENU_TEXTURE_FULLSCREEN);
+            true, MENU_TEXTURE_FULLSCREEN);
 
    if (!g_settings.menu.pause_libretro)
    {
