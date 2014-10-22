@@ -792,15 +792,16 @@ static int setting_data_bool_action_toggle_savestates(void *data, unsigned actio
 
 static int setting_data_bool_action_ok_savestates(void *data, unsigned action)
 {
-   unsigned rarch_cmd = RARCH_CMD_NONE;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;
 
-   rarch_cmd = setting->cmd_trigger.idx;
-   rarch_main_command(rarch_cmd);
-   rarch_main_command(RARCH_CMD_RESUME);
+   if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+   {
+      rarch_main_command(setting->cmd_trigger.idx);
+      rarch_main_command(RARCH_CMD_RESUME);
+   }
 
    return 0;
 }
@@ -1099,6 +1100,9 @@ static int setting_data_action_action_ok(void *data, unsigned action)
 
    if (!setting)
       return -1;
+
+   if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+      rarch_main_command(setting->cmd_trigger.idx);
 
    return 0;
 }
