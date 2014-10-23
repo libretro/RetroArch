@@ -832,7 +832,6 @@ static int setting_data_bool_action_toggle_savestates(void *data, unsigned actio
 
 static int setting_data_action_ok_bind_all(void *data, unsigned action)
 {
-   struct retro_keybind *target = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting || !driver.menu)
@@ -4460,7 +4459,6 @@ static bool setting_data_append_list_input_options(
       static char key[MAX_PLAYERS][64];
       static char key_type[MAX_PLAYERS][64];
       static char key_analog[MAX_PLAYERS][64];
-      static char key_bind[MAX_PLAYERS][64];
       static char key_bind_all[MAX_PLAYERS][64];
       static char key_bind_defaults[MAX_PLAYERS][64];
 
