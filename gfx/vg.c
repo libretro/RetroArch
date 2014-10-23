@@ -20,7 +20,7 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include "gfx_context.h"
-#include "../libretro-sdk/gfx/math/matrix_3x3.h"
+#include <gfx/math/matrix_3x3.h>
 #include "../libretro.h"
 #include "../general.h"
 #include "../driver.h"
