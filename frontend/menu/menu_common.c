@@ -168,8 +168,6 @@ void *menu_init(const void *data)
    menu->push_start_screen = g_settings.menu_show_start_screen;
    g_settings.menu_show_start_screen = false;
 
-   menu->current_pad = 0;
-
    update_libretro_info(&g_extern.menu.info);
 
    menu_shader_manager_init(menu);

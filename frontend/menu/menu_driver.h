@@ -113,7 +113,6 @@ typedef struct
    /* Points to either shader or 
     * graphics driver's current shader. */
    struct gfx_shader *parameter_shader;
-   unsigned current_pad;
 
    struct menu_bind_state binds;
    struct
