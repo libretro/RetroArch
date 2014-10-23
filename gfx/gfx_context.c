@@ -130,10 +130,19 @@ static const gfx_ctx_driver_t *gfx_ctx_find_driver(void *data,
    const gfx_ctx_driver_t *ctx = NULL;
    int i = find_gfx_ctx_driver_index(ident);
    if (i >= 0)
-      return ctx_init(data, gfx_ctx_drivers[i], ident,
+#if 0
+   {
+      ctx = ctx_init(data, gfx_ctx_drivers[i], ident,
             api, major, minor, hw_render_ctx);
+      if (ctx)
+         return ctx;
+   }
+#else
+   return ctx_init(data, gfx_ctx_drivers[i], ident,
+         api, major, minor, hw_render_ctx);
+#endif
 
-   RARCH_ERR("Couldn't find any video context driver named \"%s\"\n", ident);
+   RARCH_ERR("Couldn't find or initialize any video context driver named \"%s\"\n", ident);
    RARCH_LOG_OUTPUT("Available video context drivers are:\n");
    for (d = 0; gfx_ctx_drivers[d]; d++)
       RARCH_LOG_OUTPUT("\t%s\n", gfx_ctx_drivers[d]->ident);
@@ -147,6 +156,10 @@ static const gfx_ctx_driver_t *gfx_ctx_find_driver(void *data,
       if (ctx)
       {
          RARCH_LOG("Selected %s driver.\n", gfx_ctx_drivers[i]->ident);
+#if 0
+         strlcpy(g_settings.video.context_driver, gfx_ctx_drivers[i]->ident,
+               sizeof(g_settings.video.context_driver));
+#endif
          return ctx;
       }
    }
