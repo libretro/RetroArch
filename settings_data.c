@@ -3160,9 +3160,8 @@ static bool setting_data_append_list_driver_options(
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
-#ifdef HAVE_OPENGL
    CONFIG_STRING(
-         g_settings.video.gl_context,
+         g_settings.video.context_driver,
          "video_context_driver",
          "Video Context Driver",
          "",
@@ -3171,7 +3170,6 @@ static bool setting_data_append_list_driver_options(
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-#endif
    CONFIG_STRING(
          g_settings.audio.driver,
          "audio_driver",

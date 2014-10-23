@@ -1021,7 +1021,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 #ifdef HAVE_MENU
    CONFIG_GET_STRING(menu.driver, "menu_driver");
 #endif
-   CONFIG_GET_STRING(video.gl_context, "video_context_driver");
+   CONFIG_GET_STRING(video.context_driver, "video_context_driver");
    CONFIG_GET_STRING(audio.driver, "audio_driver");
    CONFIG_GET_PATH(video.softfilter_plugin, "video_filter");
    CONFIG_GET_PATH(audio.dsp_plugin, "audio_dsp_plugin");
@@ -1597,6 +1597,7 @@ bool config_save_file(const char *path)
    config_set_float(conf, "audio_rate_control_delta",
          g_settings.audio.rate_control_delta);
    config_set_float(conf, "audio_volume", g_settings.audio.volume);
+   config_set_string(conf, "video_context_driver", g_settings.video.context_driver);
    config_set_string(conf, "audio_driver", g_settings.audio.driver);
    config_set_bool(conf, "audio_enable", g_settings.audio.enable);
    config_set_int(conf, "audio_out_rate", g_settings.audio.out_rate);

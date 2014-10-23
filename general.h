@@ -225,7 +225,7 @@ struct settings
    struct 
    {
       char driver[32];
-      char gl_context[32];
+      char context_driver[32];
       float scale;
       bool fullscreen;
       bool windowed_fullscreen;

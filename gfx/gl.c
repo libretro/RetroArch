@@ -2017,16 +2017,16 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    gl->shared_context_use = g_settings.video.shared_context
       && cb->context_type != RETRO_HW_CONTEXT_NONE;
 
-   if (*g_settings.video.gl_context)
+   if (*g_settings.video.context_driver)
    {
       const gfx_ctx_driver_t *ctx = gfx_ctx_find_driver(
-            g_settings.video.gl_context);
+            g_settings.video.context_driver);
 
       if (ctx)
       {
          if (!ctx->bind_api(gl, api, major, minor))
          {
-            RARCH_ERR("Failed to bind API %s to context %s.\n", api_name, g_settings.video.gl_context);
+            RARCH_ERR("Failed to bind API %s to context %s.\n", api_name, g_settings.video.context_driver);
             return NULL;
          }
 
@@ -2042,7 +2042,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
       }
       else
       {
-         RARCH_ERR("Didn't find GL context: %s.\n", g_settings.video.gl_context);
+         RARCH_ERR("Didn't find GL context: %s.\n", g_settings.video.context_driver);
          return NULL;
       }
 
