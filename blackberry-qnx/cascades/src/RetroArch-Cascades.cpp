@@ -1,7 +1,7 @@
 #include "RetroArch-Cascades.h"
 #include "../../../general.h"
-#include "../../../conf/config_file.h"
-#include "../../../file.h"
+#include "../../../libretro-sdk/file/config_file.h"
+#include "../../../content.h"
 #include "../../../frontend/info/core_info.h"
 
 #include "../../frontend_qnx.h"
