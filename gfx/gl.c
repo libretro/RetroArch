@@ -21,7 +21,7 @@
 
 #include "../driver.h"
 #include "../performance.h"
-#include "scaler/scaler.h"
+#include <gfx/scaler/scaler.h>
 #include "image/image.h"
 
 #include <stdint.h>

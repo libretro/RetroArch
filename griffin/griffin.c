@@ -477,10 +477,10 @@ DRIVERS
 /*============================================================
 SCALERS
 ============================================================ */
-#include "../gfx/scaler/scaler_filter.c"
-#include "../gfx/scaler/pixconv.c"
-#include "../gfx/scaler/scaler.c"
-#include "../gfx/scaler/scaler_int.c"
+#include "../libretro-sdk/gfx/scaler/scaler_filter.c"
+#include "../libretro-sdk/gfx/scaler/pixconv.c"
+#include "../libretro-sdk/gfx/scaler/scaler.c"
+#include "../libretro-sdk/gfx/scaler/scaler_int.c"
 
 /*============================================================
 FILTERS

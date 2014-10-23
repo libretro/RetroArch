@@ -123,13 +123,13 @@ OBJ += frontend/frontend.o \
 		libretro-sdk/file/config_file.o \
 		libretro-sdk/file/config_file_userdata.o \
 		screenshot.o \
-		gfx/scaler/scaler.o \
+		libretro-sdk/gfx/scaler/scaler.o \
 		gfx/shader/shader_null.o \
 		gfx/shader/shader_context.o \
 		gfx/shader/shader_parse.o \
-		gfx/scaler/pixconv.o \
-		gfx/scaler/scaler_int.o \
-		gfx/scaler/scaler_filter.o \
+		libretro-sdk/gfx/scaler/pixconv.o \
+		libretro-sdk/gfx/scaler/scaler_int.o \
+		libretro-sdk/gfx/scaler/scaler_filter.o \
 		gfx/image/image_rpng.o \
 		gfx/fonts/fonts.o \
 		gfx/filter.o \

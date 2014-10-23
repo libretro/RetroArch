@@ -20,7 +20,7 @@
 #include "fonts/fonts.h"
 #include "math/matrix.h"
 #include "gfx_context.h"
-#include "scaler/scaler.h"
+#include <gfx/scaler/scaler.h>
 #include "fonts/gl_font.h"
 #include "shader/shader_context.h"
 

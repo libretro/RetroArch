@@ -24,7 +24,7 @@
 #include "../driver.h"
 #include "../performance.h"
 #include <retro_miscellaneous.h>
-#include "../gfx/scaler/scaler.h"
+#include <gfx/scaler/scaler.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>

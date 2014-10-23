@@ -46,7 +46,7 @@ extern "C" {
 #include "../fifo_buffer.h"
 #include <rthreads/rthreads.h>
 #include "../general.h"
-#include "../gfx/scaler/scaler.h"
+#include <gfx/scaler/scaler.h>
 #include <file/config_file.h>
 #include "../audio/utils.h"
 #include "ffemu.h"
