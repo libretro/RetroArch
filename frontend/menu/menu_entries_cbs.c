@@ -1006,49 +1006,6 @@ static int action_ok_shader_parameters(const char *path,
    return 0;
 }
 
-static int action_start_input_bind_analog_dpad_mode(unsigned type, const char *label,
-      unsigned action)
-{
-   unsigned port = 0;
-   
-   if (!driver.menu)
-      return -1;
-
-   port = driver.menu->current_pad;
-
-   g_settings.input.analog_dpad_mode[port] = 0;
-
-   return 0;
-}
-
-static int action_toggle_input_bind_analog_dpad_mode(unsigned type, const char *label,
-      unsigned action)
-{
-   unsigned port = 0;
-   
-   if (!driver.menu)
-      return -1;
-
-   port = driver.menu->current_pad;
-
-   switch (action)
-   {
-      case MENU_ACTION_RIGHT:
-         g_settings.input.analog_dpad_mode[port] =
-            (g_settings.input.analog_dpad_mode[port] + 1)
-            % ANALOG_DPAD_LAST;
-         break;
-
-      case MENU_ACTION_LEFT:
-         g_settings.input.analog_dpad_mode[port] =
-            (g_settings.input.analog_dpad_mode
-             [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
-         break;
-   }
-
-   return 0;
-}
-
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -1570,7 +1527,6 @@ static int deferred_push_input_options(void *data, void *userdata,
    driver.menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
 
    menu_list_clear(list);
-   menu_list_push(list, "Analog D-pad Mode", "input_bind_analog_dpad_mode", 0, 0);
    menu_list_push(list, "Bind Mode", "",
          MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
    menu_list_push(list, "Configure All (RetroPad)", "",
@@ -2072,8 +2028,6 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       cbs->action_start = action_start_shader_filter_pass;
    else if (!strcmp(label, "video_shader_num_passes"))
       cbs->action_start = action_start_shader_num_passes;
-   else if (!strcmp(label, "input_bind_analog_dpad_mode"))
-      cbs->action_start = action_start_input_bind_analog_dpad_mode;
    else if (type >= MENU_SETTINGS_BIND_BEGIN &&
          type <= MENU_SETTINGS_BIND_ALL_LAST)
       cbs->action_start = action_start_bind;
@@ -2165,8 +2119,6 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_toggle = action_toggle_shader_num_passes;
    else if (!strcmp(label, "shader_apply_changes"))
       cbs->action_toggle = menu_action_setting_set;
-   else if (!strcmp(label, "input_bind_analog_dpad_mode"))
-      cbs->action_toggle = action_toggle_input_bind_analog_dpad_mode;
    else if (type == MENU_SETTINGS_VIDEO_RESOLUTION)
       cbs->action_toggle = action_toggle_video_resolution;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))

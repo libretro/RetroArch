@@ -553,6 +553,18 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
 
       strlcpy(type_str, name, type_str_size);
    }
+   else if (strstr(setting->name, "analog_dpad_mode"))
+   {
+      static const char *modes[] = {
+         "None",
+         "Left Analog",
+         "Right Analog",
+      };
+
+      strlcpy(type_str, modes[g_settings.input.analog_dpad_mode
+            [setting->index_offset] % ANALOG_DPAD_LAST],
+            type_str_size);
+   }
    else if (!strcmp(setting->name, "autosave_interval"))
    {
       if (*setting->value.unsigned_integer)
@@ -697,6 +709,34 @@ static int setting_data_bool_action_start_savestates(void *data)
       return -1;
 
    g_settings.state_slot = 0;
+
+   return 0;
+}
+
+static int setting_data_uint_action_toggle_analog_dpad_mode(void *data, unsigned action)
+{
+   unsigned port = 0;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   port = setting->index_offset;
+
+   switch (action)
+   {
+      case MENU_ACTION_RIGHT:
+         g_settings.input.analog_dpad_mode[port] =
+            (g_settings.input.analog_dpad_mode[port] + 1)
+            % ANALOG_DPAD_LAST;
+         break;
+
+      case MENU_ACTION_LEFT:
+         g_settings.input.analog_dpad_mode[port] =
+            (g_settings.input.analog_dpad_mode
+             [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
+         break;
+   }
 
    return 0;
 }
@@ -857,6 +897,18 @@ static int setting_data_bool_action_ok_default(void *data, unsigned action)
 
    if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
       setting->cmd_trigger.triggered = true;
+
+   return 0;
+}
+
+static int setting_data_uint_action_start_analog_dpad_mode(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.unsigned_integer = 0;
 
    return 0;
 }
@@ -2410,18 +2462,6 @@ void setting_data_get_label(char *type_str,
       }
       else
          strlcpy(type_str, "Disabled", type_str_size);
-   }
-   else if (!strcmp(label, "input_bind_analog_dpad_mode"))
-   {
-      static const char *modes[] = {
-         "None",
-         "Left Analog",
-         "Right Analog",
-      };
-
-      strlcpy(type_str, modes[g_settings.input.analog_dpad_mode
-            [driver.menu->current_pad] % ANALOG_DPAD_LAST],
-            type_str_size);
    }
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
@@ -4343,16 +4383,23 @@ static bool setting_data_append_list_input_options(
       /* FIXME/TODO - really need to clean up this mess in some way. */
       static char key[MAX_PLAYERS][64];
       static char type_key[MAX_PLAYERS][64];
+      static char analog_key[MAX_PLAYERS][64];
       static char label[MAX_PLAYERS][64];
       static char type_label[MAX_PLAYERS][64];
+      static char analog_label[MAX_PLAYERS][64];
       snprintf(key[player], sizeof(key[player]),
                "input_player%d_joypad_index", player + 1);
-      snprintf(type_key[player], sizeof(key[player]),
+      snprintf(type_key[player], sizeof(type_key[player]),
                "input_libretro_device_p%u", player + 1);
+      snprintf(analog_key[player], sizeof(analog_key[player]),
+               "input_player%u_analog_dpad_mode", player + 1);
       snprintf(label[player], sizeof(label[player]),
                "User %d Device Index", player + 1);
       snprintf(type_label[player], sizeof(type_label[player]),
                "User %d Device Type", player + 1);
+      snprintf(analog_label[player], sizeof(analog_label[player]),
+               "User %d Analog To Digital Type", player + 1);
+
       CONFIG_UINT(
             g_settings.input.libretro_device[player],
             type_key[player],
@@ -4366,6 +4413,20 @@ static bool setting_data_append_list_input_options(
       (*list)[list_info->index - 1].index_offset = player;
       (*list)[list_info->index - 1].action_toggle = &setting_data_uint_action_toggle_libretro_device_type;
       (*list)[list_info->index - 1].action_start = &setting_data_uint_action_start_libretro_device_type;
+
+      CONFIG_UINT(
+            g_settings.input.analog_dpad_mode[player],
+            analog_key[player],
+            analog_label[player],
+            player,
+            group_info.name,
+            subgroup_info.name,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index = player + 1;
+      (*list)[list_info->index - 1].index_offset = player;
+      (*list)[list_info->index - 1].action_toggle = &setting_data_uint_action_toggle_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_start = &setting_data_uint_action_start_analog_dpad_mode;
 
       CONFIG_UINT(
             g_settings.input.joypad_map[player],
