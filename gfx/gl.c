@@ -2017,39 +2017,8 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    gl->shared_context_use = g_settings.video.shared_context
       && cb->context_type != RETRO_HW_CONTEXT_NONE;
 
-   if (*g_settings.video.context_driver)
-   {
-      const gfx_ctx_driver_t *ctx = gfx_ctx_find_driver(
-            g_settings.video.context_driver);
-
-      if (ctx)
-      {
-         if (!ctx->bind_api(gl, api, major, minor))
-         {
-            RARCH_ERR("Failed to bind API %s to context %s.\n", api_name, g_settings.video.context_driver);
-            return NULL;
-         }
-
-         /* Enables or disables offscreen HW context. */
-         if (ctx->bind_hw_render)
-            ctx->bind_hw_render(gl, gl->shared_context_use);
-
-         if (!ctx->init(gl))
-         {
-            RARCH_ERR("Failed to init GL context: %s.\n", ctx->ident);
-            return NULL;
-         }
-      }
-      else
-      {
-         RARCH_ERR("Didn't find GL context: %s.\n", g_settings.video.context_driver);
-         return NULL;
-      }
-
-      return ctx;
-   }
-
-   return gfx_ctx_init_first(gl, api, major, minor, gl->shared_context_use);
+   return gfx_ctx_init_first(gl, g_settings.video.context_driver,
+         api, major, minor, gl->shared_context_use);
 }
 
 #ifdef GL_DEBUG

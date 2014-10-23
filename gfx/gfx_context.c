@@ -85,24 +85,45 @@ const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident)
    return NULL;
 }
 
+static const gfx_ctx_driver_t *ctx_init(void *data,
+      const gfx_ctx_driver_t *ctx,
+      const char *driver,
+      enum gfx_ctx_api api, unsigned major,
+      unsigned minor, bool hw_render_ctx)
+{
+   const gfx_ctx_driver_t *tmp = gfx_ctx_find_driver(driver);
+
+   if (tmp)
+      ctx = (const gfx_ctx_driver_t*)tmp;
+
+   if (ctx->bind_api(data, api, major, minor))
+   {
+      if (ctx->bind_hw_render)
+         ctx->bind_hw_render(data,
+               g_settings.video.shared_context && hw_render_ctx);
+
+      if (ctx->init(data))
+         return ctx;
+   }
+
+   return NULL;
+}
+
 const gfx_ctx_driver_t *gfx_ctx_init_first(void *data,
+      const char *driver,
       enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx)
 {
    unsigned i;
+   const gfx_ctx_driver_t *ctx = NULL;
+
    for (i = 0; gfx_ctx_drivers[i]; i++)
    {
-      if (gfx_ctx_drivers[i]->bind_api(data, api, major, minor))
-      {
-         if (gfx_ctx_drivers[i]->bind_hw_render)
-         {
-            gfx_ctx_drivers[i]->bind_hw_render(data,
-                  g_settings.video.shared_context && hw_render_ctx);
-         }
+      ctx = ctx_init(data, gfx_ctx_drivers[i], driver,
+            api, major, minor, hw_render_ctx);
 
-         if (gfx_ctx_drivers[i]->init(data))
-            return gfx_ctx_drivers[i];
-      }
+      if (ctx)
+         return ctx;
    }
 
    return NULL;
