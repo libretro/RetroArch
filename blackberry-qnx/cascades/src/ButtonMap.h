@@ -8,7 +8,7 @@
 #include <screen/screen.h>
 #include <sys/neutrino.h>
 #include "../../../general.h"
-#include "../../../libretro-sdk/file/config_file.h"
+#include <file/config_file.h>
 #include "../../../content.h"
 
 /*

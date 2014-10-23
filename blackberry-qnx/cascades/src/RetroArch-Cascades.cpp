@@ -1,6 +1,6 @@
 #include "RetroArch-Cascades.h"
 #include "../../../general.h"
-#include "../../../libretro-sdk/file/config_file.h"
+#include <file/config_file.h>
 #include "../../../content.h"
 #include "../../../frontend/info/core_info.h"
 
