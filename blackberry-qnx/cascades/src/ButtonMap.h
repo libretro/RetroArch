@@ -8,8 +8,8 @@
 #include <screen/screen.h>
 #include <sys/neutrino.h>
 #include "../../../general.h"
-#include "../../../conf/config_file.h"
-#include "../../../file.h"
+#include "../../../libretro-sdk/file/config_file.h"
+#include "../../../content.h"
 
 /*
 typedef struct {
