@@ -164,6 +164,11 @@ void menu_list_pop_stack(menu_list_t *list)
 
    if (file_list_get_size(list->menu_stack) > 1)
    {
+#ifdef HAVE_XMB
+      file_list_copy(driver.menu->menu_list->selection_buf, driver.menu->menu_list->selection_buf_old);
+      file_list_copy(driver.menu->menu_list->menu_stack, driver.menu->menu_list->menu_stack_old);
+      driver.menu->selection_ptr_old = driver.menu->selection_ptr;
+#endif
       menu_list_pop(list->menu_stack, &driver.menu->selection_ptr);
       driver.menu->need_refresh = true;
    }
@@ -278,6 +283,13 @@ void menu_list_push_stack_refresh(menu_list_t *list,
 {
    if (!list)
       return;
+
+#ifdef HAVE_XMB
+         file_list_copy(driver.menu->menu_list->selection_buf, driver.menu->menu_list->selection_buf_old);
+         file_list_copy(driver.menu->menu_list->menu_stack, driver.menu->menu_list->menu_stack_old);
+         driver.menu->selection_ptr_old = driver.menu->selection_ptr;
+#endif
+
    menu_list_push_stack(list, path, label, type, directory_ptr);
    menu_navigation_clear(driver.menu, true);
    driver.menu->need_refresh = true;
