@@ -4456,7 +4456,6 @@ static bool setting_data_append_list_input_options(
          general_write_handler,
          general_read_handler);
 
-   /* TODO: input_libretro_device_p%u */
    for (player = 0; player < MAX_PLAYERS; player ++)
    {
       /* These constants match the string lengths.
