@@ -830,6 +830,80 @@ static int setting_data_bool_action_toggle_savestates(void *data, unsigned actio
    return 0;
 }
 
+static int setting_data_action_ok_bind_all(void *data, unsigned action)
+{
+   struct retro_keybind *target = NULL;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting || !driver.menu)
+      return -1;
+
+   driver.menu->binds.target = &g_settings.input.binds
+      [setting->index_offset][0];
+   driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+   driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
+
+   menu_list_push_stack(
+         driver.menu->menu_list,
+         "",
+         "",
+         driver.menu->bind_mode_keyboard ?
+         MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
+         MENU_SETTINGS_CUSTOM_BIND,
+         driver.menu->selection_ptr);
+
+   if (driver.menu->bind_mode_keyboard)
+   {
+      driver.menu->binds.timeout_end =
+         rarch_get_time_usec() + 
+         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+      input_keyboard_wait_keys(driver.menu,
+            menu_custom_bind_keyboard_cb);
+   }
+   else
+   {
+      menu_poll_bind_get_rested_axes(&driver.menu->binds);
+      menu_poll_bind_state(&driver.menu->binds);
+   }
+   return 0;
+}
+
+static int setting_data_action_ok_bind_defaults(void *data, unsigned action)
+{
+   unsigned i;
+   struct retro_keybind *target = NULL;
+   const struct retro_keybind *def_binds = NULL;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   target = (struct retro_keybind*)
+      &g_settings.input.binds[setting->index_offset][0];
+   def_binds =  (setting->index_offset) ? 
+      retro_keybinds_rest : retro_keybinds_1;
+
+   if (!driver.menu || !target)
+      return -1;
+
+   driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+   driver.menu->binds.last  = MENU_SETTINGS_BIND_LAST;
+
+   for (i = MENU_SETTINGS_BIND_BEGIN;
+         i <= MENU_SETTINGS_BIND_LAST; i++, target++)
+   {
+      if (driver.menu->bind_mode_keyboard)
+         target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
+      else
+      {
+         target->joykey = NO_BTN;
+         target->joyaxis = AXIS_NONE;
+      }
+   }
+
+   return 0;
+}
+
 static int setting_data_bool_action_ok_exit(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -2445,6 +2519,7 @@ void setting_data_get_label(char *type_str,
       menu_shader_manager_get_str(driver.menu->shader, type_str, type_str_size,
             menu_label, label, type);
    }
+#if 0
    else if (!strcmp(label, "input_bind_device_id"))
    {
       int map = g_settings.input.joypad_map
@@ -2463,6 +2538,7 @@ void setting_data_get_label(char *type_str,
       else
          strlcpy(type_str, "Disabled", type_str_size);
    }
+#endif
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
@@ -4382,28 +4458,44 @@ static bool setting_data_append_list_input_options(
        */
       /* FIXME/TODO - really need to clean up this mess in some way. */
       static char key[MAX_PLAYERS][64];
-      static char type_key[MAX_PLAYERS][64];
-      static char analog_key[MAX_PLAYERS][64];
+      static char key_type[MAX_PLAYERS][64];
+      static char key_analog[MAX_PLAYERS][64];
+      static char key_bind[MAX_PLAYERS][64];
+      static char key_bind_all[MAX_PLAYERS][64];
+      static char key_bind_defaults[MAX_PLAYERS][64];
+
       static char label[MAX_PLAYERS][64];
-      static char type_label[MAX_PLAYERS][64];
-      static char analog_label[MAX_PLAYERS][64];
+      static char label_type[MAX_PLAYERS][64];
+      static char label_analog[MAX_PLAYERS][64];
+      static char label_bind_all[MAX_PLAYERS][64];
+      static char label_bind_defaults[MAX_PLAYERS][64];
+
       snprintf(key[player], sizeof(key[player]),
                "input_player%d_joypad_index", player + 1);
-      snprintf(type_key[player], sizeof(type_key[player]),
+      snprintf(key_type[player], sizeof(key_type[player]),
                "input_libretro_device_p%u", player + 1);
-      snprintf(analog_key[player], sizeof(analog_key[player]),
+      snprintf(key_analog[player], sizeof(key_analog[player]),
                "input_player%u_analog_dpad_mode", player + 1);
+      snprintf(key_bind_all[player], sizeof(key_bind_all[player]),
+               "input_player%u_bind_all", player + 1);
+      snprintf(key_bind_defaults[player], sizeof(key_bind_defaults[player]),
+               "input_player%u_bind_defaults", player + 1);
+
       snprintf(label[player], sizeof(label[player]),
                "User %d Device Index", player + 1);
-      snprintf(type_label[player], sizeof(type_label[player]),
+      snprintf(label_type[player], sizeof(label_type[player]),
                "User %d Device Type", player + 1);
-      snprintf(analog_label[player], sizeof(analog_label[player]),
+      snprintf(label_analog[player], sizeof(label_analog[player]),
                "User %d Analog To Digital Type", player + 1);
+      snprintf(label_bind_all[player], sizeof(label_bind_all[player]),
+               "User %d Bind All", player + 1);
+      snprintf(label_bind_defaults[player], sizeof(label_bind_defaults[player]),
+               "User %d Bind Default All", player + 1);
 
       CONFIG_UINT(
             g_settings.input.libretro_device[player],
-            type_key[player],
-            type_label[player],
+            key_type[player],
+            label_type[player],
             player,
             group_info.name,
             subgroup_info.name,
@@ -4416,8 +4508,8 @@ static bool setting_data_append_list_input_options(
 
       CONFIG_UINT(
             g_settings.input.analog_dpad_mode[player],
-            analog_key[player],
-            analog_label[player],
+            key_analog[player],
+            label_analog[player],
             player,
             group_info.name,
             subgroup_info.name,
@@ -4437,6 +4529,32 @@ static bool setting_data_append_list_input_options(
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
+
+      CONFIG_ACTION(
+            key_bind_all[player],
+            label_bind_all[player],
+            group_info.name,
+            subgroup_info.name);
+      settings_data_list_current_add_flags(
+            list,
+            list_info,
+            SD_FLAG_PUSH_ACTION);
+      (*list)[list_info->index - 1].index = player + 1;
+      (*list)[list_info->index - 1].index_offset = player;
+      (*list)[list_info->index - 1].action_ok    = &setting_data_action_ok_bind_all;
+
+      CONFIG_ACTION(
+            key_bind_defaults[player],
+            label_bind_defaults[player],
+            group_info.name,
+            subgroup_info.name);
+      settings_data_list_current_add_flags(
+            list,
+            list_info,
+            SD_FLAG_PUSH_ACTION);
+      (*list)[list_info->index - 1].index = player + 1;
+      (*list)[list_info->index - 1].index_offset = player;
+      (*list)[list_info->index - 1].action_ok    = &setting_data_action_ok_bind_defaults;
    }
 
    START_SUB_GROUP(

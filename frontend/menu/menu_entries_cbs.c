@@ -532,68 +532,6 @@ static int action_ok_set_path(const char *path,
    return 0;
 }
 
-static int action_ok_bind_all(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   if (!driver.menu)
-      return -1;
-
-   driver.menu->binds.target = &g_settings.input.binds
-      [driver.menu->current_pad][0];
-   driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-   driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
-
-   menu_list_push_stack(
-         driver.menu->menu_list,
-         "",
-         "",
-         driver.menu->bind_mode_keyboard ?
-         MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
-         MENU_SETTINGS_CUSTOM_BIND,
-         driver.menu->selection_ptr);
-   if (driver.menu->bind_mode_keyboard)
-   {
-      driver.menu->binds.timeout_end =
-         rarch_get_time_usec() + 
-         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-      input_keyboard_wait_keys(driver.menu,
-            menu_custom_bind_keyboard_cb);
-   }
-   else
-   {
-      menu_poll_bind_get_rested_axes(&driver.menu->binds);
-      menu_poll_bind_state(&driver.menu->binds);
-   }
-   return 0;
-}
-
-static int action_ok_bind_default_all(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   unsigned i;
-   const struct retro_keybind *def_binds;
-   struct retro_keybind *target = (struct retro_keybind*)
-      &g_settings.input.binds[driver.menu->current_pad][0];
-
-   def_binds = driver.menu->current_pad ? retro_keybinds_rest : retro_keybinds_1;
-
-   driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-   driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
-
-   for (i = MENU_SETTINGS_BIND_BEGIN;
-         i <= MENU_SETTINGS_BIND_LAST; i++, target++)
-   {
-      if (driver.menu->bind_mode_keyboard)
-         target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
-      else
-      {
-         target->joykey = NO_BTN;
-         target->joyaxis = AXIS_NONE;
-      }
-   }
-   return 0;
-}
-
 static int action_ok_custom_viewport(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -1168,38 +1106,6 @@ static int custom_bind_mode_toggle(unsigned type, const char *label,
    return 0;
 }
 
-static int action_start_bind(unsigned type, const char *label,
-      unsigned action)
-{
-   struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
-   struct retro_keybind *keybind = (struct retro_keybind*)
-      &g_settings.input.binds[driver.menu->current_pad]
-      [type - MENU_SETTINGS_BIND_BEGIN];
-
-   if (!keybind)
-      return -1;
-
-   (void)label;
-   (void)action;
-
-   if (!driver.menu->bind_mode_keyboard)
-   {
-      keybind->joykey = NO_BTN;
-      keybind->joyaxis = AXIS_NONE;
-      return 0;
-   }
-
-   if (driver.menu->current_pad)
-      def_binds = (struct retro_keybind*)retro_keybinds_rest;
-
-   if (!def_binds)
-      return -1;
-
-   keybind->key = def_binds[type - MENU_SETTINGS_BIND_BEGIN].key;
-
-   return 0;
-}
-
 static int deferred_push_core_list_deferred(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -1529,10 +1435,6 @@ static int deferred_push_input_options(void *data, void *userdata,
    menu_list_clear(list);
    menu_list_push(list, "Bind Mode", "",
          MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
-   menu_list_push(list, "Configure All (RetroPad)", "",
-         MENU_SETTINGS_CUSTOM_BIND_ALL, 0);
-   menu_list_push(list, "Default All (RetroPad)", "",
-         MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(driver.menu, path, label, type);
@@ -1990,12 +1892,6 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
          else
             cbs->action_ok = action_ok_file_load;
          break;
-      case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
-         cbs->action_ok = action_ok_bind_default_all;
-         break;
-      case MENU_SETTINGS_CUSTOM_BIND_ALL:
-         cbs->action_ok = action_ok_bind_all;
-         break;
       case MENU_SETTINGS_CUSTOM_VIEWPORT:
          cbs->action_ok = action_ok_custom_viewport;
          break;
@@ -2028,9 +1924,6 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       cbs->action_start = action_start_shader_filter_pass;
    else if (!strcmp(label, "video_shader_num_passes"))
       cbs->action_start = action_start_shader_num_passes;
-   else if (type >= MENU_SETTINGS_BIND_BEGIN &&
-         type <= MENU_SETTINGS_BIND_ALL_LAST)
-      cbs->action_start = action_start_bind;
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_start = action_start_shader_action_parameter;
