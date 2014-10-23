@@ -123,8 +123,6 @@ typedef struct
       bool display;
    } keyboard;
 
-   bool bind_mode_keyboard;
-
    rarch_setting_t *list_mainmenu;
    rarch_setting_t *list_settings;
 } menu_handle_t;

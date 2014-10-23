@@ -1089,23 +1089,6 @@ static int disk_options_disk_idx_toggle(unsigned type, const char *label,
    return 0;
 }
 
-static int custom_bind_mode_toggle(unsigned type, const char *label,
-      unsigned action)
-{
-   if (!driver.menu)
-      return -1;
-
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-      case MENU_ACTION_RIGHT:
-         driver.menu->bind_mode_keyboard = !driver.menu->bind_mode_keyboard;
-         break;
-   }
-
-   return 0;
-}
-
 static int deferred_push_core_list_deferred(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -1413,28 +1396,6 @@ static int deferred_push_category(void *data, void *userdata,
       menu_list_push(list, setting->short_description,
             setting->name, setting_set_flags(setting), 0);
    }
-
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
-
-   return 0;
-}
-
-static int deferred_push_input_options(void *data, void *userdata,
-      const char *path, const char *label, unsigned type)
-{
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   settings_list_free(driver.menu->list_settings);
-   driver.menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
-
-   menu_list_clear(list);
-   menu_list_push(list, "Bind Mode", "",
-         MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(driver.menu, path, label, type);
@@ -2022,9 +1983,6 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
          cbs->action_toggle = disk_options_disk_idx_toggle;
          break;
-      case MENU_SETTINGS_CUSTOM_BIND_MODE:
-         cbs->action_toggle = custom_bind_mode_toggle;
-         break;
    }
 
 }
@@ -2047,8 +2005,6 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_category;
    else if (!strcmp(label, "deferred_core_list"))
       cbs->action_deferred_push = deferred_push_core_list_deferred;
-   else if (!strcmp(label, "Input Options"))
-      cbs->action_deferred_push = deferred_push_input_options;
    else if (!strcmp(label, "Shader Options"))
       cbs->action_deferred_push = deferred_push_shader_options;
    else if (!strcmp(label, "core_information"))

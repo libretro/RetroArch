@@ -846,12 +846,12 @@ static int setting_data_action_ok_bind_all(void *data, unsigned action)
          driver.menu->menu_list,
          "",
          "",
-         driver.menu->bind_mode_keyboard ?
+         g_extern.menu.bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
          MENU_SETTINGS_CUSTOM_BIND,
          driver.menu->selection_ptr);
 
-   if (driver.menu->bind_mode_keyboard)
+   if (g_extern.menu.bind_mode_keyboard)
    {
       driver.menu->binds.timeout_end =
          rarch_get_time_usec() + 
@@ -891,7 +891,7 @@ static int setting_data_action_ok_bind_defaults(void *data, unsigned action)
    for (i = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)
    {
-      if (driver.menu->bind_mode_keyboard)
+      if (g_extern.menu.bind_mode_keyboard)
          target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
       else
       {
@@ -1395,7 +1395,7 @@ static int setting_data_bind_action_start(void *data)
    if (!keybind)
       return -1;
 
-   if (!driver.menu->bind_mode_keyboard)
+   if (!g_extern.menu.bind_mode_keyboard)
    {
       keybind->joykey = NO_BTN;
       keybind->joyaxis = AXIS_NONE;
@@ -1437,11 +1437,11 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
          driver.menu->menu_list,
          "",
          "",
-         driver.menu->bind_mode_keyboard ?
+         g_extern.menu.bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
          driver.menu->selection_ptr);
 
-   if (driver.menu->bind_mode_keyboard)
+   if (g_extern.menu.bind_mode_keyboard)
    {
       driver.menu->binds.timeout_end = rarch_get_time_usec() +
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
@@ -2453,10 +2453,6 @@ static int get_fallback_label(char *type_str,
       case MENU_SETTINGS_CUSTOM_BIND_ALL:
       case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
          strlcpy(type_str, "...", type_str_size);
-         break;
-      case MENU_SETTINGS_CUSTOM_BIND_MODE:
-         strlcpy(type_str, driver.menu->bind_mode_keyboard ?
-               "RetroKeyboard" : "RetroPad", type_str_size);
          break;
       case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
          {
@@ -4447,6 +4443,18 @@ static bool setting_data_append_list_input_options(
          "Joypad Mapping",
          group_info.name,
          subgroup_info);
+
+   CONFIG_BOOL(
+         g_extern.menu.bind_mode_keyboard,
+         "input_bind_mode",
+         "Bind Mode",
+         false,
+         "RetroPad",
+         "RetroKeyboard",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 
    /* TODO: input_libretro_device_p%u */
    for (player = 0; player < MAX_PLAYERS; player ++)
