@@ -18,7 +18,7 @@
 
 #include "../general.h"
 #include "fonts/fonts.h"
-#include "math/matrix.h"
+#include <gfx/math/matrix.h>
 #include "gfx_context.h"
 #include <gfx/scaler/scaler.h>
 #include "fonts/gl_font.h"

@@ -173,7 +173,7 @@ VIDEO DRIVER
 ============================================================ */
 
 #if defined(HAVE_OPENGL)
-#include "../gfx/math/matrix.c"
+#include "../libretro-sdk/gfx/math/matrix.c"
 #elif defined(GEKKO)
 #ifdef HW_RVL
 #include "../wii/vi_encoder.c"
@@ -183,7 +183,7 @@ VIDEO DRIVER
 
 #ifdef HAVE_VG
 #include "../gfx/vg.c"
-#include "../gfx/math/matrix_3x3.c"
+#include "../libretro-sdk/gfx/math/matrix_3x3.c"
 #endif
 
 #ifdef HAVE_OMAP

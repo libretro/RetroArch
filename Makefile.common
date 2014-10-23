@@ -364,7 +364,7 @@ ifeq ($(HAVE_OPENGL), 1)
 			 gfx/context/gfx_null_ctx.o \
 			 gfx/fonts/gl_font.o \
 			 gfx/fonts/gl_raster_font.o \
-			 gfx/math/matrix.o \
+			 libretro-sdk/gfx/math/matrix.o \
 			 gfx/state_tracker.o \
 			 libretro-sdk/glsym/rglgen.o
 
@@ -479,7 +479,7 @@ ifeq ($(HAVE_EXYNOS), 1)
 endif
 
 ifeq ($(HAVE_VG), 1)
-   OBJ += gfx/vg.o gfx/math/matrix_3x3.o
+   OBJ += gfx/vg.o libretro-sdk/gfx/math/matrix_3x3.o
    DEFINES += $(VG_CFLAGS)
    LIBS += $(VG_LIBS)
 endif

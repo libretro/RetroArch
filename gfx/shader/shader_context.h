@@ -24,7 +24,7 @@
 #endif
 
 #include "../gfx_context.h"
-#include "../math/matrix.h"
+#include <gfx/math/matrix.h>
 
 typedef struct shader_backend
 {

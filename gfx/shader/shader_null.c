@@ -21,7 +21,7 @@
 #include <compat/posix_string.h>
 #include "../state_tracker.h"
 #include "../../dynamic.h"
-#include "../math/matrix.h"
+#include <gfx/math/matrix.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
