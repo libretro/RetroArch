@@ -790,7 +790,7 @@ static int setting_data_bool_action_toggle_savestates(void *data, unsigned actio
    return 0;
 }
 
-static int setting_data_bool_action_ok_savestates(void *data, unsigned action)
+static int setting_data_bool_action_ok_exit(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -2835,7 +2835,6 @@ static bool setting_data_append_list_main_menu_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
-   static bool lists[32];
 
    START_GROUP(group_info, "Main Menu");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
@@ -2927,7 +2926,7 @@ static bool setting_data_append_list_main_menu_options(
             subgroup_info.name);
       (*list)[list_info->index - 1].action_toggle = &setting_data_bool_action_toggle_savestates;
       (*list)[list_info->index - 1].action_start = &setting_data_bool_action_start_savestates;
-      (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_savestates;
+      (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_exit;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_SAVE_STATE);
 
@@ -2938,64 +2937,42 @@ static bool setting_data_append_list_main_menu_options(
             subgroup_info.name);
       (*list)[list_info->index - 1].action_toggle = &setting_data_bool_action_toggle_savestates;
       (*list)[list_info->index - 1].action_start = &setting_data_bool_action_start_savestates;
-      (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_savestates;
+      (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_exit;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_LOAD_STATE);
 
-      CONFIG_BOOL(
-            lists[11],
+      CONFIG_ACTION(
             "take_screenshot",
             "Take Screenshot",
-            false,
-            "",
-            "",
             group_info.name,
-            subgroup_info.name,
-            general_write_handler,
-            general_read_handler);
+            subgroup_info.name);
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_TAKE_SCREENSHOT);
       settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
-      CONFIG_BOOL(
-            lists[12],
+      CONFIG_ACTION(
             "resume_content",
             "Resume Content",
-            false,
-            "",
-            "",
             group_info.name,
-            subgroup_info.name,
-            general_write_handler,
-            general_read_handler);
+            subgroup_info.name);
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_RESUME);
-      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION | SD_FLAG_EXIT);
+      (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_exit;
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
-      CONFIG_BOOL(
-            lists[13],
+      CONFIG_ACTION(
             "restart_content",
             "Restart Content",
-            false,
-            "",
-            "",
             group_info.name,
-            subgroup_info.name,
-            general_write_handler,
-            general_read_handler);
+            subgroup_info.name);
       settings_list_current_add_cmd(list, list_info, RARCH_CMD_RESET);
-      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION | SD_FLAG_EXIT);
+      (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_exit;
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
 #ifndef HAVE_DYNAMIC
-   CONFIG_BOOL(
-         lists[14],
+   CONFIG_ACTION(
          "restart_retroarch",
          "Restart RetroArch",
-         false,
-         "",
-         "",
          group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
+         subgroup_info.name);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_RESTART_RETROARCH);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 #endif
@@ -3006,17 +2983,11 @@ static bool setting_data_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
 
-   CONFIG_BOOL(
-         lists[16],
+   CONFIG_ACTION(
          "save_new_config",
          "Save New Config",
-         false,
-         "",
-         "",
          group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
+         subgroup_info.name);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_MENU_SAVE_CONFIG);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
@@ -3029,17 +3000,11 @@ static bool setting_data_append_list_main_menu_options(
 
    /* Apple rejects iOS apps that lets you forcibly quit an application. */
 #if !defined(IOS)
-   CONFIG_BOOL(
-         lists[18],
+   CONFIG_ACTION(
          "quit_retroarch",
          "Quit RetroArch",
-         false,
-         "",
-         "",
          group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
+         subgroup_info.name);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_QUIT_RETROARCH);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 #endif
