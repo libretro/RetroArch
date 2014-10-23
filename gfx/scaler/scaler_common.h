@@ -23,7 +23,7 @@ static inline uint8_t clamp_8bit(int val)
 {
    if (val > 255)
       return 255;
-   else if (val < 0)
+   if (val < 0)
       return 0;
    return (uint8_t)val;
 }

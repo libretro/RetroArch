@@ -16,7 +16,7 @@
 
 #include "filter.h"
 #include "scaler_int.h"
-#include "../../general.h"
+#include <retro_miscellaneous.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
