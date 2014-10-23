@@ -3163,8 +3163,8 @@ static bool setting_data_append_list_driver_options(
 #ifdef HAVE_OPENGL
    CONFIG_STRING(
          g_settings.video.gl_context,
-         "video_gl_context",
-         "OpenGL Context Driver",
+         "video_context",
+         "Video Context Driver",
          "",
          group_info.name,
          subgroup_info.name,
