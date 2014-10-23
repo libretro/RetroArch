@@ -23,10 +23,8 @@
 #include "menu_shader.h"
 #include "backend/menu_backend.h"
 
-#include "../../dynamic.h"
 #include "../../file_ext.h"
 #include "../../config.def.h"
-#include "../../performance.h"
 
 #ifdef GEKKO
 enum
