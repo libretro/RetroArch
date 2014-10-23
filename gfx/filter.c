@@ -17,7 +17,6 @@
 #include "filters/softfilter.h"
 #include "../dynamic.h"
 #include <file/config_file_userdata.h>
-#include "../general.h"
 #include <file/file_path.h>
 #include "../file_ext.h"
 #include <file/dir_list.h>

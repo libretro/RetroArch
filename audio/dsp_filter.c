@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../general.h"
 #include "../performance.h"
 
 #include "dsp_filter.h"
