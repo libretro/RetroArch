@@ -29,12 +29,13 @@ asm (
       "  ldmia r0!, {r4, r5, r6, r7, r8, r9, r10, r11, sp, pc}\n"
     );
 
-// ASM
+/* ASM */
 void co_switch_arm(cothread_t handle, cothread_t current);
 
 static void crash(void)
 {
-   assert(0); // Called only if cothread_t entrypoint returns.
+   /* Called only if cothread_t entrypoint returns. */
+   assert(0);
 }
 
 cothread_t co_create(unsigned int size, void (*entrypoint)(void))
@@ -52,17 +53,17 @@ cothread_t co_create(unsigned int size, void (*entrypoint)(void))
       return handle;
 
    uint32_t *ptr = (uint32_t*)handle;
-   // Non-volatiles
-   ptr[0] = 0; // r4
-   ptr[1] = 0; // r5
-   ptr[2] = 0; // r6
-   ptr[3] = 0; // r7
-   ptr[4] = 0; // r8
-   ptr[5] = 0; // r9
-   ptr[6] = 0; // r10
-   ptr[7] = 0; // r11
-   ptr[8] = (uintptr_t)ptr + size + 256 - 4; // r13, stack pointer
-   ptr[9] = (uintptr_t)entrypoint; // r15, PC (link register r14 gets saved here).
+   /* Non-volatiles.  */
+   ptr[0] = 0; /* r4  */
+   ptr[1] = 0; /* r5  */
+   ptr[2] = 0; /* r6  */
+   ptr[3] = 0; /* r7  */
+   ptr[4] = 0; /* r8  */
+   ptr[5] = 0; /* r9  */
+   ptr[6] = 0; /* r10 */
+   ptr[7] = 0; /* r11 */
+   ptr[8] = (uintptr_t)ptr + size + 256 - 4; /* r13, stack pointer */
+   ptr[9] = (uintptr_t)entrypoint; /* r15, PC (link register r14 gets saved here). */
    return handle;
 }
 

@@ -64,22 +64,25 @@ cothread_t co_create(unsigned int size, void (*coentry)(void))
       stack.ss_flags = 0;
       stack.ss_size = size;
       thread->stack = stack.ss_sp = malloc(size);
-      if(stack.ss_sp && !sigaltstack(&stack, &old_stack)) {
+
+      if(stack.ss_sp && !sigaltstack(&stack, &old_stack))
+      {
          handler.sa_handler = springboard;
          handler.sa_flags = SA_ONSTACK;
          sigemptyset(&handler.sa_mask);
          creating = thread;
 
-         if(!sigaction(SIGUSR1, &handler, &old_handler)) {
-            if(!raise(SIGUSR1)) {
+         if(!sigaction(SIGUSR1, &handler, &old_handler))
+         {
+            if(!raise(SIGUSR1))
                thread->coentry = coentry;
-            }
             sigaltstack(&old_stack, 0);
             sigaction(SIGUSR1, &old_handler, 0);
          }
       }
 
-      if(thread->coentry != coentry) {
+      if(thread->coentry != coentry)
+      {
          co_delete(thread);
          thread = 0;
       }

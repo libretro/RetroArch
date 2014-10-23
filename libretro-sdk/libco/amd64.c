@@ -40,7 +40,8 @@ static unsigned char co_swap_function[] = {
 void co_init(void)
 {
    DWORD old_privileges;
-   VirtualProtect(co_swap_function, sizeof(co_swap_function), PAGE_EXECUTE_READWRITE, &old_privileges);
+   VirtualProtect(co_swap_function,
+         sizeof(co_swap_function), PAGE_EXECUTE_READWRITE, &old_privileges);
 }
 #else
 //ABI: SystemV
