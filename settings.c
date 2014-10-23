@@ -1021,7 +1021,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 #ifdef HAVE_MENU
    CONFIG_GET_STRING(menu.driver, "menu_driver");
 #endif
-   CONFIG_GET_STRING(video.gl_context, "video_gl_context");
+   CONFIG_GET_STRING(video.gl_context, "video_context_driver");
    CONFIG_GET_STRING(audio.driver, "audio_driver");
    CONFIG_GET_PATH(video.softfilter_plugin, "video_filter");
    CONFIG_GET_PATH(audio.dsp_plugin, "audio_dsp_plugin");
