@@ -2013,6 +2013,8 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    enum gfx_ctx_api api = GFX_CTX_OPENGL_API;
    const char *api_name = "OpenGL";
 #endif
+    
+   (void)api_name;
 
    gl->shared_context_use = g_settings.video.shared_context
       && cb->context_type != RETRO_HW_CONTEXT_NONE;

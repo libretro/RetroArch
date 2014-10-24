@@ -104,7 +104,7 @@ void find_next_context_driver(void)
 
 static const gfx_ctx_driver_t *ctx_init(void *data,
       const gfx_ctx_driver_t *ctx,
-      const char *driver,
+      const char *drv,
       enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx)
 {
@@ -173,13 +173,12 @@ static const gfx_ctx_driver_t *gfx_ctx_find_driver(void *data,
 
 
 const gfx_ctx_driver_t *gfx_ctx_init_first(void *data,
-      const char *driver,
+      const char *drv,
       enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx)
 {
-   unsigned i;
    const gfx_ctx_driver_t *ctx = (const gfx_ctx_driver_t*)
-      gfx_ctx_find_driver(data, driver, api, major, minor,
+      gfx_ctx_find_driver(data, drv, api, major, minor,
             hw_render_ctx);
 
    if (!ctx)

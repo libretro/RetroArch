@@ -149,6 +149,10 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
 /* Finds first suitable driver and initializes. */
 const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, const char *driver,
       enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx);
+    
+void find_next_context_driver(void);
+    
+void find_prev_gfx_context_driver(void);
 
 #ifdef __cplusplus
 }
