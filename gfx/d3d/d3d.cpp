@@ -54,6 +54,10 @@
 
 #endif
 
+#if !defined(DONT_HAVE_STATE_TRACKER) && !defined(_XBOX)
+#include "../../dynamic.h"
+#endif
+
 /* forward declarations */
 static void d3d_calculate_rect(d3d_video_t *d3d,
       unsigned width, unsigned height,
