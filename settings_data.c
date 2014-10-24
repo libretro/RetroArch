@@ -832,27 +832,25 @@ static int setting_data_bool_action_toggle_savestates(void *data, unsigned actio
 
 static int setting_data_action_toggle_bind_device(void *data, unsigned action)
 {
-   int *p = NULL;
+   unsigned *p = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting || !driver.menu)
       return -1;
 
-   p = (int*)&g_settings.input.joypad_map[setting->index_offset];
+   p = (unsigned*)&g_settings.input.joypad_map[setting->index_offset];
 
-   if (action == MENU_ACTION_START)
-      *p = 0;
-   else if (action == MENU_ACTION_LEFT)
+   switch (action)
    {
-      if (*p > 0)
-         (*p)--;
+      case MENU_ACTION_LEFT:
+         if ((*p) > 0)
+            (*p)--;
+         break;
+      case MENU_ACTION_RIGHT:
+         if (*p < MAX_PLAYERS)
+            (*p)++;
+         break;
    }
-   else if (action == MENU_ACTION_RIGHT)
-      (*p)++;
-   if (*p < -1)
-      *p = -1;
-   else if (*p >= MAX_PLAYERS)
-      *p = MAX_PLAYERS - 1;
 
    return 0;
 }
