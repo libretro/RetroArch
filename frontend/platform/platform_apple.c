@@ -134,19 +134,8 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    (void)home_dir_buf;
    
 #ifdef IOS
-   CFURLRef home_dir = CFCopyHomeDirectoryURL();
-   int doc_len = 10; /* Length of "/Documents" */
-   int pre_len = 7;  /* Length of "file://" */
-   int dd_len = CFURLGetBytes(home_dir, NULL, 0 );
-   UInt8 *dd_bs = (UInt8 *)(malloc(dd_len - pre_len + doc_len));
-   CFURLGetFileSystemRepresentation(home_dir, true, dd_bs, dd_len - pre_len);
-   /* We subtract another 1 to get the NUL */
-   strlcpy((char *)(dd_bs + dd_len - pre_len - 1), "/Documents", doc_len + 1);
-    
-   CFStringRef home_dir_ref = CFURLCopyPath(home_dir);
-
-   CFStringGetCString(home_dir_ref,    home_dir_buf,    sizeof(home_dir_buf),    kCFStringEncodingUTF8);
-
+    CFSearchPathForDirectoriesInDomains(CFDocumentDirectory, CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
+   
    fill_pathname_join(g_defaults.system_dir, home_dir_buf, ".RetroArch", sizeof(g_defaults.system_dir));
    fill_pathname_join(g_defaults.core_dir, bundle_path_buf, "modules", sizeof(g_defaults.core_dir));
 
@@ -167,8 +156,6 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
       if (access(g_defaults.system_dir, 0755) != 0)
          RARCH_ERR("Failed to create or access system directory: %s.\n", g_defaults.system_dir);
    }
-
-   CFRelease(home_dir);
 #elif defined(OSX)
     char support_path_buf[PATH_MAX + 1];
     CFSearchPathForDirectoriesInDomains(CFApplicationSupportDirectory, CFUserDomainMask, 1, support_path_buf, sizeof(support_path_buf));

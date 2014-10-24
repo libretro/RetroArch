@@ -21,6 +21,7 @@
 		50CCC828185E0E7D001F5BC8 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */; };
 		50D00E8E19D117C400EBA71E /* cc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */; };
 		50E7189F184B88AA001956CE /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50E7189E184B88AA001956CE /* CoreVideo.framework */; };
+		6949E72319FABADC00CC7F42 /* CFExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 6949E72219FABADC00CC7F42 /* CFExtensions.m */; };
 		696012F219F3389A006A1088 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 696012F119F3389A006A1088 /* CoreText.framework */; };
 		83D632DF19ECFCC4009E3161 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632D819ECFCC4009E3161 /* Default-568h@2x.png */; };
 		83D632E019ECFCC4009E3161 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632D919ECFCC4009E3161 /* Default.png */; };
@@ -57,6 +58,7 @@
 		50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; name = cc_resampler_neon.S; path = ../../audio/resamplers/cc_resampler_neon.S; sourceTree = "<group>"; };
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+		6949E72219FABADC00CC7F42 /* CFExtensions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = CFExtensions.m; path = ../common/CFExtensions.m; sourceTree = "<group>"; };
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 		83D632D819ECFCC4009E3161 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
 		83D632D919ECFCC4009E3161 /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
@@ -137,6 +139,7 @@
 		96AFAE1A16C1D4EA009DE44C = {
 			isa = PBXGroup;
 			children = (
+				6949E72219FABADC00CC7F42 /* CFExtensions.m */,
 				83D632D719ECFCC4009E3161 /* Assets */,
 				50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */,
 				501232C6192E5F940063A359 /* ios */,
@@ -314,6 +317,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6949E72319FABADC00CC7F42 /* CFExtensions.m in Sources */,
 				50D00E8E19D117C400EBA71E /* cc_resampler_neon.S in Sources */,
 				5073C58B196C0BA40026E146 /* utility.m in Sources */,
 				501232DA192E606D0063A359 /* menu.m in Sources */,
@@ -505,6 +509,7 @@
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 armv7s";
 				WRAPPER_EXTENSION = app;
 			};
@@ -597,7 +602,6 @@
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE = "";
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
 				VALID_ARCHS = "armv7 armv7s";
 				WRAPPER_EXTENSION = app;
