@@ -14,8 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// KMS/DRM context, running without any window manager.
-// Based on kmscube example by Rob Clark.
+/* KMS/DRM context, running without any window manager.
+ * Based on kmscube example by Rob Clark.
+ */
 
 #include "../../driver.h"
 #include "../gfx_context.h"
@@ -52,38 +53,40 @@
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
 
-static bool g_use_hw_ctx;
-static EGLContext g_egl_hw_ctx;
-static EGLContext g_egl_ctx;
-static EGLSurface g_egl_surf;
-static EGLDisplay g_egl_dpy;
-static EGLConfig g_config;
+typedef struct gfx_ctx_drm_egl_data
+{
+   bool g_use_hw_ctx;
+   int g_drm_fd;
+   uint32_t g_crtc_id;
+   uint32_t g_connector_id;
+   unsigned g_fb_width;
+   unsigned g_fb_height;
+   unsigned g_interval;
+
+   drmModeModeInfo *g_drm_mode;
+   drmModeCrtcPtr g_orig_crtc;
+   drmModeRes *g_resources;
+   drmModeConnector *g_connector;
+   drmModeEncoder *g_encoder;
+
+   struct gbm_bo *g_bo;
+   struct gbm_bo *g_next_bo;
+   EGLContext g_egl_hw_ctx;
+   EGLContext g_egl_ctx;
+   EGLSurface g_egl_surf;
+   EGLDisplay g_egl_dpy;
+   EGLConfig g_config;
+   struct gbm_device *g_gbm_dev;
+   struct gbm_surface *g_gbm_surface;
+} gfx_ctx_drm_egl_data_t;
 
 static volatile sig_atomic_t g_quit;
-static bool g_inited;
-static unsigned g_interval;
+
 static enum gfx_ctx_api g_api;
+
 static unsigned g_major;
+
 static unsigned g_minor;
-
-static struct gbm_device *g_gbm_dev;
-static struct gbm_surface *g_gbm_surface;
-
-static int g_drm_fd;
-static drmModeModeInfo *g_drm_mode;
-static uint32_t g_crtc_id;
-static uint32_t g_connector_id;
-
-static drmModeCrtcPtr g_orig_crtc;
-
-static unsigned g_fb_width; // Just use something for now.
-static unsigned g_fb_height;
-
-static struct gbm_bo *g_bo, *g_next_bo;
-
-static drmModeRes *g_resources;
-static drmModeConnector *g_connector;
-static drmModeEncoder *g_encoder;
 
 struct drm_fb
 {
@@ -91,7 +94,8 @@ struct drm_fb
    uint32_t fb_id;
 };
 
-static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo);
+static struct drm_fb *drm_fb_get_from_bo(
+      gfx_ctx_drm_egl_data_t *drm, struct gbm_bo *bo);
 
 static void gfx_ctx_drm_egl_destroy(void *data);
 
@@ -104,7 +108,10 @@ static void sighandler(int sig)
 static void gfx_ctx_drm_egl_swap_interval(void *data, unsigned interval)
 {
    (void)data;
-   g_interval = interval;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
+
+   if (drm)
+      drm->g_interval = interval;
    if (interval > 1)
       RARCH_WARN("[KMS/EGL]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
 }
@@ -123,8 +130,10 @@ static void gfx_ctx_drm_egl_check_window(void *data, bool *quit,
 
 static unsigned first_page_flip;
 static unsigned last_page_flip;
+static bool waiting_for_flip;
 
-static void page_flip_handler(int fd, unsigned frame, unsigned sec, unsigned usec, void *data)
+static void page_flip_handler(int fd, unsigned frame,
+      unsigned sec, unsigned usec, void *data)
 {
    (void)fd;
    (void)sec;
@@ -145,12 +154,13 @@ static void page_flip_handler(int fd, unsigned frame, unsigned sec, unsigned use
    *(bool*)data = false;
 }
 
-static bool waiting_for_flip;
-
 static void wait_flip(bool block)
 {
    struct pollfd fds = {0};
-   fds.fd     = g_drm_fd;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
+      driver.video_context_data;
+
+   fds.fd     = drm->g_drm_fd;
    fds.events = POLLIN;
 
    drmEventContext evctx   = {0};
@@ -169,24 +179,32 @@ static void wait_flip(bool block)
          break;
 
       if (fds.revents & POLLIN)
-         drmHandleEvent(g_drm_fd, &evctx);
+         drmHandleEvent(drm->g_drm_fd, &evctx);
       else
          break;
    }
 
-   if (!waiting_for_flip) // Page flip has taken place.
+   /* Page flip has taken place. */
+   if (!waiting_for_flip)
    {
-      gbm_surface_release_buffer(g_gbm_surface, g_bo); // This buffer is not on-screen anymore. Release it to GBM.
-      g_bo = g_next_bo; // This buffer is being shown now.
+      /* This buffer is not on-screen anymore. Release it to GBM. */
+      gbm_surface_release_buffer(drm->g_gbm_surface, drm->g_bo);
+      drm->g_bo = drm->g_next_bo; // This buffer is being shown now.
    }
 }
 
 static void queue_flip(void)
 {
-   g_next_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
-   struct drm_fb *fb = drm_fb_get_from_bo(g_next_bo);
+   int ret;
+   struct drm_fb *fb = NULL;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
+   driver.video_context_data;
 
-   int ret = drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
+   drm->g_next_bo = gbm_surface_lock_front_buffer(drm->g_gbm_surface);
+
+   fb = (struct drm_fb*)drm_fb_get_from_bo(drm, drm->g_next_bo);
+
+   ret = drmModePageFlip(drm->g_drm_fd, drm->g_crtc_id, fb->fb_id,
          DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
 
    if (ret < 0)
@@ -200,28 +218,39 @@ static void queue_flip(void)
 
 static void gfx_ctx_drm_egl_swap_buffers(void *data)
 {
-   (void)data;
-   eglSwapBuffers(g_egl_dpy, g_egl_surf);
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
+   driver.video_context_data;
 
-   // I guess we have to wait for flip to have taken place before another flip can be queued up.
+   (void)data;
+
+   eglSwapBuffers(drm->g_egl_dpy, drm->g_egl_surf);
+
+   /* I guess we have to wait for flip to have taken 
+    * place before another flip can be queued up. */
    if (waiting_for_flip)
    {
-      wait_flip(g_interval);
-      if (waiting_for_flip) // We are still waiting for a flip (nonblocking mode, just drop the frame).
+      wait_flip(drm->g_interval);
+
+      /* We are still waiting for a flip 
+       * (nonblocking mode, just drop the frame).
+       */
+      if (waiting_for_flip)
          return;
    }
 
    queue_flip();
 
-   // We have to wait for this flip to finish. This shouldn't happen as we have triple buffered page-flips.
-   if (!gbm_surface_has_free_buffers(g_gbm_surface))
+   /* We have to wait for this flip to finish. 
+    * This shouldn't happen as we have triple buffered page-flips. */
+   if (!gbm_surface_has_free_buffers(drm->g_gbm_surface))
    {
       RARCH_WARN("[KMS/EGL]: Triple buffering is not working correctly ...\n");
       wait_flip(true);  
    }
 }
 
-static void gfx_ctx_drm_egl_set_resize(void *data, unsigned width, unsigned height)
+static void gfx_ctx_drm_egl_set_resize(void *data,
+      unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
@@ -241,59 +270,131 @@ static void gfx_ctx_drm_egl_update_window_title(void *data)
 
 static void gfx_ctx_drm_egl_get_video_size(void *data, unsigned *width, unsigned *height)
 {
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
+
+   if (!drm)
+      return;
+
    (void)data;
-   *width  = g_fb_width;
-   *height = g_fb_height;
+   *width  = drm->g_fb_width;
+   *height = drm->g_fb_height;
 }
 
-static void free_drm_resources(void)
+static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
 {
-   if (g_gbm_surface)
-      gbm_surface_destroy(g_gbm_surface);
+   if (!drm)
+      return;
 
-   if (g_gbm_dev)
-      gbm_device_destroy(g_gbm_dev);
+   if (drm->g_gbm_surface)
+      gbm_surface_destroy(drm->g_gbm_surface);
 
-   if (g_encoder)
-      drmModeFreeEncoder(g_encoder);
+   if (drm->g_gbm_dev)
+      gbm_device_destroy(drm->g_gbm_dev);
 
-   if (g_connector)
-      drmModeFreeConnector(g_connector);
+   if (drm->g_encoder)
+      drmModeFreeEncoder(drm->g_encoder);
 
-   if (g_resources)
-      drmModeFreeResources(g_resources);
+   if (drm->g_connector)
+      drmModeFreeConnector(drm->g_connector);
 
-   if (g_orig_crtc)
-      drmModeFreeCrtc(g_orig_crtc);
+   if (drm->g_resources)
+      drmModeFreeResources(drm->g_resources);
 
-   if (g_drm_fd >= 0)
-      close(g_drm_fd);
+   if (drm->g_orig_crtc)
+      drmModeFreeCrtc(drm->g_orig_crtc);
 
-   g_gbm_surface = NULL;
-   g_gbm_dev     = NULL;
-   g_encoder     = NULL;
-   g_connector   = NULL;
-   g_resources   = NULL;
-   g_orig_crtc   = NULL;
-   g_drm_fd      = -1;
+   if (drm->g_drm_fd >= 0)
+      close(drm->g_drm_fd);
+
+   drm->g_gbm_surface = NULL;
+   drm->g_gbm_dev     = NULL;
+   drm->g_encoder     = NULL;
+   drm->g_connector   = NULL;
+   drm->g_resources   = NULL;
+   drm->g_orig_crtc   = NULL;
+   drm->g_drm_fd      = -1;
+}
+
+static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
+{
+   if (!drm)
+      return;
+
+   /* Make sure we acknowledge all page-flips. */
+
+   if (waiting_for_flip)
+      wait_flip(true);
+
+   if (drm->g_egl_dpy)
+   {
+      if (drm->g_egl_ctx)
+      {
+         eglMakeCurrent(drm->g_egl_dpy,
+               EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+         eglDestroyContext(drm->g_egl_dpy, drm->g_egl_ctx);
+      }
+
+      if (drm->g_egl_hw_ctx)
+         eglDestroyContext(drm->g_egl_dpy, drm->g_egl_hw_ctx);
+
+      if (drm->g_egl_surf)
+         eglDestroySurface(drm->g_egl_dpy, drm->g_egl_surf);
+      eglTerminate(drm->g_egl_dpy);
+   }
+
+   /* Be as careful as possible in deinit.
+    * If we screw up, the KMS tty will not restore.
+    */
+
+   drm->g_egl_ctx     = NULL;
+   drm->g_egl_hw_ctx  = NULL;
+   drm->g_egl_surf    = NULL;
+   drm->g_egl_dpy     = NULL;
+   drm->g_config      = 0;
+
+   /* Restore original CRTC. */
+   if (drm->g_orig_crtc)
+   {
+      drmModeSetCrtc(drm->g_drm_fd, drm->g_orig_crtc->crtc_id,
+            drm->g_orig_crtc->buffer_id,
+            drm->g_orig_crtc->x,
+            drm->g_orig_crtc->y,
+            &drm->g_connector_id, 1, &drm->g_orig_crtc->mode);
+   }
+
+   free_drm_resources(drm);
+
+   drm->g_drm_mode = NULL;
+   g_quit         = 0;
+   drm->g_crtc_id      = 0;
+   drm->g_connector_id = 0;
+
+   drm->g_fb_width  = 0;
+   drm->g_fb_height = 0;
+
+   drm->g_bo      = NULL;
+   drm->g_next_bo = NULL;
 }
 
 static bool gfx_ctx_drm_egl_init(void *data)
 {
+   const char *gpu;
    int i;
    unsigned monitor_index;
    unsigned gpu_index = 0;
    unsigned monitor = max(g_settings.video.monitor_index, 1);
+   struct string_list *gpu_descriptors  = NULL;
 
-   const char *gpu;
-   if (g_inited)
-      return false;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)calloc(1, sizeof(gfx_ctx_drm_egl_data_t));
 
-   g_drm_fd = -1;
-   struct string_list *gpu_descriptors = dir_list_new("/dev/dri", NULL, false);
+   if (!drm)
+      return NULL;
+
+   drm->g_drm_fd = -1;
+   gpu_descriptors = (struct string_list*)dir_list_new("/dev/dri", NULL, false);
 
 nextgpu:
-   free_drm_resources();
+   free_drm_resources(drm);
 
    if (!gpu_descriptors || gpu_index == gpu_descriptors->size)
    {
@@ -302,26 +403,30 @@ nextgpu:
    }
    gpu = gpu_descriptors->elems[gpu_index++].data;
 
-   g_drm_fd = open(gpu, O_RDWR);
-   if (g_drm_fd < 0)
+   drm->g_drm_fd = open(gpu, O_RDWR);
+   if (drm->g_drm_fd < 0)
    {
       RARCH_WARN("[KMS/EGL]: Couldn't open DRM device.\n");
       goto nextgpu;
    }
 
-   g_resources = drmModeGetResources(g_drm_fd);
-   if (!g_resources)
+   drm->g_resources = drmModeGetResources(drm->g_drm_fd);
+   if (!drm->g_resources)
    {
       RARCH_WARN("[KMS/EGL]: Couldn't get device resources.\n");
       goto nextgpu;
    }
 
-   // Enumerate all connectors.
+   /* Enumerate all connectors. */
    monitor_index = 0;
-   RARCH_LOG("[KMS/EGL]: Found %d connectors.\n", g_resources->count_connectors);
-   for (i = 0; i < g_resources->count_connectors; i++)
+   RARCH_LOG("[KMS/EGL]: Found %d connectors.\n",
+         drm->g_resources->count_connectors);
+
+   for (i = 0; i < drm->g_resources->count_connectors; i++)
    {
-      drmModeConnectorPtr conn = drmModeGetConnector(g_drm_fd, g_resources->connectors[i]);
+      drmModeConnectorPtr conn = drmModeGetConnector(
+            drm->g_drm_fd, drm->g_resources->connectors[i]);
+
       if (conn)
       {
          bool connected = conn->connection == DRM_MODE_CONNECTED;
@@ -337,94 +442,112 @@ nextgpu:
    }
 
    monitor_index = 0;
-   for (i = 0; i < g_resources->count_connectors; i++)
+   for (i = 0; i < drm->g_resources->count_connectors; i++)
    {
-      g_connector = drmModeGetConnector(g_drm_fd, g_resources->connectors[i]);
+      drm->g_connector = drmModeGetConnector(drm->g_drm_fd,
+            drm->g_resources->connectors[i]);
 
-      if (!g_connector)
+      if (!drm->g_connector)
          continue;
-      if (g_connector->connection == DRM_MODE_CONNECTED && g_connector->count_modes > 0)
+      if (drm->g_connector->connection == DRM_MODE_CONNECTED
+            && drm->g_connector->count_modes > 0)
       {
          monitor_index++;
          if (monitor_index == monitor)
             break;
       }
 
-      drmModeFreeConnector(g_connector);
-      g_connector = NULL;
+      drmModeFreeConnector(drm->g_connector);
+      drm->g_connector = NULL;
    }
 
-   if (!g_connector)
+   if (!drm->g_connector)
    {
       RARCH_WARN("[KMS/EGL]: Couldn't get device connector.\n");
       goto nextgpu;
    }
 
-   for (i = 0; i < g_resources->count_encoders; i++)
+   for (i = 0; i < drm->g_resources->count_encoders; i++)
    {
-      g_encoder = drmModeGetEncoder(g_drm_fd, g_resources->encoders[i]);
+      drm->g_encoder = drmModeGetEncoder(drm->g_drm_fd,
+            drm->g_resources->encoders[i]);
 
-      if (!g_encoder)
+      if (!drm->g_encoder)
          continue;
-      if (g_encoder->encoder_id == g_connector->encoder_id)
+      if (drm->g_encoder->encoder_id == drm->g_connector->encoder_id)
          break;
 
-      drmModeFreeEncoder(g_encoder);
-      g_encoder = NULL;
+      drmModeFreeEncoder(drm->g_encoder);
+      drm->g_encoder = NULL;
    }
 
-   if (!g_encoder)
+   if (!drm->g_encoder)
    {
       RARCH_WARN("[KMS/EGL]: Couldn't find DRM encoder.\n");
       goto nextgpu;
    }
 
-   for (i = 0; i < g_connector->count_modes; i++)
+   for (i = 0; i < drm->g_connector->count_modes; i++)
    {
-      RARCH_LOG("[KMS/EGL]: Mode %d: (%s) %d x %d, %u Hz\n", i,
-            g_connector->modes[i].name,
-            g_connector->modes[i].hdisplay, g_connector->modes[i].vdisplay,
-            g_connector->modes[i].vrefresh);
+      RARCH_LOG("[KMS/EGL]: Mode %d: (%s) %d x %d, %u Hz\n",
+            i,
+            drm->g_connector->modes[i].name,
+            drm->g_connector->modes[i].hdisplay,
+            drm->g_connector->modes[i].vdisplay,
+            drm->g_connector->modes[i].vrefresh);
    }
 
-   g_crtc_id   = g_encoder->crtc_id;
-   g_orig_crtc = drmModeGetCrtc(g_drm_fd, g_crtc_id);
-   if (!g_orig_crtc)
+   drm->g_crtc_id   = drm->g_encoder->crtc_id;
+   drm->g_orig_crtc = drmModeGetCrtc(drm->g_drm_fd, drm->g_crtc_id);
+   if (!drm->g_orig_crtc)
       RARCH_WARN("[KMS/EGL]: Cannot find original CRTC.\n");
 
-   g_connector_id = g_connector->connector_id;
+   drm->g_connector_id = drm->g_connector->connector_id;
 
-   // First mode is assumed to be the "optimal" one for get_video_size() purposes.
-   g_fb_width  = g_connector->modes[0].hdisplay;
-   g_fb_height = g_connector->modes[0].vdisplay;
+   /* First mode is assumed to be the "optimal" 
+    * one for get_video_size() purposes. */
+   drm->g_fb_width  = drm->g_connector->modes[0].hdisplay;
+   drm->g_fb_height = drm->g_connector->modes[0].vdisplay;
 
-   g_gbm_dev = gbm_create_device(g_drm_fd);
-   if (!g_gbm_dev)
+   drm->g_gbm_dev = gbm_create_device(drm->g_drm_fd);
+
+   if (!drm->g_gbm_dev)
    {
       RARCH_WARN("[KMS/EGL]: Couldn't create GBM device.\n");
       goto nextgpu;
    }
 
    dir_list_free(gpu_descriptors);
+
+   driver.video_context_data = drm;
+
    return true;
 
 error:
    dir_list_free(gpu_descriptors);
-   gfx_ctx_drm_egl_destroy(data);
+
+   gfx_ctx_drm_egl_destroy_resources(drm);
+
+   if (drm)
+      free(drm);
+
    return false;
 }
 
 static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
 {
    struct drm_fb *fb = (struct drm_fb*)data;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
 
-   if (fb->fb_id)
-      drmModeRmFB(g_drm_fd, fb->fb_id);
+   if (drm && fb->fb_id)
+      drmModeRmFB(drm->g_drm_fd, fb->fb_id);
 
    free(fb);
 }
 
-static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
+static struct drm_fb *drm_fb_get_from_bo(
+      gfx_ctx_drm_egl_data_t *drm,
+      struct gbm_bo *bo)
 {
    struct drm_fb *fb = (struct drm_fb*)gbm_bo_get_user_data(bo);
    if (fb)
@@ -440,7 +563,7 @@ static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
 
    RARCH_LOG("[KMS/EGL]: New FB: %ux%u (stride: %u).\n", width, height, stride);
 
-   int ret = drmModeAddFB(g_drm_fd, width, height, 24, 32, stride, handle, &fb->fb_id);
+   int ret = drmModeAddFB(drm->g_drm_fd, width, height, 24, 32, stride, handle, &fb->fb_id);
    if (ret < 0)
    {
       RARCH_ERR("[KMS/EGL]: Failed to create FB: %s\n", strerror(errno));
@@ -473,8 +596,10 @@ static EGLint *egl_fill_attribs(EGLint *attr)
             *attr++ = g_major;
             *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
             *attr++ = g_minor;
-            // Technically, we don't have core/compat until 3.2.
-            // Version 3.1 is either compat or not depending on GL_ARB_compatibility.
+
+            /* Technically, we don't have core/compat until 3.2.
+             * Version 3.1 is either compat or not depending 
+             * on GL_ARB_compatibility. */
             if (version >= 3002)
             {
                *attr++ = EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR;
@@ -516,14 +641,14 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   if (g_inited)
+   int i, ret = 0;
+   struct sigaction sa = {{0}};
+   struct drm_fb *fb = NULL;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
+
+   if (!drm)
       return false;
 
-   int i;
-   int ret = 0;
-   struct drm_fb *fb = NULL;
-
-   struct sigaction sa = {{0}};
    sa.sa_handler = sighandler;
    sa.sa_flags   = SA_RESTART;
    sigemptyset(&sa.sa_mask);
@@ -585,172 +710,144 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
          attrib_ptr = NULL;
    }
 
-   // If we use black frame insertion, we fake a 60 Hz monitor for 120 Hz one, etc, so try to match that.
+   /* If we use black frame insertion, 
+    * we fake a 60 Hz monitor for 120 Hz one, etc, so try to match that. */
    float refresh_mod = g_settings.video.black_frame_insertion ? 0.5f : 1.0f;
 
-   // Find desired video mode, and use that.
-   // If not fullscreen, we get desired windowed size, which is not appropriate.
+   /* Find desired video mode, and use that.
+    * If not fullscreen, we get desired windowed size, 
+    * which is not appropriate. */
    if ((width == 0 && height == 0) || !fullscreen)
-      g_drm_mode = &g_connector->modes[0];
+      drm->g_drm_mode = &drm->g_connector->modes[0];
    else
    {
-      // Try to match g_settings.video.refresh_rate as closely as possible.
-      // Lower resolutions tend to have multiple supported refresh rates as well.
+      /* Try to match g_settings.video.refresh_rate as closely as possible.
+       * Lower resolutions tend to have multiple supported 
+       * refresh rates as well.
+       */
       float minimum_fps_diff = 0.0f;
 
-      // Find best match.
-      for (i = 0; i < g_connector->count_modes; i++)
+      /* Find best match. */
+      for (i = 0; i < drm->g_connector->count_modes; i++)
       {
-         if (width != g_connector->modes[i].hdisplay || height != g_connector->modes[i].vdisplay)
+         if (width != drm->g_connector->modes[i].hdisplay || 
+               height != drm->g_connector->modes[i].vdisplay)
             continue;
 
-         float diff = fabsf(refresh_mod * g_connector->modes[i].vrefresh - g_settings.video.refresh_rate);
-         if (!g_drm_mode || diff < minimum_fps_diff)
+         float diff = fabsf(refresh_mod * 
+               drm->g_connector->modes[i].vrefresh - g_settings.video.refresh_rate);
+         if (!drm->g_drm_mode || diff < minimum_fps_diff)
          {
-            g_drm_mode = &g_connector->modes[i];
+            drm->g_drm_mode = &drm->g_connector->modes[i];
             minimum_fps_diff = diff;
          }
       }
    }
 
-   if (!g_drm_mode)
+   if (!drm->g_drm_mode)
    {
       RARCH_ERR("[KMS/EGL]: Did not find suitable video mode for %u x %u.\n", width, height);
       goto error;
    }
 
-   g_fb_width = g_drm_mode->hdisplay;
-   g_fb_height = g_drm_mode->vdisplay;
+   drm->g_fb_width  = drm->g_drm_mode->hdisplay;
+   drm->g_fb_height = drm->g_drm_mode->vdisplay;
 
-   // Create GBM surface.
-   g_gbm_surface = gbm_surface_create(g_gbm_dev,
-         g_fb_width, g_fb_height,
+   /* Create GBM surface. */
+   drm->g_gbm_surface = gbm_surface_create(
+         drm->g_gbm_dev,
+         drm->g_fb_width,
+         drm->g_fb_height,
          GBM_FORMAT_XRGB8888,
          GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
 
-   if (!g_gbm_surface)
+   if (!drm->g_gbm_surface)
    {
       RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
       goto error;
    }
 
-   g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)g_gbm_dev);
-   if (!g_egl_dpy)
+   drm->g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)drm->g_gbm_dev);
+   if (!drm->g_egl_dpy)
    {
       RARCH_ERR("[KMS/EGL]: Couldn't get EGL display.\n");
       goto error;
    }
 
    EGLint major, minor;
-   if (!eglInitialize(g_egl_dpy, &major, &minor))
+   if (!eglInitialize(drm->g_egl_dpy, &major, &minor))
       goto error;
 
    EGLint n;
-   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_config, 1, &n) || n != 1)
+   if (!eglChooseConfig(drm->g_egl_dpy, attrib_ptr, &drm->g_config, 1, &n) || n != 1)
       goto error;
 
    EGLint egl_attribs[16];
    EGLint *attr;
    attr = egl_fill_attribs(egl_attribs);
 
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT,
+   drm->g_egl_ctx = eglCreateContext(drm->g_egl_dpy, drm->g_config, EGL_NO_CONTEXT,
          attr != egl_attribs ? egl_attribs : NULL);
 
-   if (g_egl_ctx == EGL_NO_CONTEXT)
+   if (drm->g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
 
-   if (g_use_hw_ctx)
+   if (drm->g_use_hw_ctx)
    {
-      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_config, g_egl_ctx,
+      drm->g_egl_hw_ctx = eglCreateContext(drm->g_egl_dpy, drm->g_config, drm->g_egl_ctx,
             attr != egl_attribs ? egl_attribs : NULL);
-      RARCH_LOG("[KMS/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
+      RARCH_LOG("[KMS/EGL]: Created shared context: %p.\n", (void*)drm->g_egl_hw_ctx);
 
-      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
+      if (drm->g_egl_hw_ctx == EGL_NO_CONTEXT)
          goto error;
    }
 
-   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, (EGLNativeWindowType)g_gbm_surface, NULL);
-   if (!g_egl_surf)
+   drm->g_egl_surf = eglCreateWindowSurface(drm->g_egl_dpy,
+         drm->g_config, (EGLNativeWindowType)drm->g_gbm_surface, NULL);
+   if (!drm->g_egl_surf)
       goto error;
 
-   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
+   if (!eglMakeCurrent(drm->g_egl_dpy,
+            drm->g_egl_surf, drm->g_egl_surf, drm->g_egl_ctx))
       goto error;
 
    glClear(GL_COLOR_BUFFER_BIT);
-   eglSwapBuffers(g_egl_dpy, g_egl_surf);
+   eglSwapBuffers(drm->g_egl_dpy, drm->g_egl_surf);
 
-   g_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
-   fb = drm_fb_get_from_bo(g_bo);
+   drm->g_bo = gbm_surface_lock_front_buffer(drm->g_gbm_surface);
+   fb = drm_fb_get_from_bo(drm, drm->g_bo);
 
-   ret = drmModeSetCrtc(g_drm_fd, g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
+   ret = drmModeSetCrtc(drm->g_drm_fd,
+         drm->g_crtc_id, fb->fb_id, 0, 0, &drm->g_connector_id, 1, drm->g_drm_mode);
    if (ret < 0)
       goto error;
 
-   g_inited = true;
    return true;
 
 error:
-   gfx_ctx_drm_egl_destroy(data);
+   gfx_ctx_drm_egl_destroy_resources(drm);
+
+   if (drm)
+      free(drm);
+
    return false;
 }
 
+
 static void gfx_ctx_drm_egl_destroy(void *data)
 {
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
+
+   if (!drm)
+      return;
+
    (void)data;
-   // Make sure we acknowledge all page-flips.
-   if (waiting_for_flip)
-      wait_flip(true);
 
-   if (g_egl_dpy)
-   {
-      if (g_egl_ctx)
-      {
-         eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-         eglDestroyContext(g_egl_dpy, g_egl_ctx);
-      }
+   gfx_ctx_drm_egl_destroy_resources(drm);
 
-      if (g_egl_hw_ctx)
-         eglDestroyContext(g_egl_dpy, g_egl_hw_ctx);
-
-      if (g_egl_surf)
-         eglDestroySurface(g_egl_dpy, g_egl_surf);
-      eglTerminate(g_egl_dpy);
-   }
-
-   // Be as careful as possible in deinit.
-   // If we screw up, the KMS tty will not restore.
-
-   g_egl_ctx     = NULL;
-   g_egl_hw_ctx  = NULL;
-   g_egl_surf    = NULL;
-   g_egl_dpy     = NULL;
-   g_config      = 0;
-
-   // Restore original CRTC.
-   if (g_orig_crtc)
-   {
-      drmModeSetCrtc(g_drm_fd, g_orig_crtc->crtc_id,
-            g_orig_crtc->buffer_id,
-            g_orig_crtc->x,
-            g_orig_crtc->y,
-            &g_connector_id, 1, &g_orig_crtc->mode);
-   }
-
-   free_drm_resources();
-
-   g_drm_mode = NULL;
-
-   g_quit         = 0;
-   g_crtc_id      = 0;
-   g_connector_id = 0;
-
-   g_fb_width  = 0;
-   g_fb_height = 0;
-
-   g_bo      = NULL;
-   g_next_bo = NULL;
-
-   g_inited = false;
+   if (driver.video_context_data)
+      free(driver.video_context_data);
+   driver.video_context_data = NULL;
 }
 
 static void gfx_ctx_drm_egl_input_driver(void *data,
@@ -763,8 +860,12 @@ static void gfx_ctx_drm_egl_input_driver(void *data,
 
 static bool gfx_ctx_drm_egl_has_focus(void *data)
 {
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
    (void)data;
-   return g_inited;
+
+   if (drm)
+      return true;
+   return false;
 }
 
 static bool gfx_ctx_drm_egl_has_windowed(void *data)
@@ -808,10 +909,17 @@ static bool gfx_ctx_drm_egl_bind_api(void *data,
 
 static void gfx_ctx_drm_egl_bind_hw_render(void *data, bool enable)
 {
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
+
+   if (!drm)
+      return;
+
    (void)data;
-   g_use_hw_ctx = enable;
-   if (g_egl_dpy && g_egl_surf)
-      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
+
+   drm->g_use_hw_ctx = enable;
+   if (drm->g_egl_dpy && drm->g_egl_surf)
+      eglMakeCurrent(drm->g_egl_dpy, drm->g_egl_surf,
+            drm->g_egl_surf, enable ? drm->g_egl_hw_ctx : drm->g_egl_ctx);
 }
 
 const gfx_ctx_driver_t gfx_ctx_drm_egl = {

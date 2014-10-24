@@ -239,6 +239,77 @@ static void gfx_ctx_glx_get_video_size(void *data,
    }
 }
 
+static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
+{
+   if (!glx)
+      return;
+
+   x11_destroy_input_context(&glx->g_xim, &glx->g_xic);
+
+   if (glx->g_dpy && glx->g_ctx)
+   {
+      glFinish();
+      glXMakeContextCurrent(glx->g_dpy, None, None, NULL);
+      if (!driver.video_cache_context)
+      {
+         if (glx->g_hw_ctx)
+            glXDestroyContext(glx->g_dpy, glx->g_hw_ctx);
+         glXDestroyContext(glx->g_dpy, glx->g_ctx);
+         glx->g_ctx = NULL;
+         glx->g_hw_ctx = NULL;
+      }
+   }
+
+   if (glx->g_win)
+   {
+      glXDestroyWindow(glx->g_dpy, glx->g_glx_win);
+      glx->g_glx_win = 0;
+
+      // Save last used monitor for later.
+#ifdef HAVE_XINERAMA
+      XWindowAttributes target;
+      Window child;
+
+      int x = 0, y = 0;
+      XGetWindowAttributes(glx->g_dpy, glx->g_win, &target);
+      XTranslateCoordinates(glx->g_dpy, glx->g_win, DefaultRootWindow(glx->g_dpy),
+            target.x, target.y, &x, &y, &child);
+
+      glx->g_screen = x11_get_xinerama_monitor(glx->g_dpy, x, y,
+            target.width, target.height);
+
+      RARCH_LOG("[GLX]: Saved monitor #%u.\n", glx->g_screen);
+#endif
+
+      XUnmapWindow(glx->g_dpy, glx->g_win);
+      XDestroyWindow(glx->g_dpy, glx->g_win);
+      glx->g_win = None;
+   }
+
+   if (glx->g_cmap)
+   {
+      XFreeColormap(glx->g_dpy, glx->g_cmap);
+      glx->g_cmap = None;
+   }
+
+   if (glx->g_should_reset_mode)
+   {
+      x11_exit_fullscreen(glx->g_dpy, &glx->g_desktop_mode);
+      glx->g_should_reset_mode = false;
+   }
+
+   if (!driver.video_cache_context && glx->g_dpy)
+   {
+      XCloseDisplay(glx->g_dpy);
+      glx->g_dpy = NULL;
+   }
+
+   g_pglSwapInterval = NULL;
+   g_pglSwapIntervalEXT = NULL;
+   g_major = g_minor = 0;
+   glx->g_core = false;
+}
+
 static bool gfx_ctx_glx_init(void *data)
 {
    int nelements, major, minor;
@@ -310,9 +381,14 @@ static bool gfx_ctx_glx_init(void *data)
    return true;
 
 error:
-   gfx_ctx_glx_destroy(data);
+   ctx_glx_destroy_resources(glx);
+
+   if (glx)
+      free(glx);
+
    return false;
 }
+
 
 static bool gfx_ctx_glx_set_video_mode(void *data,
       unsigned width, unsigned height,
@@ -540,7 +616,11 @@ error:
    if (vi)
       XFree(vi);
 
-   gfx_ctx_glx_destroy(data);
+   ctx_glx_destroy_resources(glx);
+
+   if (glx)
+      free(glx);
+
    return false;
 }
 
@@ -550,73 +630,10 @@ static void gfx_ctx_glx_destroy(void *data)
 
    if (!glx)
       return;
-
+   
    (void)data;
 
-   x11_destroy_input_context(&glx->g_xim, &glx->g_xic);
-
-   if (glx->g_dpy && glx->g_ctx)
-   {
-      glFinish();
-      glXMakeContextCurrent(glx->g_dpy, None, None, NULL);
-      if (!driver.video_cache_context)
-      {
-         if (glx->g_hw_ctx)
-            glXDestroyContext(glx->g_dpy, glx->g_hw_ctx);
-         glXDestroyContext(glx->g_dpy, glx->g_ctx);
-         glx->g_ctx = NULL;
-         glx->g_hw_ctx = NULL;
-      }
-   }
-
-   if (glx->g_win)
-   {
-      glXDestroyWindow(glx->g_dpy, glx->g_glx_win);
-      glx->g_glx_win = 0;
-
-      // Save last used monitor for later.
-#ifdef HAVE_XINERAMA
-      XWindowAttributes target;
-      Window child;
-
-      int x = 0, y = 0;
-      XGetWindowAttributes(glx->g_dpy, glx->g_win, &target);
-      XTranslateCoordinates(glx->g_dpy, glx->g_win, DefaultRootWindow(glx->g_dpy),
-            target.x, target.y, &x, &y, &child);
-
-      glx->g_screen = x11_get_xinerama_monitor(glx->g_dpy, x, y,
-            target.width, target.height);
-
-      RARCH_LOG("[GLX]: Saved monitor #%u.\n", glx->g_screen);
-#endif
-
-      XUnmapWindow(glx->g_dpy, glx->g_win);
-      XDestroyWindow(glx->g_dpy, glx->g_win);
-      glx->g_win = None;
-   }
-
-   if (glx->g_cmap)
-   {
-      XFreeColormap(glx->g_dpy, glx->g_cmap);
-      glx->g_cmap = None;
-   }
-
-   if (glx->g_should_reset_mode)
-   {
-      x11_exit_fullscreen(glx->g_dpy, &glx->g_desktop_mode);
-      glx->g_should_reset_mode = false;
-   }
-
-   if (!driver.video_cache_context && glx->g_dpy)
-   {
-      XCloseDisplay(glx->g_dpy);
-      glx->g_dpy = NULL;
-   }
-
-   g_pglSwapInterval = NULL;
-   g_pglSwapIntervalEXT = NULL;
-   g_major = g_minor = 0;
-   glx->g_core = false;
+   ctx_glx_destroy_resources(glx);
 
    if (driver.video_context_data)
       free(driver.video_context_data);
