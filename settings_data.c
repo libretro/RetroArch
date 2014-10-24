@@ -843,7 +843,10 @@ static int setting_data_action_toggle_bind_device(void *data, unsigned action)
    if (action == MENU_ACTION_START)
       *p = 0;
    else if (action == MENU_ACTION_LEFT)
-      (*p)--;
+   {
+      if (*p > 0)
+         (*p)--;
+   }
    else if (action == MENU_ACTION_RIGHT)
       (*p)++;
    if (*p < -1)
