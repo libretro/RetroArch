@@ -477,6 +477,7 @@ typedef struct driver
 
    void *audio_data;
    void *video_data;
+   void *video_context_data;
    void *input_data;
    void *osk_data;
    void *camera_data;

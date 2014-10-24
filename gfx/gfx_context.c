@@ -110,12 +110,16 @@ static const gfx_ctx_driver_t *ctx_init(void *data,
 {
    if (ctx->bind_api(data, api, major, minor))
    {
+      bool initialized = ctx->init(data);
+
+      if (!initialized)
+         return NULL;
+
       if (ctx->bind_hw_render)
          ctx->bind_hw_render(data,
                g_settings.video.shared_context && hw_render_ctx);
 
-      if (ctx->init(data))
-         return ctx;
+      return ctx;
    }
 
    return NULL;
