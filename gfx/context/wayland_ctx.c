@@ -27,33 +27,36 @@
 #include <sys/poll.h>
 #include <unistd.h>
 
-static EGLContext g_egl_ctx;
-static EGLContext g_egl_hw_ctx;
-static EGLSurface g_egl_surf;
-static EGLDisplay g_egl_dpy;
-static EGLConfig g_config;
-static bool g_resize;
-static unsigned g_width, g_height;
+typedef struct gfx_ctx_wayland_data
+{
+   EGLContext g_egl_ctx;
+   EGLContext g_egl_hw_ctx;
+   EGLSurface g_egl_surf;
+   EGLDisplay g_egl_dpy;
+   EGLConfig g_config;
+   bool g_resize;
+   bool g_use_hw_ctx;
+   int g_fd;
+   unsigned g_width;
+   unsigned g_height;
+   unsigned g_interval;
+   struct wl_display *g_dpy;
+   struct wl_registry *g_registry;
+   struct wl_compositor *g_compositor;
+   struct wl_surface *g_surface;
+   struct wl_shell_surface *g_shell_surf;
+   struct wl_shell *g_shell;
+   struct wl_egl_window *g_win;
+   struct wl_keyboard *g_wl_keyboard;
+   struct wl_pointer  *g_wl_pointer;
+} gfx_ctx_wayland_data_t;
 
-static struct wl_display *g_dpy;
-static struct wl_registry *g_registry;
-static struct wl_compositor *g_compositor;
-static struct wl_surface *g_surface;
-static struct wl_shell_surface *g_shell_surf;
-static struct wl_shell *g_shell;
-static struct wl_egl_window *g_win;
-static int g_fd;
 
-static unsigned g_interval;
 static enum gfx_ctx_api g_api;
 static unsigned g_major;
 static unsigned g_minor;
-static bool g_use_hw_ctx;
 
 static volatile sig_atomic_t g_quit;
-
-struct wl_keyboard *g_wl_keyboard;
-struct wl_pointer  *g_wl_pointer;
 
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
@@ -66,26 +69,34 @@ static void sighandler(int sig)
 }
 
 // Shell surface callbacks
-static void shell_surface_handle_ping(void *data, struct wl_shell_surface *shell_surface,
+static void shell_surface_handle_ping(void *data,
+      struct wl_shell_surface *shell_surface,
       uint32_t serial)
 {
    (void)data;
    wl_shell_surface_pong(shell_surface, serial);
 }
 
-static void shell_surface_handle_configure(void *data, struct wl_shell_surface *shell_surface,
+static void shell_surface_handle_configure(void *data,
+      struct wl_shell_surface *shell_surface,
       uint32_t edges, int32_t width, int32_t height)
 {
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
+      driver.video_context_data;
+
    (void)data;
    (void)shell_surface;
    (void)edges;
-   g_width = width;
-   g_height = height;
 
-   RARCH_LOG("[Wayland/EGL]: Surface configure: %u x %u.\n", g_width, g_height);
+   wl->g_width = width;
+   wl->g_height = height;
+
+   RARCH_LOG("[Wayland/EGL]: Surface configure: %u x %u.\n",
+         wl->g_width, wl->g_height);
 }
 
-static void shell_surface_handle_popup_done(void *data, struct wl_shell_surface *shell_surface)
+static void shell_surface_handle_popup_done(void *data,
+      struct wl_shell_surface *shell_surface)
 {
    (void)data;
    (void)shell_surface;
@@ -98,19 +109,23 @@ static const struct wl_shell_surface_listener shell_surface_listener = {
 };
 
 // Registry callbacks
-static void registry_handle_global(void *data, struct wl_registry *reg, uint32_t id, const char *interface, uint32_t version)
+static void registry_handle_global(void *data, struct wl_registry *reg,
+      uint32_t id, const char *interface, uint32_t version)
 {
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
+      driver.video_context_data;
+
    (void)data;
    (void)version;
 
    if (!strcmp(interface, "wl_compositor"))
-      g_compositor = (struct wl_compositor*)wl_registry_bind(reg, id, &wl_compositor_interface, 1);
+      wl->g_compositor = (struct wl_compositor*)wl_registry_bind(reg, id, &wl_compositor_interface, 1);
    else if (!strcmp(interface, "wl_shell"))
-      g_shell = (struct wl_shell*)wl_registry_bind(reg, id, &wl_shell_interface, 1);
+      wl->g_shell = (struct wl_shell*)wl_registry_bind(reg, id, &wl_shell_interface, 1);
 }
 
-static void registry_handle_global_remove(void *data, struct wl_registry *registry,
-      uint32_t id)
+static void registry_handle_global_remove(void *data,
+      struct wl_registry *registry, uint32_t id)
 {
    (void)data;
    (void)registry;
@@ -127,7 +142,64 @@ static const struct wl_registry_listener registry_listener = {
 static void gfx_ctx_wl_get_video_size(void *data,
       unsigned *width, unsigned *height);
 
-static void gfx_ctx_wl_destroy(void *data);
+static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
+{
+   if (!wl)
+      return;
+
+   if (wl->g_egl_dpy)
+   {
+      if (wl->g_egl_ctx)
+      {
+         eglMakeCurrent(wl->g_egl_dpy,
+               EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+         eglDestroyContext(wl->g_egl_dpy, wl->g_egl_ctx);
+      }
+
+      if (wl->g_egl_hw_ctx)
+         eglDestroyContext(wl->g_egl_dpy, wl->g_egl_hw_ctx);
+
+      if (wl->g_egl_surf)
+         eglDestroySurface(wl->g_egl_dpy, wl->g_egl_surf);
+      eglTerminate(wl->g_egl_dpy);
+   }
+
+   wl->g_egl_ctx     = NULL;
+   wl->g_egl_hw_ctx  = NULL;
+   wl->g_egl_surf    = NULL;
+   wl->g_egl_dpy     = NULL;
+   wl->g_config      = 0;
+
+   if (wl->g_win)
+      wl_egl_window_destroy(wl->g_win);
+   if (wl->g_shell)
+      wl_shell_destroy(wl->g_shell);
+   if (wl->g_compositor)
+      wl_compositor_destroy(wl->g_compositor);
+   if (wl->g_registry)
+      wl_registry_destroy(wl->g_registry);
+   if (wl->g_shell_surf)
+      wl_shell_surface_destroy(wl->g_shell_surf);
+   if (wl->g_surface)
+      wl_surface_destroy(wl->g_surface);
+
+   if (wl->g_dpy)
+   {
+      wl_display_flush(wl->g_dpy);
+      wl_display_disconnect(wl->g_dpy);
+   }
+
+   wl->g_win        = NULL;
+   wl->g_shell      = NULL;
+   wl->g_compositor = NULL;
+   wl->g_registry   = NULL;
+   wl->g_dpy        = NULL;
+   wl->g_shell_surf = NULL;
+   wl->g_surface    = NULL;
+
+   wl->g_width  = 0;
+   wl->g_height = 0;
+}
 
 static void egl_report_error(void)
 {
@@ -161,12 +233,20 @@ static void egl_report_error(void)
 
 static void gfx_ctx_wl_swap_interval(void *data, unsigned interval)
 {
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
+      driver.video_context_data;
+
    (void)data;
-   g_interval = interval;
-   if (g_egl_dpy && eglGetCurrentContext())
+
+   if (!wl)
+      return;
+
+   wl->g_interval = interval;
+
+   if (wl->g_egl_dpy && eglGetCurrentContext())
    {
-      RARCH_LOG("[Wayland/EGL]: eglSwapInterval(%u)\n", g_interval);
-      if (!eglSwapInterval(g_egl_dpy, g_interval))
+      RARCH_LOG("[Wayland/EGL]: eglSwapInterval(%u)\n", wl->g_interval);
+      if (!eglSwapInterval(wl->g_egl_dpy, wl->g_interval))
       {
          RARCH_ERR("[Wayland/EGL]: eglSwapInterval() failed.\n");
          egl_report_error();
@@ -176,30 +256,34 @@ static void gfx_ctx_wl_swap_interval(void *data, unsigned interval)
 
 static void flush_wayland_fd(void)
 {
-   wl_display_dispatch_pending(g_dpy);
-   wl_display_flush(g_dpy);
-
    struct pollfd fd = {0};
-   fd.fd = g_fd;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
+      driver.video_context_data;
+
+   wl_display_dispatch_pending(wl->g_dpy);
+   wl_display_flush(wl->g_dpy);
+
+   fd.fd = wl->g_fd;
    fd.events = POLLIN | POLLOUT | POLLERR | POLLHUP;
 
    if (poll(&fd, 1, 0) > 0)
    {
       if (fd.revents & (POLLERR | POLLHUP))
       {
-         close(g_fd);
+         close(wl->g_fd);
          g_quit = true;
       }
 
       if (fd.revents & POLLIN)
-         wl_display_dispatch(g_dpy);
+         wl_display_dispatch(wl->g_dpy);
       if (fd.revents & POLLOUT)
-         wl_display_flush(g_dpy);
+         wl_display_flush(wl->g_dpy);
    }
 }
 
 static void gfx_ctx_wl_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
+      bool *resize, unsigned *width, unsigned *height,
+      unsigned frame_count)
 {
    (void)frame_count;
 
@@ -220,24 +304,35 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
 
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
+      driver.video_context_data;
+
    (void)data;
-   eglSwapBuffers(g_egl_dpy, g_egl_surf);
+
+   eglSwapBuffers(wl->g_egl_dpy, wl->g_egl_surf);
 }
 
 static void gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 {
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
+      driver.video_context_data;
+
    (void)data;
-   wl_egl_window_resize(g_win, width, height, 0, 0);
+
+   wl_egl_window_resize(wl->g_win, width, height, 0, 0);
 }
 
 static void gfx_ctx_wl_update_window_title(void *data)
 {
-   (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
+      driver.video_context_data;
+
+   (void)data;
    if (gfx_get_fps(buf, sizeof(buf),
             fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
-      wl_shell_surface_set_title(g_shell_surf, buf);
+      wl_shell_surface_set_title(wl->g_shell_surf, buf);
    if (fps_draw)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
@@ -245,16 +340,18 @@ static void gfx_ctx_wl_update_window_title(void *data)
 static void gfx_ctx_wl_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
+      driver.video_context_data;
+
    (void)data;
-   *width = g_width;
-   *height = g_height;
+
+   *width  = wl->g_width;
+   *height = wl->g_height;
 }
 
 #define DEFAULT_WINDOWED_WIDTH 640
 #define DEFAULT_WINDOWED_HEIGHT 480
 
-static bool gfx_ctx_wl_init(void *data)
-{
 #define EGL_ATTRIBS_BASE \
    EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
    EGL_RED_SIZE,        1, \
@@ -262,6 +359,10 @@ static bool gfx_ctx_wl_init(void *data)
    EGL_BLUE_SIZE,       1, \
    EGL_ALPHA_SIZE,      0, \
    EGL_DEPTH_SIZE,      0
+
+static bool gfx_ctx_wl_init(void *data)
+{
+   (void)data;
 
    static const EGLint egl_attribs_gl[] = {
       EGL_ATTRIBS_BASE,
@@ -293,6 +394,12 @@ static bool gfx_ctx_wl_init(void *data)
    EGLint num_configs;
    const EGLint *attrib_ptr;
 
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
+      calloc(1, sizeof(gfx_ctx_wayland_data_t));
+
+   if (!wl)
+      return false;
+
    switch (g_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -315,61 +422,74 @@ static bool gfx_ctx_wl_init(void *data)
 
    g_quit = 0;
 
-   g_dpy = wl_display_connect(NULL);
-   if (!g_dpy)
+   wl->g_dpy = wl_display_connect(NULL);
+   if (!wl->g_dpy)
    {
       RARCH_ERR("Failed to connect to Wayland server.\n");
       goto error;
    }
 
-   g_registry = wl_display_get_registry(g_dpy);
-   wl_registry_add_listener(g_registry, &registry_listener, NULL);
-   wl_display_dispatch(g_dpy);
+   driver.video_context_data = wl;
 
-   if (!g_compositor)
+   wl->g_registry = wl_display_get_registry(wl->g_dpy);
+   wl_registry_add_listener(wl->g_registry, &registry_listener, NULL);
+   wl_display_dispatch(wl->g_dpy);
+
+   if (!wl->g_compositor)
    {
       RARCH_ERR("Failed to create compositor.\n");
       goto error;
    }
 
-   if (!g_shell)
+   if (!wl->g_shell)
    {
       RARCH_ERR("Failed to create shell.\n");
       goto error;
    }
 
-   g_fd = wl_display_get_fd(g_dpy);
+   wl->g_fd = wl_display_get_fd(wl->g_dpy);
 
-   g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)g_dpy);
-   if (!g_egl_dpy)
+   wl->g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)wl->g_dpy);
+
+   if (!wl->g_egl_dpy)
    {
       RARCH_ERR("Failed to create EGL window.\n");
       goto error;
    }
 
-   if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor))
+   if (!eglInitialize(wl->g_egl_dpy, &egl_major, &egl_minor))
    {
       RARCH_ERR("Failed to initialize EGL.\n");
       goto error;
    }
+
    RARCH_LOG("[Wayland/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
 
-   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_config, 1, &num_configs))
+   if (!eglChooseConfig(wl->g_egl_dpy, attrib_ptr, &wl->g_config, 1, &num_configs))
    {
       RARCH_ERR("[Wayland/EGL]: eglChooseConfig failed with 0x%x.\n", eglGetError());
       goto error;
    }
 
-   if (num_configs == 0 || !g_config)
+   if (num_configs == 0 || !wl->g_config)
    {
       RARCH_ERR("[Wayland/EGL]: No EGL configurations available.\n");
       goto error;
    }
 
+
    return true;
 
 error:
-   gfx_ctx_wl_destroy(data);
+   gfx_ctx_wl_destroy_resources(wl);
+
+   if (wl)
+      free(wl);
+
+   if (driver.video_context_data)
+      free(driver.video_context_data);
+   driver.video_context_data = NULL;
+
    return false;
 }
 
@@ -433,11 +553,31 @@ static EGLint *egl_fill_attribs(EGLint *attr)
    return attr;
 }
 
+static void gfx_ctx_wl_destroy(void *data)
+{
+   (void)data;
+
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
+      driver.video_context_data;
+
+   if (!wl)
+      return;
+
+   gfx_ctx_wl_destroy_resources(wl);
+
+   if (driver.video_context_data)
+      free(driver.video_context_data);
+   driver.video_context_data = NULL;
+}
+
 static bool gfx_ctx_wl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
+      driver.video_context_data;
    struct sigaction sa = {{0}};
+
    sa.sa_handler = sighandler;
    sa.sa_flags   = SA_RESTART;
    sigemptyset(&sa.sa_mask);
@@ -448,48 +588,49 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    EGLint *attr = egl_attribs;
    attr = egl_fill_attribs(attr);
 
-   g_width = width ? width : DEFAULT_WINDOWED_WIDTH;
-   g_height = height ? height : DEFAULT_WINDOWED_HEIGHT;
+   wl->g_width = width ? width : DEFAULT_WINDOWED_WIDTH;
+   wl->g_height = height ? height : DEFAULT_WINDOWED_HEIGHT;
 
-   g_surface = wl_compositor_create_surface(g_compositor);
-   g_win = wl_egl_window_create(g_surface, g_width, g_height);
-   g_shell_surf = wl_shell_get_shell_surface(g_shell, g_surface);
+   wl->g_surface = wl_compositor_create_surface(wl->g_compositor);
+   wl->g_win = wl_egl_window_create(wl->g_surface, wl->g_width, wl->g_height);
+   wl->g_shell_surf = wl_shell_get_shell_surface(wl->g_shell, wl->g_surface);
 
-   wl_shell_surface_add_listener(g_shell_surf, &shell_surface_listener, NULL);
-   wl_shell_surface_set_toplevel(g_shell_surf);
-   wl_shell_surface_set_class(g_shell_surf, "RetroArch");
-   wl_shell_surface_set_title(g_shell_surf, "RetroArch");
+   wl_shell_surface_add_listener(wl->g_shell_surf, &shell_surface_listener, NULL);
+   wl_shell_surface_set_toplevel(wl->g_shell_surf);
+   wl_shell_surface_set_class(wl->g_shell_surf, "RetroArch");
+   wl_shell_surface_set_title(wl->g_shell_surf, "RetroArch");
 
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT,
+   wl->g_egl_ctx = eglCreateContext(wl->g_egl_dpy, wl->g_config, EGL_NO_CONTEXT,
          attr != egl_attribs ? egl_attribs : NULL);
 
-   RARCH_LOG("[Wayland/EGL]: Created context: %p.\n", (void*)g_egl_ctx);
-   if (g_egl_ctx == EGL_NO_CONTEXT)
+   RARCH_LOG("[Wayland/EGL]: Created context: %p.\n", (void*)wl->g_egl_ctx);
+   if (wl->g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
 
-   if (g_use_hw_ctx)
+   if (wl->g_use_hw_ctx)
    {
-      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_config, g_egl_ctx,
+      wl->g_egl_hw_ctx = eglCreateContext(wl->g_egl_dpy, wl->g_config, wl->g_egl_ctx,
             attr != egl_attribs ? egl_attribs : NULL);
-      RARCH_LOG("[Wayland/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
+      RARCH_LOG("[Wayland/EGL]: Created shared context: %p.\n", (void*)wl->g_egl_hw_ctx);
 
-      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
+      if (wl->g_egl_hw_ctx == EGL_NO_CONTEXT)
          goto error;
    }
 
-   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, (EGLNativeWindowType)g_win, NULL);
-   if (!g_egl_surf)
+   wl->g_egl_surf = eglCreateWindowSurface(wl->g_egl_dpy, wl->g_config,
+         (EGLNativeWindowType)wl->g_win, NULL);
+   if (!wl->g_egl_surf)
       goto error;
 
-   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
+   if (!eglMakeCurrent(wl->g_egl_dpy, wl->g_egl_surf, wl->g_egl_surf, wl->g_egl_ctx))
       goto error;
 
    RARCH_LOG("[Wayland/EGL]: Current context: %p.\n", (void*)eglGetCurrentContext());
 
-   gfx_ctx_wl_swap_interval(data, g_interval);
+   gfx_ctx_wl_swap_interval(data, wl->g_interval);
 
    if (fullscreen)
-      wl_shell_surface_set_fullscreen(g_shell_surf, WL_SHELL_SURFACE_FULLSCREEN_METHOD_DEFAULT, 0, NULL);
+      wl_shell_surface_set_fullscreen(wl->g_shell_surf, WL_SHELL_SURFACE_FULLSCREEN_METHOD_DEFAULT, 0, NULL);
 
    flush_wayland_fd();
    return true;
@@ -497,63 +638,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 error:
    gfx_ctx_wl_destroy(data);
    return false;
-}
-
-static void gfx_ctx_wl_destroy(void *data)
-{
-   (void)data;
-
-   if (g_egl_dpy)
-   {
-      if (g_egl_ctx)
-      {
-         eglMakeCurrent(g_egl_dpy,
-               EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-         eglDestroyContext(g_egl_dpy, g_egl_ctx);
-      }
-
-      if (g_egl_hw_ctx)
-         eglDestroyContext(g_egl_dpy, g_egl_hw_ctx);
-
-      if (g_egl_surf)
-         eglDestroySurface(g_egl_dpy, g_egl_surf);
-      eglTerminate(g_egl_dpy);
-   }
-
-   g_egl_ctx     = NULL;
-   g_egl_hw_ctx  = NULL;
-   g_egl_surf    = NULL;
-   g_egl_dpy     = NULL;
-   g_config      = 0;
-
-   if (g_win)
-      wl_egl_window_destroy(g_win);
-   if (g_shell)
-      wl_shell_destroy(g_shell);
-   if (g_compositor)
-      wl_compositor_destroy(g_compositor);
-   if (g_registry)
-      wl_registry_destroy(g_registry);
-   if (g_shell_surf)
-      wl_shell_surface_destroy(g_shell_surf);
-   if (g_surface)
-      wl_surface_destroy(g_surface);
-
-   if (g_dpy)
-   {
-      wl_display_flush(g_dpy);
-      wl_display_disconnect(g_dpy);
-   }
-
-   g_win        = NULL;
-   g_shell      = NULL;
-   g_compositor = NULL;
-   g_registry   = NULL;
-   g_dpy        = NULL;
-   g_shell_surf = NULL;
-   g_surface    = NULL;
-
-   g_width = g_height = 0;
 }
 
 static void gfx_ctx_wl_input_driver(void *data,
@@ -614,12 +698,16 @@ static bool gfx_ctx_wl_bind_api(void *data,
 
 static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
 {
-   (void)data;
-   g_use_hw_ctx = enable;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
+      driver.video_context_data;
 
-   if (g_egl_dpy && g_egl_surf)
-      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf,
-            enable ? g_egl_hw_ctx : g_egl_ctx);
+   (void)data;
+
+   wl->g_use_hw_ctx = enable;
+
+   if (wl->g_egl_dpy && wl->g_egl_surf)
+      eglMakeCurrent(wl->g_egl_dpy, wl->g_egl_surf, wl->g_egl_surf,
+            enable ? wl->g_egl_hw_ctx : wl->g_egl_ctx);
 }
 
 static void keyboard_handle_keymap(void* data,
@@ -735,25 +823,28 @@ static const struct wl_pointer_listener pointer_listener = {
 static void seat_handle_capabilities(void *data,
 struct wl_seat *seat, unsigned caps)
 {
-   if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !g_wl_keyboard)
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
+      driver.video_context_data;
+
+   if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !wl->g_wl_keyboard)
    {
-      g_wl_keyboard = wl_seat_get_keyboard(seat);
-      wl_keyboard_add_listener(g_wl_keyboard, &keyboard_listener, NULL);
+      wl->g_wl_keyboard = wl_seat_get_keyboard(seat);
+      wl_keyboard_add_listener(wl->g_wl_keyboard, &keyboard_listener, NULL);
    }
-   else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && g_wl_keyboard)
+   else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && wl->g_wl_keyboard)
    {
-      wl_keyboard_destroy(g_wl_keyboard);
-      g_wl_keyboard = NULL;
+      wl_keyboard_destroy(wl->g_wl_keyboard);
+      wl->g_wl_keyboard = NULL;
    }
-   if ((caps & WL_SEAT_CAPABILITY_POINTER) && !g_wl_pointer)
+   if ((caps & WL_SEAT_CAPABILITY_POINTER) && !wl->g_wl_pointer)
    {
-      g_wl_pointer = wl_seat_get_pointer(seat);
-      wl_pointer_add_listener(g_wl_pointer, &pointer_listener, NULL);
+      wl->g_wl_pointer = wl_seat_get_pointer(seat);
+      wl_pointer_add_listener(wl->g_wl_pointer, &pointer_listener, NULL);
    }
-   else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && g_wl_pointer)
+   else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && wl->g_wl_pointer)
    {
-      wl_pointer_destroy(g_wl_pointer);
-      g_wl_pointer = NULL;
+      wl_pointer_destroy(wl->g_wl_pointer);
+      wl->g_wl_pointer = NULL;
    }
 }
 
