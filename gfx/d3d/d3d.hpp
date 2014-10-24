@@ -17,6 +17,9 @@
 #ifndef D3DVIDEO_HPP__
 #define D3DVIDEO_HPP__
 
+#include <string>
+#include <vector>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -55,8 +58,7 @@
 #include <Cg/cgD3D9.h>
 #endif
 #include "d3d_wrapper.h"
-#include <string>
-#include <vector>
+
 
 #ifdef HAVE_OVERLAY
 typedef struct
