@@ -38,12 +38,14 @@
 #include "../gl_common.h"
 
 #include "../gfx_context.h"
-#include "../fonts/gl_font.h"
 
+typedef struct gfx_ctx_ps3_data
+{
 #if defined(HAVE_PSGL)
-static PSGLdevice* gl_device;
-static PSGLcontext* gl_context;
+   PSGLdevice* gl_device;
+   PSGLcontext* gl_context;
 #endif
+} gfx_ctx_ps3_data_t;
 
 static unsigned gfx_ctx_ps3_get_resolution_width(unsigned resolution_id)
 {
@@ -139,9 +141,10 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
 
 static void gfx_ctx_ps3_set_swap_interval(void *data, unsigned interval)
 {
+   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)driver.video_context_data;
    (void)data;
 #if defined(HAVE_PSGL)
-   if (gl_context)
+   if (ps3 && ps3->gl_context)
    {
       if (interval)
          glEnable(GL_VSYNC_SCE);
@@ -210,15 +213,24 @@ static void gfx_ctx_ps3_update_window_title(void *data)
 static void gfx_ctx_ps3_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
+   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)driver.video_context_data;
    (void)data;
 #if defined(HAVE_PSGL)
-   psglGetDeviceDimensions(gl_device, width, height); 
+   if (ps3)
+      psglGetDeviceDimensions(ps3->gl_device, width, height); 
 #endif
 }
 
 static bool gfx_ctx_ps3_init(void *data)
 {
    (void)data;
+
+   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
+      calloc(1, sizeof(gfx_ctx_ps3_data_t));
+
+   if (!ps3)
+      return false;
+
 #if defined(HAVE_PSGL)
    PSGLinitOptions options = {
       .enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS,
@@ -262,10 +274,10 @@ static bool gfx_ctx_ps3_init(void *data)
       params.rescRatioMode = RESC_RATIO_MODE_FULLSCREEN;
    }
 
-   gl_device = psglCreateDeviceExtended(&params);
-   gl_context = psglCreateContext();
+   ps3->gl_device = psglCreateDeviceExtended(&params);
+   ps3->gl_context = psglCreateContext();
 
-   psglMakeCurrent(gl_context, gl_device);
+   psglMakeCurrent(ps3->gl_context, ps3->gl_device);
    psglResetCurrentContext();
 #endif
 
@@ -275,6 +287,8 @@ static bool gfx_ctx_ps3_init(void *data)
             CELL_VIDEO_OUT_ASPECT_AUTO, 0);
 
    gfx_ctx_ps3_get_available_resolutions();
+
+   driver.video_context_data = ps3;
 
    return true;
 }
@@ -287,15 +301,33 @@ static bool gfx_ctx_ps3_set_video_mode(void *data,
    return true;
 }
 
-static void gfx_ctx_ps3_destroy(void *data)
+static void gfx_ctx_ps3_destroy_resources(gfx_ctx_ps3_data_t *ps3)
 {
-   (void)data;
+   if (!ps3)
+      return;
+
 #if defined(HAVE_PSGL)
-   psglDestroyContext(gl_context);
-   psglDestroyDevice(gl_device);
+   psglDestroyContext(ps3->gl_context);
+   psglDestroyDevice(ps3->gl_device);
 
    psglExit();
 #endif
+}
+
+static void gfx_ctx_ps3_destroy(void *data)
+{
+   (void)data;
+
+   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)driver.video_context_data;
+
+   if (!ps3)
+      return;
+
+   gfx_ctx_ps3_destroy_resources(ps3);
+
+   if (driver.video_context_data)
+      free(driver.video_context_data);
+   driver.video_context_data = NULL;
 }
 
 static void gfx_ctx_ps3_input_driver(void *data,
