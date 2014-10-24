@@ -4510,14 +4510,12 @@ static bool setting_data_append_list_input_options(
       static char key[MAX_PLAYERS][64];
       static char key_type[MAX_PLAYERS][64];
       static char key_analog[MAX_PLAYERS][64];
-      static char key_bind_device[MAX_PLAYERS][64];
       static char key_bind_all[MAX_PLAYERS][64];
       static char key_bind_defaults[MAX_PLAYERS][64];
 
       static char label[MAX_PLAYERS][64];
       static char label_type[MAX_PLAYERS][64];
       static char label_analog[MAX_PLAYERS][64];
-      static char label_bind_device[MAX_PLAYERS][64];
       static char label_bind_all[MAX_PLAYERS][64];
       static char label_bind_defaults[MAX_PLAYERS][64];
 
