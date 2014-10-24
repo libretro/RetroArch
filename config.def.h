@@ -428,6 +428,8 @@ static const bool aspect_ratio_auto = false;
 
 #if defined(__CELLOS_LV2) || defined(_XBOX360)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_16_9;
+#elif defined(PSP)
+static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
 #elif defined(RARCH_CONSOLE)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_4_3;
 #else
