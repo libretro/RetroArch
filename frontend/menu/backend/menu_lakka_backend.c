@@ -353,7 +353,10 @@ static int menu_lakka_iterate(unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
 
-   if (action && (lakka->depth == 1) && (lakka->menu_active_category == 0)
+   if (action && (action == MENU_ACTION_OK
+      || action == MENU_ACTION_LEFT
+      || action == MENU_ACTION_RIGHT)
+      && (lakka->depth == 1) && (lakka->menu_active_category == 0)
       && active_subitem->setting)
    {
       rarch_setting_t *setting = (rarch_setting_t*)
