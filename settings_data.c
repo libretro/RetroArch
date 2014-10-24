@@ -830,12 +830,27 @@ static int setting_data_bool_action_toggle_savestates(void *data, unsigned actio
    return 0;
 }
 
+static int setting_data_action_start_bind_device(void *data)
+{
+   unsigned *p = NULL;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   p = (unsigned*)&g_settings.input.joypad_map[setting->index_offset];
+
+   (*p) = setting->index_offset;
+
+   return 0;
+}
+
 static int setting_data_action_toggle_bind_device(void *data, unsigned action)
 {
    unsigned *p = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
-   if (!setting || !driver.menu)
+   if (!setting)
       return -1;
 
    p = (unsigned*)&g_settings.input.joypad_map[setting->index_offset];
@@ -4563,6 +4578,7 @@ static bool setting_data_append_list_input_options(
             subgroup_info.name);
       (*list)[list_info->index - 1].index = player + 1;
       (*list)[list_info->index - 1].index_offset = player;
+      (*list)[list_info->index - 1].action_start  = &setting_data_action_start_bind_device;
       (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_bind_device;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_bind_device;
 
