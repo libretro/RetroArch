@@ -2510,8 +2510,6 @@ static void get_string_representation_bind_device(void * data, char *type_str,
 
    map = g_settings.input.joypad_map[setting->index_offset];
 
-   RARCH_LOG("Gets here %d.\n", map);
-
    if (map < MAX_PLAYERS)
    {
       const char *device_name = 
