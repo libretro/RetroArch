@@ -830,6 +830,30 @@ static int setting_data_bool_action_toggle_savestates(void *data, unsigned actio
    return 0;
 }
 
+static int setting_data_action_toggle_bind_device(void *data, unsigned action)
+{
+   int *p = NULL;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting || !driver.menu)
+      return -1;
+
+   p = (int*)&g_settings.input.joypad_map[setting->index_offset];
+
+   if (action == MENU_ACTION_START)
+      *p = 0;
+   else if (action == MENU_ACTION_LEFT)
+      (*p)--;
+   else if (action == MENU_ACTION_RIGHT)
+      (*p)++;
+   if (*p < -1)
+      *p = -1;
+   else if (*p >= MAX_PLAYERS)
+      *p = MAX_PLAYERS - 1;
+
+   return 0;
+}
+
 static int setting_data_action_ok_bind_all(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -2475,6 +2499,34 @@ static int get_fallback_label(char *type_str,
    return ret;
 }
 
+static void get_string_representation_bind_device(void * data, char *type_str,
+      size_t type_str_size)
+{
+   unsigned map = 0;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting || !type_str || !type_str_size)
+      return;
+
+   map = g_settings.input.joypad_map[setting->index_offset];
+
+   RARCH_LOG("Gets here %d.\n", map);
+
+   if (map < MAX_PLAYERS)
+   {
+      const char *device_name = 
+         g_settings.input.device_names[map];
+
+      if (*device_name)
+         strlcpy(type_str, device_name, type_str_size);
+      else
+         snprintf(type_str, type_str_size,
+               "N/A (port #%d)", map);
+   }
+   else
+      strlcpy(type_str, "Disabled", type_str_size);
+}
+
 static void get_string_representation_savestate(void * data, char *type_str,
       size_t type_str_size)
 {
@@ -2514,26 +2566,6 @@ void setting_data_get_label(char *type_str,
       menu_shader_manager_get_str(driver.menu->shader, type_str, type_str_size,
             menu_label, label, type);
    }
-#if 0
-   else if (!strcmp(label, "input_bind_device_id"))
-   {
-      int map = g_settings.input.joypad_map
-         [driver.menu->current_pad];
-      if (map >= 0 && map < MAX_PLAYERS)
-      {
-         const char *device_name = 
-            g_settings.input.device_names[map];
-
-         if (*device_name)
-            strlcpy(type_str, device_name, type_str_size);
-         else
-            snprintf(type_str, type_str_size,
-                  "N/A (port #%d)", map);
-      }
-      else
-         strlcpy(type_str, "Disabled", type_str_size);
-   }
-#endif
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
@@ -4464,12 +4496,14 @@ static bool setting_data_append_list_input_options(
       static char key[MAX_PLAYERS][64];
       static char key_type[MAX_PLAYERS][64];
       static char key_analog[MAX_PLAYERS][64];
+      static char key_bind_device[MAX_PLAYERS][64];
       static char key_bind_all[MAX_PLAYERS][64];
       static char key_bind_defaults[MAX_PLAYERS][64];
 
       static char label[MAX_PLAYERS][64];
       static char label_type[MAX_PLAYERS][64];
       static char label_analog[MAX_PLAYERS][64];
+      static char label_bind_device[MAX_PLAYERS][64];
       static char label_bind_all[MAX_PLAYERS][64];
       static char label_bind_defaults[MAX_PLAYERS][64];
 
@@ -4523,15 +4557,15 @@ static bool setting_data_append_list_input_options(
       (*list)[list_info->index - 1].action_toggle = &setting_data_uint_action_toggle_analog_dpad_mode;
       (*list)[list_info->index - 1].action_start = &setting_data_uint_action_start_analog_dpad_mode;
 
-      CONFIG_UINT(
-            g_settings.input.joypad_map[player],
+      CONFIG_ACTION(
             key[player],
             label[player],
-            player,
             group_info.name,
-            subgroup_info.name,
-            general_write_handler,
-            general_read_handler);
+            subgroup_info.name);
+      (*list)[list_info->index - 1].index = player + 1;
+      (*list)[list_info->index - 1].index_offset = player;
+      (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_bind_device;
+      (*list)[list_info->index - 1].get_string_representation = &get_string_representation_bind_device;
 
       CONFIG_ACTION(
             key_bind_all[player],
