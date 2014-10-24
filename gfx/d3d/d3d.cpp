@@ -644,15 +644,14 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    TODO: GL core contexts through ANGLE? */
    enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
    unsigned major = 9, minor = 0;
-   (void)major;
-   (void)minor;
 
 #if defined(_XBOX1)
    api = GFX_CTX_DIRECT3D8_API;
    major = 8;
 #endif
-   return gfx_ctx_init_first(driver.video_data, api,
-         major, minor, false);
+   return gfx_ctx_init_first(driver.video_data,
+         g_settings.video.context_driver,
+         api, major, minor, false);
 }
 
 static void *d3d_init(const video_info_t *info,

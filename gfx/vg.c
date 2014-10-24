@@ -84,7 +84,8 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    if (!vg)
       return NULL;
 
-   vg->driver = gfx_ctx_init_first(vg, GFX_CTX_OPENVG_API, 0, 0, false);
+   vg->driver = gfx_ctx_init_first(vg, g_settings.video.context_driver,
+         GFX_CTX_OPENVG_API, 0, 0, false);
 
    if (!vg->driver)
    {
