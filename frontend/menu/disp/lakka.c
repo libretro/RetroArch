@@ -346,12 +346,41 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
          char val[PATH_MAX];
          setting_data_get_string_representation(subitem->setting, val,
                sizeof(val));
-         lakka_draw_text(lakka, val, 
-               lakka->margin_left + lakka->hspacing * (i+2.25) +
-               lakka->all_categories_x + lakka->label_margin_left + lakka->setting_margin_left, 
-               lakka->margin_top + subitem->y + lakka->label_margin_top, 
-               1, 
-               subitem->alpha);
+
+         if ((strcmp(val, "ON") && strcmp(val, "OFF"))
+            || ((!strcmp(val, "ON")
+            && !lakka->textures[TEXTURE_SWITCH_ON].id)
+            || (!strcmp(val, "OFF")
+            && !lakka->textures[TEXTURE_SWITCH_OFF].id)))
+            lakka_draw_text(lakka, val, 
+                  lakka->margin_left + lakka->hspacing * (i+2.25) +
+                  lakka->all_categories_x + lakka->label_margin_left
+                  + lakka->setting_margin_left, 
+                  lakka->margin_top + subitem->y + lakka->label_margin_top, 
+                  1, 
+                  subitem->alpha);
+
+         if (!strcmp(val, "ON") && lakka->textures[TEXTURE_SWITCH_ON].id)
+            lakka_draw_icon(lakka, lakka->textures[TEXTURE_SWITCH_ON].id, 
+                  lakka->margin_left + lakka->hspacing * (i+1)
+                  + lakka->icon_size * 2 + lakka->all_categories_x
+                  + lakka->setting_margin_left + lakka->icon_size/2.0
+                  - 8 * lakka->scale_factor, 
+                  lakka->margin_top + subitem->y + lakka->icon_size/2.0, 
+                  subitem->alpha, 
+                  0, 
+                  1);
+
+         if (!strcmp(val, "OFF") && lakka->textures[TEXTURE_SWITCH_OFF].id)
+            lakka_draw_icon(lakka, lakka->textures[TEXTURE_SWITCH_OFF].id, 
+                  lakka->margin_left + lakka->hspacing * (i+1)
+                  + lakka->icon_size * 2 + lakka->all_categories_x
+                  + lakka->setting_margin_left + lakka->icon_size/2.0
+                  - 8 * lakka->scale_factor, 
+                  lakka->margin_top + subitem->y + lakka->icon_size/2.0, 
+                  subitem->alpha, 
+                  0, 
+                  1);
       }
    }
 }
@@ -878,6 +907,10 @@ static void lakka_context_reset(void *data)
          "screenshot.png", sizeof(lakka->textures[TEXTURE_SCREENSHOT].path));
    fill_pathname_join(lakka->textures[TEXTURE_RELOAD].path, iconpath,
          "reload.png", sizeof(lakka->textures[TEXTURE_RELOAD].path));
+   fill_pathname_join(lakka->textures[TEXTURE_SWITCH_ON].path, iconpath,
+         "on.png", sizeof(lakka->textures[TEXTURE_SWITCH_ON].path));
+   fill_pathname_join(lakka->textures[TEXTURE_SWITCH_OFF].path, iconpath,
+         "off.png", sizeof(lakka->textures[TEXTURE_SWITCH_OFF].path));
 
    for (k = 0; k < TEXTURE_LAST; k++)
       lakka->textures[k].id = lakka_png_texture_load(lakka->textures[k].path);
@@ -1160,26 +1193,27 @@ static void *lakka_init(void)
    lakka->active_item_factor   = 3.0;
    lakka->under_item_offset    = 5.0;
 
-   float scale_factor = 1;
-   if      (gl->win_width >= 3840) scale_factor = 2.0;
-   else if (gl->win_width >= 2560) scale_factor = 1.5;
-   else if (gl->win_width >= 1920) scale_factor = 1.0;
-   else if (gl->win_width >= 1280) scale_factor = 0.75;
-   else if (gl->win_width >=  640) scale_factor = 0.5;
-   else if (gl->win_width >=  320) scale_factor = 0.25;
+   lakka->scale_factor = 1;
+   if      (gl->win_width >= 3840) lakka->scale_factor = 2.0;
+   else if (gl->win_width >= 2560) lakka->scale_factor = 1.5;
+   else if (gl->win_width >= 1920) lakka->scale_factor = 1.0;
+   else if (gl->win_width >= 1280) lakka->scale_factor = 0.75;
+   else if (gl->win_width >=  640) lakka->scale_factor = 0.5;
+   else if (gl->win_width >=  320) lakka->scale_factor = 0.25;
+   lakka->scale_factor = 0.75;
 
    strlcpy(lakka->icon_dir, "256", sizeof(lakka->icon_dir));
 
-   lakka->icon_size = 128.0 * scale_factor;
-   lakka->hspacing = 200.0 * scale_factor;
-   lakka->vspacing = 64.0 * scale_factor;
-   lakka->margin_left = 336.0 * scale_factor;
-   lakka->margin_top = (256+32) * scale_factor;
-   lakka->title_margin_left = 60 * scale_factor;
-   lakka->title_margin_top = 60 * scale_factor + g_settings.video.font_size/3;
-   lakka->label_margin_left = 85.0 * scale_factor;
+   lakka->icon_size = 128.0 * lakka->scale_factor;
+   lakka->hspacing = 200.0 * lakka->scale_factor;
+   lakka->vspacing = 64.0 * lakka->scale_factor;
+   lakka->margin_left = 336.0 * lakka->scale_factor;
+   lakka->margin_top = (256+32) * lakka->scale_factor;
+   lakka->title_margin_left = 60 * lakka->scale_factor;
+   lakka->title_margin_top = 60 * lakka->scale_factor + g_settings.video.font_size/3;
+   lakka->label_margin_left = 85.0 * lakka->scale_factor;
    lakka->label_margin_top = g_settings.video.font_size/3.0;
-   lakka->setting_margin_left = 600.0 * scale_factor;
+   lakka->setting_margin_left = 600.0 * lakka->scale_factor;
 
    lakka->depth                = 0;
    lakka->menu_active_category = 0;

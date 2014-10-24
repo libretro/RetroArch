@@ -42,6 +42,8 @@ enum
    TEXTURE_LOADSTATE,
    TEXTURE_SCREENSHOT,
    TEXTURE_RELOAD,
+   TEXTURE_SWITCH_ON,
+   TEXTURE_SWITCH_OFF,
    TEXTURE_LAST
 };
 
@@ -89,6 +91,7 @@ struct lakka_texture_item
 
 typedef struct lakka_handle
 {
+   float scale_factor;
    float c_active_zoom;
    float c_passive_zoom;
    float c_active_alpha;
