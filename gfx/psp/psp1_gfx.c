@@ -716,7 +716,7 @@ static void psp_update_viewport(psp1_video_t* psp)
 #endif
       {
          if ((fabsf(device_aspect - desired_aspect) < 0.0001f)
-               || (fabsf((16.0/9.0) - desired_aspect) < 0.0001f))
+               || (fabsf((16.0/9.0) - desired_aspect) < 0.02f))
          {
             /* If the aspect ratios of screen and desired aspect 
              * ratio are sufficiently equal (floating point stuff),
@@ -750,6 +750,9 @@ static void psp_update_viewport(psp1_video_t* psp)
       psp->vp.width = width;
       psp->vp.height = height;
    }
+
+   psp->vp.width += psp->vp.width&0x1;
+   psp->vp.height += psp->vp.height&0x1;
 
    psp_set_screen_coords(psp->frame_coords, psp->vp.x,
          psp->vp.y, psp->vp.width, psp->vp.height, psp->rotation);
