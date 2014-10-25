@@ -18,11 +18,30 @@
 #import <Foundation/NSPathUtilities.h>
 #include "CFExtensions.h"
 
+#ifndef CF_RETURNS_RETAINED
+#if __has_feature(attribute_cf_returns_retained)
+#define CF_RETURNS_RETAINED __attribute__((cf_returns_retained))
+#else
+#define CF_RETURNS_RETAINED
+#endif
+#endif
+
+
+NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
+{
+#ifdef __has_feature(objc_arc)
+	return (__bridge_retained CFTypeRef)x;
+#else
+	return X;
+#endif
+}
+
+
 void CFSearchPathForDirectoriesInDomains(unsigned flags,
                                                unsigned domain_mask, unsigned expand_tilde,
                                                char *buf, size_t sizeof_buf)
 {
-   CFTypeRef array_val = (CFTypeRef)CFBridgingRetain(NSSearchPathForDirectoriesInDomains(flags, domain_mask, (BOOL)expand_tilde));
+   CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(NSSearchPathForDirectoriesInDomains(flags, domain_mask, (BOOL)expand_tilde));
    CFArrayRef array = array_val ? CFRetain(array_val) : NULL;
    CFTypeRef path_val = (CFTypeRef)CFArrayGetValueAtIndex(array, 0);
    CFStringRef path = path_val ? CFRetain(path_val) : NULL;
