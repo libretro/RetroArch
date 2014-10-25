@@ -327,9 +327,9 @@ static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *
             }
 #else
          case SDL_VIDEORESIZE:
-            g_resized = true;
-            g_new_width  = event.resize.w;
-            g_new_height = event.resize.h;
+            sdl->g_resized = true;
+            sdl->g_new_width  = event.resize.w;
+            sdl->g_new_height = event.resize.h;
 #endif
             break;
          default:
