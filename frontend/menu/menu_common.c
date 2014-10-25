@@ -401,6 +401,8 @@ int menu_iterate(retro_input_t input,
       rarch_main_command(RARCH_CMD_OVERLAY_NEXT);
    if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
       rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
+   if (BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
+      rarch_main_command(RARCH_CMD_GRAB_MOUSE_TOGGLE);
 
    driver.retro_ctx.poll_cb();
 
