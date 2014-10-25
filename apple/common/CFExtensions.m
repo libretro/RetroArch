@@ -18,6 +18,11 @@
 #import <Foundation/NSPathUtilities.h>
 #include "CFExtensions.h"
 
+#ifndef __has_feature
+/* Compatibility with non-Clang compilers. */
+#define __has_feature(x) 0
+#endif
+
 #ifndef CF_RETURNS_RETAINED
 #if __has_feature(attribute_cf_returns_retained)
 #define CF_RETURNS_RETAINED __attribute__((cf_returns_retained))
@@ -25,12 +30,6 @@
 #define CF_RETURNS_RETAINED
 #endif
 #endif
-
-#ifndef __has_feature
-/* Compatibility with non-Clang compilers. */
-#define __has_feature(x) 0
-#endif
-
 
 NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
 {
