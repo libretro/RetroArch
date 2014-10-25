@@ -279,8 +279,7 @@ static int menu_settings_iterate(unsigned action,
    if (driver.menu->mouse.dy)
    {
       unsigned mouse_ptr = driver.menu->mouse.y / 11 - 2;
-      if (mouse_ptr >= 0
-            && mouse_ptr <= menu_list_get_size(driver.menu->menu_list))
+      if (mouse_ptr <= menu_list_get_size(driver.menu->menu_list))
          menu_navigation_set(driver.menu, mouse_ptr);
    }
 
@@ -721,8 +720,7 @@ static int menu_common_iterate(unsigned action)
    if (driver.menu->mouse.dy)
    {
       unsigned mouse_ptr = driver.menu->mouse.y / 11 - 2;
-      if (mouse_ptr >= 0
-            && mouse_ptr <= menu_list_get_size(driver.menu->menu_list))
+      if (mouse_ptr <= menu_list_get_size(driver.menu->menu_list))
          menu_navigation_set(driver.menu, mouse_ptr);
    }
 
