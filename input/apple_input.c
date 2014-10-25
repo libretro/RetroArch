@@ -389,8 +389,8 @@ static void apple_input_poll(void *data)
    if (icade_enabled)
       BIT32_SET(apple->buttons[0], icade_buttons);
 
-   apple->mouse_delta[0] = 0;
-   apple->mouse_delta[1] = 0;
+   apple->mouse_x = 0;
+   apple->mouse_y = 0;
 }
 
 static int16_t apple_mouse_state(apple_input_data_t *apple,
@@ -399,9 +399,9 @@ static int16_t apple_mouse_state(apple_input_data_t *apple,
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_X:
-         return apple->mouse_delta[0];
+         return apple->mouse_x;
       case RETRO_DEVICE_ID_MOUSE_Y:
-         return apple->mouse_delta[1];
+         return apple->mouse_y;
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return apple->mouse_buttons & 1;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:

@@ -41,7 +41,8 @@ typedef struct
    uint32_t touch_count;
 
    uint32_t mouse_buttons;
-   int16_t mouse_delta[2];
+   int16_t mouse_x;
+   int16_t mouse_y;
 
    uint32_t key_state[MAX_KEYS];
 

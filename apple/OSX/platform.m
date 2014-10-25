@@ -90,8 +90,8 @@ void apple_rarch_exited(void)
       {
          NSPoint pos;
          // Relative
-         apple->mouse_delta[0] += event.deltaX;
-         apple->mouse_delta[1] += event.deltaY;
+         apple->mouse_x += event.deltaX;
+         apple->mouse_y += event.deltaY;
 
          // Absolute
          pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
