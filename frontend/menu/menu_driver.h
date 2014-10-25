@@ -115,6 +115,13 @@ typedef struct
    struct gfx_shader *parameter_shader;
 
    struct menu_bind_state binds;
+
+   struct
+   {
+      int16_t x;
+      int16_t y;
+   } mouse;
+
    struct
    {
       const char **buffer;
