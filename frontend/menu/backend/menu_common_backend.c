@@ -119,7 +119,6 @@ static int menu_action_ok(menu_file_list_cbs_t *cbs)
    return 0;
 }
 
-
 static int menu_start_screen_iterate(unsigned action)
 {
    unsigned i;
@@ -289,9 +288,9 @@ static int menu_settings_iterate(unsigned action,
    {
       if (!driver.menu->mouse.oldleft)
       {
+         driver.menu->mouse.oldleft = true;
          if (cbs && cbs->action_ok)
             return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
-         driver.menu->mouse.oldleft = true;
       }
    }
    else
@@ -301,9 +300,9 @@ static int menu_settings_iterate(unsigned action,
    {
       if (!driver.menu->mouse.oldright)
       {
+         driver.menu->mouse.oldright = true;
          apply_deferred_settings();
          menu_list_pop_stack(driver.menu->menu_list);
-         driver.menu->mouse.oldright = true;
       }
    }
    else
@@ -575,7 +574,6 @@ static int menu_load_or_open_zip_iterate(unsigned action)
    return 0;
 }
 
-
 static int menu_common_iterate(unsigned action)
 {
    int ret = 0;
@@ -732,8 +730,8 @@ static int menu_common_iterate(unsigned action)
    {
       if (!driver.menu->mouse.oldleft)
       {
-         ret = menu_action_ok(cbs);
          driver.menu->mouse.oldleft = true;
+         ret = menu_action_ok(cbs);
       }
    }
    else
@@ -743,8 +741,8 @@ static int menu_common_iterate(unsigned action)
    {
       if (!driver.menu->mouse.oldright)
       {
-         menu_list_pop_stack(driver.menu->menu_list);
          driver.menu->mouse.oldright = true;
+         menu_list_pop_stack(driver.menu->menu_list);
       }
    }
    else
