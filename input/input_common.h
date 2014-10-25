@@ -18,10 +18,9 @@
 
 #include "input_autodetect.h"
 #include "input_context.h"
-#include "../driver.h"
 #include <file/config_file.h>
-#include "../general.h"
 #include <stdint.h>
+#include "../driver.h"
 
 #ifdef __cplusplus
 extern "C" {

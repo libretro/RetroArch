@@ -20,7 +20,6 @@
 #include <ctype.h>
 
 #include "../general.h"
-#include "../driver.h"
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif

@@ -16,6 +16,7 @@
 #include "state_tracker.h"
 #include <stdlib.h>
 #include <compat/strl.h>
+#include "../general.h"
 #include "../input/input_common.h"
 
 #ifdef HAVE_PYTHON
