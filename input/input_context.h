@@ -24,7 +24,6 @@ extern "C" {
 #include <stdint.h>
 #include <boolean.h>
 
-typedef struct rarch_joypad_driver rarch_joypad_driver_t;
 enum retro_rumble_effect;
 
 struct rarch_joypad_driver
@@ -40,6 +39,8 @@ struct rarch_joypad_driver
 
    const char *ident;
 };
+    
+typedef struct rarch_joypad_driver rarch_joypad_driver_t;
 
 /* If ident points to NULL or a zero-length string,
  * equivalent to calling input_joypad_init_first(). */

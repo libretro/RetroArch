@@ -29,6 +29,7 @@
 #include "gfx/filters/softfilter.h"
 #include "gfx/shader/shader_parse.h"
 #include "audio/dsp_filter.h"
+#include "input/input_context.h"
 #include "input/overlay.h"
 #include "frontend/frontend_context.h"
 #include <retro_miscellaneous.h>
@@ -239,8 +240,6 @@ enum analog_dpad_mode
    ANALOG_DPAD_RSTICK,
    ANALOG_DPAD_LAST
 };
-
-typedef struct rarch_joypad_driver rarch_joypad_driver_t;
 
 typedef struct input_driver
 {
