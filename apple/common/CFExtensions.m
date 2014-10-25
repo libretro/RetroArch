@@ -26,6 +26,11 @@
 #endif
 #endif
 
+#ifndef __has_feature
+/* Compatibility with non-Clang compilers. */
+#define __has_feature(x) 0
+#endif
+
 
 NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
 {
