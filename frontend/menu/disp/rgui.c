@@ -299,20 +299,6 @@ static void rgui_render(void)
          && !driver.menu->msg_force)
       return;
 
-   const struct retro_keybind *binds[MAX_PLAYERS];
-   driver.menu->mouse.x += driver.input->input_state(driver.input_data, binds, 0,
-         RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
-   driver.menu->mouse.y += driver.input->input_state(driver.input_data, binds, 0,
-         RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
-   if (driver.menu->mouse.x < 5)
-      driver.menu->mouse.x = 5;
-   if (driver.menu->mouse.y < 5)
-      driver.menu->mouse.y = 5;
-   if (driver.menu->mouse.x > driver.menu->width - 5)
-      driver.menu->mouse.x = driver.menu->width - 5;
-   if (driver.menu->mouse.y > driver.menu->height - 5)
-      driver.menu->mouse.y = driver.menu->height - 5;
-
    if (driver.menu->selection_ptr >= RGUI_TERM_HEIGHT / 2)
       begin = driver.menu->selection_ptr - RGUI_TERM_HEIGHT / 2;
    end   = (driver.menu->selection_ptr + RGUI_TERM_HEIGHT <=

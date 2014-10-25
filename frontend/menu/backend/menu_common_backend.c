@@ -277,6 +277,38 @@ static int menu_settings_iterate(unsigned action,
       driver.menu->push_start_screen = false;
    }
 
+   if (driver.menu->mouse.dy)
+   {
+      unsigned mouse_ptr = driver.menu->mouse.y / 11 - 2;
+      if (mouse_ptr >= 0
+            && mouse_ptr <= menu_list_get_size(driver.menu->menu_list))
+         menu_navigation_set(driver.menu, mouse_ptr);
+   }
+
+   if (driver.menu->mouse.left)
+   {
+      if (!driver.menu->mouse.oldleft)
+      {
+         if (cbs && cbs->action_ok)
+            return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
+         driver.menu->mouse.oldleft = true;
+      }
+   }
+   else
+       driver.menu->mouse.oldleft = false;
+
+   if (driver.menu->mouse.right)
+   {
+      if (!driver.menu->mouse.oldright)
+      {
+         apply_deferred_settings();
+         menu_list_pop_stack(driver.menu->menu_list);
+         driver.menu->mouse.oldright = true;
+      }
+   }
+   else
+      driver.menu->mouse.oldright = false;
+
    return 0;
 }
 
@@ -556,6 +588,31 @@ static int menu_common_iterate(unsigned action)
 
    menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, &type);
 
+   const struct retro_keybind *binds[MAX_PLAYERS];
+
+   driver.menu->mouse.dx = driver.input->input_state(driver.input_data,
+         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
+   driver.menu->mouse.dy = driver.input->input_state(driver.input_data,
+         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
+
+   driver.menu->mouse.x += driver.menu->mouse.dx;
+   driver.menu->mouse.y += driver.menu->mouse.dy;
+
+   if (driver.menu->mouse.x < 5)
+      driver.menu->mouse.x = 5;
+   if (driver.menu->mouse.y < 5)
+      driver.menu->mouse.y = 5;
+   if (driver.menu->mouse.x > driver.menu->width - 5)
+      driver.menu->mouse.x = driver.menu->width - 5;
+   if (driver.menu->mouse.y > driver.menu->height - 5)
+      driver.menu->mouse.y = driver.menu->height - 5;
+
+   driver.menu->mouse.left = driver.input->input_state(driver.input_data,
+         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
+
+   driver.menu->mouse.right = driver.input->input_state(driver.input_data,
+         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
+
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
 
@@ -663,6 +720,35 @@ static int menu_common_iterate(unsigned action)
          break;
    }
 
+   if (driver.menu->mouse.dy)
+   {
+      unsigned mouse_ptr = driver.menu->mouse.y / 11 - 2;
+      if (mouse_ptr >= 0
+            && mouse_ptr <= menu_list_get_size(driver.menu->menu_list))
+         menu_navigation_set(driver.menu, mouse_ptr);
+   }
+
+   if (driver.menu->mouse.left)
+   {
+      if (!driver.menu->mouse.oldleft)
+      {
+         ret = menu_action_ok(cbs);
+         driver.menu->mouse.oldleft = true;
+      }
+   }
+   else
+       driver.menu->mouse.oldleft = false;
+
+   if (driver.menu->mouse.right)
+   {
+      if (!driver.menu->mouse.oldright)
+      {
+         menu_list_pop_stack(driver.menu->menu_list);
+         driver.menu->mouse.oldright = true;
+      }
+   }
+   else
+      driver.menu->mouse.oldright = false;
 
    if (driver.menu_ctx && driver.menu_ctx->iterate)
       driver.menu_ctx->iterate(driver.menu, action);
