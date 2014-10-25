@@ -1200,7 +1200,6 @@ static void *lakka_init(void)
    else if (gl->win_width >= 1280) lakka->scale_factor = 0.75;
    else if (gl->win_width >=  640) lakka->scale_factor = 0.5;
    else if (gl->win_width >=  320) lakka->scale_factor = 0.25;
-   lakka->scale_factor = 0.75;
 
    strlcpy(lakka->icon_dir, "256", sizeof(lakka->icon_dir));
 
