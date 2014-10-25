@@ -108,7 +108,7 @@ static void color_rect(uint16_t *buf, unsigned pitch,
    unsigned j, i;
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
-         if (i >= 0 && j >= 0 && i < driver.menu->width && j < driver.menu->height)
+         if (i < driver.menu->width && j < driver.menu->height)
             buf[j * (pitch >> 1) + i] = color;
 }
 
