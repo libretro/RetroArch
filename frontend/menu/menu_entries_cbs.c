@@ -683,6 +683,7 @@ static int shader_action_parameter_toggle(unsigned type, const char *label,
    bool apply_changes = false;
    struct gfx_shader *shader = NULL;
    struct gfx_shader_parameter *param = NULL;
+   bool shader_current = !strcmp(label, "video_shader_parameters");
 
    if (!(shader = (struct gfx_shader*)driver.menu->parameter_shader))
       return 0;
@@ -694,12 +695,14 @@ static int shader_action_parameter_toggle(unsigned type, const char *label,
    {
       case MENU_ACTION_LEFT:
          param->current -= param->step;
-         apply_changes = true;
+         if (shader_current)
+            apply_changes = true;
          break;
 
       case MENU_ACTION_RIGHT:
          param->current += param->step;
-         apply_changes = true;
+         if (shader_current)
+            apply_changes = true;
          break;
 
       default:
@@ -708,8 +711,7 @@ static int shader_action_parameter_toggle(unsigned type, const char *label,
 
    param->current = min(max(param->minimum, param->current), param->maximum);
 
-   if (apply_changes 
-         && !strcmp(label, "video_shader_parameters"))
+   if (apply_changes)
       rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
 
 #endif
