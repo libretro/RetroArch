@@ -17,6 +17,7 @@
 #define INPUT_COMMON_H__
 
 #include "input_autodetect.h"
+#include "input_context.h"
 #include "../driver.h"
 #include <file/config_file.h>
 #include "../general.h"
@@ -55,23 +56,6 @@ static inline void input_conv_analog_id_to_bind_id(unsigned idx, unsigned ident,
    }
 }
 
-#if 0
-static inline bool get_bit(const uint8_t *buf, unsigned bit)
-{
-   return buf[bit >> 3] & (1 << (bit & 7));
-}
-
-static inline void clear_bit(uint8_t *buf, unsigned bit)
-{
-   buf[bit >> 3] &= ~(1 << (bit & 7));
-}
-
-static inline void set_bit(uint8_t *buf, unsigned bit)
-{
-   buf[bit >> 3] |= 1 << (bit & 7);
-}
-#endif
-
 bool input_translate_coord_viewport(int mouse_x, int mouse_y,
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
       int16_t *res_screen_y);
@@ -84,26 +68,6 @@ enum back_button_enums
    BACK_BUTTON_MENU_TOGGLE,
 };
 #endif
-
-struct rarch_joypad_driver
-{
-   bool (*init)(void);
-   bool (*query_pad)(unsigned);
-   void (*destroy)(void);
-   bool (*button)(unsigned, uint16_t);
-   int16_t (*axis)(unsigned, uint32_t);
-   void (*poll)(void);
-   bool (*set_rumble)(unsigned, enum retro_rumble_effect, uint16_t);
-   const char *(*name)(unsigned);
-
-   const char *ident;
-};
-
-/* If ident points to NULL or a zero-length string,
- * equivalent to calling input_joypad_init_first(). */
-const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident);
-
-const rarch_joypad_driver_t *input_joypad_init_first(void);
 
 bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
       unsigned port, const struct retro_keybind *binds, unsigned key);
@@ -126,21 +90,6 @@ bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
 
 const char *input_joypad_name(const rarch_joypad_driver_t *driver,
       unsigned joypad);
-
-extern rarch_joypad_driver_t dinput_joypad;
-extern rarch_joypad_driver_t linuxraw_joypad;
-extern rarch_joypad_driver_t parport_joypad;
-extern rarch_joypad_driver_t udev_joypad;
-extern rarch_joypad_driver_t winxinput_joypad;
-extern rarch_joypad_driver_t sdl_joypad;
-extern rarch_joypad_driver_t ps3_joypad;
-extern rarch_joypad_driver_t psp_joypad;
-extern rarch_joypad_driver_t xdk_joypad;
-extern rarch_joypad_driver_t gx_joypad;
-extern rarch_joypad_driver_t apple_hid_joypad;
-extern rarch_joypad_driver_t apple_ios_joypad;
-extern rarch_joypad_driver_t android_joypad;
-extern rarch_joypad_driver_t qnx_joypad;
 
 struct rarch_key_map
 {

@@ -281,6 +281,7 @@ FONTS
 INPUT
 ============================================================ */
 #include "../input/input_autodetect.c"
+#include "../input/input_context.c"
 #include "../input/input_common.c"
 #include "../input/keyboard_line.c"
 

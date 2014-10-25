@@ -111,6 +111,7 @@ OBJ += frontend/frontend.o \
 		gfx/gfx_common.o \
 		gfx/fonts/bitmapfont.o \
 		input/input_autodetect.o \
+		input/input_context.o \
 		input/input_common.o \
 		input/keyboard_line.o \
 		input/overlay.o \
@@ -636,4 +637,5 @@ JOYCONFIG_OBJ += tools/retroarch-joyconfig.o \
 	libretro-sdk/file/file_path.o \
 	libretro-sdk/string/string_list.o \
 	libretro-sdk/compat/compat.o \
+	tools/input_context_joyconfig.o \
 	tools/input_common_joyconfig.o
