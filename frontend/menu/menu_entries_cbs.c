@@ -726,6 +726,7 @@ static int action_ok_shader_pass(const char *path,
    if (!driver.menu)
       return -1;
 
+   hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
    menu_list_push_stack_refresh(
          driver.menu->menu_list,
          g_settings.video.shader_dir, 
