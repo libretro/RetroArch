@@ -29,8 +29,8 @@
 
 NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
 {
-#ifdef __has_feature(objc_arc)
-	return (__bridge_retained CFTypeRef)x;
+#if __has_feature(objc_arc)
+	return (__bridge_retained CFTypeRef)X;
 #else
 	return X;
 #endif
