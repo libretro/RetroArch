@@ -923,6 +923,21 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
    return 0;
 }
 
+static int action_ok_shader_preset_parameters(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+#ifdef HAVE_SHADER_MANAGER
+   menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         "",
+         "video_shader_preset_parameters",
+         MENU_FILE_PUSH,
+         driver.menu->selection_ptr);
+#endif
+
+   return 0;
+}
+
 static int action_ok_shader_parameters(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -1908,9 +1923,10 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_shader_pass;
    else if (!strcmp(label, "video_shader_preset"))
       cbs->action_ok = action_ok_shader_preset;
-   else if ((!strcmp(label, "video_shader_parameters") ||
-            !strcmp(label, "video_shader_preset_parameters")))
+   else if (!strcmp(label, "video_shader_parameters"))
       cbs->action_ok = action_ok_shader_parameters;
+   else if (!strcmp(label, "video_shader_preset_parameters"))
+      cbs->action_ok = action_ok_shader_preset_parameters;
    else if (
          !strcmp(label, "Shader Options") ||
          !strcmp(label, "Input Options") ||
