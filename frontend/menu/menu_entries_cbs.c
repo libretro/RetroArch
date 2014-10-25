@@ -114,9 +114,9 @@ unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
-static void common_load_content(void)
+static void common_load_content(bool persist)
 {
-   rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+   rarch_main_command(persist ? RARCH_CMD_LOAD_CONTENT_PERSIST : RARCH_CMD_LOAD_CONTENT);
    menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
    driver.menu->msg_force = true;
 }
@@ -287,9 +287,7 @@ static int action_ok_core_load_deferred(const char *path,
    strlcpy(g_extern.fullpath, driver.menu->deferred_path,
          sizeof(g_extern.fullpath));
 
-   rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-   menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
-   driver.menu->msg_force = true;
+   common_load_content(false);
 
    return -1;
 }
@@ -313,9 +311,7 @@ static int action_ok_core_load(const char *path,
    if (driver.menu->load_no_content)
    {
       *g_extern.fullpath = '\0';
-      rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-      menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
-      driver.menu->msg_force = true;
+      common_load_content(false);
       return -1;
    }
 
@@ -451,7 +447,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
    if (ret == -1)
    {
       rarch_main_command(RARCH_CMD_LOAD_CORE);
-      common_load_content();
+      common_load_content(false);
       return -1;
    }
    else if (ret == 0)
@@ -494,10 +490,7 @@ static int action_ok_file_load(const char *path,
          fill_pathname_join(g_extern.fullpath, menu_path, path,
                sizeof(g_extern.fullpath));
 
-      common_load_content();
-      rarch_main_command(RARCH_CMD_LOAD_CONTENT_PERSIST);
-      menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
-      driver.menu->msg_force = true;
+      common_load_content(true);
 
       return -1;
    }

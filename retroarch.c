@@ -2165,7 +2165,9 @@ bool rarch_main_command(unsigned cmd)
    switch (cmd)
    {
       case RARCH_CMD_LOAD_CONTENT_PERSIST:
+#ifdef HAVE_DYNAMIC
          rarch_main_command(RARCH_CMD_LOAD_CORE);
+#endif
          rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
          break;
       case RARCH_CMD_LOAD_CONTENT:
