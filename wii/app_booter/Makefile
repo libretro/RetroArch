@@ -21,7 +21,7 @@ OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy$(EXE_EXT)
 BIN_TARGET := app_booter.bin
 ELF_TARGET := app_booter.elf
 
-INCLUDE := -I. -I$(DEVKITPRO)/libogc/include
+INCLUDE := -I. -I$(DEVKITPRO)/libogc/include -I../../libretro-sdk/crt/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii
 
 MACHDEP := -DHW_RVL -DGEKKO -mno-eabi -mno-sdata -mcpu=750

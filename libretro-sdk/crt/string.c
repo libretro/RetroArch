@@ -23,16 +23,12 @@ void *memset(void *dst, int val, size_t count)
    return start;
 }
 
-void *memcpy(void *dst, const void *src, size_t count)
+void *memcpy(void *dst, const void *src, size_t len)
 {
-   void *ret = dst;
+   size_t i;
 
-   while (count--)
-   {
-      *(char *)dst = *(char *)src;
-      dst = (char*)dst + 1;
-      src = (char*)src + 1;
-   }
+   for (i = 0; i < len; i++)
+      ((unsigned char *)dst)[i] = ((unsigned char *)src)[i];
 
    return dst;
 }
