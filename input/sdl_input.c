@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "../libretro.h"
+#include "input_autodetect.h"
 #include "input_common.h"
 #include "keyboard_line.h"
 

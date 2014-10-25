@@ -17,6 +17,7 @@
 #include <IOKit/hid/IOHIDManager.h>
 #include <IOKit/hid/IOHIDKeys.h>
 #include "apple_input.h"
+#include "input_autodetect.h"
 #include "input_common.h"
 #include "../general.h"
 

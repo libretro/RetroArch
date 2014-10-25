@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "input_autodetect.h"
 #include "input_common.h"
 #include "SDL.h"
 #include "../general.h"

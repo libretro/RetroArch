@@ -16,7 +16,6 @@
 #ifndef INPUT_COMMON_H__
 #define INPUT_COMMON_H__
 
-#include "input_autodetect.h"
 #include "input_context.h"
 #include <file/config_file.h>
 #include <stdint.h>

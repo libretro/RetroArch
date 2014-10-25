@@ -21,6 +21,7 @@
 #include <bps/event.h>
 #include <bps/navigator.h>
 #include <sys/keycodes.h>
+#Include "input_autodetect.h"
 
 #define MAX_PADS 8
 

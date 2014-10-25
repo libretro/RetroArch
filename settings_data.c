@@ -17,6 +17,7 @@
 #include "settings_data.h"
 #include "dynamic.h"
 #include <file/file_path.h>
+#include "input/input_autodetect.h"
 #include "input/input_common.h"
 #include "config.def.h"
 #include "retroarch_logger.h"

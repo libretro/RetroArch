@@ -29,6 +29,7 @@
 #include "../menu_entries_cbs.h"
 #include "../menu_input_line_cb.h"
 
+#include "../../../input/input_autodetect.h"
 #include "../../../config.def.h"
 
 #ifdef GEKKO

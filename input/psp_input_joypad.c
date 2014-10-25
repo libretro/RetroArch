@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "input_autodetect.h"
+
 static uint64_t pad_state;
 static int16_t analog_state[1][2][2];
 
