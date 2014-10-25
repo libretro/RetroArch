@@ -1538,11 +1538,21 @@ static void input_get_bind_string_joykey(char *buf, const char *prefix,
       const char *dir;
       switch (GET_HAT_DIR(bind->joykey))
       {
-         case HAT_UP_MASK: dir = "up"; break;
-         case HAT_DOWN_MASK: dir = "down"; break;
-         case HAT_LEFT_MASK: dir = "left"; break;
-         case HAT_RIGHT_MASK: dir = "right"; break;
-         default: dir = "?"; break;
+         case HAT_UP_MASK:
+            dir = "up";
+            break;
+         case HAT_DOWN_MASK:
+            dir = "down";
+            break;
+         case HAT_LEFT_MASK:
+            dir = "left";
+            break;
+         case HAT_RIGHT_MASK:
+            dir = "right";
+            break;
+         default:
+            dir = "?";
+            break;
       }
       snprintf(buf, size, "%sHat #%u %s ", prefix,
             (unsigned)GET_HAT(bind->joykey), dir);
