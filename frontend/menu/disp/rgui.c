@@ -100,6 +100,17 @@ static void fill_rect(uint16_t *buf, unsigned pitch,
       for (i = x; i < x + width; i++)
          buf[j * (pitch >> 1) + i] = col(i, j);
 }
+static void color_rect(uint16_t *buf, unsigned pitch,
+      unsigned x, unsigned y,
+      unsigned width, unsigned height,
+      uint16_t color)
+{
+   unsigned j, i;
+   for (j = y; j < y + height; j++)
+      for (i = x; i < x + width; i++)
+         if (i >= 0 && j >= 0 && i < driver.menu->width && j < driver.menu->height)
+            buf[j * (pitch >> 1) + i] = color;
+}
 
 static void blit_line(int x, int y, const char *message, bool green)
 {
@@ -267,6 +278,17 @@ static void rgui_render_messagebox(const char *message)
    string_list_free(list);
 }
 
+static void blit_cursor(void)
+{
+   int16_t x = driver.menu->mouse.x;
+   int16_t y = driver.menu->mouse.y;
+
+   color_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
+         x, y-5, 1, 11, 0xFFFF);
+   color_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
+         x-5, y, 11, 1, 0xFFFF);
+}
+
 static void rgui_render(void)
 {
    size_t begin = 0;
@@ -276,6 +298,20 @@ static void rgui_render(void)
          && g_extern.is_menu
          && !driver.menu->msg_force)
       return;
+
+   const struct retro_keybind *binds[MAX_PLAYERS];
+   driver.menu->mouse.x += driver.input->input_state(driver.input_data, binds, 0,
+         RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
+   driver.menu->mouse.y += driver.input->input_state(driver.input_data, binds, 0,
+         RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
+   if (driver.menu->mouse.x < 5)
+      driver.menu->mouse.x = 5;
+   if (driver.menu->mouse.y < 5)
+      driver.menu->mouse.y = 5;
+   if (driver.menu->mouse.x > driver.menu->width - 5)
+      driver.menu->mouse.x = driver.menu->width - 5;
+   if (driver.menu->mouse.y > driver.menu->height - 5)
+      driver.menu->mouse.y = driver.menu->height - 5;
 
    if (driver.menu->selection_ptr >= RGUI_TERM_HEIGHT / 2)
       begin = driver.menu->selection_ptr - RGUI_TERM_HEIGHT / 2;
@@ -399,6 +435,8 @@ static void rgui_render(void)
       snprintf(msg, sizeof(msg), "%s\n%s", driver.menu->keyboard.label, str);
       rgui_render_messagebox(msg);
    }
+
+   blit_cursor();
 }
 
 static void *rgui_init(void)
