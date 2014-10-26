@@ -282,12 +282,12 @@ bool setting_data_load_config_path(rarch_setting_t* settings,
    config_file_t *cfg = (config_file_t*)config_file_new(path);
 
    if (!cfg)
-      return NULL;
+      return false;
 
    setting_data_load_config(settings, cfg);
    config_file_free(cfg);
 
-   return cfg;
+   return true;
 }
 
 bool setting_data_save_config(rarch_setting_t* settings,
