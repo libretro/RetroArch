@@ -209,10 +209,7 @@ typedef struct glsl_shader_data
    struct gfx_shader *glsl_shader;
    struct shader_uniforms gl_uniforms[GFX_MAX_SHADERS];
    struct cache_vbo glsl_vbo[GFX_MAX_SHADERS];
-   bool glsl_core;
    char glsl_alias_define[1024];
-   unsigned glsl_major;
-   unsigned glsl_minor;
    unsigned glsl_active_index;
    unsigned gl_attrib_index;
    GLuint gl_program[GFX_MAX_SHADERS];
@@ -220,6 +217,10 @@ typedef struct glsl_shader_data
    GLint gl_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
    state_tracker_t *gl_state_tracker;
 } glsl_shader_data_t;
+
+static bool glsl_core;
+static unsigned glsl_major;
+static unsigned glsl_minor;
 
 static GLint get_uniform(glsl_shader_data_t *glsl,
       GLuint prog, const char *base)
@@ -313,10 +314,10 @@ static bool compile_shader(glsl_shader_data_t *glsl,
       const char *define, const char *program)
 {
    char version[32] = {0};
-   if (glsl->glsl_core && !strstr(program, "#version"))
+   if (glsl_core && !strstr(program, "#version"))
    {
       unsigned version_no = 0;
-      unsigned gl_ver = glsl->glsl_major * 100 + glsl->glsl_minor * 10;
+      unsigned gl_ver = glsl_major * 100 + glsl_minor * 10;
       switch (gl_ver)
       {
          case 300:
@@ -772,9 +773,9 @@ static bool gl_glsl_init(void *data, const char *path)
       RARCH_WARN("[GL]: Stock GLSL shaders will be used.\n");
       glsl->glsl_shader->passes = 1;
       glsl->glsl_shader->pass[0].source.string.vertex   = 
-         strdup(glsl->glsl_core ? stock_vertex_core : stock_vertex_modern);
+         strdup(glsl_core ? stock_vertex_core : stock_vertex_modern);
       glsl->glsl_shader->pass[0].source.string.fragment = 
-         strdup(glsl->glsl_core ? stock_fragment_core : stock_fragment_modern);
+         strdup(glsl_core ? stock_fragment_core : stock_fragment_modern);
       glsl->glsl_shader->modern = true;
    }
 
@@ -792,7 +793,7 @@ static bool gl_glsl_init(void *data, const char *path)
    const char *stock_fragment = glsl->glsl_shader->modern ?
       stock_fragment_modern : stock_fragment_legacy;
 
-   if (glsl->glsl_core)
+   if (glsl_core)
    {
       stock_vertex = stock_vertex_core;
       stock_fragment = stock_fragment_core;
@@ -805,7 +806,7 @@ static bool gl_glsl_init(void *data, const char *path)
       goto error;
    }
 #else
-   if (glsl->glsl_core && !glsl->glsl_shader->modern)
+   if (glsl_core && !glsl->glsl_shader->modern)
    {
       RARCH_ERR("[GL]: GL core context is used, but shader is not core compatible. Cannot use it.\n");
       goto error;
@@ -874,9 +875,9 @@ static bool gl_glsl_init(void *data, const char *path)
    {
       glsl->gl_program[GL_SHADER_STOCK_BLEND] = compile_program(
             glsl,
-            glsl->glsl_core ? 
+            glsl_core ? 
             stock_vertex_core_blend : stock_vertex_modern_blend,
-            glsl->glsl_core ? 
+            glsl_core ? 
             stock_fragment_core_blend : stock_fragment_modern_blend,
             GL_SHADER_STOCK_BLEND);
       find_uniforms(glsl, 0, glsl->gl_program[GL_SHADER_STOCK_BLEND],
@@ -1321,14 +1322,9 @@ void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*))
 void gl_glsl_set_context_type(bool core_profile,
       unsigned major, unsigned minor)
 {
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
-
-   if (!glsl)
-      return;
-
-   glsl->glsl_core = core_profile;
-   glsl->glsl_major = major;
-   glsl->glsl_minor = minor;
+   glsl_core = core_profile;
+   glsl_major = major;
+   glsl_minor = minor;
 }
 
 const shader_backend_t gl_glsl_backend = {
