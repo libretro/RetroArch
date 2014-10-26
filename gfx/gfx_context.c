@@ -130,7 +130,6 @@ static const gfx_ctx_driver_t *gfx_ctx_find_driver(void *data,
       enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx)
 {
-   unsigned d;
    const gfx_ctx_driver_t *ctx = NULL;
    int i = find_gfx_ctx_driver_index(ident);
    if (i >= 0)
