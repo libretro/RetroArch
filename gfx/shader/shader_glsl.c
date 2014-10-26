@@ -735,7 +735,10 @@ static bool gl_glsl_init(void *data, const char *path)
 
    glsl->glsl_shader = (struct gfx_shader*)calloc(1, sizeof(*glsl->glsl_shader));
    if (!glsl->glsl_shader)
+   {
+      free(glsl);
       return false;
+   }
 
    if (path)
    {
@@ -765,6 +768,8 @@ static bool gl_glsl_init(void *data, const char *path)
       if (!ret)
       {
          RARCH_ERR("[GL]: Failed to parse GLSL shader.\n");
+         free(glsl->glsl_shader);
+         free(glsl);
          return false;
       }
    }
