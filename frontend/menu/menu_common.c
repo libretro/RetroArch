@@ -431,6 +431,8 @@ int menu_iterate(retro_input_t input,
       driver.menu->scroll_accel = 0;
    }
 
+   driver.menu->mouse.enable = g_settings.menu.mouse_enable;
+
    driver.menu->delay_count++;
 
    if (driver.block_input)

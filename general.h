@@ -286,6 +286,7 @@ struct settings
    {
       char driver[32];
       bool pause_libretro;
+      bool mouse_enable;
    } menu;
 #endif
 

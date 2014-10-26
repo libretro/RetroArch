@@ -122,6 +122,7 @@ typedef struct
       int16_t dy;
       int16_t x;
       int16_t y;
+      bool    enable;
       bool    left;
       bool    right;
       bool    oldleft;

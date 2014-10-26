@@ -422,7 +422,8 @@ static void rgui_render(void)
       rgui_render_messagebox(msg);
    }
 
-   blit_cursor();
+   if (driver.menu->mouse.enable)
+      blit_cursor();
 }
 
 static void *rgui_init(void)
