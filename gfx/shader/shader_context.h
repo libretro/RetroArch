@@ -24,7 +24,7 @@
 #endif
 
 #include "../gfx_context.h"
-#include <gfx/math/matrix.h>
+#include <gfx/math/matrix_4x4.h>
 
 typedef struct shader_backend
 {
@@ -44,7 +44,7 @@ typedef struct shader_backend
    enum gfx_wrap_type (*wrap_type)(unsigned index);
    void (*shader_scale)(unsigned index, struct gfx_fbo_scale *scale);
    bool (*set_coords)(const void *data);
-   bool (*set_mvp)(void *data, const math_matrix *mat);
+   bool (*set_mvp)(void *data, const math_matrix_4x4 *mat);
    unsigned (*get_prev_textures)(void);
    bool (*mipmap_input)(unsigned index);
 

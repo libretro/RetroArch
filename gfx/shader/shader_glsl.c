@@ -1056,7 +1056,7 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    }
 }
 
-static bool gl_glsl_set_mvp(void *data, const math_matrix *mat)
+static bool gl_glsl_set_mvp(void *data, const math_matrix_4x4 *mat)
 {
    (void)data;
    if (!glsl_enable || !glsl_shader->modern)

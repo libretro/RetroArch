@@ -166,7 +166,7 @@ static void gl_cg_reset_attrib(void)
    cg_attrib_idx = 0;
 }
 
-static bool gl_cg_set_mvp(void *data, const math_matrix *mat)
+static bool gl_cg_set_mvp(void *data, const math_matrix_4x4 *mat)
 {
    (void)data;
    if (cg_active && prg[active_idx].mvp)

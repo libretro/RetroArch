@@ -365,7 +365,7 @@ ifeq ($(HAVE_OPENGL), 1)
 			 gfx/context/gfx_null_ctx.o \
 			 gfx/fonts/gl_font.o \
 			 gfx/fonts/gl_raster_font.o \
-			 libretro-sdk/gfx/math/matrix.o \
+			 libretro-sdk/gfx/math/matrix_4x4.o \
 			 gfx/state_tracker.o \
 			 libretro-sdk/glsym/rglgen.o
 

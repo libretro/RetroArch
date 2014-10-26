@@ -21,7 +21,7 @@
 #include <compat/posix_string.h>
 #include "../state_tracker.h"
 #include "../../dynamic.h"
-#include <gfx/math/matrix.h>
+#include <gfx/math/matrix_4x4.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -48,7 +48,7 @@ static void shader_null_set_params(void *data, unsigned width, unsigned height,
 {
 }
 
-static bool shader_null_set_mvp(void *data, const math_matrix *mat)
+static bool shader_null_set_mvp(void *data, const math_matrix_4x4 *mat)
 {
 #ifdef HAVE_OPENGL
 #ifndef NO_GL_FF_MATRIX

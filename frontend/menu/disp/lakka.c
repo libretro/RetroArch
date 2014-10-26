@@ -203,7 +203,7 @@ static void lakka_draw_icon(lakka_handle_t *lakka,
       float scale_factor)
 {
    struct gl_coords coords;
-   math_matrix mymat, mrot;
+   math_matrix_4x4 mymat, mrot;
     
    if (!lakka)
       return;
@@ -242,12 +242,12 @@ static void lakka_draw_icon(lakka_handle_t *lakka,
    coords.color = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   matrix_rotate_z(&mrot, rotation);
-   matrix_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+   matrix_4x4_rotate_z(&mrot, rotation);
+   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
-   math_matrix mscal;
-   matrix_scale(&mscal, scale_factor, scale_factor, 1);
-   matrix_multiply(&mymat, &mscal, &mymat);
+   math_matrix_4x4 mscal;
+   matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
+   matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
    gl->shader->set_coords(&coords);
    gl->shader->set_mvp(gl, &mymat);
@@ -527,15 +527,15 @@ static void lakka_draw_fbo(lakka_handle_t *lakka)
    coords.color = gl->white_color_ptr;
    glBindTexture(GL_TEXTURE_2D, lakka->fbo_color);
 
-   math_matrix mymat;
-
-   math_matrix mrot;
-   matrix_rotate_z(&mrot, 0);
-   matrix_multiply(&mymat, &mrot, &gl->mvp_no_rot);
-
+   math_matrix_4x4 mymat;
+   math_matrix_4x4 mrot;
    math_matrix mscal;
-   matrix_scale(&mscal, lakka->global_scale, lakka->global_scale, 1);
-   matrix_multiply(&mymat, &mscal, &mymat);
+
+   matrix_4x4_rotate_z(&mrot, 0);
+   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+
+   matrix_4x4_scale(&mscal, lakka->global_scale, lakka->global_scale, 1);
+   matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
    gl->shader->set_coords(&coords);
    gl->shader->set_mvp(gl, &mymat);

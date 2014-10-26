@@ -28,30 +28,30 @@
  * to work on GLES 2.0 and modern GL variants.
  */
 
-typedef struct math_matrix
+typedef struct math_matrix_4x4
 {
    float data[16];
-} math_matrix;
+} math_matrix_4x4;
 
-#define MAT_ELEM(mat, r, c) ((mat).data[4 * (c) + (r)])
+#define MAT_ELEM_4X4(mat, r, c) ((mat).data[4 * (c) + (r)])
 
-void matrix_identity(math_matrix *mat);
-void matrix_transpose(math_matrix *out, const math_matrix *in);
+void matrix_4x4_identity(math_matrix_4x4 *mat);
+void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in);
 
-void matrix_rotate_x(math_matrix *mat, float rad);
-void matrix_rotate_y(math_matrix *mat, float rad);
-void matrix_rotate_z(math_matrix *mat, float rad);
+void matrix_4x4_rotate_x(math_matrix_4x4 *mat, float rad);
+void matrix_4x4_rotate_y(math_matrix_4x4 *mat, float rad);
+void matrix_4x4_rotate_z(math_matrix_4x4 *mat, float rad);
 
-void matrix_ortho(math_matrix *mat,
+void matrix_4x4_ortho(math_matrix_4x4 *mat,
       float left, float right,
       float bottom, float top,
       float znear, float zfar);
 
-void matrix_multiply(math_matrix *out, const math_matrix *a, const math_matrix *b);
+void matrix_4x4_multiply(math_matrix_4x4 *out, const math_matrix_4x4 *a, const math_matrix_4x4 *b);
 
-void matrix_scale(math_matrix *out, float x, float y, float z);
-void matrix_translate(math_matrix *out, float x, float y, float z);
-void matrix_projection(math_matrix *out, float znear, float zfar);
+void matrix_4x4_scale(math_matrix_4x4 *out, float x, float y, float z);
+void matrix_4x4_translate(math_matrix_4x4 *out, float x, float y, float z);
+void matrix_4x4_projection(math_matrix_4x4 *out, float znear, float zfar);
 
 #endif
 

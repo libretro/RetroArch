@@ -18,7 +18,7 @@
 
 #include "../general.h"
 #include "fonts/fonts.h"
-#include <gfx/math/matrix.h>
+#include <gfx/math/matrix_4x4.h>
 #include "gfx_context.h"
 #include <gfx/scaler/scaler.h>
 #include "fonts/gl_font.h"
@@ -222,7 +222,7 @@ typedef struct gl
    unsigned last_width[MAX_TEXTURES];
    unsigned last_height[MAX_TEXTURES];
    unsigned tex_w, tex_h;
-   math_matrix mvp, mvp_no_rot;
+   math_matrix_4x4 mvp, mvp_no_rot;
 
    struct gl_coords coords;
    const GLfloat *vertex_ptr;

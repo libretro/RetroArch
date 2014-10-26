@@ -133,7 +133,7 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
       float alpha, float rotation, float scale_factor)
 {
    struct gl_coords coords;
-   math_matrix mymat, mrot, mscal;
+   math_matrix_4x4 mymat, mrot, mscal;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
@@ -173,11 +173,11 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
    coords.color = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   matrix_rotate_z(&mrot, rotation);
-   matrix_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+   matrix_4x4_rotate_z(&mrot, rotation);
+   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
-   matrix_scale(&mscal, scale_factor, scale_factor, 1);
-   matrix_multiply(&mymat, &mscal, &mymat);
+   matrix_4x4_scale(&mscal, scale_factor, scale_factor, 1);
+   matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
    gl->shader->set_coords(&coords);
    gl->shader->set_mvp(gl, &mymat);

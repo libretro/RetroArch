@@ -759,10 +759,10 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 
 static void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
 {
-   math_matrix rot;
+   math_matrix_4x4 rot;
 
    /* Calculate projection. */
-   matrix_ortho(&gl->mvp_no_rot, ortho->left, ortho->right,
+   matrix_4x4_ortho(&gl->mvp_no_rot, ortho->left, ortho->right,
          ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
 
    if (!allow_rotate)
@@ -771,8 +771,8 @@ static void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotat
       return;
    }
 
-   matrix_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
-   matrix_multiply(&gl->mvp, &rot, &gl->mvp_no_rot);
+   matrix_4x4_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
+   matrix_4x4_multiply(&gl->mvp, &rot, &gl->mvp_no_rot);
 }
 
 void gl_set_viewport(gl_t *gl, unsigned width,

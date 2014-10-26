@@ -173,7 +173,7 @@ VIDEO DRIVER
 ============================================================ */
 
 #if defined(HAVE_OPENGL)
-#include "../libretro-sdk/gfx/math/matrix.c"
+#include "../libretro-sdk/gfx/math/matrix_4x4.c"
 #elif defined(GEKKO)
 #ifdef HW_RVL
 #include "../wii/vi_encoder.c"
