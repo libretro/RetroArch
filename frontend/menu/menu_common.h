@@ -157,6 +157,10 @@ unsigned menu_common_type_is(const char *label, unsigned type);
 
 void apply_deferred_settings(void);
 
+void menu_common_list_clear(void *data);
+
+void menu_common_list_set_selection(void *data);
+
 #ifdef __cplusplus
 }
 #endif

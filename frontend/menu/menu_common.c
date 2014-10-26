@@ -501,3 +501,11 @@ unsigned menu_common_type_is(const char *label, unsigned type)
 
    return 0;
 }
+
+void menu_common_list_clear(void *data)
+{
+}
+
+void menu_common_list_set_selection(void *data)
+{
+}

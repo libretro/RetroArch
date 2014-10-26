@@ -789,20 +789,11 @@ static void menu_common_list_delete(void *data, size_t idx,
    list->list[idx].actiondata = NULL;
 }
 
-static void menu_common_list_clear(void *data)
-{
-}
-
-static void menu_common_list_set_selection(void *data)
-{
-}
 
 menu_ctx_driver_backend_t menu_ctx_backend_common = {
    menu_common_iterate,
    menu_common_list_insert,
    menu_common_list_delete,
-   menu_common_list_clear,
-   menu_common_list_set_selection,
 
    "menu_common",
 };

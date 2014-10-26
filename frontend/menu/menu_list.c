@@ -217,8 +217,7 @@ end:
    if (driver.menu_ctx->list_set_selection)
       driver.menu_ctx->list_set_selection(list);
 
-   if (driver.menu_ctx->backend->list_set_selection)
-      driver.menu_ctx->backend->list_set_selection(list);
+   menu_common_list_set_selection(list);
 }
 
 void menu_list_clear(file_list_t *list)
@@ -229,8 +228,7 @@ void menu_list_clear(file_list_t *list)
    if (driver.menu_ctx->list_clear)
       driver.menu_ctx->list_clear(list);
 
-   if (driver.menu_ctx->backend->list_clear)
-      driver.menu_ctx->backend->list_clear(list);
+   menu_common_list_clear(list);
 
 end:
 
