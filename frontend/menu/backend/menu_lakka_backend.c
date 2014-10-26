@@ -526,7 +526,5 @@ static int menu_lakka_iterate(unsigned action)
 
 menu_ctx_driver_backend_t menu_ctx_backend_lakka = {
    menu_lakka_iterate,
-   NULL,
-   NULL,
    "menu_lakka",
 };

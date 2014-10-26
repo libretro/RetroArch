@@ -31,8 +31,7 @@ void menu_list_destroy(file_list_t *list)
    {
       if (driver.menu_ctx->list_delete)
          driver.menu_ctx->list_delete(list, i, list->size);
-      if (driver.menu_ctx->backend->list_delete)
-         driver.menu_ctx->backend->list_delete(list, i, list->size);
+      menu_common_list_delete(list, i, list->size);
    }
 
 end:
@@ -204,8 +203,7 @@ void menu_list_pop(file_list_t *list, size_t *directory_ptr)
 
       if (driver.menu_ctx->list_delete)
          driver.menu_ctx->list_delete(list, list_size, list_size);
-      if (driver.menu_ctx->backend->list_delete)
-         driver.menu_ctx->backend->list_delete(list, list_size, list_size);
+      menu_common_list_delete(list, list_size, list_size);
    }
 
 end:
@@ -250,9 +248,7 @@ void menu_list_push(file_list_t *list,
    if (driver.menu_ctx->list_insert)
       driver.menu_ctx->list_insert(list, path, label, list->size - 1);
 
-   if (driver.menu_ctx->backend->list_insert)
-      driver.menu_ctx->backend->list_insert(list, path,
-            label, type, list->size - 1);
+   menu_common_list_insert(list, path, label, type, list->size - 1);
 }
 
 void menu_list_push_refresh(file_list_t *list,
