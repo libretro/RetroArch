@@ -22,8 +22,6 @@
 #include <file/file_path.h>
 #include "../../general.h"
 
-#define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
-
 static const char *wrap_mode_to_str(enum gfx_wrap_type type)
 {
    switch (type)
@@ -62,7 +60,7 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
 {
    /* Source */
    char shader_name[64];
-   print_buf(shader_name, "shader%u", i);
+   snprintf(shader_name, sizeof(shader_name), "shader%u", i);
    if (!config_get_path(conf, shader_name, pass->source.path, sizeof(pass->source.path)))
    {
       RARCH_ERR("Couldn't parse shader source (%s).\n", shader_name);
@@ -71,7 +69,7 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    
    /* Smooth */
    char filter_name_buf[64];
-   print_buf(filter_name_buf, "filter_linear%u", i);
+   snprintf(filter_name_buf, sizeof(filter_name_buf), "filter_linear%u", i);
    bool smooth = false;
    if (config_get_bool(conf, filter_name_buf, &smooth))
       pass->filter = smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
@@ -80,34 +78,36 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
 
    /* Wrapping mode */
    char wrap_name_buf[64];
-   print_buf(wrap_name_buf, "wrap_mode%u", i);
    char wrap_mode[64];
+
+   snprintf(wrap_name_buf, sizeof(wrap_name_buf), "wrap_mode%u", i);
    if (config_get_array(conf, wrap_name_buf, wrap_mode, sizeof(wrap_mode)))
       pass->wrap = wrap_str_to_mode(wrap_mode);
 
    /* Frame count mod */
    char frame_count_mod[64] = {0};
    char frame_count_mod_buf[64];
-   print_buf(frame_count_mod_buf, "frame_count_mod%u", i);
+
+   snprintf(frame_count_mod_buf, sizeof(frame_count_mod_buf), "frame_count_mod%u", i);
    if (config_get_array(conf, frame_count_mod_buf,
             frame_count_mod, sizeof(frame_count_mod)))
       pass->frame_count_mod = strtoul(frame_count_mod, NULL, 0);
 
    /* FBO types and mipmapping */
    char srgb_output_buf[64];
-   print_buf(srgb_output_buf, "srgb_framebuffer%u", i);
+   snprintf(srgb_output_buf, sizeof(srgb_output_buf), "srgb_framebuffer%u", i);
    config_get_bool(conf, srgb_output_buf, &pass->fbo.srgb_fbo);
 
    char fp_fbo_buf[64];
-   print_buf(fp_fbo_buf, "float_framebuffer%u", i);
+   snprintf(fp_fbo_buf, sizeof(fp_fbo_buf), "float_framebuffer%u", i);
    config_get_bool(conf, fp_fbo_buf, &pass->fbo.fp_fbo);
 
    char mipmap_buf[64];
-   print_buf(mipmap_buf, "mipmap_input%u", i);
+   snprintf(mipmap_buf, sizeof(mipmap_buf), "mipmap_input%u", i);
    config_get_bool(conf, mipmap_buf, &pass->mipmap);
 
    char alias_buf[64];
-   print_buf(alias_buf, "alias%u", i);
+   snprintf(alias_buf, sizeof(alias_buf), "alias%u", i);
    if (!config_get_array(conf, alias_buf, pass->alias, sizeof(pass->alias)))
       *pass->alias = '\0';
 
@@ -117,13 +117,13 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    char scale_type_x[64] = {0};
    char scale_type_y[64] = {0};
    char scale_name_buf[64];
-   print_buf(scale_name_buf, "scale_type%u", i);
+   snprintf(scale_name_buf, sizeof(scale_name_buf), "scale_type%u", i);
    config_get_array(conf, scale_name_buf, scale_type, sizeof(scale_type));
 
-   print_buf(scale_name_buf, "scale_type_x%u", i);
+   snprintf(scale_name_buf, sizeof(scale_name_buf), "scale_type_x%u", i);
    config_get_array(conf, scale_name_buf, scale_type_x, sizeof(scale_type_x));
 
-   print_buf(scale_name_buf, "scale_type_y%u", i);
+   snprintf(scale_name_buf, sizeof(scale_name_buf), "scale_type_y%u", i);
    config_get_array(conf, scale_name_buf, scale_type_y, sizeof(scale_type_y));
 
    if (!*scale_type && !*scale_type_x && !*scale_type_y)
@@ -175,14 +175,14 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
       }
    }
 
-   print_buf(attr_name_buf, "scale%u", i);
+   snprintf(attr_name_buf, sizeof(attr_name_buf), "scale%u", i);
    if (scale->type_x == RARCH_SCALE_ABSOLUTE)
    {
       if (config_get_int(conf, attr_name_buf, &iattr))
          scale->abs_x = iattr;
       else
       {
-         print_buf(attr_name_buf, "scale_x%u", i);
+         snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_x%u", i);
          if (config_get_int(conf, attr_name_buf, &iattr))
             scale->abs_x = iattr;
       }
@@ -193,20 +193,20 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
          scale->scale_x = fattr;
       else
       {
-         print_buf(attr_name_buf, "scale_x%u", i);
+         snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_x%u", i);
          if (config_get_float(conf, attr_name_buf, &fattr))
             scale->scale_x = fattr;
       }
    }
 
-   print_buf(attr_name_buf, "scale%u", i);
+   snprintf(attr_name_buf, sizeof(attr_name_buf), "scale%u", i);
    if (scale->type_y == RARCH_SCALE_ABSOLUTE)
    {
       if (config_get_int(conf, attr_name_buf, &iattr))
          scale->abs_y = iattr;
       else
       {
-         print_buf(attr_name_buf, "scale_y%u", i);
+         snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_y%u", i);
          if (config_get_int(conf, attr_name_buf, &iattr))
             scale->abs_y = iattr;
       }
@@ -217,7 +217,7 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
          scale->scale_y = fattr;
       else
       {
-         print_buf(attr_name_buf, "scale_y%u", i);
+         snprintf(attr_name_buf, sizeof(attr_name_buf), "scale_y%u", i);
          if (config_get_float(conf, attr_name_buf, &fattr))
             scale->scale_y = fattr;
       }
@@ -251,7 +251,7 @@ static bool shader_parse_textures(config_file_t *conf,
             sizeof(shader->lut[shader->luts].id));
 
       char id_filter[64];
-      print_buf(id_filter, "%s_linear", id);
+      snprintf(id_filter, sizeof(id_filter), "%s_linear", id);
       bool smooth = false;
       if (config_get_bool(conf, id_filter, &smooth))
          shader->lut[shader->luts].filter = smooth ? 
@@ -260,13 +260,13 @@ static bool shader_parse_textures(config_file_t *conf,
          shader->lut[shader->luts].filter = RARCH_FILTER_UNSPEC;
 
       char id_wrap[64];
-      print_buf(id_wrap, "%s_wrap_mode", id);
+      snprintf(id_wrap, sizeof(id_wrap), "%s_wrap_mode", id);
       char wrap_mode[64];
       if (config_get_array(conf, id_wrap, wrap_mode, sizeof(wrap_mode)))
          shader->lut[shader->luts].wrap = wrap_str_to_mode(wrap_mode);
 
       char id_mipmap[64];
-      print_buf(id_mipmap, "%s_mipmap", id);
+      snprintf(id_mipmap, sizeof(id_mipmap), "%s_mipmap", id);
       bool mipmap = false;
       if (config_get_bool(conf, id_mipmap, &mipmap))
          shader->lut[shader->luts].mipmap = mipmap;
@@ -391,11 +391,11 @@ static bool shader_parse_imports(config_file_t *conf,
       char mask_buf[64];
       char equal_buf[64];
 
-      print_buf(semantic_buf, "%s_semantic", id);
-      print_buf(wram_buf, "%s_wram", id);
-      print_buf(input_slot_buf, "%s_input_slot", id);
-      print_buf(mask_buf, "%s_mask", id);
-      print_buf(equal_buf, "%s_equal", id);
+      snprintf(semantic_buf, sizeof(semantic_buf), "%s_semantic", id);
+      snprintf(wram_buf, sizeof(wram_buf), "%s_wram", id);
+      snprintf(input_slot_buf, sizeof(input_slot_buf), "%s_input_slot", id);
+      snprintf(mask_buf, sizeof(mask_buf), "%s_mask", id);
+      snprintf(equal_buf, sizeof(equal_buf), "%s_equal", id);
 
       char semantic[64];
       if (!config_get_array(conf, semantic_buf, semantic, sizeof(semantic)))
@@ -524,10 +524,10 @@ static void shader_write_scale_dim(config_file_t *conf, const char *dim,
       enum gfx_scale_type type, float scale, unsigned absolute, unsigned i)
 {
    char key[64];
-   print_buf(key, "scale_type_%s%u", dim, i);
+   snprintf(key, sizeof(key), "scale_type_%s%u", dim, i);
    config_set_string(conf, key, scale_type_to_str(type));
 
-   print_buf(key, "scale_%s%u", dim, i);
+   snprintf(key, sizeof(key), "scale_%s%u", dim, i);
    if (type == RARCH_SCALE_ABSOLUTE)
       config_set_int(conf, key, absolute);
    else
@@ -538,9 +538,9 @@ static void shader_write_fbo(config_file_t *conf,
       const struct gfx_fbo_scale *fbo, unsigned i)
 {
    char key[64];
-   print_buf(key, "float_framebuffer%u", i);
+   snprintf(key, sizeof(key), "float_framebuffer%u", i);
    config_set_bool(conf, key, fbo->fp_fbo);
-   print_buf(key, "srgb_framebuffer%u", i);
+   snprintf(key, sizeof(key), "srgb_framebuffer%u", i);
    config_set_bool(conf, key, fbo->srgb_fbo);
 
    if (!fbo->valid)
@@ -583,11 +583,11 @@ static void shader_write_variable(config_file_t *conf,
    char mask_buf[64];
    char equal_buf[64];
 
-   print_buf(semantic_buf, "%s_semantic", id);
-   print_buf(wram_buf, "%s_wram", id);
-   print_buf(input_slot_buf, "%s_input_slot", id);
-   print_buf(mask_buf, "%s_mask", id);
-   print_buf(equal_buf, "%s_equal", id);
+   snprintf(semantic_buf, sizeof(semantic_buf), "%s_semantic", id);
+   snprintf(wram_buf, sizeof(wram_buf), "%s_wram", id);
+   snprintf(input_slot_buf, sizeof(input_slot_buf), "%s_input_slot", id);
+   snprintf(mask_buf, sizeof(mask_buf), "%s_mask", id);
+   snprintf(equal_buf, sizeof(equal_buf), "%s_equal", id);
 
    config_set_string(conf, semantic_buf,
          import_semantic_to_string(info->type));
@@ -623,28 +623,28 @@ void gfx_shader_write_conf_cgp(config_file_t *conf,
       const struct gfx_shader_pass *pass = &shader->pass[i];
 
       char key[64];
-      print_buf(key, "shader%u", i);
+      snprintf(key, sizeof(key), "shader%u", i);
       config_set_string(conf, key, pass->source.path);
 
       if (pass->filter != RARCH_FILTER_UNSPEC)
       {
-         print_buf(key, "filter_linear%u", i);
+         snprintf(key, sizeof(key), "filter_linear%u", i);
          config_set_bool(conf, key, pass->filter == RARCH_FILTER_LINEAR);
       }
 
-      print_buf(key, "wrap_mode%u", i);
+      snprintf(key, sizeof(key), "wrap_mode%u", i);
       config_set_string(conf, key, wrap_mode_to_str(pass->wrap));
 
       if (pass->frame_count_mod)
       {
-         print_buf(key, "frame_count_mod%u", i);
+         snprintf(key, sizeof(key), "frame_count_mod%u", i);
          config_set_int(conf, key, pass->frame_count_mod);
       }
 
-      print_buf(key, "mipmap_input%u", i);
+      snprintf(key, sizeof(key), "mipmap_input%u", i);
       config_set_bool(conf, key, pass->mipmap);
 
-      print_buf(key, "alias%u", i);
+      snprintf(key, sizeof(key), "alias%u", i);
       config_set_string(conf, key, pass->alias);
 
       shader_write_fbo(conf, &pass->fbo, i);
@@ -689,15 +689,15 @@ void gfx_shader_write_conf_cgp(config_file_t *conf,
 
          if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
          {
-            print_buf(key, "%s_linear", shader->lut[i].id);
+            snprintf(key, sizeof(key), "%s_linear", shader->lut[i].id);
             config_set_bool(conf, key, 
                   shader->lut[i].filter == RARCH_FILTER_LINEAR);
          }
 
-         print_buf(key, "%s_wrap_mode", shader->lut[i].id);
+         snprintf(key, sizeof(key), "%s_wrap_mode", shader->lut[i].id);
          config_set_string(conf, key, wrap_mode_to_str(shader->lut[i].wrap));
 
-         print_buf(key, "%s_mipmap", shader->lut[i].id);
+         snprintf(key, sizeof(key), "%s_mipmap", shader->lut[i].id);
          config_set_bool(conf, key, shader->lut[i].mipmap);
       }
    }
