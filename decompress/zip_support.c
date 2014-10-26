@@ -180,8 +180,6 @@ int read_zip_file(const char * archive_path,
 struct string_list *compressed_zip_file_list_new(const char *path,
       const char* ext)
 {
-
-
    struct string_list *ext_list = NULL;
    struct string_list *list = (struct string_list*)string_list_new();
    if (!list)
@@ -204,6 +202,8 @@ struct string_list *compressed_zip_file_list_new(const char *path,
    if (!zipfile)
    {
       RARCH_ERR("Could not open zipfile %s.\n",path);
+      string_list_free(list);
+      string_list_free(ext_list);
       return NULL;
    }
 
@@ -215,6 +215,8 @@ struct string_list *compressed_zip_file_list_new(const char *path,
                 "Could be only a gzip file without the zip part.\n",
                 path);
       unzClose( zipfile );
+      string_list_free(list);
+      string_list_free(ext_list);
       return NULL;
    }
 
@@ -234,6 +236,8 @@ struct string_list *compressed_zip_file_list_new(const char *path,
       {
          RARCH_ERR("Could not read file info in zip %s.\n",path);
          unzClose( zipfile );
+         string_list_free(list);
+         string_list_free(ext_list);
          return NULL;
       }
 
@@ -271,6 +275,8 @@ struct string_list *compressed_zip_file_list_new(const char *path,
          {
             RARCH_ERR( "Could not iterate to next file in %s. Zipfile might be corrupt.\n",path );
             unzClose( zipfile );
+            string_list_free(list);
+            string_list_free(ext_list);
             return NULL;
          }
       }
