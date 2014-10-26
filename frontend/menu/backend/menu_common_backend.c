@@ -233,12 +233,8 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, unsigned action)
    if (!driver.menu->mouse.enable)
       return 0;
 
-   if (driver.menu->mouse.dy)
-   {
-      unsigned mouse_ptr = driver.menu->mouse.y / 11 - 2 + driver.menu->begin;
-      if (mouse_ptr <= menu_list_get_size(driver.menu->menu_list)-1)
-         menu_navigation_set(driver.menu, mouse_ptr, false);
-   }
+   if (driver.menu->mouse.ptr <= menu_list_get_size(driver.menu->menu_list)-1)
+      menu_navigation_set(driver.menu, driver.menu->mouse.ptr, false);
 
    if (driver.menu->mouse.left)
    {

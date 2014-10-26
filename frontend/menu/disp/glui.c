@@ -149,6 +149,67 @@ static void glui_render_background(bool force_transparency)
    gl->coords.color = gl->white_color_ptr;
 }
 
+static void glui_draw_cursor(float x, float y)
+{
+   gl_t *gl = NULL;
+   glui_handle_t *glui = NULL;
+
+   if (!driver.menu)
+      return;
+
+   glui = (glui_handle_t*)driver.menu->userdata;
+
+   if (!glui)
+      return;
+
+   GLfloat color[] = {
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+   };
+
+   gl = (gl_t*)driver_video_resolve(NULL);
+
+   if (!gl)
+      return;
+
+   glViewport(x - 5, gl->win_height - y, 11, 11);
+
+   static const GLfloat vertex[] = {
+      0, 0,
+      1, 0,
+      0, 1,
+      1, 1,
+   };
+
+   static const GLfloat tex_coord[] = {
+      0, 1,
+      1, 1,
+      0, 0,
+      1, 0,
+   };
+
+   struct gl_coords coords;
+   coords.vertices = 4;
+   coords.vertex = vertex;
+   coords.tex_coord = tex_coord;
+   coords.lut_tex_coord = tex_coord;
+
+   coords.color = color;
+   glBindTexture(GL_TEXTURE_2D, 0);
+
+   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   gl->shader->set_coords(&coords);
+   gl->shader->set_mvp(gl, &gl->mvp_no_rot);
+
+   glEnable(GL_BLEND);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glDisable(GL_BLEND);
+
+   gl->coords.color = gl->white_color_ptr;
+}
+
 static void glui_get_message(const char *message)
 {
    size_t i;
@@ -214,7 +275,7 @@ static void glui_frame(void)
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
-   size_t begin = 0, end;
+   size_t end;
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
    glui_handle_t *glui = NULL;
 
@@ -237,22 +298,26 @@ static void glui_frame(void)
    glui->term_width = (gl->win_width - glui->margin * 2) / glui->glyph_width;
    glui->term_height = (gl->win_height - glui->margin * 2) / glui->line_height - 2;
 
+   driver.menu->mouse.ptr = (driver.menu->mouse.y - glui->margin) /
+         glui->line_height - 2 + driver.menu->begin;
+
    glViewport(0, 0, gl->win_width, gl->win_height);
 
+   if (driver.menu->mouse.wheeldown && driver.menu->begin
+         < menu_list_get_size(driver.menu->menu_list) - glui->term_height)
+      driver.menu->begin++;
 
-   if (driver.menu->selection_ptr >= glui->term_height / 2)
-      begin = driver.menu->selection_ptr - glui->term_height / 2;
-   end   = (driver.menu->selection_ptr + glui->term_height <=
-         menu_list_get_size(driver.menu->menu_list)) ?
-      driver.menu->selection_ptr + glui->term_height :
-      menu_list_get_size(driver.menu->menu_list);
+   if (driver.menu->mouse.wheelup && driver.menu->begin > 0)
+      driver.menu->begin--;
 
    /* Do not scroll if all items are visible. */
    if (menu_list_get_size(driver.menu->menu_list) <= glui->term_height)
-      begin = 0;
+      driver.menu->begin = 0;
 
-   if (end - begin > glui->term_height)
-      end = begin + glui->term_height;
+   end = (driver.menu->begin + glui->term_height <=
+         menu_list_get_size(driver.menu->menu_list)) ?
+      driver.menu->begin + glui->term_height :
+      menu_list_get_size(driver.menu->menu_list);
 
    glui_render_background(false);
 
@@ -288,7 +353,7 @@ static void glui_frame(void)
    x = glui->margin;
    y = glui->margin + glui->line_height * 2;
 
-   for (i = begin; i < end; i++, y += glui->line_height)
+   for (i = driver.menu->begin; i < end; i++, y += glui->line_height)
    {
       char message[PATH_MAX], type_str[PATH_MAX],
            entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
@@ -355,6 +420,9 @@ static void glui_frame(void)
       glui_render_messagebox(glui->box_message);
       glui->box_message[0] = '\0';
    }
+
+   if (driver.menu->mouse.enable)
+      glui_draw_cursor(driver.menu->mouse.x, driver.menu->mouse.y);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 }
@@ -497,6 +565,40 @@ static void glui_context_reset(void *data)
    printf("%d\n", glui->bg);
 }
 
+static void glui_navigation_clear(void *data, bool pending_push)
+{
+   driver.menu->begin = 0;
+}
+
+static void glui_navigation_set(void *data, bool scroll)
+{
+   glui_handle_t *glui = NULL;
+
+   menu_handle_t *menu = (menu_handle_t*)data;
+
+   if (!menu)
+      return;
+
+   glui = (glui_handle_t*)menu->userdata;
+
+   if (!glui)
+      return;
+
+   if (!scroll)
+      return;
+
+   if (driver.menu->selection_ptr < glui->term_height/2)
+      driver.menu->begin = 0;
+   else if (driver.menu->selection_ptr >= glui->term_height/2
+         && driver.menu->selection_ptr <
+         menu_list_get_size(driver.menu->menu_list) - glui->term_height/2)
+      driver.menu->begin = driver.menu->selection_ptr - glui->term_height/2;
+   else if (driver.menu->selection_ptr >=
+         menu_list_get_size(driver.menu->menu_list) - glui->term_height/2)
+      driver.menu->begin = menu_list_get_size(driver.menu->menu_list)
+            - glui->term_height;
+}
+
 menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    glui_get_message,
@@ -510,10 +612,10 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    NULL,
    NULL,
+   glui_navigation_clear,
    NULL,
    NULL,
-   NULL,
-   NULL,
+   glui_navigation_set,
    NULL,
    NULL,
    NULL,

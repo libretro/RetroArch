@@ -127,6 +127,7 @@ typedef struct
       bool    oldright;
       bool    wheelup;
       bool    wheeldown;
+      unsigned ptr;
    } mouse;
 
    struct
