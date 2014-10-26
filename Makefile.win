@@ -27,10 +27,10 @@ HAVE_SDL2     := 0
 HAVE_RSOUND   := 0
 HAVE_PYTHON   := 0
 
-HAVE_FREETYPE := 0
+HAVE_FREETYPE := 1
 HAVE_FFMPEG   := 0
 
-HAVE_CG       := 0
+HAVE_CG       := 1
 HAVE_LIBXML2  := 0
 HAVE_ZLIB     := 1
 
