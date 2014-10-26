@@ -77,9 +77,6 @@ typedef struct
    unsigned height;
    size_t begin;
 
-   uint16_t *frame_buf;
-   size_t frame_buf_pitch;
-
    menu_list_t *menu_list;
    size_t selection_ptr;
    size_t selection_ptr_old;
