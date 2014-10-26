@@ -413,10 +413,12 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
             overlay_rect, sizeof(overlay_rect)))
    {
       struct string_list *list = string_split(overlay_rect, ", ");
-      if (list->size < 4)
+
+      if (!list || list->size < 4)
       {
          RARCH_ERR("[Overlay]: Failed to split rect \"%s\" into at least four tokens.\n",
                overlay_rect);
+         string_list_free(list);
          return false;
       }
 
