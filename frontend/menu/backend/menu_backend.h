@@ -18,8 +18,6 @@ typedef struct menu_file_list_cbs
 typedef struct menu_ctx_driver_backend
 {
    int      (*iterate)(unsigned);
-   void     (*setting_set_label)(char *, size_t, unsigned *,
-         unsigned, const char *, const char *, unsigned);
    void  (*list_insert)(void *, const char *, const char *, unsigned, size_t);
    void  (*list_delete)(void *, size_t, size_t);
    void  (*list_clear)(void *);

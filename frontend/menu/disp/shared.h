@@ -1,6 +1,8 @@
 #ifndef _DISP_SHARED_H
 #define _DISP_SHARED_H
 
+#include "../../../settings_data.h"
+
 static void get_title(const char *label, const char *dir,
       unsigned menu_type, char *title, size_t sizeof_title)
 {
@@ -217,9 +219,8 @@ static void disp_set_label(file_list_t* list,
             type_str_size);
    else if (type == MENU_FILE_PUSH || type == MENU_FILE_LINEFEED_SWITCH)
       strlcpy(type_str, "...", type_str_size);
-   else if (driver.menu_ctx && driver.menu_ctx->backend &&
-         driver.menu_ctx->backend->setting_set_label)
-      driver.menu_ctx->backend->setting_set_label(type_str,
+   else
+      setting_data_get_label(type_str,
             type_str_size, w, type, label, entry_label, i);
 
    strlcpy(path_buf, path, path_buf_size);

@@ -746,14 +746,6 @@ static int menu_common_iterate(unsigned action)
    return ret;
 }
 
-static void menu_common_setting_set_label(char *type_str,
-      size_t type_str_size, unsigned *w, unsigned type, 
-      const char *menu_label, const char *label, unsigned idx)
-{
-   setting_data_get_label(type_str, type_str_size, w, 
-         type, menu_label, label, idx);
-}
-
 static void menu_common_list_insert(void *data,
       const char *path, const char *label,
       unsigned type, size_t idx)
@@ -807,7 +799,6 @@ static void menu_common_list_set_selection(void *data)
 
 menu_ctx_driver_backend_t menu_ctx_backend_common = {
    menu_common_iterate,
-   menu_common_setting_set_label,
    menu_common_list_insert,
    menu_common_list_delete,
    menu_common_list_clear,
