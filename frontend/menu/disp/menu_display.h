@@ -23,7 +23,7 @@ typedef struct menu_ctx_driver
    void  (*navigation_clear)(void *, bool);
    void  (*navigation_decrement)(void *);
    void  (*navigation_increment)(void *);
-   void  (*navigation_set)(void *);
+   void  (*navigation_set)(void *, bool);
    void  (*navigation_set_last)(void *);
    void  (*navigation_descend_alphabet)(void *, size_t *);
    void  (*navigation_ascend_alphabet)(void *, size_t *);

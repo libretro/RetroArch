@@ -48,12 +48,12 @@ void menu_navigation_increment(menu_handle_t *menu)
       driver.menu_ctx->navigation_increment(menu);
 }
 
-void menu_navigation_set(menu_handle_t *menu, size_t i)
+void menu_navigation_set(menu_handle_t *menu, size_t i, bool scroll)
 {
    menu->selection_ptr = i; 
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_set)
-      driver.menu_ctx->navigation_set(menu);
+      driver.menu_ctx->navigation_set(menu, scroll);
 }
 
 void menu_navigation_set_last(menu_handle_t *menu)

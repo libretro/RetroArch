@@ -217,6 +217,14 @@ static int mouse_iterate(unsigned action)
    driver.menu->mouse.right = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
 
+   driver.menu->mouse.wheelup = driver.input->input_state(driver.input_data,
+         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP)
+         || driver.menu->mouse.y == 5;
+
+   driver.menu->mouse.wheeldown = driver.input->input_state(driver.input_data,
+         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN)
+         || driver.menu->mouse.y == driver.menu->height - 5;
+
    return 0;
 }
 
@@ -227,9 +235,9 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, unsigned action)
 
    if (driver.menu->mouse.dy)
    {
-      unsigned mouse_ptr = driver.menu->mouse.y / 11 - 2;
-      if (mouse_ptr <= menu_list_get_size(driver.menu->menu_list))
-         menu_navigation_set(driver.menu, mouse_ptr);
+      unsigned mouse_ptr = driver.menu->mouse.y / 11 - 2 + driver.menu->begin;
+      if (mouse_ptr <= menu_list_get_size(driver.menu->menu_list)-1)
+         menu_navigation_set(driver.menu, mouse_ptr, false);
    }
 
    if (driver.menu->mouse.left)
@@ -279,16 +287,16 @@ static int menu_settings_iterate(unsigned action,
       case MENU_ACTION_UP:
          if (driver.menu->selection_ptr >= scroll_speed)
             menu_navigation_set(driver.menu,
-                  driver.menu->selection_ptr - scroll_speed);
+                  driver.menu->selection_ptr - scroll_speed, true);
          else
             menu_navigation_set(driver.menu,
-                  menu_list_get_size(driver.menu->menu_list) - 1);
+                  menu_list_get_size(driver.menu->menu_list) - 1, true);
          break;
 
       case MENU_ACTION_DOWN:
          if (driver.menu->selection_ptr + scroll_speed < (menu_list_get_size(driver.menu->menu_list)))
             menu_navigation_set(driver.menu,
-                  driver.menu->selection_ptr + scroll_speed);
+                  driver.menu->selection_ptr + scroll_speed, true);
          else
             menu_navigation_clear(driver.menu, false);
          break;
@@ -670,16 +678,16 @@ static int menu_common_iterate(unsigned action)
       case MENU_ACTION_UP:
          if (driver.menu->selection_ptr >= scroll_speed)
             menu_navigation_set(driver.menu,
-                  driver.menu->selection_ptr - scroll_speed);
+                  driver.menu->selection_ptr - scroll_speed, true);
          else
             menu_navigation_set(driver.menu,
-                  menu_list_get_size(driver.menu->menu_list) - 1);
+                  menu_list_get_size(driver.menu->menu_list) - 1, true);
          break;
 
       case MENU_ACTION_DOWN:
          if (driver.menu->selection_ptr + scroll_speed < (menu_list_get_size(driver.menu->menu_list)))
             menu_navigation_set(driver.menu,
-                  driver.menu->selection_ptr + scroll_speed);
+                  driver.menu->selection_ptr + scroll_speed, true);
          else
             menu_navigation_clear(driver.menu, false);
          break;
@@ -687,7 +695,7 @@ static int menu_common_iterate(unsigned action)
       case MENU_ACTION_LEFT:
          if (driver.menu->selection_ptr > fast_scroll_speed)
             menu_navigation_set(driver.menu,
-                  driver.menu->selection_ptr - fast_scroll_speed);
+                  driver.menu->selection_ptr - fast_scroll_speed, true);
          else
             menu_navigation_clear(driver.menu, false);
          break;
@@ -695,7 +703,7 @@ static int menu_common_iterate(unsigned action)
       case MENU_ACTION_RIGHT:
          if (driver.menu->selection_ptr + fast_scroll_speed < (menu_list_get_size(driver.menu->menu_list)))
             menu_navigation_set(driver.menu,
-                  driver.menu->selection_ptr + fast_scroll_speed);
+                  driver.menu->selection_ptr + fast_scroll_speed, true);
          else
             menu_navigation_set_last(driver.menu);
          break;
