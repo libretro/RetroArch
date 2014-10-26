@@ -516,11 +516,16 @@ static void rgui_navigation_set(void *data, bool scroll)
    if (!scroll)
       return;
 
-   if (driver.menu->selection_ptr >= 8
-         && driver.menu->selection_ptr < menu_list_get_size(driver.menu->menu_list) - RGUI_TERM_HEIGHT/2)
-         driver.menu->begin = driver.menu->selection_ptr - RGUI_TERM_HEIGHT/2;
-   if (driver.menu->selection_ptr == menu_list_get_size(driver.menu->menu_list) - 1)
-         driver.menu->begin = menu_list_get_size(driver.menu->menu_list) - RGUI_TERM_HEIGHT;
+   if (driver.menu->selection_ptr < RGUI_TERM_HEIGHT/2)
+      driver.menu->begin = 0;
+   else if (driver.menu->selection_ptr >= RGUI_TERM_HEIGHT/2
+         && driver.menu->selection_ptr <
+         menu_list_get_size(driver.menu->menu_list) - RGUI_TERM_HEIGHT/2)
+      driver.menu->begin = driver.menu->selection_ptr - RGUI_TERM_HEIGHT/2;
+   else if (driver.menu->selection_ptr >=
+         menu_list_get_size(driver.menu->menu_list) - RGUI_TERM_HEIGHT/2)
+      driver.menu->begin = menu_list_get_size(driver.menu->menu_list)
+            - RGUI_TERM_HEIGHT;
 }
 
 menu_ctx_driver_t menu_ctx_rgui = {
