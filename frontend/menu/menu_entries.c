@@ -37,7 +37,7 @@ void menu_entries_refresh(file_list_t *list)
 
    if (driver.menu->selection_ptr >= menu_list_get_size(driver.menu->menu_list)
          && menu_list_get_size(driver.menu->menu_list))
-      menu_navigation_set(driver.menu, menu_list_get_size(driver.menu->menu_list) - 1);
+      menu_navigation_set(driver.menu, menu_list_get_size(driver.menu->menu_list) - 1, true);
    else if (!menu_list_get_size(driver.menu->menu_list))
       menu_navigation_clear(driver.menu, true);
 }

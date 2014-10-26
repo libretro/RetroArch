@@ -974,9 +974,10 @@ static void xmb_navigation_increment(void *data)
    xmb_selection_pointer_changed();
 }
 
-static void xmb_navigation_set(void *data)
+static void xmb_navigation_set(void *data, bool scroll)
 {
    (void)data;
+   (void)scroll;
 
    xmb_selection_pointer_changed();
 }

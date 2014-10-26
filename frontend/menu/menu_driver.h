@@ -75,6 +75,7 @@ typedef struct
 
    unsigned width;
    unsigned height;
+   size_t begin;
 
    uint16_t *frame_buf;
    size_t frame_buf_pitch;

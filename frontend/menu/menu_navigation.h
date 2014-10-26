@@ -29,7 +29,7 @@ void menu_navigation_decrement(menu_handle_t *menu);
 
 void menu_navigation_increment(menu_handle_t *menu);
 
-void menu_navigation_set(menu_handle_t *menu, size_t i);
+void menu_navigation_set(menu_handle_t *menu, size_t i, bool scroll);
 
 void menu_navigation_set_last(menu_handle_t *menu);
 

@@ -291,7 +291,6 @@ static void blit_cursor(void)
 
 static void rgui_render(void)
 {
-   size_t begin = 0;
    size_t end;
 
    if (driver.menu->need_refresh 
@@ -299,19 +298,21 @@ static void rgui_render(void)
          && !driver.menu->msg_force)
       return;
 
-   if (driver.menu->selection_ptr >= RGUI_TERM_HEIGHT / 2)
-      begin = driver.menu->selection_ptr - RGUI_TERM_HEIGHT / 2;
-   end   = (driver.menu->selection_ptr + RGUI_TERM_HEIGHT <=
-         menu_list_get_size(driver.menu->menu_list)) ?
-      driver.menu->selection_ptr + RGUI_TERM_HEIGHT :
-      menu_list_get_size(driver.menu->menu_list);
+   if (driver.menu->mouse.wheeldown && driver.menu->begin
+         < menu_list_get_size(driver.menu->menu_list) - RGUI_TERM_HEIGHT)
+      driver.menu->begin++;
+
+   if (driver.menu->mouse.wheelup && driver.menu->begin > 0)
+      driver.menu->begin--;
 
    /* Do not scroll if all items are visible. */
    if (menu_list_get_size(driver.menu->menu_list) <= RGUI_TERM_HEIGHT)
-      begin = 0;
+      driver.menu->begin = 0;
 
-   if (end - begin > RGUI_TERM_HEIGHT)
-      end = begin + RGUI_TERM_HEIGHT;
+   end = (driver.menu->begin + RGUI_TERM_HEIGHT <=
+         menu_list_get_size(driver.menu->menu_list)) ?
+      driver.menu->begin + RGUI_TERM_HEIGHT :
+      menu_list_get_size(driver.menu->menu_list);
 
    rgui_render_background();
 
@@ -359,7 +360,7 @@ static void rgui_render(void)
    x = RGUI_TERM_START_X;
    y = RGUI_TERM_START_Y;
 
-   for (i = begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
+   for (i = driver.menu->begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
       char message[PATH_MAX], type_str[PATH_MAX],
            entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
@@ -452,6 +453,7 @@ static void *rgui_init(void)
 
    menu->width = 320;
    menu->height = 240;
+   menu->begin = 0;
    menu->frame_buf_pitch = menu->width * sizeof(uint16_t);
 
    bool ret = rguidisp_init_font(menu);
@@ -504,6 +506,28 @@ static void rgui_set_texture(void *data)
             menu->frame_buf, false, menu->width, menu->height, 1.0f);
 }
 
+static void rgui_navigation_clear(void *data, bool pending_push)
+{
+   driver.menu->begin = 0;
+}
+
+static void rgui_navigation_set(void *data, bool scroll)
+{
+   if (!scroll)
+      return;
+
+   if (driver.menu->selection_ptr < RGUI_TERM_HEIGHT/2)
+      driver.menu->begin = 0;
+   else if (driver.menu->selection_ptr >= RGUI_TERM_HEIGHT/2
+         && driver.menu->selection_ptr <
+         menu_list_get_size(driver.menu->menu_list) - RGUI_TERM_HEIGHT/2)
+      driver.menu->begin = driver.menu->selection_ptr - RGUI_TERM_HEIGHT/2;
+   else if (driver.menu->selection_ptr >=
+         menu_list_get_size(driver.menu->menu_list) - RGUI_TERM_HEIGHT/2)
+      driver.menu->begin = menu_list_get_size(driver.menu->menu_list)
+            - RGUI_TERM_HEIGHT;
+}
+
 menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_render_messagebox,
@@ -517,10 +541,10 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    NULL,
+   rgui_navigation_clear,
    NULL,
    NULL,
-   NULL,
-   NULL,
+   rgui_navigation_set,
    NULL,
    NULL,
    NULL,
