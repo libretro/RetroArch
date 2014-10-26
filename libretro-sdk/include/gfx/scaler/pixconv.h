@@ -23,7 +23,7 @@
 #ifndef __LIBRETRO_SDK_SCALER_PIXCONV_H__
 #define __LIBRETRO_SDK_SCALER_PIXCONV_H__
 
-#include <gfx/scaler/scaler_common.h>
+#include <clamping.h>
 
 void conv_0rgb1555_argb8888(void *output, const void *input,
       int width, int height,

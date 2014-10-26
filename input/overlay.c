@@ -22,6 +22,7 @@
 #include <compat/posix_string.h>
 #include "input_common.h"
 #include <file/file_path.h>
+#include <clamping.h>
 #include <stddef.h>
 #include <math.h>
 
@@ -695,15 +696,6 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
    return false;
 }
 
-static inline float clamp(float val, float lower, float upper)
-{
-   if (val < lower)
-      return lower;
-   else if (val > upper)
-      return upper;
-   return val;
-}
-
 void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out,
       int16_t norm_x, int16_t norm_y)
 {
@@ -757,17 +749,17 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out,
          float y_val_sat = y_val / desc->analog_saturate_pct;
 
          unsigned int base = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
-         out->analog[base + 0] = clamp(x_val_sat, -1.0f, 1.0f) * 32767.0f;
-         out->analog[base + 1] = clamp(y_val_sat, -1.0f, 1.0f) * 32767.0f;
+         out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f) * 32767.0f;
+         out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f) * 32767.0f;
       }
 
       if (desc->movable)
       {
          float x_dist = x - desc->x;
          float y_dist = y - desc->y;
-         desc->delta_x = clamp(x_dist, -desc->range_x, desc->range_x)
+         desc->delta_x = clamp_float(x_dist, -desc->range_x, desc->range_x)
             * ol->active->mod_w;
-         desc->delta_y = clamp(y_dist, -desc->range_y, desc->range_y)
+         desc->delta_y = clamp_float(y_dist, -desc->range_y, desc->range_y)
             * ol->active->mod_h;
       }
    }
