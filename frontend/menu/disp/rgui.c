@@ -320,6 +320,8 @@ static void rgui_render(void)
    if (!rgui)
       return;
 
+   driver.menu->mouse.ptr = driver.menu->mouse.y / 11 - 2 + driver.menu->begin;
+
    if (driver.menu->mouse.wheeldown && driver.menu->begin
          < menu_list_get_size(driver.menu->menu_list) - RGUI_TERM_HEIGHT)
       driver.menu->begin++;
