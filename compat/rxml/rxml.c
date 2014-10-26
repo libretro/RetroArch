@@ -34,34 +34,51 @@ struct rxml_document
 
 struct rxml_node *rxml_root_node(rxml_document_t *doc)
 {
-   return doc->root_node;
+   if (doc)
+      return doc->root_node;
+   return NULL;
 }
 
 static void rxml_free_node(struct rxml_node *node)
 {
-   struct rxml_node *head;
+   struct rxml_node *head = NULL;
+   struct rxml_attrib_node *attrib_node_head = NULL;
+
    for (head = node->children; head; )
    {
-      struct rxml_node *next_node = head->next;
+      struct rxml_node *next_node = (struct rxml_node*)head->next;
       rxml_free_node(head);
       head = next_node;
    }
 
-   struct rxml_attrib_node *attrib_node_head;
    for (attrib_node_head = node->attrib; attrib_node_head; )
    {
-      struct rxml_attrib_node *next_attrib = attrib_node_head->next;
+      struct rxml_attrib_node *next_attrib = NULL;
 
-      free(attrib_node_head->attrib);
-      free(attrib_node_head->value);
-      free(attrib_node_head);
+      if (!attrib_node_head)
+         continue;
+      
+      next_attrib = (struct rxml_attrib_node*)attrib_node_head->next;
+
+      if (!next_attrib)
+         continue;
+
+      if (attrib_node_head->attrib)
+         free(attrib_node_head->attrib);
+      if (attrib_node_head->value)
+         free(attrib_node_head->value);
+      if (attrib_node_head)
+         free(attrib_node_head);
 
       attrib_node_head = next_attrib;
    }
 
-   free(node->name);
-   free(node->data);
-   free(node);
+   if (node->name)
+      free(node->name);
+   if (node->data)
+      free(node->data);
+   if (node)
+      free(node);
 }
 
 static bool validate_header(const char **ptr)
@@ -100,8 +117,8 @@ static void skip_spaces(const char **ptr_)
 static char *strdup_range(const char *begin, const char *end)
 {
    ptrdiff_t len = end - begin;
-
    char *ret = (char*)malloc(len + 1);
+
    if (!ret)
       return NULL;
 
@@ -170,9 +187,12 @@ static struct rxml_attrib_node *rxml_parse_attrs(const char *str)
    }
 
 end:
-   free(copy);
-   free(attrib);
-   free(value);
+   if (copy)
+      free(copy);
+   if (attrib)
+      free(attrib);
+   if (value)
+      free(value);
    return list;
 }
 
@@ -248,9 +268,7 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
       const char *closing_start = NULL;
 
       if (!closing_tag)
-      {
          goto error;
-      }
 
       snprintf(closing_tag, closing_tag_size, "</%s>", node->name);
 
@@ -284,7 +302,8 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
          /* Parse all child nodes. */
          struct rxml_node *list = NULL;
          struct rxml_node *tail = NULL;
-         const char *first_start = NULL, *first_closing = NULL;
+         const char *first_start = NULL;
+         const char *first_closing = NULL;
 
          ptr           = child_start;
          first_start   = strchr(ptr, '<');
@@ -332,11 +351,13 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
    else
       *ptr_ = closing + 1;
 
-   free(str);
+   if (str)
+      free(str);
    return node;
 
 error:
-   free(str);
+   if (str)
+      free(str);
    rxml_free_node(node);
    return NULL;
 }
@@ -354,13 +375,14 @@ static char *purge_xml_comments(const char *str)
    const char *copy_src  = str;
    for (;;)
    {
+      ptrdiff_t copy_len;
       const char *comment_start = strstr(copy_src, "<!--");
       const char *comment_end   = strstr(copy_src, "-->");
 
       if (!comment_start || !comment_end)
          break;
 
-      ptrdiff_t copy_len = comment_start - copy_src;
+      copy_len = comment_start - copy_src;
       memcpy(copy_dest, copy_src, copy_len);
 
       copy_dest += copy_len;
@@ -450,7 +472,7 @@ void rxml_free_document(rxml_document_t *doc)
 
 char *rxml_node_attrib(struct rxml_node *node, const char *attrib)
 {
-   struct rxml_attrib_node *attribs;
+   struct rxml_attrib_node *attribs = NULL;
    for (attribs = node->attrib; attribs; attribs = attribs->next)
    {
       if (!strcmp(attrib, attribs->attrib))
