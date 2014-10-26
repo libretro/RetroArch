@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __LIBRETRO_SDK_GFX_MATH_MATRIX_H__
-#define __LIBRETRO_SDK_GFX_MATH_MATRIX_H__
+#ifndef __LIBRETRO_SDK_GFX_MATH_MATRIX_4X4_H__
+#define __LIBRETRO_SDK_GFX_MATH_MATRIX_4X4_H__
 
 /* Column-major matrix (OpenGL-style).
  * Reimplements functionality from FF OpenGL pipeline to be able 
