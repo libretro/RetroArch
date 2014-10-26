@@ -22,43 +22,60 @@ HAVE_WINXINPUT = 1
 
 HAVE_LAKKA = 1
 
-ifeq ($(SLIM),)
-   HAVE_SDL = 1
-   HAVE_LIBXML2 = 1
-   HAVE_FREETYPE = 1
-   HAVE_ZLIB = 1
-   HAVE_RSOUND = 1
-   HAVE_CG = 1
-   HAVE_PYTHON = 1
-   HAVE_FFMPEG = 1
+HAVE_SDL      := 0
+HAVE_SDL2     := 0
+HAVE_RSOUND   := 0
+HAVE_PYTHON   := 0
+
+HAVE_FREETYPE := 0
+HAVE_FFMPEG   := 0
+
+HAVE_CG       := 0
+HAVE_LIBXML2  := 0
+HAVE_ZLIB     := 1
+
+ifeq ($(HAVE_CG), 1)
+CG_LIBS          := -lcg -lcgGL
 endif
 
-CG_LIBS          := -lcg -lcgGL
-
+ifeq ($(HAVE_FREETYPE), 1)
 FREETYPE_CFLAGS  := -DHAVE_FREETYPE -Ifreetype2
 FREETYPE_LIBS    := -lfreetype
+endif
 
+ifeq ($(HAVE_LIBXML2), 1)
 LIBXML2_CFLAGS   := -Ilibxml2 -DHAVE_LIBXML2 -DHAVE_GLSL
 LIBXML2_LIBS     := -lxml2 -liconv
+endif
 
+ifeq ($(HAVE_SDL), 1)
 SDL_LIBS         := -lSDL
 SDL_CFLAGS       := -ISDL -DHAVE_SDL
 BSD_LOCAL_INC    :=
+endif
 
+ifeq ($(HAVE_SDL2), 1)
 SDL2_LIBS        := -lSDL2
 SDL2_CFLAGS      := -ISDL2 -DHAVE_SDL2
+endif
 
+ifeq ($(HAVE_RSOUND), 1)
 RSOUND_CFLAGS    := -DHAVE_RSOUND
 RSOUND_LIBS      := -lrsound
+endif
 
+ifeq ($(HAVE_PYTHON), 1)
 PYTHON_LIBS      := -lpython32
 PYTHON_CFLAGS    := -DHAVE_PYTHON -Ipython
+endif
 
+ifeq ($(HAVE_FFMPEG), 1)
 AVCODEC_LIBS     := -lavcodec
 AVUTIL_LIBS      := -lavutil
 SWSCALE_LIBS     := -lswscale
 AVFORMAT_LIBS    := -lavformat
 FFMPEG_LIBS      := -lws2_32 -lz
+endif
 
 OBJDIR           := obj-w32
 

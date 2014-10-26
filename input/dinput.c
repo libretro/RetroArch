@@ -23,6 +23,7 @@
 
 #include "../general.h"
 #include <boolean.h>
+#include "input_autodetect.h"
 #include "input_common.h"
 #include "retroarch_logger.h"
 #include <stdlib.h>
