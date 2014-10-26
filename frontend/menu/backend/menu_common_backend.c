@@ -271,8 +271,6 @@ static int menu_settings_iterate(unsigned action,
    const char *path  = NULL;
    const char *label = NULL;
    unsigned type = 0, scroll_speed = 0;
-   
-   driver.menu->frame_buf_pitch = driver.menu->width * 2;
 
    menu_list_get_at_offset(driver.menu->menu_list->selection_buf,
          driver.menu->selection_ptr, &path, &label, &type);
