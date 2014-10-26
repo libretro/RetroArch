@@ -347,7 +347,10 @@ static bool load_content(const struct retro_subsystem_info *special,
       calloc(content->size, sizeof(*info));
 
    if (!info)
+   {
+      string_list_free(additional_path_allocs);
       return false;
+   }
 
    for (i = 0; i < content->size; i++)
    {
