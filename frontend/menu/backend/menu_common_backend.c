@@ -807,7 +807,6 @@ static void menu_common_list_set_selection(void *data)
 
 menu_ctx_driver_backend_t menu_ctx_backend_common = {
    menu_common_iterate,
-   menu_common_type_is,
    menu_common_setting_set_label,
    menu_common_list_insert,
    menu_common_list_delete,
