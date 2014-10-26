@@ -427,6 +427,7 @@ static void config_set_defaults(void)
 #ifdef HAVE_MENU
    g_settings.menu_show_start_screen = menu_show_start_screen;
    g_settings.menu.pause_libretro = true;
+   g_settings.menu.mouse_enable = false;
 #endif
 
    g_settings.location.allow = false;
@@ -882,6 +883,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
 #ifdef HAVE_MENU
    CONFIG_GET_BOOL(menu.pause_libretro, "menu_pause_libretro");
+   CONFIG_GET_BOOL(menu.mouse_enable,   "menu_mouse_enable");
 #endif
 
    CONFIG_GET_INT(video.hard_sync_frames, "video_hard_sync_frames");
@@ -1570,6 +1572,7 @@ bool config_save_file(const char *path)
 #ifdef HAVE_MENU
    config_set_string(conf,"menu_driver", g_settings.menu.driver);
    config_set_bool(conf,"menu_pause_libretro", g_settings.menu.pause_libretro);
+   config_set_bool(conf,"menu_mouse_enable", g_settings.menu.mouse_enable);
 #endif
    config_set_bool(conf,  "video_vsync", g_settings.video.vsync);
    config_set_bool(conf,  "video_hard_sync", g_settings.video.hard_sync);
