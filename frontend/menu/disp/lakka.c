@@ -388,16 +388,18 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
 static void lakka_draw_items(lakka_handle_t *lakka, int i)
 {
    int j;
-   menu_category_t *category = (menu_category_t*)&lakka->categories[i];
-   menu_category_t *active_category = (menu_category_t*)
-      &lakka->categories[lakka->menu_active_category];
-   menu_item_t *active_item = (menu_item_t*)
-      &active_category->items[active_category->active_item];
+   menu_category_t *category = NULL;
+   menu_category_t *active_category = NULL;
+   menu_item_t *active_item = NULL;
     
    (void)active_item;
 
    if (!lakka)
       return;
+
+   category = (menu_category_t*) &lakka->categories[i];
+   active_category = (menu_category_t*) &lakka->categories[lakka->menu_active_category];
+   active_item = (menu_item_t*) &active_category->items[active_category->active_item];
 
    for(j = 0; j < category->num_items; j++)
    {
