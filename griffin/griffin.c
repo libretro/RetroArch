@@ -257,7 +257,7 @@ FONTS
 #include "../gfx/fonts/d3d_font.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(HAVE_WIN32_D3D9)
 #include "../gfx/fonts/d3d_w32_font.cpp"
 #endif
 
