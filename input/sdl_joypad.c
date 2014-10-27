@@ -40,7 +40,7 @@ const int g_subsystem = SDL_INIT_GAMECONTROLLER;
 const int g_subsystem = SDL_INIT_JOYSTICK;
 #endif
 
-static sdl_joypad_t g_pads[MAX_PLAYERS];
+static sdl_joypad_t sdl_pads[MAX_PLAYERS];
 #ifdef HAVE_SDL2
 static bool g_has_haptic;
 #endif
@@ -48,7 +48,7 @@ static bool g_has_haptic;
 static const char* pad_name(unsigned id)
 {
 #ifdef HAVE_SDL2
-   if (g_pads[id].controller)
+   if (sdl_pads[id].controller)
       return SDL_GameControllerNameForIndex(id);
    return SDL_JoystickNameForIndex(id);
 #else
@@ -87,7 +87,7 @@ static int16_t pad_get_axis(sdl_joypad_t *pad, unsigned axis)
 
 static void pad_connect(unsigned id)
 {
-   sdl_joypad_t *pad = &g_pads[id];
+   sdl_joypad_t *pad = (sdl_joypad_t*)&sdl_pads[id];
    bool success = false;
    int32_t product = 0;
    int32_t vendor = 0;
@@ -186,25 +186,25 @@ static void pad_connect(unsigned id)
 static void pad_disconnect(unsigned id)
 {
 #ifdef HAVE_SDL2
-   if (g_pads[id].haptic)
-      SDL_HapticClose(g_pads[id].haptic);
+   if (sdl_pads[id].haptic)
+      SDL_HapticClose(sdl_pads[id].haptic);
 
-   if (g_pads[id].controller)
+   if (sdl_pads[id].controller)
    {
-      SDL_GameControllerClose(g_pads[id].controller);
+      SDL_GameControllerClose(sdl_pads[id].controller);
       RARCH_LOG("[SDL]: Joypad #%u disconnected.\n", id);
    }
    else
 #endif
-   if (g_pads[id].joypad)
+   if (sdl_pads[id].joypad)
    {
-      SDL_JoystickClose(g_pads[id].joypad);
+      SDL_JoystickClose(sdl_pads[id].joypad);
       RARCH_LOG("[SDL]: Joypad #%u disconnected.\n", id);
    }
 
    g_settings.input.device_names[id][0] = '\0';
 
-   memset(&g_pads[id], 0, sizeof(g_pads[id]));
+   memset(&sdl_pads[id], 0, sizeof(sdl_pads[id]));
 }
 
 static void sdl_joypad_destroy(void)
@@ -214,7 +214,7 @@ static void sdl_joypad_destroy(void)
       pad_disconnect(i);
 
    SDL_QuitSubSystem(g_subsystem);
-   memset(g_pads, 0, sizeof(g_pads));
+   memset(sdl_pads, 0, sizeof(sdl_pads));
 }
 
 static bool sdl_joypad_init(void)
@@ -238,7 +238,7 @@ static bool sdl_joypad_init(void)
       g_has_haptic = true;
 #endif
 
-   memset(g_pads, 0, sizeof(g_pads));
+   memset(sdl_pads, 0, sizeof(sdl_pads));
 
    unsigned num_sticks = SDL_NumJoysticks();
    if (num_sticks > MAX_PLAYERS)
@@ -251,7 +251,7 @@ static bool sdl_joypad_init(void)
    /* quit if no joypad is detected. */
    num_sticks = 0;
    for (i = 0; i < MAX_PLAYERS; i++)
-      if (g_pads[i].joypad)
+      if (sdl_pads[i].joypad)
          num_sticks++;
 
    if (num_sticks == 0)
@@ -272,7 +272,7 @@ static bool sdl_joypad_button(unsigned port, uint16_t joykey)
    if (joykey == NO_BTN)
       return false;
 
-   sdl_joypad_t *pad = &g_pads[port];
+   sdl_joypad_t *pad = (sdl_joypad_t*)&sdl_pads[port];
    if (!pad->joypad)
       return false;
 
@@ -312,7 +312,7 @@ static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
    if (joyaxis == AXIS_NONE)
       return 0;
 
-   sdl_joypad_t *pad = &g_pads[port];
+   sdl_joypad_t *pad = (sdl_joypad_t*)&sdl_pads[port];
    if (!pad->joypad)
       return false;
 
@@ -365,7 +365,7 @@ static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect,
    SDL_HapticEffect efx;
    memset(&efx, 0, sizeof(efx));
 
-   sdl_joypad_t *joypad = &g_pads[pad];
+   sdl_joypad_t *joypad = (sdl_joypad_t*)&sdl_pads[pad];
 
    if (!joypad->joypad || !joypad->haptic)
       return false;
@@ -383,7 +383,7 @@ static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect,
 
    if (joypad->rumble_effect == -1)
    {
-      joypad->rumble_effect = SDL_HapticNewEffect(g_pads[pad].haptic, &efx);
+      joypad->rumble_effect = SDL_HapticNewEffect(sdl_pads[pad].haptic, &efx);
       if (joypad->rumble_effect < 0)
       {
          RARCH_WARN("[SDL]: Failed to create rumble effect for joypad %u: %s\n",
@@ -411,7 +411,7 @@ static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect,
 
 static bool sdl_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS && g_pads[pad].joypad;
+   return pad < MAX_PLAYERS && sdl_pads[pad].joypad;
 }
 
 static const char *sdl_joypad_name(unsigned pad)

@@ -39,7 +39,7 @@ struct linuxraw_joypad
    char *ident;
 };
 
-static struct linuxraw_joypad g_pads[MAX_PLAYERS];
+static struct linuxraw_joypad linuxraw_pads[MAX_PLAYERS];
 static int g_notify;
 static int g_epoll;
 static bool g_hotplug;
@@ -94,7 +94,7 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
          if (g_hotplug)
          {
             char msg[512];
-            snprintf(msg, sizeof(msg), "Joypad #%u (%s) connected.", (unsigned)(pad - g_pads), pad->ident);
+            snprintf(msg, sizeof(msg), "Joypad #%u (%s) connected.", (unsigned)(pad - linuxraw_pads), pad->ident);
             msg_queue_push(g_extern.msg_queue, msg, 0, 60);
          }
 #endif
@@ -139,23 +139,23 @@ static void handle_plugged_pad(void)
 
          if (event->mask & IN_DELETE)
          {
-            if (g_pads[idx].fd >= 0)
+            if (linuxraw_pads[idx].fd >= 0)
             {
 #ifndef IS_JOYCONFIG
                if (g_hotplug)
                {
                   char msg[512];
-                  snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", idx, g_pads[idx].ident);
+                  snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", idx, linuxraw_pads[idx].ident);
                   msg_queue_push(g_extern.msg_queue, msg, 0, 60);
                }
 #endif
 
-               RARCH_LOG("[Joypad]: Joypad %s disconnected.\n", g_pads[idx].ident);
-               close(g_pads[idx].fd);
-               g_pads[idx].buttons = 0;
-               memset(g_pads[idx].axes, 0, sizeof(g_pads[idx].axes));
-               g_pads[idx].fd = -1;
-               *g_pads[idx].ident = '\0';
+               RARCH_LOG("[Joypad]: Joypad %s disconnected.\n", linuxraw_pads[idx].ident);
+               close(linuxraw_pads[idx].fd);
+               linuxraw_pads[idx].buttons = 0;
+               memset(linuxraw_pads[idx].axes, 0, sizeof(linuxraw_pads[idx].axes));
+               linuxraw_pads[idx].fd = -1;
+               *linuxraw_pads[idx].ident = '\0';
 
                /* TODO - implement VID/PID? */
                input_config_autoconfigure_joypad(idx, NULL, 0, 0, NULL);
@@ -166,11 +166,11 @@ static void handle_plugged_pad(void)
          {
             char path[PATH_MAX];
             snprintf(path, sizeof(path), "/dev/input/%s", event->name);
-            bool ret = linuxraw_joypad_init_pad(path, &g_pads[idx]);
+            bool ret = linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]);
 
-            if (*g_pads[idx].ident && ret)
+            if (*linuxraw_pads[idx].ident && ret)
                /* TODO - implement VID/PID? */
-               input_config_autoconfigure_joypad(idx, g_pads[idx].ident, 0, 0, "linuxraw");
+               input_config_autoconfigure_joypad(idx, linuxraw_pads[idx].ident, 0, 0, "linuxraw");
          }
       }
    }
@@ -212,7 +212,7 @@ static bool linuxraw_joypad_init(void)
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      struct linuxraw_joypad *pad = &g_pads[i];
+      struct linuxraw_joypad *pad = (struct linuxraw_joypad*)&linuxraw_pads[i];
       pad->fd = -1;
       pad->ident = g_settings.input.device_names[i];
       
@@ -250,13 +250,13 @@ static void linuxraw_joypad_destroy(void)
    unsigned i;
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      if (g_pads[i].fd >= 0)
-         close(g_pads[i].fd);
+      if (linuxraw_pads[i].fd >= 0)
+         close(linuxraw_pads[i].fd);
    }
 
-   memset(g_pads, 0, sizeof(g_pads));
+   memset(linuxraw_pads, 0, sizeof(linuxraw_pads));
    for (i = 0; i < MAX_PLAYERS; i++)
-      g_pads[i].fd = -1;
+      linuxraw_pads[i].fd = -1;
 
    if (g_notify >= 0)
       close(g_notify);
@@ -271,9 +271,10 @@ static void linuxraw_joypad_destroy(void)
 
 static bool linuxraw_joypad_button(unsigned port, uint16_t joykey)
 {
-   const struct linuxraw_joypad *pad = &g_pads[port];
-
-   return joykey < NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
+   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
+   if (pad)
+      return joykey < NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
+   return false;
 }
 
 static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -281,7 +282,8 @@ static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
    if (joyaxis == AXIS_NONE)
       return 0;
 
-   const struct linuxraw_joypad *pad = &g_pads[port];
+   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)
+      &linuxraw_pads[port];
 
    int16_t val = 0;
    if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
@@ -303,7 +305,7 @@ static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static bool linuxraw_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS && g_pads[pad].fd >= 0;
+   return pad < MAX_PLAYERS && linuxraw_pads[pad].fd >= 0;
 }
 
 static const char *linuxraw_joypad_name(unsigned pad)
@@ -311,7 +313,7 @@ static const char *linuxraw_joypad_name(unsigned pad)
    if (pad >= MAX_PLAYERS)
       return NULL;
 
-   return *g_pads[pad].ident ? g_pads[pad].ident : NULL;
+   return *linuxraw_pads[pad].ident ? linuxraw_pads[pad].ident : NULL;
 }
 
 rarch_joypad_driver_t linuxraw_joypad = {

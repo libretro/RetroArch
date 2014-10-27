@@ -36,7 +36,7 @@
 //
 // Code adapted from SDL 2.0's implementation.
 
-#define NUM_BUTTONS 32
+#define UDEV_NUM_BUTTONS 32
 #define NUM_AXES 32
 #define NUM_HATS 4
 
@@ -69,7 +69,7 @@ struct udev_joypad
 
 static struct udev *g_udev;
 static struct udev_monitor *g_udev_mon;
-static struct udev_joypad g_pads[MAX_PLAYERS];
+static struct udev_joypad udev_pads[MAX_PLAYERS];
 
 static inline int16_t compute_axis(const struct input_absinfo *info, int value)
 {
@@ -82,11 +82,11 @@ static inline int16_t compute_axis(const struct input_absinfo *info, int value)
    return axis;
 }
 
-static void poll_pad(unsigned p)
+static void udev_poll_pad(unsigned p)
 {
    int i, len;
    struct input_event events[32];
-   struct udev_joypad *pad = &g_pads[p];
+   struct udev_joypad *pad = (struct udev_joypad*)&udev_pads[p];
 
    if (pad->fd < 0)
       return;
@@ -188,7 +188,7 @@ end:
 
 static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_t strength)
 {
-   struct udev_joypad *pad = &g_pads[i];
+   struct udev_joypad *pad = (struct udev_joypad*)&udev_pads[i];
 
    if (pad->fd < 0)
       return false;
@@ -253,7 +253,7 @@ static void udev_joypad_poll(void)
       handle_hotplug();
 
    for (i = 0; i < MAX_PLAYERS; i++)
-      poll_pad(i);
+      udev_poll_pad(i);
 }
 
 #define test_bit(nr, addr) \
@@ -290,23 +290,23 @@ static int find_vacant_pad(void)
 {
    unsigned i;
    for (i = 0; i < MAX_PLAYERS; i++)
-      if (g_pads[i].fd < 0)
+      if (udev_pads[i].fd < 0)
          return i;
    return -1;
 }
 
 static void free_pad(unsigned pad, bool hotplug)
 {
-   if (g_pads[pad].fd >= 0)
-      close(g_pads[pad].fd);
+   if (udev_pads[pad].fd >= 0)
+      close(udev_pads[pad].fd);
 
-   free(g_pads[pad].path);
-   if (g_pads[pad].ident)
-      *g_pads[pad].ident = '\0';
-   memset(&g_pads[pad], 0, sizeof(g_pads[pad]));
+   free(udev_pads[pad].path);
+   if (udev_pads[pad].ident)
+      *udev_pads[pad].ident = '\0';
+   memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
 
-   g_pads[pad].fd = -1;
-   g_pads[pad].ident = g_settings.input.device_names[pad];
+   udev_pads[pad].fd = -1;
+   udev_pads[pad].ident = g_settings.input.device_names[pad];
 
    // Avoid autoconfig spam if we're reiniting driver.
    /* TODO - implement VID/PID? */
@@ -319,7 +319,7 @@ static void free_pad(unsigned pad, bool hotplug)
 static bool add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
 {
    int i;
-   struct udev_joypad *pad = &g_pads[p];
+   struct udev_joypad *pad = (struct udev_joypad*)&udev_pads[p];
    if (ioctl(fd, EVIOCGNAME(sizeof(g_settings.input.device_names[0])), pad->ident) < 0)
    {
       RARCH_LOG("[udev]: Failed to get pad name.\n");
@@ -358,10 +358,10 @@ static bool add_pad(struct udev_device *dev, unsigned p, int fd, const char *pat
    // and map them to button/axes/hat indices.
    unsigned buttons = 0;
    unsigned axes = 0;
-   for (i = KEY_UP; i <= KEY_DOWN && buttons < NUM_BUTTONS; i++)
+   for (i = KEY_UP; i <= KEY_DOWN && buttons < UDEV_NUM_BUTTONS; i++)
       if (test_bit(i, keybit))
          pad->button_bind[i] = buttons++;
-   for (i = BTN_MISC; i < KEY_MAX && buttons < NUM_BUTTONS; i++)
+   for (i = BTN_MISC; i < KEY_MAX && buttons < UDEV_NUM_BUTTONS; i++)
       if (test_bit(i, keybit))
          pad->button_bind[i] = buttons++;
    for (i = 0; i < ABS_MISC && axes < NUM_AXES; i++)
@@ -417,7 +417,7 @@ static void check_device(struct udev_device *dev, const char *path, bool hotplug
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      if (st.st_rdev == g_pads[i].device)
+      if (st.st_rdev == udev_pads[i].device)
       {
          RARCH_LOG("[udev]: Device ID %u is already plugged.\n", (unsigned)st.st_rdev);
          return;
@@ -458,11 +458,11 @@ static void remove_device(const char *path)
    unsigned i;
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      if (g_pads[i].path && !strcmp(g_pads[i].path, path))
+      if (udev_pads[i].path && !strcmp(udev_pads[i].path, path))
       {
 #ifndef IS_JOYCONFIG
          char msg[512];
-         snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", i, g_pads[i].ident);
+         snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", i, udev_pads[i].ident);
          msg_queue_push(g_extern.msg_queue, msg, 0, 60);
          RARCH_LOG("[udev]: %s\n", msg);
 #endif
@@ -491,8 +491,8 @@ static bool udev_joypad_init(void)
    unsigned i;
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      g_pads[i].fd = -1;
-      g_pads[i].ident = g_settings.input.device_names[i];
+      udev_pads[i].fd = -1;
+      udev_pads[i].ident = g_settings.input.device_names[i];
    }
 
    struct udev_list_entry *devs = NULL;
@@ -554,11 +554,11 @@ static bool udev_joypad_hat(const struct udev_joypad *pad, uint16_t hat)
 
 static bool udev_joypad_button(unsigned port, uint16_t joykey)
 {
-   const struct udev_joypad *pad = &g_pads[port];
+   const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
 
    if (GET_HAT_DIR(joykey))
       return udev_joypad_hat(pad, joykey);
-   return joykey < NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
+   return joykey < UDEV_NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
 }
 
 static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -566,7 +566,7 @@ static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
    if (joyaxis == AXIS_NONE)
       return 0;
 
-   const struct udev_joypad *pad = &g_pads[port];
+   const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
 
    int16_t val = 0;
    if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
@@ -587,7 +587,7 @@ static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static bool udev_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS && g_pads[pad].fd >= 0;
+   return pad < MAX_PLAYERS && udev_pads[pad].fd >= 0;
 }
 
 static const char *udev_joypad_name(unsigned pad)
@@ -595,7 +595,7 @@ static const char *udev_joypad_name(unsigned pad)
    if (pad >= MAX_PLAYERS)
       return NULL;
 
-   return *g_pads[pad].ident ? g_pads[pad].ident : NULL;
+   return *udev_pads[pad].ident ? udev_pads[pad].ident : NULL;
 }
 
 rarch_joypad_driver_t udev_joypad = {

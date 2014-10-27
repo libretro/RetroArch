@@ -63,7 +63,6 @@ ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    JOYCONFIG_LIBS += -lrt
    OBJ += input/linuxraw_input.o input/linuxraw_joypad.o
-   JOYCONFIG_OBJ += tools/linuxraw_joypad.o
 endif
 
 ifeq ($(findstring Haiku,$(OS)),)
@@ -323,14 +322,12 @@ ifeq ($(HAVE_DINPUT), 1)
    DEFINES += -DHAVE_DINPUT
    OBJ += input/dinput.o
    JOYCONFIG_LIBS += -ldinput8 -ldxguid -lole32
-   JOYCONFIG_OBJ += input/dinput.o
 endif
 
 ifeq ($(HAVE_WINXINPUT), 1)
    DEFINES += -DHAVE_WINXINPUT -DHAVE_BUILTIN_AUTOCONFIG
    OBJ += input/winxinput_joypad.o \
           input/autoconf/builtin_win.o
-   JOYCONFIG_OBJ += input/winxinput_joypad.o
 endif
 
 ifeq ($(HAVE_X11), 1)
@@ -349,12 +346,10 @@ ifeq ($(HAVE_UDEV), 1)
    LIBS += $(UDEV_LIBS)
    JOYCONFIG_LIBS += $(UDEV_LIBS)
    OBJ += input/udev_input.o input/udev_joypad.o
-   JOYCONFIG_OBJ += tools/udev_joypad.o
 endif
 
 ifeq ($(HAVE_PARPORT), 1)
    OBJ += input/parport_joypad.o
-   JOYCONFIG_OBJ += tools/parport_joypad.o
 endif
 
 # Video
@@ -451,7 +446,6 @@ ifeq ($(HAVE_SDL), 1)
      OBJ += gfx/context/sdl_gl_ctx.o
    endif
 
-   JOYCONFIG_OBJ += input/sdl_joypad.o
    JOYCONFIG_LIBS += $(SDL_LIBS)
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL_LIBS)
@@ -464,7 +458,6 @@ ifeq ($(HAVE_SDL2), 1)
      OBJ += gfx/context/sdl_gl_ctx.o
    endif
 
-   JOYCONFIG_OBJ += input/sdl_joypad.o
    JOYCONFIG_LIBS += $(SDL2_LIBS)
    DEFINES += $(SDL2_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL2_LIBS)
@@ -544,21 +537,18 @@ ifeq ($(HAVE_7ZIP),1)
 		deps/7zip/7zBuf.o \
 		decompress/7zip_support.o 
    OBJ += $(7ZOBJ)
-   JOYCONFIG_OBJ += $(7ZOBJ)
 endif
 
 ifeq ($(HAVE_ZLIB), 1)
    ZLIB_OBJS =	decompress/zip_support.o 
    OBJ += gfx/rpng/rpng.o file_extract.o
    OBJ += $(ZLIB_OBJS)
-   JOYCONFIG_OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1 
    ifeq ($(WANT_MINIZ), 1)
       DEFINES += -DWANT_MINIZ
    else
       LIBS += -lz
-      JOYCONFIG_LIBS += -lz
 		HAVE_ZLIB_DEFLATE = 1
    endif
 endif
@@ -588,7 +578,6 @@ else
 ifeq ($(HAVE_ZLIB),1)
 ZLIB_OBJS = deps/rzlib/unzip.o deps/rzlib/ioapi.o
 OBJ += $(ZLIB_OBJS)
-JOYCONFIG_OBJ += $(ZLIB_OBJS)
 HAVE_ZLIB_DEFLATE = 1
 endif
 endif
@@ -634,13 +623,4 @@ endif
 
 # Joyconfig binary
 
-JOYCONFIG_OBJ += tools/retroarch-joyconfig.o \
-	libretro-sdk/file/config_file.o \
-	libretro-sdk/file/file_path.o \
-	libretro-sdk/string/string_list.o \
-	libretro-sdk/compat/compat.o \
-	input/nullinput.o \
-	input/nullinput_joypad.o \
-	tools/input_context_joyconfig.o \
-	tools/input_common_joyconfig.o \
-	tools/input_keymaps_joyconfig.o
+JOYCONFIG_OBJ += tools/retroarch-joyconfig-griffin.o

@@ -29,21 +29,21 @@
 
 /* Linux parport driver does not support reading the control register
    Other platforms may support up to 17 buttons */
-#define NUM_BUTTONS 13
+#define PARPORT_NUM_BUTTONS 13
 
 struct parport_joypad
 {
    int fd;
    uint32_t buttons;
-   bool button_enable[NUM_BUTTONS];
+   bool button_enable[PARPORT_NUM_BUTTONS];
    char saved_data;
    char saved_control;
    char *ident;
 };
 
-static struct parport_joypad g_pads[MAX_PLAYERS];
+static struct parport_joypad parport_pads[MAX_PLAYERS];
 
-static void poll_pad(struct parport_joypad *pad)
+static void parport_poll_pad(struct parport_joypad *pad)
 {
    /* RetroArch uses an extended version of the Linux
    * Multisystem 2-button joystick protocol for parallel port
@@ -182,7 +182,7 @@ static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad
 
       strlcpy(pad->ident, path, sizeof(g_settings.input.device_names[0]));
 
-      for (i = 0; i < NUM_BUTTONS; i++)
+      for (i = 0; i < PARPORT_NUM_BUTTONS; i++)
          pad->button_enable[i] = true;
 
       return true;
@@ -202,10 +202,8 @@ static void parport_joypad_poll(void)
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      if (g_pads[i].fd >= 0)
-      {
-         poll_pad(&g_pads[i]);
-      }
+      if (parport_pads[i].fd >= 0)
+         parport_poll_pad(&parport_pads[i]);
    }
 }
 
@@ -232,14 +230,14 @@ static bool parport_joypad_init(void)
    unsigned i, j;
    bool found_enabled_button;
    bool found_disabled_button;
-   char buf[NUM_BUTTONS * 3 + 1];
+   char buf[PARPORT_NUM_BUTTONS * 3 + 1];
    char pin[3 + 1];
 
-   memset(buf, 0, NUM_BUTTONS * 3 + 1);
+   memset(buf, 0, PARPORT_NUM_BUTTONS * 3 + 1);
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      struct parport_joypad *pad = &g_pads[i];
+      struct parport_joypad *pad = &parport_pads[i];
       pad->fd = -1;
       pad->ident = g_settings.input.device_names[i];
 
@@ -254,11 +252,11 @@ static bool parport_joypad_init(void)
           * so assume the user is not holding any button on startup
           * and disable any low pins.
           */
-         poll_pad(pad);
+         parport_poll_pad(pad);
          found_enabled_button = false;
          found_disabled_button = false;
 
-         for (j = 0; j < NUM_BUTTONS; j++)
+         for (j = 0; j < PARPORT_NUM_BUTTONS; j++)
          {
             if (!(BIT32_GET(pad->buttons, j)))
             {
@@ -277,7 +275,7 @@ static bool parport_joypad_init(void)
             if (found_disabled_button)
             {
                buf[0] = '\0';
-               for (j = 0; j < NUM_BUTTONS; j++)
+               for (j = 0; j < PARPORT_NUM_BUTTONS; j++)
                {
                   if (!pad->button_enable[j])
                   {
@@ -311,22 +309,23 @@ static void parport_joypad_destroy(void)
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      pad = &g_pads[i];
+      pad = (struct parport_joypad*)&parport_pads[i];
       if (pad->fd >= 0)
       {
          destroy_pad(pad);
       }
    }
-   memset(g_pads, 0, sizeof(g_pads));
+   memset(parport_pads, 0, sizeof(parport_pads));
    for (i = 0; i < MAX_PLAYERS; i++)
-      g_pads[i].fd = -1;
+      parport_pads[i].fd = -1;
 }
 
 static bool parport_joypad_button(unsigned port, uint16_t joykey)
 {
-   const struct parport_joypad *pad = &g_pads[port];
-
-   return joykey < NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
+   const struct parport_joypad *pad = (const struct parport_joypad*)&parport_pads[port];
+   if (pad)
+      return joykey < PARPORT_NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
+   return false;
 }
 
 static int16_t parport_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -337,7 +336,7 @@ static int16_t parport_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static bool parport_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS && g_pads[pad].fd >= 0;
+   return pad < MAX_PLAYERS && parport_pads[pad].fd >= 0;
 }
 
 static const char *parport_joypad_name(unsigned pad)
@@ -345,7 +344,7 @@ static const char *parport_joypad_name(unsigned pad)
    if (pad >= MAX_PLAYERS)
       return NULL;
 
-   return *g_pads[pad].ident ? g_pads[pad].ident : NULL;
+   return *parport_pads[pad].ident ? parport_pads[pad].ident : NULL;
 }
 
 rarch_joypad_driver_t parport_joypad = {
