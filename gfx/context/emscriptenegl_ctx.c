@@ -14,8 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// VideoCore context, for Rasperry Pi.
-
 #include "../../driver.h"
 #include "../gfx_context.h"
 #include "../gl_common.h"
@@ -136,30 +134,30 @@ static bool gfx_ctx_emscripten_init(void *data)
       EGL_NONE
    };
 
-   // get an EGL display connection
+   /* Get an EGL display connection. */
    g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
    if (!g_egl_dpy)
       goto error;
 
-   // initialize the EGL display connection
+   /* Initialize the EGL display connection. */
    if (!eglInitialize(g_egl_dpy, NULL, NULL))
       goto error;
 
-   // get an appropriate EGL frame buffer configuration
+   /* Get an appropriate EGL frame buffer configuration. */
    if (!eglChooseConfig(g_egl_dpy, attribute_list, &g_config, 1, &num_config))
       goto error;
 
-   // create an EGL rendering context
+   /* Create an EGL rendering context. */
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, context_attributes);
    if (!g_egl_ctx)
       goto error;
 
-   // create an EGL window surface
+   /* create an EGL window surface. */
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, 0, NULL);
    if (!g_egl_surf)
       goto error;
 
-   // connect the context to the surface
+   /* Connect the context to the surface. */
    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
       goto error;
 
@@ -208,7 +206,8 @@ static void gfx_ctx_emscripten_destroy(void *data)
    (void)data;
    if (g_egl_dpy)
    {
-      eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+      eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE,
+            EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
       if (g_egl_ctx)
          eglDestroyContext(g_egl_dpy, g_egl_ctx);

@@ -68,7 +68,7 @@ static void sighandler(int sig)
    g_quit = 1;
 }
 
-// Shell surface callbacks
+/* Shell surface callbacks. */
 static void shell_surface_handle_ping(void *data,
       struct wl_shell_surface *shell_surface,
       uint32_t serial)
@@ -108,7 +108,7 @@ static const struct wl_shell_surface_listener shell_surface_listener = {
    shell_surface_handle_popup_done,
 };
 
-// Registry callbacks
+/* Registry callbacks. */
 static void registry_handle_global(void *data, struct wl_registry *reg,
       uint32_t id, const char *interface, uint32_t version)
 {
@@ -352,7 +352,7 @@ static void gfx_ctx_wl_get_video_size(void *data,
 #define DEFAULT_WINDOWED_WIDTH 640
 #define DEFAULT_WINDOWED_HEIGHT 480
 
-#define EGL_ATTRIBS_BASE \
+#define WL_EGL_ATTRIBS_BASE \
    EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
    EGL_RED_SIZE,        1, \
    EGL_GREEN_SIZE,      1, \
@@ -365,27 +365,27 @@ static bool gfx_ctx_wl_init(void *data)
    (void)data;
 
    static const EGLint egl_attribs_gl[] = {
-      EGL_ATTRIBS_BASE,
+      WL_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
       EGL_NONE,
    };
 
    static const EGLint egl_attribs_gles[] = {
-      EGL_ATTRIBS_BASE,
+      WL_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_NONE,
    };
 
 #ifdef EGL_KHR_create_context
    static const EGLint egl_attribs_gles3[] = {
-      EGL_ATTRIBS_BASE,
+      WL_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT_KHR,
       EGL_NONE,
    };
 #endif
 
    static const EGLint egl_attribs_vg[] = {
-      EGL_ATTRIBS_BASE,
+      WL_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
       EGL_NONE,
    };

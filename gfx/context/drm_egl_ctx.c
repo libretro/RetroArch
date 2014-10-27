@@ -637,6 +637,14 @@ static EGLint *egl_fill_attribs(EGLint *attr)
    return attr;
 }
 
+#define DRM_EGL_ATTRIBS_BASE \
+   EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
+   EGL_RED_SIZE,        1, \
+   EGL_GREEN_SIZE,      1, \
+   EGL_BLUE_SIZE,       1, \
+   EGL_ALPHA_SIZE,      0, \
+   EGL_DEPTH_SIZE,      0
+
 static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
@@ -644,7 +652,8 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    int i, ret = 0;
    struct sigaction sa = {{0}};
    struct drm_fb *fb = NULL;
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
+      driver.video_context_data;
 
    if (!drm)
       return false;
@@ -655,36 +664,29 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
-#define EGL_ATTRIBS_BASE \
-   EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
-   EGL_RED_SIZE,        1, \
-   EGL_GREEN_SIZE,      1, \
-   EGL_BLUE_SIZE,       1, \
-   EGL_ALPHA_SIZE,      0, \
-   EGL_DEPTH_SIZE,      0
 
    static const EGLint egl_attribs_gl[] = {
-      EGL_ATTRIBS_BASE,
+      DRM_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
       EGL_NONE,
    };
 
    static const EGLint egl_attribs_gles[] = {
-      EGL_ATTRIBS_BASE,
+      DRM_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_NONE,
    };
 
 #ifdef EGL_KHR_create_context
    static const EGLint egl_attribs_gles3[] = {
-      EGL_ATTRIBS_BASE,
+      DRM_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT_KHR,
       EGL_NONE,
    };
 #endif
 
    static const EGLint egl_attribs_vg[] = {
-      EGL_ATTRIBS_BASE,
+      DRM_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
       EGL_NONE,
    };
@@ -836,7 +838,8 @@ error:
 
 static void gfx_ctx_drm_egl_destroy(void *data)
 {
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
+      driver.video_context_data;
 
    if (!drm)
       return;
@@ -860,7 +863,8 @@ static void gfx_ctx_drm_egl_input_driver(void *data,
 
 static bool gfx_ctx_drm_egl_has_focus(void *data)
 {
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
+      driver.video_context_data;
    (void)data;
 
    if (drm)
@@ -909,7 +913,8 @@ static bool gfx_ctx_drm_egl_bind_api(void *data,
 
 static void gfx_ctx_drm_egl_bind_hw_render(void *data, bool enable)
 {
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
+      driver.video_context_data;
 
    if (!drm)
       return;
@@ -919,7 +924,8 @@ static void gfx_ctx_drm_egl_bind_hw_render(void *data, bool enable)
    drm->g_use_hw_ctx = enable;
    if (drm->g_egl_dpy && drm->g_egl_surf)
       eglMakeCurrent(drm->g_egl_dpy, drm->g_egl_surf,
-            drm->g_egl_surf, enable ? drm->g_egl_hw_ctx : drm->g_egl_ctx);
+            drm->g_egl_surf,
+            enable ? drm->g_egl_hw_ctx : drm->g_egl_ctx);
 }
 
 const gfx_ctx_driver_t gfx_ctx_drm_egl = {

@@ -14,8 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// X/EGL context. Mostly used for testing GLES code paths.
-// Should be its own file as it has lots of X11 stuff baked into it as well.
+/* X/EGL context. Mostly used for testing GLES code paths.
+ * Should be its own file as it has lots of X11 stuff baked into it as well.
+ */
 
 #include "../../driver.h"
 #include "../gfx_context.h"
@@ -150,7 +151,7 @@ static void gfx_ctx_xegl_check_window(void *data, bool *quit,
    XEvent event;
    while (XPending(g_dpy))
    {
-      // Can get events from older windows. Check this.
+      /* Can get events from older windows. Check this. */
       XNextEvent(g_dpy, &event);
       bool filter = XFilterEvent(&event, g_win);
 
@@ -244,14 +245,7 @@ static void gfx_ctx_xegl_get_video_size(void *data,
    }
 }
 
-static bool gfx_ctx_xegl_init(void *data)
-{
-   if (g_inited)
-      return false;
-
-   XInitThreads();
-
-#define EGL_ATTRIBS_BASE \
+#define XEGL_ATTRIBS_BASE \
    EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
    EGL_RED_SIZE,        1, \
    EGL_GREEN_SIZE,      1, \
@@ -259,28 +253,35 @@ static bool gfx_ctx_xegl_init(void *data)
    EGL_ALPHA_SIZE,      0, \
    EGL_DEPTH_SIZE,      0
 
+static bool gfx_ctx_xegl_init(void *data)
+{
+   if (g_inited)
+      return false;
+
+   XInitThreads();
+
    static const EGLint egl_attribs_gl[] = {
-      EGL_ATTRIBS_BASE,
+      XEGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
       EGL_NONE,
    };
 
    static const EGLint egl_attribs_gles[] = {
-      EGL_ATTRIBS_BASE,
+      XEGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_NONE,
    };
 
 #ifdef EGL_KHR_create_context
    static const EGLint egl_attribs_gles3[] = {
-      EGL_ATTRIBS_BASE,
+      XEGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT_KHR,
       EGL_NONE,
    };
 #endif
 
    static const EGLint egl_attribs_vg[] = {
-      EGL_ATTRIBS_BASE,
+      XEGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
       EGL_NONE,
    };
@@ -308,8 +309,8 @@ static bool gfx_ctx_xegl_init(void *data)
 
    g_quit = 0;
 
-   // Keep one g_dpy alive the entire process lifetime.
-   // This is necessary for nVidia's EGL implementation for now.
+   /* Keep one g_dpy alive the entire process lifetime.
+    * This is necessary for nVidia's EGL implementation for now. */
    if (!g_dpy)
    {
       g_dpy = XOpenDisplay(NULL);
@@ -376,8 +377,11 @@ static EGLint *egl_fill_attribs(EGLint *attr)
             *attr++ = g_major;
             *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
             *attr++ = g_minor;
-            // Technically, we don't have core/compat until 3.2.
-            // Version 3.1 is either compat or not depending on GL_ARB_compatibility.
+
+            /* Technically, we don't have core/compat until 3.2.
+             * Version 3.1 is either compat or not depending 
+             * on GL_ARB_compatibility.
+             */
             if (version >= 3002)
             {
                *attr++ = EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR;
@@ -396,7 +400,8 @@ static EGLint *egl_fill_attribs(EGLint *attr)
 #endif
 
       case GFX_CTX_OPENGL_ES_API:
-         *attr++ = EGL_CONTEXT_CLIENT_VERSION; // Same as EGL_CONTEXT_MAJOR_VERSION
+      /* Same as EGL_CONTEXT_MAJOR_VERSION. */
+         *attr++ = EGL_CONTEXT_CLIENT_VERSION;
          *attr++ = g_major ? (EGLint)g_major : 2;
 #ifdef EGL_KHR_create_context
          if (g_minor > 0)
@@ -534,21 +539,30 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       RARCH_LOG("[X/EGL]: Using true fullscreen.\n");
       XMapRaised(g_dpy, g_win);
    }
-   else if (fullscreen) // We attempted true fullscreen, but failed. Attempt using windowed fullscreen.
+   else if (fullscreen) 
    {
+      /* We attempted true fullscreen, but failed.
+       * Attempt using windowed fullscreen. */
       XMapRaised(g_dpy, g_win);
       RARCH_LOG("[X/EGL]: Using windowed fullscreen.\n");
-      // We have to move the window to the screen we want to go fullscreen on first.
-      // x_off and y_off usually get ignored in XCreateWindow().
+
+      /* We have to move the window to the screen we 
+       * want to go fullscreen on first.
+       * x_off and y_off usually get ignored in XCreateWindow().
+       */
       x11_move_window(g_dpy, g_win, x_off, y_off, width, height);
       x11_windowed_fullscreen(g_dpy, g_win);
    }
    else
    {
       XMapWindow(g_dpy, g_win);
-      // If we want to map the window on a different screen, we'll have to do it by force.
-      // Otherwise, we should try to let the window manager sort it out.
-      // x_off and y_off usually get ignored in XCreateWindow().
+
+      /* If we want to map the window on a different screen, 
+       * we'll have to do it by force.
+       *
+       * Otherwise, we should try to let the window manager sort it out.
+       * x_off and y_off usually get ignored in XCreateWindow().
+       */
       if (g_screen)
          x11_move_window(g_dpy, g_win, x_off, y_off, width, height);
    }
@@ -562,7 +576,9 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    gfx_ctx_xegl_swap_interval(data, g_interval);
 
-   // This can blow up on some drivers. It's not fatal, so override errors for this call.
+   /* This can blow up on some drivers. It's not fatal, 
+    * so override errors for this call.
+    */
    old_handler = XSetErrorHandler(nul_handler);
    XSetInputFocus(g_dpy, g_win, RevertToNone, CurrentTime);
    XSync(g_dpy, False);
@@ -598,7 +614,8 @@ static void gfx_ctx_xegl_destroy(void *data)
    {
       if (g_egl_ctx)
       {
-         eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+         eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE,
+               EGL_NO_SURFACE, EGL_NO_CONTEXT);
          eglDestroyContext(g_egl_dpy, g_egl_ctx);
       }
 
@@ -618,7 +635,7 @@ static void gfx_ctx_xegl_destroy(void *data)
 
    if (g_win)
    {
-      // Save last used monitor for later.
+      /* Save last used monitor for later. */
 #ifdef HAVE_XINERAMA
       XWindowAttributes target;
       Window child;
@@ -651,7 +668,9 @@ static void gfx_ctx_xegl_destroy(void *data)
       g_should_reset_mode = false;
    }
 
-   // Do not close g_dpy. We'll keep one for the entire application lifecycle to work-around nVidia EGL limitations.
+   /* Do not close g_dpy. We'll keep one for the entire application 
+    * lifecycle to work-around nVidia EGL limitations.
+    */
    g_inited = false;
 }
 
@@ -729,7 +748,8 @@ static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
    (void)data;
    g_use_hw_ctx = enable;
    if (g_egl_dpy && g_egl_surf)
-      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
+      eglMakeCurrent(g_egl_dpy, g_egl_surf,
+            g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
 }
 
 const gfx_ctx_driver_t gfx_ctx_x_egl = {

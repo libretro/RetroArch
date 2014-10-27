@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// VideoCore context, for Rasperry Pi.
+/* VideoCore context, for Rasperry Pi. */
 
 #include "../../driver.h"
 #include "../gfx_context.h"
@@ -81,9 +81,13 @@ static void sighandler(int sig)
 static void gfx_ctx_vc_swap_interval(void *data, unsigned interval)
 {
    (void)data;
-   // Can be called before initialization.
-   // Some contexts require that swap interval is known at startup time.
+
+   /* Can be called before initialization.
+    * Some contexts require that swap interval 
+    * is known at startup time.
+    */
    g_interval = interval;
+
    if (g_egl_dpy)
       eglSwapInterval(g_egl_dpy, interval);
 }
@@ -171,20 +175,20 @@ static bool gfx_ctx_vc_init(void *data)
 
    bcm_host_init();
 
-   // get an EGL display connection
+   /* Get an EGL display connection. */
    g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
    if (!g_egl_dpy)
       goto error;
 
-   // initialize the EGL display connection
+   /* Initialize the EGL display connection. */
    if (!eglInitialize(g_egl_dpy, NULL, NULL))
       goto error;
 
-   // get an appropriate EGL frame buffer configuration
+   /* Get an appropriate EGL frame buffer configuration. */
    if (!eglChooseConfig(g_egl_dpy, attribute_list, &g_config, 1, &num_config))
       goto error;
 
-   // create an EGL rendering context
+   /* Create an EGL rendering context. */
    g_egl_ctx = eglCreateContext(
          g_egl_dpy, g_config, EGL_NO_CONTEXT,
          (g_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL);
@@ -201,7 +205,7 @@ static bool gfx_ctx_vc_init(void *data)
          goto error;
    }
 
-   // create an EGL window surface
+   /* Create an EGL window surface. */
    if (graphics_get_display_size(0 /* LCD */, &g_fb_width, &g_fb_height) < 0)
       goto error;
 
@@ -237,7 +241,7 @@ static bool gfx_ctx_vc_init(void *data)
    if (!g_egl_surf)
       goto error;
 
-   // connect the context to the surface
+   /* Connect the context to the surface. */
    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
       goto error;
 
@@ -299,14 +303,16 @@ static void gfx_ctx_vc_destroy(void *data)
          if (eglBuffer[i] && peglDestroyImageKHR)
          {
             eglBindAPI(EGL_OPENVG_API);
-            eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
+            eglMakeCurrent(g_egl_dpy,
+                  g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
             peglDestroyImageKHR(g_egl_dpy, eglBuffer[i]);
          }
 
          if (g_egl_vgimage[i])
          {
             eglBindAPI(EGL_OPENVG_API);
-            eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
+            eglMakeCurrent(g_egl_dpy,
+                  g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
             vgDestroyImage(g_egl_vgimage[i]);
          }
       }
@@ -314,7 +320,8 @@ static void gfx_ctx_vc_destroy(void *data)
       if (g_egl_ctx)
       {
          gfx_ctx_vc_bind_api(data, g_api, 0, 0);
-         eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+         eglMakeCurrent(g_egl_dpy,
+               EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
          eglDestroyContext(g_egl_dpy, g_egl_ctx);
       }
 
@@ -324,7 +331,8 @@ static void gfx_ctx_vc_destroy(void *data)
       if (g_eglimage_ctx)
       {
          eglBindAPI(EGL_OPENVG_API);
-         eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+         eglMakeCurrent(g_egl_dpy,
+               EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
          eglDestroyContext(g_egl_dpy, g_eglimage_ctx);
       }
 
@@ -341,9 +349,11 @@ static void gfx_ctx_vc_destroy(void *data)
       }
 
       eglBindAPI(EGL_OPENVG_API);
-      eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+      eglMakeCurrent(g_egl_dpy,
+            EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
       gfx_ctx_vc_bind_api(data, g_api, 0, 0);
-      eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+      eglMakeCurrent(g_egl_dpy,
+            EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
       eglTerminate(g_egl_dpy);
    }
 
@@ -392,7 +402,8 @@ static float gfx_ctx_vc_translate_aspect(void *data,
       unsigned width, unsigned height)
 {
    (void)data;
-   // check for SD televisions: they should always be 4:3.
+
+   /* Check for SD televisions: they should always be 4:3. */
    if ((width == 640 || width == 720) && (height == 480 || height == 576))
       return 4.0f / 3.0f;
    else
@@ -441,7 +452,7 @@ static bool gfx_ctx_vc_init_egl_image_buffer(void *data,
       goto fail;
    }
 
-   // test to make sure we can switch context
+   /* Test to make sure we can switch context. */
    result = eglMakeCurrent(g_egl_dpy, g_pbuff_surf, g_pbuff_surf, g_eglimage_ctx);
    if (result == EGL_FALSE)
    {

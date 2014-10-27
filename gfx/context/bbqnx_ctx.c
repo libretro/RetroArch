@@ -78,7 +78,7 @@ static void gfx_ctx_qnx_destroy(void *data)
       eglTerminate(g_egl_dpy);
    }
 
-   // Be as careful as possible in deinit.
+   /* Be as careful as possible in deinit. */
 
    g_egl_ctx     = NULL;
    g_egl_hw_ctx  = NULL;
@@ -332,7 +332,7 @@ static void gfx_ctx_qnx_check_window(void *data, bool *quit,
       *resize = true;
    }
 
-   // Check if we are exiting.
+   /* Check if we are exiting. */
    if (g_extern.system.shutdown)
       *quit = true;
 }
@@ -367,7 +367,8 @@ static bool gfx_ctx_qnx_set_video_mode(void *data,
 }
 
 
-static void gfx_ctx_qnx_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void gfx_ctx_qnx_input_driver(void *data,
+      const input_driver_t **input, void **input_data)
 {
    (void)data;
    *input = NULL;
@@ -385,7 +386,8 @@ static gfx_ctx_proc_t gfx_ctx_qnx_get_proc_address(const char *symbol)
    return ret;
 }
 
-static bool gfx_ctx_qnx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_qnx_bind_api(void *data,
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
    (void)major;
@@ -411,7 +413,8 @@ static void gfx_qnx_ctx_bind_hw_render(void *data, bool enable)
    (void)data;
    g_use_hw_ctx = enable;
    if (g_egl_dpy && g_egl_surf)
-      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
+      eglMakeCurrent(g_egl_dpy, g_egl_surf,
+            g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
 }
 
 const gfx_ctx_driver_t gfx_ctx_bbqnx = {

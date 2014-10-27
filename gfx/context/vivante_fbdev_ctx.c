@@ -102,8 +102,10 @@ static bool gfx_ctx_vivante_init(void *data)
    sigaction(SIGTERM, &sa, NULL);
 
    static const EGLint attribs[] = {
-      //EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-      //EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+#if 0
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+      EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+#endif
       EGL_BLUE_SIZE, 5,
       EGL_GREEN_SIZE, 6,
       EGL_RED_SIZE, 5,
@@ -129,7 +131,8 @@ static bool gfx_ctx_vivante_init(void *data)
       goto error;
    }
 
-   RARCH_LOG("[Vivante fbdev]: EGL version: %d.%d\n", egl_version_major, egl_version_minor);
+   RARCH_LOG("[Vivante fbdev]: EGL version: %d.%d\n",
+         egl_version_major, egl_version_minor);
 
 
    if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &num_config))
@@ -192,7 +195,7 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   // Pick some arbitrary default.
+   /* Pick some arbitrary default. */
    if (!width || !fullscreen)
       width = 1280;
    if (!height || !fullscreen)
@@ -202,7 +205,7 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
    g_height = height;
 
    static const EGLint attribs[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2, // Use version 2, even for GLES3.
+      EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
       EGL_NONE
    };
 

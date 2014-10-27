@@ -114,7 +114,9 @@ static void create_gl_context(HWND hwnd)
    if (!g_hrc)
    {
       g_hrc = wglCreateContext(g_hdc);
-      if (g_hrc && !core_context && !debug) // We'll create shared context later if not.
+      
+      /* We'll create shared context later if not. */
+      if (g_hrc && !core_context && !debug) 
       {
          g_hw_hrc = wglCreateContext(g_hdc);
          if (g_hw_hrc)
@@ -160,8 +162,10 @@ static void create_gl_context(HWND hwnd)
          *aptr++ = WGL_CONTEXT_MINOR_VERSION_ARB;
          *aptr++ = g_minor;
 
-         // Technically, we don't have core/compat until 3.2.
-         // Version 3.1 is either compat or not depending on GL_ARB_compatibility.
+         /* Technically, we don't have core/compat until 3.2.
+          * Version 3.1 is either compat or not depending 
+          * on GL_ARB_compatibility.
+          */
          if ((g_major * 1000 + g_minor) >= 3002)
          {
             *aptr++ = WGL_CONTEXT_PROFILE_MASK_ARB;
@@ -178,7 +182,8 @@ static void create_gl_context(HWND hwnd)
       *aptr = 0;
 
       if (!pcreate_context)
-         pcreate_context = (wglCreateContextAttribsProc)wglGetProcAddress("wglCreateContextAttribsARB");
+         pcreate_context = (wglCreateContextAttribsProc)
+            wglGetProcAddress("wglCreateContextAttribsARB");
 
       if (pcreate_context)
       {
@@ -352,7 +357,8 @@ static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *he
    }
 }
 
-static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor,
+      HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
    g_all_hms[g_num_mons++] = hMonitor;
    return TRUE;
@@ -378,7 +384,8 @@ static bool gfx_ctx_wgl_init(void *data)
    wndclass.hCursor = LoadCursor(NULL, IDC_ARROW);
    wndclass.lpszClassName = "RetroArch";
    wndclass.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
-   wndclass.hIconSm = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
+   wndclass.hIconSm = (HICON)LoadImage(GetModuleHandle(NULL),
+         MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
 
    if (!RegisterClassEx(&wndclass))
       return false;

@@ -128,7 +128,8 @@ static void gfx_ctx_d3d_update_title(void *data)
       char mem[128];
       MEMORYSTATUS stat;
       GlobalMemoryStatus(&stat);
-      snprintf(mem, sizeof(mem), "|| MEM: %.2f/%.2fMB", stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
+      snprintf(mem, sizeof(mem), "|| MEM: %.2f/%.2fMB",
+            stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
       strlcat(buffer_fps, mem, sizeof(buffer_fps));
 #endif
       msg_queue_push(g_extern.msg_queue, buffer_fps, 1, 1);
@@ -160,21 +161,26 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 #else
    d3dpp->Windowed = g_settings.video.windowed_fullscreen || !info->fullscreen;
 #endif
+   d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
    if (info->vsync)
    {
       switch (g_settings.video.swap_interval)
       {
          default:
-         case 1: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_ONE; break;
-         case 2: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_TWO; break;
-         case 3: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_THREE; break;
-         case 4: d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_FOUR; break;
+         case 1:
+            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+            break;
+         case 2:
+            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_TWO;
+            break;
+         case 3:
+            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_THREE;
+            break;
+         case 4:
+            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_FOUR;
+            break;
       }
-   }
-   else
-   {
-      d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
    }
 
    d3dpp->SwapEffect = D3DSWAPEFFECT_DISCARD;
@@ -182,7 +188,8 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 #ifdef _XBOX
    d3dpp->BackBufferFormat = 
 #ifdef _XBOX360
-      g_extern.console.screen.gamma_correction ? (D3DFORMAT)MAKESRGBFMT(info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5) :
+      g_extern.console.screen.gamma_correction ? 
+      (D3DFORMAT)MAKESRGBFMT(info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5) :
 #endif
       info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
 #else
@@ -303,7 +310,8 @@ static bool gfx_ctx_d3d_has_windowed(void *data)
 #endif
 }
 
-static bool gfx_ctx_d3d_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_d3d_bind_api(void *data,
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
    (void)major;
@@ -311,7 +319,8 @@ static bool gfx_ctx_d3d_bind_api(void *data, enum gfx_ctx_api api, unsigned majo
    (void)api;
 #if defined(_XBOX1)
    return api == GFX_CTX_DIRECT3D8_API;
-#else /* As long as we don't have a D3D11 implementation, we default to this */
+#else
+   /* As long as we don't have a D3D11 implementation, we default to this */
    return api == GFX_CTX_DIRECT3D9_API;
 #endif
 }
@@ -328,7 +337,8 @@ static void gfx_ctx_d3d_destroy(void *data)
    (void)data;
 }
 
-static void gfx_ctx_d3d_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void gfx_ctx_d3d_input_driver(void *data,
+      const input_driver_t **input, void **input_data)
 {
    (void)data;
 #ifdef _XBOX
@@ -342,7 +352,8 @@ static void gfx_ctx_d3d_input_driver(void *data, const input_driver_t **input, v
 #endif
 }
 
-static void gfx_ctx_d3d_get_video_size(void *data, unsigned *width, unsigned *height)
+static void gfx_ctx_d3d_get_video_size(void *data,
+      unsigned *width, unsigned *height)
 {
    d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
 #ifdef _XBOX
@@ -438,12 +449,11 @@ static void gfx_ctx_d3d_swap_interval(void *data, unsigned interval)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 #ifdef _XBOX
-   LPDIRECT3DDEVICE d3dr = d3d->dev;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+   unsigned d3d_interval = interval ? 
+      D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 
-   if (interval)
-      d3dr->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_ONE);
-   else
-      d3dr->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_IMMEDIATE);
+   d3dr->SetRenderState(XBOX_PRESENTATIONINTERVAL, d3d_interval);
 #else
    d3d_restore(d3d);
 #endif
