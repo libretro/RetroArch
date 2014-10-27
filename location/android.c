@@ -98,7 +98,8 @@ static void *android_location_init(void)
 
    return androidlocation;
 dealloc:
-   free(androidlocation);
+   if (androidlocation)
+      free(androidlocation);
    return NULL;
 }
 
