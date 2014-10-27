@@ -126,7 +126,6 @@ VIDEO CONTEXT
 
 #ifdef HAVE_X11
 #include "../gfx/context/x11_common.c"
-#include "../input/keyboard_event_x11.c"
 #endif
 
 
@@ -350,10 +349,6 @@ INPUT
 #include "../input/winxinput_joypad.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../input/keyboard_event_win32.c"
-#endif
-
 #if defined(__CELLOS_LV2__)
 #include "../input/osk/ps3_osk.c"
 #endif
@@ -371,6 +366,22 @@ INPUT
 
 #include "../input/nullinput.c"
 #include "../input/nullinput_joypad.c"
+
+/*============================================================
+ KEYBOARD EVENT
+ ============================================================ */
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../input/keyboard_event_win32.c"
+#endif
+
+#ifdef HAVE_X11
+#include "../input/keyboard_event_x11.c"
+#endif
+
+#ifdef __APPLE__
+#include "../input/keyboard_event_apple.c"
+#endif
 
 /*============================================================
 STATE TRACKER

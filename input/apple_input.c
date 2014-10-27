@@ -124,89 +124,11 @@ const struct apple_key_name_map_entry apple_key_name_map[] =
    { "nul", 0x00},
 };
 
-#if defined(IOS)
-#define HIDKEY(X) X
-#elif defined(OSX)
-
-/* Taken from https://github.com/depp/keycode,
- * check keycode.h for license. */
-
-static const unsigned char MAC_NATIVE_TO_HID[128] = {
-  4, 22,  7,  9, 11, 10, 29, 27,  6, 25,255,  5, 20, 26,  8, 21,
- 28, 23, 30, 31, 32, 33, 35, 34, 46, 38, 36, 45, 37, 39, 48, 18,
- 24, 47, 12, 19, 40, 15, 13, 52, 14, 51, 49, 54, 56, 17, 16, 55,
- 43, 44, 53, 42,255, 41,231,227,225, 57,226,224,229,230,228,255,
-108, 99,255, 85,255, 87,255, 83,255,255,255, 84, 88,255, 86,109,
-110,103, 98, 89, 90, 91, 92, 93, 94, 95,111, 96, 97,255,255,255,
- 62, 63, 64, 60, 65, 66,255, 68,255,104,107,105,255, 67,255, 69,
-255,106,117, 74, 75, 76, 61, 77, 59, 78, 58, 80, 79, 81, 82,255
-};
-
-#define HIDKEY(X) (X < 128) ? MAC_NATIVE_TO_HID[X] : 0
-#endif
-
-static bool icade_enabled;
-static bool small_keyboard_enabled;
-static bool small_keyboard_active;
-static uint32_t icade_buttons;
-
-static bool handle_small_keyboard(unsigned* code, bool down)
-{
-   static uint8_t mapping[128];
-   static bool map_initialized;
-   static const struct { uint8_t orig; uint8_t mod; } mapping_def[] =
-   {
-      { KEY_Grave,      KEY_Escape     }, { KEY_1,          KEY_F1         },
-      { KEY_2,          KEY_F2         }, { KEY_3,          KEY_F3         },
-      { KEY_4,          KEY_F4         }, { KEY_5,          KEY_F5         },
-      { KEY_6,          KEY_F6         }, { KEY_7,          KEY_F7         },
-      { KEY_8,          KEY_F8         }, { KEY_9,          KEY_F9         },
-      { KEY_0,          KEY_F10        }, { KEY_Minus,      KEY_F11        },
-      { KEY_Equals,     KEY_F12        }, { KEY_Up,         KEY_PageUp     },
-      { KEY_Down,       KEY_PageDown   }, { KEY_Left,       KEY_Home       },
-      { KEY_Right,      KEY_End        }, { KEY_Q,          KP_7           },
-      { KEY_W,          KP_8           }, { KEY_E,          KP_9           },
-      { KEY_A,          KP_4           }, { KEY_S,          KP_5           },
-      { KEY_D,          KP_6           }, { KEY_Z,          KP_1           },
-      { KEY_X,          KP_2           }, { KEY_C,          KP_3           },
-      { 0 }
-   };
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-   unsigned translated_code  = 0;
-   
-   if (!map_initialized)
-   {
-      for (int i = 0; mapping_def[i].orig; i ++)
-         mapping[mapping_def[i].orig] = mapping_def[i].mod;
-      map_initialized = true;
-   }
-
-   if (*code == KEY_RightShift)
-   {
-      small_keyboard_active = down;
-      *code = 0;
-      return true;
-   }
-   
-   translated_code = (*code < 128) ? mapping[*code] : 0;
-   
-   /* Allow old keys to be released. */
-   if (!down && apple->key_state[*code])
-      return false;
-
-   if ((!down && apple->key_state[translated_code]) ||
-       small_keyboard_active)
-   {
-      *code = translated_code;
-      return true;
-   }
-
-   return false;
-}
-
 void apple_input_enable_small_keyboard(bool on)
 {
-   small_keyboard_enabled = on;
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   if (apple)
+      apple->small_keyboard_enabled = on;
 }
 
 static void handle_icade_event(unsigned keycode)
@@ -226,58 +148,38 @@ static void handle_icade_event(unsigned keycode)
       { false,  5 }, { true , 11 }, { false,  0 }, { false,  1 }, // 8
       { false,  4 }, { true ,  1 }, { false, -1 }, { false, -1 }  // C
    };
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
       
-   if (icade_enabled && (keycode < 0x20)
+   if (apple->icade_enabled && (keycode < 0x20)
          && (icade_map[keycode].button >= 0))
    {
       const int button = icade_map[keycode].button;
       
       if (icade_map[keycode].up)
-         BIT32_CLEAR(icade_buttons, button);
+         BIT32_CLEAR(apple->icade_buttons, button);
       else
-         BIT32_SET(icade_buttons, button);
+         BIT32_SET(apple->icade_buttons, button);
    }
 }
 
 void apple_input_enable_icade(bool on)
 {
-   icade_enabled = on;
-   icade_buttons = 0;
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+    
+   if (!apple)
+      return;
+
+   apple->icade_enabled = on;
+   apple->icade_buttons = 0;
 }
 
 void apple_input_reset_icade_buttons(void)
 {
-   icade_buttons = 0;
-}
-
-
-
-void apple_input_keyboard_event(bool down,
-      unsigned code, uint32_t character, uint32_t mod)
-{
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-
-   code = HIDKEY(code);
-
-   if (icade_enabled)
-   {
-      handle_icade_event(code);
-      return;
-   }
-
-   if (small_keyboard_enabled && handle_small_keyboard(&code, down))
-      character = 0;
-   
-   if (code == 0 || code >= MAX_KEYS)
-      return;
-
-   if (apple)
-      apple->key_state[code] = down;
     
-   input_keyboard_event(down,
-         input_translate_keysym_to_rk(code), character, (enum retro_mod)mod);
+   if (apple)
+      apple->icade_buttons = 0;
 }
-
 
 int32_t apple_input_find_any_key(void)
 {
@@ -309,8 +211,8 @@ int32_t apple_input_find_any_button(uint32_t port)
        apple->joypad->poll();
 
    buttons = apple->buttons[port];
-   if (port == 0 && icade_enabled)
-      BIT32_SET(buttons, icade_buttons);
+   if (port == 0 && apple->icade_enabled)
+      BIT32_SET(buttons, apple->icade_buttons);
 
    if (buttons)
       for (i = 0; i != 32; i ++)
@@ -387,8 +289,8 @@ static void apple_input_poll(void *data)
    if (apple->joypad)
       apple->joypad->poll();
 
-   if (icade_enabled)
-      BIT32_SET(apple->buttons[0], icade_buttons);
+   if (apple->icade_enabled)
+      BIT32_SET(apple->buttons[0], apple->icade_buttons);
 
    apple->mouse_x = 0;
    apple->mouse_y = 0;

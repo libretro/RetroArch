@@ -49,6 +49,11 @@ typedef struct
    uint32_t buttons[MAX_PLAYERS];
    int16_t axes[MAX_PLAYERS][4];
    int8_t  hats[NUM_HATS][2];
+
+   bool icade_enabled;
+   bool small_keyboard_enabled;
+   bool small_keyboard_active;
+   uint32_t icade_buttons;
     
    const rarch_joypad_driver_t *joypad;
 } apple_input_data_t;
