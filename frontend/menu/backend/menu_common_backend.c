@@ -102,24 +102,6 @@ static int menu_info_screen_iterate(unsigned action)
    return 0;
 }
 
-static int menu_action_ok(menu_file_list_cbs_t *cbs)
-{
-   const char *label             = NULL;
-   const char *path              = NULL;
-   unsigned type                 = 0;
-
-   if (menu_list_get_size(driver.menu->menu_list) == 0)
-      return 0;
-
-   menu_list_get_at_offset(driver.menu->menu_list->selection_buf,
-         driver.menu->selection_ptr, &path, &label, &type);
-
-   if (cbs && cbs->action_ok)
-      return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
-
-   return 0;
-}
-
 static int menu_start_screen_iterate(unsigned action)
 {
    unsigned i;
@@ -228,7 +210,8 @@ static int mouse_iterate(unsigned action)
    return 0;
 }
 
-static int mouse_post_iterate(menu_file_list_cbs_t *cbs, unsigned action)
+static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
+      const char *label, unsigned type, unsigned action)
 {
    if (!driver.menu->mouse.enable)
       return 0;
@@ -241,7 +224,9 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, unsigned action)
       if (!driver.menu->mouse.oldleft)
       {
          driver.menu->mouse.oldleft = true;
-         return menu_action_ok(cbs);
+
+         if (cbs && cbs->action_ok)
+            return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
       }
    }
    else
@@ -616,17 +601,11 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_OK:
-         if (is_category)
-         {
-            if (cbs && cbs->action_ok)
-               return cbs->action_ok(path_offset, label_offset, type_offset, driver.menu->selection_ptr);
-            /* fall-through */
-         }
-         else
-         {
-            ret = menu_action_ok(cbs);
+         if (cbs && cbs->action_ok)
+            return cbs->action_ok(path_offset, label_offset, type_offset, driver.menu->selection_ptr);
+         /* fall-through */
+         if (!is_category)
             break;
-         }
       case MENU_ACTION_START:
          if (is_category)
          {
@@ -697,7 +676,7 @@ static int menu_common_iterate(unsigned action)
          break;
    }
 
-   ret = mouse_post_iterate(cbs, action);
+   ret = mouse_post_iterate(cbs, path_offset, label_offset, type_offset, action);
 
    if (driver.menu_ctx && driver.menu_ctx->iterate)
       driver.menu_ctx->iterate(driver.menu, action);
