@@ -364,6 +364,11 @@ INPUT
 #include "../input/x11_input.c"
 #endif
 
+#ifdef HAVE_UDEV
+#include "../input/udev_input.c"
+#include "../input/udev_joypad.c"
+#endif
+
 #include "../input/nullinput.c"
 #include "../input/nullinput_joypad.c"
 
@@ -381,6 +386,10 @@ INPUT
 
 #ifdef __APPLE__
 #include "../input/keyboard_event_apple.c"
+#endif
+
+#ifdef HAVE_XKBCOMMON
+#include "../input/keyboard_event_xkb.c"
 #endif
 
 /*============================================================
