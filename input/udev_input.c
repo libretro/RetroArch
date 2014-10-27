@@ -44,6 +44,7 @@
 
 #ifdef HAVE_XKBCOMMON
 #include <xkbcommon/xkbcommon.h>
+#define MOD_MAP_SIZE 5
 #endif
 
 typedef struct udev_input udev_input_t;
@@ -83,8 +84,8 @@ struct udev_input
    struct xkb_context *xkb_ctx;
    struct xkb_keymap *xkb_map;
    struct xkb_state *xkb_state;
-   xkb_mod_index_t mod_map_idx[5];
-   uint16_t        mod_map_bit[5];
+   xkb_mod_index_t *mod_map_idx;
+   uint16_t        *mod_map_bit;
 #endif
 
    const rarch_joypad_driver_t *joypad;
@@ -120,7 +121,7 @@ static void handle_xkb(udev_input_t *udev, int code, int value)
    xkb_state_update_key(udev->xkb_state, xk_code, value ? XKB_KEY_DOWN : XKB_KEY_UP);
 
    /* Build mod state. */
-   for (i = 0; i < ARRAY_SIZE(udev->mod_map_idx); i++)
+   for (i = 0; i < MOD_MAP_SIZE; i++)
    {
       xkb_mod_index_t *map_idx = (xkb_mod_index_t*)&udev->mod_map_idx[i];
       uint16_t        *map_bit = (uint16_t       *)&udev->mod_map_bit[i];
@@ -593,6 +594,10 @@ static void udev_input_free(void *data)
       udev_unref(udev->udev);
 
 #ifdef HAVE_XKBCOMMON
+   if (udev->mod_map_idx)
+      free(udev->mod_map_idx);
+   if (udev->mod_map_bit)
+      free(udev->mod_map_bit);
    if (udev->xkb_map)
       xkb_keymap_unref(udev->xkb_map);
    if (udev->xkb_ctx)
@@ -724,6 +729,16 @@ static void *udev_input_init(void)
    }
 
 #ifdef HAVE_XKBCOMMON
+   udev->mod_map_idx = (xkb_mod_index_t *)calloc(MOD_MAP_SIZE, sizeof(xkb_mod_index_t));
+
+   if (!udev->mod_map_idx)
+      goto error;
+
+   udev->mod_map_bit = (uint16_t*)calloc(MOD_MAP_SIZE, sizeof(uint16_t));
+
+   if (!udev->mod_map_bit)
+      goto error;
+
    udev->xkb_ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
    if (udev->xkb_ctx)
    {
@@ -747,18 +762,29 @@ static void *udev_input_init(void)
    }
    if (udev->xkb_map)
    {
+      xkb_mod_index_t *map_idx = (xkb_mod_index_t*)&udev->mod_map_idx[0];
+      uint16_t        *map_bit = (uint16_t*)&udev->mod_map_bit[0];
+
       udev->xkb_state = xkb_state_new(udev->xkb_map);
 
-      udev->mod_map_idx[0] = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CAPS);
-      udev->mod_map_bit[0] = RETROKMOD_CAPSLOCK;
-      udev->mod_map_idx[1] = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_SHIFT);
-      udev->mod_map_bit[1] = RETROKMOD_SHIFT;
-      udev->mod_map_idx[2] = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CTRL);
-      udev->mod_map_bit[2] = RETROKMOD_CTRL;
-      udev->mod_map_idx[3] = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_ALT);
-      udev->mod_map_bit[3] = RETROKMOD_ALT;
-      udev->mod_map_idx[4] = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_LOGO);
-      udev->mod_map_bit[4] = RETROKMOD_META;
+      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CAPS);
+      map_idx++;
+      *map_bit = RETROKMOD_CAPSLOCK;
+      map_bit++;
+      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_SHIFT);
+      map_idx++;
+      *map_bit = RETROKMOD_SHIFT;
+      map_bit++;
+      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CTRL);
+      map_idx++;
+      *map_bit = RETROKMOD_CTRL;
+      map_bit++;
+      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_ALT);
+      map_idx++;
+      *map_bit = RETROKMOD_ALT;
+      map_bit++;
+      *map_idx = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_LOGO);
+      *map_bit = RETROKMOD_META;
    }
 #endif
 
@@ -787,7 +813,8 @@ static void *udev_input_init(void)
       goto error;
    }
 
-   // If using KMS and we forgot this, we could lock ourselves out completely.
+   /* If using KMS and we forgot this, 
+    * we could lock ourselves out completely. */
    if (!udev->num_devices)
       RARCH_WARN("[udev]: Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event*?\n");
 
