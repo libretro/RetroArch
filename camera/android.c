@@ -93,7 +93,8 @@ static void *android_camera_init(const char *device, uint64_t caps,
 
    return androidcamera;
 dealloc:
-   free(androidcamera);
+   if (androidcamera)
+      free(androidcamera);
    return NULL;
 }
 

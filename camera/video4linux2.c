@@ -20,8 +20,6 @@
 #include <string.h>
 #include <assert.h>
 #include <stddef.h>
-#include "../general.h"
-#include "../driver.h"
 #include "../performance.h"
 #include <retro_miscellaneous.h>
 #include <gfx/scaler/scaler.h>
