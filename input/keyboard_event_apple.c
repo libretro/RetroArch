@@ -100,6 +100,37 @@ static bool handle_small_keyboard(unsigned* code, bool down)
    return false;
 }
 
+static void handle_icade_event(unsigned keycode)
+{
+   static const struct
+   {
+      bool up;
+      int button;
+   }  icade_map[0x20] =
+   {
+      { false, -1 }, { false, -1 }, { false, -1 }, { false, -1 }, // 0
+      { false,  2 }, { false, -1 }, { true ,  3 }, { false,  3 }, // 4
+      { true ,  0 }, { true,   5 }, { true ,  7 }, { false,  8 }, // 8
+      { false,  6 }, { false,  9 }, { false, 10 }, { false, 11 }, // C
+      { true ,  6 }, { true ,  9 }, { false,  7 }, { true,  10 }, // 0
+      { true ,  2 }, { true ,  8 }, { false, -1 }, { true ,  4 }, // 4
+      { false,  5 }, { true , 11 }, { false,  0 }, { false,  1 }, // 8
+      { false,  4 }, { true ,  1 }, { false, -1 }, { false, -1 }  // C
+   };
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+      
+   if (apple->icade_enabled && (keycode < 0x20)
+         && (icade_map[keycode].button >= 0))
+   {
+      const int button = icade_map[keycode].button;
+      
+      if (icade_map[keycode].up)
+         BIT32_CLEAR(apple->icade_buttons, button);
+      else
+         BIT32_SET(apple->icade_buttons, button);
+   }
+}
+
 void apple_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod)
 {
