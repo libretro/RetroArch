@@ -41,6 +41,7 @@ static inline unsigned leading_ones(uint8_t c)
 
 /* Simple implementation. Assumes the sequence is 
  * properly synchronized and terminated. */
+
 static size_t conv_utf8_utf32(uint32_t *out,
       size_t out_chars, const char *in, size_t in_size)
 {
@@ -51,11 +52,11 @@ static size_t conv_utf8_utf32(uint32_t *out,
       uint8_t first = *in++;
 
       unsigned ones = leading_ones(first);
-      if (ones > 6 || ones == 1) // Invalid or desync
+      if (ones > 6 || ones == 1) /* Invalid or desync. */
          break;
 
       unsigned extra = ones ? ones - 1 : ones;
-      if (1 + extra > in_size) // Overflow
+      if (1 + extra > in_size) /* Overflow. */
          break;
 
       unsigned shift = (extra - 1) * 6;
@@ -90,15 +91,17 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
 #ifdef X_HAVE_UTF8_STRING
       Status status = 0;
 
-      // XwcLookupString doesn't seem to work.
+      /* XwcLookupString doesn't seem to work. */
       num = Xutf8LookupString(ic, &event->xkey, keybuf, ARRAY_SIZE(keybuf), &keysym, &status);
 
-      // libc functions need UTF-8 locale to work properly, which makes mbrtowc a bit impractical.
-      // Use custom utf8 -> UTF-32 conversion.
+      /* libc functions need UTF-8 locale to work properly, 
+       * which makes mbrtowc a bit impractical.
+       *
+       * Use custom UTF8 -> UTF-32 conversion. */
       num = conv_utf8_utf32(chars, ARRAY_SIZE(chars), keybuf, num);
 #else
       (void)ic;
-      num = XLookupString(&event->xkey, keybuf, sizeof(keybuf), &keysym, NULL); // ASCII only.
+      num = XLookupString(&event->xkey, keybuf, sizeof(keybuf), &keysym, NULL); /* ASCII only. */
       for (i = 0; i < num; i++)
          chars[i] = keybuf[i] & 0x7f;
 #endif
