@@ -17,6 +17,7 @@
 #include "../../input/keyboard_line.h"
 #include "win32_common.h"
 #include "../../input/input_common.h"
+#include "../../input/input_keymaps.h"
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 {
