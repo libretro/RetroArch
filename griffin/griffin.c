@@ -351,7 +351,7 @@ INPUT
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
-#include "../gfx/context/win32_common.c"
+#include "../input/keyboard_event_win32.c"
 #endif
 
 #if defined(__CELLOS_LV2__)

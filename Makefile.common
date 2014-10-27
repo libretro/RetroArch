@@ -615,7 +615,7 @@ endif
 
 ifneq ($(findstring Win32,$(OS)),)
    OBJ += media/rarch.o \
-          gfx/context/win32_common.o
+          input/keyboard_event_win32.o
 endif
 
 # Record
