@@ -24,6 +24,7 @@
 #include "../image/image.h"
 #include "../../general.h"
 #include "../../input/input_common.h"
+#include "../../input/input_keymaps.h"
 #include "../../input/keyboard_line.h"
 
 static void x11_hide_mouse(Display *dpy, Window win)

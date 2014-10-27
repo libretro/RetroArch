@@ -283,6 +283,7 @@ INPUT
 #include "../input/input_autodetect.c"
 #include "../input/input_context.c"
 #include "../input/input_common.c"
+#include "../input/input_keymaps.c"
 #include "../input/keyboard_line.c"
 
 #ifdef HAVE_OVERLAY

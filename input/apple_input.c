@@ -18,6 +18,7 @@
 #include <unistd.h>
 
 #include "input_common.h"
+#include "input_keymaps.h"
 #include "apple_input.h"
 #include "../general.h"
 #include "../driver.h"

@@ -89,24 +89,6 @@ bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
 const char *input_joypad_name(const rarch_joypad_driver_t *driver,
       unsigned joypad);
 
-struct rarch_key_map
-{
-   unsigned sym;
-   enum retro_key rk;
-};
-
-extern const struct rarch_key_map rarch_key_map_x11[];
-extern const struct rarch_key_map rarch_key_map_sdl[];
-extern const struct rarch_key_map rarch_key_map_sdl2[];
-extern const struct rarch_key_map rarch_key_map_dinput[];
-extern const struct rarch_key_map rarch_key_map_rwebinput[];
-extern const struct rarch_key_map rarch_key_map_linux[];
-extern const struct rarch_key_map rarch_key_map_apple_hid[];
-
-void input_init_keyboard_lut(const struct rarch_key_map *map);
-enum retro_key input_translate_keysym_to_rk(unsigned sym);
-unsigned input_translate_rk_to_keysym(enum retro_key key);
-
 /* Input config. */
 struct input_bind_map
 {
@@ -130,12 +112,6 @@ extern const struct input_bind_map input_config_bind_map[];
 void input_get_bind_string(char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size);
 
-struct input_key_map
-{
-   const char *str;
-   enum retro_key key;
-};
-extern const struct input_key_map input_config_key_map[];
 void input_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
 enum retro_key input_translate_str_to_rk(const char *str);
 

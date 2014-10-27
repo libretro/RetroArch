@@ -14,6 +14,7 @@
  */
 
 #include "input_common.h"
+#include "input_keymaps.h"
 
 #include "../driver.h"
 

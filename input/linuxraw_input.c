@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include "../general.h"
+#include "input_keymaps.h"
 #include "input_common.h"
 
 static long oldKbmd = 0xffff;
