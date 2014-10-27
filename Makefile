@@ -134,6 +134,16 @@ $(OBJDIR)/tools/input_common_joyconfig.o: input/input_common.c
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_JOYCONFIG -c -o $@ $<
 
+$(OBJDIR)/tools/nullinput_joyconfig.o: input/nullinput.c
+	@mkdir -p $(dir $@)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_JOYCONFIG -c -o $@ $<
+
+$(OBJDIR)/tools/nullinput_joypad_joyconfig.o: input/nullinput_joypad.c
+	@mkdir -p $(dir $@)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_JOYCONFIG -c -o $@ $<
+
 $(OBJDIR)/tools/input_keymaps_joyconfig.o: input/input_keymaps.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)

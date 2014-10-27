@@ -145,6 +145,7 @@ OBJ += frontend/frontend.o \
 		gfx/nullgfx.o \
 		audio/nullaudio.o \
 		input/nullinput.o \
+		input/nullinput_joypad.o \
 		input/osk/nullosk.o \
 		playlist.o \
 		movie.o \
@@ -638,6 +639,8 @@ JOYCONFIG_OBJ += tools/retroarch-joyconfig.o \
 	libretro-sdk/file/file_path.o \
 	libretro-sdk/string/string_list.o \
 	libretro-sdk/compat/compat.o \
+	input/nullinput.o \
+	input/nullinput_joypad.o \
 	tools/input_context_joyconfig.o \
 	tools/input_common_joyconfig.o \
 	tools/input_keymaps_joyconfig.o

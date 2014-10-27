@@ -370,6 +370,7 @@ INPUT
 #endif
 
 #include "../input/nullinput.c"
+#include "../input/nullinput_joypad.c"
 
 /*============================================================
 STATE TRACKER

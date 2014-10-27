@@ -62,6 +62,7 @@ extern rarch_joypad_driver_t apple_hid_joypad;
 extern rarch_joypad_driver_t apple_ios_joypad;
 extern rarch_joypad_driver_t android_joypad;
 extern rarch_joypad_driver_t qnx_joypad;
+extern rarch_joypad_driver_t null_joypad;
 
 #ifdef __cplusplus
 }

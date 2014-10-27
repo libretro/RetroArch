@@ -210,6 +210,8 @@ const char *config_get_default_joypad(void)
          return "apple_ios";
       case JOYPAD_QNX:
          return "qnx";
+      case JOYPAD_NULL:
+         return "null";
    }
 
    return NULL;

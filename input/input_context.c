@@ -66,6 +66,7 @@ rarch_joypad_driver_t *joypad_drivers[] = {
 #ifdef __QNX__
    &qnx_joypad,
 #endif
+   &null_joypad,
    NULL,
 };
 
