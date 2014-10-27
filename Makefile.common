@@ -639,4 +639,5 @@ JOYCONFIG_OBJ += tools/retroarch-joyconfig.o \
 	libretro-sdk/string/string_list.o \
 	libretro-sdk/compat/compat.o \
 	tools/input_context_joyconfig.o \
-	tools/input_common_joyconfig.o
+	tools/input_common_joyconfig.o \
+	tools/input_keymaps_joyconfig.o
