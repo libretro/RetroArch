@@ -21,11 +21,7 @@
 #include <math.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include "../image/image.h"
 #include "../../general.h"
-#include "../../input/input_common.h"
-#include "../../input/input_keymaps.h"
-#include "../../input/keyboard_line.h"
 
 static void x11_hide_mouse(Display *dpy, Window win)
 {
@@ -135,7 +131,8 @@ void x11_suspend_screensaver(Window wnd)
       RARCH_WARN("Could not suspend screen saver.\n");
 }
 
-static bool get_video_mode(Display *dpy, unsigned width, unsigned height, XF86VidModeModeInfo *mode, XF86VidModeModeInfo *desktop_mode)
+static bool get_video_mode(Display *dpy, unsigned width, unsigned height,
+      XF86VidModeModeInfo *mode, XF86VidModeModeInfo *desktop_mode)
 {
    int i;
    int num_modes = 0;
@@ -153,7 +150,8 @@ static bool get_video_mode(Display *dpy, unsigned width, unsigned height, XF86Vi
    bool ret = false;
    float minimum_fps_diff = 0.0f;
 
-   // If we use black frame insertion, we fake a 60 Hz monitor for 120 Hz one, etc, so try to match that.
+   /* If we use black frame insertion, we fake a 60 Hz monitor 
+    * for 120 Hz one, etc, so try to match that. */
    float refresh_mod = g_settings.video.black_frame_insertion ? 0.5f : 1.0f;
 
    for (i = 0; i < num_modes; i++)
@@ -177,7 +175,8 @@ static bool get_video_mode(Display *dpy, unsigned width, unsigned height, XF86Vi
    return ret;
 }
 
-bool x11_enter_fullscreen(Display *dpy, unsigned width, unsigned height, XF86VidModeModeInfo *desktop_mode)
+bool x11_enter_fullscreen(Display *dpy, unsigned width,
+      unsigned height, XF86VidModeModeInfo *desktop_mode)
 {
    XF86VidModeModeInfo mode;
    if (get_video_mode(dpy, width, height, &mode, desktop_mode))
@@ -314,92 +313,3 @@ void x11_destroy_input_context(XIM *xim, XIC *xic)
       *xim = NULL;
    }
 }
-
-static inline unsigned leading_ones(uint8_t c)
-{
-   unsigned ones = 0;
-   while (c & 0x80)
-   {
-      ones++;
-      c <<= 1;
-   }
-
-   return ones;
-}
-
-// Simple implementation. Assumes the sequence is properly synchronized and terminated.
-static size_t conv_utf8_utf32(uint32_t *out, size_t out_chars, const char *in, size_t in_size)
-{
-   unsigned i;
-   size_t ret = 0;
-   while (in_size && out_chars)
-   {
-      uint8_t first = *in++;
-
-      unsigned ones = leading_ones(first);
-      if (ones > 6 || ones == 1) // Invalid or desync
-         break;
-
-      unsigned extra = ones ? ones - 1 : ones;
-      if (1 + extra > in_size) // Overflow
-         break;
-
-      unsigned shift = (extra - 1) * 6;
-      uint32_t c = (first & ((1 << (7 - ones)) - 1)) << (6 * extra);
-
-      for (i = 0; i < extra; i++, in++, shift -= 6)
-         c |= (*in & 0x3f) << shift;
-
-      *out++ = c;
-      in_size -= 1 + extra;
-      out_chars--;
-      ret++;
-   }
-
-   return ret;
-}
-
-void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
-{
-   int i;
-   char keybuf[32] = {0};
-   uint32_t chars[32] = {0};
-
-   bool down    = event->type == KeyPress;
-   unsigned key = input_translate_keysym_to_rk(XLookupKeysym(&event->xkey, 0));
-   int num      = 0;
-
-   if (down && !filter)
-   {
-      KeySym keysym = 0;
-
-#ifdef X_HAVE_UTF8_STRING
-      Status status = 0;
-
-      // XwcLookupString doesn't seem to work.
-      num = Xutf8LookupString(ic, &event->xkey, keybuf, ARRAY_SIZE(keybuf), &keysym, &status);
-
-      // libc functions need UTF-8 locale to work properly, which makes mbrtowc a bit impractical.
-      // Use custom utf8 -> UTF-32 conversion.
-      num = conv_utf8_utf32(chars, ARRAY_SIZE(chars), keybuf, num);
-#else
-      (void)ic;
-      num = XLookupString(&event->xkey, keybuf, sizeof(keybuf), &keysym, NULL); // ASCII only.
-      for (i = 0; i < num; i++)
-         chars[i] = keybuf[i] & 0x7f;
-#endif
-   }
-
-   unsigned state = event->xkey.state;
-   uint16_t mod = 0;
-   mod |= (state & ShiftMask) ? RETROKMOD_SHIFT : 0;
-   mod |= (state & LockMask) ? RETROKMOD_CAPSLOCK : 0;
-   mod |= (state & ControlMask) ? RETROKMOD_CTRL : 0;
-   mod |= (state & Mod1Mask) ? RETROKMOD_ALT : 0;
-   mod |= (state & Mod4Mask) ? RETROKMOD_META : 0;
-
-   input_keyboard_event(down, key, chars[0], mod);
-   for (i = 1; i < num; i++)
-      input_keyboard_event(down, RETROK_UNKNOWN, chars[i], mod);
-}
-

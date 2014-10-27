@@ -126,6 +126,7 @@ VIDEO CONTEXT
 
 #ifdef HAVE_X11
 #include "../gfx/context/x11_common.c"
+#include "../input/keyboard_event_x11.c"
 #endif
 
 
