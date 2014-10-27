@@ -83,11 +83,8 @@ struct udev_input
    struct xkb_context *xkb_ctx;
    struct xkb_keymap *xkb_map;
    struct xkb_state *xkb_state;
-   struct
-   {
-      xkb_mod_index_t index;
-      uint16_t bit;
-   } mod_map[5];
+   xkb_mod_index_t mod_map_idx[5];
+   uint16_t        mod_map_bit[5];
 #endif
 
    const rarch_joypad_driver_t *joypad;
@@ -123,12 +120,17 @@ static void handle_xkb(udev_input_t *udev, int code, int value)
    xkb_state_update_key(udev->xkb_state, xk_code, value ? XKB_KEY_DOWN : XKB_KEY_UP);
 
    /* Build mod state. */
-   for (i = 0; i < ARRAY_SIZE(udev->mod_map); i++)
-      if (udev->mod_map[i].index != XKB_MOD_INVALID)
+   for (i = 0; i < ARRAY_SIZE(udev->mod_map_idx); i++)
+   {
+      xkb_mod_index_t *map_idx = (xkb_mod_index_t*)&udev->mod_map_idx[i];
+      uint16_t        *map_bit = (uint16_t       *)&udev->mod_map_bit[i];
+
+      if (*map_idx != XKB_MOD_INVALID)
          mod |= xkb_state_mod_index_is_active(
                udev->xkb_state,
-               udev->mod_map[i].index,
-               (XKB_STATE_MODS_EFFECTIVE) > 0) ? udev->mod_map[i].bit : 0;
+               *map_idx,
+               (XKB_STATE_MODS_EFFECTIVE) > 0) ? *map_bit : 0;
+   }
 
    input_keyboard_event(value, input_translate_keysym_to_rk(code),
          num_syms ? xkb_keysym_to_utf32(syms[0]) : 0, mod);
@@ -747,16 +749,16 @@ static void *udev_input_init(void)
    {
       udev->xkb_state = xkb_state_new(udev->xkb_map);
 
-      udev->mod_map[0].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CAPS);
-      udev->mod_map[0].bit = RETROKMOD_CAPSLOCK;
-      udev->mod_map[1].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_SHIFT);
-      udev->mod_map[1].bit = RETROKMOD_SHIFT;
-      udev->mod_map[2].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CTRL);
-      udev->mod_map[2].bit = RETROKMOD_CTRL;
-      udev->mod_map[3].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_ALT);
-      udev->mod_map[3].bit = RETROKMOD_ALT;
-      udev->mod_map[4].index = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_LOGO);
-      udev->mod_map[4].bit = RETROKMOD_META;
+      udev->mod_map_idx[0] = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CAPS);
+      udev->mod_map_bit[0] = RETROKMOD_CAPSLOCK;
+      udev->mod_map_idx[1] = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_SHIFT);
+      udev->mod_map_bit[1] = RETROKMOD_SHIFT;
+      udev->mod_map_idx[2] = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_CTRL);
+      udev->mod_map_bit[2] = RETROKMOD_CTRL;
+      udev->mod_map_idx[3] = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_ALT);
+      udev->mod_map_bit[3] = RETROKMOD_ALT;
+      udev->mod_map_idx[4] = xkb_keymap_mod_get_index(udev->xkb_map, XKB_MOD_NAME_LOGO);
+      udev->mod_map_bit[4] = RETROKMOD_META;
    }
 #endif
 
