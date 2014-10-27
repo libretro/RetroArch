@@ -20,6 +20,7 @@
 
 #include "../../driver.h"
 #include "../../input/input_common.h"
+#include "../../input/input_keymaps.h"
 
 static void* const associated_name_tag = (void*)&associated_name_tag;
 
