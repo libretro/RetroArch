@@ -24,16 +24,6 @@
 #include "../config.h"
 #endif
 
-#ifdef HAVE_DINPUT
-#undef DIRECTINPUT_VERSION
-#define DIRECTINPUT_VERSION 0x0800
-#include <dinput.h>
-#endif
-
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
-#include "SDL.h"
-#endif
-
 const char *input_joypad_name(const rarch_joypad_driver_t *drv,
       unsigned joypad)
 {
