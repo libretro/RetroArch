@@ -117,7 +117,7 @@ int setting_set_flags(rarch_setting_t *setting)
       return MENU_SETTING_DRIVER;
    if (setting->type == ST_PATH)
       return MENU_FILE_PATH;
-   if (setting->flags & SD_FLAG_IS_CATEGORY)
+   if (setting->type == ST_GROUP)
       return MENU_SETTING_CATEGORY;
    return 0;
 }
