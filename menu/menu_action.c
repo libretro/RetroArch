@@ -52,23 +52,6 @@ int setting_handler(
    return 0;
 }
 
-int menu_action_setting_set_current_string(
-      rarch_setting_t *setting, const char *str)
-{
-   strlcpy(setting->value.string, str, setting->size);
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   if (setting->flags & SD_FLAG_EXIT
-         && setting->cmd_trigger.triggered)
-   {
-      setting->cmd_trigger.triggered = false;
-      return -1;
-   }
-
-   return 0;
-}
 
 int menu_action_set_current_string_based_on_label(
       const char *label, const char *str)

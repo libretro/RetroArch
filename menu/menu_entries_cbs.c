@@ -113,6 +113,24 @@ unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
+int menu_action_setting_set_current_string(
+      rarch_setting_t *setting, const char *str)
+{
+   strlcpy(setting->value.string, str, setting->size);
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
+      return -1;
+   }
+
+   return 0;
+}
+
 static void common_load_content(bool persist)
 {
    rarch_main_command(persist ? RARCH_CMD_LOAD_CONTENT_PERSIST : RARCH_CMD_LOAD_CONTENT);
