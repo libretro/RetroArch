@@ -19,9 +19,9 @@ if [ -z "$CROSS_COMPILE" ] || [ -z "$OS" ]; then
 		'Linux') OS='Linux';;
 		*'BSD') OS='BSD';;
 		'Darwin') OS='Darwin';;
-		'MINGW32'*) OS='MinGW';;
 		'CYGWIN'*) OS='Cygwin';;
 		'Haiku') OS='Haiku';;
+		'MINGW'*) OS='Win32';;
 		*) OS="Win32";;
 	esac
 fi
