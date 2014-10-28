@@ -2011,12 +2011,12 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    if (!strcmp(label, "history_list"))
       cbs->action_deferred_push = deferred_push_history_list;
+   else if (!strcmp(label, "Shader Options"))
+      cbs->action_deferred_push = deferred_push_shader_options;
    else if (type == MENU_SETTING_CATEGORY)
       cbs->action_deferred_push = deferred_push_category;
    else if (!strcmp(label, "deferred_core_list"))
       cbs->action_deferred_push = deferred_push_core_list_deferred;
-   else if (!strcmp(label, "Shader Options"))
-      cbs->action_deferred_push = deferred_push_shader_options;
    else if (!strcmp(label, "core_information"))
       cbs->action_deferred_push = deferred_push_core_information;
    else if (!strcmp(label, "performance_counters"))
