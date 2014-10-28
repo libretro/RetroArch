@@ -1980,8 +1980,6 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_toggle = action_toggle_shader_filter_default;
    else if (!strcmp(label, "video_shader_num_passes"))
       cbs->action_toggle = action_toggle_shader_num_passes;
-   else if (!strcmp(label, "shader_apply_changes"))
-      cbs->action_toggle = menu_action_setting_set;
    else if (type == MENU_SETTINGS_VIDEO_RESOLUTION)
       cbs->action_toggle = action_toggle_video_resolution;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
