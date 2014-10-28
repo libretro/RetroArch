@@ -26,9 +26,6 @@ extern "C" {
 int setting_handler(
       rarch_setting_t *setting, unsigned action);
 
-int menu_action_set_current_string_based_on_label(
-      const char *label, const char *str);
-
 int menu_action_setting_set_current_string(
       rarch_setting_t *setting, const char *str);
 

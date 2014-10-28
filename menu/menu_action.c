@@ -52,16 +52,6 @@ int setting_handler(
    return 0;
 }
 
-
-int menu_action_set_current_string_based_on_label(
-      const char *label, const char *str)
-{
-   if (!strcmp(label, "video_shader_preset_save_as"))
-      menu_shader_manager_save_preset(str, false);
-
-   return 0;
-}
-
 static int menu_entries_action_ok_set_current_path_selection(
       rarch_setting_t *setting, const char *path,
       const char *label, unsigned type,

@@ -26,6 +26,7 @@
 #include <ctype.h>
 #include "menu_common.h"
 #include "menu_action.h"
+#include "menu_shader.h"
 #include "../input/keyboard_line.h"
 #include "menu_input_line_cb.h"
 #include "../performance.h"
@@ -98,8 +99,10 @@ void st_string_callback(void *userdata, const char *str)
                   menu->list_settings, menu->keyboard.label_setting)))
          menu_action_setting_set_current_string(current_setting, str);
       else
-         menu_action_set_current_string_based_on_label(
-               menu->keyboard.label_setting, str);
+      {
+         if (!strcmp(menu->keyboard.label, "video_shader_preset_save_as"))
+            menu_shader_manager_save_preset(str, false);
+      }
    }
    menu_key_end_line(menu);
 }
