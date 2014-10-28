@@ -17,7 +17,6 @@
 #include <sys/process.h>
 
 #include "../../ps3/sdk_defines.h"
-#include "../menu/menu_common.h"
 
 #include "../../general.h"
 #include <file/file_path.h>
