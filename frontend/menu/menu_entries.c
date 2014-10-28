@@ -111,7 +111,7 @@ int setting_set_flags(rarch_setting_t *setting)
    if (!setting)
       return 0;
 
-   if (setting->flags & SD_FLAG_PUSH_ACTION)
+   if (setting->type == ST_ACTION)
       return MENU_SETTING_ACTION;
    if (setting->flags & SD_FLAG_IS_DRIVER)
       return MENU_SETTING_DRIVER;

@@ -3002,10 +3002,6 @@ static bool setting_data_append_list_main_menu_options(
          "Core",
          group_info.name,
          subgroup_info.name);
-   settings_data_list_current_add_flags(
-         list,
-         list_info,
-         SD_FLAG_PUSH_ACTION);
 #endif
    if (g_defaults.history)
    {
@@ -3014,7 +3010,6 @@ static bool setting_data_append_list_main_menu_options(
             "Load Content (History)",
             group_info.name,
             subgroup_info.name);
-      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    if (
          driver.menu 
@@ -3026,28 +3021,24 @@ static bool setting_data_append_list_main_menu_options(
             "Load Content (Detect Core)",
             group_info.name,
             subgroup_info.name);
-      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    CONFIG_ACTION(
          "load_content",
          "Load Content",
          group_info.name,
          subgroup_info.name);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    CONFIG_ACTION(
          "core_options",
          "Core Options",
          group_info.name,
          subgroup_info.name);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    CONFIG_ACTION(
          "core_information",
          "Core Information",
          group_info.name,
          subgroup_info.name);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    if (g_extern.main_is_init
          && !g_extern.libretro_dummy
@@ -3058,14 +3049,13 @@ static bool setting_data_append_list_main_menu_options(
             "Core Disk Options",
             group_info.name,
             subgroup_info.name);
-      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    CONFIG_ACTION(
          "settings",
          "Settings",
          group_info.name,
          subgroup_info.name);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
+
    if (g_extern.perfcnt_enable)
    {
       CONFIG_ACTION(
@@ -3073,7 +3063,6 @@ static bool setting_data_append_list_main_menu_options(
             "Performance Counters",
             group_info.name,
             subgroup_info.name);
-      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
@@ -3105,7 +3094,6 @@ static bool setting_data_append_list_main_menu_options(
             group_info.name,
             subgroup_info.name);
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_TAKE_SCREENSHOT);
-      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
       CONFIG_ACTION(
             "resume_content",
@@ -3114,7 +3102,6 @@ static bool setting_data_append_list_main_menu_options(
             subgroup_info.name);
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_RESUME);
       (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_exit;
-      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
       CONFIG_ACTION(
             "restart_content",
@@ -3123,7 +3110,6 @@ static bool setting_data_append_list_main_menu_options(
             subgroup_info.name);
       settings_list_current_add_cmd(list, list_info, RARCH_CMD_RESET);
       (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_exit;
-      settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
    }
 #ifndef HAVE_DYNAMIC
    CONFIG_ACTION(
@@ -3132,7 +3118,6 @@ static bool setting_data_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_RESTART_RETROARCH);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 #endif
 
    CONFIG_ACTION(
@@ -3147,14 +3132,12 @@ static bool setting_data_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_MENU_SAVE_CONFIG);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    CONFIG_ACTION(
          "help",
          "Help",
          group_info.name,
          subgroup_info.name);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 
    /* Apple rejects iOS apps that lets you forcibly quit an application. */
 #if !defined(IOS)
@@ -3164,7 +3147,6 @@ static bool setting_data_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_QUIT_RETROARCH);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_PUSH_ACTION);
 #endif
 
    END_SUB_GROUP(list, list_info);
@@ -4586,10 +4568,6 @@ static bool setting_data_append_list_input_options(
             label_bind_all[player],
             group_info.name,
             subgroup_info.name);
-      settings_data_list_current_add_flags(
-            list,
-            list_info,
-            SD_FLAG_PUSH_ACTION);
       (*list)[list_info->index - 1].index = player + 1;
       (*list)[list_info->index - 1].index_offset = player;
       (*list)[list_info->index - 1].action_ok    = &setting_data_action_ok_bind_all;
@@ -4599,10 +4577,6 @@ static bool setting_data_append_list_input_options(
             label_bind_defaults[player],
             group_info.name,
             subgroup_info.name);
-      settings_data_list_current_add_flags(
-            list,
-            list_info,
-            SD_FLAG_PUSH_ACTION);
       (*list)[list_info->index - 1].index = player + 1;
       (*list)[list_info->index - 1].index_offset = player;
       (*list)[list_info->index - 1].action_ok    = &setting_data_action_ok_bind_defaults;
