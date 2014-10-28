@@ -20,8 +20,6 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
-#include "menu_common.h"
-#include "menu_list.h"
 #include "menu_navigation.h"
 
 void menu_navigation_clear(menu_handle_t *menu, bool pending_push)

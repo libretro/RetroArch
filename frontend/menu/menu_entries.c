@@ -15,14 +15,10 @@
  */
 
 #include "menu_entries.h"
-#include "menu_action.h"
-#include "menu_list.h"
 #include <file/file_list.h>
 #include <file/file_path.h>
 #include "../../file_ops.h"
 #include <file/dir_list.h>
-#include "../../settings_data.h"
-#include "../../performance.h"
 
 void menu_entries_refresh(file_list_t *list)
 {
