@@ -616,21 +616,6 @@ static int menu_common_iterate(unsigned action)
          else
             break;
       case MENU_ACTION_LEFT:
-         if (is_category)
-         {
-            if (cbs && cbs->action_toggle)
-               ret = cbs->action_toggle(type_offset, label_offset, action);
-         }
-         else
-         {
-            if (driver.menu->selection_ptr > fast_scroll_speed)
-               menu_navigation_set(driver.menu,
-                     driver.menu->selection_ptr - fast_scroll_speed, true);
-            else
-               menu_navigation_clear(driver.menu, false);
-
-         }
-         break;
       case MENU_ACTION_RIGHT:
          if (is_category)
          {
@@ -639,11 +624,23 @@ static int menu_common_iterate(unsigned action)
          }
          else
          {
-            if (driver.menu->selection_ptr + fast_scroll_speed < (menu_list_get_size(driver.menu->menu_list)))
-               menu_navigation_set(driver.menu,
-                     driver.menu->selection_ptr + fast_scroll_speed, true);
-            else
-               menu_navigation_set_last(driver.menu);
+            switch (action)
+            {
+               case MENU_ACTION_LEFT:
+                  if (driver.menu->selection_ptr > fast_scroll_speed)
+                     menu_navigation_set(driver.menu,
+                           driver.menu->selection_ptr - fast_scroll_speed, true);
+                  else
+                     menu_navigation_clear(driver.menu, false);
+                  break;
+               case MENU_ACTION_RIGHT:
+                  if (driver.menu->selection_ptr + fast_scroll_speed < (menu_list_get_size(driver.menu->menu_list)))
+                     menu_navigation_set(driver.menu,
+                           driver.menu->selection_ptr + fast_scroll_speed, true);
+                  else
+                     menu_navigation_set_last(driver.menu);
+                  break;
+            }
          }
          break;
       case MENU_ACTION_SELECT:
