@@ -5428,6 +5428,7 @@ rarch_setting_t *setting_data_new(unsigned mask)
 {
    rarch_setting_t terminator = { ST_NONE };
    rarch_setting_t* list = NULL;
+   rarch_setting_t* resized_list = NULL;
    rarch_setting_info_t *list_info = (rarch_setting_info_t*)
       settings_info_list_new();
    if (!list_info)
@@ -5531,8 +5532,10 @@ rarch_setting_t *setting_data_new(unsigned mask)
       goto error;
 
    /* flatten this array to save ourselves some kilobytes. */
-   if (!(list = (rarch_setting_t*)
-            realloc(list, list_info->index * sizeof(rarch_setting_t))))
+   resized_list = (rarch_setting_t*) realloc(list, list_info->index * sizeof(rarch_setting_t));
+   if (resized_list)
+      list = resized_list;
+   else
       goto error;
 
    settings_info_list_free(list_info);
