@@ -459,6 +459,24 @@ static int action_ok_file_load_with_detect_core(const char *path,
    return ret;
 }
 
+static int menu_action_setting_set_current_string_path(
+      rarch_setting_t *setting, const char *dir, const char *path)
+{
+   fill_pathname_join(setting->value.string, dir, path, setting->size);
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
+      return -1;
+   }
+
+   return 0;
+}
+
 static int action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {

@@ -79,24 +79,6 @@ int menu_action_set_current_string_based_on_label(
    return 0;
 }
 
-int menu_action_setting_set_current_string_path(
-      rarch_setting_t *setting, const char *dir, const char *path)
-{
-   fill_pathname_join(setting->value.string, dir, path, setting->size);
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   if (setting->flags & SD_FLAG_EXIT
-         && setting->cmd_trigger.triggered)
-   {
-      setting->cmd_trigger.triggered = false;
-      return -1;
-   }
-
-   return 0;
-}
-
 static int menu_entries_action_ok_set_current_path_selection(
       rarch_setting_t *setting, const char *path,
       const char *label, unsigned type,
