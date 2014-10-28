@@ -164,8 +164,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    return 0;
 }
 
-int menu_action_setting_set(unsigned type, const char *label,
-      unsigned action)
+static rarch_setting_t *find_setting(void)
 {
    const file_list_t *list = (const file_list_t*)driver.menu->menu_list->selection_buf;
 
@@ -174,13 +173,21 @@ int menu_action_setting_set(unsigned type, const char *label,
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
          driver.menu->list_settings, list->list[driver.menu->selection_ptr].label);
 
-   if (setting)
-      return menu_action_handle_setting(setting, type, action);
+   if (!setting)
+   {
+      /* Check if setting belongs to main menu. */
 
-   /* Check if setting belongs to main menu. */
+      setting = (rarch_setting_t*)setting_data_find_setting(
+            driver.menu->list_mainmenu, list->list[driver.menu->selection_ptr].label);
+   }
 
-   setting = (rarch_setting_t*)setting_data_find_setting(
-         driver.menu->list_mainmenu, list->list[driver.menu->selection_ptr].label);
+   return setting;
+}
+
+int menu_action_setting_set(unsigned type, const char *label,
+      unsigned action)
+{
+   rarch_setting_t *setting = find_setting();
 
    if (setting)
       return menu_action_handle_setting(setting, type, action);
