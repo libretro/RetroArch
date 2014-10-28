@@ -57,20 +57,15 @@ static int menu_entries_action_ok_set_current_path_selection(
       const char *label, unsigned type,
       unsigned action)
 {
-   switch (action)
-   {
-      case MENU_ACTION_OK:
-         menu_list_push_stack_refresh(
-               driver.menu->menu_list,
-               path,
-               label,
-               type,
-               driver.menu->selection_ptr);
+   menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         path,
+         label,
+         type,
+         driver.menu->selection_ptr);
 
-         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
-            setting->cmd_trigger.triggered = true;
-         break;
-   }
+   if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+      setting->cmd_trigger.triggered = true;
 
    if (setting->change_handler)
       setting->change_handler(setting);
@@ -123,13 +118,10 @@ static rarch_setting_t *find_setting(void)
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
          driver.menu->list_settings, list->list[driver.menu->selection_ptr].label);
 
+   /* Check if setting belongs to main menu. */
    if (!setting)
-   {
-      /* Check if setting belongs to main menu. */
-
       setting = (rarch_setting_t*)setting_data_find_setting(
             driver.menu->list_mainmenu, list->list[driver.menu->selection_ptr].label);
-   }
 
    return setting;
 }
