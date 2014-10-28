@@ -19,50 +19,10 @@
 #include "menu_shader.h"
 #include <file/file_path.h>
 
-int setting_handler(
-      rarch_setting_t *setting, unsigned action)
+static int setting_extra_handler(rarch_setting_t *setting)
 {
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-      case MENU_ACTION_RIGHT:
-         if (setting->action_toggle)
-            setting->action_toggle(setting, action);
-         break;
-      case MENU_ACTION_OK:
-         if (setting->action_ok)
-            setting->action_ok(setting, action);
-         break;
-      case MENU_ACTION_START:
-         if (setting->action_start)
-            setting->action_start(setting);
-         break;
-   }
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   if (setting->flags & SD_FLAG_EXIT
-         && setting->cmd_trigger.triggered)
-   {
-      setting->cmd_trigger.triggered = false;
+   if (!setting)
       return -1;
-   }
-
-   return 0;
-}
-
-static int menu_entries_action_ok_set_current_path_selection(
-      rarch_setting_t *setting, const char *path,
-      const char *label, unsigned type,
-      unsigned action)
-{
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         path,
-         label,
-         type,
-         driver.menu->selection_ptr);
 
    if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
       setting->cmd_trigger.triggered = true;
@@ -80,6 +40,39 @@ static int menu_entries_action_ok_set_current_path_selection(
    return 0;
 }
 
+static void process_setting_handler(
+      rarch_setting_t *setting,
+      unsigned action)
+{
+   if (!setting)
+      return;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         if (setting->action_toggle)
+            setting->action_toggle(setting, action);
+         break;
+      case MENU_ACTION_OK:
+         if (setting->action_ok)
+            setting->action_ok(setting, action);
+         break;
+      case MENU_ACTION_START:
+         if (setting->action_start)
+            setting->action_start(setting);
+         break;
+   }
+}
+
+int setting_handler(
+      rarch_setting_t *setting, unsigned action)
+{
+   process_setting_handler(setting, action);
+
+   return setting_extra_handler(setting);
+}
+
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action)
 {
@@ -90,9 +83,13 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    {
       case ST_PATH:
          if (action == MENU_ACTION_OK)
-            return menu_entries_action_ok_set_current_path_selection(setting,
-                  setting->default_value.string, setting->name, type, action);
-         /* fall-through */
+            menu_list_push_stack_refresh(
+                  driver.menu->menu_list,
+                  setting->default_value.string,
+                  setting->name,
+                  type,
+                  driver.menu->selection_ptr);
+         /* fall-through. */
       case ST_BOOL:
       case ST_INT:
       case ST_UINT:
@@ -101,12 +98,13 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_DIR:
       case ST_BIND:
       case ST_ACTION:
-         return setting_handler(setting, action);
+         process_setting_handler(setting, action);
+         break;
       default:
          break;
    }
 
-   return 0;
+   return setting_extra_handler(setting);
 }
 
 static rarch_setting_t *find_setting(void)
