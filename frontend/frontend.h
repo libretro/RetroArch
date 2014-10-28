@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <boolean.h>
-#include "frontend_context.h"
 
 #ifdef __cplusplus
 extern "C" {
