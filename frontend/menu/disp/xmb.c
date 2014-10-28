@@ -357,7 +357,7 @@ static void xmb_render_messagebox(const char *message)
 
 static void xmb_selection_pointer_changed(void)
 {
-   size_t i;
+   int i;
    unsigned current, end;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
@@ -380,11 +380,11 @@ static void xmb_selection_pointer_changed(void)
 
       if (i < current)
          if (xmb->depth > 1)
-            iy = xmb->vspacing * (i - current + xmb->above_subitem_offset);
+            iy = xmb->vspacing * (i - (int)current + xmb->above_subitem_offset);
          else
-            iy = xmb->vspacing * (i - current + xmb->above_item_offset);
+            iy = xmb->vspacing * (i - (int)current + xmb->above_item_offset);
       else
-         iy = xmb->vspacing * (i - current + xmb->under_item_offset);
+         iy = xmb->vspacing * (i - (int)current + xmb->under_item_offset);
 
       if (i == current)
       {
@@ -402,7 +402,7 @@ static void xmb_selection_pointer_changed(void)
 
 static void xmb_list_open_old(file_list_t *list, int dir, size_t current)
 {
-   size_t i;
+   int i;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
@@ -425,7 +425,7 @@ static void xmb_list_open_old(file_list_t *list, int dir, size_t current)
 
 static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
 {
-   size_t i;
+   int i;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
@@ -450,11 +450,11 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
 
       if (i < current)
          if (xmb->depth > 1)
-            iy = xmb->vspacing * (i - current + xmb->above_subitem_offset);
+            iy = xmb->vspacing * (i - (int)current + xmb->above_subitem_offset);
          else
-            iy = xmb->vspacing * (i - current + xmb->above_item_offset);
+            iy = xmb->vspacing * (i - (int)current + xmb->above_item_offset);
       else
-         iy = xmb->vspacing * (i - current + xmb->under_item_offset);
+         iy = xmb->vspacing * (i - (int)current + xmb->under_item_offset);
 
       if (i == current)
          iy = xmb->vspacing * xmb->active_item_factor;
