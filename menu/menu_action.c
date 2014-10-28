@@ -97,8 +97,8 @@ int menu_action_setting_set_current_string_path(
    return 0;
 }
 
-static int menu_entries_set_current_path_selection(
-      rarch_setting_t *setting, const char *start_path,
+static int menu_entries_action_ok_set_current_path_selection(
+      rarch_setting_t *setting, const char *path,
       const char *label, unsigned type,
       unsigned action)
 {
@@ -107,17 +107,13 @@ static int menu_entries_set_current_path_selection(
       case MENU_ACTION_OK:
          menu_list_push_stack_refresh(
                driver.menu->menu_list,
-               start_path,
+               path,
                label,
                type,
                driver.menu->selection_ptr);
 
          if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
             setting->cmd_trigger.triggered = true;
-         break;
-      case MENU_ACTION_START:
-         if (setting->action_start)
-            setting->action_start(setting);
          break;
    }
 
@@ -142,6 +138,11 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 
    switch (setting->type)
    {
+      case ST_PATH:
+         if (action == MENU_ACTION_OK)
+            return menu_entries_action_ok_set_current_path_selection(setting,
+                  setting->default_value.string, setting->name, type, action);
+         /* fall-through */
       case ST_BOOL:
       case ST_INT:
       case ST_UINT:
@@ -151,9 +152,6 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_BIND:
       case ST_ACTION:
          return setting_handler(setting, action);
-      case ST_PATH:
-         return menu_entries_set_current_path_selection(setting,
-               setting->default_value.string, setting->name, type, action);
       default:
          break;
    }
