@@ -22,9 +22,7 @@
 #include <string.h>
 #include <limits.h>
 
-#include "../menu_driver.h"
 #include "../menu_common.h"
-#include "menu_display.h"
 #include "../../../general.h"
 #include <file/file_path.h>
 #include <file/dir_list.h>

@@ -21,16 +21,11 @@
 #include <string.h>
 #include <limits.h>
 
-#include "../menu_driver.h"
-#include "../menu_list.h"
 #include "../menu_common.h"
 #include "../../../general.h"
-#include "../../../config.def.h"
-#include "../../../dynamic.h"
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 
-#include "../../../settings_data.h"
 #include "../../../gfx/fonts/bitmap.h"
 
 #include "shared.h"

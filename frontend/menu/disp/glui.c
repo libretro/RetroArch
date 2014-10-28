@@ -20,17 +20,12 @@
 #include <string.h>
 #include <limits.h>
 
-#include "../menu_list.h"
 #include "../menu_common.h"
-#include "../menu_driver.h"
-#include "menu_display.h"
 #include "../../../general.h"
 #include <file/file_path.h>
 #include "../../../gfx/gl_common.h"
 #include "../../../gfx/video_thread_wrapper.h"
 #include <compat/posix_string.h>
-
-#include "../../../settings_data.h"
 
 #include "shared.h"
 
