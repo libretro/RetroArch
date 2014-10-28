@@ -217,7 +217,7 @@ static void disp_set_label(file_list_t* list,
             core_option_get_val(g_extern.system.core_options,
                type - MENU_SETTINGS_CORE_OPTION_START),
             type_str_size);
-   else if (type == MENU_FILE_PUSH || type == MENU_FILE_LINEFEED_SWITCH)
+   else if (type == MENU_SETTING_ACTION || type == MENU_FILE_LINEFEED_SWITCH)
       strlcpy(type_str, "...", type_str_size);
    else
       setting_data_get_label(type_str,

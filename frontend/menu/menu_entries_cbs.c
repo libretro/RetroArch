@@ -931,7 +931,7 @@ static int action_ok_shader_preset_parameters(const char *path,
          driver.menu->menu_list,
          "",
          "video_shader_preset_parameters",
-         MENU_FILE_PUSH,
+         MENU_SETTING_ACTION,
          driver.menu->selection_ptr);
 #endif
 
@@ -946,7 +946,7 @@ static int action_ok_shader_parameters(const char *path,
          driver.menu->menu_list,
          "",
          "video_shader_parameters",
-         MENU_FILE_PUSH,
+         MENU_SETTING_ACTION,
          driver.menu->selection_ptr);
 #endif
 
@@ -1258,9 +1258,9 @@ static int deferred_push_performance_counters(void *data, void *userdata,
 
    menu_list_clear(list);
    menu_list_push(list, "Frontend Counters", "frontend_counters",
-         MENU_FILE_PUSH, 0);
+         MENU_SETTING_ACTION, 0);
    menu_list_push(list, "Core Counters", "core_counters",
-         MENU_FILE_PUSH, 0);
+         MENU_SETTING_ACTION, 0);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(driver.menu, path, label, type);
@@ -1430,17 +1430,17 @@ static int deferred_push_shader_options(void *data, void *userdata,
 
    menu_list_clear(list);
    menu_list_push(list, "Apply Shader Changes", "shader_apply_changes",
-         MENU_FILE_PUSH, 0);
+         MENU_SETTING_ACTION, 0);
    menu_list_push(list, "Default Filter", "video_shader_default_filter",
          0, 0);
    menu_list_push(list, "Load Shader Preset", "video_shader_preset",
-         MENU_FILE_PUSH, 0);
+         MENU_SETTING_ACTION, 0);
    menu_list_push(list, "Shader Preset Save As",
          "video_shader_preset_save_as", MENU_FILE_LINEFEED_SWITCH, 0);
    menu_list_push(list, "Parameters (Current)",
-         "video_shader_parameters", MENU_FILE_PUSH, 0);
+         "video_shader_parameters", MENU_SETTING_ACTION, 0);
    menu_list_push(list, "Parameters (Menu)",
-         "video_shader_preset_parameters", MENU_FILE_PUSH, 0);
+         "video_shader_preset_parameters", MENU_SETTING_ACTION, 0);
    menu_list_push(list, "Shader Passes", "video_shader_num_passes",
          0, 0);
 
