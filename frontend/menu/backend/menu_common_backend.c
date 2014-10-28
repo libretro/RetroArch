@@ -188,9 +188,9 @@ static int mouse_iterate(unsigned action)
       driver.menu->mouse.x = 5;
    if (driver.menu->mouse.y < 5)
       driver.menu->mouse.y = 5;
-   if (driver.menu->mouse.x > driver.menu->width - 5)
+   if (driver.menu->mouse.x > (int16_t)driver.menu->width - 5)
       driver.menu->mouse.x = driver.menu->width - 5;
-   if (driver.menu->mouse.y > driver.menu->height - 5)
+   if (driver.menu->mouse.y > (int16_t)driver.menu->height - 5)
       driver.menu->mouse.y = driver.menu->height - 5;
 
    driver.menu->mouse.left = driver.input->input_state(driver.input_data,
