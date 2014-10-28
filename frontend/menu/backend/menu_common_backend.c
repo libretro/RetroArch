@@ -22,11 +22,9 @@
 #include <ctype.h>
 #include "../menu_common.h"
 #include <file/file_path.h>
-#include "../../../settings_data.h"
 #include "menu_backend.h"
 #include "../menu_list.h"
 #include "../menu_entries.h"
-#include "../menu_entries_cbs.h"
 #include "../menu_input_line_cb.h"
 
 #include "../../../input/input_autodetect.h"
