@@ -15,8 +15,6 @@
  */
 
 #include "../../apple/common/CFExtensions.h"
-#include "../menu/menu_common.h"
-#include "../../settings_data.h"
 
 #include "../frontend.h"
 
