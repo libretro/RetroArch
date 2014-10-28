@@ -23,12 +23,12 @@
 #include "../menu_list.h"
 #include "../menu_common.h"
 
-#include "../../../gfx/gfx_common.h"
-#include "../../../gfx/gfx_context.h"
+#include "../../gfx/gfx_common.h"
+#include "../../gfx/gfx_context.h"
 
-#include "../../../settings_data.h"
-#include "../../../message_queue.h"
-#include "../../../general.h"
+#include "../../settings_data.h"
+#include "../../message_queue.h"
+#include "../../general.h"
 
 #include "../../gfx/d3d/d3d.hpp"
 

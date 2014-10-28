@@ -14,31 +14,31 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _MENU_SHADER_MANAGER_H
-#define _MENU_SHADER_MANAGER_H
+#ifndef MENU_ENTRIES_H__
+#define MENU_ENTRIES_H__
 
-#include "../../gfx/shader/shader_context.h"
+#include <stdlib.h>
+#include "menu_common.h"
+#include <file/file_list.h>
+#include "../settings_data.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void menu_shader_manager_init(void *data);
+int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
+      const char *dir, const char *label, unsigned type,
+      unsigned default_type_plain, const char *exts);
 
-void menu_shader_manager_set_preset(struct gfx_shader *shader,
-      unsigned type, const char *cgp_path);
+int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list);
 
-void menu_shader_manager_save_preset(
-      const char *basename, bool apply);
+bool menu_entries_init(menu_handle_t *menu);
 
-unsigned menu_shader_manager_get_type(
-      const struct gfx_shader *shader);
+void menu_entries_refresh(file_list_t *list);
 
-void menu_shader_manager_get_str(struct gfx_shader *shader,
-      char *type_str, size_t type_str_size, const char *menu_label,
-      const char *label, unsigned type);
+void menu_entries_build_scroll_indices(file_list_t *list);
 
-void menu_shader_manager_apply_changes(void);
+int setting_set_flags(rarch_setting_t *setting);
 
 #ifdef __cplusplus
 }

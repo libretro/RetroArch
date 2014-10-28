@@ -36,10 +36,10 @@
 #endif
 
 #ifdef HAVE_MENU
-#include "frontend/menu/menu_list.h"
-#include "frontend/menu/menu_entries.h"
-#include "frontend/menu/menu_input_line_cb.h"
-#include "frontend/menu/menu_shader.h"
+#include "menu/menu_list.h"
+#include "menu/menu_entries.h"
+#include "menu/menu_input_line_cb.h"
+#include "menu/menu_shader.h"
 #endif
 
 static void get_input_config_prefix(char *buf, size_t sizeof_buf,

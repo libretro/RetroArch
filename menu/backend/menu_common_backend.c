@@ -27,8 +27,8 @@
 #include "../menu_entries.h"
 #include "../menu_input_line_cb.h"
 
-#include "../../../input/input_autodetect.h"
-#include "../../../config.def.h"
+#include "../../input/input_autodetect.h"
+#include "../../config.def.h"
 
 #ifdef GEKKO
 extern unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2];

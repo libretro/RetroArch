@@ -34,9 +34,9 @@
 #include "frontend/frontend_context.h"
 #include <retro_miscellaneous.h>
 
-#include "frontend/menu/menu_driver.h"
-#include "frontend/menu/backend/menu_backend.h"
-#include "frontend/menu/disp/menu_display.h"
+#include "menu/menu_driver.h"
+#include "menu/backend/menu_backend.h"
+#include "menu/disp/menu_display.h"
 #include "audio/resamplers/resampler.h"
 #include "record/ffemu.h"
 

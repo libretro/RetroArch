@@ -18,8 +18,8 @@
 #ifndef _MENU_DISP_LAKKA_H
 #define _MENU_DISP_LAKKA_H
 
-#include "../../../gfx/gl_common.h"
-#include "../../../gfx/fonts/fonts.h"
+#include "../../gfx/gl_common.h"
+#include "../../gfx/fonts/fonts.h"
 
 #define THEME "monochrome" // flatui or monochrome themes are available
 

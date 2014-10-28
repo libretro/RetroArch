@@ -23,15 +23,15 @@
 
 #include "menu_display.h"
 #include "../menu_common.h"
-#include "../../../general.h"
-#include "../../../gfx/gfx_common.h"
-#include "../../../config.def.h"
+#include "../../general.h"
+#include "../../gfx/gfx_common.h"
+#include "../../config.def.h"
 #include <compat/posix_string.h>
-#include "../../../performance.h"
+#include "../../performance.h"
 
-#include "../../../settings_data.h"
-#include "../../../screenshot.h"
-#include "../../../gfx/fonts/bitmap.h"
+#include "../../settings_data.h"
+#include "../../screenshot.h"
+#include "../../gfx/fonts/bitmap.h"
 
 #include "shared.h"
 

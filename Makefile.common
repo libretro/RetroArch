@@ -260,35 +260,35 @@ ifeq ($(HAVE_NEON),1)
 endif
 
 ifeq ($(HAVE_RGUI), 1)
-   OBJ += frontend/menu/disp/rgui.o
+   OBJ += menu/disp/rgui.o
    DEFINES += -DHAVE_MENU -DHAVE_RGUI
    HAVE_MENU_COMMON = 1
 ifeq ($(HAVE_GLUI), 1)
-   OBJ += frontend/menu/disp/glui.o
+   OBJ += menu/disp/glui.o
    DEFINES += -DHAVE_GLUI
 endif
 ifeq ($(HAVE_XMB), 1)
-   OBJ += frontend/menu/disp/xmb.o
+   OBJ += menu/disp/xmb.o
    DEFINES += -DHAVE_XMB
 endif
 ifeq ($(HAVE_LAKKA), 1)
-   OBJ += frontend/menu/backend/menu_lakka_backend.o \
-          frontend/menu/disp/lakka.o
+   OBJ += menu/backend/menu_lakka_backend.o \
+          menu/disp/lakka.o
    DEFINES += -DHAVE_LAKKA
 endif
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
-   OBJ += frontend/menu/backend/menu_common_backend.o \
-			 frontend/menu/menu_input_line_cb.o \
-			 frontend/menu/menu_common.o \
-			 frontend/menu/menu_navigation.o  \
-			 frontend/menu/menu_action.o \
-			 frontend/menu/menu_shader.o \
-			 frontend/menu/menu_entries.o \
-			 frontend/menu/menu_entries_cbs.o \
-			 frontend/menu/menu_list.o \
-			 frontend/menu/menu_animation.o
+   OBJ += menu/backend/menu_common_backend.o \
+			 menu/menu_input_line_cb.o \
+			 menu/menu_common.o \
+			 menu/menu_navigation.o  \
+			 menu/menu_action.o \
+			 menu/menu_shader.o \
+			 menu/menu_entries.o \
+			 menu/menu_entries_cbs.o \
+			 menu/menu_list.o \
+			 menu/menu_animation.o
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)

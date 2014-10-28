@@ -23,14 +23,14 @@
 #include <limits.h>
 
 #include "../menu_common.h"
-#include "../../../general.h"
+#include "../../general.h"
 #include <file/file_path.h>
 #include <file/dir_list.h>
-#include "../../../gfx/gl_common.h"
-#include "../../../gfx/video_thread_wrapper.h"
+#include "../../gfx/gl_common.h"
+#include "../../gfx/video_thread_wrapper.h"
 #include <compat/posix_string.h>
 
-#include "../../../settings_data.h"
+#include "../../settings_data.h"
 
 #include "lakka.h"
 #include "../menu_animation.h"

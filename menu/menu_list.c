@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
+#include "../driver.h"
 #include "menu_list.h"
 #include "menu_navigation.h"
 #include <string.h>

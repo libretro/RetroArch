@@ -21,10 +21,6 @@
 #include "../../content.h"
 #include "../frontend.h"
 
-#ifdef HAVE_MENU
-#include "../../frontend/menu/menu_common.h"
-#endif
-
 static void emscripten_mainloop(void)
 {
    int ret = main_entry_decide(0, NULL, NULL)

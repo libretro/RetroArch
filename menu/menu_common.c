@@ -19,8 +19,8 @@
 #include "menu_entries_cbs.h"
 #include "menu_list.h"
 #include "menu_shader.h"
-#include "../../dynamic.h"
-#include "../frontend.h"
+#include "../dynamic.h"
+#include "../frontend/frontend.h"
 #include <file/file_path.h>
 
 static void draw_frame(void)

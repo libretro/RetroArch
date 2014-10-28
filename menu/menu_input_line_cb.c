@@ -26,10 +26,10 @@
 #include <ctype.h>
 #include "menu_common.h"
 #include "menu_action.h"
-#include "../../input/keyboard_line.h"
+#include "../input/keyboard_line.h"
 #include "menu_input_line_cb.h"
-#include "../../performance.h"
-#include "../../settings_data.h"
+#include "../performance.h"
+#include "../settings_data.h"
 
 void menu_key_start_line(void *data, const char *label,
       const char *label_setting, input_keyboard_line_complete_t cb)

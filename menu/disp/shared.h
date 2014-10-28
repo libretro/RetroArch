@@ -1,7 +1,7 @@
 #ifndef _DISP_SHARED_H
 #define _DISP_SHARED_H
 
-#include "../../../settings_data.h"
+#include "../../settings_data.h"
 
 static void get_title(const char *label, const char *dir,
       unsigned menu_type, char *title, size_t sizeof_title)

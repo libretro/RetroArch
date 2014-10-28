@@ -18,7 +18,7 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../fonts/bitmap.h"
-#include "../../frontend/menu/menu_common.h"
+#include "../../menu/menu_common.h"
 #include "../gfx_common.h"
 
 #ifdef HW_RVL

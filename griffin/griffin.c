@@ -660,44 +660,44 @@ PLAYLISTS
 MENU
 ============================================================ */
 #ifdef HAVE_MENU
-#include "../frontend/menu/menu_input_line_cb.c"
-#include "../frontend/menu/menu_common.c"
-#include "../frontend/menu/menu_action.c"
-#include "../frontend/menu/menu_list.c"
-#include "../frontend/menu/menu_entries.c"
-#include "../frontend/menu/menu_entries_cbs.c"
-#include "../frontend/menu/menu_shader.c"
-#include "../frontend/menu/menu_navigation.c"
-#include "../frontend/menu/menu_animation.c"
+#include "../menu/menu_input_line_cb.c"
+#include "../menu/menu_common.c"
+#include "../menu/menu_action.c"
+#include "../menu/menu_list.c"
+#include "../menu/menu_entries.c"
+#include "../menu/menu_entries_cbs.c"
+#include "../menu/menu_shader.c"
+#include "../menu/menu_navigation.c"
+#include "../menu/menu_animation.c"
 
-#include "../frontend/menu/backend/menu_common_backend.c"
+#include "../menu/backend/menu_common_backend.c"
 #endif
 
 #ifdef HAVE_RMENU
-#include "../frontend/menu/disp/rmenu.c"
+#include "../menu/disp/rmenu.c"
 #endif
 
 #ifdef HAVE_RGUI
-#include "../frontend/menu/disp/rgui.c"
+#include "../menu/disp/rgui.c"
 #endif
 
 #ifdef HAVE_RMENU_XUI
-#include "../frontend/menu/disp/rmenu_xui.cpp"
+#include "../menu/disp/rmenu_xui.cpp"
 #endif
 
 #ifdef HAVE_OPENGL
 
 #ifdef HAVE_LAKKA
-#include "../frontend/menu/backend/menu_lakka_backend.c"
-#include "../frontend/menu/disp/lakka.c"
+#include "../menu/backend/menu_lakka_backend.c"
+#include "../menu/disp/lakka.c"
 #endif
 
 #ifdef HAVE_XMB
-#include "../frontend/menu/disp/xmb.c"
+#include "../menu/disp/xmb.c"
 #endif
 
 #ifdef HAVE_GLUI
-#include "../frontend/menu/disp/glui.c"
+#include "../menu/disp/glui.c"
 #endif
 
 #endif

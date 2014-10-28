@@ -22,11 +22,11 @@
 #include <limits.h>
 
 #include "../menu_common.h"
-#include "../../../general.h"
+#include "../../general.h"
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 
-#include "../../../gfx/fonts/bitmap.h"
+#include "../../gfx/fonts/bitmap.h"
 
 #include "shared.h"
 

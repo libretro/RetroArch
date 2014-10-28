@@ -39,9 +39,9 @@
 #include "intl/intl.h"
 
 #ifdef HAVE_MENU
-#include "frontend/menu/menu_common.h"
-#include "frontend/menu/menu_shader.h"
-#include "frontend/menu/menu_input_line_cb.h"
+#include "menu/menu_common.h"
+#include "menu/menu_shader.h"
+#include "menu/menu_input_line_cb.h"
 #endif
 
 #ifdef HAVE_NETPLAY

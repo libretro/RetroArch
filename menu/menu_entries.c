@@ -17,7 +17,7 @@
 #include "menu_entries.h"
 #include <file/file_list.h>
 #include <file/file_path.h>
-#include "../../file_ops.h"
+#include "../file_ops.h"
 #include <file/dir_list.h>
 
 void menu_entries_refresh(file_list_t *list)

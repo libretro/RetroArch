@@ -22,8 +22,8 @@
 #include "menu_entries.h"
 #include "menu_shader.h"
 
-#include "../../file_ext.h"
-#include "../../config.def.h"
+#include "../file_ext.h"
+#include "../config.def.h"
 
 #ifdef GEKKO
 enum

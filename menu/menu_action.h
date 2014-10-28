@@ -17,7 +17,7 @@
 #ifndef _MENU_ACTION_H
 #define _MENU_ACTION_H
 
-#include "../../settings_list.h"
+#include "../settings_list.h"
 
 #ifdef __cplusplus
 extern "C" {

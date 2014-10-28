@@ -25,20 +25,20 @@
 #include "../menu_navigation.h"
 #include "menu_backend.h"
 
-#include "../../../gfx/gfx_common.h"
-#include "../../../driver.h"
-#include "../../../file_ext.h"
-#include "../../../input/input_common.h"
-#include "../../../config.def.h"
-#include "../../../input/keyboard_line.h"
+#include "../../gfx/gfx_common.h"
+#include "../../driver.h"
+#include "../../file_ext.h"
+#include "../../input/input_common.h"
+#include "../../config.def.h"
+#include "../../input/keyboard_line.h"
 
-#include "../../../settings_data.h"
+#include "../../settings_data.h"
 
 #include "../disp/lakka.h"
 #include "../menu_animation.h"
 
 #ifdef HAVE_CONFIG_H
-#include "../../../config.h"
+#include "../../config.h"
 #endif
 
 /* Move the categories left or right depending 

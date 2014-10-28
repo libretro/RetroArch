@@ -32,7 +32,7 @@
 #endif
 
 #ifdef HAVE_MENU
-#include "frontend/menu/menu_common.h"
+#include "menu/menu_common.h"
 #endif
 
 #ifdef HAVE_CONFIG_H
