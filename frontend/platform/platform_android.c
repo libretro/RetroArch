@@ -23,7 +23,6 @@
 #include <sys/system_properties.h>
 
 #include "platform_android.h"
-#include "../menu/menu_common.h"
 
 #include "../../general.h"
 
