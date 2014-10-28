@@ -50,6 +50,10 @@ extern void system_exec_wii(const char *path, bool should_load_game);
 #include <sdcard/gcsd.h>
 #include <fat.h>
 
+#ifdef USBGECKO
+#include <debug.h>
+#endif
+
 static bool exit_spawn = false;
 static bool exitspawn_start_game = false;
 
@@ -248,6 +252,11 @@ static void frontend_gx_init(void *data)
 #ifndef IS_SALAMANDER
    gx_init_mem2();
 #endif
+#endif
+
+#ifdef USBGECKO
+   DEBUG_Init(GDBSTUB_DEVICE_USB, 1);
+   _break();
 #endif
 
 #if defined(DEBUG) && defined(IS_SALAMANDER)

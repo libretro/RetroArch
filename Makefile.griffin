@@ -98,12 +98,18 @@ else ifeq ($(platform), wii)
   MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float -DMSB_FIRST
   LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size
 ifeq ($(BIG_STACK), 1)
-   LDFLAGS += -T gx/ld/rvl.ld
+  LDFLAGS += -T gx/ld/rvl.ld
 endif
-  LIBS := -lfat $(WHOLE_START) -lretro_wii $(WHOLE_END) -logc -lwiiuse -lbte 
+  LIBS := -lfat $(WHOLE_START) -lretro_wii $(WHOLE_END) -logc -lwiiuse -lbte
+ifeq ($(USBGECKO), 1)
+  LIBS += -ldb
+endif
   APP_BOOTER_DIR = wii/app_booter
   PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
   PLATCFLAGS := -DGEKKO
+ifeq ($(USBGECKO), 1)
+  PLATCFLAGS += -DUSBGECKO
+endif
 
   HAVE_FILTERS_BUILTIN     := 1
   HAVE_RARCH_EXEC          := 1
