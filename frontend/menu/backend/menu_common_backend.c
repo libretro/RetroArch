@@ -618,13 +618,8 @@ static int menu_common_iterate(unsigned action)
       case MENU_ACTION_LEFT:
          if (is_category)
          {
-            int ret = 0;
-
             if (cbs && cbs->action_toggle)
                ret = cbs->action_toggle(type_offset, label_offset, action);
-
-            if (ret)
-               return ret;
          }
          else
          {
@@ -639,13 +634,8 @@ static int menu_common_iterate(unsigned action)
       case MENU_ACTION_RIGHT:
          if (is_category)
          {
-            int ret = 0;
-
             if (cbs && cbs->action_toggle)
                ret = cbs->action_toggle(type_offset, label_offset, action);
-
-            if (ret)
-               return ret;
          }
          else
          {
@@ -675,6 +665,9 @@ static int menu_common_iterate(unsigned action)
       default:
          break;
    }
+
+   if (ret)
+      return ret;
 
    ret = mouse_post_iterate(cbs, path_offset, label_offset, type_offset, action);
 
