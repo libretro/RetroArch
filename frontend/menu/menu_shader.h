@@ -17,10 +17,6 @@
 #ifndef _MENU_SHADER_MANAGER_H
 #define _MENU_SHADER_MANAGER_H
 
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#define HAVE_SHADER_MANAGER
-#endif
-
 #include "../../gfx/shader/shader_context.h"
 
 #ifdef __cplusplus
