@@ -1866,7 +1866,7 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
          cbs->action_ok = action_ok_custom_viewport;
          break;
       case MENU_SETTINGS:
-      case MENU_FILE_CATEGORY:
+      case MENU_SETTING_CATEGORY:
          cbs->action_ok = action_ok_push_default;
          break;
       case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS:
@@ -2011,7 +2011,7 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    if (!strcmp(label, "history_list"))
       cbs->action_deferred_push = deferred_push_history_list;
-   else if (type == MENU_FILE_CATEGORY)
+   else if (type == MENU_SETTING_CATEGORY)
       cbs->action_deferred_push = deferred_push_category;
    else if (!strcmp(label, "deferred_core_list"))
       cbs->action_deferred_push = deferred_push_core_list_deferred;

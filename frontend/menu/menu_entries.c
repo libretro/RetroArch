@@ -116,11 +116,11 @@ int setting_set_flags(rarch_setting_t *setting)
    if (setting->flags & SD_FLAG_PUSH_ACTION)
       return MENU_FILE_PUSH;
    if (setting->flags & SD_FLAG_IS_DRIVER)
-      return MENU_FILE_DRIVER;
+      return MENU_SETTING_DRIVER;
    if (setting->type == ST_PATH)
       return MENU_FILE_PATH;
    if (setting->flags & SD_FLAG_IS_CATEGORY)
-      return MENU_FILE_CATEGORY;
+      return MENU_SETTING_CATEGORY;
    return 0;
 }
 
