@@ -560,11 +560,13 @@ static void config_set_defaults(void)
    {
       fill_pathname_expand_special(g_extern.overlay_dir,
             g_defaults.overlay_dir, sizeof(g_extern.overlay_dir));
+#ifdef RARCH_MOBILE
       if (!*g_settings.input.overlay)
             fill_pathname_join(g_settings.input.overlay,
                   g_extern.overlay_dir,
                   "gamepads/retropad/retropad.cfg",
                   sizeof(g_settings.input.overlay));
+#endif
    }
 #endif
 #ifdef HAVE_MENU
