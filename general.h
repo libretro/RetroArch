@@ -158,6 +158,7 @@ enum basic_event
    RARCH_CMD_DRIVERS_DEINIT,
    RARCH_CMD_DRIVERS_INIT,
    RARCH_CMD_AUDIO_REINIT,
+   RARCH_CMD_RESIZE_WINDOWED_SCALE,
    RARCH_CMD_TEMPORARY_CONTENT_DEINIT,
    RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT,
    RARCH_CMD_LOG_FILE_DEINIT,
@@ -516,6 +517,10 @@ struct global
    char bps_name[PATH_MAX];
    char ips_name[PATH_MAX];
 
+   struct
+   {
+      unsigned windowed_scale;
+   } pending;
 
    struct
    {

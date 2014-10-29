@@ -2203,6 +2203,17 @@ bool rarch_main_command(unsigned cmd)
 #endif
          main_state(cmd);
          break;
+      case RARCH_CMD_RESIZE_WINDOWED_SCALE:
+         if (g_extern.pending.windowed_scale != 0)
+         {
+            g_settings.video.scale = g_extern.pending.windowed_scale;
+
+            if (!g_settings.video.fullscreen)
+               rarch_main_command(RARCH_CMD_REINIT);
+
+            g_extern.pending.windowed_scale = 0;
+         }
+         break;
       case RARCH_CMD_MENU_TOGGLE:
          if (g_extern.is_menu)
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
