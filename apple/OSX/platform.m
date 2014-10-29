@@ -323,6 +323,21 @@ static char** waiting_argv;
       case 3:
          cmd = RARCH_CMD_SAVE_STATE;
          break;
+      case 4:
+         cmd = RARCH_CMD_DISK_EJECT_TOGGLE;
+         break;
+      case 5:
+         cmd = RARCH_CMD_DISK_PREV;
+         break;
+      case 6:
+         cmd = RARCH_CMD_DISK_NEXT;
+         break;
+      case 7:
+         cmd = RARCH_CMD_MENU_PAUSE_LIBRETRO;
+         break;
+      case 8:
+         cmd = RARCH_CMD_GRAB_MOUSE_TOGGLE;
+         break;
       default:
          cmd = RARCH_CMD_NONE;
          break;
