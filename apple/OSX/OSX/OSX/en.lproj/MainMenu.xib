@@ -12,7 +12,7 @@
 		</object>
 		<object class="NSMutableArray" key="IBDocument.EditedObjectIDs">
 			<bool key="EncodedWithXMLCoder">YES</bool>
-			<integer value="586"/>
+			<integer value="29"/>
 		</object>
 		<object class="NSArray" key="IBDocument.PluginDependencies">
 			<bool key="EncodedWithXMLCoder">YES</bool>
@@ -251,7 +251,7 @@
 					</object>
 					<object class="NSMenuItem" id="265357942">
 						<reference key="NSMenu" ref="649796088"/>
-						<string key="NSTitle">Core</string>
+						<string key="NSTitle">Command</string>
 						<string key="NSKeyEquiv"/>
 						<int key="NSMnemonicLoc">2147483647</int>
 						<reference key="NSOnImage" ref="35465992"/>
@@ -259,7 +259,7 @@
 						<string key="NSAction">submenuAction:</string>
 						<reference key="NSTarget" ref="604031057"/>
 						<object class="NSMenu" key="NSSubmenu" id="604031057">
-							<string key="NSTitle">Core</string>
+							<string key="NSTitle">Command</string>
 							<object class="NSMutableArray" key="NSMenuItems">
 								<bool key="EncodedWithXMLCoder">YES</bool>
 								<object class="NSMenuItem" id="768774843">
@@ -1291,7 +1291,7 @@
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{604, 618}, {382, 20}}</string>
+					<string>{{604, 618}, {420, 20}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>{{507, 199}, {480, 360}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
