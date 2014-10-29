@@ -14,7 +14,7 @@
  */
 
 #include "filter.h"
-#include "filters/softfilter.h"
+#include "video_filters/softfilter.h"
 #include "../dynamic.h"
 #include <file/config_file_userdata.h>
 #include <file/file_path.h>

@@ -26,9 +26,7 @@
 #include <compat/posix_string.h>
 #include "gfx/scaler/scaler.h"
 #include "gfx/image/image.h"
-#include "gfx/filters/softfilter.h"
 #include "gfx/shader/shader_parse.h"
-#include "audio/dsp_filter.h"
 #include "input/input_context.h"
 #include "input/overlay.h"
 #include "frontend/frontend_context.h"
