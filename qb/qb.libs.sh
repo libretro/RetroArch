@@ -19,13 +19,17 @@ add_include_dirs()
 add_library_dirs()
 {	while [ "$1" ]; do LIBRARY_DIRS="$LIBRARY_DIRS -L$1"; shift; done;}
 
-check_lib()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs
+check_lib()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs $5 = headers
 {	tmpval="$(eval echo \$HAVE_$1)"
 	[ "$tmpval" = 'no' ] && return 0
 
 	if [ "$3" ]; then
 		ECHOBUF="Checking function $3 in ${2% }"
-		echo "void $3(void); int main(void) { $3(); return 0; }" > $TEMP_C
+		if [ "$5" ]; then
+			printf "$5\nint main(void) { void *p = (void*)$3; return 0; }" > $TEMP_C
+		else
+			echo "void $3(void); int main(void) { $3(); return 0; }" > $TEMP_C
+		fi
 	else
 		ECHOBUF="Checking existence of ${2% }"
 		echo "int main(void) { return 0; }" > $TEMP_C
