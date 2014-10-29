@@ -311,6 +311,8 @@ static char** waiting_argv;
 {
    unsigned sender_tag, cmd;
    sender_tag = (unsigned)[sender tag];
+   
+   RARCH_LOG("Gets here, sender tag is: %d\n", sender_tag);
 
    switch (sender_tag)
    {
@@ -333,10 +335,10 @@ static char** waiting_argv;
          cmd = RARCH_CMD_DISK_NEXT;
          break;
       case 7:
-         cmd = RARCH_CMD_NONE; /* TODO */
+         cmd = RARCH_CMD_GRAB_MOUSE_TOGGLE;
          break;
       case 8:
-         cmd = RARCH_CMD_GRAB_MOUSE_TOGGLE;
+         cmd = RARCH_CMD_MENU_TOGGLE;
          break;
       case 9:
          cmd = RARCH_CMD_PAUSE_TOGGLE;
