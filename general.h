@@ -200,6 +200,7 @@ struct defaults
    char core_path[PATH_MAX];
    char autoconfig_dir[PATH_MAX];
    char audio_filter_dir[PATH_MAX];
+   char video_filter_dir[PATH_MAX];
    char assets_dir[PATH_MAX];
    char core_dir[PATH_MAX];
    char core_info_dir[PATH_MAX];

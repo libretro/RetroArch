@@ -165,6 +165,7 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
     fill_pathname_join(g_defaults.assets_dir, bundle_path_buf, "Contents/Resources/modules/assets", sizeof(g_defaults.assets_dir));
     fill_pathname_join(g_defaults.shader_dir, bundle_path_buf, "Contents/Resources/modules/shaders", sizeof(g_defaults.shader_dir));
     fill_pathname_join(g_defaults.audio_filter_dir, bundle_path_buf, "Contents/Resources/modules/audio_filters", sizeof(g_defaults.audio_filter_dir));
+    fill_pathname_join(g_defaults.video_filter_dir, bundle_path_buf, "Contents/Resources/modules/video_filters", sizeof(g_defaults.video_filter_dir));
     fill_pathname_join(g_defaults.menu_config_dir, support_path_buf, "RetroArch", sizeof(g_defaults.menu_config_dir));
     fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
 #endif

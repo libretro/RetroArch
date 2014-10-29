@@ -532,6 +532,9 @@ static void config_set_defaults(void)
    if (*g_defaults.audio_filter_dir)
       strlcpy(g_settings.audio.filter_dir,
             g_defaults.audio_filter_dir, sizeof(g_settings.audio.filter_dir));
+   if (*g_defaults.video_filter_dir)
+      strlcpy(g_settings.video.filter_dir,
+            g_defaults.video_filter_dir, sizeof(g_settings.video.filter_dir));
    if (*g_defaults.assets_dir)
       strlcpy(g_settings.assets_directory,
             g_defaults.assets_dir, sizeof(g_settings.assets_directory));
