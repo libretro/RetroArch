@@ -14,6 +14,7 @@ DYLIB=-ldl;
 CLIB=-lc
 PTHREADLIB=-lpthread
 SOCKETLIB=-lc
+SOCKETHEADER=
 
 if [ "$OS" = 'BSD' ]; then
    DYLIB=-lc;
@@ -24,6 +25,7 @@ elif [ "$OS" = 'Haiku' ]; then
    SOCKETLIB=-lnetwork
 elif [ "$OS" = 'Win32' ]; then
    SOCKETLIB=-lws2_32
+   SOCKETHEADER="#include <winsock2.h>"
    DYLIB=
 fi
 
@@ -133,7 +135,8 @@ else
    check_lib DYLIB "$DYLIB" dlopen
 fi
 
-check_lib NETPLAY "$SOCKETLIB" socket
+check_lib NETPLAY "$SOCKETLIB" socket "" "$SOCKETHEADER"
+
 if [ "$HAVE_NETPLAY" = 'yes' ]; then
    HAVE_GETADDRINFO=auto
    check_lib GETADDRINFO "$SOCKETLIB" getaddrinfo
