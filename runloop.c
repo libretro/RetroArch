@@ -50,6 +50,7 @@ static bool check_pause(bool pressed, bool frameadvance_pressed)
    static bool old_focus    = true;
    bool focus               = true;
    bool old_is_paused       = g_extern.is_paused;
+   unsigned cmd             = RARCH_CMD_NONE;
 
    /* FRAMEADVANCE will set us into pause mode. */
    pressed |= !g_extern.is_paused && frameadvance_pressed;
@@ -58,17 +59,20 @@ static bool check_pause(bool pressed, bool frameadvance_pressed)
       focus = driver.video->focus(driver.video_data);
 
    if (focus && pressed)
-      g_extern.is_paused  = !g_extern.is_paused;
+      cmd = RARCH_CMD_PAUSE_TOGGLE;
    else if (focus && !old_focus)
-      g_extern.is_paused  = false;
+      cmd = RARCH_CMD_UNPAUSE;
    else if (!focus && old_focus)
-      g_extern.is_paused  = true;
+      cmd = RARCH_CMD_PAUSE;
 
    old_focus = focus;
 
+   if (cmd != RARCH_CMD_NONE)
+      rarch_main_command(cmd);
+
    if (g_extern.is_paused == old_is_paused)
       return false;
-   
+
    return true;
 }
 
@@ -398,8 +402,7 @@ static int do_state_checks(
       return 0;
    }
 #endif
-   if (check_pause_func(trigger_input))
-      rarch_main_command(RARCH_CMD_PAUSE_TOGGLE);
+   check_pause_func(trigger_input);
 
    if (g_extern.is_paused)
    {

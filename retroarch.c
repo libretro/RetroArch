@@ -2504,7 +2504,7 @@ bool rarch_main_command(unsigned cmd)
          menu_shader_manager_apply_changes();
 #endif
          break;
-      case RARCH_CMD_PAUSE_TOGGLE:
+      case RARCH_CMD_PAUSE_CHECKS:
          if (g_extern.is_paused)
          {
             RARCH_LOG("Paused.\n");
@@ -2518,6 +2518,18 @@ bool rarch_main_command(unsigned cmd)
             RARCH_LOG("Unpaused.\n");
             rarch_main_command(RARCH_CMD_AUDIO_START);
          }
+         break;
+      case RARCH_CMD_PAUSE_TOGGLE:
+         g_extern.is_paused = !g_extern.is_paused;
+         rarch_main_command(RARCH_CMD_PAUSE_CHECKS);
+         break;
+      case RARCH_CMD_UNPAUSE:
+         g_extern.is_paused = false;
+         rarch_main_command(RARCH_CMD_PAUSE_CHECKS);
+         break;
+      case RARCH_CMD_PAUSE:
+         g_extern.is_paused = true;
+         rarch_main_command(RARCH_CMD_PAUSE_CHECKS);
          break;
       case RARCH_CMD_MENU_PAUSE_LIBRETRO:
          if (g_extern.is_menu)
