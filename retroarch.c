@@ -2691,6 +2691,11 @@ bool rarch_main_command(unsigned cmd)
             if (control)
                check_disk_eject(control);
          }
+         else
+         {
+            msg_queue_clear(g_extern.msg_queue);
+            msg_queue_push(g_extern.msg_queue, "Core does not support Disk Options.", 1, 120);
+         }
          break;
       case RARCH_CMD_DISK_NEXT:
          if (g_extern.system.disk_control.get_num_images)
@@ -2707,6 +2712,11 @@ bool rarch_main_command(unsigned cmd)
 
             check_disk_next(control);
          }
+         else
+         {
+            msg_queue_clear(g_extern.msg_queue);
+            msg_queue_push(g_extern.msg_queue, "Core does not support Disk Options.", 1, 120);
+         }
          break;
       case RARCH_CMD_DISK_PREV:
          if (g_extern.system.disk_control.get_num_images)
@@ -2722,6 +2732,11 @@ bool rarch_main_command(unsigned cmd)
                return false;
 
             check_disk_prev(control);
+         }
+         else
+         {
+            msg_queue_clear(g_extern.msg_queue);
+            msg_queue_push(g_extern.msg_queue, "Core does not support Disk Options.", 1, 120);
          }
          break;
       case RARCH_CMD_RUMBLE_STOP:
