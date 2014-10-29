@@ -343,6 +343,9 @@ static char** waiting_argv;
       case 9:
          cmd = RARCH_CMD_PAUSE_TOGGLE;
          break;
+      case 20:
+         cmd = RARCH_CMD_FULLSCREEN_TOGGLE;
+         break;
       default:
          cmd = RARCH_CMD_NONE;
          break;
