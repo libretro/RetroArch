@@ -2204,7 +2204,7 @@ bool rarch_main_command(unsigned cmd)
          main_state(cmd);
          break;
       case RARCH_CMD_MENU_TOGGLE:
-         if (g_extern.is_paused)
+         if (g_extern.is_menu)
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
          else
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
