@@ -347,6 +347,13 @@ static char** waiting_argv;
          cmd = RARCH_CMD_NONE;
          break;
    }
+   
+   if (sender_tag >= 10 && sender_tag <= 19)
+   {
+      unsigned idx = (sender_tag - (10-1));
+      g_extern.pending.windowed_scale = idx;
+      cmd = RARCH_CMD_RESIZE_WINDOWED_SCALE;
+   }
 
    rarch_main_command(cmd);
 }
