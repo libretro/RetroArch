@@ -202,7 +202,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir,
             "system", sizeof(g_defaults.system_dir));
       fill_pathname_join(g_defaults.shader_dir,  g_defaults.core_dir,
-            "shaders", sizeof(g_defaults.shader_dir));
+            "shaders_cg", sizeof(g_defaults.shader_dir));
       fill_pathname_join(g_defaults.config_path, g_defaults.port_dir,
             "retroarch.cfg",  sizeof(g_defaults.config_path));
       fill_pathname_join(g_defaults.overlay_dir, g_defaults.core_dir,
