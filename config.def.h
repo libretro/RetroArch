@@ -443,9 +443,6 @@ static bool config_save_on_exit = true;
 
 static const bool default_overlay_enable = false;
 
-static const char *default_filter_dir     = NULL;
-static const char *default_dsp_filter_dir = NULL;
-
 #ifdef HAVE_MENU
 static bool default_block_config_read = true;
 #else

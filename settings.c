@@ -529,14 +529,6 @@ static void config_set_defaults(void)
    g_extern.console.sound.mode = SOUND_MODE_NORMAL;
 #endif
    
-   if (default_filter_dir)
-      fill_pathname_expand_special(g_settings.video.filter_dir,
-            default_filter_dir, sizeof(g_settings.video.filter_dir));
-
-   if (default_dsp_filter_dir)
-      fill_pathname_expand_special(g_settings.audio.filter_dir,
-            default_dsp_filter_dir, sizeof(g_settings.audio.filter_dir));
-
    if (*g_defaults.audio_filter_dir)
       strlcpy(g_settings.audio.filter_dir,
             g_defaults.audio_filter_dir, sizeof(g_settings.audio.filter_dir));
