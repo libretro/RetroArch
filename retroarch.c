@@ -2203,6 +2203,12 @@ bool rarch_main_command(unsigned cmd)
 #endif
          main_state(cmd);
          break;
+      case RARCH_CMD_MENU_TOGGLE:
+         if (g_extern.is_paused)
+            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+         else
+            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+         break;
       case RARCH_CMD_CONTROLLERS_INIT:
          init_controllers();
          break;
