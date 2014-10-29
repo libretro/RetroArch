@@ -128,7 +128,7 @@ static void *blargg_ntsc_snes_generic_create(const struct softfilter_config *con
       return NULL;
    filt->workers = (struct softfilter_thread_data*)
       calloc(threads, sizeof(struct softfilter_thread_data));
-   filt->threads = threads;
+   filt->threads = 1;
    filt->in_fmt  = in_fmt;
    if (!filt->workers)
    {
