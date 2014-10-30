@@ -349,16 +349,16 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
       for (id = strtok_r(parameters, ";", &save); id; 
             id = strtok_r(NULL, ";", &save))
       {
-         param = (struct gfx_shader_parameter*)
+         struct gfx_shader_parameter *parameter = (struct gfx_shader_parameter*)
             find_parameter(shader->parameters, shader->num_parameters, id);
 
-         if (!param)
+         if (!parameter)
          {
             RARCH_WARN("[CGP/GLSLP]: Parameter %s is set in the preset, but no shader uses this parameter, ignoring.\n", id);
             continue;
          }
 
-         if (!config_get_float(conf, id, &param->current))
+         if (!config_get_float(conf, id, &parameter->current))
             RARCH_WARN("[CGP/GLSLP]: Parameter %s is not set in preset.\n", id);
       }
    }
