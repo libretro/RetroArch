@@ -224,6 +224,9 @@ void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
 void scaler_ctx_scale(struct scaler_ctx *ctx,
       void *output, const void *input)
 {
+   if (!ctx)
+      return;
+
    if (ctx->unscaled)
    {
       /* Just perform straight pixel conversion. */
