@@ -709,6 +709,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_keyboard_callback *info = 
             (const struct retro_keyboard_callback*)data;
          g_extern.system.key_event = info->callback;
+         g_extern.frontend_key_event = g_extern.system.key_event;
          break;
       }
 
