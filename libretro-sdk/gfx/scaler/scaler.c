@@ -274,36 +274,28 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
    }
    else
    {
-      bool inp_fmt_is_not_argb8888  = (ctx->in_fmt != SCALER_FMT_ARGB8888);
-      const void *inp_fmt_frame = inp_fmt_is_not_argb8888 ? ctx->input.frame : input;
-      int inp_fmt_stride = inp_fmt_is_not_argb8888 ? ctx->input.stride : ctx->in_stride;
-
-      bool out_fmt_is_not_argb8888 = (ctx->out_fmt != SCALER_FMT_ARGB8888);
-      void *out_fmt_frame = out_fmt_is_not_argb8888 ? ctx->output.frame : output;
-      int out_fmt_stride = out_fmt_is_not_argb8888 ? ctx->output.stride : ctx->out_stride;
-
       /* Take generic filter path. */
-      if (inp_fmt_is_not_argb8888)
+      if (ctx->in_fmt != SCALER_FMT_ARGB8888)
       {
-         if (ctx->in_pixconv)
-            ctx->in_pixconv(ctx->input.frame, input,
-                  ctx->in_width, ctx->in_height,
-                  ctx->input.stride, ctx->in_stride);
+         ctx->in_pixconv(ctx->input.frame, input,
+               ctx->in_width, ctx->in_height,
+               ctx->input.stride, ctx->in_stride);
+
+         ctx->scaler_horiz(ctx, ctx->input.frame, ctx->input.stride);
       }
+      else
+         ctx->scaler_horiz(ctx, input, ctx->in_stride);
 
-      if (ctx->scaler_horiz)
-         ctx->scaler_horiz(ctx, inp_fmt_frame, inp_fmt_stride);
-
-      if (ctx->scaler_vert)
-         ctx->scaler_vert(ctx, out_fmt_frame, out_fmt_stride);
-
-      if (out_fmt_is_not_argb8888)
+      if (ctx->out_fmt != SCALER_FMT_ARGB8888)
       {
-         if (ctx->out_pixconv)
-            ctx->out_pixconv(output, ctx->output.frame,
-                  ctx->out_width, ctx->out_height,
-                  ctx->out_stride, ctx->output.stride);
+         ctx->scaler_vert(ctx, ctx->output.frame, ctx->output.stride);
+
+         ctx->out_pixconv(output, ctx->output.frame,
+               ctx->out_width, ctx->out_height,
+               ctx->out_stride, ctx->output.stride);
       }
+      else
+         ctx->scaler_vert(ctx, output, ctx->out_stride);
    }
 }
 
