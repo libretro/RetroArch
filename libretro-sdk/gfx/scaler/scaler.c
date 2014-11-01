@@ -271,6 +271,10 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
    }
    else
    {
+      const void *input_frame  = input;
+      int stride = ctx->in_stride;
+      bool out_fmt_is_not_argb8888 = (ctx->out_fmt != SCALER_FMT_ARGB8888);
+
       /* Take generic filter path. */
       if (ctx->in_fmt != SCALER_FMT_ARGB8888)
       {
@@ -278,21 +282,19 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
                ctx->in_width, ctx->in_height,
                ctx->input.stride, ctx->in_stride);
 
-         ctx->scaler_horiz(ctx, ctx->input.frame, ctx->input.stride);
+         input_frame = ctx->input.frame;
+         stride      = ctx->input.stride;
       }
-      else
-         ctx->scaler_horiz(ctx, input, ctx->in_stride);
+      ctx->scaler_horiz(ctx, input_frame, stride);
 
-      if (ctx->out_fmt != SCALER_FMT_ARGB8888)
-      {
-         ctx->scaler_vert(ctx, ctx->output.frame, ctx->output.stride);
+      ctx->scaler_vert(ctx,
+            out_fmt_is_not_argb8888 ? ctx->output.frame  : output,
+            out_fmt_is_not_argb8888 ? ctx->output.stride : ctx->out_stride);
 
+      if (out_fmt_is_not_argb8888)
          ctx->out_pixconv(output, ctx->output.frame,
                ctx->out_width, ctx->out_height,
                ctx->out_stride, ctx->output.stride);
-      }
-      else
-         ctx->scaler_vert(ctx, output, ctx->out_stride);
    }
 }
 
