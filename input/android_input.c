@@ -305,7 +305,7 @@ static bool android_input_lookup_name(char *buf,
    RARCH_LOG("device name: %s\n", buf);
 
    getVendorId = NULL;
-   GET_METHOD_ID(env, getVendorId, class, "getVendorId", "()I;");
+   GET_METHOD_ID(env, getVendorId, class, "getVendorId", "()I");
    if (!getVendorId)
       goto error;
 
@@ -318,7 +318,7 @@ static bool android_input_lookup_name(char *buf,
    RARCH_LOG("device vendor id: %d\n", *vendorId);
 
    getProductId = NULL;
-   GET_METHOD_ID(env, getProductId, class, "getProductId", "()I;");
+   GET_METHOD_ID(env, getProductId, class, "getProductId", "()I");
    if (!getProductId)
       goto error;
 
