@@ -113,9 +113,7 @@ struct dirent *readdir(DIR *dir)
       }
    }
    else
-   {
       errno = EBADF;
-   }
 
    return result;
 }
@@ -129,9 +127,7 @@ void rewinddir(DIR *dir)
       dir->result.d_name = 0;
    }
    else
-   {
       errno = EBADF;
-   }
 }
 
 #ifdef __cplusplus
