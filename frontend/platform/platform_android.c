@@ -601,6 +601,8 @@ static void frontend_android_get_environment_settings(int *argc,
          RARCH_LOG("Data path: [%s].\n", path);
          if (args && *path)
          {
+            fill_pathname_join(g_defaults.assets_dir, path,
+                  "assets", sizeof(g_defaults.savestate_dir));
             fill_pathname_join(g_defaults.savestate_dir, path,
                   "savestates", sizeof(g_defaults.savestate_dir));
             fill_pathname_join(g_defaults.sram_dir, path,
@@ -616,9 +618,13 @@ static void frontend_android_get_environment_settings(int *argc,
             fill_pathname_join(g_defaults.core_info_dir,
                   path, "info", sizeof(g_defaults.core_info_dir));
             fill_pathname_join(g_defaults.autoconfig_dir,
-                  path, "autoconfig", sizeof(g_defaults.autoconfig_dir));
+                  path, "autoconfig/android", sizeof(g_defaults.autoconfig_dir));
             fill_pathname_join(g_defaults.playlist_dir,
                   path, "playlists", sizeof(g_defaults.playlist_dir));
+            fill_pathname_join(g_defaults.audio_filter_dir,
+                  path, "audio_filters", sizeof(g_defaults.audio_filter_dir));
+            fill_pathname_join(g_defaults.video_filter_dir,
+                  path, "video_filters", sizeof(g_defaults.video_filter_dir));
          }
       }
    }
