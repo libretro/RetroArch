@@ -352,7 +352,7 @@ static bool gfx_ctx_glx_init(void *data)
    glx_create_context_attribs = (glXCreateContextAttribsARBProc)glXGetProcAddress((const GLubyte*)"glXCreateContextAttribsARB");
 
 #ifdef GL_DEBUG
-   g_debug = true;
+   glx->g_debug = true;
 #else
    glx->g_debug = g_extern.system.hw_render_callback.debug_context;
 #endif

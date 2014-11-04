@@ -44,6 +44,10 @@
 #include "shader/shader_glsl.h"
 #endif
 
+#ifdef GL_DEBUG
+#include <string/string_list.h>
+#endif
+
 #include "shader/shader_context.h"
 
 /* Used for the last pass when rendering to the back buffer. */
