@@ -28,9 +28,6 @@
 #include <X11/Xutil.h>
 #include <GL/glx.h>
 
-typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*,
-      GLXFBConfig, GLXContext, Bool, const int*);
-
 
 static int (*g_pglSwapInterval)(int);
 static void (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
@@ -68,7 +65,7 @@ static volatile sig_atomic_t g_quit;
 static unsigned g_major;
 static unsigned g_minor;
 
-glXCreateContextAttribsARBProc glx_create_context_attribs;
+static PFNGLXCREATECONTEXTATTRIBSARB glx_create_context_attribs;
 
 static void sighandler(int sig)
 {
@@ -349,7 +346,7 @@ static bool gfx_ctx_glx_init(void *data)
    if ((major * 1000 + minor) < 1003)
       goto error;
 
-   glx_create_context_attribs = (glXCreateContextAttribsARBProc)glXGetProcAddress((const GLubyte*)"glXCreateContextAttribsARB");
+   glx_create_context_attribs = (PFNGLXCREATECONTEXTATTRIBSARB)glXGetProcAddress((const GLubyte*)"glXCreateContextAttribsARB");
 
 #ifdef GL_DEBUG
    glx->g_debug = true;
