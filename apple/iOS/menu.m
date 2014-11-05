@@ -21,6 +21,10 @@
 #include <file/file_path.h>
 #include "menu.h"
 
+#include "../../menu/menu_common.h"
+#include "../../menu/menu_entries.h"
+#include "../../menu/disp/shared.h"
+
 /*********************************************/
 /* RunActionSheet                            */
 /* Creates and displays a UIActionSheet with */
@@ -546,694 +550,113 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    RAMainMenu* __weak weakSelf = self;
    self.sections = [NSMutableArray array];
-   
-    [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("Content"),
-                              [RAMenuItemBasic itemWithDescription:BOXSTRING("Core")
-                                                            action:^{ [weakSelf chooseCoreWithPath:nil]; }
-                                                            detail:^{
-                                                               core_info_list_get_by_id(g_extern.core_info, g_extern.core_info_current, weakSelf.core.UTF8String);
-                                                                
-                                                                if (weakSelf.core)
-                                                                {
-                                                                    return g_extern.core_info_current ? BOXSTRING(g_extern.core_info_current->display_name) : BOXSTRING(weakSelf.core.UTF8String);
-                                                                }
-                                                                else
-                                                                    return BOXSTRING("Auto Detect");
-                                                            }],
-                              [RAMenuItemBasic itemWithDescription:BOXSTRING("Load Content (History)")       action:^{ [weakSelf loadHistory]; }],
-                              [RAMenuItemBasic itemWithDescription:BOXSTRING("Load Content")                 action:^{ [weakSelf loadGame]; }],
-                              [RAMenuItemBasic itemWithDescription:BOXSTRING("Core Options")
-                                                                                action:^{ [weakSelf.navigationController pushViewController:[RACoreOptionsMenu new] animated:YES]; }],
-                              nil]];
-    [self.sections addObject:[NSMutableArray arrayWithObjects:BOXSTRING("Settings"),
-                              [RAMenuItemBasic itemWithDescription:BOXSTRING("Settings")
-                                                            action:^{
-                                                                char config_name[PATH_MAX];
-                                                                fill_pathname_base(config_name, g_settings.libretro, sizeof(config_name));
-                                                                
-                                                                [weakSelf.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:BOXSTRING(config_name)] animated:YES];
-                                                            }],
-                              [RAMenuItemBasic itemWithDescription:BOXSTRING("Configurations")
-                                                            action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }],
-                              nil]];
-   if (g_extern.main_is_init)
-   {
-       [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("States"),
-                                 [RAMenuItemStateSelect new],
-                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Save State") action:^{ [weakSelf performBasicAction:RARCH_CMD_SAVE_STATE]; }],
-                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Load State") action:^{ [weakSelf performBasicAction:RARCH_CMD_LOAD_STATE]; }],
-                                 nil]];
-       [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("Actions"),
-                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Restart Content") action:^{ [weakSelf performBasicAction:RARCH_CMD_RESET]; }],
-                                 nil]];
-   }
-   
-   if (g_extern.main_is_init)
-      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Resume") style:UIBarButtonItemStyleBordered target:[RetroArch_iOS get] action:@selector(showGameView)];
-   else
-      self.navigationItem.leftBarButtonItem = nil;
-}
 
-- (void)performBasicAction:(unsigned)action
-{
-   [[RetroArch_iOS get] showGameView];
-   rarch_main_command(action);
-}
+   char title[256];
+   const char *dir = NULL;
+   const char *label = NULL;
+   unsigned menu_type = 0;
+   menu_list_get_last_stack(driver.menu->menu_list,
+                            &dir, &label, &menu_type);
 
-- (void)chooseCoreWithPath:(NSString*)path
-{
-   RAMenuCoreList* list;
-   RAMainMenu* __weak weakSelf = self;
+   get_title(label, dir, menu_type, title, sizeof(title));
 
-   list = [[RAMenuCoreList alloc] initWithPath:path allowAutoDetect:!path
-      action: ^(NSString* core)
-      {
-         if (path)
-         {
-            strlcpy(g_settings.libretro, core.UTF8String, sizeof(g_settings.libretro));
-            strlcpy(g_extern.fullpath,   path.UTF8String, sizeof(g_extern.fullpath));
-            rarch_main_command(RARCH_CMD_LOAD_CORE);
-            rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-         }
-         else
-         {
-            weakSelf.core = core;
-            [weakSelf.tableView reloadData];
-            [weakSelf.navigationController popViewControllerAnimated:YES];
-         }
-      }];
-   
-   // Don't push view controller if it already launched a game
-   if (!list.actionRan)
-      [self.navigationController pushViewController:list animated:YES];
-}
+   const char *core_name = g_extern.menu.info.library_name;
+   if (!core_name)
+     core_name = g_extern.system.info.library_name;
+   if (!core_name)
+     core_name = "No Core";
 
-- (void)loadGame
-{
-   RADirectoryList* list;
-   RAMainMenu __weak* weakSelf = self;
-   
-   list = [[RADirectoryList alloc] initWithPath:[RetroArch_iOS get].documentsDirectory extensions:NULL action:
-      ^(RADirectoryList *list, RADirectoryItem *item)
-      {
-         if (item && !item.isDirectory)
-         {
-            if (weakSelf.core)
-            {
-               strlcpy(g_settings.libretro, weakSelf.core.UTF8String, sizeof(g_settings.libretro));
-               strlcpy(g_extern.fullpath,   item.path.UTF8String,     sizeof(g_extern.fullpath));
-               rarch_main_command(RARCH_CMD_LOAD_CORE);
-               rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-            }
-            else
-               [weakSelf chooseCoreWithPath:item.path];
-         }
-      }];
-   
-   [self.navigationController pushViewController:list animated:YES];
-}
+   const char *core_version = g_extern.menu.info.library_version;
+   if (!core_version)
+     core_version = g_extern.system.info.library_version;
+   if (!core_version)
+     core_version = "";
 
-- (void)loadHistory
-{
-   [self.navigationController pushViewController:[[RAHistoryMenu alloc] init] animated:YES];
-}
+   char title_msg[256];
+   snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
+            core_name, core_version);
+   self.title = BOXSTRING(title_msg);
 
-@end
-
-/*************************************************/
-/* RAHistoryMenu                                 */
-/* Menu object that displays and allows          */
-/* launching a file from the content history.    */
-/*************************************************/
-@implementation RAHistoryMenu
-
-- (void)dealloc
-{
-}
-
-- (id)init
-{
-   if ((self = [super initWithStyle:UITableViewStylePlain]))
-   {
-      if (g_defaults.history)
-      {
-         [self reloadData];
-         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Clear History") style:UIBarButtonItemStyleBordered target:self action:@selector(clearHistory)];
-      }
-   }
-   
-   return self;
-}
-
-- (void)clearHistory
-{
-   if (g_defaults.history)
-      content_playlist_clear(g_defaults.history);
-   [self reloadData];
-}
-
-- (void)willReloadData
-{
-   size_t i;
-   NSMutableArray *section = [NSMutableArray arrayWithObject:BOXSTRING("")];
-   
-   if (!g_defaults.history)
-      return;
-   
-   for (i = 0; i < content_playlist_size(g_defaults.history); i ++)
-   {
-       RAMenuItemBasic *item;
-       const char *path      = NULL;
-       const char *core_path = NULL;
-       const char *core_name = NULL;
-       
-       content_playlist_get_index(g_defaults.history, i, &path, &core_path, &core_name);
-       
-       item = [
-               RAMenuItemBasic itemWithDescription:BOXSTRING(path_basename(path ? path : ""))
-               action:
-               ^{
-                   const char *path      = NULL;
-                   const char *core_path = NULL;
-                   const char *core_name = NULL;
-                   
-                   content_playlist_get_index(g_defaults.history, i, &path, &core_path, &core_name);
-                  
-                   if (!path || !core_path)
-                      return;
-                  
-                  strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
-                  strlcpy(g_extern.fullpath,   path,      sizeof(g_extern.fullpath));
-                  rarch_main_command(RARCH_CMD_LOAD_CORE);
-                  rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-               }
-               detail:
-               ^{
-                   const char *path       = NULL;
-                   const char *core_path  = NULL;
-                   const char *core_name  = NULL;
-                  
-                   if (g_defaults.history)
-                      content_playlist_get_index(g_defaults.history, i, &path, &core_path, &core_name);
-                   
-                   if (core_name)
-                       return BOXSTRING(core_name);
-                   return BOXSTRING("");
-               }
-                ];
-       [section addObject:item];
-   }
-   
-   self.sections = [NSMutableArray arrayWithObject:section];
-}
-
-@end
-
-/*********************************************/
-/* RASettingsGroupMenu                       */
-/* Menu object that displays and allows      */
-/* editing of the a group of                 */
-/* rarch_setting_t structures.               */
-/*********************************************/
-@implementation RASettingsGroupMenu
-
-- (id)initWithGroup:(rarch_setting_t*)group
-{
-   if ((self = [super initWithStyle:UITableViewStyleGrouped]))
-   {
-      rarch_setting_t *i;
-      NSMutableArray* settings = nil;
-
-      self.title = BOXSTRING(group->name);
-      
-      for (i = group + 1; i->type < ST_END_GROUP; i ++)
-      {
-         if (i->type == ST_SUB_GROUP)
-            settings = [NSMutableArray arrayWithObjects:BOXSTRING(i->name), nil];
-         else if (i->type == ST_END_SUB_GROUP)
-         {
-            if (settings.count)
-               [self.sections addObject:settings];
-         }
-         else
-            [settings addObject:[RAMenuItemGeneralSetting itemForSetting:i]];
-      }
-   }
-
-   return self;
-}
-
-@end
-
-
-/*********************************************/
-/* RACoreSettingsMenu                        */
-/* Menu object that displays and allows      */
-/* editing of the setting_data list.         */
-/*********************************************/
-@interface RACoreSettingsMenu()
-@property (nonatomic, copy) NSString* pathToSave; // < Leave nil to not save
-@property (nonatomic, assign) bool isCustom;
-@end
-
-@implementation RACoreSettingsMenu
-
-- (id)initWithCore:(NSString*)core
-{
-
-   RACoreSettingsMenu* __weak weakSelf = self;
-
-   if ((self = [super initWithStyle:UITableViewStyleGrouped]))
-   {
-      int i, j;
-      rarch_setting_t *setting_data, *setting;
-      NSMutableArray* settings;
-
-      char buffer[PATH_MAX];
-      /* TODO - reimplement or get rid of it. */
-      _isCustom = core_info_get_first_custom_config(core.UTF8String, buffer, sizeof(buffer));
-      if (_isCustom)
-      {
-          core_info_list_get_by_id(g_extern.core_info, g_extern.core_info_current, core.UTF8String);
-          self.title = g_extern.core_info_current ? BOXSTRING(g_extern.core_info_current->display_name) : BOXSTRING(core.UTF8String);
-         _pathToSave = BOXSTRING(buffer);
-         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(deleteCustom)];
-      }
-      else
-      {
-         self.title = BOXSTRING("Global Core Config");
-         _pathToSave = BOXSTRING(g_defaults.config_path);
-      }
-      
-      // If we initialized with a nil core(like when starting up) driver.menu will be NULL
-      if (!driver.menu)
-         return NULL;
-      
-      setting_data = (rarch_setting_t*)driver.menu->list_settings;
-      
-      if (!setting_data)
-         return NULL;
-      
-      setting_data_load_config_path(setting_data, _pathToSave.UTF8String);
-      
-      // HACK: Load the key mapping table
-      apple_input_find_any_key();
-      
-      self.core = core;
-   
-      // Add common options
-      const char* emula[] = { "General Options", "rewind_enable", "fps_show", 0 };
-      const char* video[] = { "Video Options", "video_scale_integer", "video_smooth", 0 };
-      const char* audio[] = { "Audio Options", "audio_enable", "audio_mute", "audio_rate_control_delta", 0 };
-      const char* input[] = { "Input Options", "input_overlay", "input_overlay_opacity", 0 };
-      const char** groups[] = { emula, video, audio, input, 0 };
-      
-      for (i = 0; groups[i]; i ++)
-      {
-         NSMutableArray* section = [NSMutableArray arrayWithObject:BOXSTRING(groups[i][0])];
-         [self.sections addObject:section];
-         
-         for (j = 1; groups[i][j]; j ++)
-         {
-            rarch_setting_t *current = (rarch_setting_t*)setting_data_find_setting(setting_data, groups[i][j]);
-            if (current)
-               [section addObject:[RAMenuItemGeneralSetting itemForSetting:current]];
-         }
-      }
-
-      settings = [NSMutableArray arrayWithObjects:BOXSTRING(""), nil];
-      [self.sections addObject:settings];
-
-      for (setting = &setting_data[0]; setting->type < ST_NONE; setting++)
-         if (setting->type == ST_GROUP)
-            [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(setting->name) action:
-            ^{
-               [weakSelf.navigationController pushViewController:[[RASettingsGroupMenu alloc] initWithGroup:setting] animated:YES];
-            }]];
-   }
-   
-   return self;
-}
-
-- (void)dealloc
-{
-   if (self.pathToSave)
-   {
-      config_file_t* config = (config_file_t*)config_file_new(self.pathToSave.UTF8String);
-
-      if (!config)
-         return;
-      
-      setting_data_save_config(driver.menu->list_settings, config);
-      config_file_write(config, self.pathToSave.UTF8String);
-      config_file_free(config);
-   }
-}
-
-- (void)deleteCustom
-{
-   if (self.isCustom && self.pathToSave)
-   {
-       remove(self.pathToSave.UTF8String);
-       self.pathToSave = false;
-       [self.navigationController popViewControllerAnimated:YES];
-   }
-}
-
-@end
-
-/*********************************************/
-/* RAFrontendSettingsMenu                    */
-/* Menu object that displays and allows      */
-/* editing of cocoa frontend related         */
-/* settings.                                 */
-/*********************************************/
-@interface RAFrontendSettingsMenu()
-@property (nonatomic, retain) NSMutableArray* coreConfigOptions;
-@end
-
-@implementation RAFrontendSettingsMenu
-
-- (id)init
-{
-   rarch_setting_t* frontend_setting_data = (rarch_setting_t*)apple_get_frontend_settings();
-
-   if ((self = [super initWithGroup:frontend_setting_data]))
-   {
-      self.title = BOXSTRING("Settings");
+   NSMutableArray *everything = [NSMutableArray array];
+   [everything addObject:BOXSTRING(title)];
   
-      _coreConfigOptions = [NSMutableArray array];
-      [self.sections addObject:_coreConfigOptions];
+   size_t end = menu_list_get_size(driver.menu->menu_list);
+   for (size_t i = driver.menu->begin; i < end; i++) {
+     char type_str[PATH_MAX], path_buf[PATH_MAX];
+     const char *path = NULL, *entry_label = NULL;
+     unsigned type = 0, w = 0;
+     
+     menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
+                             &entry_label, &type);
+     rarch_setting_t *setting =
+       (rarch_setting_t*)setting_data_find_setting
+       (driver.menu->list_settings,
+        driver.menu->menu_list->selection_buf->list[i].label);
+     (void)setting;
+
+     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+       menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf, i);
+
+     bool is_category = menu_common_type_is(entry_label, type) == MENU_SETTINGS;
+     
+     disp_set_label
+       (driver.menu->menu_list->selection_buf, &w, type, i, label,
+        type_str, sizeof(type_str), 
+        entry_label, path,
+        path_buf, sizeof(path_buf));
+
+     if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP) {
+       [everything addObject:[RAMenuItemGeneralSetting itemForSetting:setting]];
+     } else {
+       [everything addObject:
+                     [RAMenuItemBasic
+                       itemWithDescription:BOXSTRING(path_buf)
+                                    action:^{                       
+                         driver.menu->selection_ptr = i;
+                         if (cbs && cbs->action_ok) {
+                           cbs->action_ok(path, entry_label, type, i);
+                         } else if (is_category) {
+                           if (cbs && cbs->action_start) {
+                             cbs->action_start(type, entry_label, MENU_ACTION_START);
+                           }
+                           if (cbs && cbs->action_toggle) {                             
+                             cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT);
+                           }
+                           menu_list_push_stack(driver.menu->menu_list, "", "info_screen",
+                                                0, i);
+                         } else if ( setting && setting->action_ok ) {
+                           setting->action_ok(setting, MENU_ACTION_OK);
+                         }
+
+                         [weakSelf menuRefresh];
+                         [weakSelf reloadData];
+                       }]];
+     }
    }
    
-   return self;
-}
+   [self.sections addObject:everything];
 
-- (void)dealloc
-{
-}
-
-- (void)willReloadData
-{
-   RAFrontendSettingsMenu* __weak weakSelf = self;
-   NSMutableArray* cores = (NSMutableArray*)self.coreConfigOptions;
-   
-   [cores removeAllObjects];
-   
-   [cores addObject:BOXSTRING("Configurations")];
-   [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("Global Core Config")
-                                                  action: ^{ [weakSelf showCoreConfigFor:nil]; }]];
-   
-   [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("New Config for Core")
-                                                  action: ^{ [weakSelf createNewConfig]; }]];
-
-   size_t i;
-
-   if (!g_extern.core_info)
-      return;
-
-   for (i = 0; i < g_extern.core_info->count; i ++)
-   {
-       char path[PATH_MAX];
-       NSString* core_id = BOXSTRING(g_extern.core_info->list[i].path);
-
-      if (core_info_get_first_custom_config(core_id.UTF8String, path, sizeof(path)))
-      {
-         [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(g_extern.core_info->list[i].display_name)
-                                                   association:core_id
-                                                        action: ^(id userdata) { [weakSelf showCoreConfigFor:userdata]; }
-                                                        detail: ^(id userdata) { return BOXSTRING(""); }]];
-      }
+   if (menu_list_get_stack_size(driver.menu->menu_list) > 1) {
+     self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Back") style:UIBarButtonItemStyleBordered target:weakSelf action:@selector(menuBack)];
+   } else {
+     self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Resume") style:UIBarButtonItemStyleBordered target:[RetroArch_iOS get] action:@selector(showGameView)];
    }
 }
 
-- (void)viewWillAppear:(BOOL)animated
-{
-   [super viewWillAppear:animated];
-   [self reloadData];
+- (void)menuRefresh {
+  if (driver.menu->need_refresh) {
+    menu_entries_deferred_push(driver.menu->menu_list->selection_buf,
+                               driver.menu->menu_list->menu_stack);
+
+    driver.menu->need_refresh = false;
+  }
 }
 
-- (void)showCoreConfigFor:(NSString*)core
-{
-   [self.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:core] animated:YES];
-}
-
-static bool copy_config(const char *src_path, const char *dst_path)
-{
-   char ch;
-   FILE *dst;
-   FILE *src = fopen(src_path, "r");
-
-   if (!src)
-      return false;
-
-   dst = fopen(dst_path, "w");
-
-   if (!dst)
-   {
-      fclose(src);
-      return false;
-   }
-
-   while((ch = fgetc(src)) != EOF)
-      fputc(ch, dst);
-
-   fclose(src);
-   fclose(dst);
-
-   return true;
-}
-
-- (void)createNewConfig
-{
-   RAFrontendSettingsMenu* __weak weakSelf = self;
-   RAMenuCoreList* list = [[RAMenuCoreList alloc] initWithPath:nil allowAutoDetect:false
-      action:^(NSString* core)
-      {
-         char path[PATH_MAX];
-         /* TODO - reimplement or get rid of it. */
-         if (!core_info_get_first_custom_config(core.UTF8String, path, sizeof(path)))
-         {
-            if (g_defaults.config_path[0] != '\0' && path[0] != '\0')
-            {
-               if (!copy_config(g_defaults.config_path, path))
-                  RARCH_WARN("Could not create custom config at %s.", path);
-            }
-         }
-         
-         [weakSelf.navigationController popViewControllerAnimated:YES];
-      }];
-   [self.navigationController pushViewController:list animated:YES];
-}
-
-@end
-
-/*********************************************/
-/* RACoreOptionsMenu                         */
-/* Menu object that allows editing of        */
-/* options specific to the running core.     */
-/*********************************************/
-@interface RACoreOptionsMenu()
-@property (nonatomic) uint32_t currentIndex;
-@end
-
-@implementation RACoreOptionsMenu
-
-- (id)init
-{
-   if ((self = [super initWithStyle:UITableViewStyleGrouped]))
-   {
-      RACoreOptionsMenu* __weak weakSelf = self;
-      core_option_manager_t* options = (core_option_manager_t*)g_extern.system.core_options;
-   
-      NSMutableArray* section = (NSMutableArray*)[NSMutableArray arrayWithObject:BOXSTRING("")];
-      [self.sections addObject:section];
-   
-      if (options)
-      {
-         unsigned i;
-         for (i = 0; i < core_option_size(options); i ++)
-            [section addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(core_option_get_desc(options, i)) association:nil
-               action:^{ [weakSelf editValue:i]; }
-               detail:^{ return BOXSTRING(core_option_get_val(options, i)); }]];
-      }
-      else
-         [section addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("The running core has no options.") action:NULL]];
-   }
-   
-   return self;
-}
-
-- (void)editValue:(uint32_t)idx
-{
-   RACoreOptionsMenu __weak* weakSelf = self;
-   self.currentIndex = idx;
-
-   RunActionSheet(core_option_get_desc(g_extern.system.core_options, idx), core_option_get_vals(g_extern.system.core_options, idx), self.tableView,
-   ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
-   {
-      if (buttonIndex != actionSheet.cancelButtonIndex)
-         core_option_set_val(g_extern.system.core_options, self.currentIndex, buttonIndex);
-      
-      [weakSelf.tableView reloadData];
-   });
-}
-
-@end
-
-/*********************************************/
-/* RAMenuItemCoreList                        */
-/* Menu item that handles display and        */
-/* selection of an item in RAMenuCoreList.   */
-/* This item will not function on anything   */
-/* but an RAMenuCoreList type menu.          */
-/*********************************************/
-@implementation RAMenuItemCoreList
-
-- (id)initWithCore:(NSString*)core parent:(RAMenuCoreList* __weak)parent
-{
-   if ((self = [super init]))
-   {
-      _core = core;
-      _parent = parent;
-   }
-   
-   return self;
-}
-
-- (UITableViewCell*)cellForTableView:(UITableView*)tableView
-{
-   UITableViewCell *result;
-   core_info_list_get_by_id(g_extern.core_info, g_extern.core_info_current, self.core.UTF8String);
-   static NSString* const cell_id = @"RAMenuItemCoreList";
-
-   if (!(result = [tableView dequeueReusableCellWithIdentifier:cell_id]))
-      result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
-
-    result.textLabel.text = g_extern.core_info_current ? BOXSTRING(g_extern.core_info_current->display_name) : BOXSTRING(self.core.UTF8String);
-   return result;
-}
-
-- (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
-{
-   [self.parent runAction:self.core];
-}
-
-@end
-
-/*********************************************/
-/* RAMenuCoreList                            */
-/* Menu object that displays and allows      */
-/* selection from a list of cores.           */
-/* If the path is not nil, only cores that   */
-/* may support the file is listed.           */
-/* If the path is nil, an 'Auto Detect'      */
-/* entry is added to the menu, when tapped   */
-/* the action function will be called with   */
-/* nil as the argument.                      */
-/*********************************************/
-@implementation RAMenuCoreList
-
-- (id)initWithPath:(NSString*)path allowAutoDetect:(bool)autoDetect action:(void (^)(NSString *))action
-{
-   if ((self = [super initWithStyle:UITableViewStyleGrouped]))
-   {
-      NSMutableArray* core_section;
-
-      self.title = BOXSTRING("Choose Core");
-      _action = action;
-      _path = path;
-
-      if (autoDetect)
-      {
-         RAMenuCoreList* __weak weakSelf = self;
-         [self.sections addObject: @[BOXSTRING(""), [RAMenuItemBasic itemWithDescription:BOXSTRING("Auto Detect")
-               action: ^{ if(weakSelf.action) weakSelf.action(nil); }]]];
-      }
-
-      core_section = (NSMutableArray*)[NSMutableArray arrayWithObject:BOXSTRING("Cores")];
-
-      [self.sections addObject:core_section];
-
-      if (g_extern.core_info)
-      {
-         if (_path)
-         {
-            const core_info_t* core_support = NULL;
-            size_t core_count = 0;
-
-            core_info_list_get_supported_cores(g_extern.core_info, _path.UTF8String, &core_support, &core_count);
-            
-            if (core_count == 1 && _action)
-               [self runAction:BOXSTRING(core_support[0].path)];
-            else if (core_count > 1)
-               [self load:(uint32_t)core_count coresFromList:core_support toSection:core_section];
-         }
-         
-         if (!_path || [core_section count] == 1)
-            [self load:(uint32_t)g_extern.core_info->count coresFromList:g_extern.core_info->list toSection:core_section];
-      }
-   }
-
-   return self;
-}
-
-- (void)runAction:(NSString*)coreID
-{
-   self.actionRan = true;
-   
-   if (self.action)
-      self.action(coreID);
-}
-
-- (void)load:(uint32_t)count coresFromList:(const core_info_t*)list toSection:(NSMutableArray*)array
-{
-   int i;
-    
-   for (i = 0; i < count; i++)
-      [array addObject:[[RAMenuItemCoreList alloc] initWithCore:BOXSTRING(list[i].path) parent:self]];
-}
-
-@end
-
-/*********************************************/
-/* RAMenuItemStateSelect                     */
-/* Menu item that allows save state slots    */
-/* 0-9 to be selected.                       */
-/*********************************************/
-@implementation RAMenuItemStateSelect
-
-- (UITableViewCell*)cellForTableView:(UITableView*)tableView
-{
-   static NSString* const cell_id = @"state_slot_setting";
-
-   UITableViewCell* result = [tableView dequeueReusableCellWithIdentifier:cell_id];
-   if (!result)
-   {
-      result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
-      result.selectionStyle = UITableViewCellSelectionStyleNone;
-
-      result.textLabel.text = BOXSTRING("Slot");
-      
-      UISegmentedControl* accessory = [[UISegmentedControl alloc] initWithItems:@[@"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9"]];
-      [accessory addTarget:[self class] action:@selector(changed:) forControlEvents:UIControlEventValueChanged];
-      accessory.segmentedControlStyle = UISegmentedControlStyleBar;
-      result.accessoryView = accessory;
-   }
-   
-   [(id)result.accessoryView setSelectedSegmentIndex:(g_settings.state_slot < 10) ? g_settings.state_slot : -1];
-
-   return result;
-}
-
-+ (void)changed:(UISegmentedControl*)sender
-{
-   g_settings.state_slot = (int)sender.selectedSegmentIndex;
-}
-
-- (void)wasSelectedOnTableView:(UITableView *)tableView ofController:(UIViewController *)controller
-{
-
+- (void)menuBack {
+  apply_deferred_settings();
+  menu_list_pop_stack(driver.menu->menu_list);
+  [self menuRefresh];
+  [self reloadData];
 }
 
 @end

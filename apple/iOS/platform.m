@@ -26,6 +26,8 @@
 #include "bluetooth/btdynamic.h"
 #include "bluetooth/btpad.h"
 
+#include "../../menu/disp/ios.h"
+
 id<RetroArch_Platform> apple_platform;
 
 void apple_rarch_exited(void);
@@ -211,6 +213,13 @@ enum
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
 }
 
+void switch_to_ios() {
+  if ( apple_platform != NULL ) {
+    RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
+    [ap showPauseMenu:ap];
+  }
+}
+
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
    apple_platform = self;
@@ -224,9 +233,14 @@ enum
    [self pushViewController:[RAMainMenu new] animated:YES];
 
    [apple_platform loadingCore:nil withFile:nil];
-   
+
    if (rarch_main(0, NULL))
       apple_rarch_exited();
+
+   if ( driver.menu_ctx && driver.menu_ctx == &menu_ctx_ios && driver.menu && driver.menu->userdata ) {
+     ios_handle_t *ih = (ios_handle_t*)driver.menu->userdata;
+     ih->switch_to_ios = switch_to_ios;
+   }
    
    apple_gamecontroller_init();
 }
@@ -284,8 +298,6 @@ enum
 
 - (void)loadingCore:(NSString*)core withFile:(const char*)file
 {
-   (void)[[RACoreSettingsMenu alloc] initWithCore:core];
-
    btpad_set_inquiry_state(false);
 
    [self refreshSystemConfig];

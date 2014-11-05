@@ -702,6 +702,10 @@ MENU
 
 #endif
 
+#ifdef IOS
+#include "../menu/disp/ios.c"
+#endif
+
 #ifdef HAVE_COMMAND
 #include "../command.c"
 #endif

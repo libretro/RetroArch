@@ -227,6 +227,9 @@ static const location_driver_t *location_drivers[] = {
 
 #ifdef HAVE_MENU
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
+#ifdef IOS
+   &menu_ctx_ios,
+#endif
 #if defined(HAVE_RMENU)
    &menu_ctx_rmenu,
 #endif
