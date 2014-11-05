@@ -21,6 +21,9 @@
 #include <file/file_path.h>
 #include "menu.h"
 
+#include "../../menu/menu_common.h"
+#include "../../menu/disp/shared.h"
+
 /*********************************************/
 /* RunActionSheet                            */
 /* Creates and displays a UIActionSheet with */
@@ -546,8 +549,105 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    RAMainMenu* __weak weakSelf = self;
    self.sections = [NSMutableArray array];
+
+   menu_handle_t *mh = driver.menu;
+   // XXX Writing these down for reference
+   mh->list_mainmenu;
+   mh->list_settings;
+   mh->menu_list;
+
+   char title[256];
+   const char *dir = NULL;
+   const char *label = NULL;
+   unsigned menu_type = 0;
+   menu_list_get_last_stack(driver.menu->menu_list,
+                            &dir, &label, &menu_type);
+
+   get_title(label, dir, menu_type, title, sizeof(title));
+
+   const char *core_name = g_extern.menu.info.library_name;
+   if (!core_name)
+     core_name = g_extern.system.info.library_name;
+   if (!core_name)
+     core_name = "No Core";
+
+   const char *core_version = g_extern.menu.info.library_version;
+   if (!core_version)
+     core_version = g_extern.system.info.library_version;
+   if (!core_version)
+     core_version = "";
+
+   char title_msg[256];
+   snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
+            core_name, core_version);
+   self.title = BOXSTRING(title_msg);
+
+   NSMutableArray *everything = [NSMutableArray array];
+   [everything addObject:BOXSTRING(title)];
+  
+   size_t end = menu_list_get_size(driver.menu->menu_list);
+   for (size_t i = driver.menu->begin; i < end; i++) {
+     char message[PATH_MAX], type_str[PATH_MAX],
+       entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
+       path_buf[PATH_MAX];
+     const char *path = NULL, *entry_label = NULL;
+     unsigned type = 0, w = 0;
+     bool selected = false;
+     
+     menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
+                             &entry_label, &type);
+     rarch_setting_t *setting =
+       (rarch_setting_t*)setting_data_find_setting
+       (driver.menu->list_settings,
+        driver.menu->menu_list->selection_buf->list[i].label);
+     (void)setting;
+
+     disp_set_label
+       (driver.menu->menu_list->selection_buf, &w, type, i, label,
+        type_str, sizeof(type_str), 
+        entry_label, path,
+        path_buf, sizeof(path_buf));
+
+     [everything addObject:
+                   // XXX Look at the type and maybe make a different
+                   // kind, such as for a setting. Right now, assume
+                   // everything is a button.
+                   [RAMenuItemBasic
+                     itemWithDescription:BOXSTRING(path_buf)
+                                  action:^{
+                       // XXX This is not doing what I expect. In
+                       // particular, "Settings" doesn't open a new
+                       // menu. (I assumed it would call some command
+                       // that would go out, change the driver.menu
+                       // value, then call back into here with a new
+                       // thing.
+                       //
+                       // Idea 1: setting->action_ok doesn't work like that.
+                       //
+                       // Idea 2: I need to explicitly go back to
+                       // gameView and let RA run.
+                       //
+                       // Idea 3: setting is actually totally busted
+                       // because this is an ObjC block and I need to
+                       // store it in a ObjC object that is controlled
+                       // by the GC. [I don't think this is the case,
+                       // because saving a new config works, but if it
+                       // is, this is actually quite easy to fix.]
+                       if ( setting != NULL ) {
+                         setting->action_ok(setting, MENU_ACTION_OK);
+                       }
+                     }]];
+   }
    
-    [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("Content"),
+   [self.sections addObject:everything];
+}
+
+- (void)willReloadDataOLD
+{
+   RAMainMenu* __weak weakSelf = self;
+   self.sections = [NSMutableArray array];
+   
+   [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("Content"),
                               [RAMenuItemBasic itemWithDescription:BOXSTRING("Core")
                                                             action:^{ [weakSelf chooseCoreWithPath:nil]; }
                                                             detail:^{
