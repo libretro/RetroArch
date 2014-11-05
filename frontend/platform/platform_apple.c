@@ -137,7 +137,7 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.system_dir, home_dir_buf, ".RetroArch", sizeof(g_defaults.system_dir));
    fill_pathname_join(g_defaults.core_dir, bundle_path_buf, "modules", sizeof(g_defaults.core_dir));
 
-   strlcpy(g_defaults.menu_config_dir, "/tmp" /*g_defaults.system_dir*/, sizeof(g_defaults.menu_config_dir));
+   strlcpy(g_defaults.menu_config_dir, g_defaults.system_dir, sizeof(g_defaults.menu_config_dir));
    fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
 
    strlcpy(g_defaults.sram_dir, g_defaults.system_dir, sizeof(g_defaults.sram_dir));
