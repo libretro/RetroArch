@@ -237,7 +237,7 @@ void switch_to_ios() {
    if (rarch_main(0, NULL))
       apple_rarch_exited();
 
-   if ( driver.menu != NULL && driver.menu->userdata != NULL ) {
+   if ( driver.menu_ctx && driver.menu_ctx == &menu_ctx_ios && driver.menu && driver.menu->userdata ) {
      ios_handle_t *ih = (ios_handle_t*)driver.menu->userdata;
      ih->switch_to_ios = switch_to_ios;
    }

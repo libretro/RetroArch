@@ -48,10 +48,10 @@ static void ios_free ( void* data ) {
   return;
 }
 
-static void ios_render() {
+static int menu_ios_iterate(unsigned action) {
   ios_handle_t *ih = NULL;
   if (driver.menu == NULL) {
-    return;
+    return 0;
   }
 
   ih = (ios_handle_t*)driver.menu->userdata;
@@ -59,13 +59,19 @@ static void ios_render() {
     ih->switch_to_ios();
   }
 
-  return;
+  return 0;
 }
+
+menu_ctx_driver_backend_t menu_ctx_backend_ios = {
+   menu_ios_iterate,
+
+   "menu_ios",
+};
 
 menu_ctx_driver_t menu_ctx_ios = {
   NULL, // set_texture
   NULL, // render_messagebox
-  ios_render, // render
+  NULL, // render
   NULL, // frame
   ios_init, // init
   NULL, // init_lists
@@ -87,6 +93,6 @@ menu_ctx_driver_t menu_ctx_ios = {
   NULL, // list_clear
   NULL, // list_set_selection
   NULL, // init_core_info
-  &menu_ctx_backend_common, // backend
+  &menu_ctx_backend_ios, // backend
   "ios",
 };

@@ -551,10 +551,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    self.sections = [NSMutableArray array];
 
    menu_handle_t *mh = driver.menu;
-   // XXX Writing these down for reference
-   mh->list_mainmenu;
-   mh->list_settings;
-   mh->menu_list;
 
    char title[256];
    const char *dir = NULL;
@@ -602,6 +598,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
         driver.menu->menu_list->selection_buf->list[i].label);
      (void)setting;
 
+     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+       menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf, i);
+
+     bool is_category = menu_common_type_is(entry_label, type) == MENU_SETTINGS;
+     
      disp_set_label
        (driver.menu->menu_list->selection_buf, &w, type, i, label,
         type_str, sizeof(type_str), 
@@ -614,32 +615,51 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                    // everything is a button.
                    [RAMenuItemBasic
                      itemWithDescription:BOXSTRING(path_buf)
-                                  action:^{
-                       // XXX This is not doing what I expect. In
-                       // particular, "Settings" doesn't open a new
-                       // menu. (I assumed it would call some command
-                       // that would go out, change the driver.menu
-                       // value, then call back into here with a new
-                       // thing.
-                       //
-                       // Idea 1: setting->action_ok doesn't work like that.
-                       //
-                       // Idea 2: I need to explicitly go back to
-                       // gameView and let RA run.
-                       //
-                       // Idea 3: setting is actually totally busted
-                       // because this is an ObjC block and I need to
-                       // store it in a ObjC object that is controlled
-                       // by the GC. [I don't think this is the case,
-                       // because saving a new config works, but if it
-                       // is, this is actually quite easy to fix.]
-                       if ( setting != NULL ) {
+                                  action:^{                       
+                       driver.menu->selection_ptr = i;
+                       if (cbs && cbs->action_ok) {
+                         cbs->action_ok(path, entry_label, type, i);
+                       } else if (is_category) {
+                         if (cbs && cbs->action_start) {
+                           cbs->action_start(type, entry_label, MENU_ACTION_START);
+                         }
+                         if (cbs && cbs->action_toggle) {                             
+                           cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT);
+                         }
+                         menu_list_push_stack(driver.menu->menu_list, "", "info_screen",
+                                              0, i);
+                       } else if ( setting && setting->action_ok ) {
                          setting->action_ok(setting, MENU_ACTION_OK);
                        }
+
+                       [self menuRefresh];
+                       [self reloadData];
                      }]];
    }
    
    [self.sections addObject:everything];
+
+   if (menu_list_get_stack_size(driver.menu->menu_list) > 1) {
+     self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Back") style:UIBarButtonItemStyleBordered target:self action:@selector(menuBack)];
+   } else {
+     self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Resume") style:UIBarButtonItemStyleBordered target:[RetroArch_iOS get] action:@selector(showGameView)];
+   }
+}
+
+- (void)menuRefresh {
+  if (driver.menu->need_refresh) {
+    menu_entries_deferred_push(driver.menu->menu_list->selection_buf,
+                               driver.menu->menu_list->menu_stack);
+
+    driver.menu->need_refresh = false;
+  }
+}
+
+- (void)menuBack {
+  apply_deferred_settings();
+  menu_list_pop_stack(driver.menu->menu_list);
+  [self menuRefresh];
+  [self reloadData];
 }
 
 - (void)willReloadDataOLD
