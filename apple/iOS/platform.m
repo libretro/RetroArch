@@ -298,8 +298,6 @@ void switch_to_ios() {
 
 - (void)loadingCore:(NSString*)core withFile:(const char*)file
 {
-   (void)[[RACoreSettingsMenu alloc] initWithCore:core];
-
    btpad_set_inquiry_state(false);
 
    [self refreshSystemConfig];
