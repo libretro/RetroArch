@@ -609,32 +609,36 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
         entry_label, path,
         path_buf, sizeof(path_buf));
 
-     [everything addObject:
-                   // XXX Look at the type and maybe make a different
-                   // kind, such as for a setting. Right now, assume
-                   // everything is a button.
-                   [RAMenuItemBasic
-                     itemWithDescription:BOXSTRING(path_buf)
-                                  action:^{                       
-                       driver.menu->selection_ptr = i;
-                       if (cbs && cbs->action_ok) {
-                         cbs->action_ok(path, entry_label, type, i);
-                       } else if (is_category) {
-                         if (cbs && cbs->action_start) {
-                           cbs->action_start(type, entry_label, MENU_ACTION_START);
+     if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP) {
+       [everything addObject:[RAMenuItemGeneralSetting itemForSetting:setting]];
+     } else {
+       [everything addObject:
+                     // XXX Look at the type and maybe make a different
+                     // kind, such as for a setting. Right now, assume
+                     // everything is a button.
+                     [RAMenuItemBasic
+                       itemWithDescription:BOXSTRING(path_buf)
+                                    action:^{                       
+                         driver.menu->selection_ptr = i;
+                         if (cbs && cbs->action_ok) {
+                           cbs->action_ok(path, entry_label, type, i);
+                         } else if (is_category) {
+                           if (cbs && cbs->action_start) {
+                             cbs->action_start(type, entry_label, MENU_ACTION_START);
+                           }
+                           if (cbs && cbs->action_toggle) {                             
+                             cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT);
+                           }
+                           menu_list_push_stack(driver.menu->menu_list, "", "info_screen",
+                                                0, i);
+                         } else if ( setting && setting->action_ok ) {
+                           setting->action_ok(setting, MENU_ACTION_OK);
                          }
-                         if (cbs && cbs->action_toggle) {                             
-                           cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT);
-                         }
-                         menu_list_push_stack(driver.menu->menu_list, "", "info_screen",
-                                              0, i);
-                       } else if ( setting && setting->action_ok ) {
-                         setting->action_ok(setting, MENU_ACTION_OK);
-                       }
 
-                       [self menuRefresh];
-                       [self reloadData];
-                     }]];
+                         [self menuRefresh];
+                         [self reloadData];
+                       }]];
+     }
    }
    
    [self.sections addObject:everything];
