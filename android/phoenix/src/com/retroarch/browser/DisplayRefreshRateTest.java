@@ -45,7 +45,7 @@ public final class DisplayRefreshRateTest extends Activity {
 			SharedPreferences prefs = UserPreferences.getPreferences(DisplayRefreshRateTest.this);
 			SharedPreferences.Editor edit = prefs.edit();
 			edit.putString("video_refresh_rate", Double.toString(fps));
-			edit.commit();
+			edit.apply();
 		}
 
 		@Override

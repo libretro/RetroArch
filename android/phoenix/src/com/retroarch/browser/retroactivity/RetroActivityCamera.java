@@ -162,7 +162,7 @@ public class RetroActivityCamera extends RetroActivityCommon
 		SharedPreferences prefs = UserPreferences.getPreferences(this);
 		SharedPreferences.Editor edit = prefs.edit();
 		edit.putBoolean("CAMERA_UPDATES_ON", false);
-		edit.commit();
+		edit.apply();
 
 		camera_service_running = false;
 
@@ -176,7 +176,7 @@ public class RetroActivityCamera extends RetroActivityCommon
 		SharedPreferences prefs = UserPreferences.getPreferences(this);
 		SharedPreferences.Editor edit = prefs.edit();
 		edit.putBoolean("CAMERA_UPDATES_ON", camera_service_running);
-		edit.commit();
+		edit.apply();
 		
 		onCameraStop();
 		super.onPause();
@@ -203,7 +203,7 @@ public class RetroActivityCamera extends RetroActivityCommon
 		else // Otherwise, turn off camera updates
 		{
 			edit.putBoolean("CAMERA_UPDATES_ON", false);
-			edit.commit();
+			edit.apply();
 			camera_service_running = false;
 		}
 		super.onResume();

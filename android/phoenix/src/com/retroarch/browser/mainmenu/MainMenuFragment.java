@@ -78,7 +78,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 		if (!prefs.getBoolean("first_time_refreshrate_calculate", false))
 		{
-			prefs.edit().putBoolean("first_time_refreshrate_calculate", true).commit();
+			prefs.edit().putBoolean("first_time_refreshrate_calculate", true).apply();
 
 			AlertDialog.Builder alert = new AlertDialog.Builder(ctx)
 						.setTitle(R.string.welcome_to_retroarch)

@@ -45,7 +45,7 @@ public final class MainMenuActivity extends FragmentActivity
 		SharedPreferences.Editor edit = prefs.edit();
 		edit.putString("libretro_path", core_path);
 		edit.putString("libretro_name", core_name);
-		edit.commit();
+		edit.apply();
 
 		// Set the title section to contain the name of the selected core.
 		setCoreTitle(core_name);

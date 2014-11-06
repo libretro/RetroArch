@@ -252,7 +252,7 @@ public class DirectoryFragment extends DialogFragment
 			SharedPreferences settings = UserPreferences.getPreferences(getActivity());
 			SharedPreferences.Editor editor = settings.edit();
 			editor.putString(pathSettingKey, path);
-			editor.commit();
+			editor.apply();
 		}
 
 		if (onClosedListener != null)
