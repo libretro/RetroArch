@@ -77,14 +77,14 @@ public final class DetectCoreDirectoryFragment extends DirectoryFragment
 	/**
 	 * Returns everything after the last ‘.’ of the given file name or path.
 	 */
-	public static String getFileExt(String filePath)
+	private static String getFileExt(String filePath)
 	{
-        	int i = filePath.lastIndexOf('.');
-        	if (i >= 0)
-                	return filePath.substring(i+1).toLowerCase();
-        	return ""; // No extension
+		int i = filePath.lastIndexOf('.');
+		if (i >= 0)
+			return filePath.substring(i+1).toLowerCase();
+		return ""; // No extension
 	}
-	
+
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
 	{
@@ -188,24 +188,24 @@ public final class DetectCoreDirectoryFragment extends DirectoryFragment
 				{
 					try
 					{
-	       				ZipFile zipFile = new ZipFile(chosenFile);
-	       				
-	       				Enumeration<? extends ZipEntry> entries = zipFile.entries();
+						ZipFile zipFile = new ZipFile(chosenFile);
 
-        				// Try to handle the case of small text files bundles with content.
-        				long largestEntry = Long.MIN_VALUE;
+						Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
-        				while (entries.hasMoreElements())
-        				{
-                				ZipEntry zipEntry = entries.nextElement();
-                				if (zipEntry.getCompressedSize() >= largestEntry)
-                				{
-                        				largestEntry = zipEntry.getCompressedSize();
-                        				fileExt = getFileExt(zipEntry.getName());
-                				}
-        				}
-        				
-        				zipFile.close();
+						// Try to handle the case of small text files bundles with content.
+						long largestEntry = Long.MIN_VALUE;
+
+						while (entries.hasMoreElements())
+						{
+							ZipEntry zipEntry = entries.nextElement();
+							if (zipEntry.getCompressedSize() >= largestEntry)
+							{
+								largestEntry = zipEntry.getCompressedSize();
+								fileExt = getFileExt(zipEntry.getName());
+							}
+						}
+
+						zipFile.close();
 					}
 					catch(IOException e)
 					{
