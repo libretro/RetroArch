@@ -126,12 +126,11 @@ class PreferenceManagerCompat
      * <p>
      * If a preference hierarchy is given, the new preference hierarchies will
      * be merged in.
-     * 
-     * @param queryIntent The intent to match activities.
-     * @param rootPreferences Optional existing hierarchy to merge the new
-     *            hierarchies into.
-     * @return The root hierarchy (if one was not provided, the new hierarchy's
-     *         root).
+     *
+     * @param manager {@link PreferenceManager} context to use.
+     * @param intent The intent to match activities.
+     *
+     * @return The root hierarchy (if one was not provided, the new hierarchy's root).
      */
     static PreferenceScreen inflateFromIntent(PreferenceManager manager, Intent intent, PreferenceScreen screen)
     {
@@ -153,10 +152,8 @@ class PreferenceManagerCompat
      * Inflates a preference hierarchy from XML. If a preference hierarchy is
      * given, the new preference hierarchies will be merged in.
      * 
-     * @param context The context of the resource.
+     * @param manager The context of the resource.
      * @param resId The resource ID of the XML to inflate.
-     * @param rootPreferences Optional existing hierarchy to merge the new
-     *            hierarchies into.
      * @return The root hierarchy (if one was not provided, the new hierarchy's
      *         root).
      * @hide
@@ -254,8 +251,10 @@ class PreferenceManagerCompat
 
     /**
      * Sets the root of the preference hierarchy.
-     * 
-     * @param preferenceScreen The root {@link PreferenceScreen} of the preference hierarchy.
+     *
+     * @param manager {@link PreferenceManager} context.
+     * @param screen  The root {@link PreferenceScreen} of the preference hierarchy.
+     *
      * @return Whether the {@link PreferenceScreen} given is different than the previous. 
      */
     static boolean setPreferences(PreferenceManager manager, PreferenceScreen screen)
