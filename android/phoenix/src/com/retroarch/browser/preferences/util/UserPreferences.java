@@ -26,6 +26,11 @@ public final class UserPreferences
 	// Logging tag.
 	private static final String TAG = "UserPreferences";
 
+	// Disallow explicit instantiation.
+	private UserPreferences()
+	{
+	}
+
 	/**
 	 * Retrieves the path to the default location of the libretro config.
 	 * 
