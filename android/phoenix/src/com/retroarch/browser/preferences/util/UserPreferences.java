@@ -141,7 +141,7 @@ public final class UserPreferences
 		readbackBool(config, edit, "savefile_directory_enable"); // Ignored by RetroArch
 		readbackBool(config, edit, "savestate_directory_enable"); // Ignored by RetroArch
 
-		edit.commit();
+		edit.apply();
 	}
 
 	/**

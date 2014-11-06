@@ -48,7 +48,7 @@ public final class VideoPreferenceFragment extends PreferenceListFragment implem
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
 			final SharedPreferences.Editor edit = prefs.edit();
 			edit.putString("video_refresh_rate", Double.toString(rate));
-			edit.commit();
+			edit.apply();
 
 			Toast.makeText(getActivity(), String.format(getString(R.string.using_os_reported_refresh_rate), rate), Toast.LENGTH_LONG).show();
 		}

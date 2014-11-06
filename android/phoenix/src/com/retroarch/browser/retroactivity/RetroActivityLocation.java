@@ -276,7 +276,7 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 		SharedPreferences prefs = UserPreferences.getPreferences(this);
 		SharedPreferences.Editor edit = prefs.edit();
 		edit.putBoolean("LOCATION_UPDATES_ON", mUpdatesRequested);
-		edit.commit();
+		edit.apply();
 
 		super.onPause();
 	}
@@ -300,7 +300,7 @@ implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener
 		else // Otherwise, turn off location updates
 		{
 			edit.putBoolean("LOCATION_UPDATES_ON", false);
-			edit.commit();
+			edit.apply();
 			location_service_running = false;
 		}
 
