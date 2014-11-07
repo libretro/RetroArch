@@ -884,7 +884,7 @@ static void lakka_settings_context_reset(void)
 static void lakka_context_reset(void *data)
 {
    int i, j, k;
-   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX], font_path[PATH_MAX];
+   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX], fontpath[PATH_MAX];
    lakka_handle_t *lakka = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
    gl_t *gl = NULL;
@@ -914,11 +914,10 @@ static void lakka_context_reset(void *data)
    fill_pathname_join(iconpath, themepath, lakka->icon_dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
-   fill_pathname_join(font_path, themepath, "font.ttf", sizeof(font_path));
+   fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
 
-   lakka_font_init_first(&gl->font_driver, &lakka->font, gl, font_path, lakka->font_size);
-   //gl_font_init_first(&gl->font_driver, &lakka->font, gl, font_path, lakka->font_size);
-   
+   lakka_font_init_first(&gl->font_driver, &lakka->font, gl, fontpath, lakka->font_size);
+
    fill_pathname_join(lakka->textures[TEXTURE_BG].path, iconpath,
          "bg.png", sizeof(lakka->textures[TEXTURE_BG].path));
    fill_pathname_join(lakka->textures[TEXTURE_SETTINGS].path, iconpath,
