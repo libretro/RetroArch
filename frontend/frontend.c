@@ -143,6 +143,8 @@ static void check_defaults_dirs(void)
       path_mkdir(g_defaults.system_dir);
    if (*g_defaults.resampler_dir)
       path_mkdir(g_defaults.resampler_dir);
+   if (*g_defaults.menu_config_dir)
+      path_mkdir(g_defaults.menu_config_dir);
 }
 
 static void history_playlist_push(content_playlist_t *playlist,
