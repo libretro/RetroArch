@@ -55,6 +55,7 @@ enum thread_cmd
 #endif
    CMD_POKE_SET_ASPECT_RATIO,
    CMD_POKE_SET_OSD_MSG,
+   CMD_FONT_INIT,
    CMD_CUSTOM_COMMAND,
 
    CMD_DUMMY = INT_MAX
@@ -158,6 +159,16 @@ typedef struct thread_video
          int return_value;
       } custom_command;
 
+      struct
+      {
+         bool (*method)(void*, void*, void*, const char*, float);
+         void *font_driver;
+         void *font_handle;
+         void *video_data;
+         const char *font_path;
+         float font_size;
+         bool return_value;
+      } font_init;
 
    } cmd_data;
 

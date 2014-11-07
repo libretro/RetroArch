@@ -3021,7 +3021,7 @@ static void gl_apply_state_changes(void *data)
 }
 
 static void gl_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params)
+      const struct font_params *params, void *font)
 {
    gl_t *gl = (gl_t*)data;
    if (!gl)
@@ -3030,7 +3030,7 @@ static void gl_set_osd_msg(void *data, const char *msg,
    if (gl->font_driver && gl->font_handle)
    {
       context_bind_hw_render(gl, false);
-      gl->font_driver->render_msg(gl->font_handle, msg, params);
+      gl->font_driver->render_msg(font ? font : gl->font_handle, msg, params);
       context_bind_hw_render(gl, true);
    }
 }

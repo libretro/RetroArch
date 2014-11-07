@@ -61,7 +61,7 @@ static void glui_blit_line(float x, float y, const char *message, bool green)
    if (driver.video_data && driver.video_poke
        && driver.video_poke->set_osd_msg)
        driver.video_poke->set_osd_msg(driver.video_data,
-                                      message, &params);
+                                      message, &params, NULL);
 }
 
 static void glui_render_background(bool force_transparency)
