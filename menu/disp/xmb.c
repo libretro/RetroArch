@@ -89,7 +89,6 @@ typedef struct xmb_handle
    float arrow_alpha;
    float hspacing;
    float vspacing;
-   float font_size;
    float margin_left;
    float margin_top;
    float title_margin_left;
@@ -110,6 +109,8 @@ typedef struct xmb_handle
    float c_passive_alpha;
    float i_passive_zoom;
    float i_passive_alpha;
+   void *font;
+   int font_size;
 } xmb_handle_t;
 
 static const GLfloat rmb_vertex[] = {
@@ -222,7 +223,7 @@ static void xmb_draw_text(const char *str, float x,
    if (driver.video_data && driver.video_poke
        && driver.video_poke->set_osd_msg)
        driver.video_poke->set_osd_msg(driver.video_data,
-                                      str, &params, NULL);
+                                      str, &params, xmb->font);
 }
 
 static void xmb_render_background(bool force_transparency)
@@ -338,15 +339,15 @@ static void xmb_render_messagebox(const char *message)
       return;
    }
 
-   int x = gl->win_width / 2 - strlen(list->elems[0].data) * g_settings.video.font_size / 4;
-   int y = gl->win_height / 2 - list->size * g_settings.video.font_size / 2;
+   int x = gl->win_width / 2 - strlen(list->elems[0].data) * xmb->font_size / 4;
+   int y = gl->win_height / 2 - list->size * xmb->font_size / 2;
 
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
 
       if (msg)
-         xmb_draw_text(msg, x, y + i * g_settings.video.font_size, 1, 1);
+         xmb_draw_text(msg, x, y + i * xmb->font_size, 1, 1);
    }
 
    string_list_free(list);
@@ -794,15 +795,16 @@ static void *xmb_init(void)
    strlcpy(xmb->icon_dir, "256", sizeof(xmb->icon_dir));
 
    xmb->icon_size = 128.0 * scale_factor;
+   xmb->font_size = 32.0 * scale_factor;
    xmb->hspacing = 200.0 * scale_factor;
    xmb->vspacing = 64.0 * scale_factor;
    xmb->margin_left = 336.0 * scale_factor;
    xmb->margin_top = (256+32) * scale_factor;
    xmb->title_margin_left = 60 * scale_factor;
-   xmb->title_margin_top = 60 * scale_factor + g_settings.video.font_size/3;
-   xmb->title_margin_bottom = 60 * scale_factor - g_settings.video.font_size/3;
+   xmb->title_margin_top = 60 * scale_factor + xmb->font_size/3;
+   xmb->title_margin_bottom = 60 * scale_factor - xmb->font_size/3;
    xmb->label_margin_left = 85.0 * scale_factor;
-   xmb->label_margin_top = g_settings.video.font_size/3.0;
+   xmb->label_margin_top = xmb->font_size/3.0;
    xmb->setting_margin_left = 600.0 * scale_factor;
 
    xmb_init_core_info(menu);
@@ -864,17 +866,40 @@ static GLuint xmb_png_texture_load(const char* file_name)
       thr->wait_reply_func(thr, CMD_CUSTOM_COMMAND);
 
       return thr->cmd_data.custom_command.return_value;
-
    }
 
    return xmb_png_texture_load_(file_name);
+}
+
+static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
+      void **font_handle, void *video_data, const char *font_path,
+      float font_size)
+{
+   if (g_settings.video.threaded
+         && !g_extern.system.hw_render_callback.context_type)
+   {
+      thread_video_t *thr = (thread_video_t*)driver.video_data;
+      thr->cmd_data.font_init.method = gl_font_init_first;
+      thr->cmd_data.font_init.font_driver = font_driver;
+      thr->cmd_data.font_init.font_handle = font_handle;
+      thr->cmd_data.font_init.video_data = video_data;
+      thr->cmd_data.font_init.font_path = font_path;
+      thr->cmd_data.font_init.font_size = font_size;
+      thr->send_cmd_func(thr, CMD_FONT_INIT);
+      thr->wait_reply_func(thr, CMD_FONT_INIT);
+
+      return thr->cmd_data.font_init.return_value;
+   }
+
+   return gl_font_init_first(font_driver, font_handle, video_data,
+         font_path, font_size);
 }
 
 static void xmb_context_reset(void *data)
 {
    int k;
    char bgpath[PATH_MAX];
-   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX];
+   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX], fontpath[PATH_MAX];
    gl_t *gl = NULL;
    xmb_handle_t *xmb = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
@@ -909,6 +934,10 @@ static void xmb_context_reset(void *data)
    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
    fill_pathname_join(iconpath, themepath, xmb->icon_dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
+
+   fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
+
+   xmb_font_init_first(&gl->font_driver, &xmb->font, gl, fontpath, xmb->font_size);
 
    fill_pathname_join(xmb->textures[XMB_TEXTURE_BG].path, iconpath,
          "bg.png", sizeof(xmb->textures[XMB_TEXTURE_BG].path));
