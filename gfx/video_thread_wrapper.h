@@ -20,6 +20,7 @@
 #include "../general.h"
 #include <boolean.h>
 #include <rthreads/rthreads.h>
+#include "fonts/gl_font.h"
 
 /* Starts a video driver in a new thread.
  * Access to video driver will be mediated through this driver. */
@@ -161,9 +162,11 @@ typedef struct thread_video
 
       struct
       {
-         bool (*method)(void*, void*, void*, const char*, float);
-         void *font_driver;
-         void *font_handle;
+         bool (*method)(const gl_font_renderer_t **font_driver,
+               void **font_handle, void *video_data, const char *font_path,
+               float font_size);
+         const gl_font_renderer_t **font_driver;
+         void **font_handle;
          void *video_data;
          const char *font_path;
          float font_size;
