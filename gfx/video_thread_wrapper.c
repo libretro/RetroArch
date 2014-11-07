@@ -262,8 +262,20 @@ static void thread_loop(void *data)
             if (thr->poke && thr->poke->set_osd_msg)
                thr->poke->set_osd_msg(thr->driver_data,
                      thr->cmd_data.osd_message.msg,
-                     &thr->cmd_data.osd_message.params);
+                     &thr->cmd_data.osd_message.params, NULL);
             thread_reply(thr, CMD_POKE_SET_OSD_MSG);
+            break;
+
+         case CMD_FONT_INIT:
+            if (thr->cmd_data.font_init.method)
+               thr->cmd_data.font_init.return_value =
+                     thr->cmd_data.font_init.method
+                     (thr->cmd_data.font_init.font_driver,
+                        thr->cmd_data.font_init.font_handle,
+                        thr->cmd_data.font_init.video_data,
+                        thr->cmd_data.font_init.font_path,
+                        thr->cmd_data.font_init.font_size);
+            thread_reply(thr, CMD_FONT_INIT);
             break;
 
          case CMD_CUSTOM_COMMAND:
@@ -724,7 +736,8 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
 }
 #endif
 
-static void thread_set_osd_msg(void *data, const char *msg, const struct font_params *params)
+static void thread_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params, void *font)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
@@ -735,7 +748,7 @@ static void thread_set_osd_msg(void *data, const char *msg, const struct font_pa
 #endif
    {
       if (thr->poke && thr->poke->set_osd_msg)
-         thr->poke->set_osd_msg(thr->driver_data, msg, params);
+         thr->poke->set_osd_msg(thr->driver_data, msg, params, font);
    }
 #if 0
    else

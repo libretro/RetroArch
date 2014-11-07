@@ -127,6 +127,8 @@ typedef struct lakka_handle
    GLuint fbo;
    GLuint fbo_color;
    GLuint fbo_depth;
+   void *font;
+   int font_size;
 } lakka_handle_t;
 
 #endif /* MENU_DISP_LAKKA_H */

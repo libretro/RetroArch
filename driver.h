@@ -370,7 +370,7 @@ typedef struct video_poke_interface
    void (*set_texture_enable)(void *data, bool enable, bool full_screen);
 #endif
    void (*set_osd_msg)(void *data, const char *msg,
-         const struct font_params *params);
+         const struct font_params *params, void *font);
 
    void (*show_mouse)(void *data, bool state);
    void (*grab_mouse_toggle)(void *data);

@@ -222,7 +222,7 @@ static void xmb_draw_text(const char *str, float x,
    if (driver.video_data && driver.video_poke
        && driver.video_poke->set_osd_msg)
        driver.video_poke->set_osd_msg(driver.video_data,
-                                      str, &params);
+                                      str, &params, NULL);
 }
 
 static void xmb_render_background(bool force_transparency)

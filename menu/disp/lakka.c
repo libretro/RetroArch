@@ -123,7 +123,7 @@ static void lakka_draw_text(lakka_handle_t *lakka,
    if (driver.video_data && driver.video_poke
        && driver.video_poke->set_osd_msg)
        driver.video_poke->set_osd_msg(driver.video_data,
-                                      str, &params);
+                                      str, &params, lakka->font);
 }
 
 static void lakka_draw_background(bool force_transparency)
@@ -654,10 +654,33 @@ static GLuint lakka_png_texture_load(const char* file_name)
       thr->wait_reply_func(thr, CMD_CUSTOM_COMMAND);
 
       return thr->cmd_data.custom_command.return_value;
-
    }
 
    return lakka_png_texture_load_(file_name);
+}
+
+static bool lakka_font_init_first(const gl_font_renderer_t **font_driver,
+      void **font_handle, void *video_data, const char *font_path,
+      float font_size)
+{
+   if (g_settings.video.threaded
+         && !g_extern.system.hw_render_callback.context_type)
+   {
+      thread_video_t *thr = (thread_video_t*)driver.video_data;
+      thr->cmd_data.font_init.method = gl_font_init_first;
+      thr->cmd_data.font_init.font_driver = font_driver;
+      thr->cmd_data.font_init.font_handle = font_handle;
+      thr->cmd_data.font_init.video_data = video_data;
+      thr->cmd_data.font_init.font_path = font_path;
+      thr->cmd_data.font_init.font_size = font_size;
+      thr->send_cmd_func(thr, CMD_FONT_INIT);
+      thr->wait_reply_func(thr, CMD_FONT_INIT);
+
+      return thr->cmd_data.font_init.return_value;
+   }
+
+   return gl_font_init_first(font_driver, font_handle, video_data,
+         font_path, font_size);
 }
 
 static void lakka_context_destroy(void *data)
@@ -861,9 +884,10 @@ static void lakka_settings_context_reset(void)
 static void lakka_context_reset(void *data)
 {
    int i, j, k;
-   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX];
+   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX], font_path[PATH_MAX];
    lakka_handle_t *lakka = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
+   gl_t *gl = NULL;
 
    if (!menu)
       return;
@@ -871,6 +895,11 @@ static void lakka_context_reset(void *data)
    lakka = (lakka_handle_t*)menu->userdata;
 
    if (!lakka)
+      return;
+
+   gl = (gl_t*)driver_video_resolve(NULL);
+
+   if (!gl)
       return;
 
 #if defined(HAVE_FBO) && defined(LAKKA_EFFECTS)
@@ -884,6 +913,11 @@ static void lakka_context_reset(void *data)
    fill_pathname_join(themepath, mediapath, THEME, sizeof(themepath));
    fill_pathname_join(iconpath, themepath, lakka->icon_dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
+
+   fill_pathname_join(font_path, themepath, "font.ttf", sizeof(font_path));
+
+   lakka_font_init_first(&gl->font_driver, &lakka->font, gl, font_path, lakka->font_size);
+   //gl_font_init_first(&gl->font_driver, &lakka->font, gl, font_path, lakka->font_size);
    
    fill_pathname_join(lakka->textures[TEXTURE_BG].path, iconpath,
          "bg.png", sizeof(lakka->textures[TEXTURE_BG].path));
@@ -1204,14 +1238,15 @@ static void *lakka_init(void)
    strlcpy(lakka->icon_dir, "256", sizeof(lakka->icon_dir));
 
    lakka->icon_size = 128.0 * lakka->scale_factor;
+   lakka->font_size = 32.0 * lakka->scale_factor;
    lakka->hspacing = 200.0 * lakka->scale_factor;
    lakka->vspacing = 64.0 * lakka->scale_factor;
    lakka->margin_left = 336.0 * lakka->scale_factor;
    lakka->margin_top = (256+32) * lakka->scale_factor;
    lakka->title_margin_left = 60 * lakka->scale_factor;
-   lakka->title_margin_top = 60 * lakka->scale_factor + g_settings.video.font_size/3;
+   lakka->title_margin_top = 60 * lakka->scale_factor + lakka->font_size/3;
    lakka->label_margin_left = 85.0 * lakka->scale_factor;
-   lakka->label_margin_top = g_settings.video.font_size/3.0;
+   lakka->label_margin_top = lakka->font_size/3.0;
    lakka->setting_margin_left = 600.0 * lakka->scale_factor;
 
    lakka->depth                = 0;
