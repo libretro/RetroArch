@@ -63,9 +63,6 @@ int main_entry_decide(signature(), args_type() args)
       }
    }
 
-   if (driver.frontend_ctx && driver.frontend_ctx->process_events)
-      driver.frontend_ctx->process_events(args);
-
    return ret;
 }
 

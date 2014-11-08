@@ -657,115 +657,6 @@ static void frontend_android_get_environment_settings(int *argc,
 #endif
 }
 
-#if 0
-static void process_pending_intent(void *data)
-{
-   RARCH_LOG("process_pending_intent.\n");
-   JNIEnv *env;
-   struct android_app* android_app = (struct android_app*)data;
-   jstring jstr = NULL;
-   bool startgame = false;
-
-   if (!android_app)
-      return;
-
-   env = jni_thread_getenv();
-   if (!env)
-      return;
-
-   // Content 
-   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz,
-         android_app->getPendingIntentFullPath);
-
-   JNI_EXCEPTION(env);
-   RARCH_LOG("Checking arguments passed from intent ...\n");
-   if (android_app->getPendingIntentFullPath && jstr)
-   {
-      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(g_extern.fullpath, argv, sizeof(g_extern.fullpath));
-      (*env)->ReleaseStringUTFChars(env, jstr, argv);
-
-      startgame = true;
-      RARCH_LOG("Content Filename: [%s].\n", g_extern.fullpath);
-   }
-
-   // Config file
-   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz,
-         android_app->getPendingIntentConfigPath);
-
-   JNI_EXCEPTION(env);
-   if (android_app->getPendingIntentConfigPath && jstr)
-   {
-      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(g_defaults.config_path, argv, sizeof(g_defaults.config_path));
-      (*env)->ReleaseStringUTFChars(env, jstr, argv);
-
-      RARCH_LOG("Config file: [%s].\n", g_extern.config_path);
-   }
-
-   // Current IME
-   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz,
-         android_app->getPendingIntentIME);
-
-   JNI_EXCEPTION(env);
-   if (android_app->getPendingIntentIME && jstr)
-   {
-      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(android_app->current_ime, argv, sizeof(android_app->current_ime));
-      (*env)->ReleaseStringUTFChars(env, jstr, argv);
-
-      RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
-   }
-
-   //LIBRETRO
-   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz,
-         android_app->getPendingIntentLibretroPath);
-
-   JNI_EXCEPTION(env);
-   if (android_app->getPendingIntentLibretroPath && jstr)
-   {
-      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(g_defaults.core_path, argv, sizeof(g_defaults.core_path));
-      (*env)->ReleaseStringUTFChars(env, jstr, argv);
-   }
-
-   RARCH_LOG("Libretro path: [%s].\n", g_defaults.core_path);
-
-   if (startgame)
-   {
-   }
-
-   CALL_VOID_METHOD(env, android_app->activity->clazz,
-         android_app->clearPendingIntent);
-}
-#endif
-
-static int frontend_android_process_events(void *data)
-{
-#if 0
-   jboolean hasPendingIntent;
-   JNIEnv *env;
-#endif
-   struct android_app* android_app = (struct android_app*)data;
-
-   if (g_extern.is_paused)
-         android_run_events(android_app);
-
-#if 0
-   env = jni_thread_getenv();
-   if (!env)
-      return -1;
-
-   CALL_BOOLEAN_METHOD(env, hasPendingIntent, android_app->activity->clazz,
-         android_app->hasPendingIntent);
-
-   if (hasPendingIntent)
-      process_pending_intent(android_app);
-#endif
-
-   return 0;
-}
-
 static void frontend_android_init(void *data)
 {
    JNIEnv *env;
@@ -815,24 +706,6 @@ static void frontend_android_init(void *data)
          "onRetroArchExit", "()V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
-#if 0
-   GET_METHOD_ID(env, android_app->hasPendingIntent, class,
-         "hasPendingIntent", "()Z");
-   GET_METHOD_ID(env, android_app->clearPendingIntent, class,
-         "clearPendingIntent", "()V");
-   GET_METHOD_ID(env, android_app->getPendingIntentConfigPath, class,
-         "getPendingIntentConfigPath",
-         "()Ljava/lang/String;");
-   GET_METHOD_ID(env, android_app->getPendingIntentLibretroPath, class,
-         "getPendingIntentLibretroPath",
-         "()Ljava/lang/String;");
-   GET_METHOD_ID(env, android_app->getPendingIntentFullPath, class,
-         "getPendingIntentFullPath",
-         "()Ljava/lang/String;");
-   GET_METHOD_ID(env, android_app->getPendingIntentIME, class,
-         "getPendingIntentIME",
-         "()Ljava/lang/String;");
-#endif
 
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
@@ -890,7 +763,6 @@ const frontend_ctx_driver_t frontend_ctx_android = {
    frontend_android_deinit,      /* deinit */
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
-   frontend_android_process_events, /* process_events */
    NULL,                         /* exec */
    NULL,                         /* set_fork */
    frontend_android_shutdown,    /* shutdown */

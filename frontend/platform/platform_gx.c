@@ -377,7 +377,6 @@ const frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* deinit */
    frontend_gx_exitspawn,           /* exitspawn */
    frontend_gx_process_args,        /* process_args */
-   NULL,                            /* process_events */
    frontend_gx_exec,                /* exec */
    frontend_gx_set_fork,            /* set_fork */
    NULL,                            /* shutdown */

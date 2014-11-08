@@ -328,7 +328,6 @@ const frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* deinit */
    frontend_xdk_exitspawn,       /* exitspawn */
    NULL,                         /* process_args */
-   NULL,                         /* process_events */
    frontend_xdk_exec,            /* exec */
    frontend_xdk_set_fork,        /* set_fork */
    NULL,                         /* shutdown */

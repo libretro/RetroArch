@@ -59,7 +59,6 @@ typedef struct frontend_ctx_driver
    void (*exitspawn)(char *core_path, size_t sizeof_core_path);
 
    process_args_t process_args;
-   int  (*process_events)(void *data);
    void (*exec)(const char *, bool);
    void (*set_fork)(bool exitspawn, bool start_game);
    void (*shutdown)(bool);

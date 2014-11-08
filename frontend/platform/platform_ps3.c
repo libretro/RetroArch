@@ -445,7 +445,6 @@ const frontend_ctx_driver_t frontend_ctx_ps3 = {
    frontend_ps3_deinit,          /* deinit */
    frontend_ps3_exitspawn,       /* exitspawn */
    NULL,                         /* process_args */
-   NULL,                         /* process_events */
    frontend_ps3_exec,            /* exec */
    frontend_ps3_set_fork,        /* set_fork */
    NULL,                         /* shutdown */
