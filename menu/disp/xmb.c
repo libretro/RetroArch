@@ -873,7 +873,7 @@ static GLuint xmb_png_texture_load(const char* file_name)
 
 static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
       void **font_handle, void *video_data, const char *font_path,
-      float font_size)
+      float xmb_font_size)
 {
    if (g_settings.video.threaded
          && !g_extern.system.hw_render_callback.context_type)
@@ -884,7 +884,7 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
       thr->cmd_data.font_init.font_handle = font_handle;
       thr->cmd_data.font_init.video_data = video_data;
       thr->cmd_data.font_init.font_path = font_path;
-      thr->cmd_data.font_init.font_size = font_size;
+      thr->cmd_data.font_init.font_size = xmb_font_size;
       thr->send_cmd_func(thr, CMD_FONT_INIT);
       thr->wait_reply_func(thr, CMD_FONT_INIT);
 
