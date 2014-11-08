@@ -576,7 +576,9 @@ static bool psp_frame(void *data, const void *frame,
 static void psp_set_nonblock_state(void *data, bool toggle)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
-   psp->vsync = !toggle;
+
+   if (psp)
+      psp->vsync = !toggle;
 }
 
 static bool psp_alive(void *data)
@@ -676,8 +678,9 @@ static void psp_set_texture_enable(void *data, bool state, bool full_screen)
    (void) full_screen;
 
    psp1_video_t *psp = (psp1_video_t*)data;
-   psp->menu.active = state;
 
+   if (psp)
+      psp->menu.active = state;
 }
 
 static void psp_update_viewport(psp1_video_t* psp)
@@ -765,13 +768,18 @@ static void psp_set_rotation(void *data, unsigned rotation)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
 
+   if (!psp)
+      return;
+
    psp->rotation = rotation;
    psp->should_resize = true;
 }
 static void psp_set_filtering(void *data, unsigned index, bool smooth)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
-   psp->tex_filter = smooth? GU_LINEAR : GU_NEAREST;
+
+   if (psp)
+      psp->tex_filter = smooth? GU_LINEAR : GU_NEAREST;
 }
 
 static void psp_set_aspect_ratio(void *data, unsigned aspectratio_index)
@@ -807,13 +815,17 @@ static void psp_set_aspect_ratio(void *data, unsigned aspectratio_index)
 static void psp_apply_state_changes(void *data)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
-   psp->should_resize = true;
+
+   if (psp)
+      psp->should_resize = true;
 }
 
 static void psp_viewport_info(void *data, struct rarch_viewport *vp)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
-   *vp = psp->vp;
+   
+   if (psp)
+      *vp = psp->vp;
 }
 
 static const video_poke_interface_t psp_poke_interface = {
