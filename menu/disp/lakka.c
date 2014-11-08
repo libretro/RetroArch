@@ -680,7 +680,7 @@ static bool lakka_font_init_first(const gl_font_renderer_t **font_driver,
    }
 
    return gl_font_init_first(font_driver, font_handle, video_data,
-         font_path, font_size);
+         font_path, lakka_font_size);
 }
 
 static void lakka_context_destroy(void *data)

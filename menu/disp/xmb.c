@@ -892,7 +892,7 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
    }
 
    return gl_font_init_first(font_driver, font_handle, video_data,
-         font_path, font_size);
+         font_path, xmb_font_size);
 }
 
 static void xmb_context_reset(void *data)
