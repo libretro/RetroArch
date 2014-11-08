@@ -121,6 +121,8 @@ static void check_defaults_dirs(void)
       path_mkdir(g_defaults.autoconfig_dir);
    if (*g_defaults.audio_filter_dir)
       path_mkdir(g_defaults.audio_filter_dir);
+   if (*g_defaults.video_filter_dir)
+      path_mkdir(g_defaults.video_filter_dir);
    if (*g_defaults.assets_dir)
       path_mkdir(g_defaults.assets_dir);
    if (*g_defaults.playlist_dir)
