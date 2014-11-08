@@ -122,6 +122,7 @@ enum
    MENU_LAKKA,
    MENU_GLUI,
    MENU_XMB,
+   MENU_IOS,
 };
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
@@ -294,7 +295,9 @@ enum
 #define OSK_DEFAULT_DRIVER OSK_NULL
 #endif
 
-#if defined(HAVE_RMENU)
+#if defined(IOS)
+#define MENU_DEFAULT_DRIVER MENU_IOS
+#elif defined(HAVE_RMENU)
 #define MENU_DEFAULT_DRIVER MENU_RMENU
 #elif defined(HAVE_RMENU_XUI)
 #define MENU_DEFAULT_DRIVER MENU_RMENU_XUI
