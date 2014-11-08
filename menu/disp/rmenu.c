@@ -108,7 +108,7 @@ static void rmenu_render_messagebox(const char *message)
       if (driver.video_data && driver.video_poke
             && driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data,
-               msg, &font_parms);
+               msg, &font_parms, NULL);
    }
 
    render_normal = false;
@@ -172,7 +172,7 @@ static void rmenu_render(void)
    if (driver.video_data && driver.video_poke
          && driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data,
-            title_buf, &font_parms);
+            title_buf, &font_parms, NULL);
 
    char title_msg[64];
    const char *core_name = g_extern.menu.info.library_name;
@@ -198,7 +198,7 @@ static void rmenu_render(void)
    if (driver.video_data && driver.video_poke
          && driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data,
-            title_msg, &font_parms);
+            title_msg, &font_parms, NULL);
 
    size_t i, j;
 
@@ -241,14 +241,14 @@ static void rmenu_render(void)
       if (driver.video_data && driver.video_poke
             && driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data,
-               message, &font_parms);
+               message, &font_parms, NULL);
 
       font_parms.x = POSITION_EDGE_CENTER + POSITION_OFFSET;
 
       if (driver.video_data && driver.video_poke
             && driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data,
-               type_str_buf, &font_parms);
+               type_str_buf, &font_parms, NULL);
    }
 }
 

@@ -290,7 +290,7 @@ static void xui_render_message(const char *msg)
 
 		if (driver.video_poke && driver.video_poke->set_osd_msg)
 			driver.video_poke->set_osd_msg(driver.video_data,
-               msg, &font_parms);
+               msg, &font_parms, NULL);
 	}
 }
 
