@@ -22,10 +22,6 @@
 #include "config.def.h"
 #include "retroarch_logger.h"
 
-#ifdef APPLE
-#include "input/apple_keycode.h"
-#endif
-
 #if defined(__CELLOS_LV2__)
 #include <sdk_version.h>
 
