@@ -1,4 +1,8 @@
-SDKVERSION=8.1
+_SDK_DIR := $(THEOS)/sdks
+_IOS_SDKS := $(sort $(patsubst $(_SDK_DIR)/iPhoneOS%.sdk,%,$(wildcard $(_SDK_DIR)/iPhoneOS*.sdk)))
+_LATEST_SDK := $(word $(words $(_IOS_SDKS)),$(_IOS_SDKS))
+
+SDKVERSION := $(_LATEST_SDK)
 ARCHS = armv7 armv7s
 include $(THEOS)/makefiles/common.mk
 
