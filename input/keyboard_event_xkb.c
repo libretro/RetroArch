@@ -1,4 +1,3 @@
-#include <libudev.h>
 #include <xkbcommon/xkbcommon.h>
 #include "input_context.h"
 #include "input_keymaps.h"
