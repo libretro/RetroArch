@@ -16,8 +16,9 @@
 #ifndef _MENU_DISP_IOS_H
 #define _MENU_DISP_IOS_H
 
-typedef struct ios_handle {
-  void (*switch_to_ios)(void);  
+typedef struct ios_handle
+{
+   void (*switch_to_ios)(void);  
 } ios_handle_t;
 
 #endif

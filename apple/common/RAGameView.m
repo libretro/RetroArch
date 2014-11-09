@@ -172,10 +172,8 @@ static void apple_gfx_ctx_flush_buffer(void);
       case UIInterfaceOrientationLandscapeRight:
          return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskLandscapeRight);
 
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_8_0
-      case UIInterfaceOrientationUnknown:
+      default:
          return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskAll);
-#endif
    }
    
    return YES;
