@@ -19,47 +19,46 @@
 #include "../../general.h"
 #include "ios.h"
 
-static void* ios_init () {
-  menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
-  if (menu == NULL) {
-    return NULL;
-  }
+static void *ios_init(void)
+{
+   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+   if (!menu)
+      return NULL;
 
-  menu->userdata = (ios_handle_t*)calloc(1, sizeof(ios_handle_t));
-  if (menu->userdata == NULL) {
-    free(menu);
-    return NULL;
-  }
+   menu->userdata = (ios_handle_t*)calloc(1, sizeof(ios_handle_t));
+   if (!menu->userdata)
+   {
+      free(menu);
+      return NULL;
+   }
 
-  return menu;
+   return menu;
 }
 
-static void ios_free ( void* data ) {
-  menu_handle_t *menu = (menu_handle_t*)data;
-  if (menu == NULL) {
-    return;
-  }
+static void ios_free(void *data)
+{
+   menu_handle_t *menu = (menu_handle_t*)data;
+   if (!menu)
+      return;
 
-  if (menu->userdata != NULL) {
-    free(menu->userdata);
-  }
+   if (menu->userdata)
+      free(menu->userdata);
 
-  free(menu);
-  return;
+   free(menu);
+   return;
 }
 
-static int menu_ios_iterate(unsigned action) {
-  ios_handle_t *ih = NULL;
-  if (driver.menu == NULL) {
-    return 0;
-  }
+static int menu_ios_iterate(unsigned action)
+{
+   ios_handle_t *ih = NULL;
+   if (!driver.menu)
+      return 0;
 
-  ih = (ios_handle_t*)driver.menu->userdata;
-  if ( ih->switch_to_ios != NULL ) {
-    ih->switch_to_ios();
-  }
+   ih = (ios_handle_t*)driver.menu->userdata;
+   if (ih->switch_to_ios)
+      ih->switch_to_ios();
 
-  return 0;
+   return 0;
 }
 
 menu_ctx_driver_backend_t menu_ctx_backend_ios = {
