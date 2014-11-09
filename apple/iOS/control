@@ -1,0 +1,9 @@
+Package: com.libretro.retroarch
+Name: retroarch
+Depends: 
+Version: 0.0.1
+Architecture: iphoneos-arm
+Description: An awesome application!
+Maintainer: Libretro
+Author: Libretro
+Section: Utilities
