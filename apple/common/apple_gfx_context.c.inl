@@ -278,7 +278,7 @@ static void apple_gfx_ctx_swap_buffers(void *data)
 static gfx_ctx_proc_t apple_gfx_ctx_get_proc_address(const char *symbol_name)
 {
    return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(CFBundleGetBundleWithIdentifier(GLFrameworkID),
-#ifdef MAC_OS_X_VERSION_10_7
+#if defined(MAC_OS_X_VERSION_10_7) && __has_feature(objc_arc)
          (__bridge CFStringRef)BOXSTRING(symbol_name)
 #else
          (CFStringRef)BOXSTRING(symbol_name)
