@@ -201,25 +201,40 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 + (id)itemForSetting:(rarch_setting_t*)setting
 {
-   switch (setting->type)
-   {
-      case ST_BOOL:
-           return [[RAMenuItemBooleanSetting alloc] initWithSetting:setting];
-      case ST_PATH:
-           return [[RAMenuItemPathSetting alloc] initWithSetting:setting];
-      case ST_BIND:
-           return [[RAMenuItemBindSetting alloc] initWithSetting:setting];
-      default:
-           break;
-   }
+  switch (setting->type) {
+  case ST_NONE:
+  case ST_ACTION:
+    return [RAMenuItemBasic itemWithDescription:BOXSTRING("Shouldn't be called with ST_NONE or ST_ACTION")
+                                         action:^{}];                     
+  case ST_BOOL:
+    return [[RAMenuItemBooleanSetting alloc] initWithSetting:setting];
+  case ST_INT:
+  case ST_UINT:
+  case ST_FLOAT:
+    break;
+  case ST_PATH:
+  case ST_DIR:
+    return [[RAMenuItemPathSetting alloc] initWithSetting:setting];
+  case ST_STRING:
+  case ST_HEX:
+    break;
+  case ST_BIND:
+    return [[RAMenuItemBindSetting alloc] initWithSetting:setting];
+  case ST_GROUP:
+  case ST_SUB_GROUP:
+  case ST_END_GROUP:
+  case ST_END_SUB_GROUP:
+  default:
+    return [RAMenuItemBasic itemWithDescription:BOXSTRING("Shouldn't be called with ST_*GROUP")
+                                         action:^{}];
+  }
 
    if (setting->type == ST_STRING && setting->values)
       return [[RAMenuItemEnumSetting alloc] initWithSetting:setting];
    
    RAMenuItemGeneralSetting* item = [[RAMenuItemGeneralSetting alloc] initWithSetting:setting];
    
-   if (
-       item.setting->type == ST_INT  ||
+   if (item.setting->type == ST_INT  ||
        item.setting->type == ST_UINT ||
        item.setting->type == ST_FLOAT)
       item.formatter = [[RANumberFormatter alloc] initWithSetting:item.setting];
@@ -250,7 +265,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    
    [self attachDefaultingGestureTo:result];
 
-   result.textLabel.text = BOXSTRING("N/A");
+   result.textLabel.text = BOXSTRING("<Uninitialized>");
 
    if (self.setting)
    {
@@ -259,7 +274,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
       setting_data_get_string_representation(self.setting, buffer, sizeof(buffer));
       if (buffer[0] == '\0')
-         strlcpy(buffer, "N/A", sizeof(buffer));
+         strlcpy(buffer, "<default>", sizeof(buffer));
 
       result.detailTextLabel.text = BOXSTRING(buffer);
 
@@ -412,7 +427,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          
          [weakSelf.parentTable reloadData];
       }];
-   
+
    list.allowBlank = (self.setting->flags & SD_FLAG_ALLOW_EMPTY);
    list.forDirectory = (self.setting->flags & SD_FLAG_PATH_DIR);
    
@@ -641,6 +656,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    } else {
      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Resume") style:UIBarButtonItemStyleBordered target:[RetroArch_iOS get] action:@selector(showGameView)];
    }
+
+   if ( driver.menu->message_contents[0] != '\0' ) {
+     apple_display_alert(driver.menu->message_contents, NULL);
+   }                   
 }
 
 - (void)menuRefresh {
