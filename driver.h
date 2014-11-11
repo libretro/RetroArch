@@ -675,6 +675,8 @@ extern input_driver_t input_qnx;
 extern input_driver_t input_rwebinput;
 extern input_driver_t input_null;
 
+  const char* config_get_input_driver_options(void);
+  
 extern camera_driver_t camera_v4l2;
 extern camera_driver_t camera_android;
 extern camera_driver_t camera_rwebcam;
