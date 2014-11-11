@@ -45,6 +45,7 @@ typedef struct
    float zoom;
    float x;
    float y;
+   GLuint icon;
 } xmb_node_t;
 
 enum
@@ -77,6 +78,7 @@ struct xmb_texture_item
 
 typedef struct xmb_handle
 {
+   int num_categories;
    int depth;
    int old_depth;
    char icon_dir[4];
@@ -126,6 +128,44 @@ static const GLfloat rmb_tex_coord[] = {
    0, 0,
    1, 0,
 };
+
+static char *xmb_str_replace (const char *string,
+      const char *substr, const char *replacement)
+{
+   char *tok, *newstr, *oldstr, *head;
+
+   /* if either substr or replacement is NULL, 
+    * duplicate string a let caller handle it. */
+   if (!substr || !replacement)
+      return strdup (string);
+
+   newstr = strdup (string);
+   head = newstr;
+   while ( (tok = strstr ( head, substr )))
+   {
+      oldstr = newstr;
+      newstr = (char*)malloc(
+            strlen(oldstr) - strlen(substr) + strlen(replacement) + 1);
+
+      if (!newstr)
+      {
+         /*failed to alloc mem, free old string and return NULL */
+         free (oldstr);
+         return NULL;
+      }
+      memcpy(newstr, oldstr, tok - oldstr );
+      memcpy(newstr + (tok - oldstr), replacement, strlen ( replacement ) );
+      memcpy(newstr + (tok - oldstr) + strlen( replacement ), tok +
+            strlen ( substr ), strlen ( oldstr ) -
+            strlen ( substr ) - ( tok - oldstr ) );
+      memset(newstr + strlen ( oldstr ) - strlen ( substr ) +
+            strlen ( replacement ) , 0, 1 );
+      /* move back head right after the last replacement */
+      head = newstr + (tok - oldstr) + strlen( replacement );
+      free (oldstr);
+   }
+   return newstr;
+}
 
 static void xmb_draw_icon(GLuint texture, float x, float y,
       float alpha, float rotation, float scale_factor)
@@ -623,6 +663,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack, size_t current
 
 static void xmb_frame(void)
 {
+   int i;
    char title_msg[64];
    const char *dir = NULL;
    const char *label = NULL;
@@ -686,6 +727,36 @@ static void xmb_frame(void)
          1.0, 
          0, 
          1.0);
+
+   for (i = 1; i < xmb->num_categories; i++)
+   {
+      core_info_t *info = NULL;
+      core_info_list_t *info_list = NULL;
+      xmb_node_t *node = NULL;
+
+      info_list = (core_info_list_t*)g_extern.core_info;
+      info = NULL;
+
+      if (!info_list)
+         continue;
+
+      info = (core_info_t*)&info_list->list[i-1];
+
+      if (!info)
+         continue;
+
+      node = (xmb_node_t*)info->userdata;
+
+      if (!node)
+         continue;
+
+      xmb_draw_icon(node->icon, 
+            xmb->x + xmb->margin_left + xmb->hspacing*(i+1) - xmb->icon_size / 2.0,
+            xmb->margin_top + xmb->icon_size / 2.0, 
+            xmb->c_passive_alpha, 
+            0, 
+            xmb->c_passive_zoom);
+   }
 
 #ifdef GEKKO
    const char *message_queue;
@@ -809,6 +880,8 @@ static void *xmb_init(void)
 
    xmb_init_core_info(menu);
 
+   xmb->num_categories = g_extern.core_info ? (g_extern.core_info->count + 1) : 1;
+
    return menu;
 }
 
@@ -897,7 +970,7 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
 
 static void xmb_context_reset(void *data)
 {
-   int k;
+   int i, k;
    char bgpath[PATH_MAX];
    char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX], fontpath[PATH_MAX];
    gl_t *gl = NULL;
@@ -976,6 +1049,59 @@ static void xmb_context_reset(void *data)
 
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
       xmb->textures[k].id = xmb_png_texture_load(xmb->textures[k].path);
+
+   for (i = 1; i < xmb->num_categories; i++)
+   {
+      char core_id[PATH_MAX], texturepath[PATH_MAX], content_texturepath[PATH_MAX];
+      core_info_t *info = NULL;
+      core_info_list_t *info_list = NULL;
+      xmb_node_t *node = NULL;
+
+      fill_pathname_join(mediapath, g_settings.assets_directory,
+            "lakka", sizeof(mediapath));
+      fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
+      fill_pathname_join(iconpath, themepath, xmb->icon_dir, sizeof(iconpath));
+      fill_pathname_slash(iconpath, sizeof(iconpath));
+
+      info_list = (core_info_list_t*)g_extern.core_info;
+
+      if (!info_list)
+         continue;
+
+      info = (core_info_t*)&info_list->list[i-1];
+
+      if (!info)
+         continue;
+
+      info->userdata = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
+
+      if (!info->userdata)
+      {
+         RARCH_ERR("XMB node could not be allocated.\n");
+         return;
+      }
+
+      node = info->userdata;
+
+      if (info->systemname)
+      {
+         char *tmp = xmb_str_replace(info->systemname, "/", " ");
+         strlcpy(core_id, tmp, sizeof(core_id));
+         free(tmp);
+      }
+      else
+         strlcpy(core_id, "default", sizeof(core_id));
+
+      strlcpy(texturepath, iconpath, sizeof(texturepath));
+      strlcat(texturepath, core_id, sizeof(texturepath));
+      strlcat(texturepath, ".png", sizeof(texturepath));
+
+      strlcpy(content_texturepath, iconpath, sizeof(content_texturepath));
+      strlcat(content_texturepath, core_id, sizeof(content_texturepath));
+      strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
+
+      node->icon = xmb_png_texture_load(texturepath);
+   }
 }
 
 static void xmb_navigation_clear(void *data, bool pending_push)
