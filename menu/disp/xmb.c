@@ -519,9 +519,9 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
 }
 
 static void xmb_populate_entries(void *data, const char *path,
-      const char *label, unsigned j)
+      const char *label, unsigned k)
 {
-   unsigned i, current, end;
+   unsigned i, j, current, end;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
@@ -538,6 +538,34 @@ static void xmb_populate_entries(void *data, const char *path,
       dir = 1;
    else if (xmb->depth < xmb->old_depth)
       dir = -1;
+
+   for (j = 1; j < xmb->num_categories; j++)
+   {
+      core_info_t *info = NULL;
+      core_info_list_t *info_list = NULL;
+      xmb_node_t *node = NULL;
+
+      info_list = (core_info_list_t*)g_extern.core_info;
+      info = NULL;
+
+      if (!info_list)
+         continue;
+
+      info = (core_info_t*)&info_list->list[j-1];
+
+      if (!info)
+         continue;
+
+      node = (xmb_node_t*)info->userdata;
+
+      if (!node)
+         continue;
+
+      if (xmb->depth <= 1)
+         add_tween(XMB_DELAY, xmb->c_passive_alpha, &node->alpha, &inOutQuad, NULL);
+      else
+         add_tween(XMB_DELAY, 0, &node->alpha, &inOutQuad, NULL);
+   }
 
    xmb_list_open_old(driver.menu->menu_list->selection_buf_old, dir, driver.menu->selection_ptr_old);
    xmb_list_open_new(driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
@@ -753,9 +781,9 @@ static void xmb_frame(void)
       xmb_draw_icon(node->icon, 
             xmb->x + xmb->margin_left + xmb->hspacing*(i+1) - xmb->icon_size / 2.0,
             xmb->margin_top + xmb->icon_size / 2.0, 
-            xmb->c_passive_alpha, 
+            node->alpha, 
             0, 
-            xmb->c_passive_zoom);
+            node->zoom);
    }
 
 #ifdef GEKKO
@@ -1101,6 +1129,8 @@ static void xmb_context_reset(void *data)
       strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
 
       node->icon = xmb_png_texture_load(texturepath);
+      node->alpha = i ? xmb->c_passive_alpha : xmb->c_passive_alpha;
+      node->zoom = i ? xmb->c_passive_zoom : xmb->c_passive_zoom;
    }
 }
 
