@@ -2885,7 +2885,7 @@ static bool setting_data_append_list_main_menu_options(
 
 // JM: This is a very painful function to write, especially because
 // we'll have to do it to all the drivers.
-const char* config_get_input_driver_options() {
+const char* config_get_input_driver_options(void) {
    int input_option_k = 0;
    int input_options_len = 0;
    while (input_drivers[input_option_k]) {
