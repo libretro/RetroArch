@@ -1134,6 +1134,18 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
    return result;
 }
 
+rarch_setting_t setting_data_string_setting_options
+(enum setting_type type,
+ const char* name, const char* short_description, char* target,
+ unsigned size, const char* default_value, const char *empty, const char *values,
+ const char *group, const char *subgroup, change_handler_t change_handler,
+ change_handler_t read_handler)
+{
+  rarch_setting_t result = setting_data_string_setting(type, name, short_description, target, size, default_value, empty, group, subgroup, change_handler, read_handler);
+  result.values = values;
+  return result;
+}
+
 static int setting_data_bind_action_start(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -2576,6 +2588,11 @@ static void general_write_handler(void *data)
    if (!(settings_list_append(list, list_info, setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
+#define CONFIG_STRING_OPTIONS(TARGET, NAME, SHORT, DEF, OPTS, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+{ \
+  if (!(settings_list_append(list, list_info, setting_data_string_setting_options(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", OPTS, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+}
+
 #define CONFIG_HEX(TARGET, NAME, SHORT, group_info, subgroup_info)
 
 #define CONFIG_BIND(TARGET, PLAYER, PLAYER_OFFSET, NAME, SHORT, DEF, group_info, subgroup_info) \
@@ -2866,22 +2883,47 @@ static bool setting_data_append_list_main_menu_options(
    return true;
 }
 
+// JM: This is a very painful function to write, especially because
+// we'll have to do it to all the drivers.
+const char* config_get_input_driver_options() {
+   int input_option_k = 0;
+   int input_options_len = 0;
+   while (input_drivers[input_option_k]) {
+     const char *opt = input_drivers[input_option_k]->ident;
+     input_options_len += strlen(opt) + 1;
+     input_option_k++;
+   }
+   uint offset = 0;
+   char *input_options = (char*)calloc(input_options_len, sizeof(char));
+   for (int i = 0; i < input_option_k; i++) {
+     const char *opt = input_drivers[i]->ident;
+     strlcpy(input_options + offset, opt, input_options_len - offset);
+     offset += strlen(opt);
+     input_options[offset] = '|';
+     offset += 1;
+   }
+   input_options[input_options_len] = '\0';
+
+   return input_options;
+}
+
 static bool setting_data_append_list_driver_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
-
+   
    START_GROUP(group_info, "Driver Options");
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
-
-   CONFIG_STRING(
+   
+   CONFIG_STRING_OPTIONS(
          g_settings.input.driver,
          "input_driver",
          "Input Driver",
          config_get_default_input(),
+         config_get_input_driver_options(),
          group_info.name,
          subgroup_info.name,
          NULL,

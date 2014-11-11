@@ -253,9 +253,12 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
          const char* basename = path_basename(contents->elems[i].data);
 
          uint32_t section = isalpha(basename[0]) ? (toupper(basename[0]) - 'A') + 2 : 1;
-         section = (contents->elems[i].attr.i == RARCH_DIRECTORY) ? 0 : section;
+         char is_directory = (contents->elems[i].attr.i == RARCH_DIRECTORY);
+         section = is_directory ? 0 : section;
 
-         [self.sections[section] addObject:[RADirectoryItem directoryItemFromElement:&contents->elems[i]]];
+         if (! ( self.forDirectory && ! is_directory )) {
+           [self.sections[section] addObject:[RADirectoryItem directoryItemFromElement:&contents->elems[i]]];
+         }
       }
 
       dir_list_free(contents);
