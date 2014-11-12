@@ -219,7 +219,7 @@ const char* config_get_input_driver_options(void)
       input_options[offset] = '|';
       offset += 1;
    }
-   input_options[input_options_len] = '\0';
+   input_options[input_options_len - 1] = '\0';
 
    return input_options;
 }

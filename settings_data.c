@@ -989,9 +989,7 @@ rarch_setting_t setting_data_action_setting(const char* name,
       const char* short_description,
       const char *group, const char *subgroup)
 {
-   rarch_setting_t result;
-   result.type                  = ST_ACTION;
-   result.name                  = name;
+   rarch_setting_t result = { ST_ACTION, name };
    result.short_description     = short_description;
    result.group                 = group;
    result.subgroup              = subgroup;
