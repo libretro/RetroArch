@@ -191,22 +191,30 @@ static const input_driver_t *input_drivers[] = {
 
 // JM: This is a very painful function to write, especially because
 // we'll have to do it to all the drivers.
-const char* config_get_input_driver_options(void) {
+const char* config_get_input_driver_options(void)
+{
+   char *input_options;
+   int i;
    int input_option_k = 0;
    int input_options_len = 0;
-   while (input_drivers[input_option_k]) {
-     const char *opt = input_drivers[input_option_k]->ident;
-     input_options_len += strlen(opt) + 1;
-     input_option_k++;
+   unsigned offset = 0;
+
+   while (input_drivers[input_option_k])
+   {
+      const char *opt = input_drivers[input_option_k]->ident;
+      input_options_len += strlen(opt) + 1;
+      input_option_k++;
    }
-   uint offset = 0;
-   char *input_options = (char*)calloc(input_options_len, sizeof(char));
-   for (int i = 0; i < input_option_k; i++) {
-     const char *opt = input_drivers[i]->ident;
-     strlcpy(input_options + offset, opt, input_options_len - offset);
-     offset += strlen(opt);
-     input_options[offset] = '|';
-     offset += 1;
+
+   input_options = (char*)calloc(input_options_len, sizeof(char));
+
+   for (i = 0; i < input_option_k; i++)
+   {
+      const char *opt = input_drivers[i]->ident;
+      strlcpy(input_options + offset, opt, input_options_len - offset);
+      offset += strlen(opt);
+      input_options[offset] = '|';
+      offset += 1;
    }
    input_options[input_options_len] = '\0';
 
