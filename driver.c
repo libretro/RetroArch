@@ -189,8 +189,11 @@ static const input_driver_t *input_drivers[] = {
    NULL,
 };
 
-// JM: This is a very painful function to write, especially because
-// we'll have to do it to all the drivers.
+/* JM: This is a very painful function to write, 
+ * especially because we'll have to do it to all 
+ * the drivers.
+ */
+
 const char* config_get_input_driver_options(void)
 {
    char *input_options;
