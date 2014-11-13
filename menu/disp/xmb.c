@@ -518,6 +518,27 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
    xmb->old_depth = xmb->depth;
 }
 
+static xmb_node_t* xmb_node_for_core(int i)
+{
+   core_info_t *info = NULL;
+   core_info_list_t *info_list = NULL;
+   xmb_node_t *node = NULL;
+
+   info_list = (core_info_list_t*)g_extern.core_info;
+   info = NULL;
+
+   if (!info_list)
+      return NULL;
+
+   info = (core_info_t*)&info_list->list[i];
+
+   if (!info)
+      return NULL;
+
+   node = (xmb_node_t*)info->userdata;
+   return node;
+}
+
 static void xmb_populate_entries(void *data, const char *path,
       const char *label, unsigned k)
 {
@@ -541,22 +562,7 @@ static void xmb_populate_entries(void *data, const char *path,
 
    for (j = 1; j < xmb->num_categories; j++)
    {
-      core_info_t *info = NULL;
-      core_info_list_t *info_list = NULL;
-      xmb_node_t *node = NULL;
-
-      info_list = (core_info_list_t*)g_extern.core_info;
-      info = NULL;
-
-      if (!info_list)
-         continue;
-
-      info = (core_info_t*)&info_list->list[j-1];
-
-      if (!info)
-         continue;
-
-      node = (xmb_node_t*)info->userdata;
+      xmb_node_t *node = xmb_node_for_core(j-1);
 
       if (!node)
          continue;
@@ -758,22 +764,7 @@ static void xmb_frame(void)
 
    for (i = 1; i < xmb->num_categories; i++)
    {
-      core_info_t *info = NULL;
-      core_info_list_t *info_list = NULL;
-      xmb_node_t *node = NULL;
-
-      info_list = (core_info_list_t*)g_extern.core_info;
-      info = NULL;
-
-      if (!info_list)
-         continue;
-
-      info = (core_info_t*)&info_list->list[i-1];
-
-      if (!info)
-         continue;
-
-      node = (xmb_node_t*)info->userdata;
+      xmb_node_t *node = xmb_node_for_core(i-1);
 
       if (!node)
          continue;
