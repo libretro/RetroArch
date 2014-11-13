@@ -2265,6 +2265,12 @@ bool rarch_main_command(unsigned cmd)
 
          /* Poll input to avoid possibly stale data to corrupt things. */
          driver.input->poll(driver.input_data);
+
+#ifdef HAVE_MENU
+         if (g_extern.is_menu) {
+             rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
+         }
+#endif
          break;
       case RARCH_CMD_CHEATS_DEINIT:
          if (g_extern.cheat)
