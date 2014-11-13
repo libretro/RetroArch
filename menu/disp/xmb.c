@@ -78,6 +78,7 @@ struct xmb_texture_item
 
 typedef struct xmb_handle
 {
+   int active_category;
    int num_categories;
    int depth;
    int old_depth;
@@ -113,6 +114,7 @@ typedef struct xmb_handle
    float i_passive_alpha;
    void *font;
    int font_size;
+   xmb_node_t settings_node;
 } xmb_handle_t;
 
 static const GLfloat rmb_vertex[] = {
@@ -560,17 +562,16 @@ static void xmb_populate_entries(void *data, const char *path,
    else if (xmb->depth < xmb->old_depth)
       dir = -1;
 
-   for (j = 1; j < xmb->num_categories; j++)
+   for (j = 0; j < xmb->num_categories; j++)
    {
-      xmb_node_t *node = xmb_node_for_core(j-1);
+      xmb_node_t *node = j ? xmb_node_for_core(j-1) : &xmb->settings_node;
 
       if (!node)
          continue;
 
-      if (xmb->depth <= 1)
-         add_tween(XMB_DELAY, xmb->c_passive_alpha, &node->alpha, &inOutQuad, NULL);
-      else
-         add_tween(XMB_DELAY, 0, &node->alpha, &inOutQuad, NULL);
+      float ia = j == xmb->active_category ? xmb->c_active_alpha
+            : xmb->depth <= 1 ? xmb->c_passive_alpha : 0;
+      add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
    }
 
    xmb_list_open_old(driver.menu->menu_list->selection_buf_old, dir, driver.menu->selection_ptr_old);
@@ -755,16 +756,9 @@ static void xmb_frame(void)
          driver.menu->menu_list->menu_stack,
          driver.menu->selection_ptr);
 
-   xmb_draw_icon(xmb->textures[XMB_TEXTURE_SETTINGS].id, 
-         xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size / 2.0,
-         xmb->margin_top + xmb->icon_size / 2.0, 
-         1.0, 
-         0, 
-         1.0);
-
-   for (i = 1; i < xmb->num_categories; i++)
+   for (i = 0; i < xmb->num_categories; i++)
    {
-      xmb_node_t *node = xmb_node_for_core(i-1);
+      xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
 
       if (!node)
          continue;
@@ -853,6 +847,7 @@ static void *xmb_init(void)
 
    xmb = (xmb_handle_t*)menu->userdata;
 
+   xmb->active_category = 0;
    xmb->x               = 0;
    xmb->alpha           = 1.0f;
    xmb->arrow_alpha     = 0;
@@ -1069,6 +1064,10 @@ static void xmb_context_reset(void *data)
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
       xmb->textures[k].id = xmb_png_texture_load(xmb->textures[k].path);
 
+   xmb->settings_node.icon = xmb->textures[XMB_TEXTURE_SETTINGS].id;
+   xmb->settings_node.alpha = xmb->c_active_alpha;
+   xmb->settings_node.zoom = xmb->c_active_zoom;
+
    for (i = 1; i < xmb->num_categories; i++)
    {
       char core_id[PATH_MAX], texturepath[PATH_MAX], content_texturepath[PATH_MAX];
@@ -1120,8 +1119,8 @@ static void xmb_context_reset(void *data)
       strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
 
       node->icon = xmb_png_texture_load(texturepath);
-      node->alpha = i ? xmb->c_passive_alpha : xmb->c_passive_alpha;
-      node->zoom = i ? xmb->c_passive_zoom : xmb->c_passive_zoom;
+      node->alpha = xmb->c_passive_alpha;
+      node->zoom = xmb->c_passive_zoom;
    }
 }
 
