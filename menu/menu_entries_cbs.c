@@ -1663,6 +1663,58 @@ static int deferred_push_history_list(void *data, void *userdata,
    return 0;
 }
 
+static int deferred_push_content_list(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   unsigned i;
+   size_t list_size = 0;
+   file_list_t *list      = (file_list_t*)data;
+
+   if (!list || !driver.menu)
+      return -1;
+
+   if (driver.menu->cat_selection_ptr == 0)
+   {
+      menu_navigation_clear(driver.menu, true);
+      entries_push_main_menu_list(driver.menu, driver.menu->menu_list->selection_buf,
+         "", "Main Menu", 0);
+      return 0;
+   }
+
+   menu_list_clear(list);
+   list_size = content_playlist_size(g_defaults.history);
+
+   for (i = 0; i < list_size; i++)
+   {
+      char fill_buf[PATH_MAX];
+      const char *core_name = NULL;
+
+      content_playlist_get_index(g_defaults.history, i,
+            &path, NULL, &core_name);
+      strlcpy(fill_buf, core_name, sizeof(fill_buf));
+
+      if (path)
+      {
+         char path_short[PATH_MAX];
+         fill_short_pathname_representation(path_short,path,sizeof(path_short));
+         snprintf(fill_buf,sizeof(fill_buf),"%s (%s)",
+               path_short,core_name);
+      }
+
+      menu_list_push(list, fill_buf, "",
+            MENU_FILE_PLAYLIST_ENTRY, 0);
+   }
+
+   driver.menu->scroll_indices_size = 0;
+   menu_entries_build_scroll_indices(list);
+   menu_entries_refresh(list);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
+}
+
 static int deferred_push_configurations(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -1942,6 +1994,15 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       cbs->action_start = action_start_core_setting;
 }
 
+static void menu_entries_cbs_init_bind_content_list_switch(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx)
+{
+   if (!cbs)
+      return;
+
+   cbs->action_content_list_switch = deferred_push_content_list;
+}
+
 static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -2106,6 +2167,7 @@ void menu_entries_cbs_init(void *data,
    {
       menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_start(cbs, path, label, type, idx);
+      menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_toggle(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx);
    }
