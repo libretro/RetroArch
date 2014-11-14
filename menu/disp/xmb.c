@@ -578,6 +578,8 @@ static void xmb_list_switch_new(file_list_t *list, int dir, size_t current)
           continue;
 
       node->x = xmb->hspacing * dir;
+      node->alpha = 0;
+      node->label_alpha = 0;
 
       float ia = (i == current) ? 1.0 : 0.5;
       add_tween(XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
