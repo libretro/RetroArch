@@ -429,10 +429,24 @@ static void menu_common_load_content(void)
    driver.menu->msg_force = true;
 }
 
-static int menu_archive_extract(const char *menu_path, const char *path,
-      const char *menu_label, unsigned int type)
+static int menu_archive_open(void)
 {
    char cat_path[PATH_MAX];
+   const char *menu_path  = NULL;
+   const char *menu_label = NULL;
+   const char* path       = NULL;
+   unsigned int type = 0;
+
+   menu_list_pop_stack(driver.menu->menu_list);
+
+   menu_list_get_last_stack(driver.menu->menu_list,
+         &menu_path, &menu_label, NULL);
+
+   if (menu_list_get_size(driver.menu->menu_list) == 0)
+      return 0;
+
+   menu_list_get_at_offset(driver.menu->menu_list->selection_buf,
+         driver.menu->selection_ptr, &path, NULL, &type);
 
    fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
    menu_list_push_stack_refresh(
@@ -445,10 +459,26 @@ static int menu_archive_extract(const char *menu_path, const char *path,
    return 0;
 }
 
-static int menu_archive_load(const char *menu_path, const char *path,
-      const char *menu_label, unsigned int type)
+static int menu_archive_load(void)
 {
-   int ret = rarch_defer_core(g_extern.core_info, menu_path, path,
+   int ret;
+   const char *menu_path  = NULL;
+   const char *menu_label = NULL;
+   const char* path       = NULL;
+   unsigned int type = 0;
+
+   menu_list_pop_stack(driver.menu->menu_list);
+
+   menu_list_get_last_stack(driver.menu->menu_list,
+         &menu_path, &menu_label, NULL);
+
+   if (menu_list_get_size(driver.menu->menu_list) == 0)
+      return 0;
+
+   menu_list_get_at_offset(driver.menu->menu_list->selection_buf,
+         driver.menu->selection_ptr, &path, NULL, &type);
+
+   ret = rarch_defer_core(g_extern.core_info, menu_path, path,
          driver.menu->deferred_path, sizeof(driver.menu->deferred_path));
 
    switch (ret)
@@ -473,10 +503,6 @@ static int menu_archive_load(const char *menu_path, const char *path,
 static int menu_load_or_open_zip_iterate(unsigned action)
 {
    char msg[PATH_MAX];
-   const char *menu_path  = NULL;
-   const char *menu_label = NULL;
-   const char* path       = NULL;
-   unsigned int type = 0;
 
    snprintf(msg, sizeof(msg), "Opening compressed file\n"
          " \n"
@@ -494,27 +520,10 @@ static int menu_load_or_open_zip_iterate(unsigned action)
    switch (action)
    {
       case MENU_ACTION_OK:
-      case MENU_ACTION_CANCEL:
-         menu_list_pop_stack(driver.menu->menu_list);
-
-         menu_list_get_last_stack(driver.menu->menu_list,
-               &menu_path, &menu_label, NULL);
-
-         if (menu_list_get_size(driver.menu->menu_list) == 0)
-            return 0;
-
-         menu_list_get_at_offset(driver.menu->menu_list->selection_buf,
-               driver.menu->selection_ptr, &path, NULL, &type);
-         break;
-   }
-
-   switch (action)
-   {
-      case MENU_ACTION_OK:
-         menu_archive_extract(menu_path, path, menu_label, type);
+         menu_archive_open();
          break;
       case MENU_ACTION_CANCEL:
-         menu_archive_load(menu_path, path, menu_label, type);
+         menu_archive_load();
          break;
    }
 
@@ -550,7 +559,19 @@ static int menu_common_iterate(unsigned action)
    else if (!strcmp(label, "message"))
       return menu_message_toggle(action);
    else if (!strcmp(label, "load_open_zip"))
-      return menu_load_or_open_zip_iterate(action);
+   {
+      switch (g_settings.archive.mode)
+      {
+         case 0:
+            return menu_load_or_open_zip_iterate(action);
+         case 1:
+            return menu_archive_load();
+         case 2:
+            return menu_archive_open();
+         default:
+            break;
+      }
+   }
    else if (!strcmp(label, "info_screen"))
       return menu_info_screen_iterate(action);
    else if (

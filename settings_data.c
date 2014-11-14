@@ -4586,6 +4586,17 @@ static bool setting_data_append_list_archive_options(
    START_GROUP(group_info, "Archive Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
+   CONFIG_UINT(
+         g_settings.archive.mode,
+         "archive_mode",
+         "Archive Mode",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 

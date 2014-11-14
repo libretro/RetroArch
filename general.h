@@ -370,6 +370,11 @@ struct settings
       char autoconfig_dir[PATH_MAX];
    } input;
 
+   struct
+   {
+      unsigned mode;
+   } archive;
+
    int state_slot;
 
    char core_options_path[PATH_MAX];
