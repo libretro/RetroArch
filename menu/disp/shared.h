@@ -42,6 +42,8 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "CORE PERFORMANCE COUNTERS", sizeof_title);
    else if (!strcmp(label, "Shader Options"))
       strlcpy(title, "SHADER OPTIONS", sizeof_title);
+   else if (!strcmp(label, "Archive Options"))
+      strlcpy(title, "ARCHIVE OPTIONS", sizeof_title);
    else if (!strcmp(label, "video_shader_parameters"))
       strlcpy(title, "SHADER PARAMETERS (CURRENT)", sizeof_title);
    else if (!strcmp(label, "video_shader_preset_parameters"))

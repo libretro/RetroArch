@@ -4576,6 +4576,22 @@ static bool setting_data_append_list_menu_options(
    return true;
 }
 
+static bool setting_data_append_list_archive_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info)
+{
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+
+   START_GROUP(group_info, "Archive Options");
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+
+   END_SUB_GROUP(list, list_info);
+   END_GROUP(list, list_info);
+
+   return true;
+}
+
 static bool setting_data_append_list_netplay_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -5196,6 +5212,12 @@ rarch_setting_t *setting_data_new(unsigned mask)
    if (mask & SL_FLAG_NETPLAY_OPTIONS)
    {
       if (!setting_data_append_list_netplay_options(&list, list_info))
+         goto error;
+   }
+
+   if (mask & SL_FLAG_ARCHIVE_OPTIONS)
+   {
+      if (!setting_data_append_list_archive_options(&list, list_info))
          goto error;
    }
 
