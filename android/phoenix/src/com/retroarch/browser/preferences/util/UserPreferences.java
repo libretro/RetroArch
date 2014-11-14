@@ -15,8 +15,6 @@ import android.media.AudioTrack;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.view.Display;
-import android.view.WindowManager;
 
 /**
  * Utility class for retrieving, saving, or loading preferences.
