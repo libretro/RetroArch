@@ -40,6 +40,11 @@ void menu_entries_build_scroll_indices(file_list_t *list);
 
 int setting_set_flags(rarch_setting_t *setting);
 
+int entries_push_main_menu_list(menu_handle_t *menu,
+      file_list_t *list,
+      const char *path, const char *label,
+      unsigned menu_type);
+
 #ifdef __cplusplus
 }
 #endif

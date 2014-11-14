@@ -541,22 +541,91 @@ static xmb_node_t* xmb_node_for_core(int i)
    return node;
 }
 
-static void xmb_populate_entries(void *data, const char *path,
-      const char *label, unsigned k)
+static void xmb_list_switch_old(file_list_t *list, int dir, size_t current)
 {
-   unsigned i, j, current, end;
+   int i;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
       return;
-    
-   (void)current;
-   (void)end;
-   (void)i;
+
+   for (i = 0; i < file_list_get_size(list); i++)
+   {
+      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+
+      if (!xmb)
+          continue;
+
+      add_tween(XMB_DELAY, 0, &node->alpha,  &inOutQuad, NULL);
+      add_tween(XMB_DELAY, 0, &node->label_alpha,  &inOutQuad, NULL);
+      add_tween(XMB_DELAY, -xmb->hspacing*dir,  &node->x, &inOutQuad, NULL);
+   }
+}
+
+static void xmb_list_switch_new(file_list_t *list, int dir, size_t current)
+{
+   int i;
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+
+   if (!xmb)
+      return;
+
+   for (i = 0; i < file_list_get_size(list); i++)
+   {
+      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+
+      if (!xmb)
+          continue;
+
+      node->x = xmb->hspacing * dir;
+
+      float ia = (i == current) ? 1.0 : 0.5;
+      add_tween(XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
+      add_tween(XMB_DELAY, ia, &node->label_alpha,  &inOutQuad, NULL);
+      add_tween(XMB_DELAY, 0,  &node->x, &inOutQuad, NULL);
+   }
+}
+
+static void xmb_populate_entries(void *data, const char *path,
+      const char *label, unsigned k)
+{
+   int dir;
+   unsigned j;
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+
+   if (!xmb)
+      return;
+
+   if (driver.menu->cat_selection_ptr_old != driver.menu->cat_selection_ptr)
+   {
+      dir = driver.menu->cat_selection_ptr > driver.menu->cat_selection_ptr_old ? 1 : -1;
+
+      xmb->active_category += dir;
+
+      for (j = 0; j < xmb->num_categories; j++)
+      {
+         xmb_node_t *node = j ? xmb_node_for_core(j-1) : &xmb->settings_node;
+
+         if (!node)
+            continue;
+
+         float ia = j == xmb->active_category ? xmb->c_active_alpha : xmb->c_passive_alpha;
+         float iz = j == xmb->active_category ? xmb->c_active_zoom : xmb->c_passive_zoom;
+         add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
+         add_tween(XMB_DELAY, iz, &node->zoom, &inOutQuad, NULL);
+      }
+
+      add_tween(XMB_DELAY, xmb->hspacing*-(float)driver.menu->cat_selection_ptr, &xmb->x, &inOutQuad, NULL);
+      dir = driver.menu->cat_selection_ptr > driver.menu->cat_selection_ptr_old ? 1 : -1;
+      xmb_list_switch_old(driver.menu->menu_list->selection_buf_old, dir, driver.menu->selection_ptr_old);
+      xmb_list_switch_new(driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
+      driver.menu->cat_selection_ptr_old = driver.menu->cat_selection_ptr;
+      return;
+   }
 
    xmb->depth = file_list_get_size(driver.menu->menu_list->menu_stack);
 
-   int dir = 0;
+   dir = 0;
    if (xmb->depth > xmb->old_depth)
       dir = 1;
    else if (xmb->depth < xmb->old_depth)
@@ -1255,6 +1324,16 @@ static void xmb_context_destroy(void *data)
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
       glDeleteTextures(1, &xmb->textures[i].id);
+
+   for (i = 1; i < xmb->num_categories; i++)
+   {
+      xmb_node_t *node = xmb_node_for_core(i-1);
+
+      if (!node)
+         continue;
+
+      glDeleteTextures(1, &node->icon);
+   }
 }
 
 
