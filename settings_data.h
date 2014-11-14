@@ -86,6 +86,12 @@ rarch_setting_t setting_data_bind_setting(const char* name,
       uint32_t idx_offset,
       const struct retro_keybind* default_value, const char *group,
       const char *subgroup);
+    
+rarch_setting_t setting_data_string_setting_options(enum setting_type type,
+     const char* name, const char* short_description, char* target,
+     unsigned size, const char* default_value, const char *empty, const char *values,
+     const char *group, const char *subgroup, change_handler_t change_handler,
+     change_handler_t read_handler);
 
 int setting_data_get_description(const char *label, char *msg,
       size_t msg_sizeof);
