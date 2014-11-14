@@ -266,6 +266,28 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
 
       strlcpy(type_str, name, type_str_size);
    }
+   else if (strstr(setting->name, "archive_mode"))
+   {
+      const char *name = NULL;
+
+      switch (g_settings.archive.mode)
+      {
+         case 0:
+            name = "Ask";
+            break;
+         case 1:
+            name = "Load Archive";
+            break;
+         case 2:
+            name = "Open Archive";
+            break;
+         default:
+            name = "Unknown";
+            break;
+      }
+
+      strlcpy(type_str, name, type_str_size);
+   }
    else if (strstr(setting->name, "analog_dpad_mode"))
    {
       static const char *modes[] = {
