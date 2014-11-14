@@ -25,6 +25,8 @@
 #include "../file_ext.h"
 #include "../config.def.h"
 
+#include <file/dir_list.h>
+
 #ifdef GEKKO
 enum
 {
@@ -1651,12 +1653,37 @@ static int deferred_push_history_list(void *data, void *userdata,
    return 0;
 }
 
+static void content_list_push(void *data, core_info_t *info, const char* path)
+{
+   int num_items, j;
+   struct string_list *list = NULL;
+   file_list_t *flist = (file_list_t*)data;
+
+   if (!info)
+      return;
+
+   list = (struct string_list*)dir_list_new(path, info->supported_extensions, true);
+
+   dir_list_sort(list, true);
+
+   num_items = list ? list->size : 0;
+
+   for (j = 0; j < num_items; j++)
+   {
+      if (list->elems[j].attr.i == RARCH_DIRECTORY) // is a directory
+         content_list_push(flist, info, list->elems[j].data);
+      else
+         menu_list_push(flist, path_basename(list->elems[j].data), "", MENU_FILE_PLAYLIST_ENTRY, 0);
+   }
+
+   string_list_free(list);
+}
+
 static int deferred_push_content_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   unsigned i;
    size_t list_size = 0;
-   file_list_t *list      = (file_list_t*)data;
+   file_list_t *list = (file_list_t*)data;
 
    if (!list || !driver.menu)
       return -1;
@@ -1670,28 +1697,25 @@ static int deferred_push_content_list(void *data, void *userdata,
    }
 
    menu_list_clear(list);
-   list_size = content_playlist_size(g_defaults.history);
 
-   for (i = 0; i < list_size; i++)
-   {
-      char fill_buf[PATH_MAX];
-      const char *core_name = NULL;
+   core_info_t *info = NULL;
+   core_info_list_t *info_list = NULL;
 
-      content_playlist_get_index(g_defaults.history, i,
-            &path, NULL, &core_name);
-      strlcpy(fill_buf, core_name, sizeof(fill_buf));
+   info_list = (core_info_list_t*)g_extern.core_info;
+   info = NULL;
 
-      if (path)
-      {
-         char path_short[PATH_MAX];
-         fill_short_pathname_representation(path_short,path,sizeof(path_short));
-         snprintf(fill_buf,sizeof(fill_buf),"%s (%s)",
-               path_short,core_name);
-      }
+   if (!info_list)
+      return -1;
 
-      menu_list_push(list, fill_buf, "",
-            MENU_FILE_PLAYLIST_ENTRY, 0);
-   }
+   info = (core_info_t*)&info_list->list[driver.menu->cat_selection_ptr - 1];
+
+   if (!info)
+      return -1;
+
+   if (!info->supports_no_game)
+      content_list_push(list, info, g_settings.content_directory);
+   else
+      menu_list_push(list, info->display_name, "", MENU_FILE_PLAYLIST_ENTRY, 0);
 
    driver.menu->scroll_indices_size = 0;
    menu_entries_build_scroll_indices(list);
