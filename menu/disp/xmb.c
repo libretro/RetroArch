@@ -588,6 +588,39 @@ static void xmb_list_switch_new(file_list_t *list, int dir, size_t current)
    }
 }
 
+static void xmb_set_title()
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+
+   if (!xmb)
+      return;
+
+   if (driver.menu->cat_selection_ptr == 0)
+   {
+      const char *dir = NULL;
+      const char *label = NULL;
+      unsigned menu_type = 0;
+
+      menu_list_get_last_stack(driver.menu->menu_list, &dir, &label, &menu_type);
+      get_title(label, dir, menu_type, xmb->title, sizeof(xmb->title));
+   }
+   else
+   {
+      core_info_t *info = NULL;
+      core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
+
+      if (!info_list)
+         return;
+
+      info = (core_info_t*)&info_list->list[driver.menu->cat_selection_ptr - 1];
+
+      if (!info)
+         return;
+
+      strlcpy(xmb->title, info->display_name, sizeof(xmb->title));
+   }
+}
+
 static void xmb_populate_entries(void *data, const char *path,
       const char *label, unsigned k)
 {
@@ -597,6 +630,8 @@ static void xmb_populate_entries(void *data, const char *path,
 
    if (!xmb)
       return;
+
+   xmb_set_title();
 
    if (driver.menu->cat_selection_ptr_old != driver.menu->cat_selection_ptr)
    {
@@ -771,9 +806,6 @@ static void xmb_frame(void)
 {
    int i;
    char title_msg[64];
-   const char *dir = NULL;
-   const char *label = NULL;
-   unsigned menu_type = 0;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
@@ -787,18 +819,14 @@ static void xmb_frame(void)
 
    xmb_render_background(false);
 
-   menu_list_get_last_stack(driver.menu->menu_list, &dir, &label, &menu_type);
-
-   get_title(label, dir, menu_type, xmb->title, sizeof(xmb->title));
-
-   xmb_draw_text(
-         xmb->title, xmb->title_margin_left, xmb->title_margin_top, 1, 1);
-
    const char *core_name = g_extern.menu.info.library_name;
    if (!core_name)
       core_name = g_extern.system.info.library_name;
    if (!core_name)
       core_name = "No Core";
+
+   xmb_draw_text(
+         xmb->title, xmb->title_margin_left, xmb->title_margin_top, 1, 1);
 
    const char *core_version = g_extern.menu.info.library_version;
    if (!core_version)
