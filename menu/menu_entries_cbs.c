@@ -1673,7 +1673,7 @@ static void content_list_push(void *data, core_info_t *info, const char* path)
       if (list->elems[j].attr.i == RARCH_DIRECTORY) // is a directory
          content_list_push(flist, info, list->elems[j].data);
       else
-         menu_list_push(flist, path_basename(list->elems[j].data), "", MENU_FILE_PLAYLIST_ENTRY, 0);
+         menu_list_push(flist, path_basename(list->elems[j].data), "", MENU_FILE_PLAIN, 0);
    }
 
    string_list_free(list);
@@ -1715,7 +1715,7 @@ static int deferred_push_content_list(void *data, void *userdata,
    if (!info->supports_no_game)
       content_list_push(list, info, g_settings.content_directory);
    else
-      menu_list_push(list, info->display_name, "", MENU_FILE_PLAYLIST_ENTRY, 0);
+      menu_list_push(list, info->display_name, "", MENU_FILE_PLAIN, 0);
 
    driver.menu->scroll_indices_size = 0;
    menu_entries_build_scroll_indices(list);

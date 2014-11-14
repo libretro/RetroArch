@@ -649,7 +649,9 @@ static int menu_common_iterate(unsigned action)
             break;
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
-         if (file_list_get_size(driver.menu->menu_list->menu_stack) == 1 && !strcmp(driver.menu_ctx->ident, "xmb"))
+         if ((action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
+            && file_list_get_size(driver.menu->menu_list->menu_stack) == 1
+            && !strcmp(driver.menu_ctx->ident, "xmb"))
          {
             if ((action == MENU_ACTION_LEFT && driver.menu->cat_selection_ptr == 0)
                   || (action == MENU_ACTION_RIGHT && driver.menu->cat_selection_ptr == g_extern.core_info->count))
