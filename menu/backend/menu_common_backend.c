@@ -429,6 +429,47 @@ static void menu_common_load_content(void)
    driver.menu->msg_force = true;
 }
 
+static int menu_archive_extract(const char *menu_path, const char *path,
+      const char *menu_label, unsigned int type)
+{
+   char cat_path[PATH_MAX];
+
+   fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
+   menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         cat_path,
+         menu_label,
+         type,
+         driver.menu->selection_ptr);
+
+   return 0;
+}
+
+static int menu_archive_load(const char *menu_path, const char *path,
+      const char *menu_label, unsigned int type)
+{
+   int ret = rarch_defer_core(g_extern.core_info, menu_path, path,
+         driver.menu->deferred_path, sizeof(driver.menu->deferred_path));
+
+   switch (ret)
+   {
+      case -1:
+         rarch_main_command(RARCH_CMD_LOAD_CORE);
+         menu_common_load_content();
+         break;
+      case 0:
+         menu_list_push_stack_refresh(
+               driver.menu->menu_list,
+               g_settings.libretro_directory,
+               "deferred_core_list",
+               0,
+               driver.menu->selection_ptr);
+         break;
+   }
+
+   return 0;
+}
+
 static int menu_load_or_open_zip_iterate(unsigned action)
 {
    char msg[PATH_MAX];
@@ -470,37 +511,10 @@ static int menu_load_or_open_zip_iterate(unsigned action)
    switch (action)
    {
       case MENU_ACTION_OK:
-         {
-            char cat_path[PATH_MAX];
-
-            fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
-            menu_list_push_stack_refresh(
-                  driver.menu->menu_list,
-                  cat_path,
-                  menu_label,
-                  type,
-                  driver.menu->selection_ptr);
-         }
+         menu_archive_extract(menu_path, path, menu_label, type);
          break;
       case MENU_ACTION_CANCEL:
-         {
-            int ret = rarch_defer_core(g_extern.core_info, menu_path, path,
-                  driver.menu->deferred_path, sizeof(driver.menu->deferred_path));
-
-            if (ret == -1)
-            {
-               rarch_main_command(RARCH_CMD_LOAD_CORE);
-               menu_common_load_content();
-               return -1;
-            }
-            else if (ret == 0)
-               menu_list_push_stack_refresh(
-                     driver.menu->menu_list,
-                     g_settings.libretro_directory,
-                     "deferred_core_list",
-                     0,
-                     driver.menu->selection_ptr);
-         }
+         menu_archive_load(menu_path, path, menu_label, type);
          break;
    }
 
