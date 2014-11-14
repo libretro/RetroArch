@@ -354,23 +354,11 @@ static int action_ok_compressed_archive_push(const char *path,
    menu_list_get_last_stack(driver.menu->menu_list,
          &menu_path, &menu_label, NULL);
 
-   if (!strcmp(menu_label, "detect_core_list"))
-   {
-      menu_list_push_stack(
-            driver.menu->menu_list,
-            path,
-            "load_open_zip",
-            0,
-            driver.menu->selection_ptr);
-      return 0;
-   }
-
-   fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
-   menu_list_push_stack_refresh(
+   menu_list_push_stack(
          driver.menu->menu_list,
-         cat_path,
-         menu_label,
-         type,
+         path,
+         "load_open_zip",
+         0,
          driver.menu->selection_ptr);
 
    return 0;
