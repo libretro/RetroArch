@@ -616,7 +616,8 @@ static int menu_common_iterate(unsigned action)
       case MENU_ACTION_RIGHT:
          if (file_list_get_size(driver.menu->menu_list->menu_stack) == 1 && !strcmp(driver.menu_ctx->ident, "xmb"))
          {
-            if (action == MENU_ACTION_LEFT && driver.menu->cat_selection_ptr == 0)
+            if ((action == MENU_ACTION_LEFT && driver.menu->cat_selection_ptr == 0)
+                  || (action == MENU_ACTION_RIGHT && driver.menu->cat_selection_ptr == g_extern.core_info->count))
                break;
             file_list_copy(driver.menu->menu_list->selection_buf, driver.menu->menu_list->selection_buf_old);
             file_list_copy(driver.menu->menu_list->menu_stack, driver.menu->menu_list->menu_stack_old);
