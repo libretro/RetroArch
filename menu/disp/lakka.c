@@ -91,12 +91,12 @@ static void lakka_draw_text(lakka_handle_t *lakka,
       const char *str, float x,
       float y, float scale_factor, float alpha)
 {
+   if (!lakka)
+      return;
+
    if (alpha > lakka->global_alpha)
       alpha = lakka->global_alpha;
    uint8_t a8 = 255 * alpha;
-
-   if (!lakka)
-      return;
 
    if (a8 == 0)
       return;

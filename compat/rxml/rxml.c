@@ -44,6 +44,9 @@ static void rxml_free_node(struct rxml_node *node)
    struct rxml_node *head = NULL;
    struct rxml_attrib_node *attrib_node_head = NULL;
 
+   if (!node)
+      return;
+
    for (head = node->children; head; )
    {
       struct rxml_node *next_node = (struct rxml_node*)head->next;
