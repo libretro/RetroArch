@@ -941,7 +941,7 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
 
    (void)data;
 
-   if (!glsl || (glsl->gl_program[glsl->glsl_active_index] == 0))
+   if (glsl->gl_program[glsl->glsl_active_index] == 0)
       return;
 
    float input_size[2] = {(float)width, (float)height};
