@@ -204,7 +204,7 @@ static int action_ok_shader_apply_changes(const char *path,
    return 0;
 }
 
-// FIXME: Ugly hack, nees to be refactored badly
+/* FIXME: Ugly hack, need to be refactored badly. */
 size_t hack_shader_pass = 0;
 
 static int action_ok_shader_pass_load(const char *path,
