@@ -82,7 +82,7 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
 static bool xa_stop(void *data)
 {
    xa_t *xa = (xa_t*)data;
-   xa->is_paused = false;
+   xa->is_paused = true;
    return true;
 }
 
