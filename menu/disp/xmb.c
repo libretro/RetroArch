@@ -1174,17 +1174,14 @@ static void xmb_context_reset(void *data)
       fill_pathname_slash(iconpath, sizeof(iconpath));
 
       info_list = (core_info_list_t*)g_extern.core_info;
-
       if (!info_list)
          continue;
 
       info = (core_info_t*)&info_list->list[i-1];
-
       if (!info)
          continue;
 
-      info->userdata = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
-
+      info->userdata = calloc(1, sizeof(xmb_node_t));
       if (!info->userdata)
       {
          RARCH_ERR("XMB node could not be allocated.\n");
