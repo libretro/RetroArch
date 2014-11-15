@@ -1191,7 +1191,7 @@ static void xmb_context_reset(void *data)
          return;
       }
 
-      node = info->userdata;
+      node = (xmb_node_t*)info->userdata;
 
       if (info->systemname)
       {
