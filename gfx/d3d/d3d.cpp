@@ -1464,6 +1464,9 @@ static void d3d_overlay_enable(void *data, bool state)
    unsigned i;
    d3d_video_t *d3d = (d3d_video_t*)data;
 
+   if (!d3d)
+      return;
+
    for (i = 0; i < d3d->overlays.size(); i++)
       d3d->overlays_enabled = state;
 
