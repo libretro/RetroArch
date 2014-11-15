@@ -1094,21 +1094,14 @@ static void xmb_context_reset(void *data)
       return;
 
    gl = (gl_t*)driver_video_resolve(NULL);
-
    if (!gl)
       return;
 
    xmb = (xmb_handle_t*)menu->userdata;
-
    if (!xmb)
       return;
-    
-   (void)gl;
 
    driver.gfx_use_rgba = true;
-
-   if (!menu || !xmb)
-      return;
 
    fill_pathname_join(bgpath, g_settings.assets_directory,
          "xmb", sizeof(bgpath));
