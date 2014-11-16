@@ -97,11 +97,6 @@ static void apple_gfx_ctx_flush_buffer(void);
    apple_gfx_ctx_update();
 }
 
-- (void)display
-{
-   apple_gfx_ctx_flush_buffer();
-}
-
 /* Stop the annoying sound when pressing a key. */
 - (BOOL)acceptsFirstResponder
 {

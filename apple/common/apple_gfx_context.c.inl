@@ -83,15 +83,6 @@ static void apple_gfx_ctx_update(void)
 #endif
 }
 
-static void apple_gfx_ctx_flush_buffer(void)
-{
-#ifdef OSX
-    CGLContextObj context = (CGLContextObj)g_context.CGLContextObj;
-    if (context)
-       CGLFlushDrawable(context);
-#endif
-}
-
 static bool apple_gfx_ctx_init(void *data)
 {
    (void)data;
@@ -270,8 +261,15 @@ static void apple_gfx_ctx_swap_buffers(void *data)
 {
    if (!(--g_fast_forward_skips < 0))
       return;
-
+    
+#ifdef OSX
+    CGLContextObj context = (CGLContextObj)g_context.CGLContextObj;
+    if (context)
+        CGLFlushDrawable(context);
+#else
    [g_view display];
+#endif
+    
    g_fast_forward_skips = g_is_syncing ? 0 : 3;
 }
 
