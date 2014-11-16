@@ -539,7 +539,7 @@ static int menu_common_iterate(unsigned action)
    const char *label = NULL;
    const char *label_offset = NULL;
    const char *path_offset = NULL;
-   unsigned scroll_speed = 0, fast_scroll_speed = 0;
+   unsigned scroll_speed = 0;
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
             driver.menu->selection_ptr);
@@ -596,7 +596,6 @@ static int menu_common_iterate(unsigned action)
       action = MENU_ACTION_REFRESH;
 
    scroll_speed = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
-   fast_scroll_speed = 4 + 4 * scroll_speed;
 
    switch (action)
    {
