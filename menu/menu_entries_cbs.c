@@ -155,6 +155,48 @@ static int action_ok_push_content_list(const char *path,
    return 0;
 }
 
+static int action_ok_load_state(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   rarch_main_command(RARCH_CMD_LOAD_STATE);
+   rarch_main_command(RARCH_CMD_RESUME);
+
+   return 0;
+}
+
+static int action_ok_save_state(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   rarch_main_command(RARCH_CMD_SAVE_STATE);
+   rarch_main_command(RARCH_CMD_RESUME);
+
+   return 0;
+}
+
+static int action_ok_resume_content(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   rarch_main_command(RARCH_CMD_RESUME);
+
+   return 0;
+}
+
+static int action_ok_restart_content(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   rarch_main_command(RARCH_CMD_RESET);
+
+   return -1;
+}
+
+static int action_ok_screenshot(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
+
+   return 0;
+}
+
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -642,6 +684,20 @@ static int action_ok_disk_cycle_tray_status(const char *path,
    return 0;
 }
 
+static int action_ok_quit(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   rarch_main_command(RARCH_CMD_QUIT);
+   return 0;
+}
+
+static int action_ok_save_new_config(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   rarch_main_command(RARCH_CMD_MENU_SAVE_CONFIG);
+   return 0;
+}
+
 static int action_ok_help(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -813,6 +869,74 @@ static int action_start_shader_scale_pass(unsigned type, const char *label,
       shader_pass->fbo.valid = false;
    }
 #endif
+
+   return 0;
+}
+
+static int action_toggle_save_state(unsigned type, const char *label,
+      unsigned action)
+{
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         // Slot -1 is (auto) slot.
+         if (g_settings.state_slot >= 0)
+            g_settings.state_slot--;
+         break;
+      case MENU_ACTION_RIGHT:
+         g_settings.state_slot++;
+         break;
+   }
+
+   return 0;
+}
+
+static int action_toggle_mainmenu(unsigned type, const char *label,
+      unsigned action)
+{
+   menu_file_list_cbs_t *cbs = NULL;
+   bool push_list = false;
+   if (!driver.menu)
+      return -1;
+
+   if (file_list_get_size(driver.menu->menu_list->menu_stack) == 1
+         && !strcmp(driver.menu_ctx->ident, "xmb"))
+   {
+      switch (action)
+      {
+         case MENU_ACTION_LEFT:
+            if (driver.menu->cat_selection_ptr == 0)
+               break;
+            push_list = true;
+            break;
+         case MENU_ACTION_RIGHT:
+            if (driver.menu->cat_selection_ptr == g_extern.core_info->count)
+               break;
+            push_list = true;
+            break;
+      }
+   }
+
+   cbs = (menu_file_list_cbs_t*)
+      menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
+            driver.menu->selection_ptr);
+
+   if (push_list)
+   {
+      file_list_copy(driver.menu->menu_list->selection_buf, driver.menu->menu_list->selection_buf_old);
+      file_list_copy(driver.menu->menu_list->menu_stack, driver.menu->menu_list->menu_stack_old);
+      driver.menu->selection_ptr_old = driver.menu->selection_ptr;
+      driver.menu->cat_selection_ptr_old = driver.menu->cat_selection_ptr;
+      driver.menu->cat_selection_ptr += action == MENU_ACTION_LEFT ? -1 : 1;
+      driver.menu->selection_ptr = 0;
+      if (cbs && cbs->action_content_list_switch)
+         return cbs->action_content_list_switch(
+               driver.menu->menu_list->selection_buf,
+               driver.menu->menu_list->menu_stack,
+               "",
+               "",
+               0);
+   }
 
    return 0;
 }
@@ -1673,7 +1797,7 @@ static void content_list_push(void *data, core_info_t *info, const char* path)
       if (list->elems[j].attr.i == RARCH_DIRECTORY) // is a directory
          content_list_push(flist, info, list->elems[j].data);
       else
-         menu_list_push(flist, path_basename(list->elems[j].data), "", MENU_FILE_PLAIN, 0);
+         menu_list_push(flist, path_basename(list->elems[j].data), "", MENU_FILE_PLAYLIST_ENTRY, 0);
    }
 
    string_list_free(list);
@@ -1715,7 +1839,7 @@ static int deferred_push_content_list(void *data, void *userdata,
    if (!info->supports_no_game)
       content_list_push(list, info, g_settings.content_directory);
    else
-      menu_list_push(list, info->display_name, "", MENU_FILE_PLAIN, 0);
+      menu_list_push(list, info->display_name, "", MENU_FILE_PLAYLIST_ENTRY, 0);
 
    driver.menu->scroll_indices_size = 0;
    menu_entries_build_scroll_indices(list);
@@ -1910,6 +2034,17 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
    menu_list_get_last_stack(driver.menu->menu_list,
          NULL, &menu_label, NULL);
 
+   if (!strcmp(label, "savestate"))
+      cbs->action_ok = action_ok_save_state;
+   else if (!strcmp(label, "loadstate"))
+      cbs->action_ok = action_ok_load_state;
+   else if (!strcmp(label, "resume_content"))
+      cbs->action_ok = action_ok_resume_content;
+   else if (!strcmp(label, "restart_content"))
+      cbs->action_ok = action_ok_restart_content;
+   else if (!strcmp(label, "take_screenshot"))
+      cbs->action_ok = action_ok_screenshot;
+   else
    switch (type)
    {
       case MENU_SETTINGS_VIDEO_RESOLUTION:
@@ -1970,9 +2105,30 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
          break;
       case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS:
          cbs->action_ok = action_ok_disk_cycle_tray_status;
+         break;
       default:
          return -1;
    }
+
+   return 0;
+}
+
+static int action_start_setting(unsigned type, const char *label,
+      unsigned action)
+{
+   rarch_setting_t *setting = NULL;
+
+   if (!driver.menu)
+      return -1;
+   
+   setting = (rarch_setting_t*)setting_data_find_setting(
+         driver.menu->list_settings, label);
+
+   if (!setting)
+      return 0;
+
+   if (setting->action_start)
+      setting->action_start(setting);
 
    return 0;
 }
@@ -1983,7 +2139,7 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return;
 
-   cbs->action_start = NULL;
+   cbs->action_start = action_start_setting;
 
    if (!strcmp(label, "video_shader_pass"))
       cbs->action_start = action_start_shader_pass;
@@ -2025,6 +2181,10 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 
    if (menu_entries_cbs_init_bind_ok_first(cbs, path, label, type, idx) == 0)
       return;
+   else if (!strcmp(label, "quit_retroarch"))
+      cbs->action_ok = action_ok_quit;
+   else if (!strcmp(label, "save_new_config"))
+      cbs->action_ok = action_ok_save_new_config;
    else if (!strcmp(label, "help"))
       cbs->action_ok = action_ok_help;
    else if (!strcmp(label, "video_shader_pass"))
@@ -2081,6 +2241,26 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_toggle = shader_action_parameter_toggle;
+   else if (
+         !strcmp(label, "core_list") ||
+         !strcmp(label, "history_list") ||
+         !strcmp(label, "detect_core_list") ||
+         !strcmp(label, "load_content") ||
+         !strcmp(label, "core_options") ||
+         !strcmp(label, "disk_options") ||
+         !strcmp(label, "performance_counters") ||
+         !strcmp(label, "configurations") ||
+         !strcmp(label, "quit_retroarch") ||
+         !strcmp(label, "core_information") ||
+         !strcmp(label, "settings") ||
+         !strcmp(label, "help") ||
+         !strcmp(label, "resume_content") ||
+         !strcmp(label, "restart_content")
+         )
+      cbs->action_toggle = action_toggle_mainmenu;
+   else if (!strcmp(label, "savestate") ||
+         !strcmp(label, "loadstate"))
+      cbs->action_toggle = action_toggle_save_state;
    else if (!strcmp(label, "video_shader_scale_pass"))
       cbs->action_toggle = action_toggle_shader_scale_pass;
    else if (!strcmp(label, "video_shader_filter_pass"))
@@ -2098,6 +2278,9 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    {
       case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
          cbs->action_toggle = disk_options_disk_idx_toggle;
+         break;
+      case MENU_FILE_PLAYLIST_ENTRY:
+         cbs->action_toggle = action_toggle_mainmenu;
          break;
    }
 

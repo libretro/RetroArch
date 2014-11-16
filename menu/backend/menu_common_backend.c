@@ -540,7 +540,6 @@ static int menu_common_iterate(unsigned action)
    const char *label_offset = NULL;
    const char *path_offset = NULL;
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
-   bool is_category = false;
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
             driver.menu->selection_ptr);
@@ -551,8 +550,6 @@ static int menu_common_iterate(unsigned action)
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
-
-   is_category = menu_common_type_is(label, type) == MENU_SETTINGS;
 
    if (!strcmp(label, "help"))
       return menu_start_screen_iterate(action);
@@ -635,22 +632,16 @@ static int menu_common_iterate(unsigned action)
       case MENU_ACTION_OK:
          if (cbs && cbs->action_ok)
             return cbs->action_ok(path_offset, label_offset, type_offset, driver.menu->selection_ptr);
-         /* fall-through */
-         if (!is_category)
-            break;
+         break;
       case MENU_ACTION_START:
-         if (is_category)
-         {
-            if (cbs && cbs->action_start)
-               return cbs->action_start(type_offset, label_offset, action);
-            /* fall-through */
-         }
-         else
-            break;
+         if (cbs && cbs->action_start)
+            return cbs->action_start(type_offset, label_offset, action);
+         break;
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
-         if ((action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            && file_list_get_size(driver.menu->menu_list->menu_stack) == 1
+         if (cbs && cbs->action_toggle)
+            ret = cbs->action_toggle(type_offset, label_offset, action);
+         else if (file_list_get_size(driver.menu->menu_list->menu_stack) == 1
             && !strcmp(driver.menu_ctx->ident, "xmb"))
          {
             if ((action == MENU_ACTION_LEFT && driver.menu->cat_selection_ptr == 0)
@@ -669,11 +660,6 @@ static int menu_common_iterate(unsigned action)
                      "",
                      "",
                      0);
-         }
-         else if (is_category)
-         {
-            if (cbs && cbs->action_toggle)
-               ret = cbs->action_toggle(type_offset, label_offset, action);
          }
          else
          {
