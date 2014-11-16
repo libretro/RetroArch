@@ -890,6 +890,39 @@ static int action_toggle_save_state(unsigned type, const char *label,
    return 0;
 }
 
+static int action_toggle_scroll(unsigned type, const char *label,
+      unsigned action)
+{
+   unsigned scroll_speed = 0, fast_scroll_speed = 0;
+   if (!driver.menu)
+      return -1;
+
+   scroll_speed = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
+   fast_scroll_speed = 4 + 4 * scroll_speed;
+
+   (void)scroll_speed;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         if (driver.menu->selection_ptr > fast_scroll_speed)
+            menu_navigation_set(driver.menu,
+                  driver.menu->selection_ptr - fast_scroll_speed, true);
+         else
+            menu_navigation_clear(driver.menu, false);
+         break;
+      case MENU_ACTION_RIGHT:
+         if (driver.menu->selection_ptr + fast_scroll_speed < (menu_list_get_size(driver.menu->menu_list)))
+            menu_navigation_set(driver.menu,
+                  driver.menu->selection_ptr + fast_scroll_speed, true);
+         else
+            menu_navigation_set_last(driver.menu);
+         break;
+   }
+
+   return 0;
+}
+
 static int action_toggle_mainmenu(unsigned type, const char *label,
       unsigned action)
 {
@@ -2276,6 +2309,17 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    {
       case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
          cbs->action_toggle = disk_options_disk_idx_toggle;
+         break;
+      case MENU_FILE_PLAIN:
+      case MENU_FILE_DIRECTORY:
+      case MENU_FILE_CARCHIVE:
+      case MENU_FILE_CORE:
+      case MENU_FILE_SHADER:
+      case MENU_FILE_OVERLAY:
+      case MENU_FILE_VIDEOFILTER:
+      case MENU_FILE_AUDIOFILTER:
+      case MENU_FILE_CONFIG:
+         cbs->action_toggle = action_toggle_scroll;
          break;
       case MENU_FILE_PLAYLIST_ENTRY:
          cbs->action_toggle = action_toggle_mainmenu;
