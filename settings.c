@@ -406,6 +406,7 @@ static void config_set_defaults(void)
    g_settings.audio.sync = audio_sync;
    g_settings.audio.rate_control = rate_control;
    g_settings.audio.rate_control_delta = rate_control_delta;
+   g_settings.audio.max_timing_skew = max_timing_skew;
    g_settings.audio.volume = audio_volume;
    g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
 
@@ -1012,6 +1013,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(audio.sync, "audio_sync");
    CONFIG_GET_BOOL(audio.rate_control, "audio_rate_control");
    CONFIG_GET_FLOAT(audio.rate_control_delta, "audio_rate_control_delta");
+   CONFIG_GET_FLOAT(audio.max_timing_skew, "audio_max_timing_skew");
    CONFIG_GET_FLOAT(audio.volume, "audio_volume");
    CONFIG_GET_STRING(audio.resampler, "audio_resampler");
    g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
@@ -1602,6 +1604,8 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
    config_set_float(conf, "audio_rate_control_delta",
          g_settings.audio.rate_control_delta);
+   config_set_float(conf, "audio_max_timing_skew",
+         g_settings.audio.max_timing_skew);
    config_set_float(conf, "audio_volume", g_settings.audio.volume);
    config_set_string(conf, "video_context_driver", g_settings.video.context_driver);
    config_set_string(conf, "audio_driver", g_settings.audio.driver);

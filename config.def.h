@@ -544,6 +544,10 @@ static const bool rate_control = false;
  * is allowed to adjust input rate. */
 static const float rate_control_delta = 0.005;
 
+/* Maximum timing skew. Defines how much adjust_system_rates
+ * is allowed to adjust input rate. */
+static const float max_timing_skew = 0.05;
+
 /* Default audio volume in dB. (0.0 dB == unity gain). */
 static const float audio_volume = 0.0;
 

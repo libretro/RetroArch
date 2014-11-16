@@ -1582,6 +1582,20 @@ int setting_data_get_description(const char *label, char *msg,
             " Input rate is defined as: \n"
             " input rate * (1.0 +/- (rate control delta))");
    }
+   else if (!strcmp(label, "audio_max_timing_skew"))
+   {
+      snprintf(msg, sizeof_msg,
+            " -- Maximum audio timing skew.\n"
+            " \n"
+            "Defines the maximum change in input rate.\n"
+            "You may want to increase this to enable\n"
+            "very large changes in timing, for example\n"
+            "running PAL cores on NTSC displays, at the\n"
+            "cost of inaccurate audio pitch.\n"
+            " \n"
+            " Input rate is defined as: \n"
+            " input rate * (1.0 +/- (max timing skew))");
+   }
    else if (!strcmp(label, "video_filter"))
    {
 #ifdef HAVE_FILTERS_BUILTIN
@@ -2388,6 +2402,8 @@ static void general_read_handler(void *data)
          g_settings.audio.rate_control_delta = *setting->value.fraction;
       }
    }
+   else if (!strcmp(setting->name, "audio_max_timing_skew"))
+      *setting->value.fraction = g_settings.audio.max_timing_skew;
    else if (!strcmp(setting->name, "video_refresh_rate_auto"))
       *setting->value.fraction = g_settings.video.refresh_rate;
    else if (!strcmp(setting->name, "input_player1_joypad_index"))
@@ -2493,6 +2509,8 @@ static void general_write_handler(void *data)
          g_settings.audio.rate_control_delta = *setting->value.fraction;
       }
    }
+   else if (!strcmp(setting->name, "audio_max_timing_skew"))
+      g_settings.audio.max_timing_skew = *setting->value.fraction;
    else if (!strcmp(setting->name, "video_refresh_rate_auto"))
    {
       if (driver.video && driver.video_data)
@@ -4124,6 +4142,25 @@ static bool setting_data_append_list_audio_options(
          0.001,
          true,
          false);
+
+   CONFIG_FLOAT(
+         g_settings.audio.max_timing_skew,
+         "audio_max_timing_skew",
+         "Audio Maximum Timing Skew",
+         max_timing_skew,
+         "%.2f",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_list_current_add_range(
+         list,
+         list_info,
+         0.01,
+         0.5,
+         0.01,
+         true,
+         true);
 
    CONFIG_UINT(
          g_settings.audio.block_frames,

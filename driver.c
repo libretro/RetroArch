@@ -763,7 +763,7 @@ static void adjust_system_rates(void)
 
    timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
 
-   if (timing_skew > 0.05f)
+   if (timing_skew > g_settings.audio.max_timing_skew)
    {
       /* We don't want to adjust pitch too much. If we have extreme cases,
        * just don't readjust at all. */
