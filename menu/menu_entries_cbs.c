@@ -927,47 +927,59 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
       unsigned action)
 {
    menu_file_list_cbs_t *cbs = NULL;
-   bool push_list = false;
+   unsigned push_list = 0;
    if (!driver.menu)
       return -1;
 
-   if (file_list_get_size(driver.menu->menu_list->menu_stack) == 1
-         && !strcmp(driver.menu_ctx->ident, "xmb"))
+   if (file_list_get_size(driver.menu->menu_list->menu_stack) == 1)
    {
-      switch (action)
+      if (!strcmp(driver.menu_ctx->ident, "xmb"))
       {
-         case MENU_ACTION_LEFT:
-            if (driver.menu->cat_selection_ptr == 0)
+         switch (action)
+         {
+            case MENU_ACTION_LEFT:
+               if (driver.menu->cat_selection_ptr == 0)
+                  break;
+               push_list = 1;
                break;
-            push_list = true;
-            break;
-         case MENU_ACTION_RIGHT:
-            if (driver.menu->cat_selection_ptr == g_extern.core_info->count)
+            case MENU_ACTION_RIGHT:
+               if (driver.menu->cat_selection_ptr == g_extern.core_info->count)
+                  break;
+               push_list = 1;
                break;
-            push_list = true;
-            break;
+         }
       }
    }
+   else 
+      push_list = 2;
 
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
             driver.menu->selection_ptr);
 
-   if (push_list)
+   switch (push_list)
    {
-      file_list_copy(driver.menu->menu_list->selection_buf, driver.menu->menu_list->selection_buf_old);
-      file_list_copy(driver.menu->menu_list->menu_stack, driver.menu->menu_list->menu_stack_old);
-      driver.menu->selection_ptr_old = driver.menu->selection_ptr;
-      driver.menu->cat_selection_ptr_old = driver.menu->cat_selection_ptr;
-      driver.menu->cat_selection_ptr += action == MENU_ACTION_LEFT ? -1 : 1;
-      driver.menu->selection_ptr = 0;
-      if (cbs && cbs->action_content_list_switch)
-         return cbs->action_content_list_switch(
-               driver.menu->menu_list->selection_buf,
-               driver.menu->menu_list->menu_stack,
-               "",
-               "",
-               0);
+      case 1:
+         file_list_copy(driver.menu->menu_list->selection_buf, driver.menu->menu_list->selection_buf_old);
+         file_list_copy(driver.menu->menu_list->menu_stack, driver.menu->menu_list->menu_stack_old);
+         driver.menu->selection_ptr_old = driver.menu->selection_ptr;
+         driver.menu->cat_selection_ptr_old = driver.menu->cat_selection_ptr;
+         driver.menu->cat_selection_ptr += action == MENU_ACTION_LEFT ? -1 : 1;
+         driver.menu->selection_ptr = 0;
+         if (cbs && cbs->action_content_list_switch)
+            return cbs->action_content_list_switch(
+                  driver.menu->menu_list->selection_buf,
+                  driver.menu->menu_list->menu_stack,
+                  "",
+                  "",
+                  0);
+         break;
+      case 2:
+         action_toggle_scroll(0, "", action);
+         break;
+      case 0:
+      default:
+         break;
    }
 
    return 0;
