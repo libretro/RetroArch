@@ -390,7 +390,6 @@ static int action_ok_compressed_archive_push(const char *path,
 {
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
-   char cat_path[PATH_MAX];
 
    if (!driver.menu)
       return -1;
@@ -1806,7 +1805,6 @@ static void content_list_push(void *data, core_info_t *info, const char* path)
 static int deferred_push_content_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   size_t list_size = 0;
    file_list_t *list = (file_list_t*)data;
 
    if (!list || !driver.menu)
