@@ -254,7 +254,9 @@ static const location_driver_t *location_drivers[] = {
    &location_android,
 #endif
 #if defined(IOS) || defined(OSX)
+#ifdef HAVE_LOCATION
    &location_apple,
+#endif
 #endif
    &location_null,
    NULL,
