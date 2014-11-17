@@ -2340,6 +2340,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       case MENU_FILE_VIDEOFILTER:
       case MENU_FILE_AUDIOFILTER:
       case MENU_FILE_CONFIG:
+      case MENU_FILE_USE_DIRECTORY:
          cbs->action_toggle = action_toggle_scroll;
          break;
       case MENU_FILE_PLAYLIST_ENTRY:
