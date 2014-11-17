@@ -578,8 +578,8 @@ static xmb_node_t* xmb_node_for_core(int i)
    if (!xmb)
       return NULL;
 
-   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX], fontpath[PATH_MAX];
-   char core_id[PATH_MAX], texturepath[PATH_MAX], content_texturepath[PATH_MAX];
+    char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX];
+    char core_id[PATH_MAX], texturepath[PATH_MAX];
 
    fill_pathname_join(mediapath, g_settings.assets_directory,
          "lakka", sizeof(mediapath));
@@ -1129,7 +1129,7 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
 
 static void xmb_context_reset(void *data)
 {
-   int i, k;
+   int k;
    char bgpath[PATH_MAX];
    char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX], fontpath[PATH_MAX];
    gl_t *gl = NULL;
