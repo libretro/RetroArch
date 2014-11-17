@@ -30,7 +30,9 @@
 #endif
 
 + (RAGameView*)get;
+#ifndef OSX
 - (void)display;
+#endif
 
 @end
 
