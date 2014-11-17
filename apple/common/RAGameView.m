@@ -88,7 +88,6 @@ static RAGameView* g_instance;
 #ifdef OSX
 
 static void apple_gfx_ctx_update(void);
-static void apple_gfx_ctx_flush_buffer(void);
 
 - (void)setFrame:(NSRect)frameRect
 {
