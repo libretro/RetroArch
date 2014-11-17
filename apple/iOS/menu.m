@@ -607,13 +607,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
        (rarch_setting_t*)setting_data_find_setting
        (driver.menu->list_settings,
         driver.menu->menu_list->selection_buf->list[i].label);
-     (void)setting;
 
      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
        menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf, i);
 
-     bool is_category = menu_common_type_is(entry_label, type) == MENU_SETTINGS;
-     
      disp_set_label
        (driver.menu->menu_list->selection_buf, &w, type, i, label,
         type_str, sizeof(type_str), 
@@ -630,17 +627,15 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                          driver.menu->selection_ptr = i;
                          if (cbs && cbs->action_ok) {
                            cbs->action_ok(path, entry_label, type, i);
-                         } else if (is_category) {
+                         } else {
                            if (cbs && cbs->action_start) {
                              cbs->action_start(type, entry_label, MENU_ACTION_START);
                            }
                            if (cbs && cbs->action_toggle) {                             
                              cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT);
                            }
-                           menu_list_push_stack(driver.menu->menu_list, "", "info_screen",
-                                                0, i);
-                         } else if ( setting && setting->action_ok ) {
-                           setting->action_ok(setting, MENU_ACTION_OK);
+                           menu_list_push_stack(driver.menu->menu_list, "",
+                                                "info_screen", 0, i);
                          }
 
                          [weakSelf menuRefresh];
