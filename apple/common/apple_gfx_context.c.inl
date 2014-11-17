@@ -275,9 +275,13 @@ static void apple_gfx_ctx_swap_buffers(void *data)
       return;
     
 #ifdef OSX
+#ifdef MAC_OS_X_VERSION_10_6
     CGLContextObj context = (CGLContextObj)g_context.CGLContextObj;
     if (context)
         CGLFlushDrawable(context);
+#else
+    [g_context flushBuffer];
+#endif
 #else
    [g_view display];
 #endif
