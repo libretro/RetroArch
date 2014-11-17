@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		7A804DFD1A1A8EF7004D8B7F /* CFExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 7A804DFC1A1A8EF7004D8B7F /* CFExtensions.m */; };
+		7A899AB21A1A990C00B4EB56 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7A899AB01A1A990C00B4EB56 /* MainMenu.xib */; };
 		7AEFCD7D192128EA00FB5B6A /* utility.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AEFCD7C192128EA00FB5B6A /* utility.m */; };
 		7AEFCD7F192128FE00FB5B6A /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AEFCD7E192128FE00FB5B6A /* RAGameView.m */; };
 		7AEFCD831921292900FB5B6A /* platform.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AEFCD821921292900FB5B6A /* platform.m */; };
@@ -17,7 +18,6 @@
 		96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96355CE21788E72A0010DBFA /* Cocoa.framework */; };
 		964DE7C417D84B57001CBB6C /* Settings.xib in Resources */ = {isa = PBXBuildFile; fileRef = 964DE7C617D84B57001CBB6C /* Settings.xib */; };
 		967894931788ECDB00D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 9678948F1788ECDB00D6CA69 /* InfoPlist.strings */; };
-		967894941788ECDB00D6CA69 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 967894911788ECDB00D6CA69 /* MainMenu.xib */; };
 		967894A41788F0C200D6CA69 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A21788F0C200D6CA69 /* CoreAudio.framework */; };
 		967894A51788F0C200D6CA69 /* CoreAudioKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A31788F0C200D6CA69 /* CoreAudioKit.framework */; };
 		967894A71788F0D900D6CA69 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A61788F0D900D6CA69 /* OpenGL.framework */; };
@@ -28,6 +28,7 @@
 
 /* Begin PBXFileReference section */
 		7A804DFC1A1A8EF7004D8B7F /* CFExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CFExtensions.m; path = ../common/CFExtensions.m; sourceTree = SOURCE_ROOT; };
+		7A899AB11A1A990C00B4EB56 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = ../OSX/OSX/OSX/en.lproj/MainMenu.xib; sourceTree = SOURCE_ROOT; };
 		7AEFCD7C192128EA00FB5B6A /* utility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = utility.m; path = ../common/utility.m; sourceTree = SOURCE_ROOT; };
 		7AEFCD7E192128FE00FB5B6A /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RAGameView.m; path = ../common/RAGameView.m; sourceTree = SOURCE_ROOT; };
 		7AEFCD821921292900FB5B6A /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = ../OSX/platform.m; sourceTree = SOURCE_ROOT; };
@@ -42,7 +43,6 @@
 		964DE7C517D84B57001CBB6C /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/Settings.xib; sourceTree = "<group>"; };
 		9678948D1788ECCA00D6CA69 /* RetroArch-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "RetroArch-Info.plist"; path = "OSX/RetroArch-Info.plist"; sourceTree = SOURCE_ROOT; };
 		967894901788ECDB00D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = OSX/en.lproj/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
-		967894921788ECDB00D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = OSX/en.lproj/MainMenu.xib; sourceTree = SOURCE_ROOT; };
 		967894A21788F0C200D6CA69 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/CoreAudio.framework; sourceTree = DEVELOPER_DIR; };
 		967894A31788F0C200D6CA69 /* CoreAudioKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudioKit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/CoreAudioKit.framework; sourceTree = DEVELOPER_DIR; };
 		967894A61788F0D900D6CA69 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework; sourceTree = DEVELOPER_DIR; };
@@ -147,8 +147,8 @@
 		967894E7178A2E9B00D6CA69 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
+				7A899AB01A1A990C00B4EB56 /* MainMenu.xib */,
 				967894E8178A2EB400D6CA69 /* modules */,
-				967894911788ECDB00D6CA69 /* MainMenu.xib */,
 				C15874EE178F2094001171D4 /* RetroArch.icns */,
 				964DE7C617D84B57001CBB6C /* Settings.xib */,
 			);
@@ -205,10 +205,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				967894931788ECDB00D6CA69 /* InfoPlist.strings in Resources */,
-				967894941788ECDB00D6CA69 /* MainMenu.xib in Resources */,
 				967894E9178A2EB400D6CA69 /* modules in Resources */,
 				C15874EF178F2094001171D4 /* RetroArch.icns in Resources */,
 				964DE7C417D84B57001CBB6C /* Settings.xib in Resources */,
+				7A899AB21A1A990C00B4EB56 /* MainMenu.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -231,6 +231,14 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
+		7A899AB01A1A990C00B4EB56 /* MainMenu.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				7A899AB11A1A990C00B4EB56 /* en */,
+			);
+			name = MainMenu.xib;
+			sourceTree = "<group>";
+		};
 		964DE7C617D84B57001CBB6C /* Settings.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -246,15 +254,6 @@
 				967894901788ECDB00D6CA69 /* en */,
 			);
 			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
-		967894911788ECDB00D6CA69 /* MainMenu.xib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				967894921788ECDB00D6CA69 /* en */,
-			);
-			name = MainMenu.xib;
-			path = RetroArch;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
