@@ -520,11 +520,72 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
    xmb->old_depth = xmb->depth;
 }
 
+static GLuint xmb_png_texture_load_(const char * file_name)
+{
+   struct texture_image ti = {0};
+   GLuint texture = 0;
+
+   if (! path_file_exists(file_name))
+      return 0;
+
+   texture_image_load(&ti, file_name);
+
+   /* Generate the OpenGL texture object */
+   glGenTextures(1, &texture);
+   glBindTexture(GL_TEXTURE_2D, texture);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ti.width, ti.height, 0,
+         GL_RGBA, GL_UNSIGNED_BYTE, ti.pixels);
+   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glGenerateMipmap(GL_TEXTURE_2D);
+
+   free(ti.pixels);
+
+   return texture;
+}
+
+static int xmb_png_texture_load_wrap(void *data)
+{
+   const char *filename = (const char*)data;
+   return xmb_png_texture_load_(filename);
+}
+
+static GLuint xmb_png_texture_load(const char* file_name)
+{
+   if (g_settings.video.threaded
+         && !g_extern.system.hw_render_callback.context_type)
+   {
+      thread_video_t *thr = (thread_video_t*)driver.video_data;
+      thr->cmd_data.custom_command.method = xmb_png_texture_load_wrap;
+      thr->cmd_data.custom_command.data   = (void*)file_name;
+      thr->send_cmd_func(thr, CMD_CUSTOM_COMMAND);
+      thr->wait_reply_func(thr, CMD_CUSTOM_COMMAND);
+
+      return thr->cmd_data.custom_command.return_value;
+   }
+
+   return xmb_png_texture_load_(file_name);
+}
+
 static xmb_node_t* xmb_node_for_core(int i)
 {
    core_info_t *info = NULL;
    core_info_list_t *info_list = NULL;
    xmb_node_t *node = NULL;
+
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+
+   if (!xmb)
+      return NULL;
+
+   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX], fontpath[PATH_MAX];
+   char core_id[PATH_MAX], texturepath[PATH_MAX], content_texturepath[PATH_MAX];
+
+   fill_pathname_join(mediapath, g_settings.assets_directory,
+         "lakka", sizeof(mediapath));
+   fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
+   fill_pathname_join(iconpath, themepath, xmb->icon_dir, sizeof(iconpath));
+   fill_pathname_slash(iconpath, sizeof(iconpath));
 
    info_list = (core_info_list_t*)g_extern.core_info;
    info = NULL;
@@ -538,6 +599,37 @@ static xmb_node_t* xmb_node_for_core(int i)
       return NULL;
 
    node = (xmb_node_t*)info->userdata;
+
+   if (!node)
+   {
+      info->userdata = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
+
+      if (!info->userdata)
+      {
+         RARCH_ERR("XMB node could not be allocated.\n");
+         return NULL;
+      }
+
+      node = (xmb_node_t*)info->userdata;
+
+      if (info->systemname)
+      {
+         char *tmp = xmb_str_replace(info->systemname, "/", " ");
+         strlcpy(core_id, tmp, sizeof(core_id));
+         free(tmp);
+      }
+      else
+         strlcpy(core_id, "default", sizeof(core_id));
+
+      strlcpy(texturepath, iconpath, sizeof(texturepath));
+      strlcat(texturepath, core_id, sizeof(texturepath));
+      strlcat(texturepath, ".png", sizeof(texturepath));
+
+      node->alpha = i + 1 == xmb->active_category ? xmb->c_active_alpha : xmb->c_passive_alpha;
+      node->zoom = i + 1 == xmb->active_category ? xmb->c_active_zoom : xmb->c_passive_zoom;
+      node->icon = xmb_png_texture_load(texturepath);
+   }
+
    return node;
 }
 
@@ -1011,52 +1103,6 @@ static void xmb_free(void *data)
    g_extern.core_info = NULL;
 }
 
-static GLuint xmb_png_texture_load_(const char * file_name)
-{
-   struct texture_image ti = {0};
-   GLuint texture = 0;
-
-   if (! path_file_exists(file_name))
-      return 0;
-
-   texture_image_load(&ti, file_name);
-
-   /* Generate the OpenGL texture object */
-   glGenTextures(1, &texture);
-   glBindTexture(GL_TEXTURE_2D, texture);
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ti.width, ti.height, 0,
-         GL_RGBA, GL_UNSIGNED_BYTE, ti.pixels);
-   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glGenerateMipmap(GL_TEXTURE_2D);
-
-   free(ti.pixels);
-
-   return texture;
-}
-static int xmb_png_texture_load_wrap(void *data)
-{
-   const char *filename = (const char*)data;
-   return xmb_png_texture_load_(filename);
-}
-
-static GLuint xmb_png_texture_load(const char* file_name)
-{
-   if (g_settings.video.threaded
-         && !g_extern.system.hw_render_callback.context_type)
-   {
-      thread_video_t *thr = (thread_video_t*)driver.video_data;
-      thr->cmd_data.custom_command.method = xmb_png_texture_load_wrap;
-      thr->cmd_data.custom_command.data   = (void*)file_name;
-      thr->send_cmd_func(thr, CMD_CUSTOM_COMMAND);
-      thr->wait_reply_func(thr, CMD_CUSTOM_COMMAND);
-
-      return thr->cmd_data.custom_command.return_value;
-   }
-
-   return xmb_png_texture_load_(file_name);
-}
-
 static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
       void **font_handle, void *video_data, const char *font_path,
       float xmb_font_size)
@@ -1159,61 +1205,6 @@ static void xmb_context_reset(void *data)
    xmb->settings_node.icon = xmb->textures[XMB_TEXTURE_SETTINGS].id;
    xmb->settings_node.alpha = xmb->c_active_alpha;
    xmb->settings_node.zoom = xmb->c_active_zoom;
-
-   for (i = 1; i < xmb->num_categories; i++)
-   {
-      char core_id[PATH_MAX], texturepath[PATH_MAX], content_texturepath[PATH_MAX];
-      core_info_t *info = NULL;
-      core_info_list_t *info_list = NULL;
-      xmb_node_t *node = NULL;
-
-      fill_pathname_join(mediapath, g_settings.assets_directory,
-            "lakka", sizeof(mediapath));
-      fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
-      fill_pathname_join(iconpath, themepath, xmb->icon_dir, sizeof(iconpath));
-      fill_pathname_slash(iconpath, sizeof(iconpath));
-
-      info_list = (core_info_list_t*)g_extern.core_info;
-
-      if (!info_list)
-         continue;
-
-      info = (core_info_t*)&info_list->list[i-1];
-
-      if (!info)
-         continue;
-
-      info->userdata = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
-
-      if (!info->userdata)
-      {
-         RARCH_ERR("XMB node could not be allocated.\n");
-         return;
-      }
-
-      node = (xmb_node_t*)info->userdata;
-
-      if (info->systemname)
-      {
-         char *tmp = xmb_str_replace(info->systemname, "/", " ");
-         strlcpy(core_id, tmp, sizeof(core_id));
-         free(tmp);
-      }
-      else
-         strlcpy(core_id, "default", sizeof(core_id));
-
-      strlcpy(texturepath, iconpath, sizeof(texturepath));
-      strlcat(texturepath, core_id, sizeof(texturepath));
-      strlcat(texturepath, ".png", sizeof(texturepath));
-
-      strlcpy(content_texturepath, iconpath, sizeof(content_texturepath));
-      strlcat(content_texturepath, core_id, sizeof(content_texturepath));
-      strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
-
-      node->icon = xmb_png_texture_load(texturepath);
-      node->alpha = xmb->c_passive_alpha;
-      node->zoom = xmb->c_passive_zoom;
-   }
 }
 
 static void xmb_navigation_clear(void *data, bool pending_push)
