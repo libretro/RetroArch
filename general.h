@@ -293,6 +293,14 @@ struct settings
       char driver[32];
       bool pause_libretro;
       bool mouse_enable;
+      struct
+      {
+         struct
+         {
+            bool horizontal_enable;
+            bool vertical_enable;
+         } wraparound;
+      } navigation;
    } menu;
 #endif
 

@@ -433,6 +433,8 @@ static void config_set_defaults(void)
    g_settings.menu_show_start_screen = menu_show_start_screen;
    g_settings.menu.pause_libretro = true;
    g_settings.menu.mouse_enable = false;
+   g_settings.menu.navigation.wraparound.horizontal_enable = true;
+   g_settings.menu.navigation.wraparound.vertical_enable = true;
 #endif
 
    g_settings.location.allow = false;
@@ -886,6 +888,8 @@ static bool config_load_file(const char *path, bool set_defaults)
 #ifdef HAVE_MENU
    CONFIG_GET_BOOL(menu.pause_libretro, "menu_pause_libretro");
    CONFIG_GET_BOOL(menu.mouse_enable,   "menu_mouse_enable");
+   CONFIG_GET_BOOL(menu.navigation.wraparound.horizontal_enable, "menu_navigation_wraparound_horizontal_enable");
+   CONFIG_GET_BOOL(menu.navigation.wraparound.vertical_enable,   "menu_navigation_wraparound_vertical_enable");
 #endif
 
    CONFIG_GET_INT(video.hard_sync_frames, "video_hard_sync_frames");
@@ -1657,6 +1661,10 @@ bool config_save_file(const char *path)
          g_settings.menu_config_directory : "default");
    config_set_bool(conf, "rgui_show_start_screen",
          g_settings.menu_show_start_screen);
+   config_set_bool(conf, "menu_navigation_wraparound_horizontal_enable",
+         g_settings.menu.navigation.wraparound.horizontal_enable);
+   config_set_bool(conf, "menu_navigation_wraparound_vertical_enable",
+         g_settings.menu.navigation.wraparound.vertical_enable);
 #endif
 
    config_set_path(conf, "game_history_path", g_settings.content_history_path);

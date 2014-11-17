@@ -598,8 +598,8 @@ static int menu_common_iterate(unsigned action)
    {
       case MENU_ACTION_UP:
          if (driver.menu->selection_ptr >= scroll_speed)
-            menu_navigation_set(driver.menu,
-                  driver.menu->selection_ptr - scroll_speed, true);
+               menu_navigation_set(driver.menu,
+                     driver.menu->selection_ptr - scroll_speed, true);
          else
             menu_navigation_set(driver.menu,
                   menu_list_get_size(driver.menu->menu_list) - 1, true);

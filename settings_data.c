@@ -4629,6 +4629,35 @@ static bool setting_data_append_list_menu_options(
          general_read_handler);
 
    END_SUB_GROUP(list, list_info);
+
+   START_SUB_GROUP(list, list_info, "Navigation", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(
+         g_settings.menu.navigation.wraparound.horizontal_enable,
+         "menu_navigation_wraparound_horizontal_enable",
+         "Navigation Wrap-Around Horizontal",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.menu.navigation.wraparound.vertical_enable,
+         "menu_navigation_wraparound_vertical_enable",
+         "Navigation Wrap-Around Vertical",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   END_SUB_GROUP(list, list_info);
+
    END_GROUP(list, list_info);
 #endif
 
