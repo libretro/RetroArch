@@ -18,12 +18,9 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 #include <ctype.h>
-#include "../menu_common.h"
 #include <file/file_path.h>
 #include "menu_backend.h"
-#include "../menu_list.h"
 #include "../menu_entries.h"
 #include "../menu_input_line_cb.h"
 
