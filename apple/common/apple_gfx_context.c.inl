@@ -90,17 +90,29 @@ static bool apple_gfx_ctx_init(void *data)
 #ifdef OSX
     
     NSOpenGLPixelFormatAttribute attributes [] = {
-        NSOpenGLPFADoubleBuffer,	// double buffered
+        NSOpenGLPFAColorSize, 24,
+        NSOpenGLPFADoubleBuffer,
+        NSOpenGLPFAAllowOfflineRenderers,
         NSOpenGLPFADepthSize,
         (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
 #ifdef MAC_OS_X_VERSION_10_7
         (g_major || g_minor) ? NSOpenGLPFAOpenGLProfile : 0,
         (g_major << 12) | (g_minor << 8),
 #endif
-        (NSOpenGLPixelFormatAttribute)nil
+        (NSOpenGLPixelFormatAttribute)0
     };
     
     g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+    
+#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
+    if (g_format == nil)
+    {
+        /* NSOpenGLFPAAllowOfflineRenderers is 
+         not supported on this OS version. */
+        attributes[3] = (NSOpenGLPixelFormatAttribute)0;
+        g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+    }
+#endif
     
     if (g_use_hw_ctx)
     {
