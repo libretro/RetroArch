@@ -566,7 +566,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    RAMainMenu* __weak weakSelf = self;
    self.sections = [NSMutableArray array];
 
-   char title[256];
+   size_t i, end;
+   char title[256], title_msg[256];
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
@@ -587,7 +588,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    if (!core_version)
      core_version = "";
 
-   char title_msg[256];
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
             core_name, core_version);
    self.title = BOXSTRING(title_msg);
@@ -595,8 +595,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    NSMutableArray *everything = [NSMutableArray array];
    [everything addObject:BOXSTRING(title)];
   
-   size_t end = menu_list_get_size(driver.menu->menu_list);
-   for (size_t i = driver.menu->begin; i < end; i++) {
+   end = menu_list_get_size(driver.menu->menu_list);
+   
+   for (i = driver.menu->begin; i < end; i++)
+   {
      char type_str[PATH_MAX], path_buf[PATH_MAX];
      const char *path = NULL, *entry_label = NULL;
      unsigned type = 0, w = 0;
@@ -617,23 +619,23 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
         entry_label, path,
         path_buf, sizeof(path_buf));
 
-     if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP) {
+     if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP)
        [everything addObject:[RAMenuItemGeneralSetting itemForSetting:setting]];
-     } else {
+     else
+     {
        [everything addObject:
                      [RAMenuItemBasic
                        itemWithDescription:BOXSTRING(path_buf)
                                     action:^{                       
                          driver.menu->selection_ptr = i;
-                         if (cbs && cbs->action_ok) {
+                         if (cbs && cbs->action_ok)
                            cbs->action_ok(path, entry_label, type, i);
-                         } else {
-                           if (cbs && cbs->action_start) {
+                         else
+                         {
+                           if (cbs && cbs->action_start)
                              cbs->action_start(type, entry_label, MENU_ACTION_START);
-                           }
-                           if (cbs && cbs->action_toggle) {                             
+                           if (cbs && cbs->action_toggle)
                              cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT);
-                           }
                            menu_list_push_stack(driver.menu->menu_list, "",
                                                 "info_screen", 0, i);
                          }
@@ -646,19 +648,19 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    
    [self.sections addObject:everything];
 
-   if (menu_list_get_stack_size(driver.menu->menu_list) > 1) {
+   if (menu_list_get_stack_size(driver.menu->menu_list) > 1)
      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Back") style:UIBarButtonItemStyleBordered target:weakSelf action:@selector(menuBack)];
-   } else {
+   else
      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Resume") style:UIBarButtonItemStyleBordered target:[RetroArch_iOS get] action:@selector(showGameView)];
-   }
 
-   if ( driver.menu->message_contents[0] != '\0' ) {
+   if ( driver.menu->message_contents[0] != '\0' )
      apple_display_alert(driver.menu->message_contents, NULL);
-   }                   
 }
 
-- (void)menuRefresh {
-  if (driver.menu->need_refresh) {
+- (void)menuRefresh
+{
+  if (driver.menu->need_refresh)
+  {
     menu_entries_deferred_push(driver.menu->menu_list->selection_buf,
                                driver.menu->menu_list->menu_stack);
 
@@ -666,7 +668,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
   }
 }
 
-- (void)menuBack {
+- (void)menuBack
+{
   apply_deferred_settings();
   menu_list_pop_stack(driver.menu->menu_list);
   [self menuRefresh];
