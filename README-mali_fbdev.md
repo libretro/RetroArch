@@ -3,7 +3,7 @@ USAGE NOTES
 
 This driver has sense for devices with Allwinner SOCs with MALI400 3D block and a 
 good fbdev implementation. It is derived from the old Android GLES driver.
-It was ment to be used on Cubieboard/Cubieboard2/Cubietruck, but it shouldn not
+It is meant to be used on Cubieboard/Cubieboard2/Cubietruck, but it shouldn not
 be used in an Odroid X2/U2/U3 where a superior solution (RetroArch exynos video driver) is available.
 Fbdev implementation on Odroid harware is missing WAITFORVSYNC ioctl, so use Exynos driver there.
 
@@ -38,6 +38,18 @@ http://forum.odroid.com/viewtopic.php?f=52&t=4956
 This is the exact link:
 http://builder.mdrjr.net/tools/r4p0-mp400-fbdev.tar
 We should copy these libs to /usr/lib
+So in the end you should have in your system:
+   /usr/lib
+      libEGL.so    
+      libEGL.so.1.4    
+      libGLESv1_CM.so.1    
+      libGLESv2.so    
+      libGLESv2.so.2.0
+      libEGL.so.1  
+      libGLESv1_CM.so  
+      libGLESv1_CM.so.1.1  
+      libGLESv2.so.2  
+      libMali.so
 
 Now we need the headers. We can get them from here:
 http://malideveloper.arm.com/develop-for-mali/sdks/opengl-es-sdk-for-linux/#opengl-es-sdk-for-linux-download
