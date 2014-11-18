@@ -74,9 +74,7 @@ static void apple_gfx_ctx_update(void)
 {
 #ifdef OSX
 #ifdef MAC_OS_X_VERSION_10_7
-    CGLContextObj context = (CGLContextObj)g_context.CGLContextObj;
-    if (context)
-        CGLUpdateContext(context);
+   CGLUpdateContext(g_context.CGLContextObj);
 #else
 	[g_context update];
 #endif
@@ -183,7 +181,12 @@ static void apple_gfx_ctx_swap_interval(void *data, unsigned interval)
    g_fast_forward_skips = interval ? 0 : 3;
 #elif defined(OSX)
    GLint value = interval ? 1 : 0;
+#ifdef HAVE_NSOPENGL
    [g_context setValues:&value forParameter:NSOpenGLCPSwapInterval];
+#else
+    CGLSetParameter(g_context.CGLContextObj, kCGLCPSwapInterval, &value);
+#endif
+    
 #endif
 }
 
@@ -275,13 +278,14 @@ static void apple_gfx_ctx_swap_buffers(void *data)
       return;
     
 #ifdef OSX
-#ifdef MAC_OS_X_VERSION_10_6
-    CGLContextObj context = (CGLContextObj)g_context.CGLContextObj;
-    if (context)
-        CGLFlushDrawable(context);
-#else
+    
+#ifdef HAVE_NSOPENGL
     [g_context flushBuffer];
+#else
+    if (g_context.CGLContextObj)
+        CGLFlushDrawable(g_context.CGLContextObj);
 #endif
+    
 #else
    [g_view display];
 #endif
