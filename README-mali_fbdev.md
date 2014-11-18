@@ -77,7 +77,7 @@ So in the end you should have in your system:
 
 To enable mali_fbdev you must configure RetroArch with --enable-gles and --enable-mali_fbdev.
 This is what I use on my CubieBoard2 for a lightweith RetroArch:
-./configure --enable-gles --enable-mali_fbdev --disable-x11 --disable-sdl2 --enable-floathard --disable-ffmpeg --disable-netplay --enable-udev --disable-sdl --disable-pulse --disable-oss --disable-freetype --disable-7zip --disable-libxml2
+./configure --enable-gles --enable-mali_fbdev --enable-neon --disable-x11 --disable-sdl2 --enable-floathard --disable-ffmpeg --disable-netplay --enable-udev --disable-sdl --disable-pulse --disable-oss --disable-freetype --disable-7zip --disable-libxml2
 
 Snes9x-next should be fullspeed if you use the "performance" cpu freq governor, except for SA1 
 and some SuperFX.
