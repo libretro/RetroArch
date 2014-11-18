@@ -164,5 +164,6 @@ clean:
 	rm -rf $(OBJDIR)
 	rm -f $(TARGET)
 	rm -f $(JTARGET)
+	rm -f *.d
 
 .PHONY: all install uninstall clean

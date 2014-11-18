@@ -85,6 +85,7 @@ clean:
 	rm -f input/*.o
 	rm -f tools/*.o
 	rm -f $(TARGET)
+	rm -f *.d
 
 .PHONY: all clean
 

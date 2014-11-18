@@ -179,6 +179,7 @@ endif
 clean:
 	rm -rf $(OBJDIR)
 	rm -f $(TARGET)
+	rm -f *.d
 	rm -f tools/retroarch-joyconfig.exe
 
 dist_x86: all
