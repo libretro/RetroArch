@@ -10,19 +10,35 @@
 	<string>RetroArch_OSX</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
+		<key>66A80EF91DB414BA5E941825F216CCE8F40CCCF2</key>
+		<string>https://github.com/libretro/common-shaders.git</string>
+		<key>6B9F0B13E5864452B91F13C09B7ED9EB989E82AD</key>
+		<string>https://github.com/libretro/retroarch-joypad-autoconfig.git</string>
 		<key>76200F0D6584D865E96F58DE862E738E88B23A3C</key>
 		<string>https://github.com/libretro/libretro-super.git</string>
+		<key>A267D9543F572B4C32EC6E1B876E3B9BFE4DE8F6</key>
+		<string>https://github.com/libretro/retroarch-assets.git</string>
 		<key>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</key>
 		<string>https://github.com/libretro/RetroArch.git</string>
+		<key>EF363D58F01B3FB341FA6C851870E60E4F080E97</key>
+		<string>https://github.com/libretro/common-overlays.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
 	<string>apple/OSX/OSX/RetroArch_OSX.xcodeproj</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
+		<key>66A80EF91DB414BA5E941825F216CCE8F40CCCF2</key>
+		<string>../../../../../apple/OSX/OSX/modules/shaders/shaders_cg</string>
+		<key>6B9F0B13E5864452B91F13C09B7ED9EB989E82AD</key>
+		<string>../../../../../apple/OSX/OSX/modules/autoconfig</string>
 		<key>76200F0D6584D865E96F58DE862E738E88B23A3C</key>
 		<string>../../../../../..</string>
+		<key>A267D9543F572B4C32EC6E1B876E3B9BFE4DE8F6</key>
+		<string>../../../../../apple/OSX/OSX/modules/assets</string>
 		<key>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</key>
 		<string>../../../../..</string>
+		<key>EF363D58F01B3FB341FA6C851870E60E4F080E97</key>
+		<string>../../../../../apple/OSX/OSX/modules/overlays</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
 	<string>https://github.com/libretro/RetroArch.git</string>
@@ -44,9 +60,41 @@
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>
 			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>A267D9543F572B4C32EC6E1B876E3B9BFE4DE8F6</string>
+			<key>IDESourceControlWCCName</key>
+			<string>assets</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>6B9F0B13E5864452B91F13C09B7ED9EB989E82AD</string>
+			<key>IDESourceControlWCCName</key>
+			<string>autoconfig</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>EF363D58F01B3FB341FA6C851870E60E4F080E97</string>
+			<key>IDESourceControlWCCName</key>
+			<string>overlays</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
 			<string>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</string>
 			<key>IDESourceControlWCCName</key>
 			<string>retroarch</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>66A80EF91DB414BA5E941825F216CCE8F40CCCF2</string>
+			<key>IDESourceControlWCCName</key>
+			<string>shaders_cg</string>
 		</dict>
 	</array>
 </dict>
