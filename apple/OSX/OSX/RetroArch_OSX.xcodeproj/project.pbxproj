@@ -58,7 +58,7 @@
 		50351E7E192E5EC100668AB1 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = ../platform.m; sourceTree = "<group>"; };
 		5053552F185E0F4000926C26 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		50BD3F0F1A1BBA6100F2BD1B /* RetroArch copy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArch copy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		50BD3F101A1BBA6100F2BD1B /* RetroArch copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch copy-Info.plist"; path = "/Users/squarepusher/libretro-super/retroarch/apple/OSX/OSX/RetroArch copy-Info.plist"; sourceTree = "<absolute>"; };
+		50BD3F101A1BBA6100F2BD1B /* RetroArch 10.6-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch 10.6-Info.plist"; path = "/Users/squarepusher/libretro-super/retroarch/apple/OSX/OSX/RetroArch 10.6-Info.plist"; sourceTree = "<absolute>"; };
 		50C374A819F04F7A00984F8D /* CFExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CFExtensions.m; path = ../../common/CFExtensions.m; sourceTree = SOURCE_ROOT; };
 		50C61C241A1BB10300A48DD3 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		50C61C261A1BB11D00A48DD3 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
@@ -148,7 +148,7 @@
 				96355CE01788E72A0010DBFA /* Products */,
 				96355CE91788E72A0010DBFA /* Supporting Files */,
 				98BC877D19F83C45004FE2CB /* ApplicationServices.framework */,
-				50BD3F101A1BBA6100F2BD1B /* RetroArch copy-Info.plist */,
+				50BD3F101A1BBA6100F2BD1B /* RetroArch 10.6-Info.plist */,
 			);
 			indentWidth = 3;
 			sourceTree = "<group>";
@@ -409,7 +409,7 @@
 					"$(SRCROOT)/../../../gfx/inc",
 					"$(SRCROOT)/../../../libretro-sdk/include",
 				);
-				INFOPLIST_FILE = "RetroArch copy-Info.plist";
+				INFOPLIST_FILE = "RetroArch 10.6-Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
@@ -478,7 +478,7 @@
 					"$(SRCROOT)/../../../gfx/inc",
 					"$(SRCROOT)/../../../libretro-sdk/include",
 				);
-				INFOPLIST_FILE = "RetroArch copy-Info.plist";
+				INFOPLIST_FILE = "RetroArch 10.6-Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
