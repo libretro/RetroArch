@@ -1,37 +1,60 @@
-static AVCaptureSession *_session;
-static NSString *_sessionPreset;
-CVOpenGLESTextureCacheRef textureCache;
-GLuint outputTexture;
-static bool newFrame = false;
-
 #ifndef GL_BGRA
 #define GL_BGRA 0x80E1
 #endif
 
+#ifdef HAVE_OPENGLES
+#define RCVOpenGLTextureCacheCreateTextureFromImage CVOpenGLESTextureCacheCreateTextureFromImage
+#define RCVOpenGLTextureGetName CVOpenGLESTextureGetName
+#define RCVOpenGLTextureCacheFlush CVOpenGLESTextureCacheFlush
+#define RCVOpenGLTextureCacheCreate CVOpenGLESTextureCacheCreate
+#define RCVOpenGLTextureRef CVOpenGLESTextureRef
+#if COREVIDEO_USE_EAGLCONTEXT_CLASS_IN_API
+#define RCVOpenGLGetCurrentContext() (CVEAGLContext)(g_context)
+#else
+#define RCVOpenGLGetCurrentContext() (__bridge void *)(g_context)
+#endif
+#else
+#define RCVOpenGLTextureCacheCreateTextureFromImage CVOpenGLTextureCacheCreateTextureFromImage
+#define RCVOpenGLTextureGetName CVOpenGLTextureGetName
+#define RCVOpenGLTextureCacheFlush CVOpenGLTextureCacheFlush
+#define RCVOpenGLTextureCacheCreate CVOpenGLTextureCacheCreate
+#define RCVOpenGLTextureRef CVOpenGLTextureRef
+#define RCVOpenGLGetCurrentContext() CGLGetCurrentContext()
+#endif
+
+static AVCaptureSession *_session;
+static NSString *_sessionPreset;
+RCVOpenGLTextureCacheRef textureCache;
+GLuint outputTexture;
+static bool newFrame = false;
+
 void event_process_camera_frame(void* pixelBufferPtr)
 {
-    CVOpenGLESTextureRef renderTexture;
-    CVPixelBufferRef pixelBuffer = (CVPixelBufferRef)pixelBufferPtr;
     CVReturn ret;
+    RCVOpenGLTextureRef renderTexture;
+    CVPixelBufferRef pixelBuffer = (CVPixelBufferRef)pixelBufferPtr;
     size_t width  = CVPixelBufferGetWidth(pixelBuffer);
     size_t height = CVPixelBufferGetHeight(pixelBuffer);
     
     CVPixelBufferLockBaseAddress(pixelBuffer, 0);
     
-    //TODO - rewrite all this
-    // create a texture from our render target.
-    // textureCache will be what you previously made with CVOpenGLESTextureCacheCreate
-    ret = CVOpenGLESTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
+    /*TODO - rewrite all this.
+     *
+     * create a texture from our render target.
+     * textureCache will be what you previously 
+     * made with RCVOpenGLTextureCacheCreate.
+     */
+    ret = RCVOpenGLTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
           textureCache, pixelBuffer, NULL, GL_TEXTURE_2D,
           GL_RGBA, (GLsizei)width, (GLsizei)height, GL_BGRA, GL_UNSIGNED_BYTE, 0, &renderTexture);
 
     if (!renderTexture || ret)
     {
-        RARCH_ERR("ioscamera: CVOpenGLESTextureCacheCreateTextureFromImage failed.\n");
+        RARCH_ERR("[apple_camera]: RCVOpenGLTextureCacheCreateTextureFromImage failed.\n");
         return;
     }
     
-    outputTexture = CVOpenGLESTextureGetName(renderTexture);
+    outputTexture = RCVOpenGLTextureGetName(renderTexture);
     glBindTexture(GL_TEXTURE_2D, outputTexture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -44,10 +67,11 @@ void event_process_camera_frame(void* pixelBufferPtr)
     
     glBindTexture(GL_TEXTURE_2D, 0);
     
-    CVOpenGLESTextureCacheFlush(textureCache, 0);
+    RCVOpenGLTextureCacheFlush(textureCache, 0);
+
     CFRelease(renderTexture);
-    
     CFRelease(pixelBuffer);
+
     pixelBuffer = 0;
 }
 
@@ -67,17 +91,9 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     AVCaptureVideoDataOutput * dataOutput;
     AVCaptureDeviceInput *input;
     AVCaptureDevice *videoDevice;
-    CVEAGLContext egl_context = (CVEAGLContext)g_context;
-    
-    if (!egl_context)
-        return;
-    
-#if COREVIDEO_USE_EAGLCONTEXT_CLASS_IN_API
-    CVReturn ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, (CVEAGLContext)egl_context, NULL, &textureCache);
-    
-#else
-    CVReturn ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, (__bridge void *)egl_context, NULL, &textureCache);
-#endif
+
+    CVReturn ret = RCVOpenGLTextureCacheCreate(kCFAllocatorDefault, NULL,
+    RCVOpenGLGetCurrentContext(), NULL, &textureCache);
     (void)ret;
     
     //-- Setup Capture Session.
@@ -105,13 +121,13 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     
     [_session addInput:input];
     
-    //-- Create the output for the capture session.
+    /* Create the output for the capture session. */
     dataOutput = (AVCaptureVideoDataOutput*)[[AVCaptureVideoDataOutput alloc] init];
-    [dataOutput setAlwaysDiscardsLateVideoFrames:NO]; // Probably want to set this to NO when recording
+    [dataOutput setAlwaysDiscardsLateVideoFrames:NO]; /* Probably want to set this to NO when recording. */
     
 	[dataOutput setVideoSettings:[NSDictionary dictionaryWithObject:[NSNumber numberWithInt:kCVPixelFormatType_32BGRA] forKey:(id)kCVPixelBufferPixelFormatTypeKey]];
     
-    // Set dispatch to be on the main thread so OpenGL can do things with the data
+    /* Set dispatch to be on the main thread so OpenGL can do things with the data. */
     [dataOutput setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
     
     [_session addOutput:dataOutput];
@@ -130,6 +146,6 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
 - (void) onCameraFree
 {
-    CVOpenGLESTextureCacheFlush(textureCache, 0);
+    RCVOpenGLTextureCacheFlush(textureCache, 0);
     CFRelease(textureCache);
 }
