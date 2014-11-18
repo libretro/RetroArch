@@ -8,6 +8,7 @@
 #define RCVOpenGLTextureCacheFlush CVOpenGLESTextureCacheFlush
 #define RCVOpenGLTextureCacheCreate CVOpenGLESTextureCacheCreate
 #define RCVOpenGLTextureRef CVOpenGLESTextureRef
+#define RCVOpenGLTextureCacheRef CVOpenGLESTextureCacheRef
 #if COREVIDEO_USE_EAGLCONTEXT_CLASS_IN_API
 #define RCVOpenGLGetCurrentContext() (CVEAGLContext)(g_context)
 #else
@@ -19,6 +20,7 @@
 #define RCVOpenGLTextureCacheFlush CVOpenGLTextureCacheFlush
 #define RCVOpenGLTextureCacheCreate CVOpenGLTextureCacheCreate
 #define RCVOpenGLTextureRef CVOpenGLTextureRef
+#define RCVOpenGLTextureCacheRef CVOpenGLTextureCacheRef
 #define RCVOpenGLGetCurrentContext() CGLGetCurrentContext()
 #endif
 
