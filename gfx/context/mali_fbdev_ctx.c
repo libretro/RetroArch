@@ -21,6 +21,22 @@
 #include <EGL/egl.h>
 #include <signal.h>
 
+
+//Custom includes and defines for this hacky driver
+#include <sys/ioctl.h>
+#include <linux/fb.h>
+#include <linux/vt.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <EGL/fbdev_window.h>
+
+#ifndef GLOBAL_FBDEV
+#define GLOBAL_FBDEV "/dev/fb0"
+#endif
+//
+
+int fb;
+struct fbdev_window native_window;
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
@@ -29,14 +45,21 @@ static bool g_resize;
 static unsigned g_width, g_height;
 
 static volatile sig_atomic_t g_quit;
-static void sighandler(int sig)
+/*static void sighandler(int sig)
 {
    (void)sig;
    g_quit = 1;
+}*/
+
+static void gfx_ctx_clearfb(void){
+	int fd = open("/dev/tty", O_RDWR);
+	ioctl(fd,VT_ACTIVATE,5);
+	ioctl(fd,VT_ACTIVATE,1);
+	close (fd);
+	system("setterm -cursor on");
 }
 
-static void gfx_ctx_mali_fbdev_set_swap_interval(
-      void *data, unsigned interval)
+static void gfx_ctx_mali_fbdev_set_swap_interval(void *data, unsigned interval)
 {
    (void)data;
    if (g_egl_dpy)
@@ -45,106 +68,136 @@ static void gfx_ctx_mali_fbdev_set_swap_interval(
 
 static void gfx_ctx_mali_fbdev_destroy(void *data)
 {
-   (void)data;
+   RARCH_LOG("gfx_ctx_mali_fbdev_destroy().\n");
+   eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+   eglDestroyContext(g_egl_dpy, g_egl_ctx);
+   eglDestroySurface(g_egl_dpy, g_egl_surf);
+   eglTerminate(g_egl_dpy);
 
-   if (g_egl_dpy != EGL_NO_DISPLAY)
-   {
-      if (g_egl_ctx != EGL_NO_CONTEXT)
-      {
-         glFlush();
-         glFinish();
-      }
-
-      eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-      if (g_egl_ctx != EGL_NO_CONTEXT)
-         eglDestroyContext(g_egl_dpy, g_egl_ctx);
-      if (g_egl_surf != EGL_NO_SURFACE)
-         eglDestroySurface(g_egl_dpy, g_egl_surf);
-      eglTerminate(g_egl_dpy);
-   }
-
-   g_egl_dpy  = EGL_NO_DISPLAY;
+   g_egl_dpy = EGL_NO_DISPLAY;
    g_egl_surf = EGL_NO_SURFACE;
-   g_egl_ctx  = EGL_NO_CONTEXT;
+   g_egl_ctx = EGL_NO_CONTEXT;
    g_config   = 0;
-   g_quit     = 0;
    g_resize   = false;
+   
+   gfx_ctx_clearfb();
+
+   close (fb);
 }
 
-static void gfx_ctx_mali_fbdev_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+static void gfx_ctx_mali_fbdev_get_video_size(void *data, unsigned *width, unsigned *height)
 {
-   (void)data;
-   if (g_egl_dpy != EGL_NO_DISPLAY && g_egl_surf != EGL_NO_SURFACE)
+
+   if (g_egl_dpy)
    {
-      *width  = g_width;
-      *height = g_height;
+      EGLint gl_width, gl_height;
+      eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &gl_width);
+      eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &gl_height);
+      *width  = gl_width;
+      *height = gl_height;
    }
    else
    {
       *width  = 0;
       *height = 0;
    }
+
 }
 
 static bool gfx_ctx_mali_fbdev_init(void *data)
 {
-   (void)data;
-
-   struct sigaction sa = {{0}};
-   sa.sa_handler = sighandler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-
-   static const EGLint attribs[] = {
+   system("setterm -cursor off");
+   const EGLint attribs[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
       EGL_BLUE_SIZE, 8,
       EGL_GREEN_SIZE, 8,
       EGL_RED_SIZE, 8,
-      EGL_ALPHA_SIZE, 8,
       EGL_NONE
    };
    EGLint num_config;
    EGLint egl_version_major, egl_version_minor;
    EGLint format;
 
-   RARCH_LOG("[Mali fbdev]: Initializing context\n");
+   EGLint context_attributes[] = {
+      EGL_CONTEXT_CLIENT_VERSION, 2,
+      EGL_NONE
+   };
+
+   RARCH_LOG("Initializing context\n");
 
    if ((g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY)
    {
-      RARCH_ERR("[Mali fbdev]: eglGetDisplay failed.\n");
+      RARCH_ERR("eglGetDisplay failed.\n");
       goto error;
    }
 
    if (!eglInitialize(g_egl_dpy, &egl_version_major, &egl_version_minor))
    {
-      RARCH_ERR("[Mali fbdev]: eglInitialize failed.\n");
+      RARCH_ERR("eglInitialize failed.\n");
       goto error;
    }
 
-   RARCH_LOG("[Mali fbdev]: EGL version: %d.%d\n", egl_version_major, egl_version_minor);
-
+   RARCH_LOG("[GLES/EGL]: EGL version: %d.%d\n", egl_version_major, egl_version_minor);
 
    if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &num_config))
    {
-      RARCH_ERR("[Mali fbdev]: eglChooseConfig failed.\n");
+      RARCH_ERR("eglChooseConfig failed.\n");
+      goto error;
+   }
+
+   int var = eglGetConfigAttrib(g_egl_dpy, g_config, EGL_NATIVE_VISUAL_ID, &format);
+
+   if (!var)
+   {
+      RARCH_ERR("eglGetConfigAttrib failed: %d.\n", var);
+      goto error;
+   }
+
+   struct fb_var_screeninfo vinfo;
+   fb = open(GLOBAL_FBDEV, O_RDWR, 0);
+   if (ioctl(fb, FBIOGET_VSCREENINFO, &vinfo) < 0)
+   {
+      RARCH_ERR("error obtainig framebuffer info.\n");
+      goto error;
+   }
+   native_window.width = vinfo.xres;
+   native_window.height = vinfo.yres;
+
+   if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, &native_window, 0)))
+   {
+      RARCH_ERR("eglCreateWindowSurface failed.\n");
+      goto error;
+   }
+
+   if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, 0, context_attributes)))
+   {
+      RARCH_ERR("eglCreateContext failed.\n");
+      goto error;
+   }
+
+   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
+   {
+      RARCH_ERR("eglMakeCurrent failed.\n");
+      goto error;
+   }
+
+
+   if ( eglSwapInterval(g_egl_dpy,1) != EGL_TRUE ){
+      printf("\neglSwapInterval failed.\n");
       goto error;
    }
 
    return true;
 
 error:
-   RARCH_ERR("[Mali fbdev]: EGL error: %d.\n", eglGetError());
+   RARCH_ERR("EGL error: %d.\n", eglGetError());
    gfx_ctx_mali_fbdev_destroy(data);
    return false;
 }
 
 static void gfx_ctx_mali_fbdev_swap_buffers(void *data)
 {
-   (void)data;
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
@@ -165,8 +218,7 @@ static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
    *quit = g_quit;
 }
 
-static void gfx_ctx_mali_fbdev_set_resize(void *data,
-      unsigned width, unsigned height)
+static void gfx_ctx_mali_fbdev_set_resize(void *data, unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
@@ -188,53 +240,34 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   /* Pick some arbitrary default. */
-   if (!width || !fullscreen)
-      width = 1280;
-   if (!height || !fullscreen)
-      height = 720;
-
-   g_width = width;
-   g_height = height;
-
-   static const EGLint attribs[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
-      EGL_NONE
-   };
-
-   struct fbdev_window window = { width, height };
-   if ((g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, &window, 0)) == EGL_NO_SURFACE)
-   {
-      RARCH_ERR("eglCreateWindowSurface failed.\n");
-      goto error;
-   }
-
-   if ((g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, 0, attribs)) == EGL_NO_CONTEXT)
-   {
-      RARCH_ERR("eglCreateContext failed.\n");
-      goto error;
-   }
-
-   if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
-   {
-      RARCH_ERR("eglMakeCurrent failed.\n");
-      goto error;
-   }
-
+   (void)width;
+   (void)height;
+   (void)fullscreen;
    return true;
-
-error:
-   RARCH_ERR("[Mali fbdev]: EGL error: %d.\n", eglGetError());
-   gfx_ctx_mali_fbdev_destroy(data);
-   return false;
 }
 
-static void gfx_ctx_mali_fbdev_input_driver(void *data,
-      const input_driver_t **input, void **input_data)
+/*
+//MAC : Use if we don't want context to initialize an input driver. 
+//Otherwise, the best idea is to use udev if available
+static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
    (void)data;
    *input = NULL;
    *input_data = NULL;
+}
+*/
+
+static void gfx_ctx_mali_fbdev_input_driver(void *data, const input_driver_t **input, void **input_data)
+{
+#ifdef HAVE_UDEV
+   void *udev = input_udev.init();
+   *input = udev ? &input_udev : NULL;
+   *input_data = udev;
+#else
+   void *linuxinput = input_linuxraw.init();
+   *input = linuxinput ? &input_linuxraw : NULL;
+   *input_data = linuxinput;
+#endif
 }
 
 static gfx_ctx_proc_t gfx_ctx_mali_fbdev_get_proc_address(const char *symbol)
@@ -248,8 +281,7 @@ static gfx_ctx_proc_t gfx_ctx_mali_fbdev_get_proc_address(const char *symbol)
    return ret;
 }
 
-static bool gfx_ctx_mali_fbdev_bind_api(void *data,
-      enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_mali_fbdev_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
    return api == GFX_CTX_OPENGL_ES_API;
@@ -261,25 +293,20 @@ static bool gfx_ctx_mali_fbdev_has_focus(void *data)
    return true;
 }
 
-static bool gfx_ctx_mali_fbdev_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_init,
    gfx_ctx_mali_fbdev_destroy,
    gfx_ctx_mali_fbdev_bind_api,
    gfx_ctx_mali_fbdev_set_swap_interval,
    gfx_ctx_mali_fbdev_set_video_mode,
-   gfx_ctx_mali_fbdev_get_video_size,
+   gfx_ctx_mali_fbdev_get_video_size,  
    NULL,
    gfx_ctx_mali_fbdev_update_window_title,
    gfx_ctx_mali_fbdev_check_window,
    gfx_ctx_mali_fbdev_set_resize,
    gfx_ctx_mali_fbdev_has_focus,
-   gfx_ctx_mali_fbdev_has_windowed,
+   NULL,
+   //gfx_ctx_mali_fbdev_has_windowed,
    gfx_ctx_mali_fbdev_swap_buffers,
    gfx_ctx_mali_fbdev_input_driver,
    gfx_ctx_mali_fbdev_get_proc_address,
@@ -290,4 +317,3 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    NULL,
    "mali-fbdev",
 };
-
