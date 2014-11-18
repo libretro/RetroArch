@@ -7,6 +7,8 @@
 #include "../../gfx/gfx_context.h"
 #include "../../gfx/gl_common.h"
 
+//#define HAVE_NSOPENGL
+
 #ifdef IOS
 #define GLContextClass EAGLContext
 #define GLFrameworkID CFSTR("com.apple.opengles")
@@ -78,7 +80,7 @@ static RAScreen* get_chosen_screen(void)
 static void apple_gfx_ctx_update(void)
 {
 #ifdef OSX
-#ifdef MAC_OS_X_VERSION_10_7
+#ifdef MAC_OS_X_VERSION_10_7 && !defined(HAVE_NSOPENGL)
    CGLUpdateContext(g_context.CGLContextObj);
 #else
 	[g_context update];
