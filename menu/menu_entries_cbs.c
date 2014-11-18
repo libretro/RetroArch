@@ -2093,6 +2093,8 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_restart_content;
    else if (!strcmp(label, "take_screenshot"))
       cbs->action_ok = action_ok_screenshot;
+   else if (!strcmp(label, "video_refresh_rate_auto"))
+         cbs->action_ok = action_ok_file_path;
    else
    switch (type)
    {
