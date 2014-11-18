@@ -1,3 +1,8 @@
+#ifdef OSX
+#include <OpenGL/CGLTypes.h>
+#include <OpenGL/OpenGL.h>
+#endif
+
 #include "../../gfx/gfx_common.h"
 #include "../../gfx/gfx_context.h"
 #include "../../gfx/gl_common.h"
