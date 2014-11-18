@@ -57,7 +57,7 @@
 		50351E7C192E5E8900668AB1 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = ../settings.m; sourceTree = "<group>"; };
 		50351E7E192E5EC100668AB1 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = ../platform.m; sourceTree = "<group>"; };
 		5053552F185E0F4000926C26 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
-		50BD3F0F1A1BBA6100F2BD1B /* RetroArch copy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArch copy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		50BD3F0F1A1BBA6100F2BD1B /* RetroArch 10.6.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArch 10.6.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		50BD3F101A1BBA6100F2BD1B /* RetroArch 10.6-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch 10.6-Info.plist"; path = "/Users/squarepusher/libretro-super/retroarch/apple/OSX/OSX/RetroArch 10.6-Info.plist"; sourceTree = "<absolute>"; };
 		50C374A819F04F7A00984F8D /* CFExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CFExtensions.m; path = ../../common/CFExtensions.m; sourceTree = SOURCE_ROOT; };
 		50C61C241A1BB10300A48DD3 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
@@ -158,7 +158,7 @@
 			isa = PBXGroup;
 			children = (
 				96355CDF1788E72A0010DBFA /* RetroArch.app */,
-				50BD3F0F1A1BBA6100F2BD1B /* RetroArch copy.app */,
+				50BD3F0F1A1BBA6100F2BD1B /* RetroArch 10.6.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -226,9 +226,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		50BD3EF11A1BBA6100F2BD1B /* RetroArch 10.5 */ = {
+		50BD3EF11A1BBA6100F2BD1B /* RetroArch 10.6 */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 50BD3F0C1A1BBA6100F2BD1B /* Build configuration list for PBXNativeTarget "RetroArch 10.5" */;
+			buildConfigurationList = 50BD3F0C1A1BBA6100F2BD1B /* Build configuration list for PBXNativeTarget "RetroArch 10.6" */;
 			buildPhases = (
 				50BD3EF21A1BBA6100F2BD1B /* Sources */,
 				50BD3EF91A1BBA6100F2BD1B /* Frameworks */,
@@ -238,9 +238,9 @@
 			);
 			dependencies = (
 			);
-			name = "RetroArch 10.5";
+			name = "RetroArch 10.6";
 			productName = RetroArch;
-			productReference = 50BD3F0F1A1BBA6100F2BD1B /* RetroArch copy.app */;
+			productReference = 50BD3F0F1A1BBA6100F2BD1B /* RetroArch 10.6.app */;
 			productType = "com.apple.product-type.application";
 		};
 		96355CDE1788E72A0010DBFA /* RetroArch */ = {
@@ -281,7 +281,7 @@
 			projectRoot = "";
 			targets = (
 				96355CDE1788E72A0010DBFA /* RetroArch */,
-				50BD3EF11A1BBA6100F2BD1B /* RetroArch 10.5 */,
+				50BD3EF11A1BBA6100F2BD1B /* RetroArch 10.6 */,
 			);
 		};
 /* End PBXProject section */
@@ -441,7 +441,7 @@
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
 				);
-				PRODUCT_NAME = "RetroArch copy";
+				PRODUCT_NAME = "RetroArch 10.6";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
 			};
@@ -512,7 +512,7 @@
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
 				);
-				PRODUCT_NAME = "RetroArch copy";
+				PRODUCT_NAME = "RetroArch 10.6";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
 			};
@@ -706,7 +706,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		50BD3F0C1A1BBA6100F2BD1B /* Build configuration list for PBXNativeTarget "RetroArch 10.5" */ = {
+		50BD3F0C1A1BBA6100F2BD1B /* Build configuration list for PBXNativeTarget "RetroArch 10.6" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				50BD3F0D1A1BBA6100F2BD1B /* Debug */,
