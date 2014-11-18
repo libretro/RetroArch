@@ -20,26 +20,27 @@
 
 /* Define compatibility symbols and categories. */
 
-#ifdef IOS
-
-#ifdef HAVE_CAMERA
+#if defined(MAC_OS_X_VERSION_10_7) || defined(__IPHONE_3_0)
 #include <AVFoundation/AVCaptureSession.h>
 #include <AVFoundation/AVCaptureDevice.h>
 #include <AVFoundation/AVCaptureOutput.h>
 #include <AVFoundation/AVCaptureInput.h>
 #include <AVFoundation/AVMediaFormat.h>
+#ifdef HAVE_OPENGLES
 #include <CoreVideo/CVOpenGLESTextureCache.h>
+#else
+#include <CoreVideo/CVOpenGLTexture.h>
+#endif
 #endif
 
-#elif defined(OSX)
+#if defined(OSX)
 
 /* RAGameView is a container on iOS; 
  * on OSX these are both the same object
  */
 #define g_view g_instance
-#endif
 
-#ifdef IOS
+#elif defined(IOS)
 
 #include <GLKit/GLKit.h>
 #include "../iOS/views.h"
@@ -173,10 +174,10 @@ static void apple_gfx_ctx_update(void);
    return YES;
 }
 
-#ifdef HAVE_CAMERA
-#include "contentview_camera_ios.m.inl"
 #endif
 
+#if defined(MAC_OS_X_VERSION_10_7) || defined(__IPHONE_3_0)
+#include "contentview_camera_ios.m.inl"
 #endif
 
 #ifdef HAVE_LOCATION
@@ -185,7 +186,7 @@ static void apple_gfx_ctx_update(void);
 
 @end
 
-#if defined(HAVE_CAMERA) && defined(IOS)
+#if defined(MAC_OS_X_VERSION_10_7) || defined(__IPHONE_3_0)
 #include "apple_camera_ios.c.inl"
 #endif
 

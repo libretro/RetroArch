@@ -680,7 +680,7 @@ extern input_driver_t input_null;
 extern camera_driver_t camera_v4l2;
 extern camera_driver_t camera_android;
 extern camera_driver_t camera_rwebcam;
-extern camera_driver_t camera_ios;
+extern camera_driver_t camera_apple;
 extern camera_driver_t camera_null;
 
 extern location_driver_t location_apple;

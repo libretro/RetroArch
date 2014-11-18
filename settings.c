@@ -265,8 +265,8 @@ const char *config_get_default_camera(void)
          return "rwebcam";
       case CAMERA_ANDROID:
          return "android";
-      case CAMERA_IOS:
-         return "ios";
+      case CAMERA_APPLE:
+         return "apple";
       case CAMERA_NULL:
          return "null";
    }

@@ -21,7 +21,7 @@
 #define RCVOpenGLTextureCacheCreate CVOpenGLTextureCacheCreate
 #define RCVOpenGLTextureRef CVOpenGLTextureRef
 #define RCVOpenGLTextureCacheRef CVOpenGLTextureCacheRef
-#define RCVOpenGLGetCurrentContext() CGLGetCurrentContext()
+#define RCVOpenGLGetCurrentContext() CGLGetCurrentContext(), CGLGetPixelFormat(CGLGetCurrentContext())
 #endif
 
 static AVCaptureSession *_session;
@@ -29,6 +29,8 @@ static NSString *_sessionPreset;
 RCVOpenGLTextureCacheRef textureCache;
 GLuint outputTexture;
 static bool newFrame = false;
+
+extern void event_process_camera_frame(void* pixelBufferPtr);
 
 void event_process_camera_frame(void* pixelBufferPtr)
 {
@@ -40,15 +42,24 @@ void event_process_camera_frame(void* pixelBufferPtr)
     
     CVPixelBufferLockBaseAddress(pixelBuffer, 0);
     
+    (void)width;
+    (void)height;
+    
     /*TODO - rewrite all this.
      *
      * create a texture from our render target.
      * textureCache will be what you previously 
      * made with RCVOpenGLTextureCacheCreate.
      */
+#ifdef HAVE_OPENGLES
     ret = RCVOpenGLTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
-          textureCache, pixelBuffer, NULL, GL_TEXTURE_2D,
-          GL_RGBA, (GLsizei)width, (GLsizei)height, GL_BGRA, GL_UNSIGNED_BYTE, 0, &renderTexture);
+                                                      textureCache, pixelBuffer, NULL, GL_TEXTURE_2D,
+                                                      GL_RGBA, (GLsizei)width, (GLsizei)height,
+                                                      GL_BGRA, GL_UNSIGNED_BYTE, 0, &renderTexture);
+#else
+    ret = RCVOpenGLTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
+                                                      textureCache, pixelBuffer, 0, &renderTexture);
+#endif
 
     if (!renderTexture || ret)
     {

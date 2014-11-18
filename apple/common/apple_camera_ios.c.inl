@@ -1,39 +1,39 @@
-typedef struct ios_camera
+typedef struct apple_camera
 {
   void *empty;
-} ioscamera_t;
+} applecamera_t;
 
-static void *ios_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
+static void *apple_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
-   ioscamera_t *ioscamera;
+   applecamera_t *applecamera;
     
    if ((caps & (1ULL << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE)) == 0)
    {
-      RARCH_ERR("ioscamera returns OpenGL texture.\n");
+      RARCH_ERR("applecamera returns OpenGL texture.\n");
       return NULL;
    }
 
-   ioscamera = (ioscamera_t*)calloc(1, sizeof(ioscamera_t));
-   if (!ioscamera)
+   applecamera = (applecamera_t*)calloc(1, sizeof(applecamera_t));
+   if (!applecamera)
       return NULL;
 
    [[RAGameView get] onCameraInit];
 
-   return ioscamera;
+   return applecamera;
 }
 
-static void ios_camera_free(void *data)
+static void apple_camera_free(void *data)
 {
-   ioscamera_t *ioscamera = (ioscamera_t*)data;
+   applecamera_t *applecamera = (applecamera_t*)data;
     
    [[RAGameView get] onCameraFree];
 
-   if (ioscamera)
-      free(ioscamera);
-   ioscamera = NULL;
+   if (applecamera)
+      free(applecamera);
+   applecamera = NULL;
 }
 
-static bool ios_camera_start(void *data)
+static bool apple_camera_start(void *data)
 {
    (void)data;
 
@@ -42,12 +42,12 @@ static bool ios_camera_start(void *data)
    return true;
 }
 
-static void ios_camera_stop(void *data)
+static void apple_camera_stop(void *data)
 {
    [[RAGameView get] onCameraStop];
 }
 
-static bool ios_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
+static bool apple_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
       retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
 
@@ -70,11 +70,11 @@ static bool ios_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t fra
    return true;
 }
 
-camera_driver_t camera_ios = {
-   ios_camera_init,
-   ios_camera_free,
-   ios_camera_start,
-   ios_camera_stop,
-   ios_camera_poll,
-   "ios",
+camera_driver_t camera_apple = {
+   apple_camera_init,
+   apple_camera_free,
+   apple_camera_start,
+   apple_camera_stop,
+   apple_camera_poll,
+   "apple",
 };
