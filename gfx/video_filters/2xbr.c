@@ -463,13 +463,13 @@ int eq8(uint32_t A, uint32_t B,
 }
 
 
-#define FILTRO_RGB565(Z, PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, pg_red_mask, pg_green_mask, pg_blue_mask) \
+#define FILTRO_RGB565(Z, PE, _PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, pg_red_mask, pg_green_mask, pg_blue_mask) \
      ex   = (PE!=PH && PE!=PF); \
      if ( ex )\
      {\
-          e = (df(Z, PE,PC)+df(Z, PE,PG)+df(Z, PI,H5)+df(Z, PI,F4))+(df(Z, PH,PF)<<2); \
-          i = (df(Z, PH,PD)+df(Z, PH,I5)+df(Z, PF,I4)+df(Z, PF,PB))+(df(Z, PE,PI)<<2); \
-          if ((e<i)  && ( (!eq(Z, PF,PB) && !eq(Z, PF,PC)) || (!eq(Z, PH,PD) && !eq(Z, PH,PG)) || (eq(Z, PE,PI) && ((!eq(Z, PF,F4) && !eq(Z, PF,I4)) || (!eq(Z, PH,H5) && !eq(Z, PH,I5)))) || eq(Z, PE,PG) || eq(Z, PE,PC)) )\
+          e = (df(Z, PE,PC)+df(Z, PE,PG)+df(Z, _PI,H5)+df(Z, _PI,F4))+(df(Z, PH,PF)<<2); \
+          i = (df(Z, PH,PD)+df(Z, PH,I5)+df(Z, PF,I4)+df(Z, PF,PB))+(df(Z, PE,_PI)<<2); \
+          if ((e<i)  && ( (!eq(Z, PF,PB) && !eq(Z, PF,PC)) || (!eq(Z, PH,PD) && !eq(Z, PH,PG)) || (eq(Z, PE,_PI) && ((!eq(Z, PF,F4) && !eq(Z, PF,I4)) || (!eq(Z, PH,H5) && !eq(Z, PH,I5)))) || eq(Z, PE,PG) || eq(Z, PE,PC)) )\
           {\
               ke=df(Z, PF,PG); \
               ki=df(Z, PH,PC); \
@@ -497,15 +497,15 @@ int eq8(uint32_t A, uint32_t B,
           }\
      }\
  
-#define FILTRO_RGB8888(Z, PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, pg_red_mask, pg_green_mask, pg_blue_mask) \
+#define FILTRO_RGB8888(Z, PE, _PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, pg_red_mask, pg_green_mask, pg_blue_mask) \
      ex   = (PE!=PH && PE!=PF); \
      if ( ex )\
      {\
           e = (df8(PE,PC, pg_red_mask, pg_green_mask, pg_blue_mask ) + df8(PE,PG, pg_red_mask, pg_green_mask, pg_blue_mask) + \
-                df8(PI,H5, pg_red_mask, pg_green_mask, pg_blue_mask ) + df8(PI,F4, pg_red_mask, pg_green_mask, pg_blue_mask))+(4 * (df8(PH,PF, pg_red_mask, pg_green_mask, pg_blue_mask))); \
+                df8(_PI,H5, pg_red_mask, pg_green_mask, pg_blue_mask ) + df8(_PI,F4, pg_red_mask, pg_green_mask, pg_blue_mask))+(4 * (df8(PH,PF, pg_red_mask, pg_green_mask, pg_blue_mask))); \
           i = (df8(PH,PD, pg_red_mask, pg_green_mask, pg_blue_mask) + df8(PH,I5, pg_red_mask, pg_green_mask, pg_blue_mask) + \
-                df8(PF,I4, pg_red_mask, pg_green_mask, pg_blue_mask) + df8(PF,PB, pg_red_mask, pg_green_mask, pg_blue_mask))+(4 * (df8(PE,PI, pg_red_mask, pg_green_mask, pg_blue_mask))); \
-          if ((e<i)  && ( (!eq8(PF,PB, pg_red_mask, pg_green_mask, pg_blue_mask) && !eq8(PF,PC, pg_red_mask, pg_green_mask, pg_blue_mask)) || (!eq8(PH,PD, pg_red_mask, pg_green_mask, pg_blue_mask) && !eq8(PH,PG, pg_red_mask, pg_green_mask, pg_blue_mask)) || (eq8(PE,PI, pg_red_mask, pg_green_mask, pg_blue_mask) && ((!eq8(PF,F4, pg_red_mask, pg_green_mask, pg_blue_mask) && !eq8(PF,I4, pg_red_mask, pg_green_mask, pg_blue_mask)) || (!eq8(PH,H5, pg_red_mask, pg_green_mask,pg_blue_mask) && !eq8(PH,I5, pg_red_mask, pg_green_mask, pg_blue_mask)))) || eq8(PE,PG, pg_red_mask, pg_green_mask, pg_blue_mask) || eq8(PE,PC, pg_red_mask, pg_green_mask, pg_blue_mask)) )\
+                df8(PF,I4, pg_red_mask, pg_green_mask, pg_blue_mask) + df8(PF,PB, pg_red_mask, pg_green_mask, pg_blue_mask))+(4 * (df8(PE,_PI, pg_red_mask, pg_green_mask, pg_blue_mask))); \
+          if ((e<i)  && ( (!eq8(PF,PB, pg_red_mask, pg_green_mask, pg_blue_mask) && !eq8(PF,PC, pg_red_mask, pg_green_mask, pg_blue_mask)) || (!eq8(PH,PD, pg_red_mask, pg_green_mask, pg_blue_mask) && !eq8(PH,PG, pg_red_mask, pg_green_mask, pg_blue_mask)) || (eq8(PE,_PI, pg_red_mask, pg_green_mask, pg_blue_mask) && ((!eq8(PF,F4, pg_red_mask, pg_green_mask, pg_blue_mask) && !eq8(PF,I4, pg_red_mask, pg_green_mask, pg_blue_mask)) || (!eq8(PH,H5, pg_red_mask, pg_green_mask,pg_blue_mask) && !eq8(PH,I5, pg_red_mask, pg_green_mask, pg_blue_mask)))) || eq8(PE,PG, pg_red_mask, pg_green_mask, pg_blue_mask) || eq8(PE,PC, pg_red_mask, pg_green_mask, pg_blue_mask)) )\
           {\
               ke=df8(PF,PG, pg_red_mask, pg_green_mask, pg_blue_mask); ki=df8(PH,PC, pg_red_mask, pg_green_mask, pg_blue_mask); \
               ex2 = (PE!=PC && PB!=PC); ex3 = (PE!=PG && PD!=PG); px = (df8(PE,PF, pg_red_mask, pg_green_mask, pg_blue_mask) <= df8(PE,PH, pg_red_mask, pg_green_mask, pg_blue_mask)) ? PF : PH; \
@@ -533,39 +533,13 @@ int eq8(uint32_t A, uint32_t B,
      }\
  
  
- 
-#define twoxbr_declare_variables(typename_t, in, nextline) \
-         typename_t E[4]; \
-         typename_t ex, e, i, ke, ki, ex2, ex3, px; \
-         typename_t A1 = *(in - nextline - nextline - 1); \
-         typename_t B1 = *(in - nextline - nextline); \
-         typename_t C1 = *(in - nextline - nextline + 1); \
-         typename_t A0 = *(in - nextline - 2); \
-         typename_t PA = *(in - nextline - 1); \
-         typename_t PB = *(in - nextline); \
-         typename_t PC = *(in - nextline + 1); \
-         typename_t C4 = *(in - nextline + 2); \
-         typename_t D0 = *(in - 2); \
-         typename_t PD = *(in - 1); \
-         typename_t PE = *(in); \
-         typename_t PF = *(in + 1); \
-         typename_t F4 = *(in + 2); \
-         typename_t G0 = *(in + nextline - 2); \
-         typename_t PG = *(in + nextline - 1); \
-         typename_t PH = *(in + nextline); \
-         typename_t PI = *(in + nextline + 1); \
-         typename_t I4 = *(in + nextline + 2); \
-         typename_t G5 = *(in + nextline + nextline - 1); \
-         typename_t H5 = *(in + nextline + nextline); \
-         typename_t I5 = *(in + nextline + nextline + 1); \
- 
 #ifndef twoxbr_function
 #define twoxbr_function(FILTRO, Z) \
             E[0] = E[1] = E[2] = E[3] = PE;\
-            FILTRO(Z, PE, PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, 3, pg_red_mask, pg_green_mask, pg_blue_mask);\
-            FILTRO(Z, PE, PC, PF, PB, PI, PA, PH, PD, PG, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, 2, 0, 3, 1, pg_red_mask, pg_green_mask, pg_blue_mask);\
-            FILTRO(Z, PE, PA, PB, PD, PC, PG, PF, PH, PI, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, 3, 2, 1, 0, pg_red_mask, pg_green_mask, pg_blue_mask);\
-            FILTRO(Z, PE, PG, PD, PH, PA, PI, PB, PF, PC, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 1, 3, 0, 2, pg_red_mask, pg_green_mask, pg_blue_mask);\
+            FILTRO(Z, PE, _PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, 0, 1, 2, 3, pg_red_mask, pg_green_mask, pg_blue_mask);\
+            FILTRO(Z, PE, PC, PF, PB, _PI, PA, PH, PD, PG, I4, A1, I5, H5, A0, D0, B1, C1, F4, C4, G5, G0, 2, 0, 3, 1, pg_red_mask, pg_green_mask, pg_blue_mask);\
+            FILTRO(Z, PE, PA, PB, PD, PC, PG, PF, PH, _PI, C1, G0, C4, F4, G5, H5, D0, A0, B1, A1, I4, I5, 3, 2, 1, 0, pg_red_mask, pg_green_mask, pg_blue_mask);\
+            FILTRO(Z, PE, PG, PD, PH, PA, _PI, PB, PF, PC, A0, I5, A1, B1, I4, F4, H5, G5, D0, G0, C1, C4, 1, 3, 0, 2, pg_red_mask, pg_green_mask, pg_blue_mask);\
          out[0] = E[0]; \
          out[1] = E[1]; \
          out[dst_stride] = E[2]; \
@@ -598,13 +572,35 @@ static void twoxbr_generic_xrgb8888(void *data, unsigned width, unsigned height,
  
       for (finish = width; finish; finish -= 1)
       {
-         twoxbr_declare_variables(uint32_t, in, nextline);
+         uint32_t E[4];
+         uint32_t ex, e, i, ke, ki, ex2, ex3, px;
+         uint32_t A1 = *(in - nextline - nextline - 1);
+         uint32_t B1 = *(in - nextline - nextline);
+         uint32_t C1 = *(in - nextline - nextline + 1);
+         uint32_t A0 = *(in - nextline - 2);
+         uint32_t PA = *(in - nextline - 1);
+         uint32_t PB = *(in - nextline);
+         uint32_t PC = *(in - nextline + 1);
+         uint32_t C4 = *(in - nextline + 2);
+         uint32_t D0 = *(in - 2);
+         uint32_t PD = *(in - 1);
+         uint32_t PE = *(in);
+         uint32_t PF = *(in + 1);
+         uint32_t F4 = *(in + 2);
+         uint32_t G0 = *(in + nextline - 2);
+         uint32_t PG = *(in + nextline - 1);
+         uint32_t PH = *(in + nextline);
+         uint32_t _PI = *(in + nextline + 1);
+         uint32_t I4 = *(in + nextline + 2);
+         uint32_t G5 = *(in + nextline + nextline - 1);
+         uint32_t H5 = *(in + nextline + nextline);
+         uint32_t I5 = *(in + nextline + nextline + 1);
  
          /*
           * Map of the pixels:          A1 B1 C1
           *                          A0 PA PB PC C4
           *                          D0 PD PE PF F4
-          *                          G0 PG PH PI I4
+          *                          G0 PG PH _PI I4
           *                             G5 H5 I5
           */
  
@@ -638,13 +634,35 @@ static void twoxbr_generic_rgb565(void *data, unsigned width, unsigned height,
  
       for (finish = width; finish; finish -= 1)
       {
-         twoxbr_declare_variables(uint16_t, in, nextline);
+         uint16_t E[4];
+         uint16_t ex, e, i, ke, ki, ex2, ex3, px;
+         uint16_t A1 = *(in - nextline - nextline - 1);
+         uint16_t B1 = *(in - nextline - nextline);
+         uint16_t C1 = *(in - nextline - nextline + 1);
+         uint16_t A0 = *(in - nextline - 2);
+         uint16_t PA = *(in - nextline - 1);
+         uint16_t PB = *(in - nextline);
+         uint16_t PC = *(in - nextline + 1);
+         uint16_t C4 = *(in - nextline + 2);
+         uint16_t D0 = *(in - 2);
+         uint16_t PD = *(in - 1);
+         uint16_t PE = *(in);
+         uint16_t PF = *(in + 1);
+         uint16_t F4 = *(in + 2);
+         uint16_t G0 = *(in + nextline - 2);
+         uint16_t PG = *(in + nextline - 1);
+         uint16_t PH = *(in + nextline);
+         uint16_t _PI = *(in + nextline + 1);
+         uint16_t I4 = *(in + nextline + 2);
+         uint16_t G5 = *(in + nextline + nextline - 1);
+         uint16_t H5 = *(in + nextline + nextline);
+         uint16_t I5 = *(in + nextline + nextline + 1);
  
          /*
           * Map of the pixels:          A1 B1 C1
           *                          A0 PA PB PC C4
           *                          D0 PD PE PF F4
-          *                          G0 PG PH PI I4
+          *                          G0 PG PH _PI I4
           *                             G5 H5 I5
           */
  
