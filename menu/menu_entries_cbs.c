@@ -564,12 +564,6 @@ static int action_ok_file_load(const char *path,
    return 0;
 }
 
-static int action_ok_file_path(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   return menu_action_setting_set(type, label, MENU_ACTION_OK);
-}
-
 static int action_ok_set_path(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -2099,8 +2093,6 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_restart_content;
    else if (!strcmp(label, "take_screenshot"))
       cbs->action_ok = action_ok_screenshot;
-   else if (!strcmp(label, "video_refresh_rate_auto"))
-         cbs->action_ok = action_ok_file_path;
    else
    switch (type)
    {
@@ -2135,9 +2127,6 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
             cbs->action_ok = action_ok_core_load;
          else
             return -1;
-         break;
-      case MENU_FILE_PATH:
-         cbs->action_ok = action_ok_file_path;
          break;
       case MENU_FILE_FONT:
       case MENU_FILE_OVERLAY:
