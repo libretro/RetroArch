@@ -288,6 +288,99 @@ static int16_t gx_joypad_axis(unsigned port, uint32_t joyaxis)
    return val;
 }
 
+#ifdef HW_RVL
+
+#ifndef PI
+#define PI 3.14159265f
+#endif
+
+static s8 WPAD_StickX(WPADData *data, u8 chan,u8 right)
+{
+  float mag = 0.0;
+  float ang = 0.0;
+
+  switch (data->exp.type)
+  {
+    case WPAD_EXP_NUNCHUK:
+    case WPAD_EXP_GUITARHERO3:
+      if (right == 0)
+      {
+        mag = data->exp.nunchuk.js.mag;
+        ang = data->exp.nunchuk.js.ang;
+      }
+      break;
+
+    case WPAD_EXP_CLASSIC:
+      if (right == 0)
+      {
+        mag = data->exp.classic.ljs.mag;
+        ang = data->exp.classic.ljs.ang;
+      }
+      else
+      {
+        mag = data->exp.classic.rjs.mag;
+        ang = data->exp.classic.rjs.ang;
+      }
+      break;
+
+    default:
+      break;
+  }
+
+  /* calculate X value (angle need to be converted into radian) */
+  if (mag > 1.0)
+     mag = 1.0;
+  else if (mag < -1.0)
+     mag = -1.0;
+  double val = mag * sin(PI * ang/180.0f);
+ 
+  return (s8)(val * 128.0f);
+}
+
+static s8 WPAD_StickY(WPADData *data, u8 chan, u8 right)
+{
+  float mag = 0.0;
+  float ang = 0.0;
+
+  switch (data->exp.type)
+  {
+    case WPAD_EXP_NUNCHUK:
+    case WPAD_EXP_GUITARHERO3:
+      if (right == 0)
+      {
+        mag = data->exp.nunchuk.js.mag;
+        ang = data->exp.nunchuk.js.ang;
+      }
+      break;
+
+    case WPAD_EXP_CLASSIC:
+      if (right == 0)
+      {
+        mag = data->exp.classic.ljs.mag;
+        ang = data->exp.classic.ljs.ang;
+      }
+      else
+      {
+        mag = data->exp.classic.rjs.mag;
+        ang = data->exp.classic.rjs.ang;
+      }
+      break;
+
+    default:
+      break;
+  }
+
+  /* calculate X value (angle need to be converted into radian) */
+  if (mag > 1.0)
+     mag = 1.0;
+  else if (mag < -1.0)
+     mag = -1.0;
+  double val = mag * cos(PI * ang/180.0f);
+ 
+  return (s8)(val * 128.0f);
+}
+#endif
+
 static void gx_joypad_poll(void)
 {
    unsigned i, j, port;
@@ -355,38 +448,10 @@ static void gx_joypad_poll(void)
             *state_cur |= (down & WPAD_CLASSIC_BUTTON_ZL) ? (1ULL << GX_CLASSIC_ZL_TRIGGER) : 0;
             *state_cur |= (down & WPAD_CLASSIC_BUTTON_ZR) ? (1ULL << GX_CLASSIC_ZR_TRIGGER) : 0;
 
-            float ljs_mag = exp->classic.ljs.mag;
-            float ljs_ang = exp->classic.ljs.ang;
-
-            float rjs_mag = exp->classic.rjs.mag;
-            float rjs_ang = exp->classic.rjs.ang;
-
-            if (ljs_mag > 1.0f)
-               ljs_mag = 1.0f;
-            else if (ljs_mag < -1.0f)
-               ljs_mag = -1.0f;
-
-            if (rjs_mag > 1.0f)
-               rjs_mag = 1.0f;
-            else if (rjs_mag < -1.0f)
-               rjs_mag = -1.0f;
-
-            double ljs_val_x = ljs_mag * sin(M_PI * ljs_ang / 180.0);
-            double ljs_val_y = -ljs_mag * cos(M_PI * ljs_ang / 180.0);
-
-            double rjs_val_x = rjs_mag * sin(M_PI * rjs_ang / 180.0);
-            double rjs_val_y = -rjs_mag * cos(M_PI * rjs_ang / 180.0);
-
-            int16_t ls_x = (int16_t)(ljs_val_x * 32767.0f);
-            int16_t ls_y = (int16_t)(ljs_val_y * 32767.0f);
-
-            int16_t rs_x = (int16_t)(rjs_val_x * 32767.0f);
-            int16_t rs_y = (int16_t)(rjs_val_y * 32767.0f);
-
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = ls_x;
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
+            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X]  = WPAD_StickX(wpaddata, port, 0);
+            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y]  = WPAD_StickY(wpaddata, port, 0);
+            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = WPAD_StickX(wpaddata, port, 1);
+            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = WPAD_StickY(wpaddata, port, 1);
          }
          else if (ptype == WPAD_EXP_NUNCHUK)
          {
