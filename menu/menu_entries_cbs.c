@@ -696,6 +696,12 @@ static int action_ok_quit(const char *path,
    return 0;
 }
 
+static int action_ok_lookup_setting(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return menu_action_setting_set(type, label, MENU_ACTION_OK);
+}
+
 static int action_ok_save_new_config(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -2231,7 +2237,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return;
 
-   cbs->action_ok = NULL;
+   cbs->action_ok = action_ok_lookup_setting;
 
    if (menu_entries_cbs_init_bind_ok_first(cbs, path, label, type, idx) == 0)
       return;
