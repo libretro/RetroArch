@@ -29,7 +29,8 @@ void libretro_dummy_retro_init(void)
 
 void libretro_dummy_retro_deinit(void)
 {
-   free(frame_buf);
+   if (frame_buf)
+      free(frame_buf);
    frame_buf = NULL;
 }
 
