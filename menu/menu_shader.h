@@ -34,10 +34,6 @@ void menu_shader_manager_save_preset(
 unsigned menu_shader_manager_get_type(
       const struct gfx_shader *shader);
 
-void menu_shader_manager_get_str(struct gfx_shader *shader,
-      char *type_str, size_t type_str_size, const char *menu_label,
-      const char *label, unsigned type);
-
 void menu_shader_manager_apply_changes(void);
 
 #ifdef __cplusplus

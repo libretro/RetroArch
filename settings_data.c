@@ -2331,15 +2331,64 @@ void setting_data_get_label(char *type_str,
          label, idx)) == 0)
       return;
 
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    if ((!strcmp(menu_label, "Shader Options") ||
             !strcmp(menu_label, "video_shader_parameters") ||
             !strcmp(menu_label, "video_shader_preset_parameters"))
       )
    {
-      menu_shader_manager_get_str(driver.menu->shader, type_str, type_str_size,
-            menu_label, label, type);
+      if (!strcmp(label, "video_shader_num_passes"))
+         snprintf(type_str, type_str_size, "%u", driver.menu->shader->passes);
+      else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+            && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+      {
+         /* menu->parameter_shader here. */
+         if (driver.menu->shader)
+         {
+            const struct gfx_shader_parameter *param =
+               (const struct gfx_shader_parameter*)&driver.menu->shader->parameters
+               [type - MENU_SETTINGS_SHADER_PARAMETER_0];
+            snprintf(type_str, type_str_size, "%.2f [%.2f %.2f]",
+                  param->current, param->minimum, param->maximum);
+         }
+      }
+      else if (!strcmp(label, "video_shader_default_filter"))
+         snprintf(type_str, type_str_size, "%s",
+               g_settings.video.smooth ? "Linear" : "Nearest");
+      else if (!strcmp(label, "video_shader_pass"))
+      {
+         unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_0);
+         if (*driver.menu->shader->pass[pass].source.path)
+            fill_pathname_base(type_str,
+                  driver.menu->shader->pass[pass].source.path, type_str_size);
+         else
+            strlcpy(type_str, "N/A", type_str_size);
+      }
+      else if (!strcmp(label, "video_shader_filter_pass"))
+      {
+         unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_FILTER_0);
+         static const char *modes[] = {
+            "Don't care",
+            "Linear",
+            "Nearest"
+         };
+
+         strlcpy(type_str, modes[driver.menu->shader->pass[pass].filter],
+               type_str_size);
+      }
+      else if (!strcmp(label, "video_shader_scale_pass"))
+      {
+         unsigned pass        = (type - MENU_SETTINGS_SHADER_PASS_SCALE_0);
+         unsigned scale_value = driver.menu->shader->pass[pass].fbo.scale_x;
+         if (!scale_value)
+            strlcpy(type_str, "Don't care", type_str_size);
+         else
+            snprintf(type_str, type_str_size, "%ux", scale_value);
+      }
    }
-   else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
+   else
+#endif
+      if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
             perf_counters_rarch,
@@ -2373,9 +2422,6 @@ void setting_data_get_label(char *type_str,
          }
          else
             setting_data_get_string_representation(setting, type_str, type_str_size);
-      }
-      else
-      {
       }
    }
 }
