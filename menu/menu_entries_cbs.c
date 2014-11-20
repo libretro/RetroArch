@@ -2162,24 +2162,10 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
    return 0;
 }
 
-static int action_start_setting(unsigned type, const char *label,
+static int action_start_lookup_setting(unsigned type, const char *label,
       unsigned action)
 {
-   rarch_setting_t *setting = NULL;
-
-   if (!driver.menu)
-      return -1;
-   
-   setting = (rarch_setting_t*)setting_data_find_setting(
-         driver.menu->list_settings, label);
-
-   if (!setting)
-      return 0;
-
-   if (setting->action_start)
-      setting->action_start(setting);
-
-   return 0;
+   return menu_action_setting_set(type, label, MENU_ACTION_START);
 }
 
 static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
@@ -2188,7 +2174,7 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return;
 
-   cbs->action_start = action_start_setting;
+   cbs->action_start = action_start_lookup_setting;
 
    if (!strcmp(label, "video_shader_pass"))
       cbs->action_start = action_start_shader_pass;
