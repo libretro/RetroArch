@@ -27,11 +27,6 @@
 #include "../../input/input_autodetect.h"
 #include "../../config.def.h"
 
-#ifdef GEKKO
-extern unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2];
-extern unsigned menu_current_gx_resolution;
-#endif
-
 static int menu_message_toggle(unsigned action)
 {
    if (driver.video_data && driver.menu_ctx
