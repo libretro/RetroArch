@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "filter.h"
+#include "video_filter.h"
 #include "video_filters/softfilter.h"
 #include "../dynamic.h"
 #include <file/config_file_userdata.h>

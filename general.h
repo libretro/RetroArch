@@ -32,7 +32,7 @@
 #include "core_options.h"
 #include "core_info.h"
 #include <retro_miscellaneous.h>
-#include "gfx/filter.h"
+#include "gfx/video_filter.h"
 
 #include "playlist.h"
 

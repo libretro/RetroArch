@@ -133,7 +133,7 @@ OBJ += frontend/frontend.o \
 		libretro-sdk/gfx/scaler/scaler_filter.o \
 		gfx/image/image_rpng.o \
 		gfx/fonts/fonts.o \
-		gfx/filter.o \
+		gfx/video_filter.o \
 		audio/resamplers/resampler.o \
 		audio/dsp_filter.o \
 		audio/resamplers/sinc.o \
