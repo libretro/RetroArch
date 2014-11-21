@@ -46,6 +46,7 @@ typedef struct
    float x;
    float y;
    GLuint icon;
+   GLuint content_icon;
 } xmb_node_t;
 
 enum
@@ -79,6 +80,7 @@ struct xmb_texture_item
 typedef struct xmb_handle
 {
    int active_category;
+   int active_category_old;
    int num_categories;
    int depth;
    int old_depth;
@@ -578,8 +580,8 @@ static xmb_node_t* xmb_node_for_core(int i)
    if (!xmb)
       return NULL;
 
-    char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX];
-    char core_id[PATH_MAX], texturepath[PATH_MAX];
+   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX],
+      core_id[PATH_MAX], texturepath[PATH_MAX], content_texturepath[PATH_MAX];
 
    fill_pathname_join(mediapath, g_settings.assets_directory,
          "lakka", sizeof(mediapath));
@@ -625,9 +627,14 @@ static xmb_node_t* xmb_node_for_core(int i)
       strlcat(texturepath, core_id, sizeof(texturepath));
       strlcat(texturepath, ".png", sizeof(texturepath));
 
+      strlcpy(content_texturepath, iconpath, sizeof(content_texturepath));
+      strlcat(content_texturepath, core_id, sizeof(content_texturepath));
+      strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
+
       node->alpha = i + 1 == xmb->active_category ? xmb->c_active_alpha : xmb->c_passive_alpha;
       node->zoom = i + 1 == xmb->active_category ? xmb->c_active_zoom : xmb->c_passive_zoom;
       node->icon = xmb_png_texture_load(texturepath);
+      node->content_icon = xmb_png_texture_load(content_texturepath);
    }
 
    return node;
@@ -725,7 +732,7 @@ static void xmb_populate_entries(void *data, const char *path,
 
    xmb_set_title();
 
-   if (driver.menu->cat_selection_ptr_old != driver.menu->cat_selection_ptr)
+   if (driver.menu->cat_selection_ptr != xmb->active_category_old)
    {
       dir = driver.menu->cat_selection_ptr > driver.menu->cat_selection_ptr_old ? 1 : -1;
 
@@ -748,7 +755,7 @@ static void xmb_populate_entries(void *data, const char *path,
       dir = driver.menu->cat_selection_ptr > driver.menu->cat_selection_ptr_old ? 1 : -1;
       xmb_list_switch_old(driver.menu->menu_list->selection_buf_old, dir, driver.menu->selection_ptr_old);
       xmb_list_switch_new(driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
-      driver.menu->cat_selection_ptr_old = driver.menu->cat_selection_ptr;
+      xmb->active_category_old = driver.menu->cat_selection_ptr;
       return;
    }
 
@@ -787,7 +794,8 @@ static void xmb_populate_entries(void *data, const char *path,
    xmb->old_depth = xmb->depth;
 }
 
-static void xmb_draw_items(file_list_t *list, file_list_t *stack, size_t current)
+static void xmb_draw_items(file_list_t *list, file_list_t *stack,
+      size_t current, xmb_node_t* core_node)
 {
    unsigned i;
    const char *dir = NULL;
@@ -825,6 +833,9 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack, size_t current
             break;
          case MENU_FILE_PLAIN:
             icon = xmb->textures[XMB_TEXTURE_FILE].id;
+            break;
+         case MENU_FILE_PLAYLIST_ENTRY:
+            icon = core_node ? core_node->content_icon : xmb->textures[XMB_TEXTURE_FILE].id;
             break;
          case MENU_FILE_CARCHIVE:
             icon = xmb->textures[XMB_TEXTURE_ZIP].id;
@@ -941,11 +952,13 @@ static void xmb_frame(void)
    xmb_draw_items(
          driver.menu->menu_list->selection_buf_old,
          driver.menu->menu_list->menu_stack_old,
-         driver.menu->selection_ptr_old);
+         driver.menu->selection_ptr_old,
+         xmb->active_category ? xmb_node_for_core(driver.menu->cat_selection_ptr_old - 1) : NULL);
    xmb_draw_items(
          driver.menu->menu_list->selection_buf,
          driver.menu->menu_list->menu_stack,
-         driver.menu->selection_ptr);
+         driver.menu->selection_ptr,
+         xmb->active_category ? xmb_node_for_core(driver.menu->cat_selection_ptr - 1) : NULL);
 
    for (i = 0; i < xmb->num_categories; i++)
    {
@@ -1039,6 +1052,7 @@ static void *xmb_init(void)
    xmb = (xmb_handle_t*)menu->userdata;
 
    xmb->active_category = 0;
+   xmb->active_category_old = 0;
    xmb->x               = 0;
    xmb->alpha           = 1.0f;
    xmb->arrow_alpha     = 0;
@@ -1347,6 +1361,7 @@ static void xmb_context_destroy(void *data)
          continue;
 
       glDeleteTextures(1, &node->icon);
+      glDeleteTextures(1, &node->content_icon);
    }
 }
 
