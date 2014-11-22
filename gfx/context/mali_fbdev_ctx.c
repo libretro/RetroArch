@@ -29,6 +29,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+struct fbdev_window native_window;
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
@@ -223,13 +224,15 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
    g_width = width;
    g_height = height;
 
+   native_window.width = vinfo.xres;
+   native_window.height = vinfo.yres;
+
    static const EGLint attribs[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
       EGL_NONE
    };
 
-   struct fbdev_window window = { width, height };
-   if ((g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, &window, 0)) == EGL_NO_SURFACE)
+   if ((g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, &native_window, 0)) == EGL_NO_SURFACE)
    {
       RARCH_ERR("eglCreateWindowSurface failed.\n");
       goto error;
