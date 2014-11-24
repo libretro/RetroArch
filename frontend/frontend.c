@@ -254,8 +254,7 @@ returntype main_entry(signature())
 
    if (g_settings.history_list_enable)
    {
-      /* TODO - need to also check for SET_SUPPORT_NO_GAME here. */
-      if (g_extern.content_is_init)
+      if (g_extern.content_is_init || g_extern.system.no_content)
          history_playlist_push(g_defaults.history,
                g_extern.fullpath,
                g_settings.libretro,
