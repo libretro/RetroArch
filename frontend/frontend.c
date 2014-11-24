@@ -254,9 +254,8 @@ returntype main_entry(signature())
 
    if (g_settings.history_list_enable)
    {
-#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
-      if (ret)
-#endif
+      /* TODO - need to also check for SET_SUPPORT_NO_GAME here. */
+      if (g_extern.content_is_init)
          history_playlist_push(g_defaults.history,
                g_extern.fullpath,
                g_settings.libretro,

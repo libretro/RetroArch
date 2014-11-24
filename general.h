@@ -785,6 +785,7 @@ struct global
    FILE *log_file;
 
    bool main_is_init;
+   bool content_is_init;
    bool error_in_init;
    char error_string[PATH_MAX];
    jmp_buf error_sjlj_context;

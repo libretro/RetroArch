@@ -134,7 +134,11 @@ static ssize_t read_content_file(const char *path, void **buf)
 {
    uint8_t *ret_buf = NULL;
    ssize_t ret = -1;
+
+   RARCH_LOG("Loading content file: %s.\n", path);
    ret = read_file(path, (void**) &ret_buf);
+
+   g_extern.content_is_init = (ret <= 0) ? false : true;
 
    if (ret <= 0)
       return ret;
@@ -371,7 +375,6 @@ static bool load_content(const struct retro_subsystem_info *special,
       if (!need_fullpath && *path)
       {
          /* Load the content into memory. */
-         RARCH_LOG("Loading content file: %s.\n", path);
 
          /* First content file is significant, attempt to do patching,
           * CRC checking, etc. */
