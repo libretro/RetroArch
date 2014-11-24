@@ -90,6 +90,7 @@ typedef struct xmb_handle
    struct xmb_texture_item textures[XMB_TEXTURE_LAST];
    int icon_size;
    float x;
+   float categories_x;
    float alpha;
    float arrow_alpha;
    float hspacing;
@@ -580,15 +581,6 @@ static xmb_node_t* xmb_node_for_core(int i)
    if (!xmb)
       return NULL;
 
-   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX],
-      core_id[PATH_MAX], texturepath[PATH_MAX], content_texturepath[PATH_MAX];
-
-   fill_pathname_join(mediapath, g_settings.assets_directory,
-         "lakka", sizeof(mediapath));
-   fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
-   fill_pathname_join(iconpath, themepath, xmb->icon_dir, sizeof(iconpath));
-   fill_pathname_slash(iconpath, sizeof(iconpath));
-
    info_list = (core_info_list_t*)g_extern.core_info;
    info = NULL;
 
@@ -614,27 +606,8 @@ static xmb_node_t* xmb_node_for_core(int i)
 
       node = (xmb_node_t*)info->userdata;
 
-      if (info->systemname)
-      {
-         char *tmp = xmb_str_replace(info->systemname, "/", " ");
-         strlcpy(core_id, tmp, sizeof(core_id));
-         free(tmp);
-      }
-      else
-         strlcpy(core_id, "default", sizeof(core_id));
-
-      strlcpy(texturepath, iconpath, sizeof(texturepath));
-      strlcat(texturepath, core_id, sizeof(texturepath));
-      strlcat(texturepath, ".png", sizeof(texturepath));
-
-      strlcpy(content_texturepath, iconpath, sizeof(content_texturepath));
-      strlcat(content_texturepath, core_id, sizeof(content_texturepath));
-      strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
-
       node->alpha = i + 1 == xmb->active_category ? xmb->c_active_alpha : xmb->c_passive_alpha;
       node->zoom = i + 1 == xmb->active_category ? xmb->c_active_zoom : xmb->c_passive_zoom;
-      node->icon = xmb_png_texture_load(texturepath);
-      node->content_icon = xmb_png_texture_load(content_texturepath);
    }
 
    return node;
@@ -751,7 +724,7 @@ static void xmb_populate_entries(void *data, const char *path,
          add_tween(XMB_DELAY, iz, &node->zoom, &inOutQuad, NULL);
       }
 
-      add_tween(XMB_DELAY, xmb->hspacing*-(float)driver.menu->cat_selection_ptr, &xmb->x, &inOutQuad, NULL);
+      add_tween(XMB_DELAY, xmb->hspacing*-(float)driver.menu->cat_selection_ptr, &xmb->categories_x, &inOutQuad, NULL);
       dir = driver.menu->cat_selection_ptr > driver.menu->cat_selection_ptr_old ? 1 : -1;
       xmb_list_switch_old(driver.menu->menu_list->selection_buf_old, dir, driver.menu->selection_ptr_old);
       xmb_list_switch_new(driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
@@ -835,6 +808,9 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             icon = xmb->textures[XMB_TEXTURE_FILE].id;
             break;
          case MENU_FILE_PLAYLIST_ENTRY:
+            icon = xmb->textures[XMB_TEXTURE_FILE].id;
+            break;
+         case MENU_FILE_CONTENTLIST_ENTRY:
             icon = core_node ? core_node->content_icon : xmb->textures[XMB_TEXTURE_FILE].id;
             break;
          case MENU_FILE_CARCHIVE:
@@ -968,7 +944,7 @@ static void xmb_frame(void)
          continue;
 
       xmb_draw_icon(node->icon, 
-            xmb->x + xmb->margin_left + xmb->hspacing*(i+1) - xmb->icon_size / 2.0,
+            xmb->x + xmb->categories_x + xmb->margin_left + xmb->hspacing*(i+1) - xmb->icon_size / 2.0,
             xmb->margin_top + xmb->icon_size / 2.0, 
             node->alpha, 
             0, 
@@ -1054,6 +1030,7 @@ static void *xmb_init(void)
    xmb->active_category = 0;
    xmb->active_category_old = 0;
    xmb->x               = 0;
+   xmb->categories_x    = 0;
    xmb->alpha           = 1.0f;
    xmb->arrow_alpha     = 0;
    xmb->depth           = 1;
@@ -1143,12 +1120,16 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
 
 static void xmb_context_reset(void *data)
 {
-   int k;
+   int i, k;
    char bgpath[PATH_MAX];
-   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX], fontpath[PATH_MAX];
+   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX],
+         fontpath[PATH_MAX], core_id[PATH_MAX], texturepath[PATH_MAX],
+         content_texturepath[PATH_MAX];
+
    gl_t *gl = NULL;
    xmb_handle_t *xmb = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
+   xmb_node_t *node = NULL;
 
    if (!menu)
       return;
@@ -1219,6 +1200,50 @@ static void xmb_context_reset(void *data)
    xmb->settings_node.icon = xmb->textures[XMB_TEXTURE_SETTINGS].id;
    xmb->settings_node.alpha = xmb->c_active_alpha;
    xmb->settings_node.zoom = xmb->c_active_zoom;
+
+   core_info_list_t* info_list = (core_info_list_t*)g_extern.core_info;
+   core_info_t* info = NULL;
+
+   if (!info_list)
+      return;
+
+   for (i = 1; i < xmb->num_categories; i++)
+   {
+      node = xmb_node_for_core(i-1);
+
+      fill_pathname_join(mediapath, g_settings.assets_directory,
+            "lakka", sizeof(mediapath));
+      fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
+      fill_pathname_join(iconpath, themepath, xmb->icon_dir, sizeof(iconpath));
+      fill_pathname_slash(iconpath, sizeof(iconpath));
+
+      info = (core_info_t*)&info_list->list[i-1];
+
+      if (!info)
+         continue;
+
+      if (info->systemname)
+      {
+         char *tmp = xmb_str_replace(info->systemname, "/", " ");
+         strlcpy(core_id, tmp, sizeof(core_id));
+         free(tmp);
+      }
+      else
+         strlcpy(core_id, "default", sizeof(core_id));
+
+      strlcpy(texturepath, iconpath, sizeof(texturepath));
+      strlcat(texturepath, core_id, sizeof(texturepath));
+      strlcat(texturepath, ".png", sizeof(texturepath));
+
+      strlcpy(content_texturepath, iconpath, sizeof(content_texturepath));
+      strlcat(content_texturepath, core_id, sizeof(content_texturepath));
+      strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
+
+      node->alpha = i == xmb->active_category ? xmb->c_active_alpha : xmb->c_passive_alpha;
+      node->zoom = i == xmb->active_category ? xmb->c_active_zoom : xmb->c_passive_zoom;
+      node->icon = xmb_png_texture_load(texturepath);
+      node->content_icon = xmb_png_texture_load(content_texturepath);
+   }
 }
 
 static void xmb_navigation_clear(void *data, bool pending_push)
