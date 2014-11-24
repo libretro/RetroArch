@@ -835,6 +835,9 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             icon = xmb->textures[XMB_TEXTURE_FILE].id;
             break;
          case MENU_FILE_PLAYLIST_ENTRY:
+            icon = xmb->textures[XMB_TEXTURE_FILE].id;
+            break;
+         case MENU_FILE_CONTENTLIST_ENTRY:
             icon = core_node ? core_node->content_icon : xmb->textures[XMB_TEXTURE_FILE].id;
             break;
          case MENU_FILE_CARCHIVE:
