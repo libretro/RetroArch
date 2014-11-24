@@ -451,6 +451,7 @@ bool init_content_file(void)
 {
    unsigned i;
 
+   g_extern.content_is_init = false;
    g_extern.temporary_content = string_list_new();
    if (!g_extern.temporary_content)
       return false;
