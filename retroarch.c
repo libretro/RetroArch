@@ -2144,20 +2144,6 @@ static bool save_core_config(void)
    return ret;
 }
 
-static void history_playlist_new(void)
-{
-   bool init_history = true;
-
-   if (!path_file_exists(g_settings.content_history_path))
-      init_history = write_empty_file(
-            g_settings.content_history_path);
-
-   if (init_history)
-      g_defaults.history = content_playlist_init(
-            g_settings.content_history_path,
-            g_settings.content_history_size);
-}
-
 bool rarch_main_command(unsigned cmd)
 {
    bool boolean = false;
@@ -2427,7 +2413,9 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_HISTORY_INIT:
          rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
-         history_playlist_new();
+         g_defaults.history = content_playlist_init(
+               g_settings.content_history_path,
+               g_settings.content_history_size);
          break;
       case RARCH_CMD_CORE_INFO_DEINIT:
          if (g_extern.core_info)
