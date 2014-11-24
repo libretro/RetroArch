@@ -209,6 +209,21 @@ static int action_ok_playlist_entry(const char *path,
    return -1;
 }
 
+static int action_ok_contentlist_entry(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   if (!driver.menu)
+      return -1;
+
+   menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         "",
+         label,
+         type,
+         driver.menu->selection_ptr);
+   return 0;
+}
+
 static int action_ok_push_history_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -972,6 +987,19 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
          driver.menu->cat_selection_ptr_old = driver.menu->cat_selection_ptr;
          driver.menu->cat_selection_ptr += action == MENU_ACTION_LEFT ? -1 : 1;
          driver.menu->selection_ptr = 0;
+
+         size_t stack_size = driver.menu->menu_list->menu_stack->size;
+         if (driver.menu->cat_selection_ptr == 0)
+         {
+            strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Main Menu", PATH_MAX);
+            driver.menu->menu_list->menu_stack->list[stack_size-1].type = MENU_SETTINGS;
+         }
+         else
+         {
+            strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Horizontal Menu", PATH_MAX);
+            driver.menu->menu_list->menu_stack->list[stack_size-1].type = MENU_SETTING_HORIZONTAL_MENU;
+         }
+
          if (cbs && cbs->action_content_list_switch)
             return cbs->action_content_list_switch(
                   driver.menu->menu_list->selection_buf,
@@ -1827,30 +1855,27 @@ static int deferred_push_history_list(void *data, void *userdata,
    return 0;
 }
 
-static void content_list_push(void *data, core_info_t *info, const char* path)
+static int deferred_push_content_actions(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
 {
-   int num_items, j;
-   struct string_list *list = NULL;
-   file_list_t *flist = (file_list_t*)data;
+   unsigned i;
+   file_list_t *list = (file_list_t*)data;
 
-   if (!info)
-      return;
+   if (!list || !driver.menu)
+      return -1;
 
-   list = (struct string_list*)dir_list_new(path, info->supported_extensions, true);
+   menu_list_clear(list);
 
-   dir_list_sort(list, true);
+   menu_list_push(list, "Run", "", MENU_FILE_PLAIN, 0);
 
-   num_items = list ? list->size : 0;
+   driver.menu->scroll_indices_size = 0;
+   menu_entries_build_scroll_indices(list);
+   menu_entries_refresh(list);
 
-   for (j = 0; j < num_items; j++)
-   {
-      if (list->elems[j].attr.i == RARCH_DIRECTORY) // is a directory
-         content_list_push(flist, info, list->elems[j].data);
-      else
-         menu_list_push(flist, path_basename(list->elems[j].data), "", MENU_FILE_CONTENTLIST_ENTRY, 0);
-   }
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
 
-   string_list_free(list);
+   return 0;
 }
 
 static int deferred_push_content_list(void *data, void *userdata,
@@ -1861,43 +1886,13 @@ static int deferred_push_content_list(void *data, void *userdata,
    if (!list || !driver.menu)
       return -1;
 
+   menu_navigation_clear(driver.menu, true);
    if (driver.menu->cat_selection_ptr == 0)
-   {
-      menu_navigation_clear(driver.menu, true);
-      entries_push_main_menu_list(driver.menu, driver.menu->menu_list->selection_buf,
+      return entries_push_main_menu_list(driver.menu, driver.menu->menu_list->selection_buf,
          "", "Main Menu", 0);
-      return 0;
-   }
-
-   menu_list_clear(list);
-
-   core_info_t *info = NULL;
-   core_info_list_t *info_list = NULL;
-
-   info_list = (core_info_list_t*)g_extern.core_info;
-   info = NULL;
-
-   if (!info_list)
-      return -1;
-
-   info = (core_info_t*)&info_list->list[driver.menu->cat_selection_ptr - 1];
-
-   if (!info)
-      return -1;
-
-   if (!info->supports_no_game)
-      content_list_push(list, info, g_settings.content_directory);
    else
-      menu_list_push(list, info->display_name, "", MENU_FILE_CONTENTLIST_ENTRY, 0);
-
-   driver.menu->scroll_indices_size = 0;
-   menu_entries_build_scroll_indices(list);
-   menu_entries_refresh(list);
-
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
-
-   return 0;
+      return entries_push_horizontal_menu_list(driver.menu, driver.menu->menu_list->selection_buf,
+         "", "Horizontal Menu", 0);
 }
 
 static int deferred_push_configurations(void *data, void *userdata,
@@ -2101,6 +2096,9 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
          break;
       case MENU_FILE_PLAYLIST_ENTRY:
          cbs->action_ok = action_ok_playlist_entry;
+         break;
+      case MENU_FILE_CONTENTLIST_ENTRY:
+         cbs->action_ok = action_ok_contentlist_entry;
          break;
       case MENU_FILE_SHADER_PRESET:
          cbs->action_ok = action_ok_shader_preset_load;
@@ -2347,6 +2345,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    if (!strcmp(label, "history_list"))
       cbs->action_deferred_push = deferred_push_history_list;
+   else if (!strcmp(label, "content_actions"))
+      cbs->action_deferred_push = deferred_push_content_actions;
    else if (!strcmp(label, "Shader Options"))
       cbs->action_deferred_push = deferred_push_shader_options;
    else if (type == MENU_SETTING_GROUP)

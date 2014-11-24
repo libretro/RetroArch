@@ -90,6 +90,7 @@ typedef struct xmb_handle
    struct xmb_texture_item textures[XMB_TEXTURE_LAST];
    int icon_size;
    float x;
+   float categories_x;
    float alpha;
    float arrow_alpha;
    float hspacing;
@@ -751,7 +752,7 @@ static void xmb_populate_entries(void *data, const char *path,
          add_tween(XMB_DELAY, iz, &node->zoom, &inOutQuad, NULL);
       }
 
-      add_tween(XMB_DELAY, xmb->hspacing*-(float)driver.menu->cat_selection_ptr, &xmb->x, &inOutQuad, NULL);
+      add_tween(XMB_DELAY, xmb->hspacing*-(float)driver.menu->cat_selection_ptr, &xmb->categories_x, &inOutQuad, NULL);
       dir = driver.menu->cat_selection_ptr > driver.menu->cat_selection_ptr_old ? 1 : -1;
       xmb_list_switch_old(driver.menu->menu_list->selection_buf_old, dir, driver.menu->selection_ptr_old);
       xmb_list_switch_new(driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
@@ -971,7 +972,7 @@ static void xmb_frame(void)
          continue;
 
       xmb_draw_icon(node->icon, 
-            xmb->x + xmb->margin_left + xmb->hspacing*(i+1) - xmb->icon_size / 2.0,
+            xmb->x + xmb->categories_x + xmb->margin_left + xmb->hspacing*(i+1) - xmb->icon_size / 2.0,
             xmb->margin_top + xmb->icon_size / 2.0, 
             node->alpha, 
             0, 
@@ -1057,6 +1058,7 @@ static void *xmb_init(void)
    xmb->active_category = 0;
    xmb->active_category_old = 0;
    xmb->x               = 0;
+   xmb->categories_x    = 0;
    xmb->alpha           = 1.0f;
    xmb->arrow_alpha     = 0;
    xmb->depth           = 1;

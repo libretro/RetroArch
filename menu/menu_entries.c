@@ -163,6 +163,73 @@ int entries_push_main_menu_list(menu_handle_t *menu,
    return 0;
 }
 
+static void content_list_push(void *data, core_info_t *info, const char* path)
+{
+   int num_items, j;
+   struct string_list *list = NULL;
+   file_list_t *flist = (file_list_t*)data;
+
+   if (!info)
+      return;
+
+   list = (struct string_list*)dir_list_new(path, info->supported_extensions, true);
+
+   dir_list_sort(list, true);
+
+   num_items = list ? list->size : 0;
+
+   for (j = 0; j < num_items; j++)
+   {
+      if (list->elems[j].attr.i == RARCH_DIRECTORY) // is a directory
+         content_list_push(flist, info, list->elems[j].data);
+      else
+         menu_list_push(
+               flist,
+               path_basename(list->elems[j].data),
+               "content_actions",
+               MENU_FILE_CONTENTLIST_ENTRY,
+               0);
+   }
+
+   string_list_free(list);
+}
+
+int entries_push_horizontal_menu_list(menu_handle_t *menu,
+      file_list_t *list,
+      const char *path, const char *label,
+      unsigned menu_type)
+{
+   menu_list_clear(list);
+
+   core_info_t *info = NULL;
+   core_info_list_t *info_list = NULL;
+
+   info_list = (core_info_list_t*)g_extern.core_info;
+   info = NULL;
+
+   if (!info_list)
+      return -1;
+
+   info = (core_info_t*)&info_list->list[driver.menu->cat_selection_ptr - 1];
+
+   if (!info)
+      return -1;
+
+   if (!info->supports_no_game)
+      content_list_push(list, info, g_settings.content_directory);
+   else
+      menu_list_push(list, info->display_name, "", MENU_FILE_CONTENTLIST_ENTRY, 0);
+
+   driver.menu->scroll_indices_size = 0;
+   menu_entries_build_scroll_indices(list);
+   menu_entries_refresh(list);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(menu, path, label, menu_type);
+
+   return 0;
+}
+
 int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
       const char *dir, const char *label, unsigned type,
       unsigned default_type_plain, const char *exts)
@@ -398,6 +465,8 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
 
    if (!strcmp(label, "Main Menu"))
       return entries_push_main_menu_list(driver.menu, list, path, label, type);
+   else if (!strcmp(label, "Horizontal Menu"))
+      return entries_push_horizontal_menu_list(driver.menu, list, path, label, type);
 
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_last_stack_actiondata(driver.menu->menu_list);
