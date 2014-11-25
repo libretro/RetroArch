@@ -768,7 +768,7 @@ static void xmb_populate_entries(void *data, const char *path,
 }
 
 static void xmb_draw_items(file_list_t *list, file_list_t *stack,
-      size_t current, xmb_node_t* core_node)
+      size_t current)
 {
    unsigned i;
    const char *dir = NULL;
@@ -797,6 +797,9 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             val_buf, sizeof(val_buf),
             entry_label, path,
             path_buf, sizeof(path_buf));
+
+      xmb_node_t* core_node = xmb->active_category ?
+            xmb_node_for_core(driver.menu->cat_selection_ptr - 1) : NULL;
 
       GLuint icon = 0;
       switch(type)
@@ -943,13 +946,11 @@ static void xmb_frame(void)
    xmb_draw_items(
          driver.menu->menu_list->selection_buf_old,
          driver.menu->menu_list->menu_stack_old,
-         driver.menu->selection_ptr_old,
-         xmb->active_category ? xmb_node_for_core(driver.menu->cat_selection_ptr_old - 1) : NULL);
+         driver.menu->selection_ptr_old);
    xmb_draw_items(
          driver.menu->menu_list->selection_buf,
          driver.menu->menu_list->menu_stack,
-         driver.menu->selection_ptr,
-         xmb->active_category ? xmb_node_for_core(driver.menu->cat_selection_ptr - 1) : NULL);
+         driver.menu->selection_ptr);
 
    for (i = 0; i < xmb->num_categories; i++)
    {
