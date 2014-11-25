@@ -999,6 +999,11 @@ static void xmb_init_core_info(void *data)
    }
 }
 
+static void xmb_update_core_info(void *data)
+{
+   (void)data;
+}
+
 static void *xmb_init(void)
 {
    menu_handle_t *menu = NULL;
@@ -1416,6 +1421,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_clear,
    xmb_list_set_selection,
    xmb_init_core_info,
+   xmb_update_core_info,
    &menu_ctx_backend_common,
    "xmb",
 };

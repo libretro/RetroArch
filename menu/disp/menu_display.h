@@ -32,6 +32,7 @@ typedef struct menu_ctx_driver
    void  (*list_clear)(void *);
    void  (*list_set_selection)(void *);
    void  (*init_core_info)(void *);
+   void  (*update_core_info)(void *);
 
    const menu_ctx_driver_backend_t *backend;
    const char *ident;

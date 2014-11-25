@@ -563,6 +563,12 @@ static void rgui_navigation_set(void *data, bool scroll)
             - RGUI_TERM_HEIGHT;
 }
 
+static void rgui_update_core_info(void *data)
+{
+   (void)data;
+   menu_update_libretro_info(&g_extern.menu.info);
+}
+
 menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_render_messagebox,
@@ -588,6 +594,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    NULL,
+   rgui_update_core_info,
    &menu_ctx_backend_common,
    "rgui",
 };

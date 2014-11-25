@@ -47,7 +47,7 @@ static void draw_frame(void)
 
 /* Update menu state which depends on config. */
 
-static void update_libretro_info(struct retro_system_info *info)
+void menu_update_libretro_info(struct retro_system_info *info)
 {
 #ifndef HAVE_DYNAMIC
    retro_get_system_info(info);
@@ -132,8 +132,9 @@ bool load_menu_content(void)
       return false;
    }
 
-   if (driver.menu)
-      update_libretro_info(&g_extern.menu.info);
+   if (driver.menu && driver.menu_ctx
+         && driver.menu_ctx->update_core_info)
+      driver.menu_ctx->update_core_info(driver.menu);
 
    menu_shader_manager_init(driver.menu);
 
@@ -168,7 +169,7 @@ void *menu_init(const void *data)
    menu->push_start_screen = g_settings.menu_show_start_screen;
    g_settings.menu_show_start_screen = false;
 
-   update_libretro_info(&g_extern.menu.info);
+   menu_update_libretro_info(&g_extern.menu.info);
 
    menu_shader_manager_init(menu);
 

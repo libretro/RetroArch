@@ -434,6 +434,12 @@ static void glui_init_core_info(void *data)
    }
 }
 
+static void glui_update_core_info(void *data)
+{
+   (void)data;
+   menu_update_libretro_info(&g_extern.menu.info);
+}
+
 static void *glui_init(void)
 {
    menu_handle_t *menu;
@@ -619,6 +625,7 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    NULL,
    glui_init_core_info,
+   glui_update_core_info,
    &menu_ctx_backend_common,
    "glui",
 };

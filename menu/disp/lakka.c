@@ -1172,6 +1172,12 @@ static void lakka_init_core_info(void *data)
       g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
 }
 
+static void lakka_update_core_info(void *data)
+{
+   (void)data;
+   menu_update_libretro_info(&g_extern.menu.info);
+}
+
 static void *lakka_init(void)
 {
    menu_handle_t *menu = NULL;
@@ -1333,6 +1339,7 @@ menu_ctx_driver_t menu_ctx_lakka = {
    NULL,
    NULL,
    lakka_init_core_info,
+   lakka_update_core_info,
    &menu_ctx_backend_lakka,
    "lakka",
 };

@@ -61,6 +61,12 @@ static int menu_ios_iterate(unsigned action)
    return 0;
 }
 
+static void ios_update_core_info(void *data)
+{
+   (void)data;
+   menu_update_libretro_info(&g_extern.menu.info);
+}
+
 menu_ctx_driver_backend_t menu_ctx_backend_ios = {
    menu_ios_iterate,
 
@@ -92,6 +98,7 @@ menu_ctx_driver_t menu_ctx_ios = {
   NULL, // list_clear
   NULL, // list_set_selection
   NULL, // init_core_info
+  ios_update_core_info,  // ios_update_core_info
   &menu_ctx_backend_ios, // backend
   "ios",
 };
