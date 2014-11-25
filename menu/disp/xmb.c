@@ -819,6 +819,21 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
          case MENU_FILE_CORE:
             icon = xmb->textures[XMB_TEXTURE_CORE].id;
             break;
+         case MENU_SETTING_ACTION_RUN:
+            icon = xmb->textures[XMB_TEXTURE_RUN].id;
+            break;
+         case MENU_SETTING_ACTION_SAVESTATE:
+            icon = xmb->textures[XMB_TEXTURE_SAVESTATE].id;
+            break;
+         case MENU_SETTING_ACTION_LOADSTATE:
+            icon = xmb->textures[XMB_TEXTURE_LOADSTATE].id;
+            break;
+         case MENU_SETTING_ACTION_SCREENSHOT:
+            icon = xmb->textures[XMB_TEXTURE_SCREENSHOT].id;
+            break;
+         case MENU_SETTING_ACTION_RESET:
+            icon = xmb->textures[XMB_TEXTURE_RELOAD].id;
+            break;
          default:
             icon = xmb->textures[XMB_TEXTURE_SETTING].id;
             break;
