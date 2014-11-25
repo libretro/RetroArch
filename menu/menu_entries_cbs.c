@@ -1866,7 +1866,15 @@ static int deferred_push_content_actions(void *data, void *userdata,
 
    menu_list_clear(list);
 
-   menu_list_push(list, "Run", "", MENU_FILE_PLAIN, 0);
+   menu_list_push(list, "Run", "", MENU_SETTING_ACTION, 0);
+
+   if (g_extern.main_is_init && !g_extern.libretro_dummy)
+   {
+      menu_list_push(list, "Save State", "", MENU_SETTING_ACTION, 0);
+      menu_list_push(list, "Load State", "", MENU_SETTING_ACTION, 0);
+      menu_list_push(list, "Take Screenshot", "", MENU_SETTING_ACTION, 0);
+      menu_list_push(list, "Reset", "", MENU_SETTING_ACTION, 0);
+   }
 
    driver.menu->scroll_indices_size = 0;
    menu_entries_build_scroll_indices(list);
