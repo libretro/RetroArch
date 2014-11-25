@@ -218,7 +218,12 @@ int entries_push_horizontal_menu_list(menu_handle_t *menu,
    if (!info->supports_no_game)
       content_list_push(list, info, g_settings.content_directory);
    else
-      menu_list_push(list, info->display_name, "", MENU_FILE_CONTENTLIST_ENTRY, 0);
+      menu_list_push(
+            list,
+            info->display_name,
+            "content_actions",
+            MENU_FILE_CONTENTLIST_ENTRY,
+            0);
 
    driver.menu->scroll_indices_size = 0;
    menu_entries_build_scroll_indices(list);
