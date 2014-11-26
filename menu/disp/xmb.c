@@ -837,8 +837,16 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
          case MENU_SETTING_ACTION_RESET:
             icon = xmb->textures[XMB_TEXTURE_RELOAD].id;
             break;
-         default:
+         case MENU_SETTING_ACTION:
+            icon = xmb->depth == 3 ?
+                  xmb->textures[XMB_TEXTURE_SUBSETTING].id :
+                  xmb->textures[XMB_TEXTURE_SETTING].id;
+            break;
+         case MENU_SETTING_GROUP:
             icon = xmb->textures[XMB_TEXTURE_SETTING].id;
+            break;
+         default:
+            icon = xmb->textures[XMB_TEXTURE_SUBSETTING].id;
             break;
       }
 
