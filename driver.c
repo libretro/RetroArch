@@ -195,29 +195,32 @@ static const input_driver_t *input_drivers[] = {
  * the drivers.
  */
 
-const char* config_get_input_driver_options(void) {
-  char *input_options = NULL;
-  int input_option_k = 0;
-  int input_options_len = 0;
-   
-  union string_list_elem_attr attr;
-  attr.i = 0;
-  struct string_list *input_options_l = string_list_new();
+const char* config_get_input_driver_options(void)
+{
+   union string_list_elem_attr attr;
+   char *options = NULL;
+   int option_k = 0;
+   int options_len = 0;
+   struct string_list *options_l = NULL;
 
-  for (input_option_k = 0; input_drivers[input_option_k]; input_option_k++) {
-    const char *opt = input_drivers[input_option_k]->ident;
-    input_options_len += strlen(opt) + 1;
-    string_list_append(input_options_l, opt, attr);
-  }
+   attr.i = 0;
+   options_l = (struct string_list*)string_list_new();
 
-  input_options = (char*)calloc(input_options_len, sizeof(char));
+   for (option_k = 0; input_drivers[option_k]; option_k++)
+   {
+      const char *opt = input_drivers[option_k]->ident;
+      options_len += strlen(opt) + 1;
+      string_list_append(options_l, opt, attr);
+   }
 
-  string_list_join_concat(input_options, input_options_len, input_options_l, "|");
-  
-  string_list_free(input_options_l);
-  input_options_l = NULL;
+   options = (char*)calloc(options_len, sizeof(char));
 
-  return input_options;
+   string_list_join_concat(options, options_len, options_l, "|");
+
+   string_list_free(options_l);
+   options_l = NULL;
+
+   return options;
 }
 
 static const input_osk_driver_t *osk_drivers[] = {
