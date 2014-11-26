@@ -675,7 +675,15 @@ extern input_driver_t input_qnx;
 extern input_driver_t input_rwebinput;
 extern input_driver_t input_null;
 
-  const char* config_get_input_driver_options(void);
+const char* config_get_input_driver_options(void);
+const char* config_get_camera_driver_options(void);
+const char* config_get_video_driver_options(void);
+const char* config_get_audio_driver_options(void);
+const char* config_get_osk_driver_options(void);
+const char* config_get_location_driver_options(void);
+#ifdef HAVE_MENU
+const char* config_get_menu_driver_options(void);
+#endif
   
 extern camera_driver_t camera_v4l2;
 extern camera_driver_t camera_android;

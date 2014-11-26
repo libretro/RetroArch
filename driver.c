@@ -101,6 +101,34 @@ static const audio_driver_t *audio_drivers[] = {
    NULL,
 };
 
+const char* config_get_audio_driver_options(void)
+{
+   union string_list_elem_attr attr;
+   char *options = NULL;
+   int option_k = 0;
+   int options_len = 0;
+   struct string_list *options_l = NULL;
+
+   attr.i = 0;
+   options_l = (struct string_list*)string_list_new();
+
+   for (option_k = 0; audio_drivers[option_k]; option_k++)
+   {
+      const char *opt = audio_drivers[option_k]->ident;
+      options_len += strlen(opt) + 1;
+      string_list_append(options_l, opt, attr);
+   }
+
+   options = (char*)calloc(options_len, sizeof(char));
+
+   string_list_join_concat(options, options_len, options_l, "|");
+
+   string_list_free(options_l);
+   options_l = NULL;
+
+   return options;
+}
+
 static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OPENGL
    &video_gl,
@@ -141,6 +169,34 @@ static const video_driver_t *video_drivers[] = {
    &video_null,
    NULL,
 };
+
+const char* config_get_video_driver_options(void)
+{
+   union string_list_elem_attr attr;
+   char *options = NULL;
+   int option_k = 0;
+   int options_len = 0;
+   struct string_list *options_l = NULL;
+
+   attr.i = 0;
+   options_l = (struct string_list*)string_list_new();
+
+   for (option_k = 0; video_drivers[option_k]; option_k++)
+   {
+      const char *opt = video_drivers[option_k]->ident;
+      options_len += strlen(opt) + 1;
+      string_list_append(options_l, opt, attr);
+   }
+
+   options = (char*)calloc(options_len, sizeof(char));
+
+   string_list_join_concat(options, options_len, options_l, "|");
+
+   string_list_free(options_l);
+   options_l = NULL;
+
+   return options;
+}
 
 static const input_driver_t *input_drivers[] = {
 #ifdef __CELLOS_LV2__
@@ -190,11 +246,6 @@ static const input_driver_t *input_drivers[] = {
    NULL,
 };
 
-/* JM: This is a very painful function to write, 
- * especially because we'll have to do it to all 
- * the drivers.
- */
-
 const char* config_get_input_driver_options(void)
 {
    union string_list_elem_attr attr;
@@ -231,6 +282,34 @@ static const input_osk_driver_t *osk_drivers[] = {
    NULL,
 };
 
+const char* config_get_osk_driver_options(void)
+{
+   union string_list_elem_attr attr;
+   char *options = NULL;
+   int option_k = 0;
+   int options_len = 0;
+   struct string_list *options_l = NULL;
+
+   attr.i = 0;
+   options_l = (struct string_list*)string_list_new();
+
+   for (option_k = 0; osk_drivers[option_k]; option_k++)
+   {
+      const char *opt = osk_drivers[option_k]->ident;
+      options_len += strlen(opt) + 1;
+      string_list_append(options_l, opt, attr);
+   }
+
+   options = (char*)calloc(options_len, sizeof(char));
+
+   string_list_join_concat(options, options_len, options_l, "|");
+
+   string_list_free(options_l);
+   options_l = NULL;
+
+   return options;
+}
+
 static const camera_driver_t *camera_drivers[] = {
 #ifdef HAVE_V4L2
    &camera_v4l2,
@@ -248,6 +327,34 @@ static const camera_driver_t *camera_drivers[] = {
    NULL,
 };
 
+const char* config_get_camera_driver_options(void)
+{
+   union string_list_elem_attr attr;
+   char *options = NULL;
+   int option_k = 0;
+   int options_len = 0;
+   struct string_list *options_l = NULL;
+
+   attr.i = 0;
+   options_l = (struct string_list*)string_list_new();
+
+   for (option_k = 0; camera_drivers[option_k]; option_k++)
+   {
+      const char *opt = camera_drivers[option_k]->ident;
+      options_len += strlen(opt) + 1;
+      string_list_append(options_l, opt, attr);
+   }
+
+   options = (char*)calloc(options_len, sizeof(char));
+
+   string_list_join_concat(options, options_len, options_l, "|");
+
+   string_list_free(options_l);
+   options_l = NULL;
+
+   return options;
+}
+
 static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
    &location_android,
@@ -260,6 +367,34 @@ static const location_driver_t *location_drivers[] = {
    &location_null,
    NULL,
 };
+
+const char* config_get_location_driver_options(void)
+{
+   union string_list_elem_attr attr;
+   char *options = NULL;
+   int option_k = 0;
+   int options_len = 0;
+   struct string_list *options_l = NULL;
+
+   attr.i = 0;
+   options_l = (struct string_list*)string_list_new();
+
+   for (option_k = 0; location_drivers[option_k]; option_k++)
+   {
+      const char *opt = location_drivers[option_k]->ident;
+      options_len += strlen(opt) + 1;
+      string_list_append(options_l, opt, attr);
+   }
+
+   options = (char*)calloc(options_len, sizeof(char));
+
+   string_list_join_concat(options, options_len, options_l, "|");
+
+   string_list_free(options_l);
+   options_l = NULL;
+
+   return options;
+}
 
 #ifdef HAVE_MENU
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
@@ -286,6 +421,34 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #endif
    NULL
 };
+
+const char* config_get_menu_driver_options(void)
+{
+   union string_list_elem_attr attr;
+   char *options = NULL;
+   int option_k = 0;
+   int options_len = 0;
+   struct string_list *options_l = NULL;
+
+   attr.i = 0;
+   options_l = (struct string_list*)string_list_new();
+
+   for (option_k = 0; menu_ctx_drivers[option_k]; option_k++)
+   {
+      const char *opt = menu_ctx_drivers[option_k]->ident;
+      options_len += strlen(opt) + 1;
+      string_list_append(options_l, opt, attr);
+   }
+
+   options = (char*)calloc(options_len, sizeof(char));
+
+   string_list_join_concat(options, options_len, options_l, "|");
+
+   string_list_free(options_l);
+   options_l = NULL;
+
+   return options;
+}
 #endif
 
 static const void *find_driver_nonempty(const char *label, int i,

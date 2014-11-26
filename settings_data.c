@@ -2991,11 +2991,12 @@ static bool setting_data_append_list_driver_options(
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
-   CONFIG_STRING(
+   CONFIG_STRING_OPTIONS(
          g_settings.video.driver,
          "video_driver",
          "Video Driver",
          config_get_default_video(),
+         config_get_video_driver_options(),
          group_info.name,
          subgroup_info.name,
          NULL,
@@ -3012,11 +3013,13 @@ static bool setting_data_append_list_driver_options(
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-   CONFIG_STRING(
+
+   CONFIG_STRING_OPTIONS(
          g_settings.audio.driver,
          "audio_driver",
          "Audio Driver",
          config_get_default_audio(),
+         config_get_audio_driver_options(),
          group_info.name,
          subgroup_info.name,
          NULL,
@@ -3034,22 +3037,24 @@ static bool setting_data_append_list_driver_options(
          NULL);
    (*list)[list_info->index - 1].action_toggle = &setting_data_string_action_toggle_audio_resampler;
 
-   CONFIG_STRING(
+   CONFIG_STRING_OPTIONS(
          g_settings.camera.driver,
          "camera_driver",
          "Camera Driver",
          config_get_default_camera(),
+         config_get_camera_driver_options(),
          group_info.name,
          subgroup_info.name,
          NULL,
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
-   CONFIG_STRING(
+   CONFIG_STRING_OPTIONS(
          g_settings.location.driver,
          "location_driver",
          "Location Driver",
          config_get_default_location(),
+         config_get_location_driver_options(),
          group_info.name,
          subgroup_info.name,
          NULL,
@@ -3057,11 +3062,12 @@ static bool setting_data_append_list_driver_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
 #ifdef HAVE_MENU
-   CONFIG_STRING(
+   CONFIG_STRING_OPTIONS(
          g_settings.menu.driver,
          "menu_driver",
          "Menu Driver",
          config_get_default_menu(),
+         config_get_menu_driver_options(),
          group_info.name,
          subgroup_info.name,
          NULL,
