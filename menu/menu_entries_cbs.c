@@ -1858,7 +1858,6 @@ static int deferred_push_history_list(void *data, void *userdata,
 static int deferred_push_content_actions(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   unsigned i;
    file_list_t *list = (file_list_t*)data;
 
    if (!list || !driver.menu)
