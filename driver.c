@@ -26,6 +26,7 @@
 #include "gfx/video_thread_wrapper.h"
 #include "audio/audio_thread_wrapper.h"
 #include "gfx/gfx_common.h"
+#include <string/string_list.h>
 
 #ifdef HAVE_X11
 #include "gfx/context/x11_common.h"
