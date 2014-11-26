@@ -19,6 +19,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <string/string_list.h>
 #include "../general.h"
 
 rarch_joypad_driver_t *joypad_drivers[] = {
@@ -69,6 +70,34 @@ rarch_joypad_driver_t *joypad_drivers[] = {
    &null_joypad,
    NULL,
 };
+
+const char* config_get_joypad_driver_options(void)
+{
+   union string_list_elem_attr attr;
+   char *options = NULL;
+   int option_k = 0;
+   int options_len = 0;
+   struct string_list *options_l = NULL;
+
+   attr.i = 0;
+   options_l = (struct string_list*)string_list_new();
+
+   for (option_k = 0; joypad_drivers[option_k]; option_k++)
+   {
+      const char *opt = joypad_drivers[option_k]->ident;
+      options_len += strlen(opt) + 1;
+      string_list_append(options_l, opt, attr);
+   }
+
+   options = (char*)calloc(options_len, sizeof(char));
+
+   string_list_join_concat(options, options_len, options_l, "|");
+
+   string_list_free(options_l);
+   options_l = NULL;
+
+   return options;
+}
 
 const struct input_key_map input_config_key_map[] = {
    { "left", RETROK_LEFT },

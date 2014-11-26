@@ -3075,11 +3075,12 @@ static bool setting_data_append_list_driver_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 #endif
 
-   CONFIG_STRING(
+   CONFIG_STRING_OPTIONS(
          g_settings.input.joypad_driver,
          "input_joypad_driver",
          "Joypad Driver",
          config_get_default_joypad(),
+         config_get_joypad_driver_options(),
          group_info.name,
          subgroup_info.name,
          NULL,
