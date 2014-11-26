@@ -416,16 +416,23 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values action:
       ^(RADirectoryList* list, RADirectoryItem* item)
       {
-         if (!list.allowBlank && !item)
+        const char *newval = NULL;
+        if (item) {
+          if (list.forDirectory && !item.isDirectory)
             return;
-         
-         if (list.forDirectory && !item.isDirectory)
+
+          newval = [item.path UTF8String];
+        } else {
+          if (!list.allowBlank)
             return;
+          
+          newval = "";
+        }
+        
+        setting_data_set_with_string_representation(weakSelf.setting, newval);
+        [[list navigationController] popViewControllerAnimated:YES];
          
-         setting_data_set_with_string_representation(weakSelf.setting, item ? [item.path UTF8String] : "");
-         [[list navigationController] popViewControllerAnimated:YES];
-         
-         [weakSelf.parentTable reloadData];
+        [weakSelf.parentTable reloadData];
       }];
 
    list.allowBlank = (self.setting->flags & SD_FLAG_ALLOW_EMPTY);
