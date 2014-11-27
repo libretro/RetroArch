@@ -2413,6 +2413,8 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_HISTORY_INIT:
          rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
+         if (!g_settings.history_list_enable)
+            return false;
          g_defaults.history = content_playlist_init(
                g_settings.content_history_path,
                g_settings.content_history_size);
