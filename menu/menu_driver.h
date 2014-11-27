@@ -79,9 +79,7 @@ typedef struct
 
    menu_list_t *menu_list;
    size_t cat_selection_ptr;
-   size_t cat_selection_ptr_old;
    size_t selection_ptr;
-   size_t selection_ptr_old;
    bool need_refresh;
    bool msg_force;
    bool push_start_screen;
