@@ -594,6 +594,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    NULL,
+   NULL,
    rgui_update_core_info,
    &menu_ctx_backend_common,
    "rgui",

@@ -79,6 +79,10 @@ struct xmb_texture_item
 
 typedef struct xmb_handle
 {
+   file_list_t *menu_stack_old;
+   file_list_t *selection_buf_old;
+   size_t cat_selection_ptr_old;
+   size_t selection_ptr_old;
    int active_category;
    int active_category_old;
    int num_categories;
@@ -707,7 +711,7 @@ static void xmb_populate_entries(void *data, const char *path,
 
    if (driver.menu->cat_selection_ptr != xmb->active_category_old)
    {
-      dir = driver.menu->cat_selection_ptr > driver.menu->cat_selection_ptr_old ? 1 : -1;
+      dir = driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old ? 1 : -1;
 
       xmb->active_category += dir;
 
@@ -725,8 +729,8 @@ static void xmb_populate_entries(void *data, const char *path,
       }
 
       add_tween(XMB_DELAY, xmb->hspacing*-(float)driver.menu->cat_selection_ptr, &xmb->categories_x, &inOutQuad, NULL);
-      dir = driver.menu->cat_selection_ptr > driver.menu->cat_selection_ptr_old ? 1 : -1;
-      xmb_list_switch_old(driver.menu->menu_list->selection_buf_old, dir, driver.menu->selection_ptr_old);
+      dir = driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old ? 1 : -1;
+      xmb_list_switch_old(xmb->selection_buf_old, dir, xmb->selection_ptr_old);
       xmb_list_switch_new(driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
       xmb->active_category_old = driver.menu->cat_selection_ptr;
       return;
@@ -752,7 +756,7 @@ static void xmb_populate_entries(void *data, const char *path,
       add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
    }
 
-   xmb_list_open_old(driver.menu->menu_list->selection_buf_old, dir, driver.menu->selection_ptr_old);
+   xmb_list_open_old(xmb->selection_buf_old, dir, xmb->selection_ptr_old);
    xmb_list_open_new(driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
 
    if (xmb->depth == 1 || xmb->depth == 2)
@@ -954,11 +958,11 @@ static void xmb_frame(void)
    depth = file_list_get_size(driver.menu->menu_list->menu_stack);
 
    xmb_draw_items(
-         driver.menu->menu_list->selection_buf_old,
-         driver.menu->menu_list->menu_stack_old,
-         driver.menu->selection_ptr_old,
+         xmb->selection_buf_old,
+         xmb->menu_stack_old,
+         xmb->selection_ptr_old,
          depth > 1 ? driver.menu->cat_selection_ptr :
-                     driver.menu->cat_selection_ptr_old);
+                     xmb->cat_selection_ptr_old);
    xmb_draw_items(
          driver.menu->menu_list->selection_buf,
          driver.menu->menu_list->menu_stack,
@@ -1060,6 +1064,9 @@ static void *xmb_init(void)
    }
 
    xmb = (xmb_handle_t*)menu->userdata;
+
+   xmb->menu_stack_old = (file_list_t*)calloc(1, sizeof(file_list_t));
+   xmb->selection_buf_old = (file_list_t*)calloc(1, sizeof(file_list_t));
 
    xmb->active_category = 0;
    xmb->active_category_old = 0;
@@ -1390,6 +1397,36 @@ static void xmb_list_clear(void *data)
    (void)data;
 }
 
+static void xmb_list_cache(bool horizontal, unsigned action)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+
+   if (!xmb)
+      return;
+
+   file_list_copy(driver.menu->menu_list->selection_buf, xmb->selection_buf_old);
+   file_list_copy(driver.menu->menu_list->menu_stack, xmb->menu_stack_old);
+   xmb->selection_ptr_old = driver.menu->selection_ptr;
+
+   if(!horizontal)
+      return;
+
+   xmb->cat_selection_ptr_old = driver.menu->cat_selection_ptr;
+   driver.menu->cat_selection_ptr += action == MENU_ACTION_LEFT ? -1 : 1;
+
+   size_t stack_size = driver.menu->menu_list->menu_stack->size;
+   if (driver.menu->cat_selection_ptr == 0)
+   {
+      strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Main Menu", PATH_MAX);
+      driver.menu->menu_list->menu_stack->list[stack_size-1].type = MENU_SETTINGS;
+   }
+   else
+   {
+      strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Horizontal Menu", PATH_MAX);
+      driver.menu->menu_list->menu_stack->list[stack_size-1].type = MENU_SETTING_HORIZONTAL_MENU;
+   }
+}
+
 static void xmb_list_set_selection(void *data)
 {
    (void)data;
@@ -1424,7 +1461,6 @@ static void xmb_context_destroy(void *data)
    }
 }
 
-
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_get_message,
@@ -1448,6 +1484,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_insert,
    xmb_list_delete,
    xmb_list_clear,
+   xmb_list_cache,
    xmb_list_set_selection,
    xmb_init_core_info,
    xmb_update_core_info,
