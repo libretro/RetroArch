@@ -624,6 +624,7 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    NULL,
    NULL,
+   NULL,
    glui_init_core_info,
    glui_update_core_info,
    &menu_ctx_backend_common,

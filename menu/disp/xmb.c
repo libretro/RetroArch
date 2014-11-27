@@ -1390,6 +1390,31 @@ static void xmb_list_clear(void *data)
    (void)data;
 }
 
+static void xmb_list_cache(bool horizontal, unsigned action)
+{
+   file_list_copy(driver.menu->menu_list->selection_buf, driver.menu->menu_list->selection_buf_old);
+   file_list_copy(driver.menu->menu_list->menu_stack, driver.menu->menu_list->menu_stack_old);
+   driver.menu->selection_ptr_old = driver.menu->selection_ptr;
+
+   if(!horizontal)
+      return;
+
+   driver.menu->cat_selection_ptr_old = driver.menu->cat_selection_ptr;
+   driver.menu->cat_selection_ptr += action == MENU_ACTION_LEFT ? -1 : 1;
+
+   size_t stack_size = driver.menu->menu_list->menu_stack->size;
+   if (driver.menu->cat_selection_ptr == 0)
+   {
+      strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Main Menu", PATH_MAX);
+      driver.menu->menu_list->menu_stack->list[stack_size-1].type = MENU_SETTINGS;
+   }
+   else
+   {
+      strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Horizontal Menu", PATH_MAX);
+      driver.menu->menu_list->menu_stack->list[stack_size-1].type = MENU_SETTING_HORIZONTAL_MENU;
+   }
+}
+
 static void xmb_list_set_selection(void *data)
 {
    (void)data;
@@ -1424,7 +1449,6 @@ static void xmb_context_destroy(void *data)
    }
 }
 
-
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_get_message,
@@ -1448,6 +1472,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_insert,
    xmb_list_delete,
    xmb_list_clear,
+   xmb_list_cache,
    xmb_list_set_selection,
    xmb_init_core_info,
    xmb_update_core_info,

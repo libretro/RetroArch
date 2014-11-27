@@ -30,6 +30,7 @@ typedef struct menu_ctx_driver
    void  (*list_insert)(void *, const char *, const char *, size_t);
    void  (*list_delete)(void *, size_t, size_t);
    void  (*list_clear)(void *);
+   void  (*list_cache)(bool, unsigned);
    void  (*list_set_selection)(void *);
    void  (*init_core_info)(void *);
    void  (*update_core_info)(void *);

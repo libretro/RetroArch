@@ -981,24 +981,8 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
    switch (push_list)
    {
       case 1:
-         file_list_copy(driver.menu->menu_list->selection_buf, driver.menu->menu_list->selection_buf_old);
-         file_list_copy(driver.menu->menu_list->menu_stack, driver.menu->menu_list->menu_stack_old);
-         driver.menu->selection_ptr_old = driver.menu->selection_ptr;
-         driver.menu->cat_selection_ptr_old = driver.menu->cat_selection_ptr;
-         driver.menu->cat_selection_ptr += action == MENU_ACTION_LEFT ? -1 : 1;
-         driver.menu->selection_ptr = 0;
-
-         size_t stack_size = driver.menu->menu_list->menu_stack->size;
-         if (driver.menu->cat_selection_ptr == 0)
-         {
-            strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Main Menu", PATH_MAX);
-            driver.menu->menu_list->menu_stack->list[stack_size-1].type = MENU_SETTINGS;
-         }
-         else
-         {
-            strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Horizontal Menu", PATH_MAX);
-            driver.menu->menu_list->menu_stack->list[stack_size-1].type = MENU_SETTING_HORIZONTAL_MENU;
-         }
+         if (driver.menu_ctx->list_cache)
+            driver.menu_ctx->list_cache(true, action);
 
          if (cbs && cbs->action_content_list_switch)
             return cbs->action_content_list_switch(

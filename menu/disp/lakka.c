@@ -1338,6 +1338,7 @@ menu_ctx_driver_t menu_ctx_lakka = {
    NULL,
    NULL,
    NULL,
+   NULL,
    lakka_init_core_info,
    lakka_update_core_info,
    &menu_ctx_backend_lakka,
