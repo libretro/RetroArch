@@ -252,9 +252,10 @@ returntype main_entry(signature())
       }
    }
 
+   rarch_main_command(RARCH_CMD_HISTORY_INIT);
+
    if (g_settings.history_list_enable)
    {
-      rarch_main_command(RARCH_CMD_HISTORY_INIT);
       if (g_extern.content_is_init || g_extern.system.no_content)
          history_playlist_push(g_defaults.history,
                g_extern.fullpath,
