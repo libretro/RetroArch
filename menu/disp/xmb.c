@@ -513,8 +513,8 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
        
       if (!xmb)
           continue;
-       
-      float ia = (i == current) ? 1.0 : 0.5;
+
+      float ia = i == current ? xmb->i_active_alpha : xmb->i_passive_alpha;
       add_tween(XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
       add_tween(XMB_DELAY, ia, &node->label_alpha,  &inOutQuad, NULL);
       add_tween(XMB_DELAY, 0, &node->x, &inOutQuad, NULL);
@@ -768,7 +768,7 @@ static void xmb_populate_entries(void *data, const char *path,
 }
 
 static void xmb_draw_items(file_list_t *list, file_list_t *stack,
-      size_t current)
+      size_t current, size_t cat_selection_ptr)
 {
    unsigned i;
    const char *dir = NULL;
@@ -781,6 +781,9 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
       return;
 
    file_list_get_last(stack, &dir, &label, &menu_type);
+
+   xmb_node_t *core_node = xmb->active_category ?
+         xmb_node_for_core(cat_selection_ptr - 1) : NULL;
 
    for (i = 0; i < end; i++)
    {
@@ -797,9 +800,6 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             val_buf, sizeof(val_buf),
             entry_label, path,
             path_buf, sizeof(path_buf));
-
-      xmb_node_t* core_node = xmb->active_category ?
-            xmb_node_for_core(driver.menu->cat_selection_ptr - 1) : NULL;
 
       GLuint icon = 0;
       switch(type)
@@ -909,7 +909,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
 
 static void xmb_frame(void)
 {
-   int i;
+   int i, depth;
    char title_msg[64];
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
@@ -951,14 +951,19 @@ static void xmb_frame(void)
          0,
          1);
 
+   depth = file_list_get_size(driver.menu->menu_list->menu_stack);
+
    xmb_draw_items(
          driver.menu->menu_list->selection_buf_old,
          driver.menu->menu_list->menu_stack_old,
-         driver.menu->selection_ptr_old);
+         driver.menu->selection_ptr_old,
+         depth > 1 ? driver.menu->cat_selection_ptr :
+                     driver.menu->cat_selection_ptr_old);
    xmb_draw_items(
          driver.menu->menu_list->selection_buf,
          driver.menu->menu_list->menu_stack,
-         driver.menu->selection_ptr);
+         driver.menu->selection_ptr,
+         driver.menu->cat_selection_ptr);
 
    for (i = 0; i < xmb->num_categories; i++)
    {
