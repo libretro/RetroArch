@@ -78,7 +78,7 @@ public final class HistorySelection extends DialogFragment
 		adapter = new IconAdapter<HistoryWrapper>(ctx, R.layout.line_list_item);
 
 		// Populate the adapter
-		File history = new File(ctx.getApplicationInfo().dataDir, "retroarch-history.txt");
+		File history = new File(ctx.getApplicationInfo().dataDir, "retroarch-content-history.txt");
 		try
 		{
 			BufferedReader br = new BufferedReader(new InputStreamReader(

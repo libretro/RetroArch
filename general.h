@@ -213,6 +213,7 @@ struct defaults
    char screenshot_dir[PATH_MAX];
    char system_dir[PATH_MAX];
    char playlist_dir[PATH_MAX];
+   char content_history_dir[PATH_MAX];
 
    struct
    {
@@ -388,6 +389,7 @@ struct settings
 
    char core_options_path[PATH_MAX];
    char content_history_path[PATH_MAX];
+   char content_history_directory[PATH_MAX];
    unsigned content_history_size;
 
    char libretro[PATH_MAX];

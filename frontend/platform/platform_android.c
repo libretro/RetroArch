@@ -623,6 +623,8 @@ static void frontend_android_get_environment_settings(int *argc,
                   path, "audio_filters", sizeof(g_defaults.audio_filter_dir));
             fill_pathname_join(g_defaults.video_filter_dir,
                   path, "video_filters", sizeof(g_defaults.video_filter_dir));
+            strlcpy(g_defaults.content_history_dir, 
+                  path, sizeof(g_defaults.content_history_dir));
          }
       }
    }

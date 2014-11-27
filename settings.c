@@ -501,6 +501,7 @@ static void config_set_defaults(void)
 
    *g_settings.core_options_path = '\0';
    *g_settings.content_history_path = '\0';
+   *g_settings.content_history_directory = '\0';
    *g_settings.cheat_database = '\0';
    *g_settings.cheat_settings_path = '\0';
    *g_settings.resampler_directory = '\0';
@@ -600,6 +601,10 @@ static void config_set_defaults(void)
       strlcpy(g_settings.resampler_directory,
             g_defaults.resampler_dir,
             sizeof(g_settings.resampler_directory));
+   if (*g_defaults.content_history_dir)
+      strlcpy(g_settings.content_history_directory,
+            g_defaults.content_history_dir,
+            sizeof(g_settings.content_history_directory));
 
    if (*g_defaults.config_path)
       fill_pathname_expand_special(g_extern.config_path,
@@ -1144,15 +1149,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT(network_cmd_port, "network_cmd_port");
    CONFIG_GET_BOOL(stdin_cmd_enable, "stdin_cmd_enable");
 
-   if (g_settings.playlist_directory[0] != '\0')
-      fill_pathname_join(g_settings.content_history_path,
-            g_settings.playlist_directory,
-            "retroarch-content-history.txt",
-            sizeof(g_settings.content_history_path));
-   else
-      fill_pathname_resolve_relative(g_settings.content_history_path,
-            g_extern.config_path, "retroarch-content-history.txt",
-            sizeof(g_settings.content_history_path));
+   CONFIG_GET_PATH(content_history_directory, "content_history_dir");
 
    CONFIG_GET_BOOL(history_list_enable, "history_list_enable");
 
@@ -1221,6 +1218,16 @@ static bool config_load_file(const char *path, bool set_defaults)
       else
          RARCH_WARN("savestate_directory is not a directory, ignoring ...\n");
    }
+
+   if (g_settings.content_history_directory[0] != '\0')
+      fill_pathname_join(g_settings.content_history_path,
+            g_settings.content_history_directory,
+            "retroarch-content-history.txt",
+            sizeof(g_settings.content_history_path));
+   else
+      fill_pathname_resolve_relative(g_settings.content_history_path,
+            g_extern.config_path, "retroarch-content-history.txt",
+            sizeof(g_settings.content_history_path));
 
    if (!config_get_path(conf, "system_directory",
             g_settings.system_directory, sizeof(g_settings.system_directory)))
@@ -1546,6 +1553,7 @@ bool config_save_file(const char *path)
    config_set_path(conf,  "libretro_directory", g_settings.libretro_directory);
    config_set_path(conf,  "libretro_info_path", g_settings.libretro_info_path);
    config_set_path(conf,  "cheat_database_path", g_settings.cheat_database);
+   config_set_path(conf,  "content_history_dir", g_settings.content_history_directory);
    config_set_bool(conf,  "rewind_enable", g_settings.rewind_enable);
    config_set_int(conf,   "audio_latency", g_settings.audio.latency);
    config_set_bool(conf,  "audio_sync",    g_settings.audio.sync);
