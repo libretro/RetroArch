@@ -1219,15 +1219,22 @@ static bool config_load_file(const char *path, bool set_defaults)
          RARCH_WARN("savestate_directory is not a directory, ignoring ...\n");
    }
 
-   if (g_settings.content_history_directory[0] != '\0')
-      fill_pathname_join(g_settings.content_history_path,
-            g_settings.content_history_directory,
-            "retroarch-content-history.txt",
-            sizeof(g_settings.content_history_path));
-   else
-      fill_pathname_resolve_relative(g_settings.content_history_path,
-            g_extern.config_path, "retroarch-content-history.txt",
-            sizeof(g_settings.content_history_path));
+   if (g_settings.content_history_path[0] == '\0')
+   {
+      if (g_settings.content_history_directory[0] != '\0')
+      {
+         fill_pathname_join(g_settings.content_history_path,
+               g_settings.content_history_directory,
+               "retroarch-content-history.txt",
+               sizeof(g_settings.content_history_path));
+      }
+      else
+      {
+         fill_pathname_resolve_relative(g_settings.content_history_path,
+               g_extern.config_path, "retroarch-content-history.txt",
+               sizeof(g_settings.content_history_path));
+      }
+   }
 
    if (!config_get_path(conf, "system_directory",
             g_settings.system_directory, sizeof(g_settings.system_directory)))
