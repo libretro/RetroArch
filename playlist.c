@@ -200,9 +200,6 @@ static bool content_playlist_read_file(
 
    if (!file)
    {
-      if (file)
-         fclose(file);
-
       RARCH_WARN(
             "Playlist file does not exist, creating an empty playlist instead... (File: [%s])",
             path);
