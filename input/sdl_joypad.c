@@ -93,7 +93,8 @@ static void pad_connect(unsigned id)
    int32_t vendor = 0;
 
 #ifdef HAVE_SDL2
-   uint16_t *guid = NULL;
+   SDL_JoystickGUID guid;
+   uint16_t *guid_ptr;
 
    if (SDL_IsGameController(id))
    {
@@ -124,13 +125,14 @@ static void pad_connect(unsigned id)
    strlcpy(g_settings.input.device_names[id], pad_name(id), sizeof(g_settings.input.device_names[id]));
 
 #ifdef HAVE_SDL2
-   guid = (uint16_t*)SDL_JoystickGetGUID(pad->joypad).data;
+   guid = SDL_JoystickGetGUID(pad->joypad);
+   guid_ptr = (uint16_t*)guid.data;
 #ifdef __linux
-   vendor = guid[2];
-   product = guid[4];
+   vendor = guid_ptr[2];
+   product = guid_ptr[4];
 #elif _WIN32
-   vendor = guid[0];
-   product = guid[1];
+   vendor = guid_ptr[0];
+   product = guid_ptr[1];
 #endif
 #endif
    input_config_autoconfigure_joypad(id, pad_name(id),
