@@ -2816,7 +2816,7 @@ static bool setting_data_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
 #endif
-   if (g_defaults.history)
+   if (g_settings.history_list_enable)
    {
       CONFIG_ACTION(
             "history_list",
