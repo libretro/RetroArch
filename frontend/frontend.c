@@ -154,7 +154,7 @@ static void history_playlist_push(content_playlist_t *playlist,
 {
    char tmp[PATH_MAX];
 
-   if (!playlist || !g_extern.libretro_dummy || !info)
+   if (!playlist || g_extern.libretro_dummy || !info)
       return;
 
    /* path can be relative here.
