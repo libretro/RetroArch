@@ -16,6 +16,10 @@
 #ifndef __RARCH_MOVIE_H
 #define __RARCH_MOVIE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 #include <boolean.h>
@@ -51,6 +55,10 @@ void bsv_movie_set_frame_end(bsv_movie_t *handle);
 void bsv_movie_frame_rewind(bsv_movie_t *handle);
 
 void bsv_movie_free(bsv_movie_t *handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

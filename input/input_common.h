@@ -16,14 +16,15 @@
 #ifndef INPUT_COMMON_H__
 #define INPUT_COMMON_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "input_context.h"
 #include <file/config_file.h>
 #include <stdint.h>
 #include "../driver.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef uint64_t retro_input_t ;
 

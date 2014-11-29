@@ -23,6 +23,10 @@
 #ifndef __LIBRETRO_SDK_SCALER_H__
 #define __LIBRETRO_SDK_SCALER_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 #include <boolean.h>
@@ -114,6 +118,10 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
 
 void *scaler_alloc(size_t elem_size, size_t size);
 void scaler_free(void *ptr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

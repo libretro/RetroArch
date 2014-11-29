@@ -16,6 +16,10 @@
 #ifndef __RARCH_CHEATS_H
 #define __RARCH_CHEATS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct cheat_manager cheat_manager_t;
 
 cheat_manager_t* cheat_manager_new(const char *path);
@@ -27,5 +31,9 @@ void cheat_manager_index_next(cheat_manager_t *handle);
 void cheat_manager_index_prev(cheat_manager_t *handle);
 
 void cheat_manager_toggle(cheat_manager_t *handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

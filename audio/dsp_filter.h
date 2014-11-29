@@ -16,6 +16,10 @@
 #ifndef RARCH_DSP_FILTER_H__
 #define RARCH_DSP_FILTER_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct rarch_dsp_filter rarch_dsp_filter_t;
 
 rarch_dsp_filter_t *rarch_dsp_filter_new(const char *filter_config,
@@ -35,6 +39,10 @@ struct rarch_dsp_data
 
 void rarch_dsp_filter_process(rarch_dsp_filter_t *dsp,
       struct rarch_dsp_data *data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

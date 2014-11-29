@@ -23,10 +23,18 @@
 #ifndef __LIBRETRO_SDK_SCALER_FILTER_H__
 #define __LIBRETRO_SDK_SCALER_FILTER_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <boolean.h>
 #include <gfx/scaler/scaler.h>
 
 bool scaler_gen_filter(struct scaler_ctx *ctx);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

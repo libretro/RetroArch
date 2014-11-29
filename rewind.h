@@ -16,6 +16,10 @@
 #ifndef __RARCH_REWIND_H
 #define __RARCH_REWIND_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <boolean.h>
 
@@ -33,5 +37,9 @@ void state_manager_push_do(state_manager_t *state);
 
 void state_manager_capacity(state_manager_t *state,
       unsigned int *entries, size_t *bytes, bool *full);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

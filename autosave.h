@@ -16,6 +16,10 @@
 #ifndef __RARCH_AUTOSAVE_H
 #define __RARCH_AUTOSAVE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 
 typedef struct autosave autosave_t;
@@ -32,5 +36,9 @@ void autosave_free(autosave_t *handle);
 void lock_autosave(void);
 
 void unlock_autosave(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
