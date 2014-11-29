@@ -760,18 +760,33 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
    struct gfx_shader *shader = NULL;
    struct gfx_shader_parameter *param = NULL;
 
-   if (!(shader = (struct gfx_shader*)driver.menu->parameter_shader))
+   if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
+      shader = driver.video_poke->get_current_shader(driver.video_data);
+
+   if (!shader)
       return 0;
 
-   if (!(param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0]))
-      return 0;
-
+   param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
    param->current = param->initial;
-
    param->current = min(max(param->minimum, param->current), param->maximum);
+#endif
 
-   if (!strcmp(label, "video_shader_parameters"))
-      rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
+   return 0;
+}
+
+static int action_start_shader_action_preset_parameter(unsigned type, const char *label,
+      unsigned action)
+{
+#ifdef HAVE_SHADER_MANAGER
+   struct gfx_shader *shader = NULL;
+   struct gfx_shader_parameter *param = NULL;
+
+   if (!(shader = driver.menu->shader))
+      return 0;
+
+   param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
+   param->current = param->initial;
+   param->current = min(max(param->minimum, param->current), param->maximum);
 #endif
 
    return 0;
@@ -781,29 +796,25 @@ static int shader_action_parameter_toggle(unsigned type, const char *label,
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   bool apply_changes = false;
    struct gfx_shader *shader = NULL;
    struct gfx_shader_parameter *param = NULL;
-   bool shader_current = !strcmp(label, "video_shader_parameters");
 
-   if (!(shader = (struct gfx_shader*)driver.menu->parameter_shader))
+   if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
+      shader = driver.video_poke->get_current_shader(driver.video_data);
+
+   if (!shader)
       return 0;
 
-   if (!(param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0]))
-      return 0;
+   param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
 
    switch (action)
    {
       case MENU_ACTION_LEFT:
          param->current -= param->step;
-         if (shader_current)
-            apply_changes = true;
          break;
 
       case MENU_ACTION_RIGHT:
          param->current += param->step;
-         if (shader_current)
-            apply_changes = true;
          break;
 
       default:
@@ -812,8 +823,37 @@ static int shader_action_parameter_toggle(unsigned type, const char *label,
 
    param->current = min(max(param->minimum, param->current), param->maximum);
 
-   if (apply_changes)
-      rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
+#endif
+   return 0;
+}
+
+static int shader_action_parameter_preset_toggle(unsigned type, const char *label,
+      unsigned action)
+{
+#ifdef HAVE_SHADER_MANAGER
+   struct gfx_shader *shader = NULL;
+   struct gfx_shader_parameter *param = NULL;
+
+   if (!(shader = driver.menu->shader))
+      return 0;
+
+   param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         param->current -= param->step;
+         break;
+
+      case MENU_ACTION_RIGHT:
+         param->current += param->step;
+         break;
+
+      default:
+         break;
+   }
+
+   param->current = min(max(param->minimum, param->current), param->maximum);
 
 #endif
    return 0;
@@ -845,11 +885,11 @@ static int action_start_shader_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
-   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+   struct gfx_shader *shader = driver.menu->shader;
    struct gfx_shader_pass *shader_pass = NULL;
 
    if (shader)
-      shader_pass = (struct gfx_shader_pass*)&shader->pass[hack_shader_pass];
+      shader_pass = &shader->pass[hack_shader_pass];
 
    if (shader_pass)
       *shader_pass->source.path = '\0';
@@ -879,9 +919,8 @@ static int action_start_shader_scale_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
-   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-   struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
-      &shader->pass[pass];
+   struct gfx_shader *shader = driver.menu->shader;
+   struct gfx_shader_pass *shader_pass = &shader->pass[pass];
 
    if (shader)
    {
@@ -1008,9 +1047,8 @@ static int action_toggle_shader_scale_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
-   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-   struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
-      &shader->pass[pass];
+   struct gfx_shader *shader = driver.menu->shader;
+   struct gfx_shader_pass *shader_pass = &shader->pass[pass];
 
    switch (action)
    {
@@ -1038,9 +1076,8 @@ static int action_start_shader_filter_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
-   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-   struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
-      &shader->pass[pass];
+   struct gfx_shader *shader = driver.menu->shader;
+   struct gfx_shader_pass *shader_pass = &shader->pass[pass];
 
    if (shader && shader_pass)
       shader_pass->filter = RARCH_FILTER_UNSPEC;
@@ -1054,9 +1091,8 @@ static int action_toggle_shader_filter_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
-   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-   struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
-      &shader->pass[pass];
+   struct gfx_shader *shader = driver.menu->shader;
+   struct gfx_shader_pass *shader_pass = &shader->pass[pass];
 
    switch (action)
    {
@@ -1089,7 +1125,7 @@ static int action_start_shader_num_passes(unsigned type, const char *label,
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+   struct gfx_shader *shader = driver.menu->shader;
 
    if (!shader)
       return -1;
@@ -1107,7 +1143,7 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+   struct gfx_shader *shader = driver.menu->shader;
 
    if (!shader)
       return -1;
@@ -1482,71 +1518,66 @@ static int deferred_push_performance_counters(void *data, void *userdata,
 static inline struct gfx_shader *shader_manager_get_current_shader(
       menu_handle_t *menu, const char *label, unsigned type)
 {
-   if (!strcmp(label, "video_shader_preset_parameters") ||
-         !strcmp(label, "video_shader_parameters"))
+   if (!strcmp(label, "video_shader_preset_parameters"))
       return menu->shader;
-   else if (driver.video_poke && driver.video_data &&
-         driver.video_poke->get_current_shader)
+   else if (!strcmp(label, "video_shader_parameters") &&
+         driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
       return driver.video_poke->get_current_shader(driver.video_data);
    return NULL;
+}
+
+static int deferred_push_video_shader_parameters_common(void *data, void *userdata,
+      const char *path, const char *label, unsigned type,
+      struct gfx_shader *shader, unsigned base_parameter)
+{
+   unsigned i;
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_list_clear(list);
+
+   for (i = 0; i < shader->num_parameters; i++)
+   {
+      menu_list_push(list,
+            shader->parameters[i].desc, label,
+            base_parameter + i, 0);
+   }
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
 }
 
 static int deferred_push_video_shader_preset_parameters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   unsigned i;
-   struct gfx_shader *shader = NULL;
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_list_clear(list);
-
-   shader = (struct gfx_shader*)
-      shader_manager_get_current_shader(driver.menu, label, type);
-
-   if (shader)
-      for (i = 0; i < shader->num_parameters; i++)
-         menu_list_push(list,
-               shader->parameters[i].desc, label,
-               MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
-   driver.menu->parameter_shader = shader;
-
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
-
-   return 0;
+   if (driver.menu->shader)
+   {
+      return deferred_push_video_shader_parameters_common(data, userdata,
+            path, label, type,
+            driver.menu->shader, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
+   }
+   else
+      return 0;
 }
 
 static int deferred_push_video_shader_parameters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   unsigned i;
    struct gfx_shader *shader = NULL;
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
+   if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
+      shader = driver.video_poke->get_current_shader(driver.video_data);
 
-   if (!list || !menu_list)
-      return -1;
+   if (!shader)
+      return 0;
 
-   menu_list_clear(list);
-
-   shader = (struct gfx_shader*)
-      shader_manager_get_current_shader(driver.menu, label, type);
-
-   if (shader)
-      for (i = 0; i < shader->num_parameters; i++)
-         menu_list_push(list,
-               shader->parameters[i].desc, label,
-               MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
-   driver.menu->parameter_shader = shader;
-
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
-
-   return 0;
+   return deferred_push_video_shader_parameters_common(data, userdata,
+         path, label, type,
+         shader, MENU_SETTINGS_SHADER_PARAMETER_0);
 }
 
 static int deferred_push_settings(void *data, void *userdata,
@@ -1634,7 +1665,7 @@ static int deferred_push_shader_options(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   shader = (struct gfx_shader*)driver.menu->shader;
+   shader = driver.menu->shader;
 
    if (!shader)
       return -1;
@@ -2176,6 +2207,9 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_start = action_start_shader_action_parameter;
+   else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
+      cbs->action_start = action_start_shader_action_preset_parameter;
    else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
          type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
       cbs->action_start = action_start_performance_counters_core;
@@ -2224,8 +2258,6 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          !strcmp(label, "Input Options") ||
          !strcmp(label, "core_options") ||
          !strcmp(label, "core_information") ||
-         !strcmp(label, "video_shader_parameters") ||
-         !strcmp(label, "video_shader_preset_parameters") ||
          !strcmp(label, "disk_options") ||
          !strcmp(label, "settings") ||
          !strcmp(label, "performance_counters") ||
@@ -2265,6 +2297,9 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_toggle = shader_action_parameter_toggle;
+   else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
+      cbs->action_toggle = shader_action_parameter_preset_toggle;
    else if (
          !strcmp(label, "core_list") ||
          !strcmp(label, "history_list") ||

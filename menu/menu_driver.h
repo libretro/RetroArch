@@ -108,9 +108,6 @@ typedef struct
    bool load_no_content;
 
    struct gfx_shader *shader;
-   /* Points to either shader or 
-    * graphics driver's current shader. */
-   struct gfx_shader *parameter_shader;
 
    struct menu_bind_state binds;
 
