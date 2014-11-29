@@ -23,6 +23,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <boolean.h>
+#include "../libretro.h"
 
 enum retro_rumble_effect;
 
