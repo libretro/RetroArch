@@ -198,12 +198,15 @@ static bool content_playlist_read_file(
    char *last = NULL;
    FILE *file = fopen(path, "r");
 
-   if (!file || !playlist)
+   if (!file)
    {
       if (file)
          fclose(file);
 
-      return false;
+      RARCH_WARN(
+            "Playlist file does not exist, creating an empty playlist instead... (File: [%s])",
+            path);
+      return true;
    }
 
    for (playlist->size = 0; playlist->size < playlist->cap; )
@@ -250,8 +253,7 @@ content_playlist_t *content_playlist_init(const char *path, size_t size)
 
    playlist->cap = size;
 
-   if (!content_playlist_read_file(playlist, path))
-      goto error;
+   content_playlist_read_file(playlist, path);
 
    playlist->conf_path = strdup(path);
    return playlist;
