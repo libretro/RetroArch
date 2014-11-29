@@ -41,7 +41,7 @@ void handle_xkb(
          mod |= xkb_state_mod_index_is_active(
                xkb_state,
                *map_idx,
-               (XKB_STATE_MODS_EFFECTIVE) > 0) ? *map_bit : 0;
+               (enum xkb_state_component)((XKB_STATE_MODS_EFFECTIVE) > 0)) ? *map_bit : 0;
    }
 
    input_keyboard_event(value, input_translate_keysym_to_rk(code),

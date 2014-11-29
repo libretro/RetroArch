@@ -177,7 +177,8 @@ bool main_load_content(int argc, char **argv, args_type() args,
       process_args_t process_args)
 {
    bool retval = true;
-   int i, ret = 0, rarch_argc = 0;
+   int ret = 0, rarch_argc = 0;
+   unsigned i;
    char *rarch_argv[MAX_ARGS] = {NULL};
    char *argv_copy [MAX_ARGS] = {NULL};
    char **rarch_argv_ptr = (char**)argv;

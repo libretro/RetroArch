@@ -1121,18 +1121,18 @@ static bool gl_glsl_set_mvp(void *data, const math_matrix_4x4 *mat)
    (void)data;
 
    if (!glsl || !glsl->glsl_shader->modern)
-      goto fallback;
+   {
+#ifndef NO_GL_FF_MATRIX
+      gl_ff_matrix(mat);
+#endif
+      return false;
+   }
 
    int loc = glsl->gl_uniforms[glsl->glsl_active_index].mvp;
    if (loc >= 0)
       glUniformMatrix4fv(loc, 1, GL_FALSE, mat->data);
 
    return true;
-fallback:
-#ifndef NO_GL_FF_MATRIX
-   gl_ff_matrix(mat);
-#endif
-   return false;
 }
 
 static bool gl_glsl_set_coords(const void *data)
@@ -1141,7 +1141,12 @@ static bool gl_glsl_set_coords(const void *data)
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
 
    if (!glsl || !glsl->glsl_shader->modern || !coords)
-      goto fallback;
+   {
+#ifndef NO_GL_FF_VERTEX
+      gl_ff_vertex(coords);
+#endif
+      return false;
+   }
 
    /* Avoid hitting malloc on every single regular quad draw. */
    GLfloat short_buffer[4 * (2 + 2 + 4 + 2)];
@@ -1151,7 +1156,12 @@ static bool gl_glsl_set_coords(const void *data)
             (2 + 2 + 4 + 2), sizeof(*buffer));
 
    if (!buffer)
-      goto fallback;
+   {
+#ifndef NO_GL_FF_VERTEX
+      gl_ff_vertex(coords);
+#endif
+      return false;
+   }
 
    size_t size = 0;
 
@@ -1226,11 +1236,6 @@ static bool gl_glsl_set_coords(const void *data)
    if (buffer != short_buffer)
       free(buffer);
    return true;
-fallback:
-#ifndef NO_GL_FF_VERTEX
-   gl_ff_vertex(coords);
-#endif
-   return false;
 }
 
 static void gl_glsl_use(void *data, unsigned idx)

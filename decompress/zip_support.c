@@ -137,7 +137,7 @@ int read_zip_file(const char * archive_path,
             *buf = malloc(file_info.uncompressed_size + 1 );
 
             bytes_read = unzReadCurrentFile( zipfile, *buf, file_info.uncompressed_size );
-            if (bytes_read != file_info.uncompressed_size)
+            if (bytes_read != (ssize_t)file_info.uncompressed_size)
             {
                RARCH_ERR(
                   "We tried to read %d bytes, but only got %d of file %s in zip %s.\n",
