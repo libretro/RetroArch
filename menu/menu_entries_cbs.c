@@ -2100,7 +2100,13 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
    menu_list_get_last_stack(driver.menu->menu_list,
          NULL, &menu_label, NULL);
 
-   if (!strcmp(label, "savestate"))
+   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+      cbs->action_ok = NULL;
+   else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
+      cbs->action_ok = NULL;
+   else if (!strcmp(label, "savestate"))
       cbs->action_ok = action_ok_save_state;
    else if (!strcmp(label, "loadstate"))
       cbs->action_ok = action_ok_load_state;
