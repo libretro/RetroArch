@@ -15,6 +15,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "menu_display.h"
 #include "../menu_common.h"
 #include "../../general.h"
 #include "ios.h"
@@ -96,6 +97,7 @@ menu_ctx_driver_t menu_ctx_ios = {
   NULL, // list_insert
   NULL, // list_delete
   NULL, // list_clear
+  NULL, // list_cache
   NULL, // list_set_selection
   NULL, // init_core_info
   ios_update_core_info,  // ios_update_core_info
