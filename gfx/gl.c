@@ -271,7 +271,7 @@ static bool gl_shader_init(gl_t *gl)
 
       if (!ret)
       {
-         RARCH_ERR("[GL]: Failed to init shader, falling back to stock.\n");
+         RARCH_ERR("[GL]: Failed to initialize shader, falling back to stock.\n");
          ret = gl->shader->init(gl, NULL);
       }
    }
@@ -942,7 +942,7 @@ static void gl_check_fbo_dimensions(gl_t *gl)
 
          GLenum status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
          if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
-            RARCH_WARN("Failed to reinit FBO texture.\n");
+            RARCH_WARN("Failed to reinitialize FBO texture.\n");
 
          RARCH_LOG("[GL]: Recreating FBO texture #%d: %ux%u\n",
                i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
@@ -1812,7 +1812,7 @@ static bool resolve_extensions(gl_t *gl)
    if (gl->core_context &&
          !init_vao(gl))
    {
-      RARCH_ERR("[GL]: Failed to init VAOs.\n");
+      RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
       return false;
    }
 
@@ -1986,7 +1986,7 @@ static void gl_init_pbo_readback(gl_t *gl)
    if (!scaler_ctx_gen_filter(scaler))
    {
       gl->pbo_readback_enable = false;
-      RARCH_ERR("Failed to init pixel conversion for PBO.\n");
+      RARCH_ERR("Failed to initialize pixel conversion for PBO.\n");
       glDeleteBuffers(4, gl->pbo_readback);
    }
 #endif
@@ -2290,7 +2290,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (!gl_shader_init(gl))
    {
-      RARCH_ERR("[GL]: Shader init failed.\n");
+      RARCH_ERR("[GL]: Shader initialization failed.\n");
       gl->ctx_driver->destroy(gl);
       free(gl);
       return NULL;
@@ -2389,7 +2389,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       if (!gl_font_init_first(&gl->font_driver, &gl->font_handle,
             gl, *g_settings.video.font_path 
             ? g_settings.video.font_path : NULL, g_settings.video.font_size))
-         RARCH_ERR("[GL]: Failed to init font renderer.\n");
+         RARCH_ERR("[GL]: Failed to initialize font renderer.\n");
    }
 
 #ifdef HAVE_GL_ASYNC_READBACK
