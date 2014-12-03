@@ -436,6 +436,52 @@ static void context_destroy(void)
    prog = 0;
 }
 
+#ifdef GLES
+static bool retro_init_hw_context(void)
+{
+#if defined(GLES31)
+   hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES_VERSION;
+   hw_render.version_major = 3;
+   hw_render.version_minor = 1;
+#elif defined(GLES3)
+   hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES3;
+#else
+   hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES2;
+#endif
+   hw_render.context_reset = context_reset;
+   hw_render.context_destroy = context_destroy;
+   hw_render.depth = true;
+   hw_render.stencil = true;
+   hw_render.bottom_left_origin = true;
+
+   if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
+      return false;
+
+   return true;
+}
+#else
+static bool retro_init_hw_context(void)
+{
+#ifdef CORE
+   hw_render.context_type = RETRO_HW_CONTEXT_OPENGL_CORE;
+   hw_render.version_major = 3;
+   hw_render.version_minor = 1;
+#else
+   hw_render.context_type = RETRO_HW_CONTEXT_OPENGL;
+#endif
+   hw_render.context_reset = context_reset;
+   hw_render.context_destroy = context_destroy;
+   hw_render.depth = true;
+   hw_render.stencil = true;
+   hw_render.bottom_left_origin = true;
+
+   if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
+      return false;
+
+   return true;
+}
+#endif
+
 bool retro_load_game(const struct retro_game_info *info)
 {
    update_variables();
@@ -447,32 +493,11 @@ bool retro_load_game(const struct retro_game_info *info)
       return false;
    }
 
-#ifdef GLES
-#if defined(GLES31)
-   hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES_VERSION;
-   hw_render.version_major = 3;
-   hw_render.version_minor = 1;
-#elif defined(GLES3)
-   hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES3;
-#else
-   hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES2;
-#endif
-#else
-#ifdef CORE
-   hw_render.context_type = RETRO_HW_CONTEXT_OPENGL_CORE;
-   hw_render.version_major = 3;
-   hw_render.version_minor = 1;
-#else
-   hw_render.context_type = RETRO_HW_CONTEXT_OPENGL;
-#endif
-#endif
-   hw_render.context_reset = context_reset;
-   hw_render.context_destroy = context_destroy;
-   hw_render.depth = true;
-   hw_render.stencil = true;
-   hw_render.bottom_left_origin = true;
-   if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
+   if (!retro_init_hw_context())
+   {
+      fprintf(stderr, "HW Context could not be initialized, exiting...\n");
       return false;
+   }
 
    fprintf(stderr, "Loaded game!\n");
    (void)info;
