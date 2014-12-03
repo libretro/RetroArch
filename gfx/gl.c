@@ -1808,12 +1808,13 @@ static bool resolve_extensions(gl_t *gl)
       (g_extern.system.hw_render_callback.context_type 
        == RETRO_HW_CONTEXT_OPENGL_CORE);
    if (gl->core_context)
-      RARCH_LOG("[GL]: Using Core GL context.\n");
-   if (gl->core_context &&
-         !init_vao(gl))
    {
-      RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
-      return false;
+      RARCH_LOG("[GL]: Using Core GL context.\n");
+      if (!init_vao(gl))
+      {
+         RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
+         return false;
+      }
    }
 
    /* GL_RGB565 internal format support.
