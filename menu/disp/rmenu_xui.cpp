@@ -251,47 +251,47 @@ static void rmenu_xui_free(void *data)
 
 static void xui_render_message(const char *msg)
 {
-	struct font_params font_parms;
-	size_t i, j;
+   struct font_params font_parms;
+   size_t i = 0;
+   size_t j = 0;
 
-	struct string_list *list = string_split(msg, "\n");
+   struct string_list *list = string_split(msg, "\n");
    d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
-	if (!list || !d3d)
-		return;
+   if (!list || !d3d)
+      return;
 
-	if (list->elems == 0)
-	{
-		string_list_free(list);
-		return;
-	}
+   if (list->elems == 0)
+   {
+      string_list_free(list);
+      return;
+   }
 
-	j = 0;
-	for (i = 0; i < list->size; i++, j++)
-	{
-		char *msg = (char*)list->elems[i].data;
-		unsigned msglen = strlen(msg);
-	#if 0
-		if (msglen > RMENU_TERM_WIDTH)
-		{
-			msg[RMENU_TERM_WIDTH - 2] = '.';
-			msg[RMENU_TERM_WIDTH - 1] = '.';
-			msg[RMENU_TERM_WIDTH - 0] = '.';
-			msg[RMENU_TERM_WIDTH + 1] = '\0';
-			msglen = RMENU_TERM_WIDTH;
-		}
-	#endif
+   for (i = 0; i < list->size; i++, j++)
+   {
+      char *msg = (char*)list->elems[i].data;
+      unsigned msglen = strlen(msg);
+   #if 0
+      if (msglen > RMENU_TERM_WIDTH)
+      {
+         msg[RMENU_TERM_WIDTH - 2] = '.';
+         msg[RMENU_TERM_WIDTH - 1] = '.';
+         msg[RMENU_TERM_WIDTH - 0] = '.';
+         msg[RMENU_TERM_WIDTH + 1] = '\0';
+         msglen = RMENU_TERM_WIDTH;
+      }
+   #endif
       float msg_width = d3d->resolution_hd_enable ? 160 : 100;
-		float msg_height = 120;
-		float msg_offset = 32;
+      float msg_height = 120;
+      float msg_offset = 32;
 
-		font_parms.x = msg_width;
-		font_parms.y = msg_height + (msg_offset * j);
-		font_parms.scale = 21;
+      font_parms.x = msg_width;
+      font_parms.y = msg_height + (msg_offset * j);
+      font_parms.scale = 21;
 
-		if (driver.video_poke && driver.video_poke->set_osd_msg)
-			driver.video_poke->set_osd_msg(driver.video_data,
+      if (driver.video_poke && driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data,
                msg, &font_parms, NULL);
-	}
+   }
 }
 
 static void rmenu_xui_frame(void)
@@ -422,7 +422,7 @@ static void rmenu_xui_render(void)
             &entry_label, &type);
 
       disp_set_label(driver.menu->menu_list->selection_buf,
-		  &w, type, i, label,
+            &w, type, i, label,
             type_str, sizeof(type_str), 
             entry_label, path,
             path_buf, sizeof(path_buf));
