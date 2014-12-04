@@ -1292,8 +1292,7 @@ int setting_data_get_description(const char *label, char *msg,
                " \n"
                "This driver requires an active TTY. Keyboard \n"
                "events are read directly from the TTY which \n"
-               "makes it simpler, but not as flexible as udev. \n"
-               "Mice, etc, are not supported at all. \n"
+               "makes it simpler, but not as flexible as udev. \n" "Mice, etc, are not supported at all. \n"
                " \n"
                "This driver uses the older joystick API \n"
                "(/dev/input/js*).");
@@ -4309,6 +4308,19 @@ static bool setting_data_append_list_input_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.input.input_descriptor_label_show,
+         "input_descriptor_label_show",
+         "Show Core Input Descriptor Labels",
+         input_descriptor_label_show,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
    END_SUB_GROUP(list, list_info);
 
    START_SUB_GROUP(
@@ -4525,7 +4537,13 @@ static bool setting_data_append_list_input_options(
          if (!keybind || keybind->meta)
             continue;
 
-         snprintf(label, sizeof(label), "%s %s", buffer[player], keybind->desc);
+         if (g_settings.input.input_descriptor_label_show)
+            snprintf(label, sizeof(label), "%s %s", buffer[player],
+                  g_extern.system.input_desc_btn[player][i] 
+                  ? g_extern.system.input_desc_btn[player][i] : keybind->desc);
+         else
+            snprintf(label, sizeof(label), "%s %s", buffer[player], keybind->desc);
+
          snprintf(name, sizeof(name), "p%u_%s", player + 1, keybind->base);
 
          CONFIG_BIND(

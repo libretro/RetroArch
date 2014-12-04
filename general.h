@@ -378,6 +378,7 @@ struct settings
       float overlay_scale;
 
       char autoconfig_dir[PATH_MAX];
+      bool input_descriptor_label_show;
    } input;
 
    struct

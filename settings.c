@@ -437,9 +437,11 @@ static void config_set_defaults(void)
    g_settings.menu.navigation.wraparound.vertical_enable = true;
 #endif
 
+
    g_settings.location.allow = false;
    g_settings.camera.allow = false;
 
+   g_settings.input.input_descriptor_label_show = input_descriptor_label_show;
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
    memcpy(g_settings.input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
@@ -996,6 +998,8 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_BOOL(input.netplay_client_swap_input,
          "netplay_client_swap_input");
+   CONFIG_GET_BOOL(input.input_descriptor_label_show,
+         "input_descriptor_label_show");
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
@@ -1553,6 +1557,10 @@ bool config_save_file(const char *path)
 
    config_set_float(conf, "input_axis_threshold",
          g_settings.input.axis_threshold);
+   config_set_bool(conf, "netplay_client_swap_input",
+         g_settings.input.netplay_client_swap_input);
+   config_set_bool(conf, "input_descriptor_label_show",
+         g_settings.input.input_descriptor_label_show);
    config_set_bool(conf,  "load_dummy_on_core_shutdown",
          g_settings.load_dummy_on_core_shutdown);
    config_set_bool(conf,  "fps_show", g_settings.fps_show);
