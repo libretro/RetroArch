@@ -442,6 +442,7 @@ static void config_set_defaults(void)
    g_settings.camera.allow = false;
 
    g_settings.input.input_descriptor_label_show = input_descriptor_label_show;
+
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
    memcpy(g_settings.input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
@@ -1530,6 +1531,9 @@ void config_load(void)
    if (*g_extern.core_specific_config_path &&
          g_settings.config_save_on_exit && g_settings.core_specific_config)
       config_save_file(g_extern.core_specific_config_path);
+
+   /* Flush out some states that could have been set by core environment variables */
+   g_extern.has_set_input_descriptors = false;
 
    if (!g_extern.block_config_read)
    {

@@ -4537,10 +4537,13 @@ static bool setting_data_append_list_input_options(
          if (!keybind || keybind->meta)
             continue;
 
-         if (g_settings.input.input_descriptor_label_show)
+         if (
+               g_settings.input.input_descriptor_label_show
+               && (i < RARCH_FIRST_CUSTOM_BIND)
+               && (g_extern.has_set_input_descriptors)
+               )
             snprintf(label, sizeof(label), "%s %s", buffer[player],
-                  g_extern.system.input_desc_btn[player][i] 
-                  ? g_extern.system.input_desc_btn[player][i] : keybind->desc);
+                  g_extern.system.input_desc_btn[player][i] ? g_extern.system.input_desc_btn[player][i] : "N/A");
          else
             snprintf(label, sizeof(label), "%s %s", buffer[player], keybind->desc);
 

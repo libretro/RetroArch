@@ -700,6 +700,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
          }
 
+         g_extern.has_set_input_descriptors = true;
+
          break;
       }
 

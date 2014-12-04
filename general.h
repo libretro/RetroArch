@@ -484,6 +484,7 @@ struct global
    char gb_rom_path[PATH_MAX];
    char bsx_rom_path[PATH_MAX];
    char sufami_rom_path[2][PATH_MAX];
+   bool has_set_input_descriptors;
    bool has_set_save_path;
    bool has_set_state_path;
    bool has_set_libretro_device[MAX_PLAYERS];
