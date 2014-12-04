@@ -665,18 +665,55 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          for (; desc->description; desc++)
          {
+            unsigned port = desc->port;
+            unsigned id   = desc->id;
             if (desc->port >= MAX_PLAYERS)
                continue;
 
             /* Ignore all others for now. */
-            if (desc->device != RETRO_DEVICE_JOYPAD)
+            if (desc->device != RETRO_DEVICE_JOYPAD  &&
+                  desc->device != RETRO_DEVICE_ANALOG)
                continue;
 
             if (desc->id >= RARCH_FIRST_CUSTOM_BIND)
                continue;
 
-            g_extern.system.input_desc_btn[desc->port][desc->id] = 
-               desc->description;
+            if (desc->device == RETRO_DEVICE_ANALOG)
+            {
+               switch (id)
+               {
+                  case RETRO_DEVICE_ID_ANALOG_X:
+                     switch (desc->index)
+                     {
+                        case RETRO_DEVICE_INDEX_ANALOG_LEFT:
+                           g_extern.system.input_desc_btn[port][RARCH_ANALOG_LEFT_X_PLUS] = desc->description;
+                           g_extern.system.input_desc_btn[port][RARCH_ANALOG_LEFT_X_MINUS] = desc->description;
+                           break;
+                        case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
+                           g_extern.system.input_desc_btn[port][RARCH_ANALOG_RIGHT_X_PLUS] = desc->description;
+                           g_extern.system.input_desc_btn[port][RARCH_ANALOG_RIGHT_X_MINUS] = desc->description;
+                           break;
+                     }
+                     break;
+                  case RETRO_DEVICE_ID_ANALOG_Y:
+                     switch (desc->index)
+                     {
+                        case RETRO_DEVICE_INDEX_ANALOG_LEFT:
+                           g_extern.system.input_desc_btn[port][RARCH_ANALOG_LEFT_Y_PLUS] = desc->description;
+                           g_extern.system.input_desc_btn[port][RARCH_ANALOG_LEFT_Y_MINUS] = desc->description;
+                           break;
+                        case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
+                           g_extern.system.input_desc_btn[port][RARCH_ANALOG_RIGHT_Y_PLUS] = desc->description;
+                           g_extern.system.input_desc_btn[port][RARCH_ANALOG_RIGHT_Y_MINUS] = desc->description;
+                           break;
+                     }
+                     break;
+               }
+            }
+            else
+            {
+               g_extern.system.input_desc_btn[port][id] = desc->description;
+            }
          }
 
          static const char *libretro_btn_desc[] = {

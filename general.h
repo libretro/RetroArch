@@ -562,7 +562,7 @@ struct global
       bool force_nonblock;
       bool no_content;
 
-      const char *input_desc_btn[MAX_PLAYERS][RARCH_FIRST_CUSTOM_BIND];
+      const char *input_desc_btn[MAX_PLAYERS][RARCH_FIRST_META_KEY];
       char valid_extensions[PATH_MAX];
       
       retro_keyboard_event_t key_event;

@@ -4539,8 +4539,9 @@ static bool setting_data_append_list_input_options(
 
          if (
                g_settings.input.input_descriptor_label_show
-               && (i < RARCH_FIRST_CUSTOM_BIND)
+               && (i < RARCH_FIRST_META_KEY)
                && (g_extern.has_set_input_descriptors)
+               && (i != RARCH_TURBO_ENABLE)
                )
             snprintf(label, sizeof(label), "%s %s", buffer[player],
                   g_extern.system.input_desc_btn[player][i] ? g_extern.system.input_desc_btn[player][i] : "N/A");
