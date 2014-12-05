@@ -575,7 +575,7 @@ static const bool pause_nonactive = false;
 static const unsigned autosave_interval = 0;
 
 /* When being client over netplay, use keybinds for 
- * player 1 rather than player 2. */
+ * user 1 rather than user 2. */
 static const bool netplay_client_swap_input = true;
 
 /* On save state load, block SRAM from being overwritten.

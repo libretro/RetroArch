@@ -132,10 +132,10 @@
     <string name="overlay_opacity">Overlay opacity</string>
     <string name="overlay_opacity_desc">Set the opacity of the touch overlay.</string>
     <string name="custom_binds">Custom Binds</string>
-    <string name="player_1_custom_binds">Player 1 Custom Binds</string>
-    <string name="player_2_custom_binds">Player 2 Custom Binds</string>
-    <string name="player_3_custom_binds">Player 3 Custom Binds</string>
-    <string name="player_4_custom_binds">Player 4 Custom Binds</string>
+    <string name="player_1_custom_binds">User 1 Custom Binds</string>
+    <string name="player_2_custom_binds">User 2 Custom Binds</string>
+    <string name="player_3_custom_binds">User 3 Custom Binds</string>
+    <string name="player_4_custom_binds">User 4 Custom Binds</string>
     <string name="up_button">Up Button</string>
     <string name="down_button">Down Button</string>
     <string name="left_button">Left Button</string>

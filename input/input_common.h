@@ -116,7 +116,7 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
 void input_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
 enum retro_key input_translate_str_to_rk(const char *str);
 
-const char *input_config_get_prefix(unsigned player, bool meta);
+const char *input_config_get_prefix(unsigned user, bool meta);
 
 /* Returns RARCH_BIND_LIST_END on not found. */
 unsigned input_translate_str_to_bind_id(const char *str);

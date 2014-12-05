@@ -171,11 +171,11 @@ Activates verbose logging.
 
 .TP
 \fB--host, -H\fR
-Be the host of netplay. Waits until a player connects. The host will always assume player 1.
+Be the host of netplay. Waits until a user connects. The host will always assume user 1.
 
 .TP
 \fB--connect SERVER, -C SERVER\fR
-Connect to a host of netplay. Will always assume player 2.
+Connect to a host of netplay. Will always assume user 2.
 
 .TP
 \fB--frames FRAMES, -F FRAMES\fR
@@ -192,7 +192,7 @@ If netplay is used, it will go into a spectator mode.
 Spectator mode allows one host to live stream game playback to multiple clients.
 Essentially, clients receive a live streamed BSV movie file.
 Clients can connect and disconnect at any time.
-Clients thus cannot interact as player 2.
+Clients thus cannot interact as user 2.
 For spectating mode to work, both host and clients will need to use this flag.
 
 .TP
@@ -208,7 +208,7 @@ The available commands are listed if "COMMAND" is invalid.
 .TP
 \fB--nick NICK\fR
 Pick a nickname for use with netplay.
-This is purely cosmetic, and only serves to help players identify each other.
+This is purely cosmetic, and only serves to help users identify each other.
 
 .TP
 \fB--ups PATCH, -U PATCH\fR

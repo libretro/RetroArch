@@ -13,20 +13,20 @@ retroarch-joyconfig \- Tool to configure joypad bindings for \fBretroarch\fR.
 .SH "DESCRIPTION"
 
 \fBretroarch-joyconfig is a simple tool that allows updating or creating a configuration file for \fBretroarch\fR.
-It reads in necessary joypad bindings for a certain player and joypad.
+It reads in necessary joypad bindings for a certain user and joypad.
 
 .SH "EXAMPLE COMMANDLINES"
 
 .TP
-\fBConfigure joypad for player 1, using first joypad. Configuration is dumped to a file.\fR
+\fBConfigure joypad for user 1, using first joypad. Configuration is dumped to a file.\fR
 retroarch-joyconfig -p 1 -j 0 -o inputconfig.cfg
 
 .TP
-\fBConfigure joypad for player 1, using first joypad. Update retroarch.cfg directly.\fR
+\fBConfigure joypad for user 1, using first joypad. Update retroarch.cfg directly.\fR
 retroarch-joyconfig -p 1 -j 0 -i retroarch.cfg -o retroarch.cfg
 
 .TP
-\fBConfigure joypad for player 1, using first joypad. Configuration is dumped to stdout.\fR
+\fBConfigure joypad for user 1, using first joypad. Configuration is dumped to stdout.\fR
 retroarch-joyconfig -p 1 -j 0
 
 .TP
@@ -37,8 +37,8 @@ retroarch-joyconfig -j 0 -a ~/.config/retroarch/autoconfig/pad.cfg
 
 .TP
 \fB--player PLAYER, -p PLAYER\fR
-Configuration will be done for the SNES player PLAYER. This can be from 1 up to and including 5 (multitap).
-Default is configuration for player 1.
+Configuration will be done for the user PLAYER. This can be from 1 up to and including 5 (multitap).
+Default is configuration for user 1.
 
 .TP
 \fB--joypad PAD, -j PAD\fR
