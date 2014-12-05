@@ -60,16 +60,16 @@ static int16_t xenon360_input_state(void *data, const struct retro_keybind **bin
 {
    (void)data;
    (void)idx;
-   unsigned player = port;
-   uint64_t button = binds[player][id].joykey;
+   unsigned user = port;
+   uint64_t button = binds[user][id].joykey;
    int16_t retval = 0;
 
-   if(player < MAX_PADS)
+   if(user < MAX_PADS)
    {
       switch (device)
       {
          case RETRO_DEVICE_JOYPAD:
-            retval = (state[player] & button) ? 1 : 0;
+            retval = (state[user] & button) ? 1 : 0;
             break;
       }
    }

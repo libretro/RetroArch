@@ -129,7 +129,7 @@ static void process_gamepad_event(void *data,
       screen_get_event_property_iv(screen_event,
             SCREEN_PROPERTY_ANALOG1, controller->analog1);
 
-   /* Only player 1
+   /* Only user 1
     * TODO: Am I missing something? Is there a better way? */
    if((controller->port == 0) && 
          (controller->buttons & 

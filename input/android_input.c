@@ -243,7 +243,7 @@ static int android_input_get_id_port(android_input_t *android, int id,
    unsigned i;
    if (source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE | 
             AINPUT_SOURCE_TOUCHPAD))
-      return 0; /* touch overlay is always player 1 */
+      return 0; /* touch overlay is always user 1 */
 
    for (i = 0; i < android->pads_connected; i++)
       if (android->pad_states[i].id == id)
@@ -398,7 +398,7 @@ static void handle_hotplug(android_input_t *android,
       //and Xperia Play. We need to keep 'count' of the amount of similar (grouped)
       //devices.
       //
-      //For Xperia Play - count similar devices and bind them to the same 'player'
+      //For Xperia Play - count similar devices and bind them to the same 'user'
       //port
       //
       //For nVidia Shield - see above
@@ -489,7 +489,7 @@ static void handle_hotplug(android_input_t *android,
       strlcpy(name_buf, "Defender Game Racer Classic", sizeof(name_buf));
    else if (strstr(device_name, "NVIDIA Controller"))
    {
-      /* Shield is always player 1. FIXME: This is kinda ugly.
+      /* Shield is always user 1. FIXME: This is kinda ugly.
        * We really need to find a way to detect useless input devices
        * like gpio-keys in a general way.
        */

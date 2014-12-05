@@ -55,7 +55,7 @@ static bool input_joypad_is_pressed(
    if (joy_idx >= MAX_PLAYERS)
       return false;
 
-   /* Auto-binds are per joypad, not per player. */
+   /* Auto-binds are per joypad, not per user. */
    const struct retro_keybind *auto_binds = 
       g_settings.input.autoconf_binds[joy_idx];
 
@@ -102,7 +102,7 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
    if (joy_idx >= MAX_PLAYERS)
       return 0;
 
-   /* Auto-binds are per joypad, not per player. */
+   /* Auto-binds are per joypad, not per user. */
    const struct retro_keybind *auto_binds =
       g_settings.input.autoconf_binds[joy_idx];
 
@@ -206,7 +206,7 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
    return true;
 }
 
-static const char *bind_player_prefix[MAX_PLAYERS] = {
+static const char *bind_user_prefix[MAX_PLAYERS] = {
    "input_player1",
    "input_player2",
    "input_player3",
@@ -276,7 +276,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, cheat_toggle,          RARCH_CHEAT_TOGGLE, "Cheat toggle"),
       DECLARE_META_BIND(2, screenshot,            RARCH_SCREENSHOT, "Take screenshot"),
       DECLARE_META_BIND(2, audio_mute,            RARCH_MUTE, "Audio mute toggle"),
-      DECLARE_META_BIND(2, netplay_flip_players,  RARCH_NETPLAY_FLIP, "Netplay flip players"),
+      DECLARE_META_BIND(2, netplay_flip_players,  RARCH_NETPLAY_FLIP, "Netplay flip users"),
       DECLARE_META_BIND(2, slowmotion,            RARCH_SLOWMOTION, "Slow motion"),
       DECLARE_META_BIND(2, enable_hotkey,         RARCH_ENABLE_HOTKEY, "Enable hotkeys"),
       DECLARE_META_BIND(2, volume_up,             RARCH_VOLUME_UP, "Volume +"),
@@ -304,13 +304,13 @@ void input_config_parse_key(config_file_t *conf,
       bind->key = input_translate_str_to_rk(tmp);
 }
 
-const char *input_config_get_prefix(unsigned player, bool meta)
+const char *input_config_get_prefix(unsigned user, bool meta)
 {
-   if (player == 0)
-      return meta ? "input" : bind_player_prefix[player];
-   else if (player != 0 && !meta)
-      return bind_player_prefix[player];
-   /* Don't bother with meta bind for anyone else than first player. */
+   if (user == 0)
+      return meta ? "input" : bind_user_prefix[user];
+   else if (user != 0 && !meta)
+      return bind_user_prefix[user];
+   /* Don't bother with meta bind for anyone else than first user. */
    return NULL;
 }
 

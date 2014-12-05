@@ -89,7 +89,7 @@ typedef struct
 // to have to pass through unhandled joypad numbers to DI, a slightly ugly
 // hack is required here. dinput_joypad_init will fill this.
 // For each pad index, the appropriate entry will be set to -1 if it is not
-// a 360 pad, or the correct XInput player number (0..3 inclusive) if it is.
+// a 360 pad, or the correct XInput user number (0..3 inclusive) if it is.
 extern int g_xinput_pad_indexes[MAX_PLAYERS];
 extern bool g_xinput_block_pads;
 
@@ -116,7 +116,7 @@ static XINPUT_VIBRATION g_xinput_rumble_states[4];
 
 static winxinput_joypad_state g_winxinput_states[4];
 
-static inline int pad_index_to_xplayer_index(unsigned pad)
+static inline int pad_index_to_xuser_index(unsigned pad)
 {
    return g_xinput_pad_indexes[pad];
 }
@@ -133,12 +133,12 @@ static const char* const XBOX_CONTROLLER_NAMES[4] =
 
 const char* winxinput_joypad_name (unsigned pad)
 {
-   int xplayer = pad_index_to_xplayer_index(pad);
+   int xuser = pad_index_to_xuser_index(pad);
 
-   if (xplayer < 0)
+   if (xuser < 0)
       return dinput_joypad.name(pad);
    // TODO: Different name if disconnected?
-   return XBOX_CONTROLLER_NAMES[xplayer];
+   return XBOX_CONTROLLER_NAMES[xuser];
 }
 
 static bool winxinput_joypad_init(void)
@@ -209,7 +209,7 @@ static bool winxinput_joypad_init(void)
    {
       g_winxinput_states[i].connected = !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
       if (g_winxinput_states[i].connected)
-         RARCH_LOG("Found XInput controller, player #%u\n", i);
+         RARCH_LOG("Found XInput controller, user #%u\n", i);
    }
 
    if ((!g_winxinput_states[0].connected) &&
@@ -230,7 +230,7 @@ static bool winxinput_joypad_init(void)
 
    for (autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
    {
-      if (pad_index_to_xplayer_index(autoconf_pad) > -1)
+      if (pad_index_to_xuser_index(autoconf_pad) > -1)
       {
          strlcpy(g_settings.input.device_names[autoconf_pad],
                winxinput_joypad_name(autoconf_pad),
@@ -249,9 +249,9 @@ static bool winxinput_joypad_init(void)
 
 static bool winxinput_joypad_query_pad(unsigned pad)
 {
-   int xplayer = pad_index_to_xplayer_index(pad);
-   if (xplayer > -1)
-      return g_winxinput_states[xplayer].connected;
+   int xuser = pad_index_to_xuser_index(pad);
+   if (xuser > -1)
+      return g_winxinput_states[xuser].connected;
    return dinput_joypad.query_pad(pad);
 }
 
@@ -292,14 +292,14 @@ static bool winxinput_joypad_button (unsigned port_num, uint16_t joykey)
    if (joykey == NO_BTN)
       return false;
 
-   int xplayer = pad_index_to_xplayer_index(port_num);
-   if (xplayer == -1)
+   int xuser = pad_index_to_xuser_index(port_num);
+   if (xuser == -1)
       return dinput_joypad.button(port_num, joykey);
 
-   if (!(g_winxinput_states[xplayer].connected))
+   if (!(g_winxinput_states[xuser].connected))
       return false;
 
-   uint16_t btn_word = g_winxinput_states[xplayer].xstate.Gamepad.wButtons;
+   uint16_t btn_word = g_winxinput_states[xuser].xstate.Gamepad.wButtons;
 
    if (GET_HAT_DIR(joykey))
    {
@@ -332,12 +332,12 @@ static int16_t winxinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
    if (joyaxis == AXIS_NONE)
       return 0;
 
-   int xplayer = pad_index_to_xplayer_index(port_num);
+   int xuser = pad_index_to_xuser_index(port_num);
 
-   if (xplayer == -1)
+   if (xuser == -1)
       return dinput_joypad.axis(port_num, joyaxis);
 
-   if (!(g_winxinput_states[xplayer].connected))
+   if (!(g_winxinput_states[xuser].connected))
       return 0;
 
    int16_t val  = 0;
@@ -358,7 +358,7 @@ static int16_t winxinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
       is_pos = true;
    }
 
-   XINPUT_GAMEPAD* pad = &(g_winxinput_states[xplayer].xstate.Gamepad);
+   XINPUT_GAMEPAD* pad = &(g_winxinput_states[xuser].xstate.Gamepad);
 
    switch (axis)
    {
@@ -416,8 +416,8 @@ static void winxinput_joypad_poll(void)
 static bool winxinput_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   int xplayer = pad_index_to_xplayer_index(pad);
-   if (xplayer == -1)
+   int xuser = pad_index_to_xuser_index(pad);
+   if (xuser == -1)
    {
       if (dinput_joypad.set_rumble)
          return dinput_joypad.set_rumble(pad, effect, strength);
@@ -426,11 +426,11 @@ static bool winxinput_joypad_rumble(unsigned pad,
 
    /* Consider the low frequency (left) motor the "strong" one. */
    if (effect == RETRO_RUMBLE_STRONG)
-      g_xinput_rumble_states[xplayer].wLeftMotorSpeed = strength;
+      g_xinput_rumble_states[xuser].wLeftMotorSpeed = strength;
    else if (effect == RETRO_RUMBLE_WEAK)
-      g_xinput_rumble_states[xplayer].wRightMotorSpeed = strength;
+      g_xinput_rumble_states[xuser].wRightMotorSpeed = strength;
 
-   return g_XInputSetState(xplayer, &g_xinput_rumble_states[xplayer]) 
+   return g_XInputSetState(xuser, &g_xinput_rumble_states[xuser]) 
       == ERROR_SUCCESS;
 }
 

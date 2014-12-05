@@ -67,7 +67,7 @@ static void ps3_input_poll(void *data)
 
 #ifdef HAVE_MOUSE
 static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
-      unsigned player, unsigned id)
+      unsigned user, unsigned id)
 {
    CellMouseData mouse_state;
    cellMouseGetData(id, &mouse_state);
