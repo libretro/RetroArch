@@ -59,7 +59,7 @@ struct menu_bind_state
    int64_t timeout_end;
    unsigned begin;
    unsigned last;
-   unsigned player;
+   unsigned user;
    struct menu_bind_state_port state[MAX_PLAYERS];
    struct menu_bind_axis_state axis_state[MAX_PLAYERS];
    bool skip;

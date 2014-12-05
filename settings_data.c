@@ -1217,7 +1217,7 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
    driver.menu->binds.begin  = setting->bind_type;
    driver.menu->binds.last   = setting->bind_type;
    driver.menu->binds.target = keybind;
-   driver.menu->binds.player = setting->index_offset;
+   driver.menu->binds.user = setting->index_offset;
    menu_list_push_stack(
          driver.menu->menu_list,
          "",
@@ -2083,7 +2083,7 @@ int setting_data_get_description(const char *label, char *msg,
             "where (d) is slot number.");
    else if (!strcmp(label, "netplay_flip_players"))
       snprintf(msg, sizeof_msg,
-            " -- Netplay flip players.");
+            " -- Netplay flip users.");
    else if (!strcmp(label, "frame_advance"))
       snprintf(msg, sizeof_msg,
             " -- Frame advance when content is paused.");
@@ -2174,7 +2174,7 @@ int setting_data_get_description(const char *label, char *msg,
       snprintf(msg, sizeof_msg,
             " -- Input Device. \n"
             " \n"
-            "Picks which gamepad to use for player N. \n"
+            "Picks which gamepad to use for user N. \n"
             "The name of the pad is available."
             );
    else if (!strcmp(label, "input_bind_device_type"))
@@ -4292,7 +4292,7 @@ static bool setting_data_append_list_input_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
-   unsigned i, player;
+   unsigned i, user;
 
    START_GROUP(group_info, "Input Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
@@ -4342,11 +4342,11 @@ static bool setting_data_append_list_input_options(
          general_write_handler,
          general_read_handler);
 
-   for (player = 0; player < MAX_PLAYERS; player ++)
+   for (user = 0; user < MAX_PLAYERS; user ++)
    {
       /* These constants match the string lengths.
        * Keep them up to date or you'll get some really obvious bugs.
-       * 2 is the length of '99'; we don't need more players than that.
+       * 2 is the length of '99'; we don't need more users than that.
        */
       /* FIXME/TODO - really need to clean up this mess in some way. */
       static char key[MAX_PLAYERS][64];
@@ -4361,83 +4361,83 @@ static bool setting_data_append_list_input_options(
       static char label_bind_all[MAX_PLAYERS][64];
       static char label_bind_defaults[MAX_PLAYERS][64];
 
-      snprintf(key[player], sizeof(key[player]),
-               "input_player%d_joypad_index", player + 1);
-      snprintf(key_type[player], sizeof(key_type[player]),
-               "input_libretro_device_p%u", player + 1);
-      snprintf(key_analog[player], sizeof(key_analog[player]),
-               "input_player%u_analog_dpad_mode", player + 1);
-      snprintf(key_bind_all[player], sizeof(key_bind_all[player]),
-               "input_player%u_bind_all", player + 1);
-      snprintf(key_bind_defaults[player], sizeof(key_bind_defaults[player]),
-               "input_player%u_bind_defaults", player + 1);
+      snprintf(key[user], sizeof(key[user]),
+               "input_player%d_joypad_index", user + 1);
+      snprintf(key_type[user], sizeof(key_type[user]),
+               "input_libretro_device_p%u", user + 1);
+      snprintf(key_analog[user], sizeof(key_analog[user]),
+               "input_player%u_analog_dpad_mode", user + 1);
+      snprintf(key_bind_all[user], sizeof(key_bind_all[user]),
+               "input_player%u_bind_all", user + 1);
+      snprintf(key_bind_defaults[user], sizeof(key_bind_defaults[user]),
+               "input_player%u_bind_defaults", user + 1);
 
-      snprintf(label[player], sizeof(label[player]),
-               "User %d Device Index", player + 1);
-      snprintf(label_type[player], sizeof(label_type[player]),
-               "User %d Device Type", player + 1);
-      snprintf(label_analog[player], sizeof(label_analog[player]),
-               "User %d Analog To Digital Type", player + 1);
-      snprintf(label_bind_all[player], sizeof(label_bind_all[player]),
-               "User %d Bind All", player + 1);
-      snprintf(label_bind_defaults[player], sizeof(label_bind_defaults[player]),
-               "User %d Bind Default All", player + 1);
+      snprintf(label[user], sizeof(label[user]),
+               "User %d Device Index", user + 1);
+      snprintf(label_type[user], sizeof(label_type[user]),
+               "User %d Device Type", user + 1);
+      snprintf(label_analog[user], sizeof(label_analog[user]),
+               "User %d Analog To Digital Type", user + 1);
+      snprintf(label_bind_all[user], sizeof(label_bind_all[user]),
+               "User %d Bind All", user + 1);
+      snprintf(label_bind_defaults[user], sizeof(label_bind_defaults[user]),
+               "User %d Bind Default All", user + 1);
 
       CONFIG_UINT(
-            g_settings.input.libretro_device[player],
-            key_type[player],
-            label_type[player],
-            player,
+            g_settings.input.libretro_device[user],
+            key_type[user],
+            label_type[user],
+            user,
             group_info.name,
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index = player + 1;
-      (*list)[list_info->index - 1].index_offset = player;
+      (*list)[list_info->index - 1].index = user + 1;
+      (*list)[list_info->index - 1].index_offset = user;
       (*list)[list_info->index - 1].action_toggle = &setting_data_uint_action_toggle_libretro_device_type;
       (*list)[list_info->index - 1].action_start = &setting_data_uint_action_start_libretro_device_type;
 
       CONFIG_UINT(
-            g_settings.input.analog_dpad_mode[player],
-            key_analog[player],
-            label_analog[player],
-            player,
+            g_settings.input.analog_dpad_mode[user],
+            key_analog[user],
+            label_analog[user],
+            user,
             group_info.name,
             subgroup_info.name,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index = player + 1;
-      (*list)[list_info->index - 1].index_offset = player;
+      (*list)[list_info->index - 1].index = user + 1;
+      (*list)[list_info->index - 1].index_offset = user;
       (*list)[list_info->index - 1].action_toggle = &setting_data_uint_action_toggle_analog_dpad_mode;
       (*list)[list_info->index - 1].action_start = &setting_data_uint_action_start_analog_dpad_mode;
 
       CONFIG_ACTION(
-            key[player],
-            label[player],
+            key[user],
+            label[user],
             group_info.name,
             subgroup_info.name);
-      (*list)[list_info->index - 1].index = player + 1;
-      (*list)[list_info->index - 1].index_offset = player;
+      (*list)[list_info->index - 1].index = user + 1;
+      (*list)[list_info->index - 1].index_offset = user;
       (*list)[list_info->index - 1].action_start  = &setting_data_action_start_bind_device;
       (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_bind_device;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_bind_device;
 
       CONFIG_ACTION(
-            key_bind_all[player],
-            label_bind_all[player],
+            key_bind_all[user],
+            label_bind_all[user],
             group_info.name,
             subgroup_info.name);
-      (*list)[list_info->index - 1].index = player + 1;
-      (*list)[list_info->index - 1].index_offset = player;
+      (*list)[list_info->index - 1].index = user + 1;
+      (*list)[list_info->index - 1].index_offset = user;
       (*list)[list_info->index - 1].action_ok    = &setting_data_action_ok_bind_all;
 
       CONFIG_ACTION(
-            key_bind_defaults[player],
-            label_bind_defaults[player],
+            key_bind_defaults[user],
+            label_bind_defaults[user],
             group_info.name,
             subgroup_info.name);
-      (*list)[list_info->index - 1].index = player + 1;
-      (*list)[list_info->index - 1].index_offset = player;
+      (*list)[list_info->index - 1].index = user + 1;
+      (*list)[list_info->index - 1].index_offset = user;
       (*list)[list_info->index - 1].action_ok    = &setting_data_action_ok_bind_defaults;
    }
 
@@ -4485,7 +4485,7 @@ static bool setting_data_append_list_input_options(
    END_SUB_GROUP(list, list_info);
 
    /* The second argument to config bind is 1 
-    * based for players and 0 only for meta keys. */
+    * based for users and 0 only for meta keys. */
    START_SUB_GROUP(
          list,
          list_info,
@@ -4508,22 +4508,22 @@ static bool setting_data_append_list_input_options(
    }
    END_SUB_GROUP(list, list_info);
 
-   for (player = 0; player < MAX_PLAYERS; player ++)
+   for (user = 0; user < MAX_PLAYERS; user++)
    {
       /* This constants matches the string length.
        * Keep it up to date or you'll get some really obvious bugs.
-       * 2 is the length of '99'; we don't need more players than that.
+       * 2 is the length of '99'; we don't need more users than that.
        */
       static char buffer[MAX_PLAYERS][7+2+1];
       const struct retro_keybind* const defaults =
-         (player == 0) ? retro_keybinds_1 : retro_keybinds_rest;
+         (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
 
-      snprintf(buffer[player], sizeof(buffer[player]), "User %d", player + 1);
+      snprintf(buffer[user], sizeof(buffer[user]), "User %d", user + 1);
 
       START_SUB_GROUP(
             list,
             list_info,
-            buffer[player],
+            buffer[user],
             group_info.name,
             subgroup_info);
 
@@ -4543,17 +4543,17 @@ static bool setting_data_append_list_input_options(
                && (g_extern.has_set_input_descriptors)
                && (i != RARCH_TURBO_ENABLE)
                )
-            snprintf(label, sizeof(label), "%s %s", buffer[player],
-                  g_extern.system.input_desc_btn[player][i] ? g_extern.system.input_desc_btn[player][i] : "N/A");
+            snprintf(label, sizeof(label), "%s %s", buffer[user],
+                  g_extern.system.input_desc_btn[user][i] ? g_extern.system.input_desc_btn[user][i] : "N/A");
          else
-            snprintf(label, sizeof(label), "%s %s", buffer[player], keybind->desc);
+            snprintf(label, sizeof(label), "%s %s", buffer[user], keybind->desc);
 
-         snprintf(name, sizeof(name), "p%u_%s", player + 1, keybind->base);
+         snprintf(name, sizeof(name), "p%u_%s", user + 1, keybind->base);
 
          CONFIG_BIND(
-               g_settings.input.binds[player][i],
-               player + 1,
-               player,
+               g_settings.input.binds[user][i],
+               user + 1,
+               user,
                strdup(name), /* TODO: Find a way to fix these memleaks. */
                strdup(label),
                &defaults[i],

@@ -80,7 +80,7 @@ struct netplay
    int fd;
    /* UDP connection for game state updates. */
    int udp_fd;
-   /* Which port is governed by netplay (other player)? */
+   /* Which port is governed by netplay (other user)? */
    unsigned port;
    bool has_connection;
 
@@ -1171,15 +1171,15 @@ static bool netplay_get_cmd(netplay_t *netplay)
          flip_frame = ntohl(flip_frame);
          if (flip_frame < netplay->flip_frame)
          {
-            RARCH_ERR("Host asked us to flip players in the past. Not possible ...\n");
+            RARCH_ERR("Host asked us to flip users in the past. Not possible ...\n");
             return netplay_cmd_nak(netplay);
          }
 
          netplay->flip ^= true;
          netplay->flip_frame = flip_frame;
 
-         RARCH_LOG("Netplay players are flipped.\n");
-         msg_queue_push(g_extern.msg_queue, "Netplay players are flipped.", 1, 180);
+         RARCH_LOG("Netplay users are flipped.\n");
+         msg_queue_push(g_extern.msg_queue, "Netplay users are flipped.", 1, 180);
 
          return netplay_cmd_ack(netplay);
       }
@@ -1190,7 +1190,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
    }
 }
 
-void netplay_flip_players(netplay_t *netplay)
+void netplay_flip_users(netplay_t *netplay)
 {
    uint32_t flip_frame = netplay->frame_count + 2 * UDP_FRAME_PACKETS;
    uint32_t flip_frame_net = htonl(flip_frame);
@@ -1198,20 +1198,20 @@ void netplay_flip_players(netplay_t *netplay)
 
    if (netplay->spectate)
    {
-      msg = "Cannot flip players in spectate mode.";
+      msg = "Cannot flip users in spectate mode.";
       goto error;
    }
 
    if (netplay->port == 0)
    {
-      msg = "Cannot flip players if you're not the host.";
+      msg = "Cannot flip users if you're not the host.";
       goto error;
    }
 
    /* Make sure both clients are definitely synced up. */
    if (netplay->frame_count < (netplay->flip_frame + 2 * UDP_FRAME_PACKETS))
    {
-      msg = "Cannot flip players yet. Wait a second or two before attempting flip.";
+      msg = "Cannot flip users yet. Wait a second or two before attempting flip.";
       goto error;
    }
 
@@ -1219,8 +1219,8 @@ void netplay_flip_players(netplay_t *netplay)
             &flip_frame_net, sizeof(flip_frame_net))
          && netplay_get_response(netplay))
    {
-      RARCH_LOG("Netplay players are flipped.\n");
-      msg_queue_push(g_extern.msg_queue, "Netplay players are flipped.", 1, 180);
+      RARCH_LOG("Netplay users are flipped.\n");
+      msg_queue_push(g_extern.msg_queue, "Netplay users are flipped.", 1, 180);
 
       /* Queue up a flip well enough in the future. */
       netplay->flip ^= true;
@@ -1228,7 +1228,7 @@ void netplay_flip_players(netplay_t *netplay)
    }
    else
    {
-      msg = "Failed to flip players.";
+      msg = "Failed to flip users.";
       goto error;
    }
 

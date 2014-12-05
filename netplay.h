@@ -46,7 +46,7 @@ typedef struct netplay netplay_t;
 bool netplay_init_network(void);
 
 /* Creates a new netplay handle. A NULL host means we're 
- * hosting (player 1). :) */
+ * hosting (user 1). :) */
 netplay_t *netplay_new(const char *server,
       uint16_t port, unsigned frames,
       const struct retro_callbacks *cb, bool spectate,
@@ -54,8 +54,8 @@ netplay_t *netplay_new(const char *server,
 
 void netplay_free(netplay_t *handle);
 
-/* On regular netplay, flip who controls player 1 and 2. */
-void netplay_flip_players(netplay_t *handle);
+/* On regular netplay, flip who controls user 1 and 2. */
+void netplay_flip_users(netplay_t *handle);
 
 /* Call this before running retro_run(). */
 void netplay_pre_frame(netplay_t *handle);

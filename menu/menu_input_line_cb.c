@@ -277,7 +277,7 @@ bool menu_poll_find_trigger(struct menu_bind_state *state,
       {
          /* Update the joypad mapping automatically.
           * More friendly that way. */
-         g_settings.input.joypad_map[state->player] = i;
+         g_settings.input.joypad_map[state->user] = i;
          return true;
       }
    }

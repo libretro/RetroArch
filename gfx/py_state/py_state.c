@@ -96,17 +96,17 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    if (!driver.input_data)
       return PyBool_FromLong(0);
 
-   unsigned player;
+   unsigned user;
    unsigned key;
-   if (!PyArg_ParseTuple(args, "II", &player, &key))
+   if (!PyArg_ParseTuple(args, "II", &user, &key))
       return NULL;
 
-   if (player > MAX_PLAYERS || player < 1 || key >= RARCH_FIRST_META_KEY)
+   if (user > MAX_PLAYERS || user < 1 || key >= RARCH_FIRST_META_KEY)
       return NULL;
 
    int16_t res = driver.block_libretro_input ? 0 : 
       driver.input->input_state(driver.input_data,
-            py_binds, player - 1, RETRO_DEVICE_JOYPAD, 0, key);
+            py_binds, user - 1, RETRO_DEVICE_JOYPAD, 0, key);
    return PyBool_FromLong(res);
 }
 
@@ -116,17 +116,17 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
    if (!driver.input_data)
       return PyBool_FromLong(0);
 
-   unsigned player;
+   unsigned user;
    unsigned index;
    unsigned id;
-   if (!PyArg_ParseTuple(args, "III", &player, &index, &id))
+   if (!PyArg_ParseTuple(args, "III", &user, &index, &id))
       return NULL;
 
-   if (player > MAX_PLAYERS || player < 1 || index > 1 || id > 1)
+   if (user > MAX_PLAYERS || user < 1 || index > 1 || id > 1)
       return NULL;
 
    int16_t res = driver.input->input_state(driver.input_data,
-         py_binds, player - 1, RETRO_DEVICE_ANALOG, index, id);
+         py_binds, user - 1, RETRO_DEVICE_ANALOG, index, id);
    return PyFloat_FromDouble((double)res / 0x7fff);
 }
 

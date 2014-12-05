@@ -499,12 +499,12 @@ static void print_help(void)
    puts("\t\tDo note that noload-save implies that save files will be deleted and overwritten.");
 
 #ifdef HAVE_NETPLAY
-   puts("\t-H/--host: Host netplay as player 1.");
-   puts("\t-C/--connect: Connect to netplay as player 2.");
+   puts("\t-H/--host: Host netplay as user 1.");
+   puts("\t-C/--connect: Connect to netplay as user 2.");
    puts("\t--port: Port used to netplay. Default is 55435.");
    puts("\t-F/--frames: Sync frames when using netplay.");
    puts("\t--spectate: Netplay will become spectating mode.");
-   puts("\t\tHost can live stream the game content to players that connect.");
+   puts("\t\tHost can live stream the game content to users that connect.");
    puts("\t\tHowever, the client will not be able to play. Multiple clients can connect to the host.");
 #endif
    puts("\t--nick: Picks a username (for use with netplay). Not mandatory.");
@@ -2649,7 +2649,7 @@ bool rarch_main_command(unsigned cmd)
          {
             netplay_t *netplay = (netplay_t*)driver.netplay_data;
             if (netplay)
-               netplay_flip_players(netplay);
+               netplay_flip_users(netplay);
          }
 #endif
          break;
