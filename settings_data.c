@@ -4321,6 +4321,18 @@ static bool setting_data_append_list_input_options(
          general_write_handler,
          general_read_handler);
 
+   CONFIG_BOOL(
+         g_settings.input.input_descriptor_hide_unbound,
+         "input_descriptor_hide_unbound",
+         "Hide Unbound Core Input Descriptors",
+         input_descriptor_hide_unbound,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
    END_SUB_GROUP(list, list_info);
 
    START_SUB_GROUP(
@@ -4529,6 +4541,7 @@ static bool setting_data_append_list_input_options(
 
       for (i = 0; i < RARCH_BIND_LIST_END; i ++)
       {
+         bool do_add = true;
          char label[PATH_MAX];
          char name[PATH_MAX];
          const struct input_bind_map* keybind = 
@@ -4543,23 +4556,36 @@ static bool setting_data_append_list_input_options(
                && (g_extern.has_set_input_descriptors)
                && (i != RARCH_TURBO_ENABLE)
                )
-            snprintf(label, sizeof(label), "%s %s", buffer[user],
-                  g_extern.system.input_desc_btn[user][i] ? g_extern.system.input_desc_btn[user][i] : "N/A");
+         {
+            if (g_extern.system.input_desc_btn[user][i])
+               snprintf(label, sizeof(label), "%s %s", buffer[user],
+                     g_extern.system.input_desc_btn[user][i]);
+            else
+            {
+               snprintf(label, sizeof(label), "%s %s", buffer[user], "N/A");
+
+               if (g_settings.input.input_descriptor_hide_unbound)
+                  do_add = false;
+            }
+         }
          else
             snprintf(label, sizeof(label), "%s %s", buffer[user], keybind->desc);
 
          snprintf(name, sizeof(name), "p%u_%s", user + 1, keybind->base);
 
-         CONFIG_BIND(
-               g_settings.input.binds[user][i],
-               user + 1,
-               user,
-               strdup(name), /* TODO: Find a way to fix these memleaks. */
-               strdup(label),
-               &defaults[i],
-               group_info.name,
-               subgroup_info.name);
-         settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
+         if (do_add)
+         {
+            CONFIG_BIND(
+                  g_settings.input.binds[user][i],
+                  user + 1,
+                  user,
+                  strdup(name), /* TODO: Find a way to fix these memleaks. */
+                  strdup(label),
+                  &defaults[i],
+                  group_info.name,
+                  subgroup_info.name);
+            settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
+         }
       }
       END_SUB_GROUP(list, list_info);
    }

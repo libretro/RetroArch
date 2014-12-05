@@ -640,6 +640,8 @@ static const bool input_autodetect_enable = true;
  * of the default ones. */
 static const bool input_descriptor_label_show = true;
 
+static const bool input_descriptor_hide_unbound = false;
+
 #ifndef IS_SALAMANDER
 #include "intl/intl.h"
 
