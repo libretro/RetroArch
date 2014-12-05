@@ -138,7 +138,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     dataOutput = (AVCaptureVideoDataOutput*)[[AVCaptureVideoDataOutput alloc] init];
     [dataOutput setAlwaysDiscardsLateVideoFrames:NO]; /* Probably want to set this to NO when recording. */
     
-	[dataOutput setVideoSettings:[NSDictionary dictionaryWithObject:[NSNumber numberWithInt:kCVPixelFormatType_32BGRA] forKey:(id)kCVPixelBufferPixelFormatTypeKey]];
+	[dataOutput setVideoSettings:[NSDictionary dictionaryWithObject:[NSNumber numberWithInt:kCVPixelFormatType_32RGBA] forKey:(id)kCVPixelBufferPixelFormatTypeKey]];
     
     /* Set dispatch to be on the main thread so OpenGL can do things with the data. */
     [dataOutput setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
