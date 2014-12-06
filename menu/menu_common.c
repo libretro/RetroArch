@@ -166,6 +166,7 @@ void *menu_init(const void *data)
 #ifdef HAVE_SHADER_MANAGER
    menu->shader = (struct gfx_shader*)calloc(1, sizeof(struct gfx_shader));
 #endif
+   menu->cheats = cheat_manager_new(); 
    menu->push_start_screen = g_settings.menu_show_start_screen;
    g_settings.menu_show_start_screen = false;
 
@@ -217,6 +218,10 @@ void menu_free(void *data)
       free(menu->shader);
    menu->shader = NULL;
 #endif
+
+   if (menu->cheats)
+      cheat_manager_free(menu->cheats);
+   menu->cheats = NULL;
 
    if (driver.menu_ctx && driver.menu_ctx->free)
       driver.menu_ctx->free(menu);

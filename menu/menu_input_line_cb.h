@@ -27,11 +27,14 @@ void menu_key_event(bool down, unsigned keycode, uint32_t character,
       uint16_t key_modifiers);
 
 void menu_key_start_line(void *data, const char *label,
-      const char *label_setting, input_keyboard_line_complete_t cb);
+      const char *label_setting, unsigned type, unsigned idx,
+      input_keyboard_line_complete_t cb);
 
 void st_uint_callback(void *userdata, const char *str);
 
 void st_string_callback(void *userdata, const char *str);
+
+void st_cheat_callback(void *userdata, const char *str);
 
 void menu_poll_bind_get_rested_axes(struct menu_bind_state *state);
 

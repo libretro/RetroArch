@@ -16,13 +16,34 @@
 #ifndef __RARCH_CHEATS_H
 #define __RARCH_CHEATS_H
 
+#include <boolean.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct item_cheat
+{
+   char *desc;
+   bool state;
+   char *code;
+};
+
+struct cheat_manager
+{
+   struct item_cheat *cheats;
+   unsigned ptr;
+   unsigned size;
+   unsigned buf_size;
+};
+
 typedef struct cheat_manager cheat_manager_t;
 
-cheat_manager_t* cheat_manager_new(const char *path);
+cheat_manager_t *cheat_manager_new(void);
+
+cheat_manager_t* cheat_manager_new_from_xml(const char *path);
+
+bool cheat_manager_realloc(cheat_manager_t *handle, unsigned new_size);
 
 void cheat_manager_free(cheat_manager_t *handle);
 
@@ -31,6 +52,8 @@ void cheat_manager_index_next(cheat_manager_t *handle);
 void cheat_manager_index_prev(cheat_manager_t *handle);
 
 void cheat_manager_toggle(cheat_manager_t *handle);
+
+void cheat_manager_apply_cheats(cheat_manager_t *handle);
 
 #ifdef __cplusplus
 }

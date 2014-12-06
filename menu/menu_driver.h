@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <boolean.h>
 #include "menu_list.h"
+#include "../cheats.h"
 #include "../settings_list.h"
 
 #ifdef __cplusplus
@@ -108,6 +109,7 @@ typedef struct
    bool load_no_content;
 
    struct gfx_shader *shader;
+   cheat_manager_t *cheats;
 
    struct menu_bind_state binds;
 
@@ -133,6 +135,8 @@ typedef struct
       const char *label;
       const char *label_setting;
       bool display;
+      unsigned type;
+      unsigned idx;
    } keyboard;
 
    rarch_setting_t *list_mainmenu;

@@ -35,21 +35,6 @@
 #include "compat/rxml/rxml.h"
 #endif
 
-struct cheat
-{
-   char *desc;
-   bool state;
-   char *code;
-};
-
-struct cheat_manager
-{
-   struct cheat *cheats;
-   unsigned ptr;
-   unsigned size;
-   unsigned buf_size;
-};
-
 static char *strcat_alloc(char *dest, const char *input)
 {
    size_t dest_len = dest ? strlen(dest) : 0;
@@ -68,13 +53,13 @@ static char *strcat_alloc(char *dest, const char *input)
    return output;
 }
 
-static bool xml_grab_cheat(struct cheat *cht, xmlNodePtr ptr)
+static bool xml_grab_cheat(struct item_cheat *cht, xmlNodePtr ptr)
 {
    bool first;
    if (!ptr)
       return false;
 
-   memset(cht, 0, sizeof(struct cheat));
+   memset(cht, 0, sizeof(struct item_cheat));
    first = true;
 
    for (; ptr; ptr = ptr->next)
@@ -124,10 +109,7 @@ static bool xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
       {
          if (handle->size == handle->buf_size)
          {
-            handle->buf_size *= 2;
-            handle->cheats = (struct cheat*)
-               realloc(handle->cheats, handle->buf_size * sizeof(struct cheat));
-            if (!handle->cheats)
+            if (!cheat_manager_realloc(handle, handle->buf_size * 2))
                return false;
          }
 
@@ -139,7 +121,7 @@ static bool xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
    return true;
 }
 
-static void cheat_manager_apply_cheats(cheat_manager_t *handle)
+void cheat_manager_apply_cheats(cheat_manager_t *handle)
 {
    unsigned i;
    unsigned idx = 0;
@@ -231,7 +213,68 @@ static void cheat_manager_save_config(cheat_manager_t *handle,
    config_file_free(conf);
 }
 
-cheat_manager_t *cheat_manager_new(const char *path)
+cheat_manager_t *cheat_manager_new(void)
+{
+   unsigned i;
+   cheat_manager_t *handle = NULL;
+   handle = (cheat_manager_t*)calloc(1, sizeof(struct cheat_manager));
+   if (!handle)
+      return NULL;
+
+   handle->buf_size = handle->size = 0;
+   handle->cheats = (struct item_cheat*)
+      calloc(handle->buf_size, sizeof(struct item_cheat));
+
+   if (!handle->cheats)
+   {
+      handle->buf_size = 0;
+      handle->size = 0;
+      handle->cheats = NULL;
+      return handle;
+   }
+
+   for (i = 0; i < handle->size; i++)
+   {
+      handle->cheats[i].desc   = NULL;
+      handle->cheats[i].code   = NULL;
+      handle->cheats[i].state  = false;
+   }
+
+   return handle;
+}
+
+bool cheat_manager_realloc(cheat_manager_t *handle, unsigned new_size)
+{
+   unsigned i;
+
+   if (!handle->cheats)
+      handle->cheats = (struct item_cheat*)
+         calloc(new_size, sizeof(struct item_cheat));
+   else
+      handle->cheats = (struct item_cheat*)
+         realloc(handle->cheats, new_size * sizeof(struct item_cheat));
+
+   if (!handle->cheats)
+   {
+      handle->buf_size = handle->size = 0;
+      handle->cheats = NULL;
+      return false;
+   }
+
+   handle->buf_size = new_size;
+   handle->size     = new_size;
+
+   for (i = 0; i < handle->size; i++)
+   {
+      handle->cheats[i].desc    = NULL;
+      handle->cheats[i].code    = NULL;
+      handle->cheats[i].state   = false;
+   }
+
+   return true;
+}
+
+cheat_manager_t *cheat_manager_new_from_xml(const char *path)
 {
    xmlParserCtxtPtr ctx;
    xmlNodePtr head, cur;
@@ -252,8 +295,8 @@ cheat_manager_t *cheat_manager_new(const char *path)
    cur = NULL;
 
    handle->buf_size = 1;
-   handle->cheats = (struct cheat*)
-      calloc(handle->buf_size, sizeof(struct cheat));
+   handle->cheats = (struct item_cheat*)
+      calloc(handle->buf_size, sizeof(struct item_cheat));
    if (!handle->cheats)
    {
       handle->buf_size = 0;

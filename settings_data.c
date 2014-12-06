@@ -989,7 +989,7 @@ static int setting_data_uint_action_ok_linefeed(void *data, unsigned action)
       return -1;
 
    menu_key_start_line(driver.menu, setting->short_description,
-         setting->name, st_uint_callback);
+         setting->name, 0, 0, st_uint_callback);
 
    return 0;
 }
@@ -2400,7 +2400,19 @@ void setting_data_get_label(char *type_str,
    }
    else
 #endif
-      if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
+   if (!strcmp(label, "cheat_num_passes"))
+      snprintf(type_str, type_str_size, "%u", driver.menu->cheats->buf_size);
+   else if (type >= MENU_SETTINGS_CHEAT_BEGIN
+         && type <= MENU_SETTINGS_CHEAT_END)
+   {
+      unsigned cheat_index = type - MENU_SETTINGS_CHEAT_BEGIN;
+      if (cheat_index < driver.menu->cheats->buf_size)
+         snprintf(type_str, type_str_size, "%s",
+               (
+                (driver.menu->cheats->cheats[cheat_index].code != NULL)
+               ) ? driver.menu->cheats->cheats[cheat_index].code : "N/A");
+   }
+   else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
             perf_counters_rarch,
@@ -2747,7 +2759,7 @@ static int setting_data_string_action_ok_allow_input(void *data,
       return -1;
 
    menu_key_start_line(driver.menu, setting->short_description,
-         setting->name, st_string_callback);
+         setting->name, 0, 0, st_string_callback);
 
    return 0;
 }
@@ -2859,22 +2871,32 @@ static bool setting_data_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
 
+
    CONFIG_ACTION(
          "core_information",
          "Core Information",
          group_info.name,
          subgroup_info.name);
 
-   if (g_extern.main_is_init
-         && !g_extern.libretro_dummy
-         && g_extern.system.disk_control.get_num_images)
+   if (g_extern.main_is_init)
    {
       CONFIG_ACTION(
-            "disk_options",
-            "Core Disk Options",
+            "core_cheat_options",
+            "Core Cheat Options",
             group_info.name,
             subgroup_info.name);
+
+      if ( !g_extern.libretro_dummy
+            && g_extern.system.disk_control.get_num_images)
+      {
+         CONFIG_ACTION(
+               "disk_options",
+               "Core Disk Options",
+               group_info.name,
+               subgroup_info.name);
+      }
    }
+
    CONFIG_ACTION(
          "settings",
          "Settings",

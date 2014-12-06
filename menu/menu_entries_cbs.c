@@ -24,6 +24,7 @@
 
 #include "../file_ext.h"
 #include "../config.def.h"
+#include "../cheats.h"
 
 #include <file/dir_list.h>
 
@@ -164,6 +165,14 @@ static int action_ok_load_state(const char *path,
    return 0;
 }
 
+static int action_ok_cheat(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   menu_key_start_line(driver.menu, "Input Cheat",
+         label, type, idx, st_cheat_callback);
+   return 0;
+}
+
 static int action_ok_save_state(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -261,6 +270,19 @@ static int action_ok_shader_apply_changes(const char *path,
    return 0;
 }
 
+static int action_ok_cheat_apply_changes(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   cheat_manager_t *cheat = (cheat_manager_t*)driver.menu->cheats;
+
+   if (!cheat)
+      return -1;
+
+   cheat_manager_apply_cheats(cheat);
+
+   return 0;
+}
+
 /* FIXME: Ugly hack, need to be refactored badly. */
 size_t hack_shader_pass = 0;
 
@@ -321,7 +343,7 @@ static int action_ok_shader_preset_save_as(const char *path,
       return -1;
 
    menu_key_start_line(driver.menu, "Preset Filename",
-         label, st_string_callback);
+         label, type, idx, st_string_callback);
    return 0;
 }
 
@@ -1130,12 +1152,58 @@ static int action_start_shader_num_passes(unsigned type, const char *label,
    if (!shader)
       return -1;
 
-   if (shader && shader->passes)
+   if (shader->passes)
       shader->passes = 0;
    driver.menu->need_refresh = true;
 
    gfx_shader_resolve_parameters(NULL, driver.menu->shader);
 #endif
+   return 0;
+}
+
+static int action_start_cheat_num_passes(unsigned type, const char *label,
+      unsigned action)
+{
+   cheat_manager_t *cheat = (cheat_manager_t*)driver.menu->cheats;
+
+   if (!cheat)
+      return -1;
+
+   if (cheat->size)
+   {
+      cheat_manager_realloc(cheat, 0);
+      driver.menu->need_refresh = true;
+   }
+
+   return 0;
+}
+
+static int action_toggle_cheat_num_passes(unsigned type, const char *label,
+      unsigned action)
+{
+   unsigned new_size = 0;
+   cheat_manager_t *cheat = (cheat_manager_t*)driver.menu->cheats;
+
+   if (!cheat)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         if (cheat->size)
+            new_size = cheat->size - 1;
+         driver.menu->need_refresh = true;
+         break;
+
+      case MENU_ACTION_RIGHT:
+         new_size = cheat->size + 1;
+         driver.menu->need_refresh = true;
+         break;
+   }
+
+   if (driver.menu->need_refresh)
+      cheat_manager_realloc(cheat, new_size);
+
    return 0;
 }
 
@@ -1151,13 +1219,13 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         if (shader && shader->passes)
+         if (shader->passes)
             shader->passes--;
          driver.menu->need_refresh = true;
          break;
 
       case MENU_ACTION_RIGHT:
-         if (shader && (shader->passes < GFX_MAX_SHADERS))
+         if ((shader->passes < GFX_MAX_SHADERS))
             shader->passes++;
          driver.menu->need_refresh = true;
          break;
@@ -1761,6 +1829,36 @@ static int deferred_push_frontend_counters(void *data, void *userdata,
    return 0;
 }
 
+static int deferred_push_core_cheat_options(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   unsigned i;
+   size_t opts = 100;
+   file_list_t *list      = (file_list_t*)data;
+   cheat_manager_t *cheat = (cheat_manager_t*)driver.menu->cheats;
+
+   if (!list || !cheat)
+      return -1;
+
+   menu_list_clear(list);
+   menu_list_push(list, "Cheat Passes", "cheat_num_passes",
+         0, 0);
+   menu_list_push(list, "Apply Cheat Changes", "cheat_apply_changes",
+         MENU_SETTING_ACTION, 0);
+
+   for (i = 0; i < cheat->size; i++)
+   {
+      char label[64];
+      snprintf(label, sizeof(label), "Cheat #%d: ", i);
+      menu_list_push(list, label, "", MENU_SETTINGS_CHEAT_BEGIN + i, 0);
+   }
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
+}
+
 static int deferred_push_core_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -2106,6 +2204,9 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
       cbs->action_ok = NULL;
+   else if (type >= MENU_SETTINGS_CHEAT_BEGIN
+         && type <= MENU_SETTINGS_CHEAT_END)
+      cbs->action_ok = action_ok_cheat;
    else if (!strcmp(label, "savestate"))
       cbs->action_ok = action_ok_save_state;
    else if (!strcmp(label, "loadstate"))
@@ -2210,6 +2311,8 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       cbs->action_start = action_start_shader_filter_pass;
    else if (!strcmp(label, "video_shader_num_passes"))
       cbs->action_start = action_start_shader_num_passes;
+   else if (!strcmp(label, "cheat_num_passes"))
+      cbs->action_start = action_start_cheat_num_passes;
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_start = action_start_shader_action_parameter;
@@ -2263,6 +2366,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          !strcmp(label, "Shader Options") ||
          !strcmp(label, "Input Options") ||
          !strcmp(label, "core_options") ||
+         !strcmp(label, "core_cheat_options") ||
          !strcmp(label, "core_information") ||
          !strcmp(label, "disk_options") ||
          !strcmp(label, "settings") ||
@@ -2282,6 +2386,8 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_push_path_list;
    else if (!strcmp(label, "shader_apply_changes"))
       cbs->action_ok = action_ok_shader_apply_changes;
+   else if (!strcmp(label, "cheat_apply_changes"))
+      cbs->action_ok = action_ok_cheat_apply_changes;
    else if (!strcmp(label, "video_shader_preset_save_as"))
       cbs->action_ok = action_ok_shader_preset_save_as;
    else if (!strcmp(label, "core_list"))
@@ -2334,6 +2440,8 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_toggle = action_toggle_shader_filter_default;
    else if (!strcmp(label, "video_shader_num_passes"))
       cbs->action_toggle = action_toggle_shader_num_passes;
+   else if (!strcmp(label, "cheat_num_passes"))
+      cbs->action_toggle = action_toggle_cheat_num_passes;
    else if (type == MENU_SETTINGS_VIDEO_RESOLUTION)
       cbs->action_toggle = action_toggle_video_resolution;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
@@ -2401,6 +2509,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_frontend_counters;
    else if (!strcmp(label, "core_options"))
       cbs->action_deferred_push = deferred_push_core_options;
+   else if (!strcmp(label, "core_cheat_options"))
+      cbs->action_deferred_push = deferred_push_core_cheat_options;
    else if (!strcmp(label, "disk_options"))
       cbs->action_deferred_push = deferred_push_disk_options;
    else if (!strcmp(label, "core_list"))

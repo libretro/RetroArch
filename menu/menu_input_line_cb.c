@@ -33,7 +33,8 @@
 #include "../settings_data.h"
 
 void menu_key_start_line(void *data, const char *label,
-      const char *label_setting, input_keyboard_line_complete_t cb)
+      const char *label_setting, unsigned type, unsigned idx,
+      input_keyboard_line_complete_t cb)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
 
@@ -43,6 +44,8 @@ void menu_key_start_line(void *data, const char *label,
    menu->keyboard.display       = true;
    menu->keyboard.label         = label;
    menu->keyboard.label_setting = label_setting;
+   menu->keyboard.type          = type;
+   menu->keyboard.idx           = idx;
    menu->keyboard.buffer        = input_keyboard_start_line(menu, cb);
 }
 
@@ -103,6 +106,22 @@ void st_string_callback(void *userdata, const char *str)
          if (!strcmp(menu->keyboard.label, "video_shader_preset_save_as"))
             menu_shader_manager_save_preset(str, false);
       }
+   }
+   menu_key_end_line(menu);
+}
+
+void st_cheat_callback(void *userdata, const char *str)
+{
+   menu_handle_t *menu = (menu_handle_t*)userdata;
+   cheat_manager_t *cheat = (cheat_manager_t*)menu->cheats;
+ 
+   if (cheat && str && *str)
+   {
+      unsigned cheat_index = menu->keyboard.type - MENU_SETTINGS_CHEAT_BEGIN;
+      RARCH_LOG("cheat_index is: %d\n", cheat_index);
+
+      cheat->cheats[cheat_index].code  = strdup(str);
+      cheat->cheats[cheat_index].state = true;
    }
    menu_key_end_line(menu);
 }

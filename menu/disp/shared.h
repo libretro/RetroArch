@@ -58,6 +58,8 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "DISK OPTIONS", sizeof_title);
    else if (!strcmp(label, "core_options"))
       strlcpy(title, "CORE OPTIONS", sizeof_title);
+   else if (!strcmp(label, "core_cheat_options"))
+      strlcpy(title, "CORE CHEAT OPTIONS", sizeof_title);
    else if (!strcmp(label, "core_information"))
       strlcpy(title, "CORE INFO", sizeof_title);
    else if (!strcmp(label, "Privacy Options"))
