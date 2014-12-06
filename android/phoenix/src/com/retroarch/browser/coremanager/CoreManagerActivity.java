@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.retroarch.R;
 import com.retroarch.browser.coremanager.fragments.DownloadableCoresFragment;
+import com.retroarch.browser.coremanager.fragments.InstalledCoresFragment;
 import com.retroarch.browser.coremanager.fragments.InstalledCoresManagerFragment;
 
 import android.os.Bundle;
@@ -17,7 +18,7 @@ import android.support.v7.app.ActionBarActivity;
  * Activity which provides the base for viewing installed cores,
  * as well as the ability to download other cores.
  */
-public final class CoreManagerActivity extends ActionBarActivity
+public final class CoreManagerActivity extends ActionBarActivity implements DownloadableCoresFragment.OnCoreDownloadedListener
 {
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -74,6 +75,19 @@ public final class CoreManagerActivity extends ActionBarActivity
 		}
 
 		return false;
+	}
+
+	// Callback function used to update the installed cores list
+	@Override
+	public void onCoreDownloaded()
+	{
+		InstalledCoresManagerFragment icmf = (InstalledCoresManagerFragment) getSupportFragmentManager().findFragmentByTag("android:switcher:" + R.id.coreviewer_viewPager + ":" + 0);
+		if (icmf != null)
+		{
+			InstalledCoresFragment icf = (InstalledCoresFragment) icmf.getChildFragmentManager().findFragmentByTag("InstalledCoresList");
+			if (icf != null)
+				icf.updateInstalledCoresList();
+		}
 	}
 
 	// Adapter for the core manager ViewPager.

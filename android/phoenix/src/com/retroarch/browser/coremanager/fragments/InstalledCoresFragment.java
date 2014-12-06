@@ -56,70 +56,23 @@ public final class InstalledCoresFragment extends ListFragment
 	}
 
 	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+	public void onActivityCreated(Bundle savedInstanceState)
 	{
-		// Inflate the layout for this ListFragment.
-		ListView parentView = (ListView) inflater.inflate(R.layout.coremanager_listview, container, false);
+		super.onActivityCreated(savedInstanceState);
 
-		// Set the long click listener.
-		parentView.setOnItemLongClickListener(itemLongClickListener);
+		adapter = new InstalledCoresAdapter(getActivity(), android.R.layout.simple_list_item_2, getInstalledCoresList());
+		setListAdapter(adapter);
 
 		// Get the callback. (implemented within InstalledCoresManagerFragment).
 		callback = (OnCoreItemClickedListener) getParentFragment();
+	}
 
-		// The list of items that will be added to the adapter backing this ListFragment.
-		final List<ModuleWrapper> items = new ArrayList<ModuleWrapper>();
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState)
+	{
+		super.onViewCreated(view, savedInstanceState);
 
-		// Check if the device supports NEON.
-		final String cpuInfo = UserPreferences.readCPUInfo();
-		final boolean supportsNeon = cpuInfo.contains("neon");
-
-		// Populate the list
-		final File[] libs = new File(getActivity().getApplicationInfo().dataDir, "/cores").listFiles();
-		if (libs != null)
-		{
-			for (File lib : libs)
-			{
-				String libName = lib.getName();
-	
-				// Never append a NEON lib if we don't have NEON.
-				if (libName.contains("neon") && !supportsNeon)
-					continue;
-	
-				// If we have a NEON version with NEON capable CPU,
-				// never append a non-NEON version.
-				if (supportsNeon && !libName.contains("neon"))
-				{
-					boolean hasNeonVersion = false;
-					for (File lib_ : libs)
-					{
-						String otherName = lib_.getName();
-						String baseName = libName.replace(".so", "");
-	
-						if (otherName.contains("neon") && otherName.startsWith(baseName))
-						{
-							hasNeonVersion = true;
-							break;
-						}
-					}
-	
-					if (hasNeonVersion)
-						continue;
-				}
-	
-				// Add it to the list.
-				items.add(new ModuleWrapper(getActivity(), lib));
-			}
-		}
-
-		// Sort the list alphabetically
-		Collections.sort(items);
-
-		// Initialize and set the backing adapter for this ListFragment.
-		adapter = new InstalledCoresAdapter(getActivity(), android.R.layout.simple_list_item_2, items);
-		parentView.setAdapter(adapter);
-
-		return parentView;
+		getListView().setOnItemLongClickListener(itemLongClickListener);
 	}
 
 	@Override
@@ -129,6 +82,68 @@ public final class InstalledCoresFragment extends ListFragment
 
 		// Set the item as checked so it highlights in the two-fragment view.
 		getListView().setItemChecked(position, true);
+	}
+
+	/**
+	 * Refreshes the list of installed cores.
+	 */
+	public void updateInstalledCoresList()
+	{
+		adapter.clear();
+		adapter.addAll(getInstalledCoresList());
+		adapter.notifyDataSetChanged();
+	}
+
+	private List<ModuleWrapper> getInstalledCoresList()
+	{
+	// The list of items that will be added to the adapter backing this ListFragment.
+			final List<ModuleWrapper> items = new ArrayList<ModuleWrapper>();
+
+			// Check if the device supports NEON.
+			final String cpuInfo = UserPreferences.readCPUInfo();
+			final boolean supportsNeon = cpuInfo.contains("neon");
+
+			// Populate the list
+			final File[] libs = new File(getActivity().getApplicationInfo().dataDir, "/cores").listFiles();
+			if (libs != null)
+			{
+				for (File lib : libs)
+				{
+					String libName = lib.getName();
+		
+					// Never append a NEON lib if we don't have NEON.
+					if (libName.contains("neon") && !supportsNeon)
+						continue;
+		
+					// If we have a NEON version with NEON capable CPU,
+					// never append a non-NEON version.
+					if (supportsNeon && !libName.contains("neon"))
+					{
+						boolean hasNeonVersion = false;
+						for (File lib_ : libs)
+						{
+							String otherName = lib_.getName();
+							String baseName = libName.replace(".so", "");
+		
+							if (otherName.contains("neon") && otherName.startsWith(baseName))
+							{
+								hasNeonVersion = true;
+								break;
+							}
+						}
+		
+						if (hasNeonVersion)
+							continue;
+					}
+		
+					// Add it to the list.
+					items.add(new ModuleWrapper(getActivity(), lib));
+				}
+			}
+
+			// Sort the list alphabetically
+			Collections.sort(items);
+			return items;
 	}
 
 	// This will be the handler for long clicks on individual list items in this ListFragment.
