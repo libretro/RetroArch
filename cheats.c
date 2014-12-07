@@ -262,9 +262,11 @@ bool cheat_manager_realloc(cheat_manager_t *handle, unsigned new_size)
    }
 
    handle->buf_size = new_size;
-   handle->size     = new_size;
 
-   for (i = 0; i < handle->size; i++)
+   if (handle->size > handle->buf_size)
+      handle->size = handle->buf_size;
+
+   for (i = handle->size; i < handle->buf_size; i++)
    {
       handle->cheats[i].desc    = NULL;
       handle->cheats[i].code    = NULL;
