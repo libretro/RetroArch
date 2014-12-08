@@ -508,6 +508,7 @@ static bool load_program(
       if (*(cg->cg_alias_define[i]))
          argv[argc++] = cg->cg_alias_define[i];
    }
+   argv[argc] = NULL;
 
    if (path_is_file)
    {
