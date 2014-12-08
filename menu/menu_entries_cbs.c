@@ -1833,7 +1833,6 @@ static int deferred_push_core_cheat_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
    unsigned i;
-   size_t opts = 100;
    file_list_t *list      = (file_list_t*)data;
    cheat_manager_t *cheat = (cheat_manager_t*)driver.menu->cheats;
 
