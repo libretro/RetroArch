@@ -497,12 +497,10 @@ static bool load_program(
    char *listing_f = NULL;
    char *listing_v = NULL;
 
-   unsigned i, argc = 1;
-   const char *argv[2 + GFX_MAX_SHADERS] = {
-      "-DPARAMETER_UNIFORM",
-      NULL,
-   };
+   unsigned i, argc = 0;
+   const char *argv[2 + GFX_MAX_SHADERS];
 
+   argv[argc++] = "-DPARAMETER_UNIFORM";
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
       if (*(cg->cg_alias_define[i]))
