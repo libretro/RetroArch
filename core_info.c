@@ -97,6 +97,25 @@ static void core_info_list_resolve_all_firmware(
    }
 }
 
+/* qsort_r() is not in standard C, sadly. */
+static const char *core_info_tmp_path;
+static const struct string_list *core_info_tmp_list;
+
+static int core_info_qsort_cmp(const void *a_, const void *b_)
+{
+   const core_info_t *a = (const core_info_t*)a_;
+   const core_info_t *b = (const core_info_t*)b_;
+
+   int support_a = core_info_does_support_any_file(a, core_info_tmp_list) ||
+      core_info_does_support_file(a, core_info_tmp_path);
+   int support_b = core_info_does_support_any_file(b, core_info_tmp_list) ||
+      core_info_does_support_file(b, core_info_tmp_path);
+
+   if (support_a != support_b)
+      return support_b - support_a;
+   return strcasecmp(a->display_name, b->display_name);
+}
+
 core_info_list_t *core_info_list_new(const char *modules_path)
 {
    size_t i;
@@ -192,6 +211,9 @@ core_info_list_t *core_info_list_new(const char *modules_path)
 
    core_info_list_resolve_all_extensions(core_info_list);
    core_info_list_resolve_all_firmware(core_info_list);
+
+   qsort(core_info_list->list, core_info_list->count,
+         sizeof(core_info_t), core_info_qsort_cmp);
 
    dir_list_free(contents);
    return core_info_list;
@@ -348,25 +370,6 @@ const char *core_info_list_get_all_extensions(core_info_list_t *core_info_list)
    if (core_info_list)
       return core_info_list->all_ext;
    return "";
-}
-
-/* qsort_r() is not in standard C, sadly. */
-static const char *core_info_tmp_path;
-static const struct string_list *core_info_tmp_list;
-
-static int core_info_qsort_cmp(const void *a_, const void *b_)
-{
-   const core_info_t *a = (const core_info_t*)a_;
-   const core_info_t *b = (const core_info_t*)b_;
-
-   int support_a = core_info_does_support_any_file(a, core_info_tmp_list) ||
-      core_info_does_support_file(a, core_info_tmp_path);
-   int support_b = core_info_does_support_any_file(b, core_info_tmp_list) ||
-      core_info_does_support_file(b, core_info_tmp_path);
-
-   if (support_a != support_b)
-      return support_b - support_a;
-   return strcasecmp(a->display_name, b->display_name);
 }
 
 void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
