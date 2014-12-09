@@ -41,7 +41,7 @@
 #elif defined(GEKKO)
 #define EXT_EXECUTABLES "dol"
 #define SALAMANDER_FILE "boot.dol"
-#elif defined(EMSCRIPTEN)
+#else
 #define EXT_EXECUTABLES ""
 #endif
 #endif
