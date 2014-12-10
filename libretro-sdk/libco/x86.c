@@ -90,7 +90,7 @@ cothread_t co_create(unsigned int size, void (*entrypoint)(void))
    size += 256; /* allocate additional space for storage */
    size &= ~15; /* align stack to 16-byte boundary */
 
-   if(handle = (cothread_t)malloc(size))
+   if((handle = (cothread_t)malloc(size)))
    {
       long *p = (long*)((char*)handle + size); /* seek to top of stack */
       *--p = (long)crash;                      /* crash if entrypoint returns */
