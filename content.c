@@ -138,8 +138,6 @@ static ssize_t read_content_file(const char *path, void **buf)
    RARCH_LOG("Loading content file: %s.\n", path);
    ret = read_file(path, (void**) &ret_buf);
 
-   g_extern.content_is_init = (ret <= 0) ? false : true;
-
    if (ret <= 0)
       return ret;
 
@@ -561,6 +559,7 @@ bool init_content_file(void)
    /* Set attr to need_fullpath as appropriate. */
    
    bool ret = load_content(special, content);
+   g_extern.content_is_init = (ret) ? true : false;
    string_list_free(content);
    return ret;
 }
