@@ -60,7 +60,7 @@ Run the libretro-super iOS build script to build the libretro cores.
 
 This will clone down their repos, build them into the `libretro-super/dist/ios` directory. Once this is complete, you need to copy them into the appropriate directory for RetroArch iOS. The path is:
 
-`RetroArch/apple/modules`
+`RetroArch/apple/iOS/modules`
 
 ### Build RetroArch iOS app
 
