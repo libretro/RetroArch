@@ -1,9 +1,12 @@
 package com.retroarch.browser.mainmenu;
 
+import java.io.File;
+
 import com.retroarch.R;
 import com.retroarch.browser.preferences.util.UserPreferences;
 
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
@@ -20,6 +23,15 @@ public final class MainMenuActivity extends FragmentActivity
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+
+		// Ensure resource directories are created.
+		final ApplicationInfo info = getApplicationInfo();
+		final File coresDir = new File(info.dataDir, "cores");
+		final File infoDir = new File(info.dataDir, "info");
+		if (!coresDir.exists())
+			coresDir.mkdir();
+		if (!infoDir.exists())
+			infoDir.mkdir();
 
 		// Load the main menu layout
 		setContentView(R.layout.mainmenu_activity_layout);

@@ -23,7 +23,7 @@ public class InstalledCoresManagerFragment extends Fragment implements Installed
 
 		final Fragment installedCores = new InstalledCoresFragment();
 		final FragmentTransaction ft = getChildFragmentManager().beginTransaction();
-		ft.replace(R.id.installed_cores_fragment_container1, installedCores);
+		ft.replace(R.id.installed_cores_fragment_container1, installedCores, "InstalledCoresList");
 		ft.commit();
 
 		return v;
