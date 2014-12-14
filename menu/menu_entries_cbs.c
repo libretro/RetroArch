@@ -1472,6 +1472,23 @@ static int deferred_push_core_information(void *data, void *userdata,
       menu_list_push(list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0);
 
+      if (info->systemname)
+      {
+         snprintf(tmp, sizeof(tmp), "System name: %s",
+               info->systemname);
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (info->categories_list)
+      {
+         strlcpy(tmp, "Categories: ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               info->categories_list, ", ");
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
       if (info->authors_list)
       {
          strlcpy(tmp, "Authors: ", sizeof(tmp));

@@ -45,7 +45,9 @@ typedef struct
    char *authors;
    char *permissions;
    char *licenses;
+   char *categories;
    char *notes;
+   struct string_list *categories_list;
    struct string_list *note_list;   
    struct string_list *supported_extensions_list;
    struct string_list *authors_list;
