@@ -86,8 +86,10 @@ void find_prev_gfx_context_driver(void)
 {
    int i = find_gfx_ctx_driver_index(g_settings.video.context_driver);
    if (i > 0)
+   {
       strlcpy(g_settings.video.context_driver, gfx_ctx_drivers[i - 1]->ident,
             sizeof(g_settings.video.context_driver));
+   }
    else
       RARCH_WARN("Couldn't find any previous video context driver.\n");
 }
@@ -96,8 +98,10 @@ void find_next_context_driver(void)
 {
    int i = find_gfx_ctx_driver_index(g_settings.video.context_driver);
    if (i >= 0 && gfx_ctx_drivers[i + 1])
+   {
       strlcpy(g_settings.video.context_driver, gfx_ctx_drivers[i + 1]->ident,
             sizeof(g_settings.video.context_driver));
+   }
    else
       RARCH_WARN("Couldn't find any next video context driver.\n");
 }
@@ -121,6 +125,11 @@ static const gfx_ctx_driver_t *ctx_init(void *data,
 
       return ctx;
    }
+   else
+   {
+      RARCH_ERR("Failed to bind API (#%u, version %u.%u) on context driver \"%s\".\n",
+            (unsigned)api, major, minor, ctx->ident);
+   }
 
    return NULL;
 }
@@ -132,56 +141,31 @@ static const gfx_ctx_driver_t *gfx_ctx_find_driver(void *data,
 {
    const gfx_ctx_driver_t *ctx = NULL;
    int i = find_gfx_ctx_driver_index(ident);
+
    if (i >= 0)
-#if 0
    {
-      ctx = ctx_init(data, gfx_ctx_drivers[i], ident,
+      return ctx_init(data, gfx_ctx_drivers[i], ident,
             api, major, minor, hw_render_ctx);
-      if (ctx)
-         return ctx;
    }
-
-   RARCH_ERR("Couldn't find or initialize any video context driver named \"%s\"\n", ident);
-   RARCH_LOG_OUTPUT("Available video context drivers are:\n");
-   for (d = 0; gfx_ctx_drivers[d]; d++)
-      RARCH_LOG_OUTPUT("\t%s\n", gfx_ctx_drivers[d]->ident);
-
-   RARCH_WARN("Going to default to first suitable video context driver ...\n");
-#else
-   return ctx_init(data, gfx_ctx_drivers[i], ident,
-         api, major, minor, hw_render_ctx);
-#endif
-
-   for (i = 0; gfx_ctx_drivers[i]; i++)
+   else
    {
-      ctx = ctx_init(data, gfx_ctx_drivers[i], ident,
-            api, major, minor, hw_render_ctx);
-      if (ctx)
+      for (i = 0; gfx_ctx_drivers[i]; i++)
       {
-#if 0
-         RARCH_LOG("Selected %s driver.\n", gfx_ctx_drivers[i]->ident);
-         strlcpy(g_settings.video.context_driver, gfx_ctx_drivers[i]->ident,
-               sizeof(g_settings.video.context_driver));
-#endif
-         return ctx;
+         ctx = ctx_init(data, gfx_ctx_drivers[i], ident,
+               api, major, minor, hw_render_ctx);
+         if (ctx)
+            return ctx;
       }
+
+      return NULL;
    }
-
-   return NULL;
 }
-
 
 const gfx_ctx_driver_t *gfx_ctx_init_first(void *data,
       const char *drv,
       enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx)
 {
-   const gfx_ctx_driver_t *ctx = (const gfx_ctx_driver_t*)
-      gfx_ctx_find_driver(data, drv, api, major, minor,
-            hw_render_ctx);
-
-   if (!ctx)
-      return NULL;
-
-   return ctx;
+   return gfx_ctx_find_driver(data, drv, api, major, minor, hw_render_ctx);
 }
+
