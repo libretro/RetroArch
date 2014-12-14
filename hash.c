@@ -56,6 +56,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <fcntl.h>
 #include "hash.h"
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
@@ -277,7 +278,7 @@ uint32_t crc32_calculate(const uint8_t *data, size_t length)
 /* Define the circular shift macro */
 #define SHA1CircularShift(bits,word) ((((word) << (bits)) & 0xFFFFFFFF) | ((word) >> (32-(bits))))
 
-void SHA1Reset(SHA1Context *context)
+static void SHA1Reset(SHA1Context *context)
 {
    context->Length_Low             = 0;
    context->Length_High            = 0;
@@ -424,7 +425,7 @@ static void SHA1PadMessage(SHA1Context *context)
    SHA1ProcessMessageBlock(context);
 }
 
-int SHA1Result(SHA1Context *context)
+static int SHA1Result(SHA1Context *context)
 {
    if (context->Corrupted)
       return 0;
@@ -438,7 +439,7 @@ int SHA1Result(SHA1Context *context)
    return 1;
 }
 
-void SHA1Input(     SHA1Context         *context,
+static void SHA1Input(     SHA1Context         *context,
                     const unsigned char *message_array,
                     unsigned            length)
 {
@@ -473,4 +474,43 @@ void SHA1Input(     SHA1Context         *context,
 
       message_array++;
    }
+}
+
+int sha1_calculate(const char *path, char *result)
+{
+   unsigned char buff[4096];
+   SHA1Context sha;
+   int rv = 1;
+   int fd = open(path, O_RDONLY);
+
+   if (fd < 0)
+      goto error;
+
+   SHA1Reset(&sha);
+
+   do
+   {
+      rv = read(fd, buff, 4096);
+      if (rv < 0)
+         goto error;
+
+      SHA1Input(&sha, buff, rv);
+   }while(rv);
+
+   if (!SHA1Result(&sha))
+      goto error;
+
+   sprintf(result, "%08X%08X%08X%08X%08X",
+         sha.Message_Digest[0],
+         sha.Message_Digest[1],
+         sha.Message_Digest[2],
+         sha.Message_Digest[3], sha.Message_Digest[4]);
+
+   close(fd);
+   return 0;
+
+error:
+   if (fd >= 0)
+      close(fd);
+   return -1;
 }

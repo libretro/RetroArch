@@ -85,9 +85,7 @@ typedef struct SHA1Context
    int Corrupted;              /* Is the message digest corruped?  */
 } SHA1Context;
 
-void SHA1Reset(SHA1Context *);
-int SHA1Result(SHA1Context *);
-void SHA1Input( SHA1Context *, const unsigned char *, unsigned);
+int sha1_calculate(const char *path, char *result);
 
 #endif
 
