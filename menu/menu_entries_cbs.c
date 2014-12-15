@@ -1937,6 +1937,8 @@ static int deferred_push_core_cheat_options(void *data, void *userdata,
    {
       char cheat_label[64];
       snprintf(cheat_label, sizeof(cheat_label), "Cheat #%d: ", i);
+      if (cheat->cheats[i].desc)
+         strlcat(cheat_label, cheat->cheats[i].desc, sizeof(cheat_label));
       menu_list_push(list, cheat_label, "", MENU_SETTINGS_CHEAT_BEGIN + i, 0);
    }
 
