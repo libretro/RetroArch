@@ -563,6 +563,11 @@ static void rgui_navigation_set(void *data, bool scroll)
             - RGUI_TERM_HEIGHT;
 }
 
+static void rgui_navigation_set_last(void *data)
+{
+   rgui_navigation_set(data, true);
+}
+
 static void rgui_update_core_info(void *data)
 {
    (void)data;
@@ -586,7 +591,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    rgui_navigation_set,
-   NULL,
+   rgui_navigation_set_last,
    NULL,
    NULL,
    NULL,
