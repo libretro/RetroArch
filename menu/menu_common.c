@@ -471,6 +471,7 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          !strcmp(label, "rgui_browser_directory") ||
          !strcmp(label, "content_directory") ||
          !strcmp(label, "assets_directory") ||
+         !strcmp(label, "cheat_database_path") ||
          !strcmp(label, "video_shader_dir") ||
          !strcmp(label, "video_filter_dir") ||
          !strcmp(label, "audio_filter_dir") ||
