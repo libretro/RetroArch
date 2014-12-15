@@ -1877,9 +1877,9 @@ static int deferred_push_core_cheat_options(void *data, void *userdata,
 
    for (i = 0; i < cheat->size; i++)
    {
-      char label[64];
-      snprintf(label, sizeof(label), "Cheat #%d: ", i);
-      menu_list_push(list, label, "", MENU_SETTINGS_CHEAT_BEGIN + i, 0);
+      char cheat_label[64];
+      snprintf(cheat_label, sizeof(cheat_label), "Cheat #%d: ", i);
+      menu_list_push(list, cheat_label, "", MENU_SETTINGS_CHEAT_BEGIN + i, 0);
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
