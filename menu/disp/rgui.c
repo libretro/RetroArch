@@ -568,6 +568,16 @@ static void rgui_navigation_set_last(void *data)
    rgui_navigation_set(data, true);
 }
 
+static void rgui_navigation_descend_alphabet(void *data, size_t *unused)
+{
+   rgui_navigation_set(data, true);
+}
+
+static void rgui_navigation_ascend_alphabet(void *data, size_t *unused)
+{
+   rgui_navigation_set(data, true);
+}
+
 static void rgui_update_core_info(void *data)
 {
    (void)data;
@@ -592,8 +602,8 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    rgui_navigation_set,
    rgui_navigation_set_last,
-   NULL,
-   NULL,
+   rgui_navigation_descend_alphabet,
+   rgui_navigation_ascend_alphabet,
    NULL,
    NULL,
    NULL,

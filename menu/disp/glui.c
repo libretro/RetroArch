@@ -600,6 +600,21 @@ static void glui_navigation_set(void *data, bool scroll)
             - glui->term_height;
 }
 
+static void glui_navigation_set_last(void *data)
+{
+   glui_navigation_set(data, true);
+}
+
+static void glui_navigation_descend_alphabet(void *data, size_t *unused)
+{
+   glui_navigation_set(data, true);
+}
+
+static void glui_navigation_ascend_alphabet(void *data, size_t *unused)
+{
+   glui_navigation_set(data, true);
+}
+
 menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    glui_get_message,
@@ -617,9 +632,9 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    NULL,
    glui_navigation_set,
-   NULL,
-   NULL,
-   NULL,
+   glui_navigation_set_last,
+   glui_navigation_descend_alphabet,
+   glui_navigation_ascend_alphabet,
    NULL,
    NULL,
    NULL,
