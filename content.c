@@ -412,7 +412,7 @@ static bool load_content(const struct retro_subsystem_info *special,
                       "extraction directory was not set or found. "
                       "Setting extraction directory to directory "
                       "derived by basename...\n");
-               fill_pathname_basedir(new_basedir, path_basename(path),
+               fill_pathname_basedir(new_basedir, path,
                      sizeof(new_basedir));
             }
 
