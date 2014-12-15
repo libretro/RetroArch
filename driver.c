@@ -107,10 +107,9 @@ const char* config_get_audio_driver_options(void)
    char *options = NULL;
    int option_k = 0;
    int options_len = 0;
-   struct string_list *options_l = NULL;
+   struct string_list *options_l = string_list_new();
 
    attr.i = 0;
-   options_l = (struct string_list*)string_list_new();
 
    for (option_k = 0; audio_drivers[option_k]; option_k++)
    {
@@ -176,10 +175,9 @@ const char* config_get_video_driver_options(void)
    char *options = NULL;
    int option_k = 0;
    int options_len = 0;
-   struct string_list *options_l = NULL;
+   struct string_list *options_l = string_list_new();
 
    attr.i = 0;
-   options_l = (struct string_list*)string_list_new();
 
    for (option_k = 0; video_drivers[option_k]; option_k++)
    {
@@ -252,10 +250,9 @@ const char* config_get_input_driver_options(void)
    char *options = NULL;
    int option_k = 0;
    int options_len = 0;
-   struct string_list *options_l = NULL;
+   struct string_list *options_l = string_list_new();
 
    attr.i = 0;
-   options_l = (struct string_list*)string_list_new();
 
    for (option_k = 0; input_drivers[option_k]; option_k++)
    {
@@ -288,10 +285,9 @@ const char* config_get_osk_driver_options(void)
    char *options = NULL;
    int option_k = 0;
    int options_len = 0;
-   struct string_list *options_l = NULL;
+   struct string_list *options_l = string_list_new();
 
    attr.i = 0;
-   options_l = (struct string_list*)string_list_new();
 
    for (option_k = 0; osk_drivers[option_k]; option_k++)
    {
@@ -333,10 +329,9 @@ const char* config_get_camera_driver_options(void)
    char *options = NULL;
    int option_k = 0;
    int options_len = 0;
-   struct string_list *options_l = NULL;
+   struct string_list *options_l = string_list_new();
 
    attr.i = 0;
-   options_l = (struct string_list*)string_list_new();
 
    for (option_k = 0; camera_drivers[option_k]; option_k++)
    {
@@ -374,10 +369,9 @@ const char* config_get_location_driver_options(void)
    char *options = NULL;
    int option_k = 0;
    int options_len = 0;
-   struct string_list *options_l = NULL;
+   struct string_list *options_l = string_list_new();
 
    attr.i = 0;
-   options_l = (struct string_list*)string_list_new();
 
    for (option_k = 0; location_drivers[option_k]; option_k++)
    {
@@ -428,10 +422,9 @@ const char* config_get_menu_driver_options(void)
    char *options = NULL;
    int option_k = 0;
    int options_len = 0;
-   struct string_list *options_l = NULL;
+   struct string_list *options_l = string_list_new();
 
    attr.i = 0;
-   options_l = (struct string_list*)string_list_new();
 
    for (option_k = 0; menu_ctx_drivers[option_k]; option_k++)
    {
