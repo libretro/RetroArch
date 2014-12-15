@@ -5122,22 +5122,12 @@ static bool setting_data_append_list_path_options(
    CONFIG_PATH(
          g_settings.cheat_database,
          "cheat_database_path",
-         "Cheat Database",
+         "Cheat Database Directory",
          "",
          "Paths",
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
-
-   CONFIG_PATH(
-         g_settings.cheat_settings_path,
-         "cheat_settings_path",
-         "Cheat Settings",
-         "",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler, general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_PATH(
