@@ -113,7 +113,7 @@ void st_string_callback(void *userdata, const char *str)
 void st_cheat_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
-   cheat_manager_t *cheat = (cheat_manager_t*)menu->cheats;
+   cheat_manager_t *cheat = g_extern.cheat;
  
    if (cheat && str && *str)
    {

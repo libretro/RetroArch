@@ -273,7 +273,7 @@ static int action_ok_shader_apply_changes(const char *path,
 static int action_ok_cheat_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   cheat_manager_t *cheat = driver.menu->cheats;
+   cheat_manager_t *cheat = g_extern.cheat;
 
    if (!cheat)
       return -1;
@@ -1198,7 +1198,7 @@ static int action_start_shader_num_passes(unsigned type, const char *label,
 static int action_start_cheat_num_passes(unsigned type, const char *label,
       unsigned action)
 {
-   cheat_manager_t *cheat = driver.menu->cheats;
+   cheat_manager_t *cheat = g_extern.cheat;
 
    if (!cheat)
       return -1;
@@ -1216,7 +1216,7 @@ static int action_toggle_cheat_num_passes(unsigned type, const char *label,
       unsigned action)
 {
    unsigned new_size = 0;
-   cheat_manager_t *cheat = driver.menu->cheats;
+   cheat_manager_t *cheat = g_extern.cheat;
 
    if (!cheat)
       return -1;
@@ -1896,13 +1896,22 @@ static int deferred_push_core_cheat_options(void *data, void *userdata,
 {
    unsigned i;
    file_list_t *list      = (file_list_t*)data;
-   cheat_manager_t *cheat = driver.menu->cheats;
+   cheat_manager_t *cheat = g_extern.cheat;
 
    (void)userdata;
    (void)type;
 
-   if (!list || !cheat)
+   if (!list)
       return -1;
+
+   if (!cheat)
+   {
+      g_extern.cheat = cheat_manager_new(0);
+
+      if (!g_extern.cheat)
+         return -1;
+      cheat = g_extern.cheat;
+   }
 
    menu_list_clear(list);
    menu_list_push(list, "Cheat File Load", "cheat_file_load",

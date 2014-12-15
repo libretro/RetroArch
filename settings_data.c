@@ -2399,16 +2399,16 @@ void setting_data_get_label(char *type_str,
    else
 #endif
    if (!strcmp(label, "cheat_num_passes"))
-      snprintf(type_str, type_str_size, "%u", driver.menu->cheats->buf_size);
+      snprintf(type_str, type_str_size, "%u", g_extern.cheat->buf_size);
    else if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
    {
       unsigned cheat_index = type - MENU_SETTINGS_CHEAT_BEGIN;
-      if (cheat_index < driver.menu->cheats->buf_size)
+      if (cheat_index < g_extern.cheat->buf_size)
          snprintf(type_str, type_str_size, "%s",
                (
-                (driver.menu->cheats->cheats[cheat_index].code != NULL)
-               ) ? driver.menu->cheats->cheats[cheat_index].code : "N/A");
+                (g_extern.cheat->cheats[cheat_index].code != NULL)
+               ) ? g_extern.cheat->cheats[cheat_index].code : "N/A");
    }
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
