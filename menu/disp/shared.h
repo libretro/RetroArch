@@ -68,6 +68,8 @@ static void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "SHADER %s", dir);
    else if (!strcmp(label, "video_shader_preset"))
       snprintf(title, sizeof_title, "SHADER PRESET %s", dir);
+   else if (!strcmp(label, "cheat_file_load"))
+      snprintf(title, sizeof_title, "CHEAT FILE %s", dir);
    else if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
          !strcmp(label, "custom_viewport_2") ||
          !strcmp(label, "help") ||
