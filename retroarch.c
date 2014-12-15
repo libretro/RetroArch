@@ -1116,11 +1116,6 @@ static void init_cheats(void)
 
    if (!allow_cheats)
       return;
-
-#if 0
-   if (*g_settings.cheat_database)
-      g_extern.cheat = cheat_manager_new_from_xml(g_settings.cheat_database);
-#endif
 }
 
 static void init_rewind(void)
