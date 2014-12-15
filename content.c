@@ -392,6 +392,7 @@ static bool load_content(const struct retro_subsystem_info *special,
          RARCH_LOG("Content loading skipped. Implementation will"
                " load it on its own.\n");
 
+#if 0
 #ifdef HAVE_COMPRESSION
          if (need_fullpath && path_contains_compressed_file(path))
          {
@@ -432,6 +433,7 @@ static bool load_content(const struct retro_subsystem_info *special,
             string_list_append(g_extern.temporary_content,
                   new_path, attributes);
          }
+#endif
 #endif
       }
    }
