@@ -408,11 +408,12 @@ static bool load_content(const struct retro_subsystem_info *special,
             if ((!strcmp(new_basedir, "")) ||
                  !path_is_directory(new_basedir))
             {
-               RARCH_ERR("Tried extracting to extraction directory, but "
+               RARCH_WARN("Tried extracting to extraction directory, but "
                       "extraction directory was not set or found. "
                       "Setting extraction directory to directory "
                       "derived by basename...\n");
-               rarch_assert(false);
+               fill_pathname_basedir(new_basedir, path_basename(path),
+                     sizeof(new_basedir));
             }
 
             attributes.i = 0;
