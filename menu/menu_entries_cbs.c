@@ -1468,6 +1468,11 @@ static int deferred_push_core_information(void *data, void *userdata,
       char tmp[PATH_MAX];
 
       snprintf(tmp, sizeof(tmp), "Core name: %s",
+            info->core_name ? info->core_name : "");
+      menu_list_push(list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(tmp, sizeof(tmp), "Core label: %s",
             info->display_name ? info->display_name : "");
       menu_list_push(list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0);
@@ -1476,6 +1481,14 @@ static int deferred_push_core_information(void *data, void *userdata,
       {
          snprintf(tmp, sizeof(tmp), "System name: %s",
                info->systemname);
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (info->system_manufacturer)
+      {
+         snprintf(tmp, sizeof(tmp), "System manufacturer: %s",
+               info->system_manufacturer);
          menu_list_push(list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0);
       }

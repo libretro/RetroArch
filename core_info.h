@@ -40,6 +40,8 @@ typedef struct
    char *path;
    config_file_t *data;
    char *display_name;
+   char *core_name;
+   char *system_manufacturer;
    char *systemname;
    char *supported_extensions;
    char *authors;
