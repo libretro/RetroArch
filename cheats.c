@@ -16,6 +16,8 @@
 #include "cheats.h"
 #include "general.h"
 #include "dynamic.h"
+#include <file/config_file.h>
+#include <file/config_file_macros.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
@@ -40,7 +42,55 @@ void cheat_manager_apply_cheats(cheat_manager_t *handle)
    }
 }
 
-cheat_manager_t *cheat_manager_new(void)
+cheat_manager_t *cheat_manager_load(const char *path)
+{
+   unsigned cheats = 0, i;
+   cheat_manager_t *cheat = NULL;
+   config_file_t *conf = config_file_new(path);
+
+   if (!conf)
+      return NULL;
+
+   config_get_uint(conf, "cheats", &cheats);
+
+   if (cheats == 0)
+      return NULL;
+
+   cheat = cheat_manager_new(cheats);
+
+   if (!cheat)
+      return NULL;
+
+   for (i = 0; i < cheats; i++)
+   {
+      char key[64];
+      char desc_key[256];
+      char code_key[256];
+      char enable_key[256];
+      char *tmp = NULL;
+      bool tmp_bool;
+
+      snprintf(key, sizeof(key), "cheat%u", i);
+      snprintf(desc_key, sizeof(desc_key), "cheat%u_desc", i);
+      snprintf(code_key, sizeof(code_key), "cheat%u_code", i);
+      snprintf(enable_key, sizeof(enable_key), "cheat%u_enable", i);
+
+      if (config_get_string(conf, desc_key, &tmp))
+         cheat->cheats[i].desc   = strdup(tmp);
+
+      if (config_get_string(conf, code_key, &tmp))
+         cheat->cheats[i].code   = strdup(tmp);
+
+      if (config_get_bool(conf, enable_key, &tmp_bool))
+         cheat->cheats[i].state  = tmp_bool;
+   }
+
+   config_file_free(conf);
+
+   return cheat;
+}
+
+cheat_manager_t *cheat_manager_new(unsigned size)
 {
    unsigned i;
    cheat_manager_t *handle = NULL;
@@ -48,7 +98,7 @@ cheat_manager_t *cheat_manager_new(void)
    if (!handle)
       return NULL;
 
-   handle->buf_size = handle->size = 0;
+   handle->buf_size = handle->size = size;
    handle->cheats = (struct item_cheat*)
       calloc(handle->buf_size, sizeof(struct item_cheat));
 

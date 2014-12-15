@@ -39,7 +39,9 @@ struct cheat_manager
 
 typedef struct cheat_manager cheat_manager_t;
 
-cheat_manager_t *cheat_manager_new(void);
+cheat_manager_t *cheat_manager_new(unsigned size);
+
+cheat_manager_t *cheat_manager_load(const char *path);
 
 bool cheat_manager_realloc(cheat_manager_t *handle, unsigned new_size);
 

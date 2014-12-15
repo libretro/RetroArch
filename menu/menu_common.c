@@ -166,7 +166,7 @@ void *menu_init(const void *data)
 #ifdef HAVE_SHADER_MANAGER
    menu->shader = (struct gfx_shader*)calloc(1, sizeof(struct gfx_shader));
 #endif
-   menu->cheats = cheat_manager_new(); 
+   menu->cheats = cheat_manager_new(0); 
    menu->push_start_screen = g_settings.menu_show_start_screen;
    g_settings.menu_show_start_screen = false;
 
