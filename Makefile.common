@@ -508,12 +508,12 @@ ifeq ($(HAVE_D3D9), 1)
    endif
 endif
 
-ifeq ($(HAVE_LIBXML2), 1)
-   LIBS += $(LIBXML2_LIBS)
-   DEFINES += $(LIBXML2_CFLAGS)
-else
-   OBJ += compat/rxml/rxml.o
-endif
+#ifeq ($(HAVE_LIBXML2), 1)
+   #LIBS += $(LIBXML2_LIBS)
+   #DEFINES += $(LIBXML2_CFLAGS)
+#else
+   #OBJ += compat/rxml/rxml.o
+#endif
 
 # Compression/Archive
 
