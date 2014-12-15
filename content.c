@@ -342,9 +342,7 @@ static bool load_content(const struct retro_subsystem_info *special,
 {
    unsigned i;
    bool ret = true;
-
    struct string_list* additional_path_allocs = string_list_new();
-
    struct retro_game_info *info = (struct retro_game_info*)
       calloc(content->size, sizeof(*info));
 
@@ -503,9 +501,10 @@ bool init_content_file(void)
    }
 
    union string_list_elem_attr attr;
+   struct string_list *content = string_list_new();
+
    attr.i = 0;
 
-   struct string_list *content = (struct string_list*)string_list_new();
    if (!content)
       return false;
 

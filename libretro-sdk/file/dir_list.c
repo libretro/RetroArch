@@ -96,9 +96,9 @@ struct string_list *dir_list_new(const char *dir,
 {
    char path_buf[PATH_MAX];
    WIN32_FIND_DATA ffd;
-   struct string_list *ext_list = NULL, *list = NULL;
+   struct string_list *ext_list = NULL;
    HANDLE hFind = INVALID_HANDLE_VALUE;
-   list = string_list_new();
+   struct string_list *list = string_list_new();
    if (!list)
       return NULL;
 
@@ -196,7 +196,7 @@ struct string_list *dir_list_new(const char *dir,
    DIR *directory = NULL;
    const struct dirent *entry = NULL;
    struct string_list *ext_list = NULL;
-   struct string_list *list = (struct string_list*)string_list_new();
+   struct string_list *list = string_list_new();
 
    if (!list)
       return NULL;

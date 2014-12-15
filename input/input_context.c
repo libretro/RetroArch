@@ -77,10 +77,9 @@ const char* config_get_joypad_driver_options(void)
    char *options = NULL;
    int option_k = 0;
    int options_len = 0;
-   struct string_list *options_l = NULL;
+   struct string_list *options_l = string_list_new();
 
    attr.i = 0;
-   options_l = (struct string_list*)string_list_new();
 
    for (option_k = 0; joypad_drivers[option_k]; option_k++)
    {

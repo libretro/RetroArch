@@ -321,7 +321,7 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
 {
 
    struct string_list *ext_list = NULL;
-   struct string_list *list = (struct string_list*)string_list_new();
+   struct string_list *list = string_list_new();
    if (!list)
    {
       RARCH_ERR("Could not allocate list memory in compressed_7zip_file_list_new\n.");
