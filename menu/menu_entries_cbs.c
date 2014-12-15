@@ -331,14 +331,26 @@ static int action_ok_cheat_file_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *menu_path = NULL;
-   char shader_path[PATH_MAX];
+   char cheat_path[PATH_MAX];
    if (!driver.menu)
       return -1;
 
-   (void)shader_path;
+   (void)cheat_path;
    (void)menu_path;
    menu_list_get_last_stack(driver.menu->menu_list, &menu_path, NULL,
          NULL);
+
+   fill_pathname_join(cheat_path, menu_path, path, sizeof(cheat_path));
+
+   RARCH_LOG("menu path is: %s\n", menu_path);
+
+   if (g_extern.cheat)
+      cheat_manager_free(g_extern.cheat);
+
+   g_extern.cheat = cheat_manager_load(cheat_path);
+
+   if (!g_extern.cheat)
+      return -1;
 
    menu_list_flush_stack_by_needle(driver.menu->menu_list, "core_cheat_options");
 
