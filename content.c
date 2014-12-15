@@ -393,24 +393,31 @@ static bool load_content(const struct retro_subsystem_info *special,
       {
          RARCH_LOG("Content loading skipped. Implementation will"
                " load it on its own.\n");
+
          if (need_fullpath && path_contains_compressed_file(path))
          {
+            char new_path[PATH_MAX], new_basedir[PATH_MAX];
+            union string_list_elem_attr attributes;
+
             RARCH_LOG("Compressed file in case of need_fullpath."
                   "Now extracting to temporary directory.\n");
 
-            if ((!strcmp(g_settings.extraction_directory,"")) ||
-                 !path_is_directory(g_settings.extraction_directory))
+            strlcpy(new_basedir, g_settings.extraction_directory,
+                  sizeof(new_basedir));
+
+            if ((!strcmp(new_basedir, "")) ||
+                 !path_is_directory(new_basedir))
             {
                RARCH_ERR("Tried extracting to extraction directory, but "
-                      "extraction directory was not set or found. Exiting.\n");
+                      "extraction directory was not set or found. "
+                      "Setting extraction directory to directory "
+                      "derived by basename...\n");
                rarch_assert(false);
             }
 
-            char new_path[PATH_MAX];
-            union string_list_elem_attr attributes;
             attributes.i = 0;
-            fill_pathname_join(new_path,g_settings.extraction_directory,
-                  path_basename(path),sizeof(new_path));
+            fill_pathname_join(new_path, new_basedir,
+                  path_basename(path), sizeof(new_path));
             read_compressed_file(path,NULL,new_path);
             string_list_append(additional_path_allocs,new_path, attributes);
             info[i].path =
