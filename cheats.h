@@ -41,8 +41,6 @@ typedef struct cheat_manager cheat_manager_t;
 
 cheat_manager_t *cheat_manager_new(void);
 
-cheat_manager_t* cheat_manager_new_from_xml(const char *path);
-
 bool cheat_manager_realloc(cheat_manager_t *handle, unsigned new_size);
 
 void cheat_manager_free(cheat_manager_t *handle);
