@@ -246,7 +246,7 @@ void rarch_recording_dump_frame(const void *data, unsigned width,
 static void init_recording(void)
 {
    struct ffemu_params params = {0};
-   const struct retro_system_av_info *info = {0};
+   const struct retro_system_av_info *info = &g_extern.system.av_info;
 
    if (!g_extern.recording_enable)
       return;
@@ -268,7 +268,6 @@ static void init_recording(void)
          (float)g_extern.system.av_info.timing.fps,
          (float)g_extern.system.av_info.timing.sample_rate);
 
-   info = (const struct retro_system_av_info*)&g_extern.system.av_info;
    params.out_width  = info->geometry.base_width;
    params.out_height = info->geometry.base_height;
    params.fb_width   = info->geometry.max_width;
@@ -1373,7 +1372,7 @@ static void rarch_init_savefile_paths(void)
 
       unsigned i, j;
       const struct retro_subsystem_info *info = 
-         (const struct retro_subsystem_info*)libretro_find_subsystem_info(
+         libretro_find_subsystem_info(
                g_extern.system.special, g_extern.system.num_special,
                g_extern.subsystem);
 
