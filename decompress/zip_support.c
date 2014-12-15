@@ -46,9 +46,9 @@ int read_zip_file(const char * archive_path,
    ssize_t bytes_read = -1;
    bool finished_reading = false;
    unzFile *zipfile = (unzFile*)unzOpen( archive_path );
-   if ( ! zipfile )
+   if (!zipfile)
    {
-      RARCH_ERR("Could not open zipfile %s.\n",archive_path);
+      RARCH_ERR("Could not open ZIP file %s.\n",archive_path);
       return -1;
    }
 
@@ -56,8 +56,8 @@ int read_zip_file(const char * archive_path,
    unz_global_info global_info;
    if ( unzGetGlobalInfo( zipfile, &global_info ) != UNZ_OK )
    {
-      RARCH_ERR("Could not get global zipfile info of %s."
-                "Could be only a gzip file without the zip part.\n",
+      RARCH_ERR("Could not get global ZIP file info of %s."
+                "Could be only a GZIP file without the ZIP part.\n",
                 archive_path);
       unzClose( zipfile );
       return -1;
@@ -77,7 +77,7 @@ int read_zip_file(const char * archive_path,
             PATH_MAX,
             NULL, 0, NULL, 0 ) != UNZ_OK )
       {
-         RARCH_ERR("Could not read file info in zip %s.\n",
+         RARCH_ERR("Could not read file info in ZIP %s.\n",
                archive_path);
          unzClose( zipfile );
          return -1;
@@ -107,8 +107,7 @@ int read_zip_file(const char * archive_path,
             FILE* outsink = fopen(optional_outfile,"wb");
             if (outsink == NULL)
             {
-               RARCH_ERR("Could not open outfilepath %s in zip_extract.\n",
-                     optional_outfile);
+               RARCH_ERR("Could not open outfilepath %s.\n", optional_outfile);
                unzCloseCurrentFile( zipfile );
                unzClose( zipfile );
                return -1;
@@ -140,7 +139,7 @@ int read_zip_file(const char * archive_path,
             if (bytes_read != (ssize_t)file_info.uncompressed_size)
             {
                RARCH_ERR(
-                  "We tried to read %d bytes, but only got %d of file %s in zip %s.\n",
+                  "Tried to read %d bytes, but only got %d of file %s in ZIP %s.\n",
                   (unsigned int) file_info.uncompressed_size, (int)bytes_read,
                   relative_path, archive_path);
                free(*buf);
@@ -161,7 +160,7 @@ int read_zip_file(const char * archive_path,
          if ( unzGoToNextFile( zipfile ) != UNZ_OK )
          {
             RARCH_ERR(
-                  "Could not iterate to next file in %s. Zipfile might be corrupt.\n",
+                  "Could not iterate to next file in %s. ZIP file might be corrupt.\n",
                   archive_path );
             unzClose( zipfile );
             return -1;
@@ -171,7 +170,7 @@ int read_zip_file(const char * archive_path,
    unzClose( zipfile );
    if(!finished_reading)
    {
-      RARCH_ERR("File %s not found in %s\n",relative_path,archive_path);
+      RARCH_ERR("File %s not found in %s\n", relative_path, archive_path);
       return -1;
    }
    return bytes_read;
@@ -182,11 +181,9 @@ struct string_list *compressed_zip_file_list_new(const char *path,
 {
    struct string_list *ext_list = NULL;
    struct string_list *list = string_list_new();
+
    if (!list)
-   {
-      RARCH_ERR("Could not allocate list memory in compressed_7zip_file_list_new\n.");
       return NULL;
-   }
 
    if (ext)
       ext_list = string_split(ext, "|");
@@ -201,7 +198,7 @@ struct string_list *compressed_zip_file_list_new(const char *path,
 
    if (!zipfile)
    {
-      RARCH_ERR("Could not open zipfile %s.\n",path);
+      RARCH_ERR("Could not open ZIP file %s.\n",path);
       string_list_free(list);
       string_list_free(ext_list);
       return NULL;
@@ -212,7 +209,7 @@ struct string_list *compressed_zip_file_list_new(const char *path,
    if ( unzGetGlobalInfo( zipfile, &global_info ) != UNZ_OK )
    {
       RARCH_ERR("Could not get global zipfile info of %s."
-                "Could be only a gzip file without the zip part.\n",
+                "Could be only a GZIP file without the ZIP part.\n",
                 path);
       unzClose( zipfile );
       string_list_free(list);
@@ -234,7 +231,7 @@ struct string_list *compressed_zip_file_list_new(const char *path,
             PATH_MAX,
             NULL, 0, NULL, 0 ) != UNZ_OK )
       {
-         RARCH_ERR("Could not read file info in zip %s.\n",path);
+         RARCH_ERR("Could not read file info in ZIP %s.\n", path);
          unzClose( zipfile );
          string_list_free(list);
          string_list_free(ext_list);
@@ -261,7 +258,7 @@ struct string_list *compressed_zip_file_list_new(const char *path,
             attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
             if (!string_list_append(list, filename, attr))
             {
-               RARCH_ERR("Could not append item to stringlist in zip_support.\n");
+               RARCH_ERR("Could not append item to string list.\n");
                unzCloseCurrentFile( zipfile );
                break;
             }
@@ -273,7 +270,7 @@ struct string_list *compressed_zip_file_list_new(const char *path,
       {
          if ( unzGoToNextFile( zipfile ) != UNZ_OK )
          {
-            RARCH_ERR( "Could not iterate to next file in %s. Zipfile might be corrupt.\n",path );
+            RARCH_ERR( "Could not iterate to next file in %s. ZIP file might be corrupt.\n",path );
             unzClose( zipfile );
             string_list_free(list);
             string_list_free(ext_list);

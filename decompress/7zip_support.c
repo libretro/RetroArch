@@ -267,7 +267,7 @@ int read_7zip_file(const char * archive_path,
                FILE* outsink = fopen(optional_outfile,"wb");
                if (outsink == NULL)
                {
-                  RARCH_ERR("Could not open outfilepath %s in 7zip_extract.\n",
+                  RARCH_ERR("Could not open outfilepath %s.\n",
                         optional_outfile);
                   IAlloc_Free(&allocImp, outBuffer);
                   SzArEx_Free(&db, &allocImp);
@@ -323,10 +323,7 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
    struct string_list *ext_list = NULL;
    struct string_list *list = string_list_new();
    if (!list)
-   {
-      RARCH_ERR("Could not allocate list memory in compressed_7zip_file_list_new\n.");
       return NULL;
-   }
 
    if (ext)
       ext_list = string_split(ext, "|");
