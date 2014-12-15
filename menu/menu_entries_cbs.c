@@ -1653,14 +1653,12 @@ static int deferred_push_video_shader_parameters_common(void *data, void *userda
 static int deferred_push_video_shader_preset_parameters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   if (driver.menu->shader)
-   {
-      return deferred_push_video_shader_parameters_common(data, userdata,
-            path, label, type,
-            driver.menu->shader, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
-   }
-   else
+   if (!driver.menu->shader)
       return 0;
+
+   return deferred_push_video_shader_parameters_common(data, userdata,
+         path, label, type,
+         driver.menu->shader, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 }
 
 static int deferred_push_video_shader_parameters(void *data, void *userdata,
@@ -1866,6 +1864,9 @@ static int deferred_push_core_cheat_options(void *data, void *userdata,
    file_list_t *list      = (file_list_t*)data;
    cheat_manager_t *cheat = (cheat_manager_t*)driver.menu->cheats;
 
+   (void)userdata;
+   (void)type;
+
    if (!list || !cheat)
       return -1;
 
@@ -1894,6 +1895,8 @@ static int deferred_push_core_options(void *data, void *userdata,
    unsigned i;
    file_list_t *list      = (file_list_t*)data;
 
+   (void)userdata;
+
    if (!list)
       return -1;
 
@@ -1920,6 +1923,8 @@ static int deferred_push_disk_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
    file_list_t *list      = (file_list_t*)data;
+
+   (void)userdata;
 
    if (!list)
       return -1;
@@ -1959,6 +1964,8 @@ static int deferred_push_history_list(void *data, void *userdata,
    unsigned i;
    size_t list_size = 0;
    file_list_t *list      = (file_list_t*)data;
+
+   (void)userdata;
 
    if (!list || !driver.menu)
       return -1;
@@ -2002,6 +2009,8 @@ static int deferred_push_content_actions(void *data, void *userdata,
 {
    file_list_t *list = (file_list_t*)data;
 
+   (void)userdata;
+
    if (!list || !driver.menu)
       return -1;
 
@@ -2031,6 +2040,8 @@ static int deferred_push_content_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
    file_list_t *list = (file_list_t*)data;
+
+   (void)userdata;
 
    if (!list || !driver.menu)
       return -1;
