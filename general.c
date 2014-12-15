@@ -103,6 +103,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
 
    fill_pathname_join(deferred_path, dir, path, sizeof_deferred_path);
 
+#ifdef HAVE_COMPRESSION
    if (path_is_compressed_file(dir))
    {
       /* In case of a compressed archive, we have to join with a hash */
@@ -110,6 +111,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
       rarch_assert(strlen(dir) < strlen(deferred_path));
       deferred_path[strlen(dir)] = '#';
    }
+#endif
 
    if (core_info)
       core_info_list_get_supported_cores(core_info, deferred_path, &info,

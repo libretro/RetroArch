@@ -224,6 +224,7 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
    else
       ptr = in_path;
 
+#ifdef HAVE_COMPRESSION
    /* In case of compression, we also have to consider paths like
     *   /path/to/archive.7z#mygame.img
     *   and
@@ -231,7 +232,6 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
     *   basename would be mygame.img in both cases
     */
 
-#ifdef HAVE_COMPRESSION
    const char *ptr_bak = ptr;
    ptr = strchr(ptr_bak,'#');
    if (ptr)
@@ -305,9 +305,7 @@ const char *path_basename(const char *path)
 #ifdef HAVE_COMPRESSION
    const char *last_hash = strchr(path,'#');
    if (last_hash > last)
-   {
       return last_hash + 1;
-   }
 #endif
 
    if (last)
