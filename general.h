@@ -520,6 +520,7 @@ struct global
 
    char savefile_name[PATH_MAX];
    char savestate_name[PATH_MAX];
+   char cheatfile_name[PATH_MAX];
 
    /* Used on reentrancy to use a savestate dir. */
    char savefile_dir[PATH_MAX];

@@ -598,6 +598,30 @@ static void set_special_paths(char **argv, unsigned num_content)
             sizeof(g_settings.system_directory));
 }
 
+static void set_paths_redirect(const char *path)
+{
+   if (path_is_directory(g_extern.savefile_name))
+   {
+      fill_pathname_dir(g_extern.savefile_name, g_extern.basename,
+            ".srm", sizeof(g_extern.savefile_name));
+      RARCH_LOG("Redirecting save file to \"%s\".\n", g_extern.savefile_name);
+   }
+
+   if (path_is_directory(g_extern.savestate_name))
+   {
+      fill_pathname_dir(g_extern.savestate_name, g_extern.basename,
+            ".state", sizeof(g_extern.savestate_name));
+      RARCH_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
+   }
+
+   if (path_is_directory(g_extern.cheatfile_name))
+   {
+      fill_pathname_dir(g_extern.cheatfile_name, g_extern.basename,
+            ".state", sizeof(g_extern.cheatfile_name));
+      RARCH_LOG("Redirecting cheat file to \"%s\".\n", g_extern.cheatfile_name);
+   }
+}
+
 static void set_paths(const char *path)
 {
    set_basename(path);
@@ -608,19 +632,10 @@ static void set_paths(const char *path)
    if (!g_extern.has_set_state_path)
       fill_pathname_noext(g_extern.savestate_name, g_extern.basename,
             ".state", sizeof(g_extern.savestate_name));
+   fill_pathname_noext(g_extern.cheatfile_name, g_extern.basename,
+         ".cht", sizeof(g_extern.cheatfile_name));
 
-   if (path_is_directory(g_extern.savefile_name))
-   {
-      fill_pathname_dir(g_extern.savefile_name, g_extern.basename,
-            ".srm", sizeof(g_extern.savefile_name));
-      RARCH_LOG("Redirecting save file to \"%s\".\n", g_extern.savefile_name);
-   }
-   if (path_is_directory(g_extern.savestate_name))
-   {
-      fill_pathname_dir(g_extern.savestate_name, g_extern.basename,
-            ".state", sizeof(g_extern.savestate_name));
-      RARCH_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
-   }
+   set_paths_redirect(path);
 
    /* If this is already set, do not overwrite it
     * as this was initialized before in a menu or otherwise. */
