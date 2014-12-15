@@ -364,6 +364,16 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
  * 1 - when RetroArch is paused.
  */
 
+static void check_cheats(retro_input_t trigger_input)
+{
+   if (BIT64_GET(trigger_input, RARCH_CHEAT_INDEX_PLUS))
+      cheat_manager_index_next(g_extern.cheat);
+   else if (BIT64_GET(trigger_input, RARCH_CHEAT_INDEX_MINUS))
+      cheat_manager_index_prev(g_extern.cheat);
+   else if (BIT64_GET(trigger_input, RARCH_CHEAT_TOGGLE))
+      cheat_manager_toggle(g_extern.cheat);
+}
+
 static int do_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
@@ -434,7 +444,6 @@ static int do_state_checks(
 
    check_shader_dir_func(trigger_input);
 
-
    if (BIT64_GET(trigger_input, RARCH_DISK_EJECT_TOGGLE))
       rarch_main_command(RARCH_CMD_DISK_EJECT_TOGGLE);
    else if (BIT64_GET(trigger_input, RARCH_DISK_NEXT))
@@ -445,15 +454,8 @@ static int do_state_checks(
    if (BIT64_GET(trigger_input, RARCH_RESET))
       rarch_main_command(RARCH_CMD_RESET);
 
-   if (!g_extern.cheat)
-      return 0;
-
-   if (BIT64_GET(trigger_input, RARCH_CHEAT_INDEX_PLUS))
-      cheat_manager_index_next(g_extern.cheat);
-   else if (BIT64_GET(trigger_input, RARCH_CHEAT_INDEX_MINUS))
-      cheat_manager_index_prev(g_extern.cheat);
-   else if (BIT64_GET(trigger_input, RARCH_CHEAT_TOGGLE))
-      cheat_manager_toggle(g_extern.cheat);
+   if (g_extern.cheat)
+      check_cheats(trigger_input);
 
    return 0;
 }
