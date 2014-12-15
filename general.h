@@ -739,8 +739,6 @@ struct global
       size_t ptr;
    } filter_dir;
 
-   char sha256[64 + 1];
-
    cheat_manager_t *cheat;
 
    bool block_config_read;

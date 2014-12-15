@@ -146,10 +146,8 @@ static ssize_t read_content_file(const char *path, void **buf)
       patch_content(&ret_buf, &ret);
    
    g_extern.content_crc = crc32_calculate(ret_buf, ret);
-   sha256_hash(g_extern.sha256, ret_buf, ret);
 
-   RARCH_LOG("CRC32: 0x%x, SHA256: %s\n",
-         (unsigned)g_extern.content_crc, g_extern.sha256);
+   RARCH_LOG("CRC32: 0x%x .\n", (unsigned)g_extern.content_crc);
    *buf = ret_buf;
    return ret;
 }
