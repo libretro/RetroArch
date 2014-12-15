@@ -68,9 +68,9 @@ void *menu_list_new(void)
 
 size_t menu_list_get_stack_size(menu_list_t *list)
 {
-   if (!list)
-      return 0;
-   return file_list_get_size(list->menu_stack);
+   if (list)
+      return file_list_get_size(list->menu_stack);
+   return 0;
 }
 
 void menu_list_get_at_offset(const file_list_t *list, size_t idx,
@@ -81,9 +81,9 @@ void menu_list_get_at_offset(const file_list_t *list, size_t idx,
 
 size_t menu_list_get_size(menu_list_t *list)
 {
-   if (!list)
-      return 0;
-   return file_list_get_size(list->selection_buf);
+   if (list)
+      return file_list_get_size(list->selection_buf);
+   return 0;
 }
 
 void menu_list_get_last(const file_list_t *list,
@@ -262,9 +262,8 @@ void menu_list_push_stack(menu_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr)
 {
-   if (!list)
-      return;
-   menu_list_push(list->menu_stack, path, label, type, directory_ptr);
+   if (list)
+      menu_list_push(list->menu_stack, path, label, type, directory_ptr);
 }
 
 void menu_list_push_stack_refresh(menu_list_t *list,
