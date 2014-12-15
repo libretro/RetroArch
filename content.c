@@ -392,48 +392,49 @@ static bool load_content(const struct retro_subsystem_info *special,
          RARCH_LOG("Content loading skipped. Implementation will"
                " load it on its own.\n");
 
-#if 0
 #ifdef HAVE_COMPRESSION
-         if (need_fullpath && path_contains_compressed_file(path))
+         if (!g_extern.system.info.block_extract)
          {
-            char new_path[PATH_MAX], new_basedir[PATH_MAX];
-            union string_list_elem_attr attributes;
-
-            RARCH_LOG("Compressed file in case of need_fullpath."
-                  "Now extracting to temporary directory.\n");
-
-            strlcpy(new_basedir, g_settings.extraction_directory,
-                  sizeof(new_basedir));
-
-            if ((!strcmp(new_basedir, "")) ||
-                 !path_is_directory(new_basedir))
+            if (need_fullpath && path_contains_compressed_file(path))
             {
-               RARCH_WARN("Tried extracting to extraction directory, but "
-                      "extraction directory was not set or found. "
-                      "Setting extraction directory to directory "
-                      "derived by basename...\n");
-               fill_pathname_basedir(new_basedir, path,
+               char new_path[PATH_MAX], new_basedir[PATH_MAX];
+               union string_list_elem_attr attributes;
+
+               RARCH_LOG("Compressed file in case of need_fullpath."
+                     "Now extracting to temporary directory.\n");
+
+               strlcpy(new_basedir, g_settings.extraction_directory,
                      sizeof(new_basedir));
-            }
 
-            attributes.i = 0;
-            fill_pathname_join(new_path, new_basedir,
-                  path_basename(path), sizeof(new_path));
-            read_compressed_file(path,NULL,new_path);
-            string_list_append(additional_path_allocs,new_path, attributes);
-            info[i].path =
+               if ((!strcmp(new_basedir, "")) ||
+                     !path_is_directory(new_basedir))
+               {
+                  RARCH_WARN("Tried extracting to extraction directory, but "
+                        "extraction directory was not set or found. "
+                        "Setting extraction directory to directory "
+                        "derived by basename...\n");
+                  fill_pathname_basedir(new_basedir, path,
+                        sizeof(new_basedir));
+               }
+
+               attributes.i = 0;
+               fill_pathname_join(new_path, new_basedir,
+                     path_basename(path), sizeof(new_path));
+               read_compressed_file(path,NULL,new_path);
+               string_list_append(additional_path_allocs,new_path, attributes);
+               info[i].path =
                   additional_path_allocs->elems
-                     [additional_path_allocs->size -1 ].data;
+                  [additional_path_allocs->size -1 ].data;
 
-            /* g_extern.temporary_content is initialized in init_content_file
-             * The following part takes care of cleanup of the unzipped files
-             * after exit.
-             */
-            rarch_assert(g_extern.temporary_content != NULL);
-            string_list_append(g_extern.temporary_content,
-                  new_path, attributes);
+               /* g_extern.temporary_content is initialized in init_content_file
+                * The following part takes care of cleanup of the unzipped files
+                * after exit.
+                */
+               rarch_assert(g_extern.temporary_content != NULL);
+               string_list_append(g_extern.temporary_content,
+                     new_path, attributes);
+            }
          }
-#endif
 #endif
       }
    }
