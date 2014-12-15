@@ -567,16 +567,12 @@ static int setting_data_bool_action_toggle_savestates(void *data, unsigned actio
 
 static int setting_data_action_start_bind_device(void *data)
 {
-   unsigned *p = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;
 
-   p = (unsigned*)&g_settings.input.joypad_map[setting->index_offset];
-
-   (*p) = setting->index_offset;
-
+   g_settings.input.joypad_map[setting->index_offset] = setting->index_offset;
    return 0;
 }
 
@@ -588,12 +584,14 @@ static int setting_data_action_toggle_bind_device(void *data, unsigned action)
    if (!setting)
       return -1;
 
-   p = (unsigned*)&g_settings.input.joypad_map[setting->index_offset];
+   p = &g_settings.input.joypad_map[setting->index_offset];
 
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         if ((*p) > 0)
+         if ((*p) >= MAX_PLAYERS)
+            *p = MAX_PLAYERS - 1;
+         else if ((*p) > 0)
             (*p)--;
          break;
       case MENU_ACTION_RIGHT:

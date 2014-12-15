@@ -38,7 +38,7 @@ bool input_joypad_set_rumble(const rarch_joypad_driver_t *drv,
    if (!drv || !drv->set_rumble)
       return false;
 
-   unsigned int joy_idx = g_settings.input.joypad_map[port];
+   unsigned joy_idx = g_settings.input.joypad_map[port];
    if (joy_idx >= MAX_PLAYERS)
       return false;
 
@@ -51,7 +51,7 @@ static bool input_joypad_is_pressed(
       const struct retro_keybind *binds,
       unsigned key)
 {
-   unsigned int joy_idx = g_settings.input.joypad_map[port];
+   unsigned joy_idx = g_settings.input.joypad_map[port];
    if (joy_idx >= MAX_PLAYERS)
       return false;
 
@@ -98,7 +98,7 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
    if (!drv)
       return 0;
 
-   unsigned int joy_idx = g_settings.input.joypad_map[port];
+   unsigned joy_idx = g_settings.input.joypad_map[port];
    if (joy_idx >= MAX_PLAYERS)
       return 0;
 
