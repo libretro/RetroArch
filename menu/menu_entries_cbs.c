@@ -939,7 +939,7 @@ static int action_toggle_cheat(unsigned type, const char *label,
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
          cheat->cheats[idx].state = !cheat->cheats[idx].state;
-         cheat_manager_update(cheat);
+         cheat_manager_update(cheat, idx);
          break;
    }
 

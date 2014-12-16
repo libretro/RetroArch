@@ -55,7 +55,7 @@ void cheat_manager_toggle(cheat_manager_t *handle);
 
 void cheat_manager_apply_cheats(cheat_manager_t *handle);
 
-void cheat_manager_update(cheat_manager_t *handle);
+void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx);
 
 #ifdef __cplusplus
 }

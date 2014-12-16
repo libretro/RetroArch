@@ -171,14 +171,14 @@ void cheat_manager_free(cheat_manager_t *handle)
    free(handle);
 }
 
-void cheat_manager_update(cheat_manager_t *handle)
+void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
 {
    msg_queue_clear(g_extern.msg_queue);
    char msg[256];
    snprintf(msg, sizeof(msg), "Cheat: #%u [%s]: %s",
-         handle->ptr, handle->cheats[handle->ptr].state ? "ON" : "OFF",
-         (handle->cheats[handle->ptr].desc) ? 
-         (handle->cheats[handle->ptr].desc) : (handle->cheats[handle->ptr].code)
+         handle_idx, handle->cheats[handle_idx].state ? "ON" : "OFF",
+         (handle->cheats[handle_idx].desc) ? 
+         (handle->cheats[handle_idx].desc) : (handle->cheats[handle_idx].code)
          );
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
    RARCH_LOG("%s\n", msg);
@@ -192,7 +192,7 @@ void cheat_manager_toggle(cheat_manager_t *handle)
 
    handle->cheats[handle->ptr].state ^= true;
    cheat_manager_apply_cheats(handle);
-   cheat_manager_update(handle);
+   cheat_manager_update(handle, handle->ptr);
 }
 
 void cheat_manager_index_next(cheat_manager_t *handle)
@@ -200,7 +200,7 @@ void cheat_manager_index_next(cheat_manager_t *handle)
    if (!handle)
       return;
    handle->ptr = (handle->ptr + 1) % handle->size;
-   cheat_manager_update(handle);
+   cheat_manager_update(handle, handle->ptr);
 }
 
 void cheat_manager_index_prev(cheat_manager_t *handle)
@@ -213,5 +213,5 @@ void cheat_manager_index_prev(cheat_manager_t *handle)
    else
       handle->ptr--;
 
-   cheat_manager_update(handle);
+   cheat_manager_update(handle, handle->ptr);
 }
