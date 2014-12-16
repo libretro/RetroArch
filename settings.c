@@ -1004,6 +1004,8 @@ static bool config_load_file(const char *path, bool set_defaults)
          "input_descriptor_label_show");
    CONFIG_GET_BOOL(input.input_descriptor_hide_unbound,
          "input_descriptor_hide_unbound");
+   CONFIG_GET_BOOL(input.autoconfig_descriptor_label_show,
+         "autoconfig_descriptor_label_show");
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
@@ -1568,6 +1570,8 @@ bool config_save_file(const char *path)
          g_settings.input.netplay_client_swap_input);
    config_set_bool(conf, "input_descriptor_label_show",
          g_settings.input.input_descriptor_label_show);
+   config_set_bool(conf, "autoconfig_descriptor_label_show",
+         g_settings.input.autoconfig_descriptor_label_show);
    config_set_bool(conf, "input_descriptor_hide_unbound",
          g_settings.input.input_descriptor_hide_unbound);
    config_set_bool(conf,  "load_dummy_on_core_shutdown",

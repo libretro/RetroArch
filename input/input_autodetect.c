@@ -112,6 +112,8 @@ void input_config_autoconfigure_joypad(unsigned idx,
    {
       g_settings.input.autoconf_binds[idx][i].joykey = NO_BTN;
       g_settings.input.autoconf_binds[idx][i].joyaxis = AXIS_NONE;
+      g_settings.input.autoconf_binds[idx][i].joykey_label[0] = '\0';
+      g_settings.input.autoconf_binds[idx][i].joyaxis_label[0] = '\0';
    }
    g_settings.input.autoconfigured[idx] = false;
 

@@ -358,8 +358,10 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
       const char *btn, struct retro_keybind *bind)
 {
    char tmp[64];
-   char key[64];
+   char *tmp_a = NULL;
+   char key[64], key_label[64];
    snprintf(key, sizeof(key), "%s_%s_btn", prefix, btn);
+   snprintf(key_label, sizeof(key_label), "%s_%s_btn_label", prefix, btn);
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
@@ -374,14 +376,19 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
             bind->joykey = strtoull(tmp, NULL, 0);
       }
    }
+
+   if (config_get_string(conf, key_label, &tmp_a))
+      strlcpy(bind->joykey_label, tmp_a, sizeof(bind->joykey_label));
 }
 
 void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
       const char *axis, struct retro_keybind *bind)
 {
    char tmp[64];
-   char key[64];
+   char *tmp_a = NULL;
+   char key[64], key_label[64];
    snprintf(key, sizeof(key), "%s_%s_axis", prefix, axis);
+   snprintf(key_label, sizeof(key_label), "%s_%s_axis_label", prefix, axis);
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
@@ -399,6 +406,9 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
       /* Ensure that d-pad emulation doesn't screw this over. */
       bind->orig_joyaxis = bind->joyaxis;
    }
+
+   if (config_get_string(conf, key_label, &tmp_a))
+      strlcpy(bind->joyaxis_label, tmp_a, sizeof(bind->joyaxis_label));
 }
 
 #if !defined(IS_JOYCONFIG)
@@ -426,11 +436,20 @@ static void input_get_bind_string_joykey(char *buf, const char *prefix,
             dir = "?";
             break;
       }
-      snprintf(buf, size, "%sHat #%u %s ", prefix,
-            (unsigned)GET_HAT(bind->joykey), dir);
+
+      if (bind->joykey_label[0] != '\0' && g_settings.input.autoconfig_descriptor_label_show)
+         snprintf(buf, size, "%s %s ", prefix, bind->joykey_label);
+      else
+         snprintf(buf, size, "%sHat #%u %s ", prefix,
+               (unsigned)GET_HAT(bind->joykey), dir);
    }
    else
-      snprintf(buf, size, "%s%u (btn) ", prefix, (unsigned)bind->joykey);
+   {
+      if (bind->joykey_label[0] != '\0' && g_settings.input.autoconfig_descriptor_label_show)
+         snprintf(buf, size, "%s%s (btn) ", prefix, bind->joykey_label);
+      else
+         snprintf(buf, size, "%s%u (btn) ", prefix, (unsigned)bind->joykey);
+   }
 }
 
 static void input_get_bind_string_joyaxis(char *buf, const char *prefix,
@@ -448,7 +467,10 @@ static void input_get_bind_string_joyaxis(char *buf, const char *prefix,
       dir = '+';
       axis = AXIS_POS_GET(bind->joyaxis);
    }
-   snprintf(buf, size, "%s%c%u (axis) ", prefix, dir, axis);
+   if (bind->joyaxis_label[0] != '\0' && g_settings.input.autoconfig_descriptor_label_show)
+      snprintf(buf, size, "%s%s (axis) ", prefix, bind->joyaxis_label);
+   else
+      snprintf(buf, size, "%s%c%u (axis) ", prefix, dir, axis);
 }
 
 void input_get_bind_string(char *buf, const struct retro_keybind *bind,

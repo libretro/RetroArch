@@ -4321,8 +4321,20 @@ static bool setting_data_append_list_input_options(
    CONFIG_BOOL(
          g_settings.input.autodetect_enable,
          "input_autodetect_enable",
-         "Autodetect Enable",
+         "Autoconfig Enable",
          input_autodetect_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.input.autoconfig_descriptor_label_show,
+         "autoconfig_descriptor_label_show",
+         "Show Autoconfig Descriptor Labels",
+         true,
          "OFF",
          "ON",
          group_info.name,
