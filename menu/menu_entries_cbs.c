@@ -342,8 +342,6 @@ static int action_ok_cheat_file_load(const char *path,
 
    fill_pathname_join(cheat_path, menu_path, path, sizeof(cheat_path));
 
-   RARCH_LOG("menu path is: %s\n", menu_path);
-
    if (g_extern.cheat)
       cheat_manager_free(g_extern.cheat);
 
@@ -924,6 +922,27 @@ static int shader_action_parameter_preset_toggle(unsigned type, const char *labe
    param->current = min(max(param->minimum, param->current), param->maximum);
 
 #endif
+   return 0;
+}
+
+static int action_toggle_cheat(unsigned type, const char *label,
+      unsigned action)
+{
+   cheat_manager_t *cheat = g_extern.cheat;
+   size_t idx = type - MENU_SETTINGS_CHEAT_BEGIN;
+
+   if (!cheat)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         cheat->cheats[idx].state = !cheat->cheats[idx].state;
+         cheat_manager_update(cheat);
+         break;
+   }
+
    return 0;
 }
 
@@ -2531,6 +2550,9 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
       cbs->action_toggle = shader_action_parameter_preset_toggle;
+   else if (type >= MENU_SETTINGS_CHEAT_BEGIN
+         && type <= MENU_SETTINGS_CHEAT_END)
+      cbs->action_toggle = action_toggle_cheat;
    else if (
          !strcmp(label, "core_list") ||
          !strcmp(label, "history_list") ||

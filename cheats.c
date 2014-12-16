@@ -171,13 +171,15 @@ void cheat_manager_free(cheat_manager_t *handle)
    free(handle);
 }
 
-static void cheat_manager_update(cheat_manager_t *handle)
+void cheat_manager_update(cheat_manager_t *handle)
 {
    msg_queue_clear(g_extern.msg_queue);
    char msg[256];
    snprintf(msg, sizeof(msg), "Cheat: #%u [%s]: %s",
          handle->ptr, handle->cheats[handle->ptr].state ? "ON" : "OFF",
-         handle->cheats[handle->ptr].desc);
+         (handle->cheats[handle->ptr].desc) ? 
+         (handle->cheats[handle->ptr].desc) : (handle->cheats[handle->ptr].code)
+         );
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
    RARCH_LOG("%s\n", msg);
 }

@@ -2405,10 +2405,11 @@ void setting_data_get_label(char *type_str,
    {
       unsigned cheat_index = type - MENU_SETTINGS_CHEAT_BEGIN;
       if (cheat_index < g_extern.cheat->buf_size)
-         snprintf(type_str, type_str_size, "%s",
-               (
+         snprintf(type_str, type_str_size, "%s : (%s)",
                 (g_extern.cheat->cheats[cheat_index].code != NULL)
-               ) ? g_extern.cheat->cheats[cheat_index].code : "N/A");
+               ? g_extern.cheat->cheats[cheat_index].code : "N/A",
+               g_extern.cheat->cheats[cheat_index].state ? "ON" : "OFF"
+               );
    }
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
