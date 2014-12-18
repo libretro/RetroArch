@@ -441,6 +441,7 @@ static void config_set_defaults(void)
    g_settings.location.allow = false;
    g_settings.camera.allow = false;
 
+   g_settings.input.autoconfig_descriptor_label_show = true;
    g_settings.input.input_descriptor_label_show = input_descriptor_label_show;
    g_settings.input.input_descriptor_hide_unbound = input_descriptor_hide_unbound;
 
