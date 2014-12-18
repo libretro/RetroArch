@@ -44,6 +44,11 @@
     <string name="download_core_confirm_title">Confirm</string>
     <string name="download_core_confirm_msg">Are you sure you want to download %1$s?</string>
     <string name="downloading_msg">Downloading %1$s…</string>
+    <string name="download_core_list_error">Error retrieving list of cores.</string>
+
+    <!-- Core Downloader - Downloadable Cores Context Menu -->
+    <string name="downloadable_cores_ctx_title">Actions</string>
+	<string name="downloadable_cores_ctx_goto_wiki">Go to core wiki page</string>
 
     <!-- Display Refresh Rate Test Class -->
     <string name="refresh_rate_calibration">Refresh rate calibration</string>

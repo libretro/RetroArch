@@ -26,14 +26,22 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.retroarch.R;
 
@@ -74,6 +82,7 @@ public final class DownloadableCoresFragment extends ListFragment
 	{
 		super.onCreateView(inflater, container, savedInstanceState);
 		final ListView coreList = (ListView) inflater.inflate(R.layout.coremanager_listview, container, false);
+		registerForContextMenu(coreList);
 
 		final DownloadableCoresAdapter adapter = new DownloadableCoresAdapter(getActivity(), android.R.layout.simple_list_item_2);
 		adapter.setNotifyOnChange(true);
@@ -106,6 +115,37 @@ public final class DownloadableCoresFragment extends ListFragment
 			}
 		});
 		notification.show();
+	}
+
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo)
+	{
+		super.onCreateContextMenu(menu, v, menuInfo);
+
+		menu.setHeaderTitle(R.string.downloadable_cores_ctx_title);
+
+		MenuInflater inflater = getActivity().getMenuInflater();
+		inflater.inflate(R.menu.downloadable_cores_context_menu, menu);
+	}
+
+	@Override
+	public boolean onContextItemSelected(MenuItem item)
+	{
+		final AdapterContextMenuInfo info = (AdapterContextMenuInfo)item.getMenuInfo();
+
+		switch (item.getItemId())
+		{
+			case R.id.go_to_wiki_ctx_item:
+			{
+				String coreUrlPart = ((DownloadableCore)getListView().getItemAtPosition(info.position)).getCoreName().replace(" ", "_");
+				Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://wiki.libretro.com/index.php?title=" + coreUrlPart));
+				startActivity(browserIntent);
+				return true;
+			}
+
+			default:
+				return super.onContextItemSelected(item);
+		}
 	}
 
 	// Async event responsible for populating the Downloadable Cores list.
@@ -154,9 +194,7 @@ public final class DownloadableCoresFragment extends ListFragment
 				Log.e("PopulateCoresListOperation", e.getMessage());
 
 				// Make a dummy entry to notify an error.
-				final ArrayList<DownloadableCore> errorList = new ArrayList<DownloadableCore>();
-				errorList.add(new DownloadableCore("Error", e.getMessage()));
-				return errorList;
+				return new ArrayList<DownloadableCore>();
 			}
 		}
 
@@ -164,7 +202,11 @@ public final class DownloadableCoresFragment extends ListFragment
 		protected void onPostExecute(ArrayList<DownloadableCore> result)
 		{
 			super.onPostExecute(result);
-			adapter.addAll(result);
+
+			if (result.isEmpty())
+				Toast.makeText(adapter.getContext(), R.string.download_core_list_error, Toast.LENGTH_SHORT).show();
+			else
+				adapter.addAll(result);
 		}
 
 		// Literally downloads the info file, writes it, and parses it for the corename key/value pair.
