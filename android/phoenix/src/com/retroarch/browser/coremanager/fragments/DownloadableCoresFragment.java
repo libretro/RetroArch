@@ -41,6 +41,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.retroarch.R;
 
@@ -193,9 +194,7 @@ public final class DownloadableCoresFragment extends ListFragment
 				Log.e("PopulateCoresListOperation", e.getMessage());
 
 				// Make a dummy entry to notify an error.
-				final ArrayList<DownloadableCore> errorList = new ArrayList<DownloadableCore>();
-				errorList.add(new DownloadableCore("Error", e.getMessage()));
-				return errorList;
+				return new ArrayList<DownloadableCore>();
 			}
 		}
 
@@ -203,7 +202,11 @@ public final class DownloadableCoresFragment extends ListFragment
 		protected void onPostExecute(ArrayList<DownloadableCore> result)
 		{
 			super.onPostExecute(result);
-			adapter.addAll(result);
+
+			if (result.isEmpty())
+				Toast.makeText(adapter.getContext(), R.string.download_core_list_error, Toast.LENGTH_SHORT).show();
+			else
+				adapter.addAll(result);
 		}
 
 		// Literally downloads the info file, writes it, and parses it for the corename key/value pair.
