@@ -30,7 +30,6 @@ import com.retroarch.browser.NativeInterface;
 import com.retroarch.browser.dirfragment.DetectCoreDirectoryFragment;
 import com.retroarch.browser.dirfragment.DirectoryFragment;
 import com.retroarch.browser.dirfragment.DirectoryFragment.OnDirectoryFragmentClosedListener;
-import com.retroarch.browser.mainmenu.gplwaiver.GPLWaiverDialogFragment;
 import com.retroarch.browser.preferences.fragments.util.PreferenceListFragment;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import com.retroarch.browser.retroactivity.RetroActivityFuture;
@@ -85,9 +84,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 						.setMessage(R.string.welcome_to_retroarch_desc)
 						.setPositiveButton(R.string.ok, null);
 			alert.show();
-
-			// First-run, so we show the GPL waiver agreement dialog.
-			GPLWaiverDialogFragment.newInstance().show(getFragmentManager(), "gplWaiver");
+			
 			UserPreferences.updateConfigFile(ctx);
 		}
 	}
