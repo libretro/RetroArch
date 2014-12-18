@@ -45,6 +45,10 @@
     <string name="download_core_confirm_msg">Are you sure you want to download %1$s?</string>
     <string name="downloading_msg">Downloading %1$s…</string>
 
+    <!-- Core Downloader - Downloadable Cores Context Menu -->
+    <string name="downloadable_cores_ctx_title">Actions</string>
+	<string name="downloadable_cores_ctx_goto_wiki">Go to core wiki page</string>
+
     <!-- Display Refresh Rate Test Class -->
     <string name="refresh_rate_calibration">Refresh rate calibration</string>
     <string name="touch_screen_with_fingers">Touch the screen with your fingers for more accurate measurements.</string>
