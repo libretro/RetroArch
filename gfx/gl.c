@@ -1887,8 +1887,10 @@ static bool resolve_extensions(gl_t *gl)
 #endif
 #endif
 
+#ifdef HAVE_FBO
    if (g_settings.video.force_srgb_disable)
       gl->has_srgb_fbo = false;
+#endif
 
 #ifdef GL_DEBUG
    /* Useful for debugging, but kinda obnoxious otherwise. */
