@@ -80,7 +80,7 @@ static int http_read_line (int fd, char *buffer, int max)
    int n=0;
    while (n<max)
    {
-      if (read(fd,buffer,1)!=1)
+      if (read(fd,buffer,1) != 1)
       {
          n= -n;
          break;
@@ -169,7 +169,7 @@ static http_retcode http_query(const char *command, const char *url, const char 
    char header[MAXBUF];
    int  hlg;
    http_retcode ret;
-   int  proxy=(http_proxy_server!=NULL && http_proxy_port!=0);
+   int  proxy=(http_proxy_server != NULL && http_proxy_port != 0);
    int  port = proxy ? http_proxy_port : http_port ;
 
    if (pfd) *pfd=-1;
@@ -227,11 +227,11 @@ static http_retcode http_query(const char *command, const char *url, const char 
       hlg=strlen(header);
 
       /* send header */
-      if (write(s,header,hlg)!=hlg)
+      if (write(s,header,hlg) != hlg)
          ret= ERRWRHD;
 
       /* send data */
-      else if (length && data && (write(s,data,length)!=length) ) 
+      else if (length && data && (write(s,data,length) != length) ) 
          ret= ERRWRDT;
       else
       {
@@ -243,7 +243,7 @@ static http_retcode http_query(const char *command, const char *url, const char 
 #endif	
          if (linelen<=0) 
             ret=ERRRDHD;
-         else if (sscanf(header,"HTTP/1.%*d %03d",(int*)&ret)!=1) 
+         else if (sscanf(header,"HTTP/1.%*d %03d",(int*)&ret) != 1) 
             ret=ERRPAHD;
          else if (mode == KEEP_OPEN)
             return ret;
@@ -326,14 +326,15 @@ http_retcode http_get(const char *filename, char **pdata, int *plength, char *ty
 
    if (!pdata)
       return ERRNULL;
-   else
-      *pdata = NULL;
+
+   *pdata = NULL;
+
    if (plength)
       *plength = 0;
    if (typebuf)
       *typebuf = '\0';
 
-   ret=http_query("GET",filename,"",KEEP_OPEN, NULL, 0, &fd);
+   ret = http_query("GET",filename,"",KEEP_OPEN, NULL, 0, &fd);
    if (ret == 200)
    {
       while (1)
@@ -353,7 +354,7 @@ http_retcode http_get(const char *filename, char **pdata, int *plength, char *ty
             break;
          /* try to parse some keywords : */
          /* convert to lower case 'till a : is found or end of string */
-         for (pc=header; (*pc!=':' && *pc) ; pc++)
+         for (pc=header; (*pc != ':' && *pc) ; pc++)
             *pc=tolower(*pc);
          sscanf(header,"content-length: %d",&length);
          if (typebuf)
@@ -373,7 +374,7 @@ http_retcode http_get(const char *filename, char **pdata, int *plength, char *ty
       }
       n=http_read_buffer(fd,*pdata,length);
       close(fd);
-      if (n!=length)
+      if (n != length)
          ret=ERRRDDT;
    }
    else if (ret>=0)
@@ -436,7 +437,7 @@ http_retcode http_head(const char *filename, int *plength, char *typebuf)
             break;
          /* try to parse some keywords : */
          /* convert to lower case 'till a : is found or end of string */
-         for (pc=header; (*pc!=':' && *pc) ; pc++)
+         for (pc=header; (*pc != ':' && *pc) ; pc++)
             *pc=tolower(*pc);
          sscanf(header,"content-length: %d",&length);
          if (typebuf)
@@ -511,14 +512,14 @@ http_retcode http_parse_url(char *url, char **pfilename)
    *(pc-1) = 0;
    if (c == ':')
    {
-      if (sscanf(pc,"%d",&http_port)!=1)
+      if (sscanf(pc,"%d",&http_port) != 1)
       {
 #ifdef VERBOSE
          fprintf(stderr,"invalid port in url\n");
 #endif
          return ERRURLP;
       }
-      for (pc++; (*pc && *pc!='/') ; pc++) ;
+      for (pc++; (*pc && *pc != '/') ; pc++) ;
       if (*pc)
          pc++;
    }
