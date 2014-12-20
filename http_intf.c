@@ -8,12 +8,9 @@ int http_intf_command(unsigned mode, char *url)
    int ret, lg, blocksize, r;
    char typebuf[70];
    char *data=NULL, *filename = NULL, *proxy = NULL;
-   int i=1;
 
    if (mode == HTTP_INTF_ERROR)
       return -1;
-
-   i++;
 
 #if 0
    if ((proxy = getenv("http_proxy")))
@@ -93,5 +90,5 @@ int http_intf_command(unsigned mode, char *url)
    free(http_server);
    if (proxy)
       free(http_proxy_server);
-   return ( (ret==201) || (ret==200) ) ? 0 : ret;
+   return ( (ret == 201) || (ret == 200) ) ? 0 : ret;
 }
