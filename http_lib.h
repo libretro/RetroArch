@@ -9,8 +9,10 @@
  *
  */
 
- /* declarations */
+#ifndef _HTTP_LIB_H
+#define _HTTP_LIB_H
 
+ /* declarations */
 
 extern char *http_server;
 
@@ -68,5 +70,7 @@ http_retcode http_parse_url(char *url, char **pfilename);
 http_retcode http_delete(const char *filename) ;
 
 http_retcode http_head(const char *filename, int *plength, char *typebuf);
+
+#endif
 
 #endif
