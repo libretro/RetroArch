@@ -54,7 +54,7 @@ char *http_proxy_server=NULL;
 /* proxy server port number or 0 */
 int http_proxy_port=0;
 /* user agent id string */
-static char *http_user_agent="adlib/3 ($Date: 1998/09/23 06:19:15 $)";
+static const char *http_user_agent="adlib/3 ($Date: 1998/09/23 06:19:15 $)";
 
 /*
  * read a line from file descriptor
@@ -125,9 +125,9 @@ typedef enum
 
 #ifndef OSK
 
-static http_retcode http_query(char *command, char *url,
-      char *additional_header, querymode mode, 
-      char* data, int length, int *pfd);
+static http_retcode http_query(const char *command, const char *url,
+      const char *additional_header, querymode mode, 
+      const char* data, int length, int *pfd);
 #endif
 
 /* beware that filename+type+rest of header must not exceed MAXBUF */
@@ -154,8 +154,8 @@ static http_retcode http_query(char *command, char *url,
    length            - size of data
    pfd               - pointer to variable where to set file descriptor value
 */
-static http_retcode http_query(char *command, char *url, char *additional_header, querymode mode,
-      char *data, int length, int *pfd) 
+static http_retcode http_query(const char *command, const char *url, const char *additional_header, querymode mode,
+      const char *data, int length, int *pfd) 
 {
    int     s;
    struct  hostent *hp;
@@ -188,7 +188,7 @@ static http_retcode http_query(char *command, char *url, char *additional_header
    setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, 0, 0);
 
    /* connect to server */
-   if (connect(s, &server, sizeof(server)) < 0) 
+   if (connect(s, (struct sockaddr*)&server, sizeof(server)) < 0) 
       ret=ERRCONN;
    else
    {
@@ -230,12 +230,12 @@ static http_retcode http_query(char *command, char *url, char *additional_header
       else
       {
          /* read result & check */
-         ret=http_read_line(s,header,MAXBUF-1);
+         int linelen=http_read_line(s,header,MAXBUF-1);
 #ifdef VERBOSE
          fputs(header,stderr);
          putc('\n',stderr);
 #endif	
-         if (ret<=0) 
+         if (linelen<=0) 
             ret=ERRRDHD;
          else if (sscanf(header,"HTTP/1.%*d %03d",(int*)&ret)!=1) 
             ret=ERRPAHD;
@@ -268,7 +268,7 @@ static http_retcode http_query(char *command, char *url, char *additional_header
    was already existing.
    type      - type of the data, if NULL default type is used.
    */
-http_retcode http_put(char *filename, char *data, int length, int overwrite, char *type) 
+http_retcode http_put(const char *filename, const char *data, int length, int overwrite, const char *type) 
 {
    char header[MAXBUF];
    if (type) 
@@ -309,7 +309,7 @@ http_retcode http_put(char *filename, char *data, int length, int overwrite, cha
    If NULL, the type is not returned.
    */
 
-http_retcode http_get(char *filename, char **pdata, int *plength, char *typebuf) 
+http_retcode http_get(const char *filename, char **pdata, int *plength, char *typebuf) 
 {
    http_retcode ret;
 
@@ -360,7 +360,7 @@ http_retcode http_get(char *filename, char **pdata, int *plength, char *typebuf)
       }
       if (plength)
          *plength=length;
-      if (!(*pdata=malloc(length)))
+      if (!(*pdata=(char*)malloc(length)))
       {
          close(fd);
          return ERRMEM;
@@ -395,7 +395,7 @@ http_retcode http_get(char *filename, char **pdata, int *plength, char *typebuf)
  * typebuf -  allocated buffer where the data type is returned.
  *            If NULL, the type is not returned.
  */
-http_retcode http_head(char *filename, int *plength, char *typebuf) 
+http_retcode http_head(const char *filename, int *plength, char *typebuf) 
 {
    /* mostly copied from http_get : */
    http_retcode ret;
@@ -461,7 +461,7 @@ http_retcode http_head(char *filename, int *plength, char *typebuf)
  * filename - name of the ressource to create
  */
 
-http_retcode http_delete(char *filename) 
+http_retcode http_delete(const char *filename) 
 {
    return http_query("DELETE",filename,"",CLOSE, NULL, 0, NULL);
 }

@@ -59,14 +59,14 @@ typedef enum {
 /* prototypes */
 
 #ifndef OSK
-http_retcode http_put(char *filename, char *data, int length, 
-	     int overwrite, char *type) ;
-http_retcode http_get(char *filename, char **pdata,int *plength, char *typebuf);
+http_retcode http_put(const char *filename, const char *data, int length, 
+	     int overwrite, const char *type) ;
+http_retcode http_get(const char *filename, char **pdata,int *plength, char *typebuf);
 
 http_retcode http_parse_url(char *url, char **pfilename);
 
-http_retcode http_delete(char *filename) ;
+http_retcode http_delete(const char *filename) ;
 
-http_retcode http_head(char *filename, int *plength, char *typebuf);
+http_retcode http_head(const char *filename, int *plength, char *typebuf);
 
 #endif
