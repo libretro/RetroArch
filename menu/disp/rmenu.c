@@ -353,6 +353,7 @@ menu_ctx_driver_t menu_ctx_rmenu = {
    NULL,
    NULL,
    NULL,
+   NULL,
    rmenu_update_core_info,
    &menu_ctx_backend_common,
    "rmenu",
