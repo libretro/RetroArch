@@ -3398,47 +3398,6 @@ static bool setting_data_append_list_general_options(
          general_read_handler);
 
    END_SUB_GROUP(list, list_info);
-   START_SUB_GROUP(
-         list,
-         list_info,
-         "Miscellaneous",
-         group_info.name,
-         subgroup_info);
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-   CONFIG_BOOL(
-         g_settings.network_cmd_enable,
-         "network_cmd_enable",
-         "Network Commands",
-         network_cmd_enable,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-#if 0
-   CONFIG_INT(
-         g_settings.network_cmd_port,
-         "network_cmd_port",
-         "Network Command Port",
-         network_cmd_port,
-         group_info.name,
-         subgroup_info.name,
-         NULL);
-#endif
-   CONFIG_BOOL(
-         g_settings.stdin_cmd_enable,
-         "stdin_cmd_enable",
-         "stdin command",
-         stdin_cmd_enable,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-#endif
-   END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 
    return true;
@@ -4919,6 +4878,49 @@ static bool setting_data_append_list_netplay_options(
    settings_list_current_add_range(list, list_info, 1, 99999, 1, true, true);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
+   END_SUB_GROUP(list, list_info);
+
+   START_SUB_GROUP(
+         list,
+         list_info,
+         "Miscellaneous",
+         group_info.name,
+         subgroup_info);
+
+#if defined(HAVE_NETWORK_CMD)
+   CONFIG_BOOL(
+         g_settings.network_cmd_enable,
+         "network_cmd_enable",
+         "Network Commands",
+         network_cmd_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+#if 0
+   CONFIG_INT(
+         g_settings.network_cmd_port,
+         "network_cmd_port",
+         "Network Command Port",
+         network_cmd_port,
+         group_info.name,
+         subgroup_info.name,
+         NULL);
+#endif
+   CONFIG_BOOL(
+         g_settings.stdin_cmd_enable,
+         "stdin_cmd_enable",
+         "stdin command",
+         stdin_cmd_enable,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+#endif
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 #endif
