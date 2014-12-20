@@ -40,6 +40,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
 #include "netplay_compat.h"
 #include "http_lib.h"
 
