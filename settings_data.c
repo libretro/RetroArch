@@ -4846,8 +4846,8 @@ static bool setting_data_append_list_netplay_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Netplay Options");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+   START_GROUP(group_info, "Network Options");
+   START_SUB_GROUP(list, list_info, "Netplay", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
          g_extern.netplay_enable,
