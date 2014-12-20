@@ -144,15 +144,18 @@ static http_retcode http_query(char *command, char *url,
  * Limitations: the url is truncated to first 256 chars and
  * the server name to 128 in case of proxy request.
  */
-static http_retcode http_query(command, url, additional_header, mode,
-      data, length, pfd) 
-   char *command;	/* command to send  */
-   char *url;		/* url / filename queried  */
-   char *additional_header;	/* additional header */
-   querymode mode; 		/* type of query */
-   char *data;  /* Data to send after header. If NULL, not data is sent */
-   int length;  /* size of data */
-   int *pfd;    /* pointer to variable where to set file descriptor value */
+
+/*
+   command           - command to send 
+   url               - url / filename queried
+   additional_header - additional header
+   mode              - type of query
+   data              - Data to send after header. If NULL, not data is sent
+   length            - size of data
+   pfd               - pointer to variable where to set file descriptor value
+*/
+static http_retcode http_query(char *command, char *url, char *additional_header, querymode mode,
+      char *data, int length, int *pfd) 
 {
    int     s;
    struct  hostent *hp;
