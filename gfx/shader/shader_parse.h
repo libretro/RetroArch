@@ -104,8 +104,8 @@ struct gfx_shader_pass
       char path[PATH_MAX];
       struct
       {
-         char *vertex; // Dynamically allocated. Must be free'd.
-         char *fragment; // Dynamically allocated. Must be free'd.
+         char *vertex; /* Dynamically allocated. Must be free'd. */
+         char *fragment; /* Dynamically allocated. Must be free'd. */
       } string;
    } source;
 
