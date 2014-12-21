@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <assert.h>
 #include "http_intf.h"
 #include "retroarch_logger.h"
 #include "general.h"
