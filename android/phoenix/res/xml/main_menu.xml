@@ -2,7 +2,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     android:title="@string/mainmenu_title" >
 
-    <!-- TV Mode -->
+    <!-- Resume Content -->
     <Preference
         android:key="resumeContentPref"
         android:title="@string/resume_content"/>
@@ -26,6 +26,14 @@
     <Preference
         android:key="loadContentHistoryPref"
         android:title="@string/load_content_history"/>
+
+    <!-- Manage Cores -->
+    <Preference 
+        android:title="@string/manage_cores">
+        <intent
+            android:targetClass="com.retroarch.browser.coremanager.CoreManagerActivity"
+            android:targetPackage="com.retroarch"/>
+     </Preference>
 
     <!-- Settings -->
     <Preference android:title="@string/settings">
