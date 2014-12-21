@@ -41,9 +41,9 @@ public final class ModuleWrapper implements IconAdapterItem, Comparable<ModuleWr
 
 		// So first, since the core name will have a platform-specific identifier at the end of its name, we trim this.
 		// If it turns out we have an invalid core name, simply assign the core name as the full name of the file.
-		final boolean isValidCoreName = (file.getName().lastIndexOf("_android.so") != -1); 
-		final String coreName = (isValidCoreName) ? file.getName().substring(0, file.getName().lastIndexOf("_android.so"))
-												  : file.getName();
+		final boolean isValidCoreName = (file.getName().lastIndexOf("_libretro.so") != -1); 
+		final String coreName = (isValidCoreName) ? file.getName().substring(0, file.getName().lastIndexOf(".so"))
+		                                          : file.getName();
 
 		// Now get the directory where all of the info files are kept (dataDir/info)
 		final String infoFileDir  = context.getApplicationInfo().dataDir + File.separator + "info";
