@@ -5,6 +5,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -72,8 +73,8 @@ public final class DownloadableCoresFragment extends ListFragment
 	}
 
 	private static final String BUILDBOT_BASE_URL = "http://buildbot.libretro.com";
-	private static final String BUILDBOT_CORE_URL = BUILDBOT_BASE_URL + "/stable/android/armv7/1.0.0.2/cores/";
-	private static final String BUILDBOT_INFO_URL = BUILDBOT_BASE_URL + "/stable/android/armv7/1.0.0.2/info/";
+	private static final String BUILDBOT_CORE_URL = BUILDBOT_BASE_URL + "/nightly/android/latest/armeabi-v7a/";
+	private static final String BUILDBOT_INFO_URL = BUILDBOT_BASE_URL + "/nightly/android/latest/info/";
 
 	private OnCoreDownloadedListener coreDownloadedListener = null;
 
@@ -182,7 +183,7 @@ public final class DownloadableCoresFragment extends ListFragment
 
 					final String coreURL = BUILDBOT_BASE_URL + coreElement.attr("href");
 					final String coreName = coreURL.substring(coreURL.lastIndexOf("/") + 1);
-					final String infoURL = BUILDBOT_INFO_URL + coreName.replace("_android.so.zip", ".info");
+					final String infoURL = BUILDBOT_INFO_URL + coreName.replace(".so.zip", ".info");
 
 					downloadableCores.add(new DownloadableCore(getCoreName(infoURL), coreURL));
 				}
@@ -191,7 +192,7 @@ public final class DownloadableCoresFragment extends ListFragment
 			}
 			catch (IOException e)
 			{
-				Log.e("PopulateCoresListOperation", e.getMessage());
+				Log.e("PopulateCoresListOperation", e.toString());
 
 				// Make a dummy entry to notify an error.
 				return new ArrayList<DownloadableCore>();
@@ -216,34 +217,52 @@ public final class DownloadableCoresFragment extends ListFragment
 		//
 		// One way this can be improved is by checking the info directory for
 		// existing info files that match the core. Eliminating the download retrieval.
-		private String getCoreName(String urlPath) throws IOException
+		private String getCoreName(String urlPath)
 		{
-			final URL url = new URL(urlPath);
-			final BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
-			final StringBuilder sb = new StringBuilder();
-			
-			String str = "";
-			while ((str = br.readLine()) != null)
-				sb.append(str + "\n");
-			br.close();
-
-			// Write the info file.
-			File outputPath = new File(adapter.getContext().getApplicationInfo().dataDir + "/info/", urlPath.substring(urlPath.lastIndexOf('/') + 1));
-			BufferedWriter bw = new BufferedWriter(new FileWriter(outputPath));
-			bw.append(sb);
-			bw.close();
-
-			// Now read the core name
-			String[] lines = sb.toString().split("\n");
 			String name = "";
-			for (int i = 0; i < lines.length; i++)
+
+			try
 			{
-				if (lines[i].contains("corename"))
+				final URL url = new URL(urlPath);
+				final BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
+				final StringBuilder sb = new StringBuilder();
+			
+				String str = "";
+				while ((str = br.readLine()) != null)
+					sb.append(str + "\n");
+				br.close();
+
+				// Write the info file.
+				File outputPath = new File(adapter.getContext().getApplicationInfo().dataDir + "/info/", urlPath.substring(urlPath.lastIndexOf('/') + 1));
+				BufferedWriter bw = new BufferedWriter(new FileWriter(outputPath));
+				bw.append(sb);
+				bw.close();
+	
+				// Now read the core name
+				String[] lines = sb.toString().split("\n");
+				for (int i = 0; i < lines.length; i++)
 				{
-					// Gross
-					name = lines[i].split("=")[1].trim().replace("\"", "");
-					break;
+					if (lines[i].contains("corename"))
+					{
+						// Gross
+						name = lines[i].split("=")[1].trim().replace("\"", "");
+						break;
+					}
 				}
+			}
+			catch (FileNotFoundException fnfe)
+			{
+				// Can't find the info file. Name it the same thing as the package.
+				final int start = urlPath.lastIndexOf('/') + 1;
+				final int end = urlPath.lastIndexOf('.');
+				if (end == -1)
+					name = urlPath.substring(start);
+				else
+					name = urlPath.substring(start, end);
+			}
+			catch (IOException ioe)
+			{
+				name = "Report this: " + ioe.getMessage();
 			}
 
 			return name;
