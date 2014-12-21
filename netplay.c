@@ -435,7 +435,7 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
 }
 
 /* Platform specific socket library init. */
-bool netplay_init_network(void)
+bool network_init(void)
 {
    static bool inited = false;
    if (inited)
@@ -445,7 +445,7 @@ bool netplay_init_network(void)
    WSADATA wsaData;
    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
    {
-      WSACleanup();
+      network_deinit();
       return false;
    }
 #elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
@@ -459,9 +459,19 @@ bool netplay_init_network(void)
    return true;
 }
 
+void network_deinit(void)
+{
+#if defined(_WIN32)
+   WSACleanup();
+#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+   sys_net_finalize_network();
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
+#endif
+}
+
 static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
 {
-   if (!netplay_init_network())
+   if (!network_init())
       return false;
 
    if (!init_tcp_socket(netplay, server, port, netplay->spectate))
@@ -1561,7 +1571,6 @@ void netplay_post_frame(netplay_t *netplay)
 
 #define addrinfo addrinfo_rarch__
 
-/* Yes, we love shitty implementations, don't we? :( */
 #ifdef _XBOX
 struct hostent
 {

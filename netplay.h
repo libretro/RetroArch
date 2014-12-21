@@ -43,7 +43,9 @@ int16_t input_state_spectate_client(unsigned port, unsigned device,
 
 typedef struct netplay netplay_t;
 
-bool netplay_init_network(void);
+bool network_init(void);
+
+void network_deinit(void);
 
 /* Creates a new netplay handle. A NULL host means we're 
  * hosting (user 1). :) */

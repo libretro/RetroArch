@@ -67,7 +67,7 @@ static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
    struct addrinfo hints, *res = NULL;
    int yes = 1;
 
-   if (!netplay_init_network())
+   if (!network_init())
       return false;
 
    RARCH_LOG("Bringing up command interface on port %hu.\n",
@@ -612,7 +612,7 @@ bool network_cmd_send(const char *cmd_)
    bool old_verbose = g_extern.verbosity;
    uint16_t port = DEFAULT_NETWORK_CMD_PORT;
 
-   if (!netplay_init_network())
+   if (!network_init())
       return false;
 
    if (!(command = strdup(cmd_)))
