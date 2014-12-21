@@ -3,11 +3,16 @@
 
 int main()
 {
-	char url[]="http://unicodesnowmanforyou.com/";
+	char url[]="http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/2048_libretro.so.zip";
 	char* urlfilename=NULL;
-	http_parse_url(url, &urlfilename);
+	int len;
 	char * out;
-	http_retcode status=http_get(urlfilename, &out, NULL, NULL);
+	FILE * f;
+	http_parse_url(url, &urlfilename);
+	http_retcode status=http_get(urlfilename, &out, &len, NULL);
 	if (status<0) printf("%i - failure...\n", status);
-	else printf("%i - success - %s\n", status, out);
+	else printf("%i - success\n", status);
+	f=fopen("2048_libretro.so.zip", "wb");
+	fwrite(out, 1,len, f);
+	fclose(f);
 }
