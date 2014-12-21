@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "http_intf.h"
-#include "general.h"
 #include "retroarch_logger.h"
+#include "general.h"
 
 int http_intf_command(unsigned mode, char *url)
 {
@@ -41,7 +41,7 @@ int http_intf_command(unsigned mode, char *url)
          /* read stdin into memory */
          blocksize=16384;
          lg=0;
-         if (!(data=malloc(blocksize)))
+         if (!(data=(char*)malloc(blocksize)))
             return 3;
          while (1)
          {
@@ -55,7 +55,7 @@ int http_intf_command(unsigned mode, char *url)
                blocksize *= 4;
                RARCH_LOG("read to date: %9d bytes, reallocating buffer to %9d\n",
                      lg, blocksize);
-               if (!(data=realloc(data,blocksize)))
+               if (!(data=(char*)realloc(data,blocksize)))
                   return 4;
             }
          }
