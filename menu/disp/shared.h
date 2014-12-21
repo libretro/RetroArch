@@ -8,6 +8,8 @@ static void get_title(const char *label, const char *dir,
 {
    if (!strcmp(label, "core_list"))
       snprintf(title, sizeof_title, "CORE SELECTION %s", dir);
+   if (!strcmp(label, "core_manager_list"))
+      snprintf(title, sizeof_title, "CORE MANAGER %s", dir);
    else if (!strcmp(label, "deferred_core_list"))
       snprintf(title, sizeof_title, "DETECTED CORES %s", dir);
    else if (!strcmp(label, "configurations"))

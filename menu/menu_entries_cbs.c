@@ -466,6 +466,19 @@ static int action_ok_core_load(const char *path,
 #endif
 }
 
+static int action_ok_core_download(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   const char *menu_path    = NULL;
+   if (!driver.menu)
+      return -1;
+
+   menu_list_get_last_stack(driver.menu->menu_list,
+         &menu_path, NULL, NULL);
+
+   return 0;
+}
+
 static int action_ok_compressed_archive_push(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -709,6 +722,12 @@ static int action_ok_core_list(const char *path,
          dir, label, type,
          driver.menu->selection_ptr);
 
+   return 0;
+}
+
+static int action_ok_core_manager_list(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
    return 0;
 }
 
@@ -2036,6 +2055,12 @@ static int deferred_push_core_list(void *data, void *userdata,
    return 0;
 }
 
+static int deferred_push_core_manager_list(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   return 0;
+}
+
 static int deferred_push_history_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -2388,6 +2413,8 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
             cbs->action_ok = action_ok_core_load_deferred;
          else if (!strcmp(menu_label, "core_list"))
             cbs->action_ok = action_ok_core_load;
+         else if (!strcmp(menu_label, "core_manager_list"))
+            cbs->action_ok = action_ok_core_download;
          else
             return -1;
          break;
@@ -2530,6 +2557,8 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_shader_preset_save_as;
    else if (!strcmp(label, "core_list"))
       cbs->action_ok = action_ok_core_list;
+   else if (!strcmp(label, "core_manager_list"))
+      cbs->action_ok = action_ok_core_manager_list;
    else if (!strcmp(label, "disk_image_append"))
       cbs->action_ok = action_ok_disk_image_append_list;
    else if (!strcmp(label, "configurations"))
@@ -2555,6 +2584,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_toggle = action_toggle_cheat;
    else if (
          !strcmp(label, "core_list") ||
+         !strcmp(label, "core_manager_list") ||
          !strcmp(label, "history_list") ||
          !strcmp(label, "detect_core_list") ||
          !strcmp(label, "load_content") ||
@@ -2658,6 +2688,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_disk_options;
    else if (!strcmp(label, "core_list"))
       cbs->action_deferred_push = deferred_push_core_list;
+   else if (!strcmp(label, "core_manager_list"))
+      cbs->action_deferred_push = deferred_push_core_manager_list;
    else if (!strcmp(label, "configurations"))
       cbs->action_deferred_push = deferred_push_configurations;
    else if (!strcmp(label, "video_shader_preset"))
