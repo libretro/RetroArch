@@ -15,7 +15,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stddef.h>
 #include <boolean.h>
 #include "message_queue.h"
 #include "retroarch_logger.h"

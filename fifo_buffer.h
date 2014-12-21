@@ -17,6 +17,9 @@
 #ifndef __FIFO_BUFFER_H
 #define __FIFO_BUFFER_H
 
+#include <stdint.h>
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
