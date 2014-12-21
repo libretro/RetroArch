@@ -15,7 +15,6 @@
  */
 
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 
 #include "fifo_buffer.h"
