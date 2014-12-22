@@ -243,16 +243,18 @@ void switch_to_ios() {
    }
    
    apple_gamecontroller_init();
+
+   apple_start_iteration();
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-   apple_start_iteration();
+  [self showGameView];
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {
-   apple_stop_iteration();
+  [self showPauseMenu: self];
 }
 
 -(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
