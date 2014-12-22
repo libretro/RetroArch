@@ -96,8 +96,10 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
  * If it can make a decision right now, returns -1. */
 
 int rarch_defer_core(core_info_list_t *core_info, const char *dir,
-      const char *path, char *deferred_path, size_t sizeof_deferred_path)
+      const char *path, const char *menu_label,
+      char *deferred_path, size_t sizeof_deferred_path)
 {
+   char new_core_path[PATH_MAX];
    const core_info_t *info = NULL;
    size_t supported = 0;
 
@@ -117,13 +119,23 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
       core_info_list_get_supported_cores(core_info, deferred_path, &info,
             &supported);
 
+   if (!strcmp(menu_label, "load_content"))
+   {
+      strlcpy(new_core_path, g_extern.core_info_current->path, sizeof(new_core_path));
+      supported = 1;
+   }
+   else
+   {
+      strlcpy(new_core_path, info->path, sizeof(new_core_path));
+   }
+
    /* Can make a decision right now. */
    if (supported == 1)
    {
       strlcpy(g_extern.fullpath, deferred_path,
             sizeof(g_extern.fullpath));
-      if (path_file_exists(info->path))
-         strlcpy(g_settings.libretro, info->path,
+      if (path_file_exists(new_core_path))
+         strlcpy(g_settings.libretro, new_core_path,
                sizeof(g_settings.libretro));
       return -1;
    }

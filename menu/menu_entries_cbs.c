@@ -583,7 +583,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
          &menu_path, NULL, NULL);
 
    ret = rarch_defer_core(g_extern.core_info,
-         menu_path, path, driver.menu->deferred_path,
+         menu_path, path, label, driver.menu->deferred_path,
          sizeof(driver.menu->deferred_path));
 
    if (ret == -1)

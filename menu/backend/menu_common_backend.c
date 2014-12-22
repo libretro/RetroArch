@@ -470,7 +470,7 @@ static int menu_archive_load(void)
    menu_list_get_at_offset(driver.menu->menu_list->selection_buf,
          driver.menu->selection_ptr, &path, NULL, &type);
 
-   ret = rarch_defer_core(g_extern.core_info, menu_path, path,
+   ret = rarch_defer_core(g_extern.core_info, menu_path, path, menu_label,
          driver.menu->deferred_path, sizeof(driver.menu->deferred_path));
 
    switch (ret)
