@@ -27,7 +27,7 @@ void apple_start_iteration(void);
 
 void apple_stop_iteration(void);
 
-static CFRunLoopObserverRef iterate_observer;
+static CFRunLoopObserverRef iterate_observer = NULL;
 
 static void do_iteration(void)
 {
@@ -103,17 +103,22 @@ static void do_iteration(void)
 
 void apple_start_iteration(void)
 {
-   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
-         true, 0, (CFRunLoopObserverCallBack)do_iteration, 0);
-   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer,
-         kCFRunLoopCommonModes);
+  if (iterate_observer == NULL) {
+    iterate_observer =
+      CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
+                              true, 0, (CFRunLoopObserverCallBack)do_iteration, 0);
+    CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer,
+                         kCFRunLoopCommonModes);
+  }
 }
 
 void apple_stop_iteration(void)
 {
-   CFRunLoopObserverInvalidate(iterate_observer);
-   CFRelease(iterate_observer);
-   iterate_observer = 0;
+  if (iterate_observer != NULL) {
+    CFRunLoopObserverInvalidate(iterate_observer);
+    CFRelease(iterate_observer);
+    iterate_observer = NULL;
+  }
 }
 
 static void frontend_apple_get_environment_settings(int *argc, char *argv[],
