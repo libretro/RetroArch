@@ -16,6 +16,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
+#ifdef _WIN32
+#include <io.h>
+#endif
 #include "hash.h"
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
