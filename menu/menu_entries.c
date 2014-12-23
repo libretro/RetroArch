@@ -237,6 +237,10 @@ int entries_push_horizontal_menu_list(menu_handle_t *menu,
 
 static void parse_drive_list(file_list_t *list)
 {
+   size_t i;
+
+   (void)i;
+
 #if defined(GEKKO)
 #ifdef HW_RVL
    menu_list_push(list,
