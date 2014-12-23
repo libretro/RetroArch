@@ -523,7 +523,7 @@ static void rmenu_xui_list_set_selection(void *data)
 static void rmenu_xui_update_core_info(void *data)
 {
    (void)data;
-   update_libretro_info(&g_extern.menu.info);
+   menu_update_libretro_info(&g_extern.menu.info);
 }
 
 menu_ctx_driver_t menu_ctx_rmenu_xui = {

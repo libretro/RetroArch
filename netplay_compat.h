@@ -54,6 +54,14 @@
 
 #ifdef _XBOX
 #define socklen_t int
+
+#ifndef h_addr 
+#define h_addr h_addr_list[0] /* for backward compatibility */
+#endif
+
+#ifndef SO_KEEPALIVE
+#define SO_KEEPALIVE 0 /* verify if correct */
+#endif
 #endif
 
 #if defined(_WIN32)

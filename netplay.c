@@ -1572,9 +1572,12 @@ void netplay_post_frame(netplay_t *netplay)
 #define addrinfo addrinfo_rarch__
 
 #ifdef _XBOX
+/* TODO - implement h_length and h_addrtype */
 struct hostent
 {
-   char **h_addr_list; /* Just do the minimal needed ... */
+   int h_addrtype;     /* host address type   */
+   int h_length;       /* length of addresses */
+   char **h_addr_list; /* list of addresses   */
 };
 
 static struct hostent *gethostbyname(const char *name)
