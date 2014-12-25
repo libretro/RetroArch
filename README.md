@@ -33,8 +33,7 @@ More developer-centric stuff is found [here](https://github.com/libretro/libretr
 
 ## Related projects
 
-   - Cg/HLSL shaders: [common-shaders](https://github.com/twinaphex/common-shaders)
-   - More Cg shaders: [Emulator-Shader-Pack](https://github.com/Themaister/Emulator-Shader-Pack)
+   - Cg/HLSL shaders: [common-shaders](https://github.com/libretro/common-shaders)
    - Helper scripts to build libretro implementations: [libretro-super](https://github.com/libretro/libretro-super)
 
 ## Philosophy
