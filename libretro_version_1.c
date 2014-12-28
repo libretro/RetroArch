@@ -306,21 +306,31 @@ static int16_t input_state(unsigned port, unsigned device,
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
          res = driver.input->input_state(driver.input_data, binds, port,
                device, idx, id);
-   }
 
 #ifdef HAVE_OVERLAY
-   if (device == RETRO_DEVICE_JOYPAD && port == 0)
-      res |= driver.overlay_state.buttons & (UINT64_C(1) << id) ? 1 : 0;
-   else if (device == RETRO_DEVICE_KEYBOARD && port == 0 && id < RETROK_LAST)
-      res |= OVERLAY_GET_KEY(&driver.overlay_state, id) ? 1 : 0;
-   else if (device == RETRO_DEVICE_ANALOG && port == 0)
-   {
-      unsigned base = (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT) ? 2 : 0;
-      base += (id == RETRO_DEVICE_ID_ANALOG_Y) ? 1 : 0;
-      if (driver.overlay_state.analog[base])
-         res = driver.overlay_state.analog[base];
-   }
+      if (port == 0)
+      {
+         switch (device)
+         {
+            case RETRO_DEVICE_JOYPAD:
+               res |= driver.overlay_state.buttons & (UINT64_C(1) << id) ? 1 : 0;
+               break;
+            case RETRO_DEVICE_KEYBOARD:
+               if (id < RETROK_LAST)
+                  res |= OVERLAY_GET_KEY(&driver.overlay_state, id) ? 1 : 0;
+               break;
+            case RETRO_DEVICE_ANALOG:
+               {
+                  unsigned base = (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT) ? 2 : 0;
+                  base += (id == RETRO_DEVICE_ID_ANALOG_Y) ? 1 : 0;
+                  if (driver.overlay_state.analog[base])
+                     res = driver.overlay_state.analog[base];
+               }
+               break;
+         }
+      }
 #endif
+   }
 
    /* flushing_input will be cleared in rarch_main_iterate. */
    if (driver.flushing_input)
