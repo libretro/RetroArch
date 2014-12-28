@@ -5299,6 +5299,10 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
    CONFIG_DIR(
          g_extern.savestate_dir,
@@ -5310,6 +5314,10 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
    CONFIG_DIR(
          g_settings.system_directory,
@@ -5321,6 +5329,10 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
    CONFIG_DIR(
          g_settings.extraction_directory,
@@ -5332,6 +5344,10 @@ static bool setting_data_append_list_path_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 
