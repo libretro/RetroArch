@@ -301,12 +301,12 @@ static int16_t input_state(unsigned port, unsigned device,
       g_settings.input.binds[15],
    };
 
-   if (!driver.block_libretro_input &&
-         ((id < RARCH_FIRST_META_KEY ||
-            device == RETRO_DEVICE_KEYBOARD))
-         )
-      res = driver.input->input_state(driver.input_data, binds, port,
-            device, idx, id);
+   if (!driver.block_libretro_input)
+   {
+      if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
+         res = driver.input->input_state(driver.input_data, binds, port,
+               device, idx, id);
+   }
 
 #ifdef HAVE_OVERLAY
    if (device == RETRO_DEVICE_JOYPAD && port == 0)
