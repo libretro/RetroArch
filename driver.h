@@ -316,21 +316,6 @@ typedef struct location_driver
 
 struct rarch_viewport;
 
-#ifdef HAVE_OVERLAY
-typedef struct video_overlay_interface
-{
-   void (*enable)(void *data, bool state);
-   bool (*load)(void *data,
-         const struct texture_image *images, unsigned num_images);
-   void (*tex_geom)(void *data, unsigned image,
-         float x, float y, float w, float h);
-   void (*vertex_geom)(void *data, unsigned image,
-         float x, float y, float w, float h);
-   void (*full_screen)(void *data, bool enable);
-   void (*set_alpha)(void *data, unsigned image, float mod);
-} video_overlay_interface_t;
-#endif
-
 struct font_params
 {
    float x;

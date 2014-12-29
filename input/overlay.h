@@ -18,6 +18,7 @@
 
 #include <boolean.h>
 #include "../libretro.h"
+#include "../gfx/image/image.h"
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -33,6 +34,100 @@ extern "C" {
  * This interface requires that the video driver has support 
  * for the overlay interface.
  */
+
+typedef struct video_overlay_interface
+{
+   void (*enable)(void *data, bool state);
+   bool (*load)(void *data,
+         const struct texture_image *images, unsigned num_images);
+   void (*tex_geom)(void *data, unsigned image,
+         float x, float y, float w, float h);
+   void (*vertex_geom)(void *data, unsigned image,
+         float x, float y, float w, float h);
+   void (*full_screen)(void *data, bool enable);
+   void (*set_alpha)(void *data, unsigned image, float mod);
+} video_overlay_interface_t;
+
+enum overlay_hitbox
+{
+   OVERLAY_HITBOX_RADIAL = 0,
+   OVERLAY_HITBOX_RECT
+};
+
+enum overlay_type
+{
+   OVERLAY_TYPE_BUTTONS = 0,
+   OVERLAY_TYPE_ANALOG_LEFT,
+   OVERLAY_TYPE_ANALOG_RIGHT,
+   OVERLAY_TYPE_KEYBOARD
+};
+
+struct overlay_desc
+{
+   float x;
+   float y;
+
+   enum overlay_hitbox hitbox;
+   float range_x, range_y;
+   float range_x_mod, range_y_mod;
+   float mod_x, mod_y, mod_w, mod_h;
+   float delta_x, delta_y;
+
+   enum overlay_type type;
+   uint64_t key_mask;
+   float analog_saturate_pct;
+
+   unsigned next_index;
+   char next_index_name[64];
+
+   struct texture_image image;
+   unsigned image_index;
+
+   float alpha_mod;
+   float range_mod;
+
+   bool updated;
+   bool movable;
+};
+
+struct overlay
+{
+   struct overlay_desc *descs;
+   size_t size;
+
+   struct texture_image image;
+
+   bool block_scale;
+   float mod_x, mod_y, mod_w, mod_h;
+   float x, y, w, h;
+   float scale;
+   float center_x, center_y;
+
+   bool full_screen;
+
+   char name[64];
+
+   struct texture_image *load_images;
+   unsigned load_images_size;
+};
+
+struct input_overlay
+{
+   void *iface_data;
+   const video_overlay_interface_t *iface;
+   bool enable;
+
+   bool blocked;
+
+   struct overlay *overlays;
+   const struct overlay *active;
+   size_t index;
+   size_t size;
+
+   unsigned next_index;
+   char *overlay_path;
+};
+
 typedef struct input_overlay input_overlay_t;
 
 typedef struct input_overlay_state
