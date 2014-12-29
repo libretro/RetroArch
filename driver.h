@@ -28,7 +28,11 @@
 #include "gfx/image/image.h"
 #include "gfx/shader/shader_parse.h"
 #include "input/input_context.h"
+
+#ifdef HAVE_OVERLAY
 #include "input/overlay.h"
+#endif
+
 #include "frontend/frontend_context.h"
 #include <retro_miscellaneous.h>
 
@@ -699,7 +703,10 @@ extern menu_ctx_driver_backend_t menu_ctx_backend_lakka;
 
 extern rarch_joypad_driver_t *joypad_drivers[];
 
+#ifdef HAVE_OVERLAY
 #define check_overlay_func(input, old_input) rarch_check_overlay(BIT64_GET(input, RARCH_OVERLAY_NEXT), BIT64_GET(old_input, RARCH_OVERLAY_NEXT))
+#endif
+
 #define check_oneshot_func(trigger_input) (check_is_oneshot(BIT64_GET(trigger_input, RARCH_FRAMEADVANCE), BIT64_GET(trigger_input, RARCH_REWIND)))
 #define check_slowmotion_func(input) check_slowmotion(BIT64_GET(input, RARCH_SLOWMOTION))
 #define check_shader_dir_func(trigger_input) check_shader_dir(BIT64_GET(trigger_input, RARCH_SHADER_NEXT), BIT64_GET(trigger_input, RARCH_SHADER_PREV))
