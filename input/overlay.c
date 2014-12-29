@@ -624,7 +624,7 @@ static void input_overlay_load_active(input_overlay_t *ol)
    ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
 }
 
-input_overlay_t *input_overlay_new(const char *overlay)
+input_overlay_t *input_overlay_new(const char *overlay, bool enable)
 {
    input_overlay_t *ol = (input_overlay_t*)calloc(1, sizeof(*ol));
 
@@ -657,8 +657,7 @@ input_overlay_t *input_overlay_new(const char *overlay)
    ol->active = &ol->overlays[0];
 
    input_overlay_load_active(ol);
-   ol->iface->enable(ol->iface_data, true);
-   ol->enable = true;
+   input_overlay_enable(ol, enable);
 
    input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
    input_overlay_set_scale_factor(ol, g_settings.input.overlay_scale);

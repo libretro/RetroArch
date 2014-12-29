@@ -2368,7 +2368,7 @@ bool rarch_main_command(unsigned cmd)
          if (!*g_settings.input.overlay)
             break;
 
-         driver.overlay = input_overlay_new(g_settings.input.overlay);
+         driver.overlay = input_overlay_new(g_settings.input.overlay, g_settings.input.overlay_enable);
          if (!driver.overlay)
             RARCH_ERR("Failed to load overlay.\n");
 #endif

@@ -48,7 +48,7 @@ typedef struct input_overlay_state
 #define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 #define OVERLAY_CLEAR_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
 
-input_overlay_t *input_overlay_new(const char *overlay);
+input_overlay_t *input_overlay_new(const char *overlay, bool enable);
 void input_overlay_free(input_overlay_t *ol);
 
 void input_overlay_enable(input_overlay_t *ol, bool enable);

@@ -4644,6 +4644,18 @@ static bool setting_data_append_list_overlay_options(
    START_GROUP(group_info, "Overlay Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
+   CONFIG_BOOL(
+         g_settings.input.overlay_enable,
+         "input_overlay_enable",
+         "Overlay Enable",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
    CONFIG_PATH(
          g_settings.input.overlay,
          "input_overlay",

@@ -474,6 +474,7 @@ static void config_set_defaults(void)
    g_settings.input.turbo_period = turbo_period;
    g_settings.input.turbo_duty_cycle = turbo_duty_cycle;
 
+   g_settings.input.overlay_enable = true;
    g_settings.input.overlay_opacity = 0.7f;
    g_settings.input.overlay_scale = 1.0f;
    g_settings.input.autodetect_enable = input_autodetect_enable;
@@ -1121,6 +1122,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       *g_extern.overlay_dir = '\0';
 
    CONFIG_GET_PATH(input.overlay, "input_overlay");
+   CONFIG_GET_BOOL(input.overlay_enable, "input_overlay_enable");
    CONFIG_GET_FLOAT(input.overlay_opacity, "input_overlay_opacity");
    CONFIG_GET_FLOAT(input.overlay_scale, "input_overlay_scale");
 #endif
@@ -1715,6 +1717,7 @@ bool config_save_file(const char *path)
    config_set_path(conf, "overlay_directory",
          *g_extern.overlay_dir ? g_extern.overlay_dir : "default");
    config_set_path(conf, "input_overlay", g_settings.input.overlay);
+   config_set_bool(conf, "input_overlay_enable", g_settings.input.overlay_enable);
    config_set_float(conf, "input_overlay_opacity",
          g_settings.input.overlay_opacity);
    config_set_float(conf, "input_overlay_scale",
