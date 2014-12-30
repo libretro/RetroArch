@@ -4,12 +4,6 @@
 #include <stdint.h>
 #include <retro_endianness.h>
 
-#ifndef swap16
-#define swap16(val)				\
-	((((uint16_t)(val) & 0x00ff) << 8)	\
-	 | (((uint16_t)(val) & 0xff00) >> 8))
-#endif
-
 #ifndef swap64
 #define swap64(val)						\
 	((((uint64_t)(val) & 0x00000000000000ffULL) << 56)	\
@@ -25,7 +19,7 @@
 
 #define httobe64(x) (is_little_endian() ? swap64(x) : (x))
 #define httobe32(x) (is_little_endian() ? SWAP32(x) : (x))
-#define httobe16(x) (is_little_endian() ? swap16(x) : (x))
+#define httobe16(x) (is_little_endian() ? SWAP16(x) : (x))
 
 #define betoht16(x) httobe16(x)
 #define betoht32(x) httobe32(x)

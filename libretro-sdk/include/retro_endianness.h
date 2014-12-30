@@ -26,6 +26,11 @@
 #include <retro_inline.h>
 #include <stdint.h>
 
+#define SWAP16(x) ((uint16_t)(				      \
+         (((uint16_t)(x) & 0x00ff) << 8)      |	\
+         (((uint16_t)(x) & 0xff00) >> 8)        \
+          ))
+
 #define SWAP32(x) ((uint32_t)(           \
          (((uint32_t)(x) & 0x000000ff) << 24) | \
          (((uint32_t)(x) & 0x0000ff00) <<  8) | \
