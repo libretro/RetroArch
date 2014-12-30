@@ -1,4 +1,4 @@
-CFLAGS   =-std=c99 -g
+CFLAGS   = -g
 INCFLAGS = -I. -I../libretro-sdk/include
 DAT_CONVERTER_OBJ = rmsgpack.o \
 		    rmsgpack_dom.o \
@@ -27,6 +27,6 @@ rarchdb_tool: ${RARCHDB_TOOL_OBJ}
 	${CC} $(INCFLAGS) ${RARCHDB_TOOL_OBJ} -o $@
 
 rmsgpack_test:
-	${CC} $(INCFLAGS) rmsgpack.c rmsgpack_test.c -std=c99 -g -o $@
+	${CC} $(INCFLAGS) rmsgpack.c rmsgpack_test.c -g -o $@
 clean:
 	rm -rf *.o rmsgpack_test dat_converter rarchdb_tool
