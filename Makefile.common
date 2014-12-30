@@ -151,6 +151,14 @@ OBJ += frontend/frontend.o \
 		record/ffemu.o \
 		performance.o
 
+# RarchDB
+
+OBJ += rarchdb/bintree.o \
+		 rarchdb/db_parser.o \
+		 rarchdb/rarchdb.o \
+		 rarchdb/rmsgpack.o \
+		 rarchdb/rmsgpack_dom.o
+
 # Miscellaneous
 
 ifeq ($(HAVE_STDIN_CMD), 1)

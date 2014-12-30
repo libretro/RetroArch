@@ -2,22 +2,7 @@
 #define __RARCHDB_MSGPACK_ENDIAN_H
 
 #include <stdint.h>
-
-#ifndef INLINE
-#define INLINE inline
-#endif
-
-static INLINE uint8_t is_little_endian(void)
-{
-   union
-   {
-      uint16_t x;
-      uint8_t y[2];
-   } u;
-
-   u.x = 1;
-   return u.y[0];
-}
+#include <retro_endianness.h>
 
 #define swap16(val)				\
 	((((uint16_t)(val) & 0x00ff) << 8)	\

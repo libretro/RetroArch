@@ -782,6 +782,15 @@ XML
 ============================================================ */
 #include "../audio/utils.c"
 
+/*============================================================
+ RARCHDB
+============================================================ */
+#include "../rarchdb/bintree.c"
+#include "../rarchdb/db_parser.c"
+#include "../rarchdb/rarchdb.c"
+#include "../rarchdb/rmsgpack.c"
+#include "../rarchdb/rmsgpack_dom.c"
+
 #ifdef __cplusplus
 }
 #endif

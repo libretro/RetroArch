@@ -376,7 +376,6 @@ int rmsgpack_dom_read_into(int fd, ...)
    struct rmsgpack_dom_value map;
    int rv;
    const char* key_name;
-   int value_type;
    struct rmsgpack_dom_value key;
    struct rmsgpack_dom_value *value;
    int64_t *int_value;
@@ -385,8 +384,13 @@ int rmsgpack_dom_read_into(int fd, ...)
    char *buff_value;
    uint64_t min_len;
 
+   int value_type = 0;
+
    va_start(ap, fd);
    rv = rmsgpack_dom_read(fd, &map);
+
+   (void)value_type;
+
    if (rv < 0)
       return rv;
 
@@ -459,4 +463,3 @@ clean:
    rmsgpack_dom_value_free(&map);
    return 0;
 }
-

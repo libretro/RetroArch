@@ -353,6 +353,10 @@ int rarchdb_create_index(struct rarchdb *db, const char* name, const char *field
       rmsgpack_dom_value_free(&item);
       item_loc = rarchdb_tell(db);
    }
+
+   (void)rv;
+   (void)idx_header_offset;
+
    idx_header_offset = lseek(db->fd, 0, SEEK_END);
    strncpy(idx.name, name, 50);
 
