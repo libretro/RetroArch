@@ -4,7 +4,9 @@
 
 #include "bintree.h"
 
+#if 0
 static int NIL_VALUE = 1;
+#endif
 static void* NIL_NODE = &NIL_NODE;
 
 static struct bintree_node *new_nil_node(struct bintree_node *parent);

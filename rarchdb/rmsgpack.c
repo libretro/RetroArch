@@ -368,7 +368,7 @@ static int read_int(int fd, int64_t *out, size_t size)
 
 static int read_buff(int fd, size_t size, char** pbuff, uint64_t *len)
 {
-   uint64_t tmp_len;
+   uint64_t tmp_len = 0;
    if(read_uint(fd, &tmp_len, size) == -1)
       return -errno;
 
@@ -426,7 +426,7 @@ int rmsgpack_read(int fd, struct rmsgpack_read_callbacks *callbacks, void *data)
    uint64_t tmp_uint = 0;
    int64_t tmp_int = 0;
    uint8_t type = 0;
-   char* buff;
+   char* buff = NULL;
    if (read(fd, &type, sizeof(uint8_t)) == -1)
       return -errno;
 
