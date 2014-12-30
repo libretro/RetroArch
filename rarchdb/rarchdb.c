@@ -275,6 +275,7 @@ uint64_t rarchdb_tell(struct rarchdb *db)
 int rarchdb_create_index(struct rarchdb *db, const char* name, const char *field_name)
 {
    int rv;
+   struct node_iter_ctx nictx;
    struct rmsgpack_dom_value key;
    struct rarchdb_index idx;
    struct rmsgpack_dom_value item;
@@ -354,11 +355,12 @@ int rarchdb_create_index(struct rarchdb *db, const char* name, const char *field
    }
    idx_header_offset = lseek(db->fd, 0, SEEK_END);
    strncpy(idx.name, name, 50);
+
    idx.name[49] = '\0';
    idx.key_size = field_size;
    idx.next = db->count * (field_size + sizeof(uint64_t));
    rarchdb_write_index_header(db->fd, &idx);
-   struct node_iter_ctx nictx;
+
    nictx.db = db;
    nictx.idx = &idx;
    bintree_iterate(&tree, node_iter, &nictx);
