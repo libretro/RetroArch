@@ -10,14 +10,6 @@
 	 | (((uint16_t)(val) & 0xff00) >> 8))
 #endif
 
-#ifndef swap32
-#define swap32(val)					\
-	((((uint32_t)(val) & 0x000000ff) << 24)		\
-	 | (((uint32_t)(val) & 0x0000ff00) << 8)	\
-	 | (((uint32_t)(val) & 0x00ff0000) >> 8)	\
-	 | (((uint32_t)(val) & 0xff000000) >> 24))
-#endif
-
 #ifndef swap64
 #define swap64(val)						\
 	((((uint64_t)(val) & 0x00000000000000ffULL) << 56)	\
@@ -32,7 +24,7 @@
 
 
 #define httobe64(x) (is_little_endian() ? swap64(x) : (x))
-#define httobe32(x) (is_little_endian() ? swap32(x) : (x))
+#define httobe32(x) (is_little_endian() ? SWAP32(x) : (x))
 #define httobe16(x) (is_little_endian() ? swap16(x) : (x))
 
 #define betoht16(x) httobe16(x)
