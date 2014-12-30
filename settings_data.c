@@ -5140,16 +5140,20 @@ static bool setting_data_append_list_path_options(
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
-   CONFIG_PATH(
-         g_settings.core_options_path,
-         "core_options_path",
-         "Core Options Path",
+   CONFIG_DIR(
+         g_settings.content_database,
+         "content_database_path",
+         "Content Database Directory",
          "",
-         "Paths",
+         "<None>",
+         group_info.name,
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   settings_data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
 
    CONFIG_DIR(
          g_settings.cheat_database,

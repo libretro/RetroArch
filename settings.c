@@ -508,6 +508,7 @@ static void config_set_defaults(void)
    *g_settings.core_options_path = '\0';
    *g_settings.content_history_path = '\0';
    *g_settings.content_history_directory = '\0';
+   *g_settings.content_database = '\0';
    *g_settings.cheat_database = '\0';
    *g_settings.cheat_settings_path = '\0';
    *g_settings.resampler_directory = '\0';
@@ -1150,6 +1151,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(pause_nonactive, "pause_nonactive");
    CONFIG_GET_INT(autosave_interval, "autosave_interval");
 
+   CONFIG_GET_PATH(content_database, "content_database_path");
    CONFIG_GET_PATH(cheat_database, "cheat_database_path");
    CONFIG_GET_PATH(cheat_settings_path, "cheat_settings_path");
 
@@ -1583,6 +1585,7 @@ bool config_save_file(const char *path)
    config_set_path(conf,  "libretro_path", g_settings.libretro);
    config_set_path(conf,  "libretro_directory", g_settings.libretro_directory);
    config_set_path(conf,  "libretro_info_path", g_settings.libretro_info_path);
+   config_set_path(conf,  "content_database_path", g_settings.content_database);
    config_set_path(conf,  "cheat_database_path", g_settings.cheat_database);
    config_set_path(conf,  "content_history_dir", g_settings.content_history_directory);
    config_set_bool(conf,  "rewind_enable", g_settings.rewind_enable);
