@@ -30,7 +30,11 @@
 
 id<RetroArch_Platform> apple_platform;
 
+/* forward decls */
+
 void apple_rarch_exited(void);
+
+void main_exit_save_config(void);
 
 void apple_rarch_exited(void)
 {
@@ -254,6 +258,7 @@ void switch_to_ios() {
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {
+   main_exit_save_config();
   [self showPauseMenu: self];
 }
 
