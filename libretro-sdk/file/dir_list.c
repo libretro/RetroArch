@@ -89,6 +89,7 @@ void dir_list_free(struct string_list *list)
    string_list_free(list);
 }
 
+#ifndef _WIN32
 static bool dirent_is_directory(const char *path,
       const struct dirent *entry)
 {
@@ -105,6 +106,7 @@ static bool dirent_is_directory(const char *path,
    return path_is_directory(path);
 #endif
 }
+#endif
 
 /* Return values:
  * -1 - error
@@ -163,20 +165,27 @@ static int parse_dir_entry(const char *name, char *file_path,
 struct string_list *dir_list_new(const char *dir,
       const char *ext, bool include_dirs)
 {
-#ifdef _WIN32
    char path_buf[PATH_MAX];
+   struct string_list *ext_list, *list;
+#ifdef _WIN32
    WIN32_FIND_DATA ffd;
-   struct string_list *ext_list = NULL;
    HANDLE hFind = INVALID_HANDLE_VALUE;
-   struct string_list *list = string_list_new();
+#else
+   DIR *directory = NULL;
+   const struct dirent *entry = NULL;
+#endif
 
-   if (!list)
+   ext_list = NULL;
+   (void)path_buf;
+
+   if (!(list = string_list_new()))
       return NULL;
-
-   snprintf(path_buf, sizeof(path_buf), "%s\\*", dir);
 
    if (ext)
       ext_list = string_split(ext, "|");
+
+#ifdef _WIN32
+   snprintf(path_buf, sizeof(path_buf), "%s\\*", dir);
 
    hFind = FindFirstFile(path_buf, &ffd);
    if (hFind == INVALID_HANDLE_VALUE)
@@ -210,17 +219,6 @@ error:
    if (hFind != INVALID_HANDLE_VALUE)
       FindClose(hFind);
 #else
-   DIR *directory = NULL;
-   const struct dirent *entry = NULL;
-   struct string_list *ext_list = NULL;
-   struct string_list *list = string_list_new();
-
-   if (!list)
-      return NULL;
-
-   if (ext)
-      ext_list = string_split(ext, "|");
-
    directory = opendir(dir);
    if (!directory)
       goto error;
