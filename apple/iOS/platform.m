@@ -217,10 +217,17 @@ enum
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
 }
 
-void switch_to_ios() {
+void switch_to_ios(void) {
   if ( apple_platform != NULL ) {
     RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
     [ap showPauseMenu:ap];
+  }
+}
+
+void notify_content_loaded(void) {
+  if ( apple_platform != NULL ) {    
+    RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
+    [ap showGameView];
   }
 }
 
@@ -244,6 +251,7 @@ void switch_to_ios() {
    if ( driver.menu_ctx && driver.menu_ctx == &menu_ctx_ios && driver.menu && driver.menu->userdata ) {
      ios_handle_t *ih = (ios_handle_t*)driver.menu->userdata;
      ih->switch_to_ios = switch_to_ios;
+     ih->notify_content_loaded = notify_content_loaded;
    }
    
    apple_gamecontroller_init();

@@ -17,6 +17,7 @@
 #include "../../apple/common/CFExtensions.h"
 
 #include "../frontend.h"
+#include "../../menu/disp/ios.h"
 
 #include <stdint.h>
 #include <boolean.h>
@@ -183,6 +184,10 @@ extern void apple_rarch_exited(void);
 
 static void frontend_apple_load_content(void)
 {
+  if ( driver.menu_ctx && driver.menu_ctx == &menu_ctx_ios && driver.menu && driver.menu->userdata ) {
+     ios_handle_t *ih = (ios_handle_t*)driver.menu->userdata;
+     ih->notify_content_loaded();
+   }
 }
 
 static void frontend_apple_shutdown(bool unused)

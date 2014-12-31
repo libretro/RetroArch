@@ -81,6 +81,8 @@ void main_exit_save_config(void)
             g_settings.core_specific_config)
          config_save_file(g_extern.core_specific_config_path);
    }
+
+   rarch_main_command(RARCH_CMD_AUTOSAVE_STATE);
 }
 
 void main_exit(args_type() args)
