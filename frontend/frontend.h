@@ -27,6 +27,8 @@ extern "C" {
 #endif
 
 void main_exit(args_type() args);
+    
+void main_exit_save_config(void);
 
 returntype main_entry(signature());
 
