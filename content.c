@@ -42,8 +42,12 @@
 
 static void patch_content(uint8_t **buf, ssize_t *size)
 {
+   size_t target_size;
+
    uint8_t *ret_buf = *buf;
    ssize_t ret_size = *size;
+
+   uint8_t *patched_content = NULL;
 
    const char *patch_desc = NULL;
    const char *patch_path = NULL;
@@ -54,15 +58,15 @@ static void patch_content(uint8_t **buf, ssize_t *size)
    void *patch_data = NULL;
    bool success = false;
 
+   bool allow_bps = !g_extern.ups_pref && !g_extern.ips_pref;
+   bool allow_ups = !g_extern.bps_pref && !g_extern.ips_pref;
+   bool allow_ips = !g_extern.ups_pref && !g_extern.bps_pref;
+
    if (g_extern.ups_pref + g_extern.bps_pref + g_extern.ips_pref > 1)
    {
       RARCH_WARN("Several patches are explicitly defined, ignoring all ...\n");
       return;
    }
-
-   bool allow_bps = !g_extern.ups_pref && !g_extern.ips_pref;
-   bool allow_ups = !g_extern.bps_pref && !g_extern.ips_pref;
-   bool allow_ips = !g_extern.ups_pref && !g_extern.bps_pref;
 
    if (allow_ups && *g_extern.ups_name
          && (patch_size = read_file(g_extern.ups_name, &patch_data)) >= 0)
@@ -94,8 +98,10 @@ static void patch_content(uint8_t **buf, ssize_t *size)
    RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n",
          patch_desc, patch_path);
 
-   size_t target_size = ret_size * 4; /* Just to be sure. */
-   uint8_t *patched_content = (uint8_t*)malloc(target_size);
+   target_size = ret_size * 4; /* Just to be sure. */
+
+   patched_content = (uint8_t*)malloc(target_size);
+
    if (!patched_content)
    {
       RARCH_ERR("Failed to allocate memory for patched content ...\n");
@@ -153,9 +159,12 @@ static ssize_t read_content_file(const char *path, void **buf)
 }
 
 /* Attempt to save valuable RAM data somewhere. */
+
 static void dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
+   char path[PATH_MAX], timebuf[PATH_MAX];
+   time_t time_;
 #if defined(_WIN32) && !defined(_XBOX)
    const char *base = getenv("APPDATA");
 #elif defined(__CELLOS_LV2__) || defined(_XBOX)
@@ -167,12 +176,10 @@ static void dump_to_file_desperate(const void *data,
    if (!base)
       goto error;
 
-   char path[PATH_MAX];
    snprintf(path, sizeof(path), "%s/RetroArch-recovery-%u", base, type);
-   char timebuf[PATH_MAX];
 
-   time_t time_;
    time(&time_);
+
    strftime(timebuf, sizeof(timebuf), "%Y-%m-%d-%H-%M-%S", localtime(&time_));
    strlcat(path, timebuf, sizeof(path));
 
@@ -189,12 +196,19 @@ error:
 
 bool save_state(const char *path)
 {
+   bool ret = false;
+   size_t size;
+   void *data = NULL;
+
    RARCH_LOG("Saving state: \"%s\".\n", path);
-   size_t size = pretro_serialize_size();
+
+   size = pretro_serialize_size();
+
    if (size == 0)
       return false;
 
-   void *data = malloc(size);
+   data = malloc(size);
+
    if (!data)
    {
       RARCH_ERR("Failed to allocate memory for save state buffer.\n");
@@ -202,7 +216,8 @@ bool save_state(const char *path)
    }
 
    RARCH_LOG("State size: %d bytes.\n", (int)size);
-   bool ret = pretro_serialize(data, size);
+   ret = pretro_serialize(data, size);
+
    if (ret)
       ret = write_file(path, data, size);
 
@@ -210,6 +225,7 @@ bool save_state(const char *path)
       RARCH_ERR("Failed to save state to \"%s\".\n", path);
 
    free(data);
+
    return ret;
 }
 
@@ -223,7 +239,11 @@ struct sram_block
 bool load_state(const char *path)
 {
    unsigned i;
+   unsigned num_blocks = 0;
+   bool ret = true;
    void *buf = NULL;
+   struct sram_block *blocks = NULL;
+
    ssize_t size = read_file(path, &buf);
 
    RARCH_LOG("Loading state: \"%s\".\n", path);
@@ -234,11 +254,7 @@ bool load_state(const char *path)
       return false;
    }
 
-   bool ret = true;
    RARCH_LOG("State size: %u bytes.\n", (unsigned)size);
-
-   struct sram_block *blocks = NULL;
-   unsigned num_blocks = 0;
 
    if (g_settings.block_sram_overwrite && g_extern.savefiles
          && g_extern.savefiles->size)
@@ -295,14 +311,16 @@ bool load_state(const char *path)
 
 void load_ram_file(const char *path, int type)
 {
+   ssize_t rc;
+   void *buf = NULL;
    size_t size = pretro_get_memory_size(type);
    void *data = pretro_get_memory_data(type);
 
    if (size == 0 || !data)
       return;
 
-   void *buf = NULL;
-   ssize_t rc = read_file(path, &buf);
+   rc = read_file(path, &buf);
+
    if (rc > 0)
    {
       if (rc > (ssize_t)size)
@@ -355,7 +373,7 @@ static bool load_content(const struct retro_subsystem_info *special,
       const char *path = content->elems[i].data;
       int attr = content->elems[i].attr.i;
 
-      bool need_fullpath = attr & 2;
+      bool need_fullpath   = attr & 2;
       bool require_content = attr & 4;
 
       if (require_content && !*path)
@@ -366,13 +384,14 @@ static bool load_content(const struct retro_subsystem_info *special,
       }
 
       info[i].path = *path ? path : NULL;
+
       if (!need_fullpath && *path)
       {
          /* Load the content into memory. */
 
          /* First content file is significant, attempt to do patching,
           * CRC checking, etc. */
-         long size = i == 0 ?
+         long size = (i == 0) ?
             read_content_file(path, (void**)&info[i].data) :
             read_file(path, (void**)&info[i].data);
 
@@ -457,13 +476,15 @@ end:
 bool init_content_file(void)
 {
    unsigned i;
+   union string_list_elem_attr attr;
+   bool ret = false;
+   struct string_list *content = NULL;
+   const struct retro_subsystem_info *special = NULL;
 
    g_extern.content_is_init = false;
    g_extern.temporary_content = string_list_new();
    if (!g_extern.temporary_content)
       return false;
-
-   const struct retro_subsystem_info *special = NULL;
 
    if (*g_extern.subsystem)
    {
@@ -501,8 +522,7 @@ bool init_content_file(void)
       }
    }
 
-   union string_list_elem_attr attr;
-   struct string_list *content = string_list_new();
+   content = string_list_new();
 
    attr.i = 0;
 
@@ -568,8 +588,10 @@ bool init_content_file(void)
 
    /* Set attr to need_fullpath as appropriate. */
    
-   bool ret = load_content(special, content);
+   ret = load_content(special, content);
+
    g_extern.content_is_init = (ret) ? true : false;
+
    string_list_free(content);
    return ret;
 }
