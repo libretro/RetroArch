@@ -570,6 +570,8 @@ void uninit_drivers(int flags);
 void find_prev_driver(const char *label, char *str, size_t sizeof_str);
 void find_next_driver(const char *label, char *str, size_t sizeof_str);
 
+
+const char* config_get_audio_resampler_driver_options(void);
 void find_prev_resampler_driver(void);
 void find_next_resampler_driver(void);
 

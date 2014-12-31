@@ -3066,11 +3066,12 @@ static bool setting_data_append_list_driver_options(
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
-   CONFIG_STRING(
+   CONFIG_STRING_OPTIONS(
          g_settings.audio.resampler,
          "audio_resampler_driver",
          "Audio Resampler Driver",
          config_get_default_audio_resampler(),
+         config_get_audio_resampler_driver_options(),
          group_info.name,
          subgroup_info.name,
          NULL,

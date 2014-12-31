@@ -46,6 +46,7 @@ static int find_resampler_driver_index(const char *drv)
 }
 
 #if !defined(RESAMPLER_TEST) && defined(RARCH_INTERNAL)
+#include <string/string_list.h>
 #include "../../general.h"
 
 void find_prev_resampler_driver(void)
@@ -68,6 +69,33 @@ void find_next_resampler_driver(void)
    else
       RARCH_WARN("Couldn't find any next resampler driver (current one: \"%s\").\n",
             driver.resampler->ident);
+}
+
+const char* config_get_audio_resampler_driver_options(void)
+{
+   union string_list_elem_attr attr;
+   char *options = NULL;
+   int option_k = 0;
+   int options_len = 0;
+   struct string_list *options_l = string_list_new();
+
+   attr.i = 0;
+
+   for (option_k = 0; resampler_drivers[option_k]; option_k++)
+   {
+      const char *opt = resampler_drivers[option_k]->ident;
+      options_len += strlen(opt) + 1;
+      string_list_append(options_l, opt, attr);
+   }
+
+   options = (char*)calloc(options_len, sizeof(char));
+
+   string_list_join_concat(options, options_len, options_l, "|");
+
+   string_list_free(options_l);
+   options_l = NULL;
+
+   return options;
 }
 #endif
 
