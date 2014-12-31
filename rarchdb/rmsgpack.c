@@ -345,12 +345,14 @@ static int read_uint(int fd, uint64_t *out, size_t size)
 
 static int read_int(int fd, int64_t *out, size_t size)
 {
-   uint8_t tmp8;
+   uint8_t tmp8 = 0;
    uint16_t tmp16;
    uint32_t tmp32;
    uint64_t tmp64;
    if(read(fd, &tmp64, size) == -1)
       return -errno;
+
+   (void)tmp8;
 
    switch(size)
    {
