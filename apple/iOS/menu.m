@@ -199,7 +199,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 @implementation RAMenuItemGeneralSetting
 
-+ (id)itemForSetting:(rarch_setting_t*)setting
++ (id)itemForSetting:(rarch_setting_t*)setting action:(void (^)())action
 {
   switch (setting->type) {
   case ST_NONE:
@@ -207,19 +207,19 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
     return [RAMenuItemBasic itemWithDescription:BOXSTRING("Shouldn't be called with ST_NONE or ST_ACTION")
                                          action:^{}];                     
   case ST_BOOL:
-    return [[RAMenuItemBooleanSetting alloc] initWithSetting:setting];
+    return [[RAMenuItemBooleanSetting alloc] initWithSetting:setting action:action];
   case ST_INT:
   case ST_UINT:
   case ST_FLOAT:
     break;
   case ST_PATH:
   case ST_DIR:
-    return [[RAMenuItemPathSetting alloc] initWithSetting:setting];
+    return [[RAMenuItemPathSetting alloc] initWithSetting:setting action:action];
   case ST_STRING:
   case ST_HEX:
     break;
   case ST_BIND:
-    return [[RAMenuItemBindSetting alloc] initWithSetting:setting];
+    return [[RAMenuItemBindSetting alloc] initWithSetting:setting action:action];
   case ST_GROUP:
   case ST_SUB_GROUP:
   case ST_END_GROUP:
@@ -230,9 +230,9 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
   }
 
    if (setting->type == ST_STRING && setting->values)
-      return [[RAMenuItemEnumSetting alloc] initWithSetting:setting];
+      return [[RAMenuItemEnumSetting alloc] initWithSetting:setting action:action];
    
-   RAMenuItemGeneralSetting* item = [[RAMenuItemGeneralSetting alloc] initWithSetting:setting];
+   RAMenuItemGeneralSetting* item = [[RAMenuItemGeneralSetting alloc] initWithSetting:setting action:action];
    
    if (item.setting->type == ST_INT  ||
        item.setting->type == ST_UINT ||
@@ -242,11 +242,13 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    return item;
 }
 
-- (id)initWithSetting:(rarch_setting_t*)setting
+- (id)initWithSetting:(rarch_setting_t*)setting action:(void (^)())action
 {
-   if ((self = [super init]))
-      _setting = setting;
-   return self;
+  if ((self = [super init])) {
+    _setting = setting;
+    _action = action;
+  }
+  return self;
 }
 
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
@@ -358,10 +360,12 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 /*********************************************/
 @implementation RAMenuItemBooleanSetting
 
-- (id)initWithSetting:(rarch_setting_t*)setting
+- (id)initWithSetting:(rarch_setting_t*)setting action:(void (^)())action
 {
-   if ((self = [super init]))
-      _setting = setting;
+  if ((self = [super init])) {
+    _setting = setting;
+    _action = action;
+  }
    return self;
 }
 
@@ -388,8 +392,12 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)handleBooleanSwitch:(UISwitch*)swt
 {
-   if (self.setting)
-      *self.setting->value.boolean = swt.on ? true : false;
+  if (self.setting) {
+    *self.setting->value.boolean = swt.on ? true : false;
+  }
+  if (self.action) {
+    self.action();
+  }
 }
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
@@ -431,6 +439,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
         
         setting_data_set_with_string_representation(weakSelf.setting, newval);
         [[list navigationController] popViewControllerAnimated:YES];
+
+        weakSelf.action();
          
         [weakSelf.parentTable reloadData];
       }];
@@ -627,7 +637,14 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
         path_buf, sizeof(path_buf));
 
      if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP)
-       [everything addObject:[RAMenuItemGeneralSetting itemForSetting:setting]];
+       [everything addObject:
+                     [RAMenuItemGeneralSetting
+                       itemForSetting:setting
+                               action:^{
+                         driver.menu->selection_ptr = i;
+                         if (cbs && cbs->action_ok)
+                           cbs->action_ok(path, entry_label, type, i);
+                       }]];
      else
      {
        [everything addObject:

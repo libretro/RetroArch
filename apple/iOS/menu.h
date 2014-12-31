@@ -65,9 +65,10 @@
 /*********************************************/
 @interface RAMenuItemGeneralSetting : NSObject<RAMenuItemBase>
 @property (nonatomic) rarch_setting_t* setting;
+@property (copy) void (^action)();
 @property (nonatomic, weak) UITableView* parentTable;
-+ (id)itemForSetting:(rarch_setting_t*)setting;
-- (id)initWithSetting:(rarch_setting_t*)setting;
++ (id)itemForSetting:(rarch_setting_t*)setting action:(void (^)())action;
+- (id)initWithSetting:(rarch_setting_t*)setting action:(void (^)())action;
 @end
 
 /*********************************************/
@@ -78,7 +79,8 @@
 /*********************************************/
 @interface RAMenuItemBooleanSetting : NSObject<RAMenuItemBase>
 @property (nonatomic) rarch_setting_t* setting;
-- (id)initWithSetting:(rarch_setting_t*)setting;
+@property (copy) void (^action)();
+- (id)initWithSetting:(rarch_setting_t*)setting action:(void (^)())action;
 @end
 
 /*********************************************/
