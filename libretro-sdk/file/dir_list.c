@@ -89,90 +89,6 @@ void dir_list_free(struct string_list *list)
    string_list_free(list);
 }
 
-#ifdef _WIN32
-
-struct string_list *dir_list_new(const char *dir,
-      const char *ext, bool include_dirs)
-{
-   char path_buf[PATH_MAX];
-   WIN32_FIND_DATA ffd;
-   struct string_list *ext_list = NULL;
-   HANDLE hFind = INVALID_HANDLE_VALUE;
-   struct string_list *list = string_list_new();
-   if (!list)
-      return NULL;
-
-   snprintf(path_buf, sizeof(path_buf), "%s\\*", dir);
-
-   if (ext)
-      ext_list = string_split(ext, "|");
-
-   hFind = FindFirstFile(path_buf, &ffd);
-   if (hFind == INVALID_HANDLE_VALUE)
-      goto error;
-
-   do
-   {
-      union string_list_elem_attr attr;
-      char file_path[PATH_MAX];
-      const char *name        = ffd.cFileName;
-      const char *file_ext    = path_get_extension(name);
-      bool is_dir             = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
-      bool is_compressed_file = false;
-      bool supported_by_core  = false;
-      attr.i                  = RARCH_FILETYPE_UNSET;
-
-      fill_pathname_join(file_path, dir, name, sizeof(file_path));
-
-      if (!is_dir)
-      {
-         is_compressed_file = path_is_compressed_file(file_path);
-         if (string_list_find_elem_prefix(ext_list, ".", file_ext))
-            supported_by_core = true;
-      }
-
-      if (!include_dirs && is_dir)
-         continue;
-
-      if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
-         continue;
-
-      if (!is_compressed_file && !is_dir && ext_list && !supported_by_core)
-         continue;
-
-      if (is_dir)
-         attr.i = RARCH_DIRECTORY;
-      if (is_compressed_file)
-         attr.i = RARCH_COMPRESSED_ARCHIVE;
-      /* The order of these ifs is important.
-       * If the file format is explicitly supported by the libretro-core, we
-       * need to immediately load it and not designate it as a compressed file.
-       *
-       * Example: .zip could be supported as a image by the core and as a
-       * compressed_file. In that case, we have to interpret it as a image.
-       *
-       * */
-      if (supported_by_core)
-         attr.i = RARCH_PLAIN_FILE;
-
-      if (!string_list_append(list, file_path, attr))
-         goto error;
-   }
-   while (FindNextFile(hFind, &ffd) != 0);
-
-   FindClose(hFind);
-   string_list_free(ext_list);
-   return list;
-
-error:
-   if (hFind != INVALID_HANDLE_VALUE)
-      FindClose(hFind);
-   
-   string_list_free(list);
-   string_list_free(ext_list);
-   return NULL;
-}
-#else
 static bool dirent_is_directory(const char *path,
       const struct dirent *entry)
 {
@@ -190,9 +106,110 @@ static bool dirent_is_directory(const char *path,
 #endif
 }
 
+/* Return values:
+ * -1 - error
+ *  1 - continue
+ *  0 - normal
+ */
+
+static int parse_dir_entry(const char *name, char *file_path,
+      bool is_dir, bool include_dirs,
+      struct string_list *list, struct string_list *ext_list,
+      const char *file_ext)
+{
+   union string_list_elem_attr attr;
+   bool is_compressed_file = false;
+   bool supported_by_core  = false;
+
+   attr.i                  = RARCH_FILETYPE_UNSET;
+
+   if (!is_dir)
+   {
+      is_compressed_file = path_is_compressed_file(file_path);
+      if (string_list_find_elem_prefix(ext_list, ".", file_ext))
+         supported_by_core = true;
+   }
+
+   if (!include_dirs && is_dir)
+      return 1;
+
+   if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
+      return 1;
+
+   if (!is_compressed_file && !is_dir && ext_list && !supported_by_core)
+      return 1;
+
+   if (is_dir)
+      attr.i = RARCH_DIRECTORY;
+   if (is_compressed_file)
+      attr.i = RARCH_COMPRESSED_ARCHIVE;
+   /* The order of these ifs is important.
+    * If the file format is explicitly supported by the libretro-core, we
+    * need to immediately load it and not designate it as a compressed file.
+    *
+    * Example: .zip could be supported as a image by the core and as a
+    * compressed_file. In that case, we have to interpret it as a image.
+    *
+    * */
+   if (supported_by_core)
+      attr.i = RARCH_PLAIN_FILE;
+
+   if (!string_list_append(list, file_path, attr))
+      return -1;
+
+   return 0;
+}
+
 struct string_list *dir_list_new(const char *dir,
       const char *ext, bool include_dirs)
 {
+#ifdef _WIN32
+   char path_buf[PATH_MAX];
+   WIN32_FIND_DATA ffd;
+   struct string_list *ext_list = NULL;
+   HANDLE hFind = INVALID_HANDLE_VALUE;
+   struct string_list *list = string_list_new();
+
+   if (!list)
+      return NULL;
+
+   snprintf(path_buf, sizeof(path_buf), "%s\\*", dir);
+
+   if (ext)
+      ext_list = string_split(ext, "|");
+
+   hFind = FindFirstFile(path_buf, &ffd);
+   if (hFind == INVALID_HANDLE_VALUE)
+      goto error;
+
+   do
+   {
+      int ret = 0;
+      char file_path[PATH_MAX];
+      const char *name        = ffd.cFileName;
+      const char *file_ext    = path_get_extension(name);
+      bool is_dir             = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+
+      fill_pathname_join(file_path, dir, name, sizeof(file_path));
+
+      ret = parse_dir_entry(name, file_path, is_dir,
+            include_dirs, list, ext_list, file_ext);
+
+      if (ret == -1)
+         goto error;
+
+      if (ret == 1)
+         continue;
+   }while (FindNextFile(hFind, &ffd) != 0);
+
+   FindClose(hFind);
+   string_list_free(ext_list);
+   return list;
+
+error:
+   if (hFind != INVALID_HANDLE_VALUE)
+      FindClose(hFind);
+#else
    DIR *directory = NULL;
    const struct dirent *entry = NULL;
    struct string_list *ext_list = NULL;
@@ -210,52 +227,24 @@ struct string_list *dir_list_new(const char *dir,
 
    while ((entry = readdir(directory)))
    {
-      bool is_dir;
+      int ret = 0;
       char file_path[PATH_MAX];
-      union string_list_elem_attr attr;
       const char *name     = entry->d_name;
       const char *file_ext = path_get_extension(name);
-      bool is_compressed_file = false;
-      bool supported_by_core  = false;
-      attr.i                  = RARCH_FILETYPE_UNSET;
+      bool is_dir = false;
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
       is_dir = dirent_is_directory(file_path, entry);
 
-      if (!is_dir)
-      {
-         is_compressed_file = path_is_compressed_file(file_path);
-         if (string_list_find_elem_prefix(ext_list, ".", file_ext))
-            supported_by_core = true;
-      }
+      ret = parse_dir_entry(name, file_path, is_dir,
+            include_dirs, list, ext_list, file_ext);
 
-      if (!include_dirs && is_dir)
-         continue;
-
-      if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
-         continue;
-
-      if (!is_dir && ext_list && !is_compressed_file && !supported_by_core)
-         continue;
-
-      if (is_dir)
-         attr.i = RARCH_DIRECTORY;
-      if (is_compressed_file)
-         attr.i = RARCH_COMPRESSED_ARCHIVE;
-      /* The order of these ifs is important.
-       * If the file format is explicitly supported by the libretro-core, we
-       * need to immediately load it and not designate it as a compressed file.
-       *
-       * Example: .zip could be supported as a image by the core and as a
-       * compressed_file. In that case, we have to interpret it as a image.
-       *
-       * */
-      if (supported_by_core)
-         attr.i = RARCH_PLAIN_FILE;
-
-      if (!string_list_append(list, file_path, attr))
+      if (ret == -1)
          goto error;
+
+      if (ret == 1)
+         continue;
    }
 
    closedir(directory);
@@ -268,8 +257,8 @@ error:
    if (directory)
       closedir(directory);
 
+#endif
    string_list_free(list);
    string_list_free(ext_list);
    return NULL;
 }
-#endif
