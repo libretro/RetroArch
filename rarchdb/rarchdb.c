@@ -86,7 +86,13 @@ int rarchdb_create(int fd, rarchdb_value_provider value_provider, void *ctx)
    rarchdb_write_metadata(fd, &md);
    lseek(fd, root, SEEK_SET);
    write(fd, &header, sizeof(header));
-   printf("Created DB with %llu entries\n", item_count);
+   printf(
+#ifdef _WIN32
+   "Created DB with %I64u entries\n"
+#else
+   "Created DB with %llu entries\n"
+#endif
+   ,(unsigned long long)item_count);
    return 0;
 }
 
