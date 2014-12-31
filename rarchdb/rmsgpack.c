@@ -534,14 +534,12 @@ int rmsgpack_read(int fd, struct rmsgpack_read_callbacks *callbacks, void *data)
             return -errno;
 
          return read_array(fd, tmp_len, callbacks, data);
-         break;
       case 0xde:
       case 0xdf:
          if(read_uint(fd, &tmp_len, 2<<(type - 0xde)) == -1)
             return -errno;
 
          return read_map(fd, tmp_len, callbacks, data);
-         break;
    }
 
    return 0;

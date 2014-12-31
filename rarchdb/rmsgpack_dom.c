@@ -205,26 +205,20 @@ int rmsgpack_dom_value_cmp(
    {
       case RDT_NULL:
          return 0;
-         break;
       case RDT_BOOL:
          return a->bool_ == b->bool_ ? 1 : 0;
-         break;
       case RDT_INT:
          return a->int_ == b->int_ ? 1 : 0;
-         break;
       case RDT_UINT:
          return a->uint_ == b->uint_ ? 1 : 0;
-         break;
       case RDT_STRING:
          if (a->string.len != b->string.len)
             return 1;
          return strncmp(a->string.buff, b->string.buff, a->string.len);
-         break;
       case RDT_BINARY:
          if (a->binary.len != b->binary.len)
             return 1;
          return memcmp(a->binary.buff, b->binary.buff, a->binary.len);
-         break;
       case RDT_MAP:
          if (a->map.len != b->map.len)
             return 1;
@@ -246,6 +240,7 @@ int rmsgpack_dom_value_cmp(
          }
          break;
    }
+
    return 1;
 }
 
@@ -320,22 +315,16 @@ int rmsgpack_dom_write(int fd, const struct rmsgpack_dom_value *obj)
    {
       case RDT_NULL:
          return rmsgpack_write_nil(fd);
-         break;
       case RDT_BOOL:
          return rmsgpack_write_bool(fd, obj->bool_);
-         break;
       case RDT_INT:
          return rmsgpack_write_int(fd, obj->int_);
-         break;
       case RDT_UINT:
          return rmsgpack_write_uint(fd, obj->uint_);
-         break;
       case RDT_STRING:
          return rmsgpack_write_string(fd, obj->string.buff, obj->string.len);
-         break;
       case RDT_BINARY:
          return rmsgpack_write_bin(fd, obj->binary.buff, obj->binary.len);
-         break;
       case RDT_MAP:
          if ((rv = rmsgpack_write_map_header(fd, obj->map.len)) < 0)
             return rv;
