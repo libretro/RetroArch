@@ -1,7 +1,11 @@
 #include "rarchdb.h"
 
 #include <sys/types.h>
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
@@ -265,7 +269,7 @@ int rarchdb_read_item(struct rarchdb *db, struct rmsgpack_dom_value *out)
 
 static int node_iter(void *value, void *ctx)
 {
-	struct node_iter_ctx *nictx = ctx;
+	struct node_iter_ctx *nictx = (struct node_iter_ctx*)ctx;
 
 	if (write(nictx->db->fd, value, nictx->idx->key_size + sizeof(uint64_t)) > 0)
 		return 0;

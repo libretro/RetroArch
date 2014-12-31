@@ -12,7 +12,11 @@
 #include "rmsgpack.h"
 
 #include <stdlib.h>
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <stdint.h>
 #include <string.h>
@@ -372,7 +376,7 @@ static int read_buff(int fd, size_t size, char** pbuff, uint64_t *len)
    if(read_uint(fd, &tmp_len, size) == -1)
       return -errno;
 
-   *pbuff = calloc(tmp_len + 1, sizeof(char));
+   *pbuff = (char*)calloc(tmp_len + 1, sizeof(char));
    if (read(fd, *pbuff, tmp_len) == -1)
    {
       free(*pbuff);
@@ -449,7 +453,7 @@ int rmsgpack_read(int fd, struct rmsgpack_read_callbacks *callbacks, void *data)
    else if (type < MPF_NIL)
    {
       tmp_len = type - MPF_FIXSTR;
-      buff = calloc(tmp_len + 1, sizeof(char));
+      buff = (char*)calloc(tmp_len + 1, sizeof(char));
       if (!buff)
          return -ENOMEM;
       if(read(fd, buff, tmp_len) == -1)
@@ -499,7 +503,7 @@ int rmsgpack_read(int fd, struct rmsgpack_read_callbacks *callbacks, void *data)
       case 0xcd:
       case 0xce:
       case 0xcf:
-         tmp_len = 1<<(type - 0xcc);
+         tmp_len = 1 << (type - 0xcc);
          tmp_uint = 0;
          if(read_uint(fd, &tmp_uint, tmp_len) == -1)
             return -errno;
@@ -511,7 +515,7 @@ int rmsgpack_read(int fd, struct rmsgpack_read_callbacks *callbacks, void *data)
       case 0xd1:
       case 0xd2:
       case 0xd3:
-         tmp_len = 1<<(type - 0xd0);
+         tmp_len = 1 << (type - 0xd0);
          tmp_int = 0;
          if(read_int(fd, &tmp_int, tmp_len) == -1)
             return -errno;

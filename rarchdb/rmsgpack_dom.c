@@ -35,14 +35,18 @@ static int dom_reader_state_push(struct dom_reader_state *s, struct rmsgpack_dom
 
 static int dom_read_nil(void *data)
 {
-	struct rmsgpack_dom_value *v = dom_reader_state_pop(data);
+	dom_reader_state *dom_state = (dom_reader_state*)data;
+	struct rmsgpack_dom_value *v = 
+		(struct rmsgpack_dom_value*)dom_reader_state_pop(dom_state);
 	v->type = RDT_NULL;
 	return 0;
 }
 
 static int dom_read_bool(int value, void *data)
 {
-	struct rmsgpack_dom_value *v = dom_reader_state_pop(data);
+	dom_reader_state *dom_state = (dom_reader_state*)data;
+	struct rmsgpack_dom_value *v = 
+		(struct rmsgpack_dom_value*)dom_reader_state_pop(dom_state);
 	v->type = RDT_BOOL;
 	v->bool_ = value;
 	return 0;
@@ -50,7 +54,9 @@ static int dom_read_bool(int value, void *data)
 
 static int dom_read_int(int64_t value, void *data)
 {
-	struct rmsgpack_dom_value *v = dom_reader_state_pop(data);
+    dom_reader_state *dom_state = (dom_reader_state*)data;
+	struct rmsgpack_dom_value *v = 
+		(struct rmsgpack_dom_value*)dom_reader_state_pop(dom_state);
 	v->type = RDT_INT;
 	v->int_ = value;
 	return 0;
@@ -58,7 +64,9 @@ static int dom_read_int(int64_t value, void *data)
 
 static int dom_read_uint(uint64_t value, void *data)
 {
-	struct rmsgpack_dom_value *v = dom_reader_state_pop(data);
+    dom_reader_state *dom_state = (dom_reader_state*)data;
+	struct rmsgpack_dom_value *v = 
+		(struct rmsgpack_dom_value*)dom_reader_state_pop(dom_state);
 	v->type = RDT_UINT;
 	v->uint_ = value;
 	return 0;
@@ -66,7 +74,9 @@ static int dom_read_uint(uint64_t value, void *data)
 
 static int dom_read_string(char* value, uint32_t len, void *data)
 {
-	struct rmsgpack_dom_value *v = dom_reader_state_pop(data);
+    dom_reader_state *dom_state = (dom_reader_state*)data;
+	struct rmsgpack_dom_value *v = 
+		(struct rmsgpack_dom_value*)dom_reader_state_pop(dom_state);
 	v->type = RDT_STRING;
 	v->string.len = len;
 	v->string.buff = value;
@@ -75,18 +85,22 @@ static int dom_read_string(char* value, uint32_t len, void *data)
 
 static int dom_read_bin(void* value, uint32_t len, void *data)
 {
-	struct rmsgpack_dom_value *v = dom_reader_state_pop(data);
+    dom_reader_state *dom_state = (dom_reader_state*)data;
+	struct rmsgpack_dom_value *v = 
+		(struct rmsgpack_dom_value*)dom_reader_state_pop(dom_state);
 	v->type = RDT_BINARY;
 	v->binary.len = len;
-	v->binary.buff = value;
+	v->binary.buff = (char*)value;
 	return 0;
 }
 
 static int dom_read_map_start(uint32_t len, void *data)
 {
    int i;
-   struct rmsgpack_dom_pair *items;
-	struct rmsgpack_dom_value *v = dom_reader_state_pop(data);
+   struct rmsgpack_dom_pair *items = NULL;
+   dom_reader_state *dom_state = (dom_reader_state*)data;
+	
+   struct rmsgpack_dom_value *v = dom_reader_state_pop(dom_state);
 	v->type = RDT_MAP;
 	v->map.len = len;
 	v->map.items = NULL;
@@ -99,9 +113,9 @@ static int dom_read_map_start(uint32_t len, void *data)
 	v->map.items = items;
 	for (i = 0; i < len; i++)
    {
-      if (dom_reader_state_push(data, &items[i].value) < 0)
+      if (dom_reader_state_push(dom_state, &items[i].value) < 0)
          return -ENOMEM;
-      if (dom_reader_state_push(data, &items[i].key) < 0)
+      if (dom_reader_state_push(dom_state, &items[i].key) < 0)
          return -ENOMEM;
    }
 	return 0;
@@ -110,8 +124,9 @@ static int dom_read_map_start(uint32_t len, void *data)
 static int dom_read_array_start(uint32_t len, void *data)
 {
    int i;
-   struct rmsgpack_dom_value *v = dom_reader_state_pop(data);
-   struct rmsgpack_dom_value *items;
+   dom_reader_state *dom_state = (dom_reader_state*)data;
+   struct rmsgpack_dom_value *v = dom_reader_state_pop(dom_state);
+   struct rmsgpack_dom_value *items = NULL;
    v->type = RDT_ARRAY;
    v->array.len = len;
    v->array.items = NULL;
@@ -125,7 +140,7 @@ static int dom_read_array_start(uint32_t len, void *data)
 
    for (i = 0; i < len; i++)
    {
-      if (dom_reader_state_push(data, &items[i]) < 0)
+      if (dom_reader_state_push(dom_state, &items[i]) < 0)
          return -ENOMEM;
    }
    return 0;

@@ -20,7 +20,7 @@ void bintree_new(struct bintree *t, bintree_cmp_func cmp, void *ctx)
 
 static struct bintree_node *new_nil_node(struct bintree_node *parent)
 {
-   struct bintree_node *node = calloc(1, sizeof(struct bintree_node));
+   struct bintree_node *node = (struct bintree_node*)calloc(1, sizeof(struct bintree_node));
    if (!node)
       return NULL;
    node->value = NIL_NODE;
