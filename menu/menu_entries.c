@@ -308,6 +308,8 @@ static void parse_drive_list(file_list_t *list)
          "host0:/", "", MENU_FILE_DIRECTORY, 0);
 #elif defined(IOS)
    menu_list_push(list,
+         "/var/mobile/Documents/", "", MENU_FILE_DIRECTORY, 0);
+   menu_list_push(list,
          "/var/mobile/", "", MENU_FILE_DIRECTORY, 0);
    menu_list_push(list,
          g_defaults.core_dir, "", MENU_FILE_DIRECTORY, 0);
