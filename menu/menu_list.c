@@ -35,7 +35,8 @@ void menu_list_destroy(file_list_t *list)
    }
 
 end:
-   file_list_free(list);
+   if (list)
+      file_list_free(list);
 }
 
 void menu_list_free(menu_list_t *menu_list)
