@@ -345,26 +345,29 @@ static int read_uint(int fd, uint64_t *out, size_t size)
 
 static int read_int(int fd, int64_t *out, size_t size)
 {
-   uint64_t tmp;
-   if(read(fd, &tmp, size) == -1)
+   uint8_t tmp8;
+   uint16_t tmp16;
+   uint32_t tmp32;
+   uint64_t tmp64;
+   if(read(fd, &tmp64, size) == -1)
       return -errno;
 
    switch(size)
    {
       case 1:
-         *out = *((int8_t*)(&tmp));
+         *out = *((int8_t*)(&tmp64));
          break;
       case 2:
-         tmp = betoht16(tmp);
-         *out = *((int16_t*)(&tmp));
+         tmp16 = betoht16(tmp64);
+         *out = *((int16_t*)(&tmp16));
          break;
       case 4:
-         tmp = betoht32(tmp);
-         *out = *((int32_t*)(&tmp));
+         tmp32 = betoht32(tmp64);
+         *out = *((int32_t*)(&tmp32));
          break;
       case 8:
-         tmp = betoht64(tmp);
-         *out = *((int64_t*)(&tmp));
+         tmp64 = betoht64(tmp64);
+         *out = *((int64_t*)(&tmp64));
          break;
    }
    return 0;
