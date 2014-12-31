@@ -74,6 +74,7 @@
    if (!(cond)) { RARCH_ERR("Assertion failed at %s:%d.\n", __FILE__, __LINE__); abort(); } \
 } while(0)
 #else
+#include <assert.h>
 #define rarch_assert(cond) assert(cond)
 #endif
 
