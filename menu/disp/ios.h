@@ -18,7 +18,8 @@
 
 typedef struct ios_handle
 {
-   void (*switch_to_ios)(void);  
+  void (*switch_to_ios)(void);
+  void (*notify_content_loaded)(void);
 } ios_handle_t;
 
 #endif
