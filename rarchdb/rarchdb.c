@@ -23,7 +23,7 @@
 
 struct rarchdb_header
 {
-	char magic_number[7];
+	char magic_number[sizeof(MAGIC_NUMBER)-1];
 	uint64_t metadata_offset;
 };
 
@@ -66,7 +66,7 @@ int rarchdb_create(int fd, rarchdb_value_provider value_provider, void *ctx)
    struct rmsgpack_dom_value item = {};
    struct rarchdb_header header = {};
    struct rarchdb_metadata md;
-   strcpy(header.magic_number, MAGIC_NUMBER);
+   memcpy(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)-1);
    off_t root = lseek(fd, 0, SEEK_CUR);
    // We write the header in the end because we need to know the size of
    // the db first
