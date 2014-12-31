@@ -66,10 +66,8 @@ int main_entry_decide(signature(), args_type() args)
    return ret;
 }
 
-void main_exit(args_type() args)
+void main_exit_save_config(void)
 {
-   g_extern.system.shutdown = false;
-
    if (g_settings.config_save_on_exit && *g_extern.config_path)
    {
       /* Save last core-specific config to the default config location,
@@ -83,6 +81,13 @@ void main_exit(args_type() args)
             g_settings.core_specific_config)
          config_save_file(g_extern.core_specific_config_path);
    }
+}
+
+void main_exit(args_type() args)
+{
+   g_extern.system.shutdown = false;
+
+   main_exit_save_config();
 
    if (g_extern.main_is_init)
    {

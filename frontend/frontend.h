@@ -28,6 +28,8 @@ extern "C" {
 
 void main_exit(args_type() args);
 
+void main_exit_save_config(void);
+
 returntype main_entry(signature());
 
 bool main_load_content(int argc, char **argv,
