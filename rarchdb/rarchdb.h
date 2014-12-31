@@ -25,4 +25,6 @@ int rarchdb_read_reset(struct rarchdb *db);
 int rarchdb_create_index(struct rarchdb *db, const char* name, const char *field_name);
 int rarchdb_find_entry(struct rarchdb *db, const char *index_name, const void *key);
 
+uint64_t rarchdb_tell(struct rarchdb *db);
+
 #endif
