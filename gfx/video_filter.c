@@ -288,7 +288,7 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
 
    return true;
 }
-#else
+#elif defined(HAVE_FILTERS_BUILTIN)
 extern const struct softfilter_implementation *blargg_ntsc_snes_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *lq2x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *phosphor2x_get_implementation(softfilter_simd_mask_t simd);
@@ -333,6 +333,11 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt)
    }
 
    return true;
+}
+#else
+static bool append_softfilter_plugs(rarch_softfilter_t *filt)
+{
+   return false;
 }
 #endif
 

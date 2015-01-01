@@ -6,13 +6,14 @@ DEFINES := -DRARCH_INTERNAL -DHAVE_OVERLAY
 DEFINES += -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_EGL -DHAVE_OVERLAY -DHAVE_GLSL
 
 HAVE_OPENGL = 1
+HAVE_GLES = 1
 HAVE_EMSCRIPTEN = 1
 HAVE_RGUI = 1
 HAVE_SDL = 0
 HAVE_ZLIB = 1
 HAVE_FBO = 1
 WANT_MINIZ = 1
-MEMORY = 67108864
+MEMORY = 268435456
 LTO = 0
 # XXX: setting this to 1/2 currently crashes Firefox nightly
 PRECISE_F32 = 2
@@ -84,6 +85,7 @@ clean:
 	rm -f record/*.o
 	rm -f input/*.o
 	rm -f tools/*.o
+	rm -f libretro-sdk/*/*.o
 	rm -f $(TARGET)
 	rm -f *.d
 
