@@ -435,6 +435,7 @@ static void config_set_defaults(void)
    g_settings.menu.mouse_enable = false;
    g_settings.menu.navigation.wraparound.horizontal_enable = true;
    g_settings.menu.navigation.wraparound.vertical_enable = true;
+   g_settings.menu.navigation.browser.filter.supported_extensions_enable = true;
 #endif
 
 
@@ -902,6 +903,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(menu.mouse_enable,   "menu_mouse_enable");
    CONFIG_GET_BOOL(menu.navigation.wraparound.horizontal_enable, "menu_navigation_wraparound_horizontal_enable");
    CONFIG_GET_BOOL(menu.navigation.wraparound.vertical_enable,   "menu_navigation_wraparound_vertical_enable");
+   CONFIG_GET_BOOL(menu.navigation.browser.filter.supported_extensions_enable,   "menu_navigation_browser_filter_supported_extensions_enable");
 #endif
 
    CONFIG_GET_INT(video.hard_sync_frames, "video_hard_sync_frames");
@@ -1707,6 +1709,8 @@ bool config_save_file(const char *path)
          g_settings.menu.navigation.wraparound.horizontal_enable);
    config_set_bool(conf, "menu_navigation_wraparound_vertical_enable",
          g_settings.menu.navigation.wraparound.vertical_enable);
+   config_set_bool(conf, "menu_navigation_browser_filter_supported_extensions_enable",
+         g_settings.menu.navigation.browser.filter.supported_extensions_enable);
 #endif
 
    config_set_path(conf, "game_history_path", g_settings.content_history_path);

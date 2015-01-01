@@ -4784,6 +4784,22 @@ static bool setting_data_append_list_menu_options(
 
    END_SUB_GROUP(list, list_info);
 
+   START_SUB_GROUP(list, list_info, "Browser", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(
+         g_settings.menu.navigation.browser.filter.supported_extensions_enable,
+         "menu_navigation_browser_filter_supported_extensions_enable",
+         "Load Content - Filter by supported extensions",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   END_SUB_GROUP(list, list_info);
+
    END_GROUP(list, list_info);
 #endif
 

@@ -301,6 +301,13 @@ struct settings
             bool horizontal_enable;
             bool vertical_enable;
          } wraparound;
+         struct
+         {
+            struct
+            {
+               bool supported_extensions_enable;
+            } filter;
+         } browser;
       } navigation;
    } menu;
 #endif

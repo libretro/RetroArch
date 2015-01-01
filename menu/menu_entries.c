@@ -354,7 +354,7 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
    if (path_is_compressed)
       str_list = compressed_file_list_new(dir,exts);
    else
-      str_list = dir_list_new(dir, exts, true);
+      str_list = dir_list_new(dir, g_settings.menu.navigation.browser.filter.supported_extensions_enable ? exts : NULL, true);
 
    if (!str_list)
       return -1;
