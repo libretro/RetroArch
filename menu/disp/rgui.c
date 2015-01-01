@@ -94,7 +94,7 @@ static void fill_rect(uint16_t *buf, unsigned pitch,
 {
    unsigned j, i;
     
-   if (!buf)
+   if (!buf || !col)
       return;
     
    for (j = y; j < y + height; j++)
