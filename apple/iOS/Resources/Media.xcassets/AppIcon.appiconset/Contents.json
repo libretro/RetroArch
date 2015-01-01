@@ -57,13 +57,13 @@
     {
       "size" : "29x29",
       "idiom" : "ipad",
-      "filename" : "Icon-29-1-1.png",
+      "filename" : "Icon-29-1.png",
       "scale" : "1x"
     },
     {
       "size" : "29x29",
       "idiom" : "ipad",
-      "filename" : "Icon-29-2-1.png",
+      "filename" : "Icon-29-2.png",
       "scale" : "2x"
     },
     {
@@ -75,7 +75,7 @@
     {
       "size" : "40x40",
       "idiom" : "ipad",
-      "filename" : "Icon-40-2-1.png",
+      "filename" : "Icon-40-2.png",
       "scale" : "2x"
     },
     {
@@ -120,6 +120,6 @@
     "author" : "xcode"
   },
   "properties" : {
-    "pre-rendered" : true
+    "pre-rendered" : false
   }
 }
