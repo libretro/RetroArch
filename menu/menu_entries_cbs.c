@@ -511,6 +511,9 @@ static int action_ok_directory_push(const char *path,
    if (!driver.menu)
       return -1;
 
+   if (!path)
+      return -1;
+
    menu_list_get_last_stack(driver.menu->menu_list,
          &menu_path, &menu_label, NULL);
 
