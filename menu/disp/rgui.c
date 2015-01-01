@@ -93,6 +93,10 @@ static void fill_rect(uint16_t *buf, unsigned pitch,
       uint16_t (*col)(unsigned x, unsigned y))
 {
    unsigned j, i;
+    
+   if (!buf)
+      return;
+    
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
          buf[j * (pitch >> 1) + i] = col(i, j);

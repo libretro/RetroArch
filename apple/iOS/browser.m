@@ -23,6 +23,7 @@
 
 #include <file/config_file.h>
 #include "../../content.h"
+#include "../../general.h"
 #include <file/dir_list.h>
 #include "../../file_ops.h"
 #include <file/file_path.h>
@@ -233,7 +234,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [self.sections addObject:[NSMutableArray arrayWithObject:i]];
 
    // List contents
-   struct string_list* contents = dir_list_new(self.path.UTF8String, self.extensions.UTF8String, true);
+   struct string_list *contents = dir_list_new(self.path.UTF8String, g_settings.menu.navigation.browser.filter.supported_extensions_enable ? self.extensions.UTF8String : NULL, true);
 
    if (contents)
    {
@@ -422,7 +423,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
 
       // List contents
-      struct string_list* contents = dir_list_new([self.path stringByDeletingLastPathComponent].UTF8String, 0, true);
+      struct string_list* contents = dir_list_new([self.path stringByDeletingLastPathComponent].UTF8String, NULL, true);
       NSMutableArray* items = [NSMutableArray arrayWithObject:BOXSTRING("")];
 
       if (contents)
