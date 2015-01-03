@@ -38,8 +38,8 @@ typedef struct _AURORA_LAUNCHDATA_EXECUTABLE
    DWORD FunctionId;                                    //   AURORA_LAUNCHDATA_EXECUTABLE_FUNCID
    DWORD FunctionVersion;                               //   AURORA_LAUNCHDATA_EXECUTABLE_VERSION
    CHAR SystemPath[0x40];                               //   /System/Harddisk0/Parition0
-   CHAR RelativePath[0x104];                            //   /Emulators/Snes9x/Roms/
-   CHAR Exectutable[0x28];                              //   ChronoTrigger.zip
+   CHAR RelativePath[0x104];                            //   /SomeCore/Content/
+   CHAR Exectutable[0x28];                              //   SomeContent.zip
    CHAR Reserved[0x100];                                //   Reserved for future use
 } AURORA_LAUNCHDATA_EXECUTABLE, *PAURORA_LAUNCH_DATA_EXECUTABLE;
 
