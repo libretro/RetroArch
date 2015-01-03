@@ -205,9 +205,16 @@ public final class DownloadableCoresFragment extends ListFragment
 			super.onPostExecute(result);
 
 			if (result.isEmpty())
+			{
 				Toast.makeText(adapter.getContext(), R.string.download_core_list_error, Toast.LENGTH_SHORT).show();
+			}
 			else
-				adapter.addAll(result);
+			{
+				for (int i = 0; i < result.size(); i++)
+				{
+					adapter.add(result.get(i));
+				}
+			}
 		}
 
 		// Literally downloads the info file, writes it, and parses it for the corename key/value pair.
