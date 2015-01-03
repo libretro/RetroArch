@@ -19,8 +19,17 @@
 #include "../gl_common.h"
 
 #include <EGL/egl.h>
+#include <EGL/fbdev_window.h>
 #include <signal.h>
 
+//Includes and defines for framebuffer size retrieval
+#include <sys/ioctl.h>
+#include <linux/fb.h>
+#include <linux/vt.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+struct fbdev_window native_window;
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
@@ -69,6 +78,14 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
    g_config   = 0;
    g_quit     = 0;
    g_resize   = false;
+
+   //Clear framebuffer and set cursor on again
+   int fd = open("/dev/tty", O_RDWR);
+   ioctl(fd,VT_ACTIVATE,5);
+   ioctl(fd,VT_ACTIVATE,1);
+   close (fd);
+   system("setterm -cursor on");
+
 }
 
 static void gfx_ctx_mali_fbdev_get_video_size(void *data,
@@ -110,7 +127,11 @@ static bool gfx_ctx_mali_fbdev_init(void *data)
    EGLint num_config;
    EGLint egl_version_major, egl_version_minor;
    EGLint format;
+ 
 
+   //Disable cursor blinking so it's not visible in RetroArch
+   system("setterm -cursor off");
+   
    RARCH_LOG("[Mali fbdev]: Initializing context\n");
 
    if ((g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY)
@@ -188,22 +209,30 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   /* Pick some arbitrary default. */
-   if (!width || !fullscreen)
-      width = 1280;
-   if (!height || !fullscreen)
-      height = 720;
+   struct fb_var_screeninfo vinfo;
+   int fb = open("/dev/fb0", O_RDWR, 0);
+   if (ioctl(fb, FBIOGET_VSCREENINFO, &vinfo) < 0)
+   {
+      RARCH_ERR("Error obtainig framebuffer info.\n");
+      goto error;
+   }
+   close (fb);
+   
+   width = vinfo.xres;
+   height = vinfo.yres;
 
    g_width = width;
    g_height = height;
+
+   native_window.width = vinfo.xres;
+   native_window.height = vinfo.yres;
 
    static const EGLint attribs[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
       EGL_NONE
    };
 
-   struct fbdev_window window = { width, height };
-   if ((g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, &window, 0)) == EGL_NO_SURFACE)
+   if ((g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, &native_window, 0)) == EGL_NO_SURFACE)
    {
       RARCH_ERR("eglCreateWindowSurface failed.\n");
       goto error;
