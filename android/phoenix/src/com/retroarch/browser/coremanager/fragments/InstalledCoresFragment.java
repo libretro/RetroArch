@@ -90,7 +90,10 @@ public final class InstalledCoresFragment extends ListFragment
 	public void updateInstalledCoresList()
 	{
 		adapter.clear();
-		adapter.addAll(getInstalledCoresList());
+		for (int i = 0; i < getInstalledCoresList().size(); i++)
+		{
+			adapter.add(getInstalledCoresList().get(i));
+		}
 		adapter.notifyDataSetChanged();
 	}
 
