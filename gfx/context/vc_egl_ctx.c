@@ -132,8 +132,15 @@ static void gfx_ctx_vc_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    (void)data;
-   *width  = g_fb_width;
-   *height = g_fb_height;
+   if (g_settings.video.fullscreen_x != 0 &&
+      g_settings.video.fullscreen_y != 0) {
+      *width  = g_settings.video.fullscreen_x;
+      *height = g_settings.video.fullscreen_y;
+   }
+   else {
+      *width  = g_fb_width;
+      *height = g_fb_height;
+   }
 }
 
 static void gfx_ctx_vc_destroy(void *data);
@@ -216,9 +223,15 @@ static bool gfx_ctx_vc_init(void *data)
 
    src_rect.x = 0;
    src_rect.y = 0;
-   src_rect.width = g_fb_width << 16;
-   src_rect.height = g_fb_height << 16;
-
+   if (g_settings.video.fullscreen_x != 0 &&
+      g_settings.video.fullscreen_y != 0) {
+      src_rect.width = g_settings.video.fullscreen_x << 16;
+      src_rect.height = g_settings.video.fullscreen_y << 16;
+   }
+   else {
+      src_rect.width = g_fb_width << 16;
+      src_rect.height = g_fb_height << 16;
+   }
    dispman_display = vc_dispmanx_display_open(0 /* LCD */);
    vc_dispmanx_display_get_info(dispman_display, &dispman_modeinfo);
    dispman_update = vc_dispmanx_update_start(0);
@@ -233,8 +246,15 @@ static bool gfx_ctx_vc_init(void *data)
       &src_rect, DISPMANX_PROTECTION_NONE, &alpha, 0 /*clamp*/, DISPMANX_NO_ROTATE);
 
    nativewindow.element = dispman_element;
-   nativewindow.width = g_fb_width;
-   nativewindow.height = g_fb_height;
+   if (g_settings.video.fullscreen_x != 0 &&
+      g_settings.video.fullscreen_y != 0) {
+      nativewindow.width = g_settings.video.fullscreen_x;
+      nativewindow.height = g_settings.video.fullscreen_y;
+   }
+   else {
+      nativewindow.width = g_fb_width;
+      nativewindow.height = g_fb_height;
+   }
    vc_dispmanx_update_submit_sync(dispman_update);
 
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, &nativewindow, NULL);
