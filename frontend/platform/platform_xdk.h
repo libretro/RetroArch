@@ -26,6 +26,24 @@
 #ifndef __XBOX_INTERNAL_H__
 #define __XBOX_INTERNAL_H__
 
+#ifdef _XBOX360
+
+#define AURORA_LAUNCHDATA_APPID             'AUOA'
+#define AURORA_LAUNCHDATA_ROM_FUNCID        'ROMS'
+#define AURORA_LAUNCHDATA_ROM_VERSION       1
+
+typedef struct _AURORA_LAUNCHDATA_ROM {
+    DWORD ApplicationId;                                 //   AURORA_LAUNCHDATA_APPID
+    DWORD FunctionId;                                    //   AURORA_LAUNCHDATA_ROM_FUNCID
+    DWORD FunctionVersion;                               //   AURORA_LAUNCHDATA_ROM_VERSION
+    CHAR SystemPath[0x40];                               //   /System/Harddisk0/Parition0
+    CHAR RelativePath[0x104];                            //   /Emulators/Snes9x/Roms/
+    CHAR Exectutable[0x28];                              //   ChronoTrigger.zip
+    CHAR Reserved[0x100];                                //   Reserved for future use
+} AURORA_LAUNCHDATA_ROM, *PAURORA_LAUNCH_DATA_ROM;
+
+#endif
+
 #ifdef _XBOX1
 
 #include <pshpack4.h>
