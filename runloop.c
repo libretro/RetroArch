@@ -536,6 +536,8 @@ static void check_block_hotkey(bool enable_hotkey)
    bool use_hotkey_enable;
    static const struct retro_keybind *bind = 
       &g_settings.input.binds[0][RARCH_ENABLE_HOTKEY];
+   static const struct retro_keybind *autoconf_bind = 
+      &g_settings.input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
@@ -544,7 +546,10 @@ static void check_block_hotkey(bool enable_hotkey)
    // If we haven't bound anything to this, always allow hotkeys.
    use_hotkey_enable = bind->key != RETROK_UNKNOWN ||
       bind->joykey != NO_BTN ||
-      bind->joyaxis != AXIS_NONE;
+      bind->joyaxis != AXIS_NONE ||
+      autoconf_bind->key != RETROK_UNKNOWN ||
+      autoconf_bind->joykey != NO_BTN ||
+      autoconf_bind->joyaxis != AXIS_NONE;;
 
    driver.block_hotkey = driver.block_input ||
       (use_hotkey_enable && !enable_hotkey);
