@@ -355,7 +355,7 @@ static void gfx_ctx_d3d_input_driver(void *data,
 static void gfx_ctx_d3d_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
 #ifdef _XBOX
    (void)width;
    (void)height;
