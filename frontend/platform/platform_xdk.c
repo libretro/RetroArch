@@ -29,6 +29,37 @@
 static bool exit_spawn;
 static bool exitspawn_start_game;
 
+#ifdef _XBOX360
+
+typedef struct _STRING 
+{
+    USHORT Length;
+    USHORT MaximumLength;
+    PCHAR Buffer;
+} STRING, *PSTRING;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+VOID RtlInitAnsiString(PSTRING DestinationString, PCHAR SourceString);	
+HRESULT ObDeleteSymbolicLink(PSTRING SymbolicLinkName);
+HRESULT ObCreateSymbolicLink(PSTRING SymbolicLinkName, PSTRING DeviceName);
+#ifdef __cplusplus
+}
+#endif
+
+HRESULT xbox_io_mount(const char* szDrive, char* szDevice)
+{
+	STRING DeviceName, LinkName;
+	CHAR szDestinationDrive[MAX_PATH];
+	sprintf_s(szDestinationDrive, MAX_PATH, "\\??\\%s", szDrive);
+	RtlInitAnsiString(&DeviceName, szDevice);
+	RtlInitAnsiString(&LinkName, szDestinationDrive);
+	ObDeleteSymbolicLink(&LinkName);
+	return (HRESULT)ObCreateSymbolicLink(&LinkName, &DeviceName);
+}
+#endif
+
 #ifdef _XBOX1
 static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 {
@@ -202,8 +233,18 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    {
       BYTE* pLaunchData = new BYTE[dwLaunchDataSize];
       XGetLaunchData(pLaunchData, dwLaunchDataSize);
-      char *extracted_path = (char*)&pLaunchData;
-
+	  AURORA_LAUNCHDATA_ROM* aurora = (AURORA_LAUNCHDATA_ROM*)pLaunchData;
+	  char* extracted_path = new char[dwLaunchDataSize];
+	  memset(extracted_path, 0, dwLaunchDataSize);
+	  if (aurora->ApplicationId == AURORA_LAUNCHDATA_APPID && aurora->FunctionId == AURORA_LAUNCHDATA_ROM_FUNCID)
+	  {
+		  if (xbox_io_mount("aurora:", aurora->SystemPath) >= 0)
+			  sprintf_s(extracted_path, dwLaunchDataSize, "aurora:%s%s", aurora->RelativePath, aurora->Exectutable);
+		  else
+			  RARCH_LOG("Failed to mount %s as aurora:.\n", aurora->SystemPath);
+	  }
+	  else
+		  sprintf_s(extracted_path, dwLaunchDataSize, "%s", pLaunchData);
       if (extracted_path && extracted_path[0] != '\0')
       {
          strlcpy(path, extracted_path, sizeof(path));
