@@ -233,10 +233,10 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    {
       BYTE* pLaunchData = new BYTE[dwLaunchDataSize];
       XGetLaunchData(pLaunchData, dwLaunchDataSize);
-	  AURORA_LAUNCHDATA_ROM* aurora = (AURORA_LAUNCHDATA_ROM*)pLaunchData;
+	  AURORA_LAUNCHDATA_EXECUTABLE* aurora = (AURORA_LAUNCHDATA_EXECUTABLE*)pLaunchData;
 	  char* extracted_path = new char[dwLaunchDataSize];
 	  memset(extracted_path, 0, dwLaunchDataSize);
-	  if (aurora->ApplicationId == AURORA_LAUNCHDATA_APPID && aurora->FunctionId == AURORA_LAUNCHDATA_ROM_FUNCID)
+	  if (aurora->ApplicationId == AURORA_LAUNCHDATA_APPID && aurora->FunctionId == AURORA_LAUNCHDATA_EXECUTABLE_FUNCID)
 	  {
 		  if (xbox_io_mount("aurora:", aurora->SystemPath) >= 0)
 			  sprintf_s(extracted_path, dwLaunchDataSize, "aurora:%s%s", aurora->RelativePath, aurora->Exectutable);
