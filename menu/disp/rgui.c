@@ -590,6 +590,12 @@ static void rgui_update_core_info(void *data)
    menu_update_libretro_info(&g_extern.menu.info);
 }
 
+static void rgui_populate_entries(void *data, const char *path,
+      const char *label, unsigned k)
+{
+   rgui_navigation_set(data, true);
+}
+
 menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_render_messagebox,
@@ -600,7 +606,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_free,
    NULL,
    NULL,
-   NULL,
+   rgui_populate_entries,
    NULL,
    NULL,
    rgui_navigation_clear,
