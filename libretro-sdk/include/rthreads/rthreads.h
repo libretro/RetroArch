@@ -26,7 +26,7 @@
 #include <boolean.h>
 #include <stdint.h>
 
-#if defined(__cplusplus) && !defined(MSC_VER)
+#if defined(__cplusplus) && !defined(_MSC_VER)
 extern "C" {
 #endif
 
@@ -106,7 +106,7 @@ static inline void retro_sleep(unsigned msec)
 }
 #endif
 
-#if defined(__cplusplus) && !defined(MSC_VER)
+#if defined(__cplusplus) && !defined(_MSC_VER)
 }
 #endif
 
