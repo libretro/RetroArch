@@ -221,7 +221,10 @@ static void rgui_render_background(void *data)
 static void rgui_render_messagebox(const char *message)
 {
    size_t i;
+   int x, y;
+   unsigned width, glyphs_width, height;
    rgui_handle_t *rgui = NULL;
+   struct string_list *list = NULL;
 
    if (!driver.menu || !message || !*message)
       return;
@@ -231,7 +234,7 @@ static void rgui_render_messagebox(const char *message)
    if (!rgui)
       return;
 
-   struct string_list *list = string_split(message, "\n");
+   list = string_split(message, "\n");
    if (!list)
       return;
    if (list->elems == 0)
@@ -240,12 +243,14 @@ static void rgui_render_messagebox(const char *message)
       return;
    }
 
-   unsigned width = 0;
-   unsigned glyphs_width = 0;
+   width = 0;
+   glyphs_width = 0;
    for (i = 0; i < list->size; i++)
    {
-      char *msg = list->elems[i].data;
+      unsigned line_width;
+      char     *msg = list->elems[i].data;
       unsigned msglen = strlen(msg);
+
       if (msglen > RGUI_TERM_WIDTH)
       {
          msg[RGUI_TERM_WIDTH - 2] = '.';
@@ -255,14 +260,14 @@ static void rgui_render_messagebox(const char *message)
          msglen = RGUI_TERM_WIDTH;
       }
 
-      unsigned line_width = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
+      line_width = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
       width = max(width, line_width);
       glyphs_width = max(glyphs_width, msglen);
    }
 
-   unsigned height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;
-   int x = (driver.menu->width - width) / 2;
-   int y = (driver.menu->height - height) / 2;
+   height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;
+   x = (driver.menu->width - width) / 2;
+   y = (driver.menu->height - height) / 2;
 
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          x + 5, y + 5, width - 10, height - 10, gray_filler);
@@ -306,7 +311,11 @@ static void rgui_blit_cursor(void* data)
 
 static void rgui_render(void)
 {
-   size_t end;
+   size_t i, end;
+   char title[256], title_buf[256], title_msg[64];
+   unsigned x, y, menu_type  = 0;
+   const char *dir     = NULL;
+   const char *label   = NULL;
    rgui_handle_t *rgui = NULL;
 
    if (driver.menu->need_refresh 
@@ -339,10 +348,6 @@ static void rgui_render(void)
 
    rgui_render_background(rgui);
 
-   char title[256];
-   const char *dir = NULL;
-   const char *label = NULL;
-   unsigned menu_type = 0;
    menu_list_get_last_stack(driver.menu->menu_list,
          &dir, &label, &menu_type);
 
@@ -352,12 +357,10 @@ static void rgui_render(void)
 
    get_title(label, dir, menu_type, title, sizeof(title));
 
-   char title_buf[256];
    menu_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
          g_extern.frame_count / RGUI_TERM_START_X, title, true);
    blit_line(RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, true);
 
-   char title_msg[64];
    const char *core_name = g_extern.menu.info.library_name;
    if (!core_name)
       core_name = g_extern.system.info.library_name;
@@ -377,8 +380,6 @@ static void rgui_render(void)
          (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
          RGUI_TERM_START_Y + 2, title_msg, true);
 
-   unsigned x, y;
-   size_t i;
 
    x = RGUI_TERM_START_X;
    y = RGUI_TERM_START_Y;
@@ -452,6 +453,7 @@ static void rgui_render(void)
 
 static void *rgui_init(void)
 {
+   bool ret = false;
    rgui_handle_t *rgui = NULL;
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
@@ -482,7 +484,7 @@ static void *rgui_init(void)
    menu->begin = 0;
    rgui->frame_buf_pitch = menu->width * sizeof(uint16_t);
 
-   bool ret = rguidisp_init_font(menu);
+   ret = rguidisp_init_font(menu);
 
    if (!ret)
    {
