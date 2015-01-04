@@ -11,7 +11,7 @@
 
     <!-- Main Menu Strings -->
     <string name="mainmenu_title">RetroArch - Main Menu</string>
-    <string name="resume_content">Resume Content</string>
+    <string name="resume_content">Load RetroArch</string>
     <string name="load_core">Load Core</string>
     <string name="load_content">Load Content</string>
     <string name="load_content_auto">Load Content (Detect Core)</string>
