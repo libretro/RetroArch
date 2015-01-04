@@ -339,6 +339,7 @@
     <Deploy>
       <DeploymentFiles>$(RemoteRoot)=$(ImagePath);$(RemoteRoot)\media=$(OutDir)media</DeploymentFiles>
       <DeploymentType>CopyToHardDrive</DeploymentType>
+      <ExcludedFromBuild>true</ExcludedFromBuild>
     </Deploy>
     <ImageXex>
       <AdditionalOptions>/privilege=6 %(AdditionalOptions)</AdditionalOptions>
