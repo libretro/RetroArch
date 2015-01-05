@@ -449,10 +449,17 @@ static void config_set_defaults(void)
 
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
+
    memcpy(g_settings.input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
+   memcpy(g_settings.input.remap_binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
+
    for (i = 1; i < MAX_USERS; i++)
+   {
       memcpy(g_settings.input.binds[i], retro_keybinds_rest,
             sizeof(retro_keybinds_rest));
+      memcpy(g_settings.input.remap_binds[i], retro_keybinds_rest,
+            sizeof(retro_keybinds_rest));
+   }
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -468,8 +475,12 @@ static void config_set_defaults(void)
    /* Verify that binds are in proper order. */
    for (i = 0; i < MAX_USERS; i++)
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
+      {
          if (g_settings.input.binds[i][j].valid)
             rarch_assert(j == g_settings.input.binds[i][j].id);
+         if (g_settings.input.remap_binds[i][j].valid)
+            rarch_assert(j == g_settings.input.remap_binds[i][j].id);
+      }
 
    g_settings.input.axis_threshold = axis_threshold;
    g_settings.input.netplay_client_swap_input = netplay_client_swap_input;

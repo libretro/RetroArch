@@ -360,13 +360,15 @@ struct settings
       char driver[32];
       char joypad_driver[32];
       char keyboard_layout[64];
+
       struct retro_keybind binds[MAX_USERS][RARCH_BIND_LIST_END];
+      struct retro_keybind remap_binds[MAX_USERS][RARCH_BIND_LIST_END];
+      struct retro_keybind autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 
       unsigned max_users;
 
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
-      struct retro_keybind autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
       bool autoconfigured[MAX_USERS];
 
       unsigned libretro_device[MAX_USERS];

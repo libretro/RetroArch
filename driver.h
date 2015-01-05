@@ -143,11 +143,7 @@ struct retro_keybind
    const char *desc;
    enum retro_key key;
 
-   /* PC only uses lower 16-bits.
-    * Full 64-bit can be used for port-specific purposes,
-    * like simplifying multiple binds, etc. */
    uint64_t joykey;
-
    /* Default key binding value - for resetting bind to default */
    uint64_t def_joykey;
 
