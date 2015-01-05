@@ -103,7 +103,7 @@ void st_string_callback(void *userdata, const char *str)
          menu_action_setting_set_current_string(current_setting, str);
       else
       {
-         if (!strcmp(menu->keyboard.label, "video_shader_preset_save_as"))
+         if (!strcmp(menu->keyboard.label_setting, "video_shader_preset_save_as"))
             menu_shader_manager_save_preset(str, false);
       }
    }
