@@ -175,21 +175,23 @@ void file_list_sort_on_alt(file_list_t *list)
 
 void *file_list_get_userdata_at_offset(const file_list_t *list, size_t idx)
 {
+   if (!list)
+      return NULL;
    return list->list[idx].userdata;
 }
 
 void *file_list_get_actiondata_at_offset(const file_list_t *list, size_t idx)
 {
-   if (list)
-      return list->list[idx].actiondata;
-   return NULL;
+   if (!list)
+      return NULL;
+   return list->list[idx].actiondata;
 }
 
 void *file_list_get_last_actiondata(const file_list_t *list)
 {
-   if (list)
-      return list->list[list->size - 1].actiondata;
-   return NULL;
+   if (!list)
+      return NULL;
+   return list->list[list->size - 1].actiondata;
 }
 
 void file_list_get_at_offset(const file_list_t *list, size_t idx,
