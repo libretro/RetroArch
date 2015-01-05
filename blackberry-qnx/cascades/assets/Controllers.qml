@@ -8,23 +8,23 @@ Page
         options: [
             Option {
                 id: p1
-                text: "Player 1"
+                text: "User 1"
                 value: 0
                 selected: true
             },
             Option {
                 id: p2
-                text: "Player 2"
+                text: "User 2"
                 value: 1
             },
             Option {
                 id: p3
-                text: "Player 3"
+                text: "User 3"
                 value: 2
             },
             Option {
                 id: p4
-                text: "Player 4"
+                text: "User 4"
                 value: 3
             }
         ]
