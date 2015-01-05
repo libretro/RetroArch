@@ -845,12 +845,14 @@ static int action_start_performance_counters_core(unsigned type, const char *lab
 static int action_start_input_desc(unsigned type, const char *label,
       unsigned action)
 {
-   unsigned offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
+   unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
+   unsigned inp_desc_user         = inp_desc_index_offset / RARCH_FIRST_CUSTOM_BIND;
+   unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * RARCH_FIRST_CUSTOM_BIND);
 
    (void)label;
    (void)action;
 
-   RARCH_LOG("label is: %s, offset is: %u\n", label, offset);
+   g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset] = g_settings.input.binds[inp_desc_user][inp_desc_button_index_offset].id;
 
    return 0;
 }
@@ -976,6 +978,28 @@ static int action_toggle_cheat(unsigned type, const char *label,
       case MENU_ACTION_RIGHT:
          cheat->cheats[idx].state = !cheat->cheats[idx].state;
          cheat_manager_update(cheat, idx);
+         break;
+   }
+
+   return 0;
+}
+
+static int action_toggle_input_desc(unsigned type, const char *label,
+      unsigned action)
+{
+   unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
+   unsigned inp_desc_user         = inp_desc_index_offset / RARCH_FIRST_CUSTOM_BIND;
+   unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * RARCH_FIRST_CUSTOM_BIND);
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         if (g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset] > 0)
+            g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset]--;
+         break;
+      case MENU_ACTION_RIGHT:
+         if (g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_CUSTOM_BIND)
+            g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
          break;
    }
 
@@ -2030,13 +2054,14 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
       for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
       {
          char desc_label[64];
+         unsigned user = p + 1;
          const char *description = g_extern.system.input_desc_btn[p][retro_id];
 
          if (!description)
             continue;
 
-         snprintf(desc_label, sizeof(desc_label), "User %u %s : ", p + 1, description);
-         menu_list_push(list, desc_label, "", MENU_SETTINGS_INPUT_DESC_BEGIN + retro_id, p);
+         snprintf(desc_label, sizeof(desc_label), "User %u %s : ", user, description);
+         menu_list_push(list, desc_label, "", MENU_SETTINGS_INPUT_DESC_BEGIN + (p * RARCH_FIRST_CUSTOM_BIND) +  retro_id, 0);
       }
    }
 
@@ -2646,6 +2671,9 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
       cbs->action_toggle = action_toggle_cheat;
+   else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+         && type <= MENU_SETTINGS_INPUT_DESC_END)
+      cbs->action_toggle = action_toggle_input_desc;
    else if (
          !strcmp(label, "core_list") ||
          !strcmp(label, "core_manager_list") ||

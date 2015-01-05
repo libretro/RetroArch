@@ -445,20 +445,22 @@ static void config_set_defaults(void)
    g_settings.input.autoconfig_descriptor_label_show = true;
    g_settings.input.input_descriptor_label_show = input_descriptor_label_show;
    g_settings.input.input_descriptor_hide_unbound = input_descriptor_hide_unbound;
+   g_settings.input.remap_binds_enable = true;
    g_settings.input.max_users = MAX_USERS;
 
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
 
    memcpy(g_settings.input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
-   memcpy(g_settings.input.remap_binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
 
    for (i = 1; i < MAX_USERS; i++)
-   {
       memcpy(g_settings.input.binds[i], retro_keybinds_rest,
             sizeof(retro_keybinds_rest));
-      memcpy(g_settings.input.remap_binds[i], retro_keybinds_rest,
-            sizeof(retro_keybinds_rest));
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      for (j = 0; j < RARCH_BIND_LIST_END; j++)
+         g_settings.input.remap_ids[i][j] = g_settings.input.binds[i][j].id;
    }
 
    for (i = 0; i < MAX_USERS; i++)
@@ -478,8 +480,6 @@ static void config_set_defaults(void)
       {
          if (g_settings.input.binds[i][j].valid)
             rarch_assert(j == g_settings.input.binds[i][j].id);
-         if (g_settings.input.remap_binds[i][j].valid)
-            rarch_assert(j == g_settings.input.remap_binds[i][j].id);
       }
 
    g_settings.input.axis_threshold = axis_threshold;
@@ -1014,6 +1014,8 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (!strcmp(g_settings.audio.filter_dir, "default"))
       *g_settings.audio.filter_dir = '\0';
 
+   CONFIG_GET_BOOL(input.remap_binds_enable,
+         "input_remap_binds_enable");
    CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_BOOL(input.netplay_client_swap_input,
          "netplay_client_swap_input");
@@ -1587,6 +1589,8 @@ bool config_save_file(const char *path)
    config_set_int(conf, "input_max_users", g_settings.input.max_users);
    config_set_float(conf, "input_axis_threshold",
          g_settings.input.axis_threshold);
+   config_set_bool(conf, "input_remap_binds_enable",
+         g_settings.input.remap_binds_enable);
    config_set_bool(conf, "netplay_client_swap_input",
          g_settings.input.netplay_client_swap_input);
    config_set_bool(conf, "input_descriptor_label_show",

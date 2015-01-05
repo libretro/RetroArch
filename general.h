@@ -361,8 +361,8 @@ struct settings
       char joypad_driver[32];
       char keyboard_layout[64];
 
+      unsigned remap_ids[MAX_USERS][RARCH_BIND_LIST_END];
       struct retro_keybind binds[MAX_USERS][RARCH_BIND_LIST_END];
-      struct retro_keybind remap_binds[MAX_USERS][RARCH_BIND_LIST_END];
       struct retro_keybind autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 
       unsigned max_users;
@@ -374,6 +374,7 @@ struct settings
       unsigned libretro_device[MAX_USERS];
       unsigned analog_dpad_mode[MAX_USERS];
 
+      bool remap_binds_enable;
       float axis_threshold;
       unsigned joypad_map[MAX_USERS];
       unsigned device[MAX_USERS];

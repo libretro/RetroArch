@@ -266,23 +266,13 @@ static bool input_apply_turbo(unsigned port, unsigned id, bool res)
    return res;
 }
 
+
 static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    int16_t res = 0;
 
-   device &= RETRO_DEVICE_MASK;
-
-   if (g_extern.bsv.movie && g_extern.bsv.movie_playback)
-   {
-      int16_t ret;
-      if (bsv_movie_get_input(g_extern.bsv.movie, &ret))
-         return ret;
-
-      g_extern.bsv.movie_end = true;
-   }
-
-   static const struct retro_keybind *binds[MAX_USERS] = {
+   static const struct retro_keybind *libretro_input_binds[MAX_USERS] = {
       g_settings.input.binds[0],
       g_settings.input.binds[1],
       g_settings.input.binds[2],
@@ -301,10 +291,26 @@ static int16_t input_state(unsigned port, unsigned device,
       g_settings.input.binds[15],
    };
 
+   device &= RETRO_DEVICE_MASK;
+
+   if (g_extern.bsv.movie && g_extern.bsv.movie_playback)
+   {
+      int16_t ret;
+      if (bsv_movie_get_input(g_extern.bsv.movie, &ret))
+         return ret;
+
+      g_extern.bsv.movie_end = true;
+   }
+
+   if (g_settings.input.remap_binds_enable)
+   {
+      id = g_settings.input.remap_ids[port][id];
+   }
+
    if (!driver.block_libretro_input)
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
-         res = driver.input->input_state(driver.input_data, binds, port,
+         res = driver.input->input_state(driver.input_data, libretro_input_binds, port,
                device, idx, id);
 
 #ifdef HAVE_OVERLAY

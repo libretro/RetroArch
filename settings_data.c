@@ -2404,12 +2404,24 @@ void setting_data_get_label(char *type_str,
          && type <= MENU_SETTINGS_CHEAT_END)
    {
       unsigned cheat_index = type - MENU_SETTINGS_CHEAT_BEGIN;
+
       if (cheat_index < g_extern.cheat->buf_size)
          snprintf(type_str, type_str_size, "%s : (%s)",
                 (g_extern.cheat->cheats[cheat_index].code != NULL)
                ? g_extern.cheat->cheats[cheat_index].code : "N/A",
                g_extern.cheat->cheats[cheat_index].state ? "ON" : "OFF"
                );
+   }
+   else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+         && type <= MENU_SETTINGS_INPUT_DESC_END)
+   {
+      unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
+      unsigned inp_desc_user         = inp_desc_index_offset / RARCH_FIRST_CUSTOM_BIND;
+      unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * RARCH_FIRST_CUSTOM_BIND);
+
+      //snprintf(type_str, type_str_size, "user %u, index offset %u", type, inp_desc_user, inp_desc_button_index_offset);
+      unsigned remap_id = g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset];
+      snprintf(type_str, type_str_size, "%s", g_settings.input.binds[inp_desc_user][remap_id].desc);
    }
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
@@ -4302,6 +4314,18 @@ static bool setting_data_append_list_input_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_range(list, list_info, 1, MAX_USERS, 1, true, true);
+
+   CONFIG_BOOL(
+         g_settings.input.remap_binds_enable,
+         "input_remap_binds_enable",
+         "Remap Binds Enable",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 
    CONFIG_BOOL(
          g_settings.input.autodetect_enable,
