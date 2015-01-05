@@ -169,7 +169,7 @@ void menu_poll_bind_state(struct menu_bind_state *state)
    if (joypad->poll)
       joypad->poll();
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < g_settings.input.max_users; i++)
    {
       for (b = 0; b < MENU_MAX_BUTTONS; b++)
          state->state[i].buttons[b] = input_joypad_button_raw(joypad, i, b);
@@ -206,7 +206,7 @@ void menu_poll_bind_get_rested_axes(struct menu_bind_state *state)
       return;
    }
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < g_settings.input.max_users; i++)
       for (a = 0; a < MENU_MAX_AXES; a++)
          state->axis_state[i].rested_axes[a] =
             input_joypad_axis_raw(joypad, i, a);
@@ -290,7 +290,7 @@ bool menu_poll_find_trigger(struct menu_bind_state *state,
    if (!state || !new_state)
       return false;
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < g_settings.input.max_users; i++)
    {
       if (menu_poll_find_trigger_pad(state, new_state, i))
       {

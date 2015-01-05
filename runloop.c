@@ -599,7 +599,7 @@ static inline retro_input_t input_keys_pressed(void)
          (g_settings.input.analog_dpad_mode[0] == ANALOG_DPAD_NONE) ?
          ANALOG_DPAD_LSTICK : g_settings.input.analog_dpad_mode[0]);
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < g_settings.input.max_users; i++)
    {
       input_push_analog_dpad(g_settings.input.autoconf_binds[i],
             g_settings.input.analog_dpad_mode[i]);
@@ -635,7 +635,7 @@ static inline retro_input_t input_keys_pressed(void)
    }
 
    input_pop_analog_dpad((struct retro_keybind*)binds[0]);
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < g_settings.input.max_users; i++)
       input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
 
    return ret;
@@ -730,7 +730,7 @@ int rarch_main_iterate(void)
       driver_camera_poll();
 
    /* Update binds for analog dpad modes. */
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < g_settings.input.max_users; i++)
    {
       if (!g_settings.input.analog_dpad_mode[i])
          continue;
@@ -748,7 +748,7 @@ int rarch_main_iterate(void)
    /* Run libretro for one frame. */
    pretro_run();
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < g_settings.input.max_users; i++)
    {
       if (!g_settings.input.analog_dpad_mode[i])
          continue;

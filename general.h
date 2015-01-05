@@ -362,6 +362,8 @@ struct settings
       char keyboard_layout[64];
       struct retro_keybind binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
 
+      unsigned max_users;
+
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
       struct retro_keybind autoconf_binds[MAX_PLAYERS][RARCH_BIND_LIST_END];

@@ -445,6 +445,7 @@ static void config_set_defaults(void)
    g_settings.input.autoconfig_descriptor_label_show = true;
    g_settings.input.input_descriptor_label_show = input_descriptor_label_show;
    g_settings.input.input_descriptor_hide_unbound = input_descriptor_hide_unbound;
+   g_settings.input.max_users = MAX_PLAYERS;
 
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
@@ -1005,6 +1006,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_BOOL(input.netplay_client_swap_input,
          "netplay_client_swap_input");
+   CONFIG_GET_INT(input.max_users, "input_max_users");
    CONFIG_GET_BOOL(input.input_descriptor_label_show,
          "input_descriptor_label_show");
    CONFIG_GET_BOOL(input.input_descriptor_hide_unbound,
@@ -1571,6 +1573,7 @@ bool config_save_file(const char *path)
 
    RARCH_LOG("Saving config at path: \"%s\"\n", path);
 
+   config_set_int(conf, "input_max_users", g_settings.input.max_users);
    config_set_float(conf, "input_axis_threshold",
          g_settings.input.axis_threshold);
    config_set_bool(conf, "netplay_client_swap_input",

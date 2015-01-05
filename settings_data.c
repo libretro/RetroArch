@@ -589,13 +589,13 @@ static int setting_data_action_toggle_bind_device(void *data, unsigned action)
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         if ((*p) >= MAX_PLAYERS)
-            *p = MAX_PLAYERS - 1;
+         if ((*p) >= g_settings.input.max_users)
+            *p = g_settings.input.max_users - 1;
          else if ((*p) > 0)
             (*p)--;
          break;
       case MENU_ACTION_RIGHT:
-         if (*p < MAX_PLAYERS)
+         if (*p < g_settings.input.max_users)
             (*p)++;
          break;
    }
@@ -2282,7 +2282,7 @@ static void get_string_representation_bind_device(void * data, char *type_str,
 
    map = g_settings.input.joypad_map[setting->index_offset];
 
-   if (map < MAX_PLAYERS)
+   if (map < g_settings.input.max_users)
    {
       const char *device_name = 
          g_settings.input.device_names[map];
@@ -4285,6 +4285,17 @@ static bool setting_data_append_list_input_options(
    START_GROUP(group_info, "Input Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
+   CONFIG_UINT(
+         g_settings.input.max_users,
+         "input_max_users",
+         "Max Users",
+         MAX_PLAYERS,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_list_current_add_range(list, list_info, 1, MAX_PLAYERS, 1, true, true);
+
    CONFIG_BOOL(
          g_settings.input.autodetect_enable,
          "input_autodetect_enable",
@@ -4354,7 +4365,7 @@ static bool setting_data_append_list_input_options(
          general_write_handler,
          general_read_handler);
 
-   for (user = 0; user < MAX_PLAYERS; user ++)
+   for (user = 0; user < g_settings.input.max_users; user ++)
    {
       /* These constants match the string lengths.
        * Keep them up to date or you'll get some really obvious bugs.
@@ -4520,7 +4531,7 @@ static bool setting_data_append_list_input_options(
    }
    END_SUB_GROUP(list, list_info);
 
-   for (user = 0; user < MAX_PLAYERS; user++)
+   for (user = 0; user < g_settings.input.max_users; user++)
    {
       /* This constants matches the string length.
        * Keep it up to date or you'll get some really obvious bugs.
