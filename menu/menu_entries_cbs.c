@@ -831,12 +831,26 @@ static int action_start_performance_counters_core(unsigned type, const char *lab
    unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
 
    (void)label;
+   (void)action;
 
    if (counters[offset])
    {
       counters[offset]->total = 0;
       counters[offset]->call_cnt = 0;
    }
+
+   return 0;
+}
+
+static int action_start_input_desc(unsigned type, const char *label,
+      unsigned action)
+{
+   unsigned offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
+
+   (void)label;
+   (void)action;
+
+   RARCH_LOG("label is: %s, offset is: %u\n", label, offset);
 
    return 0;
 }
@@ -1989,6 +2003,49 @@ static int deferred_push_core_cheat_options(void *data, void *userdata,
    return 0;
 }
 
+static int deferred_push_core_input_remapping_options(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   unsigned p, retro_id;
+   file_list_t *list      = (file_list_t*)data;
+
+   (void)userdata;
+   (void)type;
+
+   if (!list)
+      return -1;
+
+   menu_list_clear(list);
+#if 0
+   menu_list_push(list, "Cheat File Load", "cheat_file_load",
+         MENU_SETTING_ACTION, 0);
+   menu_list_push(list, "Cheat Passes", "cheat_num_passes",
+         0, 0);
+   menu_list_push(list, "Apply Cheat Changes", "cheat_apply_changes",
+         MENU_SETTING_ACTION, 0);
+#endif
+
+   for (p = 0; p < g_settings.input.max_users; p++)
+   {
+      for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+      {
+         char desc_label[64];
+         const char *description = g_extern.system.input_desc_btn[p][retro_id];
+
+         if (!description)
+            continue;
+
+         snprintf(desc_label, sizeof(desc_label), "User %u %s : ", p + 1, description);
+         menu_list_push(list, desc_label, "", MENU_SETTINGS_INPUT_DESC_BEGIN + retro_id, p);
+      }
+   }
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
+}
+
 static int deferred_push_core_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -2488,6 +2545,9 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
          type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
       cbs->action_start = action_start_performance_counters_core;
+   else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+         && type <= MENU_SETTINGS_INPUT_DESC_END)
+      cbs->action_start = action_start_input_desc;
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
          type <= MENU_SETTINGS_PERF_COUNTERS_END)
       cbs->action_start = action_start_performance_counters_frontend;
@@ -2535,6 +2595,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          !strcmp(label, "Input Options") ||
          !strcmp(label, "core_options") ||
          !strcmp(label, "core_cheat_options") ||
+         !strcmp(label, "core_input_remapping_options") ||
          !strcmp(label, "core_information") ||
          !strcmp(label, "disk_options") ||
          !strcmp(label, "settings") ||
@@ -2687,6 +2748,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_core_options;
    else if (!strcmp(label, "core_cheat_options"))
       cbs->action_deferred_push = deferred_push_core_cheat_options;
+   else if (!strcmp(label, "core_input_remapping_options"))
+      cbs->action_deferred_push = deferred_push_core_input_remapping_options;
    else if (!strcmp(label, "disk_options"))
       cbs->action_deferred_push = deferred_push_disk_options;
    else if (!strcmp(label, "core_list"))
