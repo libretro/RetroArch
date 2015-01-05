@@ -725,7 +725,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          };
 
          RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
-         for (p = 0; p < MAX_USERS; p++)
+         for (p = 0; p < g_settings.input.max_users; p++)
          {
             for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
             {
