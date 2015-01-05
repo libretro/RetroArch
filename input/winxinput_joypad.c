@@ -125,10 +125,10 @@ static inline int pad_index_to_xuser_index(unsigned pad)
 // some other non-xbox third party PC controllers.
 static const char* const XBOX_CONTROLLER_NAMES[4] = 
 {
-   "XInput Controller (Player 1)",
-   "XInput Controller (Player 2)",
-   "XInput Controller (Player 3)",
-   "XInput Controller (Player 4)"
+   "XInput Controller (User 1)",
+   "XInput Controller (User 2)",
+   "XInput Controller (User 3)",
+   "XInput Controller (User 4)"
 };
 
 const char* winxinput_joypad_name (unsigned pad)

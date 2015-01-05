@@ -475,14 +475,14 @@ static void handle_hotplug(android_input_t *android,
       //For nVidia Shield - see above
       //
       //For TTT HT - keep track of how many of these 'pads' are already
-      //connected, and based on that, assign one of them to be Player 1 and
-      //the other to be Player 2.
+      //connected, and based on that, assign one of them to be User 1 and
+      //the other to be User 2.
       //
       //If this is finally implemented right, then these port conditionals can go.
       if (*port == 0)
-         strlcpy(name_buf, "TTT THT Arcade (Player 1)", sizeof(name_buf));
+         strlcpy(name_buf, "TTT THT Arcade (User 1)", sizeof(name_buf));
       else if (*port == 1)
-         strlcpy(name_buf, "TTT THT Arcade (Player 2)", sizeof(name_buf));
+         strlcpy(name_buf, "TTT THT Arcade (User 2)", sizeof(name_buf));
    }      
    else if (strstr(device_name, "Sun4i-keypad"))
       strlcpy(name_buf, "iDroid x360", sizeof(name_buf));

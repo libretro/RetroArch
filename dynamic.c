@@ -732,7 +732,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                const char *description = g_extern.system.input_desc_btn[p][retro_id];
                if (description)
                {
-                  RARCH_LOG("\tRetroPad, Player %u, Button \"%s\" => \"%s\"\n",
+                  RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
                         p + 1, libretro_btn_desc[retro_id], description);
                }
             }

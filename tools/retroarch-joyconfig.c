@@ -406,12 +406,12 @@ static void parse_input(int argc, char *argv[])
             g_player = strtol(optarg, NULL, 0);
             if (g_player < 1)
             {
-               fprintf(stderr, "Player number must be at least 1.\n");
+               fprintf(stderr, "User number must be at least 1.\n");
                exit(1);
             }
             else if (g_player > MAX_USERS)
             {
-               fprintf(stderr, "Player number must be from 1 to %d.\n",
+               fprintf(stderr, "User number must be from 1 to %d.\n",
                      MAX_USERS);
                exit(1);
             }

@@ -125,7 +125,7 @@ struct netplay
    size_t spectate_input_ptr;
    size_t spectate_input_size;
 
-   /* Player flipping
+   /* User flipping
     * Flipping state. If ptr >= flip_frame, we apply the flip.
     * If not, we apply the opposite, effectively creating a trigger point.
     * To avoid collition we need to make sure our client/host is synced up 
@@ -583,7 +583,7 @@ static bool send_info(netplay_t *netplay)
       return false;
    }
 
-   /* Get SRAM data from Player 1. */
+   /* Get SRAM data from User 1. */
    void *sram = pretro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
    unsigned sram_size = pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
 
@@ -641,7 +641,7 @@ static bool get_info(netplay_t *netplay)
       return false;
    }
 
-   /* Send SRAM data to our Player 2. */
+   /* Send SRAM data to our User 2. */
    const void *sram = pretro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
    unsigned sram_size = pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
    if (!send_all(netplay->fd, sram, sram_size))
