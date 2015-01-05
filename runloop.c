@@ -569,7 +569,7 @@ static void check_block_hotkey(bool enable_hotkey)
 
 static inline retro_input_t input_keys_pressed(void)
 {
-   static const struct retro_keybind *binds[MAX_PLAYERS] = {
+   static const struct retro_keybind *binds[MAX_USERS] = {
       g_settings.input.binds[0],
       g_settings.input.binds[1],
       g_settings.input.binds[2],

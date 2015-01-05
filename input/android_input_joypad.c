@@ -25,7 +25,7 @@ static bool android_joypad_init(void)
 {
    unsigned autoconf_pad;
 
-   for (autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
+   for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
    {
       strlcpy(g_settings.input.device_names[autoconf_pad],
             android_joypad_name(autoconf_pad),
@@ -127,7 +127,7 @@ static void android_joypad_poll(void)
 static bool android_joypad_query_pad(unsigned pad)
 {
    android_input_t *android = (android_input_t*)driver.input_data;
-   return (pad < MAX_PLAYERS && pad < android->pads_connected);
+   return (pad < MAX_USERS && pad < android->pads_connected);
 }
 
 

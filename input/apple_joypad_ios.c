@@ -29,7 +29,7 @@ joypad_connection_t *slots;
 
 static bool apple_joypad_init(void)
 {
-   slots = (joypad_connection_t*)pad_connection_init(MAX_PLAYERS);
+   slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
     
    if (!slots)
       return false;
@@ -38,7 +38,7 @@ static bool apple_joypad_init(void)
 
 static bool apple_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS;
+   return pad < MAX_USERS;
 }
 
 static void apple_joypad_destroy(void)
@@ -57,7 +57,7 @@ static bool apple_joypad_button(unsigned port, uint16_t joykey)
    if (GET_HAT_DIR(joykey))
       return false;
    // Check the button
-   if ((port < MAX_PLAYERS) && (joykey < 32))
+   if ((port < MAX_USERS) && (joykey < 32))
        return ((apple->buttons[port] & (1 << joykey)) != 0) ||
               ((buttons & (1 << joykey)) != 0);
     return false;

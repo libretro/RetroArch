@@ -80,7 +80,7 @@
 extern "C" {
 #endif
 
-#define MAX_PLAYERS 16
+#define MAX_USERS 16
 
 enum basic_event
 {
@@ -360,22 +360,22 @@ struct settings
       char driver[32];
       char joypad_driver[32];
       char keyboard_layout[64];
-      struct retro_keybind binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
+      struct retro_keybind binds[MAX_USERS][RARCH_BIND_LIST_END];
 
       unsigned max_users;
 
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
-      struct retro_keybind autoconf_binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
-      bool autoconfigured[MAX_PLAYERS];
+      struct retro_keybind autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
+      bool autoconfigured[MAX_USERS];
 
-      unsigned libretro_device[MAX_PLAYERS];
-      unsigned analog_dpad_mode[MAX_PLAYERS];
+      unsigned libretro_device[MAX_USERS];
+      unsigned analog_dpad_mode[MAX_USERS];
 
       float axis_threshold;
-      unsigned joypad_map[MAX_PLAYERS];
-      unsigned device[MAX_PLAYERS];
-      char device_names[MAX_PLAYERS][64];
+      unsigned joypad_map[MAX_USERS];
+      unsigned device[MAX_USERS];
+      char device_names[MAX_USERS][64];
       bool autodetect_enable;
       bool netplay_client_swap_input;
 
@@ -500,7 +500,7 @@ struct global
    bool has_set_input_descriptors;
    bool has_set_save_path;
    bool has_set_state_path;
-   bool has_set_libretro_device[MAX_PLAYERS];
+   bool has_set_libretro_device[MAX_USERS];
    bool has_set_libretro;
    bool has_set_libretro_directory;
    bool has_set_verbosity;
@@ -576,7 +576,7 @@ struct global
       bool force_nonblock;
       bool no_content;
 
-      const char *input_desc_btn[MAX_PLAYERS][RARCH_FIRST_META_KEY];
+      const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
       char valid_extensions[PATH_MAX];
       
       retro_keyboard_event_t key_event;
@@ -698,8 +698,8 @@ struct global
    bool is_slowmotion;
 
    /* Turbo support. */
-   bool turbo_frame_enable[MAX_PLAYERS];
-   uint16_t turbo_enable[MAX_PLAYERS];
+   bool turbo_frame_enable[MAX_USERS];
+   uint16_t turbo_enable[MAX_USERS];
    unsigned turbo_count;
 
    /* Autosave support. */

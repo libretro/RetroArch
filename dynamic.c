@@ -668,7 +668,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          {
             retro_port = desc->port;
             retro_id   = desc->id;
-            if (desc->port >= MAX_PLAYERS)
+            if (desc->port >= MAX_USERS)
                continue;
 
             /* Ignore all others for now. */
@@ -725,7 +725,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          };
 
          RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
-         for (p = 0; p < MAX_PLAYERS; p++)
+         for (p = 0; p < MAX_USERS; p++)
          {
             for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
             {

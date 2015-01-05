@@ -596,7 +596,7 @@ static void gx_joypad_poll(void)
 
 static bool gx_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS && pad_state[pad];
+   return pad < MAX_USERS && pad_state[pad];
 }
 
 static void gx_joypad_destroy(void)

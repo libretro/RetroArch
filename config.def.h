@@ -645,7 +645,7 @@ static const bool input_descriptor_hide_unbound = false;
 #ifndef IS_SALAMANDER
 #include "intl/intl.h"
 
-/* Player 1 */
+/* User 1 */
 static const struct retro_keybind retro_keybinds_1[] = {
     /*     | RetroPad button            | desc                           | keyboard key  | js btn |     js axis   | */
    { true, RETRO_DEVICE_ID_JOYPAD_B,      RETRO_LBL_JOYPAD_B,              RETROK_z,       NO_BTN, 0, AXIS_NONE },
@@ -708,7 +708,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_MENU_TOGGLE,              RETRO_LBL_MENU_TOGGLE,          RETROK_F1,      NO_BTN, 0, AXIS_NONE },
 };
 
-/* Players 2 to MAX_PLAYERS */
+/* Users 2 to MAX_USERS */
 static const struct retro_keybind retro_keybinds_rest[] = {
     /*     | RetroPad button            | desc                           | keyboard key  | js btn |     js axis   | */
    { true, RETRO_DEVICE_ID_JOYPAD_B,      RETRO_LBL_JOYPAD_B,              RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },

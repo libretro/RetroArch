@@ -50,7 +50,7 @@ struct pad_connection
 
 static bool inquiry_off;
 static bool inquiry_running;
-static struct pad_connection g_connections[MAX_PLAYERS];
+static struct pad_connection g_connections[MAX_USERS];
 
 static void btpad_connection_send_control(void *data,
         uint8_t* data_buf, size_t size)
@@ -73,7 +73,7 @@ void btpad_set_inquiry_state(bool on)
 static struct pad_connection* btpad_find_empty_connection(void)
 {
    int i;
-   for (i = 0; i != MAX_PLAYERS; i ++)
+   for (i = 0; i < MAX_USERS; i ++)
       if (g_connections[i].state == BTPAD_EMPTY)
          return &g_connections[i];
 
@@ -84,7 +84,7 @@ static struct pad_connection* btpad_find_connection_for(
       uint16_t handle, bd_addr_t address)
 {
    int i;
-   for (i = 0; i < MAX_PLAYERS; i ++)
+   for (i = 0; i < MAX_USERS; i ++)
    {
       if (!g_connections[i].handle && !g_connections[i].has_address)
          continue;
@@ -117,7 +117,7 @@ static void btpad_close_connection(struct pad_connection* connection)
 static void btpad_close_all_connections(void)
 {
    int i;
-   for (i = 0; i < MAX_PLAYERS; i ++)
+   for (i = 0; i < MAX_USERS; i ++)
       btpad_close_connection(&g_connections[i]);
    /* TODO/FIXME - create platform-agnostic solution for this
     * and figure out why/if this is needed. */
@@ -133,7 +133,7 @@ void btpad_packet_handler(uint8_t packet_type,
    switch (packet_type)
    {
       case L2CAP_DATA_PACKET:
-         for (i = 0; i < MAX_PLAYERS; i ++)
+         for (i = 0; i < MAX_USERS; i ++)
          {
             struct pad_connection* connection = 
                (struct pad_connection*)&g_connections[i];

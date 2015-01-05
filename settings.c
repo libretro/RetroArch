@@ -445,16 +445,16 @@ static void config_set_defaults(void)
    g_settings.input.autoconfig_descriptor_label_show = true;
    g_settings.input.input_descriptor_label_show = input_descriptor_label_show;
    g_settings.input.input_descriptor_hide_unbound = input_descriptor_hide_unbound;
-   g_settings.input.max_users = MAX_PLAYERS;
+   g_settings.input.max_users = MAX_USERS;
 
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
    memcpy(g_settings.input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
-   for (i = 1; i < MAX_PLAYERS; i++)
+   for (i = 1; i < MAX_USERS; i++)
       memcpy(g_settings.input.binds[i], retro_keybinds_rest,
             sizeof(retro_keybinds_rest));
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
       {
@@ -466,7 +466,7 @@ static void config_set_defaults(void)
          sizeof(g_settings.input.autoconfigured));
 
    /* Verify that binds are in proper order. */
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
          if (g_settings.input.binds[i][j].valid)
             rarch_assert(j == g_settings.input.binds[i][j].id);
@@ -482,7 +482,7 @@ static void config_set_defaults(void)
    g_settings.input.autodetect_enable = input_autodetect_enable;
    *g_settings.input.keyboard_layout = '\0';
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       g_settings.input.joypad_map[i] = i;
       g_settings.input.analog_dpad_mode[i] = ANALOG_DPAD_NONE;
@@ -1014,7 +1014,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(input.autoconfig_descriptor_label_show,
          "autoconfig_descriptor_label_show");
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       char buf[64];
       snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
@@ -1409,7 +1409,7 @@ static void read_keybinds_user(config_file_t *conf, unsigned user)
 static void config_read_keybinds_conf(config_file_t *conf)
 {
    unsigned i;
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
       read_keybinds_user(conf, i);
 }
 
@@ -1800,7 +1800,7 @@ bool config_save_file(const char *path)
          g_settings.input.joypad_driver);
    config_set_string(conf, "input_keyboard_layout",
          g_settings.input.keyboard_layout);
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       char cfg[64];
       snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
@@ -1813,7 +1813,7 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, g_settings.input.analog_dpad_mode[i]);
    }
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
       save_keybinds_user(conf, i);
 
    config_set_bool(conf, "core_specific_config",

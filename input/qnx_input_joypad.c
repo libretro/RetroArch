@@ -26,7 +26,7 @@ static bool qnx_joypad_init(void)
 {
    unsigned autoconf_pad;
 
-   for (autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
+   for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
    {
       strlcpy(g_settings.input.device_names[autoconf_pad], "None",
             sizeof(g_settings.input.device_names[autoconf_pad]));
@@ -105,7 +105,7 @@ static void qnx_joypad_poll(void)
 static bool qnx_joypad_query_pad(unsigned pad)
 {
    qnx_input_t *qnx = (qnx_input_t*)driver.input_data;
-   return (qnx && pad < MAX_PLAYERS && qnx->pad_state[pad]);
+   return (qnx && pad < MAX_USERS && qnx->pad_state[pad]);
 }
 
 

@@ -79,7 +79,7 @@ static PyObject* py_read_vram(PyObject *self, PyObject *args)
    return PyLong_FromLong(data[addr]);
 }
 
-static const struct retro_keybind *py_binds[MAX_PLAYERS] = {
+static const struct retro_keybind *py_binds[MAX_USERS] = {
    g_settings.input.binds[0],
    g_settings.input.binds[1],
    g_settings.input.binds[2],
@@ -101,7 +101,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    if (!PyArg_ParseTuple(args, "II", &user, &key))
       return NULL;
 
-   if (user > MAX_PLAYERS || user < 1 || key >= RARCH_FIRST_META_KEY)
+   if (user > MAX_USERS || user < 1 || key >= RARCH_FIRST_META_KEY)
       return NULL;
 
    int16_t res = driver.block_libretro_input ? 0 : 
@@ -122,7 +122,7 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
    if (!PyArg_ParseTuple(args, "III", &user, &index, &id))
       return NULL;
 
-   if (user > MAX_PLAYERS || user < 1 || index > 1 || id > 1)
+   if (user > MAX_USERS || user < 1 || index > 1 || id > 1)
       return NULL;
 
    int16_t res = driver.input->input_state(driver.input_data,
@@ -348,7 +348,7 @@ float py_state_get(py_state_t *handle, const char *id,
       unsigned frame_count)
 {
    unsigned i;
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       input_push_analog_dpad(g_settings.input.binds[i],
             g_settings.input.analog_dpad_mode[i]);
@@ -358,7 +358,7 @@ float py_state_get(py_state_t *handle, const char *id,
 
    PyObject *ret = PyObject_CallMethod(handle->inst, (char*)id, (char*)"I", frame_count);
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       input_pop_analog_dpad(g_settings.input.binds[i]);
       input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);

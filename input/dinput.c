@@ -66,7 +66,7 @@ struct dinput_joypad
 };
 
 static unsigned g_joypad_cnt;
-static struct dinput_joypad g_pads[MAX_PLAYERS];
+static struct dinput_joypad g_pads[MAX_USERS];
 
 static void dinput_destroy_context(void)
 {
@@ -610,13 +610,13 @@ input_driver_t input_dinput = {
  * -1 = not xbox pad, otherwise 0..3
  */
 
-int g_xinput_pad_indexes[MAX_PLAYERS];
+int g_xinput_pad_indexes[MAX_USERS];
 bool g_xinput_block_pads;
 
 static void dinput_joypad_destroy(void)
 {
    unsigned i;
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       if (g_pads[i].joypad)
       {
@@ -734,7 +734,7 @@ static unsigned g_last_xinput_pad_idx;
 static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
    (void)p;
-   if (g_joypad_cnt == MAX_PLAYERS)
+   if (g_joypad_cnt == MAX_USERS)
       return DIENUM_STOP;
 
    LPDIRECTINPUTDEVICE8 *pad = &g_pads[g_joypad_cnt].joypad;
@@ -799,7 +799,7 @@ static bool dinput_joypad_init(void)
    
    g_last_xinput_pad_idx = 0;
    
-   for (i = 0; i < MAX_PLAYERS; ++i)
+   for (i = 0; i < MAX_USERS; ++i)
    {
       g_xinput_pad_indexes[i] = -1;
       g_pads[i].joy_name = NULL;
@@ -923,7 +923,7 @@ static int16_t dinput_joypad_axis(unsigned port_num, uint32_t joyaxis)
 static void dinput_joypad_poll(void)
 {
    unsigned i;
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       struct dinput_joypad *pad = &g_pads[i];
 
@@ -955,12 +955,12 @@ static void dinput_joypad_poll(void)
 
 static bool dinput_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS && g_pads[pad].joypad;
+   return pad < MAX_USERS && g_pads[pad].joypad;
 }
 
 static const char *dinput_joypad_name(unsigned pad)
 {
-   if (pad < MAX_PLAYERS)
+   if (pad < MAX_USERS)
       return g_pads[pad].joy_name;
 
    return NULL;

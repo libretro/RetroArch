@@ -90,7 +90,7 @@ typedef struct
 // hack is required here. dinput_joypad_init will fill this.
 // For each pad index, the appropriate entry will be set to -1 if it is not
 // a 360 pad, or the correct XInput user number (0..3 inclusive) if it is.
-extern int g_xinput_pad_indexes[MAX_PLAYERS];
+extern int g_xinput_pad_indexes[MAX_USERS];
 extern bool g_xinput_block_pads;
 
 // For xinput1_n.dll
@@ -228,7 +228,7 @@ static bool winxinput_joypad_init(void)
       return false;
    }
 
-   for (autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
+   for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
    {
       if (pad_index_to_xuser_index(autoconf_pad) > -1)
       {

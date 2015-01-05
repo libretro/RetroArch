@@ -409,10 +409,10 @@ static void parse_input(int argc, char *argv[])
                fprintf(stderr, "Player number must be at least 1.\n");
                exit(1);
             }
-            else if (g_player > MAX_PLAYERS)
+            else if (g_player > MAX_USERS)
             {
                fprintf(stderr, "Player number must be from 1 to %d.\n",
-                     MAX_PLAYERS);
+                     MAX_USERS);
                exit(1);
             }
             break;

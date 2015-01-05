@@ -264,7 +264,7 @@ static void update_input(state_tracker_t *tracker)
    for (i = 0; i < 2; i++)
       input_push_analog_dpad(g_settings.input.binds[i],
             g_settings.input.analog_dpad_mode[i]);
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
       input_push_analog_dpad(g_settings.input.autoconf_binds[i],
             g_settings.input.analog_dpad_mode[i]);
 
@@ -284,7 +284,7 @@ static void update_input(state_tracker_t *tracker)
 
    for (i = 0; i < 2; i++)
       input_pop_analog_dpad(g_settings.input.binds[i]);
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
       input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
 
    for (i = 0; i < 2; i++)

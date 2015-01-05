@@ -69,7 +69,7 @@ struct udev_joypad
 
 static struct udev *g_udev;
 static struct udev_monitor *g_udev_mon;
-static struct udev_joypad udev_pads[MAX_PLAYERS];
+static struct udev_joypad udev_pads[MAX_USERS];
 
 static inline int16_t compute_axis(const struct input_absinfo *info, int value)
 {
@@ -252,7 +252,7 @@ static void udev_joypad_poll(void)
    while (hotplug_available())
       handle_hotplug();
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
       udev_poll_pad(i);
 }
 
@@ -289,7 +289,7 @@ error:
 static int find_vacant_pad(void)
 {
    unsigned i;
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
       if (udev_pads[i].fd < 0)
          return i;
    return -1;
@@ -415,7 +415,7 @@ static void check_device(struct udev_device *dev, const char *path, bool hotplug
    if (stat(path, &st) < 0)
       return;
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       if (st.st_rdev == udev_pads[i].device)
       {
@@ -456,7 +456,7 @@ static void check_device(struct udev_device *dev, const char *path, bool hotplug
 static void remove_device(const char *path)
 {
    unsigned i;
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       if (udev_pads[i].path && !strcmp(udev_pads[i].path, path))
       {
@@ -475,7 +475,7 @@ static void remove_device(const char *path)
 static void udev_joypad_destroy(void)
 {
    unsigned i;
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
       free_pad(i, false);
 
    if (g_udev_mon)
@@ -489,7 +489,7 @@ static void udev_joypad_destroy(void)
 static bool udev_joypad_init(void)
 {
    unsigned i;
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       udev_pads[i].fd = -1;
       udev_pads[i].ident = g_settings.input.device_names[i];
@@ -587,12 +587,12 @@ static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static bool udev_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS && udev_pads[pad].fd >= 0;
+   return pad < MAX_USERS && udev_pads[pad].fd >= 0;
 }
 
 static const char *udev_joypad_name(unsigned pad)
 {
-   if (pad >= MAX_PLAYERS)
+   if (pad >= MAX_USERS)
       return NULL;
 
    return *udev_pads[pad].ident ? udev_pads[pad].ident : NULL;

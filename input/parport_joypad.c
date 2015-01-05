@@ -41,7 +41,7 @@ struct parport_joypad
    char *ident;
 };
 
-static struct parport_joypad parport_pads[MAX_PLAYERS];
+static struct parport_joypad parport_pads[MAX_USERS];
 
 static void parport_poll_pad(struct parport_joypad *pad)
 {
@@ -200,7 +200,7 @@ static void parport_joypad_poll(void)
 {
    int i;
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       if (parport_pads[i].fd >= 0)
          parport_poll_pad(&parport_pads[i]);
@@ -235,7 +235,7 @@ static bool parport_joypad_init(void)
 
    memset(buf, 0, PARPORT_NUM_BUTTONS * 3 + 1);
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       struct parport_joypad *pad = &parport_pads[i];
       pad->fd = -1;
@@ -307,7 +307,7 @@ static void parport_joypad_destroy(void)
    unsigned i;
    struct parport_joypad *pad;
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       pad = (struct parport_joypad*)&parport_pads[i];
       if (pad->fd >= 0)
@@ -316,7 +316,7 @@ static void parport_joypad_destroy(void)
       }
    }
    memset(parport_pads, 0, sizeof(parport_pads));
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
       parport_pads[i].fd = -1;
 }
 
@@ -336,12 +336,12 @@ static int16_t parport_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static bool parport_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS && parport_pads[pad].fd >= 0;
+   return pad < MAX_USERS && parport_pads[pad].fd >= 0;
 }
 
 static const char *parport_joypad_name(unsigned pad)
 {
-   if (pad >= MAX_PLAYERS)
+   if (pad >= MAX_USERS)
       return NULL;
 
    return *parport_pads[pad].ident ? parport_pads[pad].ident : NULL;

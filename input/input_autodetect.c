@@ -164,7 +164,7 @@ void input_config_autoconfigure_joypad(unsigned idx,
 const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
 {
    unsigned joy_idx = g_settings.input.joypad_map[port];
-   if (joy_idx < MAX_PLAYERS)
+   if (joy_idx < MAX_USERS)
       return &g_settings.input.autoconf_binds[joy_idx][id];
    else
       return NULL;

@@ -46,8 +46,8 @@ typedef struct
 
    uint32_t key_state[MAX_KEYS];
 
-   uint32_t buttons[MAX_PLAYERS];
-   int16_t axes[MAX_PLAYERS][4];
+   uint32_t buttons[MAX_USERS];
+   int16_t axes[MAX_USERS][4];
    int8_t  hats[NUM_HATS][2];
 
    bool icade_enabled;

@@ -39,7 +39,7 @@ struct linuxraw_joypad
    char *ident;
 };
 
-static struct linuxraw_joypad linuxraw_pads[MAX_PLAYERS];
+static struct linuxraw_joypad linuxraw_pads[MAX_USERS];
 static int g_notify;
 static int g_epoll;
 static bool g_hotplug;
@@ -134,7 +134,7 @@ static void handle_plugged_pad(void)
             continue;
 
          unsigned idx = strtoul(event->name + 2, NULL, 0);
-         if (idx >= MAX_PLAYERS)
+         if (idx >= MAX_USERS)
             continue;
 
          if (event->mask & IN_DELETE)
@@ -181,10 +181,10 @@ static void handle_plugged_pad(void)
 static void linuxraw_joypad_poll(void)
 {
    int i, ret;
-   struct epoll_event events[MAX_PLAYERS + 1];
+   struct epoll_event events[MAX_USERS + 1];
 
 retry:
-   ret = epoll_wait(g_epoll, events, MAX_PLAYERS + 1, 0);
+   ret = epoll_wait(g_epoll, events, MAX_USERS + 1, 0);
    if (ret < 0 && errno == EINTR)
       goto retry;
 
@@ -206,11 +206,11 @@ static void linuxraw_joypad_setup_notify(void)
 static bool linuxraw_joypad_init(void)
 {
    unsigned i;
-   g_epoll = epoll_create(MAX_PLAYERS + 1);
+   g_epoll = epoll_create(MAX_USERS + 1);
    if (g_epoll < 0)
       return false;
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       struct linuxraw_joypad *pad = (struct linuxraw_joypad*)&linuxraw_pads[i];
       pad->fd = -1;
@@ -248,14 +248,14 @@ static bool linuxraw_joypad_init(void)
 static void linuxraw_joypad_destroy(void)
 {
    unsigned i;
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       if (linuxraw_pads[i].fd >= 0)
          close(linuxraw_pads[i].fd);
    }
 
    memset(linuxraw_pads, 0, sizeof(linuxraw_pads));
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
       linuxraw_pads[i].fd = -1;
 
    if (g_notify >= 0)
@@ -305,12 +305,12 @@ static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static bool linuxraw_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS && linuxraw_pads[pad].fd >= 0;
+   return pad < MAX_USERS && linuxraw_pads[pad].fd >= 0;
 }
 
 static const char *linuxraw_joypad_name(unsigned pad)
 {
-   if (pad >= MAX_PLAYERS)
+   if (pad >= MAX_USERS)
       return NULL;
 
    return *linuxraw_pads[pad].ident ? linuxraw_pads[pad].ident : NULL;

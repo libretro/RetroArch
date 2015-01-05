@@ -485,9 +485,9 @@ static void print_help(void)
    puts("\t\tContent must be loaded in an order which depends on the particular subsystem used.");
    puts("\t\tSee verbose log output to learn how a particular subsystem wants content to be loaded.");
 
-   printf("\t-N/--nodevice: Disconnects controller device connected to port (1 to %d).\n", MAX_PLAYERS);
-   printf("\t-A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n", MAX_PLAYERS);
-   printf("\t-d/--device: Connect a generic device into port of the device (1 to %d).\n", MAX_PLAYERS);
+   printf("\t-N/--nodevice: Disconnects controller device connected to port (1 to %d).\n", MAX_USERS);
+   printf("\t-A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n", MAX_USERS);
+   printf("\t-d/--device: Connect a generic device into port of the device (1 to %d).\n", MAX_USERS);
    puts("\t\tFormat is port:ID, where ID is an unsigned number corresponding to the particular device.\n");
 
    puts("\t-P/--bsvplay: Playback a BSV movie file.");
@@ -774,7 +774,7 @@ static void parse_input(int argc, char *argv[])
             }
             string_list_free(list);
 
-            if (port < 1 || port > MAX_PLAYERS)
+            if (port < 1 || port > MAX_USERS)
             {
                RARCH_ERR("Connect device to a valid port.\n");
                print_help();
@@ -787,7 +787,7 @@ static void parse_input(int argc, char *argv[])
 
          case 'A':
             port = strtol(optarg, NULL, 0);
-            if (port < 1 || port > MAX_PLAYERS)
+            if (port < 1 || port > MAX_USERS)
             {
                RARCH_ERR("Connect dualanalog to a valid port.\n");
                print_help();
@@ -820,7 +820,7 @@ static void parse_input(int argc, char *argv[])
 
          case 'N':
             port = strtol(optarg, NULL, 0);
-            if (port < 1 || port > MAX_PLAYERS)
+            if (port < 1 || port > MAX_USERS)
             {
                RARCH_ERR("Disconnect device from a valid port.\n");
                print_help();
@@ -1046,7 +1046,7 @@ static void init_controllers(void)
 {
    unsigned i;
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       unsigned device = g_settings.input.libretro_device[i];
       const struct retro_controller_description *desc = NULL;
@@ -1798,7 +1798,7 @@ static void main_clear_state(bool inited)
 
    init_state();
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
       g_settings.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
 }
 
@@ -2768,7 +2768,7 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_RUMBLE_STOP:
          {
             int i;
-            for (i = 0; i < MAX_PLAYERS; i++)
+            for (i = 0; i < MAX_USERS; i++)
             {
                driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
                driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);

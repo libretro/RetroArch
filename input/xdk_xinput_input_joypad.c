@@ -61,7 +61,7 @@ static bool xdk_joypad_init(void)
    while(XGetDeviceEnumerationStatus() == XDEVICE_ENUMERATION_BUSY) {}
 #endif
 
-   for (autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
+   for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
    {
       strlcpy(g_settings.input.device_names[autoconf_pad],
             "XInput Controller",
@@ -250,7 +250,7 @@ static void xdk_joypad_poll(void)
 
 static bool xdk_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS && pad_state[pad];
+   return pad < MAX_USERS && pad_state[pad];
 }
 
 static void xdk_joypad_destroy(void)

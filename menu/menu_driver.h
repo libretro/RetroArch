@@ -32,8 +32,8 @@ extern "C" {
 #define MENU_MAX_AXES 32
 #define MENU_MAX_HATS 4
 
-#ifndef MAX_PLAYERS
-#define MAX_PLAYERS 16
+#ifndef MAX_USERS
+#define MAX_USERS 16
 #endif
 
 struct menu_bind_state_port
@@ -60,8 +60,8 @@ struct menu_bind_state
    unsigned begin;
    unsigned last;
    unsigned user;
-   struct menu_bind_state_port state[MAX_PLAYERS];
-   struct menu_bind_axis_state axis_state[MAX_PLAYERS];
+   struct menu_bind_state_port state[MAX_USERS];
+   struct menu_bind_axis_state axis_state[MAX_USERS];
    bool skip;
 };
 

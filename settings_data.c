@@ -4289,12 +4289,12 @@ static bool setting_data_append_list_input_options(
          g_settings.input.max_users,
          "input_max_users",
          "Max Users",
-         MAX_PLAYERS,
+         MAX_USERS,
          group_info.name,
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_list_current_add_range(list, list_info, 1, MAX_PLAYERS, 1, true, true);
+   settings_list_current_add_range(list, list_info, 1, MAX_USERS, 1, true, true);
 
    CONFIG_BOOL(
          g_settings.input.autodetect_enable,
@@ -4372,17 +4372,17 @@ static bool setting_data_append_list_input_options(
        * 2 is the length of '99'; we don't need more users than that.
        */
       /* FIXME/TODO - really need to clean up this mess in some way. */
-      static char key[MAX_PLAYERS][64];
-      static char key_type[MAX_PLAYERS][64];
-      static char key_analog[MAX_PLAYERS][64];
-      static char key_bind_all[MAX_PLAYERS][64];
-      static char key_bind_defaults[MAX_PLAYERS][64];
+      static char key[MAX_USERS][64];
+      static char key_type[MAX_USERS][64];
+      static char key_analog[MAX_USERS][64];
+      static char key_bind_all[MAX_USERS][64];
+      static char key_bind_defaults[MAX_USERS][64];
 
-      static char label[MAX_PLAYERS][64];
-      static char label_type[MAX_PLAYERS][64];
-      static char label_analog[MAX_PLAYERS][64];
-      static char label_bind_all[MAX_PLAYERS][64];
-      static char label_bind_defaults[MAX_PLAYERS][64];
+      static char label[MAX_USERS][64];
+      static char label_type[MAX_USERS][64];
+      static char label_analog[MAX_USERS][64];
+      static char label_bind_all[MAX_USERS][64];
+      static char label_bind_defaults[MAX_USERS][64];
 
       snprintf(key[user], sizeof(key[user]),
                "input_player%d_joypad_index", user + 1);
@@ -4537,7 +4537,7 @@ static bool setting_data_append_list_input_options(
        * Keep it up to date or you'll get some really obvious bugs.
        * 2 is the length of '99'; we don't need more users than that.
        */
-      static char buffer[MAX_PLAYERS][7+2+1];
+      static char buffer[MAX_USERS][7+2+1];
       const struct retro_keybind* const defaults =
          (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
 

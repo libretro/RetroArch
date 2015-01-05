@@ -161,7 +161,7 @@ static int menu_start_screen_iterate(unsigned action)
 
 static int mouse_iterate(unsigned action)
 {
-   const struct retro_keybind *binds[MAX_PLAYERS];
+   const struct retro_keybind *binds[MAX_USERS];
 
    if (!driver.menu->mouse.enable)
       return 0;

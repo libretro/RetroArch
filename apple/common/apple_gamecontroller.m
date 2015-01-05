@@ -32,7 +32,7 @@ static void apple_gamecontroller_poll(GCController *controller)
 {
    uint32_t slot, pause;
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-   if (!apple || !controller || controller.playerIndex == MAX_PLAYERS)
+   if (!apple || !controller || controller.playerIndex == MAX_USERS)
       return;
     
     slot = (uint32_t)controller.playerIndex;
@@ -114,7 +114,7 @@ static void apple_gamecontroller_connect(GCController *controller)
 {
     int32_t slot = apple_joypad_connect_gcapi(slots);
     
-    controller.playerIndex = (slot >= 0 && slot < MAX_PLAYERS) ? slot : GCControllerPlayerIndexUnset;
+    controller.playerIndex = (slot >= 0 && slot < MAX_USERS) ? slot : GCControllerPlayerIndexUnset;
     
     if (controller.playerIndex == GCControllerPlayerIndexUnset)
         return;

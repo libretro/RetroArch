@@ -20,7 +20,7 @@ static int find_vacant_pad(joypad_connection_t *joyconn)
 {
    unsigned i;
 
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       joypad_connection_t *conn = (joypad_connection_t*)&joyconn[i];
       if (conn && !conn->used)
@@ -91,7 +91,7 @@ int32_t apple_joypad_connect_gcapi(joypad_connection_t *joyconn)
 {
    int pad = find_vacant_pad(joyconn);
 
-   if (pad >= 0 && pad < MAX_PLAYERS)
+   if (pad >= 0 && pad < MAX_USERS)
    {
       joypad_connection_t *s = (joypad_connection_t*)&joyconn[pad];
 
@@ -159,7 +159,7 @@ void pad_connection_destroy(joypad_connection_t *joyconn)
 {
    unsigned i;
 
-   for (i = 0; i < MAX_PLAYERS; i ++)
+   for (i = 0; i < MAX_USERS; i ++)
    {
       joypad_connection_t *s = (joypad_connection_t*)&joyconn[i];
       pad_connection_pad_deinit(s, i);

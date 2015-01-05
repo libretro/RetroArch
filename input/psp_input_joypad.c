@@ -154,7 +154,7 @@ static void psp_joypad_poll(void)
 
 static bool psp_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS && pad_state;
+   return pad < MAX_USERS && pad_state;
 }
 
 

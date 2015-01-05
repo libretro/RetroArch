@@ -123,7 +123,7 @@ static void remove_device(void* context, IOReturn result, void* sender)
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
    struct pad_connection* connection = (struct pad_connection*)context;
 
-   if (connection && connection->slot < MAX_PLAYERS)
+   if (connection && connection->slot < MAX_USERS)
    {
       char msg[512];
       snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.",
@@ -162,7 +162,7 @@ static void add_device(void* context, IOReturn result,
       calloc(1, sizeof(*connection));
 
    connection->device_handle = device;
-   connection->slot          = MAX_PLAYERS;
+   connection->slot          = MAX_USERS;
 
    IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
 
@@ -252,14 +252,14 @@ static bool apple_joypad_init(void)
 
    IOHIDManagerOpen(g_hid_manager, kIOHIDOptionsTypeNone);
     
-   slots = (joypad_connection_t*)pad_connection_init(MAX_PLAYERS);
+   slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
 
    return true;
 }
 
 static bool apple_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS;
+   return pad < MAX_USERS;
 }
 
 static void apple_joypad_hid_destroy(void)
@@ -294,7 +294,7 @@ static bool apple_joypad_button(unsigned port, uint16_t joykey)
       return false;
 
    /* Check the button. */
-   if ((port < MAX_PLAYERS) && (joykey < 32))
+   if ((port < MAX_USERS) && (joykey < 32))
        return ((apple->buttons[port] & (1 << joykey)) != 0) ||
               ((buttons & (1 << joykey)) != 0);
     return false;
@@ -337,7 +337,7 @@ static bool apple_joypad_rumble(unsigned pad,
 static const char *apple_joypad_name(unsigned pad)
 {
    /* TODO/FIXME - implement properly */
-   if (pad >= MAX_PLAYERS)
+   if (pad >= MAX_USERS)
       return NULL;
 
    return NULL;

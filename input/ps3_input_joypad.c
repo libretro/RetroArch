@@ -41,7 +41,7 @@ static bool ps3_joypad_init(void)
 
    cellPadInit(MAX_PADS);
 
-   for (autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
+   for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
    {
       strlcpy(g_settings.input.device_names[autoconf_pad],
             "SixAxis Controller",
@@ -209,7 +209,7 @@ static void ps3_joypad_poll(void)
 
 static bool ps3_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS && pad_state[pad];
+   return pad < MAX_USERS && pad_state[pad];
 }
 
 static bool ps3_joypad_rumble(unsigned pad,

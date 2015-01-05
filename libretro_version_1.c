@@ -282,7 +282,7 @@ static int16_t input_state(unsigned port, unsigned device,
       g_extern.bsv.movie_end = true;
    }
 
-   static const struct retro_keybind *binds[MAX_PLAYERS] = {
+   static const struct retro_keybind *binds[MAX_USERS] = {
       g_settings.input.binds[0],
       g_settings.input.binds[1],
       g_settings.input.binds[2],

@@ -39,7 +39,7 @@ bool input_joypad_set_rumble(const rarch_joypad_driver_t *drv,
       return false;
 
    unsigned joy_idx = g_settings.input.joypad_map[port];
-   if (joy_idx >= MAX_PLAYERS)
+   if (joy_idx >= MAX_USERS)
       return false;
 
    return drv->set_rumble(joy_idx, effect, strength);
@@ -52,7 +52,7 @@ static bool input_joypad_is_pressed(
       unsigned key)
 {
    unsigned joy_idx = g_settings.input.joypad_map[port];
-   if (joy_idx >= MAX_PLAYERS)
+   if (joy_idx >= MAX_USERS)
       return false;
 
    /* Auto-binds are per joypad, not per user. */
@@ -99,7 +99,7 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
       return 0;
 
    unsigned joy_idx = g_settings.input.joypad_map[port];
-   if (joy_idx >= MAX_PLAYERS)
+   if (joy_idx >= MAX_USERS)
       return 0;
 
    /* Auto-binds are per joypad, not per user. */
@@ -206,7 +206,7 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
    return true;
 }
 
-static const char *bind_user_prefix[MAX_PLAYERS] = {
+static const char *bind_user_prefix[MAX_USERS] = {
    "input_player1",
    "input_player2",
    "input_player3",

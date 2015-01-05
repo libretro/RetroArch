@@ -40,7 +40,7 @@ const int g_subsystem = SDL_INIT_GAMECONTROLLER;
 const int g_subsystem = SDL_INIT_JOYSTICK;
 #endif
 
-static sdl_joypad_t sdl_pads[MAX_PLAYERS];
+static sdl_joypad_t sdl_pads[MAX_USERS];
 #ifdef HAVE_SDL2
 static bool g_has_haptic;
 #endif
@@ -212,7 +212,7 @@ static void pad_disconnect(unsigned id)
 static void sdl_joypad_destroy(void)
 {
    unsigned i;
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
       pad_disconnect(i);
 
    SDL_QuitSubSystem(g_subsystem);
@@ -243,8 +243,8 @@ static bool sdl_joypad_init(void)
    memset(sdl_pads, 0, sizeof(sdl_pads));
 
    unsigned num_sticks = SDL_NumJoysticks();
-   if (num_sticks > MAX_PLAYERS)
-      num_sticks = MAX_PLAYERS;
+   if (num_sticks > MAX_USERS)
+      num_sticks = MAX_USERS;
 
    for (i = 0; i < num_sticks; i++)
       pad_connect(i);
@@ -252,7 +252,7 @@ static bool sdl_joypad_init(void)
 #ifndef HAVE_SDL2
    /* quit if no joypad is detected. */
    num_sticks = 0;
-   for (i = 0; i < MAX_PLAYERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
       if (sdl_pads[i].joypad)
          num_sticks++;
 
@@ -413,12 +413,12 @@ static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect,
 
 static bool sdl_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_PLAYERS && sdl_pads[pad].joypad;
+   return pad < MAX_USERS && sdl_pads[pad].joypad;
 }
 
 static const char *sdl_joypad_name(unsigned pad)
 {
-   if (pad >= MAX_PLAYERS)
+   if (pad >= MAX_USERS)
       return NULL;
 
    return pad_name(pad);
