@@ -197,6 +197,8 @@ static const char *font_paths[] = {
    "/usr/share/fonts/TTF/DejaVuSans.ttf",
    "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSansMono.ttf",
    "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf",
+   "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+   "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
 #endif
    "osd-font.ttf", /* Magic font to search for, useful for distribution. */
 };
