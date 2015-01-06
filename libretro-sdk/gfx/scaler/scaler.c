@@ -224,77 +224,54 @@ void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
 void scaler_ctx_scale(struct scaler_ctx *ctx,
       void *output, const void *input)
 {
+   const void *input_frame = input;
+   void *output_frame      = output;
+   int input_stride        = ctx->in_stride;
+   int output_stride       = ctx->out_stride;
+
    if (ctx->unscaled)
    {
       /* Just perform straight pixel conversion. */
       ctx->direct_pixconv(output, input,
             ctx->out_width, ctx->out_height,
             ctx->out_stride, ctx->in_stride);
+      return;
    }
-   else if (ctx->scaler_special)
+
+   if (ctx->in_fmt != SCALER_FMT_ARGB8888)
+   {
+      ctx->in_pixconv(ctx->input.frame, input,
+            ctx->in_width, ctx->in_height,
+            ctx->input.stride, ctx->in_stride);
+
+      input_frame       = ctx->input.frame;
+      input_stride      = ctx->input.stride;
+   }
+
+   if (ctx->out_fmt != SCALER_FMT_ARGB8888)
+   {
+      output_frame  = ctx->output.frame;
+      output_stride = ctx->output.stride;
+   }
+
+   if (ctx->scaler_special)
    {
       /* Take some special, and (hopefully) more optimized path. */
-      const void *inp = input;
-      int in_stride   = ctx->in_stride;
-
-      if (ctx->in_fmt != SCALER_FMT_ARGB8888)
-      {
-         ctx->in_pixconv(ctx->input.frame, input,
-               ctx->in_width, ctx->in_height,
-               ctx->input.stride, ctx->in_stride);
-
-         inp       = ctx->input.frame;
-         in_stride = ctx->input.stride;
-      }
-
-      bool conv_out  = ctx->out_fmt != SCALER_FMT_ARGB8888;
-      void *outp     = output;
-      int out_stride = ctx->out_stride;
-
-      if (conv_out)
-      {
-         outp       = ctx->output.frame;
-         out_stride = ctx->output.stride;
-      }
-
-      ctx->scaler_special(ctx, outp, inp,
+      ctx->scaler_special(ctx, output_frame, input_frame,
             ctx->out_width, ctx->out_height,
             ctx->in_width, ctx->in_height,
-            out_stride, in_stride);
-
-      if (conv_out)
-      {
-         ctx->out_pixconv(output, ctx->output.frame,
-               ctx->out_width, ctx->out_height,
-               ctx->out_stride, ctx->output.stride);
-      }
+            output_stride, input_stride);
    }
    else
    {
-      const void *input_frame  = input;
-      int stride = ctx->in_stride;
-      bool out_fmt_is_not_argb8888 = (ctx->out_fmt != SCALER_FMT_ARGB8888);
-
       /* Take generic filter path. */
-      if (ctx->in_fmt != SCALER_FMT_ARGB8888)
-      {
-         ctx->in_pixconv(ctx->input.frame, input,
-               ctx->in_width, ctx->in_height,
-               ctx->input.stride, ctx->in_stride);
-
-         input_frame = ctx->input.frame;
-         stride      = ctx->input.stride;
-      }
-      ctx->scaler_horiz(ctx, input_frame, stride);
-
-      ctx->scaler_vert(ctx,
-            out_fmt_is_not_argb8888 ? ctx->output.frame  : output,
-            out_fmt_is_not_argb8888 ? ctx->output.stride : ctx->out_stride);
-
-      if (out_fmt_is_not_argb8888)
-         ctx->out_pixconv(output, ctx->output.frame,
-               ctx->out_width, ctx->out_height,
-               ctx->out_stride, ctx->output.stride);
+      ctx->scaler_horiz(ctx, input_frame, input_stride);
+      ctx->scaler_vert (ctx, output, output_stride);
    }
+
+   if (ctx->out_fmt != SCALER_FMT_ARGB8888)
+      ctx->out_pixconv(output, ctx->output.frame,
+            ctx->out_width, ctx->out_height,
+            ctx->out_stride, ctx->output.stride);
 }
 
