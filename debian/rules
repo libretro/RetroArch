@@ -56,7 +56,7 @@ override_dh_auto_install:
 	$(MAKE) DESTDIR=$(CURDIR)/debian/retroarch PREFIX=/usr install
 	cp $(CURDIR)/AUTHORS $(CURDIR)/debian/retroarch/usr/share/doc/retroarch/
 	cp $(CURDIR)/debian/retroarch.desktop $(CURDIR)/debian/retroarch/usr/share/applications/
-	cp $(CURDIR)/debian/retroarch.cfg $(CURDIR)/debian/retroarch/etc/
+	#cp $(CURDIR)/debian/retroarch.cfg $(CURDIR)/debian/retroarch/etc/
 ifeq ($(ARCH),armhf)
 	rm -f $(CURDIR)/debian/retroarch/usr/bin/retroarch-cg2glsl
 endif
