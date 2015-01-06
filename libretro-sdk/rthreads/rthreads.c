@@ -117,7 +117,7 @@ slock_t *slock_new(void)
    if (!lock)
       return NULL;
 
-   lock->lock = CreateMutex(NULL, FALSE, "");
+   lock->lock = CreateMutex(NULL, FALSE, "RetroArchMutex");
    if (!lock->lock)
    {
       free(lock);

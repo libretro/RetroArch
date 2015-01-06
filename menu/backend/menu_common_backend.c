@@ -95,7 +95,7 @@ static int menu_info_screen_iterate(unsigned action)
 static int menu_start_screen_iterate(unsigned action)
 {
    unsigned i;
-   char msg[PATH_MAX];
+   char msg[PATH_MAX * 2];
 
    if (!driver.menu)
       return 0;
@@ -142,9 +142,7 @@ static int menu_start_screen_iterate(unsigned action)
          "Load a libretro core (Core).\n"
          "Load a content file (Load Content).     \n"
          " \n"
-
-         "See Path Options to set directories\n"
-         "for faster access to files.\n"
+         "See Path Options to set directories for faster access to files.\n"
          " \n"
 
          "Press Accept/OK to continue.",
