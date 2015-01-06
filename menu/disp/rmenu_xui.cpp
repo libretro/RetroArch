@@ -399,9 +399,9 @@ static void rmenu_xui_render(void)
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s",
          PACKAGE_VERSION, core_name, core_version);
-   blit_line(RXUI_TERM_START_X + 15,
-         (RXUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RXUI_TERM_START_Y + 2,
-         title_msg, true);
+         
+   mbstowcs(strw_buffer, title_msg, sizeof(strw_buffer) / sizeof(wchar_t));
+   XuiTextElementSetText(m_menutitlebottom, strw_buffer);
 
    unsigned x, y;
    size_t i;
@@ -437,8 +437,8 @@ static void rmenu_xui_render(void)
 #endif
 
       snprintf(message, sizeof(message), "%s : %s",
-            entry_title_buf,
-            type_str_buf);
+            type_str,
+            path_buf);
 
       wchar_t msg_w[256];
       mbstowcs(msg_w, message, sizeof(msg_w) / sizeof(wchar_t));
