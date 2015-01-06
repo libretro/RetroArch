@@ -142,9 +142,12 @@ static int menu_start_screen_iterate(unsigned action)
          "Load a libretro core (Core).\n"
          "Load a content file (Load Content).     \n"
          " \n"
-
+#ifdef _XBOX360
+         "See Path Options to set directories for faster access to files.\n"
+#else
          "See Path Options to set directories\n"
          "for faster access to files.\n"
+#endif
          " \n"
 
          "Press Accept/OK to continue.",
