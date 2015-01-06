@@ -1,3 +1,9 @@
+retroarch (1.0.0.3-0ubuntu1) UNRELEASED; urgency=low
+
+  * New version release (Beta)
+
+ -- Sérgio Benjamim <sergio_br2@yahoo.com.br>  Mon, 27 Oct 2014 13:17:00 -0300
+
 retroarch (1.0.0.2-0ubuntu12) UNRELEASED; urgency=low
 
   * Improve debian packaging

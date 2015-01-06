@@ -3,30 +3,31 @@ Section: otherosfs
 Priority: extra
 Maintainer: Hunter Kaller (hizzlekizzle) <hunter_kaller@yahoo.com>
 Build-Depends:	debhelper (>= 9),
-		pkg-config,
-		libc6-dev (>= 2.13),
-		libpulse-dev,
-		libsdl1.2-dev,
-		libxml2-dev,
-		libavcodec-dev,
-		libavformat-dev,
-		libavutil-dev,
-		libswscale-dev,
-		libv4l-dev,
-		x11proto-xext-dev,
-		libxxf86vm-dev,
-		libxinerama-dev,
-		libudev-dev,
-		libasound2-dev,
-		libxv-dev,
-		libopenal-dev,
-		libfreetype6-dev,
-		libgbm-dev,
-		libdrm-dev,
-		libegl1-mesa-dev,
-		python3-dev,
-		nvidia-cg-dev,
-		zlib1g-dev
+				pkg-config,
+				libc6-dev (>= 2.13),
+				libpulse-dev,
+				libsdl2-dev,
+				libxml2-dev,
+				libavcodec-dev,
+				libavformat-dev,
+				libavutil-dev,
+				libswscale-dev,
+				libv4l-dev,
+				x11proto-xext-dev,
+				libxxf86vm-dev,
+				libxinerama-dev,
+				libudev-dev,
+				libasound2-dev,
+				libxv-dev,
+				libopenal-dev,
+				libfreetype6-dev,
+				libgbm-dev,
+				libdrm-dev,
+				libegl1-mesa-dev,
+				libopenvg1-mesa-dev,
+				python3-dev,
+				zlib1g-dev,
+				nvidia-cg-dev [!armhf]
 Standards-Version: 3.9.5
 Homepage: http://www.libretro.com/
 Vcs-Git: git://github.com/libretro/RetroArch.git
@@ -34,13 +35,13 @@ Vcs-Browser: https://github.com/libretro/RetroArch
 
 Package: retroarch
 Architecture: any
-Depends: 	${shlibs:Depends},
-		${misc:Depends},
-		libopenal1,
-		nvidia-cg-toolkit,
-		python3
+Depends:		${shlibs:Depends},
+				${misc:Depends},
+				fonts-dejavu-core,
+				python3,
+				nvidia-cg-toolkit [!armhf]
 Replaces: ssnes
-Suggests: retroarch-joypad-autoconfig, libretro-common-shaders
+Suggests: retroarch-joypad-autoconfig, libretro-common-shaders, retroarch-assets, libretro-database
 Description: Simple frontend for the libretro library
  RetroArch is an open source, multi-platform frontend for the libretro API. 
  It can be used as a modular multi emulator system, game engine, media player 
