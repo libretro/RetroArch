@@ -8,6 +8,7 @@ usr/share/man/man1
 usr/share/applications
 usr/share/libretro/assets
 usr/share/libretro/autoconfig
+usr/share/libretro/cheats
 usr/share/libretro/info
 usr/share/libretro/shaders
 usr/share/libretro/overlays
