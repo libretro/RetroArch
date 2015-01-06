@@ -95,7 +95,7 @@ static int menu_info_screen_iterate(unsigned action)
 static int menu_start_screen_iterate(unsigned action)
 {
    unsigned i;
-   char msg[PATH_MAX];
+   char msg[PATH_MAX * 2];
 
    if (!driver.menu)
       return 0;
