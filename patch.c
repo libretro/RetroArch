@@ -79,10 +79,15 @@ patch_error_t bps_apply_patch(
       uint8_t *target_data, size_t *target_length)
 {
    size_t i;
+   size_t modify_source_size, modify_target_size,
+          modify_markup_size;
+   struct bps_data bps = {0};
+   uint32_t modify_source_checksum = 0, modify_target_checksum = 0,
+            modify_modify_checksum = 0, checksum;
+
    if (modify_length < 19)
       return PATCH_PATCH_TOO_SMALL;
 
-   struct bps_data bps = {0};
    bps.modify_data = modify_data;
    bps.modify_length = modify_length;
    bps.target_data = target_data;
@@ -96,9 +101,9 @@ patch_error_t bps_apply_patch(
          (bps_read(&bps) != 'S') || (bps_read(&bps) != '1'))
       return PATCH_PATCH_INVALID_HEADER;
 
-   size_t modify_source_size = bps_decode(&bps);
-   size_t modify_target_size = bps_decode(&bps);
-   size_t modify_markup_size = bps_decode(&bps);
+   modify_source_size = bps_decode(&bps);
+   modify_target_size = bps_decode(&bps);
+   modify_markup_size = bps_decode(&bps);
    for (i = 0; i < modify_markup_size; i++)
       bps_read(&bps);
 
@@ -111,6 +116,7 @@ patch_error_t bps_apply_patch(
    {
       size_t length = bps_decode(&bps);
       unsigned mode = length & 3;
+
       length = (length >> 2) + 1;
 
       switch (mode)
@@ -152,15 +158,13 @@ patch_error_t bps_apply_patch(
       }
    }
 
-   uint32_t modify_source_checksum = 0, modify_target_checksum = 0,
-            modify_modify_checksum = 0;
 
    for (i = 0; i < 32; i += 8)
       modify_source_checksum |= bps_read(&bps) << i;
    for (i = 0; i < 32; i += 8)
       modify_target_checksum |= bps_read(&bps) << i;
 
-   uint32_t checksum = ~bps.modify_checksum;
+   checksum = ~bps.modify_checksum;
    for (i = 0; i < 32; i += 8)
       modify_modify_checksum |= bps_read(&bps) << i;
 
@@ -242,7 +246,11 @@ patch_error_t ups_apply_patch(
       uint8_t *targetdata, size_t *targetlength)
 {
    size_t i;
+   unsigned source_read_length, target_read_length;
+   uint32_t patch_read_checksum = 0, source_read_checksum = 0,
+            target_read_checksum = 0, patch_result_checksum;
    struct ups_data data = {0};
+
    data.patch_data = patchdata;
    data.source_data = sourcedata;
    data.target_data = targetdata;
@@ -264,8 +272,8 @@ patch_error_t ups_apply_patch(
    if (ups_patch_read(&data) != '1') 
       return PATCH_PATCH_INVALID;
 
-   unsigned source_read_length = ups_decode(&data);
-   unsigned target_read_length = ups_decode(&data);
+   source_read_length = ups_decode(&data);
+   target_read_length = ups_decode(&data);
 
    if (data.source_length != source_read_length
          && data.source_length != target_read_length) 
@@ -285,7 +293,8 @@ patch_error_t ups_apply_patch(
       {
          uint8_t patch_xor = ups_patch_read(&data);
          ups_target_write(&data, patch_xor ^ ups_source_read(&data));
-         if (patch_xor == 0) break;
+         if (patch_xor == 0)
+            break;
       }
    }
 
@@ -294,17 +303,15 @@ patch_error_t ups_apply_patch(
    while (data.target_offset < data.target_length) 
       ups_target_write(&data, ups_source_read(&data));
 
-   uint32_t patch_read_checksum = 0, source_read_checksum = 0,
-            target_read_checksum = 0;
 
    for (i = 0; i < 4; i++) 
       source_read_checksum |= ups_patch_read(&data) << (i * 8);
    for (i = 0; i < 4; i++) 
       target_read_checksum |= ups_patch_read(&data) << (i * 8);
 
-   uint32_t patch_result_checksum = ~data.patch_checksum;
-   data.source_checksum = ~data.source_checksum;
-   data.target_checksum = ~data.target_checksum;
+   patch_result_checksum = ~data.patch_checksum;
+   data.source_checksum  = ~data.source_checksum;
+   data.target_checksum  = ~data.target_checksum;
 
    for (i = 0; i < 4; i++) 
       patch_read_checksum |= ups_patch_read(&data) << (i * 8);
@@ -328,8 +335,8 @@ patch_error_t ups_apply_patch(
          return PATCH_SUCCESS;
       return PATCH_TARGET_INVALID;
    } 
-   else
-      return PATCH_SOURCE_INVALID;
+
+   return PATCH_SOURCE_INVALID;
 }
 
 patch_error_t ips_apply_patch(
@@ -337,6 +344,8 @@ patch_error_t ips_apply_patch(
       const uint8_t *sourcedata, size_t sourcelength,
       uint8_t *targetdata, size_t *targetlength)
 {
+   uint32_t offset = 5;
+
    if (patchlen < 8 ||
          patchdata[0] != 'P' ||
          patchdata[1] != 'A' ||
@@ -347,15 +356,17 @@ patch_error_t ips_apply_patch(
 
    memcpy(targetdata, sourcedata, sourcelength);
 
-   uint32_t offset = 5;
    *targetlength = sourcelength;
 
    for (;;)
    {
+      uint32_t address;
+      unsigned length;
+
       if (offset > patchlen - 3)
          break;
 
-      uint32_t address = patchdata[offset++] << 16;
+      address  = patchdata[offset++] << 16;
       address |= patchdata[offset++] << 8;
       address |= patchdata[offset++] << 0;
 
@@ -376,7 +387,7 @@ patch_error_t ips_apply_patch(
       if (offset > patchlen - 2)
          break;
 
-      unsigned length = patchdata[offset++] << 8;
+      length  = patchdata[offset++] << 8;
       length |= patchdata[offset++] << 0;
 
       if (length) /* Copy */
