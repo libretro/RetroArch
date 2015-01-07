@@ -77,6 +77,14 @@ static int qstrcmp_dir(const void *a_, const void *b_)
    return strcasecmp(a->data, b->data);
 }
 
+/**
+ * dir_list_sort:
+ * @list      : pointer to the directory listing.
+ * @dir_first : move the directories in the listing to the top?
+ *
+ * Sorts a directory listing.
+ *
+ **/
 void dir_list_sort(struct string_list *list, bool dir_first)
 {
    if (list)
@@ -84,6 +92,13 @@ void dir_list_sort(struct string_list *list, bool dir_first)
             dir_first ? qstrcmp_dir : qstrcmp_plain);
 }
 
+/**
+ * dir_list_free:
+ * @list : pointer to the directory listing
+ *
+ * Free a directory listing.
+ *
+ **/
 void dir_list_free(struct string_list *list)
 {
    string_list_free(list);
@@ -108,12 +123,21 @@ static bool dirent_is_directory(const char *path,
 }
 #endif
 
-/* Return values:
- * -1 - error
- *  1 - continue
- *  0 - normal
- */
-
+/**
+ * parse_dir_entry:
+ * @name         : name of the directory listing entry.
+ * @file_path    : file path of the directory listing entry.
+ * @is_dir       : is the directory listing a directory?
+ * @include_dirs : include directories as part of the finished directory listing?
+ * @list         : pointer to directory listing.
+ * @ext_list     : pointer to allowed file extensions listing.
+ * @file_ext     : file extension of the directory listing entry.
+ *
+ * Parses a directory listing.
+ *
+ * Returns: zero on success, -1 on error, 1 if we should
+ * continue to the next entry in the directory listing.
+ **/
 static int parse_dir_entry(const char *name, char *file_path,
       bool is_dir, bool include_dirs,
       struct string_list *list, struct string_list *ext_list,
@@ -162,6 +186,17 @@ static int parse_dir_entry(const char *name, char *file_path,
    return 0;
 }
 
+/**
+ * dir_list_new:
+ * @dir          : directory path.
+ * @ext          : allowed extensions of file directory entries to include.
+ * @include_dirs : include directories as part of the finished directory listing?
+ *
+ * Create a directory listing.
+ *
+ * Returns: pointer to a directory listing of type 'struct string_list *' on success,
+ * NULL in case of error. Has to be freed manually.
+ **/
 struct string_list *dir_list_new(const char *dir,
       const char *ext, bool include_dirs)
 {
