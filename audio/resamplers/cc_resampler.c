@@ -1,6 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2014      - Ali Bouhlel ( aliaspider@gmail.com )
+ *  Copyright (C) 2014-2015 - Ali Bouhlel ( aliaspider@gmail.com )
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Convoluted Cosine Resampler
+/* Convoluted Cosine Resampler */
 
 #include "resampler.h"
 #include <math.h>
@@ -29,7 +28,7 @@
 #endif
 
 
-/* since SSE and NEON don't provide support for trigonometric functions
+/* Since SSE and NEON don't provide support for trigonometric functions
  * we approximate those with polynoms
  *
  * CC_RESAMPLER_PRECISION defines how accurate the approximation is

@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Simple C interface for XAudio2
+/* Simple C interface for XAudio2 */
 
 #include "xaudio.h"
 #include "xaudio-c.h"
