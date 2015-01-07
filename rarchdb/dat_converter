@@ -1,0 +1,2 @@
+#!/bin/sh
+./lua_converter "$2" dat_converter.lua "$1"

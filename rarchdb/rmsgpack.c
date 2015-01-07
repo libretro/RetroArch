@@ -57,6 +57,8 @@ static const uint8_t MPF_NIL = 0xc0;
 
 int rmsgpack_write_array_header(int fd, uint32_t size)
 {
+   uint16_t tmp_i16;
+   uint32_t tmp_i32;
    if (size < 16)
    {
       size = (size | MPF_FIXARRAY);
@@ -68,7 +70,8 @@ int rmsgpack_write_array_header(int fd, uint32_t size)
    {
       if (write(fd, &MPF_ARRAY16, sizeof(MPF_ARRAY16)) == -1)
          return -errno;
-      if (write(fd, (void *)(&size), sizeof(uint16_t)) == -1)
+      tmp_i16 = httobe16(size);
+      if (write(fd, (void *)(&tmp_i16), sizeof(uint16_t)) == -1)
          return -errno;
       return sizeof(int8_t) + sizeof(uint16_t);
    }
@@ -76,7 +79,8 @@ int rmsgpack_write_array_header(int fd, uint32_t size)
    {
       if (write(fd, &MPF_ARRAY32, sizeof(MPF_ARRAY32)) == -1)
          return -errno;
-      if (write(fd, (void *)(&size), sizeof(uint32_t)) == -1)
+      tmp_i32 = httobe32(size);
+      if (write(fd, (void *)(&tmp_i32), sizeof(uint32_t)) == -1)
          return -errno;
       return sizeof(int8_t) + sizeof(uint32_t);
    }
@@ -84,6 +88,8 @@ int rmsgpack_write_array_header(int fd, uint32_t size)
 
 int rmsgpack_write_map_header(int fd, uint32_t size)
 {
+	uint16_t tmp_i16;
+	uint32_t tmp_i32;
    if (size < 16)
    {
       size = (size | MPF_FIXMAP);
@@ -95,15 +101,17 @@ int rmsgpack_write_map_header(int fd, uint32_t size)
    {
       if (write(fd, &MPF_MAP16, sizeof(MPF_MAP16)) == -1)
          return -errno;
-      if (write(fd, (void *)(&size), sizeof(uint16_t)) == -1)
+      tmp_i16 = httobe16(size);
+      if (write(fd, (void *)(&tmp_i16), sizeof(uint16_t)) == -1)
          return -errno;
-      return sizeof(int8_t) + sizeof(uint16_t);
+      return sizeof(uint8_t) + sizeof(uint16_t);
    }
    else
    {
+	tmp_i32 = httobe32(size);
       if (write(fd, &MPF_MAP32, sizeof(MPF_MAP32)) == -1)
          return -errno;
-      if (write(fd, (void *)(&size), sizeof(uint32_t)) == -1)
+      if (write(fd, (void *)(&tmp_i32), sizeof(uint32_t)) == -1)
          return -errno;
       return sizeof(int8_t) + sizeof(uint32_t);
    }
@@ -131,13 +139,13 @@ int rmsgpack_write_string(int fd, const char *s, uint32_t len)
    }
    else if (len < 1<<16)
    {
-		if (write(fd, &MPF_STR16, sizeof(MPF_STR16)) == -1)
-			return -errno;
-		tmp_i16 = httobe16(len);
-		if (write(fd, &tmp_i16, sizeof(uint16_t)) == -1)
-			return -errno;
-		written += sizeof(uint16_t);
-	}
+	   if (write(fd, &MPF_STR16, sizeof(MPF_STR16)) == -1)
+		   return -errno;
+	   tmp_i16 = httobe16(len);
+	   if (write(fd, &tmp_i16, sizeof(uint16_t)) == -1)
+		   return -errno;
+	   written += sizeof(uint16_t);
+   }
    else
    {
 		if (write(fd, &MPF_STR32, sizeof(MPF_STR32)) == -1)
