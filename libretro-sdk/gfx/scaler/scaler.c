@@ -242,6 +242,14 @@ void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
    memset(&ctx->output, 0, sizeof(ctx->output));
 }
 
+/**
+ * scaler_ctx_scale:
+ * @ctx          : pointer to scaler context object.
+ * @output       : pointer to output image.
+ * @input        : pointer to input image.
+ *
+ * Scales an input image to an output image.
+ **/
 void scaler_ctx_scale(struct scaler_ctx *ctx,
       void *output, const void *input)
 {
