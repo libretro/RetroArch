@@ -22,6 +22,7 @@
 #include "input/input_common.h"
 #include "config.def.h"
 #include "retroarch_logger.h"
+#include "file_ext.h"
 
 #if defined(__CELLOS_LV2__)
 #include <sdk_version.h>
@@ -2834,39 +2835,51 @@ static void settings_data_list_current_add_flags(
    setting_data_add_special_callbacks(list, list_info, values);
 }
 
-int core_list_action_toggle(void *data, unsigned action) {
-  rarch_setting_t *setting = (rarch_setting_t *)data;
-  // If the user CANCELs the browse, then g_settings.libretro is now
-  // set to a directory, which is very bad and will cause a crash
-  // later on. I need to be able to add something to call when a
-  // cancel happens.
-  strlcpy(setting->value.string, g_settings.libretro_directory, setting->size);
-  return 0;
+int core_list_action_toggle(void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t *)data;
+
+   /* If the user CANCELs the browse, then g_settings.libretro is now
+    * set to a directory, which is very bad and will cause a crash
+    * later on. I need to be able to add something to call when a
+    * cancel happens.
+    */
+   strlcpy(setting->value.string, g_settings.libretro_directory, setting->size);
+
+   return 0;
 }
-void core_list_change_handler(void *data) {
+
+void core_list_change_handler(void *data)
+{
   rarch_setting_t *setting = (rarch_setting_t *)data;
+  (void)setting;
+
   rarch_main_command(RARCH_CMD_LOAD_CORE);
 }
 
-int load_content_action_toggle(void *data, unsigned action) {
-  rarch_setting_t *setting = (rarch_setting_t *)data;
+int load_content_action_toggle(void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t *)data;
 
-  strlcpy(setting->value.string, g_settings.menu_content_directory, setting->size);
+   strlcpy(setting->value.string, g_settings.menu_content_directory, setting->size);
 
-  if (g_extern.menu.info.valid_extensions) {
-    setting->values = g_extern.menu.info.valid_extensions;
-  } else {
-    setting->values = g_extern.system.valid_extensions;
-  }
-  
-  return 0;
+   if (g_extern.menu.info.valid_extensions)
+      setting->values = g_extern.menu.info.valid_extensions;
+   else
+      setting->values = g_extern.system.valid_extensions;
+
+   return 0;
 }
-void load_content_change_handler(void *data) {
-  rarch_setting_t *setting = (rarch_setting_t *)data;
-  // This does not appear to be robust enough because sometimes I get
-  // crashes. I think it is because LOAD_CORE has not yet run. I'm not
-  // sure the best way to test for that.
-  rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+void load_content_change_handler(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t *)data;
+   (void)setting;
+
+   /* This does not appear to be robust enough because sometimes I get
+    * crashes. I think it is because LOAD_CORE has not yet run. I'm not
+    * sure the best way to test for that.
+    */
+   rarch_main_command(RARCH_CMD_LOAD_CONTENT);
 }
 
 static bool setting_data_append_list_main_menu_options(
