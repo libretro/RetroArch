@@ -234,7 +234,8 @@ static void update_element(
    }
 }
 
-/* Updates 16-bit input in same format as SNES itself. */
+/* Updates 16-bit input in same format as libretro API itself. */
+
 static void update_input(state_tracker_t *tracker)
 {
    unsigned i;
