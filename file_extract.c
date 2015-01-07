@@ -47,6 +47,7 @@ struct zlib_file_backend
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+
 typedef struct
 {
    int fd;
@@ -130,6 +131,8 @@ static void zlib_file_free(void *handle)
 static const uint8_t *zlib_file_data(void *handle)
 {
    zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   if (!data)
+      return NULL;
    return (const uint8_t*)data->data;
 }
 
@@ -141,10 +144,12 @@ static size_t zlib_file_size(void *handle)
 
 static void *zlib_file_open(const char *path)
 {
+   ssize_t ret;
    zlib_file_data_t *data = (zlib_file_data_t*)calloc(1, sizeof(*data));
    if (!data)
       return NULL;
-   ssize_t ret = read_file(path, &data->data);
+
+   ret = read_file(path, &data->data);
    if (ret < 0)
    {
       RARCH_ERR("Failed to open archive: %s.\n",
@@ -198,12 +203,12 @@ bool zlib_inflate_data_to_file(const char *path, const uint8_t *cdata,
       uint32_t csize, uint32_t size, uint32_t checksum)
 {
    bool ret = true;
-   uint8_t *out_data = (uint8_t*)malloc(size);
-   if (!out_data)
-      return false;
-
    uint32_t real_checksum = 0;
    z_stream stream = {0};
+   uint8_t *out_data = (uint8_t*)malloc(size);
+
+   if (!out_data)
+      return false;
 
    if (inflateInit2(&stream, -MAX_WBITS) != Z_OK)
       GOTO_END_ERROR();
@@ -235,18 +240,18 @@ end:
 
 bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
 {
-   const uint8_t *footer = NULL;
+   const uint8_t *footer    = NULL;
    const uint8_t *directory = NULL;
-
+   const uint8_t *data      = NULL;
+   ssize_t zip_size = 0;
    bool ret = true;
-   const uint8_t *data = NULL;
-
    const struct zlib_file_backend *backend = zlib_get_default_file_backend();
+   void *handle;
+
    if (!backend)
       return false;
 
-   ssize_t zip_size = 0;
-   void *handle = backend->open(file);
+   handle = backend->open(file);
    if (!handle)
       GOTO_END_ERROR();
 
@@ -273,30 +278,35 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
 
    for (;;)
    {
+      uint32_t checksum, csize, size, offset;
+      unsigned cmode, namelength, extralength, commentlength,
+               offsetNL, offsetEL;
+      char filename[PATH_MAX] = {0};
+      const uint8_t *cdata = NULL;
       uint32_t signature = read_le(directory + 0, 4);
+
       if (signature != 0x02014b50)
          break;
 
-      unsigned cmode    = read_le(directory + 10, 2);
-      uint32_t checksum = read_le(directory + 16, 4);
-      uint32_t csize    = read_le(directory + 20, 4);
-      uint32_t size     = read_le(directory + 24, 4);
+      cmode    = read_le(directory + 10, 2);
+      checksum = read_le(directory + 16, 4);
+      csize    = read_le(directory + 20, 4);
+      size     = read_le(directory + 24, 4);
 
-      unsigned namelength    = read_le(directory + 28, 2);
-      unsigned extralength   = read_le(directory + 30, 2);
-      unsigned commentlength = read_le(directory + 32, 2);
+      namelength    = read_le(directory + 28, 2);
+      extralength   = read_le(directory + 30, 2);
+      commentlength = read_le(directory + 32, 2);
 
-      char filename[PATH_MAX] = {0};
       if (namelength >= PATH_MAX)
          GOTO_END_ERROR();
 
       memcpy(filename, directory + 46, namelength);
 
-      uint32_t offset   = read_le(directory + 42, 4);
-      unsigned offsetNL = read_le(data + offset + 26, 2);
-      unsigned offsetEL = read_le(data + offset + 28, 2);
+      offset   = read_le(directory + 42, 4);
+      offsetNL = read_le(data + offset + 26, 2);
+      offsetEL = read_le(data + offset + 28, 2);
 
-      const uint8_t *cdata = data + offset + 30 + offsetNL + offsetEL;
+      cdata = data + offset + 30 + offsetNL + offsetEL;
 
 #if 0
       RARCH_LOG("OFFSET: %u, CSIZE: %u, SIZE: %u.\n", offset + 30 + 
@@ -370,7 +380,7 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata,
 bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
       const char *valid_exts, const char *extraction_directory)
 {
-   bool ret;
+   bool ret = true;
    struct zip_extract_userdata userdata = {0};
    struct string_list *list;
 
@@ -380,7 +390,6 @@ bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
       return false;
    }
 
-   ret = true;
    list = string_split(valid_exts, "|");
    if (!list)
       GOTO_END_ERROR();
@@ -412,14 +421,17 @@ static bool zlib_get_file_list_cb(const char *path, const uint8_t *cdata,
       unsigned cmode, uint32_t csize, uint32_t size, uint32_t checksum,
       void *userdata)
 {
+   union string_list_elem_attr attr;
+   struct string_list *list = (struct string_list*)userdata;
+
    (void)cdata;
    (void)cmode;
    (void)csize;
    (void)size;
    (void)checksum;
-   struct string_list *list = (struct string_list*)userdata;
-   union string_list_elem_attr attr;
+
    memset(&attr, 0, sizeof(attr));
+
    return string_list_append(list, path, attr);
 }
 
