@@ -97,6 +97,9 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
 
    for (i = 0; i < info->info_elem; i++)
    {
+      /* If we don't have a valid pointer. */
+      static const uint8_t empty = 0;
+
       strlcpy(tracker->info[i].id, info->info[i].id,
             sizeof(tracker->info[i].id));
       tracker->info[i].addr  = info->info[i].addr;
@@ -118,9 +121,6 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
          tracker->info[i].py = tracker->py;
       }
 #endif
-
-      /* If we don't have a valid pointer. */
-      static const uint8_t empty = 0;
 
       switch (info->info[i].ram_type)
       {
@@ -159,11 +159,10 @@ void state_tracker_free(state_tracker_t *tracker)
 
 static inline uint16_t fetch(const struct state_tracker_internal *info)
 {
-   uint16_t val = 0;
+   uint16_t val = info->ptr[info->addr];
+
    if (info->is_input)
       val = *info->input_ptr;
-   else
-      val = info->ptr[info->addr];
 
    val &= info->mask;
 
@@ -239,8 +238,7 @@ static void update_element(
 static void update_input(state_tracker_t *tracker)
 {
    unsigned i;
-   if (driver.input == NULL)
-      return;
+   uint16_t state[2] = {0};
 
    static const unsigned buttons[] = {
       RETRO_DEVICE_ID_JOYPAD_R,
@@ -263,6 +261,9 @@ static void update_input(state_tracker_t *tracker)
       g_settings.input.binds[1],
    };
 
+   if (!driver.input)
+      return;
+
    for (i = 0; i < 2; i++)
       input_push_analog_dpad(g_settings.input.binds[i],
             g_settings.input.analog_dpad_mode[i]);
@@ -270,7 +271,6 @@ static void update_input(state_tracker_t *tracker)
       input_push_analog_dpad(g_settings.input.autoconf_binds[i],
             g_settings.input.analog_dpad_mode[i]);
 
-   uint16_t state[2] = {0};
    if (!driver.block_libretro_input)
    {
       for (i = 4; i < 16; i++)
@@ -297,8 +297,8 @@ unsigned state_get_uniform(state_tracker_t *tracker,
       struct state_tracker_uniform *uniforms,
       unsigned elem, unsigned frame_count)
 {
-   unsigned i, elems;
-   elems = tracker->info_elem < elem ? tracker->info_elem : elem;
+   unsigned i;
+   unsigned elems = tracker->info_elem < elem ? tracker->info_elem : elem;
 
    update_input(tracker);
 

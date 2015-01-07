@@ -30,17 +30,20 @@
 
 static PyObject* py_read_wram(PyObject *self, PyObject *args)
 {
-   (void)self;
+   unsigned addr;
+   size_t   max;
    const uint8_t *data = (const uint8_t*)
       pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+
+   (void)self;
+
    if (!data)
    {
       Py_INCREF(Py_None);
       return Py_None;
    }
 
-   size_t max = pretro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
-   unsigned addr;
+   max = pretro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
 
    if (!PyArg_ParseTuple(args, "I", &addr))
       return NULL;
@@ -56,17 +59,20 @@ static PyObject* py_read_wram(PyObject *self, PyObject *args)
 
 static PyObject* py_read_vram(PyObject *self, PyObject *args)
 {
-   (void)self;
+   unsigned addr;
+   size_t max;
    const uint8_t *data = (const uint8_t*)
       pretro_get_memory_data(RETRO_MEMORY_VIDEO_RAM);
+
+   (void)self;
+
    if (!data)
    {
       Py_INCREF(Py_None);
       return Py_None;
    }
 
-   size_t max = pretro_get_memory_size(RETRO_MEMORY_VIDEO_RAM);
-   unsigned addr;
+   max = pretro_get_memory_size(RETRO_MEMORY_VIDEO_RAM);
 
    if (!PyArg_ParseTuple(args, "I", &addr))
       return NULL;
@@ -93,40 +99,43 @@ static const struct retro_keybind *py_binds[MAX_USERS] = {
 
 static PyObject *py_read_input(PyObject *self, PyObject *args)
 {
+   unsigned user, key;
+   int16_t res = 0;
+   
    (void)self;
+
    if (!driver.input_data)
       return PyBool_FromLong(0);
 
-   unsigned user;
-   unsigned key;
    if (!PyArg_ParseTuple(args, "II", &user, &key))
       return NULL;
 
    if (user > MAX_USERS || user < 1 || key >= RARCH_FIRST_META_KEY)
       return NULL;
 
-   int16_t res = driver.block_libretro_input ? 0 : 
-      driver.input->input_state(driver.input_data,
+   if (!driver.block_libretro_input)
+      res = driver.input->input_state(driver.input_data,
             py_binds, user - 1, RETRO_DEVICE_JOYPAD, 0, key);
    return PyBool_FromLong(res);
 }
 
 static PyObject *py_read_analog(PyObject *self, PyObject *args)
 {
+   unsigned user, index, id;
+   int16_t res = 0;
+
    (void)self;
+
    if (!driver.input_data)
       return PyBool_FromLong(0);
 
-   unsigned user;
-   unsigned index;
-   unsigned id;
    if (!PyArg_ParseTuple(args, "III", &user, &index, &id))
       return NULL;
 
    if (user > MAX_USERS || user < 1 || index > 1 || id > 1)
       return NULL;
 
-   int16_t res = driver.input->input_state(driver.input_data,
+   res = driver.input->input_state(driver.input_data,
          py_binds, user - 1, RETRO_DEVICE_ANALOG, index, id);
    return PyFloat_FromDouble((double)res / 0x7fff);
 }
@@ -196,11 +205,13 @@ struct py_state
 
 static char *dupe_newline(const char *str)
 {
+   unsigned size;
+   char *ret = NULL;
    if (!str)
       return NULL;
 
-   unsigned size = strlen(str) + 2;
-   char *ret = (char*)malloc(size);
+   size = strlen(str) + 2;
+   ret = (char*)malloc(size);
    if (!ret)
       return NULL;
 
@@ -213,20 +224,22 @@ static char *dupe_newline(const char *str)
 /* Need to make sure that first-line indentation is 0. */
 static char *align_program(const char *program)
 {
+   size_t prog_size;
+   char *new_prog = NULL, *save = NULL, *line;
+   unsigned skip_chars = 0;
    char *prog = strdup(program);
    if (!prog)
       return NULL;
 
-   size_t prog_size = strlen(program) + 1;
-   char *new_prog = (char*)calloc(1, prog_size);
+   prog_size = strlen(program) + 1;
+   new_prog = (char*)calloc(1, prog_size);
    if (!new_prog)
    {
       free(prog);
       return NULL;
    }
 
-   char *save;
-   char *line = dupe_newline(strtok_r(prog, "\n", &save));
+   line = dupe_newline(strtok_r(prog, "\n", &save));
    if (!line)
    {
       free(prog);
@@ -234,7 +247,6 @@ static char *align_program(const char *program)
       return NULL;
    }
 
-   unsigned skip_chars = 0;
    while (isblank(line[skip_chars]) && line[skip_chars])
       skip_chars++;
 
@@ -349,6 +361,9 @@ float py_state_get(py_state_t *handle, const char *id,
       unsigned frame_count)
 {
    unsigned i;
+   float retval;
+   PyObject *ret = NULL;
+
    for (i = 0; i < MAX_USERS; i++)
    {
       input_push_analog_dpad(g_settings.input.binds[i],
@@ -357,7 +372,7 @@ float py_state_get(py_state_t *handle, const char *id,
             g_settings.input.analog_dpad_mode[i]);
    }
 
-   PyObject *ret = PyObject_CallMethod(handle->inst, (char*)id, (char*)"I", frame_count);
+   ret = PyObject_CallMethod(handle->inst, (char*)id, (char*)"I", frame_count);
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -378,7 +393,7 @@ float py_state_get(py_state_t *handle, const char *id,
       return 0.0f;
    }
 
-   float retval = (float)PyFloat_AsDouble(ret);
+   retval = (float)PyFloat_AsDouble(ret);
    Py_DECREF(ret);
    return retval;
 }
