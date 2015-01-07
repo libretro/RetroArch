@@ -29,6 +29,13 @@
 #include "netplay.h"
 #endif
 
+/**
+ * set_volume:
+ * @gain      : amount of gain to be applied to current volume level.
+ *
+ * Adjusts the current audio volume level.
+ *
+ **/
 static void set_volume(float gain)
 {
    char msg[PATH_MAX];
@@ -45,6 +52,17 @@ static void set_volume(float gain)
    g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
 }
 
+/**
+ * check_pause:
+ * @pressed              : was libretro pause key pressed?
+ * @frameadvance_pressed : was frameadvance key pressed?
+ *
+ * Check if libretro pause key was pressed. If so, pause or 
+ * unpause the libretro core.
+ *
+ * Returns: true if libretro pause key was toggled, otherwise false.
+ *
+ **/
 static bool check_pause(bool pressed, bool frameadvance_pressed)
 {
    static bool old_focus    = true;
@@ -76,20 +94,30 @@ static bool check_pause(bool pressed, bool frameadvance_pressed)
    return true;
 }
 
-/* Rewind buttons works like FRAMEREWIND when paused.
- * We will one-shot in that case. */
+/**
+ * check_is_oneshot:
+ * @oneshot_pressed      : is this a oneshot frame?
+ * @rewind_pressed       : was rewind key pressed?
+ *
+ * Checks if the current frame is one-shot frame type.
+ *
+ * Returns: true if libretro frame is one-shot, otherwise false..
+ *
+ **/
 static inline bool check_is_oneshot(bool oneshot_pressed, bool rewind_pressed)
 {
+   /* Rewind buttons works like FRAMEREWIND when paused.
+    * We will one-shot in that case. */
    return (oneshot_pressed | rewind_pressed);
 }
 
-/* To avoid continous switching if we hold the button down, we require
- * that the button must go from pressed to unpressed back to pressed 
- * to be able to toggle between then.
- */
 static void check_fast_forward_button(bool fastforward_pressed,
       bool hold_pressed, bool old_hold_pressed)
 {
+   /* To avoid continous switching if we hold the button down, we require
+    * that the button must go from pressed to unpressed back to pressed 
+    * to be able to toggle between then.
+    */
    if (fastforward_pressed)
       driver.nonblock_state = !driver.nonblock_state;
    else if (old_hold_pressed != hold_pressed)
@@ -653,15 +681,16 @@ static bool input_flush(retro_input_t *input)
    return true;
 }
 
-/*
- * RetroArch's main iteration loop.
+/**
+ * rarch_main_iterate:
  *
- * Returns:
- *  0  -  Forcibly wake up the loop.
- *  1  -  Wait until input to wake up the loop
- * -1  -  Quit out of iteration loop.
- */
-
+ * Run Libretro/RetroArch for one frame.
+ *
+ * Returns: 0 if we want to indicate to the caller that any top-level runtime loop
+ * needs to be forcibly woken up. 1 if we have to wait until button input in order
+ * to wake up the loop. -1 if we forcibly quit out of the RetroArch iteration loop. 
+ *
+ **/
 int rarch_main_iterate(void)
 {
    unsigned i;
