@@ -195,25 +195,25 @@ enum sound_mode_enums
 
 struct defaults
 {
-   char menu_config_dir[PATH_MAX];
-   char config_path[PATH_MAX];
-   char core_path[PATH_MAX];
-   char autoconfig_dir[PATH_MAX];
-   char audio_filter_dir[PATH_MAX];
-   char video_filter_dir[PATH_MAX];
-   char assets_dir[PATH_MAX];
-   char core_dir[PATH_MAX];
-   char core_info_dir[PATH_MAX];
-   char overlay_dir[PATH_MAX];
-   char port_dir[PATH_MAX];
-   char shader_dir[PATH_MAX];
-   char savestate_dir[PATH_MAX];
-   char resampler_dir[PATH_MAX];
-   char sram_dir[PATH_MAX];
-   char screenshot_dir[PATH_MAX];
-   char system_dir[PATH_MAX];
-   char playlist_dir[PATH_MAX];
-   char content_history_dir[PATH_MAX];
+   char menu_config_dir[PATH_MAX_LENGTH];
+   char config_path[PATH_MAX_LENGTH];
+   char core_path[PATH_MAX_LENGTH];
+   char autoconfig_dir[PATH_MAX_LENGTH];
+   char audio_filter_dir[PATH_MAX_LENGTH];
+   char video_filter_dir[PATH_MAX_LENGTH];
+   char assets_dir[PATH_MAX_LENGTH];
+   char core_dir[PATH_MAX_LENGTH];
+   char core_info_dir[PATH_MAX_LENGTH];
+   char overlay_dir[PATH_MAX_LENGTH];
+   char port_dir[PATH_MAX_LENGTH];
+   char shader_dir[PATH_MAX_LENGTH];
+   char savestate_dir[PATH_MAX_LENGTH];
+   char resampler_dir[PATH_MAX_LENGTH];
+   char sram_dir[PATH_MAX_LENGTH];
+   char screenshot_dir[PATH_MAX_LENGTH];
+   char system_dir[PATH_MAX_LENGTH];
+   char playlist_dir[PATH_MAX_LENGTH];
+   char content_history_dir[PATH_MAX_LENGTH];
 
    struct
    {
@@ -258,17 +258,17 @@ struct settings
       unsigned aspect_ratio_idx;
       unsigned rotation;
 
-      char shader_path[PATH_MAX];
+      char shader_path[PATH_MAX_LENGTH];
       bool shader_enable;
 
-      char softfilter_plugin[PATH_MAX];
+      char softfilter_plugin[PATH_MAX_LENGTH];
       float refresh_rate;
       bool threaded;
 
-      char filter_dir[PATH_MAX];
-      char shader_dir[PATH_MAX];
+      char filter_dir[PATH_MAX_LENGTH];
+      char shader_dir[PATH_MAX_LENGTH];
 
-      char font_path[PATH_MAX];
+      char font_path[PATH_MAX_LENGTH];
       float font_size;
       bool font_enable;
       float msg_pos_x;
@@ -315,7 +315,7 @@ struct settings
    struct
    {
       char driver[32];
-      char device[PATH_MAX];
+      char device[PATH_MAX_LENGTH];
       bool allow;
       unsigned width;
       unsigned height;
@@ -341,12 +341,12 @@ struct settings
       bool enable;
       unsigned out_rate;
       unsigned block_frames;
-      char device[PATH_MAX];
+      char device[PATH_MAX_LENGTH];
       unsigned latency;
       bool sync;
 
-      char dsp_plugin[PATH_MAX];
-      char filter_dir[PATH_MAX];
+      char dsp_plugin[PATH_MAX_LENGTH];
+      char filter_dir[PATH_MAX_LENGTH];
 
       bool rate_control;
       float rate_control_delta;
@@ -386,11 +386,11 @@ struct settings
       unsigned turbo_duty_cycle;
 
       bool overlay_enable;
-      char overlay[PATH_MAX];
+      char overlay[PATH_MAX_LENGTH];
       float overlay_opacity;
       float overlay_scale;
 
-      char autoconfig_dir[PATH_MAX];
+      char autoconfig_dir[PATH_MAX_LENGTH];
       bool autoconfig_descriptor_label_show;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
@@ -403,25 +403,25 @@ struct settings
 
    int state_slot;
 
-   char core_options_path[PATH_MAX];
-   char content_history_path[PATH_MAX];
-   char content_history_directory[PATH_MAX];
+   char core_options_path[PATH_MAX_LENGTH];
+   char content_history_path[PATH_MAX_LENGTH];
+   char content_history_directory[PATH_MAX_LENGTH];
    unsigned content_history_size;
 
-   char libretro[PATH_MAX];
-   char libretro_directory[PATH_MAX];
+   char libretro[PATH_MAX_LENGTH];
+   char libretro_directory[PATH_MAX_LENGTH];
    unsigned libretro_log_level;
-   char libretro_info_path[PATH_MAX];
-   char content_database[PATH_MAX];
-   char cheat_database[PATH_MAX];
-   char cheat_settings_path[PATH_MAX];
+   char libretro_info_path[PATH_MAX_LENGTH];
+   char content_database[PATH_MAX_LENGTH];
+   char cheat_database[PATH_MAX_LENGTH];
+   char cheat_settings_path[PATH_MAX_LENGTH];
 
-   char resampler_directory[PATH_MAX];
-   char screenshot_directory[PATH_MAX];
-   char system_directory[PATH_MAX];
+   char resampler_directory[PATH_MAX_LENGTH];
+   char screenshot_directory[PATH_MAX_LENGTH];
+   char system_directory[PATH_MAX_LENGTH];
 
-   char extraction_directory[PATH_MAX];
-   char playlist_directory[PATH_MAX];
+   char extraction_directory[PATH_MAX_LENGTH];
+   char playlist_directory[PATH_MAX_LENGTH];
 
    bool history_list_enable;
    bool rewind_enable;
@@ -444,11 +444,11 @@ struct settings
    uint16_t network_cmd_port;
    bool stdin_cmd_enable;
 
-   char content_directory[PATH_MAX];
-   char assets_directory[PATH_MAX];
-   char menu_config_directory[PATH_MAX];
+   char content_directory[PATH_MAX_LENGTH];
+   char assets_directory[PATH_MAX_LENGTH];
+   char menu_config_directory[PATH_MAX_LENGTH];
 #if defined(HAVE_MENU)
-   char menu_content_directory[PATH_MAX];
+   char menu_content_directory[PATH_MAX_LENGTH];
    bool menu_show_start_screen;
 #endif
    bool fps_show;
@@ -497,9 +497,9 @@ struct global
 
    uint32_t content_crc;
 
-   char gb_rom_path[PATH_MAX];
-   char bsx_rom_path[PATH_MAX];
-   char sufami_rom_path[2][PATH_MAX];
+   char gb_rom_path[PATH_MAX_LENGTH];
+   char bsx_rom_path[PATH_MAX_LENGTH];
+   char sufami_rom_path[2][PATH_MAX_LENGTH];
    bool has_set_input_descriptors;
    bool has_set_save_path;
    bool has_set_state_path;
@@ -515,43 +515,43 @@ struct global
    bool has_set_netplay_ip_port;
 
    /* Config associated with global "default" config. */
-   char config_path[PATH_MAX];
-   char append_config_path[PATH_MAX];
-   char input_config_path[PATH_MAX];
+   char config_path[PATH_MAX_LENGTH];
+   char append_config_path[PATH_MAX_LENGTH];
+   char input_config_path[PATH_MAX_LENGTH];
 
 #ifdef HAVE_FILE_LOGGER
-   char default_log_file[PATH_MAX];
+   char default_log_file[PATH_MAX_LENGTH];
 #endif
    
-   char basename[PATH_MAX];
-   char fullpath[PATH_MAX];
+   char basename[PATH_MAX_LENGTH];
+   char fullpath[PATH_MAX_LENGTH];
 
    /* A list of save types and associated paths for all content. */
    struct string_list *savefiles;
 
    /* For --subsystem content. */
-   char subsystem[PATH_MAX];
+   char subsystem[PATH_MAX_LENGTH];
    struct string_list *subsystem_fullpaths;
 
-   char savefile_name[PATH_MAX];
-   char savestate_name[PATH_MAX];
-   char cheatfile_name[PATH_MAX];
+   char savefile_name[PATH_MAX_LENGTH];
+   char savestate_name[PATH_MAX_LENGTH];
+   char cheatfile_name[PATH_MAX_LENGTH];
 
    /* Used on reentrancy to use a savestate dir. */
-   char savefile_dir[PATH_MAX];
-   char savestate_dir[PATH_MAX];
+   char savefile_dir[PATH_MAX_LENGTH];
+   char savestate_dir[PATH_MAX_LENGTH];
 
 #ifdef HAVE_OVERLAY
-   char overlay_dir[PATH_MAX];
+   char overlay_dir[PATH_MAX_LENGTH];
 #endif
 
    bool block_patch;
    bool ups_pref;
    bool bps_pref;
    bool ips_pref;
-   char ups_name[PATH_MAX];
-   char bps_name[PATH_MAX];
-   char ips_name[PATH_MAX];
+   char ups_name[PATH_MAX_LENGTH];
+   char bps_name[PATH_MAX_LENGTH];
+   char ips_name[PATH_MAX_LENGTH];
 
    struct
    {
@@ -580,7 +580,7 @@ struct global
       bool no_content;
 
       const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
-      char valid_extensions[PATH_MAX];
+      char valid_extensions[PATH_MAX_LENGTH];
       
       retro_keyboard_event_t key_event;
 
@@ -674,12 +674,12 @@ struct global
    struct
    {
       bsv_movie_t *movie;
-      char movie_path[PATH_MAX];
+      char movie_path[PATH_MAX_LENGTH];
       bool movie_playback;
       bool eof_exit;
 
       /* Immediate playback/recording. */
-      char movie_start_path[PATH_MAX];
+      char movie_start_path[PATH_MAX_LENGTH];
       bool movie_start_recording;
       bool movie_start_playback;
       bool movie_end;
@@ -711,7 +711,7 @@ struct global
 
 #ifdef HAVE_NETPLAY
    /* Netplay. */
-   char netplay_server[PATH_MAX];
+   char netplay_server[PATH_MAX_LENGTH];
    bool netplay_enable;
    bool netplay_is_client;
    bool netplay_is_spectate;
@@ -720,8 +720,8 @@ struct global
 #endif
 
    /* Recording. */
-   char record_path[PATH_MAX];
-   char record_config[PATH_MAX];
+   char record_path[PATH_MAX_LENGTH];
+   char record_config[PATH_MAX_LENGTH];
    bool recording_enable;
    unsigned record_width;
    unsigned record_height;
@@ -806,14 +806,14 @@ struct global
    bool main_is_init;
    bool content_is_init;
    bool error_in_init;
-   char error_string[PATH_MAX];
+   char error_string[PATH_MAX_LENGTH];
    jmp_buf error_sjlj_context;
 
    bool libretro_no_content;
    bool libretro_dummy;
 
    /* Config file associated with per-core configs. */
-   char core_specific_config_path[PATH_MAX];
+   char core_specific_config_path[PATH_MAX_LENGTH];
 
    retro_keyboard_event_t frontend_key_event;
 };

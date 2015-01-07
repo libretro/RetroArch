@@ -549,7 +549,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             (const struct retro_variable*)data;
 
          const char *options_path = g_settings.core_options_path;
-         char buf[PATH_MAX];
+         char buf[PATH_MAX_LENGTH];
          if (!*options_path && *g_extern.config_path)
          {
             fill_pathname_resolve_relative(buf, g_extern.config_path,

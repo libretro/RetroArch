@@ -71,7 +71,7 @@
 long read_compressed_file(const char * path, void **buf,
       const char* optional_filename)
 {
-   char archive_path[PATH_MAX], *archive_found = NULL;
+   char archive_path[PATH_MAX_LENGTH], *archive_found = NULL;
 
    /* Safety check.
     * If optional_filename and optional_filename exists, we simply return 0,

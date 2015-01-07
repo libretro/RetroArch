@@ -57,8 +57,8 @@
  * set this value explicitly in platform specific headers.
  */
 
-#ifndef PATH_MAX
-#define PATH_MAX 4096
+#ifndef PATH_MAX_LENGTH
+#define PATH_MAX_LENGTH 4096
 #endif
 
 #ifndef max

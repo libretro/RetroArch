@@ -281,7 +281,7 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
       uint32_t checksum, csize, size, offset;
       unsigned cmode, namelength, extralength, commentlength,
                offsetNL, offsetEL;
-      char filename[PATH_MAX] = {0};
+      char filename[PATH_MAX_LENGTH] = {0};
       const uint8_t *cdata = NULL;
       uint32_t signature = read_le(directory + 0, 4);
 
@@ -297,7 +297,7 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
       extralength   = read_le(directory + 30, 2);
       commentlength = read_le(directory + 32, 2);
 
-      if (namelength >= PATH_MAX)
+      if (namelength >= PATH_MAX_LENGTH)
          GOTO_END_ERROR();
 
       memcpy(filename, directory + 46, namelength);
@@ -344,7 +344,7 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata,
    const char *ext = path_get_extension(name);
    if (ext && string_list_find_elem(data->ext, ext))
    {
-      char new_path[PATH_MAX];
+      char new_path[PATH_MAX_LENGTH];
 
       if (data->extraction_directory)
          fill_pathname_join(new_path, data->extraction_directory,

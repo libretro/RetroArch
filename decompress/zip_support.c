@@ -70,12 +70,12 @@ int read_zip_file(const char * archive_path,
    {
       /* Get info about current file. */
       unz_file_info file_info;
-      char filename[ PATH_MAX ];
+      char filename[PATH_MAX_LENGTH];
       if ( unzGetCurrentFileInfo(
             zipfile,
             &file_info,
             filename,
-            PATH_MAX,
+            PATH_MAX_LENGTH,
             NULL, 0, NULL, 0 ) != UNZ_OK )
       {
          RARCH_ERR("Could not read file info in ZIP %s.\n",
@@ -224,12 +224,12 @@ struct string_list *compressed_zip_file_list_new(const char *path,
    {
       /* Get info about current file. */
       unz_file_info file_info;
-      char filename[ PATH_MAX ];
+      char filename[PATH_MAX_LENGTH];
       if ( unzGetCurrentFileInfo(
             zipfile,
             &file_info,
             filename,
-            PATH_MAX,
+            PATH_MAX_LENGTH,
             NULL, 0, NULL, 0 ) != UNZ_OK )
       {
          RARCH_ERR("Could not read file info in ZIP %s.\n", path);

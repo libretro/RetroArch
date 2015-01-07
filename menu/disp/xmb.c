@@ -74,7 +74,7 @@ enum
 struct xmb_texture_item
 {
    GLuint id;
-   char path[PATH_MAX];
+   char path[PATH_MAX_LENGTH];
 };
 
 typedef struct xmb_handle
@@ -89,8 +89,8 @@ typedef struct xmb_handle
    int depth;
    int old_depth;
    char icon_dir[4];
-   char box_message[PATH_MAX];
-   char title[PATH_MAX];
+   char box_message[PATH_MAX_LENGTH];
+   char title[PATH_MAX_LENGTH];
    struct xmb_texture_item textures[XMB_TEXTURE_LAST];
    int icon_size;
    float x;
@@ -791,7 +791,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
 
    for (i = 0; i < end; i++)
    {
-      char val_buf[PATH_MAX], path_buf[PATH_MAX];
+      char val_buf[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
       char name[256], value[256];
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
@@ -1000,7 +1000,7 @@ static void xmb_frame(void)
 
    if (driver.menu->keyboard.display)
    {
-      char msg[PATH_MAX];
+      char msg[PATH_MAX_LENGTH];
       const char *str = *driver.menu->keyboard.buffer;
       if (!str)
          str = "";
@@ -1162,10 +1162,10 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
 static void xmb_context_reset(void *data)
 {
    int i, k;
-   char bgpath[PATH_MAX];
-   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX],
-         fontpath[PATH_MAX], core_id[PATH_MAX], texturepath[PATH_MAX],
-         content_texturepath[PATH_MAX];
+   char bgpath[PATH_MAX_LENGTH];
+   char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH], iconpath[PATH_MAX_LENGTH],
+         fontpath[PATH_MAX_LENGTH], core_id[PATH_MAX_LENGTH], texturepath[PATH_MAX_LENGTH],
+         content_texturepath[PATH_MAX_LENGTH];
 
    gl_t *gl = NULL;
    xmb_handle_t *xmb = NULL;
@@ -1417,12 +1417,12 @@ static void xmb_list_cache(bool horizontal, unsigned action)
    size_t stack_size = driver.menu->menu_list->menu_stack->size;
    if (driver.menu->cat_selection_ptr == 0)
    {
-      strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Main Menu", PATH_MAX);
+      strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Main Menu", PATH_MAX_LENGTH);
       driver.menu->menu_list->menu_stack->list[stack_size-1].type = MENU_SETTINGS;
    }
    else
    {
-      strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Horizontal Menu", PATH_MAX);
+      strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Horizontal Menu", PATH_MAX_LENGTH);
       driver.menu->menu_list->menu_stack->list[stack_size-1].type = MENU_SETTING_HORIZONTAL_MENU;
    }
 }

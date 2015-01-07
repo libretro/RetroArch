@@ -22,7 +22,7 @@
 
 void menu_shader_manager_init(void *data)
 {
-   char cgp_path[PATH_MAX];
+   char cgp_path[PATH_MAX_LENGTH];
    struct gfx_shader *shader = NULL;
    config_file_t *conf = NULL;
    const char *config_path = NULL;
@@ -146,7 +146,7 @@ void menu_shader_manager_set_preset(struct gfx_shader *shader,
 void menu_shader_manager_save_preset(
       const char *basename, bool apply)
 {
-   char buffer[PATH_MAX], config_directory[PATH_MAX], cgp_path[PATH_MAX];
+   char buffer[PATH_MAX_LENGTH], config_directory[PATH_MAX_LENGTH], cgp_path[PATH_MAX_LENGTH];
    unsigned d, type = RARCH_SHADER_NONE;
    config_file_t *conf = NULL;
    bool ret = false;

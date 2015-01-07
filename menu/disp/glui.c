@@ -36,7 +36,7 @@ typedef struct glui_handle
    unsigned margin;
    unsigned term_width;
    unsigned term_height;
-   char box_message[PATH_MAX];
+   char box_message[PATH_MAX_LENGTH];
    GLuint bg;
 } glui_handle_t;
 
@@ -265,8 +265,8 @@ static void glui_frame(void)
 {
    unsigned x, y;
    size_t i;
-   char title[PATH_MAX], title_buf[PATH_MAX], 
-        title_msg[PATH_MAX];
+   char title[PATH_MAX_LENGTH], title_buf[PATH_MAX_LENGTH], 
+        title_msg[PATH_MAX_LENGTH];
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
@@ -350,9 +350,9 @@ static void glui_frame(void)
 
    for (i = driver.menu->begin; i < end; i++, y += glui->line_height)
    {
-      char message[PATH_MAX], type_str[PATH_MAX],
-           entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
-           path_buf[PATH_MAX];
+      char message[PATH_MAX_LENGTH], type_str[PATH_MAX_LENGTH],
+           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH],
+           path_buf[PATH_MAX_LENGTH];
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
       bool selected = false;
@@ -400,7 +400,7 @@ static void glui_frame(void)
 
    if (driver.menu->keyboard.display)
    {
-      char msg[PATH_MAX];
+      char msg[PATH_MAX_LENGTH];
       const char *str = *driver.menu->keyboard.buffer;
       if (!str)
          str = "";
@@ -538,7 +538,7 @@ static GLuint glui_png_texture_load(const char* file_name)
 
 static void glui_context_reset(void *data)
 {
-   char bgpath[PATH_MAX];
+   char bgpath[PATH_MAX_LENGTH];
    glui_handle_t *glui = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);

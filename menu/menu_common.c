@@ -88,8 +88,8 @@ static void push_to_history_playlist(void)
 
    if (*g_extern.fullpath)
    {
-      char tmp[PATH_MAX];
-      char str[PATH_MAX];
+      char tmp[PATH_MAX_LENGTH];
+      char str[PATH_MAX_LENGTH];
 
       fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
       snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
@@ -120,7 +120,7 @@ bool load_menu_content(void)
    if (!(main_load_content(0, NULL, NULL, menu_environment_get,
          driver.frontend_ctx->process_args)))
    {
-      char name[PATH_MAX], msg[PATH_MAX];
+      char name[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
 
       fill_pathname_base(name, g_extern.fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);

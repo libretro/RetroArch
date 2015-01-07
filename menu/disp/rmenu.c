@@ -206,9 +206,9 @@ static void rmenu_render(void)
 
    for (i = begin; i < end; i++, j++)
    {
-      char message[PATH_MAX], type_str[PATH_MAX],
-           entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
-           path_buf[PATH_MAX];
+      char message[PATH_MAX_LENGTH], type_str[PATH_MAX_LENGTH],
+           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH],
+           path_buf[PATH_MAX_LENGTH];
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
       bool selected = false;
@@ -272,7 +272,7 @@ void rmenu_set_texture(void *data)
 
 static void rmenu_context_reset(void *data)
 {
-   char menu_bg[PATH_MAX];
+   char menu_bg[PATH_MAX_LENGTH];
    menu_handle_t *menu = (menu_handle_t*)data;
 
    if (!menu)

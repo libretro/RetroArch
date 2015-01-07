@@ -236,11 +236,12 @@ static bool parport_joypad_init(void)
 
    for (i = 0; i < MAX_USERS; i++)
    {
+      char path[PATH_MAX_LENGTH];
       struct parport_joypad *pad = &parport_pads[i];
+
       pad->fd = -1;
       pad->ident = g_settings.input.device_names[i];
 
-      char path[PATH_MAX];
       snprintf(path, sizeof(path), "/dev/parport%u", i);
 
       if (parport_joypad_init_pad(path, pad))

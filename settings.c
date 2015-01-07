@@ -644,9 +644,9 @@ static config_file_t *open_default_config_file(void)
    config_file_t *conf = NULL;
 
 #if defined(_WIN32) && !defined(_XBOX)
-   char conf_path[PATH_MAX];
+   char conf_path[PATH_MAX_LENGTH];
 
-   char app_path[PATH_MAX];
+   char app_path[PATH_MAX_LENGTH];
    fill_pathname_application_path(app_path, sizeof(app_path));
    fill_pathname_resolve_relative(conf_path, app_path,
          "retroarch.cfg", sizeof(conf_path));
@@ -694,7 +694,7 @@ static config_file_t *open_default_config_file(void)
       strlcpy(g_extern.config_path, conf_path,
             sizeof(g_extern.config_path));
 #elif defined(OSX)
-   char conf_path[PATH_MAX];
+   char conf_path[PATH_MAX_LENGTH];
    const char *home = getenv("HOME");
 
    if (!home)
@@ -734,7 +734,7 @@ static config_file_t *open_default_config_file(void)
       strlcpy(g_extern.config_path, conf_path, sizeof(g_extern.config_path));
 
 #elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
-   char conf_path[PATH_MAX];
+   char conf_path[PATH_MAX_LENGTH];
    const char *xdg  = getenv("XDG_CONFIG_HOME");
    const char *home = getenv("HOME");
 
@@ -782,7 +782,7 @@ static config_file_t *open_default_config_file(void)
                ".config/retroarch/retroarch.cfg", sizeof(conf_path));
 #endif
 
-      char basedir[PATH_MAX];
+      char basedir[PATH_MAX_LENGTH];
       fill_pathname_basedir(basedir, conf_path, sizeof(basedir));
 
       if (path_mkdir(basedir))
@@ -794,7 +794,7 @@ static config_file_t *open_default_config_file(void)
 #define GLOBAL_CONFIG_DIR "/etc"
 #endif
 #endif
-         char skeleton_conf[PATH_MAX];
+         char skeleton_conf[PATH_MAX_LENGTH];
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
                "retroarch.cfg", sizeof(skeleton_conf));
          conf = config_file_new(skeleton_conf);
@@ -855,8 +855,8 @@ static void config_file_dump_all(config_file_t *conf)
 static bool config_load_file(const char *path, bool set_defaults)
 {
    unsigned i;
-   char *save, tmp_str[PATH_MAX];
-   char tmp_append_path[PATH_MAX]; /* Don't destroy append_config_path. */
+   char *save, tmp_str[PATH_MAX_LENGTH];
+   char tmp_append_path[PATH_MAX_LENGTH]; /* Don't destroy append_config_path. */
    const char *extra_path;
    unsigned msg_color = 0;
    config_file_t *conf = NULL;
@@ -1320,7 +1320,7 @@ static void config_load_core_specific(void)
 
    if (g_settings.core_specific_config)
    {
-      char tmp[PATH_MAX];
+      char tmp[PATH_MAX_LENGTH];
       strlcpy(tmp, g_settings.libretro, sizeof(tmp));
       RARCH_LOG("Loading core-specific config from: %s.\n",
             g_extern.core_specific_config_path);

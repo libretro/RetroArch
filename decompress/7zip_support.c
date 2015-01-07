@@ -161,7 +161,7 @@ static SRes ConvertUtf16toCharString(const uint16_t *s, char *outstring)
    res = Utf16_To_Char(&buf, s, 0);
 
    if (res == SZ_OK)
-      strncpy(outstring,(const char *)buf.data,PATH_MAX);
+      strncpy(outstring, (const char *)buf.data, PATH_MAX_LENGTH);
 
    Buf_Free(&buf, &g_Alloc);
    return res;
@@ -242,7 +242,7 @@ int read_7zip_file(const char * archive_path,
             }
          }
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         char infile[PATH_MAX];
+         char infile[PATH_MAX_LENGTH];
          res = ConvertUtf16toCharString(temp,infile);
 
          uint64_t filesize = f->Size;
@@ -400,7 +400,7 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
             }
          }
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         char infile[PATH_MAX];
+         char infile[PATH_MAX_LENGTH];
          res = ConvertUtf16toCharString(temp, infile);
 
          const char *file_ext = path_get_extension(infile);

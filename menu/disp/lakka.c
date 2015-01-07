@@ -324,7 +324,7 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
 
          if (i && (k == 1 || k == 2))
          {
-            char slot[PATH_MAX];
+            char slot[PATH_MAX_LENGTH];
 
             if (g_settings.state_slot == -1)
                snprintf(slot, sizeof(slot), "%d (auto)", g_settings.state_slot);
@@ -341,7 +341,7 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
 
       if (subitem->setting)
       {
-         char val[PATH_MAX];
+         char val[PATH_MAX_LENGTH];
          setting_data_get_string_representation(subitem->setting, val,
                sizeof(val));
 
@@ -884,7 +884,7 @@ static void lakka_settings_context_reset(void)
 static void lakka_context_reset(void *data)
 {
    int i, j, k;
-   char mediapath[PATH_MAX], themepath[PATH_MAX], iconpath[PATH_MAX], fontpath[PATH_MAX];
+   char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH], iconpath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
    lakka_handle_t *lakka = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
    gl_t *gl = NULL;
@@ -952,7 +952,7 @@ static void lakka_context_reset(void *data)
 
    for (i = 1; i < lakka->num_categories; i++)
    {
-      char core_id[PATH_MAX], texturepath[PATH_MAX], content_texturepath[PATH_MAX];
+      char core_id[PATH_MAX_LENGTH], texturepath[PATH_MAX_LENGTH], content_texturepath[PATH_MAX_LENGTH];
       menu_category_t *category = (menu_category_t*)&lakka->categories[i];
       core_info_t *info = NULL;
       core_info_list_t *info_list = NULL;

@@ -99,7 +99,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
       const char *path, const char *menu_label,
       char *deferred_path, size_t sizeof_deferred_path)
 {
-   char new_core_path[PATH_MAX];
+   char new_core_path[PATH_MAX_LENGTH];
    const core_info_t *info = NULL;
    size_t supported = 0;
 

@@ -321,7 +321,7 @@ bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
 
 int menu_input_bind_iterate(void *data)
 {
-   char msg[PATH_MAX];
+   char msg[PATH_MAX_LENGTH];
    menu_handle_t *menu = (menu_handle_t*)data;
    struct menu_bind_state binds = menu->binds;
     
@@ -361,7 +361,7 @@ int menu_input_bind_iterate(void *data)
 
 int menu_input_bind_iterate_keyboard(void *data)
 {
-   char msg[PATH_MAX];
+   char msg[PATH_MAX_LENGTH];
    int64_t current;
    int timeout = 0;
    bool timed_out = false;

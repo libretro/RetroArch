@@ -20,6 +20,7 @@
 #include <file/dir_list.h>
 #include <compat/posix_string.h>
 #include <compat/strl.h>
+#include <retro_miscellaneous.h>
 
 struct core_option
 {
@@ -32,7 +33,7 @@ struct core_option
 struct core_option_manager
 {
    config_file_t *conf;
-   char conf_path[PATH_MAX];
+   char conf_path[PATH_MAX_LENGTH];
 
    struct core_option *opts;
    size_t size;

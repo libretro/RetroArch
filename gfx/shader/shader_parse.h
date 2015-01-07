@@ -102,7 +102,7 @@ struct gfx_shader_pass
 {
    struct
    {
-      char path[PATH_MAX];
+      char path[PATH_MAX_LENGTH];
       struct
       {
          char *vertex; /* Dynamically allocated. Must be free'd. */
@@ -121,7 +121,7 @@ struct gfx_shader_pass
 struct gfx_shader_lut
 {
    char id[64];
-   char path[PATH_MAX];
+   char path[PATH_MAX_LENGTH];
    unsigned filter;
    enum gfx_wrap_type wrap;
    bool mipmap;
@@ -147,7 +147,7 @@ struct gfx_shader
 
    unsigned variables;
    struct state_tracker_uniform_info variable[GFX_MAX_VARIABLES];
-   char script_path[PATH_MAX];
+   char script_path[PATH_MAX_LENGTH];
    char *script; /* Dynamically allocated. Must be free'd. Only used by XML. */
    char script_class[512];
 };

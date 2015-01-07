@@ -122,7 +122,7 @@ core_info_list_t *core_info_list_new(const char *modules_path)
 
    for (i = 0; i < contents->size; i++)
    {
-      char info_path_base[PATH_MAX], info_path[PATH_MAX];
+      char info_path_base[PATH_MAX_LENGTH], info_path[PATH_MAX_LENGTH];
       core_info[i].path = strdup(contents->elems[i].data);
 
       if (!core_info[i].path)
@@ -456,7 +456,7 @@ void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
       const char *core, const char *systemdir)
 {
    size_t i;
-   char path[PATH_MAX];
+   char path[PATH_MAX_LENGTH];
    core_info_t *info = NULL;
 
    if (!core_info_list || !core)
@@ -481,7 +481,7 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
       const core_info_firmware_t **firmware, size_t *num_firmware)
 {
    size_t i;
-   char path[PATH_MAX];
+   char path[PATH_MAX_LENGTH];
    core_info_t *info = NULL;
 
    if (!core_info_list || !core)

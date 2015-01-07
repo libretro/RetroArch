@@ -41,8 +41,8 @@ static int menu_message_toggle(unsigned action)
 
 static int menu_info_screen_iterate(unsigned action)
 {
-   char msg[PATH_MAX];
-   char needle[PATH_MAX];
+   char msg[PATH_MAX_LENGTH];
+   char needle[PATH_MAX_LENGTH];
    unsigned info_type = 0;
    rarch_setting_t *current_setting = NULL;
    file_list_t *list = (file_list_t*)driver.menu->menu_list->selection_buf;
@@ -95,7 +95,7 @@ static int menu_info_screen_iterate(unsigned action)
 static int menu_start_screen_iterate(unsigned action)
 {
    unsigned i;
-   char msg[PATH_MAX * 2];
+   char msg[PATH_MAX_LENGTH * 2];
 
    if (!driver.menu)
       return 0;
@@ -237,7 +237,7 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
 static int menu_viewport_iterate(unsigned action)
 {
    int stride_x = 1, stride_y = 1;
-   char msg[PATH_MAX];
+   char msg[PATH_MAX_LENGTH];
    struct retro_game_geometry *geom = NULL;
    const char *base_msg = NULL;
    const char *label = NULL;
@@ -421,7 +421,7 @@ static void menu_common_load_content(void)
 
 static int menu_archive_open(void)
 {
-   char cat_path[PATH_MAX];
+   char cat_path[PATH_MAX_LENGTH];
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
    const char* path       = NULL;
@@ -492,7 +492,7 @@ static int menu_archive_load(void)
 
 static int menu_load_or_open_zip_iterate(unsigned action)
 {
-   char msg[PATH_MAX];
+   char msg[PATH_MAX_LENGTH];
 
    snprintf(msg, sizeof(msg), "Opening compressed file\n"
          " \n"

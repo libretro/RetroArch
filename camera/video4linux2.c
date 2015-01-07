@@ -56,7 +56,7 @@ typedef struct video4linux
    uint32_t *buffer_output;
    bool ready;
 
-   char dev_name[PATH_MAX];
+   char dev_name[PATH_MAX_LENGTH];
 } video4linux_t;
 
 static void process_image(video4linux_t *v4l,

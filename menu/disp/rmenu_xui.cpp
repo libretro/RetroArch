@@ -122,7 +122,7 @@ CREATE_CLASS(CRetroArchMain, L"RetroArchMain");
 
 CRetroArch app;
 
-wchar_t strw_buffer[PATH_MAX];
+wchar_t strw_buffer[PATH_MAX_LENGTH];
 
 /* Register custom classes */
 HRESULT CRetroArch::RegisterXuiClasses (void)
@@ -146,7 +146,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiTxtTitle", &m_menutitle);
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
 
-   char str[PATH_MAX];
+   char str[PATH_MAX_LENGTH];
    snprintf(str, sizeof(str), "%s - %s", PACKAGE_VERSION, g_extern.title_buf);
    mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
    XuiTextElementSetText(m_menutitlebottom, strw_buffer);
@@ -412,9 +412,9 @@ static void rmenu_xui_render(void)
 
    for (i = begin; i < end; i++/*, y += FONT_HEIGHT_STRIDE */)
    {
-      char message[PATH_MAX], type_str[PATH_MAX],
-           entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
-           path_buf[PATH_MAX];
+      char message[PATH_MAX_LENGTH], type_str[PATH_MAX_LENGTH],
+           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH],
+           path_buf[PATH_MAX_LENGTH];
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
       bool selected = false;
@@ -493,7 +493,7 @@ static void rmenu_xui_list_insert(void *data,
       const char *path, const char *, size_t list_size)
 {
    (void)data;
-   wchar_t buf[PATH_MAX];
+   wchar_t buf[PATH_MAX_LENGTH];
 
    XuiListInsertItems(m_menulist, list_size, 1);
    mbstowcs(buf, path, sizeof(buf) / sizeof(wchar_t));

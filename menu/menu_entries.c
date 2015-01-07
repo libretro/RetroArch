@@ -442,7 +442,7 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
 
       for (i = 0; i < list_size; i++)
       {
-         char core_path[PATH_MAX], display_name[PATH_MAX];
+         char core_path[PATH_MAX_LENGTH], display_name[PATH_MAX_LENGTH];
          const char *path = NULL;
 
          menu_list_get_at_offset(list, i, &path, NULL, &type);

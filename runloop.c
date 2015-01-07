@@ -39,7 +39,7 @@
  **/
 static void set_volume(float gain)
 {
-   char msg[PATH_MAX];
+   char msg[PATH_MAX_LENGTH];
 
    g_settings.audio.volume += gain;
    g_settings.audio.volume = max(g_settings.audio.volume, -80.0f);
@@ -149,7 +149,7 @@ static void check_fast_forward_button(bool fastforward_pressed,
  **/
 static void check_stateslots(bool pressed_increase, bool pressed_decrease)
 {
-   char msg[PATH_MAX];
+   char msg[PATH_MAX_LENGTH];
 
    /* Save state slots */
    if (pressed_increase)
@@ -279,7 +279,7 @@ static void check_slowmotion(bool pressed)
 
 static bool check_movie_init(void)
 {
-   char path[PATH_MAX], msg[PATH_MAX];
+   char path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
    bool ret = true;
    
    if (g_extern.bsv.movie)
@@ -360,7 +360,7 @@ static bool check_movie(void)
 
 static void check_shader_dir(bool pressed_next, bool pressed_prev)
 {
-   char msg[PATH_MAX];
+   char msg[PATH_MAX_LENGTH];
    const char *shader = NULL, *ext = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
 

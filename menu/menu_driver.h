@@ -85,13 +85,13 @@ typedef struct
    bool push_start_screen;
 
    bool defer_core;
-   char deferred_path[PATH_MAX];
+   char deferred_path[PATH_MAX_LENGTH];
 
    /* This buffer can be used to display generic OK messages to the user.
     * Fill it and call
     * menu_list_push(driver.menu->menu_stack, "", "message", 0, 0);
     */
-   char message_contents[PATH_MAX];
+   char message_contents[PATH_MAX_LENGTH];
 
    /* Quick jumping indices with L/R.
     * Rebuilt when parsing directory. */
@@ -99,8 +99,8 @@ typedef struct
    unsigned scroll_indices_size;
    unsigned scroll_accel;
 
-   char default_glslp[PATH_MAX];
-   char default_cgp[PATH_MAX];
+   char default_glslp[PATH_MAX_LENGTH];
+   char default_cgp[PATH_MAX_LENGTH];
 
    const uint8_t *font;
    bool alloc_font;

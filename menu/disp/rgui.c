@@ -386,9 +386,9 @@ static void rgui_render(void)
 
    for (i = driver.menu->begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
-      char message[PATH_MAX], type_str[PATH_MAX],
-           entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
-           path_buf[PATH_MAX];
+      char message[PATH_MAX_LENGTH], type_str[PATH_MAX_LENGTH],
+           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH],
+           path_buf[PATH_MAX_LENGTH];
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
       bool selected = false;
@@ -439,7 +439,7 @@ static void rgui_render(void)
 
    if (driver.menu->keyboard.display)
    {
-      char msg[PATH_MAX];
+      char msg[PATH_MAX_LENGTH];
       const char *str = *driver.menu->keyboard.buffer;
       if (!str)
          str = "";

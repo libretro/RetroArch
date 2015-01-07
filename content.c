@@ -164,7 +164,7 @@ static ssize_t read_content_file(const char *path, void **buf)
 static void dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
-   char path[PATH_MAX], timebuf[PATH_MAX];
+   char path[PATH_MAX_LENGTH], timebuf[PATH_MAX_LENGTH];
    time_t time_;
 #if defined(_WIN32) && !defined(_XBOX)
    const char *base = getenv("APPDATA");
@@ -415,7 +415,7 @@ static bool load_content(const struct retro_subsystem_info *special,
          {
             if (need_fullpath && path_contains_compressed_file(path))
             {
-               char new_path[PATH_MAX], new_basedir[PATH_MAX];
+               char new_path[PATH_MAX_LENGTH], new_basedir[PATH_MAX_LENGTH];
                union string_list_elem_attr attributes;
 
                RARCH_LOG("Compressed file in case of need_fullpath."
@@ -566,7 +566,7 @@ bool init_content_file(void)
 
       if (ext && !strcasecmp(ext, "zip"))
       {
-         char temporary_content[PATH_MAX];
+         char temporary_content[PATH_MAX_LENGTH];
          strlcpy(temporary_content, content->elems[i].data,
                sizeof(temporary_content));
 

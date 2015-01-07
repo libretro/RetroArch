@@ -129,11 +129,11 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
    snprintf(overlay_desc_image_key, sizeof(overlay_desc_image_key),
          "overlay%u_desc%u_overlay", ol_idx, desc_idx);
 
-   char image_path[PATH_MAX];
+   char image_path[PATH_MAX_LENGTH];
    if (config_get_path(conf, overlay_desc_image_key,
             image_path, sizeof(image_path)))
    {
-      char path[PATH_MAX];
+      char path[PATH_MAX_LENGTH];
       fill_pathname_resolve_relative(path, ol->overlay_path,
             image_path, sizeof(path));
 
@@ -290,8 +290,8 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
    size_t i;
    char overlay_path_key[64];
    char overlay_name_key[64];
-   char overlay_path[PATH_MAX];
-   char overlay_resolved_path[PATH_MAX];
+   char overlay_path[PATH_MAX_LENGTH];
+   char overlay_resolved_path[PATH_MAX_LENGTH];
 
    snprintf(overlay_path_key, sizeof(overlay_path_key),
          "overlay%u_overlay", idx);

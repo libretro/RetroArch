@@ -331,7 +331,7 @@ static int action_ok_cheat_file_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *menu_path = NULL;
-   char cheat_path[PATH_MAX];
+   char cheat_path[PATH_MAX_LENGTH];
    if (!driver.menu)
       return -1;
 
@@ -359,7 +359,7 @@ static int action_ok_shader_preset_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *menu_path = NULL;
-   char shader_path[PATH_MAX];
+   char shader_path[PATH_MAX_LENGTH];
    if (!driver.menu)
       return -1;
 
@@ -506,7 +506,7 @@ static int action_ok_directory_push(const char *path,
 {
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
-   char cat_path[PATH_MAX];
+   char cat_path[PATH_MAX_LENGTH];
 
    if (!driver.menu)
       return -1;
@@ -532,7 +532,7 @@ static int action_ok_config_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *menu_path  = NULL;
-   char config[PATH_MAX];
+   char config[PATH_MAX_LENGTH];
 
    if (!driver.menu)
       return -1;
@@ -556,7 +556,7 @@ static int action_ok_disk_image_append(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *menu_path    = NULL;
-   char image[PATH_MAX];
+   char image[PATH_MAX_LENGTH];
 
    if (!driver.menu)
       return -1;
@@ -1590,7 +1590,7 @@ static int deferred_push_core_information(void *data, void *userdata,
 
    if (info->data)
    {
-      char tmp[PATH_MAX];
+      char tmp[PATH_MAX_LENGTH];
 
       snprintf(tmp, sizeof(tmp), "Core name: %s",
             info->core_name ? info->core_name : "");
@@ -2163,7 +2163,7 @@ static int deferred_push_history_list(void *data, void *userdata,
 
    for (i = 0; i < list_size; i++)
    {
-      char fill_buf[PATH_MAX];
+      char fill_buf[PATH_MAX_LENGTH];
       const char *core_name = NULL;
 
       content_playlist_get_index(g_defaults.history, i,
@@ -2172,7 +2172,7 @@ static int deferred_push_history_list(void *data, void *userdata,
 
       if (path)
       {
-         char path_short[PATH_MAX];
+         char path_short[PATH_MAX_LENGTH];
          fill_short_pathname_representation(path_short,path,sizeof(path_short));
          snprintf(fill_buf,sizeof(fill_buf),"%s (%s)",
                path_short,core_name);
@@ -2400,7 +2400,7 @@ static int deferred_push_detect_core_list(void *data, void *userdata,
 static int deferred_push_default(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   char ext_buf[PATH_MAX];
+   char ext_buf[PATH_MAX_LENGTH];
    const char *exts = NULL;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;

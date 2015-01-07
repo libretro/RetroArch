@@ -158,8 +158,8 @@ end:
 bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
 {
-   char filename[PATH_MAX];
-   char shotname[PATH_MAX];
+   char filename[PATH_MAX_LENGTH];
+   char shotname[PATH_MAX_LENGTH];
 
 #ifdef HAVE_ZLIB_DEFLATE
 #define IMG_EXT "png"

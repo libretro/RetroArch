@@ -59,7 +59,7 @@
 
 static bool take_screenshot_viewport(void)
 {
-   char screenshot_path[PATH_MAX];
+   char screenshot_path[PATH_MAX_LENGTH];
    const char *screenshot_dir = NULL;
    uint8_t *buffer = NULL;
    bool retval = false;
@@ -102,7 +102,7 @@ done:
 
 static bool take_screenshot_raw(void)
 {
-   char screenshot_path[PATH_MAX];
+   char screenshot_path[PATH_MAX_LENGTH];
    const void *data           = g_extern.frame_cache.data;
    unsigned width             = g_extern.frame_cache.width;
    unsigned height            = g_extern.frame_cache.height;
@@ -1190,7 +1190,7 @@ static void init_movie(void)
    }
    else if (g_extern.bsv.movie_start_recording)
    {
-      char msg[PATH_MAX];
+      char msg[PATH_MAX_LENGTH];
       snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".",
             g_extern.bsv.movie_start_path);
 
@@ -1322,7 +1322,7 @@ static void deinit_autosave(void)
 
 static void set_savestate_auto_index(void)
 {
-   char state_dir[PATH_MAX], state_base[PATH_MAX];
+   char state_dir[PATH_MAX_LENGTH], state_base[PATH_MAX_LENGTH];
    size_t i;
    struct string_list *dir_list = NULL;
    unsigned max_idx = 0;
@@ -1347,7 +1347,7 @@ static void set_savestate_auto_index(void)
 
    for (i = 0; i < dir_list->size; i++)
    {
-      char elem_base[PATH_MAX];
+      char elem_base[PATH_MAX_LENGTH];
       const char *dir_elem = dir_list->elems[i].data;
 
       fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
@@ -1398,7 +1398,7 @@ static void rarch_init_savefile_paths(void)
          for (j = 0; j < info->roms[i].num_memory; j++)
          {
             union string_list_elem_attr attr;
-            char path[PATH_MAX], ext[32];
+            char path[PATH_MAX_LENGTH], ext[32];
             const struct retro_subsystem_memory_info *mem =
                (const struct retro_subsystem_memory_info*)
                &info->roms[i].memory[j];
@@ -1438,7 +1438,7 @@ static void rarch_init_savefile_paths(void)
    }
    else
    {
-      char savefile_name_rtc[PATH_MAX];
+      char savefile_name_rtc[PATH_MAX_LENGTH];
       union string_list_elem_attr attr;
 
       attr.i = RETRO_MEMORY_SAVE_RAM;
@@ -1474,7 +1474,7 @@ static void fill_pathnames(void)
 
 static void load_auto_state(void)
 {
-   char savestate_name_auto[PATH_MAX];
+   char savestate_name_auto[PATH_MAX_LENGTH];
 
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay_enable && !g_extern.netplay_is_spectate)
@@ -1489,7 +1489,7 @@ static void load_auto_state(void)
 
    if (path_file_exists(savestate_name_auto))
    {
-      char msg[PATH_MAX];
+      char msg[PATH_MAX_LENGTH];
       bool ret = load_state(savestate_name_auto);
 
       RARCH_LOG("Found auto savestate in: %s\n", savestate_name_auto);
@@ -1503,7 +1503,7 @@ static void load_auto_state(void)
 
 static bool save_auto_state(void)
 {
-   char savestate_name_auto[PATH_MAX];
+   char savestate_name_auto[PATH_MAX_LENGTH];
 
    if (!g_settings.savestate_auto_save || g_extern.libretro_dummy ||
        g_extern.libretro_no_content)
@@ -1557,7 +1557,7 @@ static void rarch_save_state(const char *path,
 
 static void main_state(unsigned cmd)
 {
-   char path[PATH_MAX], msg[PATH_MAX];
+   char path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
 
    if (g_settings.state_slot > 0)
       snprintf(path, sizeof(path), "%s%d",
@@ -1585,7 +1585,7 @@ static void main_state(unsigned cmd)
 
 void rarch_disk_control_append_image(const char *path)
 {
-   char msg[PATH_MAX];
+   char msg[PATH_MAX_LENGTH];
    unsigned new_idx;
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
@@ -1626,7 +1626,7 @@ void rarch_disk_control_append_image(const char *path)
 
 void rarch_disk_control_set_eject(bool new_state, bool print_log)
 {
-   char msg[PATH_MAX];
+   char msg[PATH_MAX_LENGTH];
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
    bool error = false;
@@ -1664,7 +1664,7 @@ void rarch_disk_control_set_eject(bool new_state, bool print_log)
 
 void rarch_disk_control_set_index(unsigned next_idx)
 {
-   char msg[PATH_MAX];
+   char msg[PATH_MAX_LENGTH];
    unsigned num_disks;
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
@@ -2073,8 +2073,8 @@ void rarch_main_set_state(unsigned cmd)
 static bool save_core_config(void)
 {
    bool ret = false;
-   char config_dir[PATH_MAX], config_name[PATH_MAX],
-        config_path[PATH_MAX], msg[PATH_MAX];
+   char config_dir[PATH_MAX_LENGTH], config_name[PATH_MAX_LENGTH],
+        config_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
    bool found_path = false;
 
    *config_dir = '\0';
