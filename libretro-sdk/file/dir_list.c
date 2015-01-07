@@ -45,15 +45,7 @@
 #include <unistd.h>
 #endif
 
-/* Some platforms do not set this value.
- * Just assume a value. It's usually 4KiB.
- * Platforms with a known value (like Win32)
- * set this value explicitly in platform specific headers.
- */
-
-#ifndef PATH_MAX
-#define PATH_MAX 4096
-#endif
+#include <retro_miscellaneous.h>
 
 static int qstrcmp_plain(const void *a_, const void *b_)
 {
@@ -212,7 +204,7 @@ static int parse_dir_entry(const char *name, char *file_path,
 struct string_list *dir_list_new(const char *dir,
       const char *ext, bool include_dirs)
 {
-   char path_buf[PATH_MAX];
+   char path_buf[PATH_MAX_LENGTH];
    struct string_list *ext_list, *list;
 #ifdef _WIN32
    WIN32_FIND_DATA ffd;
@@ -241,7 +233,7 @@ struct string_list *dir_list_new(const char *dir,
    do
    {
       int ret = 0;
-      char file_path[PATH_MAX];
+      char file_path[PATH_MAX_LENGTH];
       const char *name        = ffd.cFileName;
       const char *file_ext    = path_get_extension(name);
       bool is_dir             = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
@@ -273,7 +265,7 @@ error:
    while ((entry = readdir(directory)))
    {
       int ret = 0;
-      char file_path[PATH_MAX];
+      char file_path[PATH_MAX_LENGTH];
       const char *name     = entry->d_name;
       const char *file_ext = path_get_extension(name);
       bool is_dir = false;

@@ -169,7 +169,7 @@ bool string_list_find_elem_prefix(const struct string_list *list,
       const char *prefix, const char *elem)
 {
    size_t i;
-   char prefixed[PATH_MAX];
+   char prefixed[PATH_MAX_LENGTH];
 
    if (!list)
       return false;

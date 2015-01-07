@@ -186,7 +186,7 @@ static void add_include_list(config_file_t *conf, const char *path)
 
 static void add_sub_conf(config_file_t *conf, char *line)
 {
-   char real_path[PATH_MAX];
+   char real_path[PATH_MAX_LENGTH];
    config_file_t *sub_conf = NULL;
    char *path = extract_value(line, false);
    if (!path)
@@ -767,7 +767,7 @@ void config_set_path(config_file_t *conf, const char *entry, const char *val)
 #if defined(RARCH_CONSOLE)
    config_set_string(conf, entry, val);
 #else
-   char buf[PATH_MAX];
+   char buf[PATH_MAX_LENGTH];
    fill_pathname_abbreviate_special(buf, val, sizeof(buf));
    config_set_string(conf, entry, buf);
 #endif

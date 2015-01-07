@@ -156,7 +156,7 @@ bool path_file_exists(const char *path)
 void fill_pathname(char *out_path, const char *in_path,
       const char *replace, size_t size)
 {
-   char tmp_path[PATH_MAX];
+   char tmp_path[PATH_MAX_LENGTH];
    char *tok;
 
    rarch_assert(strlcpy(tmp_path, in_path,
@@ -327,17 +327,17 @@ bool path_is_absolute(const char *path)
 void path_resolve_realpath(char *buf, size_t size)
 {
 #ifndef RARCH_CONSOLE
-   char tmp[PATH_MAX];
+   char tmp[PATH_MAX_LENGTH];
    strlcpy(tmp, buf, sizeof(tmp));
 
 #ifdef _WIN32
    if (!_fullpath(buf, tmp, size))
       strlcpy(buf, tmp, size);
 #else
-   rarch_assert(size >= PATH_MAX);
+   rarch_assert(size >= PATH_MAX_LENGTH);
 
-   /* NOTE: realpath() expects at least PATH_MAX bytes in buf.
-    * Technically, PATH_MAX needn't be defined, but we rely on it anyways.
+   /* NOTE: realpath() expects at least PATH_MAX_LENGTH bytes in buf.
+    * Technically, PATH_MAX_LENGTH needn't be defined, but we rely on it anyways.
     * POSIX 2008 can automatically allocate for you,
     * but don't rely on that. */
    if (!realpath(tmp, buf))
@@ -469,7 +469,7 @@ void fill_pathname_expand_special(char *out_path,
 #endif
             )
    {
-      char application_dir[PATH_MAX];
+      char application_dir[PATH_MAX_LENGTH];
       fill_pathname_application_path(application_dir, sizeof(application_dir));
       path_basedir(application_dir);
 
@@ -488,7 +488,7 @@ void fill_pathname_expand_special(char *out_path,
 void fill_short_pathname_representation(char* out_rep,
       const char *in_path, size_t size)
 {
-   char path_short[PATH_MAX], *last_hash = NULL;
+   char path_short[PATH_MAX_LENGTH], *last_hash = NULL;
    fill_pathname(path_short, path_basename(in_path), "",
             sizeof(path_short));
 
@@ -517,7 +517,7 @@ void fill_pathname_abbreviate_special(char *out_path,
    unsigned i;
 
    const char *home = getenv("HOME");
-   char application_dir[PATH_MAX];
+   char application_dir[PATH_MAX_LENGTH];
    fill_pathname_application_path(application_dir, sizeof(application_dir));
    path_basedir(application_dir);
 
@@ -594,7 +594,7 @@ void fill_pathname_application_path(char *buf, size_t size)
 #else
    *buf = '\0';
    pid_t pid = getpid(); 
-   char link_path[PATH_MAX];
+   char link_path[PATH_MAX_LENGTH];
    /* Linux, BSD and Solaris paths. Not standardized. */
    static const char *exts[] = { "exe", "file", "path/a.out" };
    for (i = 0; i < ARRAY_SIZE(exts); i++)
