@@ -18,8 +18,7 @@
 #include <string.h>
 #include <boolean.h>
 #include "message_queue.h"
-#include "retroarch_logger.h"
-#include "compat/posix_string.h"
+#include <compat/posix_string.h>
 
 struct queue_elem
 {
@@ -36,6 +35,15 @@ struct msg_queue
    char *tmp_msg;
 };
 
+/**
+ * msg_queue_new:
+ * @size              : maximum size of message
+ *
+ * Creates a message queue with maximum size different messages.
+ *
+ * Returns: NULL if allocation error, pointer to a message queue
+ * if successful. Has to be freed manually.
+ **/
 msg_queue_t *msg_queue_new(size_t size)
 {
    msg_queue_t *queue = (msg_queue_t*)calloc(1, sizeof(*queue));
@@ -65,6 +73,17 @@ void msg_queue_free(msg_queue_t *queue)
    free(queue);
 }
 
+/**
+ * msg_queue_push:
+ * @queue             : pointer to queue object
+ * @msg               : message to add to the queue
+ * @prio              : priority level of the message
+ * @duration          : how many times the message can be pulled
+ *                      before it vanishes (E.g. show a message for
+ *                      3 seconds @ 60fps = 180 duration).
+ *
+ * Push a new message onto the queue.
+ **/
 void msg_queue_push(msg_queue_t *queue, const char *msg,
       unsigned prio, unsigned duration)
 {
@@ -74,10 +93,7 @@ void msg_queue_push(msg_queue_t *queue, const char *msg,
    struct queue_elem *new_elem = (struct queue_elem*)
       calloc(1, sizeof(struct queue_elem));
    if (!new_elem)
-   {
-      RARCH_ERR("New element allocation failed.\n");
       return;
-   }
 
    new_elem->prio = prio;
    new_elem->duration = duration;
@@ -102,6 +118,12 @@ void msg_queue_push(msg_queue_t *queue, const char *msg,
    }
 }
 
+/**
+ * msg_queue_clear:
+ * @queue             : pointer to queue object
+ *
+ * Clears out everything in the queue.
+ **/
 void msg_queue_clear(msg_queue_t *queue)
 {
    if (!queue)
@@ -122,9 +144,19 @@ void msg_queue_clear(msg_queue_t *queue)
    queue->tmp_msg = NULL;
 }
 
+/**
+ * msg_queue_pull:
+ * @queue             : pointer to queue object
+ *
+ * Pulls highest priority message in queue.
+ *
+ * Returns: NULL if no message in queue, otherwise a string
+ * containing the message.
+ **/
 const char *msg_queue_pull(msg_queue_t *queue)
 {
-   struct queue_elem *front  = NULL, *last = NULL, *parent = NULL, *child = NULL;
+   struct queue_elem *front  = NULL, *last = NULL,
+                     *parent = NULL, *child = NULL;
    size_t tmp_ptr = 1;
     
    (void)parent;
