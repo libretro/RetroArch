@@ -105,6 +105,18 @@ void dir_list_free(struct string_list *list)
 }
 
 #ifndef _WIN32
+/**
+ *
+ * dirent_is_directory:
+ * @path         : path to the directory entry.
+ * @entry        : pointer to the directory entry.
+ *
+ * Is the directory listing entry a directory?
+ *
+ * Returns: true if directory listing entry is
+ * a directory, false if not.
+ */
+
 static bool dirent_is_directory(const char *path,
       const struct dirent *entry)
 {
