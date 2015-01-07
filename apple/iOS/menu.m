@@ -425,8 +425,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
        self.setting->change_handler ) {
      self.setting->action_toggle( self.setting, MENU_ACTION_RIGHT );
    }
-   
-   path = [BOXSTRING(self.setting->value.string) stringByDeletingLastPathComponent];
+
+   path = BOXSTRING(self.setting->value.string);
+   if ( self.setting->type == ST_PATH ) {
+     path = [path stringByDeletingLastPathComponent];
+   }
    list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values action:
       ^(RADirectoryList* list, RADirectoryItem* item)
       {
