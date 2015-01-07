@@ -29,15 +29,36 @@
 #include <stdio.h>
 #include <math.h>
 
-// In case aligned allocs are needed later ...
+/* In case aligned allocs are needed later. */
+
+/**
+ * scaler_alloc:
+ * @elem_size    : size of the elements to be used.
+ * @siz          : size of the image that the scaler needs to handle.
+ *
+ * Allocate and returns a scaler object.
+ *
+ * Returns: pointer to a scaler object of type 'void *' on success,
+ * NULL in case of error. Has to be freed manually.
+ **/
 void *scaler_alloc(size_t elem_size, size_t size)
 {
-   return calloc(elem_size, size);
+   void *ptr = calloc(elem_size, size);
+   if (!ptr)
+      return NULL;
+   return ptr;
 }
 
+/**
+ * scaler_free:
+ * @ptr          : pointer to scaler object.
+ *
+ * Frees a scaler object.
+ **/
 void scaler_free(void *ptr)
 {
-   free(ptr);
+   if (ptr)
+      free(ptr);
 }
 
 static bool allocate_frames(struct scaler_ctx *ctx)

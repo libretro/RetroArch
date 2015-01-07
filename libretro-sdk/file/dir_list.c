@@ -96,7 +96,7 @@ void dir_list_sort(struct string_list *list, bool dir_first)
  * dir_list_free:
  * @list : pointer to the directory listing
  *
- * Free a directory listing.
+ * Frees a directory listing.
  *
  **/
 void dir_list_free(struct string_list *list)
