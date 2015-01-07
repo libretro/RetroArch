@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef D3DVIDEO_HPP__
-#define D3DVIDEO_HPP__
+#ifndef __D3DVIDEO_INTF_H__
+#define __D3DVIDEO_INTF_H__
 
 #include <string>
 #include <vector>

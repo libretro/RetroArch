@@ -14,10 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "d3d.hpp"
+#include "d3d.h"
 #include "d3d_wrapper.h"
 #ifndef _XBOX
-#include "render_chain.hpp"
+#include "render_chain.h"
 #endif
 
 void d3d_swap(void *data, LPDIRECT3DDEVICE dev)

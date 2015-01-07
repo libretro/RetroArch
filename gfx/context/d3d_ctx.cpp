@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../d3d/d3d.hpp"
+#include "../d3d/d3d.h"
 #include "win32_common.h"
 
 #include "../gfx_common.h"

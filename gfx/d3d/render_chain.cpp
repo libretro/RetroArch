@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "render_chain.hpp"
+#include "render_chain.h"
 #include <string.h>
 
 static inline D3DTEXTUREFILTERTYPE translate_filter(unsigned type)

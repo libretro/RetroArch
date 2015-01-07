@@ -20,9 +20,9 @@
 #include <xgraphics.h>
 #endif
 
-#include "d3d.hpp"
+#include "d3d.h"
 #ifndef _XBOX
-#include "render_chain.hpp"
+#include "render_chain.h"
 #endif
 #include "../gfx_common.h"
 
