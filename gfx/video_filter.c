@@ -339,8 +339,12 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
    return true;
 }
 #else
-static bool append_softfilter_plugs(rarch_softfilter_t *filt)
+static bool append_softfilter_plugs(rarch_softfilter_t *filt,
+      struct string_list *list)
 {
+   (void)filt;
+   (void)list;
+
    return false;
 }
 #endif
