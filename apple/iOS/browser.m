@@ -13,15 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <dirent.h>
-#include <sys/stat.h>
-
 #include "../../file_extract.h"
 
 #import "../common/RetroArch_Apple.h"
 #import "views.h"
 
-#include <file/config_file.h>
 #include "../../content.h"
 #include "../../general.h"
 #include <file/dir_list.h>
@@ -109,16 +105,26 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 + (RADirectoryItem*)directoryItemFromPath:(NSString*)path
 {
    RADirectoryItem* item = [RADirectoryItem new];
+   
+   if (!item)
+      return NULL;
+   
    item.path = path;
    item.isDirectory = path_is_directory(path.UTF8String);
+   
    return item;
 }
 
 + (RADirectoryItem*)directoryItemFromElement:(struct string_list_elem*)element
 {
    RADirectoryItem* item = [RADirectoryItem new];
+   
+   if (!item)
+      return NULL;
+   
    item.path = BOXSTRING(element->data);
    item.isDirectory = (element->attr.i == RARCH_DIRECTORY);
+   
    return item;
 }
 
@@ -126,10 +132,9 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 {
    static NSString* const cell_id = @"path_item";
    static NSString* const icon_types[2] = { @"ic_file", @"ic_dir" };
-
    uint32_t type_id = self.isDirectory ? 1 : 0;
-
    UITableViewCell* result = [tableView dequeueReusableCellWithIdentifier:cell_id];
+   
    if (!result)
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cell_id];
 
@@ -227,17 +232,18 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    self.path = path;
    self.title = self.path.lastPathComponent;
 
-   // Need one array per section
+   /* Need one array per section. */
    self.sections = [NSMutableArray array];
 
    for (NSString* i in [self sectionIndexTitlesForTableView:self.tableView])
       [self.sections addObject:[NSMutableArray arrayWithObject:i]];
 
-   // List contents
+   /* List contents */
    struct string_list *contents = dir_list_new(self.path.UTF8String, g_settings.menu.navigation.browser.filter.supported_extensions_enable ? self.extensions.UTF8String : NULL, true);
 
    if (contents)
    {
+      ssize_t i;
       RADirectoryList __weak* weakSelf = self;
 
       if (self.allowBlank)
@@ -249,7 +255,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
       dir_list_sort(contents, true);
 
-      for (size_t i = 0; i < contents->size; i ++)
+      for (i = 0; i < contents->size; i ++)
       {
          const char* basename = path_basename(contents->elems[i].data);
 
@@ -316,13 +322,15 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
       if (idx_path)
       {
+         bool is_zip;
+         UIActionSheet *menu;
+         NSString *button4_name = (IOS_IS_VERSION_7_OR_HIGHER()) ? @"AirDrop" : @"Delete";
+         NSString *button5_name = (IOS_IS_VERSION_7_OR_HIGHER()) ? @"Delete" : nil;
+         
          self.selectedItem = [self itemForIndexPath:idx_path];
-         bool is_zip = [[self.selectedItem.path pathExtension] isEqualToString:@"zip"];
+         is_zip = !(strcmp(self.selectedItem.path.pathExtension.UTF8String, "zip"));
 
-         NSString* button4_name = (IOS_IS_VERSION_7_OR_HIGHER()) ? @"AirDrop" : @"Delete";
-         NSString* button5_name = (IOS_IS_VERSION_7_OR_HIGHER()) ? @"Delete" : nil;
-
-         UIActionSheet* menu = [[UIActionSheet alloc] initWithTitle:self.selectedItem.path.lastPathComponent delegate:self
+         menu = [[UIActionSheet alloc] initWithTitle:self.selectedItem.path.lastPathComponent delegate:self
                                                       cancelButtonTitle:@"Cancel" destructiveButtonTitle:nil
                                                       otherButtonTitles:is_zip ? @"Unzip" : @"Zip", @"Move", @"Rename", button4_name, button5_name, nil];
          [menu showFromToolbar:self.navigationController.toolbar];
@@ -331,13 +339,13 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    }
 }
 
-// Called by the action sheet created in (void)fileAction:
+/* Called by the action sheet created in (void)fileAction: */
 - (void)actionSheet:(UIActionSheet*)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
 {
    NSString* target = self.selectedItem.path;
    NSString* action = [actionSheet buttonTitleAtIndex:buttonIndex];
-
-   if ([action isEqualToString:@"Unzip"])
+   
+   if (!strcmp(action.UTF8String, "Unzip"))
    {
       UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Enter target directory" message:@"" delegate:self
                                                    cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
@@ -346,19 +354,18 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [alertView textFieldAtIndex:0].text = [[target lastPathComponent] stringByDeletingPathExtension];
       [alertView show];
    }
-   else if ([action isEqualToString:@"Move"])
+   else if (!strcmp(action.UTF8String, "Move"))
       [self.navigationController pushViewController:[[RAFoldersList alloc] initWithFilePath:target] animated:YES];
-   else if ([action isEqualToString:@"Rename"])
+   else if (!strcmp(action.UTF8String, "Rename"))
    {
-      UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Enter new name" message:@"" delegate:self
-                                                    cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
+      UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Enter new name" message:@"" delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
       alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
       alertView.tag = FA_MOVE;
       [alertView textFieldAtIndex:0].text = target.lastPathComponent;
       [alertView show];
    }
 #ifdef __IPHONE_7_0
-   else if ([action isEqualToString:@"AirDrop"] && IOS_IS_VERSION_7_OR_HIGHER())
+   else if (!strcmp(action.UTF8String, "AirDrop") && IOS_IS_VERSION_7_OR_HIGHER())
    {
       // TODO: Zip if not already zipped
 
@@ -369,14 +376,13 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [self presentViewController:avc animated:YES completion:nil];
    }
 #endif
-   else if ([action isEqualToString:@"Delete"])
+   else if (!strcmp(action.UTF8String, "Delete"))
    {
-      UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Really delete?" message:@"" delegate:self
-                                                    cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
+      UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Really delete?" message:@"" delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
       alertView.tag = FA_DELETE;
       [alertView show];
    }
-   else if (![action isEqualToString:@"Cancel"])// Zip
+   else if (!strcmp(action.UTF8String, "Cancel")) /* Zip */
       apple_display_alert("Action not supported.", "Action Failed");
 }
 

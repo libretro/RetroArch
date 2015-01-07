@@ -374,6 +374,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    static NSString* const cell_id = @"boolean_setting";
    
    UITableViewCell* result = (UITableViewCell*)[tableView dequeueReusableCellWithIdentifier:cell_id];
+   
    if (!result)
    {
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
@@ -392,12 +393,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)handleBooleanSwitch:(UISwitch*)swt
 {
-  if (self.setting) {
+  if (self.setting)
     *self.setting->value.boolean = swt.on ? true : false;
-  }
-  if (self.action) {
+  if (self.action)
     self.action();
-  }
 }
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
@@ -425,12 +424,15 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       ^(RADirectoryList* list, RADirectoryItem* item)
       {
         const char *newval = NULL;
-        if (item) {
+        if (item)
+        {
           if (list.forDirectory && !item.isDirectory)
             return;
 
           newval = [item.path UTF8String];
-        } else {
+        }
+        else
+        {
           if (!list.allowBlank)
             return;
           
