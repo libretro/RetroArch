@@ -2876,12 +2876,14 @@ static bool setting_data_append_list_main_menu_options(
             "Load Content (Detect Core)",
             group_info.name,
             subgroup_info.name);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
    }
    CONFIG_ACTION(
          "load_content",
          "Load Content",
          group_info.name,
          subgroup_info.name);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 
    CONFIG_ACTION(
          "core_options",
@@ -5118,7 +5120,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_settings.content_directory,
@@ -5133,7 +5135,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_settings.assets_directory,
@@ -5148,7 +5150,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_settings.menu_config_directory,
@@ -5163,7 +5165,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
 #endif
 
@@ -5181,7 +5183,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_settings.libretro_info_path,
@@ -5197,7 +5199,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_settings.content_database,
@@ -5212,7 +5214,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_settings.cheat_database,
@@ -5227,7 +5229,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_PATH(
          g_settings.content_history_path,
@@ -5253,7 +5255,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_settings.audio.filter_dir,
@@ -5268,7 +5270,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
 #if defined(HAVE_DYLIB) && defined(HAVE_SHADER_MANAGER)
    CONFIG_DIR(
@@ -5284,7 +5286,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -5301,7 +5303,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 #endif
 
    CONFIG_DIR(
@@ -5317,7 +5319,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_settings.screenshot_directory,
@@ -5332,7 +5334,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_settings.input.autoconfig_dir,
@@ -5347,7 +5349,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_settings.playlist_directory,
@@ -5362,7 +5364,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_extern.savefile_dir,
@@ -5377,7 +5379,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_extern.savestate_dir,
@@ -5392,7 +5394,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_settings.system_directory,
@@ -5407,7 +5409,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_settings.extraction_directory,
@@ -5422,7 +5424,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(
          list,
          list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR);
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 
