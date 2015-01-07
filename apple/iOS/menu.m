@@ -418,6 +418,13 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    NSString *path;
    RADirectoryList* list;
    RAMenuItemPathSetting __weak* weakSelf = self;
+
+   if (self.setting && self.setting->type == ST_ACTION &&
+       self.setting->flags & SD_FLAG_BROWSER_ACTION &&
+       self.setting->action_toggle &&
+       self.setting->change_handler ) {
+     self.setting->action_toggle( self.setting, MENU_ACTION_RIGHT );
+   }
    
    path = [BOXSTRING(self.setting->value.string) stringByDeletingLastPathComponent];
    list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values action:
@@ -438,7 +445,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
           
           newval = "";
         }
-        
+
         setting_data_set_with_string_representation(weakSelf.setting, newval);
         [[list navigationController] popViewControllerAnimated:YES];
 
@@ -638,37 +645,47 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
         entry_label, path,
         path_buf, sizeof(path_buf));
 
-     if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP)
-       [everything addObject:
-                     [RAMenuItemGeneralSetting
+     if (setting && setting->type == ST_ACTION &&
+         setting->flags & SD_FLAG_BROWSER_ACTION &&
+         setting->action_toggle &&
+         setting->change_handler ) {
+       [everything
+         addObject:
+           [[RAMenuItemPathSetting alloc]
+                       initWithSetting:setting
+                                action:^{}]];
+     } else if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP) {
+       [everything
+         addObject:
+           [RAMenuItemGeneralSetting
                        itemForSetting:setting
                                action:^{
-                         driver.menu->selection_ptr = i;
-                         if (cbs && cbs->action_ok)
-                           cbs->action_ok(path, entry_label, type, i);
-                       }]];
-     else
-     {
-       [everything addObject:
-                     [RAMenuItemBasic
+               driver.menu->selection_ptr = i;
+               if (cbs && cbs->action_ok)
+                 cbs->action_ok(path, entry_label, type, i);
+             }]];
+     } else {
+       [everything
+         addObject:
+           [RAMenuItemBasic
                        itemWithDescription:BOXSTRING(path_buf)
                                     action:^{                       
-                         driver.menu->selection_ptr = i;
-                         if (cbs && cbs->action_ok)
-                           cbs->action_ok(path, entry_label, type, i);
-                         else
-                         {
-                           if (cbs && cbs->action_start)
-                             cbs->action_start(type, entry_label, MENU_ACTION_START);
-                           if (cbs && cbs->action_toggle)
-                             cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT);
-                           menu_list_push_stack(driver.menu->menu_list, "",
-                                                "info_screen", 0, i);
-                         }
+               driver.menu->selection_ptr = i;
+               if (cbs && cbs->action_ok)
+                 cbs->action_ok(path, entry_label, type, i);
+               else
+                 {
+                   if (cbs && cbs->action_start)
+                     cbs->action_start(type, entry_label, MENU_ACTION_START);
+                   if (cbs && cbs->action_toggle)
+                     cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT);
+                   menu_list_push_stack(driver.menu->menu_list, "",
+                                        "info_screen", 0, i);
+                 }
 
-                         [weakSelf menuRefresh];
-                         [weakSelf reloadData];
-                       }]];
+               [weakSelf menuRefresh];
+               [weakSelf reloadData];
+             }]];
      }
    }
    

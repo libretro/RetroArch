@@ -171,12 +171,11 @@ void setting_data_set_with_string_representation(rarch_setting_t* setting,
       case ST_PATH:
       case ST_DIR:
       case ST_STRING:
+      case ST_ACTION:
          strlcpy(setting->value.string, value, setting->size);
          break;
 
          /* TODO */
-      case ST_ACTION:
-         break;
       case ST_HEX:
          break;
       case ST_GROUP:
@@ -2835,6 +2834,41 @@ static void settings_data_list_current_add_flags(
    setting_data_add_special_callbacks(list, list_info, values);
 }
 
+int core_list_action_toggle(void *data, unsigned action) {
+  rarch_setting_t *setting = (rarch_setting_t *)data;
+  // If the user CANCELs the browse, then g_settings.libretro is now
+  // set to a directory, which is very bad and will cause a crash
+  // later on. I need to be able to add something to call when a
+  // cancel happens.
+  strlcpy(setting->value.string, g_settings.libretro_directory, setting->size);
+  return 0;
+}
+void core_list_change_handler(void *data) {
+  rarch_setting_t *setting = (rarch_setting_t *)data;
+  rarch_main_command(RARCH_CMD_LOAD_CORE);
+}
+
+int load_content_action_toggle(void *data, unsigned action) {
+  rarch_setting_t *setting = (rarch_setting_t *)data;
+
+  strlcpy(setting->value.string, g_settings.menu_content_directory, setting->size);
+
+  if (g_extern.menu.info.valid_extensions) {
+    setting->values = g_extern.menu.info.valid_extensions;
+  } else {
+    setting->values = g_extern.system.valid_extensions;
+  }
+  
+  return 0;
+}
+void load_content_change_handler(void *data) {
+  rarch_setting_t *setting = (rarch_setting_t *)data;
+  // This does not appear to be robust enough because sometimes I get
+  // crashes. I think it is because LOAD_CORE has not yet run. I'm not
+  // sure the best way to test for that.
+  rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+}
+
 static bool setting_data_append_list_main_menu_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -2850,6 +2884,16 @@ static bool setting_data_append_list_main_menu_options(
          "Core",
          group_info.name,
          subgroup_info.name);
+   (*list)[list_info->index - 1].size = sizeof(g_settings.libretro);
+   (*list)[list_info->index - 1].value.string = g_settings.libretro;
+   (*list)[list_info->index - 1].values = EXT_EXECUTABLES;
+   // It is not a good idea to have chosen action_toggle as the place
+   // to put this callback. It should be called whenever the browser
+   // needs to get the directory to browse into. It's not quite like
+   // get_string_representation, but it is close.
+   (*list)[list_info->index - 1].action_toggle = core_list_action_toggle;
+   (*list)[list_info->index - 1].change_handler = core_list_change_handler;
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 #endif
 
    CONFIG_ACTION(
@@ -2883,6 +2927,10 @@ static bool setting_data_append_list_main_menu_options(
          "Load Content",
          group_info.name,
          subgroup_info.name);
+   (*list)[list_info->index - 1].size = sizeof(g_extern.fullpath);
+   (*list)[list_info->index - 1].value.string = g_extern.fullpath;
+   (*list)[list_info->index - 1].action_toggle = load_content_action_toggle;
+   (*list)[list_info->index - 1].change_handler = load_content_change_handler;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 
    CONFIG_ACTION(
