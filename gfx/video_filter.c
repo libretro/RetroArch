@@ -315,10 +315,13 @@ static const softfilter_get_implementation_t soft_plugs_builtin[] = {
    scale2x_get_implementation,
 };
 
-static bool append_softfilter_plugs(rarch_softfilter_t *filt)
+static bool append_softfilter_plugs(rarch_softfilter_t *filt,
+      struct string_list *list)
 {
    unsigned i;
    softfilter_simd_mask_t mask = rarch_get_cpu_features();
+
+   (void)list;
 
    filt->plugs = (struct rarch_soft_plug*)
       calloc(ARRAY_SIZE(soft_plugs_builtin), sizeof(*filt->plugs));
@@ -347,13 +350,14 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
       enum retro_pixel_format in_pixel_format,
       unsigned max_width, unsigned max_height)
 {
-#if defined(HAVE_DYLIB)
    char basedir[PATH_MAX];
-#endif
    softfilter_simd_mask_t cpu_features = rarch_get_cpu_features();
    struct string_list *plugs = NULL;
+   rarch_softfilter_t *filt  = NULL;
 
-   rarch_softfilter_t *filt = (rarch_softfilter_t*)calloc(1, sizeof(*filt));
+   (void)basedir;
+
+   filt = (rarch_softfilter_t*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
 
@@ -370,16 +374,13 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
    plugs = dir_list_new(basedir, EXT_EXECUTABLES, false);
    if (!plugs)
       goto error;
-
+#endif
    if (!append_softfilter_plugs(filt, plugs))
       goto error;
 
-   string_list_free(plugs);
+   if (plugs)
+      string_list_free(plugs);
    plugs = NULL;
-#else
-   if (!append_softfilter_plugs(filt))
-      goto error;
-#endif
 
    if (!create_softfilter_graph(filt, in_pixel_format,
             max_width, max_height, cpu_features, threads))
@@ -388,7 +389,9 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
    return filt;
 
 error:
-   string_list_free(plugs);
+   if (plugs)
+      string_list_free(plugs);
+   plugs = NULL;
    rarch_softfilter_free(filt);
    return NULL;
 }
