@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -34,7 +35,7 @@ enum ffemu_pix_format
 /* Parameters passed to ffemu_new() */
 struct ffemu_params
 {
-   /* FPS of input video. */
+   /* Framerate per second of input video. */
    double fps;
    /* Sample rate of input audio. */
    double samplerate;

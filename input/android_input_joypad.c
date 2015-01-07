@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2014 - Daniel De Matteis
- *  Copyright (C) 2012-2014 - Michael Lelli
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
+ *  Copyright (C) 2012-2015 - Michael Lelli
  *  Copyright (C) 2013-2014 - Steven Crowe
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
