@@ -719,9 +719,13 @@ static bool input_flush(retro_input_t *input)
  *
  * Run Libretro/RetroArch for one frame.
  *
- * Returns: 0 if we want to indicate to the caller that any top-level runtime loop
- * needs to be forcibly woken up. 1 if we have to wait until button input in order
- * to wake up the loop. -1 if we forcibly quit out of the RetroArch iteration loop. 
+ * Returns: 0 if we want to indicate to the caller that 
+ * any top-level runtime loop needs to be forcibly woken up.
+ *
+ * 1 if we have to wait until button input in order
+ * to wake up the loop.
+ *
+ * -1 if we forcibly quit out of the RetroArch iteration loop. 
  *
  **/
 int rarch_main_iterate(void)

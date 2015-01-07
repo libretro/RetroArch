@@ -35,6 +35,15 @@
 #include "netplay.h"
 #endif
 
+/**
+ * video_frame:
+ * @data                 : pointer to data of the video frame.
+ * @width                : width of the video frame.
+ * @height               : height of the video frame.
+ * @pitch                : pitch of the video frame.
+ *
+ * Video frame render callback function.
+ **/
 static void video_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
@@ -223,6 +232,13 @@ void retro_flush_audio(const int16_t *data, size_t samples)
    driver.audio_active = audio_flush(data, samples) && driver.audio_active;
 }
 
+/**
+ * audio_sample:
+ * @left                 : value of the left audio channel.
+ * @right                : value of the right audio channel.
+ *
+ * Audio sample render callback function.
+ **/
 static void audio_sample(int16_t left, int16_t right)
 {
    g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr++] = left;
@@ -237,6 +253,16 @@ static void audio_sample(int16_t left, int16_t right)
    g_extern.audio_data.data_ptr = 0;
 }
 
+/**
+ * audio_sample_batch:
+ * @data                 : pointer to audio buffer.
+ * @frames               : amount of audio frames to push.
+ *
+ * Batched audio sample render callback function.
+ *
+ * Returns: amount of frames sampled. Will be equal to @frames
+ * unless @frames exceeds (AUDIO_CHUNK_SIZE_NONBLOCKING / 2).
+ **/
 static size_t audio_sample_batch(const int16_t *data, size_t frames)
 {
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
@@ -248,11 +274,23 @@ static size_t audio_sample_batch(const int16_t *data, size_t frames)
    return frames;
 }
 
-/* Turbo scheme: If turbo button is held, all buttons pressed except
+/**
+ * input_apply_turbo:
+ * @port                 : user number
+ * @id                   : identifier of the key
+ * @res                  : boolean return value. FIXME/TODO: to be refactored.
+ *
+ * Apply turbo button if activated.
+ *
+ * If turbo button is held, all buttons pressed except
  * for D-pad will go into a turbo mode. Until the button is
- * released again, the input state will be modulated by a periodic pulse
- * defined by the configured duty cycle. */
-
+ * released again, the input state will be modulated by a 
+ * periodic pulse defined by the configured duty cycle. 
+ *
+ * Returns: 1 (true) if turbo button is enabled for this
+ * key ID, otherwise the value of @res will be returned.
+ *
+ **/
 static bool input_apply_turbo(unsigned port, unsigned id, bool res)
 {
    if (res && g_extern.turbo_frame_enable[port])
@@ -266,7 +304,18 @@ static bool input_apply_turbo(unsigned port, unsigned id, bool res)
    return res;
 }
 
-
+/**
+ * input_state:
+ * @port                 : user number.
+ * @device               : device identifier of user.
+ * @idx                  : index value of user.
+ * @id                   : identifier of key pressed by user.
+ *
+ * Input state callback function.
+ *
+ * Returns: Non-zero if the given key (identified by @id) was pressed by the user
+ * (assigned to @port).
+ **/
 static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
