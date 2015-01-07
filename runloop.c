@@ -111,6 +111,15 @@ static inline bool check_is_oneshot(bool oneshot_pressed, bool rewind_pressed)
    return (oneshot_pressed | rewind_pressed);
 }
 
+/**
+ * check_fast_forward_button:
+ * @fastforward_pressed  : is fastforward key pressed?
+ * @hold_pressed         : is fastforward key pressed and held?
+ * @old_hold_pressed     : was fastforward key pressed and held the last frame?
+ *
+ * Checks if the fast forward key has been pressed for this frame. 
+ *
+ **/
 static void check_fast_forward_button(bool fastforward_pressed,
       bool hold_pressed, bool old_hold_pressed)
 {
@@ -128,6 +137,15 @@ static void check_fast_forward_button(bool fastforward_pressed,
    driver_set_nonblock_state(driver.nonblock_state);
 }
 
+/**
+ * check_stateslots:
+ * @pressed_increase     : is state slot increase key pressed?
+ * @pressed_decrease     : is state slot decrease key pressed?
+ *
+ * Checks if the state increase/decrease keys have been pressed 
+ * for this frame. 
+ *
+ **/
 static void check_stateslots(bool pressed_increase, bool pressed_decrease)
 {
    char msg[PATH_MAX];
@@ -384,13 +402,6 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
       RARCH_WARN("Failed to apply shader.\n");
 }
 
-/* 
- * Checks for stuff like fullscreen, save states, etc.
- *
- * Returns:
- * 0 - normal operation.
- * 1 - when RetroArch is paused.
- */
 
 static void check_cheats(retro_input_t trigger_input)
 {
@@ -402,6 +413,17 @@ static void check_cheats(retro_input_t trigger_input)
       cheat_manager_toggle(g_extern.cheat);
 }
 
+/**
+ * do_state_checks:
+ * @input                : input sample for this frame
+ * @old_input            : input sample of the previous frame
+ * @trigger_input        : difference' input sample - difference
+ *                         between 'input' and 'old_input'
+ *
+ * Checks for state changes in this frame.
+ *
+ * Returns: 1 if RetroArch is in pause mode, 0 otherwise.
+ **/
 static int do_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
@@ -587,14 +609,17 @@ static void check_block_hotkey(bool enable_hotkey)
    driver.block_libretro_input = use_hotkey_enable && enable_hotkey;
 }
 
-/* We query all known keys per frame. Returns a 64-bit mask 
- * of all pressed keys.
+/**
+ * input_keys_pressed:
+ *
+ * Grab an input sample for this frame.
  *
  * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
  * and you need a bitmask of more than 64 entries, reimplement
  * it to use something like rarch_bits_t.
+ *
+ * Returns: Input sample containg a mask of all pressed keys.
  */
-
 static inline retro_input_t input_keys_pressed(void)
 {
    static const struct retro_keybind *binds[MAX_USERS] = {
@@ -669,6 +694,14 @@ static inline retro_input_t input_keys_pressed(void)
    return ret;
 }
 
+/**
+ * input_flush:
+ * @input                : input sample for this frame
+ *
+ * Resets input sample.
+ *
+ * Returns: always true (1).
+ */
 static bool input_flush(retro_input_t *input)
 {
    *input = 0;
