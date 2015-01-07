@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,9 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Win32/WGL context.
+/* Win32/WGL context. */
 
-// necessary for mingw32 multimon defines:
+/* necessary for mingw32 multimon defines: */
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
 #endif

@@ -1,4 +1,4 @@
-//forward decls
+/* forward decls */
 static void renderchain_set_mvp(void *data, unsigned vp_width, unsigned vp_height, unsigned rotation);
 static void renderchain_blit_to_texture(void *data, const void *frame,
    unsigned width, unsigned height, unsigned pitch);
@@ -202,7 +202,7 @@ static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, 
       vert[3].v =  0.0f;
 #endif
 
-      // Align texels and vertices.
+      /* Align texels and vertices. */
       for (unsigned i = 0; i < 4; i++)
       {
          vert[i].x -= 0.5f / ((float)d3d->tex_w);

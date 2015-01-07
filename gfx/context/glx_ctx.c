@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,8 +13,6 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-
-/* GLX context. */
 
 #include "../../driver.h"
 #include "../gfx_context.h"
@@ -262,7 +260,7 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
       glXDestroyWindow(glx->g_dpy, glx->g_glx_win);
       glx->g_glx_win = 0;
 
-      // Save last used monitor for later.
+      /* Save last used monitor for later. */
 #ifdef HAVE_XINERAMA
       XWindowAttributes target;
       Window child;
@@ -342,7 +340,7 @@ static bool gfx_ctx_glx_init(void *data)
 
    glXQueryVersion(glx->g_dpy, &major, &minor);
 
-   // GLX 1.3+ minimum required.
+   /* GLX 1.3+ minimum required. */
    if ((major * 1000 + minor) < 1003)
       goto error;
 
@@ -354,7 +352,7 @@ static bool gfx_ctx_glx_init(void *data)
    glx->g_debug = g_extern.system.hw_render_callback.debug_context;
 #endif
 
-   glx->g_core = (g_major * 1000 + g_minor) >= 3001; // Have to use ContextAttribs
+   glx->g_core = (g_major * 1000 + g_minor) >= 3001; /* Have to use ContextAttribs */
    if ((glx->g_core || glx->g_debug) && !glx_create_context_attribs)
       goto error;
 
@@ -475,12 +473,13 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
       RARCH_LOG("[GLX]: Using true fullscreen.\n");
       XMapRaised(glx->g_dpy, glx->g_win);
    }
-   else if (fullscreen) // We attempted true fullscreen, but failed. Attempt using windowed fullscreen.
+   else if (fullscreen) /* We attempted true fullscreen, but failed. Attempt using windowed fullscreen. */
    {
       XMapRaised(glx->g_dpy, glx->g_win);
       RARCH_LOG("[GLX]: Using windowed fullscreen.\n");
-      // We have to move the window to the screen we want to go fullscreen on first.
-      // x_off and y_off usually get ignored in XCreateWindow().
+      /* We have to move the window to the screen we want to go fullscreen on first.
+       * x_off and y_off usually get ignored in XCreateWindow().
+       */
       x11_move_window(glx->g_dpy, glx->g_win, x_off, y_off, width, height);
       x11_windowed_fullscreen(glx->g_dpy, glx->g_win);
    }
@@ -510,8 +509,9 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
             *aptr++ = GLX_CONTEXT_MINOR_VERSION_ARB;
             *aptr++ = g_minor;
 
-            // Technically, we don't have core/compat until 3.2.
-            // Version 3.1 is either compat or not depending on GL_ARB_compatibility.
+            /* Technically, we don't have core/compat until 3.2.
+             * Version 3.1 is either compat or not depending on GL_ARB_compatibility.
+             */
             if ((g_major * 1000 + g_minor) >= 3002)
             {
                *aptr++ = GLX_CONTEXT_PROFILE_MASK_ARB;
@@ -590,7 +590,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
 
    gfx_ctx_glx_swap_interval(data, glx->g_interval);
 
-   // This can blow up on some drivers. It's not fatal, so override errors for this call.
+   /* This can blow up on some drivers. It's not fatal, so override errors for this call. */
    old_handler = XSetErrorHandler(nul_handler);
    XSetInputFocus(glx->g_dpy, glx->g_win, RevertToNone, CurrentTime);
    XSync(glx->g_dpy, False);
@@ -670,7 +670,8 @@ static gfx_ctx_proc_t gfx_ctx_glx_get_proc_address(const char *symbol)
    return glXGetProcAddress((const GLubyte*)symbol);
 }
 
-static bool gfx_ctx_glx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_glx_bind_api(void *data, enum gfx_ctx_api api,
+      unsigned major, unsigned minor)
 {
    (void)data;
    g_major = major;

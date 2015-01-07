@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2015 - Higor Euripedes
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -75,9 +76,7 @@ static void sdl2_gfx_free(void *data);
 static inline void sdl_tex_zero(sdl2_tex_t *t)
 {
    if (t->tex)
-   {
       SDL_DestroyTexture(t->tex);
-   }
 
    t->tex = NULL;
    t->w = t->h = t->pitch = 0;

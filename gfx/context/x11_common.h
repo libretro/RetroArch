@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -38,7 +38,7 @@ bool x11_enter_fullscreen(Display *dpy, unsigned width, unsigned height, XF86Vid
 void x11_exit_fullscreen(Display *dpy, XF86VidModeModeInfo *desktop_mode);
 void x11_move_window(Display *dpy, Window win, int x, int y, unsigned width, unsigned height);
 
-// Set icon, class, default stuff.
+/* Set icon, class, default stuff. */
 void x11_set_window_attr(Display *dpy, Window win);
 
 #ifdef HAVE_XINERAMA

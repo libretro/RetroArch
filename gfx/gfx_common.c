@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -24,6 +24,19 @@
 
 #define FPS_UPDATE_INTERVAL 256
 
+/**
+ * gfx_get_fps:
+ * @buf           : string suitable for Window title
+ * @size          : size of buffer.
+ * @buf_fps       : string of raw FPS only (optional).
+ * @size_fps      : size of raw FPS buffer.
+ *
+ * Get the amount of frames per seconds.
+ *
+ * Returns: true if framerate per seconds could be obtained,
+ * otherwise false.
+ *
+ **/
 bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps)
 {
    static retro_time_t curr_time;

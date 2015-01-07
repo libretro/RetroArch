@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -244,7 +244,7 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
       *resize = true;
    }
 
-   // Check if we are exiting.
+   /* Check if we are exiting. */
    if (g_extern.system.shutdown)
       *quit = true;
 }

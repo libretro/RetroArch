@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2014 - Jean-Andre Santoni
+ *  Copyright (C) 2014 2015 - Jean-Andre Santoni
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -299,4 +299,3 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    NULL,
    "vivante-fbdev",
 };
-

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -238,7 +238,7 @@ static bool gfx_ctx_ps3_init(void *data)
       .initializeSPUs = GL_FALSE,
    };
 
-   // Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL
+   /* Initialize 6 SPUs but reserve 1 SPU as a raw SPU for PSGL. */
    sys_spu_initialize(6, 1);
    psglInit(&options);
 

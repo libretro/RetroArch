@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -30,10 +31,6 @@ extern "C" {
 #include "../config.h"
 #endif
 
-/* bufs gets a string suitable for Window title, 
- * buf_fps for raw FPS only.
- * buf_fps is optional.
- */
 bool gfx_get_fps(char *buf, size_t size,
       char *buf_fps, size_t size_fps);
 

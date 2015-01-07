@@ -21,7 +21,7 @@
 #include <EGL/egl.h>
 #include <signal.h>
 
-//Includes and defines for framebuffer size retrieval
+/* Includes and defines for framebuffer size retrieval */
 #include <sys/ioctl.h>
 #include <linux/fb.h>
 #include <linux/vt.h>
@@ -78,7 +78,7 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
    g_quit     = 0;
    g_resize   = false;
 
-   //Clear framebuffer and set cursor on again
+   /* Clear framebuffer and set cursor on again */
    int fd = open("/dev/tty", O_RDWR);
    ioctl(fd,VT_ACTIVATE,5);
    ioctl(fd,VT_ACTIVATE,1);
