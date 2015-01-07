@@ -29,6 +29,7 @@
 <Width>466.000000</Width>
 <Height>272.720001</Height>
 <Position>24.880005,52.959991,0.000000</Position>
+<Visual>XuiList_Custom</Visual>
 </Properties>
 <XuiListItem>
 <Properties>
@@ -280,6 +281,17 @@
 <Show>false</Show>
 <Visual>XuiButton</Visual>
 <InterItemSpacing>0.000000,10.000000,0.000000</InterItemSpacing>
+</Properties>
+</XuiListItem>
+<XuiListItem>
+<Properties>
+<Id>control_ListItem</Id>
+<Width>254.000000</Width>
+<Height>40.000000</Height>
+<Position>7.000000,26.000000,0.000000</Position>
+<Anchor>5</Anchor>
+<Show>false</Show>
+<Visual>XuiButton_two_col</Visual>
 </Properties>
 </XuiListItem>
 </XuiCommonList>

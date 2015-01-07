@@ -318,8 +318,7 @@ static void rmenu_xui_frame(void)
 
    XUIMessage msg;
    XUIMessageRender msgRender;
-   XuiMessageRender( &msg, &msgRender,
-         app.GetDC(), 0xffffffff, XUI_BLEND_NORMAL );
+   XuiMessageRender( &msg, &msgRender, app.GetDC(), 0xffffffff, XUI_BLEND_NORMAL );
    XuiSendMessage( app.GetRootObj(), &msg );
 
    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
@@ -366,7 +365,6 @@ static void rmenu_xui_render(void)
          g_extern.is_menu && !driver.menu->msg_force)
       return;
 
-   begin = driver.menu->selection_ptr;
    end   = menu_list_get_size(driver.menu->menu_list);
 
    rmenu_xui_render_background();
@@ -374,8 +372,7 @@ static void rmenu_xui_render(void)
    menu_list_get_last_stack(driver.menu->menu_list, &dir,
          &label, &menu_type);
 
-   get_title(label, dir, menu_type,
-         title, sizeof(title));
+   get_title(label, dir, menu_type, title, sizeof(title));
 
    mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
    XuiTextElementSetText(m_menutitle, strw_buffer);
@@ -410,11 +407,9 @@ static void rmenu_xui_render(void)
    x = RXUI_TERM_START_X;
    y = RXUI_TERM_START_Y;
 
-   for (i = begin; i < end; i++/*, y += FONT_HEIGHT_STRIDE */)
+   for (i = 0; i < end; i++/*, y += FONT_HEIGHT_STRIDE */)
    {
-      char message[PATH_MAX_LENGTH], type_str[PATH_MAX_LENGTH],
-           entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH],
-           path_buf[PATH_MAX_LENGTH];
+      char type_str[PATH_MAX_LENGTH],entry_title_buf[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
       bool selected = false;
@@ -436,15 +431,27 @@ static void rmenu_xui_render(void)
       else
          menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
 #endif
-
-      snprintf(message, sizeof(message), "%s : %s",
-            type_str,
-            path_buf);
-
-      wchar_t msg_w[256];
-      mbstowcs(msg_w, message, sizeof(msg_w) / sizeof(wchar_t));
-      XuiListSetText(m_menulist, i, msg_w);
-      blit_line(x, y, message, i);
+	  HXUIOBJ hVisual = NULL;
+	  HXUIOBJ hControl = XuiListGetItemControl(m_menulist, i);
+	  if (XuiHandleIsValid(hControl))
+		  XuiControlGetVisual(hControl, &hVisual);
+	  if(XuiHandleIsValid(hVisual)) 
+	  {
+		 HXUIOBJ hTextLeft = NULL, hTextRight = NULL;
+		 XuiElementGetChildById(hVisual, L"LeftText", &hTextLeft);
+		 XuiElementGetChildById(hVisual, L"RightText", &hTextRight);
+		 wchar_t msg_w[256];
+		 if(XuiHandleIsValid(hTextLeft))
+		 {
+			 mbstowcs(msg_w, path_buf, sizeof(msg_w) / sizeof(wchar_t));
+			 XuiTextElementSetText(hTextLeft, msg_w);
+		 }		 
+		 if(XuiHandleIsValid(hTextRight)) 
+		 {
+			 mbstowcs(msg_w, type_str, sizeof(msg_w) / sizeof(wchar_t));
+			 XuiTextElementSetText(hTextRight, msg_w);
+		 }	  
+	  }
    }
 
    if (driver.menu->keyboard.display)
