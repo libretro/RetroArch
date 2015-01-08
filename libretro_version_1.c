@@ -120,6 +120,11 @@ static void video_frame(const void *data, unsigned width,
       driver.video_active = false;
 }
 
+/*
+ * readjust_audio_input_rate:
+ *
+ * Readjust the audio input rate.
+ */
 static void readjust_audio_input_rate(void)
 {
    int avail = driver.audio->write_avail(driver.audio_data);
@@ -142,6 +147,17 @@ static void readjust_audio_input_rate(void)
    //      g_extern.audio_data.src_ratio, g_extern.audio_data.orig_src_ratio);
 }
 
+/**
+ * audio_flush:
+ * @data                 : pointer to audio buffer.
+ * @right                : amount of samples to write.
+ *
+ * Writes audio samples to audio driver. Will first
+ * perform DSP processing (if enabled) and resampling.
+ *
+ * Returns: true (1) if audio samples were written to the audio
+ * driver, false (0) in case of an error.
+ **/
 static bool audio_flush(const int16_t *data, size_t samples)
 {
    const void *output_data        = NULL;
@@ -227,9 +243,11 @@ static bool audio_flush(const int16_t *data, size_t samples)
    return true;
 }
 
+#define write_audio(data, samples) (driver.audio_active = audio_flush((data), (samples)) && driver.audio_active)
+
 void retro_flush_audio(const int16_t *data, size_t samples)
 {
-   driver.audio_active = audio_flush(data, samples) && driver.audio_active;
+   write_audio(data, samples);
 }
 
 /**
@@ -247,8 +265,7 @@ static void audio_sample(int16_t left, int16_t right)
    if (g_extern.audio_data.data_ptr < g_extern.audio_data.chunk_size)
       return;
 
-   driver.audio_active = audio_flush(g_extern.audio_data.conv_outsamples,
-         g_extern.audio_data.data_ptr) && driver.audio_active;
+   write_audio(g_extern.audio_data.conv_outsamples, g_extern.audio_data.data_ptr);
 
    g_extern.audio_data.data_ptr = 0;
 }
@@ -268,8 +285,43 @@ static size_t audio_sample_batch(const int16_t *data, size_t frames)
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
 
-   driver.audio_active = audio_flush(data, frames << 1)
-      && driver.audio_active;
+   write_audio(data, frames << 1);
+
+   return frames;
+}
+
+/**
+ * audio_sample_rewind:
+ * @left                 : value of the left audio channel.
+ * @right                : value of the right audio channel.
+ *
+ * Audio sample render callback function (rewind version). This callback
+ * function will be used instead of audio_sample when rewinding is activated.
+ **/
+static void audio_sample_rewind(int16_t left, int16_t right)
+{
+   g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = right;
+   g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = left;
+}
+
+/**
+ * audio_sample_batch_rewind:
+ * @data                 : pointer to audio buffer.
+ * @frames               : amount of audio frames to push.
+ *
+ * Batched audio sample render callback function (rewind version). This callback
+ * function will be used instead of audio_sample_batch when rewinding is activated.
+ *
+ * Returns: amount of frames sampled. Will be equal to @frames
+ * unless @frames exceeds (AUDIO_CHUNK_SIZE_NONBLOCKING / 2).
+ **/
+static size_t audio_sample_batch_rewind(const int16_t *data, size_t frames)
+{
+   size_t i;
+   size_t samples = frames << 1;
+
+   for (i = 0; i < samples; i++)
+      g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = data[i];
 
    return frames;
 }
@@ -352,9 +404,7 @@ static int16_t input_state(unsigned port, unsigned device,
    }
 
    if (g_settings.input.remap_binds_enable)
-   {
       id = g_settings.input.remap_ids[port][id];
-   }
 
    if (!driver.block_libretro_input)
    {
@@ -402,24 +452,14 @@ static int16_t input_state(unsigned port, unsigned device,
    return res;
 }
 
-static void audio_sample_rewind(int16_t left, int16_t right)
-{
-   g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = right;
-   g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = left;
-}
-
-static size_t audio_sample_batch_rewind(const int16_t *data, size_t frames)
-{
-   size_t i;
-   size_t samples = frames << 1;
-
-   for (i = 0; i < samples; i++)
-      g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = data[i];
-
-   return frames;
-}
 
 #ifdef HAVE_OVERLAY
+/*
+ * input_poll_overlay:
+ *
+ * Poll pressed buttons/keys on currently active overlay.
+ *
+ **/
 static inline void input_poll_overlay(void)
 {
    input_overlay_state_t old_key_state;
@@ -495,6 +535,7 @@ static inline void input_poll_overlay(void)
       {
          unsigned bind_plus  = RARCH_ANALOG_LEFT_X_PLUS + 2 * j;
          unsigned bind_minus = bind_plus + 1;
+
          driver.overlay_state.analog[j] += (driver.overlay_state.buttons &
                (1ULL << bind_plus)) ? 0x7fff : 0;
          driver.overlay_state.analog[j] -= (driver.overlay_state.buttons &
@@ -513,6 +554,7 @@ static inline void input_poll_overlay(void)
             ANALOG_DPAD_LSTICK ? 0 : 2;
          float analog_x = (float)driver.overlay_state.analog[analog_base + 0] / 0x7fff;
          float analog_y = (float)driver.overlay_state.analog[analog_base + 1] / 0x7fff;
+
          driver.overlay_state.buttons |=
             (analog_x <= -g_settings.input.axis_threshold) ?
             (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
@@ -539,6 +581,11 @@ static inline void input_poll_overlay(void)
 }
 #endif
 
+/**
+ * input_poll:
+ *
+ * Input polling callback function.
+ **/
 static void input_poll(void)
 {
    driver.input->poll(driver.input_data);
@@ -554,6 +601,12 @@ static void input_poll(void)
 #endif
 }
 
+/**
+ * retro_set_default_callbacks:
+ * @data           : pointer to retro_callbacks object
+ *
+ * Binds the libretro callbacks to default callback functions.
+ **/
 void retro_set_default_callbacks(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
@@ -568,6 +621,13 @@ void retro_set_default_callbacks(void *data)
    cbs->poll_cb         = input_poll;
 }
 
+/**
+ * retro_set_default_callbacks:
+ * @data           : pointer to retro_callbacks object
+ *
+ * Initializes libretro callbacks, and binds the libretro callbacks 
+ * to default callback functions.
+ **/
 void retro_init_libretro_cbs(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
@@ -604,6 +664,12 @@ void retro_init_libretro_cbs(void *data)
 #endif
 }
 
+/**
+ * retro_set_rewind_callbacks:
+ *
+ * Sets the audio sampling callbacks based on whether or not
+ * rewinding is currently activated.
+ **/
 void retro_set_rewind_callbacks(void)
 {
    if (g_extern.frame_is_reverse)
