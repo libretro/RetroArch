@@ -61,7 +61,16 @@
 #include <unistd.h>
 #endif
 
-/* Dump to file. */
+/**
+ * write_file:
+ * @path             : path to file.
+ * @data             : contents to write to the file.
+ * @size             : size of the contents.
+ *
+ * Writes data to a file.
+ *
+ * Returns: true (1) on success, false (0) otherwise.
+ */
 bool write_file(const char *path, const void *data, size_t size)
 {
    bool ret = false;
@@ -74,6 +83,14 @@ bool write_file(const char *path, const void *data, size_t size)
    return ret;
 }
 
+/**
+ * write_empty_file:
+ * @path             : path to file.
+ *
+ * Creates an empty file.
+ *
+ * Returns: true (1) on success, false (0) otherwise.
+ */
 bool write_empty_file(const char *path)
 {
    FILE *file = fopen(path, "w");
@@ -85,6 +102,16 @@ bool write_empty_file(const char *path)
    return true;
 }
 
+/**
+ * read_generic_file:
+ * @path             : path to file.
+ * @buf              : buffer to allocate and read the contents of the
+ *                     file into. Needs to be freed manually.
+ *
+ * Read the contents of a file into @buf.
+ *
+ * Returns: number of items read, -1 on error.
+ */
 static long read_generic_file(const char *path, void **buf)
 {
    long rc = 0, len = 0;
@@ -119,15 +146,26 @@ static long read_generic_file(const char *path, void **buf)
 error:
    if (file)
       fclose(file);
-   free(rom_buf);
+   if (rom_buf)
+      free(rom_buf);
    *buf = NULL;
    return -1;
-
 }
 
-/* Generic file loader. */
+/**
+ * read_file:
+ * @path             : path to file.
+ * @buf              : buffer to allocate and read the contents of the
+ *                     file into. Needs to be freed manually.
+ *
+ * Read the contents of a file into @buf. Will call read_compressed_file
+ * if path contains a compressed file, otherwise will call read_generic_file.
+ *
+ * Returns: number of items read, -1 on error.
+ */
 long read_file(const char *path, void **buf)
 {
+#ifdef HAVE_COMPRESSION
    /* Here we check, whether the file, we are about to read is
     * inside an archive, or not.
     *
@@ -137,20 +175,29 @@ long read_file(const char *path, void **buf)
     * For example: fullpath: /home/user/game.7z/mygame.rom
     * carchive_path: /home/user/game.7z
     * */
-#ifdef HAVE_COMPRESSION
    if (path_contains_compressed_file(path))
       return read_compressed_file(path,buf,0);
 #endif
    return read_generic_file(path,buf);
 }
 
-/* Reads file content as one string. */
+/**
+ * read_file_string:
+ * @path             : path to file to be read from.
+ * @buf              : buffer to allocate and read the contents of the
+ *                     file into. Needs to be freed manually.
+ *
+ * Reads file content as one string.
+ *
+ * Returns: true (1) on success, false (0) otherwise.
+ */
 bool read_file_string(const char *path, char **buf)
 {
-   *buf = NULL;
-   FILE *file = fopen(path, "r");
    long len = 0;
    char *ptr = NULL;
+   FILE *file = fopen(path, "r");
+
+   *buf = NULL;
 
    if (!file)
       goto error;
