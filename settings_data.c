@@ -41,6 +41,12 @@
 #include "menu/menu_shader.h"
 #endif
 
+/**
+ * setting_data_reset_setting:
+ * @setting            : pointer to setting
+ *
+ * Reset a setting's value to its defaults.
+ **/
 void setting_data_reset_setting(rarch_setting_t* setting)
 {
    if (!setting)
@@ -97,23 +103,38 @@ void setting_data_reset_setting(rarch_setting_t* setting)
       setting->change_handler(setting);
 }
 
+/**
+ * setting_data_reset:
+ * @settings           : pointer to settings
+ *
+ * Reset all settings to their default values.
+ **/
 void setting_data_reset(rarch_setting_t* settings)
 {
    for (; settings->type != ST_NONE; settings++)
       setting_data_reset_setting(settings);
 }
 
-rarch_setting_t* setting_data_find_setting(rarch_setting_t* setting,
+/**
+ * setting_data_reset:
+ * @settings           : pointer to settings
+ * @name               : name of setting to search for
+ *
+ * Search for a setting with a specified name (@name).
+ *
+ * Returns: pointer to setting if found, NULL otherwise.
+ **/
+rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings,
       const char* name)
 {
    bool found = false;
 
-   if (!setting || !name)
+   if (!settings || !name)
       return NULL;
 
-   for (; setting->type != ST_NONE; setting++)
+   for (; settings->type != ST_NONE; settings++)
    {
-      if (setting->type <= ST_GROUP && !strcmp(setting->name, name))
+      if (settings->type <= ST_GROUP && !strcmp(settings->name, name))
       {
          found = true;
          break;
@@ -123,15 +144,23 @@ rarch_setting_t* setting_data_find_setting(rarch_setting_t* setting,
    if (!found)
       return NULL;
 
-   if (setting->short_description && setting->short_description[0] == '\0')
+   if (settings->short_description && settings->short_description[0] == '\0')
       return NULL;
 
-   if (setting->read_handler)
-      setting->read_handler(setting);
+   if (settings->read_handler)
+      settings->read_handler(settings);
 
-   return setting;
+   return settings;
 }
 
+/**
+ * setting_data_set_with_string_representation:
+ * @setting            : pointer to setting
+ * @value              : value for the setting (string)
+ *
+ * Set a settings' value with a string. It is assumed
+ * that the string has been properly formatted.
+ **/
 void setting_data_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
@@ -200,6 +229,15 @@ void setting_data_set_with_string_representation(rarch_setting_t* setting,
       setting->change_handler(setting);
 }
 
+/**
+ * menu_common_setting_set_label_st_bool:
+ * @setting            : pointer to setting
+ * @type_str           : string for the type to be represented on-screen as
+ *                       a label.
+ * @type_str_size      : size of @type_str
+ *
+ * Set a settings' label value. The setting is of type ST_BOOL.
+ **/
 static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
       char *type_str, size_t type_str_size)
 {
@@ -208,6 +246,15 @@ static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
             setting->boolean.off_label, type_str_size);
 }
 
+/**
+ * menu_common_setting_set_label_st_uint:
+ * @setting            : pointer to setting
+ * @type_str           : string for the type to be represented on-screen as
+ *                       a label.
+ * @type_str_size      : size of @type_str
+ *
+ * Set a settings' label value. The setting is of type ST_UINT.
+ **/
 static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
       char *type_str, size_t type_str_size)
 {
@@ -347,6 +394,15 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
    }
 }
 
+/**
+ * menu_common_setting_set_label_st_float:
+ * @setting            : pointer to setting
+ * @type_str           : string for the type to be represented on-screen as
+ *                       a label.
+ * @type_str_size      : size of @type_str
+ *
+ * Set a settings' label value. The setting is of type ST_FLOAT.
+ **/
 static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
       char *type_str, size_t type_str_size)
 {
@@ -372,6 +428,14 @@ static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
          *setting->value.fraction);
 }
 
+/**
+ * setting_data_get_string_representation:
+ * @setting            : pointer to setting
+ * @buf                : buffer to write contents of string representation to.
+ * @sizeof_buf         : size of the buffer (@buf)
+ *
+ * Get a setting value's string representation.
+ **/
 void setting_data_get_string_representation(rarch_setting_t* setting,
       char* buf, size_t sizeof_buf)
 {
@@ -437,6 +501,15 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
    }
 }
 
+/**
+ * setting_data_bool_action_start_savestates:
+ * @data               : pointer to setting
+ *
+ * Function callback for 'Savestate' action's 'Action Start'
+ * function pointer.
+ *
+ * Returns: 0 on success, -1 on error.
+ **/
 static int setting_data_bool_action_start_savestates(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -449,6 +522,17 @@ static int setting_data_bool_action_start_savestates(void *data)
    return 0;
 }
 
+/**
+ * setting_data_uint_action_toggle_analog_dpad_mode
+ * @data               : pointer to setting
+ * @action             : toggle action value. Can be either one of :
+ *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
+ *
+ * Function callback for 'Analog D-Pad Mode' action's 'Action Toggle'
+ * function pointer.
+ *
+ * Returns: 0 on success, -1 on error.
+ **/
 static int setting_data_uint_action_toggle_analog_dpad_mode(void *data, unsigned action)
 {
    unsigned port = 0;
@@ -477,6 +561,17 @@ static int setting_data_uint_action_toggle_analog_dpad_mode(void *data, unsigned
    return 0;
 }
 
+/**
+ * setting_data_uint_action_toggle_libretro_device_type
+ * @data               : pointer to setting
+ * @action             : toggle action value. Can be either one of :
+ *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
+ *
+ * Function callback for 'Libretro Device Type' action's 'Action Toggle'
+ * function pointer.
+ *
+ * Returns: 0 on success, -1 on error.
+ **/
 static int setting_data_uint_action_toggle_libretro_device_type(void *data, unsigned action)
 {
    unsigned current_device, current_idx, i, devices[128];
@@ -544,6 +639,17 @@ static int setting_data_uint_action_toggle_libretro_device_type(void *data, unsi
    return 0;
 }
 
+/**
+ * setting_data_bool_action_toggle_savestates
+ * @data               : pointer to setting
+ * @action             : toggle action value. Can be either one of :
+ *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
+ *
+ * Function callback for 'SaveStates' action's 'Action Toggle'
+ * function pointer.
+ *
+ * Returns: 0 on success, -1 on error.
+ **/
 static int setting_data_bool_action_toggle_savestates(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -554,7 +660,7 @@ static int setting_data_bool_action_toggle_savestates(void *data, unsigned actio
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         // Slot -1 is (auto) slot.
+         /* Slot -1 is (auto) slot. */
          if (g_settings.state_slot >= 0)
             g_settings.state_slot--;
          break;
