@@ -749,6 +749,7 @@ void conv_argb8888_abgr8888(void *output_, const void *input_,
 #define YUV_MAT_U_B (113)
 #define YUV_MAT_V_R (90)
 #define YUV_MAT_V_G (-46)
+
 #if defined(__SSE2__)
 void conv_yuyv_argb8888(void *output_, const void *input_,
       int width, int height,
@@ -920,11 +921,11 @@ void conv_copy(void *output_, const void *input_,
 {
    int h;
    int copy_len = abs(out_stride);
-   if (abs(in_stride) < copy_len)
-      copy_len = abs(in_stride);
-
    const uint8_t *input = (const uint8_t*)input_;
    uint8_t *output      = (uint8_t*)output_;
+
+   if (abs(in_stride) < copy_len)
+      copy_len = abs(in_stride);
 
    for (h = 0; h < height;
          h++, output += out_stride, input += in_stride)

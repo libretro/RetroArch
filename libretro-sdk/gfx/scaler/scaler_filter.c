@@ -38,7 +38,8 @@ static bool allocate_filters(struct scaler_ctx *ctx)
    return ctx->horiz.filter && ctx->vert.filter;
 }
 
-static void gen_filter_point_sub(struct scaler_filter *filter, int len, int pos, int step)
+static void gen_filter_point_sub(struct scaler_filter *filter,
+      int len, int pos, int step)
 {
    int i;
    for (i = 0; i < len; i++, pos += step)
@@ -50,6 +51,8 @@ static void gen_filter_point_sub(struct scaler_filter *filter, int len, int pos,
 
 static bool gen_filter_point(struct scaler_ctx *ctx)
 {
+   int x_pos, x_step, y_pos, y_step;
+
    ctx->horiz.filter_len    = 1;
    ctx->horiz.filter_stride = 1;
    ctx->vert.filter_len     = 1;
@@ -58,10 +61,10 @@ static bool gen_filter_point(struct scaler_ctx *ctx)
    if (!allocate_filters(ctx))
       return false;
 
-   int x_pos  = (1 << 15) * ctx->in_width / ctx->out_width - (1 << 15);
-   int x_step = (1 << 16) * ctx->in_width / ctx->out_width;
-   int y_pos  = (1 << 15) * ctx->in_height / ctx->out_height - (1 << 15);
-   int y_step = (1 << 16) * ctx->in_height / ctx->out_height;
+   x_pos  = (1 << 15) * ctx->in_width / ctx->out_width - (1 << 15);
+   x_step = (1 << 16) * ctx->in_width / ctx->out_width;
+   y_pos  = (1 << 15) * ctx->in_height / ctx->out_height - (1 << 15);
+   y_step = (1 << 16) * ctx->in_height / ctx->out_height;
 
    gen_filter_point_sub(&ctx->horiz, ctx->out_width, x_pos, x_step);
    gen_filter_point_sub(&ctx->vert, ctx->out_height, y_pos, y_step);
@@ -71,7 +74,8 @@ static bool gen_filter_point(struct scaler_ctx *ctx)
    return true;
 }
 
-static void gen_filter_bilinear_sub(struct scaler_filter *filter, int len, int pos, int step)
+static void gen_filter_bilinear_sub(struct scaler_filter *filter,
+      int len, int pos, int step)
 {
    int i;
    for (i = 0; i < len; i++, pos += step)
@@ -84,6 +88,8 @@ static void gen_filter_bilinear_sub(struct scaler_filter *filter, int len, int p
 
 static bool gen_filter_bilinear(struct scaler_ctx *ctx)
 {
+   int x_pos, x_step, y_pos, y_step;
+
    ctx->horiz.filter_len    = 2;
    ctx->horiz.filter_stride = 2;
    ctx->vert.filter_len     = 2;
@@ -92,10 +98,10 @@ static bool gen_filter_bilinear(struct scaler_ctx *ctx)
    if (!allocate_filters(ctx))
       return false;
 
-   int x_pos  = (1 << 15) * ctx->in_width / ctx->out_width - (1 << 15);
-   int x_step = (1 << 16) * ctx->in_width / ctx->out_width;
-   int y_pos  = (1 << 15) * ctx->in_height / ctx->out_height - (1 << 15);
-   int y_step = (1 << 16) * ctx->in_height / ctx->out_height;
+   x_pos  = (1 << 15) * ctx->in_width / ctx->out_width - (1 << 15);
+   x_step = (1 << 16) * ctx->in_width / ctx->out_width;
+   y_pos  = (1 << 15) * ctx->in_height / ctx->out_height - (1 << 15);
+   y_step = (1 << 16) * ctx->in_height / ctx->out_height;
 
    gen_filter_bilinear_sub(&ctx->horiz, ctx->out_width, x_pos, x_step);
    gen_filter_bilinear_sub(&ctx->vert, ctx->out_height, y_pos, y_step);
@@ -110,7 +116,8 @@ static inline double filter_sinc(double phase)
    return sin(phase) / phase;
 }
 
-static void gen_filter_sinc_sub(struct scaler_filter *filter, int len, int pos, int step, double phase_mul)
+static void gen_filter_sinc_sub(struct scaler_filter *filter,
+      int len, int pos, int step, double phase_mul)
 {
    int i, j;
    const int sinc_size = filter->filter_len;
@@ -135,8 +142,13 @@ static void gen_filter_sinc_sub(struct scaler_filter *filter, int len, int pos, 
 
 static bool gen_filter_sinc(struct scaler_ctx *ctx)
 {
-   // Need to expand the filter when downsampling to get a proper low-pass effect.
-   const int sinc_size      = 8 * (ctx->in_width > ctx->out_width ? next_pow2(ctx->in_width / ctx->out_width) : 1);
+   int x_pos, x_step, y_pos, y_step;
+   double phase_mul_horiz, phase_mul_vert;
+   /* Need to expand the filter when downsampling 
+    * to get a proper low-pass effect. */
+   const int sinc_size      = 8 * ((ctx->in_width > ctx->out_width)
+         ? next_pow2(ctx->in_width / ctx->out_width) : 1);
+
    ctx->horiz.filter_len    = sinc_size;
    ctx->horiz.filter_stride = sinc_size;
    ctx->vert.filter_len     = sinc_size;
@@ -145,13 +157,13 @@ static bool gen_filter_sinc(struct scaler_ctx *ctx)
    if (!allocate_filters(ctx))
       return false;
 
-   int x_pos  = (1 << 15) * ctx->in_width / ctx->out_width - (1 << 15) - (sinc_size << 15);
-   int x_step = (1 << 16) * ctx->in_width / ctx->out_width;
-   int y_pos  = (1 << 15) * ctx->in_height / ctx->out_height - (1 << 15) - (sinc_size << 15);
-   int y_step = (1 << 16) * ctx->in_height / ctx->out_height;
+   x_pos  = (1 << 15) * ctx->in_width / ctx->out_width - (1 << 15) - (sinc_size << 15);
+   x_step = (1 << 16) * ctx->in_width / ctx->out_width;
+   y_pos  = (1 << 15) * ctx->in_height / ctx->out_height - (1 << 15) - (sinc_size << 15);
+   y_step = (1 << 16) * ctx->in_height / ctx->out_height;
 
-   double phase_mul_horiz = ctx->in_width  > ctx->out_width  ? (double)ctx->out_width  / ctx->in_width  : 1.0;
-   double phase_mul_vert  = ctx->in_height > ctx->out_height ? (double)ctx->out_height / ctx->in_height : 1.0;
+   phase_mul_horiz = ctx->in_width  > ctx->out_width  ? (double)ctx->out_width  / ctx->in_width  : 1.0;
+   phase_mul_vert  = ctx->in_height > ctx->out_height ? (double)ctx->out_height / ctx->in_height : 1.0;
 
    gen_filter_sinc_sub(&ctx->horiz, ctx->out_width, x_pos, x_step, phase_mul_horiz);
    gen_filter_sinc_sub(&ctx->vert, ctx->out_height, y_pos, y_step, phase_mul_vert);
@@ -163,7 +175,9 @@ static bool gen_filter_sinc(struct scaler_ctx *ctx)
 static bool validate_filter(struct scaler_ctx *ctx)
 {
    int i;
+   int max_h_pos;
    int max_w_pos = ctx->in_width - ctx->horiz.filter_len;
+
    for (i = 0; i < ctx->out_width; i++)
    {
       if (ctx->horiz.filter_pos[i] > max_w_pos || ctx->horiz.filter_pos[i] < 0)
@@ -173,7 +187,8 @@ static bool validate_filter(struct scaler_ctx *ctx)
       }
    }
 
-   int max_h_pos = ctx->in_height - ctx->vert.filter_len;
+   max_h_pos = ctx->in_height - ctx->vert.filter_len;
+
    for (i = 0; i < ctx->out_height; i++)
    {
       if (ctx->vert.filter_pos[i] > max_h_pos || ctx->vert.filter_pos[i] < 0)
@@ -198,36 +213,40 @@ static void fixup_filter_sub(struct scaler_filter *filter, int out_len, int in_l
 
       if (postsample > 0)
       {
+         int16_t *base_filter = NULL;
          filter->filter_pos[i] -= postsample;
 
-         int16_t *base_filter = filter->filter + i * filter->filter_stride;
+         base_filter = filter->filter + i * filter->filter_stride;
 
          if (postsample > (int)filter->filter_len)
             memset(base_filter, 0, filter->filter_len * sizeof(int16_t));
          else
          {
-            memmove(base_filter + postsample, base_filter, (filter->filter_len - postsample) * sizeof(int16_t));
+            memmove(base_filter + postsample, base_filter,
+                  (filter->filter_len - postsample) * sizeof(int16_t));
             memset(base_filter, 0, postsample * sizeof(int16_t));
          }
       }
 
       if (presample > 0)
       {
+         int16_t *base_filter = NULL;
          filter->filter_pos[i] += presample;
-         int16_t *base_filter = filter->filter + i * filter->filter_stride;
+         base_filter = filter->filter + i * filter->filter_stride;
 
          if (presample > (int)filter->filter_len)
             memset(base_filter, 0, filter->filter_len * sizeof(int16_t));
          else
          {
-            memmove(base_filter, base_filter + presample, (filter->filter_len - presample) * sizeof(int16_t));
+            memmove(base_filter, base_filter + presample,
+                  (filter->filter_len - presample) * sizeof(int16_t));
             memset(base_filter + (filter->filter_len - presample), 0, presample * sizeof(int16_t));
          }
       }
    }
 }
 
-// Makes sure that we never sample outside our rectangle.
+/* Makes sure that we never sample outside our rectangle. */
 static void fixup_filter(struct scaler_ctx *ctx)
 {
    fixup_filter_sub(&ctx->horiz, ctx->out_width, ctx->in_width);

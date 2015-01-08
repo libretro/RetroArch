@@ -251,20 +251,23 @@ void scaler_argb8888_point_special(const struct scaler_ctx *ctx,
       int in_width, int in_height,
       int out_stride, int in_stride)
 {
+   const uint32_t *input = NULL;
+   uint32_t *output      = NULL;
    int h, w;
-   (void)ctx;
    int x_pos  = (1 << 15) * in_width / out_width - (1 << 15);
    int x_step = (1 << 16) * in_width / out_width;
    int y_pos  = (1 << 15) * in_height / out_height - (1 << 15);
    int y_step = (1 << 16) * in_height / out_height;
+
+   (void)ctx;
 
    if (x_pos < 0)
       x_pos = 0;
    if (y_pos < 0)
       y_pos = 0;
 
-   const uint32_t *input = (const uint32_t*)input_;
-   uint32_t *output = (uint32_t*)output_;
+   input = (const uint32_t*)input_;
+   output = (uint32_t*)output_;
 
    for (h = 0; h < out_height; h++, y_pos += y_step, output += out_stride >> 2)
    {
