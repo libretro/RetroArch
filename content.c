@@ -264,7 +264,7 @@ bool save_state(const char *path)
 
 /**
  * load_state:
- * @path      - path that state will be loaded from.
+ * @path      : path that state will be loaded from.
  *
  * Load a state from disk to memory.
  *
