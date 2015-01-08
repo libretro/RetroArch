@@ -33,9 +33,42 @@ typedef struct retro_callbacks
    retro_input_poll_t poll_cb;
 } retro_callbacks_t;
 
+/**
+ * retro_init_libretro_cbs:
+ * @data           : pointer to retro_callbacks object
+ *
+ * Initializes libretro callbacks, and binds the libretro callbacks 
+ * to default callback functions.
+ **/
 void retro_init_libretro_cbs(void *data);
+
+/**
+ * retro_set_default_callbacks:
+ * @data           : pointer to retro_callbacks object
+ *
+ * Binds the libretro callbacks to default callback functions.
+ **/
 void retro_set_default_callbacks(void *data);
+
+/**
+ * retro_set_rewind_callbacks:
+ *
+ * Sets the audio sampling callbacks based on whether or not
+ * rewinding is currently activated.
+ **/
 void retro_set_rewind_callbacks(void);
+
+/**
+ * retro_flush_audio:
+ * @data                 : pointer to audio buffer.
+ * @samples              : amount of samples to write.
+ *
+ * Writes audio samples to audio driver. Will first
+ * perform DSP processing (if enabled) and resampling.
+ *
+ * driver.audio_active will be set to false (0) in case
+ * of an error, otherwise will be set to true (1).
+ **/
 void retro_flush_audio(const int16_t *data, size_t samples);
 
 #ifdef __cplusplus

@@ -245,6 +245,17 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
 #define write_audio(data, samples) (driver.audio_active = audio_flush((data), (samples)) && driver.audio_active)
 
+/**
+ * retro_flush_audio:
+ * @data                 : pointer to audio buffer.
+ * @samples              : amount of samples to write.
+ *
+ * Writes audio samples to audio driver. Will first
+ * perform DSP processing (if enabled) and resampling.
+ *
+ * driver.audio_active will be set to false (0) in case
+ * of an error, otherwise will be set to true (1).
+ **/
 void retro_flush_audio(const int16_t *data, size_t samples)
 {
    write_audio(data, samples);
@@ -622,7 +633,7 @@ void retro_set_default_callbacks(void *data)
 }
 
 /**
- * retro_set_default_callbacks:
+ * retro_init_libretro_cbs:
  * @data           : pointer to retro_callbacks object
  *
  * Initializes libretro callbacks, and binds the libretro callbacks 
