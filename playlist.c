@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "retroarch_logger.h"
 
 struct content_playlist_entry
 {
@@ -82,10 +81,7 @@ void content_playlist_push(content_playlist_t *playlist,
    size_t i;
 
    if (!playlist)
-   {
-      RARCH_ERR("Content playlist not initialized.\n");
       return;
-   }
 
    for (i = 0; i < playlist->size; i++)
    {
@@ -130,18 +126,12 @@ static void content_playlist_write_file(content_playlist_t *playlist)
    FILE *file = NULL;
 
    if (!playlist)
-   {
-      RARCH_ERR("Content playlist not initialized.\n");
       return;
-   }
 
    file = fopen(playlist->conf_path, "w");
 
    if (!file)
-   {
-      RARCH_ERR("Playlist output file could not be written to.\n");
       return;
-   }
 
    for (i = 0; i < playlist->size; i++)
    {
@@ -200,9 +190,9 @@ static bool content_playlist_read_file(
 
    if (!file)
    {
-      RARCH_WARN(
-            "Playlist file does not exist, creating an empty playlist instead... (File: [%s])",
-            path);
+      /* Playlist file does not exist,
+       * creating an empty playlist instead.
+       */
       return true;
    }
 
