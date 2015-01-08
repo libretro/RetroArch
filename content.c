@@ -223,7 +223,7 @@ struct sram_block
 
 /**
  * save_state:
- * @path      - path that saved state shall be written to.
+ * @path      : path of saved state that shall be written to.
  *
  * Save a state from memory to disk.
  *
@@ -343,12 +343,19 @@ bool load_state(const char *path)
    return ret;
 }
 
+/**
+ * load_ram_file:
+ * @path             : path of RAM state that will be loaded from.
+ * @type             : type of memory
+ *
+ * Load a RAM state from disk to memory.
+ */
 void load_ram_file(const char *path, int type)
 {
    ssize_t rc;
    void *buf = NULL;
    size_t size = pretro_get_memory_size(type);
-   void *data = pretro_get_memory_data(type);
+   void *data  = pretro_get_memory_data(type);
 
    if (size == 0 || !data)
       return;
@@ -366,25 +373,39 @@ void load_ram_file(const char *path, int type)
       memcpy(data, buf, rc);
    }
 
-   free(buf);
+   if (buf)
+      free(buf);
 }
 
+/**
+ * save_ram_file:
+ * @path             : path of RAM state that shall be written to.
+ * @type             : type of memory
+ *
+ * Save a RAM state from memory to disk.
+ *
+ * In case the file could not be written to, a fallback function
+ * 'dump_to_file_desperate' will be called.
+ */
 void save_ram_file(const char *path, int type)
 {
    size_t size = pretro_get_memory_size(type);
    void *data = pretro_get_memory_data(type);
 
-   if (data && size > 0)
+   if (!data)
+      return;
+   if (size <= 0)
+      return;
+
+   if (write_file(path, data, size))
    {
-      if (!write_file(path, data, size))
-      {
-         RARCH_ERR("Failed to save SRAM.\n");
-         RARCH_WARN("Attempting to recover ...\n");
-         dump_to_file_desperate(data, size, type);
-      }
-      else
-         RARCH_LOG("Saved successfully to \"%s\".\n", path);
+      RARCH_LOG("Saved successfully to \"%s\".\n", path);
+      return;
    }
+
+   RARCH_ERR("Failed to save SRAM.\n");
+   RARCH_WARN("Attempting to recover ...\n");
+   dump_to_file_desperate(data, size, type);
 }
 
 /**
@@ -512,10 +533,22 @@ end:
       free((void*)info[i].data);
 
    string_list_free(additional_path_allocs);
-   free(info);
+   if (info)
+      free(info);
    return ret;
 }
 
+/**
+ * init_content_file:
+ *
+ * Initializes and loads a content file for the currently
+ * selected libretro core.
+ *
+ * g_extern.content_is_init will be set to the return value
+ * on exit.
+ *
+ * Returns : true if successful, otherwise false.
+ **/
 bool init_content_file(void)
 {
    unsigned i;
@@ -526,8 +559,9 @@ bool init_content_file(void)
 
    g_extern.content_is_init = false;
    g_extern.temporary_content = string_list_new();
+
    if (!g_extern.temporary_content)
-      return false;
+      goto error;
 
    if (*g_extern.subsystem)
    {
@@ -539,13 +573,13 @@ bool init_content_file(void)
          RARCH_ERR(
                "Failed to find subsystem \"%s\" in libretro implementation.\n",
                g_extern.subsystem);
-         return false;
+         goto error;
       }
 
       if (special->num_roms && !g_extern.subsystem_fullpaths)
       {
          RARCH_ERR("libretro core requires special content, but none were provided.\n");
-         return false;
+         goto error;
       }
       else if (special->num_roms && special->num_roms
             != g_extern.subsystem_fullpaths->size)
@@ -553,7 +587,7 @@ bool init_content_file(void)
          RARCH_ERR("libretro core requires %u content files for subsystem \"%s\", but %u content files were provided.\n",
                special->num_roms, special->desc,
                (unsigned)g_extern.subsystem_fullpaths->size);
-         return false;
+         goto error;
       }
       else if (!special->num_roms && g_extern.subsystem_fullpaths
             && g_extern.subsystem_fullpaths->size)
@@ -561,7 +595,7 @@ bool init_content_file(void)
          RARCH_ERR("libretro core takes no content for subsystem \"%s\", but %u content files were provided.\n",
                special->desc,
                (unsigned)g_extern.subsystem_fullpaths->size);
-         return false;
+         goto error;
       }
    }
 
@@ -570,7 +604,7 @@ bool init_content_file(void)
    attr.i = 0;
 
    if (!content)
-      return false;
+      goto error;
 
    if (*g_extern.subsystem)
    {
@@ -619,8 +653,7 @@ bool init_content_file(void)
          {
             RARCH_ERR("Failed to extract content from zipped file: %s.\n",
                   temporary_content);
-            string_list_free(content);
-            return false;
+            goto error;
          }
          string_list_set(content, i, temporary_content);
          string_list_append(g_extern.temporary_content,
@@ -630,11 +663,12 @@ bool init_content_file(void)
 #endif
 
    /* Set attr to need_fullpath as appropriate. */
-   
    ret = load_content(special, content);
 
+error:
    g_extern.content_is_init = (ret) ? true : false;
 
-   string_list_free(content);
+   if (content)
+      string_list_free(content);
    return ret;
 }
