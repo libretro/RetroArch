@@ -89,6 +89,16 @@ static void *thread_wrap(void *data_)
    return 0;
 }
 
+/**
+ * sthread_create:
+ * @start_routine           : thread entry callback function
+ * @userdata                : pointer to userdata that will be made
+ *                            available in thread entry callback function
+ *
+ * Create a new thread.
+ *
+ * Returns: pointer to new thread if successful, otherwise NULL.
+ */
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 {
    sthread_t *thread = (sthread_t*)calloc(1, sizeof(*thread));
@@ -120,6 +130,17 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    return thread;
 }
 
+/**
+ * sthread_detach:
+ * @thread                  : pointer to thread object 
+ *
+ * Detach a thread. When a detached thread terminates, its
+ * resource sare automatically released back to the system
+ * without the need for another thread to join with the 
+ * terminated thread.
+ *
+ * Returns: 0 on success, otherwise it returns a non-zero error number.
+ */
 int sthread_detach(sthread_t *thread)
 {
 #ifdef _WIN32
@@ -131,6 +152,17 @@ int sthread_detach(sthread_t *thread)
 #endif
 }
 
+/**
+ * sthread_join:
+ * @thread                  : pointer to thread object 
+ *
+ * Join with a terminated thread. Waits for the thread specified by
+ * @thread to terminate. If that thread has already terminated, then
+ * it will return immediately. The thread specified by @thread must
+ * be joinable.
+ * 
+ * Returns: 0 on success, otherwise it returns a non-zero error number.
+ */
 void sthread_join(sthread_t *thread)
 {
 #ifdef _WIN32
@@ -142,6 +174,14 @@ void sthread_join(sthread_t *thread)
    free(thread);
 }
 
+/**
+ * slock_new:
+ *
+ * Create and initialize a new mutex. Must be manually
+ * freed.
+ *
+ * Returns: pointer to a new mutex if successful, otherwise NULL.
+ **/
 slock_t *slock_new(void)
 {
    slock_t *lock = (slock_t*)calloc(1, sizeof(*lock));
@@ -162,6 +202,12 @@ slock_t *slock_new(void)
    return lock;
 }
 
+/**
+ * slock_free:
+ * @lock                    : pointer to mutex object 
+ *
+ * Frees a mutex.
+ **/
 void slock_free(slock_t *lock)
 {
    if (!lock)
@@ -175,6 +221,14 @@ void slock_free(slock_t *lock)
    free(lock);
 }
 
+/**
+ * slock_lock:
+ * @lock                    : pointer to mutex object 
+ *
+ * Locks a mutex. If a mutex is already locked by
+ * another thread, the calling thread shall block until
+ * the mutex becomes available.
+**/
 void slock_lock(slock_t *lock)
 {
 #ifdef _WIN32
@@ -184,6 +238,12 @@ void slock_lock(slock_t *lock)
 #endif
 }
 
+/**
+ * slock_unlock:
+ * @lock                    : pointer to mutex object 
+ *
+ * Unlocks a mutex.
+ **/
 void slock_unlock(slock_t *lock)
 {
 #ifdef _WIN32
@@ -193,6 +253,15 @@ void slock_unlock(slock_t *lock)
 #endif
 }
 
+/**
+ * scond_new:
+ *
+ * Creates and initializes a condition variable. Must
+ * be manually freed.
+ *
+ * Returns: pointer to new condition variable on success,
+ * otherwise NULL.
+ **/
 scond_t *scond_new(void)
 {
    scond_t *cond = (scond_t*)calloc(1, sizeof(*cond));
@@ -213,6 +282,12 @@ scond_t *scond_new(void)
    return cond;
 }
 
+/**
+ * scond_free:
+ * @cond                    : pointer to condition variable object 
+ *
+ * Frees a condition variable.
+**/
 void scond_free(scond_t *cond)
 {
    if (!cond)
@@ -226,6 +301,13 @@ void scond_free(scond_t *cond)
    free(cond);
 }
 
+/**
+ * scond_wait:
+ * @cond                    : pointer to condition variable object 
+ * @lock                    : pointer to mutex object 
+ *
+ * Block on a condition variable (i.e. wait on a condition). 
+ **/
 void scond_wait(scond_t *cond, slock_t *lock)
 {
 #ifdef _WIN32
@@ -243,12 +325,18 @@ void scond_wait(scond_t *cond, slock_t *lock)
 #endif
 }
 
-/* FIXME _WIN32 - check how this function should differ 
- * from scond_signal implementation. */
-
+/**
+ * scond_broadcast:
+ * @cond                    : pointer to condition variable object 
+ *
+ * Broadcast a condition. Unblocks all threads currently blocked
+ * on the specified condition variable @cond. 
+ **/
 int scond_broadcast(scond_t *cond)
 {
 #ifdef _WIN32
+   /* FIXME _- check how this function should differ 
+    * from scond_signal implementation. */
    SetEvent(cond->event);
    return 0;
 #else
@@ -256,6 +344,13 @@ int scond_broadcast(scond_t *cond)
 #endif
 }
 
+/**
+ * scond_signal:
+ * @cond                    : pointer to condition variable object 
+ *
+ * Signal a condition. Unblocks at least one of the threads currently blocked
+ * on the specified condition variable @cond. 
+ **/
 void scond_signal(scond_t *cond)
 {
 #ifdef _WIN32
@@ -265,6 +360,18 @@ void scond_signal(scond_t *cond)
 #endif
 }
 
+/**
+ * scond_wait_timeout:
+ * @cond                    : pointer to condition variable object 
+ * @lock                    : pointer to mutex object 
+ * @timeout_us              : timeout (in microseconds)
+ *
+ * Try to block on a condition variable (i.e. wait on a condition) until
+ * @timeout_us elapses.
+ *
+ * Returns: false (0) if timeout elapses before condition variable is
+ * signaled or broadcast, otherwise true (1).
+ **/
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
 #ifdef _WIN32
