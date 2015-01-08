@@ -60,9 +60,16 @@ msg_queue_t *msg_queue_new(size_t size)
       return NULL;
    }
    queue->ptr = 1;
+
    return queue;
 }
 
+/**
+ * msg_queue_free:
+ * @queue             : pointer to queue object
+ *
+ * Frees message queue..
+ **/
 void msg_queue_free(msg_queue_t *queue)
 {
    if (queue)
@@ -87,11 +94,13 @@ void msg_queue_free(msg_queue_t *queue)
 void msg_queue_push(msg_queue_t *queue, const char *msg,
       unsigned prio, unsigned duration)
 {
+   size_t tmp_ptr = 0;
+   struct queue_elem *new_elem = NULL;
+
    if (!queue || queue->ptr >= queue->size)
       return;
 
-   struct queue_elem *new_elem = (struct queue_elem*)
-      calloc(1, sizeof(struct queue_elem));
+   new_elem = (struct queue_elem*)calloc(1, sizeof(struct queue_elem));
    if (!new_elem)
       return;
 
@@ -100,20 +109,19 @@ void msg_queue_push(msg_queue_t *queue, const char *msg,
    new_elem->msg = msg ? strdup(msg) : NULL;
 
    queue->elems[queue->ptr] = new_elem;
-   size_t tmp_ptr = queue->ptr++;
+   tmp_ptr = queue->ptr++;
 
    while (tmp_ptr > 1)
    {
       struct queue_elem *parent = queue->elems[tmp_ptr >> 1];
-      struct queue_elem *child = queue->elems[tmp_ptr];
+      struct queue_elem *child  = queue->elems[tmp_ptr];
 
       if (child->prio <= parent->prio)
          break;
-      else
-      {
-         queue->elems[tmp_ptr >> 1] = child;
-         queue->elems[tmp_ptr] = parent;
-      }
+
+      queue->elems[tmp_ptr >> 1] = child;
+      queue->elems[tmp_ptr] = parent;
+
       tmp_ptr >>= 1;
    }
 }
@@ -126,10 +134,11 @@ void msg_queue_push(msg_queue_t *queue, const char *msg,
  **/
 void msg_queue_clear(msg_queue_t *queue)
 {
+   size_t i;
+
    if (!queue)
       return;
 
-   size_t i;
    for (i = 1; i < queue->ptr; i++)
    {
       if (queue->elems[i])
@@ -183,6 +192,7 @@ const char *msg_queue_pull(msg_queue_t *queue)
 
    for (;;)
    {
+      size_t switch_index = tmp_ptr;
       bool left = (tmp_ptr * 2 <= queue->ptr)
          && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2]);
       bool right = (tmp_ptr * 2 + 1 <= queue->ptr)
@@ -191,7 +201,6 @@ const char *msg_queue_pull(msg_queue_t *queue)
       if (!left && !right)
          break;
 
-      size_t switch_index = tmp_ptr;
       if (left && !right)
          switch_index <<= 1;
       else if (right && !left)
