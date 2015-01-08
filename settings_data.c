@@ -502,7 +502,7 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
 }
 
 /**
- * setting_data_bool_action_start_savestates:
+ * setting_data_action_start_savestates:
  * @data               : pointer to setting
  *
  * Function callback for 'Savestate' action's 'Action Start'
@@ -510,7 +510,7 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_data_bool_action_start_savestates(void *data)
+static int setting_data_action_start_savestates(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -583,10 +583,8 @@ static int setting_data_uint_action_start_default(void *data)
 
 static int setting_data_action_start_libretro_device_type(void *data)
 {
-   unsigned current_device, i, devices[128];
-   const struct retro_controller_info *desc;
-   unsigned types = 0;
-   unsigned port = 0;
+   unsigned current_device, i, devices[128], types = 0, port = 0;
+   const struct retro_controller_info *desc = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
@@ -681,12 +679,11 @@ static int setting_data_string_action_start_allow_input(void *data)
 static int setting_data_bind_action_start(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
+   struct retro_keybind *keybind = (struct retro_keybind*)setting->value.keybind;
 
    if (!setting || !driver.menu)
       return -1;
-
-   struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
-   struct retro_keybind *keybind = (struct retro_keybind*)setting->value.keybind;
 
    if (!keybind)
       return -1;
@@ -762,9 +759,9 @@ static int setting_data_action_toggle_analog_dpad_mode(void *data, unsigned acti
 static int setting_data_action_toggle_libretro_device_type(
       void *data, unsigned action)
 {
-   unsigned current_device, current_idx, i, devices[128];
-   const struct retro_controller_info *desc;
-   unsigned types = 0, port = 0;
+   unsigned current_device, current_idx, i, devices[128],
+            types = 0, port = 0;
+   const struct retro_controller_info *desc = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
@@ -828,7 +825,7 @@ static int setting_data_action_toggle_libretro_device_type(
 }
 
 /**
- * setting_data_bool_action_toggle_savestates
+ * setting_data_action_toggle_savestates
  * @data               : pointer to setting
  * @action             : toggle action value. Can be either one of :
  *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
@@ -838,7 +835,7 @@ static int setting_data_action_toggle_libretro_device_type(
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_data_bool_action_toggle_savestates(
+static int setting_data_action_toggle_savestates(
       void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -997,7 +994,6 @@ static int setting_data_string_action_toggle_driver(void *data,
    if (!setting)
       return -1;
 
-
    switch (action)
    {
       case MENU_ACTION_LEFT:
@@ -1035,6 +1031,9 @@ static int setting_data_string_action_toggle_audio_resampler(void *data,
 int core_list_action_toggle(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
+
+   if (!setting)
+      return -1;
 
    /* If the user CANCELs the browse, then g_settings.libretro is now
     * set to a directory, which is very bad and will cause a crash
@@ -3177,8 +3176,8 @@ static bool setting_data_append_list_main_menu_options(
             "Save State",
             group_info.name,
             subgroup_info.name);
-      (*list)[list_info->index - 1].action_toggle = &setting_data_bool_action_toggle_savestates;
-      (*list)[list_info->index - 1].action_start = &setting_data_bool_action_start_savestates;
+      (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_savestates;
+      (*list)[list_info->index - 1].action_start = &setting_data_action_start_savestates;
       (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_exit;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_SAVE_STATE);
@@ -3188,8 +3187,8 @@ static bool setting_data_append_list_main_menu_options(
             "Load State",
             group_info.name,
             subgroup_info.name);
-      (*list)[list_info->index - 1].action_toggle = &setting_data_bool_action_toggle_savestates;
-      (*list)[list_info->index - 1].action_start = &setting_data_bool_action_start_savestates;
+      (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_savestates;
+      (*list)[list_info->index - 1].action_start = &setting_data_action_start_savestates;
       (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_exit;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_LOAD_STATE);
