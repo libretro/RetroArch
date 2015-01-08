@@ -191,6 +191,10 @@ static bool d3d_init_base(void *data, const video_info_t *info)
       return false;
    }
 
+#ifdef _XBOX360
+   d3d->cur_mon_id=0;
+#endif
+
    if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
             d3d->cur_mon_id,
             D3DDEVTYPE_HAL,
