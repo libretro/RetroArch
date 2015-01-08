@@ -25,6 +25,16 @@
 
 #include <stdint.h>
 
+/**
+ * clamp_float:
+ * @val           : initial value
+ * @lower         : lower limit that value should be clamped against
+ * @upper         : upper limit that value should be clamped against
+ *
+ * Clamps a floating point value.
+ *
+ * Returns: a clamped value of initial float value @val.
+ */
 static inline float clamp_float(float val, float lower, float upper)
 {
    if (val < lower)
@@ -34,6 +44,14 @@ static inline float clamp_float(float val, float lower, float upper)
    return val;
 }
 
+/**
+ * clamp_8bit:
+ * @val           : initial value
+ *
+ * Clamps an unsigned 8-bit value.
+ *
+ * Returns: a clamped value of initial unsigned 8-bit value @val.
+ */
 static inline uint8_t clamp_8bit(int val)
 {
    if (val > 255)
