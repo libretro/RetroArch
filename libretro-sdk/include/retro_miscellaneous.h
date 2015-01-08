@@ -51,12 +51,6 @@
 #include <retro_endianness.h>
 #include <limits.h>
 
-/* Some platforms do not set this value.
- * Just assume a value. It's usually 4KiB.
- * Platforms with a known value (like Win32)
- * set this value explicitly in platform specific headers.
- */
-
 #ifndef PATH_MAX_LENGTH
 #define PATH_MAX_LENGTH 4096
 #endif
@@ -81,6 +75,12 @@
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define RARCH_SCALE_BASE 256
 
+/**
+ * rarch_sleep:
+ * @msec         : amount in milliseconds to sleep
+ *
+ * Sleeps for a specified amount of milliseconds (@msec).
+ **/
 static INLINE void rarch_sleep(unsigned msec)
 {
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
@@ -101,6 +101,14 @@ static INLINE void rarch_sleep(unsigned msec)
 #endif
 }
 
+/**
+ * next_pow2:
+ * @v         : initial value
+ *
+ * Increase initial value to next power of 2 value.
+ *
+ * Returns: next power of 2 value (derived from @v).
+ **/
 static INLINE uint32_t next_pow2(uint32_t v)
 {
    v--;
@@ -113,6 +121,14 @@ static INLINE uint32_t next_pow2(uint32_t v)
    return v;
 }
 
+/**
+ * prev_pow2:
+ * @v         : initial value
+ *
+ * Increase initial value to previous power of 2 value.
+ *
+ * Returns: previous power of 2 value (derived from @v).
+ **/
 static INLINE uint32_t prev_pow2(uint32_t v)
 {
    v |= v >> 1;
