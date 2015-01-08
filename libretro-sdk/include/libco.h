@@ -48,8 +48,8 @@ cothread_t co_active(void);
 
 /**
  * co_create:
- * @int                : size to allocate
- * @funcptr            : function callback
+ * @int                : stack size
+ * @funcptr            : thread entry function callback
  *
  * Create a co_thread.
  *
