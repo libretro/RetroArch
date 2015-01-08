@@ -37,13 +37,41 @@ extern "C" {
 
 typedef void* cothread_t;
 
+/**
+ * co_active:
+ *
+ * Gets the currently active context.
+ *
+ * Returns: active context.
+ **/
 cothread_t co_active(void);
 
+/**
+ * co_create:
+ * @int                : size to allocate
+ * @funcptr            : function callback
+ *
+ * Create a co_thread.
+ *
+ * Returns: cothread if successful, otherwise NULL.
+ */
 cothread_t co_create(unsigned int, void (*)(void));
 
-void co_delete(cothread_t);
+/**
+ * co_delete:
+ * @cothread           : cothread object
+ *
+ * Frees a co_thread.
+ */
+void co_delete(cothread_t cothread);
 
-void co_switch(cothread_t);
+/**
+ * co_switch:
+ * @cothread           : cothread object to switch to
+ *
+ * Do a context switch to @cothread.
+ */
+void co_switch(cothread_t cothread);
 
 #ifdef __cplusplus
 }
