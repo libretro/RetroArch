@@ -29,11 +29,37 @@
 extern "C" {
 #endif
 
+/**
+ * dir_list_new:
+ * @dir          : directory path.
+ * @ext          : allowed extensions of file directory entries to include.
+ * @include_dirs : include directories as part of the finished directory listing?
+ *
+ * Create a directory listing.
+ *
+ * Returns: pointer to a directory listing of type 'struct string_list *' on success,
+ * NULL in case of error. Has to be freed manually.
+ **/
 struct string_list *dir_list_new(const char *dir, const char *ext,
       bool include_dirs);
 
+/**
+ * dir_list_sort:
+ * @list      : pointer to the directory listing.
+ * @dir_first : move the directories in the listing to the top?
+ *
+ * Sorts a directory listing.
+ *
+ **/
 void dir_list_sort(struct string_list *list, bool dir_first);
 
+/**
+ * dir_list_free:
+ * @list : pointer to the directory listing
+ *
+ * Frees a directory listing.
+ *
+ **/
 void dir_list_free(struct string_list *list);
 
 #ifdef __cplusplus
