@@ -572,7 +572,8 @@ static int setting_data_uint_action_toggle_analog_dpad_mode(void *data, unsigned
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_data_uint_action_toggle_libretro_device_type(void *data, unsigned action)
+static int setting_data_uint_action_toggle_libretro_device_type(
+      void *data, unsigned action)
 {
    unsigned current_device, current_idx, i, devices[128];
    const struct retro_controller_info *desc;
@@ -650,7 +651,8 @@ static int setting_data_uint_action_toggle_libretro_device_type(void *data, unsi
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_data_bool_action_toggle_savestates(void *data, unsigned action)
+static int setting_data_bool_action_toggle_savestates(
+      void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -672,17 +674,17 @@ static int setting_data_bool_action_toggle_savestates(void *data, unsigned actio
    return 0;
 }
 
-static int setting_data_action_start_bind_device(void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   g_settings.input.joypad_map[setting->index_offset] = setting->index_offset;
-   return 0;
-}
-
+/**
+ * setting_data_action_toggle_bind_device
+ * @data               : pointer to setting
+ * @action             : toggle action value. Can be either one of :
+ *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
+ *
+ * Function callback for 'Bind Device' action's 'Action Toggle'
+ * function pointer.
+ *
+ * Returns: 0 on success, -1 on error.
+ **/
 static int setting_data_action_toggle_bind_device(void *data, unsigned action)
 {
    unsigned *p = NULL;
@@ -709,6 +711,193 @@ static int setting_data_action_toggle_bind_device(void *data, unsigned action)
 
    return 0;
 }
+
+static int setting_data_bool_action_toggle_default(void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         *setting->value.boolean = !(*setting->value.boolean);
+         break;
+   }
+
+   return 0;
+}
+
+static int setting_data_uint_action_toggle_default(void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         if (*setting->value.unsigned_integer != setting->min)
+            *setting->value.unsigned_integer =
+               *setting->value.unsigned_integer - setting->step;
+
+         if (setting->enforce_minrange)
+         {
+            if (*setting->value.unsigned_integer < setting->min)
+               *setting->value.unsigned_integer = setting->min;
+         }
+         break;
+
+      case MENU_ACTION_RIGHT:
+         *setting->value.unsigned_integer =
+            *setting->value.unsigned_integer + setting->step;
+
+         if (setting->enforce_maxrange)
+         {
+            if (*setting->value.unsigned_integer > setting->max)
+               *setting->value.unsigned_integer = setting->max;
+         }
+         break;
+   }
+
+   return 0;
+}
+
+static int setting_data_fraction_action_toggle_default(
+      void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         *setting->value.fraction =
+            *setting->value.fraction - setting->step;
+
+         if (setting->enforce_minrange)
+         {
+            if (*setting->value.fraction < setting->min)
+               *setting->value.fraction = setting->min;
+         }
+         break;
+
+      case MENU_ACTION_RIGHT:
+         *setting->value.fraction = 
+            *setting->value.fraction + setting->step;
+
+         if (setting->enforce_maxrange)
+         {
+            if (*setting->value.fraction > setting->max)
+               *setting->value.fraction = setting->max;
+         }
+         break;
+   }
+
+   return 0;
+}
+
+static int setting_data_string_action_toggle_driver(void *data,
+      unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         find_prev_driver(setting->name, setting->value.string, setting->size);
+         break;
+      case MENU_ACTION_RIGHT:
+         find_next_driver(setting->name, setting->value.string, setting->size);
+         break;
+   }
+
+   return 0;
+}
+
+static int setting_data_string_action_toggle_audio_resampler(void *data,
+      unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         find_prev_resampler_driver();
+         break;
+      case MENU_ACTION_RIGHT:
+         find_next_resampler_driver();
+         break;
+   }
+
+   return 0;
+}
+
+int core_list_action_toggle(void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t *)data;
+
+   /* If the user CANCELs the browse, then g_settings.libretro is now
+    * set to a directory, which is very bad and will cause a crash
+    * later on. I need to be able to add something to call when a
+    * cancel happens.
+    */
+   strlcpy(setting->value.string, g_settings.libretro_directory, setting->size);
+
+   return 0;
+}
+
+/**
+ * load_content_action_toggle:
+ * @data               : pointer to setting
+ * @action             : toggle action value. Can be either one of :
+ *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
+ *
+ * Function callback for 'Load Content' action's 'Action Toggle'
+ * function pointer.
+ *
+ * Returns: 0 on success, -1 on error.
+ **/
+int load_content_action_toggle(void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t *)data;
+
+   if (!setting)
+      return -1;
+
+   strlcpy(setting->value.string, g_settings.menu_content_directory, setting->size);
+
+   if (g_extern.menu.info.valid_extensions)
+      setting->values = g_extern.menu.info.valid_extensions;
+   else
+      setting->values = g_extern.system.valid_extensions;
+
+   return 0;
+}
+
+static int setting_data_action_start_bind_device(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   g_settings.input.joypad_map[setting->index_offset] = setting->index_offset;
+   return 0;
+}
+
 
 static int setting_data_action_ok_bind_all(void *data, unsigned action)
 {
@@ -823,23 +1012,6 @@ static int setting_data_string_dir_action_start_default(void *data)
    return 0;
 }
 
-static int setting_data_bool_action_toggle_default(void *data, unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-      case MENU_ACTION_RIGHT:
-         *setting->value.boolean = !(*setting->value.boolean);
-         break;
-   }
-
-   return 0;
-}
 
 static int setting_data_bool_action_ok_default(void *data, unsigned action)
 {
@@ -925,41 +1097,6 @@ static int setting_data_uint_action_start_libretro_device_type(void *data)
    return 0;
 }
 
-static int setting_data_uint_action_toggle_default(void *data, unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         if (*setting->value.unsigned_integer != setting->min)
-            *setting->value.unsigned_integer =
-               *setting->value.unsigned_integer - setting->step;
-
-         if (setting->enforce_minrange)
-         {
-            if (*setting->value.unsigned_integer < setting->min)
-               *setting->value.unsigned_integer = setting->min;
-         }
-         break;
-
-      case MENU_ACTION_RIGHT:
-         *setting->value.unsigned_integer =
-            *setting->value.unsigned_integer + setting->step;
-
-         if (setting->enforce_maxrange)
-         {
-            if (*setting->value.unsigned_integer > setting->max)
-               *setting->value.unsigned_integer = setting->max;
-         }
-         break;
-   }
-
-   return 0;
-}
 
 static int setting_data_uint_action_ok_default(void *data, unsigned action)
 {
@@ -1011,41 +1148,6 @@ static int setting_data_fraction_action_ok_video_refresh_rate_auto(
    return 0;
 }
 
-static int setting_data_fraction_action_toggle_default(
-      void *data, unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         *setting->value.fraction =
-            *setting->value.fraction - setting->step;
-
-         if (setting->enforce_minrange)
-         {
-            if (*setting->value.fraction < setting->min)
-               *setting->value.fraction = setting->min;
-         }
-         break;
-
-      case MENU_ACTION_RIGHT:
-         *setting->value.fraction = 
-            *setting->value.fraction + setting->step;
-
-         if (setting->enforce_maxrange)
-         {
-            if (*setting->value.fraction > setting->max)
-               *setting->value.fraction = setting->max;
-         }
-         break;
-   }
-
-   return 0;
-}
 
 static int setting_data_fraction_action_start_default(
       void *data)
@@ -2847,27 +2949,6 @@ static void general_write_handler(void *data)
 #define MAX_GAMMA_SETTING 1
 #endif
 
-static int setting_data_string_action_toggle_driver(void *data,
-      unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         find_prev_driver(setting->name, setting->value.string, setting->size);
-         break;
-      case MENU_ACTION_RIGHT:
-         find_next_driver(setting->name, setting->value.string, setting->size);
-         break;
-   }
-
-   return 0;
-}
 
 static int setting_data_string_action_start_allow_input(void *data)
 {
@@ -2895,26 +2976,6 @@ static int setting_data_string_action_ok_allow_input(void *data,
    return 0;
 }
 
-static int setting_data_string_action_toggle_audio_resampler(void *data,
-      unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         find_prev_resampler_driver();
-         break;
-      case MENU_ACTION_RIGHT:
-         find_next_resampler_driver();
-         break;
-   }
-
-   return 0;
-}
 
 static void setting_data_add_special_callbacks(
       rarch_setting_t **list,
@@ -2955,19 +3016,6 @@ static void settings_data_list_current_add_flags(
    setting_data_add_special_callbacks(list, list_info, values);
 }
 
-int core_list_action_toggle(void *data, unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t *)data;
-
-   /* If the user CANCELs the browse, then g_settings.libretro is now
-    * set to a directory, which is very bad and will cause a crash
-    * later on. I need to be able to add something to call when a
-    * cancel happens.
-    */
-   strlcpy(setting->value.string, g_settings.libretro_directory, setting->size);
-
-   return 0;
-}
 
 void core_list_change_handler(void *data)
 {
@@ -2975,34 +3023,6 @@ void core_list_change_handler(void *data)
   (void)setting;
 
   rarch_main_command(RARCH_CMD_LOAD_CORE);
-}
-
-/**
- * load_content_action_toggle:
- * @data               : pointer to setting
- * @action             : toggle action value. Can be either one of :
- *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
- *
- * Function callback for 'Load Content' action's 'Action Toggle'
- * function pointer.
- *
- * Returns: 0 on success, -1 on error.
- **/
-int load_content_action_toggle(void *data, unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t *)data;
-
-   if (!setting)
-      return -1;
-
-   strlcpy(setting->value.string, g_settings.menu_content_directory, setting->size);
-
-   if (g_extern.menu.info.valid_extensions)
-      setting->values = g_extern.menu.info.valid_extensions;
-   else
-      setting->values = g_extern.system.valid_extensions;
-
-   return 0;
 }
 
 /**
@@ -3017,7 +3037,7 @@ void load_content_change_handler(void *data)
    rarch_setting_t *setting = (rarch_setting_t *)data;
 
    if (!setting)
-      return -1;
+      return;
 
    /* This does not appear to be robust enough because sometimes I get
     * crashes. I think it is because LOAD_CORE has not yet run. I'm not
