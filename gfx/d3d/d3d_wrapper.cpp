@@ -345,6 +345,7 @@ void d3d_texture_blit(void *data, void *renderchain_data,
       memcpy(out, in, width * d3d->pixel_size);
    }
 #endif
+   D3DTexture_UnlockRect(tex, 0);
 #else
    renderchain_t *chain = (renderchain_t*)renderchain_data;
 
