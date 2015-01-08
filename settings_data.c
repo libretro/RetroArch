@@ -1267,7 +1267,9 @@ rarch_setting_t setting_data_string_setting_options
  const char *group, const char *subgroup, change_handler_t change_handler,
  change_handler_t read_handler)
 {
-  rarch_setting_t result = setting_data_string_setting(type, name, short_description, target, size, default_value, empty, group, subgroup, change_handler, read_handler);
+  rarch_setting_t result = setting_data_string_setting(type, name,
+        short_description, target, size, default_value, empty, group,
+        subgroup, change_handler, read_handler);
   result.values = values;
   return result;
 }
@@ -1367,6 +1369,18 @@ rarch_setting_t setting_data_bind_setting(const char* name,
    return result;
 }
 
+/**
+ * setting_data_get_description:
+ * @label              : identifier label of setting
+ * @msg                : output message 
+ * @sizeof_msg         : size of @msg
+ *
+ * Writes a 'Help' description message to @msg if there is
+ * one available based on the identifier label of the setting
+ * (@label).
+ *
+ * Returns: 0 (always for now). TODO: make it handle -1 as well.
+ **/
 int setting_data_get_description(const char *label, char *msg,
       size_t sizeof_msg)
 {
@@ -2526,7 +2540,6 @@ void setting_data_get_label(char *type_str,
       unsigned inp_desc_user         = inp_desc_index_offset / RARCH_FIRST_CUSTOM_BIND;
       unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * RARCH_FIRST_CUSTOM_BIND);
 
-      //snprintf(type_str, type_str_size, "user %u, index offset %u", type, inp_desc_user, inp_desc_button_index_offset);
       unsigned remap_id = g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset];
       snprintf(type_str, type_str_size, "%s", g_settings.input.binds[inp_desc_user][remap_id].desc);
    }
@@ -2964,9 +2977,23 @@ void core_list_change_handler(void *data)
   rarch_main_command(RARCH_CMD_LOAD_CORE);
 }
 
+/**
+ * load_content_action_toggle:
+ * @data               : pointer to setting
+ * @action             : toggle action value. Can be either one of :
+ *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
+ *
+ * Function callback for 'Load Content' action's 'Action Toggle'
+ * function pointer.
+ *
+ * Returns: 0 on success, -1 on error.
+ **/
 int load_content_action_toggle(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
+
+   if (!setting)
+      return -1;
 
    strlcpy(setting->value.string, g_settings.menu_content_directory, setting->size);
 
@@ -2977,10 +3004,20 @@ int load_content_action_toggle(void *data, unsigned action)
 
    return 0;
 }
+
+/**
+ * load_content_change_handler:
+ * @data               : pointer to setting
+ *
+ * Function callback for 'Load Content' action's 'Change Handler'
+ * function pointer.
+ **/
 void load_content_change_handler(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
-   (void)setting;
+
+   if (!setting)
+      return -1;
 
    /* This does not appear to be robust enough because sometimes I get
     * crashes. I think it is because LOAD_CORE has not yet run. I'm not
@@ -3181,8 +3218,8 @@ static bool setting_data_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
 
-   /* Apple rejects iOS apps that lets you forcibly quit an application. */
 #if !defined(IOS)
+   /* Apple rejects iOS apps that lets you forcibly quit an application. */
    CONFIG_ACTION(
          "quit_retroarch",
          "Quit RetroArch",
