@@ -29,12 +29,58 @@ extern "C" {
 
 /* Handles files related to libretro. */
 
+/**
+ * load_state:
+ * @path      : path that state will be loaded from.
+ *
+ * Load a state from disk to memory.
+ *
+ * Returns: true if successful, false otherwise.
+ **/
 bool load_state(const char *path);
+
+/**
+ * save_state:
+ * @path      : path of saved state that shall be written to.
+ *
+ * Save a state from memory to disk.
+ *
+ * Returns: true if successful, false otherwise.
+ **/
 bool save_state(const char *path);
 
+/**
+ * load_ram_file:
+ * @path             : path of RAM state that will be loaded from.
+ * @type             : type of memory
+ *
+ * Load a RAM state from disk to memory.
+ */
 void load_ram_file(const char *path, int type);
+
+/**
+ * save_ram_file:
+ * @path             : path of RAM state that shall be written to.
+ * @type             : type of memory
+ *
+ * Save a RAM state from memory to disk.
+ *
+ * In case the file could not be written to, a fallback function
+ * 'dump_to_file_desperate' will be called.
+ */
 void save_ram_file(const char *path, int type);
 
+/**
+ * init_content_file:
+ *
+ * Initializes and loads a content file for the currently
+ * selected libretro core.
+ *
+ * g_extern.content_is_init will be set to the return value
+ * on exit.
+ *
+ * Returns : true if successful, otherwise false.
+ **/
 bool init_content_file(void);
 
 #ifdef __cplusplus
