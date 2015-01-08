@@ -78,12 +78,18 @@ void core_option_get(core_option_manager_t *opt, struct retro_variable *var)
 static bool parse_variable(core_option_manager_t *opt, size_t idx,
       const struct retro_variable *var)
 {
+   char *value, *desc_end, *config_val = NULL;
+   const char *val_start;
    size_t i;
    struct core_option *option = (struct core_option*)&opt->opts[idx];
+
+   if (!option)
+      return false;
+
    option->key = strdup(var->key);
 
-   char *value = strdup(var->value);
-   char *desc_end = strstr(value, "; ");
+   value = strdup(var->value);
+   desc_end = strstr(value, "; ");
 
    if (!desc_end)
    {
@@ -94,7 +100,7 @@ static bool parse_variable(core_option_manager_t *opt, size_t idx,
    *desc_end = '\0';
    option->desc = strdup(value);
 
-   const char *val_start = desc_end + 2;
+   val_start = desc_end + 2;
    option->vals = string_split(val_start, "|");
 
    if (!option->vals)
@@ -103,7 +109,6 @@ static bool parse_variable(core_option_manager_t *opt, size_t idx,
       return false;
    }
 
-   char *config_val = NULL;
    if (config_get_string(opt->conf, option->key, &config_val))
    {
       for (i = 0; i < option->vals->size; i++)
@@ -127,12 +132,11 @@ core_option_manager_t *core_option_new(const char *conf_path,
       const struct retro_variable *vars)
 {
    const struct retro_variable *var;
+   size_t size = 0;
    core_option_manager_t *opt = (core_option_manager_t*)
       calloc(1, sizeof(*opt));
    if (!opt)
       return NULL;
-
-   size_t size = 0;
 
    if (*conf_path)
       opt->conf = config_file_new(conf_path);
@@ -180,39 +184,40 @@ void core_option_flush(core_option_manager_t *opt)
    for (i = 0; i < opt->size; i++)
    {
       struct core_option *option = (struct core_option*)&opt->opts[i];
-      config_set_string(opt->conf, option->key, core_option_get_val(opt, i));
+      if (option)
+         config_set_string(opt->conf, option->key, core_option_get_val(opt, i));
    }
    config_file_write(opt->conf, opt->conf_path);
 }
 
 size_t core_option_size(core_option_manager_t *opt)
 {
-   if (opt)
-      return opt->size;
-   return 0;
+   if (!opt)
+      return 0;
+   return opt->size;
 }
 
 const char *core_option_get_desc(core_option_manager_t *opt, size_t idx)
 {
-   if (opt)
-      return opt->opts[idx].desc;
-   return NULL;
+   if (!opt)
+      return NULL;
+   return opt->opts[idx].desc;
 }
 
 const char *core_option_get_val(core_option_manager_t *opt, size_t idx)
 {
    struct core_option *option = (struct core_option*)&opt->opts[idx];
-   if (option)
-      return option->vals->elems[option->index].data;
-   return NULL;
+   if (!option)
+      return NULL;
+   return option->vals->elems[option->index].data;
 }
 
 struct string_list *core_option_get_vals(
       core_option_manager_t *opt, size_t idx)
 {
-   if (opt)
-      return opt->opts[idx].vals;
-   return NULL;
+   if (!opt)
+      return NULL;
+   return opt->opts[idx].vals;
 }
 
 void core_option_set_val(core_option_manager_t *opt,
@@ -227,6 +232,13 @@ void core_option_set_val(core_option_manager_t *opt,
    opt->updated = true;
 }
 
+/**
+ * core_option_prev:
+ * @opt                   : pointer to core option manager object.
+ * @idx                   : index of core option to be reset to defaults.
+ *
+ * Get next value for core option specified by @idx.
+ **/
 void core_option_next(core_option_manager_t *opt, size_t idx)
 {
    struct core_option *option = (struct core_option*)&opt->opts[idx];
@@ -238,6 +250,13 @@ void core_option_next(core_option_manager_t *opt, size_t idx)
    opt->updated = true;
 }
 
+/**
+ * core_option_prev:
+ * @opt                   : pointer to core option manager object.
+ * @idx                   : index of core option to be reset to defaults.
+ *
+ * Get previous value for core option specified by @idx.
+ **/
 void core_option_prev(core_option_manager_t *opt, size_t idx)
 {
    struct core_option *option = (struct core_option*)&opt->opts[idx];
@@ -250,6 +269,13 @@ void core_option_prev(core_option_manager_t *opt, size_t idx)
    opt->updated = true;
 }
 
+/**
+ * core_option_set_default:
+ * @opt                   : pointer to core option manager object.
+ * @idx                   : index of core option to be reset to defaults.
+ *
+ * Reset core option specified by @idx to be reset to default settings.
+ **/
 void core_option_set_default(core_option_manager_t *opt, size_t idx)
 {
    if (!opt)
@@ -258,5 +284,3 @@ void core_option_set_default(core_option_manager_t *opt, size_t idx)
    opt->opts[idx].index = 0;
    opt->updated = true;
 }
-
-

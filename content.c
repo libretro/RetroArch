@@ -41,6 +41,14 @@
 #endif
 #endif
 
+/**
+ * patch_content:
+ * @buf          : buffer of the content file.
+ * @size         : size   of the content file.
+ *
+ * Apply patch to the content file in-memory.
+ *
+ **/
 static void patch_content(uint8_t **buf, ssize_t *size)
 {
    size_t target_size;
@@ -137,6 +145,17 @@ error:
    free(patch_data);
 }
 
+/**
+ * read_content_file:
+ * @path         : buffer of the content file.
+ * @buf          : size   of the content file.
+ *
+ * Read the content file into memory. Also performs soft patching
+ * (see patch_content function) in case soft patching has not been
+ * blocked by the enduser.
+ *
+ * Returns: size of the content file that has been read from.
+ **/
 static ssize_t read_content_file(const char *path, void **buf)
 {
    uint8_t *ret_buf = NULL;
@@ -195,15 +214,28 @@ error:
    RARCH_WARN("Failed ... Cannot recover save file.\n");
 }
 
+struct sram_block
+{
+   unsigned type;
+   void *data;
+   size_t size;
+};
+
+/**
+ * save_state:
+ * @path      - path that saved state shall be written to.
+ *
+ * Save a state from memory to disk.
+ *
+ * Returns: true if successful, false otherwise.
+ **/
 bool save_state(const char *path)
 {
    bool ret = false;
-   size_t size;
    void *data = NULL;
+   size_t size = pretro_serialize_size();
 
    RARCH_LOG("Saving state: \"%s\".\n", path);
-
-   size = pretro_serialize_size();
 
    if (size == 0)
       return false;
@@ -230,13 +262,14 @@ bool save_state(const char *path)
    return ret;
 }
 
-struct sram_block
-{
-   unsigned type;
-   void *data;
-   size_t size;
-};
-
+/**
+ * load_state:
+ * @path      - path that state will be loaded from.
+ *
+ * Load a state from disk to memory.
+ *
+ * Returns: true if successful, false otherwise.
+ **/
 bool load_state(const char *path)
 {
    unsigned i;
@@ -354,6 +387,15 @@ void save_ram_file(const char *path, int type)
    }
 }
 
+/**
+ * load_content:
+ * @special          : subsystem of content to be loaded. Can be NULL.
+ * content           : 
+ *
+ * Load content file (for libretro core).
+ *
+ * Returns : true if successful, otherwise false.
+ **/
 static bool load_content(const struct retro_subsystem_info *special,
       const struct string_list *content)
 {

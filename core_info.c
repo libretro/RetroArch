@@ -41,9 +41,7 @@ static void core_info_list_resolve_all_extensions(
    }
 
    if (all_ext_len)
-   {
       core_info_list->all_ext = (char*)calloc(1, all_ext_len);
-   }
 
    if (core_info_list->all_ext)
    {
@@ -360,9 +358,9 @@ bool core_info_does_support_file(const core_info_t *core, const char *path)
 
 const char *core_info_list_get_all_extensions(core_info_list_t *core_info_list)
 {
-   if (core_info_list)
-      return core_info_list->all_ext;
-   return "";
+   if (!core_info_list)
+      return "";
+   return core_info_list->all_ext;
 }
 
 /* qsort_r() is not in standard C, sadly. */
