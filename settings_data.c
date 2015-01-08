@@ -522,6 +522,193 @@ static int setting_data_bool_action_start_savestates(void *data)
    return 0;
 }
 
+static int setting_data_action_start_bind_device(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   g_settings.input.joypad_map[setting->index_offset] = setting->index_offset;
+   return 0;
+}
+
+static int setting_data_bool_action_start_default(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.boolean = setting->default_value.boolean;
+
+   return 0;
+}
+
+static int setting_data_string_dir_action_start_default(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.string = '\0';
+
+   return 0;
+}
+
+static int setting_data_uint_action_start_analog_dpad_mode(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.unsigned_integer = 0;
+
+   return 0;
+}
+
+static int setting_data_uint_action_start_default(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
+
+   return 0;
+}
+
+static int setting_data_uint_action_start_libretro_device_type(void *data)
+{
+   unsigned current_device, i, devices[128];
+   const struct retro_controller_info *desc;
+   unsigned types = 0;
+   unsigned port = 0;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
+
+   port = setting->index_offset;
+
+   devices[types++] = RETRO_DEVICE_NONE;
+   devices[types++] = RETRO_DEVICE_JOYPAD;
+
+   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+    * older core which doesn't use SET_CONTROLLER_INFO. */
+   if (!g_extern.system.num_ports)
+      devices[types++] = RETRO_DEVICE_ANALOG;
+
+   desc = port < g_extern.system.num_ports ?
+      &g_extern.system.ports[port] : NULL;
+   if (desc)
+   {
+      for (i = 0; i < desc->num_types; i++)
+      {
+         unsigned id = desc->types[i].id;
+         if (types < ARRAY_SIZE(devices) &&
+               id != RETRO_DEVICE_NONE &&
+               id != RETRO_DEVICE_JOYPAD)
+            devices[types++] = id;
+      }
+   }
+
+   current_device = g_settings.input.libretro_device[port];
+
+   current_device = RETRO_DEVICE_JOYPAD;
+
+   g_settings.input.libretro_device[port] = current_device;
+   pretro_set_controller_port_device(port, current_device);
+
+   return 0;
+}
+
+static int setting_data_fraction_action_start_video_refresh_rate_auto(
+      void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   g_extern.measure_data.frame_time_samples_count = 0;
+
+   return 0;
+}
+
+static int setting_data_fraction_action_start_default(
+      void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.fraction = setting->default_value.fraction;
+
+   return 0;
+}
+
+static int setting_data_uint_action_start_linefeed(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
+
+   return 0;
+}
+
+static int setting_data_string_action_start_allow_input(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting || !driver.menu)
+      return -1;
+
+   *setting->value.string = '\0';
+
+   return 0;
+}
+
+static int setting_data_bind_action_start(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting || !driver.menu)
+      return -1;
+
+   struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
+   struct retro_keybind *keybind = (struct retro_keybind*)setting->value.keybind;
+
+   if (!keybind)
+      return -1;
+
+   if (!g_extern.menu.bind_mode_keyboard)
+   {
+      keybind->joykey = NO_BTN;
+      keybind->joyaxis = AXIS_NONE;
+      return 0;
+   }
+
+   if (setting->index_offset)
+      def_binds = (struct retro_keybind*)retro_keybinds_rest;
+
+   if (!def_binds)
+      return -1;
+
+   keybind->key = def_binds[setting->bind_type - MENU_SETTINGS_BIND_BEGIN].key;
+
+   return 0;
+}
+
 /**
  * setting_data_uint_action_toggle_analog_dpad_mode
  * @data               : pointer to setting
@@ -887,16 +1074,6 @@ int load_content_action_toggle(void *data, unsigned action)
    return 0;
 }
 
-static int setting_data_action_start_bind_device(void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   g_settings.input.joypad_map[setting->index_offset] = setting->index_offset;
-   return 0;
-}
 
 
 static int setting_data_action_ok_bind_all(void *data, unsigned action)
@@ -988,29 +1165,6 @@ static int setting_data_bool_action_ok_exit(void *data, unsigned action)
    return 0;
 }
 
-static int setting_data_bool_action_start_default(void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   *setting->value.boolean = setting->default_value.boolean;
-
-   return 0;
-}
-
-static int setting_data_string_dir_action_start_default(void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   *setting->value.string = '\0';
-
-   return 0;
-}
 
 
 static int setting_data_bool_action_ok_default(void *data, unsigned action)
@@ -1026,76 +1180,6 @@ static int setting_data_bool_action_ok_default(void *data, unsigned action)
    return 0;
 }
 
-static int setting_data_uint_action_start_analog_dpad_mode(void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   *setting->value.unsigned_integer = 0;
-
-   return 0;
-}
-
-static int setting_data_uint_action_start_default(void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
-
-   return 0;
-}
-
-static int setting_data_uint_action_start_libretro_device_type(void *data)
-{
-   unsigned current_device, i, devices[128];
-   const struct retro_controller_info *desc;
-   unsigned types = 0;
-   unsigned port = 0;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
-
-   port = setting->index_offset;
-
-   devices[types++] = RETRO_DEVICE_NONE;
-   devices[types++] = RETRO_DEVICE_JOYPAD;
-
-   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
-    * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!g_extern.system.num_ports)
-      devices[types++] = RETRO_DEVICE_ANALOG;
-
-   desc = port < g_extern.system.num_ports ?
-      &g_extern.system.ports[port] : NULL;
-   if (desc)
-   {
-      for (i = 0; i < desc->num_types; i++)
-      {
-         unsigned id = desc->types[i].id;
-         if (types < ARRAY_SIZE(devices) &&
-               id != RETRO_DEVICE_NONE &&
-               id != RETRO_DEVICE_JOYPAD)
-            devices[types++] = id;
-      }
-   }
-
-   current_device = g_settings.input.libretro_device[port];
-
-   current_device = RETRO_DEVICE_JOYPAD;
-
-   g_settings.input.libretro_device[port] = current_device;
-   pretro_set_controller_port_device(port, current_device);
-
-   return 0;
-}
 
 
 static int setting_data_uint_action_ok_default(void *data, unsigned action)
@@ -1111,18 +1195,6 @@ static int setting_data_uint_action_ok_default(void *data, unsigned action)
    return 0;
 }
 
-static int setting_data_fraction_action_start_video_refresh_rate_auto(
-      void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   g_extern.measure_data.frame_time_samples_count = 0;
-
-   return 0;
-}
 
 static int setting_data_fraction_action_ok_video_refresh_rate_auto(
       void *data, unsigned action)
@@ -1149,19 +1221,6 @@ static int setting_data_fraction_action_ok_video_refresh_rate_auto(
 }
 
 
-static int setting_data_fraction_action_start_default(
-      void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   *setting->value.fraction = setting->default_value.fraction;
-
-   return 0;
-}
-
 static int setting_data_fraction_action_ok_default(
       void *data, unsigned action)
 {
@@ -1176,17 +1235,6 @@ static int setting_data_fraction_action_ok_default(
    return 0;
 }
 
-static int setting_data_uint_action_start_linefeed(void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
-
-   return 0;
-}
 
 static int setting_data_uint_action_ok_linefeed(void *data, unsigned action)
 {
@@ -1376,36 +1424,6 @@ rarch_setting_t setting_data_string_setting_options
   return result;
 }
 
-static int setting_data_bind_action_start(void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting || !driver.menu)
-      return -1;
-
-   struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
-   struct retro_keybind *keybind = (struct retro_keybind*)setting->value.keybind;
-
-   if (!keybind)
-      return -1;
-
-   if (!g_extern.menu.bind_mode_keyboard)
-   {
-      keybind->joykey = NO_BTN;
-      keybind->joyaxis = AXIS_NONE;
-      return 0;
-   }
-
-   if (setting->index_offset)
-      def_binds = (struct retro_keybind*)retro_keybinds_rest;
-
-   if (!def_binds)
-      return -1;
-
-   keybind->key = def_binds[setting->bind_type - MENU_SETTINGS_BIND_BEGIN].key;
-
-   return 0;
-}
 
 static int setting_data_bind_action_ok(void *data, unsigned action)
 {
@@ -2950,17 +2968,6 @@ static void general_write_handler(void *data)
 #endif
 
 
-static int setting_data_string_action_start_allow_input(void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting || !driver.menu)
-      return -1;
-
-   *setting->value.string = '\0';
-
-   return 0;
-}
 
 static int setting_data_string_action_ok_allow_input(void *data,
       unsigned action)
