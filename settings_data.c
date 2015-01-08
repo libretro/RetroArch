@@ -1074,8 +1074,6 @@ int load_content_action_toggle(void *data, unsigned action)
    return 0;
 }
 
-
-
 static int setting_data_action_ok_bind_all(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1262,6 +1260,64 @@ static int setting_data_action_action_ok(void *data, unsigned action)
    return 0;
 }
 
+static int setting_data_bind_action_ok(void *data, unsigned action)
+{
+   struct retro_keybind *keybind = NULL;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   if (!driver.menu || !driver.menu->menu_list)
+      return -1;
+   
+   keybind = (struct retro_keybind*)setting->value.keybind;
+
+   if (!keybind)
+      return -1;
+
+   driver.menu->binds.begin  = setting->bind_type;
+   driver.menu->binds.last   = setting->bind_type;
+   driver.menu->binds.target = keybind;
+   driver.menu->binds.user = setting->index_offset;
+   menu_list_push_stack(
+         driver.menu->menu_list,
+         "",
+         "",
+         g_extern.menu.bind_mode_keyboard ?
+         MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
+         driver.menu->selection_ptr);
+
+   if (g_extern.menu.bind_mode_keyboard)
+   {
+      driver.menu->binds.timeout_end = rarch_get_time_usec() +
+         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+      input_keyboard_wait_keys(driver.menu,
+            menu_custom_bind_keyboard_cb);
+   }
+   else
+   {
+      menu_poll_bind_get_rested_axes(&driver.menu->binds);
+      menu_poll_bind_state(&driver.menu->binds);
+   }
+
+   return 0;
+}
+
+static int setting_data_string_action_ok_allow_input(void *data,
+      unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting || !driver.menu)
+      return -1;
+
+   menu_key_start_line(driver.menu, setting->short_description,
+         setting->name, 0, 0, st_string_callback);
+
+   return 0;
+}
+
 rarch_setting_t setting_data_action_setting(const char* name,
       const char* short_description,
       const char *group, const char *subgroup)
@@ -1425,49 +1481,6 @@ rarch_setting_t setting_data_string_setting_options
 }
 
 
-static int setting_data_bind_action_ok(void *data, unsigned action)
-{
-   struct retro_keybind *keybind = NULL;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   if (!driver.menu || !driver.menu->menu_list)
-      return -1;
-   
-   keybind = (struct retro_keybind*)setting->value.keybind;
-
-   if (!keybind)
-      return -1;
-
-   driver.menu->binds.begin  = setting->bind_type;
-   driver.menu->binds.last   = setting->bind_type;
-   driver.menu->binds.target = keybind;
-   driver.menu->binds.user = setting->index_offset;
-   menu_list_push_stack(
-         driver.menu->menu_list,
-         "",
-         "",
-         g_extern.menu.bind_mode_keyboard ?
-         MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
-         driver.menu->selection_ptr);
-
-   if (g_extern.menu.bind_mode_keyboard)
-   {
-      driver.menu->binds.timeout_end = rarch_get_time_usec() +
-         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-      input_keyboard_wait_keys(driver.menu,
-            menu_custom_bind_keyboard_cb);
-   }
-   else
-   {
-      menu_poll_bind_get_rested_axes(&driver.menu->binds);
-      menu_poll_bind_state(&driver.menu->binds);
-   }
-
-   return 0;
-}
 
 rarch_setting_t setting_data_bind_setting(const char* name,
       const char* short_description, struct retro_keybind* target,
@@ -2969,19 +2982,6 @@ static void general_write_handler(void *data)
 
 
 
-static int setting_data_string_action_ok_allow_input(void *data,
-      unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting || !driver.menu)
-      return -1;
-
-   menu_key_start_line(driver.menu, setting->short_description,
-         setting->name, 0, 0, st_string_callback);
-
-   return 0;
-}
 
 
 static void setting_data_add_special_callbacks(
