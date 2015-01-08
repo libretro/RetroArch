@@ -853,6 +853,15 @@ static void config_file_dump_all(config_file_t *conf)
    }
 }
 
+/**
+ * config_load:
+ * @path                : path to be read from.
+ * @set_defaults        : set default values first before
+ *                        reading the values from the config file
+ *
+ * Loads a config file and reads all the values into memory.
+ *
+ */
 static bool config_load_file(const char *path, bool set_defaults)
 {
    unsigned i;

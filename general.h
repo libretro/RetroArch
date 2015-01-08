@@ -837,7 +837,15 @@ extern struct global g_extern;
 extern struct defaults g_defaults;
 
 /* Public functions. */
+
+/**
+ * config_load:
+ *
+ * Loads a config file and reads all the values into memory.
+ *
+ */
 void config_load(void);
+
 const char *config_get_default_camera(void);
 const char *config_get_default_location(void);
 const char *config_get_default_osk(void);
@@ -850,6 +858,14 @@ const char *config_get_default_joypad(void);
 const char *config_get_default_menu(void);
 #endif
 
+/**
+ * config_save_file:
+ * @path            : Path that shall be written to.
+ *
+ * Writes a config file to disk.
+ *
+ * Returns: true (1) on success, otherwise returns false (0).
+ */
 bool config_save_file(const char *path);
 
 void rarch_main_state_new(void);
@@ -862,7 +878,23 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 int rarch_main_init(int argc, char *argv[]);
 void rarch_main_set_state(unsigned action);
 bool rarch_main_command(unsigned action);
+
+/**
+ * rarch_main_iterate:
+ *
+ * Run Libretro/RetroArch for one frame.
+ *
+ * Returns: 0 if we want to indicate to the caller that 
+ * any top-level runtime loop needs to be forcibly woken up.
+ *
+ * 1 if we have to wait until button input in order
+ * to wake up the loop.
+ *
+ * -1 if we forcibly quit out of the RetroArch iteration loop. 
+ *
+ **/
 int rarch_main_iterate(void);
+
 void rarch_main_deinit(void);
 void rarch_render_cached_frame(void);
 void rarch_disk_control_set_eject(bool state, bool log);
