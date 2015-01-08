@@ -101,6 +101,13 @@ static const audio_driver_t *audio_drivers[] = {
    NULL,
 };
 
+/**
+ * config_get_audio_driver_options:
+ *
+ * Get an enumerated list of all audio driver names, separated by '|'.
+ *
+ * Returns: string listing of all audio driver names, separated by '|'.
+ **/
 const char* config_get_audio_driver_options(void)
 {
    union string_list_elem_attr attr;
@@ -169,6 +176,13 @@ static const video_driver_t *video_drivers[] = {
    NULL,
 };
 
+/**
+ * config_get_video_driver_options:
+ *
+ * Get an enumerated list of all video driver names, separated by '|'.
+ *
+ * Returns: string listing of all video driver names, separated by '|'.
+ **/
 const char* config_get_video_driver_options(void)
 {
    union string_list_elem_attr attr;
@@ -244,6 +258,13 @@ static const input_driver_t *input_drivers[] = {
    NULL,
 };
 
+/**
+ * config_get_input_driver_options:
+ *
+ * Get an enumerated list of all input driver names, separated by '|'.
+ *
+ * Returns: string listing of all input driver names, separated by '|'.
+ **/
 const char* config_get_input_driver_options(void)
 {
    union string_list_elem_attr attr;
@@ -279,6 +300,15 @@ static const input_osk_driver_t *osk_drivers[] = {
    NULL,
 };
 
+/**
+ * config_get_osk_driver_options:
+ *
+ * Get an enumerated list of all OSK (onscreen keyboard) driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all OSK (onscreen keyboard) driver names,
+ * separated by '|'.
+ **/
 const char* config_get_osk_driver_options(void)
 {
    union string_list_elem_attr attr;
@@ -323,6 +353,15 @@ static const camera_driver_t *camera_drivers[] = {
    NULL,
 };
 
+/**
+ * config_get_camera_driver_options:
+ *
+ * Get an enumerated list of all camera driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all camera driver names,
+ * separated by '|'.
+ **/
 const char* config_get_camera_driver_options(void)
 {
    union string_list_elem_attr attr;
@@ -363,6 +402,15 @@ static const location_driver_t *location_drivers[] = {
    NULL,
 };
 
+/**
+ * config_get_location_driver_options:
+ *
+ * Get an enumerated list of all location driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all location driver names,
+ * separated by '|'.
+ **/
 const char* config_get_location_driver_options(void)
 {
    union string_list_elem_attr attr;
@@ -416,6 +464,15 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    NULL
 };
 
+/**
+ * config_get_menu_driver_options:
+ *
+ * Get an enumerated list of all menu driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all menu driver names,
+ * separated by '|'.
+ **/
 const char* config_get_menu_driver_options(void)
 {
    union string_list_elem_attr attr;
@@ -444,6 +501,19 @@ const char* config_get_menu_driver_options(void)
 }
 #endif
 
+/**
+ * find_driver_nonempty:
+ * @label              : string of driver type to be found.
+ * @i                  : index of driver.
+ * @str                : identifier name of the found driver
+ *                       gets written to this string.
+ * @sizeof_str         : size of @str.
+ *
+ * Find driver based on @label.
+ *
+ * Returns: NULL if no driver based on @label found, otherwise
+ * pointer to driver.
+ **/
 static const void *find_driver_nonempty(const char *label, int i,
       char *str, size_t sizeof_str)
 {
@@ -503,6 +573,16 @@ static const void *find_driver_nonempty(const char *label, int i,
    return drv;
 }
 
+/**
+ * find_driver_index:
+ * @label              : string of driver type to be found.
+ * @drv                : identifier of driver to be found.
+ *
+ * Find index of the driver, based on @label.
+ *
+ * Returns: -1 if no driver based on @label and @drv found, otherwise
+ * index number of the driver found in the array.
+ **/
 static int find_driver_index(const char * label, const char *drv)
 {
    unsigned i;
@@ -523,6 +603,14 @@ static int find_driver_index(const char * label, const char *drv)
    return -1;
 }
 
+/**
+ * find_prev_driver:
+ * @label              : string of driver type to be found.
+ * @str                : identifier of driver to be found.
+ * @sizeof_str         : size of @str.
+ *
+ * Find previous driver in driver array.
+ **/
 void find_prev_driver(const char *label, char *str, size_t sizeof_str)
 {
    int i = find_driver_index(label, str);
@@ -533,6 +621,14 @@ void find_prev_driver(const char *label, char *str, size_t sizeof_str)
             "Couldn't find any previous driver (current one: \"%s\").\n", str);
 }
 
+/**
+ * find_next_driver:
+ * @label              : string of driver type to be found.
+ * @str                : identifier of driver to be found.
+ * @sizeof_str         : size of @str.
+ *
+ * Find next driver in driver array.
+ **/
 void find_next_driver(const char *label, char *str, size_t sizeof_str)
 {
    int i = find_driver_index(label, str);
@@ -542,6 +638,11 @@ void find_next_driver(const char *label, char *str, size_t sizeof_str)
       RARCH_WARN("Couldn't find any next driver (current one: \"%s\").\n", str);
 }
 
+/**
+ * find_osk_driver:
+ *
+ * Find OSK (onscreen keyboard) driver.
+ **/
 static void find_osk_driver(void)
 {
    int i = find_driver_index("osk_driver", g_settings.osk.driver);
@@ -1792,11 +1893,6 @@ bool driver_monitor_fps_statistics(double *refresh_rate,
 
    return true;
 }
-
-
-
-
-
 
 void *driver_video_resolve(const video_driver_t **drv)
 {
