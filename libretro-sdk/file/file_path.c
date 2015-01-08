@@ -69,9 +69,9 @@
 const char *path_get_extension(const char *path)
 {
    const char *ext = strrchr(path_basename(path), '.');
-   if (ext)
-      return ext + 1;
-   return "";
+   if (!ext)
+      return "";
+   return ext + 1;
 }
 
 char *path_remove_extension(char *path)
@@ -144,13 +144,11 @@ bool path_file_exists(const char *path)
 {
    FILE *dummy = fopen(path, "rb");
 
-   if (dummy)
-   {
-      fclose(dummy);
-      return true;
-   }
+   if (!dummy)
+      return false;
 
-   return false;
+   fclose(dummy);
+   return true;
 }
 
 void fill_pathname(char *out_path, const char *in_path,

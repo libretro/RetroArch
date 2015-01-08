@@ -48,9 +48,9 @@ void file_list_push(file_list_t *list,
 
 size_t file_list_get_size(const file_list_t *list)
 {
-   if (list)
-      return list->size;
-   return 0;
+   if (!list)
+      return 0;
+   return list->size;
 }
 
 size_t file_list_get_directory_ptr(const file_list_t *list)
