@@ -710,8 +710,9 @@ static config_file_t *open_default_config_file(void)
 
    if (!conf)
    {
-      conf = config_file_new(NULL);
       bool saved = false;
+      conf = config_file_new(NULL);
+
       if (conf)
       {
          config_set_bool(conf, "config_save_on_exit", true);
@@ -1529,6 +1530,15 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
    }
 }
 
+/**
+ * save_keybind:
+ * @conf               : pointer to config file object
+ * @prefix             : prefix name of keybind
+ * @base               : base name   of keybind
+ * @bind               : pointer to key binding object
+ *
+ * Save a key binding to the config file.
+ */
 static void save_keybind(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind)
 {
@@ -1540,6 +1550,13 @@ static void save_keybind(config_file_t *conf, const char *prefix,
    save_keybind_axis(conf, prefix, base, bind);
 }
 
+/**
+ * save_keybinds_user:
+ * @conf               : pointer to config file object
+ * @user               : user number
+ *
+ * Save the current keybinds of a user (@user) to the config file (@conf).
+ */
 static void save_keybinds_user(config_file_t *conf, unsigned user)
 {
    unsigned i = 0;
@@ -1553,6 +1570,12 @@ static void save_keybinds_user(config_file_t *conf, unsigned user)
    }
 }
 
+/**
+ * config_load:
+ *
+ * Loads a config file and reads all the values into memory.
+ *
+ */
 void config_load(void)
 {
    /* Flush out per-core configs before loading a new config. */
@@ -1573,6 +1596,14 @@ void config_load(void)
    config_load_core_specific();
 }
 
+/**
+ * config_save_file:
+ * @path            : Path that shall be written to.
+ *
+ * Writes a config file to disk.
+ *
+ * Returns: true (1) on success, otherwise returns false (0).
+ */
 bool config_save_file(const char *path)
 {
    unsigned i = 0;
