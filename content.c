@@ -557,7 +557,6 @@ bool init_content_file(void)
    struct string_list *content = NULL;
    const struct retro_subsystem_info *special = NULL;
 
-   g_extern.content_is_init = false;
    g_extern.temporary_content = string_list_new();
 
    if (!g_extern.temporary_content)
