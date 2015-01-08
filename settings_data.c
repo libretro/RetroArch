@@ -626,7 +626,7 @@ static int setting_data_action_start_libretro_device_type(void *data)
    return 0;
 }
 
-static int setting_data_fraction_action_start_video_refresh_rate_auto(
+static int setting_data_action_start_video_refresh_rate_auto(
       void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1193,7 +1193,7 @@ static int setting_data_uint_action_ok_default(void *data, unsigned action)
 }
 
 
-static int setting_data_fraction_action_ok_video_refresh_rate_auto(
+static int setting_data_action_ok_video_refresh_rate_auto(
       void *data, unsigned action)
 {
    double video_refresh_rate, deviation = 0.0;
@@ -3770,9 +3770,9 @@ static bool setting_data_append_list_video_options(
          general_write_handler,
          general_read_handler);
    (*list)[list_info->index - 1].action_start = 
-      &setting_data_fraction_action_start_video_refresh_rate_auto;
+      &setting_data_action_start_video_refresh_rate_auto;
    (*list)[list_info->index - 1].action_ok = 
-      &setting_data_fraction_action_ok_video_refresh_rate_auto;
+      &setting_data_action_ok_video_refresh_rate_auto;
 
    CONFIG_BOOL(
          g_settings.video.force_srgb_disable,
