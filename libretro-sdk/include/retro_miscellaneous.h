@@ -105,7 +105,7 @@ static INLINE void rarch_sleep(unsigned msec)
  * next_pow2:
  * @v         : initial value
  *
- * Increase initial value to next power of 2 value.
+ * Get next power of 2 value based on  initial value.
  *
  * Returns: next power of 2 value (derived from @v).
  **/
@@ -125,7 +125,7 @@ static INLINE uint32_t next_pow2(uint32_t v)
  * prev_pow2:
  * @v         : initial value
  *
- * Increase initial value to previous power of 2 value.
+ * Get previous power of 2 value based on initial value.
  *
  * Returns: previous power of 2 value (derived from @v).
  **/
@@ -170,6 +170,5 @@ typedef struct
 #define BIT128_CLEAR(a, bit) ((a).data[(bit) >> 5] &= ~(1 << ((bit) & 31)))
 #define BIT128_GET(a, bit)   ((a).data[(bit) >> 5] &   (1 << ((bit) & 31)))
 #define BIT128_CLEAR_ALL(a)  memset(&(a), 0, sizeof(a));
-
 
 #endif
