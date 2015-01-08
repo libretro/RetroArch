@@ -557,7 +557,7 @@ static int setting_data_string_dir_action_start_default(void *data)
    return 0;
 }
 
-static int setting_data_uint_action_start_analog_dpad_mode(void *data)
+static int setting_data_action_start_analog_dpad_mode(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -581,7 +581,7 @@ static int setting_data_uint_action_start_default(void *data)
    return 0;
 }
 
-static int setting_data_uint_action_start_libretro_device_type(void *data)
+static int setting_data_action_start_libretro_device_type(void *data)
 {
    unsigned current_device, i, devices[128];
    const struct retro_controller_info *desc;
@@ -710,7 +710,7 @@ static int setting_data_bind_action_start(void *data)
 }
 
 /**
- * setting_data_uint_action_toggle_analog_dpad_mode
+ * setting_data_action_toggle_analog_dpad_mode
  * @data               : pointer to setting
  * @action             : toggle action value. Can be either one of :
  *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
@@ -720,7 +720,7 @@ static int setting_data_bind_action_start(void *data)
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_data_uint_action_toggle_analog_dpad_mode(void *data, unsigned action)
+static int setting_data_action_toggle_analog_dpad_mode(void *data, unsigned action)
 {
    unsigned port = 0;
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -749,7 +749,7 @@ static int setting_data_uint_action_toggle_analog_dpad_mode(void *data, unsigned
 }
 
 /**
- * setting_data_uint_action_toggle_libretro_device_type
+ * setting_data_action_toggle_libretro_device_type
  * @data               : pointer to setting
  * @action             : toggle action value. Can be either one of :
  *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
@@ -759,7 +759,7 @@ static int setting_data_uint_action_toggle_analog_dpad_mode(void *data, unsigned
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_data_uint_action_toggle_libretro_device_type(
+static int setting_data_action_toggle_libretro_device_type(
       void *data, unsigned action)
 {
    unsigned current_device, current_idx, i, devices[128];
@@ -4682,8 +4682,8 @@ static bool setting_data_append_list_input_options(
             general_read_handler);
       (*list)[list_info->index - 1].index = user + 1;
       (*list)[list_info->index - 1].index_offset = user;
-      (*list)[list_info->index - 1].action_toggle = &setting_data_uint_action_toggle_libretro_device_type;
-      (*list)[list_info->index - 1].action_start = &setting_data_uint_action_start_libretro_device_type;
+      (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_libretro_device_type;
+      (*list)[list_info->index - 1].action_start = &setting_data_action_start_libretro_device_type;
 
       CONFIG_UINT(
             g_settings.input.analog_dpad_mode[user],
@@ -4696,8 +4696,8 @@ static bool setting_data_append_list_input_options(
             general_read_handler);
       (*list)[list_info->index - 1].index = user + 1;
       (*list)[list_info->index - 1].index_offset = user;
-      (*list)[list_info->index - 1].action_toggle = &setting_data_uint_action_toggle_analog_dpad_mode;
-      (*list)[list_info->index - 1].action_start = &setting_data_uint_action_start_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_start = &setting_data_action_start_analog_dpad_mode;
 
       CONFIG_ACTION(
             key[user],
