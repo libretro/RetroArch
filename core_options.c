@@ -173,9 +173,9 @@ error:
 
 bool core_option_updated(core_option_manager_t *opt)
 {
-   if (opt)
-      return opt->updated;
-   return false;
+   if (!opt)
+      return false;
+   return opt->updated;
 }
 
 void core_option_flush(core_option_manager_t *opt)
