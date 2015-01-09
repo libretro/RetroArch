@@ -68,21 +68,29 @@ static void zlib_file_free(void *handle)
 static const uint8_t *zlib_file_data(void *handle)
 {
    zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   if (!data)
+      return NULL;
    return (const uint8_t*)data->data;
 }
 
 static size_t zlib_file_size(void *handle)
 {
    zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   if (!data)
+      return 0;
    return data->size;
 }
 
 static void *zlib_file_open(const char *path)
 {
+   struct stat fds;
    zlib_file_data_t *data = (zlib_file_data_t*)calloc(1, sizeof(*data));
+
    if (!data)
       return NULL;
+
    data->fd = open(path, O_RDONLY);
+
    if (data->fd < 0)
    {
       RARCH_ERR("Failed to open archive: %s (%s).\n",
@@ -90,7 +98,6 @@ static void *zlib_file_open(const char *path)
       goto error;
    }
 
-   struct stat fds;
    if (fstat(data->fd, &fds) < 0)
       goto error;
 
@@ -139,6 +146,8 @@ static const uint8_t *zlib_file_data(void *handle)
 static size_t zlib_file_size(void *handle)
 {
    zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   if (!data)
+      return NULL;
    return data->size;
 }
 
@@ -192,6 +201,7 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
 {
    unsigned i;
    uint32_t val = 0;
+
    size *= 8;
    for (i = 0; i < size; i += 8)
       val |= *data++ << i;
@@ -199,6 +209,18 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
    return val;
 }
 
+/**
+ * zlib_inflate_data_to_file:
+ * @path                        : filename path of archive.
+ * @cdata                       : input data.
+ * @csize                       : size of input data.
+ * @size                        : output file size
+ * @checksum                    : CRC32 checksum from input data.
+ *
+ * Decompress data to file.
+ *
+ * Returns: true (1) on success, otherwise false (0).
+ **/
 bool zlib_inflate_data_to_file(const char *path, const uint8_t *cdata,
       uint32_t csize, uint32_t size, uint32_t checksum)
 {
@@ -238,15 +260,26 @@ end:
    return ret;
 }
 
+/**
+ * zlib_parse_file:
+ * @file                        : filename path of archive
+ * @file_cb                     : file_cb function pointer
+ * @userdata                    : userdata to pass to file_cb function pointer.
+ *
+ * Low-level file parsing. Enumerates over all files and calls 
+ * file_cb with userdata.
+ *
+ * Returns: true (1) on success, otherwise false (0).
+ **/
 bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
 {
+   void *handle;
    const uint8_t *footer    = NULL;
    const uint8_t *directory = NULL;
    const uint8_t *data      = NULL;
    ssize_t zip_size = 0;
    bool ret = true;
    const struct zlib_file_backend *backend = zlib_get_default_file_backend();
-   void *handle;
 
    if (!backend)
       return false;
@@ -342,6 +375,7 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata,
 
    /* Extract first content that matches our list. */
    const char *ext = path_get_extension(name);
+
    if (ext && string_list_find_elem(data->ext, ext))
    {
       char new_path[PATH_MAX_LENGTH];
@@ -377,12 +411,24 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata,
    return true;
 }
 
+/**
+ * zlib_extract_first_content_file:
+ * @zip_path                    : filename path to ZIP archive.
+ * @zip_path_size               : size of ZIP archive.
+ * @valid_exts                  : valid extensions for a content file.
+ * @extraction_directory        : the directory to extract temporary
+ *                                unzipped content to.
+ *
+ * Extract first content file from archive.
+ *
+ * Returns : true (1) on success, otherwise false (0).
+ **/
 bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
       const char *valid_exts, const char *extraction_directory)
 {
+   struct string_list *list;
    bool ret = true;
    struct zip_extract_userdata userdata = {0};
-   struct string_list *list;
 
    if (!valid_exts)
    {
@@ -435,9 +481,16 @@ static bool zlib_get_file_list_cb(const char *path, const uint8_t *cdata,
    return string_list_append(list, path, attr);
 }
 
+/**
+ * zlib_get_file_list:
+ * @path                        : filename path of archive
+ *
+ * Returns: string listing of files from archive on success, otherwise NULL.
+ **/
 struct string_list *zlib_get_file_list(const char *path)
 {
    struct string_list *list = string_list_new();
+
    if (!list)
       return NULL;
 
