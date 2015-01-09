@@ -61,7 +61,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    &gfx_ctx_bbqnx,
 #endif
 #if defined(IOS) || defined(OSX)
-   /* < Don't use __APPLE__ as it breaks basic SDL builds */
+   /* Don't use __APPLE__ as it breaks basic SDL builds. */
    &gfx_ctx_apple,
 #endif
 #if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && defined(HAVE_OPENGL)
@@ -74,18 +74,33 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    NULL
 };
 
-static int find_gfx_ctx_driver_index(const char *drv)
+/**
+ * find_gfx_ctx_driver_index:
+ * @ident                      : Identifier of resampler driver to find.
+ *
+ * Finds graphics context driver index by @ident name.
+ *
+ * Returns: graphics context driver index if driver was found, otherwise
+ * -1.
+ **/
+static int find_gfx_ctx_driver_index(const char *ident)
 {
    unsigned i;
    for (i = 0; gfx_ctx_drivers[i]; i++)
-      if (strcasecmp(drv, gfx_ctx_drivers[i]->ident) == 0)
+      if (strcasecmp(ident, gfx_ctx_drivers[i]->ident) == 0)
          return i;
    return -1;
 }
 
+/**
+ * find_prev_context_driver:
+ *
+ * Finds previous driver in graphics context driver array.
+ **/
 void find_prev_gfx_context_driver(void)
 {
    int i = find_gfx_ctx_driver_index(g_settings.video.context_driver);
+   
    if (i > 0)
    {
       strlcpy(g_settings.video.context_driver, gfx_ctx_drivers[i - 1]->ident,
@@ -95,9 +110,15 @@ void find_prev_gfx_context_driver(void)
       RARCH_WARN("Couldn't find any previous video context driver.\n");
 }
 
+/**
+ * find_next_context_driver:
+ *
+ * Finds next driver in graphics context driver array.
+ **/
 void find_next_context_driver(void)
 {
    int i = find_gfx_ctx_driver_index(g_settings.video.context_driver);
+
    if (i >= 0 && gfx_ctx_drivers[i + 1])
    {
       strlcpy(g_settings.video.context_driver, gfx_ctx_drivers[i + 1]->ident,
@@ -107,9 +128,24 @@ void find_next_context_driver(void)
       RARCH_WARN("Couldn't find any next video context driver.\n");
 }
 
-static const gfx_ctx_driver_t *ctx_init(void *data,
+/**
+ * gfx_ctx_init:
+ * @data                    : Input data.
+ * @ctx                     : Graphics context driver to initialize.
+ * @ident                   : Identifier of graphics context driver to find.
+ * @api                     : API of higher-level graphics API.
+ * @major                   : Major version number of higher-level graphics API.
+ * @minor                   : Minor version number of higher-level graphics API.
+ * @hw_render_ctx           : Request a graphics context driver capable of
+ *                            hardware rendering?
+ *
+ * Initialize graphics context driver.
+ *
+ * Returns: graphics context driver if successfully initialized, otherwise NULL.
+ **/
+static const gfx_ctx_driver_t *gfx_ctx_init(void *data,
       const gfx_ctx_driver_t *ctx,
-      const char *drv,
+      const char *ident,
       enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx)
 {
@@ -126,15 +162,27 @@ static const gfx_ctx_driver_t *ctx_init(void *data,
 
       return ctx;
    }
-   else
-   {
-      RARCH_ERR("Failed to bind API (#%u, version %u.%u) on context driver \"%s\".\n",
-            (unsigned)api, major, minor, ctx->ident);
-   }
+
+   RARCH_ERR("Failed to bind API (#%u, version %u.%u) on context driver \"%s\".\n",
+         (unsigned)api, major, minor, ctx->ident);
 
    return NULL;
 }
 
+/**
+ * gfx_ctx_find_driver:
+ * @data                    : Input data.
+ * @ident                   : Identifier of graphics context driver to find.
+ * @api                     : API of higher-level graphics API.
+ * @major                   : Major version number of higher-level graphics API.
+ * @minor                   : Minor version number of higher-level graphics API.
+ * @hw_render_ctx           : Request a graphics context driver capable of
+ *                            hardware rendering?
+ *
+ * Finds first suitable graphics context driver and initializes.
+ *
+ * Returns: graphics context driver if found, otherwise NULL.
+ **/
 static const gfx_ctx_driver_t *gfx_ctx_find_driver(void *data,
       const char *ident,
       enum gfx_ctx_api api, unsigned major,
@@ -144,29 +192,37 @@ static const gfx_ctx_driver_t *gfx_ctx_find_driver(void *data,
    int i = find_gfx_ctx_driver_index(ident);
 
    if (i >= 0)
-   {
-      return ctx_init(data, gfx_ctx_drivers[i], ident,
+      return gfx_ctx_init(data, gfx_ctx_drivers[i], ident,
             api, major, minor, hw_render_ctx);
-   }
-   else
-   {
-      for (i = 0; gfx_ctx_drivers[i]; i++)
-      {
-         ctx = ctx_init(data, gfx_ctx_drivers[i], ident,
-               api, major, minor, hw_render_ctx);
-         if (ctx)
-            return ctx;
-      }
 
-      return NULL;
+   for (i = 0; gfx_ctx_drivers[i]; i++)
+   {
+      ctx = gfx_ctx_init(data, gfx_ctx_drivers[i], ident,
+            api, major, minor, hw_render_ctx);
+      if (ctx)
+         return ctx;
    }
+
+   return NULL;
 }
 
+/**
+ * gfx_ctx_init_first:
+ * @data                    : Input data.
+ * @ident                   : Identifier of graphics context driver to find.
+ * @api                     : API of higher-level graphics API.
+ * @major                   : Major version number of higher-level graphics API.
+ * @minor                   : Minor version number of higher-level graphics API.
+ * @hw_render_ctx           : Request a graphics context driver capable of
+ *                            hardware rendering?
+ *
+ * Finds first suitable graphics context driver and initializes.
+ *
+ * Returns: graphics context driver if found, otherwise NULL.
+ **/
 const gfx_ctx_driver_t *gfx_ctx_init_first(void *data,
-      const char *drv,
-      enum gfx_ctx_api api, unsigned major,
+      const char *ident, enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx)
 {
-   return gfx_ctx_find_driver(data, drv, api, major, minor, hw_render_ctx);
+   return gfx_ctx_find_driver(data, ident, api, major, minor, hw_render_ctx);
 }
-

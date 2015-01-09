@@ -63,7 +63,7 @@ static int find_resampler_driver_index(const char *ident)
 /**
  * find_prev_resampler_driver:
  *
- * Find previous driver in resampler driver array.
+ * Finds previous driver in resampler driver array.
  **/
 void find_prev_resampler_driver(void)
 {
@@ -80,7 +80,7 @@ void find_prev_resampler_driver(void)
 /**
  * find_next_resampler_driver:
  *
- * Find next driver in resampler driver array.
+ * Finds next driver in resampler driver array.
  **/
 void find_next_resampler_driver(void)
 {

@@ -147,12 +147,35 @@ extern const gfx_ctx_driver_t gfx_ctx_apple;
 extern const gfx_ctx_driver_t gfx_ctx_emscripten;
 extern const gfx_ctx_driver_t gfx_ctx_null;
 
-/* Finds first suitable driver and initializes. */
-const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, const char *driver,
+/**
+ * gfx_ctx_init_first:
+ * @data                    : Input data.
+ * @ident                   : Identifier of graphics context driver to find.
+ * @api                     : API of higher-level graphics API.
+ * @major                   : Major version number of higher-level graphics API.
+ * @minor                   : Minor version number of higher-level graphics API.
+ * @hw_render_ctx           : Request a graphics context driver capable of
+ *                            hardware rendering?
+ *
+ * Finds first suitable graphics context driver and initializes.
+ *
+ * Returns: graphics context driver if found, otherwise NULL.
+ **/
+const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, const char *ident,
       enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx);
     
+/**
+ * find_next_context_driver:
+ *
+ * Finds next driver in graphics context driver array.
+ **/
 void find_next_context_driver(void);
     
+/**
+ * find_prev_context_driver:
+ *
+ * Finds previous driver in graphics context driver array.
+ **/
 void find_prev_gfx_context_driver(void);
 
 #ifdef __cplusplus
