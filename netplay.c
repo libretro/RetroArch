@@ -476,9 +476,9 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
 
 bool netplay_can_poll(netplay_t *netplay)
 {
-   if (netplay)
-      return netplay->can_poll;
-   return false;
+   if (!netplay)
+      return false;
+   return netplay->can_poll;
 }
 
 /* Not really a hash, but should be enough to differentiate 
@@ -490,14 +490,15 @@ bool netplay_can_poll(netplay_t *netplay)
  */
 static uint32_t implementation_magic_value(void)
 {
-   size_t i;
+   size_t i, len;
    uint32_t res = 0;
+   const char *lib = g_extern.system.info.library_name;
+   const char *ver = PACKAGE_VERSION;
    unsigned api = pretro_api_version();
 
    res |= api;
 
-   const char *lib = g_extern.system.info.library_name;
-   size_t len = strlen(lib);
+   len = strlen(lib);
    for (i = 0; i < len; i++)
       res ^= lib[i] << (i & 0xf);
 
@@ -506,7 +507,6 @@ static uint32_t implementation_magic_value(void)
    for (i = 0; i < len; i++)
       res ^= lib[i] << (i & 0xf);
 
-   const char *ver = PACKAGE_VERSION;
    len = strlen(ver);
    for (i = 0; i < len; i++)
       res ^= ver[i] << ((i & 0xf) + 16);
@@ -560,6 +560,9 @@ static bool get_nickname(netplay_t *netplay, int fd)
 
 static bool send_info(netplay_t *netplay)
 {
+   unsigned sram_size;
+   char msg[512];
+   void *sram = NULL;
    uint32_t header[3] = {
       htonl(g_extern.content_crc),
       htonl(implementation_magic_value()),
@@ -576,8 +579,8 @@ static bool send_info(netplay_t *netplay)
    }
 
    /* Get SRAM data from User 1. */
-   void *sram = pretro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
-   unsigned sram_size = pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+   sram      = pretro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+   sram_size = pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
 
    if (!recv_all(netplay->fd, sram, sram_size))
    {
@@ -591,7 +594,6 @@ static bool send_info(netplay_t *netplay)
       return false;
    }
 
-   char msg[512];
    snprintf(msg, sizeof(msg), "Connected to: \"%s\"", netplay->other_nick);
    RARCH_LOG("%s\n", msg);
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
@@ -601,6 +603,8 @@ static bool send_info(netplay_t *netplay)
 
 static bool get_info(netplay_t *netplay)
 {
+   const void *sram;
+   unsigned sram_size;
    uint32_t header[3];
 
    if (!recv_all(netplay->fd, header, sizeof(header)))
@@ -634,8 +638,9 @@ static bool get_info(netplay_t *netplay)
    }
 
    /* Send SRAM data to our User 2. */
-   const void *sram = pretro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
-   unsigned sram_size = pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+   sram      = pretro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+   sram_size = pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+
    if (!send_all(netplay->fd, sram, sram_size))
    {
       RARCH_ERR("Failed to send SRAM data to client.\n");
@@ -657,12 +662,13 @@ static bool get_info(netplay_t *netplay)
 
 static uint32_t *bsv_header_generate(size_t *size, uint32_t magic)
 {
-   uint32_t bsv_header[4] = {0};
+   uint32_t *header, bsv_header[4] = {0};
    size_t serialize_size = pretro_serialize_size();
    size_t header_size = sizeof(bsv_header) + serialize_size;
+
    *size = header_size;
 
-   uint32_t *header = (uint32_t*)malloc(header_size);
+   header = (uint32_t*)malloc(header_size);
    if (!header)
       return NULL;
 
@@ -683,7 +689,9 @@ static uint32_t *bsv_header_generate(size_t *size, uint32_t magic)
 
 static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
 {
+   uint32_t in_crc, in_magic, in_state_size;
    uint32_t in_bsv = swap_if_little32(header[MAGIC_INDEX]);
+
    if (in_bsv != BSV_MAGIC)
    {
       RARCH_ERR("BSV magic mismatch, got 0x%x, expected 0x%x.\n",
@@ -691,14 +699,14 @@ static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
       return false;
    }
 
-   uint32_t in_magic = swap_if_big32(header[SERIALIZER_INDEX]);
+   in_magic = swap_if_big32(header[SERIALIZER_INDEX]);
    if (in_magic != magic)
    {
       RARCH_ERR("Magic mismatch, got 0x%x, expected 0x%x.\n", in_magic, magic);
       return false;
    }
 
-   uint32_t in_crc = swap_if_big32(header[CRC_INDEX]);
+   in_crc = swap_if_big32(header[CRC_INDEX]);
    if (in_crc != g_extern.content_crc)
    {
       RARCH_ERR("CRC32 mismatch, got 0x%x, expected 0x%x.\n", in_crc,
@@ -706,7 +714,7 @@ static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
       return false;
    }
 
-   uint32_t in_state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
+   in_state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
    if (in_state_size != pretro_serialize_size())
    {
       RARCH_ERR("Serialization size mismatch, got 0x%x, expected 0x%x.\n",
@@ -719,6 +727,12 @@ static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
 
 static bool get_info_spectate(netplay_t *netplay)
 {
+   void *buf;
+   size_t save_state_size, size;
+   uint32_t header[4];
+   char msg[512];
+   bool ret = true;
+
    if (!send_nickname(netplay, netplay->fd))
    {
       RARCH_ERR("Failed to send nickname to host.\n");
@@ -731,12 +745,10 @@ static bool get_info_spectate(netplay_t *netplay)
       return false;
    }
 
-   char msg[512];
    snprintf(msg, sizeof(msg), "Connected to \"%s\"", netplay->other_nick);
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
    RARCH_LOG("%s\n", msg);
 
-   uint32_t header[4];
 
    if (!recv_all(netplay->fd, header, sizeof(header)))
    {
@@ -744,18 +756,18 @@ static bool get_info_spectate(netplay_t *netplay)
       return false;
    }
 
-   size_t save_state_size = pretro_serialize_size();
+   save_state_size = pretro_serialize_size();
    if (!bsv_parse_header(header, implementation_magic_value()))
    {
       RARCH_ERR("Received invalid BSV header from host.\n");
       return false;
    }
 
-   void *buf = malloc(save_state_size);
+   buf = malloc(save_state_size);
    if (!buf)
       return false;
 
-   size_t size = save_state_size;
+   size = save_state_size;
 
    if (!recv_all(netplay->fd, buf, size))
    {
@@ -764,7 +776,6 @@ static bool get_info_spectate(netplay_t *netplay)
       return false;
    }
 
-   bool ret = true;
    if (save_state_size)
       ret = pretro_unserialize(buf, save_state_size);
 
@@ -870,9 +881,9 @@ error:
 
 static bool netplay_is_alive(netplay_t *netplay)
 {
-   if (netplay)
-      return netplay->has_connection;
-   return false;
+   if (!netplay)
+      return false;
+   return netplay->has_connection;
 }
 
 static bool send_chunk(netplay_t *netplay)
@@ -957,8 +968,8 @@ static bool get_self_input_state(netplay_t *netplay)
 {
    unsigned i;
    struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
-
    uint32_t state = 0;
+
    if (!driver.block_libretro_input && netplay->frame_count > 0)
    {
       /* First frame we always give zero input since relying on 
@@ -993,7 +1004,7 @@ static bool get_self_input_state(netplay_t *netplay)
 /* TODO: Somewhat better prediction. :P */
 static void simulate_input(netplay_t *netplay)
 {
-   size_t ptr = PREV_PTR(netplay->self_ptr);
+   size_t ptr  = PREV_PTR(netplay->self_ptr);
    size_t prev = PREV_PTR(netplay->read_ptr);
 
    netplay->buffer[ptr].simulated_input_state = 
@@ -1027,6 +1038,7 @@ static void parse_packet(netplay_t *netplay, uint32_t *buffer, unsigned size)
 static bool receive_data(netplay_t *netplay, uint32_t *buffer, size_t size)
 {
    socklen_t addrlen = sizeof(netplay->their_addr);
+
    if (recvfrom(netplay->udp_fd, NONCONST_CAST buffer, size, 0,
             (struct sockaddr*)&netplay->their_addr, &addrlen) != (ssize_t)size)
       return false;
@@ -1039,6 +1051,8 @@ static bool receive_data(netplay_t *netplay, uint32_t *buffer, size_t size)
 
 static bool netplay_poll(netplay_t *netplay)
 {
+   int res;
+
    if (!netplay->has_connection)
       return false;
 
@@ -1061,7 +1075,7 @@ static bool netplay_poll(netplay_t *netplay)
 
    /* We might have reached the end of the buffer, where we 
     * simply have to block. */
-   int res = poll_input(netplay, netplay->other_ptr == netplay->self_ptr);
+   res = poll_input(netplay, netplay->other_ptr == netplay->self_ptr);
    if (res == -1)
    {
       netplay->has_connection = false;
@@ -1143,21 +1157,20 @@ static bool netplay_get_response(netplay_t *netplay)
 
 static bool netplay_get_cmd(netplay_t *netplay)
 {
-   uint32_t cmd;
+   uint32_t cmd, flip_frame;
+   size_t cmd_size;
+
    if (!recv_all(netplay->fd, &cmd, sizeof(cmd)))
       return false;
 
    cmd = ntohl(cmd);
 
-   size_t cmd_size = cmd & 0xffff;
+   cmd_size = cmd & 0xffff;
    cmd = cmd >> 16;
 
    switch (cmd)
    {
       case NETPLAY_CMD_FLIP_PLAYERS:
-      {
-         uint32_t flip_frame;
-
          if (cmd_size != sizeof(uint32_t))
          {
             RARCH_ERR("CMD_FLIP_PLAYERS has unexpected command size.\n");
@@ -1171,6 +1184,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
          }
 
          flip_frame = ntohl(flip_frame);
+
          if (flip_frame < netplay->flip_frame)
          {
             RARCH_ERR("Host asked us to flip users in the past. Not possible ...\n");
@@ -1184,12 +1198,13 @@ static bool netplay_get_cmd(netplay_t *netplay)
          msg_queue_push(g_extern.msg_queue, "Netplay users are flipped.", 1, 180);
 
          return netplay_cmd_ack(netplay);
-      }
 
       default:
-         RARCH_ERR("Unknown netplay command received.\n");
-         return netplay_cmd_nak(netplay);
+         break;
    }
+
+   RARCH_ERR("Unknown netplay command received.\n");
+   return netplay_cmd_nak(netplay);
 }
 
 void netplay_flip_users(netplay_t *netplay)
@@ -1243,11 +1258,13 @@ error:
 
 static bool netplay_flip_port(netplay_t *netplay, bool port)
 {
+   size_t frame = netplay->frame_count;
+
    if (netplay->flip_frame == 0)
       return port;
 
-   size_t frame = netplay->is_replay ?
-      netplay->tmp_frame_count : netplay->frame_count;
+   if (netplay->is_replay)
+      frame = netplay->tmp_frame_count;
 
    return port ^ netplay->flip ^ (frame < netplay->flip_frame);
 }
@@ -1301,9 +1318,9 @@ void netplay_free(netplay_t *netplay)
 
 static bool netplay_should_skip(netplay_t *netplay)
 {
-   if (netplay)
-      return netplay->is_replay && netplay->has_connection;
-   return false;
+   if (!netplay)
+      return false;
+   return netplay->is_replay && netplay->has_connection;
 }
 
 static void netplay_pre_frame_net(netplay_t *netplay)
@@ -1333,6 +1350,7 @@ int16_t input_state_spectate(unsigned port, unsigned device,
 {
    netplay_t *netplay = (netplay_t*)driver.netplay_data;
    int16_t res = netplay->cbs.state_cb(port, device, idx, id);
+
    netplay_set_spectate_input(netplay, res);
    return res;
 }
@@ -1344,16 +1362,14 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
 
    if (recv_all(netplay->fd, NONCONST_CAST &inp, sizeof(inp)))
       return swap_if_big16(inp);
-   else
-   {
-      RARCH_ERR("Connection with host was cut.\n");
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue,
-            "Connection with host was cut.", 1, 180);
 
-      pretro_set_input_state(netplay->cbs.state_cb);
-      return netplay->cbs.state_cb(port, device, idx, id);
-   }
+   RARCH_ERR("Connection with host was cut.\n");
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue,
+         "Connection with host was cut.", 1, 180);
+
+   pretro_set_input_state(netplay->cbs.state_cb);
+   return netplay->cbs.state_cb(port, device, idx, id);
 }
 
 int16_t input_state_spectate_client(unsigned port, unsigned device,
@@ -1366,6 +1382,12 @@ int16_t input_state_spectate_client(unsigned port, unsigned device,
 static void netplay_pre_frame_spectate(netplay_t *netplay)
 {
    unsigned i;
+   uint32_t *header;
+   int new_fd, idx, bufsize;
+   size_t header_size;
+   struct sockaddr_storage their_addr;
+   struct timeval tmp_tv = {0};
+
    if (netplay->spectate_client)
       return;
 
@@ -1373,23 +1395,21 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
    FD_ZERO(&fds);
    FD_SET(netplay->fd, &fds);
 
-   struct timeval tmp_tv = {0};
    if (select(netplay->fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
       return;
 
    if (!FD_ISSET(netplay->fd, &fds))
       return;
 
-   struct sockaddr_storage their_addr;
    socklen_t addr_size = sizeof(their_addr);
-   int new_fd = accept(netplay->fd, (struct sockaddr*)&their_addr, &addr_size);
+   new_fd = accept(netplay->fd, (struct sockaddr*)&their_addr, &addr_size);
    if (new_fd < 0)
    {
       RARCH_ERR("Failed to accept incoming spectator.\n");
       return;
    }
 
-   int idx = -1;
+   idx = -1;
    for (i = 0; i < MAX_SPECTATORS; i++)
    {
       if (netplay->spectate_fds[i] == -1)
@@ -1420,8 +1440,7 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
       return;
    }
 
-   size_t header_size;
-   uint32_t *header = bsv_header_generate(&header_size,
+   header = bsv_header_generate(&header_size,
          implementation_magic_value());
 
    if (!header)
@@ -1431,7 +1450,7 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
       return;
    }
 
-   int bufsize = header_size;
+   bufsize = header_size;
    setsockopt(new_fd, SOL_SOCKET, SO_SNDBUF, CONST_CAST &bufsize,
          sizeof(int));
 
@@ -1481,6 +1500,8 @@ static void netplay_post_frame_net(netplay_t *netplay)
 
    if (netplay->other_frame_count < netplay->read_frame_count)
    {
+      bool first = true;
+
       /* Replay frames. */
       netplay->is_replay = true;
       netplay->tmp_ptr = netplay->other_ptr;
@@ -1488,7 +1509,7 @@ static void netplay_post_frame_net(netplay_t *netplay)
 
       pretro_unserialize(netplay->buffer[netplay->other_ptr].state,
             netplay->state_size);
-      bool first = true;
+
       while (first || (netplay->tmp_ptr != netplay->self_ptr))
       {
          pretro_serialize(netplay->buffer[netplay->tmp_ptr].state,
@@ -1526,9 +1547,10 @@ static void netplay_post_frame_spectate(netplay_t *netplay)
                netplay->spectate_input,
                netplay->spectate_input_ptr * sizeof(int16_t)))
       {
+         char msg[512];
+
          RARCH_LOG("Client (#%u) disconnected ...\n", i);
 
-         char msg[512];
          snprintf(msg, sizeof(msg), "Client (#%u) disconnected.", i);
          msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
@@ -1612,6 +1634,7 @@ int getaddrinfo_rarch__(const char *node, const char *service,
       const struct addrinfo *hints,
       struct addrinfo **res)
 {
+   struct sockaddr_in *in_addr;
    struct addrinfo *info = (struct addrinfo*)calloc(1, sizeof(*info));
    if (!info)
       return -1;
@@ -1619,8 +1642,8 @@ int getaddrinfo_rarch__(const char *node, const char *service,
    info->ai_family = AF_INET;
    info->ai_socktype = hints->ai_socktype;
 
-   struct sockaddr_in *in_addr = (struct sockaddr_in*)
-      calloc(1, sizeof(*in_addr));
+   in_addr = (struct sockaddr_in*)calloc(1, sizeof(*in_addr));
+
    if (!in_addr)
    {
       free(info);
