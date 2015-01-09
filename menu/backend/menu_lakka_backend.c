@@ -33,6 +33,7 @@
 #include "../../input/keyboard_line.h"
 
 #include "../../settings_data.h"
+#include "../../retroarch.h"
 
 #include "../disp/lakka.h"
 #include "../menu_animation.h"

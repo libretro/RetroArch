@@ -28,6 +28,7 @@
 #include <file/file_path.h>
 #include <file/dir_list.h>
 #include "general.h"
+#include "retroarch.h"
 #include "settings.h"
 #include <compat/strl.h>
 #include "screenshot.h"

@@ -25,6 +25,7 @@
 #include "../menu_input_line_cb.h"
 
 #include "../../input/input_autodetect.h"
+#include "../../retroarch.h"
 #include "../../config.def.h"
 
 static int menu_message_toggle(unsigned action)

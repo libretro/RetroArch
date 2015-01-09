@@ -837,17 +837,14 @@ extern struct global g_extern;
 extern struct defaults g_defaults;
 
 /* Public functions. */
-
-void rarch_main_state_new(void);
-void rarch_main_state_free(void);
-
 int rarch_main(int argc, char *argv[]);
+
 bool rarch_replace_config(const char *path);
+
 void rarch_main_init_wrap(const struct rarch_main_wrap *args,
       int *argc, char **argv);
+
 int rarch_main_init(int argc, char *argv[]);
-void rarch_main_set_state(unsigned action);
-bool rarch_main_command(unsigned action);
 
 /**
  * rarch_main_iterate:
@@ -861,15 +858,8 @@ bool rarch_main_command(unsigned action);
  * to wake up the loop.
  *
  * -1 if we forcibly quit out of the RetroArch iteration loop. 
- *
  **/
 int rarch_main_iterate(void);
-
-void rarch_main_deinit(void);
-void rarch_render_cached_frame(void);
-void rarch_disk_control_set_eject(bool state, bool log);
-void rarch_disk_control_set_index(unsigned index);
-void rarch_disk_control_append_image(const char *path);
 
 void rarch_playlist_load_content(content_playlist_t *playlist,
       unsigned index);
@@ -880,9 +870,6 @@ int rarch_defer_core(core_info_list_t *data,
 
 void rarch_update_system_info(struct retro_system_info *info,
       bool *load_no_content);
-
-void rarch_recording_dump_frame(const void *data, unsigned width,
-      unsigned height, size_t pitch);
 
 #ifdef __cplusplus
 }

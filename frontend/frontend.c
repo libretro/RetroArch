@@ -19,6 +19,7 @@
 #include "frontend.h"
 #include "../general.h"
 #include "../settings.h"
+#include "../retroarch.h"
 #include <file/file_path.h>
 
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)

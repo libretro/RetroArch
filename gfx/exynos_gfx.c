@@ -31,6 +31,7 @@
 #include <exynos/exynos_fimg2d.h>
 
 #include "../general.h"
+#include "../retroarch.h"
 #include "gfx_common.h"
 #include "fonts/fonts.h"
 

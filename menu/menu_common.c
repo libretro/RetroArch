@@ -21,6 +21,7 @@
 #include "menu_shader.h"
 #include "../dynamic.h"
 #include "../frontend/frontend.h"
+#include "../../retroarch.h"
 #include <file/file_path.h>
 
 static void draw_frame(void)

@@ -23,6 +23,7 @@
 #include <gfx/math/matrix_3x3.h>
 #include "../libretro.h"
 #include "../general.h"
+#include "../retroarch.h"
 #include "../driver.h"
 #include "../performance.h"
 #include "fonts/fonts.h"

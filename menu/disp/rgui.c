@@ -23,6 +23,7 @@
 
 #include "../menu_common.h"
 #include "../../general.h"
+#include "../../retroarch.h"
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 

@@ -25,6 +25,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include "general.h"
+#include "retroarch.h"
 #include "performance.h"
 #include "input/keyboard_line.h"
 #include "audio/utils.h"

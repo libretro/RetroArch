@@ -25,6 +25,7 @@
 #include "../file_ext.h"
 #include "../config.def.h"
 #include "../cheats.h"
+#include "../retroarch.h"
 
 #include <file/dir_list.h>
 

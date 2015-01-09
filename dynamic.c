@@ -30,6 +30,7 @@
 #include <boolean.h>
 #include "libretro_private.h"
 #include "dynamic_dummy.h"
+#include "retroarch.h"
 
 #ifdef NEED_DYNAMIC
 #ifdef _WIN32

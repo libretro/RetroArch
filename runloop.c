@@ -21,6 +21,7 @@
 #include "performance.h"
 #include "retroarch_logger.h"
 #include "intl/intl.h"
+#include "retroarch.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu_common.h"

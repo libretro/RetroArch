@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../general.h"
+#include "../retroarch.h"
 #include <math.h>
 
 #ifdef HAVE_CONFIG_H

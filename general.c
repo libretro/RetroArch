@@ -17,6 +17,7 @@
 
 #include "general.h"
 #include "settings.h"
+#include "retroarch.h"
 #include "dynamic.h"
 #include <file/file_path.h>
 
