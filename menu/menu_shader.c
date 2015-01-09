@@ -23,6 +23,7 @@
 void menu_shader_manager_init(void *data)
 {
    char cgp_path[PATH_MAX_LENGTH];
+   const char *ext;
    struct gfx_shader *shader = NULL;
    config_file_t *conf = NULL;
    const char *config_path = NULL;
@@ -58,8 +59,7 @@ void menu_shader_manager_init(void *data)
       strlcpy(menu->default_cgp, "menu.cgp", sizeof(menu->default_cgp));
    }
 
-
-   const char *ext = path_get_extension(g_settings.video.shader_path);
+   ext = path_get_extension(g_settings.video.shader_path);
    if (strcmp(ext, "glslp") == 0 || strcmp(ext, "cgp") == 0)
    {
       conf = config_file_new(g_settings.video.shader_path);
