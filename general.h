@@ -818,19 +818,6 @@ struct global
    retro_keyboard_event_t frontend_key_event;
 };
 
-struct rarch_main_wrap
-{
-   const char *content_path;
-   const char *sram_path;
-   const char *state_path;
-   const char *config_path;
-   const char *libretro_path;
-   bool verbose;
-   bool no_content;
-
-   bool touched;
-};
-
 /* Public data structures. */
 extern struct settings g_settings;
 extern struct global g_extern;
