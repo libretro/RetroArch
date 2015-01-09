@@ -104,13 +104,14 @@ static bool check_pause(bool pressed, bool frameadvance_pressed)
  *
  * Checks if the current frame is one-shot frame type.
  *
+ * Rewind buttons works like FRAMEREWIND when paused.
+ * We will one-shot in that case.
+ *
  * Returns: true if libretro frame is one-shot, otherwise false..
  *
  **/
 static inline bool check_is_oneshot(bool oneshot_pressed, bool rewind_pressed)
 {
-   /* Rewind buttons works like FRAMEREWIND when paused.
-    * We will one-shot in that case. */
    return (oneshot_pressed | rewind_pressed);
 }
 
