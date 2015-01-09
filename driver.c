@@ -717,7 +717,14 @@ static void find_camera_driver(void)
    }
 }
 
-
+/**
+ * driver_camera_start:
+ *
+ * Starts camera driver interface.
+ * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool driver_camera_start(void)
 {
    if (driver.camera && driver.camera_data && driver.camera->start)
@@ -731,12 +738,28 @@ bool driver_camera_start(void)
    return false;
 }
 
+/**
+ * driver_camera_stop:
+ *
+ * Stops camera driver.
+ * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 void driver_camera_stop(void)
 {
    if (driver.camera && driver.camera->stop && driver.camera_data)
       driver.camera->stop(driver.camera_data);
 }
 
+/**
+ * driver_camera_poll:
+ *
+ * Call camera driver's poll function.
+ * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 void driver_camera_poll(void)
 {
    if (driver.camera && driver.camera->poll && driver.camera_data)
@@ -807,7 +830,14 @@ static void find_location_driver(void)
    }
 }
 
-
+/**
+ * driver_location_start:
+ *
+ * Starts location driver interface..
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool driver_location_start(void)
 {
    if (driver.location && driver.location_data && driver.location->start)
@@ -820,12 +850,28 @@ bool driver_location_start(void)
    return false;
 }
 
+/**
+ * driver_location_stop:
+ *
+ * Stops location driver interface..
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 void driver_location_stop(void)
 {
    if (driver.location && driver.location->stop && driver.location_data)
       driver.location->stop(driver.location_data);
 }
 
+/**
+ * driver_location_set_interval:
+ * @interval_msecs     : Interval time in milliseconds.
+ * @interval_distance  : Distance at which to update.
+ *
+ * Sets interval update time for location driver interface.
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ **/
 void driver_location_set_interval(unsigned interval_msecs,
       unsigned interval_distance)
 {
@@ -835,6 +881,19 @@ void driver_location_set_interval(unsigned interval_msecs,
             interval_msecs, interval_distance);
 }
 
+/**
+ * driver_location_get_position:
+ * @lat                : Latitude of current position.
+ * @lon                : Longitude of current position.
+ * @horiz_accuracy     : Horizontal accuracy.
+ * @vert_accuracy      : Vertical accuracy.
+ *
+ * Gets current positioning information from 
+ * location driver interface.
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ *
+ * Returns: bool (1) if successful, otherwise false (0).
+ **/
 bool driver_location_get_position(double *lat, double *lon,
       double *horiz_accuracy, double *vert_accuracy)
 {
@@ -1090,6 +1149,15 @@ void driver_set_nonblock_state(bool nonblock)
       g_extern.audio_data.block_chunk_size;
 }
 
+/**
+ * driver_set_rumble_state:
+ * @port               : User number.
+ * @effect             : Rumble effect.
+ * @strength           : Strength of rumble effect.
+ *
+ * Sets the rumble state.
+ * Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE.
+ **/
 bool driver_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
@@ -1099,6 +1167,15 @@ bool driver_set_rumble_state(unsigned port,
    return false;
 }
 
+/**
+ * driver_set_sensor_state:
+ * @port               : User number.
+ * @effect             : Sensor action.
+ * @rate               : Sensor rate update.
+ *
+ * Sets the sensor state.
+ * Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE.
+ **/
 bool driver_set_sensor_state(unsigned port,
       enum retro_sensor_action action, unsigned rate)
 {
@@ -1118,6 +1195,14 @@ float driver_sensor_get_input(unsigned port, unsigned id)
    return 0.0f;
 }
 
+/**
+ * driver_get_current_framebuffer:
+ *
+ * Gets pointer to current hardware renderer framebuffer object.
+ * Used by RETRO_ENVIRONMENT_SET_HW_RENDER.
+ *
+ * Returns: pointer to hardware framebuffer object, otherwise 0.
+ **/
 uintptr_t driver_get_current_framebuffer(void)
 {
 #ifdef HAVE_FBO
@@ -1136,6 +1221,16 @@ retro_proc_address_t driver_get_proc_address(const char *sym)
    return NULL;
 }
 
+/**
+ * driver_update_system_av_info:
+ * @info               : pointer to new A/V info
+ *
+ * Update the system Audio/Video information. 
+ * Will reinitialize audio/video drivers.
+ * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool driver_update_system_av_info(const struct retro_system_av_info *info)
 {
    g_extern.system.av_info = *info;
@@ -1178,8 +1273,7 @@ static void init_menu(void)
 
 static void init_audio(void)
 {
-   size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
-   size_t outsamples_max;
+   size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
 
    audio_convert_init_simd();
 
@@ -1251,9 +1345,9 @@ static void init_audio(void)
          g_extern.audio_data.nonblock_chunk_size;
    }
 
-   /* Should never happen. */
    if (g_extern.audio_data.in_rate <= 0.0f)
    {
+      /* Should never happen. */
       RARCH_WARN("Input rate is invalid (%.3f Hz). Using output rate (%u Hz).\n",
             g_extern.audio_data.in_rate, g_settings.audio.out_rate);
       g_extern.audio_data.in_rate = g_settings.audio.out_rate;
@@ -1664,8 +1758,6 @@ void init_drivers(int flags)
    }
 }
 
-
-
 static void compute_monitor_fps_statistics(void)
 {
    double avg_fps = 0.0, stddev = 0.0;
@@ -1716,12 +1808,11 @@ static void compute_audio_buffer_statistics(void)
       accum_var += diff * diff;
    }
 
-   stddev = (unsigned)sqrt((double)accum_var / (samples - 2));
+   stddev          = (unsigned)sqrt((double)accum_var / (samples - 2));
+   avg_filled      = 1.0f - (float)avg / g_extern.audio_data.driver_buffer_size;
+   deviation       = (float)stddev / g_extern.audio_data.driver_buffer_size;
 
-   avg_filled = 1.0f - (float)avg / g_extern.audio_data.driver_buffer_size;
-   deviation = (float)stddev / g_extern.audio_data.driver_buffer_size;
-
-   low_water_size = g_extern.audio_data.driver_buffer_size * 3 / 4;
+   low_water_size  = g_extern.audio_data.driver_buffer_size * 3 / 4;
    high_water_size = g_extern.audio_data.driver_buffer_size / 4;
 
    for (i = 1; i < samples; i++)
@@ -1856,14 +1947,12 @@ void uninit_drivers(int flags)
 }
 
 
-
-
 bool driver_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points)
 {
    unsigned i;
    retro_time_t accum = 0, avg, accum_var = 0;
-   unsigned samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
+   unsigned samples   = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
          g_extern.measure_data.frame_time_samples_count);
 
    if (g_settings.video.threaded || (samples < 2))
@@ -1888,13 +1977,22 @@ bool driver_monitor_fps_statistics(double *refresh_rate,
       accum_var += diff * diff;
    }
 
-   *deviation = sqrt((double)accum_var / (samples - 1)) / avg;
-   *refresh_rate = 1000000.0 / avg;
+   *deviation     = sqrt((double)accum_var / (samples - 1)) / avg;
+   *refresh_rate  = 1000000.0 / avg;
    *sample_points = samples;
 
    return true;
 }
 
+/**
+ * driver_video_resolve:
+ * @drv                : real video driver will be set to this.
+ *
+ * Use this if you need the real video driver 
+ * and driver data pointers.
+ *
+ * Returns: video driver's userdata.
+ **/
 void *driver_video_resolve(const video_driver_t **drv)
 {
 #ifdef HAVE_THREADS

@@ -560,54 +560,180 @@ typedef struct driver
 } driver_t;
 
 void init_drivers(int flags);
+
 void init_drivers_pre(void);
+
 void uninit_drivers(int flags);
 
+/**
+ * find_prev_driver:
+ * @label              : string of driver type to be found.
+ * @str                : identifier of driver to be found.
+ * @sizeof_str         : size of @str.
+ *
+ * Find previous driver in driver array.
+ **/
 void find_prev_driver(const char *label, char *str, size_t sizeof_str);
+
+/**
+ * find_next_driver:
+ * @label              : string of driver type to be found.
+ * @str                : identifier of driver to be found.
+ * @sizeof_str         : size of @str.
+ *
+ * Find next driver in driver array.
+ **/
 void find_next_driver(const char *label, char *str, size_t sizeof_str);
 
-
 const char* config_get_audio_resampler_driver_options(void);
+
 void find_prev_resampler_driver(void);
+
 void find_next_resampler_driver(void);
 
 void driver_set_monitor_refresh_rate(float hz);
+
 bool driver_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
+
 void driver_set_nonblock_state(bool nonblock);
 
-/* Used by RETRO_ENVIRONMENT_SET_HW_RENDER. */
+/**
+ * driver_get_current_framebuffer:
+ *
+ * Gets pointer to current hardware renderer framebuffer object.
+ * Used by RETRO_ENVIRONMENT_SET_HW_RENDER.
+ *
+ * Returns: pointer to hardware framebuffer object, otherwise 0.
+ **/
 uintptr_t driver_get_current_framebuffer(void);
 
 retro_proc_address_t driver_get_proc_address(const char *sym);
 
-/* Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE */
+/**
+ * driver_set_rumble_state:
+ * @port               : User number.
+ * @effect             : Rumble effect.
+ * @strength           : Strength of rumble effect.
+ *
+ * Sets the rumble state.
+ * Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE.
+ **/
 bool driver_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
 
-/* Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE */
+/**
+ * driver_set_sensor_state:
+ * @port               : User number.
+ * @effect             : Sensor action.
+ * @rate               : Sensor rate update.
+ *
+ * Sets the sensor state.
+ * Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE.
+ **/
 bool driver_set_sensor_state(unsigned port,
       enum retro_sensor_action action, unsigned rate);
 
 float driver_sensor_get_input(unsigned port, unsigned action);
 
-/* Use this if you need the real video driver and driver data pointers */
+/**
+ * driver_video_resolve:
+ * @drv                : real video driver will be set to this.
+ *
+ * Use this if you need the real video driver 
+ * and driver data pointers.
+ *
+ * Returns: video driver's userdata.
+ **/
 void *driver_video_resolve(const video_driver_t **drv);
 
-/* Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE. */
+/**
+ * driver_camera_start:
+ *
+ * Starts camera driver.
+ * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool driver_camera_start(void);
+
+/**
+ * driver_camera_stop:
+ *
+ * Stops camera driver.
+ * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 void driver_camera_stop(void);
+
+/**
+ * driver_camera_poll:
+ *
+ * Call camera driver's poll function.
+ * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 void driver_camera_poll(void);
 
-/* Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE. */
+/**
+ * driver_location_start:
+ *
+ * Starts location driver interface..
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool driver_location_start(void);
+
+/**
+ * driver_location_stop:
+ *
+ * Stops location driver interface..
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 void driver_location_stop(void);
+
+/**
+ * driver_location_get_position:
+ * @lat                : Latitude of current position.
+ * @lon                : Longitude of current position.
+ * @horiz_accuracy     : Horizontal accuracy.
+ * @vert_accuracy      : Vertical accuracy.
+ *
+ * Gets current positioning information from 
+ * location driver interface.
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ *
+ * Returns: bool (1) if successful, otherwise false (0).
+ **/
 bool driver_location_get_position(double *lat, double *lon,
       double *horiz_accuracy, double *vert_accuracy);
+
+/**
+ * driver_location_set_interval:
+ * @interval_msecs     : Interval time in milliseconds.
+ * @interval_distance  : Distance at which to update.
+ *
+ * Sets interval update time for location driver interface.
+ * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
+ **/
 void driver_location_set_interval(unsigned interval_msecs,
       unsigned interval_distance);
 
-/* Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO. */
+/**
+ * driver_update_system_av_info:
+ * @info               : pointer to new A/V info
+ *
+ * Update the system Audio/Video information. 
+ * Will reinitialize audio/video drivers.
+ * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool driver_update_system_av_info(const struct retro_system_av_info *info);
 
 extern driver_t driver;
@@ -665,13 +791,76 @@ extern input_driver_t input_qnx;
 extern input_driver_t input_rwebinput;
 extern input_driver_t input_null;
 
+/**
+ * config_get_input_driver_options:
+ *
+ * Get an enumerated list of all input driver names, separated by '|'.
+ *
+ * Returns: string listing of all input driver names, separated by '|'.
+ **/
 const char* config_get_input_driver_options(void);
+
+/**
+ * config_get_camera_driver_options:
+ *
+ * Get an enumerated list of all camera driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all camera driver names,
+ * separated by '|'.
+ **/
 const char* config_get_camera_driver_options(void);
+
+/**
+ * config_get_video_driver_options:
+ *
+ * Get an enumerated list of all video driver names, separated by '|'.
+ *
+ * Returns: string listing of all video driver names, separated by '|'.
+ **/
 const char* config_get_video_driver_options(void);
+
+/**
+ * config_get_audio_driver_options:
+ *
+ * Get an enumerated list of all audio driver names, separated by '|'.
+ *
+ * Returns: string listing of all audio driver names, separated by '|'.
+ **/
 const char* config_get_audio_driver_options(void);
+
+/**
+ * config_get_osk_driver_options:
+ *
+ * Get an enumerated list of all OSK (onscreen keyboard) driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all OSK (onscreen keyboard) driver names,
+ * separated by '|'.
+ **/
 const char* config_get_osk_driver_options(void);
+
+/**
+ * config_get_location_driver_options:
+ *
+ * Get an enumerated list of all location driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all location driver names,
+ * separated by '|'.
+ **/
 const char* config_get_location_driver_options(void);
+
 #ifdef HAVE_MENU
+/**
+ * config_get_menu_driver_options:
+ *
+ * Get an enumerated list of all menu driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all menu driver names,
+ * separated by '|'.
+ **/
 const char* config_get_menu_driver_options(void);
 #endif
   
