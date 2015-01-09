@@ -361,7 +361,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
       enum retro_pixel_format in_pixel_format,
       unsigned max_width, unsigned max_height)
 {
-   char basedir[PATH_MAX];
+   char basedir[PATH_MAX_LENGTH];
    softfilter_simd_mask_t cpu_features = rarch_get_cpu_features();
    struct string_list *plugs = NULL;
    rarch_softfilter_t *filt  = NULL;

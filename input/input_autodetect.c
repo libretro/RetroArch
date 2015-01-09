@@ -40,13 +40,13 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       unsigned idx, const char *name, const char *drv,
       int32_t vid, int32_t pid, bool block_osd_spam)
 {
-   if (!conf)
-      return false;
-
-   char ident[PATH_MAX], ident_idx[PATH_MAX], input_driver[PATH_MAX];
+   char ident[PATH_MAX_LENGTH], ident_idx[PATH_MAX_LENGTH], input_driver[PATH_MAX_LENGTH];
    int input_vid = 0, input_pid = 0;
    bool cond_found_idx, cond_found_general,
         cond_found_vid = false, cond_found_pid = false;
+
+   if (!conf)
+      return false;
 
    *ident = *input_driver = '\0';
 

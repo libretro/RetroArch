@@ -166,7 +166,7 @@ int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
 #endif
 
 #ifdef IS_SALAMANDER
-extern char gx_rom_path[PATH_MAX];
+extern char gx_rom_path[PATH_MAX_LENGTH];
 #endif
 
 static void frontend_gx_get_environment_settings(int *argc, char *argv[],
@@ -219,7 +219,7 @@ static void frontend_gx_get_environment_settings(int *argc, char *argv[],
     * filename are separate in the argument list */
    if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
-      static char path[PATH_MAX];
+      static char path[PATH_MAX_LENGTH];
       *path = '\0';
       struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
 
@@ -342,7 +342,7 @@ static void frontend_gx_process_args(int *argc, char *argv[])
     * g_settings.libretro is set here. */
    if (!g_settings.libretro[0] && *argc >= 1 && strrchr(argv[0], '/'))
    {
-      char path[PATH_MAX];
+      char path[PATH_MAX_LENGTH];
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
       rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, path);
    }

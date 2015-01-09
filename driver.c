@@ -587,7 +587,7 @@ static const void *find_driver_nonempty(const char *label, int i,
 static int find_driver_index(const char * label, const char *drv)
 {
    unsigned i;
-   char str[PATH_MAX];
+   char str[PATH_MAX_LENGTH];
    const void *obj = NULL;
 
    for (i = 0; (obj = (const void*)
@@ -1057,7 +1057,7 @@ static void adjust_system_rates(void)
 
 void driver_set_monitor_refresh_rate(float hz)
 {
-   char msg[PATH_MAX];
+   char msg[PATH_MAX_LENGTH];
    snprintf(msg, sizeof(msg), "Setting refresh rate to: %.3f Hz.", hz);
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
    RARCH_LOG("%s\n", msg);

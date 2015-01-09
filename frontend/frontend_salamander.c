@@ -51,7 +51,7 @@ static void find_first_libretro_core(char *first_file,
    
    for (i = 0; i < list->size && !ret; i++)
    {
-      char fname[PATH_MAX];
+      char fname[PATH_MAX_LENGTH];
       const char *libretro_elem = (const char*)list->elems[i].data;
 
       RARCH_LOG("Checking library: \"%s\".\n", libretro_elem);
@@ -87,7 +87,7 @@ static void find_and_set_first_file(char *path, size_t sizeof_path,
     * we can find in the RetroArch cores directory.
     */
 
-   char first_file[PATH_MAX] = {0};
+   char first_file[PATH_MAX_LENGTH] = {0};
    find_first_libretro_core(first_file, sizeof(first_file),
          g_defaults.core_dir, ext);
 
@@ -110,7 +110,7 @@ static void salamander_init(char *libretro_path, size_t sizeof_libretro_path)
 
    if (config_file_exists)
    {
-      char tmp_str[PATH_MAX];
+      char tmp_str[PATH_MAX_LENGTH];
       config_file_t * conf = (config_file_t*)config_file_new(g_defaults.config_path);
 
       if (conf)
@@ -145,7 +145,7 @@ static void salamander_init(char *libretro_path, size_t sizeof_libretro_path)
 
 int main(int argc, char *argv[])
 {
-   char libretro_path[PATH_MAX];
+   char libretro_path[PATH_MAX_LENGTH];
    void *args = NULL;
    struct rarch_main_wrap *wrap_args = NULL;
    frontend_ctx_driver_t *frontend_ctx = NULL;

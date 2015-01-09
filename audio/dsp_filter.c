@@ -217,7 +217,7 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 rarch_dsp_filter_t *rarch_dsp_filter_new(
       const char *filter_config, float sample_rate)
 {
-   char basedir[PATH_MAX];
+   char basedir[PATH_MAX_LENGTH];
    struct string_list *plugs = NULL;
    rarch_dsp_filter_t *dsp = NULL;
 

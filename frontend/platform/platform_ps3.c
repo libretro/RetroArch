@@ -98,7 +98,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
    unsigned int get_attributes;
    CellGameContentSize size;
    char dirName[CELL_GAME_DIRNAME_SIZE];
-   char contentInfoPath[PATH_MAX];
+   char contentInfoPath[PATH_MAX_LENGTH];
 
 #ifdef HAVE_MULTIMAN
    /* not launched from external launcher, set default path */
@@ -114,7 +114,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
 #ifndef IS_SALAMANDER
       if (*argc > 1 && argv[1] != NULL && argv[1][0] != '\0')
       {
-         static char path[PATH_MAX];
+         static char path[PATH_MAX_LENGTH];
          *path = '\0';
          struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
 

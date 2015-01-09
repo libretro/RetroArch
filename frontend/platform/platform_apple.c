@@ -128,8 +128,8 @@ void apple_stop_iteration(void)
 static void frontend_apple_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   char bundle_path_buf[PATH_MAX + 1], home_dir_buf[PATH_MAX + 1],
-        support_path_buf[PATH_MAX + 1];
+   char bundle_path_buf[PATH_MAX_LENGTH], home_dir_buf[PATH_MAX_LENGTH],
+        support_path_buf[PATH_MAX_LENGTH];
    CFURLRef bundle_url;
    CFStringRef bundle_path;
    CFBundleRef bundle = CFBundleGetMainBundle();

@@ -5070,9 +5070,9 @@ static bool setting_data_append_list_input_options(
 
       for (i = 0; i < RARCH_BIND_LIST_END; i ++)
       {
+         char label[PATH_MAX_LENGTH];
+         char name[PATH_MAX_LENGTH];
          bool do_add = true;
-         char label[PATH_MAX];
-         char name[PATH_MAX];
          const struct input_bind_map* keybind = 
             (const struct input_bind_map*)&input_config_bind_map[i];
 

@@ -237,7 +237,7 @@ int entries_push_horizontal_menu_list(menu_handle_t *menu,
 
 static void parse_drive_list(file_list_t *list)
 {
-   size_t i;
+   size_t i = 0;
 
    (void)i;
 

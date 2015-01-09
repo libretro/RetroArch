@@ -530,7 +530,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char config_path[PATH_MAX];
+      static char config_path[PATH_MAX_LENGTH];
       *config_path = '\0';
 
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
@@ -576,7 +576,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char core_path[PATH_MAX];
+      static char core_path[PATH_MAX_LENGTH];
       *core_path = '\0';
 
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
@@ -595,7 +595,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char path[PATH_MAX];
+      static char path[PATH_MAX_LENGTH];
       *path = '\0';
 
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
@@ -618,7 +618,7 @@ static void frontend_android_get_environment_settings(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char path[PATH_MAX];
+      static char path[PATH_MAX_LENGTH];
       *path = '\0';
 
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);

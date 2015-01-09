@@ -31,10 +31,6 @@
 #define BOOTER_ADDR ((uint8_t *) 0x93000000)
 #define ARGS_ADDR ((uint8_t *) 0x93200000)
 
-#ifndef PATH_MAX
-#define PATH_MAX 4096
-#endif
-
 extern uint8_t _binary_wii_app_booter_app_booter_bin_start[];
 extern uint8_t _binary_wii_app_booter_app_booter_bin_end[];
 #define booter_start _binary_wii_app_booter_app_booter_bin_start
@@ -43,12 +39,12 @@ extern uint8_t _binary_wii_app_booter_app_booter_bin_end[];
 #include "../../retroarch_logger.h"
 
 #ifdef IS_SALAMANDER
-char gx_rom_path[PATH_MAX];
+char gx_rom_path[PATH_MAX_LENGTH];
 #endif
 
 static void dol_copy_argv_path(const char *dolpath, const char *argpath)
 {
-   char tmp[PATH_MAX];
+   char tmp[PATH_MAX_LENGTH];
    size_t len, t_len;
    struct __argv *argv = (struct __argv *) ARGS_ADDR;
    memset(ARGS_ADDR, 0, sizeof(struct __argv));
@@ -113,8 +109,8 @@ void system_exec_wii(const char *_path, bool should_load_game)
    g_extern.verbosity = true;
 #endif
 
-   char path[PATH_MAX];
-   char game_path[PATH_MAX];
+   char path[PATH_MAX_LENGTH];
+   char game_path[PATH_MAX_LENGTH];
 
    // copy heap info into stack so it survives us moving the .dol into MEM2
    strlcpy(path, _path, sizeof(path));

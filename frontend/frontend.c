@@ -183,7 +183,7 @@ static void history_playlist_push(content_playlist_t *playlist,
       const char *path, const char *core_path,
       struct retro_system_info *info)
 {
-   char tmp[PATH_MAX];
+   char tmp[PATH_MAX_LENGTH];
 
    if (!playlist || g_extern.libretro_dummy || !info)
       return;
