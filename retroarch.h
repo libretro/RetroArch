@@ -29,6 +29,11 @@ void rarch_main_set_state(unsigned action);
 
 bool rarch_main_command(unsigned action);
 
+int rarch_main_init(int argc, char *argv[]);
+
+void rarch_main_init_wrap(const struct rarch_main_wrap *args,
+      int *argc, char **argv);
+
 void rarch_main_deinit(void);
 
 void rarch_render_cached_frame(void);
