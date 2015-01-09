@@ -96,19 +96,19 @@ static int dom_read_bin(void* value, uint32_t len, void *data)
 
 static int dom_read_map_start(uint32_t len, void *data)
 {
-   int i;
+   unsigned i;
    struct rmsgpack_dom_pair *items = NULL;
-	struct dom_reader_state *dom_state = (struct dom_reader_state*)data;
-	
+   struct dom_reader_state *dom_state = (struct dom_reader_state*)data;
    struct rmsgpack_dom_value *v = dom_reader_state_pop(dom_state);
-	v->type = RDT_MAP;
-	v->map.len = len;
-	v->map.items = NULL;
 
-	items = (struct rmsgpack_dom_pair *)calloc(len, sizeof(struct rmsgpack_dom_pair));
+   v->type = RDT_MAP;
+   v->map.len = len;
+   v->map.items = NULL;
 
-	if (!items)
-		return -ENOMEM;
+   items = (struct rmsgpack_dom_pair *)calloc(len, sizeof(struct rmsgpack_dom_pair));
+
+   if (!items)
+      return -ENOMEM;
 
 	v->map.items = items;
 	for (i = 0; i < len; i++)
@@ -123,10 +123,11 @@ static int dom_read_map_start(uint32_t len, void *data)
 
 static int dom_read_array_start(uint32_t len, void *data)
 {
-   int i;
-	struct dom_reader_state *dom_state = (struct dom_reader_state*)data;
+   unsigned i;
+   struct dom_reader_state *dom_state = (struct dom_reader_state*)data;
    struct rmsgpack_dom_value *v = dom_reader_state_pop(dom_state);
    struct rmsgpack_dom_value *items = NULL;
+
    v->type = RDT_ARRAY;
    v->array.len = len;
    v->array.items = NULL;
@@ -159,7 +160,7 @@ static struct rmsgpack_read_callbacks dom_reader_callbacks = {
 
 void rmsgpack_dom_value_free(struct rmsgpack_dom_value *v)
 {
-   int i;
+   unsigned i;
 
    switch (v->type)
    {
@@ -194,7 +195,7 @@ void rmsgpack_dom_value_free(struct rmsgpack_dom_value *v)
 struct rmsgpack_dom_value *rmsgpack_dom_value_map_value(
       const struct rmsgpack_dom_value *map, const struct rmsgpack_dom_value *key)
 {
-   int i;
+   unsigned i;
    if (map->type != RDT_MAP)
       return NULL;
 
@@ -209,7 +210,9 @@ struct rmsgpack_dom_value *rmsgpack_dom_value_map_value(
 int rmsgpack_dom_value_cmp(
       const struct rmsgpack_dom_value *a, const struct rmsgpack_dom_value *b)
 {
-   int rv, i;
+   int rv;
+   unsigned i;
+
    if (a == b)
       return 1;
 
@@ -261,7 +264,7 @@ int rmsgpack_dom_value_cmp(
 
 void rmsgpack_dom_value_print(struct rmsgpack_dom_value *obj)
 {
-   int i;
+   unsigned i;
 
    switch (obj->type)
    {
@@ -322,7 +325,7 @@ void rmsgpack_dom_value_print(struct rmsgpack_dom_value *obj)
 }
 int rmsgpack_dom_write(int fd, const struct rmsgpack_dom_value *obj)
 {
-   int i;
+   unsigned i;
    int rv = 0;
    int written = 0;
 

@@ -208,16 +208,20 @@ static int binsearch(const void *buff, const void *item, uint64_t count, uint8_t
 int rarchdb_find_entry(struct rarchdb *db, const char *index_name, const void *key)
 {
    struct rarchdb_index idx;
-   uint64_t offset;
-   ssize_t nread = 0;
    int rv;
+   void *buff;
+   uint64_t offset;
+   ssize_t bufflen, nread = 0;
+
    if (rarchdb_find_index(db, index_name, &idx) < 0)
    {
       rarchdb_read_reset(db);
       return -1;
    }
-   size_t bufflen = idx.next;
-   void* buff = malloc(bufflen);
+   
+   bufflen = idx.next;
+   buff = malloc(bufflen);
+   
    if (!buff)
       return -ENOMEM;
 

@@ -401,7 +401,9 @@ static int read_buff(int fd, size_t size, char** pbuff, uint64_t *len)
 
 static int read_map(int fd, uint32_t len, struct rmsgpack_read_callbacks *callbacks, void *data)
 {
-	int rv, i;
+	int rv;
+	unsigned i;
+
 	if (
 		callbacks->read_map_start &&
 		(rv = callbacks->read_map_start(len, data)) < 0)
@@ -420,7 +422,8 @@ static int read_map(int fd, uint32_t len, struct rmsgpack_read_callbacks *callba
 
 static int read_array(int fd, uint32_t len, struct rmsgpack_read_callbacks *callbacks, void *data)
 {
-	int rv, i;
+   int rv;
+   unsigned i;
 
 	if (
 		callbacks->read_array_start &&
