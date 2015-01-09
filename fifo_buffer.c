@@ -49,6 +49,7 @@ size_t fifo_read_avail(fifo_buffer_t *buffer)
 {
    size_t first = buffer->first;
    size_t end   = buffer->end;
+
    if (end < first)
       end += buffer->bufsize;
    return end - first;
@@ -58,6 +59,7 @@ size_t fifo_write_avail(fifo_buffer_t *buffer)
 {
    size_t first = buffer->first;
    size_t end   = buffer->end;
+
    if (end < first)
       end += buffer->bufsize;
 
@@ -86,6 +88,7 @@ void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t size)
 {
    size_t first_read = size;
    size_t rest_read  = 0;
+
    if (buffer->first + size > buffer->bufsize)
    {
       first_read = buffer->bufsize - buffer->first;

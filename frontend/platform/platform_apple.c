@@ -105,7 +105,8 @@ static void do_iteration(void)
 
 void apple_start_iteration(void)
 {
-  if (iterate_observer == NULL) {
+  if (iterate_observer == NULL)
+  {
     iterate_observer =
       CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
                               true, 0, (CFRunLoopObserverCallBack)do_iteration, 0);
@@ -116,7 +117,8 @@ void apple_start_iteration(void)
 
 void apple_stop_iteration(void)
 {
-  if (iterate_observer != NULL) {
+  if (iterate_observer != NULL)
+  {
     CFRunLoopObserverInvalidate(iterate_observer);
     CFRelease(iterate_observer);
     iterate_observer = NULL;
@@ -126,14 +128,17 @@ void apple_stop_iteration(void)
 static void frontend_apple_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
-
-   char bundle_path_buf[PATH_MAX + 1], home_dir_buf[PATH_MAX + 1];
+   char bundle_path_buf[PATH_MAX + 1], home_dir_buf[PATH_MAX + 1],
+        support_path_buf[PATH_MAX + 1];
    CFURLRef bundle_url;
+   CFStringRef bundle_path;
    CFBundleRef bundle = CFBundleGetMainBundle();
+
    if (!bundle)
       return;
-   bundle_url = CFBundleCopyBundleURL(bundle);
-   CFStringRef bundle_path = CFURLCopyPath(bundle_url);
+
+   bundle_url  = CFBundleCopyBundleURL(bundle);
+   bundle_path = CFURLCopyPath(bundle_url);
     
    CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
    (void)home_dir_buf;
@@ -162,7 +167,6 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
          RARCH_ERR("Failed to create or access system directory: %s.\n", g_defaults.system_dir);
    }
 #elif defined(OSX)
-    char support_path_buf[PATH_MAX + 1];
     CFSearchPathForDirectoriesInDomains(CFApplicationSupportDirectory, CFUserDomainMask, 1, support_path_buf, sizeof(support_path_buf));
     
     fill_pathname_join(g_defaults.core_dir, bundle_path_buf, "Contents/Resources/modules", sizeof(g_defaults.core_dir));
@@ -189,7 +193,8 @@ static void frontend_apple_load_content(void)
    if ( driver.menu_ctx && driver.menu_ctx == &menu_ctx_ios && driver.menu && driver.menu->userdata )
    {
       ios_handle_t *ih = (ios_handle_t*)driver.menu->userdata;
-      ih->notify_content_loaded();
+      if (ih)
+         ih->notify_content_loaded();
    }
 #endif
 }
