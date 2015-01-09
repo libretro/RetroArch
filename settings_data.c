@@ -1377,6 +1377,17 @@ static void menu_common_setting_set_label_perf(char *type_str,
  ******* LIST BUILDING HELPER FUNCTIONS *******
 **/
 
+/**
+ * setting_data_action_setting:
+ * @name               : Name of setting.
+ * @short_description  : Short description of setting.
+ * @group              : Group that the setting belongs to.
+ * @subgroup           : Subgroup that the setting belongs to.
+ *
+ * Initializes a setting of type ST_ACTION.
+ *
+ * Returns: setting of type ST_ACTION.
+ **/
 rarch_setting_t setting_data_action_setting(const char* name,
       const char* short_description,
       const char *group, const char *subgroup)
@@ -1403,6 +1414,15 @@ rarch_setting_t setting_data_action_setting(const char* name,
    return result;
 }
 
+/**
+ * setting_data_group_setting:
+ * @type               : type of settting.
+ * @name               : name of setting.
+ *
+ * Initializes a setting of type ST_GROUP.
+ *
+ * Returns: setting of type ST_GROUP.
+ **/
 rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name)
 {
    rarch_setting_t result;
@@ -1416,8 +1436,18 @@ rarch_setting_t setting_data_group_setting(enum setting_type type, const char* n
    return result;
 }
 
-rarch_setting_t setting_data_subgroup_setting(enum setting_type type, const char* name,
-      const char *parent_name)
+/**
+ * setting_data_subgroup_setting:
+ * @type               : type of settting.
+ * @name               : name of setting.
+ * @parent_name        : group that the subgroup setting belongs to.
+ *
+ * Initializes a setting of type ST_SUBGROUP.
+ *
+ * Returns: setting of type ST_SUBGROUP.
+ **/
+rarch_setting_t setting_data_subgroup_setting(enum setting_type type,
+      const char* name, const char *parent_name)
 {
    rarch_setting_t result;
 
@@ -1432,10 +1462,26 @@ rarch_setting_t setting_data_subgroup_setting(enum setting_type type, const char
    return result;
 }
 
+/**
+ * setting_data_float_setting:
+ * @name               : name of setting.
+ * @short_description  : Short description of setting.
+ * @target             : Target of float setting.
+ * @default_value      : Default value (in float).
+ * @rounding           : Rounding (for float-to-string representation).
+ * @group              : Group that the setting belongs to.
+ * @subgroup           : Subgroup that the setting belongs to.
+ * @change_handler     : Function callback for change handler function pointer.
+ * @read_handler       : Function callback for read handler function pointer.
+ *
+ * Initializes a setting of type ST_FLOAT.
+ *
+ * Returns: setting of type ST_FLOAT.
+ **/
 rarch_setting_t setting_data_float_setting(const char* name,
       const char* short_description, float* target, float default_value,
-      const char *rounding, const char *group, const char *subgroup, change_handler_t change_handler,
-      change_handler_t read_handler)
+      const char *rounding, const char *group, const char *subgroup,
+      change_handler_t change_handler, change_handler_t read_handler)
 {
    rarch_setting_t result;
 
@@ -1462,11 +1508,28 @@ rarch_setting_t setting_data_float_setting(const char* name,
    return result;
 }
 
+/**
+ * setting_data_bool_setting:
+ * @name               : name of setting.
+ * @short_description  : Short description of setting.
+ * @target             : Target of bool setting.
+ * @default_value      : Default value (in bool format).
+ * @off                : String value for "Off" label.
+ * @on                 : String value for "On"  label.
+ * @group              : Group that the setting belongs to.
+ * @subgroup           : Subgroup that the setting belongs to.
+ * @change_handler     : Function callback for change handler function pointer.
+ * @read_handler       : Function callback for read handler function pointer.
+ *
+ * Initializes a setting of type ST_BOOL.
+ *
+ * Returns: setting of type ST_BOOL.
+ **/
 rarch_setting_t setting_data_bool_setting(const char* name,
       const char* short_description, bool* target, bool default_value,
       const char *off, const char *on,
-      const char *group, const char *subgroup, change_handler_t change_handler,
-      change_handler_t read_handler)
+      const char *group, const char *subgroup,
+      change_handler_t change_handler, change_handler_t read_handler)
 {
    rarch_setting_t result;
 
@@ -1494,6 +1557,21 @@ rarch_setting_t setting_data_bool_setting(const char* name,
    return result;
 }
 
+/**
+ * setting_data_int_setting:
+ * @name               : name of setting.
+ * @short_description  : Short description of setting.
+ * @target             : Target of signed integer setting.
+ * @default_value      : Default value (in signed integer format).
+ * @group              : Group that the setting belongs to.
+ * @subgroup           : Subgroup that the setting belongs to.
+ * @change_handler     : Function callback for change handler function pointer.
+ * @read_handler       : Function callback for read handler function pointer.
+ *
+ * Initializes a setting of type ST_INT. 
+ *
+ * Returns: setting of type ST_INT.
+ **/
 rarch_setting_t setting_data_int_setting(const char* name,
       const char* short_description, int* target, int default_value,
       const char *group, const char *subgroup, change_handler_t change_handler,
@@ -1519,6 +1597,21 @@ rarch_setting_t setting_data_int_setting(const char* name,
    return result;
 }
 
+/**
+ * setting_data_uint_setting:
+ * @name               : name of setting.
+ * @short_description  : Short description of setting.
+ * @target             : Target of unsigned integer setting.
+ * @default_value      : Default value (in unsigned integer format).
+ * @group              : Group that the setting belongs to.
+ * @subgroup           : Subgroup that the setting belongs to.
+ * @change_handler     : Function callback for change handler function pointer.
+ * @read_handler       : Function callback for read handler function pointer.
+ *
+ * Initializes a setting of type ST_UINT. 
+ *
+ * Returns: setting of type ST_UINT.
+ **/
 rarch_setting_t setting_data_uint_setting(const char* name,
       const char* short_description, unsigned int* target,
       unsigned int default_value, const char *group, const char *subgroup,
@@ -1548,6 +1641,21 @@ rarch_setting_t setting_data_uint_setting(const char* name,
    return result;
 }
 
+/**
+ * setting_data_bind_setting:
+ * @name               : name of setting.
+ * @short_description  : Short description of setting.
+ * @target             : Target of bind setting.
+ * @idx                : Index of bind setting.
+ * @idx_offset         : Index offset of bind setting.
+ * @default_value      : Default value (in bind format).
+ * @group              : Group that the setting belongs to.
+ * @subgroup           : Subgroup that the setting belongs to.
+ *
+ * Initializes a setting of type ST_BIND. 
+ *
+ * Returns: setting of type ST_BIND.
+ **/
 rarch_setting_t setting_data_bind_setting(const char* name,
       const char* short_description, struct retro_keybind* target,
       uint32_t idx, uint32_t idx_offset,
@@ -1576,6 +1684,24 @@ rarch_setting_t setting_data_bind_setting(const char* name,
    return result;
 }
 
+/**
+ * setting_data_string_setting:
+ * @type               : type of setting.
+ * @name               : name of setting.
+ * @short_description  : Short description of setting.
+ * @target             : Target of string setting.
+ * @size               : Size of string setting.
+ * @default_value      : Default value (in string format).
+ * @empty              : TODO/FIXME: ???
+ * @group              : Group that the setting belongs to.
+ * @subgroup           : Subgroup that the setting belongs to.
+ * @change_handler     : Function callback for change handler function pointer.
+ * @read_handler       : Function callback for read handler function pointer.
+ *
+ * Initializes a string setting (of type @type). 
+ *
+ * Returns: String setting of type @type.
+ **/
 rarch_setting_t setting_data_string_setting(enum setting_type type,
       const char* name, const char* short_description, char* target,
       unsigned size, const char* default_value, const char *empty,
@@ -1615,12 +1741,12 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
    return result;
 }
 
-rarch_setting_t setting_data_string_setting_options
-(enum setting_type type,
+rarch_setting_t setting_data_string_setting_options(enum setting_type type,
  const char* name, const char* short_description, char* target,
- unsigned size, const char* default_value, const char *empty, const char *values,
- const char *group, const char *subgroup, change_handler_t change_handler,
- change_handler_t read_handler)
+ unsigned size, const char* default_value,
+ const char *empty, const char *values,
+ const char *group, const char *subgroup,
+ change_handler_t change_handler, change_handler_t read_handler)
 {
   rarch_setting_t result = setting_data_string_setting(type, name,
         short_description, target, size, default_value, empty, group,
@@ -1629,9 +1755,6 @@ rarch_setting_t setting_data_string_setting_options
   result.values          = values;
   return result;
 }
-
-
-
 
 /**
  * setting_data_get_description:
@@ -2674,6 +2797,20 @@ static void get_string_representation_savestate(void * data, char *type_str,
       strlcat(type_str, " (Auto)", type_str_size);
 }
 
+/**
+ * setting_data_get_label:
+ * @type_str           : String for the type to be represented on-screen as
+ *                       a label.
+ * @type_str_size      : Size of @type_str
+ * @w                  : Width of the string (for text label representation
+ *                       purposes in the menu display driver).
+ * @type               : Identifier of setting.
+ * @menu_label         : Menu Label identifier of setting.
+ * @label              : Label identifier of setting.
+ * @idx                : Index identifier of setting.
+ *
+ * Get associated label of a setting.
+ **/
 void setting_data_get_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx)
@@ -5817,6 +5954,15 @@ static bool setting_data_append_list_privacy_options(
 }
 
 
+/**
+ * setting_data_new:
+ * @mask               : Bitmask of settings to include.
+ *
+ * Request a list of settings based on @mask.
+ *
+ * Returns: settings list composed of all requested
+ * settings on success, otherwise NULL.
+ **/
 rarch_setting_t *setting_data_new(unsigned mask)
 {
    rarch_setting_t terminator = { ST_NONE };
