@@ -90,6 +90,7 @@ static inline void write_size_t(void *ptr, size_t val)
 static inline size_t read_size_t(const void *ptr)
 {
    size_t ret;
+
    memcpy(&ret, ptr, sizeof(ret));
    return ret;
 }
@@ -120,15 +121,18 @@ struct state_manager
 
 state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
 {
+   size_t newblocksize;
+   int maxcblks;
+   const int maxcblkcover = UINT16_MAX * sizeof(uint16_t);
    state_manager_t *state = (state_manager_t*)calloc(1, sizeof(*state));
+
    if (!state)
       return NULL;
 
-   size_t newblocksize = ((state_size - 1) | (sizeof(uint16_t) - 1)) + 1;
+   newblocksize = ((state_size - 1) | (sizeof(uint16_t) - 1)) + 1;
    state->blocksize = newblocksize;
 
-   const int maxcblkcover = UINT16_MAX * sizeof(uint16_t);
-   const int maxcblks = (state->blocksize + maxcblkcover - 1) / maxcblkcover;
+   maxcblks = (state->blocksize + maxcblkcover - 1) / maxcblkcover;
    state->maxcompsize = state->blocksize + maxcblks * sizeof(uint16_t) * 2 +
       sizeof(uint16_t) + sizeof(uint32_t) + sizeof(size_t) * 2;
 
@@ -182,6 +186,12 @@ void state_manager_free(state_manager_t *state)
 
 bool state_manager_pop(state_manager_t *state, const void **data)
 {
+   size_t start;
+   uint8_t *out;
+   uint16_t *out16;
+   const uint8_t *compressed = NULL;
+   const uint16_t *compressed16 = NULL;
+
    *data = NULL;
 
    if (state->thisblock_valid)
@@ -195,21 +205,22 @@ bool state_manager_pop(state_manager_t *state, const void **data)
    if (state->head == state->tail)
       return false;
 
-   size_t start = read_size_t(state->head - sizeof(size_t));
+   start = read_size_t(state->head - sizeof(size_t));
    state->head = state->data + start;
 
-   const uint8_t *compressed = state->data + start + sizeof(size_t);
-   uint8_t *out = state->thisblock;
+   compressed = state->data + start + sizeof(size_t);
+   out = state->thisblock;
 
    /* Begin decompression code
     * out is the last pushed (or returned) state */
-   const uint16_t *compressed16 = (const uint16_t*)compressed;
-   uint16_t *out16 = (uint16_t*)out;
+   compressed16 = (const uint16_t*)compressed;
+   out16 = (uint16_t*)out;
 
    for (;;)
    {
       uint16_t i;
       uint16_t numchanged = *(compressed16++);
+
       if (numchanged)
       {
          out16 += *compressed16++;
@@ -228,6 +239,7 @@ bool state_manager_pop(state_manager_t *state, const void **data)
       else
       {
          uint32_t numunchanged = compressed16[0] | (compressed16[1] << 16);
+
          if (!numunchanged)
             break;
          compressed16 += 2;
@@ -296,11 +308,11 @@ static inline size_t find_change(const uint16_t *a, const uint16_t *b)
 	
    for (;;)
    {
-      __m128i v0 = _mm_loadu_si128(a128);
-      __m128i v1 = _mm_loadu_si128(b128);
-      __m128i c = _mm_cmpeq_epi32(v0, v1);
-
+      __m128i v0    = _mm_loadu_si128(a128);
+      __m128i v1    = _mm_loadu_si128(b128);
+      __m128i c     = _mm_cmpeq_epi32(v0, v1);
       uint32_t mask = _mm_movemask_epi8(c);
+
       if (mask != 0xffff) /* Something has changed, figure out where. */
       {
          size_t ret = (((uint8_t*)a128 - (uint8_t*)a) |
@@ -498,8 +510,8 @@ recheckcapacity:;
 void state_manager_capacity(state_manager_t *state,
       unsigned *entries, size_t *bytes, bool *full)
 {
-   size_t headpos = state->head - state->data;
-   size_t tailpos = state->tail - state->data;
+   size_t headpos   = state->head - state->data;
+   size_t tailpos   = state->tail - state->data;
    size_t remaining = (tailpos + state->capacity -
          sizeof(size_t) - headpos - 1) % state->capacity + 1;
 
