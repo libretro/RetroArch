@@ -775,6 +775,8 @@ static config_file_t *open_default_config_file(void)
    /* Try to create a new config file. */
    if (!conf && (home || xdg))
    {
+      char basedir[PATH_MAX_LENGTH];
+
       /* XDG_CONFIG_HOME falls back to $HOME/.config. */
       if (xdg)
          fill_pathname_join(conf_path, xdg,
@@ -788,7 +790,6 @@ static config_file_t *open_default_config_file(void)
                ".config/retroarch/retroarch.cfg", sizeof(conf_path));
 #endif
 
-      char basedir[PATH_MAX_LENGTH];
       fill_pathname_basedir(basedir, conf_path, sizeof(basedir));
 
       if (path_mkdir(basedir))
@@ -842,14 +843,16 @@ static void config_read_keybinds_conf(config_file_t *conf);
 
 static void config_file_dump_all(config_file_t *conf)
 {
+   struct config_entry_list *list = NULL;
    struct config_include_list *includes = conf->includes;
+
    while (includes)
    {
       RARCH_LOG("#include \"%s\"\n", includes->path);
       includes = includes->next;
    }
 
-   struct config_entry_list *list = conf->entries;
+   list = conf->entries;
    while (list)
    {
       RARCH_LOG("%s = \"%s\" %s\n", list->key,
@@ -1351,9 +1354,6 @@ static void config_load_core_specific(void)
       g_settings.core_specific_config = true;
    }
 }
-
-
-
 
 static void parse_config_file(void)
 {
