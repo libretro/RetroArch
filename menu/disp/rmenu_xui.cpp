@@ -485,6 +485,7 @@ static void rmenu_xui_render(void)
 		 }	  
 	  }
    }
+   XuiListSetCurSelVisible(m_menulist, driver.menu->selection_ptr);
 
    if (driver.menu->keyboard.display)
    {
