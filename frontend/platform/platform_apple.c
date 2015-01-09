@@ -133,6 +133,8 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    CFURLRef bundle_url;
    CFStringRef bundle_path;
    CFBundleRef bundle = CFBundleGetMainBundle();
+    
+   (void)support_path_buf;
 
    if (!bundle)
       return;

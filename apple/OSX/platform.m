@@ -22,6 +22,7 @@
 #include "../../input/apple_input.h"
 #include "../../frontend/frontend.h"
 #include "../../menu/menu_common.h"
+#include "../../retroarch.h"
 
 static void* const associated_core_key = (void*)&associated_core_key;
 id<RetroArch_Platform> apple_platform;
