@@ -190,6 +190,14 @@ void core_option_flush(core_option_manager_t *opt)
    config_file_write(opt->conf, opt->conf_path);
 }
 
+/**
+ * core_option_size:
+ * @opt              : options manager handle
+ *
+ * Gets total number of options.
+ *
+ * Returns: Total number of options.
+ **/
 size_t core_option_size(core_option_manager_t *opt)
 {
    if (!opt)
@@ -197,6 +205,15 @@ size_t core_option_size(core_option_manager_t *opt)
    return opt->size;
 }
 
+/**
+ * core_option_get_desc:
+ * @opt              : options manager handle
+ * @index            : index identifier of the option
+ *
+ * Gets description for an option.
+ *
+ * Returns: Description for an option.
+ **/
 const char *core_option_get_desc(core_option_manager_t *opt, size_t idx)
 {
    if (!opt)
@@ -204,6 +221,15 @@ const char *core_option_get_desc(core_option_manager_t *opt, size_t idx)
    return opt->opts[idx].desc;
 }
 
+/**
+ * core_option_get_val:
+ * @opt              : options manager handle
+ * @index            : index identifier of the option
+ *
+ * Gets value for an option.
+ *
+ * Returns: Value for an option.
+ **/
 const char *core_option_get_val(core_option_manager_t *opt, size_t idx)
 {
    struct core_option *option = (struct core_option*)&opt->opts[idx];
@@ -233,11 +259,12 @@ void core_option_set_val(core_option_manager_t *opt,
 }
 
 /**
- * core_option_prev:
+ * core_option_next:
  * @opt                   : pointer to core option manager object.
  * @idx                   : index of core option to be reset to defaults.
  *
  * Get next value for core option specified by @idx.
+ * Options wrap around.
  **/
 void core_option_next(core_option_manager_t *opt, size_t idx)
 {
@@ -254,8 +281,10 @@ void core_option_next(core_option_manager_t *opt, size_t idx)
  * core_option_prev:
  * @opt                   : pointer to core option manager object.
  * @idx                   : index of core option to be reset to defaults.
+ * Options wrap around.
  *
  * Get previous value for core option specified by @idx.
+ * Options wrap around.
  **/
 void core_option_prev(core_option_manager_t *opt, size_t idx)
 {
@@ -274,7 +303,7 @@ void core_option_prev(core_option_manager_t *opt, size_t idx)
  * @opt                   : pointer to core option manager object.
  * @idx                   : index of core option to be reset to defaults.
  *
- * Reset core option specified by @idx to be reset to default settings.
+ * Reset core option specified by @idx and sets default value for option.
  **/
 void core_option_set_default(core_option_manager_t *opt, size_t idx)
 {
