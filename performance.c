@@ -141,6 +141,13 @@ void retro_perf_log(void)
    log_counters(perf_counters_libretro, perf_ptr_libretro);
 }
 
+/**
+ * rarch_get_perf_counter:
+ *
+ * Gets performance counter.
+ *
+ * Returns: performance counter.
+ **/
 retro_perf_tick_t rarch_get_perf_counter(void)
 {
    retro_perf_tick_t time_ticks = 0;
@@ -193,6 +200,13 @@ retro_perf_tick_t rarch_get_perf_counter(void)
    return time_ticks;
 }
 
+/**
+ * rarch_get_time_usec:
+ *
+ * Gets time in microseconds.
+ *
+ * Returns: time in microseconds.
+ **/
 retro_time_t rarch_get_time_usec(void)
 {
 #if defined(_WIN32)
@@ -311,6 +325,13 @@ static void arm_enable_runfast_mode(void)
 }
 #endif
 
+/**
+ * rarch_get_cpu_cores:
+ *
+ * Gets the amount of available CPU cores.
+ *
+ * Returns: amount of CPU cores available.
+ **/
 unsigned rarch_get_cpu_cores(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
@@ -354,6 +375,13 @@ unsigned rarch_get_cpu_cores(void)
 #endif
 }
 
+/**
+ * rarch_get_cpu_features:
+ *
+ * Gets CPU features..
+ *
+ * Returns: bitmask of all CPU features available.
+ **/
 uint64_t rarch_get_cpu_features(void)
 {
    uint64_t cpu = 0;

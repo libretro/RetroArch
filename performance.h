@@ -17,27 +17,55 @@
 #ifndef _RARCH_PERF_H
 #define _RARCH_PERF_H
 
+#include "general.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef _WIN32
 #define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
 #else
 #define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/* Used internally by RetroArch. */
+#define RARCH_PERFORMANCE_INIT(X) \
+   static struct retro_perf_counter X = {#X}; \
+   do { \
+      if (!(X).registered) \
+         rarch_perf_register(&(X)); \
+   } while(0)
 
-#include "general.h"
+#define RARCH_PERFORMANCE_START(X) rarch_perf_start(&(X))
+#define RARCH_PERFORMANCE_STOP(X) rarch_perf_stop(&(X))
 
+#ifndef MAX_COUNTERS
 #define MAX_COUNTERS 64
+#endif
 
 extern const struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
 extern const struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
 extern unsigned perf_ptr_rarch;
 extern unsigned perf_ptr_libretro;
 
+
+/**
+ * rarch_get_perf_counter:
+ *
+ * Gets performance counter.
+ *
+ * Returns: performance counter.
+ **/
 retro_perf_tick_t rarch_get_perf_counter(void);
 
+/**
+ * rarch_get_time_usec:
+ *
+ * Gets time in microseconds.
+ *
+ * Returns: time in microseconds.
+ **/
 retro_time_t rarch_get_time_usec(void);
 
 void rarch_perf_register(struct retro_perf_counter *perf);
@@ -51,34 +79,53 @@ void rarch_perf_log(void);
 
 void retro_perf_log(void);
 
+/**
+ * rarch_perf_start:
+ * @perf               : pointer to performance counter
+ *
+ * Start performance counter. 
+ **/
 static inline void rarch_perf_start(struct retro_perf_counter *perf)
 {
-   if (g_extern.perfcnt_enable)
-   {
-      perf->call_cnt++;
-      perf->start = rarch_get_perf_counter();
-   }
+   if (!g_extern.perfcnt_enable || !perf)
+      return;
+
+   perf->call_cnt++;
+   perf->start = rarch_get_perf_counter();
 }
 
+/**
+ * rarch_perf_stop:
+ * @perf               : pointer to performance counter
+ *
+ * Stop performance counter. 
+ **/
 static inline void rarch_perf_stop(struct retro_perf_counter *perf)
 {
-   if (g_extern.perfcnt_enable)
-      perf->total += rarch_get_perf_counter() - perf->start;
+   if (!g_extern.perfcnt_enable || !perf)
+      return;
+
+   perf->total += rarch_get_perf_counter() - perf->start;
 }
 
+/**
+ * rarch_get_cpu_features:
+ *
+ * Gets CPU features..
+ *
+ * Returns: bitmask of all CPU features available.
+ **/
 uint64_t rarch_get_cpu_features(void);
+
+/**
+ * rarch_get_cpu_cores:
+ *
+ * Gets the amount of available CPU cores.
+ *
+ * Returns: amount of CPU cores available.
+ **/
 unsigned rarch_get_cpu_cores(void);
 
-/* Used internally by RetroArch. */
-#define RARCH_PERFORMANCE_INIT(X) \
-   static struct retro_perf_counter X = {#X}; \
-   do { \
-      if (!(X).registered) \
-         rarch_perf_register(&(X)); \
-   } while(0)
-
-#define RARCH_PERFORMANCE_START(X) rarch_perf_start(&(X))
-#define RARCH_PERFORMANCE_STOP(X) rarch_perf_stop(&(X))
 
 #ifdef __cplusplus
 }
