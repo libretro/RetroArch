@@ -838,36 +838,6 @@ extern struct defaults g_defaults;
 
 /* Public functions. */
 
-/**
- * config_load:
- *
- * Loads a config file and reads all the values into memory.
- *
- */
-void config_load(void);
-
-const char *config_get_default_camera(void);
-const char *config_get_default_location(void);
-const char *config_get_default_osk(void);
-const char *config_get_default_video(void);
-const char *config_get_default_audio(void);
-const char *config_get_default_audio_resampler(void);
-const char *config_get_default_input(void);
-const char *config_get_default_joypad(void);
-#ifdef HAVE_MENU
-const char *config_get_default_menu(void);
-#endif
-
-/**
- * config_save_file:
- * @path            : Path that shall be written to.
- *
- * Writes a config file to disk.
- *
- * Returns: true (1) on success, otherwise returns false (0).
- */
-bool config_save_file(const char *path);
-
 void rarch_main_state_new(void);
 void rarch_main_state_free(void);
 

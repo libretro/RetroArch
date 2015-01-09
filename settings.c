@@ -21,6 +21,7 @@
 #include "config.def.h"
 #include <file/file_path.h>
 #include "input/input_common.h"
+#include "settings.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

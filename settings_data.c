@@ -24,6 +24,7 @@
 #include "config.def.h"
 #include "retroarch_logger.h"
 #include "file_ext.h"
+#include "settings.h"
 
 #if defined(__CELLOS_LV2__)
 #include <sdk_version.h>
