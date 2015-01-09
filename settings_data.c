@@ -229,204 +229,17 @@ void setting_data_set_with_string_representation(rarch_setting_t* setting,
       setting->change_handler(setting);
 }
 
-/**
- * menu_common_setting_set_label_st_bool:
- * @setting            : pointer to setting
- * @type_str           : string for the type to be represented on-screen as
- *                       a label.
- * @type_str_size      : size of @type_str
- *
- * Set a settings' label value. The setting is of type ST_BOOL.
- **/
+/*
+ * Forward declarations for set_label callback functions. 
+ */
 static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
-      char *type_str, size_t type_str_size)
-{
-   if (setting)
-      strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label :
-            setting->boolean.off_label, type_str_size);
-}
+      char *type_str, size_t type_str_size);
 
-/**
- * menu_common_setting_set_label_st_uint:
- * @setting            : pointer to setting
- * @type_str           : string for the type to be represented on-screen as
- *                       a label.
- * @type_str_size      : size of @type_str
- *
- * Set a settings' label value. The setting is of type ST_UINT.
- **/
 static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
-      char *type_str, size_t type_str_size)
-{
-   if (!setting)
-      return;
+      char *type_str, size_t type_str_size);
 
-   if (!strcmp(setting->name, "video_monitor_index"))
-   {
-      if (*setting->value.unsigned_integer)
-         snprintf(type_str, type_str_size, "%u",
-               *setting->value.unsigned_integer);
-      else
-         strlcpy(type_str, "0 (Auto)", type_str_size);
-   }
-   else if (!strcmp(setting->name, "video_rotation"))
-   {
-      strlcpy(type_str, rotation_lut[*setting->value.unsigned_integer],
-            type_str_size);
-   }
-   else if (!strcmp(setting->name, "aspect_ratio_index"))
-   {
-      strlcpy(type_str,
-            aspectratio_lut[*setting->value.unsigned_integer].name,
-            type_str_size);
-   }
-   else if (!strncmp(setting->name, "input_libretro_device_p", 23))
-   {
-      const struct retro_controller_description *desc = NULL;
-      if (setting->index_offset < g_extern.system.num_ports)
-         desc = libretro_find_controller_description(
-               &g_extern.system.ports[setting->index_offset],
-               g_settings.input.libretro_device
-               [setting->index_offset]);
-
-      const char *name = desc ? desc->desc : NULL;
-      if (!name)
-      {
-         /* Find generic name. */
-
-         switch (g_settings.input.libretro_device
-               [setting->index_offset])
-         {
-            case RETRO_DEVICE_NONE:
-               name = "None";
-               break;
-            case RETRO_DEVICE_JOYPAD:
-               name = "RetroPad";
-               break;
-            case RETRO_DEVICE_ANALOG:
-               name = "RetroPad w/ Analog";
-               break;
-            default:
-               name = "Unknown";
-               break;
-         }
-      }
-
-      strlcpy(type_str, name, type_str_size);
-   }
-   else if (strstr(setting->name, "archive_mode"))
-   {
-      const char *name = NULL;
-
-      switch (g_settings.archive.mode)
-      {
-         case 0:
-            name = "Ask";
-            break;
-         case 1:
-            name = "Load Archive";
-            break;
-         case 2:
-            name = "Open Archive";
-            break;
-         default:
-            name = "Unknown";
-            break;
-      }
-
-      strlcpy(type_str, name, type_str_size);
-   }
-   else if (strstr(setting->name, "analog_dpad_mode"))
-   {
-      static const char *modes[] = {
-         "None",
-         "Left Analog",
-         "Right Analog",
-      };
-
-      strlcpy(type_str, modes[g_settings.input.analog_dpad_mode
-            [setting->index_offset] % ANALOG_DPAD_LAST],
-            type_str_size);
-   }
-   else if (!strcmp(setting->name, "autosave_interval"))
-   {
-      if (*setting->value.unsigned_integer)
-         snprintf(type_str, type_str_size, "%u seconds",
-               *setting->value.unsigned_integer);
-      else
-         strlcpy(type_str, "OFF", type_str_size);
-   }
-   else if (!strcmp(setting->name, "user_language"))
-   {
-      static const char *modes[] = {
-         "English",
-         "Japanese",
-         "French",
-         "Spanish",
-         "German",
-         "Italian",
-         "Dutch",
-         "Portuguese",
-         "Russian",
-         "Korean",
-         "Chinese (Traditional)",
-         "Chinese (Simplified)"
-      };
-
-      strlcpy(type_str, modes[g_settings.user_language], type_str_size);
-   }
-   else if (!strcmp(setting->name, "libretro_log_level"))
-   {
-      static const char *modes[] = {
-         "0 (Debug)",
-         "1 (Info)",
-         "2 (Warning)",
-         "3 (Error)"
-      };
-
-      strlcpy(type_str, modes[*setting->value.unsigned_integer],
-            type_str_size);
-   }
-   else
-   {
-      snprintf(type_str, type_str_size, "%u",
-            *setting->value.unsigned_integer);
-   }
-}
-
-/**
- * menu_common_setting_set_label_st_float:
- * @setting            : pointer to setting
- * @type_str           : string for the type to be represented on-screen as
- *                       a label.
- * @type_str_size      : size of @type_str
- *
- * Set a settings' label value. The setting is of type ST_FLOAT.
- **/
 static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
-      char *type_str, size_t type_str_size)
-{
-   if (!setting)
-      return;
-
-   if (!strcmp(setting->name, "video_refresh_rate_auto"))
-   {
-      double video_refresh_rate = 0.0;
-      double deviation = 0.0;
-      unsigned sample_points = 0;
-
-      if (driver_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
-         snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
-               video_refresh_rate, 100.0 * deviation, sample_points);
-      else
-         strlcpy(type_str, "N/A", type_str_size);
-
-      return;
-   }
-
-   snprintf(type_str, type_str_size, setting->rounding_fraction,
-         *setting->value.fraction);
-}
+      char *type_str, size_t type_str_size);
 
 /**
  * setting_data_get_string_representation:
@@ -500,6 +313,10 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
          break;
    }
 }
+
+/**
+ ******* ACTION START CALLBACK FUNCTIONS *******
+**/
 
 /**
  * setting_data_action_start_savestates:
@@ -705,6 +522,10 @@ static int setting_data_bind_action_start(void *data)
 
    return 0;
 }
+
+/**
+ ******* ACTION TOGGLE CALLBACK FUNCTIONS *******
+**/
 
 /**
  * setting_data_action_toggle_analog_dpad_mode
@@ -1073,6 +894,10 @@ int load_content_action_toggle(void *data, unsigned action)
    return 0;
 }
 
+/**
+ ******* ACTION OK CALLBACK FUNCTIONS *******
+**/
+
 static int setting_data_action_ok_bind_all(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1317,41 +1142,293 @@ static int setting_data_string_action_ok_allow_input(void *data,
    return 0;
 }
 
+/**
+ ******* ACTION CANCEL CALLBACK FUNCTIONS *******
+**/
+
+/**
+ ******* SET LABEL CALLBACK FUNCTIONS *******
+**/
+
+/**
+ * menu_common_setting_set_label_st_bool:
+ * @setting            : pointer to setting
+ * @type_str           : string for the type to be represented on-screen as
+ *                       a label.
+ * @type_str_size      : size of @type_str
+ *
+ * Set a settings' label value. The setting is of type ST_BOOL.
+ **/
+static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
+      char *type_str, size_t type_str_size)
+{
+   if (setting)
+      strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label :
+            setting->boolean.off_label, type_str_size);
+}
+
+/**
+ * menu_common_setting_set_label_st_uint:
+ * @setting            : pointer to setting
+ * @type_str           : string for the type to be represented on-screen as
+ *                       a label.
+ * @type_str_size      : size of @type_str
+ *
+ * Set a settings' label value. The setting is of type ST_UINT.
+ **/
+static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
+      char *type_str, size_t type_str_size)
+{
+   if (!setting)
+      return;
+
+   if (!strcmp(setting->name, "video_monitor_index"))
+   {
+      if (*setting->value.unsigned_integer)
+         snprintf(type_str, type_str_size, "%u",
+               *setting->value.unsigned_integer);
+      else
+         strlcpy(type_str, "0 (Auto)", type_str_size);
+   }
+   else if (!strcmp(setting->name, "video_rotation"))
+   {
+      strlcpy(type_str, rotation_lut[*setting->value.unsigned_integer],
+            type_str_size);
+   }
+   else if (!strcmp(setting->name, "aspect_ratio_index"))
+   {
+      strlcpy(type_str,
+            aspectratio_lut[*setting->value.unsigned_integer].name,
+            type_str_size);
+   }
+   else if (!strncmp(setting->name, "input_libretro_device_p", 23))
+   {
+      const struct retro_controller_description *desc = NULL;
+      if (setting->index_offset < g_extern.system.num_ports)
+         desc = libretro_find_controller_description(
+               &g_extern.system.ports[setting->index_offset],
+               g_settings.input.libretro_device
+               [setting->index_offset]);
+
+      const char *name = desc ? desc->desc : NULL;
+      if (!name)
+      {
+         /* Find generic name. */
+
+         switch (g_settings.input.libretro_device
+               [setting->index_offset])
+         {
+            case RETRO_DEVICE_NONE:
+               name = "None";
+               break;
+            case RETRO_DEVICE_JOYPAD:
+               name = "RetroPad";
+               break;
+            case RETRO_DEVICE_ANALOG:
+               name = "RetroPad w/ Analog";
+               break;
+            default:
+               name = "Unknown";
+               break;
+         }
+      }
+
+      strlcpy(type_str, name, type_str_size);
+   }
+   else if (strstr(setting->name, "archive_mode"))
+   {
+      const char *name = NULL;
+
+      switch (g_settings.archive.mode)
+      {
+         case 0:
+            name = "Ask";
+            break;
+         case 1:
+            name = "Load Archive";
+            break;
+         case 2:
+            name = "Open Archive";
+            break;
+         default:
+            name = "Unknown";
+            break;
+      }
+
+      strlcpy(type_str, name, type_str_size);
+   }
+   else if (strstr(setting->name, "analog_dpad_mode"))
+   {
+      static const char *modes[] = {
+         "None",
+         "Left Analog",
+         "Right Analog",
+      };
+
+      strlcpy(type_str, modes[g_settings.input.analog_dpad_mode
+            [setting->index_offset] % ANALOG_DPAD_LAST],
+            type_str_size);
+   }
+   else if (!strcmp(setting->name, "autosave_interval"))
+   {
+      if (*setting->value.unsigned_integer)
+         snprintf(type_str, type_str_size, "%u seconds",
+               *setting->value.unsigned_integer);
+      else
+         strlcpy(type_str, "OFF", type_str_size);
+   }
+   else if (!strcmp(setting->name, "user_language"))
+   {
+      static const char *modes[] = {
+         "English",
+         "Japanese",
+         "French",
+         "Spanish",
+         "German",
+         "Italian",
+         "Dutch",
+         "Portuguese",
+         "Russian",
+         "Korean",
+         "Chinese (Traditional)",
+         "Chinese (Simplified)"
+      };
+
+      strlcpy(type_str, modes[g_settings.user_language], type_str_size);
+   }
+   else if (!strcmp(setting->name, "libretro_log_level"))
+   {
+      static const char *modes[] = {
+         "0 (Debug)",
+         "1 (Info)",
+         "2 (Warning)",
+         "3 (Error)"
+      };
+
+      strlcpy(type_str, modes[*setting->value.unsigned_integer],
+            type_str_size);
+   }
+   else
+   {
+      snprintf(type_str, type_str_size, "%u",
+            *setting->value.unsigned_integer);
+   }
+}
+
+/**
+ * menu_common_setting_set_label_st_float:
+ * @setting            : pointer to setting
+ * @type_str           : string for the type to be represented on-screen as
+ *                       a label.
+ * @type_str_size      : size of @type_str
+ *
+ * Set a settings' label value. The setting is of type ST_FLOAT.
+ **/
+static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
+      char *type_str, size_t type_str_size)
+{
+   if (!setting)
+      return;
+
+   if (!strcmp(setting->name, "video_refresh_rate_auto"))
+   {
+      double video_refresh_rate = 0.0;
+      double deviation = 0.0;
+      unsigned sample_points = 0;
+
+      if (driver_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
+         snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
+               video_refresh_rate, 100.0 * deviation, sample_points);
+      else
+         strlcpy(type_str, "N/A", type_str_size);
+
+      return;
+   }
+
+   snprintf(type_str, type_str_size, setting->rounding_fraction,
+         *setting->value.fraction);
+}
+
+#ifdef HAVE_MENU
+static void menu_common_setting_set_label_perf(char *type_str,
+      size_t type_str_size, unsigned *w, unsigned type,
+      const struct retro_perf_counter **counters, unsigned offset)
+{
+   if (counters[offset] && counters[offset]->call_cnt)
+   {
+      snprintf(type_str, type_str_size,
+#ifdef _WIN32
+            "%I64u ticks, %I64u runs.",
+#else
+            "%llu ticks, %llu runs.",
+#endif
+            ((unsigned long long)counters[offset]->total /
+             (unsigned long long)counters[offset]->call_cnt),
+            (unsigned long long)counters[offset]->call_cnt);
+      return;
+   }
+
+   *type_str = '\0';
+   *w = 0;
+}
+#endif
+
+/**
+ ******* LIST BUILDING HELPER FUNCTIONS *******
+**/
+
 rarch_setting_t setting_data_action_setting(const char* name,
       const char* short_description,
       const char *group, const char *subgroup)
 {
-   rarch_setting_t result = { ST_ACTION, name };
-   result.short_description     = short_description;
-   result.group                 = group;
-   result.subgroup              = subgroup;
-   result.change_handler        = NULL;
-   result.deferred_handler      = NULL;
-   result.read_handler          = NULL;
+   rarch_setting_t result;
+
+   memset(&result, 0, sizeof(result));
    
+   result.type                      = ST_ACTION;
+   result.name                      = name;
+
+   result.short_description         = short_description;
+   result.group                     = group;
+   result.subgroup                  = subgroup;
+   result.change_handler            = NULL;
+   result.deferred_handler          = NULL;
+   result.read_handler              = NULL;
    result.get_string_representation = NULL;
    result.action_start              = NULL;
    result.action_toggle             = NULL;
    result.action_ok                 = setting_data_action_action_ok;
    result.action_cancel             = NULL;
+
    return result;
 }
 
 rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name)
 {
-   rarch_setting_t result = { type, name };
+   rarch_setting_t result;
 
+   memset(&result, 0, sizeof(result));
+   
+   result.type              = type;
+   result.name              = name;
    result.short_description = name;
+
    return result;
 }
 
 rarch_setting_t setting_data_subgroup_setting(enum setting_type type, const char* name,
       const char *parent_name)
 {
-   rarch_setting_t result = { type, name };
+   rarch_setting_t result;
+
+   memset(&result, 0, sizeof(result));
+   
+   result.type              = type;
+   result.name              = name;
 
    result.short_description = name;
-   result.group = parent_name;
+   result.group             = parent_name;
+
    return result;
 }
 
@@ -1360,20 +1437,28 @@ rarch_setting_t setting_data_float_setting(const char* name,
       const char *rounding, const char *group, const char *subgroup, change_handler_t change_handler,
       change_handler_t read_handler)
 {
-   rarch_setting_t result = { ST_FLOAT, name, sizeof(float), short_description,
-      group, subgroup };
+   rarch_setting_t result;
 
-   result.rounding_fraction = rounding;
-   result.change_handler = change_handler;
-   result.read_handler = read_handler;
-   result.value.fraction = target;
-   result.original_value.fraction = *target;
-   result.default_value.fraction = default_value;
+   memset(&result, 0, sizeof(result));
    
-   result.action_start     = setting_data_fraction_action_start_default;
-   result.action_toggle    = setting_data_fraction_action_toggle_default;
-   result.action_ok        = setting_data_fraction_action_ok_default;
-   result.action_cancel    = NULL;
+   result.type                    = ST_FLOAT;
+   result.name                    = name;
+   result.size                    = sizeof(float);
+   result.short_description       = short_description;
+   result.group                   = group;
+   result.subgroup                = subgroup;
+
+   result.rounding_fraction       = rounding;
+   result.change_handler          = change_handler;
+   result.read_handler            = read_handler;
+   result.value.fraction          = target;
+   result.original_value.fraction = *target;
+   result.default_value.fraction  = default_value;
+   result.action_start            = setting_data_fraction_action_start_default;
+   result.action_toggle           = setting_data_fraction_action_toggle_default;
+   result.action_ok               = setting_data_fraction_action_ok_default;
+   result.action_cancel           = NULL;
+
    return result;
 }
 
@@ -1383,20 +1468,29 @@ rarch_setting_t setting_data_bool_setting(const char* name,
       const char *group, const char *subgroup, change_handler_t change_handler,
       change_handler_t read_handler)
 {
-   rarch_setting_t result = { ST_BOOL, name, sizeof(bool), short_description,
-      group, subgroup };
-   result.change_handler = change_handler;
-   result.read_handler = read_handler;
-   result.value.boolean = target;
-   result.original_value.boolean = *target;
-   result.default_value.boolean = default_value;
-   result.boolean.off_label = off;
-   result.boolean.on_label = on;
+   rarch_setting_t result;
 
-   result.action_start = setting_data_bool_action_start_default;
-   result.action_toggle= setting_data_bool_action_toggle_default;
-   result.action_ok    = setting_data_bool_action_ok_default;
-   result.action_cancel= NULL;
+   memset(&result, 0, sizeof(result));
+   
+   result.type                   = ST_BOOL;
+   result.name                   = name;
+   result.size                   = sizeof(bool);
+   result.short_description      = short_description;
+   result.group                  = group;
+   result.subgroup               = subgroup;
+
+   result.change_handler         = change_handler;
+   result.read_handler           = read_handler;
+   result.value.boolean          = target;
+   result.original_value.boolean = *target;
+   result.default_value.boolean  = default_value;
+   result.boolean.off_label      = off;
+   result.boolean.on_label       = on;
+
+   result.action_start           = setting_data_bool_action_start_default;
+   result.action_toggle          = setting_data_bool_action_toggle_default;
+   result.action_ok              = setting_data_bool_action_ok_default;
+   result.action_cancel          = NULL;
    return result;
 }
 
@@ -1405,14 +1499,23 @@ rarch_setting_t setting_data_int_setting(const char* name,
       const char *group, const char *subgroup, change_handler_t change_handler,
       change_handler_t read_handler)
 {
-   rarch_setting_t result = { ST_INT, name, sizeof(int), short_description,
-      group, subgroup };
+   rarch_setting_t result;
 
-   result.change_handler = change_handler;
-   result.read_handler = read_handler;
-   result.value.integer = target;
+   memset(&result, 0, sizeof(result));
+   
+   result.type                   = ST_INT;
+   result.name                   = name;
+   result.size                   = sizeof(int);
+   result.short_description      = short_description;
+   result.group                  = group;
+   result.subgroup               = subgroup;
+
+   result.change_handler         = change_handler;
+   result.read_handler           = read_handler;
+   result.value.integer          = target;
    result.original_value.integer = *target;
-   result.default_value.integer = default_value;
+   result.default_value.integer  = default_value;
+
    return result;
 }
 
@@ -1421,19 +1524,54 @@ rarch_setting_t setting_data_uint_setting(const char* name,
       unsigned int default_value, const char *group, const char *subgroup,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result = { ST_UINT, name, sizeof(unsigned int),
-      short_description, group, subgroup };
+   rarch_setting_t result;
 
-   result.change_handler = change_handler;
-   result.read_handler = read_handler;
-   result.value.unsigned_integer = target;
+   memset(&result, 0, sizeof(result));
+   
+   result.type                            = ST_UINT;
+   result.name                            = name;
+   result.size                            = sizeof(unsigned int);
+   result.short_description               = short_description;
+   result.group                           = group;
+   result.subgroup                        = subgroup;
+
+   result.change_handler                  = change_handler;
+   result.read_handler                    = read_handler;
+   result.value.unsigned_integer          = target;
    result.original_value.unsigned_integer = *target;
-   result.default_value.unsigned_integer = default_value;
+   result.default_value.unsigned_integer  = default_value;
+   result.action_start                    = setting_data_uint_action_start_default;
+   result.action_toggle                   = setting_data_uint_action_toggle_default;
+   result.action_ok                       = setting_data_uint_action_ok_default;
+   result.action_cancel                   = NULL;
 
-   result.action_start  = setting_data_uint_action_start_default;
-   result.action_toggle = setting_data_uint_action_toggle_default;
-   result.action_ok     = setting_data_uint_action_ok_default;
-   result.action_cancel = NULL;
+   return result;
+}
+
+rarch_setting_t setting_data_bind_setting(const char* name,
+      const char* short_description, struct retro_keybind* target,
+      uint32_t idx, uint32_t idx_offset,
+      const struct retro_keybind* default_value,
+      const char *group, const char *subgroup)
+{
+   rarch_setting_t result;
+
+   memset(&result, 0, sizeof(result));
+   
+   result.type                  = ST_BIND;
+   result.name                  = name;
+   result.size                  = 0;
+   result.short_description     = short_description;
+   result.group                 = group;
+   result.subgroup              = subgroup;
+
+   result.value.keybind         = target;
+   result.default_value.keybind = default_value;
+   result.index                 = idx;
+   result.index_offset          = idx_offset;
+   result.action_start          = setting_data_bind_action_start;
+   result.action_ok             = setting_data_bind_action_ok;
+   result.action_cancel         = NULL;
 
    return result;
 }
@@ -1444,8 +1582,16 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
       const char *group, const char *subgroup, change_handler_t change_handler,
       change_handler_t read_handler)
 {
-   rarch_setting_t result = { type, name, size, short_description, group,
-      subgroup };
+   rarch_setting_t result;
+
+   memset(&result, 0, sizeof(result));
+   
+   result.type                 = type;
+   result.name                 = name;
+   result.size                 = size;
+   result.short_description    = short_description;
+   result.group                = group;
+   result.subgroup             = subgroup;
 
    result.dir.empty_path       = empty;
    result.change_handler       = change_handler;
@@ -1457,10 +1603,10 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
    switch (type)
    {
       case ST_DIR:
-         result.action_start  = setting_data_string_dir_action_start_default;
+         result.action_start   = setting_data_string_dir_action_start_default;
          break;
       case ST_PATH:
-         result.action_start  = setting_data_string_dir_action_start_default;
+         result.action_start   = setting_data_string_dir_action_start_default;
          break;
       default:
          break;
@@ -1479,32 +1625,13 @@ rarch_setting_t setting_data_string_setting_options
   rarch_setting_t result = setting_data_string_setting(type, name,
         short_description, target, size, default_value, empty, group,
         subgroup, change_handler, read_handler);
-  result.values = values;
+
+  result.values          = values;
   return result;
 }
 
 
 
-rarch_setting_t setting_data_bind_setting(const char* name,
-      const char* short_description, struct retro_keybind* target,
-      uint32_t idx, uint32_t idx_offset,
-      const struct retro_keybind* default_value,
-      const char *group, const char *subgroup)
-{
-   rarch_setting_t result = { ST_BIND, name, 0, short_description, group,
-      subgroup };
-
-   result.value.keybind = target;
-   result.default_value.keybind = default_value;
-   result.index        = idx;
-   result.index_offset = idx_offset;
-
-   result.action_start  = setting_data_bind_action_start;
-   result.action_ok     = setting_data_bind_action_ok;
-   result.action_cancel = NULL;
-
-   return result;
-}
 
 /**
  * setting_data_get_description:
@@ -2448,27 +2575,6 @@ int setting_data_get_description(const char *label, char *msg,
 }
 
 #ifdef HAVE_MENU
-static void menu_common_setting_set_label_perf(char *type_str,
-      size_t type_str_size, unsigned *w, unsigned type,
-      const struct retro_perf_counter **counters, unsigned offset)
-{
-   if (counters[offset] && counters[offset]->call_cnt)
-   {
-      snprintf(type_str, type_str_size,
-#ifdef _WIN32
-            "%I64u ticks, %I64u runs.",
-#else
-            "%llu ticks, %llu runs.",
-#endif
-            ((unsigned long long)counters[offset]->total /
-             (unsigned long long)counters[offset]->call_cnt),
-            (unsigned long long)counters[offset]->call_cnt);
-      return;
-   }
-
-   *type_str = '\0';
-   *w = 0;
-}
 
 #if defined(GEKKO)
 extern unsigned menu_gx_resolutions[][2];

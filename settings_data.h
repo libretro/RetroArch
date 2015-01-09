@@ -28,17 +28,56 @@ extern "C" {
 
 #define BINDFOR(s) (*(&(s))->value.keybind)
 
+/**
+ * setting_data_reset_setting:
+ * @setting            : pointer to setting
+ *
+ * Reset a setting's value to its defaults.
+ **/
 void setting_data_reset_setting(rarch_setting_t* setting);
+
+/**
+ * setting_data_reset:
+ * @settings           : pointer to settings
+ *
+ * Reset all settings to their default values.
+ **/
 void setting_data_reset(rarch_setting_t* settings);
 
 bool setting_data_load_config_path(rarch_setting_t* settings,
       const char* path);
 
+/**
+ * setting_data_reset:
+ * @settings           : pointer to settings
+ * @name               : name of setting to search for
+ *
+ * Search for a setting with a specified name (@name).
+ *
+ * Returns: pointer to setting if found, NULL otherwise.
+ **/
 rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings,
       const char* name);
 
+/**
+ * setting_data_set_with_string_representation:
+ * @setting            : pointer to setting
+ * @value              : value for the setting (string)
+ *
+ * Set a settings' value with a string. It is assumed
+ * that the string has been properly formatted.
+ **/
 void setting_data_set_with_string_representation(
       rarch_setting_t* setting, const char* value);
+
+/**
+ * setting_data_get_string_representation:
+ * @setting            : pointer to setting
+ * @buf                : buffer to write contents of string representation to.
+ * @sizeof_buf         : size of the buffer (@buf)
+ *
+ * Get a setting value's string representation.
+ **/
 void setting_data_get_string_representation(rarch_setting_t* setting,
       char* buf, size_t sizeof_buf);
 
