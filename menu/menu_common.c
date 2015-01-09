@@ -24,6 +24,11 @@
 #include "../../retroarch.h"
 #include <file/file_path.h>
 
+/**
+ ** draw_frame:
+ *
+ * Draws menu graphics onscreen.
+ **/
 static void draw_frame(void)
 {
    if (driver.video_data && driver.video_poke &&
@@ -46,8 +51,12 @@ static void draw_frame(void)
    rarch_render_cached_frame();
 }
 
-/* Update menu state which depends on config. */
-
+/**
+ * menu_update_libretro_info:
+ * @info                     : Pointer to system info
+ *
+ * Update menu state which depends on config.
+ **/
 void menu_update_libretro_info(struct retro_system_info *info)
 {
 #ifndef HAVE_DYNAMIC
@@ -146,6 +155,14 @@ bool load_menu_content(void)
    return true;
 }
 
+/**
+ * menu_init:
+ * @data                     : Menu context handle.
+ *
+ * Create and initialize menu handle.
+ *
+ * Returns: menu handle on success, otherwise NULL.
+ **/
 void *menu_init(const void *data)
 {
    menu_handle_t *menu = NULL;
@@ -206,6 +223,12 @@ bool menu_init_list(void *data)
    return true;
 }
 
+/**
+ * menu_free:
+ * @info                     : Menu handle.
+ *
+ * Frees a menu handle
+ **/
 void menu_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
@@ -240,6 +263,17 @@ void menu_free(void *data)
    free(data);
 }
 
+/**
+ * menu_ticker_line:
+ * @buf                      : buffer to write new message line to.
+ * @len                      : length of buffer @input.
+ * @idx                      : Index. Will be used for ticker logic.
+ * @str                      : Input string.
+ * @selected                 : Is the item currently selected in the menu?
+ *
+ * Take the contents of @str and apply a ticker effect to it,
+ * and write the results in @buf.
+ **/
 void menu_ticker_line(char *buf, size_t len, unsigned idx,
       const char *str, bool selected)
 {
@@ -376,11 +410,17 @@ void apply_deferred_settings(void)
    }
 }
 
-/* Returns:
- *  0  -  Forcibly wake up the loop.
- * -1  -  Quit out of iteration loop.
- */
-
+/**
+ * menu_iterate:
+ * @input                    : input sample for this frame
+ * @old_input                : input sample of the previous frame
+ * @trigger_input            : difference' input sample - difference
+ *                             between 'input' and 'old_input'
+ *
+ * Runs RetroArch menu for one frame.
+ *
+ * Returns: 0 on success, -1 if we need to quit out of the loop. 
+ **/
 int menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input)
 {
