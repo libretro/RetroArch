@@ -60,15 +60,6 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
       int16_t *res_screen_y);
 
-#ifdef ANDROID
-enum back_button_enums
-{
-   BACK_BUTTON_QUIT = 0,
-   BACK_BUTTON_GUI_TOGGLE,
-   BACK_BUTTON_MENU_TOGGLE,
-};
-#endif
-
 bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
       unsigned port, const struct retro_keybind *binds, unsigned key);
 
