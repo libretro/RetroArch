@@ -64,7 +64,6 @@ static void set_volume(float gain)
  * unpause the libretro core.
  *
  * Returns: true if libretro pause key was toggled, otherwise false.
- *
  **/
 static bool check_pause(bool pressed, bool frameadvance_pressed)
 {
@@ -197,6 +196,12 @@ static inline void setup_rewind_audio(void)
    g_extern.audio_data.data_ptr = 0;
 }
 
+/**
+ * check_rewind:
+ * @pressed              : was rewind key pressed or held?
+ *
+ * Checks if rewind toggle/hold was being pressed and/or held.
+ **/
 static void check_rewind(bool pressed)
 {
    static bool first = true;
@@ -265,6 +270,12 @@ static void check_rewind(bool pressed)
    retro_set_rewind_callbacks();
 }
 
+/**
+ * check_slowmotion:
+ * @pressed              : was slow motion key pressed or held?
+ *
+ * Checks if slowmotion toggle/hold was being pressed and/or held.
+ **/
 static void check_slowmotion(bool pressed)
 {
    g_extern.is_slowmotion = pressed;
@@ -320,6 +331,13 @@ static bool check_movie_init(void)
    return ret;
 }
 
+/**
+ * check_movie_record:
+ *
+ * Checks if movie is being recorded.
+ *
+ * Returns: true (1) if movie is being recorded, otherwise false (0).
+ **/
 static bool check_movie_record(void)
 {
    if (!g_extern.bsv.movie)
@@ -335,6 +353,13 @@ static bool check_movie_record(void)
    return true;
 }
 
+/**
+ * check_movie_playback:
+ *
+ * Checks if movie is being played.
+ *
+ * Returns: true (1) if movie is being played, otherwise false (0).
+ **/
 static bool check_movie_playback(void)
 {
    if (!g_extern.bsv.movie_end)
@@ -406,7 +431,15 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
       RARCH_WARN("Failed to apply shader.\n");
 }
 
-
+/**
+ * check_cheats:
+ * @trigger_input        : difference' input sample - difference
+ *
+ * Checks if any one of the cheat keys has been pressed for this frame: 
+ * a) Next cheat index.
+ * b) Previous cheat index.
+ * c) Toggle on/off of current cheat index.
+ **/
 static void check_cheats(retro_input_t trigger_input)
 {
    if (BIT64_GET(trigger_input, RARCH_CHEAT_INDEX_PLUS))
@@ -514,6 +547,22 @@ static int do_state_checks(
    return 0;
 }
 
+/**
+ * time_to_exit:
+ * @input                : input sample for this frame
+ *
+ * rarch_main_iterate() checks this to see if it's time to
+ * exit out of the main loop.
+ *
+ * Reasons for exiting:
+ * a) Shutdown environment callback was invoked.
+ * b) Quit key was pressed.
+ * c) Frame count exceeds or equals maximum amount of frames to run.
+ * d) Video driver no longer alive.
+ * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
+ *
+ * Returns: 1 if any of the above conditions are true, otherwise 0.
+ **/
 static inline int time_to_exit(retro_input_t input)
 {
    if (
@@ -531,9 +580,9 @@ static inline int time_to_exit(retro_input_t input)
 static void update_frame_time(void)
 {
    retro_time_t curr_time = rarch_get_time_usec();
-   retro_time_t delta = curr_time - g_extern.system.frame_time_last;
-   bool is_locked_fps = g_extern.is_paused || driver.nonblock_state;
-   is_locked_fps |= !!driver.recording_data;
+   retro_time_t delta     = curr_time - g_extern.system.frame_time_last;
+   bool is_locked_fps     = g_extern.is_paused || driver.nonblock_state;
+   is_locked_fps         |= !!driver.recording_data;
 
    if (!g_extern.system.frame_time_last || is_locked_fps)
       delta = g_extern.system.frame_time.reference;
@@ -541,7 +590,11 @@ static void update_frame_time(void)
    if (!is_locked_fps && g_extern.is_slowmotion)
       delta /= g_settings.slowmotion_ratio;
 
-   g_extern.system.frame_time_last = is_locked_fps ? 0 : curr_time;
+   g_extern.system.frame_time_last = curr_time;
+
+   if (is_locked_fps)
+      g_extern.system.frame_time_last = 0;
+
    g_extern.system.frame_time.callback(delta);
 }
 
@@ -722,27 +775,21 @@ static bool input_flush(retro_input_t *input)
 /**
  * rarch_main_iterate:
  *
- * Run Libretro/RetroArch for one frame.
+ * Run Libretro core in RetroArch for one frame.
  *
- * Returns: 0 if we want to indicate to the caller that 
- * any top-level runtime loop needs to be forcibly woken up.
- *
- * 1 if we have to wait until button input in order
- * to wake up the loop.
- *
- * -1 if we forcibly quit out of the RetroArch iteration loop. 
- *
+ * Returns: 0 on successful run, 1 if we have to wait until button input in order
+ * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop. 
  **/
 int rarch_main_iterate(void)
 {
    unsigned i;
    retro_input_t trigger_input;
-   int ret = 0;
+   int ret                         = 0;
    static retro_input_t last_input = 0;
-   retro_input_t old_input = last_input;
-   retro_input_t input = input_keys_pressed();
+   retro_input_t old_input         = last_input;
+   retro_input_t input             = input_keys_pressed();
 
-   last_input = input;
+   last_input                      = input;
 
    if (driver.flushing_input)
       driver.flushing_input = (input) ? input_flush(&input) : false;
