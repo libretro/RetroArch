@@ -26,6 +26,10 @@
 extern "C" {
 #endif
 
+#define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
+#define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
+#define OVERLAY_CLEAR_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
+
 /* Overlay driver acts as a medium between input drivers 
  * and video driver.
  *
@@ -137,41 +141,108 @@ typedef struct input_overlay_state
    uint64_t buttons;
    /* Left X, Left Y, Right X, Right Y */
    int16_t analog[4]; 
+
    uint32_t keys[RETROK_LAST / 32 + 1];
 } input_overlay_state_t;
 
-#define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
-#define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
-#define OVERLAY_CLEAR_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
-
+/**
+ * input_overlay_new:
+ * @path               : Path to overlay file.
+ * @enable             : Enable the overlay after initializing it?
+ *
+ * Creates and initializes an overlay handle.
+ *
+ * Returns: Overlay handle on success, otherwise NULL.
+ **/
 input_overlay_t *input_overlay_new(const char *overlay, bool enable);
+
+/**
+ * input_overlay_free:
+ * @ol                    : Overlay handle.
+ *
+ * Frees overlay handle.
+ **/
 void input_overlay_free(input_overlay_t *ol);
 
+/**
+ * input_overlay_enable:
+ * @ol                    : Overlay handle.
+ * @enable                : Enable or disable the overlay
+ *
+ * Enable or disable the overlay.
+ **/
 void input_overlay_enable(input_overlay_t *ol, bool enable);
 
+/**
+ * input_overlay_full_screen:
+ * @ol                    : Overlay handle.
+ *
+ * Checks if the overlay is fullscreen.
+ *
+ * Returns: true (1) if overlay is fullscreen, otherwise false (0).
+ **/
 bool input_overlay_full_screen(input_overlay_t *ol);
 
-/* norm_x and norm_y are the result of
- * input_translate_coord_viewport(). */
+/**
+ * input_overlay_poll:
+ * @ol                    : Overlay handle.
+ * @out                   : Polled output data.
+ * @norm_x                : Normalized X coordinate.
+ * @norm_y                : Normalized Y coordinate.
+ *
+ * Polls input overlay.
+ *
+ * @norm_x and @norm_y are the result of
+ * input_translate_coord_viewport().
+ **/
 void input_overlay_poll(input_overlay_t *ol,
       input_overlay_state_t *out, int16_t norm_x, int16_t norm_y);
 
-/* called after all the input_overlay_poll calls to
+/**
+ * input_overlay_post_poll:
+ * @ol                    : overlay handle
+ *
+ * Called after all the input_overlay_poll() calls to
  * update the range modifiers for pressed/unpressed regions
- * and alpha mods */
+ * and alpha mods.
+ **/
 void input_overlay_post_poll(input_overlay_t *ol);
 
-/* Call when there is nothing to poll. Allows overlay to
- * clear certain state. */
+/**
+ * input_overlay_poll_clear:
+ * @ol                    : overlay handle
+ *
+ * Call when there is nothing to poll. Allows overlay to
+ * clear certain state.
+ **/
 void input_overlay_poll_clear(input_overlay_t *ol);
 
-/* Sets a modulating factor for alpha channel. Default is 1.0.
- * The alpha factor is applied for all overlays. */
+/**
+ * input_overlay_set_alpha_mod:
+ * @ol                    : Overlay handle.
+ * @mod                   : New modulating factor to apply.
+ *
+ * Sets a modulating factor for alpha channel. Default is 1.0.
+ * The alpha factor is applied for all overlays.
+ **/
 void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
 
-/* Scales the overlay by a factor of scale. */
+/**
+ * input_overlay_set_scale_factor:
+ * @ol                    : Overlay handle.
+ * @scale                 : Factor of scale to apply.
+ *
+ * Scales the overlay by a factor of scale.
+ **/
 void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
 
+/**
+ * input_overlay_next:
+ * @ol                    : Overlay handle.
+ *
+ * Switch to the next available overlay
+ * screen.
+ **/
 void input_overlay_next(input_overlay_t *ol);
 
 #ifdef __cplusplus

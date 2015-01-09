@@ -78,6 +78,13 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
    }
 }
 
+/**
+ * input_overlay_set_scale_factor:
+ * @ol                    : Overlay handle.
+ * @scale                 : Factor of scale to apply.
+ *
+ * Scales the overlay by a factor of scale.
+ **/
 void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
 {
    size_t i;
@@ -554,14 +561,23 @@ static void input_overlay_load_active(input_overlay_t *ol)
    ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
 }
 
-input_overlay_t *input_overlay_new(const char *overlay, bool enable)
+/**
+ * input_overlay_new:
+ * @path               : Path to overlay file.
+ * @enable             : Enable the overlay after initializing it?
+ *
+ * Creates and initializes an overlay handle.
+ *
+ * Returns: Overlay handle on success, otherwise NULL.
+ **/
+input_overlay_t *input_overlay_new(const char *path, bool enable)
 {
    input_overlay_t *ol = (input_overlay_t*)calloc(1, sizeof(*ol));
 
    if (!ol)
       goto error;
 
-   ol->overlay_path = strdup(overlay);
+   ol->overlay_path = strdup(path);
    if (!ol->overlay_path)
    {
       free(ol);
@@ -581,7 +597,7 @@ input_overlay_t *input_overlay_new(const char *overlay, bool enable)
    if (!ol->iface)
       goto error;
 
-   if (!input_overlay_load_overlays(ol, overlay))
+   if (!input_overlay_load_overlays(ol, path))
       goto error;
 
    ol->active = &ol->overlays[0];
@@ -600,6 +616,13 @@ error:
    return NULL;
 }
 
+/**
+ * input_overlay_enable:
+ * @ol                    : Overlay handle.
+ * @enable                : Enable or disable the overlay
+ *
+ * Enable or disable the overlay.
+ **/
 void input_overlay_enable(input_overlay_t *ol, bool enable)
 {
    if (!ol)
@@ -608,6 +631,17 @@ void input_overlay_enable(input_overlay_t *ol, bool enable)
    ol->iface->enable(ol->iface_data, enable);
 }
 
+/**
+ * inside_hitbox:
+ * @desc                  : Overlay descriptor handle.
+ * @x                     : X coordinate value.
+ * @y                     : Y coordinate value.
+ *
+ * Check whether the given @x and @y coordinates of the overlay
+ * descriptor @desc is inside the overlay descriptor's hitbox.
+ *
+ * Returns: true (1) if X, Y coordinates are inside a hitbox, otherwise false (0). 
+ **/
 static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
 {
    switch (desc->hitbox)
@@ -629,6 +663,18 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
    return false;
 }
 
+/**
+ * input_overlay_poll:
+ * @ol                    : Overlay handle.
+ * @out                   : Polled output data.
+ * @norm_x                : Normalized X coordinate.
+ * @norm_y                : Normalized Y coordinate.
+ *
+ * Polls input overlay.
+ *
+ * @norm_x and @norm_y are the result of
+ * input_translate_coord_viewport().
+ **/
 void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out,
       int16_t norm_x, int16_t norm_y)
 {
@@ -721,6 +767,14 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
    }
 }
 
+/**
+ * input_overlay_post_poll:
+ * @ol                    : overlay handle
+ *
+ * Called after all the input_overlay_poll() calls to
+ * update the range modifiers for pressed/unpressed regions
+ * and alpha mods.
+ **/
 void input_overlay_post_poll(input_overlay_t *ol)
 {
    size_t i;
@@ -755,6 +809,13 @@ void input_overlay_post_poll(input_overlay_t *ol)
    }
 }
 
+/**
+ * input_overlay_poll_clear:
+ * @ol                    : overlay handle
+ *
+ * Call when there is nothing to poll. Allows overlay to
+ * clear certain state.
+ **/
 void input_overlay_poll_clear(input_overlay_t *ol)
 {
    size_t i;
@@ -779,6 +840,13 @@ void input_overlay_poll_clear(input_overlay_t *ol)
    }
 }
 
+/**
+ * input_overlay_next:
+ * @ol                    : Overlay handle.
+ *
+ * Switch to the next available overlay
+ * screen.
+ **/
 void input_overlay_next(input_overlay_t *ol)
 {
    if (!ol)
@@ -793,6 +861,14 @@ void input_overlay_next(input_overlay_t *ol)
    ol->next_index = (ol->index + 1) % ol->size;
 }
 
+/**
+ * input_overlay_full_screen:
+ * @ol                    : Overlay handle.
+ *
+ * Checks if the overlay is fullscreen.
+ *
+ * Returns: true (1) if overlay is fullscreen, otherwise false (0).
+ **/
 bool input_overlay_full_screen(input_overlay_t *ol)
 {
    if (!ol)
@@ -800,6 +876,12 @@ bool input_overlay_full_screen(input_overlay_t *ol)
    return ol->active->full_screen;
 }
 
+/**
+ * input_overlay_free:
+ * @ol                    : Overlay handle.
+ *
+ * Frees overlay handle.
+ **/
 void input_overlay_free(input_overlay_t *ol)
 {
    if (!ol)
@@ -814,6 +896,14 @@ void input_overlay_free(input_overlay_t *ol)
    free(ol);
 }
 
+/**
+ * input_overlay_set_alpha_mod:
+ * @ol                    : Overlay handle.
+ * @mod                   : New modulating factor to apply.
+ *
+ * Sets a modulating factor for alpha channel. Default is 1.0.
+ * The alpha factor is applied for all overlays.
+ **/
 void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
 {
    unsigned i;
@@ -825,4 +915,3 @@ void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
       ol->iface->set_alpha(ol->iface_data, i,
             g_settings.input.overlay_opacity);
 }
-
