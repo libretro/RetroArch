@@ -80,10 +80,23 @@ extern const frontend_ctx_driver_t frontend_ctx_android;
 extern const frontend_ctx_driver_t frontend_ctx_psp;
 extern const frontend_ctx_driver_t frontend_ctx_null;
 
-/* Finds driver with ident. Does not initialize. */
+/**
+ * frontend_ctx_find_driver:
+ * @ident               : Identifier name of driver to find.
+ *
+ * Finds driver with @ident. Does not initialize.
+ *
+ * Returns: pointer to driver if successful, otherwise NULL.
+ **/
 const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident);
 
-/* Finds first suitable driver and initialize. */
+/**
+ * frontend_ctx_init_first:
+ *
+ * Finds first suitable driver and initialize.
+ *
+ * Returns: pointer to first suitable driver, otherwise NULL. 
+ **/
 const frontend_ctx_driver_t *frontend_ctx_init_first(void);
 
 int main_entry_decide(signature(), args_type() args);

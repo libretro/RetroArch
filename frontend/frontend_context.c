@@ -47,6 +47,14 @@ static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
    NULL
 };
 
+/**
+ * frontend_ctx_find_driver:
+ * @ident               : Identifier name of driver to find.
+ *
+ * Finds driver with @ident. Does not initialize.
+ *
+ * Returns: pointer to driver if successful, otherwise NULL.
+ **/
 const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
 {
    unsigned i;
@@ -59,6 +67,13 @@ const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
    return NULL;
 }
 
+/**
+ * frontend_ctx_init_first:
+ *
+ * Finds first suitable driver and initialize.
+ *
+ * Returns: pointer to first suitable driver, otherwise NULL. 
+ **/
 const frontend_ctx_driver_t *frontend_ctx_init_first(void)
 {
    unsigned i;
