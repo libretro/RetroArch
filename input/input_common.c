@@ -478,6 +478,9 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
 {
    char key[64], keybuf[64];
 
+   (void)key;
+   (void)keybuf;
+
    *buf = '\0';
    if (bind->joykey != NO_BTN)
       input_get_bind_string_joykey(buf, "", bind, size);

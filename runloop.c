@@ -624,6 +624,8 @@ static void check_block_hotkey(bool enable_hotkey)
  */
 static inline retro_input_t input_keys_pressed(void)
 {
+   int key;
+   unsigned i;
    static const struct retro_keybind *binds[MAX_USERS] = {
       g_settings.input.binds[0],
       g_settings.input.binds[1],
@@ -643,7 +645,6 @@ static inline retro_input_t input_keys_pressed(void)
       g_settings.input.binds[15],
    };
    retro_input_t ret = 0;
-   int i, key;
 
    g_extern.turbo_count++;
 
