@@ -27,30 +27,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Checks if input port/index is controlled by netplay or not. */
-static bool netplay_is_alive(netplay_t *netplay);
-
-static bool netplay_poll(netplay_t *netplay);
-
-static int16_t netplay_input_state(netplay_t *netplay, bool port,
-      unsigned device, unsigned idx, unsigned id);
-
-/* If we're fast-forward replaying to resync, check if we 
- * should actually show frame. */
-static bool netplay_should_skip(netplay_t *netplay);
-
-static bool netplay_can_poll(netplay_t *netplay);
-
-static void netplay_set_spectate_input(netplay_t *netplay, int16_t input);
-
-static bool netplay_send_cmd(netplay_t *netplay, uint32_t cmd,
-      const void *data, size_t size);
-
-static bool netplay_get_cmd(netplay_t *netplay);
-
-#define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
-#define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
-
 struct delta_frame
 {
    void *state;
@@ -69,6 +45,9 @@ struct delta_frame
 #define NETPLAY_CMD_ACK 0
 #define NETPLAY_CMD_NAK 1
 #define NETPLAY_CMD_FLIP_PLAYERS 2
+
+#define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
+#define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
 
 struct netplay
 {
@@ -174,6 +153,328 @@ static void warn_hangup(void)
       msg_queue_push(g_extern.msg_queue, "Netplay has disconnected. Will continue without connection.", 0, 480);
 }
 
+/* If we're fast-forward replaying to resync, check if we 
+ * should actually show frame. */
+static bool netplay_should_skip(netplay_t *netplay)
+{
+   if (!netplay)
+      return false;
+   return netplay->is_replay && netplay->has_connection;
+}
+
+static bool netplay_can_poll(netplay_t *netplay)
+{
+   if (!netplay)
+      return false;
+   return netplay->can_poll;
+}
+
+static bool send_chunk(netplay_t *netplay)
+{
+   const struct sockaddr *addr = NULL;
+   if (netplay->addr)
+      addr = netplay->addr->ai_addr;
+   else if (netplay->has_client_addr)
+      addr = (const struct sockaddr*)&netplay->their_addr;
+
+   if (addr)
+   {
+      if (sendto(netplay->udp_fd, CONST_CAST netplay->packet_buffer,
+               sizeof(netplay->packet_buffer), 0, addr,
+               sizeof(struct sockaddr)) != sizeof(netplay->packet_buffer))
+      {
+         warn_hangup();
+         netplay->has_connection = false;
+         return false;
+      }
+   }
+   return true;
+}
+
+/* Grab our own input state and send this over the network. */
+static bool get_self_input_state(netplay_t *netplay)
+{
+   unsigned i;
+   struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
+   uint32_t state = 0;
+
+   if (!driver.block_libretro_input && netplay->frame_count > 0)
+   {
+      /* First frame we always give zero input since relying on 
+       * input from first frame screws up when we use -F 0. */
+      retro_input_state_t cb = netplay->cbs.state_cb;
+      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
+      {
+         int16_t tmp = cb(g_settings.input.netplay_client_swap_input ?
+               0 : !netplay->port,
+               RETRO_DEVICE_JOYPAD, 0, i);
+         state |= tmp ? 1 << i : 0;
+      }
+   }
+
+   memmove(netplay->packet_buffer, netplay->packet_buffer + 2,
+         sizeof (netplay->packet_buffer) - 2 * sizeof(uint32_t));
+   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2] = htonl(netplay->frame_count); 
+   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2 + 1] = htonl(state);
+
+   if (!send_chunk(netplay))
+   {
+      warn_hangup();
+      netplay->has_connection = false;
+      return false;
+   }
+
+   ptr->self_state = state;
+   netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
+   return true;
+}
+
+static bool netplay_cmd_ack(netplay_t *netplay)
+{
+   uint32_t cmd = htonl(NETPLAY_CMD_ACK);
+   return send_all(netplay->fd, &cmd, sizeof(cmd));
+}
+
+static bool netplay_cmd_nak(netplay_t *netplay)
+{
+   uint32_t cmd = htonl(NETPLAY_CMD_NAK);
+   return send_all(netplay->fd, &cmd, sizeof(cmd));
+}
+
+static bool netplay_get_response(netplay_t *netplay)
+{
+   uint32_t response;
+   if (!recv_all(netplay->fd, &response, sizeof(response)))
+      return false;
+
+   return ntohl(response) == NETPLAY_CMD_ACK;
+}
+
+static bool netplay_get_cmd(netplay_t *netplay)
+{
+   uint32_t cmd, flip_frame;
+   size_t cmd_size;
+
+   if (!recv_all(netplay->fd, &cmd, sizeof(cmd)))
+      return false;
+
+   cmd = ntohl(cmd);
+
+   cmd_size = cmd & 0xffff;
+   cmd = cmd >> 16;
+
+   switch (cmd)
+   {
+      case NETPLAY_CMD_FLIP_PLAYERS:
+         if (cmd_size != sizeof(uint32_t))
+         {
+            RARCH_ERR("CMD_FLIP_PLAYERS has unexpected command size.\n");
+            return netplay_cmd_nak(netplay);
+         }
+
+         if (!recv_all(netplay->fd, &flip_frame, sizeof(flip_frame)))
+         {
+            RARCH_ERR("Failed to receive CMD_FLIP_PLAYERS argument.\n");
+            return netplay_cmd_nak(netplay);
+         }
+
+         flip_frame = ntohl(flip_frame);
+
+         if (flip_frame < netplay->flip_frame)
+         {
+            RARCH_ERR("Host asked us to flip users in the past. Not possible ...\n");
+            return netplay_cmd_nak(netplay);
+         }
+
+         netplay->flip ^= true;
+         netplay->flip_frame = flip_frame;
+
+         RARCH_LOG("Netplay users are flipped.\n");
+         msg_queue_push(g_extern.msg_queue, "Netplay users are flipped.", 1, 180);
+
+         return netplay_cmd_ack(netplay);
+
+      default:
+         break;
+   }
+
+   RARCH_ERR("Unknown netplay command received.\n");
+   return netplay_cmd_nak(netplay);
+}
+
+#define MAX_RETRIES 16
+#define RETRY_MS 500
+
+static int poll_input(netplay_t *netplay, bool block)
+{
+   int max_fd = (netplay->fd > netplay->udp_fd ? netplay->fd : netplay->udp_fd) + 1;
+
+   struct timeval tv = {0};
+   tv.tv_sec = 0;
+   tv.tv_usec = block ? (RETRY_MS * 1000) : 0;
+
+   do
+   { 
+      netplay->timeout_cnt++;
+
+      /* select() does not take pointer to const struct timeval.
+       * Technically possible for select() to modify tmp_tv, so 
+       * we go paranoia mode. */
+      struct timeval tmp_tv = tv;
+
+      fd_set fds;
+      FD_ZERO(&fds);
+      FD_SET(netplay->udp_fd, &fds);
+      FD_SET(netplay->fd, &fds);
+
+      if (select(max_fd, &fds, NULL, NULL, &tmp_tv) < 0)
+         return -1;
+
+      /* Somewhat hacky,
+       * but we aren't using the TCP connection for anything useful atm. */
+      if (FD_ISSET(netplay->fd, &fds) && !netplay_get_cmd(netplay))
+         return -1; 
+
+      if (FD_ISSET(netplay->udp_fd, &fds))
+         return 1;
+
+      if (block && !send_chunk(netplay))
+      {
+         warn_hangup();
+         netplay->has_connection = false;
+         return -1;
+      }
+
+      if (block)
+      {
+         RARCH_LOG("Network is stalling, resending packet... Count %u of %d ...\n",
+               netplay->timeout_cnt, MAX_RETRIES);
+      }
+   } while ((netplay->timeout_cnt < MAX_RETRIES) && block);
+
+   if (block)
+      return -1;
+   return 0;
+}
+
+static bool receive_data(netplay_t *netplay, uint32_t *buffer, size_t size)
+{
+   socklen_t addrlen = sizeof(netplay->their_addr);
+
+   if (recvfrom(netplay->udp_fd, NONCONST_CAST buffer, size, 0,
+            (struct sockaddr*)&netplay->their_addr, &addrlen) != (ssize_t)size)
+      return false;
+   netplay->has_client_addr = true;
+   return true;
+}
+
+static void parse_packet(netplay_t *netplay, uint32_t *buffer, unsigned size)
+{
+   unsigned i;
+   for (i = 0; i < size * 2; i++)
+      buffer[i] = ntohl(buffer[i]);
+
+   for (i = 0; i < size && netplay->read_frame_count <= netplay->frame_count; i++)
+   {
+      uint32_t frame = buffer[2 * i + 0];
+      uint32_t state = buffer[2 * i + 1];
+
+      if (frame == netplay->read_frame_count)
+      {
+         netplay->buffer[netplay->read_ptr].is_simulated = false;
+         netplay->buffer[netplay->read_ptr].real_input_state = state;
+         netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
+         netplay->read_frame_count++;
+         netplay->timeout_cnt = 0;
+      }
+   }
+}
+
+/* TODO: Somewhat better prediction. :P */
+static void simulate_input(netplay_t *netplay)
+{
+   size_t ptr  = PREV_PTR(netplay->self_ptr);
+   size_t prev = PREV_PTR(netplay->read_ptr);
+
+   netplay->buffer[ptr].simulated_input_state = 
+      netplay->buffer[prev].real_input_state;
+   netplay->buffer[ptr].is_simulated = true;
+   netplay->buffer[ptr].used_real = false;
+}
+
+/* Poll network to see if we have anything new. If our 
+ * network buffer is full, we simply have to block for new input data. */
+
+static bool netplay_poll(netplay_t *netplay)
+{
+   int res;
+
+   if (!netplay->has_connection)
+      return false;
+
+   netplay->can_poll = false;
+
+   if (!get_self_input_state(netplay))
+      return false;
+
+   /* We skip reading the first frame so the host has a chance to grab 
+    * our host info so we don't block forever :') */
+   if (netplay->frame_count == 0)
+   {
+      netplay->buffer[0].used_real = true;
+      netplay->buffer[0].is_simulated = false;
+      netplay->buffer[0].real_input_state = 0;
+      netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
+      netplay->read_frame_count++;
+      return true;
+   }
+
+   /* We might have reached the end of the buffer, where we 
+    * simply have to block. */
+   res = poll_input(netplay, netplay->other_ptr == netplay->self_ptr);
+   if (res == -1)
+   {
+      netplay->has_connection = false;
+      warn_hangup();
+      return false;
+   }
+
+   if (res == 1)
+   {
+      uint32_t first_read = netplay->read_frame_count;
+      do 
+      {
+         uint32_t buffer[UDP_FRAME_PACKETS * 2];
+         if (!receive_data(netplay, buffer, sizeof(buffer)))
+         {
+            warn_hangup();
+            netplay->has_connection = false;
+            return false;
+         }
+         parse_packet(netplay, buffer, UDP_FRAME_PACKETS);
+
+      } while ((netplay->read_frame_count <= netplay->frame_count) && 
+            poll_input(netplay, (netplay->other_ptr == netplay->self_ptr) && 
+               (first_read == netplay->read_frame_count)) == 1);
+   }
+   else
+   {
+      /* Cannot allow this. Should not happen though. */
+      if (netplay->self_ptr == netplay->other_ptr)
+      {
+         warn_hangup();
+         return false;
+      }
+   }
+
+   if (netplay->read_ptr != netplay->self_ptr)
+      simulate_input(netplay);
+   else
+      netplay->buffer[PREV_PTR(netplay->self_ptr)].used_real = true;
+
+   return true;
+}
+
 void input_poll_net(void)
 {
    netplay_t *netplay = (netplay_t*)driver.netplay_data;
@@ -202,6 +503,45 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames)
    if (!netplay_should_skip(netplay))
       return netplay->cbs.sample_batch_cb(data, frames);
    return frames;
+}
+
+/* Checks if input port/index is controlled by netplay or not. */
+static bool netplay_is_alive(netplay_t *netplay)
+{
+   if (!netplay)
+      return false;
+   return netplay->has_connection;
+}
+
+static bool netplay_flip_port(netplay_t *netplay, bool port)
+{
+   size_t frame = netplay->frame_count;
+
+   if (netplay->flip_frame == 0)
+      return port;
+
+   if (netplay->is_replay)
+      frame = netplay->tmp_frame_count;
+
+   return port ^ netplay->flip ^ (frame < netplay->flip_frame);
+}
+
+static int16_t netplay_input_state(netplay_t *netplay, bool port, unsigned device,
+      unsigned idx, unsigned id)
+{
+   size_t ptr = netplay->is_replay ? 
+      netplay->tmp_ptr : PREV_PTR(netplay->self_ptr);
+   uint16_t curr_input_state = netplay->buffer[ptr].self_state;
+
+   if (netplay->port == (netplay_flip_port(netplay, port) ? 1 : 0))
+   {
+      if (netplay->buffer[ptr].is_simulated)
+         curr_input_state = netplay->buffer[ptr].simulated_input_state;
+      else
+         curr_input_state = netplay->buffer[ptr].real_input_state;
+   }
+
+   return ((1 << id) & curr_input_state) ? 1 : 0;
 }
 
 int16_t input_state_net(unsigned port, unsigned device,
@@ -474,12 +814,6 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
    return true;
 }
 
-bool netplay_can_poll(netplay_t *netplay)
-{
-   if (!netplay)
-      return false;
-   return netplay->can_poll;
-}
 
 /* Not really a hash, but should be enough to differentiate 
  * implementations from each other.
@@ -494,7 +828,7 @@ static uint32_t implementation_magic_value(void)
    uint32_t res = 0;
    const char *lib = g_extern.system.info.library_name;
    const char *ver = PACKAGE_VERSION;
-   unsigned api = pretro_api_version();
+   unsigned api    = pretro_api_version();
 
    res |= api;
 
@@ -879,245 +1213,14 @@ error:
 }
 
 
-static bool netplay_is_alive(netplay_t *netplay)
-{
-   if (!netplay)
-      return false;
-   return netplay->has_connection;
-}
 
-static bool send_chunk(netplay_t *netplay)
-{
-   const struct sockaddr *addr = NULL;
-   if (netplay->addr)
-      addr = netplay->addr->ai_addr;
-   else if (netplay->has_client_addr)
-      addr = (const struct sockaddr*)&netplay->their_addr;
 
-   if (addr)
-   {
-      if (sendto(netplay->udp_fd, CONST_CAST netplay->packet_buffer,
-               sizeof(netplay->packet_buffer), 0, addr,
-               sizeof(struct sockaddr)) != sizeof(netplay->packet_buffer))
-      {
-         warn_hangup();
-         netplay->has_connection = false;
-         return false;
-      }
-   }
-   return true;
-}
 
-#define MAX_RETRIES 16
-#define RETRY_MS 500
 
-static int poll_input(netplay_t *netplay, bool block)
-{
-   int max_fd = (netplay->fd > netplay->udp_fd ? netplay->fd : netplay->udp_fd) + 1;
 
-   struct timeval tv = {0};
-   tv.tv_sec = 0;
-   tv.tv_usec = block ? (RETRY_MS * 1000) : 0;
 
-   do
-   { 
-      netplay->timeout_cnt++;
 
-      /* select() does not take pointer to const struct timeval.
-       * Technically possible for select() to modify tmp_tv, so 
-       * we go paranoia mode. */
-      struct timeval tmp_tv = tv;
 
-      fd_set fds;
-      FD_ZERO(&fds);
-      FD_SET(netplay->udp_fd, &fds);
-      FD_SET(netplay->fd, &fds);
-
-      if (select(max_fd, &fds, NULL, NULL, &tmp_tv) < 0)
-         return -1;
-
-      /* Somewhat hacky,
-       * but we aren't using the TCP connection for anything useful atm. */
-      if (FD_ISSET(netplay->fd, &fds) && !netplay_get_cmd(netplay))
-         return -1; 
-
-      if (FD_ISSET(netplay->udp_fd, &fds))
-         return 1;
-
-      if (block && !send_chunk(netplay))
-      {
-         warn_hangup();
-         netplay->has_connection = false;
-         return -1;
-      }
-
-      if (block)
-      {
-         RARCH_LOG("Network is stalling, resending packet... Count %u of %d ...\n",
-               netplay->timeout_cnt, MAX_RETRIES);
-      }
-   } while ((netplay->timeout_cnt < MAX_RETRIES) && block);
-
-   if (block)
-      return -1;
-   return 0;
-}
-
-/* Grab our own input state and send this over the network. */
-static bool get_self_input_state(netplay_t *netplay)
-{
-   unsigned i;
-   struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
-   uint32_t state = 0;
-
-   if (!driver.block_libretro_input && netplay->frame_count > 0)
-   {
-      /* First frame we always give zero input since relying on 
-       * input from first frame screws up when we use -F 0. */
-      retro_input_state_t cb = netplay->cbs.state_cb;
-      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
-      {
-         int16_t tmp = cb(g_settings.input.netplay_client_swap_input ?
-               0 : !netplay->port,
-               RETRO_DEVICE_JOYPAD, 0, i);
-         state |= tmp ? 1 << i : 0;
-      }
-   }
-
-   memmove(netplay->packet_buffer, netplay->packet_buffer + 2,
-         sizeof (netplay->packet_buffer) - 2 * sizeof(uint32_t));
-   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2] = htonl(netplay->frame_count); 
-   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2 + 1] = htonl(state);
-
-   if (!send_chunk(netplay))
-   {
-      warn_hangup();
-      netplay->has_connection = false;
-      return false;
-   }
-
-   ptr->self_state = state;
-   netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
-   return true;
-}
-
-/* TODO: Somewhat better prediction. :P */
-static void simulate_input(netplay_t *netplay)
-{
-   size_t ptr  = PREV_PTR(netplay->self_ptr);
-   size_t prev = PREV_PTR(netplay->read_ptr);
-
-   netplay->buffer[ptr].simulated_input_state = 
-      netplay->buffer[prev].real_input_state;
-   netplay->buffer[ptr].is_simulated = true;
-   netplay->buffer[ptr].used_real = false;
-}
-
-static void parse_packet(netplay_t *netplay, uint32_t *buffer, unsigned size)
-{
-   unsigned i;
-   for (i = 0; i < size * 2; i++)
-      buffer[i] = ntohl(buffer[i]);
-
-   for (i = 0; i < size && netplay->read_frame_count <= netplay->frame_count; i++)
-   {
-      uint32_t frame = buffer[2 * i + 0];
-      uint32_t state = buffer[2 * i + 1];
-
-      if (frame == netplay->read_frame_count)
-      {
-         netplay->buffer[netplay->read_ptr].is_simulated = false;
-         netplay->buffer[netplay->read_ptr].real_input_state = state;
-         netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
-         netplay->read_frame_count++;
-         netplay->timeout_cnt = 0;
-      }
-   }
-}
-
-static bool receive_data(netplay_t *netplay, uint32_t *buffer, size_t size)
-{
-   socklen_t addrlen = sizeof(netplay->their_addr);
-
-   if (recvfrom(netplay->udp_fd, NONCONST_CAST buffer, size, 0,
-            (struct sockaddr*)&netplay->their_addr, &addrlen) != (ssize_t)size)
-      return false;
-   netplay->has_client_addr = true;
-   return true;
-}
-
-/* Poll network to see if we have anything new. If our 
- * network buffer is full, we simply have to block for new input data. */
-
-static bool netplay_poll(netplay_t *netplay)
-{
-   int res;
-
-   if (!netplay->has_connection)
-      return false;
-
-   netplay->can_poll = false;
-
-   if (!get_self_input_state(netplay))
-      return false;
-
-   /* We skip reading the first frame so the host has a chance to grab 
-    * our host info so we don't block forever :') */
-   if (netplay->frame_count == 0)
-   {
-      netplay->buffer[0].used_real = true;
-      netplay->buffer[0].is_simulated = false;
-      netplay->buffer[0].real_input_state = 0;
-      netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
-      netplay->read_frame_count++;
-      return true;
-   }
-
-   /* We might have reached the end of the buffer, where we 
-    * simply have to block. */
-   res = poll_input(netplay, netplay->other_ptr == netplay->self_ptr);
-   if (res == -1)
-   {
-      netplay->has_connection = false;
-      warn_hangup();
-      return false;
-   }
-
-   if (res == 1)
-   {
-      uint32_t first_read = netplay->read_frame_count;
-      do 
-      {
-         uint32_t buffer[UDP_FRAME_PACKETS * 2];
-         if (!receive_data(netplay, buffer, sizeof(buffer)))
-         {
-            warn_hangup();
-            netplay->has_connection = false;
-            return false;
-         }
-         parse_packet(netplay, buffer, UDP_FRAME_PACKETS);
-
-      } while ((netplay->read_frame_count <= netplay->frame_count) && 
-            poll_input(netplay, (netplay->other_ptr == netplay->self_ptr) && 
-               (first_read == netplay->read_frame_count)) == 1);
-   }
-   else
-   {
-      /* Cannot allow this. Should not happen though. */
-      if (netplay->self_ptr == netplay->other_ptr)
-      {
-         warn_hangup();
-         return false;
-      }
-   }
-
-   if (netplay->read_ptr != netplay->self_ptr)
-      simulate_input(netplay);
-   else
-      netplay->buffer[PREV_PTR(netplay->self_ptr)].used_real = true;
-
-   return true;
-}
 
 static bool netplay_send_cmd(netplay_t *netplay, uint32_t cmd,
       const void *data, size_t size)
@@ -1134,78 +1237,7 @@ static bool netplay_send_cmd(netplay_t *netplay, uint32_t cmd,
    return true;
 }
 
-static bool netplay_cmd_ack(netplay_t *netplay)
-{
-   uint32_t cmd = htonl(NETPLAY_CMD_ACK);
-   return send_all(netplay->fd, &cmd, sizeof(cmd));
-}
 
-static bool netplay_cmd_nak(netplay_t *netplay)
-{
-   uint32_t cmd = htonl(NETPLAY_CMD_NAK);
-   return send_all(netplay->fd, &cmd, sizeof(cmd));
-}
-
-static bool netplay_get_response(netplay_t *netplay)
-{
-   uint32_t response;
-   if (!recv_all(netplay->fd, &response, sizeof(response)))
-      return false;
-
-   return ntohl(response) == NETPLAY_CMD_ACK;
-}
-
-static bool netplay_get_cmd(netplay_t *netplay)
-{
-   uint32_t cmd, flip_frame;
-   size_t cmd_size;
-
-   if (!recv_all(netplay->fd, &cmd, sizeof(cmd)))
-      return false;
-
-   cmd = ntohl(cmd);
-
-   cmd_size = cmd & 0xffff;
-   cmd = cmd >> 16;
-
-   switch (cmd)
-   {
-      case NETPLAY_CMD_FLIP_PLAYERS:
-         if (cmd_size != sizeof(uint32_t))
-         {
-            RARCH_ERR("CMD_FLIP_PLAYERS has unexpected command size.\n");
-            return netplay_cmd_nak(netplay);
-         }
-
-         if (!recv_all(netplay->fd, &flip_frame, sizeof(flip_frame)))
-         {
-            RARCH_ERR("Failed to receive CMD_FLIP_PLAYERS argument.\n");
-            return netplay_cmd_nak(netplay);
-         }
-
-         flip_frame = ntohl(flip_frame);
-
-         if (flip_frame < netplay->flip_frame)
-         {
-            RARCH_ERR("Host asked us to flip users in the past. Not possible ...\n");
-            return netplay_cmd_nak(netplay);
-         }
-
-         netplay->flip ^= true;
-         netplay->flip_frame = flip_frame;
-
-         RARCH_LOG("Netplay users are flipped.\n");
-         msg_queue_push(g_extern.msg_queue, "Netplay users are flipped.", 1, 180);
-
-         return netplay_cmd_ack(netplay);
-
-      default:
-         break;
-   }
-
-   RARCH_ERR("Unknown netplay command received.\n");
-   return netplay_cmd_nak(netplay);
-}
 
 void netplay_flip_users(netplay_t *netplay)
 {
@@ -1256,36 +1288,7 @@ error:
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 }
 
-static bool netplay_flip_port(netplay_t *netplay, bool port)
-{
-   size_t frame = netplay->frame_count;
 
-   if (netplay->flip_frame == 0)
-      return port;
-
-   if (netplay->is_replay)
-      frame = netplay->tmp_frame_count;
-
-   return port ^ netplay->flip ^ (frame < netplay->flip_frame);
-}
-
-int16_t netplay_input_state(netplay_t *netplay, bool port, unsigned device,
-      unsigned idx, unsigned id)
-{
-   size_t ptr = netplay->is_replay ? 
-      netplay->tmp_ptr : PREV_PTR(netplay->self_ptr);
-   uint16_t curr_input_state = netplay->buffer[ptr].self_state;
-
-   if (netplay->port == (netplay_flip_port(netplay, port) ? 1 : 0))
-   {
-      if (netplay->buffer[ptr].is_simulated)
-         curr_input_state = netplay->buffer[ptr].simulated_input_state;
-      else
-         curr_input_state = netplay->buffer[ptr].real_input_state;
-   }
-
-   return ((1 << id) & curr_input_state) ? 1 : 0;
-}
 
 void netplay_free(netplay_t *netplay)
 {
@@ -1316,12 +1319,6 @@ void netplay_free(netplay_t *netplay)
    free(netplay);
 }
 
-static bool netplay_should_skip(netplay_t *netplay)
-{
-   if (!netplay)
-      return false;
-   return netplay->is_replay && netplay->has_connection;
-}
 
 static void netplay_pre_frame_net(netplay_t *netplay)
 {
