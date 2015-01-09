@@ -76,9 +76,8 @@ static const struct dspfilter_config dspfilter_config = {
 
 static bool create_filter_graph(rarch_dsp_filter_t *dsp, float sample_rate)
 {
-   unsigned i;
+   unsigned i, filters = 0;
 
-   unsigned filters = 0;
    if (!config_get_uint(dsp->conf, "filters", &filters))
       return false;
 
@@ -91,10 +90,12 @@ static bool create_filter_graph(rarch_dsp_filter_t *dsp, float sample_rate)
 
    for (i = 0; i < filters; i++)
    {
-      char key[64];
+      char key[64], name[64];
+      struct config_file_userdata userdata;
+      struct dspfilter_info info = { sample_rate };
+
       snprintf(key, sizeof(key), "filter%u", i);
 
-      char name[64];
       if (!config_get_array(dsp->conf, key, name, sizeof(name)))
          return false;
 
@@ -102,13 +103,11 @@ static bool create_filter_graph(rarch_dsp_filter_t *dsp, float sample_rate)
       if (!dsp->instances[i].impl)
          return false;
 
-      struct config_file_userdata userdata;
       userdata.conf = dsp->conf;
       /* Index-specific configs take priority over ident-specific. */
       userdata.prefix[0] = key;
       userdata.prefix[1] = dsp->instances[i].impl->short_ident;
 
-      struct dspfilter_info info = { sample_rate };
       dsp->instances[i].impl_data = dsp->instances[i].impl->init(&info, &dspfilter_config, &userdata);
       if (!dsp->instances[i].impl_data)
          return false;
@@ -147,6 +146,7 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
       calloc(ARRAY_SIZE(dsp_plugs_builtin), sizeof(*dsp->plugs));
    if (!dsp->plugs)
       return false;
+
    dsp->num_plugs = ARRAY_SIZE(dsp_plugs_builtin);
 
    for (i = 0; i < ARRAY_SIZE(dsp_plugs_builtin); i++)
@@ -166,7 +166,10 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 
    for (i = 0; i < list->size; i++)
    {
+      const struct dspfilter_implementation *impl = NULL;
+      struct rarch_dsp_plug *new_plugs = NULL;
       dylib_t lib = dylib_load(list->elems[i].data);
+
       if (!lib)
          continue;
 
@@ -178,7 +181,7 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
          continue;
       }
 
-      const struct dspfilter_implementation *impl = cb(mask);
+      impl = cb(mask);
       if (!impl)
       {
          dylib_close(lib);
@@ -191,7 +194,7 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
          continue;
       }
 
-      struct rarch_dsp_plug *new_plugs = (struct rarch_dsp_plug*)
+      new_plugs = (struct rarch_dsp_plug*)
          realloc(dsp->plugs, sizeof(*dsp->plugs) * (dsp->num_plugs + 1));
       if (!new_plugs)
       {
