@@ -74,6 +74,8 @@ const char *config_get_default_audio(void)
          return "psp1";
       case AUDIO_RWEBAUDIO:
          return "rwebaudio";
+      default:
+         break;
    }
 
    return "null";
@@ -89,6 +91,8 @@ const char *config_get_default_audio_resampler(void)
          return "sinc";
       case AUDIO_RESAMPLER_NEAREST:
          return "nearest";
+      default:
+         break;
    }
 
    return "null";
@@ -125,6 +129,8 @@ const char *config_get_default_video(void)
          return "omap";
       case VIDEO_EXYNOS:
          return "exynos";
+      default:
+         break;
    }
 
    return "null";
@@ -166,6 +172,8 @@ const char *config_get_default_input(void)
       	 return "qnx_input";
       case INPUT_RWEBINPUT:
       	 return "rwebinput";
+      default:
+         break;
    }
 
    return "null";
@@ -205,6 +213,8 @@ const char *config_get_default_joypad(void)
          return "apple_ios";
       case JOYPAD_QNX:
          return "qnx";
+      default:
+         break;
    }
 
    return "null";
@@ -229,6 +239,8 @@ const char *config_get_default_menu(void)
          return "ios";
       case MENU_XMB:
          return "xmb";
+      default:
+         break;
    }
 
    return "null";
@@ -241,6 +253,8 @@ const char *config_get_default_osk(void)
    {
       case OSK_PS3:
          return "ps3";
+      default:
+         break;
    }
 
    return "null";
@@ -258,6 +272,8 @@ const char *config_get_default_camera(void)
          return "android";
       case CAMERA_APPLE:
          return "apple";
+      default:
+         break;
    }
 
    return "null";
@@ -271,6 +287,8 @@ const char *config_get_default_location(void)
          return "android";
       case LOCATION_APPLE:
          return "apple";
+      default:
+         break;
    }
 
    return "null";
