@@ -143,8 +143,18 @@ extern rarch_resampler_t sinc_resampler;
 extern rarch_resampler_t CC_resampler;
 extern rarch_resampler_t nearest_resampler;
 
-/* Reallocs resampler. Will free previous handle before 
- * allocating a new one. If ident is NULL, first resampler will be used. */
+/**
+ * rarch_resampler_realloc:
+ * @re                         : Resampler handle
+ * @backend                    : Resampler backend that is about to be set.
+ * @ident                      : Identifier name for resampler we want.
+ * @bw_ratio                   : Bandwidth ratio.
+ *
+ * Reallocates resampler. Will free previous handle before 
+ * allocating a new one. If ident is NULL, first resampler will be used.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
       const char *ident, double bw_ratio);
 

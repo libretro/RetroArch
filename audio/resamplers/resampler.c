@@ -37,11 +37,21 @@ static const struct resampler_config resampler_config = {
    config_userdata_free,
 };
 
-static int find_resampler_driver_index(const char *drv)
+/**
+ * find_resampler_driver_index:
+ * @ident                      : Identifier of resampler driver to find.
+ *
+ * Finds resampler driver index by @ident name.
+ *
+ * Returns: resampler driver index if resampler driver was found, otherwise
+ * -1.
+ **/
+static int find_resampler_driver_index(const char *ident)
 {
    unsigned i;
+
    for (i = 0; resampler_drivers[i]; i++)
-      if (strcasecmp(drv, resampler_drivers[i]->ident) == 0)
+      if (strcasecmp(ident, resampler_drivers[i]->ident) == 0)
          return i;
    return -1;
 }
@@ -50,9 +60,15 @@ static int find_resampler_driver_index(const char *drv)
 #include <string/string_list.h>
 #include "../../general.h"
 
+/**
+ * find_prev_resampler_driver:
+ *
+ * Find previous driver in resampler driver array.
+ **/
 void find_prev_resampler_driver(void)
 {
    int i = find_resampler_driver_index(g_settings.audio.resampler);
+
    if (i > 0)
       strlcpy(g_settings.audio.resampler, resampler_drivers[i - 1]->ident,
             sizeof(g_settings.audio.resampler));
@@ -61,9 +77,15 @@ void find_prev_resampler_driver(void)
             driver.resampler->ident);
 }
 
+/**
+ * find_next_resampler_driver:
+ *
+ * Find next driver in resampler driver array.
+ **/
 void find_next_resampler_driver(void)
 {
    int i = find_resampler_driver_index(g_settings.audio.resampler);
+
    if (i >= 0 && resampler_drivers[i + 1])
       strlcpy(g_settings.audio.resampler, resampler_drivers[i + 1]->ident,
             sizeof(g_settings.audio.resampler));
@@ -72,6 +94,13 @@ void find_next_resampler_driver(void)
             driver.resampler->ident);
 }
 
+/**
+ * config_get_audio_resampler_driver_options:
+ *
+ * Get an enumerated list of all resampler driver names, separated by '|'.
+ *
+ * Returns: string listing of all resampler driver names, separated by '|'.
+ **/
 const char* config_get_audio_resampler_driver_options(void)
 {
    union string_list_elem_attr attr;
@@ -100,30 +129,45 @@ const char* config_get_audio_resampler_driver_options(void)
 }
 #endif
 
-/* Resampler is used by multiple modules so avoid 
- * clobbering driver.resampler here. */
-
+/**
+ * find_resampler_driver:
+ * @ident                      : Identifier of resampler driver to find.
+ *
+ * Finds resampler by @ident name.
+ *
+ * Returns: resampler driver if resampler driver was found, otherwise
+ * NULL.
+ **/
 static const rarch_resampler_t *find_resampler_driver(const char *ident)
 {
+   unsigned d;
    int i = find_resampler_driver_index(ident);
+
    if (i >= 0)
       return resampler_drivers[i];
-   else
-   {
-#ifdef RARCH_INTERNAL
-      unsigned d;
-      RARCH_ERR("Couldn't find any resampler driver named \"%s\"\n", ident);
-      RARCH_LOG_OUTPUT("Available resampler drivers are:\n");
-      for (d = 0; resampler_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", resampler_drivers[d]->ident);
 
-      RARCH_WARN("Going to default to first resampler driver ...\n");
+#ifdef RARCH_INTERNAL
+   RARCH_ERR("Couldn't find any resampler driver named \"%s\"\n", ident);
+   RARCH_LOG_OUTPUT("Available resampler drivers are:\n");
+   for (d = 0; resampler_drivers[d]; d++)
+      RARCH_LOG_OUTPUT("\t%s\n", resampler_drivers[d]->ident);
+
+   RARCH_WARN("Going to default to first resampler driver ...\n");
 #endif
 
-      return resampler_drivers[0];
-   }
+   return resampler_drivers[0];
 }
 
+/**
+ * resampler_append_plugs:
+ * @re                         : Resampler handle
+ * @backend                    : Resampler backend that is about to be set.
+ * @bw_ratio                   : Bandwidth ratio.
+ *
+ * Initializes resampler driver based on queried CPU features.
+ *
+ * Returns: true (1) if successfully initialized, otherwise false (0).
+ **/
 static bool resampler_append_plugs(void **re,
       const rarch_resampler_t **backend,
       double bw_ratio)
@@ -137,6 +181,18 @@ static bool resampler_append_plugs(void **re,
    return true;
 }
 
+/**
+ * rarch_resampler_realloc:
+ * @re                         : Resampler handle
+ * @backend                    : Resampler backend that is about to be set.
+ * @ident                      : Identifier name for resampler we want.
+ * @bw_ratio                   : Bandwidth ratio.
+ *
+ * Reallocates resampler. Will free previous handle before 
+ * allocating a new one. If ident is NULL, first resampler will be used.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
       const char *ident, double bw_ratio)
 {

@@ -585,10 +585,27 @@ void find_prev_driver(const char *label, char *str, size_t sizeof_str);
  **/
 void find_next_driver(const char *label, char *str, size_t sizeof_str);
 
+/**
+ * config_get_audio_resampler_driver_options:
+ *
+ * Get an enumerated list of all resampler driver names, separated by '|'.
+ *
+ * Returns: string listing of all resampler driver names, separated by '|'.
+ **/
 const char* config_get_audio_resampler_driver_options(void);
 
+/**
+ * find_prev_resampler_driver:
+ *
+ * Find previous driver in resampler driver array.
+ **/
 void find_prev_resampler_driver(void);
 
+/**
+ * find_next_resampler_driver:
+ *
+ * Find next driver in resampler driver array.
+ **/
 void find_next_resampler_driver(void);
 
 void driver_set_monitor_refresh_rate(float hz);
