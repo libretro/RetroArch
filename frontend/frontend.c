@@ -47,6 +47,14 @@
 
 #define MAX_ARGS 32
 
+/**
+ * main_entry_decide:
+ *
+ * Runs RetroArch for one frame.
+ *
+ * Returns: -1 upon exiting, 0 if we want to
+ * iterate to the next frame.
+ **/
 int main_entry_decide(signature(), args_type() args)
 {
    int ret = rarch_main_iterate();
@@ -66,6 +74,12 @@ int main_entry_decide(signature(), args_type() args)
    return ret;
 }
 
+/**
+ * main_exit_save_config:
+ *
+ * Saves configuration file to disk, and (optionally)
+ * autosave state.
+ **/
 void main_exit_save_config(void)
 {
    if (g_settings.config_save_on_exit && *g_extern.config_path)
@@ -85,6 +99,14 @@ void main_exit_save_config(void)
    rarch_main_command(RARCH_CMD_AUTOSAVE_STATE);
 }
 
+/**
+ * main_exit:
+ *
+ * Cleanly exit RetroArch.
+ *
+ * Also saves configuration files to disk,
+ * and (optionally) autosave state.
+ **/
 void main_exit(args_type() args)
 {
    g_extern.system.shutdown = false;
@@ -164,7 +186,7 @@ static void history_playlist_push(content_playlist_t *playlist,
    if (!playlist || g_extern.libretro_dummy || !info)
       return;
 
-   /* path can be relative here.
+   /* Path can be relative here.
     * Ensure we're pushing absolute path. */
 
    strlcpy(tmp, path, sizeof(tmp));
@@ -179,6 +201,20 @@ static void history_playlist_push(content_playlist_t *playlist,
             info->library_name);
 }
 
+/**
+ * main_load_content:
+ * @argc             : Argument count.
+ * @argv             : Argument variable list.
+ * @args             : Arguments passed from callee.
+ * @environ_get      : Function passed for environment_get function.
+ * @process_args     : Function passed for process_args function.
+ *
+ * Loads content file and starts up RetroArch.
+ * If no content file can be loaded, will start up RetroArch
+ * as-is.
+ *
+ * Returns: false (0) if rarch_main_init failed, otherwise true (1).
+ **/
 bool main_load_content(int argc, char **argv, args_type() args,
       environment_get_t environ_get,
       process_args_t process_args)
@@ -233,6 +269,17 @@ error:
    return retval;
 }
 
+/**
+ * main_entry:
+ *
+ * Main function of RetroArch.
+ *
+ * If HAVE_MAIN_LOOP is defined, will contain main loop and will not
+ * be exited from until we exit the program. Otherwise, will 
+ * just do initialization.
+ *
+ * Returns: varies per platform.
+ **/
 returntype main_entry(signature())
 {
    declare_argc();
