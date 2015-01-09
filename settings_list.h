@@ -85,6 +85,7 @@ enum setting_list_flags
 typedef void (*change_handler_t               )(void *data);
 typedef int  (*action_toggle_handler_t        )(void *data, unsigned action);
 typedef int  (*action_start_handler_t         )(void *data);
+typedef int  (*action_cancel_handler_t        )(void *data, unsigned action);
 typedef int  (*action_ok_handler_t            )(void *data, unsigned action);
 typedef void (*get_string_representation_t    )(void *data, char *buf, size_t sizeof_buf);
 
@@ -124,6 +125,7 @@ typedef struct rarch_setting
    change_handler_t read_handler;
    action_start_handler_t action_start;
    action_toggle_handler_t action_toggle;
+   action_cancel_handler_t action_cancel;
    action_ok_handler_t action_ok;
    get_string_representation_t get_string_representation;
 

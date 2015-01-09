@@ -27,6 +27,8 @@ typedef struct menu_file_list_cbs
          *path, const char *label, unsigned type);
    int (*action_ok)(const char *path, const char *label, unsigned type,
          size_t idx);
+   int (*action_cancel)(const char *path, const char *label, unsigned type,
+         size_t idx);
    int (*action_start)(unsigned type,  const char *label, unsigned action);
    int (*action_content_list_switch)(void *data, void *userdata, const char
          *path, const char *label, unsigned type);
