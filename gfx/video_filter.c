@@ -52,10 +52,11 @@ static void filter_thread_loop(void *data)
 
    for (;;)
    {
+      bool die;
       slock_lock(thr->lock);
       while (thr->done && !thr->die)
          scond_wait(thr->cond, thr->lock);
-      bool die = thr->die;
+      die = thr->die;
       slock_unlock(thr->lock);
 
       if (die)
@@ -97,6 +98,7 @@ static const struct softfilter_implementation *
 softfilter_find_implementation(rarch_softfilter_t *filt, const char *ident)
 {
    unsigned i;
+
    for (i = 0; i < filt->num_plugs; i++)
    {
       if (!strcmp(filt->plugs[i].impl->short_ident, ident))
@@ -121,13 +123,12 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
       softfilter_simd_mask_t cpu_features,
       unsigned threads)
 {
-   unsigned input_fmts, input_fmt, output_fmts;
-   char key[64];
+   unsigned input_fmts, input_fmt, output_fmts, i;
+   char key[64], name[64];
    struct config_file_userdata userdata;
 
    snprintf(key, sizeof(key), "filter");
 
-   char name[64];
    if (!config_get_array(filt->conf, key, name, sizeof(name)))
       return false;
 
@@ -214,7 +215,6 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
       return false;
    filt->threads = threads;
 
-   unsigned i;
    for (i = 0; i < threads; i++)
    {
       filt->thread_data[i].userdata = filt->impl_data;
@@ -245,19 +245,24 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
 
    for (i = 0; i < list->size; i++)
    {
+      softfilter_get_implementation_t cb;
+      const struct softfilter_implementation *impl = NULL;
+      struct rarch_soft_plug *new_plugs = NULL;
       dylib_t lib = dylib_load(list->elems[i].data);
+
       if (!lib)
          continue;
 
-      softfilter_get_implementation_t cb = (softfilter_get_implementation_t)
+      cb = (softfilter_get_implementation_t)
          dylib_proc(lib, "softfilter_get_implementation");
+
       if (!cb)
       {
          dylib_close(lib);
          continue;
       }
 
-      const struct softfilter_implementation *impl = cb(mask);
+      impl = cb(mask);
       if (!impl)
       {
          dylib_close(lib);
@@ -270,7 +275,7 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
          continue;
       }
 
-      struct rarch_soft_plug *new_plugs = (struct rarch_soft_plug*)
+      new_plugs = (struct rarch_soft_plug*)
          realloc(filt->plugs, sizeof(*filt->plugs) * (filt->num_plugs + 1));
       if (!new_plugs)
       {
@@ -325,8 +330,10 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
 
    filt->plugs = (struct rarch_soft_plug*)
       calloc(ARRAY_SIZE(soft_plugs_builtin), sizeof(*filt->plugs));
+
    if (!filt->plugs)
       return false;
+
    filt->num_plugs = ARRAY_SIZE(soft_plugs_builtin);
 
    for (i = 0; i < ARRAY_SIZE(soft_plugs_builtin); i++)

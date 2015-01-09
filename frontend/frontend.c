@@ -183,9 +183,9 @@ bool main_load_content(int argc, char **argv, args_type() args,
       environment_get_t environ_get,
       process_args_t process_args)
 {
+   unsigned i;
    bool retval = true;
    int ret = 0, rarch_argc = 0;
-   unsigned i;
    char *rarch_argv[MAX_ARGS] = {NULL};
    char *argv_copy [MAX_ARGS] = {NULL};
    char **rarch_argv_ptr = (char**)argv;

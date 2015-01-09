@@ -297,8 +297,10 @@ unsigned state_get_uniform(state_tracker_t *tracker,
       struct state_tracker_uniform *uniforms,
       unsigned elem, unsigned frame_count)
 {
-   unsigned i;
-   unsigned elems = tracker->info_elem < elem ? tracker->info_elem : elem;
+   unsigned i, elems = elem;
+   
+   if (tracker->info_elem < elem)
+      elems = tracker->info_elem;
 
    update_input(tracker);
 

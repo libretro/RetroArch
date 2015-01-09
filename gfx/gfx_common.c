@@ -129,6 +129,7 @@ static bool gfx_init_dwm(void)
 
 void gfx_set_dwm(void)
 {
+   HRESULT ret;
    if (!gfx_init_dwm())
       return;
 
@@ -143,7 +144,7 @@ void gfx_set_dwm(void)
       return;
    }
 
-   HRESULT ret = composition_enable(!g_settings.video.disable_composition);
+   ret = composition_enable(!g_settings.video.disable_composition);
    if (FAILED(ret))
       RARCH_ERR("Failed to set composition state ...\n");
    dwm_composition_disabled = g_settings.video.disable_composition;
@@ -153,8 +154,7 @@ void gfx_set_dwm(void)
 void gfx_scale_integer(struct rarch_viewport *vp, unsigned width,
       unsigned height, float aspect_ratio, bool keep_aspect)
 {
-   int padding_x = 0;
-   int padding_y = 0;
+   int padding_x = 0, padding_y = 0;
 
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
@@ -169,9 +169,11 @@ void gfx_scale_integer(struct rarch_viewport *vp, unsigned width,
    }
    else
    {
+      unsigned base_height, base_width;
+
       /* Use system reported sizes as these define the 
        * geometry for the "normal" case. */
-      unsigned base_height = g_extern.system.av_info.geometry.base_height;
+      base_height = g_extern.system.av_info.geometry.base_height;
 
       if (base_height == 0)
          base_height = 1;
@@ -182,7 +184,7 @@ void gfx_scale_integer(struct rarch_viewport *vp, unsigned width,
        *
        * If square pixels are used, base_height will be equal to 
        * g_extern.system.av_info.base_height. */
-      unsigned base_width = (unsigned)roundf(base_height * aspect_ratio);
+      base_width = (unsigned)roundf(base_height * aspect_ratio);
 
       /* Make sure that we don't get 0x scale ... */
       if (width >= base_width && height >= base_height)
@@ -248,7 +250,7 @@ char rotation_lut[4][32] =
 
 void gfx_set_square_pixel_viewport(unsigned width, unsigned height)
 {
-   unsigned len, highest, i;
+   unsigned len, highest, i, aspect_x, aspect_y;
    if (width == 0 || height == 0)
       return;
 
@@ -260,8 +262,8 @@ void gfx_set_square_pixel_viewport(unsigned width, unsigned height)
          highest = i;
    }
 
-   unsigned aspect_x = width / highest;
-   unsigned aspect_y = height / highest;
+   aspect_x = width / highest;
+   aspect_y = height / highest;
 
    snprintf(aspectratio_lut[ASPECT_RATIO_SQUARE].name,
          sizeof(aspectratio_lut[ASPECT_RATIO_SQUARE].name),
