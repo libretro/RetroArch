@@ -27,9 +27,9 @@
 const char *input_joypad_name(const rarch_joypad_driver_t *drv,
       unsigned joypad)
 {
-   if (drv)
-      return drv->name(joypad);
-   return NULL;
+   if (!drv)
+      return NULL;
+   return drv->name(joypad);
 }
 
 bool input_joypad_set_rumble(const rarch_joypad_driver_t *drv,
@@ -80,7 +80,6 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *drv,
 {
    if (!drv)
       return false;
-
 
    if (!binds[key].valid)
       return false;
@@ -147,32 +146,33 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
 int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *drv,
       unsigned joypad, unsigned axis)
 {
-   if (drv)
-      return drv->axis(joypad, AXIS_POS(axis)) +
-         drv->axis(joypad, AXIS_NEG(axis));
-   return 0;
+   if (!drv)
+      return 0;
+   return drv->axis(joypad, AXIS_POS(axis)) +
+      drv->axis(joypad, AXIS_NEG(axis));
 }
 
 bool input_joypad_button_raw(const rarch_joypad_driver_t *drv,
       unsigned joypad, unsigned button)
 {
-   if (drv)
-      return drv->button(joypad, button);
-   return false;
+   if (!drv)
+      return false;
+   return drv->button(joypad, button);
 }
 
 bool input_joypad_hat_raw(const rarch_joypad_driver_t *drv,
       unsigned joypad, unsigned hat_dir, unsigned hat)
 {
-   if (drv)
-      return drv->button(joypad, HAT_MAP(hat, hat_dir));
-   return false;
+   if (!drv)
+      return false;
+   return drv->button(joypad, HAT_MAP(hat, hat_dir));
 }
 
 bool input_translate_coord_viewport(int mouse_x, int mouse_y,
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
       int16_t *res_screen_y)
 {
+   int scaled_screen_x, scaled_screen_y, scaled_x, scaled_y;
    struct rarch_viewport vp = {0};
    bool have_viewport_info = driver.video && driver.video->viewport_info;
 
@@ -181,8 +181,8 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
 
    driver.video->viewport_info(driver.video_data, &vp);
 
-   int scaled_screen_x = (2 * mouse_x * 0x7fff) / (int)vp.full_width - 0x7fff;
-   int scaled_screen_y = (2 * mouse_y * 0x7fff) / (int)vp.full_height - 0x7fff;
+   scaled_screen_x = (2 * mouse_x * 0x7fff) / (int)vp.full_width - 0x7fff;
+   scaled_screen_y = (2 * mouse_y * 0x7fff) / (int)vp.full_height - 0x7fff;
    if (scaled_screen_x < -0x7fff || scaled_screen_x > 0x7fff)
       scaled_screen_x = -0x8000; /* OOB */
    if (scaled_screen_y < -0x7fff || scaled_screen_y > 0x7fff)
@@ -191,8 +191,8 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
    mouse_x -= vp.x;
    mouse_y -= vp.y;
 
-   int scaled_x = (2 * mouse_x * 0x7fff) / (int)vp.width - 0x7fff;
-   int scaled_y = (2 * mouse_y * 0x7fff) / (int)vp.height - 0x7fff;
+   scaled_x = (2 * mouse_x * 0x7fff) / (int)vp.width - 0x7fff;
+   scaled_y = (2 * mouse_y * 0x7fff) / (int)vp.height - 0x7fff;
    if (scaled_x < -0x7fff || scaled_x > 0x7fff)
       scaled_x = -0x8000; /* OOB */
    if (scaled_y < -0x7fff || scaled_y > 0x7fff)
@@ -296,8 +296,7 @@ void input_config_parse_key(config_file_t *conf,
       const char *prefix, const char *btn,
       struct retro_keybind *bind)
 {
-   char tmp[64];
-   char key[64];
+   char tmp[64], key[64];
    snprintf(key, sizeof(key), "%s_%s", prefix, btn);
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
@@ -325,15 +324,15 @@ unsigned input_translate_str_to_bind_id(const char *str)
 
 static void parse_hat(struct retro_keybind *bind, const char *str)
 {
+   char *dir = NULL;
+   uint16_t hat_dir = 0, hat;
    if (!bind || !str)
       return;
 
    if (!isdigit(*str))
       return;
 
-   char *dir = NULL;
-   uint16_t hat = strtoul(str, &dir, 0);
-   uint16_t hat_dir = 0;
+   hat = strtoul(str, &dir, 0);
 
    if (!dir)
    {
@@ -357,9 +356,9 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
 void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
       const char *btn, struct retro_keybind *bind)
 {
-   char tmp[64];
+   char tmp[64], key[64], key_label[64];
    char *tmp_a = NULL;
-   char key[64], key_label[64];
+
    snprintf(key, sizeof(key), "%s_%s_btn", prefix, btn);
    snprintf(key_label, sizeof(key_label), "%s_%s_btn_label", prefix, btn);
 
@@ -384,9 +383,9 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
 void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
       const char *axis, struct retro_keybind *bind)
 {
-   char tmp[64];
+   char tmp[64], key[64], key_label[64];
    char *tmp_a = NULL;
-   char key[64], key_label[64];
+
    snprintf(key, sizeof(key), "%s_%s_axis", prefix, axis);
    snprintf(key_label, sizeof(key_label), "%s_%s_axis_label", prefix, axis);
 
@@ -457,6 +456,7 @@ static void input_get_bind_string_joyaxis(char *buf, const char *prefix,
 {
    unsigned axis = 0;
    char dir = '\0';
+
    if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
       dir = '-';
@@ -476,6 +476,8 @@ static void input_get_bind_string_joyaxis(char *buf, const char *prefix,
 void input_get_bind_string(char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size)
 {
+   char key[64], keybuf[64];
+
    *buf = '\0';
    if (bind->joykey != NO_BTN)
       input_get_bind_string_joykey(buf, "", bind, size);
@@ -487,12 +489,10 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
       input_get_bind_string_joyaxis(buf, "Auto: ", auto_bind, size);
 
 #ifndef RARCH_CONSOLE
-   char key[64];
    input_translate_rk_to_str(bind->key, key, sizeof(key));
    if (!strcmp(key, "nul"))
       *key = '\0';
 
-   char keybuf[64];
    snprintf(keybuf, sizeof(keybuf), "(Key: %s)", key);
    strlcat(buf, keybuf, size);
 #endif
