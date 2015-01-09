@@ -146,6 +146,11 @@ static bool recv_all(int fd, void *data_, size_t size)
    return true;
 }
 
+/**
+ * warn_hangup:
+ *
+ * Warns that netplay has disconnected.
+ **/
 static void warn_hangup(void)
 {
    RARCH_WARN("Netplay has disconnected. Will continue without connection ...\n");
@@ -153,8 +158,16 @@ static void warn_hangup(void)
       msg_queue_push(g_extern.msg_queue, "Netplay has disconnected. Will continue without connection.", 0, 480);
 }
 
-/* If we're fast-forward replaying to resync, check if we 
- * should actually show frame. */
+/**
+ * netplay_should_skip:
+ * @netplay              : pointer to netplay object
+ *
+ * If we're fast-forward replaying to resync, check if we 
+ * should actually show frame.
+ *
+ * Returns: bool (1) if we should skip this frame, otherwise
+ * false (0).
+ **/
 static bool netplay_should_skip(netplay_t *netplay)
 {
    if (!netplay)
@@ -172,6 +185,7 @@ static bool netplay_can_poll(netplay_t *netplay)
 static bool send_chunk(netplay_t *netplay)
 {
    const struct sockaddr *addr = NULL;
+
    if (netplay->addr)
       addr = netplay->addr->ai_addr;
    else if (netplay->has_client_addr)
@@ -191,7 +205,14 @@ static bool send_chunk(netplay_t *netplay)
    return true;
 }
 
-/* Grab our own input state and send this over the network. */
+/**
+ * get_self_input_state:
+ * @netplay              : pointer to netplay object
+ *
+ * Grab our own input state and send this over the network.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 static bool get_self_input_state(netplay_t *netplay)
 {
    unsigned i;
@@ -402,9 +423,16 @@ static void simulate_input(netplay_t *netplay)
    netplay->buffer[ptr].used_real = false;
 }
 
-/* Poll network to see if we have anything new. If our 
- * network buffer is full, we simply have to block for new input data. */
-
+/**
+ * netplay_poll:
+ * @netplay              : pointer to netplay object
+ *
+ * Polls network to see if we have anything new. If our 
+ * network buffer is full, we simply have to block 
+ * for new input data.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 static bool netplay_poll(netplay_t *netplay)
 {
    int res;
@@ -505,7 +533,14 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames)
    return frames;
 }
 
-/* Checks if input port/index is controlled by netplay or not. */
+/**
+ * netplay_is_alive:
+ * @netplay              : pointer to netplay object
+ *
+ * Checks if input port/index is controlled by netplay or not.
+ *
+ * Returns: true (1) if alive, otherwise false (0).
+ **/
 static bool netplay_is_alive(netplay_t *netplay)
 {
    if (!netplay)
@@ -766,7 +801,13 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
    return true;
 }
 
-/* Platform specific socket library init. */
+/**
+ * network_init:
+ *
+ * Platform specific socket library initialization.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool network_init(void)
 {
    static bool inited = false;
@@ -791,6 +832,11 @@ bool network_init(void)
    return true;
 }
 
+/**
+ * network_deinit:
+ *
+ * Deinitialize platform specific socket libraries.
+ **/
 void network_deinit(void)
 {
 #if defined(_WIN32)
@@ -815,17 +861,20 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
 }
 
 
-/* Not really a hash, but should be enough to differentiate 
+/**
+ * implementation_magic_value:
+ *
+ * Not really a hash, but should be enough to differentiate 
  * implementations from each other.
  *
  * Subtle differences in the implementation will not be possible to spot.
  * The alternative would have been checking serialization sizes, but it 
  * was troublesome for cross platform compat.
- */
+ **/
 static uint32_t implementation_magic_value(void)
 {
    size_t i, len;
-   uint32_t res = 0;
+   uint32_t res    = 0;
    const char *lib = g_extern.system.info.library_name;
    const char *ver = PACKAGE_VERSION;
    unsigned api    = pretro_api_version();
@@ -1120,6 +1169,10 @@ static bool get_info_spectate(netplay_t *netplay)
 static bool init_buffers(netplay_t *netplay)
 {
    unsigned i;
+
+   if (!netplay)
+      return false;
+
    netplay->buffer = (struct delta_frame*)calloc(netplay->buffer_size,
          sizeof(*netplay->buffer));
    
@@ -1141,16 +1194,32 @@ static bool init_buffers(netplay_t *netplay)
    return true;
 }
 
+/**
+ * netplay_new:
+ * @server               : IP address of server.
+ * @port                 : Port of server.
+ * @frames               : Amount of lag frames.
+ * @cb                   : Libretro callbacks.
+ * @spectate             : If true, enable spectator mode.
+ * @nick                 : Nickname of user.
+ *
+ * Creates a new netplay handle. A NULL host means we're 
+ * hosting (user 1).
+ *
+ * Returns: new netplay handle.
+ **/
 netplay_t *netplay_new(const char *server, uint16_t port,
       unsigned frames, const struct retro_callbacks *cb,
       bool spectate,
       const char *nick)
 {
    unsigned i;
+   netplay_t *netplay = NULL;
+
    if (frames > UDP_FRAME_PACKETS)
       frames = UDP_FRAME_PACKETS;
 
-   netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
+   netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    if (!netplay)
       return NULL;
 
@@ -1212,16 +1281,6 @@ error:
    return NULL;
 }
 
-
-
-
-
-
-
-
-
-
-
 static bool netplay_send_cmd(netplay_t *netplay, uint32_t cmd,
       const void *data, size_t size)
 {
@@ -1237,8 +1296,12 @@ static bool netplay_send_cmd(netplay_t *netplay, uint32_t cmd,
    return true;
 }
 
-
-
+/**
+ * netplay_flip_users:
+ * @netplay              : pointer to netplay object
+ *
+ * On regular netplay, flip who controls user 1 and 2.
+ **/
 void netplay_flip_users(netplay_t *netplay)
 {
    uint32_t flip_frame = netplay->frame_count + 2 * UDP_FRAME_PACKETS;
@@ -1288,11 +1351,16 @@ error:
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 }
 
-
-
+/**
+ * netplay_free:
+ * @netplay              : pointer to netplay object
+ *
+ * Frees netplay handle.
+ **/
 void netplay_free(netplay_t *netplay)
 {
    unsigned i;
+
    close(netplay->fd);
 
    if (netplay->spectate)
@@ -1319,7 +1387,12 @@ void netplay_free(netplay_t *netplay)
    free(netplay);
 }
 
-
+/**
+ * netplay_pre_frame_net:   
+ * @netplay              : pointer to netplay object
+ *
+ * Pre-frame for Netplay (normal version).
+ **/
 static void netplay_pre_frame_net(netplay_t *netplay)
 {
    pretro_serialize(netplay->buffer[netplay->self_ptr].state,
@@ -1346,7 +1419,7 @@ int16_t input_state_spectate(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    netplay_t *netplay = (netplay_t*)driver.netplay_data;
-   int16_t res = netplay->cbs.state_cb(port, device, idx, id);
+   int16_t res        = netplay->cbs.state_cb(port, device, idx, id);
 
    netplay_set_spectate_input(netplay, res);
    return res;
@@ -1376,6 +1449,12 @@ int16_t input_state_spectate_client(unsigned port, unsigned device,
          device, idx, id);
 }
 
+/**
+ * netplay_pre_frame_spectate:   
+ * @netplay              : pointer to netplay object
+ *
+ * Pre-frame for Netplay (spectate mode version).
+ **/
 static void netplay_pre_frame_spectate(netplay_t *netplay)
 {
    unsigned i;
@@ -1383,12 +1462,13 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
    int new_fd, idx, bufsize;
    size_t header_size;
    struct sockaddr_storage their_addr;
+   socklen_t addr_size;
+   fd_set fds;
    struct timeval tmp_tv = {0};
 
    if (netplay->spectate_client)
       return;
 
-   fd_set fds;
    FD_ZERO(&fds);
    FD_SET(netplay->fd, &fds);
 
@@ -1398,7 +1478,7 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
    if (!FD_ISSET(netplay->fd, &fds))
       return;
 
-   socklen_t addr_size = sizeof(their_addr);
+   addr_size = sizeof(their_addr);
    new_fd = accept(netplay->fd, (struct sockaddr*)&their_addr, &addr_size);
    if (new_fd < 0)
    {
@@ -1467,6 +1547,13 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
 #endif
 }
 
+/**
+ * netplay_pre_frame:   
+ * @netplay              : pointer to netplay object
+ *
+ * Pre-frame for Netplay.
+ * Call this before running retro_run().
+ **/
 void netplay_pre_frame(netplay_t *netplay)
 {
    if (netplay->spectate)
@@ -1475,6 +1562,13 @@ void netplay_pre_frame(netplay_t *netplay)
       netplay_pre_frame_net(netplay);
 }
 
+/**
+ * netplay_post_frame_net:   
+ * @netplay              : pointer to netplay object
+ *
+ * Post-frame for Netplay (normal version).
+ * We check if we have new input and replay from recorded input.
+ **/
 static void netplay_post_frame_net(netplay_t *netplay)
 {
    netplay->frame_count++;
@@ -1529,6 +1623,13 @@ static void netplay_post_frame_net(netplay_t *netplay)
    }
 }
 
+/**
+ * netplay_post_frame_spectate:   
+ * @netplay              : pointer to netplay object
+ *
+ * Post-frame for Netplay (spectate mode version).
+ * We check if we have new input and replay from recorded input.
+ **/
 static void netplay_post_frame_spectate(netplay_t *netplay)
 {
    unsigned i;
@@ -1560,7 +1661,14 @@ static void netplay_post_frame_spectate(netplay_t *netplay)
    netplay->spectate_input_ptr = 0;
 }
 
-/* Here we check if we have new input and replay from recorded input. */
+/**
+ * netplay_post_frame:   
+ * @netplay              : pointer to netplay object
+ *
+ * Post-frame for Netplay.
+ * We check if we have new input and replay from recorded input.
+ * Call this after running retro_run().
+ **/
 void netplay_post_frame(netplay_t *netplay)
 {
    if (netplay->spectate)

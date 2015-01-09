@@ -24,6 +24,8 @@
 #include "libretro.h"
 #include "retro.h"
 
+typedef struct netplay netplay_t;
+
 void input_poll_net(void);
 
 int16_t input_state_net(unsigned port, unsigned device,
@@ -42,28 +44,74 @@ int16_t input_state_spectate(unsigned port, unsigned device,
 int16_t input_state_spectate_client(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
-typedef struct netplay netplay_t;
-
+/**
+ * network_init:
+ *
+ * Platform specific socket library initialization.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool network_init(void);
 
+/**
+ * network_deinit:
+ *
+ * Deinitialize platform specific socket libraries.
+ **/
 void network_deinit(void);
 
-/* Creates a new netplay handle. A NULL host means we're 
- * hosting (user 1). :) */
+/**
+ * netplay_new:
+ * @server               : IP address of server.
+ * @port                 : Port of server.
+ * @frames               : Amount of lag frames.
+ * @cb                   : Libretro callbacks.
+ * @spectate             : If true, enable spectator mode.
+ * @nick                 : Nickname of user.
+ *
+ * Creates a new netplay handle. A NULL host means we're 
+ * hosting (user 1).
+ *
+ * Returns: new netplay handle.
+ **/
 netplay_t *netplay_new(const char *server,
       uint16_t port, unsigned frames,
       const struct retro_callbacks *cb, bool spectate,
       const char *nick);
 
+/**
+ * netplay_free:
+ * @netplay              : pointer to netplay object
+ *
+ * Frees netplay handle.
+ **/
 void netplay_free(netplay_t *handle);
 
-/* On regular netplay, flip who controls user 1 and 2. */
+/**
+ * netplay_flip_users:
+ * @netplay              : pointer to netplay object
+ *
+ * On regular netplay, flip who controls user 1 and 2.
+ **/
 void netplay_flip_users(netplay_t *handle);
 
-/* Call this before running retro_run(). */
+/**
+ * netplay_pre_frame:   
+ * @netplay              : pointer to netplay object
+ *
+ * Pre-frame for Netplay.
+ * Call this before running retro_run().
+ **/
 void netplay_pre_frame(netplay_t *handle);
 
-/* Call this after running retro_run(). */
+/**
+ * netplay_post_frame:   
+ * @netplay              : pointer to netplay object
+ *
+ * Post-frame for Netplay.
+ * We check if we have new input and replay from recorded input.
+ * Call this after running retro_run().
+ **/
 void netplay_post_frame(netplay_t *handle);
 
 #endif
