@@ -52,6 +52,7 @@ HXUIOBJ m_menutitlebottom;
 HXUIOBJ m_back;
 HXUIOBJ root_menu;
 HXUIOBJ current_menu;
+HXUIFONT m_menufont;
 static msg_queue_t *xui_msg_queue;
 
 class CRetroArch : public CXuiModule
@@ -145,6 +146,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiMenuList", &m_menulist);
    GetChildById(L"XuiTxtTitle", &m_menutitle);
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
+   XuiCreateFont(L"Arial Unicode MS", 14, XUI_FONT_STYLE_NORMAL, 0, &m_menufont);
 
    char str[PATH_MAX_LENGTH];
    snprintf(str, sizeof(str), "%s - %s", PACKAGE_VERSION, g_extern.title_buf);
@@ -444,15 +446,46 @@ static void rmenu_xui_render(void)
 		 if(XuiHandleIsValid(hTextLeft))
 		 {
 			 mbstowcs(msg_w, path_buf, sizeof(msg_w) / sizeof(wchar_t));
+			 LPCWSTR currText = XuiTextElementGetText(hTextLeft);
 			 XuiTextElementSetText(hTextLeft, msg_w);
+			 float width, height;
+			 XuiElementGetBounds(hTextLeft, &width, &height);
+			 if (!currText || wcscmp(currText, msg_w) || width <= 1)
+			 {
+				 XUIRect* pRect = new XUIRect();
+				 XuiMeasureText(m_menufont, msg_w, -1, XUI_FONT_STYLE_NO_WORDWRAP, 0, pRect);
+				 if (width < pRect->GetWidth())
+					 XuiElementSetBounds(hTextLeft, pRect->GetWidth(), height);
+			 }
 		 }		 
 		 if(XuiHandleIsValid(hTextRight)) 
 		 {
 			 mbstowcs(msg_w, type_str, sizeof(msg_w) / sizeof(wchar_t));
+			 LPCWSTR currText = XuiTextElementGetText(hTextRight);
 			 XuiTextElementSetText(hTextRight, msg_w);
+			 float width, height;
+			 XuiElementGetBounds(hTextRight, &width, &height);
+			 if (!currText || wcscmp(currText, msg_w) || width <= 1) // Check if we need to adjust width
+			 {
+				 XUIRect* pRect = new XUIRect();
+				 XuiMeasureText(m_menufont, msg_w, -1, XUI_FONT_STYLE_NO_WORDWRAP, 0, pRect);
+				 
+				 XuiElementSetBounds(hTextRight, pRect->GetWidth(), height);
+
+				 D3DXVECTOR3 textPos, rPos;
+				 XuiElementGetPosition(hTextLeft, &textPos);
+
+				 HXUIOBJ hRightEdge = NULL;
+				 XuiElementGetChildById(hVisual, L"graphic_CapRight", &hRightEdge);
+				 XuiElementGetPosition(hRightEdge, &rPos);
+
+				 textPos.x = rPos.x - (pRect->GetWidth() + textPos.x);
+				 XuiElementSetPosition(hTextRight, &textPos);
+			 }
 		 }	  
 	  }
    }
+   XuiListSetCurSelVisible(m_menulist, driver.menu->selection_ptr);
 
    if (driver.menu->keyboard.display)
    {
