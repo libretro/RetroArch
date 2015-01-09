@@ -34,23 +34,42 @@
 extern "C" {
 #endif
 
+typedef void *dylib_t;
+typedef void (*function_t)(void);
+
 void init_libretro_sym(bool dummy);
 
 void uninit_libretro_sym(void);
 
-typedef void *dylib_t;
-
 #ifdef NEED_DYNAMIC
-typedef void (*function_t)(void);
-
+/**
+ * dylib_load:
+ * @path                         : Path to libretro core library.
+ *
+ * Platform independent dylib loading.
+ *
+ * Returns: library handle on success, otherwise NULL.
+ **/
 dylib_t dylib_load(const char *path);
 
+/**
+ * dylib_close:
+ * @lib                          : Library handle.
+ *
+ * Frees library handle.
+ **/
 void dylib_close(dylib_t lib);
 
 function_t dylib_proc(dylib_t lib, const char *proc);
 #endif
 
-/* Sets environment callback in order to get statically known 
+/**
+ * libretro_get_environment_info:
+ * @func                         : Function pointer for get_environment_info.
+ * @load_no_content              : If true, core should be able to auto-start
+ *                                 without any content loaded.
+ *
+ * Sets environment callback in order to get statically known 
  * information from it.
  *
  * Fetched via environment callbacks instead of
@@ -65,15 +84,37 @@ void libretro_get_environment_info(void (*)(retro_environment_t),
       bool *load_no_content);
 
 #ifdef HAVE_DYNAMIC
-/* Gets system info from an arbitrary lib.
- * The struct returned must be freed as strings are allocated dynamically. */
+/**
+ * libretro_get_system_info:
+ * @path                         : Path to libretro library.
+ * @info                         : System info information.
+ * @load_no_content              : If true, core should be able to auto-start
+ *                                 without any content loaded.
+ *
+ * Gets system info from an arbitrary lib.
+ * The struct returned must be freed as strings are allocated dynamically.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool libretro_get_system_info(const char *path,
       struct retro_system_info *info, bool *load_no_content);
 
+/**
+ * libretro_free_system_info:
+ * @info                         : Pointer to system info information.
+ *
+ * Frees system information.
+ **/
 void libretro_free_system_info(struct retro_system_info *info);
 #endif
 
-/* Transforms a library id to a name suitable as a pathname. */
+/**
+ * libretro_get_current_core_pathname:
+ * @name                         : Sanitized name of libretro core.
+ * @size                         : Size of @name
+ *
+ * Transforms a library id to a name suitable as a pathname.
+ **/
 void libretro_get_current_core_pathname(char *name, size_t size);
 
 const struct retro_subsystem_info *libretro_find_subsystem_info(
