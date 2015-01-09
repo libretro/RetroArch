@@ -71,6 +71,13 @@ rarch_joypad_driver_t *joypad_drivers[] = {
    NULL,
 };
 
+/**
+ * config_get_joypad_driver_options:
+ *
+ * Get an enumerated list of all joypad driver names, separated by '|'.
+ *
+ * Returns: string listing of all joypad driver names, separated by '|'.
+ **/
 const char* config_get_joypad_driver_options(void)
 {
    union string_list_elem_attr attr;
@@ -227,6 +234,7 @@ const struct input_key_map input_config_key_map[] = {
 static enum retro_key find_rk_bind(const char *str)
 {
    size_t i;
+
    for (i = 0; input_config_key_map[i].str; i++)
    {
       if (strcasecmp(input_config_key_map[i].str, str) == 0)
@@ -244,6 +252,17 @@ enum retro_key input_translate_str_to_rk(const char *str)
    return find_rk_bind(str);
 }
 
+/**
+ * input_joypad_init_driver:
+ * @ident                           : identifier of driver to initialize.
+ *
+ * Initialize a joypad driver of name @ident.
+ *
+ * If ident points to NULL or a zero-length string, 
+ * equivalent to calling input_joypad_init_first().
+ *
+ * Returns: joypad driver if found, otherwise NULL.
+ **/
 const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident)
 {
    unsigned i;
@@ -264,9 +283,17 @@ const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident)
    return input_joypad_init_first();
 }
 
+/**
+ * input_joypad_init_first:
+ *
+ * Finds first suitable joypad driver and initializes.
+ *
+ * Returns: joypad driver if found, otherwise NULL.
+ **/
 const rarch_joypad_driver_t *input_joypad_init_first(void)
 {
    unsigned i;
+
    for (i = 0; joypad_drivers[i]; i++)
    {
       if (joypad_drivers[i]->init())

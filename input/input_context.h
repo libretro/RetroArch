@@ -25,6 +25,8 @@ extern "C" {
 #include <boolean.h>
 #include "../libretro.h"
 
+typedef struct rarch_joypad_driver rarch_joypad_driver_t;
+
 enum retro_rumble_effect;
 
 struct rarch_joypad_driver
@@ -40,16 +42,6 @@ struct rarch_joypad_driver
 
    const char *ident;
 };
-    
-typedef struct rarch_joypad_driver rarch_joypad_driver_t;
-
-const char* config_get_joypad_driver_options(void);
-
-/* If ident points to NULL or a zero-length string,
- * equivalent to calling input_joypad_init_first(). */
-const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident);
-
-const rarch_joypad_driver_t *input_joypad_init_first(void);
 
 extern rarch_joypad_driver_t dinput_joypad;
 extern rarch_joypad_driver_t linuxraw_joypad;
@@ -66,6 +58,37 @@ extern rarch_joypad_driver_t apple_ios_joypad;
 extern rarch_joypad_driver_t android_joypad;
 extern rarch_joypad_driver_t qnx_joypad;
 extern rarch_joypad_driver_t null_joypad;
+
+/**
+ * config_get_joypad_driver_options:
+ *
+ * Get an enumerated list of all joypad driver names, separated by '|'.
+ *
+ * Returns: string listing of all joypad driver names, separated by '|'.
+ **/
+const char* config_get_joypad_driver_options(void);
+
+/**
+ * input_joypad_init_driver:
+ * @ident                           : identifier of driver to initialize.
+ *
+ * Initialize a joypad driver of name @ident.
+ *
+ * If ident points to NULL or a zero-length string, 
+ * equivalent to calling input_joypad_init_first().
+ *
+ * Returns: joypad driver if found, otherwise NULL.
+ **/
+const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident);
+
+/**
+ * input_joypad_init_first:
+ *
+ * Finds first suitable joypad driver and initializes.
+ *
+ * Returns: joypad driver if found, otherwise NULL.
+ **/
+const rarch_joypad_driver_t *input_joypad_init_first(void);
 
 #ifdef __cplusplus
 }
