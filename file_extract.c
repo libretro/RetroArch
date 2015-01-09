@@ -147,7 +147,7 @@ static size_t zlib_file_size(void *handle)
 {
    zlib_file_data_t *data = (zlib_file_data_t*)handle;
    if (!data)
-      return NULL;
+      return 0;
    return data->size;
 }
 
