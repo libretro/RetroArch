@@ -31,6 +31,7 @@ static void core_info_list_resolve_all_extensions(
       core_info_list_t *core_info_list)
 {
    size_t i, all_ext_len = 0;
+
    if (!core_info_list)
       return;
 
@@ -62,6 +63,7 @@ static void core_info_list_resolve_all_firmware(
 {
    size_t i;
    unsigned c;
+
    if (!core_info_list)
       return;
 
@@ -104,6 +106,7 @@ core_info_list_t *core_info_list_new(const char *modules_path)
    core_info_list_t *core_info_list = NULL;
    struct string_list *contents = (struct string_list*)
       dir_list_new(modules_path, EXT_EXECUTABLES, false);
+
    if (!contents)
       return NULL;
 
@@ -216,12 +219,16 @@ error:
 void core_info_list_free(core_info_list_t *core_info_list)
 {
    size_t i, j;
+
    if (!core_info_list)
       return;
 
    for (i = 0; i < core_info_list->count; i++)
    {
       core_info_t *info = (core_info_t*)&core_info_list->list[i];
+
+      if (!info)
+         continue;
 
       free(info->path);
       free(info->systemname);
@@ -264,6 +271,7 @@ size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
    num = 0;
    for (i = 0; i < core_info_list->count; i++)
       num += !!core_info_list->list[i].data;
+
    return num;
 }
 
@@ -271,6 +279,7 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
       const char *path, char *buf, size_t size)
 {
    size_t i;
+
    if (!core_info_list)
       return false;
 
@@ -385,13 +394,17 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
 void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
       const char *path, const core_info_t **infos, size_t *num_infos)
 {
+   struct string_list *list = NULL;
+   size_t supported = 0, i;
+
    if (!core_info_list)
       return;
+
+   (void)list;
 
    core_info_tmp_path = path;
 
 #ifdef HAVE_ZLIB
-   struct string_list *list = NULL;
    if (!strcasecmp(path_get_extension(path), "zip"))
       list = zlib_get_file_list(path);
    core_info_tmp_list = list;
@@ -402,11 +415,13 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    qsort(core_info_list->list, core_info_list->count,
          sizeof(core_info_t), core_info_qsort_cmp);
 
-   size_t supported, i;
-   supported = 0;
    for (i = 0; i < core_info_list->count; i++, supported++)
    {
       const core_info_t *core = &core_info_list->list[i];
+
+      if (!core)
+         continue;
+
       if (!core_info_does_support_file(core, path)
 #ifdef HAVE_ZLIB
             && !core_info_does_support_any_file(core, list)
@@ -432,7 +447,7 @@ static core_info_t *find_core_info(core_info_list_t *list,
    for (i = 0; i < list->count; i++)
    {
       core_info_t *info = (core_info_t*)&list->list[i];
-      if (info->path && !strcmp(info->path, core))
+      if (info && info->path && !strcmp(info->path, core))
          return info;
    }
 

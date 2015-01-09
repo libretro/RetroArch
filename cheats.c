@@ -32,10 +32,10 @@
 
 void cheat_manager_apply_cheats(cheat_manager_t *handle)
 {
-   unsigned i;
-   unsigned idx = 0;
+   unsigned i, idx = 0;
 
    pretro_cheat_reset();
+
    for (i = 0; i < handle->size; i++)
    {
       if (handle->cheats[i].state)
@@ -64,10 +64,7 @@ cheat_manager_t *cheat_manager_load(const char *path)
 
    for (i = 0; i < cheats; i++)
    {
-      char key[64];
-      char desc_key[256];
-      char code_key[256];
-      char enable_key[256];
+      char key[64], desc_key[256], code_key[256], enable_key[256];
       char *tmp = NULL;
       bool tmp_bool = false;
 
@@ -94,8 +91,9 @@ cheat_manager_t *cheat_manager_load(const char *path)
 cheat_manager_t *cheat_manager_new(unsigned size)
 {
    unsigned i;
-   cheat_manager_t *handle = NULL;
-   handle = (cheat_manager_t*)calloc(1, sizeof(struct cheat_manager));
+   cheat_manager_t *handle = (cheat_manager_t*)
+      calloc(1, sizeof(struct cheat_manager));
+
    if (!handle)
       return NULL;
 
@@ -176,6 +174,7 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
 {
    msg_queue_clear(g_extern.msg_queue);
    char msg[256];
+
    snprintf(msg, sizeof(msg), "Cheat: #%u [%s]: %s",
          handle_idx, handle->cheats[handle_idx].state ? "ON" : "OFF",
          (handle->cheats[handle_idx].desc) ? 
@@ -200,6 +199,7 @@ void cheat_manager_index_next(cheat_manager_t *handle)
 {
    if (!handle)
       return;
+
    handle->ptr = (handle->ptr + 1) % handle->size;
    cheat_manager_update(handle, handle->ptr);
 }

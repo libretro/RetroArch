@@ -178,8 +178,14 @@ static ssize_t read_content_file(const char *path, void **buf)
    return ret;
 }
 
-/* Attempt to save valuable RAM data somewhere. */
-
+/**
+ * dump_to_file_desperate:
+ * @data         : pointer to data buffer.
+ * @size         : size of @data.
+ * @type         : type of file to be saved.
+ *
+ * Attempt to save valuable RAM data somewhere.
+ **/
 static void dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
@@ -353,7 +359,7 @@ bool load_state(const char *path)
 void load_ram_file(const char *path, int type)
 {
    ssize_t rc;
-   void *buf = NULL;
+   void *buf   = NULL;
    size_t size = pretro_get_memory_size(type);
    void *data  = pretro_get_memory_data(type);
 
@@ -390,7 +396,7 @@ void load_ram_file(const char *path, int type)
 void save_ram_file(const char *path, int type)
 {
    size_t size = pretro_get_memory_size(type);
-   void *data = pretro_get_memory_data(type);
+   void *data  = pretro_get_memory_data(type);
 
    if (!data)
       return;
@@ -435,7 +441,7 @@ static bool load_content(const struct retro_subsystem_info *special,
    for (i = 0; i < content->size; i++)
    {
       const char *path = content->elems[i].data;
-      int attr = content->elems[i].attr.i;
+      int         attr = content->elems[i].attr.i;
 
       bool need_fullpath   = attr & 2;
       bool require_content = attr & 4;
@@ -629,19 +635,21 @@ bool init_content_file(void)
    /* Try to extract all content we're going to load if appropriate. */
    for (i = 0; i < content->size; i++)
    {
+      const char *ext = NULL;
+      const char *valid_ext = NULL;
+
       /* Block extract check. */
       if (content->elems[i].attr.i & 1)
          continue;
 
-      const char *ext = path_get_extension(content->elems[i].data);
-
-      const char *valid_ext = special ?
-         special->roms[i].valid_extensions :
+      ext = path_get_extension(content->elems[i].data);
+      valid_ext = special ? special->roms[i].valid_extensions :
          g_extern.system.info.valid_extensions;
 
       if (ext && !strcasecmp(ext, "zip"))
       {
          char temporary_content[PATH_MAX_LENGTH];
+
          strlcpy(temporary_content, content->elems[i].data,
                sizeof(temporary_content));
 
