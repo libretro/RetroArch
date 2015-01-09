@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -19,9 +20,21 @@
 #include "../driver.h"
 #include <boolean.h>
 
-// Starts a audio driver in a new thread.
-// Access to audio driver will be mediated through this driver.
-// This driver interfaces with audio callback and is only used in that case.
+/**
+ * rarch_threaded_audio_init:
+ * @out_driver                : output driver
+ * @out_data                  : output audio data
+ * @device                    : audio device (optional)
+ * @out_rate                  : output audio rate
+ * @latency                   : audio latency
+ * @driver                    : audio driver
+ *
+ * Starts a audio driver in a new thread.
+ * Access to audio driver will be mediated through this driver.
+ * This driver interfaces with audio callback and is only used in that case.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool rarch_threaded_audio_init(const audio_driver_t **out_driver, void **out_data,
       const char *device, unsigned out_rate, unsigned latency,
       const audio_driver_t *driver);

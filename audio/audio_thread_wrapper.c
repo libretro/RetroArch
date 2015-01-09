@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -36,7 +37,7 @@ typedef struct audio_thread
 
    int inited;
 
-   // Init options.
+   /* Initialization options. */
    const char *device;
    unsigned out_rate;
    unsigned latency;
@@ -45,6 +46,9 @@ typedef struct audio_thread
 static void audio_thread_loop(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
+
+   if (!thr)
+      return;
 
    RARCH_LOG("[Audio Thread]: Initializing audio driver.\n");
    thr->driver_data = thr->driver->init(thr->device, thr->out_rate, thr->latency);
@@ -58,7 +62,8 @@ static void audio_thread_loop(void *data)
    if (thr->inited < 0)
       return;
 
-   // Wait until we start to avoid calling stop immediately after init.
+   /* Wait until we start to avoid calling 
+    * stop immediately after initialization. */
    slock_lock(thr->lock);
    while (thr->stopped)
       scond_wait(thr->cond, thr->lock);
@@ -95,6 +100,9 @@ static void audio_thread_loop(void *data)
 
 static void audio_thread_block(audio_thread_t *thr)
 {
+   if (!thr)
+      return;
+
    slock_lock(thr->lock);
    thr->stopped = true;
    scond_signal(thr->cond);
@@ -103,6 +111,9 @@ static void audio_thread_block(audio_thread_t *thr)
 
 static void audio_thread_unblock(audio_thread_t *thr)
 {
+   if (!thr)
+      return;
+
    slock_lock(thr->lock);
    thr->stopped = false;
    scond_signal(thr->cond);
@@ -112,6 +123,7 @@ static void audio_thread_unblock(audio_thread_t *thr)
 static void audio_thread_free(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
+
    if (!thr)
       return;
 
@@ -137,27 +149,42 @@ static bool audio_thread_alive(void *data)
 {
    bool alive = false;
    audio_thread_t *thr = (audio_thread_t*)data;
+
+   if (!thr)
+      return false;
+
    audio_thread_block(thr);
    alive = !thr->is_paused;
    audio_thread_unblock(thr);
+
    return alive;
 }
 
 static bool audio_thread_stop(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
+
+   if (!thr)
+      return false;
+
    audio_thread_block(thr);
    thr->is_paused = true;
    g_extern.system.audio_callback.set_state(false);
+
    return true;
 }
 
 static bool audio_thread_start(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
+
+   if (!thr)
+      return false;
+
    g_extern.system.audio_callback.set_state(true);
    thr->is_paused = false;
    audio_thread_unblock(thr);
+
    return true;
 }
 
@@ -170,20 +197,27 @@ static void audio_thread_set_nonblock_state(void *data, bool state)
 static bool audio_thread_use_float(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr)
+      return false;
    return thr->use_float;
 }
 
 static ssize_t audio_thread_write(void *data, const void *buf, size_t size)
 {
+   ssize_t ret;
    audio_thread_t *thr = (audio_thread_t*)data;
-   ssize_t ret = thr->driver->write(thr->driver_data, buf, size);
+
+   if (!thr)
+      return 0;
+
+   ret = thr->driver->write(thr->driver_data, buf, size);
+
    if (ret < 0)
    {
       slock_lock(thr->lock);
       thr->alive = false;
       scond_signal(thr->cond);
       slock_unlock(thr->lock);
-      return ret;
    }
 
    return ret;
@@ -199,10 +233,25 @@ static const audio_driver_t audio_thread = {
    audio_thread_free,
    audio_thread_use_float,
    "audio-thread",
-   NULL, // No point in using rate control with threaded audio.
+   NULL, /* No point in using rate control with threaded audio. */
    NULL,
 };
 
+/**
+ * rarch_threaded_audio_init:
+ * @out_driver                : output driver
+ * @out_data                  : output audio data
+ * @device                    : audio device (optional)
+ * @out_rate                  : output audio rate
+ * @latency                   : audio latency
+ * @driver                    : audio driver
+ *
+ * Starts a audio driver in a new thread.
+ * Access to audio driver will be mediated through this driver.
+ * This driver interfaces with audio callback and is only used in that case.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool rarch_threaded_audio_init(const audio_driver_t **out_driver, void **out_data,
       const char *device, unsigned audio_out_rate, unsigned latency,
       const audio_driver_t *drv)
@@ -227,13 +276,13 @@ bool rarch_threaded_audio_init(const audio_driver_t **out_driver, void **out_dat
    if (!(thr->thread = sthread_create(audio_thread_loop, thr)))
       goto error;
 
-   // Wait until thread has initialized (or failed) the driver.
+   /* Wait until thread has initialized (or failed) the driver. */
    slock_lock(thr->lock);
    while (!thr->inited)
       scond_wait(thr->cond, thr->lock);
    slock_unlock(thr->lock);
 
-   if (thr->inited < 0) // Thread failed.
+   if (thr->inited < 0) /* Thread failed. */
       goto error;
 
    *out_driver = &audio_thread;
@@ -246,4 +295,3 @@ error:
    audio_thread_free(thr);
    return false;
 }
-

@@ -123,8 +123,9 @@ void audio_convert_s16_to_float_SSE2(float *out,
 void audio_convert_float_to_s16_SSE2(int16_t *out,
       const float *in, size_t samples)
 {
-   __m128 factor = _mm_set1_ps((float)0x8000);
    size_t i;
+   __m128 factor = _mm_set1_ps((float)0x8000);
+
    for (i = 0; i + 8 <= samples; i += 8, in += 8, out += 8)
    {
       __m128 input[2] = { _mm_loadu_ps(in + 0), _mm_loadu_ps(in + 4) };
@@ -354,6 +355,8 @@ void audio_convert_s16_to_float_ALLEGREX(float *out,
 void audio_convert_float_to_s16_ALLEGREX(int16_t *out,
       const float *in, size_t samples)
 {
+   size_t i;
+
 #ifdef DEBUG
    /* Make sure the buffers are 16 byte aligned, this should be 
     * the default behaviour of malloc in the PSPSDK.
@@ -362,7 +365,6 @@ void audio_convert_float_to_s16_ALLEGREX(int16_t *out,
    rarch_assert(((uintptr_t)out & 0xf) == 0);
 #endif
 
-   size_t i;
    for (i = 0; i + 8 <= samples; i += 8)
    {
       __asm__ (
