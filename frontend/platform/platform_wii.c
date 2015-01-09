@@ -23,6 +23,7 @@
 #include <ogc/cache.h>
 #include "../../gfx/gx/ppc_asm.h"
 #include <file/file_path.h>
+#include <retro_miscellaneous.h>
 #include <ogc/system.h>
 #include <ogc/usbstorage.h>
 #include <sdcard/wiisd_io.h>
