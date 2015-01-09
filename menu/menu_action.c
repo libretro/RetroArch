@@ -58,6 +58,10 @@ static void process_setting_handler(
          if (setting->action_ok)
             setting->action_ok(setting, action);
          break;
+      case MENU_ACTION_CANCEL:
+         if (setting->action_cancel)
+            setting->action_cancel(setting, action);
+         break;
       case MENU_ACTION_START:
          if (setting->action_start)
             setting->action_start(setting);

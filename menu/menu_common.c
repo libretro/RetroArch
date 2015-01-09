@@ -531,6 +531,7 @@ void menu_common_list_delete(void *data, size_t idx,
    {
       cbs->action_start         = NULL;
       cbs->action_ok            = NULL;
+      cbs->action_cancel        = NULL;
       cbs->action_toggle        = NULL;
       cbs->action_deferred_push = NULL;
       free(list->list[idx].actiondata);

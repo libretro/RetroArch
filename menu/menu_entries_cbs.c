@@ -799,6 +799,20 @@ static int action_ok_lookup_setting(const char *path,
    return menu_action_setting_set(type, label, MENU_ACTION_OK);
 }
 
+static int action_cancel_lookup_setting(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return menu_action_setting_set(type, label, MENU_ACTION_CANCEL);
+}
+
+static int action_cancel_pop_default(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   apply_deferred_settings();
+   menu_list_pop_stack(driver.menu->menu_list);
+   return 0;
+}
+
 static int action_ok_save_new_config(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -2589,6 +2603,18 @@ static void menu_entries_cbs_init_bind_content_list_switch(menu_file_list_cbs_t 
    cbs->action_content_list_switch = deferred_push_content_list;
 }
 
+static void menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx)
+{
+   if (!cbs)
+      return;
+
+   cbs->action_cancel = action_cancel_lookup_setting;
+
+   /* TODO - add some stuff here. */
+   cbs->action_cancel = action_cancel_pop_default;
+}
+
 static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -2819,6 +2845,7 @@ void menu_entries_cbs_init(void *data,
    if (cbs)
    {
       menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx);
+      menu_entries_cbs_init_bind_cancel(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_start(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_toggle(cbs, path, label, type, idx);

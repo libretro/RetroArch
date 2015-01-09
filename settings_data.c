@@ -1333,6 +1333,7 @@ rarch_setting_t setting_data_action_setting(const char* name,
    result.action_start              = NULL;
    result.action_toggle             = NULL;
    result.action_ok                 = setting_data_action_action_ok;
+   result.action_cancel             = NULL;
    return result;
 }
 
@@ -1372,6 +1373,7 @@ rarch_setting_t setting_data_float_setting(const char* name,
    result.action_start     = setting_data_fraction_action_start_default;
    result.action_toggle    = setting_data_fraction_action_toggle_default;
    result.action_ok        = setting_data_fraction_action_ok_default;
+   result.action_cancel    = NULL;
    return result;
 }
 
@@ -1394,6 +1396,7 @@ rarch_setting_t setting_data_bool_setting(const char* name,
    result.action_start = setting_data_bool_action_start_default;
    result.action_toggle= setting_data_bool_action_toggle_default;
    result.action_ok    = setting_data_bool_action_ok_default;
+   result.action_cancel= NULL;
    return result;
 }
 
@@ -1430,6 +1433,7 @@ rarch_setting_t setting_data_uint_setting(const char* name,
    result.action_start  = setting_data_uint_action_start_default;
    result.action_toggle = setting_data_uint_action_toggle_default;
    result.action_ok     = setting_data_uint_action_ok_default;
+   result.action_cancel = NULL;
 
    return result;
 }
@@ -1495,8 +1499,9 @@ rarch_setting_t setting_data_bind_setting(const char* name,
    result.index        = idx;
    result.index_offset = idx_offset;
 
-   result.action_start = setting_data_bind_action_start;
-   result.action_ok    = setting_data_bind_action_ok;
+   result.action_start  = setting_data_bind_action_start;
+   result.action_ok     = setting_data_bind_action_ok;
+   result.action_cancel = NULL;
 
    return result;
 }
@@ -2997,10 +3002,12 @@ static void setting_data_add_special_callbacks(
          case ST_UINT:
             (*list)[idx].action_start  = setting_data_uint_action_start_linefeed;
             (*list)[idx].action_ok     = setting_data_uint_action_ok_linefeed;
+            (*list)[idx].action_cancel = NULL;
             break;
          case ST_STRING:
             (*list)[idx].action_start  = setting_data_string_action_start_allow_input;
             (*list)[idx].action_ok     = setting_data_string_action_ok_allow_input;
+            (*list)[idx].action_cancel = NULL;
             break;
          default:
             break;
@@ -3177,8 +3184,8 @@ static bool setting_data_append_list_main_menu_options(
             group_info.name,
             subgroup_info.name);
       (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_savestates;
-      (*list)[list_info->index - 1].action_start = &setting_data_action_start_savestates;
-      (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_exit;
+      (*list)[list_info->index - 1].action_start  = &setting_data_action_start_savestates;
+      (*list)[list_info->index - 1].action_ok     = &setting_data_bool_action_ok_exit;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_SAVE_STATE);
 
@@ -3188,8 +3195,8 @@ static bool setting_data_append_list_main_menu_options(
             group_info.name,
             subgroup_info.name);
       (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_savestates;
-      (*list)[list_info->index - 1].action_start = &setting_data_action_start_savestates;
-      (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_exit;
+      (*list)[list_info->index - 1].action_start  = &setting_data_action_start_savestates;
+      (*list)[list_info->index - 1].action_ok     = &setting_data_bool_action_ok_exit;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_LOAD_STATE);
 
@@ -3206,7 +3213,7 @@ static bool setting_data_append_list_main_menu_options(
             group_info.name,
             subgroup_info.name);
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_RESUME);
-      (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_exit;
+      (*list)[list_info->index - 1].action_ok     = &setting_data_bool_action_ok_exit;
 
       CONFIG_ACTION(
             "restart_content",
@@ -4714,18 +4721,20 @@ static bool setting_data_append_list_input_options(
             label_bind_all[user],
             group_info.name,
             subgroup_info.name);
-      (*list)[list_info->index - 1].index = user + 1;
-      (*list)[list_info->index - 1].index_offset = user;
-      (*list)[list_info->index - 1].action_ok    = &setting_data_action_ok_bind_all;
+      (*list)[list_info->index - 1].index          = user + 1;
+      (*list)[list_info->index - 1].index_offset   = user;
+      (*list)[list_info->index - 1].action_ok      = &setting_data_action_ok_bind_all;
+      (*list)[list_info->index - 1].action_cancel  = NULL;
 
       CONFIG_ACTION(
             key_bind_defaults[user],
             label_bind_defaults[user],
             group_info.name,
             subgroup_info.name);
-      (*list)[list_info->index - 1].index = user + 1;
-      (*list)[list_info->index - 1].index_offset = user;
-      (*list)[list_info->index - 1].action_ok    = &setting_data_action_ok_bind_defaults;
+      (*list)[list_info->index - 1].index          = user + 1;
+      (*list)[list_info->index - 1].index_offset   = user;
+      (*list)[list_info->index - 1].action_ok      = &setting_data_action_ok_bind_defaults;
+      (*list)[list_info->index - 1].action_cancel  = NULL;
    }
 
    START_SUB_GROUP(

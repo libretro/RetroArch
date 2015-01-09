@@ -614,8 +614,8 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_CANCEL:
-         apply_deferred_settings();
-         menu_list_pop_stack(driver.menu->menu_list);
+         if (cbs && cbs->action_cancel)
+            return cbs->action_cancel(path_offset, label_offset, type_offset, driver.menu->selection_ptr);
          break;
 
       case MENU_ACTION_OK:
