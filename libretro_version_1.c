@@ -90,9 +90,7 @@ static void video_frame(const void *data, unsigned width,
 
    if (g_extern.filter.filter && data)
    {
-      unsigned owidth  = 0;
-      unsigned oheight = 0;
-      unsigned opitch  = 0;
+      unsigned owidth  = 0, oheight = 0, opitch = 0;
 
       rarch_softfilter_get_output_size(g_extern.filter.filter,
             &owidth, &oheight, width, height);
@@ -469,7 +467,6 @@ static int16_t input_state(unsigned port, unsigned device,
  * input_poll_overlay:
  *
  * Poll pressed buttons/keys on currently active overlay.
- *
  **/
 static inline void input_poll_overlay(void)
 {

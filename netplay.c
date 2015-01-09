@@ -285,39 +285,30 @@ static int init_tcp_connection(const struct addrinfo *res,
          goto end;
       }
    }
-   else if (spectate)
-   {
-      int yes = 1;
-      setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, CONST_CAST &yes, sizeof(int));
-
-      if (bind(fd, res->ai_addr, res->ai_addrlen) < 0 ||
-            listen(fd, MAX_SPECTATORS) < 0)
-      {
-         ret = false;
-         goto end;
-      }
-   }
    else
    {
       int yes = 1;
       setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, CONST_CAST &yes, sizeof(int));
 
       if (bind(fd, res->ai_addr, res->ai_addrlen) < 0 ||
-            listen(fd, 1) < 0)
+            listen(fd, spectate ? MAX_SPECTATORS : 1) < 0)
       {
          ret = false;
          goto end;
       }
 
-      int new_fd = accept(fd, other_addr, &addr_size);
-      if (new_fd < 0)
+      if (!spectate)
       {
-         ret = false;
-         goto end;
-      }
+         int new_fd = accept(fd, other_addr, &addr_size);
+         if (new_fd < 0)
+         {
+            ret = false;
+            goto end;
+         }
 
-      close(fd);
-      fd = new_fd;
+         close(fd);
+         fd = new_fd;
+      }
    }
 
 end:
