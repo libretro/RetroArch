@@ -38,16 +38,45 @@ struct autosave
    unsigned interval;
 };
 
+/**
+ * autosave_lock:
+ * @handle          : pointer to autosave object
+ *
+ * Locks autosave.
+ **/
+static void autosave_lock(autosave_t *handle)
+{
+   slock_lock(handle->lock);
+}
+
+/**
+ * autosave_unlock:
+ * @handle          : pointer to autosave object
+ *
+ * Unlocks autosave.
+ **/
+static void autosave_unlock(autosave_t *handle)
+{
+   slock_unlock(handle->lock);
+}
+
+/**
+ * autosave_thread:
+ * @data            : pointer to autosave object
+ *
+ * Callback function for (threaded) autosave.
+ **/
 static void autosave_thread(void *data)
 {
-   autosave_t *save = (autosave_t*)data;
-
    bool first_log = true;
+   autosave_t *save = (autosave_t*)data;
 
    while (!save->quit)
    {
+      bool differ = false;
+
       autosave_lock(save);
-      bool differ = memcmp(save->buffer, save->retro_buffer,
+      differ = memcmp(save->buffer, save->retro_buffer,
             save->bufsize) != 0;
       if (differ)
          memcpy(save->buffer, save->retro_buffer, save->bufsize);
@@ -57,8 +86,11 @@ static void autosave_thread(void *data)
       {
          /* Should probably deal with this more elegantly. */
          FILE *file = fopen(save->path, "wb");
+
          if (file)
          {
+            bool failed = false;
+
             /* Avoid spamming down stderr ... */
             if (first_log)
             {
@@ -69,7 +101,6 @@ static void autosave_thread(void *data)
             else
                RARCH_LOG("SRAM changed ... autosaving ...\n");
 
-            bool failed = false;
             failed |= fwrite(save->buffer, 1, save->bufsize, file)
                != save->bufsize;
             failed |= fflush(file) != 0;
@@ -89,6 +120,18 @@ static void autosave_thread(void *data)
    }
 }
 
+/**
+ * autosave_new:
+ * @path            : path to autosave file
+ * @data            : pointer to buffer
+ * @size            : size of @data buffer
+ * @interval        : interval at which saves should be performed.
+ *
+ * Create and initialize autosave object.
+ *
+ * Returns: pointer to new autosave_t object if successful, otherwise
+ * NULL.
+ **/
 autosave_t *autosave_new(const char *path, const void *data, size_t size,
       unsigned interval)
 {
@@ -118,16 +161,12 @@ autosave_t *autosave_new(const char *path, const void *data, size_t size,
    return handle;
 }
 
-void autosave_lock(autosave_t *handle)
-{
-   slock_lock(handle->lock);
-}
-
-void autosave_unlock(autosave_t *handle)
-{
-   slock_unlock(handle->lock);
-}
-
+/**
+ * autosave_free:
+ * @handle          : pointer to autosave object
+ *
+ * Frees autosave object.
+ **/
 void autosave_free(autosave_t *handle)
 {
    if (!handle)
@@ -147,6 +186,11 @@ void autosave_free(autosave_t *handle)
    free(handle);
 }
 
+/**
+ * lock_autosave:
+ *
+ * Lock autosave.
+ **/
 void lock_autosave(void)
 {
    unsigned i;
@@ -157,6 +201,11 @@ void lock_autosave(void)
    }
 }
 
+/**
+ * unlock_autosave:
+ *
+ * Unlocks autosave.
+ **/
 void unlock_autosave(void)
 {
    unsigned i;
