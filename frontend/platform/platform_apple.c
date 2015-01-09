@@ -18,6 +18,7 @@
 #include "../../apple/common/CFExtensions.h"
 
 #include "../frontend.h"
+#include "../runloop.h"
 #include "../../menu/disp/ios.h"
 
 #include <stdint.h>

@@ -846,21 +846,6 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 
 int rarch_main_init(int argc, char *argv[]);
 
-/**
- * rarch_main_iterate:
- *
- * Run Libretro/RetroArch for one frame.
- *
- * Returns: 0 if we want to indicate to the caller that 
- * any top-level runtime loop needs to be forcibly woken up.
- *
- * 1 if we have to wait until button input in order
- * to wake up the loop.
- *
- * -1 if we forcibly quit out of the RetroArch iteration loop. 
- **/
-int rarch_main_iterate(void);
-
 void rarch_playlist_load_content(content_playlist_t *playlist,
       unsigned index);
 

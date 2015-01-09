@@ -22,6 +22,7 @@
 #include "retroarch_logger.h"
 #include "intl/intl.h"
 #include "retroarch.h"
+#include "runloop.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu_common.h"
