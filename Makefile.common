@@ -99,7 +99,6 @@ OBJ += frontend/frontend.o \
 		rarch_compr_file_path.o \
 		hash.o \
 		driver.o \
-		general.o \
 		settings.o \
 		settings_list.o \
 		settings_data.o \

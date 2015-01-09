@@ -47,6 +47,18 @@ void rarch_disk_control_append_image(const char *path);
 void rarch_recording_dump_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
+bool rarch_replace_config(const char *path);
+
+void rarch_playlist_load_content(content_playlist_t *playlist,
+      unsigned index);
+
+int rarch_defer_core(core_info_list_t *data,
+      const char *dir, const char *path, const char *menu_label,
+      char *deferred_path, size_t sizeof_deferred_path);
+
+void rarch_update_system_info(struct retro_system_info *info,
+      bool *load_no_content);
+
 #ifdef __cplusplus
 }
 #endif

@@ -2882,3 +2882,134 @@ void rarch_main_deinit(void)
 
    g_extern.main_is_init = false;
 }
+
+void rarch_playlist_load_content(content_playlist_t *playlist,
+      unsigned idx)
+{
+   const char *path      = NULL;
+   const char *core_path = NULL;
+
+   content_playlist_get_index(playlist,
+         idx, &path, &core_path, NULL);
+
+   strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
+
+   driver.menu->load_no_content = (path) ? false : true;
+
+   rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
+
+   rarch_main_command(RARCH_CMD_LOAD_CORE);
+}
+
+/* When selection is presented back, returns 0.
+ * If it can make a decision right now, returns -1. */
+
+int rarch_defer_core(core_info_list_t *core_info, const char *dir,
+      const char *path, const char *menu_label,
+      char *deferred_path, size_t sizeof_deferred_path)
+{
+   char new_core_path[PATH_MAX_LENGTH];
+   const core_info_t *info = NULL;
+   size_t supported = 0;
+
+   fill_pathname_join(deferred_path, dir, path, sizeof_deferred_path);
+
+#ifdef HAVE_COMPRESSION
+   if (path_is_compressed_file(dir))
+   {
+      /* In case of a compressed archive, we have to join with a hash */
+      /* We are going to write at the position of dir: */
+      rarch_assert(strlen(dir) < strlen(deferred_path));
+      deferred_path[strlen(dir)] = '#';
+   }
+#endif
+
+   if (core_info)
+      core_info_list_get_supported_cores(core_info, deferred_path, &info,
+            &supported);
+
+   if (!strcmp(menu_label, "load_content"))
+   {
+      strlcpy(new_core_path, g_extern.core_info_current->path, sizeof(new_core_path));
+      supported = 1;
+   }
+   else
+   {
+      strlcpy(new_core_path, info->path, sizeof(new_core_path));
+   }
+
+   /* Can make a decision right now. */
+   if (supported == 1)
+   {
+      strlcpy(g_extern.fullpath, deferred_path,
+            sizeof(g_extern.fullpath));
+      if (path_file_exists(new_core_path))
+         strlcpy(g_settings.libretro, new_core_path,
+               sizeof(g_settings.libretro));
+      return -1;
+   }
+   return 0;
+}
+
+/* Quite intrusive and error prone.
+ * Likely to have lots of small bugs.
+ * Cleanly exit the main loop to ensure that all the tiny details
+ * get set properly.
+ *
+ * This should mitigate most of the smaller bugs. */
+
+bool rarch_replace_config(const char *path)
+{
+   /* If config file to be replaced is the same as the 
+    * current config file, exit. */
+   if (!strcmp(path, g_extern.config_path))
+      return false;
+
+   if (g_settings.config_save_on_exit && *g_extern.config_path)
+      config_save_file(g_extern.config_path);
+
+   strlcpy(g_extern.config_path, path, sizeof(g_extern.config_path));
+   g_extern.block_config_read = false;
+   *g_settings.libretro = '\0'; /* Load core in new config. */
+
+   rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
+
+   return true;
+}
+
+void rarch_update_system_info(struct retro_system_info *_info,
+      bool *load_no_content)
+{
+   const core_info_t *info = NULL;
+#if defined(HAVE_DYNAMIC)
+   libretro_free_system_info(_info);
+   if (!(*g_settings.libretro))
+      return;
+
+   libretro_get_system_info(g_settings.libretro, _info,
+         load_no_content);
+#endif
+   if (!g_extern.core_info)
+      return;
+
+   if (!core_info_list_get_info(g_extern.core_info,
+            g_extern.core_info_current, g_settings.libretro))
+      return;
+
+   /* Keep track of info for the currently selected core. */
+   info = (const core_info_t*)g_extern.core_info_current;
+
+   if (!g_extern.verbosity)
+      return;
+
+   RARCH_LOG("[Core Info]:\n");
+   if (info->display_name)
+      RARCH_LOG("Display Name = %s\n", info->display_name);
+   if (info->supported_extensions)
+      RARCH_LOG("Supported Extensions = %s\n",
+            info->supported_extensions);
+   if (info->authors)
+      RARCH_LOG("Authors = %s\n", info->authors);
+   if (info->permissions)
+      RARCH_LOG("Permissions = %s\n", info->permissions);
+}
