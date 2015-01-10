@@ -806,7 +806,7 @@ static int action_cancel_lookup_setting(const char *path,
 static int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   apply_deferred_settings();
+   menu_apply_deferred_settings();
    menu_list_pop_stack(driver.menu->menu_list);
    return 0;
 }

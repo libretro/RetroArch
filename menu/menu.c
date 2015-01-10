@@ -343,7 +343,7 @@ void menu_ticker_line(char *buf, size_t len, unsigned idx,
    }
 }
 
-void apply_deferred_settings(void)
+void menu_apply_deferred_settings(void)
 {
    rarch_setting_t *setting = NULL;
     
