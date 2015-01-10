@@ -21,7 +21,6 @@
 extern "C" {
 #endif
 
-#include "input_context.h"
 #include <file/config_file.h>
 #include <stdint.h>
 #include "../driver.h"
