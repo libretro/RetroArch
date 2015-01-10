@@ -39,8 +39,11 @@ static void sighandler(int sig)
 static void gfx_ctx_vivante_set_swap_interval(void *data, unsigned interval)
 {
    (void)data;
-   if (g_egl_dpy)
-      eglSwapInterval(g_egl_dpy, interval);
+
+   if (!g_egl_dpy)
+      return;
+
+   eglSwapInterval(g_egl_dpy, interval);
 }
 
 static void gfx_ctx_vivante_destroy(void *data)
@@ -75,32 +78,27 @@ static void gfx_ctx_vivante_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    (void)data;
+
+   *width  = 0;
+   *height = 0;
+
    if (g_egl_dpy != EGL_NO_DISPLAY && g_egl_surf != EGL_NO_SURFACE)
    {
       EGLint gl_width, gl_height;
+
       eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &gl_width);
       eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &gl_height);
       *width  = gl_width;
       *height = gl_height;
    }
-   else
-   {
-      *width  = 0;
-      *height = 0;
-   }
 }
 
 static bool gfx_ctx_vivante_init(void *data)
 {
-   (void)data;
-
+   EGLint num_config;
+   EGLint egl_version_major, egl_version_minor;
+   EGLint format;
    struct sigaction sa = {{0}};
-   sa.sa_handler = sighandler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-
    static const EGLint attribs[] = {
 #if 0
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
@@ -113,9 +111,14 @@ static bool gfx_ctx_vivante_init(void *data)
       EGL_SAMPLES,            0,
       EGL_NONE
    };
-   EGLint num_config;
-   EGLint egl_version_major, egl_version_minor;
-   EGLint format;
+
+   (void)data;
+
+   sa.sa_handler = sighandler;
+   sa.sa_flags   = SA_RESTART;
+   sigemptyset(&sa.sa_mask);
+   sigaction(SIGINT, &sa, NULL);
+   sigaction(SIGTERM, &sa, NULL);
 
    RARCH_LOG("[Vivante fbdev]: Initializing context\n");
 
@@ -133,7 +136,6 @@ static bool gfx_ctx_vivante_init(void *data)
 
    RARCH_LOG("[Vivante fbdev]: EGL version: %d.%d\n",
          egl_version_major, egl_version_minor);
-
 
    if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &num_config))
    {
@@ -158,10 +160,12 @@ static void gfx_ctx_vivante_swap_buffers(void *data)
 static void gfx_ctx_vivante_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   unsigned new_width, new_height;
+
    (void)frame_count;
 
-   unsigned new_width, new_height;
    gfx_ctx_vivante_get_video_size(data, &new_width, &new_height);
+
    if (new_width != *width || new_height != *height)
    {
       *width  = new_width;
@@ -182,19 +186,28 @@ static void gfx_ctx_vivante_set_resize(void *data,
 
 static void gfx_ctx_vivante_update_window_title(void *data)
 {
-   (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
-   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
 
-   if (fps_draw)
-      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+   (void)data;
+
+   if (!fps_draw)
+      return;
+
+   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
+   msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
 static bool gfx_ctx_vivante_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+   EGLNativeWindowType window;
+   static const EGLint attribs[] = {
+      EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
+      EGL_NONE
+   };
+
    /* Pick some arbitrary default. */
    if (!width || !fullscreen)
       width = 1280;
@@ -204,13 +217,9 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
    g_width = width;
    g_height = height;
 
-   static const EGLint attribs[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
-      EGL_NONE
-   };
-
-   EGLNativeWindowType window = fbCreateWindow(fbGetDisplayByIndex(0), 0, 0, 0, 0);
+   window     = fbCreateWindow(fbGetDisplayByIndex(0), 0, 0, 0, 0);
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, window, 0);
+
    if (g_egl_surf == EGL_NO_SURFACE)
    {
       RARCH_ERR("eglCreateWindowSurface failed.\n");
@@ -248,10 +257,12 @@ static void gfx_ctx_vivante_input_driver(void *data,
 
 static gfx_ctx_proc_t gfx_ctx_vivante_get_proc_address(const char *symbol)
 {
-   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
    gfx_ctx_proc_t ret;
+   void *sym__;
 
-   void *sym__ = eglGetProcAddress(symbol);
+   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
+
+   sym__ = eglGetProcAddress(symbol);
    memcpy(&ret, &sym__, sizeof(void*));
 
    return ret;

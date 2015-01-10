@@ -68,9 +68,11 @@ static void sdl_ctx_destroy_resources(gfx_ctx_sdl_data_t *sdl)
 
 static bool sdl_ctx_init(void *data)
 {
+   gfx_ctx_sdl_data_t *sdl;
+
    (void)data;
 
-   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)
+   sdl = (gfx_ctx_sdl_data_t*)
       calloc(1, sizeof(gfx_ctx_sdl_data_t));
 
    if (!sdl)
@@ -92,7 +94,6 @@ static bool sdl_ctx_init(void *data)
            SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
 
    driver.video_context_data = sdl;
-
 
    return true;
 
@@ -127,13 +128,15 @@ static void sdl_ctx_destroy(void *data)
 static bool sdl_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major,
                              unsigned minor)
 {
+   unsigned profile;
+
    (void)data;
 
 #ifdef HAVE_SDL2
    if (api != GFX_CTX_OPENGL_API && api != GFX_CTX_OPENGL_ES_API)
       return false;
 
-   unsigned profile = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
+   profile = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
 
    if (api == GFX_CTX_OPENGL_ES_API)
       profile = SDL_GL_CONTEXT_PROFILE_ES;
@@ -195,6 +198,7 @@ static bool sdl_ctx_set_video_mode(void *data, unsigned width, unsigned height,
    else
    {
       unsigned display = g_settings.video.monitor_index;
+
       sdl->g_win = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
                                SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
                                width, height, SDL_WINDOW_OPENGL | fsflag);
@@ -271,8 +275,8 @@ static void sdl_ctx_get_video_size(void *data,
 
 static void sdl_ctx_update_window_title(void *data)
 {
-   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver.video_context_data;
    char buf[128], buf_fps[128];
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver.video_context_data;
    bool fps_draw = g_settings.fps_show;
 
    if (!sdl)
@@ -289,18 +293,16 @@ static void sdl_ctx_update_window_title(void *data)
 
    if (fps_draw)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
-
-   (void)data;
 }
 
 static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *width,
                             unsigned *height, unsigned frame_count)
 {
+   SDL_Event event;
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver.video_context_data;
 
    (void)data;
 
-   SDL_Event event;
    SDL_PumpEvents();
 
 #ifdef HAVE_SDL2
@@ -357,14 +359,15 @@ static void sdl_ctx_set_resize(void *data, unsigned width, unsigned height)
 
 static bool sdl_ctx_has_focus(void *data)
 {
+   unsigned flags;
    (void)data;
 
 #ifdef HAVE_SDL2
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver.video_context_data;
-   unsigned flags = (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS);
+   flags = (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS);
    return (SDL_GetWindowFlags(sdl->g_win) & flags) == flags;
 #else
-   unsigned flags = (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
+   flags = (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
    return (SDL_GetAppState() & flags) == flags;
 #endif
 }

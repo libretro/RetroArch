@@ -206,6 +206,7 @@ static void egl_report_error(void)
 {
    EGLint error = eglGetError();
    const char *str = NULL;
+
    switch (error)
    {
       case EGL_SUCCESS:
@@ -286,11 +287,15 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height,
       unsigned frame_count)
 {
+   unsigned new_width, new_height;
+
    (void)frame_count;
 
    flush_wayland_fd();
 
-   unsigned new_width = *width, new_height = *height;
+   new_width = *width;
+   new_height = *height;
+
    gfx_ctx_wl_get_video_size(data, &new_width, &new_height);
 
    if (new_width != *width || new_height != *height)
@@ -331,9 +336,11 @@ static void gfx_ctx_wl_update_window_title(void *data)
       driver.video_context_data;
 
    (void)data;
+
    if (gfx_get_fps(buf, sizeof(buf),
             fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
       wl_shell_surface_set_title(wl->g_shell_surf, buf);
+
    if (fps_draw)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
@@ -363,8 +370,6 @@ static void gfx_ctx_wl_get_video_size(void *data,
 
 static bool gfx_ctx_wl_init(void *data)
 {
-   (void)data;
-
    static const EGLint egl_attribs_gl[] = {
       WL_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
@@ -397,6 +402,8 @@ static bool gfx_ctx_wl_init(void *data)
 
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
       calloc(1, sizeof(gfx_ctx_wayland_data_t));
+
+   (void)data;
 
    if (!wl)
       return false;
@@ -478,7 +485,6 @@ static bool gfx_ctx_wl_init(void *data)
       goto error;
    }
 
-
    return true;
 
 error:
@@ -556,10 +562,10 @@ static EGLint *egl_fill_attribs(EGLint *attr)
 
 static void gfx_ctx_wl_destroy(void *data)
 {
-   (void)data;
-
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
       driver.video_context_data;
+
+   (void)data;
 
    if (!wl)
       return;
@@ -673,9 +679,11 @@ static bool gfx_ctx_wl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
+
    g_major = major;
    g_minor = minor;
    g_api = api;
+
    switch (api)
    {
       case GFX_CTX_OPENGL_API:
@@ -706,9 +714,13 @@ static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
 
    wl->g_use_hw_ctx = enable;
 
-   if (wl->g_egl_dpy && wl->g_egl_surf)
-      eglMakeCurrent(wl->g_egl_dpy, wl->g_egl_surf, wl->g_egl_surf,
-            enable ? wl->g_egl_hw_ctx : wl->g_egl_ctx);
+   if (!wl->g_egl_dpy)
+      return;
+   if (!wl->g_egl_surf)
+      return;
+
+   eglMakeCurrent(wl->g_egl_dpy, wl->g_egl_surf, wl->g_egl_surf,
+         enable ? wl->g_egl_hw_ctx : wl->g_egl_ctx);
 }
 
 static void keyboard_handle_keymap(void* data,

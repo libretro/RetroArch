@@ -91,29 +91,23 @@ static void gfx_ctx_mali_fbdev_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    (void)data;
+
+   *width  = 0;
+   *height = 0;
+
    if (g_egl_dpy != EGL_NO_DISPLAY && g_egl_surf != EGL_NO_SURFACE)
    {
       *width  = g_width;
       *height = g_height;
    }
-   else
-   {
-      *width  = 0;
-      *height = 0;
-   }
 }
 
 static bool gfx_ctx_mali_fbdev_init(void *data)
 {
-   (void)data;
 
-   struct sigaction sa = {{0}};
-   sa.sa_handler = sighandler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-
+   EGLint num_config;
+   EGLint egl_version_major, egl_version_minor;
+   EGLint format;
    static const EGLint attribs[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -123,12 +117,17 @@ static bool gfx_ctx_mali_fbdev_init(void *data)
       EGL_ALPHA_SIZE, 8,
       EGL_NONE
    };
-   EGLint num_config;
-   EGLint egl_version_major, egl_version_minor;
-   EGLint format;
- 
+   struct sigaction sa = {{0}};
 
-   //Disable cursor blinking so it's not visible in RetroArch
+   sa.sa_handler = sighandler;
+   sa.sa_flags   = SA_RESTART;
+   sigemptyset(&sa.sa_mask);
+   sigaction(SIGINT, &sa, NULL);
+   sigaction(SIGTERM, &sa, NULL);
+
+   (void)data;
+
+   /* Disable cursor blinking so it's not visible in RetroArch. */
    system("setterm -cursor off");
    
    RARCH_LOG("[Mali fbdev]: Initializing context\n");
@@ -165,16 +164,19 @@ error:
 static void gfx_ctx_mali_fbdev_swap_buffers(void *data)
 {
    (void)data;
+
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
 static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   unsigned new_width, new_height;
+
    (void)frame_count;
 
-   unsigned new_width, new_height;
    gfx_ctx_mali_fbdev_get_video_size(data, &new_width, &new_height);
+
    if (new_width != *width || new_height != *height)
    {
       *width  = new_width;
@@ -195,13 +197,16 @@ static void gfx_ctx_mali_fbdev_set_resize(void *data,
 
 static void gfx_ctx_mali_fbdev_update_window_title(void *data)
 {
-   (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
-   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
 
-   if (fps_draw)
-      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+   (void)data;
+
+   if (!fps_draw)
+      return;
+
+   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
+   msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
 static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
@@ -209,7 +214,12 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
       bool fullscreen)
 {
    struct fb_var_screeninfo vinfo;
+   static const EGLint attribs[] = {
+      EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
+      EGL_NONE
+   };
    int fb = open("/dev/fb0", O_RDWR, 0);
+
    if (ioctl(fb, FBIOGET_VSCREENINFO, &vinfo) < 0)
    {
       RARCH_ERR("Error obtainig framebuffer info.\n");
@@ -225,11 +235,6 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
 
    native_window.width = vinfo.xres;
    native_window.height = vinfo.yres;
-
-   static const EGLint attribs[] = {
-      EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
-      EGL_NONE
-   };
 
    if ((g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, &native_window, 0)) == EGL_NO_SURFACE)
    {
@@ -267,10 +272,12 @@ static void gfx_ctx_mali_fbdev_input_driver(void *data,
 
 static gfx_ctx_proc_t gfx_ctx_mali_fbdev_get_proc_address(const char *symbol)
 {
-   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
    gfx_ctx_proc_t ret;
+   void *sym__;
 
-   void *sym__ = eglGetProcAddress(symbol);
+   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
+
+   sym__ = eglGetProcAddress(symbol);
    memcpy(&ret, &sym__, sizeof(void*));
 
    return ret;

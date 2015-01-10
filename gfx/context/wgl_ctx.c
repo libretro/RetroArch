@@ -101,17 +101,23 @@ static void setup_pixel_format(HDC hdc)
 
 static void create_gl_context(HWND hwnd)
 {
+   bool core_context;
+   bool debug = g_extern.system.hw_render_callback.debug_context;
+
    g_hdc = GetDC(hwnd);
    setup_pixel_format(g_hdc);
 
 #ifdef GL_DEBUG
-   bool debug = true;
-#else
-   bool debug = g_extern.system.hw_render_callback.debug_context;
+   debug = true;
 #endif
-   bool core_context = (g_major * 1000 + g_minor) >= 3001;
+   core_context = (g_major * 1000 + g_minor) >= 3001;
 
-   if (!g_hrc)
+   if (g_hrc)
+   {
+      RARCH_LOG("[WGL]: Using cached GL context.\n");
+      driver.video_cache_context_ack = true;
+   }
+   else
    {
       g_hrc = wglCreateContext(g_hdc);
       
@@ -130,11 +136,6 @@ static void create_gl_context(HWND hwnd)
          else
             g_quit = true;
       }
-   }
-   else
-   {
-      RARCH_LOG("[WGL]: Using cached GL context.\n");
-      driver.video_cache_context_ack = true;
    }
 
    if (g_hrc)
@@ -280,21 +281,24 @@ static void gfx_ctx_wgl_swap_interval(void *data, unsigned interval)
    (void)data;
    g_interval = interval;
 
-   if (g_hrc && p_swap_interval)
-   {
-      RARCH_LOG("[WGL]: wglSwapInterval(%u)\n", g_interval);
-      if (!p_swap_interval(g_interval))
-         RARCH_WARN("[WGL]: wglSwapInterval() failed.\n");
-   }
+   if (!g_hrc)
+      return;
+   if (!p_swap_interval)
+      return;
+
+   RARCH_LOG("[WGL]: wglSwapInterval(%u)\n", g_interval);
+   if (!p_swap_interval(g_interval))
+      RARCH_WARN("[WGL]: wglSwapInterval() failed.\n");
 }
 
 static void gfx_ctx_wgl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   MSG msg;
+
    (void)data;
    (void)frame_count;
 
-   MSG msg;
    while (PeekMessage(&msg, g_hwnd, 0, 0, PM_REMOVE))
    {
       TranslateMessage(&msg);
@@ -302,6 +306,7 @@ static void gfx_ctx_wgl_check_window(void *data, bool *quit,
    }
 
    *quit = g_quit;
+
    if (g_resized)
    {
       *resize = true;
@@ -327,9 +332,11 @@ static void gfx_ctx_wgl_set_resize(void *data,
 
 static void gfx_ctx_wgl_update_window_title(void *data)
 {
-   (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
+
+   (void)data;
+
    if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
       SetWindowText(g_hwnd, buf);
 
@@ -340,6 +347,7 @@ static void gfx_ctx_wgl_update_window_title(void *data)
 static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *height)
 {
    (void)data;
+
    if (!g_hwnd)
    {
       HMONITOR hm_to_use = NULL;
@@ -366,7 +374,10 @@ static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor,
 
 static bool gfx_ctx_wgl_init(void *data)
 {
+   WNDCLASSEX wndclass = {0};
+
    (void)data;
+
    if (g_inited)
       return false;
 
@@ -376,7 +387,6 @@ static bool gfx_ctx_wgl_init(void *data)
    g_num_mons = 0;
    EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, 0);
 
-   WNDCLASSEX wndclass = {0};
    wndclass.cbSize = sizeof(wndclass);
    wndclass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
    wndclass.lpfnWndProc = WndProc;
@@ -396,6 +406,7 @@ static bool gfx_ctx_wgl_init(void *data)
 static bool set_fullscreen(unsigned width, unsigned height, char *dev_name)
 {
    DEVMODE devmode;
+
    memset(&devmode, 0, sizeof(devmode));
    devmode.dmSize       = sizeof(DEVMODE);
    devmode.dmPelsWidth  = width;
@@ -416,11 +427,13 @@ static void show_cursor(bool show)
 
 static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use)
 {
+   unsigned fs_monitor;
+
    if (!g_last_hm)
       g_last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
    *hm_to_use = g_last_hm;
 
-   unsigned fs_monitor = g_settings.video.monitor_index;
+   fs_monitor = g_settings.video.monitor_index;
    if (fs_monitor && fs_monitor <= g_num_mons && g_all_hms[fs_monitor - 1])
       *hm_to_use = g_all_hms[fs_monitor - 1];
 
@@ -434,18 +447,21 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       bool fullscreen)
 {
    DWORD style;
-   RECT rect   = {0};
-
-   HMONITOR hm_to_use = NULL;
+   MSG msg;
+   RECT mon_rect;
    MONITORINFOEX current_mon;
+   bool windowed_full;
+   RECT rect   = {0};
+   HMONITOR hm_to_use = NULL;
 
    monitor_info(&current_mon, &hm_to_use);
-   RECT mon_rect = current_mon.rcMonitor;
+   mon_rect = current_mon.rcMonitor;
 
    g_resize_width  = width;
    g_resize_height = height;
 
-   bool windowed_full = g_settings.video.windowed_fullscreen;
+   windowed_full = g_settings.video.windowed_fullscreen;
+
    if (fullscreen)
    {
       if (windowed_full)
@@ -461,7 +477,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
          if (!set_fullscreen(width, height, current_mon.szDevice))
             goto error;
 
-         // display settings might have changed, get new coordinates
+         /* Display settings might have changed, get new coordinates. */
          GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
          mon_rect = current_mon.rcMonitor;
          g_restore_desktop = true;
@@ -496,8 +512,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
 
    show_cursor(!fullscreen);
 
-   // Wait until GL context is created (or failed to do so ...)
-   MSG msg;
+   /* Wait until GL context is created (or failed to do so ...) */
    while (!g_inited && !g_quit && GetMessage(&msg, g_hwnd, 0, 0))
    {
       TranslateMessage(&msg);
@@ -525,6 +540,7 @@ error:
 static void gfx_ctx_wgl_destroy(void *data)
 {
    (void)data;
+
    if (g_hrc)
    {
       glFinish();
@@ -573,7 +589,9 @@ static void gfx_ctx_wgl_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
    (void)data;
+
    dinput_wgl   = input_dinput.init();
+
    *input       = dinput_wgl ? &input_dinput : NULL;
    *input_data  = dinput_wgl;
 }
@@ -581,6 +599,7 @@ static void gfx_ctx_wgl_input_driver(void *data,
 static bool gfx_ctx_wgl_has_focus(void *data)
 {
    (void)data;
+
    if (!g_inited)
       return false;
 
@@ -603,8 +622,10 @@ static bool gfx_ctx_wgl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
+
    g_major = major;
    g_minor = minor;
+
    return api == GFX_CTX_OPENGL_API;
 }
 
@@ -617,6 +638,7 @@ static void gfx_ctx_wgl_show_mouse(void *data, bool state)
 static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
 {
    g_use_hw_ctx = enable;
+
    if (g_hdc)
       wglMakeCurrent(g_hdc, enable ? g_hw_hrc : g_hrc);
 }

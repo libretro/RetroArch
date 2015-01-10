@@ -117,25 +117,31 @@ static void gfx_ctx_vc_set_resize(void *data, unsigned width, unsigned height)
 
 static void gfx_ctx_vc_update_window_title(void *data)
 {
-   (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
-   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
 
-   if (fps_draw)
-      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+   (void)data;
+
+   if (!fps_draw)
+      return;
+
+   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
+   msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
 static void gfx_ctx_vc_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    (void)data;
+
    if (g_settings.video.fullscreen_x != 0 &&
-      g_settings.video.fullscreen_y != 0) {
+      g_settings.video.fullscreen_y != 0)
+   {
       *width  = g_settings.video.fullscreen_x;
       *height = g_settings.video.fullscreen_y;
    }
-   else {
+   else
+   {
       *width  = g_fb_width;
       *height = g_fb_height;
    }
@@ -145,13 +151,6 @@ static void gfx_ctx_vc_destroy(void *data);
 
 static bool gfx_ctx_vc_init(void *data)
 {
-   RARCH_LOG("[VC/EGL]: Initializing...\n");
-   if (g_inited)
-   {
-      RARCH_ERR("[VC/EGL]: Attempted to re-initialize driver.\n");
-      return false;
-   }
-
    EGLint num_config;
    static EGL_DISPMANX_WINDOW_T nativewindow;
 
@@ -177,6 +176,13 @@ static bool gfx_ctx_vc_init(void *data)
       EGL_CONTEXT_CLIENT_VERSION, 2,
       EGL_NONE
    };
+
+   RARCH_LOG("[VC/EGL]: Initializing...\n");
+   if (g_inited)
+   {
+      RARCH_ERR("[VC/EGL]: Attempted to re-initialize driver.\n");
+      return false;
+   }
 
    bcm_host_init();
 
@@ -221,15 +227,19 @@ static bool gfx_ctx_vc_init(void *data)
 
    src_rect.x = 0;
    src_rect.y = 0;
+
    if (g_settings.video.fullscreen_x != 0 &&
-      g_settings.video.fullscreen_y != 0) {
+      g_settings.video.fullscreen_y != 0)
+   {
       src_rect.width = g_settings.video.fullscreen_x << 16;
       src_rect.height = g_settings.video.fullscreen_y << 16;
    }
-   else {
+   else
+   {
       src_rect.width = g_fb_width << 16;
       src_rect.height = g_fb_height << 16;
    }
+
    dispman_display = vc_dispmanx_display_open(0 /* LCD */);
    vc_dispmanx_display_get_info(dispman_display, &dispman_modeinfo);
    dispman_update = vc_dispmanx_update_start(0);
@@ -245,11 +255,13 @@ static bool gfx_ctx_vc_init(void *data)
 
    nativewindow.element = dispman_element;
    if (g_settings.video.fullscreen_x != 0 &&
-      g_settings.video.fullscreen_y != 0) {
+      g_settings.video.fullscreen_y != 0)
+   {
       nativewindow.width = g_settings.video.fullscreen_x;
       nativewindow.height = g_settings.video.fullscreen_y;
    }
-   else {
+   else
+   {
       nativewindow.width = g_fb_width;
       nativewindow.height = g_fb_height;
    }
@@ -274,10 +286,11 @@ static bool gfx_ctx_vc_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+   struct sigaction sa = {{0}};
+
    if (g_inited)
       return false;
 
-   struct sigaction sa = {{0}};
    sa.sa_handler = sighandler;
    sa.sa_flags   = SA_RESTART;
    sigemptyset(&sa.sa_mask);
@@ -287,6 +300,7 @@ static bool gfx_ctx_vc_set_video_mode(void *data,
    gfx_ctx_vc_swap_interval(data, g_interval);
 
    g_inited = true;
+
    return true;
 }
 
@@ -296,7 +310,9 @@ static bool gfx_ctx_vc_bind_api(void *data,
    (void)data;
    (void)major;
    (void)minor;
+
    g_api = api;
+
    switch (api)
    {
       case GFX_CTX_OPENGL_API:
@@ -314,6 +330,7 @@ static void gfx_ctx_vc_destroy(void *data)
 {
    (void)data;
    unsigned i;
+
    if (g_egl_dpy)
    {
       for (i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
@@ -431,6 +448,14 @@ static float gfx_ctx_vc_translate_aspect(void *data,
 static bool gfx_ctx_vc_init_egl_image_buffer(void *data,
       const video_info_t *video)
 {
+   EGLBoolean result;
+   EGLint pbufsurface_list[] =
+   {
+      EGL_WIDTH, g_egl_res,
+      EGL_HEIGHT, g_egl_res,
+      EGL_NONE
+   };
+
    /* Don't bother, we just use VGImages for our EGLImage anyway. */
    if (g_api == GFX_CTX_OPENVG_API)
       return false;
@@ -445,15 +470,6 @@ static bool gfx_ctx_vc_init_egl_image_buffer(void *data,
       return false;
 
    g_egl_res = video->input_scale * RARCH_SCALE_BASE;
-
-   EGLint pbufsurface_list[] =
-   {
-      EGL_WIDTH, g_egl_res,
-      EGL_HEIGHT, g_egl_res,
-      EGL_NONE
-   };
-
-   EGLBoolean result;
 
    eglBindAPI(EGL_OPENVG_API);
    g_pbuff_surf = eglCreatePbufferSurface(g_egl_dpy, g_config, pbufsurface_list);
@@ -552,11 +568,16 @@ static bool gfx_ctx_vc_write_egl_image(void *data, const void *frame, unsigned w
 static void gfx_ctx_vc_bind_hw_render(void *data, bool enable)
 {
    (void)data;
+
    g_use_hw_ctx = enable;
 
-   if (g_egl_dpy && g_egl_surf)
-      eglMakeCurrent(g_egl_dpy, g_egl_surf,
-            g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
+   if (!g_egl_dpy)
+      return;
+   if (!g_egl_surf)
+      return;
+
+   eglMakeCurrent(g_egl_dpy, g_egl_surf,
+         g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
 }
 
 const gfx_ctx_driver_t gfx_ctx_videocore = {

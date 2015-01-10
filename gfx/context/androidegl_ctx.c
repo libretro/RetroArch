@@ -44,8 +44,10 @@ static void android_gfx_ctx_set_swap_interval(void *data, unsigned interval)
       driver.video_context_data;
 
    (void)data;
-   if (android)
-      eglSwapInterval(android->g_egl_dpy, interval);
+   if (!android)
+      return;
+
+   eglSwapInterval(android->g_egl_dpy, interval);
 }
 
 static void android_gfx_ctx_destroy_resources(gfx_ctx_android_data_t *android)
@@ -98,30 +100,35 @@ static void android_gfx_ctx_destroy(void *data)
 static void android_gfx_ctx_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
+   EGLint gl_width, gl_height;
    gfx_ctx_android_data_t *android = (gfx_ctx_android_data_t*)
       driver.video_context_data;
-   (void)data;
 
    *width  = 0;
    *height = 0;
 
-   if (android && android->g_egl_dpy)
-   {
-      EGLint gl_width, gl_height;
+   if (!android)
+      return;
+   if (!android->g_egl_dpy)
+      return;
 
-      eglQuerySurface(android->g_egl_dpy,
-            android->g_egl_surf, EGL_WIDTH, &gl_width);
-      eglQuerySurface(android->g_egl_dpy,
-            android->g_egl_surf, EGL_HEIGHT, &gl_height);
-      *width  = gl_width;
-      *height = gl_height;
-   }
+   eglQuerySurface(android->g_egl_dpy,
+         android->g_egl_surf, EGL_WIDTH, &gl_width);
+   eglQuerySurface(android->g_egl_dpy,
+         android->g_egl_surf, EGL_HEIGHT, &gl_height);
+   *width  = gl_width;
+   *height = gl_height;
 }
 
 static bool android_gfx_ctx_init(void *data)
 {
    int var;
-   struct android_app *android_app = (struct android_app*)g_android;
+   EGLint num_config, egl_version_major, egl_version_minor;
+   EGLint format;
+   EGLint context_attributes[] = {
+      EGL_CONTEXT_CLIENT_VERSION, g_es3 ? 3 : 2,
+      EGL_NONE
+   };
    const EGLint attribs[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -131,16 +138,15 @@ static bool android_gfx_ctx_init(void *data)
       EGL_ALPHA_SIZE, 8,
       EGL_NONE
    };
-   EGLint num_config;
-   EGLint egl_version_major, egl_version_minor;
-   EGLint format;
+   struct android_app *android_app = NULL;
+   gfx_ctx_android_data_t *android = NULL;
+   
+   android_app = (struct android_app*)g_android;
+   
+   if (!android_app)
+      return false;
 
-   EGLint context_attributes[] = {
-      EGL_CONTEXT_CLIENT_VERSION, g_es3 ? 3 : 2,
-      EGL_NONE
-   };
-
-   gfx_ctx_android_data_t *android = (gfx_ctx_android_data_t*)
+   android = (gfx_ctx_android_data_t*)
       calloc(1, sizeof(gfx_ctx_android_data_t));
 
    if (!android)
@@ -149,6 +155,7 @@ static bool android_gfx_ctx_init(void *data)
    RARCH_LOG("Android EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
 
    android->g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+
    if (!android->g_egl_dpy)
    {
       RARCH_ERR("[Android/EGL]: Couldn't get EGL display.\n");
@@ -224,7 +231,8 @@ static void android_gfx_ctx_swap_buffers(void *data)
 
    (void)data;
 
-   eglSwapBuffers(android->g_egl_dpy, android->g_egl_surf);
+   if (android)
+      eglSwapBuffers(android->g_egl_dpy, android->g_egl_surf);
 }
 
 static void android_gfx_ctx_check_window(void *data, bool *quit,
@@ -237,6 +245,7 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
    *quit = false;
 
    android_gfx_ctx_get_video_size(data, &new_width, &new_height);
+
    if (new_width != *width || new_height != *height)
    {
       *width  = new_width;
@@ -264,10 +273,11 @@ static void android_gfx_ctx_update_window_title(void *data)
 
    (void)data;
 
-   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
+   if (!fps_draw)
+      return;
 
-   if (fps_draw)
-      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
+   msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
 static bool android_gfx_ctx_set_video_mode(void *data,
@@ -284,8 +294,10 @@ static bool android_gfx_ctx_set_video_mode(void *data,
 static void android_gfx_ctx_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
-   (void)data;
    void *androidinput = input_android.init();
+
+   (void)data;
+
    *input = androidinput ? &input_android : NULL;
    *input_data = androidinput;
 }
@@ -293,10 +305,12 @@ static void android_gfx_ctx_input_driver(void *data,
 static gfx_ctx_proc_t android_gfx_ctx_get_proc_address(
       const char *symbol)
 {
-   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
    gfx_ctx_proc_t ret;
+   void *sym__ = NULL;
 
-   void *sym__ = eglGetProcAddress(symbol);
+   rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
+
+   sym__ = eglGetProcAddress(symbol);
    memcpy(&ret, &sym__, sizeof(void*));
 
    return ret;
@@ -305,9 +319,10 @@ static gfx_ctx_proc_t android_gfx_ctx_get_proc_address(
 static bool android_gfx_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   unsigned version = major * 100 + minor;
+
    (void)data;
 
-   unsigned version = major * 100 + minor;
    if (version > 300)
       return false;
    if (version < 300)
@@ -341,12 +356,14 @@ static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
 
    android->g_use_hw_ctx = enable;
 
-   if (android->g_egl_dpy && android->g_egl_surf)
-      eglMakeCurrent(
-            android->g_egl_dpy,
-            android->g_egl_surf,
-            android->g_egl_surf,
-            enable ? android->g_egl_hw_ctx : android->g_egl_ctx);
+   if (!android->g_egl_dpy)
+      return;
+   if (!android->g_egl_surf)
+      return;
+
+   eglMakeCurrent(android->g_egl_dpy, android->g_egl_surf,
+         android->g_egl_surf, enable ? 
+         android->g_egl_hw_ctx : android->g_egl_ctx);
 }
 
 const gfx_ctx_driver_t gfx_ctx_android = {

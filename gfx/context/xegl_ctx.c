@@ -122,23 +122,29 @@ static void gfx_ctx_xegl_swap_interval(void *data, unsigned interval)
 {
    (void)data;
    g_interval = interval;
-   if (g_egl_dpy && eglGetCurrentContext())
+
+   if (!g_egl_dpy)
+      return;
+   if (!(eglGetCurrentContext()))
+      return;
+
+   RARCH_LOG("[X/EGL]: eglSwapInterval(%u)\n", g_interval);
+   if (!eglSwapInterval(g_egl_dpy, g_interval))
    {
-      RARCH_LOG("[X/EGL]: eglSwapInterval(%u)\n", g_interval);
-      if (!eglSwapInterval(g_egl_dpy, g_interval))
-      {
-         RARCH_ERR("[X/EGL]: eglSwapInterval() failed.\n");
-         egl_report_error();
-      }
+      RARCH_ERR("[X/EGL]: eglSwapInterval() failed.\n");
+      egl_report_error();
    }
 }
 
 static void gfx_ctx_xegl_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   XEvent event;
+   unsigned new_width  = *width;
+   unsigned new_height = *height;
+
    (void)frame_count;
 
-   unsigned new_width = *width, new_height = *height;
    gfx_ctx_xegl_get_video_size(data, &new_width, &new_height);
 
    if (new_width != *width || new_height != *height)
@@ -148,12 +154,13 @@ static void gfx_ctx_xegl_check_window(void *data, bool *quit,
       *height = new_height;
    }
 
-   XEvent event;
    while (XPending(g_dpy))
    {
+      bool filter;
+      
       /* Can get events from older windows. Check this. */
       XNextEvent(g_dpy, &event);
-      bool filter = XFilterEvent(&event, g_win);
+      filter = XFilterEvent(&event, g_win);
 
       switch (event.type)
       {
@@ -204,9 +211,11 @@ static void gfx_ctx_xegl_set_resize(void *data,
 
 static void gfx_ctx_xegl_update_window_title(void *data)
 {
-   (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
+
+   (void)data;
+
    if (gfx_get_fps(buf, sizeof(buf),
             fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
       XStoreName(g_dpy, g_win, buf);
@@ -219,6 +228,7 @@ static void gfx_ctx_xegl_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    (void)data;
+
    if (!g_dpy || g_win == None)
    {
       Display *dpy = XOpenDisplay(NULL);
@@ -255,11 +265,6 @@ static void gfx_ctx_xegl_get_video_size(void *data,
 
 static bool gfx_ctx_xegl_init(void *data)
 {
-   if (g_inited)
-      return false;
-
-   XInitThreads();
-
    static const EGLint egl_attribs_gl[] = {
       XEGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
@@ -287,6 +292,12 @@ static bool gfx_ctx_xegl_init(void *data)
    };
 
    const EGLint *attrib_ptr;
+
+   if (g_inited)
+      return false;
+
+   XInitThreads();
+
    switch (g_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -365,10 +376,10 @@ static EGLint *egl_fill_attribs(EGLint *attr)
       {
          unsigned version = g_major * 1000 + g_minor;
          bool core = version >= 3001;
-#ifdef GL_DEBUG
-         bool debug = true;
-#else
          bool debug = g_extern.system.hw_render_callback.debug_context;
+
+#ifdef GL_DEBUG
+         debug = true;
 #endif
 
          if (core)
@@ -424,35 +435,37 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+   EGLint egl_attribs[16];
+   EGLint *attr;
+   EGLint vid, num_visuals;
+   bool windowed_full;
+   bool true_full = false;
+   int x_off = 0;
+   int y_off = 0;
    struct sigaction sa = {{0}};
+   XVisualInfo temp = {0};
+   XSetWindowAttributes swa = {0};
+   XVisualInfo *vi = NULL;
+
    sa.sa_handler = sighandler;
    sa.sa_flags   = SA_RESTART;
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
-   XVisualInfo temp = {0};
-   XSetWindowAttributes swa = {0};
-   XVisualInfo *vi = NULL;
-   bool windowed_full = g_settings.video.windowed_fullscreen;
-   bool true_full = false;
-   int x_off = 0;
-   int y_off = 0;
+   windowed_full = g_settings.video.windowed_fullscreen;
+   true_full = false;
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
 
-   EGLint egl_attribs[16];
-   EGLint *attr = egl_attribs;
-
+   attr = egl_attribs;
    attr = egl_fill_attribs(attr);
 
-   EGLint vid;
    if (!eglGetConfigAttrib(g_egl_dpy, g_config, EGL_NATIVE_VISUAL_ID, &vid))
       goto error;
 
    temp.visualid = vid;
 
-   EGLint num_visuals;
    vi = XGetVisualInfo(g_dpy, VisualIDMask, &temp, &num_visuals);
    if (!vi)
       goto error;
@@ -481,6 +494,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    {
       unsigned new_width  = width;
       unsigned new_height = height;
+
       if (x11_get_xinerama_coord(g_dpy, g_screen, &x_off, &y_off, &new_width, &new_height))
          RARCH_LOG("[X/EGL]: Using Xinerama on screen #%u.\n", g_screen);
       else
@@ -507,6 +521,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          attr != egl_attribs ? egl_attribs : NULL);
 
    RARCH_LOG("[X/EGL]: Created context: %p.\n", (void*)g_egl_ctx);
+
    if (g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
 
@@ -609,7 +624,9 @@ error:
 static void gfx_ctx_xegl_destroy(void *data)
 {
    (void)data;
+
    x11_destroy_input_context(&g_xim, &g_xic);
+
    if (g_egl_dpy)
    {
       if (g_egl_ctx)
@@ -677,20 +694,25 @@ static void gfx_ctx_xegl_destroy(void *data)
 static void gfx_ctx_xegl_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
+   void *xinput;
+
    (void)data;
-   void *xinput = input_x.init();
+   xinput = input_x.init();
+
    *input       = xinput ? &input_x : NULL;
    *input_data  = xinput;
 }
 
 static bool gfx_ctx_xegl_has_focus(void *data)
 {
+   Window win;
+   int rev;
+
    (void)data;
+
    if (!g_inited)
       return false;
 
-   Window win;
-   int rev;
    XGetInputFocus(g_dpy, &win, &rev);
 
    return (win == g_win && g_has_focus) || g_true_full;
@@ -713,9 +735,11 @@ static bool gfx_ctx_xegl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
+
    g_major = major;
    g_minor = minor;
    g_api = api;
+
    switch (api)
    {
       case GFX_CTX_OPENGL_API:
@@ -747,9 +771,14 @@ static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
 {
    (void)data;
    g_use_hw_ctx = enable;
-   if (g_egl_dpy && g_egl_surf)
-      eglMakeCurrent(g_egl_dpy, g_egl_surf,
-            g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
+
+   if (!g_egl_dpy)
+      return;
+   if (!g_egl_surf)
+      return;
+
+   eglMakeCurrent(g_egl_dpy, g_egl_surf,
+         g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
 }
 
 const gfx_ctx_driver_t gfx_ctx_x_egl = {

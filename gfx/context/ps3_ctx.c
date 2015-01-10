@@ -65,8 +65,10 @@ static unsigned gfx_ctx_ps3_get_resolution_height(unsigned resolution_id)
 
 static float gfx_ctx_ps3_get_aspect_ratio(void *data)
 {
-   (void)data;
    CellVideoOutState videoState;
+
+   (void)data;
+
    cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &videoState);
 
    switch (videoState.displayMode.aspect)
@@ -82,15 +84,10 @@ static float gfx_ctx_ps3_get_aspect_ratio(void *data)
 
 static void gfx_ctx_ps3_get_available_resolutions(void)
 {
+   unsigned i;
    bool defaultresolution;
    uint32_t resolution_count;
    uint16_t num_videomodes;
-
-   if (g_extern.console.screen.resolutions.check)
-      return;
-
-   defaultresolution = true;
-
    uint32_t videomode[] = {
       CELL_VIDEO_OUT_RESOLUTION_480,
       CELL_VIDEO_OUT_RESOLUTION_576,
@@ -102,10 +99,16 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
       CELL_VIDEO_OUT_RESOLUTION_1080
    };
 
+   if (g_extern.console.screen.resolutions.check)
+      return;
+
+   defaultresolution = true;
+
    num_videomodes = sizeof(videomode) / sizeof(uint32_t);
 
    resolution_count = 0;
-   for (unsigned i = 0; i < num_videomodes; i++)
+
+   for (i = 0; i < num_videomodes; i++)
    {
       if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i],
                CELL_VIDEO_OUT_ASPECT_AUTO, 0))
@@ -115,7 +118,7 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
    g_extern.console.screen.resolutions.list = malloc(resolution_count * sizeof(uint32_t));
    g_extern.console.screen.resolutions.count = 0;
 
-   for (unsigned i = 0; i < num_videomodes; i++)
+   for (i = 0; i < num_videomodes; i++)
    {
       if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i],
                CELL_VIDEO_OUT_ASPECT_AUTO, 0))
@@ -142,15 +145,19 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
 static void gfx_ctx_ps3_set_swap_interval(void *data, unsigned interval)
 {
    gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)driver.video_context_data;
+
    (void)data;
+
 #if defined(HAVE_PSGL)
-   if (ps3 && ps3->gl_context)
-   {
-      if (interval)
-         glEnable(GL_VSYNC_SCE);
-      else
-         glDisable(GL_VSYNC_SCE);
-   }
+   if (!ps3)
+      return;
+   if (!ps3->gl_context)
+      return;
+
+   if (interval)
+      glEnable(GL_VSYNC_SCE);
+   else
+      glDisable(GL_VSYNC_SCE);
 #endif
 }
 
@@ -158,9 +165,9 @@ static void gfx_ctx_ps3_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    gl_t *gl = data;
+
    *quit = false;
    *resize = false;
-
 
    if (gl->quitting)
       *quit = true;
@@ -203,18 +210,22 @@ static void gfx_ctx_ps3_update_window_title(void *data)
    (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
+
+   if (!fps_draw)
+      return;
+
    gfx_get_fps(buf, sizeof(buf), fps_draw 
          ? buf_fps : NULL, sizeof(buf_fps));
-
-   if (fps_draw)
-      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+   msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
 static void gfx_ctx_ps3_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)driver.video_context_data;
+
    (void)data;
+
 #if defined(HAVE_PSGL)
    if (ps3)
       psglGetDeviceDimensions(ps3->gl_device, width, height); 
@@ -223,10 +234,10 @@ static void gfx_ctx_ps3_get_video_size(void *data,
 
 static bool gfx_ctx_ps3_init(void *data)
 {
-   (void)data;
-
    gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
       calloc(1, sizeof(gfx_ctx_ps3_data_t));
+
+   (void)data;
 
    if (!ps3)
       return false;
@@ -333,8 +344,12 @@ static void gfx_ctx_ps3_destroy(void *data)
 static void gfx_ctx_ps3_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
+   void *ps3input = NULL;
+
    (void)data;
-   void *ps3input = input_ps3.init();
+
+   ps3input = input_ps3.init();
+
    *input = ps3input ? &input_ps3 : NULL;
    *input_data = ps3input;
 }
@@ -345,6 +360,7 @@ static bool gfx_ctx_ps3_bind_api(void *data,
    (void)data;
    (void)major;
    (void)minor;
+
    return api == GFX_CTX_OPENGL_API || GFX_CTX_OPENGL_ES_API;
 }
 

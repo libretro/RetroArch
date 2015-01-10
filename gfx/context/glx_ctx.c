@@ -190,16 +190,20 @@ static void gfx_ctx_glx_set_resize(void *data,
 
 static void gfx_ctx_glx_update_window_title(void *data)
 {
-   (void)data;
    char buf[128], buf_fps[128];
+   gfx_ctx_glx_data_t *glx = NULL;
    bool fps_draw = g_settings.fps_show;
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
+
+   (void)data;
+
+   glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
 
    if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
       XStoreName(glx->g_dpy, glx->g_win, buf);
 
-   if (fps_draw)
-      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+   if (!fps_draw)
+      return;
+   msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
 static void gfx_ctx_glx_get_video_size(void *data,
@@ -705,12 +709,13 @@ static void gfx_ctx_glx_bind_hw_render(void *data, bool enable)
 
    glx->g_use_hw_ctx = enable;
 
-   if (glx->g_dpy && glx->g_glx_win)
-   {
-      //RARCH_LOG("[GLX]: Binding context (%s): %p\n", enable ? "RetroArch" : "HW render", enable ? (void*)g_hw_ctx : (void*)g_ctx);
-      glXMakeContextCurrent(glx->g_dpy, glx->g_glx_win,
-            glx->g_glx_win, enable ? glx->g_hw_ctx : glx->g_ctx);
-   }
+   if (!glx->g_dpy)
+      return;
+   if (!glx->g_glx_win)
+      return;
+
+   glXMakeContextCurrent(glx->g_dpy, glx->g_glx_win,
+         glx->g_glx_win, enable ? glx->g_hw_ctx : glx->g_ctx);
 }
 
 const gfx_ctx_driver_t gfx_ctx_glx = {

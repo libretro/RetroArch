@@ -48,16 +48,17 @@ extern bool d3d_restore(d3d_video_t *data);
 
 static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
 {
-   (void)data;
-   d3d_video_t *d3d = (d3d_video_t*)curD3D;
+   d3d_video_t *d3d      = (d3d_video_t*)curD3D;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+
    if (!d3dr)
       return;
 
-   RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
+   (void)data;
 
    if (new_width != d3d->video_info.width || new_height != d3d->video_info.height)
    {
+      RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
       d3d->video_info.width = d3d->screen_width = new_width;
       d3d->video_info.height = d3d->screen_height = new_height;
       d3d_restore(d3d);
@@ -103,7 +104,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 
 static void gfx_ctx_d3d_swap_buffers(void *data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
    d3d_swap(d3d, d3dr);
@@ -143,6 +144,7 @@ static void gfx_ctx_d3d_update_title(void *data)
 static void gfx_ctx_d3d_show_mouse(void *data, bool state)
 {
    (void)data;
+
 #ifdef HAVE_WINDOW
    if (state)
       while (ShowCursor(TRUE) < 0);
@@ -154,6 +156,7 @@ static void gfx_ctx_d3d_show_mouse(void *data, bool state)
 void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+
    memset(d3dpp, 0, sizeof(*d3dpp));
 
 #ifdef _XBOX
@@ -201,6 +204,7 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
    {
 #ifdef _XBOX
       unsigned width, height;
+
       width = 0;
       height = 0;
 
@@ -266,8 +270,10 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 static void gfx_ctx_d3d_check_window(void *data, bool *quit,
    bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
-   (void)data;
    d3d_video_t *d3d = (d3d_video_t*)data;
+
+   (void)data;
+
    *quit = false;
    *resize = false;
 
@@ -297,12 +303,15 @@ static HANDLE GetFocus(void)
 static bool gfx_ctx_d3d_has_focus(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+   if (!d3d)
+      return false;
    return GetFocus() == d3d->hWnd;
 }
 
 static bool gfx_ctx_d3d_has_windowed(void *data)
 {
    (void)data;
+
 #ifdef _XBOX
    return false;
 #else
@@ -317,6 +326,7 @@ static bool gfx_ctx_d3d_bind_api(void *data,
    (void)major;
    (void)minor;
    (void)api;
+
 #if defined(_XBOX1)
    return api == GFX_CTX_DIRECT3D8_API;
 #else
@@ -328,7 +338,9 @@ static bool gfx_ctx_d3d_bind_api(void *data,
 static bool gfx_ctx_d3d_init(void *data)
 {
    (void)data;
+
    d3d_quit = false;
+
    return true;
 }
 
@@ -356,11 +368,13 @@ static void gfx_ctx_d3d_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+
 #ifdef _XBOX
    (void)width;
    (void)height;
 #if defined(_XBOX360)
    XVIDEO_MODE video_mode;
+
    XGetVideoMode(&video_mode);
 
    *width  = video_mode.dwDisplayWidth;
@@ -387,11 +401,12 @@ static void gfx_ctx_d3d_get_video_size(void *data,
     *width  = 640;
     *height = 480;
 
-   // Only valid in PAL mode, not valid for HDTV modes!
+    widescreen_mode = false;
+
+   /* Only valid in PAL mode, not valid for HDTV modes! */
+
    if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
-      widescreen_mode = false;
-
       /* Check for 16:9 mode (PAL REGION) */
       if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
@@ -406,8 +421,6 @@ static void gfx_ctx_d3d_get_video_size(void *data,
    }
    else
    {
-      widescreen_mode = false;
-
       /* Check for 16:9 mode (NTSC REGIONS) */
       if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
@@ -447,7 +460,7 @@ static void gfx_ctx_d3d_get_video_size(void *data,
 
 static void gfx_ctx_d3d_swap_interval(void *data, unsigned interval)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t      *d3d = (d3d_video_t*)data;
 #ifdef _XBOX
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    unsigned d3d_interval = interval ? 

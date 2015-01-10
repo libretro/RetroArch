@@ -264,14 +264,16 @@ static void gfx_ctx_drm_egl_set_resize(void *data,
 
 static void gfx_ctx_drm_egl_update_window_title(void *data)
 {
-   (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
 
-   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
+   (void)data;
 
-   if (fps_draw)
-      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+   if (!fps_draw)
+      return;
+
+   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
+   msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
 static void gfx_ctx_drm_egl_get_video_size(void *data, unsigned *width, unsigned *height)
@@ -929,10 +931,15 @@ static void gfx_ctx_drm_egl_bind_hw_render(void *data, bool enable)
    (void)data;
 
    drm->g_use_hw_ctx = enable;
-   if (drm->g_egl_dpy && drm->g_egl_surf)
-      eglMakeCurrent(drm->g_egl_dpy, drm->g_egl_surf,
-            drm->g_egl_surf,
-            enable ? drm->g_egl_hw_ctx : drm->g_egl_ctx);
+
+   if (!drm->g_egl_dpy)
+      return;
+   if (!drm->g_egl_surf)
+      return;
+
+   eglMakeCurrent(drm->g_egl_dpy, drm->g_egl_surf,
+         drm->g_egl_surf,
+         enable ? drm->g_egl_hw_ctx : drm->g_egl_ctx);
 }
 
 const gfx_ctx_driver_t gfx_ctx_drm_egl = {
