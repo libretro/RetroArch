@@ -1731,10 +1731,12 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
    switch (type)
    {
       case ST_DIR:
-         result.action_start   = setting_data_string_dir_action_start_default;
+         result.action_start           = setting_data_string_dir_action_start_default;
+         result.browser_selection_type = ST_DIR;
          break;
       case ST_PATH:
-         result.action_start   = setting_data_string_dir_action_start_default;
+         result.action_start           = setting_data_string_dir_action_start_default;
+         result.browser_selection_type = ST_PATH;
          break;
       default:
          break;

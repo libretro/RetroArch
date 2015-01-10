@@ -175,6 +175,7 @@ typedef struct rarch_setting
    } boolean;
 
    unsigned bind_type;
+   unsigned browser_selection_type;
    float step;
    const char *rounding_fraction;
    bool enforce_minrange;

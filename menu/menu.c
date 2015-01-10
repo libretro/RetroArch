@@ -498,30 +498,3 @@ int menu_iterate(retro_input_t input,
 
    return 0;
 }
-
-unsigned menu_type_is(const char *label, unsigned type)
-{
-   if (
-         !strcmp(label, "rgui_browser_directory") ||
-         !strcmp(label, "content_directory") ||
-         !strcmp(label, "assets_directory") ||
-         !strcmp(label, "content_database_path") ||
-         !strcmp(label, "cheat_database_path") ||
-         !strcmp(label, "video_shader_dir") ||
-         !strcmp(label, "video_filter_dir") ||
-         !strcmp(label, "audio_filter_dir") ||
-         !strcmp(label, "savestate_directory") ||
-         !strcmp(label, "libretro_dir_path") ||
-         !strcmp(label, "libretro_info_path") ||
-         !strcmp(label, "rgui_config_directory") ||
-         !strcmp(label, "savefile_directory") ||
-         !strcmp(label, "overlay_directory") ||
-         !strcmp(label, "screenshot_directory") ||
-         !strcmp(label, "joypad_autoconfig_dir") ||
-         !strcmp(label, "playlist_directory") ||
-         !strcmp(label, "extraction_directory") ||
-         !strcmp(label, "system_directory"))
-      return MENU_FILE_DIRECTORY;
-
-   return 0;
-}

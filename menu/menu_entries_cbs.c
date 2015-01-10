@@ -2147,7 +2147,7 @@ static int deferred_push_core_list(void *data, void *userdata,
       return -1;
 
    menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_PLAIN, EXT_EXECUTABLES);
+         type, MENU_FILE_PLAIN, EXT_EXECUTABLES, NULL);
 
    return 0;
 }
@@ -2265,7 +2265,7 @@ static int deferred_push_configurations(void *data, void *userdata,
       return -1;
 
    menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_CONFIG, "cfg");
+         type, MENU_FILE_CONFIG, "cfg", NULL);
 
    return 0;
 }
@@ -2280,7 +2280,7 @@ static int deferred_push_video_shader_preset(void *data, void *userdata,
       return -1;
 
    menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_SHADER_PRESET, "cgp|glslp");
+         type, MENU_FILE_SHADER_PRESET, "cgp|glslp", NULL);
 
    return 0;
 }
@@ -2295,7 +2295,7 @@ static int deferred_push_video_shader_pass(void *data, void *userdata,
       return -1;
 
    menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_SHADER, "cg|glsl");
+         type, MENU_FILE_SHADER, "cg|glsl", NULL);
 
    return 0;
 }
@@ -2310,7 +2310,7 @@ static int deferred_push_video_filter(void *data, void *userdata,
       return -1;
 
    menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_VIDEOFILTER, "filt");
+         type, MENU_FILE_VIDEOFILTER, "filt", NULL);
 
    return 0;
 }
@@ -2325,7 +2325,7 @@ static int deferred_push_audio_dsp_plugin(void *data, void *userdata,
       return -1;
 
    menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_AUDIOFILTER, "dsp");
+         type, MENU_FILE_AUDIOFILTER, "dsp", NULL);
 
    return 0;
 }
@@ -2340,7 +2340,7 @@ static int deferred_push_cheat_file_load(void *data, void *userdata,
       return -1;
 
    menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_CHEAT, "cht");
+         type, MENU_FILE_CHEAT, "cht", NULL);
 
    return 0;
 }
@@ -2355,7 +2355,7 @@ static int deferred_push_input_overlay(void *data, void *userdata,
       return -1;
 
    menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_OVERLAY, "cfg");
+         type, MENU_FILE_OVERLAY, "cfg", NULL);
 
    return 0;
 }
@@ -2370,7 +2370,7 @@ static int deferred_push_video_font_path(void *data, void *userdata,
       return -1;
 
    menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_FONT, "ttf");
+         type, MENU_FILE_FONT, "ttf", NULL);
 
    return 0;
 }
@@ -2385,7 +2385,7 @@ static int deferred_push_content_history_path(void *data, void *userdata,
       return -1;
 
    menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_PLAIN, "cfg");
+         type, MENU_FILE_PLAIN, "cfg", NULL);
 
    return 0;
 }
@@ -2404,7 +2404,7 @@ static int deferred_push_detect_core_list(void *data, void *userdata,
          g_extern.core_info) : "";
 
    menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_PLAIN, exts);
+         type, MENU_FILE_PLAIN, exts, NULL);
 
    return 0;
 }
@@ -2416,11 +2416,13 @@ static int deferred_push_default(void *data, void *userdata,
    const char *exts = NULL;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
+   rarch_setting_t *setting = (rarch_setting_t*)
+      setting_data_find_setting(driver.menu->list_settings, label);
 
    if (!list || !menu_list)
       return -1;
 
-   if (menu_type_is(label, type) == MENU_FILE_DIRECTORY)
+   if (setting && setting->browser_selection_type == ST_DIR)
       exts = ""; /* we ignore files anyway */
    else if (g_extern.menu.info.valid_extensions)
    {
@@ -2435,7 +2437,7 @@ static int deferred_push_default(void *data, void *userdata,
       exts = g_extern.system.valid_extensions;
 
    menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_PLAIN, exts);
+         type, MENU_FILE_PLAIN, exts, setting);
 
    return 0;
 }
@@ -2616,6 +2618,9 @@ static void menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
 static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
+   rarch_setting_t *setting = (rarch_setting_t*)
+      setting_data_find_setting(driver.menu->list_settings, label);
+
    if (!cbs)
       return;
 
@@ -2660,7 +2665,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_push_content_list;
    else if (!strcmp(label, "history_list"))
       cbs->action_ok = action_ok_push_history_list;
-   else if (menu_type_is(label, type) == MENU_FILE_DIRECTORY)
+   else if (setting && setting->browser_selection_type == ST_DIR)
       cbs->action_ok = action_ok_push_path_list;
    else if (!strcmp(label, "shader_apply_changes"))
       cbs->action_ok = action_ok_shader_apply_changes;

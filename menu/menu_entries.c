@@ -324,7 +324,8 @@ static void parse_drive_list(file_list_t *list)
 
 int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
       const char *dir, const char *label, unsigned type,
-      unsigned default_type_plain, const char *exts)
+      unsigned default_type_plain, const char *exts,
+      rarch_setting_t *setting)
 {
    size_t i, list_size;
    bool path_is_compressed, push_dir;
@@ -351,7 +352,7 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
 #endif
 
    path_is_compressed = path_is_compressed_file(dir);
-   push_dir           = menu_type_is(label, type) == MENU_FILE_DIRECTORY;
+   push_dir           = (setting && setting->browser_selection_type == ST_DIR);
 
    if (path_is_compressed)
       str_list = compressed_file_list_new(dir,exts);
