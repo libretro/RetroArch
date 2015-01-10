@@ -61,8 +61,10 @@ struct input_device
 
    union
    {
-      // keyboard
-      // mouse
+      /*
+       * keyboard
+       * mouse
+       */
       struct
       {
          float x, y;
@@ -249,11 +251,13 @@ static void udev_handle_mouse(udev_input_t *udev,
 static bool hotplug_available(udev_input_t *udev)
 {
    struct pollfd fds = {0};
+
    if (!udev || !udev->monitor)
       return false;
 
    fds.fd = udev_monitor_get_fd(udev->monitor);
    fds.events = POLLIN;
+
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
 
@@ -323,6 +327,7 @@ static bool add_device(udev_input_t *udev,
 static void remove_device(udev_input_t *udev, const char *devnode)
 {
    unsigned i;
+
    for (i = 0; i < udev->num_devices; i++)
    {
       if (!strcmp(devnode, udev->devices[i]->devnode))
@@ -338,22 +343,28 @@ static void remove_device(udev_input_t *udev, const char *devnode)
 
 static void handle_hotplug(udev_input_t *udev)
 {
-   struct udev_device *dev = udev_monitor_receive_device(udev->monitor);
+   bool is_keyboard, is_mouse, is_touchpad;
+   struct udev_device *dev  = udev_monitor_receive_device(udev->monitor);
+   device_handle_cb cb      = NULL;
+   const char *devtype      = NULL;
+   const char *val_keyboard = NULL;
+   const char *val_mouse    = NULL;
+   const char *val_touchpad = NULL;
+   const char *action       = NULL;
+   const char *devnode      = NULL;
+
    if (!dev)
       return;
 
-   const char *val_keyboard = udev_device_get_property_value(dev, "ID_INPUT_KEYBOARD");
-   const char *val_mouse = udev_device_get_property_value(dev, "ID_INPUT_MOUSE");
-   const char *val_touchpad = udev_device_get_property_value(dev, "ID_INPUT_TOUCHPAD");
-   const char *action = udev_device_get_action(dev);
-   const char *devnode = udev_device_get_devnode(dev);
+   val_keyboard = udev_device_get_property_value(dev, "ID_INPUT_KEYBOARD");
+   val_mouse = udev_device_get_property_value(dev, "ID_INPUT_MOUSE");
+   val_touchpad = udev_device_get_property_value(dev, "ID_INPUT_TOUCHPAD");
+   action = udev_device_get_action(dev);
+   devnode = udev_device_get_devnode(dev);
 
-   bool is_keyboard = val_keyboard && !strcmp(val_keyboard, "1") && devnode;
-   bool is_mouse = val_mouse && !strcmp(val_mouse, "1") && devnode;
-   bool is_touchpad = val_touchpad && !strcmp(val_touchpad, "1") && devnode;
-
-   device_handle_cb cb = NULL;
-   const char *devtype = NULL;
+   is_keyboard = val_keyboard && !strcmp(val_keyboard, "1") && devnode;
+   is_mouse = val_mouse && !strcmp(val_mouse, "1") && devnode;
+   is_touchpad = val_touchpad && !strcmp(val_touchpad, "1") && devnode;
 
    if (!is_keyboard && !is_mouse && !is_touchpad)
       goto end;
@@ -394,6 +405,7 @@ static void udev_input_poll(void *data)
    int i, ret;
    struct epoll_event events[32];
    udev_input_t *udev = (udev_input_t*)data;
+
    udev->mouse_x = udev->mouse_y = 0;
 
    while (hotplug_available(udev))
@@ -407,13 +419,13 @@ static void udev_input_poll(void *data)
       {
          int j, len;
          struct input_device *device = (struct input_device*)events[i].data.ptr;
-         struct input_event events[32];
+         struct input_event input_events[32];
 
-         while ((len = read(device->fd, events, sizeof(events))) > 0)
+         while ((len = read(device->fd, input_events, sizeof(input_events))) > 0)
          {
-            len /= sizeof(*events);
+            len /= sizeof(*input_events);
             for (j = 0; j < len; j++)
-               device->handle_cb(udev, &events[j], device);
+               device->handle_cb(udev, &input_events[j], device);
          }
       }
    }
@@ -484,12 +496,15 @@ static int16_t udev_analog_pressed(udev_input_t *udev,
 {
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
+   int16_t pressed_minus = 0, pressed_plus = 0;
+
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   int16_t pressed_minus = udev_input_is_pressed(udev,
-         binds, id_minus) ? -0x7fff : 0;
-   int16_t pressed_plus = udev_input_is_pressed(udev,
-         binds, id_plus) ? 0x7fff : 0;
+   if (udev_input_is_pressed(udev, binds, id_minus))
+      pressed_minus = -0x7fff;
+   if (udev_input_is_pressed(udev, binds, id_plus))
+      pressed_plus = 0x7fff;
+
    return pressed_plus + pressed_minus;
 }
 
@@ -538,6 +553,7 @@ static void udev_input_free(void *data)
 {
    unsigned i;
    udev_input_t *udev = (udev_input_t*)data;
+
    if (!data || !udev)
       return;
 
@@ -579,8 +595,8 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
 {
    struct udev_list_entry *devs;
    struct udev_list_entry *item;
-
    struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
+
    if (!enumerate)
       return false;
 
@@ -594,7 +610,7 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
       /* Get the filename of the /sys entry for the device
        * and create a udev_device object (dev) representing it. */
       struct udev_device *dev = udev_device_new_from_syspath(udev->udev, name);
-      const char *devnode = udev_device_get_devnode(dev);
+      const char *devnode     = udev_device_get_devnode(dev);
 
       int fd = devnode ? open(devnode, O_RDONLY | O_NONBLOCK) : -1;
 
@@ -677,6 +693,7 @@ static void disable_terminal_input(void)
 static void *udev_input_init(void)
 {
    udev_input_t *udev = (udev_input_t*)calloc(1, sizeof(*udev));
+
    if (!udev)
       return NULL;
 
@@ -708,10 +725,10 @@ static void *udev_input_init(void)
    udev->xkb_ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
    if (udev->xkb_ctx)
    {
-      struct xkb_rule_names rule = {0};
-      rule.rules = "evdev";
-
       struct string_list *list = NULL;
+      struct xkb_rule_names rule = {0};
+
+      rule.rules = "evdev";
 
       if (*g_settings.input.keyboard_layout)
       {

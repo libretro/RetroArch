@@ -29,12 +29,14 @@
 #include <linux/types.h>
 #include <linux/input.h>
 
-// Udev/evdev Linux joypad driver.
-// More complex and extremely low level,
-// but only Linux driver which can support joypad rumble.
-// Uses udev for device detection + hotplug.
-//
-// Code adapted from SDL 2.0's implementation.
+/* Udev/evdev Linux joypad driver.
+ * More complex and extremely low level,
+ * but only Linux driver which can support joypad rumble.
+ *
+ * Uses udev for device detection + hotplug.
+ *
+ * Code adapted from SDL 2.0's implementation.
+ */
 
 #define UDEV_NUM_BUTTONS 32
 #define NUM_AXES 32
@@ -45,18 +47,18 @@ struct udev_joypad
    int fd;
    dev_t device;
 
-   // Input state polled
+   /* Input state polled. */
    uint32_t buttons;
    int16_t axes[NUM_AXES];
    int8_t hats[NUM_HATS][2];
 
-   // Maps keycodes -> button/axes
+   /* Maps keycodes -> button/axes */
    uint8_t button_bind[KEY_MAX];
    uint8_t axes_bind[ABS_MAX];
    struct input_absinfo absinfo[NUM_AXES];
 
    int num_effects;
-   int effects[2]; // [0] - strong, [1] - weak 
+   int effects[2]; /* [0] - strong, [1] - weak  */
    bool has_set_ff[2];
    uint16_t strength[2];
    uint16_t configured_strength[2];
@@ -74,7 +76,8 @@ static struct udev_joypad udev_pads[MAX_USERS];
 static inline int16_t compute_axis(const struct input_absinfo *info, int value)
 {
    int range = info->maximum - info->minimum;
-   int axis = (value - info->minimum) * 0xffffll / range - 0x7fffll;
+   int axis  = (value - info->minimum) * 0xffffll / range - 0x7fffll;
+
    if (axis > 0x7fff)
       return 0x7fff;
    else if (axis < -0x7fff)
@@ -147,9 +150,10 @@ static void udev_poll_pad(unsigned p)
 
 static bool hotplug_available(void)
 {
+   struct pollfd fds = {0};
+
    if (!g_udev_mon)
       return false;
-   struct pollfd fds = {0};
    fds.fd = udev_monitor_get_fd(g_udev_mon);
    fds.events = POLLIN;
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
@@ -203,7 +207,7 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
 
    if (strength && strength != pad->configured_strength[effect])
    {
-      // Create new or update old playing state.
+      /* Create new or update old playing state. */
       struct ff_effect e;
       memset(&e, 0, sizeof(e));
       e.type = FF_RUMBLE;
@@ -227,10 +231,11 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
    }
    pad->strength[effect] = strength;
 
-   // It seems that we can update strength with EVIOCSFF atomically.
+   /* It seems that we can update strength with EVIOCSFF atomically. */
    if ((!!strength) != (!!old_strength))
    {
       struct input_event play;
+
       memset(&play, 0, sizeof(play));
       play.type = EV_FF;
       play.code = pad->effects[effect];
@@ -275,7 +280,7 @@ static int open_joystick(const char *path)
          (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(absbit)), absbit) < 0))
       goto error;
 
-   // Has to at least support EV_KEY interface.
+   /* Has to at least support EV_KEY interface. */
    if (!test_bit(EV_KEY, evbit))
       goto error;
 
@@ -308,7 +313,7 @@ static void free_pad(unsigned pad, bool hotplug)
    udev_pads[pad].fd = -1;
    udev_pads[pad].ident = g_settings.input.device_names[pad];
 
-   // Avoid autoconfig spam if we're reiniting driver.
+   /* Avoid autoconfig spam if we're reiniting driver. */
    /* TODO - implement VID/PID? */
    if (hotplug)
       input_config_autoconfigure_joypad(pad, NULL, 
@@ -319,18 +324,23 @@ static void free_pad(unsigned pad, bool hotplug)
 static bool add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
 {
    int i;
+   const char *buf;
+   struct stat st;
+   struct udev_device *parent;
    struct udev_joypad *pad = (struct udev_joypad*)&udev_pads[p];
+   unsigned long keybit[NBITS(KEY_MAX)] = {0};
+   unsigned long absbit[NBITS(ABS_MAX)] = {0};
+   unsigned long ffbit[NBITS(FF_MAX)]   = {0};
+   unsigned buttons = 0, axes = 0;
+
    if (ioctl(fd, EVIOCGNAME(sizeof(g_settings.input.device_names[0])), pad->ident) < 0)
    {
       RARCH_LOG("[udev]: Failed to get pad name.\n");
       return false;
    }
 
-   const char *buf;
-
-   /* don't worry about unref'ing the parent */
-   struct udev_device *parent =
-         udev_device_get_parent_with_subsystem_devtype(dev, "usb", "usb_device");
+   /* Don't worry about unref'ing the parent. */
+   parent = udev_device_get_parent_with_subsystem_devtype(dev, "usb", "usb_device");
 
    pad->vid = pad->pid = 0;
 
@@ -343,21 +353,17 @@ static bool add_pad(struct udev_device *dev, unsigned p, int fd, const char *pat
    RARCH_LOG("[udev]: Plugged pad: %s (%04x:%04x) on port #%u.\n",
              pad->ident, pad->vid, pad->pid, p);
 
-   struct stat st;
    if (fstat(fd, &st) < 0)
       return false;
 
-   unsigned long keybit[NBITS(KEY_MAX)] = {0};
-   unsigned long absbit[NBITS(ABS_MAX)] = {0};
 
    if ((ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) ||
             (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(absbit)), absbit) < 0))
       return false;
 
-   // Go through all possible keycodes, check if they are used,
-   // and map them to button/axes/hat indices.
-   unsigned buttons = 0;
-   unsigned axes = 0;
+   /* Go through all possible keycodes, check if they are used,
+    * and map them to button/axes/hat indices.
+    */
    for (i = KEY_UP; i <= KEY_DOWN && buttons < UDEV_NUM_BUTTONS; i++)
       if (test_bit(i, keybit))
          pad->button_bind[i] = buttons++;
@@ -366,7 +372,7 @@ static bool add_pad(struct udev_device *dev, unsigned p, int fd, const char *pat
          pad->button_bind[i] = buttons++;
    for (i = 0; i < ABS_MISC && axes < NUM_AXES; i++)
    {
-      // Skip hats for now.
+      /* Skip hats for now. */
       if (i == ABS_HAT0X)
       {
          i = ABS_HAT3Y;
@@ -376,6 +382,7 @@ static bool add_pad(struct udev_device *dev, unsigned p, int fd, const char *pat
       if (test_bit(i, absbit))
       {
          struct input_absinfo *abs = &pad->absinfo[axes];
+
          if (ioctl(fd, EVIOCGABS(i), abs) < 0)
             continue;
          if (abs->maximum > abs->minimum)
@@ -393,8 +400,7 @@ static bool add_pad(struct udev_device *dev, unsigned p, int fd, const char *pat
    if (*pad->ident)
       input_config_autoconfigure_joypad(p, pad->ident, pad->vid, pad->pid, "udev");
 
-   // Check for rumble features.
-   unsigned long ffbit[NBITS(FF_MAX)] = {0};
+   /* Check for rumble features. */
    if (ioctl(fd, EVIOCGBIT(EV_FF, sizeof(ffbit)), ffbit) >= 0)
    {
       if (test_bit(FF_RUMBLE, ffbit))
@@ -410,8 +416,10 @@ static bool add_pad(struct udev_device *dev, unsigned p, int fd, const char *pat
 
 static void check_device(struct udev_device *dev, const char *path, bool hotplugged)
 {
+   int pad, fd;
    unsigned i;
    struct stat st;
+
    if (stat(path, &st) < 0)
       return;
 
@@ -424,11 +432,11 @@ static void check_device(struct udev_device *dev, const char *path, bool hotplug
       }
    }
 
-   int pad = find_vacant_pad();
+   pad = find_vacant_pad();
    if (pad < 0)
       return;
 
-   int fd = open_joystick(path);
+   fd = open_joystick(path);
    if (fd < 0)
       return;
 
@@ -456,6 +464,7 @@ static void check_device(struct udev_device *dev, const char *path, bool hotplug
 static void remove_device(const char *path)
 {
    unsigned i;
+
    for (i = 0; i < MAX_USERS; i++)
    {
       if (udev_pads[i].path && !strcmp(udev_pads[i].path, path))
@@ -475,6 +484,7 @@ static void remove_device(const char *path)
 static void udev_joypad_destroy(void)
 {
    unsigned i;
+
    for (i = 0; i < MAX_USERS; i++)
       free_pad(i, false);
 
@@ -489,14 +499,15 @@ static void udev_joypad_destroy(void)
 static bool udev_joypad_init(void)
 {
    unsigned i;
+   struct udev_list_entry *devs = NULL;
+   struct udev_list_entry *item = NULL;
+   struct udev_enumerate *enumerate = NULL;
+
    for (i = 0; i < MAX_USERS; i++)
    {
       udev_pads[i].fd = -1;
       udev_pads[i].ident = g_settings.input.device_names[i];
    }
-
-   struct udev_list_entry *devs = NULL;
-   struct udev_list_entry *item = NULL;
 
    g_udev = udev_new();
    if (!g_udev)
@@ -509,18 +520,20 @@ static bool udev_joypad_init(void)
       udev_monitor_enable_receiving(g_udev_mon);
    }
 
-   struct udev_enumerate *enumerate = udev_enumerate_new(g_udev);
+   enumerate = udev_enumerate_new(g_udev);
    if (!enumerate)
       goto error;
 
    udev_enumerate_add_match_property(enumerate, "ID_INPUT_JOYSTICK", "1");
    udev_enumerate_scan_devices(enumerate);
    devs = udev_enumerate_get_list_entry(enumerate);
+
    for (item = devs; item; item = udev_list_entry_get_next(item))
    {
       const char *name = udev_list_entry_get_name(item);
       struct udev_device *dev = udev_device_new_from_syspath(g_udev, name);
       const char *devnode = udev_device_get_devnode(dev);
+
       if (devnode)
          check_device(dev, devnode, false);
       udev_device_unref(dev);
@@ -539,16 +552,22 @@ error:
 static bool udev_joypad_hat(const struct udev_joypad *pad, uint16_t hat)
 {
    unsigned h = GET_HAT(hat);
+
    if (h >= NUM_HATS)
       return false;
 
    switch (GET_HAT_DIR(hat))
    {
-      case HAT_LEFT_MASK: return pad->hats[h][0] < 0;
-      case HAT_RIGHT_MASK: return pad->hats[h][0] > 0;
-      case HAT_UP_MASK: return pad->hats[h][1] < 0;
-      case HAT_DOWN_MASK: return pad->hats[h][1] > 0;
-      default: return 0;
+      case HAT_LEFT_MASK:
+         return pad->hats[h][0] < 0;
+      case HAT_RIGHT_MASK:
+         return pad->hats[h][0] > 0;
+      case HAT_UP_MASK:
+         return pad->hats[h][1] < 0;
+      case HAT_DOWN_MASK:
+         return pad->hats[h][1] > 0;
+      default:
+         return 0;
    }
 }
 
@@ -563,12 +582,13 @@ static bool udev_joypad_button(unsigned port, uint16_t joykey)
 
 static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
 {
+   int16_t val = 0;
+   const struct udev_joypad *pad;
    if (joyaxis == AXIS_NONE)
       return 0;
 
-   const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
+   pad = (const struct udev_joypad*)&udev_pads[port];
 
-   int16_t val = 0;
    if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
    {
       val = pad->axes[AXIS_NEG_GET(joyaxis)];
