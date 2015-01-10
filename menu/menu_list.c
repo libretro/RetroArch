@@ -15,6 +15,7 @@
  */
 
 #include "../driver.h"
+#include "menu_common_list.h"
 #include "menu_list.h"
 #include "menu_navigation.h"
 #include <string.h>

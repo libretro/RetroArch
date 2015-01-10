@@ -16,8 +16,6 @@
 
 #include "menu_common.h"
 #include "menu_entries.h"
-#include "menu_entries_cbs.h"
-#include "menu_list.h"
 #include "menu_shader.h"
 #include "../dynamic.h"
 #include "../frontend/frontend.h"
@@ -526,56 +524,4 @@ unsigned menu_common_type_is(const char *label, unsigned type)
       return MENU_FILE_DIRECTORY;
 
    return 0;
-}
-
-void menu_common_list_clear(void *data)
-{
-}
-
-void menu_common_list_set_selection(void *data)
-{
-}
-
-void menu_common_list_insert(void *data,
-      const char *path, const char *label,
-      unsigned type, size_t idx)
-{
-   file_list_t *list = (file_list_t*)data;
-
-   if (!list)
-      return;
-
-   list->list[idx].actiondata = (menu_file_list_cbs_t*)
-      calloc(1, sizeof(menu_file_list_cbs_t));
-
-   if (!list->list[idx].actiondata)
-   {
-      RARCH_ERR("Action data could not be allocated.\n");
-      return;
-   }
-
-   menu_entries_cbs_init(list, path, label, type, idx);
-}
-
-void menu_common_list_delete(void *data, size_t idx,
-      size_t list_size)
-{
-   menu_file_list_cbs_t *cbs = NULL;
-   file_list_t *list = (file_list_t*)data;
-
-   if (!list)
-      return;
-
-   cbs = (menu_file_list_cbs_t*)list->list[idx].actiondata;
-
-   if (cbs)
-   {
-      cbs->action_start         = NULL;
-      cbs->action_ok            = NULL;
-      cbs->action_cancel        = NULL;
-      cbs->action_toggle        = NULL;
-      cbs->action_deferred_push = NULL;
-      free(list->list[idx].actiondata);
-   }
-   list->list[idx].actiondata = NULL;
 }
