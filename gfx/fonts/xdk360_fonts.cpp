@@ -25,25 +25,25 @@
 
 typedef struct GLYPH_ATTR
 {
-   unsigned short tu1, tv1, tu2, tv2;   // Texture coordinates for the image
-   short wOffset;                       // Pixel offset for glyph start
-   short wWidth;                        // Pixel width of the glyph
-   short wAdvance;                      // Pixels to advance after the glyph
+   unsigned short tu1, tv1, tu2, tv2;   /* Texture coordinates for the image. */
+   short wOffset;                       /* Pixel offset for glyph start. */
+   short wWidth;                        /* Pixel width of the glyph. */
+   short wAdvance;                      /* Pixels to advance after the glyph. */
    unsigned short wMask;
 } GLYPH_ATTR;
 
 typedef struct
 {
    unsigned long m_dwSavedState;
-   unsigned long m_cMaxGlyph;           // Number of entries in the translator table
-   unsigned long m_dwNumGlyphs;         // Number of valid glyphs
-   float m_fFontHeight;                 // Height of the font strike in pixels
-   float m_fFontTopPadding;             // Padding above the strike zone
-   float m_fFontBottomPadding;          // Padding below the strike zone
-   float m_fFontYAdvance;               // Number of pixels to move the cursor for a line feed
-   wchar_t * m_TranslatorTable;         // ASCII to glyph lookup table
+   unsigned long m_cMaxGlyph;           /* Number of entries in the translator table. */
+   unsigned long m_dwNumGlyphs;         /* Number of valid glyphs. */
+   float m_fFontHeight;                 /* Height of the font strike in pixels. */
+   float m_fFontTopPadding;             /* Padding above the strike zone. */
+   float m_fFontBottomPadding;          /* Padding below the strike zone. */
+   float m_fFontYAdvance;               /* Number of pixels to move the cursor for a line feed. */
+   wchar_t * m_TranslatorTable;         /* ASCII to glyph lookup table. */
    D3DTexture* m_pFontTexture;
-   const GLYPH_ATTR* m_Glyphs;          // Array of glyphs
+   const GLYPH_ATTR* m_Glyphs;          /* Array of glyphs. */
 } xdk360_video_font_t;
 
 static xdk360_video_font_t m_Font;
@@ -53,18 +53,18 @@ static PackedResource m_xprResource;
 #define FONTFILEVERSION 5
 
 typedef struct {
-   unsigned long m_dwFileVersion;   // Version of the font file (Must match FONTFILEVERSION)
-   float m_fFontHeight;            // Height of the font strike in pixels
-   float m_fFontTopPadding;        // Padding above the strike zone
-   float m_fFontBottomPadding;     // Padding below the strike zone
-   float m_fFontYAdvance;          // Number of pixels to move the cursor for a line feed
-   unsigned short m_cMaxGlyph;     // Number of font characters (Should be an odd number to maintain DWORD Alignment)
-   wchar_t m_TranslatorTable[1];   // ASCII to Glyph lookup table, NOTE: It's m_cMaxGlyph+1 in size.
+   unsigned long m_dwFileVersion;       /* Version of the font file (Must match FONTFILEVERSION). */
+   float m_fFontHeight;                 /* Height of the font strike in pixels. */
+   float m_fFontTopPadding;             /* Padding above the strike zone. */
+   float m_fFontBottomPadding;          /* Padding below the strike zone. */
+   float m_fFontYAdvance;               /* Number of pixels to move the cursor for a line feed. */
+   unsigned short m_cMaxGlyph;          /* Number of font characters (Should be an odd number to maintain DWORD Alignment). */
+   wchar_t m_TranslatorTable[1];        /* ASCII to Glyph lookup table, NOTE: It's m_cMaxGlyph+1 in size. */
 } FontFileHeaderImage_t;
 
 typedef struct {
-   unsigned long m_dwNumGlyphs;    // Size of font strike array (First entry is the unknown glyph)
-   GLYPH_ATTR m_Glyphs[1];         // Array of font strike uv's etc... NOTE: It's m_dwNumGlyphs in size
+   unsigned long m_dwNumGlyphs;         /* Size of font strike array (First entry is the unknown glyph). */
+   GLYPH_ATTR m_Glyphs[1];              /* Array of font strike uv's etc... NOTE: It's m_dwNumGlyphs in size. */
 } FontFileStrikesImage_t; 
 
 static const char g_strFontShader[] =
@@ -113,80 +113,82 @@ static HRESULT xdk360_video_font_create_shaders(
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
-   if (!s_FontLocals.m_pFontVertexDecl)
-   {
-      do
-      {
-         static const D3DVERTEXELEMENT9 decl[] =
-         {
-            { 0,  0, D3DDECLTYPE_FLOAT2,   D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-            { 0,  8, D3DDECLTYPE_USHORT2,  D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-            { 0, 12, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
-            D3DDECL_END()
-         };
-
-
-         hr = d3dr->CreateVertexDeclaration( decl, &s_FontLocals.m_pFontVertexDecl );
-
-         if (hr >= 0)
-         {
-            ID3DXBuffer* pShaderCode;
-
-            hr = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
-                  NULL, NULL, "main_vertex", "vs.2.0", 0,&pShaderCode, NULL, NULL );
-
-            if (hr >= 0)
-            {
-               hr = d3dr->CreateVertexShader( ( unsigned long * )pShaderCode->GetBufferPointer(),
-                     &s_FontLocals.m_pFontVertexShader );
-               pShaderCode->Release();
-
-               if (hr >= 0)
-               {
-                  hr = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
-                        NULL, NULL, "main_fragment", "ps.2.0", 0,&pShaderCode, NULL, NULL );
-
-                  if (hr >= 0)
-                  {
-                     hr = d3dr->CreatePixelShader((DWORD*)pShaderCode->GetBufferPointer(),
-                           &s_FontLocals.m_pFontPixelShader );
-                     pShaderCode->Release();
-
-                     if (hr >= 0) 
-                     {
-                        hr = 0;
-                        break;
-                     }
-                  }
-                  s_FontLocals.m_pFontVertexShader->Release();
-               }
-
-               s_FontLocals.m_pFontVertexShader = NULL;
-            }
-
-            s_FontLocals.m_pFontVertexDecl->Release();
-         }  
-         s_FontLocals.m_pFontVertexDecl = NULL;
-      }while (0);
-   }
-   else
+   if (s_FontLocals.m_pFontVertexDecl)
    {
       s_FontLocals.m_pFontVertexDecl->AddRef();
       s_FontLocals.m_pFontVertexShader->AddRef();
       s_FontLocals.m_pFontPixelShader->AddRef();
-      hr = 0;
+      return 0;
    }
+
+   do
+   {
+      static const D3DVERTEXELEMENT9 decl[] =
+      {
+         { 0,  0, D3DDECLTYPE_FLOAT2,   D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+         { 0,  8, D3DDECLTYPE_USHORT2,  D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+         { 0, 12, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
+         D3DDECL_END()
+      };
+
+
+      hr = d3dr->CreateVertexDeclaration( decl, &s_FontLocals.m_pFontVertexDecl );
+
+      if (hr >= 0)
+      {
+         ID3DXBuffer* pShaderCode;
+
+         hr = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
+               NULL, NULL, "main_vertex", "vs.2.0", 0,&pShaderCode, NULL, NULL );
+
+         if (hr >= 0)
+         {
+            hr = d3dr->CreateVertexShader( ( unsigned long * )pShaderCode->GetBufferPointer(),
+                  &s_FontLocals.m_pFontVertexShader );
+            pShaderCode->Release();
+
+            if (hr >= 0)
+            {
+               hr = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
+                     NULL, NULL, "main_fragment", "ps.2.0", 0,&pShaderCode, NULL, NULL );
+
+               if (hr >= 0)
+               {
+                  hr = d3dr->CreatePixelShader((DWORD*)pShaderCode->GetBufferPointer(),
+                        &s_FontLocals.m_pFontPixelShader );
+                  pShaderCode->Release();
+
+                  if (hr >= 0) 
+                  {
+                     hr = 0;
+                     break;
+                  }
+               }
+               s_FontLocals.m_pFontVertexShader->Release();
+            }
+
+            s_FontLocals.m_pFontVertexShader = NULL;
+         }
+
+         s_FontLocals.m_pFontVertexDecl->Release();
+      }  
+      s_FontLocals.m_pFontVertexDecl = NULL;
+   }while(0);
+
    return hr;
 }
 
 static bool xdk360_init_font(void *data,
       const char *font_path, unsigned font_size)
 {
-   (void)font_size;
+   unsigned long dwFileVersion;
+   const void *pFontData       = NULL;
+   D3DTexture *pFontTexture    = NULL;
+   const unsigned char * pData = NULL;
+   xdk360_video_font_t *font   = &m_Font;
+   d3d_video_t         *d3d    = (d3d_video_t*)data;
 
-   // Create the font
-   xdk360_video_font_t *font = &m_Font;
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   (void)font_size;
 
    font->m_pFontTexture = NULL;
    font->m_dwNumGlyphs = 0L;
@@ -194,43 +196,40 @@ static bool xdk360_init_font(void *data,
    font->m_cMaxGlyph = 0;
    font->m_TranslatorTable = NULL;
 
-   // Create the font
+   /* Create the font. */
    if (FAILED( m_xprResource.Create(font_path)))
       goto error;
 
-   D3DTexture *pFontTexture = m_xprResource.GetTexture( "FontTexture" );
-   const void *pFontData    = m_xprResource.GetData( "FontData"); 
+   pFontTexture               = m_xprResource.GetTexture( "FontTexture" );
+   pFontData                  = m_xprResource.GetData( "FontData"); 
 
-   // Save a copy of the texture
-   font->m_pFontTexture = pFontTexture;
+   /* Save a copy of the texture. */
+   font->m_pFontTexture       = pFontTexture;
 
-   // Check version of file (to make sure it matches up with the FontMaker tool)
-   const unsigned char * pData = (const unsigned char*)pFontData;
-   unsigned long dwFileVersion = ((const FontFileHeaderImage_t *)pData)->m_dwFileVersion;
+   /* Check version of file (to make sure it matches up with the FontMaker tool). */
+   pData                      = (const unsigned char*)pFontData;
+   dwFileVersion              = ((const FontFileHeaderImage_t *)pData)->m_dwFileVersion;
 
-   if (dwFileVersion == FONTFILEVERSION)
+   if (dwFileVersion != FONTFILEVERSION)
    {
-      font->m_fFontHeight = ((const FontFileHeaderImage_t *)pData)->m_fFontHeight;
-      font->m_fFontTopPadding = ((const FontFileHeaderImage_t *)pData)->m_fFontTopPadding;
-      font->m_fFontBottomPadding = ((const FontFileHeaderImage_t *)pData)->m_fFontBottomPadding;
-      font->m_fFontYAdvance = ((const FontFileHeaderImage_t *)pData)->m_fFontYAdvance;
-
-      // Point to the translator string which immediately follows the 4 floats
-      font->m_cMaxGlyph = ((const FontFileHeaderImage_t *)pData)->m_cMaxGlyph;
-
-      font->m_TranslatorTable = const_cast<FontFileHeaderImage_t*>((const FontFileHeaderImage_t *)pData)->m_TranslatorTable;
-
-      pData += CALCFONTFILEHEADERSIZE( font->m_cMaxGlyph + 1 );
-
-      // Read the glyph attributes from the file
-      font->m_dwNumGlyphs = ((const FontFileStrikesImage_t *)pData)->m_dwNumGlyphs;
-      font->m_Glyphs = ((const FontFileStrikesImage_t *)pData)->m_Glyphs;
-   }
-   else
-   {
-      RARCH_ERR( "Incorrect version number on font file.\n" );
+      RARCH_ERR("Incorrect version number on font file.\n");
       goto error;
    }
+
+   font->m_fFontHeight        = ((const FontFileHeaderImage_t *)pData)->m_fFontHeight;
+   font->m_fFontTopPadding    = ((const FontFileHeaderImage_t *)pData)->m_fFontTopPadding;
+   font->m_fFontBottomPadding = ((const FontFileHeaderImage_t *)pData)->m_fFontBottomPadding;
+   font->m_fFontYAdvance      = ((const FontFileHeaderImage_t *)pData)->m_fFontYAdvance;
+
+   /* Point to the translator string which immediately follows the 4 floats. */
+   font->m_cMaxGlyph          = ((const FontFileHeaderImage_t *)pData)->m_cMaxGlyph;
+   font->m_TranslatorTable    = const_cast<FontFileHeaderImage_t*>((const FontFileHeaderImage_t *)pData)->m_TranslatorTable;
+
+   pData += CALCFONTFILEHEADERSIZE( font->m_cMaxGlyph + 1 );
+
+   /* Read the glyph attributes from the file. */
+   font->m_dwNumGlyphs        = ((const FontFileStrikesImage_t *)pData)->m_dwNumGlyphs;
+   font->m_Glyphs             = ((const FontFileStrikesImage_t *)pData)->m_Glyphs;
 
    /* Create the vertex and pixel shaders for rendering the font */
    if (FAILED(xdk360_video_font_create_shaders(d3d, font)))
@@ -287,22 +286,22 @@ static void xdk360_render_msg_post(xdk360_video_font_t * font, void *video_data)
 
 static void xdk360_render_msg_pre(xdk360_video_font_t * font, void *video_data)
 {
+   float vTexScale[4];
+   D3DSURFACE_DESC TextureDesc;
    d3d_video_t *d3d = (d3d_video_t*)video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
-   // Save state
+   /* Save state. */
    d3dr->GetRenderState( D3DRS_VIEWPORTENABLE, &font->m_dwSavedState );
 
-   // Set the texture scaling factor as a vertex shader constant
-   D3DSURFACE_DESC TextureDesc;
+   /* Set the texture scaling factor as a vertex shader constant. */
    D3DTexture_GetLevelDesc(font->m_pFontTexture, 0, &TextureDesc); // Get the description
 
-   // Set render state
+   /* Set render state. */
    d3d_set_texture(d3dr, 0, font->m_pFontTexture);
 
-   // Read the TextureDesc here to ensure no load/hit/store from GetLevelDesc()
-   float vTexScale[4];
-   vTexScale[0] = 1.0f / TextureDesc.Width;		// LHS due to int->float conversion
+   /* Read the TextureDesc here to ensure no load/hit/store from GetLevelDesc(). */
+   vTexScale[0] = 1.0f / TextureDesc.Width;		/* LHS due to int->float conversion. */
    vTexScale[1] = 1.0f / TextureDesc.Height;
    vTexScale[2] = 0.0f;
    vTexScale[3] = 0.0f;
@@ -312,93 +311,102 @@ static void xdk360_render_msg_pre(xdk360_video_font_t * font, void *video_data)
    d3d_set_vertex_shader(d3dr, 0, s_FontLocals.m_pFontVertexShader);
    d3dr->SetPixelShader(s_FontLocals.m_pFontPixelShader);
 
-   // Set the texture scaling factor as a vertex shader constant
-   // Call here to avoid load hit store from writing to vTexScale above
+   /* Set the texture scaling factor as a vertex shader constant.
+    * Call here to avoid load hit store from writing to vTexScale above
+    */
    d3dr->SetVertexShaderConstantF( 2, vTexScale, 1 );
 }
 
 static void xdk360_draw_text(xdk360_video_font_t *font, void *video_data,
       float x, float y, const wchar_t * strText)
 {
-   d3d_video_t *d3d = (d3d_video_t*)video_data;
+   unsigned long dwNumChars;
+   volatile float *pVertex;
+   float vColor[4], m_fCursorX, m_fCursorY;
+   d3d_video_t *d3d      = (d3d_video_t*)video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
-   // Set the color as a vertex shader constant
-   float vColor[4];
+   /* Set the color as a vertex shader constant. */
    vColor[0] = ( ( 0xffffffff & 0x00ff0000 ) >> 16L ) / 255.0f;
    vColor[1] = ( ( 0xffffffff & 0x0000ff00 ) >> 8L )  / 255.0f;
    vColor[2] = ( ( 0xffffffff & 0x000000ff ) >> 0L )  / 255.0f;
    vColor[3] = ( ( 0xffffffff & 0xff000000 ) >> 24L ) / 255.0f;
 
-   // Perform the actual storing of the color constant here to prevent
-   // a load-hit-store by inserting work between the store and the use of
-   // the vColor array.
+   /* Perform the actual storing of the color constant here to prevent
+    * a load-hit-store by inserting work between the store and the use of
+    * the vColor array. */
    d3dr->SetVertexShaderConstantF( 1, vColor, 1 );
 
-   float m_fCursorX = floorf(x);
-   float m_fCursorY = floorf(y);
+   m_fCursorX = floorf(x);
+   m_fCursorY = floorf(y);
 
-   // Adjust for padding
+   /* Adjust for padding. */
    y -= font->m_fFontTopPadding;
 
-   // Begin drawing the vertices
+   /* Begin drawing the vertices
+    * Declared as volatile to force writing in ascending
+    * address order.
+    *
+    * It prevents out of sequence writing in write combined
+    * memory.
+    */
 
-   // Declared as volatile to force writing in ascending
-   // address order. It prevents out of sequence writing in write combined
-   // memory.
-
-   volatile float * pVertex;
-
-   unsigned long dwNumChars = wcslen(strText);
+   dwNumChars = wcslen(strText);
    d3dr->BeginVertices(D3DPT_QUADLIST, 4 * dwNumChars,
          sizeof(XMFLOAT4), (void**)&pVertex);
 
-   // Draw four vertices for each glyph
+   /* Draw four vertices for each glyph. */
    while (*strText)
    {
-      // Get the current letter in the string
-      wchar_t letter = *strText++;
+      float fOffset, fAdvance, fWidth, fHeight;
+      unsigned long tu1, tu2, tv1, tv2;
+      const GLYPH_ATTR *pGlyph;
+      wchar_t letter = *strText++; /* Get the current letter in the string */
 
+      /* Handle the newline character. */
       if (letter == L'\n')
       {
-         // Handle the newline character
          m_fCursorX = x;
          m_fCursorY += font->m_fFontYAdvance * FONT_SCALE(d3d);
          continue;
       }
 
-      // Translate unprintable characters
-      const GLYPH_ATTR *pGlyph;
-
+      /* Translate unprintable characters. */
       if (letter <= font->m_cMaxGlyph)
          pGlyph = &font->m_Glyphs[font->m_TranslatorTable[letter]];
       else
          pGlyph = &font->m_Glyphs[0];
 
-      float fOffset  = FONT_SCALE(d3d) * (float)pGlyph->wOffset;
-      float fAdvance = FONT_SCALE(d3d) * (float)pGlyph->wAdvance;
-      float fWidth   = FONT_SCALE(d3d) * (float)pGlyph->wWidth;
-      float fHeight  = FONT_SCALE(d3d) * font->m_fFontHeight;
+      fOffset  = FONT_SCALE(d3d) * (float)pGlyph->wOffset;
+      fAdvance = FONT_SCALE(d3d) * (float)pGlyph->wAdvance;
+      fWidth   = FONT_SCALE(d3d) * (float)pGlyph->wWidth;
+      fHeight  = FONT_SCALE(d3d) * font->m_fFontHeight;
 
       m_fCursorX += fOffset;
 
-      // Add the vertices to draw this glyph
+      /* Add the vertices to draw this glyph. */
 
-      unsigned long tu1 = pGlyph->tu1;        // Convert shorts to 32 bit longs for in register merging
-      unsigned long tv1 = pGlyph->tv1;
-      unsigned long tu2 = pGlyph->tu2;
-      unsigned long tv2 = pGlyph->tv2;
+      /* Convert shorts to 32 bit longs for in register merging */
+      tu1 = pGlyph->tu1;        
+      tv1 = pGlyph->tv1;
+      tu2 = pGlyph->tu2;
+      tv2 = pGlyph->tv2;
 
-      // NOTE: The vertexes are 2 floats for the screen coordinates,
-      // followed by two USHORTS for the u/vs of the character,
-      // terminated with the ARGB 32 bit color.
-      // This makes for 16 bytes per vertex data (Easier to read)
-      // Second NOTE: The uvs are merged and written using a DWORD due
-      // to the write combining hardware being only able to handle 32,
-      // 64 and 128 writes. Never store to write combined memory with
-      // 8 or 16 bit instructions. You've been warned.
+      /* NOTE: The vertexes are 2 floats for the screen coordinates,
+       * followed by two USHORTS for the u/vs of the character,
+       * terminated with the ARGB 32 bit color.
+       *
+       * This makes for 16 bytes per vertex data (Easier to read)
+       *
+       * Second NOTE: The U/V coordinates are merged and written 
+       * using a DWORD due to the write combining hardware 
+       * being only able to handle 32, 64 and 128 writes.
+       *
+       * Never store to write combined memory with 8 or 16bit 
+       * instructions. You've been warned.
+       */
 
-      // Setup the vertex/screen coordinates
+      /* Setup the vertex/screen coordinates */
 
       pVertex[0]  = m_fCursorX;
       pVertex[1]  = m_fCursorY;
@@ -425,11 +433,15 @@ static void xdk360_draw_text(xdk360_video_font_t *font, void *video_data,
       dwNumChars--;
    }
 
-   // Since we allocated vertex data space based on the string length, we now need to
-   // add some dummy verts for any skipped characters (like newlines, etc.)
+   /* Since we allocated vertex data space 
+    * based on the string length, we now need to
+    * add some dummy verts for any skipped 
+    * characters (like newlines, etc.)
+    */
    while (dwNumChars)
    {
-      for (unsigned i = 0; i < 16; i++)
+      unsigned i;
+      for (i = 0; i < 16; i++)
          pVertex[i] = 0;
 
       pVertex += 16;
@@ -442,10 +454,10 @@ static void xdk360_draw_text(xdk360_video_font_t *font, void *video_data,
 static void xdk360_render_msg(void *data, const char *str_msg,
       const struct font_params *params)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   xdk360_video_font_t *font = &m_Font;
-   wchar_t msg[PATH_MAX];
    float x, y;
+   wchar_t msg[PATH_MAX_LENGTH];
+   d3d_video_t         *d3d  = (d3d_video_t*)data;
+   xdk360_video_font_t *font = &m_Font;
 
    if (params)
    {

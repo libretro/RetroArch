@@ -37,9 +37,11 @@ bool font_renderer_create_default(
       const char *font_path, unsigned font_size)
 {
    unsigned i;
+
    for (i = 0; font_backends[i]; i++)
    {
       const char *path = font_path;
+
       if (!path)
          path = font_backends[i]->get_default_font();
       if (!path)

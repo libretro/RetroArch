@@ -40,6 +40,8 @@ typedef struct freetype_renderer
 static const struct font_atlas *font_renderer_ft_get_atlas(void *data)
 {
    font_renderer_t *handle = (font_renderer_t*)data;
+   if (!handle)
+      return NULL;
    return &handle->atlas;
 }
 
@@ -47,6 +49,8 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
       void *data, uint32_t code)
 {
    font_renderer_t *handle = (font_renderer_t*)data;
+   if (!handle)
+      return NULL;
    return code < ATLAS_SIZE ? &handle->glyphs[code] : NULL;
 }
 
@@ -79,6 +83,9 @@ static bool font_renderer_create_atlas(font_renderer_t *handle)
    for (i = 0; i < ATLAS_SIZE; i++)
    {
       struct font_glyph *glyph = &handle->glyphs[i];
+
+      if (!glyph)
+         continue;
 
       if (FT_Load_Char(handle->face, i, FT_LOAD_RENDER))
       {
@@ -124,7 +131,7 @@ static bool font_renderer_create_atlas(font_renderer_t *handle)
    for (i = 0; i < ATLAS_SIZE; i++)
    {
       unsigned r, c;
-      uint8_t *dst = NULL;
+      uint8_t *dst      = NULL;
       unsigned offset_x = (i % ATLAS_COLS) * max_width;
       unsigned offset_y = (i / ATLAS_COLS) * max_height;
 
@@ -137,6 +144,7 @@ static bool font_renderer_create_atlas(font_renderer_t *handle)
       if (buffer[i])
       {
          const uint8_t *src = (const uint8_t*)buffer[i];
+
          for (r = 0; r < handle->glyphs[i].height;
                r++, dst += handle->atlas.width, src += pitches[i])
             for (c = 0; c < handle->glyphs[i].width; c++)
@@ -208,6 +216,7 @@ static const char *font_paths[] = {
 static const char *font_renderer_ft_get_default_font(void)
 {
    size_t i;
+
    for (i = 0; i < ARRAY_SIZE(font_paths); i++)
    {
       if (path_file_exists(font_paths[i]))

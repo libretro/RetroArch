@@ -35,9 +35,10 @@
 
 static void *libdbg_font_init_font(void *gl_data, const char *font_path, float font_size)
 {
+   gl_t *gl = (gl_t*)gl_data;
+
    (void)font_path;
    (void)font_size;
-   gl_t *gl = (gl_t*)gl_data;
 
    DbgFontConfig cfg;
 #if defined(SN_TARGET_PSP2)
@@ -63,9 +64,10 @@ static void libdbg_font_deinit_font(void *data)
 static void libdbg_font_render_msg(void *data, const char *msg,
       const struct font_params *params)
 {
-   (void)data;
    float x, y, scale;
    unsigned color;
+
+   (void)data;
 
    if (params)
    {

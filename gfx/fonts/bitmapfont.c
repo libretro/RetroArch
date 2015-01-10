@@ -35,6 +35,8 @@ typedef struct bm_renderer
 static const struct font_atlas *font_renderer_bmp_get_atlas(void *data)
 {
    bm_renderer_t *handle = (bm_renderer_t*)data;
+   if (!handle)
+      return NULL;
    return &handle->atlas;
 }
 
@@ -42,6 +44,8 @@ static const struct font_glyph *font_renderer_bmp_get_glyph(
       void *data, uint32_t code)
 {
    bm_renderer_t *handle = (bm_renderer_t*)data;
+   if (!handle)
+      return NULL;
    return code < ATLAS_SIZE ? &handle->glyphs[code] : NULL;
 }
 
@@ -57,11 +61,11 @@ static void char_to_texture(bm_renderer_t *handle, uint8_t letter,
       for (x = 0; x < FONT_WIDTH; x++)
       {
          unsigned font_pixel = x + y * FONT_WIDTH;
-         uint8_t rem = 1 << (font_pixel & 7);
-         unsigned offset = font_pixel >> 3;
-         uint8_t col = (bitmap_bin[FONT_OFFSET(letter) + offset] & rem) ? 0xff : 0;
+         uint8_t rem         = 1 << (font_pixel & 7);
+         unsigned offset     = font_pixel >> 3;
+         uint8_t col         = (bitmap_bin[FONT_OFFSET(letter) + offset] & rem) ? 0xff : 0;
+         uint8_t *dst        = target;
 
-         uint8_t *dst = target;
          dst += x * handle->scale_factor;
          dst += y * handle->scale_factor * handle->atlas.width;
 
@@ -74,12 +78,13 @@ static void char_to_texture(bm_renderer_t *handle, uint8_t letter,
 
 static void *font_renderer_bmp_init(const char *font_path, float font_size)
 {
-   (void)font_path;
    unsigned i;
-
    bm_renderer_t *handle = (bm_renderer_t*)calloc(1, sizeof(*handle));
+
    if (!handle)
       return NULL;
+
+   (void)font_path;
 
    handle->scale_factor = (unsigned)roundf(font_size / FONT_HEIGHT);
    if (!handle->scale_factor)
@@ -93,6 +98,7 @@ static void *font_renderer_bmp_init(const char *font_path, float font_size)
    {
       unsigned x = (i % ATLAS_COLS) * handle->scale_factor * FONT_WIDTH;
       unsigned y = (i / ATLAS_COLS) * handle->scale_factor * FONT_HEIGHT;
+
       char_to_texture(handle, i, x, y);
 
       handle->glyphs[i].width = FONT_WIDTH * handle->scale_factor;

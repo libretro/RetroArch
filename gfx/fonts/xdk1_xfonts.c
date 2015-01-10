@@ -47,7 +47,7 @@ static void xfonts_render_msg(void *data, const char *msg,
       const struct font_params *params)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   wchar_t str[PATH_MAX];
+   wchar_t str[PATH_MAX_LENGTH];
    float x, y;
 
    if (params)
