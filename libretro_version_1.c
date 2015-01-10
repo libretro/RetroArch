@@ -419,7 +419,7 @@ static int16_t input_state(unsigned port, unsigned device,
 
    if (g_settings.input.remap_binds_enable)
    {
-      if (id >= 0 && id < RARCH_FIRST_CUSTOM_BIND)
+      if (id < RARCH_FIRST_CUSTOM_BIND)
          id = g_settings.input.remap_ids[port][id];
    }
 
