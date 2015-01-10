@@ -147,15 +147,17 @@ static void hid_device_report(void* context, IOReturn result, void *sender,
 {
    struct pad_connection* connection = (struct pad_connection*)context;
 
-   if (connection)
-      pad_connection_packet(&slots[connection->slot], connection->slot,
-            connection->data, reportLength + 1);
+   if (!connection)
+      return;
+
+   pad_connection_packet(&slots[connection->slot], connection->slot,
+         connection->data, reportLength + 1);
 }
 
 static void add_device(void* context, IOReturn result,
       void* sender, IOHIDDeviceRef device)
 {
-   char device_name[PATH_MAX];
+   char device_name[PATH_MAX_LENGTH];
    CFStringRef device_name_ref;
    CFNumberRef vendorID, productID;
    struct pad_connection* connection = (struct pad_connection*)
@@ -208,13 +210,11 @@ static void add_device(void* context, IOReturn result,
 static void append_matching_dictionary(CFMutableArrayRef array,
       uint32_t page, uint32_t use)
 {
-   CFNumberRef pagen, usen;
-   CFMutableDictionaryRef matcher;
-
-   matcher = CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
+   CFNumberRef usen;
+   CFMutableDictionaryRef matcher = CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
          &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+   CFNumberRef pagen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &page);
 
-   pagen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &page);
    CFDictionarySetValue(matcher, CFSTR(kIOHIDDeviceUsagePageKey), pagen);
    CFRelease(pagen);
 
@@ -286,6 +286,7 @@ static bool apple_joypad_button(unsigned port, uint16_t joykey)
 {
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
    uint32_t buttons = pad_connection_get_buttons(&slots[port], port);
+
    if (!apple || joykey == NO_BTN)
       return false;
 

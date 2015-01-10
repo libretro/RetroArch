@@ -158,6 +158,7 @@ static bool android_input_lookup_name_gingerbread(char *buf,
    jclass class;
    jmethodID method, getName;
    jobject device, name;
+   const char *str = NULL;
    JNIEnv *env = (JNIEnv*)jni_thread_getenv();
 
    if (!env)
@@ -197,7 +198,7 @@ static bool android_input_lookup_name_gingerbread(char *buf,
 
    buf[0] = '\0';
 
-   const char *str = (*env)->GetStringUTFChars(env, name, 0);
+   str = (*env)->GetStringUTFChars(env, name, 0);
    if (str)
       strlcpy(buf, str, size);
    (*env)->ReleaseStringUTFChars(env, name, str);
@@ -215,6 +216,7 @@ static bool android_input_lookup_name_post_gingerbread(char *buf,
    jclass class;
    jmethodID method, getName, getVendorId, getProductId;
    jobject device, name;
+   const char *str = NULL;
    JNIEnv *env = (JNIEnv*)jni_thread_getenv();
 
    if (!env)
@@ -254,7 +256,7 @@ static bool android_input_lookup_name_post_gingerbread(char *buf,
 
    buf[0] = '\0';
 
-   const char *str = (*env)->GetStringUTFChars(env, name, 0);
+   str = (*env)->GetStringUTFChars(env, name, 0);
    if (str)
       strlcpy(buf, str, size);
    (*env)->ReleaseStringUTFChars(env, name, str);
@@ -297,6 +299,7 @@ static void *android_input_init(void)
 {
    int32_t major, minor, bugfix;
    android_input_t *android = (android_input_t*)calloc(1, sizeof(*android));
+
    if (!android)
       return NULL;
 
@@ -349,6 +352,7 @@ static inline int android_input_poll_event_type_motion(
    {
       float x, y;
       int pointer_max = min(AMotionEvent_getPointerCount(event), MAX_TOUCH);
+
       for (motion_pointer = 0; motion_pointer < pointer_max; motion_pointer++)
       {
          x = AMotionEvent_getX(event, motion_pointer);
@@ -619,7 +623,7 @@ static void android_input_poll(void *data)
 {
    int ident;
    struct android_app *android_app = (struct android_app*)g_android;
-   android_input_t *android = (android_input_t*)data;
+   android_input_t    *android     = (android_input_t*)data;
 
    while ((ident = 
             ALooper_pollAll((driver.input->key_pressed(driver.input_data, RARCH_PAUSE_TOGGLE))
@@ -841,9 +845,9 @@ static float android_input_get_sensor_input(void *data,
 static const rarch_joypad_driver_t *android_input_get_joypad_driver(void *data)
 {
    android_input_t *android = (android_input_t*)data;
-   if (android)
-      return android->joypad;
-   return NULL;
+   if (!android)
+      return NULL;
+   return android->joypad;
 }
 
 input_driver_t input_android = {

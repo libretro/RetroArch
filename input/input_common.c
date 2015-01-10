@@ -15,6 +15,7 @@
  */
 
 #include "input_common.h"
+#include "input_keymaps.h"
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -166,6 +167,27 @@ const char *input_config_get_prefix(unsigned user, bool meta)
       return bind_user_prefix[user];
    /* Don't bother with meta bind for anyone else than first user. */
    return NULL;
+}
+
+static enum retro_key find_rk_bind(const char *str)
+{
+   size_t i;
+
+   for (i = 0; input_config_key_map[i].str; i++)
+   {
+      if (strcasecmp(input_config_key_map[i].str, str) == 0)
+         return input_config_key_map[i].key;
+   }
+
+   RARCH_WARN("Key name %s not found.\n", str);
+   return RETROK_UNKNOWN;
+}
+
+enum retro_key input_translate_str_to_rk(const char *str)
+{
+   if (strlen(str) == 1 && isalpha(*str))
+      return (enum retro_key)(RETROK_a + (tolower(*str) - (int)'a'));
+   return find_rk_bind(str);
 }
 
 /**

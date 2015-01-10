@@ -89,15 +89,14 @@ static bool android_joypad_button(unsigned port, uint16_t joykey)
 
 static int16_t android_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   android_input_t *android = (android_input_t*)driver.input_data;
-   if (!android || joyaxis == AXIS_NONE || port >= MAX_PADS)
-      return 0;
-
    int val = 0;
-
    int axis    = -1;
    bool is_neg = false;
    bool is_pos = false;
+   android_input_t *android = (android_input_t*)driver.input_data;
+
+   if (!android || joyaxis == AXIS_NONE || port >= MAX_PADS)
+      return 0;
 
    if (AXIS_NEG_GET(joyaxis) < MAX_AXIS)
    {
