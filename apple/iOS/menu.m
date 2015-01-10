@@ -717,7 +717,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)menuBack
 {
-  apply_deferred_settings();
+  menu_apply_deferred_settings();
   menu_list_pop_stack(driver.menu->menu_list);
   [self menuRefresh];
   [self reloadData];
