@@ -107,8 +107,9 @@ static void sighandler(int sig)
 
 static void gfx_ctx_drm_egl_swap_interval(void *data, unsigned interval)
 {
-   (void)data;
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
+
+   (void)data;
 
    if (drm)
       drm->g_interval = interval;
@@ -156,22 +157,25 @@ static void page_flip_handler(int fd, unsigned frame,
 
 static void wait_flip(bool block)
 {
+   int timeout = 0;
    struct pollfd fds = {0};
+   drmEventContext evctx   = {0};
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
       driver.video_context_data;
 
    fds.fd     = drm->g_drm_fd;
    fds.events = POLLIN;
 
-   drmEventContext evctx   = {0};
    evctx.version           = DRM_EVENT_CONTEXT_VERSION;
    evctx.page_flip_handler = page_flip_handler;
    
-   int timeout = block ? -1 : 0;
+   if (block)
+      timeout = -1;
 
    while (waiting_for_flip)
    {
       fds.revents = 0;
+
       if (poll(&fds, 1, timeout) < 0)
          break;
 
@@ -184,13 +188,14 @@ static void wait_flip(bool block)
          break;
    }
 
+   if (waiting_for_flip)
+      return;
+
    /* Page flip has taken place. */
-   if (!waiting_for_flip)
-   {
-      /* This buffer is not on-screen anymore. Release it to GBM. */
-      gbm_surface_release_buffer(drm->g_gbm_surface, drm->g_bo);
-      drm->g_bo = drm->g_next_bo; // This buffer is being shown now.
-   }
+
+   /* This buffer is not on-screen anymore. Release it to GBM. */
+   gbm_surface_release_buffer(drm->g_gbm_surface, drm->g_bo);
+   drm->g_bo = drm->g_next_bo; // This buffer is being shown now.
 }
 
 static void queue_flip(void)
@@ -262,6 +267,7 @@ static void gfx_ctx_drm_egl_update_window_title(void *data)
    (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
+
    gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
 
    if (fps_draw)
@@ -549,6 +555,8 @@ static struct drm_fb *drm_fb_get_from_bo(
       gfx_ctx_drm_egl_data_t *drm,
       struct gbm_bo *bo)
 {
+   int ret;
+   unsigned width, height, stride, handle;
    struct drm_fb *fb = (struct drm_fb*)gbm_bo_get_user_data(bo);
    if (fb)
       return fb;
@@ -556,14 +564,14 @@ static struct drm_fb *drm_fb_get_from_bo(
    fb = (struct drm_fb*)calloc(1, sizeof(*fb));
    fb->bo = bo;
 
-   unsigned width  = gbm_bo_get_width(bo);
-   unsigned height = gbm_bo_get_height(bo);
-   unsigned stride = gbm_bo_get_stride(bo);
-   unsigned handle = gbm_bo_get_handle(bo).u32;
+   width  = gbm_bo_get_width(bo);
+   height = gbm_bo_get_height(bo);
+   stride = gbm_bo_get_stride(bo);
+   handle = gbm_bo_get_handle(bo).u32;
 
    RARCH_LOG("[KMS/EGL]: New FB: %ux%u (stride: %u).\n", width, height, stride);
 
-   int ret = drmModeAddFB(drm->g_drm_fd, width, height, 24, 32, stride, handle, &fb->fb_id);
+   ret = drmModeAddFB(drm->g_drm_fd, width, height, 24, 32, stride, handle, &fb->fb_id);
    if (ret < 0)
    {
       RARCH_ERR("[KMS/EGL]: Failed to create FB: %s\n", strerror(errno));
@@ -649,22 +657,6 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   int i, ret = 0;
-   struct sigaction sa = {{0}};
-   struct drm_fb *fb = NULL;
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      driver.video_context_data;
-
-   if (!drm)
-      return false;
-
-   sa.sa_handler = sighandler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-
-
    static const EGLint egl_attribs_gl[] = {
       DRM_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
@@ -692,6 +684,23 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    };
 
    const EGLint *attrib_ptr;
+   EGLint major, minor, n, egl_attribs[16], *attr;
+   float refresh_mod;
+   int i, ret = 0;
+   struct sigaction sa = {{0}};
+   struct drm_fb *fb = NULL;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
+      driver.video_context_data;
+
+   if (!drm)
+      return false;
+
+   sa.sa_handler = sighandler;
+   sa.sa_flags   = SA_RESTART;
+   sigemptyset(&sa.sa_mask);
+   sigaction(SIGINT, &sa, NULL);
+   sigaction(SIGTERM, &sa, NULL);
+
    switch (g_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -714,7 +723,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
 
    /* If we use black frame insertion, 
     * we fake a 60 Hz monitor for 120 Hz one, etc, so try to match that. */
-   float refresh_mod = g_settings.video.black_frame_insertion ? 0.5f : 1.0f;
+   refresh_mod = g_settings.video.black_frame_insertion ? 0.5f : 1.0f;
 
    /* Find desired video mode, and use that.
     * If not fullscreen, we get desired windowed size, 
@@ -776,16 +785,12 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       goto error;
    }
 
-   EGLint major, minor;
    if (!eglInitialize(drm->g_egl_dpy, &major, &minor))
       goto error;
 
-   EGLint n;
    if (!eglChooseConfig(drm->g_egl_dpy, attrib_ptr, &drm->g_config, 1, &n) || n != 1)
       goto error;
 
-   EGLint egl_attribs[16];
-   EGLint *attr;
    attr = egl_fill_attribs(egl_attribs);
 
    drm->g_egl_ctx = eglCreateContext(drm->g_egl_dpy, drm->g_config, EGL_NO_CONTEXT,
@@ -867,9 +872,9 @@ static bool gfx_ctx_drm_egl_has_focus(void *data)
       driver.video_context_data;
    (void)data;
 
-   if (drm)
-      return true;
-   return false;
+   if (!drm)
+      return false;
+   return true;
 }
 
 static bool gfx_ctx_drm_egl_has_windowed(void *data)
@@ -887,9 +892,11 @@ static bool gfx_ctx_drm_egl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
+
    g_major = major;
    g_minor = minor;
    g_api = api;
+
    switch (api)
    {
       case GFX_CTX_OPENGL_API:
