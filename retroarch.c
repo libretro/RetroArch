@@ -2220,7 +2220,10 @@ static bool save_core_config(void)
 
 bool rarch_main_command(unsigned cmd)
 {
+   unsigned i   = 0;
    bool boolean = false;
+
+   (void)i;
 
    switch (cmd)
    {
@@ -2264,15 +2267,15 @@ bool rarch_main_command(unsigned cmd)
          main_state(cmd);
          break;
       case RARCH_CMD_RESIZE_WINDOWED_SCALE:
-         if (g_extern.pending.windowed_scale != 0)
-         {
-            g_settings.video.scale = g_extern.pending.windowed_scale;
+         if (g_extern.pending.windowed_scale == 0)
+            return false;
 
-            if (!g_settings.video.fullscreen)
-               rarch_main_command(RARCH_CMD_REINIT);
+         g_settings.video.scale = g_extern.pending.windowed_scale;
 
-            g_extern.pending.windowed_scale = 0;
-         }
+         if (!g_settings.video.fullscreen)
+            rarch_main_command(RARCH_CMD_REINIT);
+
+         g_extern.pending.windowed_scale = 0;
          break;
       case RARCH_CMD_MENU_TOGGLE:
          if (g_extern.is_menu)
@@ -2640,27 +2643,25 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_SHADER_DIR_INIT:
          rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
+
+         if (!*g_settings.video.shader_dir)
+            return false;
+
+         g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir,
+               "cg|cgp|glsl|glslp", false);
+
+         if (!g_extern.shader_dir.list || g_extern.shader_dir.list->size == 0)
          {
-            unsigned i;
-            if (!*g_settings.video.shader_dir)
-               return false;
-
-            g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir,
-                  "cg|cgp|glsl|glslp", false);
-
-            if (!g_extern.shader_dir.list || g_extern.shader_dir.list->size == 0)
-            {
-               rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
-               return false;
-            }
-
-            g_extern.shader_dir.ptr  = 0;
-            dir_list_sort(g_extern.shader_dir.list, false);
-
-            for (i = 0; i < g_extern.shader_dir.list->size; i++)
-               RARCH_LOG("Found shader \"%s\"\n",
-                     g_extern.shader_dir.list->elems[i].data);
+            rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
+            return false;
          }
+
+         g_extern.shader_dir.ptr  = 0;
+         dir_list_sort(g_extern.shader_dir.list, false);
+
+         for (i = 0; i < g_extern.shader_dir.list->size; i++)
+            RARCH_LOG("Found shader \"%s\"\n",
+                  g_extern.shader_dir.list->elems[i].data);
          break;
       case RARCH_CMD_SAVEFILES:
          save_files();
@@ -2828,13 +2829,10 @@ bool rarch_main_command(unsigned cmd)
          }
          break;
       case RARCH_CMD_RUMBLE_STOP:
+         for (i = 0; i < MAX_USERS; i++)
          {
-            int i;
-            for (i = 0; i < MAX_USERS; i++)
-            {
-               driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
-               driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
-            }
+            driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
+            driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
          }
          break;
       case RARCH_CMD_GRAB_MOUSE_TOGGLE:
