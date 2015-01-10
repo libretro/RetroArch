@@ -2679,7 +2679,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
          return false;
       }
 #else
-      ptr = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+      ptr = (const uint8_t*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
       if (!ptr)
       {
          RARCH_ERR("[GL]: Failed to map pixel unpack buffer.\n");
