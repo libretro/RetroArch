@@ -397,6 +397,17 @@ static bool check_movie(void)
    return check_movie_record();
 }
 
+/**
+ * check_shader_dir:
+ * @pressed_next         : was next shader key pressed?
+ * @pressed_previous     : was previous shader key pressed?
+ *
+ * Checks if any one of the shader keys has been pressed for this frame: 
+ * a) Next shader index.
+ * b) Previous shader index.
+ *
+ * Will also immediately apply the shader.
+ **/
 static void check_shader_dir(bool pressed_next, bool pressed_prev)
 {
    char msg[PATH_MAX_LENGTH];
@@ -588,6 +599,11 @@ static inline int time_to_exit(retro_input_t input)
    return 0;
 }
 
+/**
+ * update_frame_time:
+ *
+ * Updates frame timing if frame timing callback is in use by the core.
+ **/
 static void update_frame_time(void)
 {
    retro_time_t curr_time = rarch_get_time_usec();
@@ -623,30 +639,38 @@ static void do_state_check_menu_toggle(void)
 }
 #endif
 
+/**
+ * limit_frame_time:
+ *
+ * Limit frame time if fast forward ratio throttle is enabled.
+ **/
 static void limit_frame_time(void)
 {
-   retro_time_t current = rarch_get_time_usec();
-   retro_time_t target  = 0, to_sleep_ms = 0;
-   double effective_fps = g_extern.system.av_info.timing.fps 
+   double effective_fps, mft_f;
+   retro_time_t current, target = 0, to_sleep_ms = 0;
+
+   current       = rarch_get_time_usec();
+   effective_fps = g_extern.system.av_info.timing.fps 
       * g_settings.fastforward_ratio;
-   double mft_f = 1000000.0f / effective_fps;
+   mft_f         = 1000000.0f / effective_fps;
 
    g_extern.frame_limit.minimum_frame_time = (retro_time_t) roundf(mft_f);
 
-   target = g_extern.frame_limit.last_frame_time + 
-      g_extern.frame_limit.minimum_frame_time;
-   to_sleep_ms = (target - current) / 1000;
+   target        = g_extern.frame_limit.last_frame_time + 
+                   g_extern.frame_limit.minimum_frame_time;
+   to_sleep_ms   = (target - current) / 1000;
 
-   if (to_sleep_ms > 0)
+   if (to_sleep_ms <= 0)
    {
-      rarch_sleep((unsigned int)to_sleep_ms);
-
-      /* Combat jitter a bit. */
-      g_extern.frame_limit.last_frame_time += 
-         g_extern.frame_limit.minimum_frame_time;
-   }
-   else
       g_extern.frame_limit.last_frame_time = rarch_get_time_usec();
+      return;
+   }
+
+   rarch_sleep((unsigned int)to_sleep_ms);
+
+   /* Combat jitter a bit. */
+   g_extern.frame_limit.last_frame_time += 
+      g_extern.frame_limit.minimum_frame_time;
 }
 
 static void check_block_hotkey(bool enable_hotkey)
