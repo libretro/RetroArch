@@ -17,7 +17,7 @@
 #ifndef _MENU_NAVIGATION_H
 #define _MENU_NAVIGATION_H
 
-#include "menu_common.h"
+#include "menu.h"
 
 #ifdef __cplusplus
 extern "C" {

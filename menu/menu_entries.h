@@ -18,7 +18,7 @@
 #define MENU_ENTRIES_H__
 
 #include <stdlib.h>
-#include "menu_common.h"
+#include "menu.h"
 #include <file/file_list.h>
 #include "../settings_data.h"
 

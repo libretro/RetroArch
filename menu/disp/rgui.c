@@ -21,7 +21,7 @@
 #include <string.h>
 #include <limits.h>
 
-#include "../menu_common.h"
+#include "../menu.h"
 #include "../../general.h"
 #include "../../retroarch.h"
 #include <compat/posix_string.h>

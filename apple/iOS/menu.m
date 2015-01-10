@@ -22,7 +22,7 @@
 #include <file/file_path.h>
 #include "menu.h"
 
-#include "../../menu/menu_common.h"
+#include "../../menu/menu.h"
 #include "../../menu/menu_entries.h"
 #include "../../menu/disp/shared.h"
 

@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "menu_common.h"
+#include "menu.h"
 #include "menu_entries.h"
 #include "menu_shader.h"
 #include "../dynamic.h"

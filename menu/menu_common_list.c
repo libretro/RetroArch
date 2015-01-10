@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "menu_common.h"
+#include "menu.h"
 #include "menu_common_list.h"
 #include "menu_list.h"
 #include "menu_entries_cbs.h"

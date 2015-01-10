@@ -24,7 +24,7 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
-#include "menu_common.h"
+#include "menu.h"
 #include "menu_action.h"
 #include "menu_shader.h"
 #include "../input/keyboard_line.h"

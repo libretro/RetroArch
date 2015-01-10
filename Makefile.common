@@ -288,7 +288,7 @@ endif
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/backend/menu_common_backend.o \
 			 menu/menu_input_line_cb.o \
-			 menu/menu_common.o \
+			 menu/menu.o \
 			 menu/menu_common_list.o \
 			 menu/menu_navigation.o  \
 			 menu/menu_action.o \

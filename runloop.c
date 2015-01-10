@@ -25,7 +25,7 @@
 #include "runloop.h"
 
 #ifdef HAVE_MENU
-#include "menu/menu_common.h"
+#include "menu/menu.h"
 #endif
 
 #ifdef HAVE_NETPLAY

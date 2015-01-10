@@ -22,7 +22,7 @@
 #include <limits.h>
 
 #include "menu_display.h"
-#include "../menu_common.h"
+#include "../menu.h"
 #include "../../general.h"
 #include "../../gfx/gfx_common.h"
 #include "../../config.def.h"

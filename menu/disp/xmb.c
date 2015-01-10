@@ -20,7 +20,7 @@
 #include <string.h>
 #include <limits.h>
 
-#include "../menu_common.h"
+#include "../menu.h"
 #include "../../general.h"
 #include <file/file_path.h>
 #include "../../gfx/gl_common.h"

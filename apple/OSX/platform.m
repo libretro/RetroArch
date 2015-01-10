@@ -21,7 +21,7 @@
 #import "../common/RetroArch_Apple.h"
 #include "../../input/apple_input.h"
 #include "../../frontend/frontend.h"
-#include "../../menu/menu_common.h"
+#include "../../menu/menu.h"
 #include "../../retroarch.h"
 
 static void* const associated_core_key = (void*)&associated_core_key;

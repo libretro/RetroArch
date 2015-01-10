@@ -21,8 +21,8 @@
 #include <xuiapp.h>
 
 #include "menu_display.h"
+#include "../menu.h"
 #include "../menu_list.h"
-#include "../menu_common.h"
 
 #include "../../gfx/gfx_common.h"
 #include "../../gfx/gfx_context.h"

@@ -41,7 +41,7 @@
 #include "intl/intl.h"
 
 #ifdef HAVE_MENU
-#include "menu/menu_common.h"
+#include "menu/menu.h"
 #include "menu/menu_shader.h"
 #include "menu/menu_input_line_cb.h"
 #endif

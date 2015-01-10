@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MENU_COMMON_H__
-#define MENU_COMMON_H__
+#ifndef __RETROARCH_MENU_H__
+#define __RETROARCH_MENU_H__
 
 #include <stdint.h>
 #include <stddef.h>
