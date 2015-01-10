@@ -59,8 +59,19 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
 /* CGP */
 static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass, unsigned i)
 {
+   char shader_name[64], filter_name_buf[64], wrap_name_buf[64], wrap_mode[64];
+   char frame_count_mod_buf[64], srgb_output_buf[64], fp_fbo_buf[64];
+   char mipmap_buf[64], alias_buf[64], scale_name_buf[64], attr_name_buf[64];
+   char scale_type[64] = {0};
+   char scale_type_x[64] = {0};
+   char scale_type_y[64] = {0};
+   char frame_count_mod[64] = {0};
+   struct gfx_fbo_scale *scale = NULL;
+   bool smooth = false;
+   float fattr = 0.0f;
+   int iattr = 0;
+
    /* Source */
-   char shader_name[64];
    snprintf(shader_name, sizeof(shader_name), "shader%u", i);
    if (!config_get_path(conf, shader_name, pass->source.path, sizeof(pass->source.path)))
    {
@@ -69,55 +80,39 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    }
    
    /* Smooth */
-   char filter_name_buf[64];
    snprintf(filter_name_buf, sizeof(filter_name_buf), "filter_linear%u", i);
-   bool smooth = false;
    if (config_get_bool(conf, filter_name_buf, &smooth))
       pass->filter = smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
    else
       pass->filter = RARCH_FILTER_UNSPEC;
 
    /* Wrapping mode */
-   char wrap_name_buf[64];
-   char wrap_mode[64];
-
    snprintf(wrap_name_buf, sizeof(wrap_name_buf), "wrap_mode%u", i);
    if (config_get_array(conf, wrap_name_buf, wrap_mode, sizeof(wrap_mode)))
       pass->wrap = wrap_str_to_mode(wrap_mode);
 
    /* Frame count mod */
-   char frame_count_mod[64] = {0};
-   char frame_count_mod_buf[64];
-
    snprintf(frame_count_mod_buf, sizeof(frame_count_mod_buf), "frame_count_mod%u", i);
    if (config_get_array(conf, frame_count_mod_buf,
             frame_count_mod, sizeof(frame_count_mod)))
       pass->frame_count_mod = strtoul(frame_count_mod, NULL, 0);
 
    /* FBO types and mipmapping */
-   char srgb_output_buf[64];
    snprintf(srgb_output_buf, sizeof(srgb_output_buf), "srgb_framebuffer%u", i);
    config_get_bool(conf, srgb_output_buf, &pass->fbo.srgb_fbo);
 
-   char fp_fbo_buf[64];
    snprintf(fp_fbo_buf, sizeof(fp_fbo_buf), "float_framebuffer%u", i);
    config_get_bool(conf, fp_fbo_buf, &pass->fbo.fp_fbo);
 
-   char mipmap_buf[64];
    snprintf(mipmap_buf, sizeof(mipmap_buf), "mipmap_input%u", i);
    config_get_bool(conf, mipmap_buf, &pass->mipmap);
 
-   char alias_buf[64];
    snprintf(alias_buf, sizeof(alias_buf), "alias%u", i);
    if (!config_get_array(conf, alias_buf, pass->alias, sizeof(pass->alias)))
       *pass->alias = '\0';
 
    /* Scale */
-   struct gfx_fbo_scale *scale = &pass->fbo;
-   char scale_type[64] = {0};
-   char scale_type_x[64] = {0};
-   char scale_type_y[64] = {0};
-   char scale_name_buf[64];
+   scale = &pass->fbo;
    snprintf(scale_name_buf, sizeof(scale_name_buf), "scale_type%u", i);
    config_get_array(conf, scale_name_buf, scale_type, sizeof(scale_type));
 
@@ -135,10 +130,6 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
       strlcpy(scale_type_x, scale_type, sizeof(scale_type_x));
       strlcpy(scale_type_y, scale_type, sizeof(scale_type_y));
    }
-
-   char attr_name_buf[64];
-   float fattr = 0.0f;
-   int iattr = 0;
 
    scale->valid = true;
    scale->type_x = RARCH_SCALE_INPUT;
@@ -241,6 +232,11 @@ static bool shader_parse_textures(config_file_t *conf,
          id && shader->luts < GFX_MAX_TEXTURES;
          shader->luts++, id = strtok_r(NULL, ";", &save))
    {
+      char id_filter[64], id_wrap[64], wrap_mode[64];
+      char id_mipmap[64];
+      bool mipmap = false;
+      bool smooth = false;
+
       if (!config_get_array(conf, id, shader->lut[shader->luts].path,
                sizeof(shader->lut[shader->luts].path)))
       {
@@ -251,24 +247,18 @@ static bool shader_parse_textures(config_file_t *conf,
       strlcpy(shader->lut[shader->luts].id, id,
             sizeof(shader->lut[shader->luts].id));
 
-      char id_filter[64];
       snprintf(id_filter, sizeof(id_filter), "%s_linear", id);
-      bool smooth = false;
       if (config_get_bool(conf, id_filter, &smooth))
          shader->lut[shader->luts].filter = smooth ? 
             RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
       else
          shader->lut[shader->luts].filter = RARCH_FILTER_UNSPEC;
 
-      char id_wrap[64];
       snprintf(id_wrap, sizeof(id_wrap), "%s_wrap_mode", id);
-      char wrap_mode[64];
       if (config_get_array(conf, id_wrap, wrap_mode, sizeof(wrap_mode)))
          shader->lut[shader->luts].wrap = wrap_str_to_mode(wrap_mode);
 
-      char id_mipmap[64];
       snprintf(id_mipmap, sizeof(id_mipmap), "%s_mipmap", id);
-      bool mipmap = false;
       if (config_get_bool(conf, id_mipmap, &mipmap))
          shader->lut[shader->luts].mipmap = mipmap;
       else
@@ -282,6 +272,7 @@ static struct gfx_shader_parameter *find_parameter(
       struct gfx_shader_parameter *params, unsigned num_params, const char *id)
 {
    unsigned i;
+
    for (i = 0; i < num_params; i++)
    {
       if (!strcmp(params[i].id, id))
@@ -294,9 +285,10 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
       struct gfx_shader *shader)
 {
    unsigned i;
+   struct gfx_shader_parameter *param = NULL;
 
    shader->num_parameters = 0;
-   struct gfx_shader_parameter *param = (struct gfx_shader_parameter*)
+   param = (struct gfx_shader_parameter*)
       &shader->parameters[shader->num_parameters];
 
    /* Find all parameters in our shaders. */
@@ -304,6 +296,7 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
    {
       char line[4096];
       FILE *file = fopen(shader->pass[i].source.path, "r");
+
       if (!file)
          continue;
 
@@ -340,8 +333,8 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
    if (conf)
    {
       char parameters[4096];
-      char *save = NULL;
       const char *id;
+      char *save = NULL;
 
       if (!config_get_array(conf, "parameters",
                parameters, sizeof(parameters)))
@@ -371,8 +364,9 @@ static bool shader_parse_imports(config_file_t *conf,
       struct gfx_shader *shader)
 {
    char imports[1024];
-   char *save = NULL;
    const char *id;
+   char *save = NULL;
+
    if (!config_get_array(conf, "imports", imports, sizeof(imports)))
       return true;
 
@@ -380,17 +374,14 @@ static bool shader_parse_imports(config_file_t *conf,
          id && shader->variables < GFX_MAX_VARIABLES;
          shader->variables++, id = strtok_r(NULL, ";", &save))
    {
+      char semantic_buf[64], wram_buf[64], input_slot_buf[64];
+      char mask_buf[64], equal_buf[64], semantic[64];
+      unsigned addr = 0, mask = 0, equal = 0;
       struct state_tracker_uniform_info *var = 
          (struct state_tracker_uniform_info*)
          &shader->variable[shader->variables];
 
       strlcpy(var->id, id, sizeof(var->id));
-
-      char semantic_buf[64];
-      char wram_buf[64];
-      char input_slot_buf[64];
-      char mask_buf[64];
-      char equal_buf[64];
 
       snprintf(semantic_buf, sizeof(semantic_buf), "%s_semantic", id);
       snprintf(wram_buf, sizeof(wram_buf), "%s_wram", id);
@@ -398,7 +389,6 @@ static bool shader_parse_imports(config_file_t *conf,
       snprintf(mask_buf, sizeof(mask_buf), "%s_mask", id);
       snprintf(equal_buf, sizeof(equal_buf), "%s_equal", id);
 
-      char semantic[64];
       if (!config_get_array(conf, semantic_buf, semantic, sizeof(semantic)))
       {
          RARCH_ERR("No semantic for import variable.\n");
@@ -423,7 +413,6 @@ static bool shader_parse_imports(config_file_t *conf,
          return false;
       }
 
-      unsigned addr = 0, mask = 0, equal = 0;
       if (var->type != RARCH_STATE_PYTHON)
       {
          unsigned input_slot = 0;
@@ -473,6 +462,7 @@ static bool shader_parse_imports(config_file_t *conf,
 bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
 {
    unsigned shaders, i;
+
    memset(shader, 0, sizeof(*shader));
    shader->type = RARCH_SHADER_CG;
 
@@ -525,6 +515,7 @@ static void shader_write_scale_dim(config_file_t *conf, const char *dim,
       enum gfx_scale_type type, float scale, unsigned absolute, unsigned i)
 {
    char key[64];
+
    snprintf(key, sizeof(key), "scale_type_%s%u", dim, i);
    config_set_string(conf, key, scale_type_to_str(type));
 
@@ -539,6 +530,7 @@ static void shader_write_fbo(config_file_t *conf,
       const struct gfx_fbo_scale *fbo, unsigned i)
 {
    char key[64];
+
    snprintf(key, sizeof(key), "float_framebuffer%u", i);
    config_set_bool(conf, key, fbo->fp_fbo);
    snprintf(key, sizeof(key), "srgb_framebuffer%u", i);
@@ -576,13 +568,9 @@ static const char *import_semantic_to_string(enum state_tracker_type type)
 static void shader_write_variable(config_file_t *conf,
       const struct state_tracker_uniform_info *info)
 {
+   char semantic_buf[64], wram_buf[64], input_slot_buf[64];
+   char mask_buf[64], equal_buf[64];
    const char *id = info->id;
-
-   char semantic_buf[64];
-   char wram_buf[64];
-   char input_slot_buf[64];
-   char mask_buf[64];
-   char equal_buf[64];
 
    snprintf(semantic_buf, sizeof(semantic_buf), "%s_semantic", id);
    snprintf(wram_buf, sizeof(wram_buf), "%s_wram", id);
@@ -618,12 +606,14 @@ void gfx_shader_write_conf_cgp(config_file_t *conf,
       struct gfx_shader *shader)
 {
    unsigned i;
+
    config_set_int(conf, "shaders", shader->passes);
+
    for (i = 0; i < shader->passes; i++)
    {
+      char key[64];
       const struct gfx_shader_pass *pass = &shader->pass[i];
 
-      char key[64];
       snprintf(key, sizeof(key), "shader%u", i);
       config_set_string(conf, key, pass->source.path);
 
@@ -654,7 +644,9 @@ void gfx_shader_write_conf_cgp(config_file_t *conf,
    if (shader->num_parameters)
    {
       char parameters[4096] = {0};
+
       strlcpy(parameters, shader->parameters[0].id, sizeof(parameters));
+
       for (i = 1; i < shader->num_parameters; i++)
       {
          /* O(n^2), but number of parameters is very limited. */
@@ -672,6 +664,7 @@ void gfx_shader_write_conf_cgp(config_file_t *conf,
    if (shader->luts)
    {
       char textures[4096] = {0};
+
       strlcpy(textures, shader->lut[0].id, sizeof(textures));
       for (i = 1; i < shader->luts; i++)
       {
@@ -711,7 +704,9 @@ void gfx_shader_write_conf_cgp(config_file_t *conf,
    if (shader->variables)
    {
       char variables[4096] = {0};
+
       strlcpy(variables, shader->variable[0].id, sizeof(variables));
+
       for (i = 1; i < shader->variables; i++)
       {
          strlcat(variables, ";", sizeof(variables));
@@ -728,10 +723,11 @@ void gfx_shader_write_conf_cgp(config_file_t *conf,
 enum rarch_shader_type gfx_shader_parse_type(const char *path,
       enum rarch_shader_type fallback)
 {
+   const char *ext = NULL;
    if (!path)
       return fallback;
 
-   const char *ext = path_get_extension(path);
+   ext = path_get_extension(path);
 
    if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
       return RARCH_SHADER_CG;
