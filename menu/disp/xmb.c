@@ -237,6 +237,7 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
 static void xmb_draw_text(const char *str, float x,
       float y, float scale_factor, float alpha)
 {
+   gl_t *gl;
    uint8_t a8 = 0;
    struct font_params params = {0};
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
@@ -250,7 +251,7 @@ static void xmb_draw_text(const char *str, float x,
    if (a8 == 0)
       return;
 
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   gl = (gl_t*)driver_video_resolve(NULL);
 
    if (!gl)
       return;
@@ -276,9 +277,24 @@ static void xmb_draw_text(const char *str, float x,
 
 static void xmb_render_background(bool force_transparency)
 {
-   float alpha = 0.75f;
-   gl_t *gl = NULL;
-   xmb_handle_t *xmb = NULL;
+   static const GLfloat vertex[] = {
+      0, 0,
+      1, 0,
+      0, 1,
+      1, 1,
+   };
+
+   static const GLfloat tex_coord[] = {
+      0, 1,
+      1, 1,
+      0, 0,
+      1, 0,
+   };
+
+   float alpha              = 0.75f;
+   gl_t *gl                 = NULL;
+   xmb_handle_t *xmb        = NULL;
+   struct gl_coords coords;
 
    if (!driver.menu)
       return;
@@ -312,21 +328,7 @@ static void xmb_render_background(bool force_transparency)
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
-   static const GLfloat vertex[] = {
-      0, 0,
-      1, 0,
-      0, 1,
-      1, 1,
-   };
 
-   static const GLfloat tex_coord[] = {
-      0, 1,
-      1, 1,
-      0, 0,
-      1, 0,
-   };
-
-   struct gl_coords coords;
    coords.vertices = 4;
    coords.vertex = vertex;
    coords.tex_coord = tex_coord;
@@ -359,8 +361,6 @@ static void xmb_render_background(bool force_transparency)
 
 static void xmb_get_message(const char *message)
 {
-   size_t i;
-   (void)i;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb || !message || !*message)
@@ -371,24 +371,27 @@ static void xmb_get_message(const char *message)
 
 static void xmb_render_messagebox(const char *message)
 {
+   int x, y;
    unsigned i;
+   struct string_list *list = NULL;
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!gl || !xmb)
       return;
 
-   struct string_list *list = string_split(message, "\n");
+   list = string_split(message, "\n");
    if (!list)
       return;
+
    if (list->elems == 0)
    {
       string_list_free(list);
       return;
    }
 
-   int x = gl->win_width / 2 - strlen(list->elems[0].data) * xmb->font_size / 4;
-   int y = gl->win_height / 2 - list->size * xmb->font_size / 2;
+   x = gl->win_width / 2 - strlen(list->elems[0].data) * xmb->font_size / 4;
+   y = gl->win_height / 2 - list->size * xmb->font_size / 2;
 
    for (i = 0; i < list->size; i++)
    {
@@ -456,10 +459,16 @@ static void xmb_list_open_old(file_list_t *list, int dir, size_t current)
 
    for (i = 0; i < file_list_get_size(list); i++)
    {
-      xmb_node_t *node = NULL;
-      node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
-      float ia = i == current ? xmb->i_active_alpha : 0;
-      if (dir == -1) ia = 0;
+      float ia = 0;
+      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+
+      if (!node)
+         continue;
+
+      if (i == current)
+         ia = xmb->i_active_alpha;
+      if (dir == -1)
+         ia = 0;
       add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
       add_tween(XMB_DELAY, 0, &node->label_alpha, &inOutQuad, NULL);
       //if (i == current)
@@ -479,6 +488,7 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
 
    for (i = 0; i < file_list_get_size(list); i++)
    {
+      float iy = 0;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
        
       if (!xmb)
@@ -491,8 +501,6 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
          node->x = xmb->icon_size*dir*2;
       //else
       //   node->x = xmb->icon_size*dir;
-
-      float iy = 0;
 
       if (i < current)
          if (xmb->depth > 1)
@@ -512,12 +520,13 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
    }
    for (i = 0; i < file_list_get_size(list); i++)
    {
+      float ia;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
        
       if (!xmb)
           continue;
 
-      float ia = i == current ? xmb->i_active_alpha : xmb->i_passive_alpha;
+      ia = (i == current) ? xmb->i_active_alpha : xmb->i_passive_alpha;
       add_tween(XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
       add_tween(XMB_DELAY, ia, &node->label_alpha,  &inOutQuad, NULL);
       add_tween(XMB_DELAY, 0, &node->x, &inOutQuad, NULL);
@@ -647,6 +656,7 @@ static void xmb_list_switch_new(file_list_t *list, int dir, size_t current)
 
    for (i = 0; i < file_list_get_size(list); i++)
    {
+      float ia = 0.5;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
 
       if (!xmb)
@@ -656,7 +666,8 @@ static void xmb_list_switch_new(file_list_t *list, int dir, size_t current)
       node->alpha = 0;
       node->label_alpha = 0;
 
-      float ia = (i == current) ? 1.0 : 0.5;
+      if (i == current)
+         ia = 1.0;
       add_tween(XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
       add_tween(XMB_DELAY, ia, &node->label_alpha,  &inOutQuad, NULL);
       add_tween(XMB_DELAY, 0,  &node->x, &inOutQuad, NULL);
@@ -716,13 +727,14 @@ static void xmb_populate_entries(void *data, const char *path,
 
       for (j = 0; j < xmb->num_categories; j++)
       {
+         float ia, iz;
          xmb_node_t *node = j ? xmb_node_for_core(j-1) : &xmb->settings_node;
 
          if (!node)
             continue;
 
-         float ia = j == xmb->active_category ? xmb->c_active_alpha : xmb->c_passive_alpha;
-         float iz = j == xmb->active_category ? xmb->c_active_zoom : xmb->c_passive_zoom;
+         ia = (j == xmb->active_category) ? xmb->c_active_alpha : xmb->c_passive_alpha;
+         iz = (j == xmb->active_category) ? xmb->c_active_zoom : xmb->c_passive_zoom;
          add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
          add_tween(XMB_DELAY, iz, &node->zoom, &inOutQuad, NULL);
       }
@@ -745,13 +757,14 @@ static void xmb_populate_entries(void *data, const char *path,
 
    for (j = 0; j < xmb->num_categories; j++)
    {
+      float ia;
       xmb_node_t *node = j ? xmb_node_for_core(j-1) : &xmb->settings_node;
 
       if (!node)
          continue;
 
-      float ia = j == xmb->active_category ? xmb->c_active_alpha
-            : xmb->depth <= 1 ? xmb->c_passive_alpha : 0;
+      ia = (j == xmb->active_category) ? xmb->c_active_alpha
+            : (xmb->depth <= 1) ? xmb->c_passive_alpha : 0;
       add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
    }
 
@@ -777,6 +790,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
+   xmb_node_t *core_node = NULL;
    size_t end = file_list_get_size(list);
 
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
@@ -785,8 +799,8 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
 
    file_list_get_last(stack, &dir, &label, &menu_type);
 
-   xmb_node_t *core_node = xmb->active_category ?
-         xmb_node_for_core(cat_selection_ptr - 1) : NULL;
+   if (xmb->active_category)
+      core_node = xmb_node_for_core(cat_selection_ptr - 1);
 
    for (i = 0; i < end; i++)
    {
@@ -841,7 +855,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             icon = xmb->textures[XMB_TEXTURE_RELOAD].id;
             break;
          case MENU_SETTING_ACTION:
-            icon = xmb->depth == 3 ?
+            icon = (xmb->depth == 3) ?
                   xmb->textures[XMB_TEXTURE_SUBSETTING].id :
                   xmb->textures[XMB_TEXTURE_SETTING].id;
             break;
@@ -914,6 +928,8 @@ static void xmb_frame(void)
 {
    int i, depth;
    char title_msg[64];
+   const char *core_name = NULL;
+   const char *core_version = NULL;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
@@ -927,7 +943,8 @@ static void xmb_frame(void)
 
    xmb_render_background(false);
 
-   const char *core_name = g_extern.menu.info.library_name;
+   core_name = g_extern.menu.info.library_name;
+
    if (!core_name)
       core_name = g_extern.system.info.library_name;
    if (!core_name)
@@ -936,7 +953,8 @@ static void xmb_frame(void)
    xmb_draw_text(
          xmb->title, xmb->title_margin_left, xmb->title_margin_top, 1, 1);
 
-   const char *core_version = g_extern.menu.info.library_version;
+   core_version = g_extern.menu.info.library_version;
+
    if (!core_version)
       core_version = g_extern.system.info.library_version;
    if (!core_version)
@@ -1026,9 +1044,7 @@ static void xmb_init_core_info(void *data)
    core_info_list_free(g_extern.core_info);
    g_extern.core_info = NULL;
    if (*g_settings.libretro_directory)
-   {
       g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
-   }
 }
 
 static void xmb_update_core_info(void *data)
@@ -1041,6 +1057,7 @@ static void *xmb_init(void)
    menu_handle_t *menu = NULL;
    xmb_handle_t *xmb = NULL;
    const video_driver_t *video_driver = NULL;
+   float scale_factor = 1;
    gl_t *gl = (gl_t*)driver_video_resolve(&video_driver);
 
    if (video_driver != &video_gl || !gl)
@@ -1091,13 +1108,18 @@ static void *xmb_init(void)
    xmb->active_item_factor   = 3.0;
    xmb->under_item_offset    = 5.0;
 
-   float scale_factor = 1;
-   if      (gl->win_width >= 3840) scale_factor = 2.0;
-   else if (gl->win_width >= 2560) scale_factor = 1.5;
-   else if (gl->win_width >= 1920) scale_factor = 1.0;
-   else if (gl->win_width >= 1280) scale_factor = 0.75;
-   else if (gl->win_width >=  640) scale_factor = 0.5;
-   else if (gl->win_width >=  320) scale_factor = 0.25;
+   if (gl->win_width >= 3840)
+      scale_factor = 2.0;
+   else if (gl->win_width >= 2560)
+      scale_factor = 1.5;
+   else if (gl->win_width >= 1920)
+      scale_factor = 1.0;
+   else if (gl->win_width >= 1280)
+      scale_factor = 0.75;
+   else if (gl->win_width >=  640)
+      scale_factor = 0.5;
+   else if (gl->win_width >=  320)
+      scale_factor = 0.25;
 
    strlcpy(xmb->icon_dir, "256", sizeof(xmb->icon_dir));
 
@@ -1166,6 +1188,8 @@ static void xmb_context_reset(void *data)
          fontpath[PATH_MAX_LENGTH], core_id[PATH_MAX_LENGTH], texturepath[PATH_MAX_LENGTH],
          content_texturepath[PATH_MAX_LENGTH];
 
+   core_info_t* info = NULL;
+   core_info_list_t* info_list = NULL;
    gl_t *gl = NULL;
    xmb_handle_t *xmb = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
@@ -1241,8 +1265,7 @@ static void xmb_context_reset(void *data)
    xmb->settings_node.alpha = xmb->c_active_alpha;
    xmb->settings_node.zoom = xmb->c_active_zoom;
 
-   core_info_list_t* info_list = (core_info_list_t*)g_extern.core_info;
-   core_info_t* info = NULL;
+   info_list = (core_info_list_t*)g_extern.core_info;
 
    if (!info_list)
       return;
@@ -1290,8 +1313,9 @@ static void xmb_navigation_clear(void *data, bool pending_push)
 {
    (void)data;
 
-   if (!pending_push)
-      xmb_selection_pointer_changed();
+   if (pending_push)
+      return;
+   xmb_selection_pointer_changed();
 }
 
 static void xmb_navigation_decrement(void *data)
@@ -1342,7 +1366,9 @@ static void xmb_navigation_ascend_alphabet(void *data, size_t *unused)
 static void xmb_list_insert(void *data,
       const char *path, const char *unused, size_t list_size)
 {
+   float iy;
    int current = 0, i = list_size;
+   xmb_node_t *node = NULL;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
    file_list_t *list = (file_list_t*)data;
 
@@ -1357,14 +1383,14 @@ static void xmb_list_insert(void *data,
       return;
    }
 
-   xmb_node_t *node = (xmb_node_t*)list->list[i].userdata;
+   node = (xmb_node_t*)list->list[i].userdata;
 
    if (!node)
       return;
 
    current = driver.menu->selection_ptr;
 
-   float iy = (i < current) ? xmb->vspacing *
+   iy = (i < current) ? xmb->vspacing *
       (i - current + xmb->above_item_offset) :
       xmb->vspacing * (i - current + xmb->under_item_offset);
 
@@ -1398,6 +1424,7 @@ static void xmb_list_clear(void *data)
 
 static void xmb_list_cache(bool horizontal, unsigned action)
 {
+   size_t stack_size;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
@@ -1413,7 +1440,8 @@ static void xmb_list_cache(bool horizontal, unsigned action)
    xmb->cat_selection_ptr_old = driver.menu->cat_selection_ptr;
    driver.menu->cat_selection_ptr += action == MENU_ACTION_LEFT ? -1 : 1;
 
-   size_t stack_size = driver.menu->menu_list->menu_stack->size;
+   stack_size = driver.menu->menu_list->menu_stack->size;
+
    if (driver.menu->cat_selection_ptr == 0)
    {
       strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Main Menu", PATH_MAX_LENGTH);

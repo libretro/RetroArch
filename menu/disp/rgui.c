@@ -45,6 +45,10 @@ typedef struct rgui_handle
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {
    int y, x;
+
+   if (!glyph)
+      return;
+
    for (y = 0; y < FONT_HEIGHT; y++)
    {
       for (x = 0; x < FONT_WIDTH; x++)
@@ -65,9 +69,12 @@ static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 
 static uint16_t gray_filler(unsigned x, unsigned y)
 {
+   unsigned col;
+
    x >>= 1;
    y >>= 1;
-   unsigned col = ((x + y) & 1) + 1;
+   col = ((x + y) & 1) + 1;
+
 #if defined(GEKKO) || defined(PSP)
    return (6 << 12) | (col << 8) | (col << 4) | (col << 0);
 #else
@@ -77,9 +84,11 @@ static uint16_t gray_filler(unsigned x, unsigned y)
 
 static uint16_t green_filler(unsigned x, unsigned y)
 {
+   unsigned col;
+
    x >>= 1;
    y >>= 1;
-   unsigned col = ((x + y) & 1) + 1;
+   col = ((x + y) & 1) + 1;
 #if defined(GEKKO) || defined(PSP)
    return (6 << 12) | (col << 8) | (col << 5) | (col << 0);
 #else
@@ -107,6 +116,10 @@ static void color_rect(uint16_t *buf, unsigned pitch,
       uint16_t color)
 {
    unsigned j, i;
+
+   if (!buf)
+      return;
+
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
          if (i < driver.menu->width && j < driver.menu->height)
@@ -200,6 +213,9 @@ static void rgui_render_background(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
+   if (!rgui)
+      return;
+
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          0, 0, driver.menu->width, driver.menu->height, gray_filler);
 
@@ -248,7 +264,7 @@ static void rgui_render_messagebox(const char *message)
    for (i = 0; i < list->size; i++)
    {
       unsigned line_width;
-      char     *msg = list->elems[i].data;
+      char     *msg   = list->elems[i].data;
       unsigned msglen = strlen(msg);
 
       if (msglen > RGUI_TERM_WIDTH)
@@ -297,11 +313,12 @@ static void rgui_render_messagebox(const char *message)
 
 static void rgui_blit_cursor(void* data)
 {
-   int16_t x, y;
    rgui_handle_t *rgui = (rgui_handle_t*)data;
+   int16_t x = driver.menu->mouse.x;
+   int16_t y = driver.menu->mouse.y;
 
-   x = driver.menu->mouse.x;
-   y = driver.menu->mouse.y;
+   if (!rgui)
+      return;
 
    color_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          x, y-5, 1, 11, 0xFFFF);
@@ -317,6 +334,8 @@ static void rgui_render(void)
    const char *dir     = NULL;
    const char *label   = NULL;
    rgui_handle_t *rgui = NULL;
+   const char *core_name = NULL;
+   const char *core_version = NULL;
 
    if (driver.menu->need_refresh 
          && g_extern.is_menu
@@ -361,13 +380,13 @@ static void rgui_render(void)
          g_extern.frame_count / RGUI_TERM_START_X, title, true);
    blit_line(RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, true);
 
-   const char *core_name = g_extern.menu.info.library_name;
+   core_name = g_extern.menu.info.library_name;
    if (!core_name)
       core_name = g_extern.system.info.library_name;
    if (!core_name)
       core_name = "No Core";
 
-   const char *core_version = g_extern.menu.info.library_version;
+   core_version = g_extern.menu.info.library_version;
    if (!core_version)
       core_version = g_extern.system.info.library_version;
    if (!core_version)

@@ -41,6 +41,7 @@ typedef struct glui_handle
 
 static void glui_blit_line(float x, float y, const char *message, bool green)
 {
+   struct font_params params = {0};
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
 
    if (!driver.menu || !gl)
@@ -48,7 +49,6 @@ static void glui_blit_line(float x, float y, const char *message, bool green)
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 
-   struct font_params params = {0};
    params.x = x / gl->win_width;
    params.y = 1.0f - y / gl->win_height;
 
@@ -65,6 +65,20 @@ static void glui_blit_line(float x, float y, const char *message, bool green)
 
 static void glui_render_background(bool force_transparency)
 {
+   static const GLfloat vertex[] = {
+      0, 0,
+      1, 0,
+      0, 1,
+      1, 1,
+   };
+
+   static const GLfloat tex_coord[] = {
+      0, 1,
+      1, 1,
+      0, 0,
+      1, 0,
+   };
+   struct gl_coords coords;
    float alpha = 0.75f;
    gl_t *gl = NULL;
    glui_handle_t *glui = NULL;
@@ -98,24 +112,9 @@ static void glui_render_background(bool force_transparency)
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
-   static const GLfloat vertex[] = {
-      0, 0,
-      1, 0,
-      0, 1,
-      1, 1,
-   };
-
-   static const GLfloat tex_coord[] = {
-      0, 1,
-      1, 1,
-      0, 0,
-      1, 0,
-   };
-
-   struct gl_coords coords;
-   coords.vertices = 4;
-   coords.vertex = vertex;
-   coords.tex_coord = tex_coord;
+   coords.vertices      = 4;
+   coords.vertex        = vertex;
+   coords.tex_coord     = tex_coord;
    coords.lut_tex_coord = tex_coord;
 
    if ((g_settings.menu.pause_libretro
@@ -145,31 +144,6 @@ static void glui_render_background(bool force_transparency)
 
 static void glui_draw_cursor(float x, float y)
 {
-   gl_t *gl = NULL;
-   glui_handle_t *glui = NULL;
-
-   if (!driver.menu)
-      return;
-
-   glui = (glui_handle_t*)driver.menu->userdata;
-
-   if (!glui)
-      return;
-
-   GLfloat color[] = {
-      1.0f, 1.0f, 1.0f, 1.0f,
-      1.0f, 1.0f, 1.0f, 1.0f,
-      1.0f, 1.0f, 1.0f, 1.0f,
-      1.0f, 1.0f, 1.0f, 1.0f,
-   };
-
-   gl = (gl_t*)driver_video_resolve(NULL);
-
-   if (!gl)
-      return;
-
-   glViewport(x - 5, gl->win_height - y, 11, 11);
-
    static const GLfloat vertex[] = {
       0, 0,
       1, 0,
@@ -183,11 +157,34 @@ static void glui_draw_cursor(float x, float y)
       0, 0,
       1, 0,
    };
-
+   GLfloat color[] = {
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+   };
    struct gl_coords coords;
-   coords.vertices = 4;
-   coords.vertex = vertex;
-   coords.tex_coord = tex_coord;
+   gl_t *gl = NULL;
+   glui_handle_t *glui = NULL;
+
+   if (!driver.menu)
+      return;
+
+   glui = (glui_handle_t*)driver.menu->userdata;
+
+   if (!glui)
+      return;
+
+   gl = (gl_t*)driver_video_resolve(NULL);
+
+   if (!gl)
+      return;
+
+   glViewport(x - 5, gl->win_height - y, 11, 11);
+
+   coords.vertices      = 4;
+   coords.vertex        = vertex;
+   coords.tex_coord     = tex_coord;
    coords.lut_tex_coord = tex_coord;
 
    coords.color = color;
@@ -272,6 +269,8 @@ static void glui_frame(void)
    size_t end;
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
    glui_handle_t *glui = NULL;
+   const char *core_name = NULL;
+   const char *core_version = NULL;
 
    if (!driver.menu || !gl)
       return;
@@ -288,8 +287,8 @@ static void glui_frame(void)
 
    glui->line_height = g_settings.video.font_size * 4 / 3;
    glui->glyph_width = glui->line_height / 2;
-   glui->margin = gl->win_width / 20 ;
-   glui->term_width = (gl->win_width - glui->margin * 2) / glui->glyph_width;
+   glui->margin      = gl->win_width / 20 ;
+   glui->term_width  = (gl->win_width - glui->margin * 2) / glui->glyph_width;
    glui->term_height = (gl->win_height - glui->margin * 2) / glui->line_height - 2;
 
    driver.menu->mouse.ptr = (driver.menu->mouse.y - glui->margin) /
@@ -324,13 +323,13 @@ static void glui_frame(void)
    glui_blit_line(glui->margin * 2, glui->margin + glui->line_height,
          title_buf, true);
 
-   const char *core_name = g_extern.menu.info.library_name;
+   core_name = g_extern.menu.info.library_name;
    if (!core_name)
       core_name = g_extern.system.info.library_name;
    if (!core_name)
       core_name = "No Core";
 
-   const char *core_version = g_extern.menu.info.library_version;
+   core_version = g_extern.menu.info.library_version;
    if (!core_version)
       core_version = g_extern.system.info.library_version;
    if (!core_version)
@@ -427,10 +426,9 @@ static void glui_init_core_info(void *data)
 
    core_info_list_free(g_extern.core_info);
    g_extern.core_info = NULL;
+
    if (*g_settings.libretro_directory)
-   {
       g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
-   }
 }
 
 static void glui_update_core_info(void *data)
@@ -490,14 +488,14 @@ static void glui_free(void *data)
 
 static GLuint glui_png_texture_load_(const char * file_name)
 {
+   GLuint texture = 0;
+   struct texture_image ti = {0};
    if (! path_file_exists(file_name))
       return 0;
 
-   struct texture_image ti = {0};
    texture_image_load(&ti, file_name);
 
    /* Generate the OpenGL texture object */
-   GLuint texture = 0;
    glGenTextures(1, &texture);
    glBindTexture(GL_TEXTURE_2D, texture);
    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ti.width, ti.height, 0,
