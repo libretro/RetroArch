@@ -1833,7 +1833,7 @@ static int deferred_push_settings(void *data, void *userdata,
    {
       if (setting->type == ST_GROUP)
          menu_list_push(list, setting->short_description,
-               setting->name, setting_set_flags(setting), 0);
+               setting->name, menu_entries_setting_set_flags(setting), 0);
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
@@ -1878,7 +1878,7 @@ static int deferred_push_category(void *data, void *userdata,
          continue;
 
       menu_list_push(list, setting->short_description,
-            setting->name, setting_set_flags(setting), 0);
+            setting->name, menu_entries_setting_set_flags(setting), 0);
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
@@ -2248,10 +2248,10 @@ static int deferred_push_content_list(void *data, void *userdata,
 
    menu_navigation_clear(driver.menu, true);
    if (driver.menu->cat_selection_ptr == 0)
-      return entries_push_main_menu_list(driver.menu, driver.menu->menu_list->selection_buf,
+      return menu_entries_push_main_menu_list(driver.menu, driver.menu->menu_list->selection_buf,
          "", "Main Menu", 0);
    else
-      return entries_push_horizontal_menu_list(driver.menu, driver.menu->menu_list->selection_buf,
+      return menu_entries_push_horizontal_menu_list(driver.menu, driver.menu->menu_list->selection_buf,
          "", "Horizontal Menu", 0);
 }
 

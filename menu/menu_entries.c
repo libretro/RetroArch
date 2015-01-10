@@ -102,7 +102,7 @@ void menu_entries_build_scroll_indices(file_list_t *list)
       list->size - 1;
 }
 
-int setting_set_flags(rarch_setting_t *setting)
+int menu_entries_setting_set_flags(rarch_setting_t *setting)
 {
    if (!setting)
       return 0;
@@ -129,7 +129,7 @@ int setting_set_flags(rarch_setting_t *setting)
    return 0;
 }
 
-int entries_push_main_menu_list(menu_handle_t *menu,
+int menu_entries_push_main_menu_list(menu_handle_t *menu,
       file_list_t *list,
       const char *path, const char *label,
       unsigned menu_type)
@@ -156,7 +156,7 @@ int entries_push_main_menu_list(menu_handle_t *menu,
          continue;
 
       menu_list_push(list, setting->short_description,
-            setting->name, setting_set_flags(setting), 0);
+            setting->name, menu_entries_setting_set_flags(setting), 0);
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
@@ -196,7 +196,7 @@ static void content_list_push(void *data, core_info_t *info, const char* path)
    string_list_free(list);
 }
 
-int entries_push_horizontal_menu_list(menu_handle_t *menu,
+int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
       file_list_t *list,
       const char *path, const char *label,
       unsigned menu_type)
@@ -485,9 +485,9 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
    menu_list_get_last_stack(driver.menu->menu_list, &path, &label, &type);
 
    if (!strcmp(label, "Main Menu"))
-      return entries_push_main_menu_list(driver.menu, list, path, label, type);
+      return menu_entries_push_main_menu_list(driver.menu, list, path, label, type);
    else if (!strcmp(label, "Horizontal Menu"))
-      return entries_push_horizontal_menu_list(driver.menu, list, path, label, type);
+      return menu_entries_push_horizontal_menu_list(driver.menu, list, path, label, type);
 
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_last_stack_actiondata(driver.menu->menu_list);
@@ -508,7 +508,7 @@ bool menu_entries_init(menu_handle_t *menu)
 
    menu_list_push_stack(menu->menu_list, "", "Main Menu", MENU_SETTINGS, 0);
    menu_navigation_clear(menu, true);
-   entries_push_main_menu_list(menu, menu->menu_list->selection_buf,
+   menu_entries_push_main_menu_list(menu, menu->menu_list->selection_buf,
          "", "Main Menu", 0);
 
    return true;
