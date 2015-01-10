@@ -148,10 +148,13 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
    XuiCreateFont(L"Arial Unicode MS", 14, XUI_FONT_STYLE_NORMAL, 0, &m_menufont);
 
-   char str[PATH_MAX_LENGTH];
-   snprintf(str, sizeof(str), "%s - %s", PACKAGE_VERSION, g_extern.title_buf);
-   mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
-   XuiTextElementSetText(m_menutitlebottom, strw_buffer);
+   if (XuiHandleIsValid(m_menutitlebottom))
+   {
+	   char str[PATH_MAX_LENGTH];
+	   snprintf(str, sizeof(str), "%s - %s", PACKAGE_VERSION, g_extern.title_buf);
+	   mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
+	   XuiTextElementSetText(m_menutitlebottom, strw_buffer);
+   }
 
    return 0;
 }
@@ -355,151 +358,131 @@ static void rmenu_xui_render_messagebox(const char *message)
    msg_queue_push(xui_msg_queue, message, 2, 1);
 }
 
+static void rmenu_xui_set_list_text(int index, const wchar_t* leftText, const wchar_t* rightText)
+{
+	HXUIOBJ hVisual = NULL, hControl = NULL, hTextLeft = NULL, hTextRight = NULL, hRightEdge = NULL;
+	LPCWSTR currText;
+	float width, height;
+	XUIRect* pRect;
+	D3DXVECTOR3 textPos, rightEdgePos;
+
+	hControl = XuiListGetItemControl(m_menulist, index);
+	if (XuiHandleIsValid(hControl))
+		XuiControlGetVisual(hControl, &hVisual);
+	if(XuiHandleIsValid(hVisual))
+	{		
+		XuiElementGetChildById(hVisual, L"LeftText", &hTextLeft);
+		if(XuiHandleIsValid(hTextLeft))
+		{
+			currText = XuiTextElementGetText(hTextLeft);
+			XuiElementGetBounds(hTextLeft, &width, &height);
+			if (!currText || wcscmp(currText, leftText) || width <= 5)
+			{
+				pRect = new XUIRect();
+				XuiMeasureText(m_menufont, leftText, -1, XUI_FONT_STYLE_NO_WORDWRAP, 0, pRect);
+				XuiElementSetBounds(hTextLeft, pRect->GetWidth(), height);
+			}
+			XuiTextElementSetText(hTextLeft, leftText);
+			XuiElementGetChildById(hVisual, L"RightText", &hTextRight);
+			if(XuiHandleIsValid(hTextRight)) 
+			{
+				currText = XuiTextElementGetText(hTextRight);
+				XuiElementGetBounds(hTextRight, &width, &height);
+				if (!currText || wcscmp(currText, rightText) || width <= 5)
+				{
+					pRect = new XUIRect();
+					XuiMeasureText(m_menufont, rightText, -1, XUI_FONT_STYLE_NO_WORDWRAP, 0, pRect);				
+					XuiElementSetBounds(hTextRight, pRect->GetWidth(), height);
+					XuiElementGetPosition(hTextLeft, &textPos);
+
+					XuiElementGetChildById(hVisual, L"graphic_CapRight", &hRightEdge);
+					XuiElementGetPosition(hRightEdge, &rightEdgePos);
+
+					textPos.x = rightEdgePos.x - (pRect->GetWidth() + textPos.x);
+					XuiElementSetPosition(hTextRight, &textPos);
+				}
+				XuiTextElementSetText(hTextRight, rightText);
+			}
+		}
+	}
+}
+
 static void rmenu_xui_render(void)
 {
-   size_t begin, end;
-   char title[256];
-   const char *dir = NULL;
-   const char *label = NULL;
-   unsigned menu_type = 0;
+	size_t end, i;
+	char title[PATH_MAX_LENGTH];
+	const char *dir = NULL, *label = NULL;
+	unsigned menu_type = 0;
 
-   (void)begin;
+	if (!driver.menu || driver.menu->need_refresh && 
+		g_extern.is_menu && !driver.menu->msg_force)
+		return;
 
-   if (!driver.menu || driver.menu->need_refresh && 
-         g_extern.is_menu && !driver.menu->msg_force)
-      return;
+	rmenu_xui_render_background();
 
-   end   = menu_list_get_size(driver.menu->menu_list);
+	menu_list_get_last_stack(driver.menu->menu_list, &dir, &label, &menu_type);
 
-   rmenu_xui_render_background();
+	if (XuiHandleIsValid(m_menutitle))
+	{
+		get_title(label, dir, menu_type, title, sizeof(title));
+		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
+		XuiTextElementSetText(m_menutitle, strw_buffer);
+		menu_ticker_line(title, RXUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
+	}
 
-   menu_list_get_last_stack(driver.menu->menu_list, &dir,
-         &label, &menu_type);
+	if (XuiHandleIsValid(m_menutitle))
+	{
+		const char *core_name = g_extern.menu.info.library_name;
+		if (!core_name)
+			core_name = g_extern.system.info.library_name;
+		if (!core_name)
+			core_name = "No Core";
 
-   get_title(label, dir, menu_type, title, sizeof(title));
+		const char *core_version = g_extern.menu.info.library_version;
+		if (!core_version)
+			core_version = g_extern.system.info.library_version;
+		if (!core_version)
+			core_version = "";
 
-   mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
-   XuiTextElementSetText(m_menutitle, strw_buffer);
+		snprintf(title, sizeof(title), "%s - %s %s",
+			PACKAGE_VERSION, core_name, core_version);
 
-   char title_buf[256];
-   menu_ticker_line(title_buf, RXUI_TERM_WIDTH - 3,
-         g_extern.frame_count / 15, title, true);
-   blit_line(RXUI_TERM_START_X + 15, 15, title_buf, true);
+		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
+		XuiTextElementSetText(m_menutitlebottom, strw_buffer);
+	}
 
-   char title_msg[64];
-   const char *core_name = g_extern.menu.info.library_name;
-   if (!core_name)
-      core_name = g_extern.system.info.library_name;
-   if (!core_name)
-      core_name = "No Core";
+	end = menu_list_get_size(driver.menu->menu_list);
+	for (i = 0; i < end; i++)
+	{
+		wchar_t msg_left[PATH_MAX_LENGTH], msg_right[PATH_MAX_LENGTH];
+		char type_str[PATH_MAX_LENGTH], entry_title_buf[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
+		const char *path = NULL, *entry_label = NULL;
+		unsigned type = 0, w = 0;
 
-   const char *core_version = g_extern.menu.info.library_version;
-   if (!core_version)
-      core_version = g_extern.system.info.library_version;
-   if (!core_version)
-      core_version = "";
+		menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
+			&entry_label, &type);
 
-   snprintf(title_msg, sizeof(title_msg), "%s - %s %s",
-         PACKAGE_VERSION, core_name, core_version);
-         
-   mbstowcs(strw_buffer, title_msg, sizeof(strw_buffer) / sizeof(wchar_t));
-   XuiTextElementSetText(m_menutitlebottom, strw_buffer);
+		disp_set_label(driver.menu->menu_list->selection_buf,
+			&w, type, i, label,
+			type_str, sizeof(type_str), 
+			entry_label, path,
+			path_buf, sizeof(path_buf));
 
-   unsigned x, y;
-   size_t i;
+		mbstowcs(msg_left, path_buf, sizeof(msg_left) / sizeof(wchar_t));
+		mbstowcs(msg_right, type_str, sizeof(msg_right) / sizeof(wchar_t));
+		rmenu_xui_set_list_text(i, msg_left, msg_right);
+	}
+	XuiListSetCurSelVisible(m_menulist, driver.menu->selection_ptr);
 
-   x = RXUI_TERM_START_X;
-   y = RXUI_TERM_START_Y;
-
-   for (i = 0; i < end; i++/*, y += FONT_HEIGHT_STRIDE */)
-   {
-      char type_str[PATH_MAX_LENGTH],entry_title_buf[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
-      const char *path = NULL, *entry_label = NULL;
-      unsigned type = 0, w = 0;
-      bool selected = false;
-
-	  (void)entry_title_buf;
-
-      menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
-            &entry_label, &type);
-
-      disp_set_label(driver.menu->menu_list->selection_buf,
-            &w, type, i, label,
-            type_str, sizeof(type_str), 
-            entry_label, path,
-            path_buf, sizeof(path_buf));
-
-      selected = (i == driver.menu->selection_ptr);
-
-#if 0
-      if ((type == MENU_FILE_PLAIN || type == MENU_FILE_DIRECTORY))
-         menu_ticker_line(entry_title_buf, RXUI_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
-      else
-         menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
-#endif
-	  HXUIOBJ hVisual = NULL;
-	  HXUIOBJ hControl = XuiListGetItemControl(m_menulist, i);
-	  if (XuiHandleIsValid(hControl))
-		  XuiControlGetVisual(hControl, &hVisual);
-	  if(XuiHandleIsValid(hVisual)) 
-	  {
-		 HXUIOBJ hTextLeft = NULL, hTextRight = NULL;
-		 XuiElementGetChildById(hVisual, L"LeftText", &hTextLeft);
-		 XuiElementGetChildById(hVisual, L"RightText", &hTextRight);
-		 wchar_t msg_w[256];
-		 if(XuiHandleIsValid(hTextLeft))
-		 {
-			 mbstowcs(msg_w, path_buf, sizeof(msg_w) / sizeof(wchar_t));
-			 LPCWSTR currText = XuiTextElementGetText(hTextLeft);
-			 XuiTextElementSetText(hTextLeft, msg_w);
-			 float width, height;
-			 XuiElementGetBounds(hTextLeft, &width, &height);
-			 if (!currText || wcscmp(currText, msg_w) || width <= 1)
-			 {
-				 XUIRect* pRect = new XUIRect();
-				 XuiMeasureText(m_menufont, msg_w, -1, XUI_FONT_STYLE_NO_WORDWRAP, 0, pRect);
-				 if (width < pRect->GetWidth())
-					 XuiElementSetBounds(hTextLeft, pRect->GetWidth(), height);
-			 }
-		 }		 
-		 if(XuiHandleIsValid(hTextRight)) 
-		 {
-			 mbstowcs(msg_w, type_str, sizeof(msg_w) / sizeof(wchar_t));
-			 LPCWSTR currText = XuiTextElementGetText(hTextRight);
-			 XuiTextElementSetText(hTextRight, msg_w);
-			 float width, height;
-			 XuiElementGetBounds(hTextRight, &width, &height);
-			 if (!currText || wcscmp(currText, msg_w) || width <= 1) // Check if we need to adjust width
-			 {
-				 XUIRect* pRect = new XUIRect();
-				 XuiMeasureText(m_menufont, msg_w, -1, XUI_FONT_STYLE_NO_WORDWRAP, 0, pRect);
-				 
-				 XuiElementSetBounds(hTextRight, pRect->GetWidth(), height);
-
-				 D3DXVECTOR3 textPos, rPos;
-				 XuiElementGetPosition(hTextLeft, &textPos);
-
-				 HXUIOBJ hRightEdge = NULL;
-				 XuiElementGetChildById(hVisual, L"graphic_CapRight", &hRightEdge);
-				 XuiElementGetPosition(hRightEdge, &rPos);
-
-				 textPos.x = rPos.x - (pRect->GetWidth() + textPos.x);
-				 XuiElementSetPosition(hTextRight, &textPos);
-			 }
-		 }	  
-	  }
-   }
-   XuiListSetCurSelVisible(m_menulist, driver.menu->selection_ptr);
-
-   if (driver.menu->keyboard.display)
-   {
-      char msg[1024];
-      const char *str = *driver.menu->keyboard.buffer;
-      if (!str)
-         str = "";
-      snprintf(msg, sizeof(msg), "%s\n%s", driver.menu->keyboard.label, str);
-      rmenu_xui_render_messagebox(msg);
-   }
+	if (driver.menu->keyboard.display)
+	{
+		char msg[1024];
+		const char *str = *driver.menu->keyboard.buffer;
+		if (!str)
+			str = "";
+		snprintf(msg, sizeof(msg), "%s\n%s", driver.menu->keyboard.label, str);
+		rmenu_xui_render_messagebox(msg);			
+	}
 }
 
 static void rmenu_xui_populate_entries(void *data, const char *path,
