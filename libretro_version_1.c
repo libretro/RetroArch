@@ -413,7 +413,7 @@ static int16_t input_state(unsigned port, unsigned device,
       g_extern.bsv.movie_end = true;
    }
 
-   if (g_settings.input.remap_binds_enable)
+   if (g_settings.input.remap_binds_enable && id >=0 && id <= 16)
       id = g_settings.input.remap_ids[port][id];
 
    if (!driver.block_libretro_input)
