@@ -32,6 +32,17 @@
 #include "netplay.h"
 #endif
 
+/* Convenience macros. */
+#define check_oneshot_func(trigger_input) (check_is_oneshot(BIT64_GET(trigger_input, RARCH_FRAMEADVANCE), BIT64_GET(trigger_input, RARCH_REWIND)))
+#define check_slowmotion_func(input)      (check_slowmotion(BIT64_GET(input, RARCH_SLOWMOTION)))
+#define check_quit_key_func(input)        (BIT64_GET(input, RARCH_QUIT_KEY))
+#define check_pause_func(input)           (check_pause(BIT64_GET(input, RARCH_PAUSE_TOGGLE), BIT64_GET(input, RARCH_FRAMEADVANCE)))
+#define check_stateslots_func(trigger_input) (check_stateslots(BIT64_GET(trigger_input, RARCH_STATE_SLOT_PLUS), BIT64_GET(trigger_input, RARCH_STATE_SLOT_MINUS)))
+#define check_rewind_func(input)          (check_rewind(BIT64_GET(input, RARCH_REWIND)))
+#define check_fast_forward_button_func(input, old_input, trigger_input) (check_fast_forward_button(BIT64_GET(trigger_input, RARCH_FAST_FORWARD_KEY), BIT64_GET(input, RARCH_FAST_FORWARD_HOLD_KEY), BIT64_GET(old_input, RARCH_FAST_FORWARD_HOLD_KEY)))
+#define check_enter_menu_func(input)      (BIT64_GET(input, RARCH_MENU_TOGGLE))
+#define check_shader_dir_func(trigger_input) (check_shader_dir(BIT64_GET(trigger_input, RARCH_SHADER_NEXT), BIT64_GET(trigger_input, RARCH_SHADER_PREV)))
+
 /**
  * set_volume:
  * @gain      : amount of gain to be applied to current volume level.
