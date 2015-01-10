@@ -192,6 +192,8 @@ end:
 
 static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_t strength)
 {
+   int old_effect;
+   uint16_t old_strength;
    struct udev_joypad *pad = (struct udev_joypad*)&udev_pads[i];
 
    if (pad->fd < 0)
@@ -199,24 +201,31 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
    if (pad->num_effects < 2)
       return false;
 
-   uint16_t old_strength = pad->strength[effect];
+   old_strength = pad->strength[effect];
    if (old_strength == strength)
       return true;
 
-   int old_effect = pad->has_set_ff[effect] ? pad->effects[effect] : -1;
+   old_effect = pad->has_set_ff[effect] ? pad->effects[effect] : -1;
 
    if (strength && strength != pad->configured_strength[effect])
    {
       /* Create new or update old playing state. */
       struct ff_effect e;
+
       memset(&e, 0, sizeof(e));
       e.type = FF_RUMBLE;
       e.id = old_effect;
+
       switch (effect)
       {
-         case RETRO_RUMBLE_STRONG: e.u.rumble.strong_magnitude = strength; break;
-         case RETRO_RUMBLE_WEAK: e.u.rumble.weak_magnitude = strength; break;
-         default: return false;
+         case RETRO_RUMBLE_STRONG:
+            e.u.rumble.strong_magnitude = strength;
+            break;
+         case RETRO_RUMBLE_WEAK:
+            e.u.rumble.weak_magnitude = strength;
+            break;
+         default:
+            return false;
       }
 
       if (ioctl(pad->fd, EVIOCSFF, &e) < 0)
@@ -240,6 +249,7 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
       play.type = EV_FF;
       play.code = pad->effects[effect];
       play.value = !!strength;
+
       if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
       {
          RARCH_ERR("[udev]: Failed to play rumble effect #%u on pad #%u.\n",
@@ -267,13 +277,13 @@ static void udev_joypad_poll(void)
 
 static int open_joystick(const char *path)
 {
-   int fd = open(path, O_RDWR | O_NONBLOCK);
-   if (fd < 0)
-      return fd;
-
    unsigned long evbit[NBITS(EV_MAX)] = {0};
    unsigned long keybit[NBITS(KEY_MAX)] = {0};
    unsigned long absbit[NBITS(ABS_MAX)] = {0};
+   int fd = open(path, O_RDWR | O_NONBLOCK);
+
+   if (fd < 0)
+      return fd;
 
    if ((ioctl(fd, EVIOCGBIT(0, sizeof(evbit)), evbit) < 0) ||
          (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) ||
@@ -294,6 +304,7 @@ error:
 static int find_vacant_pad(void)
 {
    unsigned i;
+
    for (i = 0; i < MAX_USERS; i++)
       if (udev_pads[i].fd < 0)
          return i;
