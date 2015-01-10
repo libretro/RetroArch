@@ -800,8 +800,8 @@ void gl_set_viewport(gl_t *gl, unsigned width,
    }
    else if (gl->keep_aspect && !force_full)
    {
-      float desired_aspect = g_extern.system.aspect_ratio;
       float delta;
+      float desired_aspect = g_extern.system.aspect_ratio;
 
 #if defined(HAVE_MENU)
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
@@ -1421,15 +1421,14 @@ static void gl_pbo_async_readback(gl_t *gl)
 #if defined(HAVE_MENU)
 static inline void gl_draw_texture(gl_t *gl)
 {
-   if (!gl->menu_texture)
-      return;
-
    const GLfloat color[] = {
       1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
       1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
       1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
       1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
    };
+   if (!gl->menu_texture)
+      return;
 
    gl->coords.vertex = vertexes_flipped;
    gl->coords.tex_coord = tex_coords;
@@ -1463,10 +1462,10 @@ static inline void gl_draw_texture(gl_t *gl)
 static bool gl_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
+   gl_t *gl = (gl_t*)data;
+
    RARCH_PERFORMANCE_INIT(frame_run);
    RARCH_PERFORMANCE_START(frame_run);
-
-   gl_t *gl = (gl_t*)data;
 
    if (!gl)
       return true;
@@ -1954,6 +1953,9 @@ static inline void gl_set_texture_fmts(gl_t *gl, bool rgb32)
 static void gl_init_pbo_readback(gl_t *gl)
 {
    unsigned i;
+   struct scaler_ctx *scaler = NULL;
+
+   (void)scaler;
    /* Only bother with this if we're doing GPU recording.
     * Check g_extern.recording_enable and not 
     * driver.recording_data, because recording is 
@@ -1977,7 +1979,7 @@ static void gl_init_pbo_readback(gl_t *gl)
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
 #ifndef HAVE_OPENGLES3
-   struct scaler_ctx *scaler = &gl->pbo_readback_scaler;
+   scaler              = &gl->pbo_readback_scaler;
    scaler->in_width    = gl->vp.width;
    scaler->in_height   = gl->vp.height;
    scaler->out_width   = gl->vp.width;
@@ -2171,12 +2173,18 @@ static void gl_begin_debug(gl_t *gl)
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
    unsigned win_width, win_height;
+   bool force_smooth                  = false;
+   gl_t *gl                           = NULL;
    const gfx_ctx_driver_t *ctx_driver = NULL;
+   const char *vendor                 = NULL;
+   const char *renderer               = NULL;
+   const char *version                = NULL;
+   struct retro_hw_render_callback *hw_render = NULL;
 #ifdef _WIN32
    gfx_set_dwm();
 #endif
 
-   gl_t *gl = (gl_t*)calloc(1, sizeof(gl_t));
+   gl = (gl_t*)calloc(1, sizeof(gl_t));
    if (!gl)
       return NULL;
 
@@ -2216,11 +2224,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    /* Clear out potential error flags in case we use cached context. */
    glGetError(); 
 
-   const char *vendor = (const char*)glGetString(GL_VENDOR);
-   const char *renderer = (const char*)glGetString(GL_RENDERER);
-   RARCH_LOG("[GL]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
+   vendor   = (const char*)glGetString(GL_VENDOR);
+   renderer = (const char*)glGetString(GL_RENDERER);
+   version  = (const char*)glGetString(GL_VERSION);
 
-   const char *version = (const char*)glGetString(GL_VERSION);
+   RARCH_LOG("[GL]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
    RARCH_LOG("[GL]: Version: %s.\n", version);
 
 #ifndef RARCH_CONSOLE
@@ -2255,7 +2263,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->full_y = gl->win_height;
    }
 
-   struct retro_hw_render_callback *hw_render = &g_extern.system.hw_render_callback;
+   hw_render = &g_extern.system.hw_render_callback;
+
    gl->vertex_ptr = hw_render->bottom_left_origin ? vertexes : vertexes_flipped;
 
    /* Better pipelining with GPU due to synchronous glSubTexImage.
@@ -2265,6 +2274,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->textures = 4;
 #ifdef HAVE_FBO
    gl->hw_render_use = hw_render->context_type != RETRO_HW_CONTEXT_NONE;
+
    if (gl->hw_render_use)
    {
       /* All on GPU, no need to excessively
@@ -2320,7 +2330,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_set_shader_viewport(gl, 0);
    gl_set_shader_viewport(gl, 1);
 
-   bool force_smooth = false;
    gl->tex_mipmap = gl->shader->mipmap_input(1);
 
    if (gl->shader->filter_type(1, &force_smooth))
@@ -2436,9 +2445,9 @@ static bool gl_focus(void *data)
 {
    gl_t *gl = (gl_t*)data;
 
-   if (gl)
-      return gl->ctx_driver->has_focus(gl);
-   return false;
+   if (!gl)
+      return false;
+   return gl->ctx_driver->has_focus(gl);
 }
 
 static bool gl_has_windowed(void *data)
@@ -2453,6 +2462,8 @@ static bool gl_has_windowed(void *data)
 static void gl_update_tex_filter_frame(gl_t *gl)
 {
    unsigned i;
+   GLenum wrap_mode;
+   GLuint new_filt;
    bool smooth = false;
 
    if (!gl)
@@ -2461,12 +2472,12 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    context_bind_hw_render(gl, false);
    if (!gl->shader->filter_type(1, &smooth))
       smooth = g_settings.video.smooth;
-   GLenum wrap_mode = gl_wrap_type_to_enum(gl->shader->wrap_type(1));
+   wrap_mode = gl_wrap_type_to_enum(gl->shader->wrap_type(1));
 
    gl->tex_mipmap = gl->shader->mipmap_input(1);
 
    gl->video_info.smooth = smooth;
-   GLuint new_filt = gl->tex_mipmap ? (smooth ? 
+   new_filt = gl->tex_mipmap ? (smooth ? 
          GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) 
       : (smooth ? GL_LINEAR : GL_NEAREST);
    if (new_filt == gl->tex_min_filter && wrap_mode == gl->wrap_mode)
@@ -2596,6 +2607,7 @@ static void gl_viewport_info(void *data, struct rarch_viewport *vp)
 {
    unsigned top_y, top_dist;
    gl_t *gl = (gl_t*)data;
+
    *vp = gl->vp;
    vp->full_width  = gl->win_width;
    vp->full_height = gl->win_height;
@@ -2606,21 +2618,30 @@ static void gl_viewport_info(void *data, struct rarch_viewport *vp)
    vp->y = top_dist;
 }
 
+#ifdef NO_GL_READ_PIXELS
 static bool gl_read_viewport(void *data, uint8_t *buffer)
 {
-#ifndef NO_GL_READ_PIXELS
+   return false;
+}
+#else
+static bool gl_read_viewport(void *data, uint8_t *buffer)
+{
+   unsigned num_pixels = 0;
    gl_t *gl = (gl_t*)data;
+
    if (!gl)
       return false;
 
    context_bind_hw_render(gl, false);
-    
+
    RARCH_PERFORMANCE_INIT(read_viewport);
    RARCH_PERFORMANCE_START(read_viewport);
 
 #ifdef HAVE_GL_ASYNC_READBACK
    if (gl->pbo_readback_enable)
    {
+      const uint8_t *ptr  = NULL;
+
       /* Don't readback if we're in menu mode. */
       if (!gl->pbo_readback_valid[gl->pbo_readback_index]) 
       {
@@ -2633,12 +2654,14 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index]);
 #ifdef HAVE_OPENGLES3
       /* Slower path, but should work on all implementations at least. */
-      unsigned num_pixels = gl->vp.width * gl->vp.height;
-      const uint8_t *ptr = (const uint8_t*)glMapBufferRange(GL_PIXEL_PACK_BUFFER,
+      num_pixels = gl->vp.width * gl->vp.height;
+      ptr = (const uint8_t*)glMapBufferRange(GL_PIXEL_PACK_BUFFER,
             0, num_pixels * sizeof(uint32_t), GL_MAP_READ_BIT);
+
       if (ptr)
       {
          unsigned x, y;
+
          for (y = 0; y < gl->vp.height; y++)
          {
             for (x = 0; x < gl->vp.width; x++, buffer += 3, ptr += 4)
@@ -2656,7 +2679,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
          return false;
       }
 #else
-      const void *ptr = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+      ptr = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
       if (!ptr)
       {
          RARCH_ERR("[GL]: Failed to map pixel unpack buffer.\n");
@@ -2672,6 +2695,10 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    else /* Use slow synchronous readbacks. Use this with plain screenshots as we don't really care about performance in this case. */
 #endif
    {
+      unsigned i;
+      uint8_t *dst = NULL;
+      const uint8_t *src = NULL;
+
       /* GLES2 only guarantees GL_RGBA/GL_UNSIGNED_BYTE 
        * readbacks so do just that.
        * GLES2 also doesn't support reading back data 
@@ -2682,7 +2709,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
        * Keep codepath similar for GLES and desktop GL.
        */
 
-      unsigned num_pixels = gl->vp.width * gl->vp.height;
+      num_pixels = gl->vp.width * gl->vp.height;
 
       gl->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
       if (!gl->readback_buffer_screenshot)
@@ -2694,9 +2721,9 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 
       rarch_render_cached_frame();
 
-      uint8_t *dst = buffer;
-      const uint8_t *src = (const uint8_t*)gl->readback_buffer_screenshot;
-      unsigned i;
+      dst = buffer;
+      src = (const uint8_t*)gl->readback_buffer_screenshot;
+
       for (i = 0; i < num_pixels; i++, dst += 3, src += 4)
       {
          dst[0] = src[2]; /* RGBA -> BGR. */
@@ -2711,10 +2738,8 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    RARCH_PERFORMANCE_STOP(read_viewport);
    context_bind_hw_render(gl, true);
    return true;
-#else
-   return false;
-#endif
 }
+#endif
 
 #ifdef HAVE_OVERLAY
 static void gl_free_overlay(gl_t *gl);
@@ -2723,6 +2748,7 @@ static bool gl_overlay_load(void *data,
 {
    unsigned i, j;
    gl_t *gl = (gl_t*)data;
+
    if (!gl)
       return false;
 
@@ -2765,6 +2791,7 @@ static bool gl_overlay_load(void *data,
       /* Default. Stretch to whole screen. */
       gl_overlay_tex_geom(gl, i, 0, 0, 1, 1);
       gl_overlay_vertex_geom(gl, i, 0, 0, 1, 1);
+
       for (j = 0; j < 16; j++)
          gl->overlay_color_coord[16 * i + j] = 1.0f;
    }
@@ -2780,6 +2807,7 @@ static void gl_overlay_tex_geom(void *data,
 {
    GLfloat *tex = NULL;
    gl_t *gl = (gl_t*)data;
+
    if (!gl)
       return;
 
@@ -2801,6 +2829,7 @@ static void gl_overlay_vertex_geom(void *data,
 {
    GLfloat *vertex = NULL;
    gl_t *gl = (gl_t*)data;
+
    if (!gl)
       return;
 
@@ -2963,6 +2992,7 @@ static void gl_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
+   unsigned base_size;
    gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
@@ -2983,7 +3013,7 @@ static void gl_set_texture_frame(void *data,
 
    gl->menu_texture_alpha = alpha;
 
-   unsigned base_size = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   base_size = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * base_size));
 
    if (rgb32)
