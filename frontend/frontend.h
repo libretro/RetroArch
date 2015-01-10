@@ -75,6 +75,16 @@ bool main_load_content(int argc, char **argv,
       args_type() args, environment_get_t environ_get,
       process_args_t process_args);
 
+/**
+ * main_entry_decide:
+ *
+ * Runs RetroArch for one frame.
+ *
+ * Returns: -1 upon exiting, 0 if we want to
+ * iterate to the next frame.
+ **/
+int main_entry_decide(signature(), args_type() args);
+
 #ifdef __cplusplus
 }
 #endif

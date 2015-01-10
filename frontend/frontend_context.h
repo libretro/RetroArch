@@ -99,16 +99,6 @@ const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident);
  **/
 const frontend_ctx_driver_t *frontend_ctx_init_first(void);
 
-/**
- * main_entry_decide:
- *
- * Runs RetroArch for one frame.
- *
- * Returns: -1 upon exiting, 0 if we want to
- * iterate to the next frame.
- **/
-int main_entry_decide(signature(), args_type() args);
-
 #ifdef __cplusplus
 }
 #endif
