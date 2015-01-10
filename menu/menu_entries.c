@@ -134,9 +134,11 @@ int entries_push_main_menu_list(menu_handle_t *menu,
       const char *path, const char *label,
       unsigned menu_type)
 {
+   rarch_setting_t *setting = NULL;
+   
    settings_list_free(menu->list_mainmenu);
    menu->list_mainmenu = (rarch_setting_t *)setting_data_new(SL_FLAG_MAIN_MENU);
-   rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(menu->list_mainmenu,
+   setting = (rarch_setting_t*)setting_data_find_setting(menu->list_mainmenu,
          label);
 
    if (!setting)
@@ -199,13 +201,12 @@ int entries_push_horizontal_menu_list(menu_handle_t *menu,
       const char *path, const char *label,
       unsigned menu_type)
 {
-   menu_list_clear(list);
-
    core_info_t *info = NULL;
    core_info_list_t *info_list = NULL;
 
+   menu_list_clear(list);
+
    info_list = (core_info_list_t*)g_extern.core_info;
-   info = NULL;
 
    if (!info_list)
       return -1;
@@ -326,6 +327,7 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
       unsigned default_type_plain, const char *exts)
 {
    size_t i, list_size;
+   bool path_is_compressed, push_dir;
    struct string_list *str_list = NULL;
 
    menu_list_clear(list);
@@ -348,8 +350,8 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
    LWP_MutexUnlock(gx_device_mutex);
 #endif
 
-   bool path_is_compressed = path_is_compressed_file(dir);
-   bool push_dir = menu_common_type_is(label, type) == MENU_FILE_DIRECTORY;
+   path_is_compressed = path_is_compressed_file(dir);
+   push_dir           = menu_common_type_is(label, type) == MENU_FILE_DIRECTORY;
 
    if (path_is_compressed)
       str_list = compressed_file_list_new(dir,exts);
@@ -368,7 +370,10 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
    list_size = str_list->size;
    for (i = 0; i < str_list->size; i++)
    {
+      bool is_dir;
+      const char *path = NULL;
       menu_file_type_t file_type = MENU_FILE_NONE;
+
       switch (str_list->elems[i].attr.i)
       {
          case RARCH_DIRECTORY:
@@ -396,14 +401,14 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
             file_type = (menu_file_type_t)default_type_plain;
             break;
       }
-      bool is_dir = (file_type == MENU_FILE_DIRECTORY);
+
+      is_dir = (file_type == MENU_FILE_DIRECTORY);
 
       if (push_dir && !is_dir)
          continue;
 
-
       /* Need to preserve slash first time. */
-      const char *path = str_list->elems[i].data;
+      path = str_list->elems[i].data;
 
       if (*dir && !path_is_compressed)
          path = path_basename(path);
@@ -471,10 +476,9 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
 
 int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
 {
-   unsigned type = 0;
-
-   const char *path = NULL;
-   const char *label = NULL;
+   unsigned type             = 0;
+   const char *path          = NULL;
+   const char *label         = NULL;
    menu_file_list_cbs_t *cbs = NULL;
 
    menu_list_get_last_stack(driver.menu->menu_list, &path, &label, &type);

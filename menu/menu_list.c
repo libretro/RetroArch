@@ -22,6 +22,7 @@
 void menu_list_destroy(file_list_t *list)
 {
    unsigned i;
+
    if (!list)
       return;
 
@@ -70,9 +71,9 @@ void *menu_list_new(void)
 
 size_t menu_list_get_stack_size(menu_list_t *list)
 {
-   if (list)
-      return file_list_get_size(list->menu_stack);
-   return 0;
+   if (!list)
+      return 0;
+   return file_list_get_size(list->menu_stack);
 }
 
 void menu_list_get_at_offset(const file_list_t *list, size_t idx,
@@ -83,9 +84,9 @@ void menu_list_get_at_offset(const file_list_t *list, size_t idx,
 
 size_t menu_list_get_size(menu_list_t *list)
 {
-   if (list)
-      return file_list_get_size(list->selection_buf);
-   return 0;
+   if (!list)
+      return 0;
+   return file_list_get_size(list->selection_buf);
 }
 
 void menu_list_get_last(const file_list_t *list,
@@ -106,16 +107,16 @@ void menu_list_get_last_stack(const menu_list_t *list,
 
 void *menu_list_get_actiondata_at_offset(const file_list_t *list, size_t idx)
 {
-   if (list)
-      return file_list_get_actiondata_at_offset(list, idx);
-   return NULL;
+   if (!list)
+      return NULL;
+   return file_list_get_actiondata_at_offset(list, idx);
 }
 
 void *menu_list_get_last_stack_actiondata(const menu_list_t *list)
 {
-   if (list)
+   if (!list)
+      return NULL;
       return file_list_get_last_actiondata(list->menu_stack);
-   return NULL;
 }
 
 void menu_list_flush_stack(menu_list_t *list,
@@ -238,6 +239,7 @@ void menu_list_push(file_list_t *list,
 {
    if (!list)
       return;
+
    file_list_push(list, path, label, type, directory_ptr);
 
    if (!driver.menu_ctx)
@@ -255,6 +257,7 @@ void menu_list_push_refresh(file_list_t *list,
 {
    if (!list)
       return;
+
    menu_list_push(list, path, label, type, directory_ptr);
    menu_navigation_clear(driver.menu, true);
    driver.menu->need_refresh = true;
