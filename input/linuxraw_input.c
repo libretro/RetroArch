@@ -25,6 +25,7 @@
 #include "../general.h"
 #include "input_keymaps.h"
 #include "input_common.h"
+#include "input_joypad.h"
 
 static long oldKbmd = 0xffff;
 static struct termios oldTerm, newTerm;

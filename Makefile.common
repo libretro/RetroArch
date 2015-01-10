@@ -110,6 +110,7 @@ OBJ += frontend/frontend.o \
 		gfx/fonts/bitmapfont.o \
 		input/input_autodetect.o \
 		input/input_context.o \
+		input/input_joypad.o \
 		input/input_common.o \
 		input/input_keymaps.o \
 		input/keyboard_line.o \

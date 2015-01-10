@@ -30,6 +30,7 @@
 #include "menu_shader.h"
 #include "../performance.h"
 #include "../settings_data.h"
+#include "../input/input_joypad.h"
 
 void menu_key_start_line(void *data, const char *label,
       const char *label_setting, unsigned type, unsigned idx,

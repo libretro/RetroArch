@@ -50,6 +50,7 @@
 #include "../input/nullinput_joypad.c"
 
 #include "../input/input_context.c"
+#include "../input/input_joypad.c"
 #include "../input/input_common.c"
 #include "../input/input_keymaps.c"
 

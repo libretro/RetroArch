@@ -14,6 +14,7 @@
  */
 
 #include "input_common.h"
+#include "input_joypad.h"
 #include "input_keymaps.h"
 #include "../general.h"
 #include <file/file_path.h>

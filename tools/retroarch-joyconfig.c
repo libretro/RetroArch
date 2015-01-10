@@ -24,6 +24,7 @@
 #include <compat/posix_string.h>
 #include <boolean.h>
 #include "../input/input_common.h"
+#include "../input/input_joypad.h"
 #include "../general.h"
 #include <assert.h>
 
