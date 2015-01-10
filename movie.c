@@ -44,6 +44,9 @@ struct bsv_movie
 
 static bool init_playback(bsv_movie_t *handle, const char *path)
 {
+   uint32_t state_size;
+   uint32_t header[4] = {0};
+
    handle->playback = true;
    handle->file = fopen(path, "rb");
    if (!handle->file)
@@ -52,7 +55,6 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
       return false;
    }
 
-   uint32_t header[4] = {0};
    if (fread(header, sizeof(uint32_t), 4, handle->file) != 4)
    {
       RARCH_ERR("Couldn't read movie header.\n");
@@ -71,7 +73,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
    if (swap_if_big32(header[CRC_INDEX]) != g_extern.content_crc)
       RARCH_WARN("CRC32 checksum mismatch between content file and saved content checksum in replay file header; replay highly likely to desync on playback.\n");
 
-   uint32_t state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
+   state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
 
    if (state_size)
    {
@@ -99,6 +101,9 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
 
 static bool init_record(bsv_movie_t *handle, const char *path)
 {
+   uint32_t state_size;
+   uint32_t header[4] = {0};
+
    handle->file = fopen(path, "wb");
    if (!handle->file)
    {
@@ -106,7 +111,6 @@ static bool init_record(bsv_movie_t *handle, const char *path)
       return false;
    }
 
-   uint32_t header[4] = {0};
 
    /* This value is supposed to show up as
     * BSV1 in a HEX editor, big-endian. */
@@ -114,7 +118,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
 
    header[CRC_INDEX] = swap_if_big32(g_extern.content_crc);
 
-   uint32_t state_size = pretro_serialize_size();
+   state_size = pretro_serialize_size();
 
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
    fwrite(header, 4, sizeof(uint32_t), handle->file);
@@ -137,14 +141,14 @@ static bool init_record(bsv_movie_t *handle, const char *path)
 
 void bsv_movie_free(bsv_movie_t *handle)
 {
-   if (handle)
-   {
-      if (handle->file)
-         fclose(handle->file);
-      free(handle->state);
-      free(handle->frame_pos);
-      free(handle);
-   }
+   if (!handle)
+      return;
+
+   if (handle->file)
+      fclose(handle->file);
+   free(handle->state);
+   free(handle->frame_pos);
+   free(handle);
 }
 
 bool bsv_movie_get_input(bsv_movie_t *handle, int16_t *input)
@@ -193,11 +197,16 @@ error:
 
 void bsv_movie_set_frame_start(bsv_movie_t *handle)
 {
+   if (!handle)
+      return;
    handle->frame_pos[handle->frame_ptr] = ftell(handle->file);
 }
 
 void bsv_movie_set_frame_end(bsv_movie_t *handle)
 {
+   if (!handle)
+      return;
+
    handle->frame_ptr = (handle->frame_ptr + 1) & handle->frame_mask;
 
    handle->first_rewind = !handle->did_rewind;
