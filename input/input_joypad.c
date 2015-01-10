@@ -41,6 +41,17 @@ const char *input_joypad_name(const rarch_joypad_driver_t *drv,
    return drv->name(port);
 }
 
+/**
+ * input_joypad_set_rumble:
+ * @drv                     : Joypad driver handle.
+ * @port                    : User number.
+ * @effect                  : Rumble effect to set.
+ * @strength                : Strength of rumble effect.
+ *
+ * Sets rumble effect @effect with strength @strength.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool input_joypad_set_rumble(const rarch_joypad_driver_t *drv,
       unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
@@ -125,6 +136,25 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *drv,
    return true;
 }
 
+/**
+ * input_joypad_analog:
+ * @drv                     : Joypad driver handle.
+ * @port                    : User number.
+ * @idx                     : Analog key index.
+ *                            E.g.: 
+ *                            - RETRO_DEVICE_INDEX_ANALOG_LEFT
+ *                            - RETRO_DEVICE_INDEX_ANALOG_RIGHT
+ * @ident                   : Analog key identifier.
+ *                            E.g.:
+ *                            - RETRO_DEVICE_ID_ANALOG_X
+ *                            - RETRO_DEVICE_ID_ANALOG_Y
+ * @binds                   : Binds of user.
+ *
+ * Gets analog value of analog key identifiers @idx and @ident
+ * from user with number @port with provided keybinds (@binds).
+ *
+ * Returns: analog value on success, otherwise 0.
+ **/
 int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds)
