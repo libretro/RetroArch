@@ -182,7 +182,7 @@ static void content_list_push(void *data, core_info_t *info, const char* path)
 
    for (j = 0; j < num_items; j++)
    {
-      if (list->elems[j].attr.i == RARCH_DIRECTORY) // is a directory
+      if (list->elems[j].attr.i == RARCH_DIRECTORY)
          content_list_push(flist, info, list->elems[j].data);
       else
          menu_list_push(

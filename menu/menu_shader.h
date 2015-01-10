@@ -23,17 +23,51 @@
 extern "C" {
 #endif
 
+/**
+ * menu_shader_manager_init:
+ *
+ * Initializes shader manager.
+ **/
 void menu_shader_manager_init(void *data);
 
-void menu_shader_manager_set_preset(struct gfx_shader *shader,
-      unsigned type, const char *cgp_path);
+/**
+ * menu_shader_manager_set_preset:
+ * @shader                   : Shader handle.   
+ * @type                     : Type of shader.
+ * @preset_path              : Preset path to load from.
+ *
+ * Sets shader preset.
+ **/
+void menu_shader_manager_set_preset(
+      struct gfx_shader *shader,
+      unsigned type, const char *preset_path);
 
+/**
+ * menu_shader_manager_save_preset:
+ * @basename                 : basename of preset
+ * @apply                    : immediately set preset after saving
+ *
+ * Save a shader preset to disk.
+ **/
 void menu_shader_manager_save_preset(
       const char *basename, bool apply);
 
+/**
+ * menu_shader_manager_get_type:
+ * @shader                   : shader handle     
+ *
+ * Gets type of shader.
+ *
+ * Returns: type of shader. 
+ **/
 unsigned menu_shader_manager_get_type(
       const struct gfx_shader *shader);
 
+/**
+ * menu_shader_manager_apply_changes:
+ *
+ * Apply shader state changes.
+ **/
 void menu_shader_manager_apply_changes(void);
 
 #ifdef __cplusplus

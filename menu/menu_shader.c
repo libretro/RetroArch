@@ -18,11 +18,16 @@
 #include "menu_entries.h"
 #include <file/file_path.h>
 
-#ifdef HAVE_SHADER_MANAGER
 
+/**
+ * menu_shader_manager_init:
+ *
+ * Initializes shader manager.
+ **/
 void menu_shader_manager_init(void *data)
 {
-   char cgp_path[PATH_MAX_LENGTH];
+#ifdef HAVE_SHADER_MANAGER
+   char preset_path[PATH_MAX_LENGTH];
    const char *ext;
    struct gfx_shader *shader = NULL;
    config_file_t *conf = NULL;
@@ -84,69 +89,92 @@ void menu_shader_manager_init(void *data)
       const char *shader_dir = *g_settings.video.shader_dir ?
          g_settings.video.shader_dir : g_settings.system_directory;
 
-      fill_pathname_join(cgp_path, shader_dir, "menu.glslp", sizeof(cgp_path));
-      conf = config_file_new(cgp_path);
+      fill_pathname_join(preset_path, shader_dir, "menu.glslp", sizeof(preset_path));
+      conf = config_file_new(preset_path);
 
       if (!conf)
       {
-         fill_pathname_join(cgp_path, shader_dir, "menu.cgp", sizeof(cgp_path));
-         conf = config_file_new(cgp_path);
+         fill_pathname_join(preset_path, shader_dir, "menu.cgp", sizeof(preset_path));
+         conf = config_file_new(preset_path);
       }
 
       if (conf)
       {
          if (gfx_shader_read_conf_cgp(conf, shader))
          {
-            gfx_shader_resolve_relative(shader, cgp_path);
+            gfx_shader_resolve_relative(shader, preset_path);
             gfx_shader_resolve_parameters(conf, shader);
          }
          config_file_free(conf);
       }
    }
+#endif
 }
 
+/**
+ * menu_shader_manager_set_preset:
+ * @shader                   : Shader handle.   
+ * @type                     : Type of shader.
+ * @preset_path              : Preset path to load from.
+ *
+ * Sets shader preset.
+ **/
 void menu_shader_manager_set_preset(struct gfx_shader *shader,
-      unsigned type, const char *cgp_path)
+      unsigned type, const char *preset_path)
 {
-   RARCH_LOG("Setting Menu shader: %s.\n", cgp_path ? cgp_path : "N/A (stock)");
+#ifdef HAVE_SHADER_MANAGER
+   RARCH_LOG("Setting Menu shader: %s.\n", preset_path ? preset_path : "N/A (stock)");
    g_settings.video.shader_enable = false;
 
    if (driver.video->set_shader && driver.video->set_shader(driver.video_data,
-            (enum rarch_shader_type)type, cgp_path))
+            (enum rarch_shader_type)type, preset_path))
    {
-      /* Makes sure that we use Menu CGP shader on driver reinit.
+      config_file_t *conf = NULL;
+
+      /* Makes sure that we use Menu Preset shader on driver reinit.
        * Only do this when the cgp actually works to avoid potential errors. */
-      strlcpy(g_settings.video.shader_path, cgp_path ? cgp_path : "",
+      strlcpy(g_settings.video.shader_path, preset_path ? preset_path : "",
             sizeof(g_settings.video.shader_path));
       g_settings.video.shader_enable = true;
 
-      if (cgp_path && shader)
+      if (!preset_path)
+         return;
+      if (!shader)
+         return;
+
+      /* Load stored Preset into menu on success.
+       * Used when a preset is directly loaded.
+       * No point in updating when the Preset was 
+       * created from the menu itself. */
+      conf = config_file_new(preset_path);
+
+      if (conf)
       {
-         /* Load stored CGP into menu on success.
-          * Used when a preset is directly loaded.
-          * No point in updating when the CGP was 
-          * created from the menu itself. */
-         config_file_t *conf = config_file_new(cgp_path);
-
-         if (conf)
+         if (gfx_shader_read_conf_cgp(conf, shader))
          {
-            if (gfx_shader_read_conf_cgp(conf, shader))
-            {
-               gfx_shader_resolve_relative(shader, cgp_path);
-               gfx_shader_resolve_parameters(conf, shader);
-            }
-            config_file_free(conf);
+            gfx_shader_resolve_relative(shader, preset_path);
+            gfx_shader_resolve_parameters(conf, shader);
          }
-
-         driver.menu->need_refresh = true;
+         config_file_free(conf);
       }
+
+      driver.menu->need_refresh = true;
    }
+#endif
 }
 
+/**
+ * menu_shader_manager_save_preset:
+ * @basename                 : basename of preset
+ * @apply                    : immediately set preset after saving
+ *
+ * Save a shader preset to disk.
+ **/
 void menu_shader_manager_save_preset(
       const char *basename, bool apply)
 {
-   char buffer[PATH_MAX_LENGTH], config_directory[PATH_MAX_LENGTH], cgp_path[PATH_MAX_LENGTH];
+#ifdef HAVE_SHADER_MANAGER
+   char buffer[PATH_MAX_LENGTH], config_directory[PATH_MAX_LENGTH], preset_path[PATH_MAX_LENGTH];
    unsigned d, type = RARCH_SHADER_NONE;
    config_file_t *conf = NULL;
    bool ret = false;
@@ -203,26 +231,38 @@ void menu_shader_manager_save_preset(
       if (!*dirs[d])
          continue;
 
-      fill_pathname_join(cgp_path, dirs[d], buffer, sizeof(cgp_path));
-      if (config_file_write(conf, cgp_path))
+      fill_pathname_join(preset_path, dirs[d], buffer, sizeof(preset_path));
+      if (config_file_write(conf, preset_path))
       {
-         RARCH_LOG("Saved shader preset to %s.\n", cgp_path);
+         RARCH_LOG("Saved shader preset to %s.\n", preset_path);
          if (apply)
-            menu_shader_manager_set_preset(NULL, type, cgp_path);
+            menu_shader_manager_set_preset(NULL, type, preset_path);
          ret = true;
          break;
       }
       else
-         RARCH_LOG("Failed writing shader preset to %s.\n", cgp_path);
+         RARCH_LOG("Failed writing shader preset to %s.\n", preset_path);
    }
 
    config_file_free(conf);
    if (!ret)
       RARCH_ERR("Failed to save shader preset. Make sure config directory and/or shader dir are writable.\n");
+#endif
 }
 
+/**
+ * menu_shader_manager_get_type:
+ * @shader                   : shader handle     
+ *
+ * Gets type of shader.
+ *
+ * Returns: type of shader. 
+ **/
 unsigned menu_shader_manager_get_type(const struct gfx_shader *shader)
 {
+#ifndef HAVE_SHADER_MANAGER
+   return RARCH_SHADER_NONE;
+#else
    /* All shader types must be the same, or we cannot use it. */
    unsigned i = 0, type = 0;
 
@@ -250,10 +290,17 @@ unsigned menu_shader_manager_get_type(const struct gfx_shader *shader)
    }
 
    return type;
+#endif
 }
 
+/**
+ * menu_shader_manager_apply_changes:
+ *
+ * Apply shader state changes.
+ **/
 void menu_shader_manager_apply_changes(void)
 {
+#ifdef HAVE_SHADER_MANAGER
    unsigned shader_type = menu_shader_manager_get_type(driver.menu->shader);
 
    if (driver.menu->shader->passes 
@@ -277,22 +324,5 @@ void menu_shader_manager_apply_changes(void)
 #endif
    }
    menu_shader_manager_set_preset(NULL, shader_type, NULL);
-}
-
-#else
-
-void menu_shader_manager_init(void *data) {}
-void menu_shader_manager_set_preset(struct gfx_shader *shader,
-      unsigned type, const char *cgp_path) { }
-
-void menu_shader_manager_save_preset(
-      const char *basename, bool apply) { }
-
-unsigned menu_shader_manager_get_type(const struct gfx_shader *shader)
-{
-   return RARCH_SHADER_NONE;
-}
-
-void menu_shader_manager_apply_changes(void) { }
-
 #endif
+}
