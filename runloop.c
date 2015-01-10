@@ -741,12 +741,10 @@ static inline retro_input_t input_keys_pressed(void)
    check_block_hotkey(driver.input->key_pressed(driver.input_data,
             RARCH_ENABLE_HOTKEY));
 
-   input_push_analog_dpad((struct retro_keybind*)binds[0],
-         (g_settings.input.analog_dpad_mode[0] == ANALOG_DPAD_NONE) ?
-         ANALOG_DPAD_LSTICK : g_settings.input.analog_dpad_mode[0]);
-
    for (i = 0; i < g_settings.input.max_users; i++)
    {
+      input_push_analog_dpad(g_settings.input.binds[i],
+            g_settings.input.analog_dpad_mode[i]);
       input_push_analog_dpad(g_settings.input.autoconf_binds[i],
             g_settings.input.analog_dpad_mode[i]);
 
@@ -755,7 +753,7 @@ static inline retro_input_t input_keys_pressed(void)
       else
          g_extern.turbo_frame_enable[i] = 
             driver.input->input_state(driver.input_data, binds, i,
-               RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+                  RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
@@ -780,9 +778,11 @@ static inline retro_input_t input_keys_pressed(void)
          ret |= (1ULL << key);
    }
 
-   input_pop_analog_dpad((struct retro_keybind*)binds[0]);
    for (i = 0; i < g_settings.input.max_users; i++)
+   {
+      input_pop_analog_dpad(g_settings.input.binds[i]);
       input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
+   }
 
    return ret;
 }
