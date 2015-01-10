@@ -23,14 +23,47 @@
 extern "C" {
 #endif
 
+/**
+ * menu_navigation_clear:
+ * @menu                  : menu handle
+ * @pending_push          : pending push ?
+ *
+ * Clears the navigation pointer.
+ **/
 void menu_navigation_clear(menu_handle_t *menu, bool pending_push);
 
+/**
+ * menu_navigation_decrement:
+ * @menu                  : menu handle
+ *
+ * Decrement the navigation pointer.
+ **/
 void menu_navigation_decrement(menu_handle_t *menu);
 
+/**
+ * menu_navigation_increment:
+ * @menu                  : menu handle
+ *
+ * Increment the navigation pointer.
+ **/
 void menu_navigation_increment(menu_handle_t *menu);
 
+/**
+ * menu_navigation_set:      
+ * @menu                  : menu handle
+ * @idx                   : index to set navigation pointer to.
+ * @scroll                : should we scroll when needed?
+ *
+ * Sets navigation pointer to index @idx.
+ **/
 void menu_navigation_set(menu_handle_t *menu, size_t i, bool scroll);
 
+/**
+ * menu_navigation_set_last:
+ * @menu                  : menu handle
+ *
+ * Sets navigation pointer to last index.
+ **/
 void menu_navigation_set_last(menu_handle_t *menu);
 
 void menu_navigation_descend_alphabet(menu_handle_t *menu, size_t *ptr_out);

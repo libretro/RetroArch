@@ -22,6 +22,13 @@
 #include <ctype.h>
 #include "menu_navigation.h"
 
+/**
+ * menu_navigation_clear:
+ * @menu                  : menu handle
+ * @pending_push          : pending push ?
+ *
+ * Clears the navigation pointer.
+ **/
 void menu_navigation_clear(menu_handle_t *menu, bool pending_push)
 {
    menu->selection_ptr = 0;
@@ -30,6 +37,12 @@ void menu_navigation_clear(menu_handle_t *menu, bool pending_push)
       driver.menu_ctx->navigation_clear(menu, pending_push);
 }
 
+/**
+ * menu_navigation_decrement:
+ * @menu                  : menu handle
+ *
+ * Decrement the navigation pointer.
+ **/
 void menu_navigation_decrement(menu_handle_t *menu)
 {
    menu->selection_ptr--;
@@ -38,6 +51,12 @@ void menu_navigation_decrement(menu_handle_t *menu)
       driver.menu_ctx->navigation_decrement(menu);
 }
 
+/**
+ * menu_navigation_increment:
+ * @menu                  : menu handle
+ *
+ * Increment the navigation pointer.
+ **/
 void menu_navigation_increment(menu_handle_t *menu)
 {
    menu->selection_ptr++;
@@ -46,14 +65,28 @@ void menu_navigation_increment(menu_handle_t *menu)
       driver.menu_ctx->navigation_increment(menu);
 }
 
-void menu_navigation_set(menu_handle_t *menu, size_t i, bool scroll)
+/**
+ * menu_navigation_set:      
+ * @menu                  : menu handle
+ * @idx                   : index to set navigation pointer to.
+ * @scroll                : should we scroll when needed?
+ *
+ * Sets navigation pointer to index @idx.
+ **/
+void menu_navigation_set(menu_handle_t *menu, size_t idx, bool scroll)
 {
-   menu->selection_ptr = i; 
+   menu->selection_ptr = idx; 
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_set)
       driver.menu_ctx->navigation_set(menu, scroll);
 }
 
+/**
+ * menu_navigation_set_last:
+ * @menu                  : menu handle
+ *
+ * Sets navigation pointer to last index.
+ **/
 void menu_navigation_set_last(menu_handle_t *menu)
 {
    menu->selection_ptr = menu_list_get_size(driver.menu->menu_list) - 1;
