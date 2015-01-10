@@ -264,11 +264,11 @@ void core_info_list_free(core_info_list_t *core_info_list)
 
 size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
 {
-   size_t i, num;
+   size_t i, num = 0;
+
    if (!core_info_list)
       return 0;
 
-   num = 0;
    for (i = 0; i < core_info_list->count; i++)
       num += !!core_info_list->list[i].data;
 
@@ -380,10 +380,9 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
 {
    const core_info_t *a = (const core_info_t*)a_;
    const core_info_t *b = (const core_info_t*)b_;
-
-   int support_a = core_info_does_support_any_file(a, core_info_tmp_list) ||
+   int support_a        = core_info_does_support_any_file(a, core_info_tmp_list) ||
       core_info_does_support_file(a, core_info_tmp_path);
-   int support_b = core_info_does_support_any_file(b, core_info_tmp_list) ||
+   int support_b        = core_info_does_support_any_file(b, core_info_tmp_list) ||
       core_info_does_support_file(b, core_info_tmp_path);
 
    if (support_a != support_b)
