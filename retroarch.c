@@ -2087,7 +2087,7 @@ void rarch_main_set_state(unsigned cmd)
       case RARCH_ACTION_STATE_LOAD_CONTENT:
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
-         if (!load_menu_content())
+         if (!menu_load_content())
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
 #endif
          if (driver.frontend_ctx && driver.frontend_ctx->content_loaded)

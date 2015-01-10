@@ -110,7 +110,15 @@ static void push_to_history_playlist(void)
          g_extern.menu.info.library_name);
 }
 
-bool load_menu_content(void)
+/**
+ * menu_load_content:
+ *
+ * Loads content into currently selected core.
+ * Will also optionally push the content entry to the history playlist.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool menu_load_content(void)
 {
    if (*g_extern.fullpath || (driver.menu && driver.menu->load_no_content))
       push_to_history_playlist();

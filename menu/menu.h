@@ -201,7 +201,15 @@ void menu_free(void *data);
 void menu_ticker_line(char *buf, size_t len, unsigned tick,
       const char *str, bool selected);
 
-bool load_menu_content(void);
+/**
+ * menu_load_content:
+ *
+ * Loads content into currently selected core.
+ * Will also optionally push the content entry to the history playlist.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool menu_load_content(void);
 
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
 
