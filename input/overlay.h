@@ -147,8 +147,8 @@ typedef struct input_overlay_state
 
 /**
  * input_overlay_new:
- * @path               : Path to overlay file.
- * @enable             : Enable the overlay after initializing it?
+ * @path                  : Path to overlay file.
+ * @enable                : Enable the overlay after initializing it?
  *
  * Creates and initializes an overlay handle.
  *
