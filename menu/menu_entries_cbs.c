@@ -2423,7 +2423,7 @@ static int deferred_push_default(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   if (menu_common_type_is(label, type) == MENU_FILE_DIRECTORY)
+   if (menu_type_is(label, type) == MENU_FILE_DIRECTORY)
       exts = ""; /* we ignore files anyway */
    else if (g_extern.menu.info.valid_extensions)
    {
@@ -2663,7 +2663,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_push_content_list;
    else if (!strcmp(label, "history_list"))
       cbs->action_ok = action_ok_push_history_list;
-   else if (menu_common_type_is(label, type) == MENU_FILE_DIRECTORY)
+   else if (menu_type_is(label, type) == MENU_FILE_DIRECTORY)
       cbs->action_ok = action_ok_push_path_list;
    else if (!strcmp(label, "shader_apply_changes"))
       cbs->action_ok = action_ok_shader_apply_changes;

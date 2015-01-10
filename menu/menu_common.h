@@ -213,7 +213,7 @@ void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
  **/
 void menu_update_libretro_info(struct retro_system_info *info);
 
-unsigned menu_common_type_is(const char *label, unsigned type);
+unsigned menu_type_is(const char *label, unsigned type);
 
 void apply_deferred_settings(void);
 

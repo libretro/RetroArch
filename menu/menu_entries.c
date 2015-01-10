@@ -351,7 +351,7 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
 #endif
 
    path_is_compressed = path_is_compressed_file(dir);
-   push_dir           = menu_common_type_is(label, type) == MENU_FILE_DIRECTORY;
+   push_dir           = menu_type_is(label, type) == MENU_FILE_DIRECTORY;
 
    if (path_is_compressed)
       str_list = compressed_file_list_new(dir,exts);

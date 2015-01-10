@@ -499,7 +499,7 @@ int menu_iterate(retro_input_t input,
    return 0;
 }
 
-unsigned menu_common_type_is(const char *label, unsigned type)
+unsigned menu_type_is(const char *label, unsigned type)
 {
    if (
          !strcmp(label, "rgui_browser_directory") ||
