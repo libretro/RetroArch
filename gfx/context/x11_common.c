@@ -25,14 +25,12 @@
 
 static void x11_hide_mouse(Display *dpy, Window win)
 {
+   static char bm_no_data[] = {0, 0, 0, 0, 0, 0, 0, 0};
+
    Cursor no_ptr;
    Pixmap bm_no;
    XColor black, dummy;
-   Colormap colormap;
-
-   static char bm_no_data[] = {0, 0, 0, 0, 0, 0, 0, 0};
-
-   colormap = DefaultColormap(dpy, DefaultScreen(dpy));
+   Colormap colormap = DefaultColormap(dpy, DefaultScreen(dpy));
    if (!XAllocNamedColor(dpy, colormap, "black", &black, &dummy))
       return;
 
@@ -88,9 +86,9 @@ void x11_windowed_fullscreen(Display *dpy, Window win)
 void x11_move_window(Display *dpy, Window win, int x, int y,
       unsigned width, unsigned height)
 {
-   XA_INIT(_NET_MOVERESIZE_WINDOW);
-
    XEvent xev = {0};
+
+   XA_INIT(_NET_MOVERESIZE_WINDOW);
 
    xev.xclient.type = ClientMessage;
    xev.xclient.send_event = True;
@@ -109,6 +107,7 @@ void x11_move_window(Display *dpy, Window win, int x, int y,
 static void x11_set_window_class(Display *dpy, Window win)
 {
    XClassHint hint = {0};
+
    hint.res_name   = (char*)"retroarch"; // Broken header.
    hint.res_class  = (char*)"retroarch";
    XSetClassHint(dpy, win, &hint);
@@ -121,10 +120,12 @@ void x11_set_window_attr(Display *dpy, Window win)
 
 void x11_suspend_screensaver(Window wnd)
 {
+   int ret;
    char cmd[64];
+
    snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend %d", (int)wnd);
 
-   int ret = system(cmd);
+   ret = system(cmd);
    if (ret == -1)
       RARCH_WARN("Failed to launch xdg-screensaver.\n");
    else if (WEXITSTATUS(ret))
@@ -134,9 +135,12 @@ void x11_suspend_screensaver(Window wnd)
 static bool get_video_mode(Display *dpy, unsigned width, unsigned height,
       XF86VidModeModeInfo *mode, XF86VidModeModeInfo *desktop_mode)
 {
-   int i;
-   int num_modes = 0;
+   float refresh_mod;
+   int i, num_modes = 0;
+   bool ret = false;
+   float minimum_fps_diff = 0.0f;
    XF86VidModeModeInfo **modes = NULL;
+
    XF86VidModeGetAllModeLines(dpy, DefaultScreen(dpy), &num_modes, &modes);
 
    if (!num_modes)
@@ -147,16 +151,17 @@ static bool get_video_mode(Display *dpy, unsigned width, unsigned height,
 
    *desktop_mode = *modes[0];
 
-   bool ret = false;
-   float minimum_fps_diff = 0.0f;
-
    /* If we use black frame insertion, we fake a 60 Hz monitor 
     * for 120 Hz one, etc, so try to match that. */
-   float refresh_mod = g_settings.video.black_frame_insertion ? 0.5f : 1.0f;
+   refresh_mod = g_settings.video.black_frame_insertion ? 0.5f : 1.0f;
 
    for (i = 0; i < num_modes; i++)
    {
       const XF86VidModeModeInfo *m = modes[i];
+
+      if (!m)
+         continue;
+
       if (m->hdisplay == width && m->vdisplay == height)
       {
          float refresh = refresh_mod * m->dotclock * 1000.0f / (m->htotal * m->vtotal);
@@ -202,6 +207,7 @@ void x11_exit_fullscreen(Display *dpy, XF86VidModeModeInfo *desktop_mode)
 static XineramaScreenInfo *x11_query_screens(Display *dpy, int *num_screens)
 {
    int major, minor;
+
    if (!XineramaQueryExtension(dpy, &major, &minor))
       return NULL;
 
@@ -217,10 +223,9 @@ static XineramaScreenInfo *x11_query_screens(Display *dpy, int *num_screens)
 bool x11_get_xinerama_coord(Display *dpy, int screen,
       int *x, int *y, unsigned *w, unsigned *h)
 {
-   int i;
+   int i, num_screens = 0;
    bool ret = false;
 
-   int num_screens = 0;
    XineramaScreenInfo *info = x11_query_screens(dpy, &num_screens);
    RARCH_LOG("[X11]: Xinerama screens: %d.\n", num_screens);
 
@@ -244,16 +249,16 @@ bool x11_get_xinerama_coord(Display *dpy, int screen,
 unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
       int w, int h)
 {
-   int i;
-   unsigned monitor = 0;
-   int largest_area = 0;
+   int i, num_screens = 0;
+   unsigned monitor   = 0;
+   int largest_area   = 0;
 
-   int num_screens = 0;
    XineramaScreenInfo *info = x11_query_screens(dpy, &num_screens);
    RARCH_LOG("[X11]: Xinerama screens: %d.\n", num_screens);
 
    for (i = 0; i < num_screens; i++)
    {
+      int area;
       int max_lx = max(x, info[i].x_org);
       int min_rx = min(x + w, info[i].x_org + info[i].width);
       int max_ty = max(y, info[i].y_org);
@@ -264,7 +269,7 @@ unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
       if (len_x < 0 || len_y < 0) // The whole window is outside the screen.
          continue;
 
-      int area = len_x * len_y;
+      area = len_x * len_y;
       if (area > largest_area)
       {
          monitor = i;

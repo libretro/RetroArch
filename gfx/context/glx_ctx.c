@@ -74,12 +74,13 @@ static void sighandler(int sig)
 static Bool glx_wait_notify(Display *d, XEvent *e, char *arg)
 {
    gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
+
    (void)d;
    (void)e;
 
-   if (glx)
-      return (e->type == MapNotify) && (e->xmap.window == glx->g_win);
-   return false;
+   if (!glx)
+      return false;
+   return (e->type == MapNotify) && (e->xmap.window == glx->g_win);
 }
 
 static int nul_handler(Display *dpy, XErrorEvent *event)
@@ -116,6 +117,7 @@ static void gfx_ctx_glx_swap_interval(void *data, unsigned interval)
 static void gfx_ctx_glx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   XEvent event;
    gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
    unsigned new_width = *width, new_height = *height;
 
@@ -130,11 +132,11 @@ static void gfx_ctx_glx_check_window(void *data, bool *quit,
       *height = new_height;
    }
 
-   XEvent event;
    while (XPending(glx->g_dpy))
    {
+      bool filter;
       XNextEvent(glx->g_dpy, &event);
-      bool filter = XFilterEvent(&event, glx->g_win);
+      filter = XFilterEvent(&event, glx->g_win);
 
       switch (event.type)
       {
@@ -307,15 +309,6 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
 
 static bool gfx_ctx_glx_init(void *data)
 {
-   int nelements, major, minor;
-   GLXFBConfig *fbcs = NULL;
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)calloc(1, sizeof(gfx_ctx_glx_data_t));
-
-   if (!glx)
-      return false;
-
-   XInitThreads();
-
    static const int visual_attribs[] = {
       GLX_X_RENDERABLE     , True,
       GLX_DRAWABLE_TYPE    , GLX_WINDOW_BIT,
@@ -329,6 +322,14 @@ static bool gfx_ctx_glx_init(void *data)
       GLX_STENCIL_SIZE     , 0,
       None
    };
+   int nelements, major, minor;
+   GLXFBConfig *fbcs = NULL;
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)calloc(1, sizeof(gfx_ctx_glx_data_t));
+
+   if (!glx)
+      return false;
+
+   XInitThreads();
 
    g_quit = 0;
 
@@ -438,6 +439,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    {
       unsigned new_width  = width;
       unsigned new_height = height;
+
       if (x11_get_xinerama_coord(glx->g_dpy, glx->g_screen,
                &x_off, &y_off, &new_width, &new_height))
          RARCH_LOG("[GLX]: Using Xinerama on screen #%u.\n", glx->g_screen);
@@ -640,8 +642,10 @@ static void gfx_ctx_glx_destroy(void *data)
 static void gfx_ctx_glx_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
-   (void)data;
    void *xinput = input_x.init();
+
+   (void)data;
+
    *input       = xinput ? &input_x : NULL;
    *input_data  = xinput;
 }
@@ -674,8 +678,10 @@ static bool gfx_ctx_glx_bind_api(void *data, enum gfx_ctx_api api,
       unsigned major, unsigned minor)
 {
    (void)data;
+
    g_major = major;
    g_minor = minor;
+
    return api == GFX_CTX_OPENGL_API;
 }
 
