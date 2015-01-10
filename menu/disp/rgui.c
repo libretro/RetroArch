@@ -22,7 +22,6 @@
 #include <limits.h>
 
 #include "../menu.h"
-#include "../../general.h"
 #include "../../retroarch.h"
 #include <compat/posix_string.h>
 #include <file/file_path.h>

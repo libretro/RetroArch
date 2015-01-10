@@ -16,8 +16,6 @@
 
 #include "menu_action.h"
 #include "menu_entries.h"
-#include "menu_shader.h"
-#include <file/file_path.h>
 
 static int setting_extra_handler(rarch_setting_t *setting)
 {

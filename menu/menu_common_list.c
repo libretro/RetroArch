@@ -14,11 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "menu.h"
 #include "menu_common_list.h"
-#include "menu_list.h"
+#include "menu.h"
 #include "menu_entries_cbs.h"
-#include <file/file_path.h>
 
 void menu_common_list_clear(void *data)
 {

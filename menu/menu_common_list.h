@@ -17,6 +17,8 @@
 #ifndef MENU_COMMON_LIST_H__
 #define MENU_COMMON_LIST_H__
 
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

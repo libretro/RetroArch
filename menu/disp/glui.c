@@ -21,7 +21,6 @@
 #include <limits.h>
 
 #include "../menu.h"
-#include "../../general.h"
 #include <file/file_path.h>
 #include "../../gfx/gl_common.h"
 #include "../../gfx/video_thread_wrapper.h"
