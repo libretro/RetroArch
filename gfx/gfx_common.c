@@ -151,6 +151,17 @@ void gfx_set_dwm(void)
 }
 #endif
 
+/**
+ * gfx_scale_integer:
+ * @vp            : Viewport handle
+ * @width         : Width.
+ * @height        : Height.
+ * @aspect_ratio  : Aspect ratio (in float).
+ * @keep_aspect   : Preserve aspect ratio?
+ *
+ * Gets new viewport scaling dimensions based on 
+ * scaled integer aspect ratio.
+ **/
 void gfx_scale_integer(struct rarch_viewport *vp, unsigned width,
       unsigned height, float aspect_ratio, bool keep_aspect)
 {
@@ -169,11 +180,10 @@ void gfx_scale_integer(struct rarch_viewport *vp, unsigned width,
    }
    else
    {
-      unsigned base_height, base_width;
-
+      unsigned base_width;
       /* Use system reported sizes as these define the 
        * geometry for the "normal" case. */
-      base_height = g_extern.system.av_info.geometry.base_height;
+      unsigned base_height = g_extern.system.av_info.geometry.base_height;
 
       if (base_height == 0)
          base_height = 1;
@@ -248,6 +258,13 @@ char rotation_lut[4][32] =
    "270 deg"
 };
 
+/**
+ * gfx_set_square_pixel_viewport:
+ * @width         : Width.
+ * @height        : Height.
+ *
+ * Sets viewport to square pixel aspect ratio based on @width and @height. 
+ **/
 void gfx_set_square_pixel_viewport(unsigned width, unsigned height)
 {
    unsigned len, highest, i, aspect_x, aspect_y;
@@ -272,6 +289,11 @@ void gfx_set_square_pixel_viewport(unsigned width, unsigned height)
    aspectratio_lut[ASPECT_RATIO_SQUARE].value = (float)aspect_x / aspect_y;
 }
 
+/**
+ * gfx_set_core_viewport:
+ *
+ * Sets viewport to aspect ratio set by core A/V info. 
+ **/
 void gfx_set_core_viewport(void)
 {
    const struct retro_game_geometry *geom = 
