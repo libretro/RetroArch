@@ -60,7 +60,14 @@ enum retro_key input_translate_str_to_rk(const char *str);
 
 const char *input_config_get_prefix(unsigned user, bool meta);
 
-/* Returns RARCH_BIND_LIST_END on not found. */
+/**
+ * input_translate_str_to_bind_id:
+ * @str                            : String to translate to bind ID.
+ *
+ * Translate string representation to bind ID.
+ *
+ * Returns: Bind ID value on success, otherwise RARCH_BIND_LIST_END on not found.
+ **/
 unsigned input_translate_str_to_bind_id(const char *str);
 
 void input_config_parse_key(config_file_t *conf,
@@ -75,6 +82,12 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
 
 void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode);
 
+/**
+ * input_pop_analog_dpad:
+ * @binds                          : Binds to modify.
+ *
+ * Restores binds temporarily overridden by input_push_analog_dpad().
+ **/
 void input_pop_analog_dpad(struct retro_keybind *binds);
 
 #ifdef __cplusplus

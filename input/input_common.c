@@ -24,44 +24,6 @@
 #include "../config.h"
 #endif
 
-bool input_translate_coord_viewport(int mouse_x, int mouse_y,
-      int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
-      int16_t *res_screen_y)
-{
-   int scaled_screen_x, scaled_screen_y, scaled_x, scaled_y;
-   struct rarch_viewport vp = {0};
-   bool have_viewport_info = driver.video && driver.video->viewport_info;
-
-   if (!have_viewport_info)
-      return false;
-
-   driver.video->viewport_info(driver.video_data, &vp);
-
-   scaled_screen_x = (2 * mouse_x * 0x7fff) / (int)vp.full_width - 0x7fff;
-   scaled_screen_y = (2 * mouse_y * 0x7fff) / (int)vp.full_height - 0x7fff;
-   if (scaled_screen_x < -0x7fff || scaled_screen_x > 0x7fff)
-      scaled_screen_x = -0x8000; /* OOB */
-   if (scaled_screen_y < -0x7fff || scaled_screen_y > 0x7fff)
-      scaled_screen_y = -0x8000; /* OOB */
-
-   mouse_x -= vp.x;
-   mouse_y -= vp.y;
-
-   scaled_x = (2 * mouse_x * 0x7fff) / (int)vp.width - 0x7fff;
-   scaled_y = (2 * mouse_y * 0x7fff) / (int)vp.height - 0x7fff;
-   if (scaled_x < -0x7fff || scaled_x > 0x7fff)
-      scaled_x = -0x8000; /* OOB */
-   if (scaled_y < -0x7fff || scaled_y > 0x7fff)
-      scaled_y = -0x8000; /* OOB */
-
-   *res_x = scaled_x;
-   *res_y = scaled_y;
-   *res_screen_x = scaled_screen_x;
-   *res_screen_y = scaled_screen_y;
-
-   return true;
-}
-
 static const char *bind_user_prefix[MAX_USERS] = {
    "input_player1",
    "input_player2",
@@ -140,13 +102,50 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, overlay_next,          RARCH_OVERLAY_NEXT, "Overlay next"),
       DECLARE_META_BIND(2, disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE, "Disk eject toggle"),
       DECLARE_META_BIND(2, disk_next,             RARCH_DISK_NEXT, "Disk next"),
-	  DECLARE_META_BIND(2, disk_prev,             RARCH_DISK_NEXT, "Disk prev"),
+	   DECLARE_META_BIND(2, disk_prev,             RARCH_DISK_NEXT, "Disk prev"),
       DECLARE_META_BIND(2, grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE, "Grab mouse toggle"),
 #ifdef HAVE_MENU
       DECLARE_META_BIND(1, menu_toggle,           RARCH_MENU_TOGGLE, "Menu toggle"),
 #endif
 };
 
+bool input_translate_coord_viewport(int mouse_x, int mouse_y,
+      int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
+      int16_t *res_screen_y)
+{
+   int scaled_screen_x, scaled_screen_y, scaled_x, scaled_y;
+   struct rarch_viewport vp = {0};
+   bool have_viewport_info = driver.video && driver.video->viewport_info;
+
+   if (!have_viewport_info)
+      return false;
+
+   driver.video->viewport_info(driver.video_data, &vp);
+
+   scaled_screen_x = (2 * mouse_x * 0x7fff) / (int)vp.full_width - 0x7fff;
+   scaled_screen_y = (2 * mouse_y * 0x7fff) / (int)vp.full_height - 0x7fff;
+   if (scaled_screen_x < -0x7fff || scaled_screen_x > 0x7fff)
+      scaled_screen_x = -0x8000; /* OOB */
+   if (scaled_screen_y < -0x7fff || scaled_screen_y > 0x7fff)
+      scaled_screen_y = -0x8000; /* OOB */
+
+   mouse_x -= vp.x;
+   mouse_y -= vp.y;
+
+   scaled_x = (2 * mouse_x * 0x7fff) / (int)vp.width - 0x7fff;
+   scaled_y = (2 * mouse_y * 0x7fff) / (int)vp.height - 0x7fff;
+   if (scaled_x < -0x7fff || scaled_x > 0x7fff)
+      scaled_x = -0x8000; /* OOB */
+   if (scaled_y < -0x7fff || scaled_y > 0x7fff)
+      scaled_y = -0x8000; /* OOB */
+
+   *res_x = scaled_x;
+   *res_y = scaled_y;
+   *res_screen_x = scaled_screen_x;
+   *res_screen_y = scaled_screen_y;
+
+   return true;
+}
 
 void input_config_parse_key(config_file_t *conf,
       const char *prefix, const char *btn,
@@ -169,6 +168,14 @@ const char *input_config_get_prefix(unsigned user, bool meta)
    return NULL;
 }
 
+/**
+ * input_translate_str_to_bind_id:
+ * @str                            : String to translate to bind ID.
+ *
+ * Translate string representation to bind ID.
+ *
+ * Returns: Bind ID value on success, otherwise RARCH_BIND_LIST_END on not found.
+ **/
 unsigned input_translate_str_to_bind_id(const char *str)
 {
    unsigned i;
@@ -182,6 +189,7 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
 {
    char *dir = NULL;
    uint16_t hat_dir = 0, hat;
+
    if (!bind || !str)
       return;
 
@@ -258,7 +266,7 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
             bind->joyaxis = AXIS_NEG(i_axis);
       }
 
-      /* Ensure that d-pad emulation doesn't screw this over. */
+      /* Ensure that D-pad emulation doesn't screw this over. */
       bind->orig_joyaxis = bind->joyaxis;
    }
 
@@ -384,7 +392,12 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
    }
 }
 
-/* Restore binds temporarily overridden by input_push_analog_dpad. */
+/**
+ * input_pop_analog_dpad:
+ * @binds                          : Binds to modify.
+ *
+ * Restores binds temporarily overridden by input_push_analog_dpad().
+ **/
 void input_pop_analog_dpad(struct retro_keybind *binds)
 {
    unsigned i;
