@@ -24,12 +24,21 @@
 #include "../config.h"
 #endif
 
+/**
+ * input_joypad_name:  
+ * @drv                     : Joypad driver handle.
+ * @port                    : Joystick number.
+ *
+ * Gets name of the joystick (@port).
+ *
+ * Returns: name of joystick #port.
+ **/
 const char *input_joypad_name(const rarch_joypad_driver_t *drv,
-      unsigned joypad)
+      unsigned port)
 {
    if (!drv)
       return NULL;
-   return drv->name(joypad);
+   return drv->name(port);
 }
 
 bool input_joypad_set_rumble(const rarch_joypad_driver_t *drv,
@@ -46,6 +55,19 @@ bool input_joypad_set_rumble(const rarch_joypad_driver_t *drv,
    return drv->set_rumble(joy_idx, effect, strength);
 }
 
+/**
+ * input_joypad_is_pressed:
+ * @drv                     : Joypad driver handle.
+ * @port                    : User number.
+ * @binds                   : Binds of user.
+ * @key                     : Identifier of key.
+ *
+ * Checks if key (@key) was being pressed by user
+ * with number @port with provided keybinds (@binds).
+ *
+ * Returns: true (1) if key was pressed, otherwise
+ * false (0).
+ **/
 static bool input_joypad_is_pressed(
       const rarch_joypad_driver_t *drv,
       unsigned port,
@@ -81,19 +103,26 @@ static bool input_joypad_is_pressed(
    return scaled_axis > g_settings.input.axis_threshold;
 }
 
+/**
+ * input_joypad_pressed:
+ * @drv                     : Joypad driver handle.
+ * @port                    : User number.
+ * @binds                   : Binds of user.
+ * @key                     : Identifier of key.
+ *
+ * Checks if key (@key) was being pressed by user
+ * with number @port with provided keybinds (@binds).
+ *
+ * Returns: true (1) if key was pressed, otherwise
+ * false (0).
+ **/
 bool input_joypad_pressed(const rarch_joypad_driver_t *drv,
       unsigned port, const struct retro_keybind *binds, unsigned key)
 {
-   if (!drv)
+   if (!drv || !binds[key].valid || 
+         !input_joypad_is_pressed(drv, port, binds, key))
       return false;
-
-   if (!binds[key].valid)
-      return false;
-
-   if (input_joypad_is_pressed(drv, port, binds, key))
-      return true;
-
-   return false;
+   return true;
 }
 
 int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
@@ -154,27 +183,51 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
    return digital_right + digital_left;
 }
 
+/**
+ * input_joypad_axis_raw:  
+ * @drv                     : Joypad driver handle.
+ * @port                    : Joystick number.
+ * @axis                    : Identifier of axis.
+ *
+ * Checks if axis (@axis) was being pressed by user   
+ * with joystick number @port.
+ *
+ * Returns: true (1) if axis was pressed, otherwise
+ * false (0).
+ **/
 int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *drv,
-      unsigned joypad, unsigned axis)
+      unsigned port, unsigned axis)
 {
    if (!drv)
       return 0;
-   return drv->axis(joypad, AXIS_POS(axis)) +
-      drv->axis(joypad, AXIS_NEG(axis));
+   return drv->axis(port, AXIS_POS(axis)) +
+      drv->axis(port, AXIS_NEG(axis));
 }
 
+/**
+ * input_joypad_button_raw:
+ * @drv                     : Joypad driver handle.
+ * @port                    : Joystick number.
+ * @button                  : Identifier of key.
+ *
+ * Checks if key (@button) was being pressed by user
+ * with joystick number @port.
+ *
+ * Returns: true (1) if key was pressed, otherwise
+ * false (0).
+ **/
 bool input_joypad_button_raw(const rarch_joypad_driver_t *drv,
-      unsigned joypad, unsigned button)
+      unsigned port, unsigned button)
 {
    if (!drv)
       return false;
-   return drv->button(joypad, button);
+   return drv->button(port, button);
 }
 
 bool input_joypad_hat_raw(const rarch_joypad_driver_t *drv,
-      unsigned joypad, unsigned hat_dir, unsigned hat)
+      unsigned port, unsigned hat_dir, unsigned hat)
 {
    if (!drv)
       return false;
-   return drv->button(joypad, HAT_MAP(hat, hat_dir));
+   return drv->button(port, HAT_MAP(hat, hat_dir));
 }
