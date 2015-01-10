@@ -1104,7 +1104,7 @@ static bool load_save_files(void)
       load_ram_file(g_extern.savefiles->elems[i].data,
             g_extern.savefiles->elems[i].attr.i);
     
-    return true;
+   return true;
 }
 
 static void save_files(void)
@@ -1133,6 +1133,8 @@ static void init_cheats(void)
 
    if (!allow_cheats)
       return;
+
+   /* TODO/FIXME - add some stuff here. */
 }
 
 static void init_rewind(void)
@@ -1153,6 +1155,7 @@ static void init_rewind(void)
    }
 
    g_extern.state_size = pretro_serialize_size();
+
    if (!g_extern.state_size)
    {
       RARCH_ERR(RETRO_LOG_REWIND_INIT_FAILED_NO_SAVESTATES);
@@ -1724,7 +1727,8 @@ static void check_disk_next(
    if (num_disks && num_disks != UINT_MAX)
    {
       unsigned new_idx = current;
-      current < num_disks - 1 ? new_idx++ : new_idx;
+      if (current < num_disks - 1)
+         new_idx++;
       rarch_disk_control_set_index(new_idx);
    }
    else
@@ -1739,7 +1743,8 @@ static void check_disk_prev(
    if (num_disks && num_disks != UINT_MAX)
    {
       unsigned new_idx = current;
-      current > 0 ? new_idx-- : new_idx;
+      if (current > 0)
+         new_idx--;
       rarch_disk_control_set_index(new_idx);
    }
    else
