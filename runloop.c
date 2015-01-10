@@ -472,6 +472,58 @@ static void check_cheats(retro_input_t trigger_input)
       cheat_manager_toggle(g_extern.cheat);
 }
 
+#ifdef HAVE_MENU
+static void do_state_check_menu_toggle(void)
+{
+   if (g_extern.is_menu)
+   {
+      if (g_extern.main_is_init && !g_extern.libretro_dummy)
+         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+      return;
+   }
+
+   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+}
+#endif
+
+/**
+ * do_pre_state_checks:
+ * @input                : input sample for this frame
+ * @old_input            : input sample of the previous frame
+ * @trigger_input        : difference' input sample - difference
+ *                         between 'input' and 'old_input'
+ *
+ * Checks for state changes in this frame.
+ *
+ * Unlike do_state_checks(), this is performed for both
+ * the menu and the regular loop.
+ *
+ * Returns: 0.
+ **/
+static int do_pre_state_checks(
+      retro_input_t input, retro_input_t old_input,
+      retro_input_t trigger_input)
+{
+   if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))
+      rarch_main_command(RARCH_CMD_OVERLAY_NEXT);
+
+   if (!g_extern.is_paused || g_extern.is_menu)
+   {
+      if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+         rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
+   }
+
+   if (BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
+      rarch_main_command(RARCH_CMD_GRAB_MOUSE_TOGGLE);
+
+#ifdef HAVE_MENU
+   if (check_enter_menu_func(trigger_input) || (g_extern.libretro_dummy))
+      do_state_check_menu_toggle();
+#endif
+
+   return 0;
+}
+
 /**
  * do_state_checks:
  * @input                : input sample for this frame
@@ -497,18 +549,6 @@ static int do_state_checks(
       set_volume(0.5f);
    else if (BIT64_GET(input, RARCH_VOLUME_DOWN))
       set_volume(-0.5f);
-
-   if (BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
-      rarch_main_command(RARCH_CMD_GRAB_MOUSE_TOGGLE);
-
-   if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))
-      rarch_main_command(RARCH_CMD_OVERLAY_NEXT);
-
-   if (!g_extern.is_paused)
-   {
-      if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
-         rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
-   }
 
 #ifdef HAVE_NETPLAY
    if (driver.netplay_data)
@@ -625,19 +665,6 @@ static void update_frame_time(void)
    g_extern.system.frame_time.callback(delta);
 }
 
-#ifdef HAVE_MENU
-static void do_state_check_menu_toggle(void)
-{
-   if (g_extern.is_menu)
-   {
-      if (g_extern.main_is_init && !g_extern.libretro_dummy)
-         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-      return;
-   }
-
-   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
-}
-#endif
 
 /**
  * limit_frame_time:
@@ -837,10 +864,9 @@ int rarch_main_iterate(void)
    if (g_extern.system.frame_time.callback)
       update_frame_time();
 
-#ifdef HAVE_MENU
-   if (check_enter_menu_func(trigger_input) || (g_extern.libretro_dummy))
-      do_state_check_menu_toggle();
+   do_pre_state_checks(input, old_input, trigger_input);
 
+#ifdef HAVE_MENU
    if (g_extern.is_menu)
    {
       if (menu_iterate(input, old_input, trigger_input) == -1)
