@@ -536,10 +536,9 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
 
       case RETRO_DEVICE_LIGHTGUN:
          return udev_lightgun_state(udev, id);
-
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 static bool udev_input_bind_button_pressed(void *data, int key)
@@ -633,12 +632,12 @@ static struct termios oldterm, newterm;
 
 static void restore_terminal_input(void)
 {
-   if (oldkbmd != 0xffff)
-   {
-      ioctl(0, KDSKBMODE, oldkbmd);
-      tcsetattr(0, TCSAFLUSH, &oldterm);
-      oldkbmd = 0xffff;
-   }
+   if (oldkbmd == 0xffff)
+      return;
+
+   ioctl(0, KDSKBMODE, oldkbmd);
+   tcsetattr(0, TCSAFLUSH, &oldterm);
+   oldkbmd = 0xffff;
 }
 
 static void restore_terminal_signal(int sig)
@@ -842,9 +841,9 @@ static bool udev_input_set_rumble(void *data, unsigned port, enum retro_rumble_e
 static const rarch_joypad_driver_t *udev_input_get_joypad_driver(void *data)
 {
    udev_input_t *udev = (udev_input_t*)data;
-   if (udev)
-      return udev->joypad;
-   return NULL;
+   if (!udev)
+      return NULL;
+   return udev->joypad;
 }
 
 input_driver_t input_udev = {
