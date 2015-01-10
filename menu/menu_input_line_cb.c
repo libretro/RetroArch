@@ -24,11 +24,10 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
+#include "menu_input_line_cb.h"
 #include "menu.h"
 #include "menu_action.h"
 #include "menu_shader.h"
-#include "../input/keyboard_line.h"
-#include "menu_input_line_cb.h"
 #include "../performance.h"
 #include "../settings_data.h"
 
@@ -66,8 +65,8 @@ static void menu_key_end_line(void *data)
 
 static void menu_search_callback(void *userdata, const char *str)
 {
-   menu_handle_t *menu = (menu_handle_t*)userdata;
    size_t idx;
+   menu_handle_t *menu = (menu_handle_t*)userdata;
 
    if (str && *str && file_list_search(menu->menu_list->selection_buf, str, &idx))
          menu_navigation_set(menu, idx, true);
@@ -409,4 +408,33 @@ int menu_input_bind_iterate_keyboard(void *data)
    }
 
    return 0;
+}
+
+unsigned menu_input_frame(retro_input_t trigger_state)
+{
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
+      return MENU_ACTION_UP;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
+      return MENU_ACTION_DOWN;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT))
+      return MENU_ACTION_LEFT;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      return MENU_ACTION_RIGHT;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
+      return MENU_ACTION_SCROLL_UP;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
+      return MENU_ACTION_SCROLL_DOWN;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_B))
+      return MENU_ACTION_CANCEL;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
+      return MENU_ACTION_OK;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_Y))
+      return MENU_ACTION_Y;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
+      return MENU_ACTION_START;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
+      return MENU_ACTION_SELECT;
+   if (trigger_state & (1ULL << RARCH_MENU_TOGGLE))
+      return MENU_ACTION_TOGGLE;
+   return MENU_ACTION_NOOP;
 }

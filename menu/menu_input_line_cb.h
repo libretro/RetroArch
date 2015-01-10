@@ -17,6 +17,7 @@
 #ifndef _MENU_INPUT_LINE_CB_H
 #define _MENU_INPUT_LINE_CB_H
 
+#include "../input/input_common.h"
 #include "../input/keyboard_line.h"
 
 #ifdef __cplusplus
@@ -48,6 +49,8 @@ bool menu_custom_bind_keyboard_cb(void *data, unsigned code);
 int menu_input_bind_iterate(void *data);
 
 int menu_input_bind_iterate_keyboard(void *data);
+
+unsigned menu_input_frame(retro_input_t trigger_state);
 
 #ifdef __cplusplus
 }
