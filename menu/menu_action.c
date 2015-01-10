@@ -67,7 +67,7 @@ static void process_setting_handler(
    }
 }
 
-int setting_handler(
+int menu_action_setting_handler(
       rarch_setting_t *setting, unsigned action)
 {
    process_setting_handler(setting, action);

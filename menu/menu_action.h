@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-int setting_handler(
+int menu_action_setting_handler(
       rarch_setting_t *setting, unsigned action);
 
 int menu_action_setting_set_current_string(
