@@ -51,17 +51,62 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 
 void rarch_main_deinit(void);
 
+/**
+ * rarch_render_cached_frame:
+ *
+ * Renders the current video frame.
+ **/
 void rarch_render_cached_frame(void);
 
+/**
+ * rarch_disk_control_set_eject:
+ * @new_state            : Eject or close the virtual drive tray.
+ *                         false (0) : Close
+ *                         true  (1) : Eject
+ * @print_log            : Show message onscreen.
+ *
+ * Ejects/closes of the virtual drive tray.
+ **/
 void rarch_disk_control_set_eject(bool state, bool log);
 
+/**
+ * rarch_disk_control_set_index:
+ * @index                : Index of disk to set as current.
+ *
+ * Sets current disk to @index.
+ **/
 void rarch_disk_control_set_index(unsigned index);
 
+/**
+ * rarch_disk_control_append_image:
+ * @path                 : Path to disk image. 
+ *
+ * Appends disk image to disk image list.
+ **/
 void rarch_disk_control_append_image(const char *path);
 
 void rarch_recording_dump_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
+/**
+ * rarch_replace_config:
+ * @path                 : Path to config file to replace
+ *                         current config file with.
+ *
+ * Replaces currently loaded configuration file with
+ * another one. Will load a dummy core to flush state
+ * properly.
+ *
+ * Quite intrusive and error prone.
+ * Likely to have lots of small bugs.
+ * Cleanly exit the main loop to ensure that all the tiny details
+ * get set properly.
+ *
+ * This should mitigate most of the smaller bugs.
+ *
+ * Returns: true (1) if successful, false (0) if @path was the
+ * same as the current config file.
+ **/
 bool rarch_replace_config(const char *path);
 
 void rarch_playlist_load_content(content_playlist_t *playlist,
