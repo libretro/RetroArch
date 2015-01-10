@@ -729,11 +729,12 @@ static void set_program_base_attrib(cg_shader_data_t *cg, unsigned i)
    CGparameter param = cgGetFirstParameter(cg->prg[i].vprg, CG_PROGRAM);
    for (; param; param = cgGetNextParameter(param))
    {
+      const char *semantic = NULL;
       if (cgGetParameterDirection(param) != CG_IN 
             || cgGetParameterVariability(param) != CG_VARYING)
          continue;
 
-      const char *semantic = cgGetParameterSemantic(param);
+      semantic = cgGetParameterSemantic(param);
       if (!semantic)
          continue;
 
@@ -822,16 +823,15 @@ static void set_program_attributes(cg_shader_data_t *cg, unsigned i)
    if (i > 1)
    {
       char pass_str[64];
+
       snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i);
       set_pass_attrib(&cg->prg[i], &cg->prg[i].orig, pass_str);
    }
 
    for (j = 0; j < PREV_TEXTURES; j++)
    {
-      char attr_buf_tex[64];
-      char attr_buf_vid_size[64];
-      char attr_buf_tex_size[64];
-      char attr_buf_coord[64];
+      char attr_buf_tex[64], attr_buf_vid_size[64];
+      char attr_buf_tex_size[64], attr_buf_coord[64];
       static const char *prev_names[PREV_TEXTURES] = {
          "PREV",
          "PREV1",
@@ -987,9 +987,9 @@ static void gl_cg_use(void *data, unsigned idx)
 static unsigned gl_cg_num(void)
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
-   if (cg)
-      return cg->cg_shader->passes;
-   return 0;
+   if (!cg)
+      return 0;
+   return cg->cg_shader->passes;
 }
 
 static bool gl_cg_filter_type(unsigned idx, bool *smooth)
@@ -1053,9 +1053,9 @@ static bool gl_cg_mipmap_input(unsigned idx)
 static struct gfx_shader *gl_cg_get_current_shader(void)
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
-   if (cg)
-      return cg->cg_shader;
-   return NULL;
+   if (!cg)
+      return NULL;
+   return cg->cg_shader;
 }
 
 const shader_backend_t gl_cg_backend = {

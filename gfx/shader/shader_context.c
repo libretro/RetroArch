@@ -38,6 +38,7 @@ static const shader_backend_t *shader_ctx_drivers[] = {
 const shader_backend_t *shader_ctx_find_driver(const char *ident)
 {
    unsigned i;
+
    for (i = 0; shader_ctx_drivers[i]; i++)
    {
       if (strcmp(shader_ctx_drivers[i]->ident, ident) == 0)
@@ -50,6 +51,7 @@ const shader_backend_t *shader_ctx_find_driver(const char *ident)
 const shader_backend_t *shader_ctx_init_first(void)
 {
    unsigned i;
+
    for (i = 0; shader_ctx_drivers[i]; i++)
       return shader_ctx_drivers[i];
 
