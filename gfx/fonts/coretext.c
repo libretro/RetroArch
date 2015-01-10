@@ -47,7 +47,6 @@ static const struct font_atlas *font_renderer_ct_get_atlas(void *data)
 
 static const struct font_glyph *font_renderer_ct_get_glyph(void *data, uint32_t code)
 {
-   struct font_glyph *result = NULL;
    font_renderer_t *handle   = (font_renderer_t*)data;
 
    if (!handle)
