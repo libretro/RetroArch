@@ -24,27 +24,27 @@
 extern "C" {
 #endif
 
-void menu_key_event(bool down, unsigned keycode, uint32_t character,
+void menu_input_key_event(bool down, unsigned keycode, uint32_t character,
       uint16_t key_modifiers);
 
-void menu_key_start_line(void *data, const char *label,
+void menu_input_key_start_line(void *data, const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb);
 
-void st_uint_callback(void *userdata, const char *str);
+void menu_input_st_uint_callback(void *userdata, const char *str);
 
-void st_string_callback(void *userdata, const char *str);
+void menu_input_st_string_callback(void *userdata, const char *str);
 
-void st_cheat_callback(void *userdata, const char *str);
+void menu_input_st_cheat_callback(void *userdata, const char *str);
 
-void menu_poll_bind_get_rested_axes(struct menu_bind_state *state);
+void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state);
 
-void menu_poll_bind_state(struct menu_bind_state *state);
+void menu_input_poll_bind_state(struct menu_bind_state *state);
 
-bool menu_poll_find_trigger(struct menu_bind_state *state,
+bool menu_input_poll_find_trigger(struct menu_bind_state *state,
       struct menu_bind_state *new_state);
 
-bool menu_custom_bind_keyboard_cb(void *data, unsigned code);
+bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code);
 
 int menu_input_bind_iterate(void *data);
 

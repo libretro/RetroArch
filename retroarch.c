@@ -2180,7 +2180,7 @@ void rarch_main_set_state(unsigned cmd)
           * We'll use this later for something ...
           * FIXME: This should probably be moved to menu_common somehow. */
          g_extern.frontend_key_event = g_extern.system.key_event;
-         g_extern.system.key_event = menu_key_event;
+         g_extern.system.key_event   = menu_input_key_event;
 
          driver.menu->need_refresh = true;
          g_extern.system.frame_time_last = 0;

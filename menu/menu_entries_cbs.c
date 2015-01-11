@@ -166,8 +166,8 @@ static int action_ok_load_state(const char *path,
 static int action_ok_cheat(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_key_start_line(driver.menu, "Input Cheat",
-         label, type, idx, st_cheat_callback);
+   menu_input_key_start_line(driver.menu, "Input Cheat",
+         label, type, idx, menu_input_st_cheat_callback);
    return 0;
 }
 
@@ -384,8 +384,8 @@ static int action_ok_shader_preset_save_as(const char *path,
    if (!driver.menu)
       return -1;
 
-   menu_key_start_line(driver.menu, "Preset Filename",
-         label, type, idx, st_string_callback);
+   menu_input_key_start_line(driver.menu, "Preset Filename",
+         label, type, idx, menu_input_st_string_callback);
    return 0;
 }
 

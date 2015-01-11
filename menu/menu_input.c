@@ -32,7 +32,7 @@
 #include "../settings_data.h"
 #include "../input/input_joypad.h"
 
-void menu_key_start_line(void *data, const char *label,
+void menu_input_key_start_line(void *data, const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb)
 {
@@ -49,7 +49,7 @@ void menu_key_start_line(void *data, const char *label,
    menu->keyboard.buffer        = input_keyboard_start_line(menu, cb);
 }
 
-static void menu_key_end_line(void *data)
+static void menu_input_key_end_line(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
 
@@ -64,7 +64,7 @@ static void menu_key_end_line(void *data)
    driver.flushing_input = true;
 }
 
-static void menu_search_callback(void *userdata, const char *str)
+static void menu_input_search_callback(void *userdata, const char *str)
 {
    size_t idx;
    menu_handle_t *menu = (menu_handle_t*)userdata;
@@ -72,10 +72,10 @@ static void menu_search_callback(void *userdata, const char *str)
    if (str && *str && file_list_search(menu->menu_list->selection_buf, str, &idx))
          menu_navigation_set(menu, idx, true);
 
-   menu_key_end_line(menu);
+   menu_input_key_end_line(menu);
 }
 
-void st_uint_callback(void *userdata, const char *str)
+void menu_input_st_uint_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
    rarch_setting_t *current_setting = NULL;
@@ -87,10 +87,10 @@ void st_uint_callback(void *userdata, const char *str)
                   menu->list_settings, menu->keyboard.label_setting)))
          *current_setting->value.unsigned_integer = strtoul(str, NULL, 0);
    }
-   menu_key_end_line(menu);
+   menu_input_key_end_line(menu);
 }
 
-void st_string_callback(void *userdata, const char *str)
+void menu_input_st_string_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
    rarch_setting_t *current_setting = NULL;
@@ -107,10 +107,11 @@ void st_string_callback(void *userdata, const char *str)
             menu_shader_manager_save_preset(str, false);
       }
    }
-   menu_key_end_line(menu);
+
+   menu_input_key_end_line(menu);
 }
 
-void st_cheat_callback(void *userdata, const char *str)
+void menu_input_st_cheat_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
    cheat_manager_t *cheat = g_extern.cheat;
@@ -123,10 +124,11 @@ void st_cheat_callback(void *userdata, const char *str)
       cheat->cheats[cheat_index].code  = strdup(str);
       cheat->cheats[cheat_index].state = true;
    }
-   menu_key_end_line(menu);
+
+   menu_input_key_end_line(menu);
 }
 
-void menu_key_event(bool down, unsigned keycode,
+void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
    if (!driver.menu)
@@ -141,11 +143,11 @@ void menu_key_event(bool down, unsigned keycode,
       driver.menu->keyboard.display = true;
       driver.menu->keyboard.label = "Search: ";
       driver.menu->keyboard.buffer = 
-         input_keyboard_start_line(driver.menu, menu_search_callback);
+         input_keyboard_start_line(driver.menu, menu_input_search_callback);
    }
 }
 
-void menu_poll_bind_state(struct menu_bind_state *state)
+void menu_input_poll_bind_state(struct menu_bind_state *state)
 {
    unsigned i, b, a, h;
    const rarch_joypad_driver_t *joypad = NULL;
@@ -191,7 +193,7 @@ void menu_poll_bind_state(struct menu_bind_state *state)
    }
 }
 
-void menu_poll_bind_get_rested_axes(struct menu_bind_state *state)
+void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state)
 {
    unsigned i, a;
    const rarch_joypad_driver_t *joypad = NULL;
@@ -214,7 +216,7 @@ void menu_poll_bind_get_rested_axes(struct menu_bind_state *state)
             input_joypad_axis_raw(joypad, i, a);
 }
 
-static bool menu_poll_find_trigger_pad(struct menu_bind_state *state,
+static bool menu_input_poll_find_trigger_pad(struct menu_bind_state *state,
       struct menu_bind_state *new_state, unsigned p)
 {
    unsigned a, b, h;
@@ -286,7 +288,7 @@ static bool menu_poll_find_trigger_pad(struct menu_bind_state *state,
    return false;
 }
 
-bool menu_poll_find_trigger(struct menu_bind_state *state,
+bool menu_input_poll_find_trigger(struct menu_bind_state *state,
       struct menu_bind_state *new_state)
 {
    unsigned i;
@@ -296,7 +298,7 @@ bool menu_poll_find_trigger(struct menu_bind_state *state,
 
    for (i = 0; i < g_settings.input.max_users; i++)
    {
-      if (!menu_poll_find_trigger_pad(state, new_state, i))
+      if (!menu_input_poll_find_trigger_pad(state, new_state, i))
          continue;
 
       /* Update the joypad mapping automatically.
@@ -307,7 +309,7 @@ bool menu_poll_find_trigger(struct menu_bind_state *state,
    return false;
 }
 
-bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
+bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
 
@@ -342,10 +344,10 @@ int menu_input_bind_iterate(void *data)
       driver.menu_ctx->render_messagebox(msg);
 
    driver.block_input = true;
-   menu_poll_bind_state(&binds);
+   menu_input_poll_bind_state(&binds);
 
    if ((binds.skip && !menu->binds.skip) ||
-         menu_poll_find_trigger(&menu->binds, &binds))
+         menu_input_poll_find_trigger(&menu->binds, &binds))
    {
       driver.block_input = false;
 

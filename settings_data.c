@@ -927,12 +927,12 @@ static int setting_data_action_ok_bind_all(void *data, unsigned action)
          rarch_get_time_usec() + 
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
       input_keyboard_wait_keys(driver.menu,
-            menu_custom_bind_keyboard_cb);
+            menu_input_custom_bind_keyboard_cb);
    }
    else
    {
-      menu_poll_bind_get_rested_axes(&driver.menu->binds);
-      menu_poll_bind_state(&driver.menu->binds);
+      menu_input_poll_bind_get_rested_axes(&driver.menu->binds);
+      menu_input_poll_bind_state(&driver.menu->binds);
    }
    return 0;
 }
@@ -1067,8 +1067,8 @@ static int setting_data_uint_action_ok_linefeed(void *data, unsigned action)
    if (!setting)
       return -1;
 
-   menu_key_start_line(driver.menu, setting->short_description,
-         setting->name, 0, 0, st_uint_callback);
+   menu_input_key_start_line(driver.menu, setting->short_description,
+         setting->name, 0, 0, menu_input_st_uint_callback);
 
    return 0;
 }
@@ -1119,12 +1119,12 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
       driver.menu->binds.timeout_end = rarch_get_time_usec() +
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
       input_keyboard_wait_keys(driver.menu,
-            menu_custom_bind_keyboard_cb);
+            menu_input_custom_bind_keyboard_cb);
    }
    else
    {
-      menu_poll_bind_get_rested_axes(&driver.menu->binds);
-      menu_poll_bind_state(&driver.menu->binds);
+      menu_input_poll_bind_get_rested_axes(&driver.menu->binds);
+      menu_input_poll_bind_state(&driver.menu->binds);
    }
 
    return 0;
@@ -1138,8 +1138,8 @@ static int setting_data_string_action_ok_allow_input(void *data,
    if (!setting || !driver.menu)
       return -1;
 
-   menu_key_start_line(driver.menu, setting->short_description,
-         setting->name, 0, 0, st_string_callback);
+   menu_input_key_start_line(driver.menu, setting->short_description,
+         setting->name, 0, 0, menu_input_st_string_callback);
 
    return 0;
 }
