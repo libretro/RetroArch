@@ -984,8 +984,8 @@ success:
       limit_frame_time();
 
 quit:
-   if (ret == -1)
-      return rarch_main_iterate_quit();
+   if (ret != -1)
+      return ret;
 
-   return ret;
+   return rarch_main_iterate_quit();
 }
