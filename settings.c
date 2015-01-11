@@ -33,6 +33,13 @@ struct settings g_settings;
 struct global g_extern;
 struct defaults g_defaults;
 
+/**
+ * config_get_default_audio:
+ *
+ * Gets default audio driver.
+ *
+ * Returns: Default audio driver.
+ **/
 const char *config_get_default_audio(void)
 {
    switch (AUDIO_DEFAULT_DRIVER)
@@ -82,6 +89,13 @@ const char *config_get_default_audio(void)
    return "null";
 }
 
+/**
+ * config_get_default_audio_resampler:
+ *
+ * Gets default audio resampler driver.
+ *
+ * Returns: Default audio resampler driver.
+ **/
 const char *config_get_default_audio_resampler(void)
 {
    switch (AUDIO_DEFAULT_RESAMPLER_DRIVER)
@@ -99,6 +113,13 @@ const char *config_get_default_audio_resampler(void)
    return "null";
 }
 
+/**
+ * config_get_default_video:
+ *
+ * Gets default video driver.
+ *
+ * Returns: Default video driver.
+ **/
 const char *config_get_default_video(void)
 {
    switch (VIDEO_DEFAULT_DRIVER)
@@ -137,6 +158,13 @@ const char *config_get_default_video(void)
    return "null";
 }
 
+/**
+ * config_get_default_input:
+ *
+ * Gets default input driver.
+ *
+ * Returns: Default input driver.
+ **/
 const char *config_get_default_input(void)
 {
    switch (INPUT_DEFAULT_DRIVER)
@@ -180,6 +208,13 @@ const char *config_get_default_input(void)
    return "null";
 }
 
+/**
+ * config_get_default_joypad:
+ *
+ * Gets default input joypad driver.
+ *
+ * Returns: Default input joypad driver.
+ **/
 const char *config_get_default_joypad(void)
 {
    switch (JOYPAD_DEFAULT_DRIVER)
@@ -222,6 +257,13 @@ const char *config_get_default_joypad(void)
 }
 
 #ifdef HAVE_MENU
+/**
+ * config_get_default_menu:
+ *
+ * Gets default menu driver.
+ *
+ * Returns: Default menu driver.
+ **/
 const char *config_get_default_menu(void)
 {
    switch (MENU_DEFAULT_DRIVER)
@@ -248,6 +290,13 @@ const char *config_get_default_menu(void)
 }
 #endif
 
+/**
+ * config_get_default_osk:
+ *
+ * Gets default OSK driver.
+ *
+ * Returns: Default OSK driver.
+ **/
 const char *config_get_default_osk(void)
 {
    switch (OSK_DEFAULT_DRIVER)
@@ -261,6 +310,13 @@ const char *config_get_default_osk(void)
    return "null";
 }
 
+/**
+ * config_get_default_camera:
+ *
+ * Gets default camera driver.
+ *
+ * Returns: Default camera driver.
+ **/
 const char *config_get_default_camera(void)
 {
    switch (CAMERA_DEFAULT_DRIVER)
@@ -280,6 +336,13 @@ const char *config_get_default_camera(void)
    return "null";
 }
 
+/**
+ * config_get_default_location:
+ *
+ * Gets default location driver.
+ *
+ * Returns: Default location driver.
+ **/
 const char *config_get_default_location(void)
 {
    switch (LOCATION_DEFAULT_DRIVER)
@@ -295,6 +358,11 @@ const char *config_get_default_location(void)
    return "null";
 }
 
+/**
+ * config_set_defaults:
+ *
+ * Set 'default' configuration values.
+ **/
 static void config_set_defaults(void)
 {
    unsigned i, j;
@@ -642,8 +710,13 @@ static void config_set_defaults(void)
    g_extern.block_config_read = default_block_config_read;
 }
 
-static void parse_config_file(void);
-
+/**
+ * open_default_config_file
+ *
+ * Open a default config file. Platform-specific.
+ *
+ * Returns: handle to config file if found, otherwise NULL.
+ **/
 static config_file_t *open_default_config_file(void)
 {
    config_file_t *conf = NULL;
@@ -837,7 +910,68 @@ static config_file_t *open_default_config_file(void)
    return conf;
 }
 
-static void config_read_keybinds_conf(config_file_t *conf);
+static void read_keybinds_keyboard(config_file_t *conf, unsigned user,
+      unsigned idx, struct retro_keybind *bind)
+{
+   if (input_config_bind_map[idx].valid && input_config_bind_map[idx].base)
+   {
+      const char *prefix = input_config_get_prefix(user,
+            input_config_bind_map[idx].meta);
+      if (prefix)
+         input_config_parse_key(conf, prefix,
+               input_config_bind_map[idx].base, bind);
+   }
+}
+
+static void read_keybinds_button(config_file_t *conf, unsigned user,
+      unsigned idx, struct retro_keybind *bind)
+{
+   if (input_config_bind_map[idx].valid && input_config_bind_map[idx].base)
+   {
+      const char *prefix = input_config_get_prefix(user,
+            input_config_bind_map[idx].meta);
+      if (prefix)
+         input_config_parse_joy_button(conf, prefix,
+               input_config_bind_map[idx].base, bind);
+   }
+}
+
+static void read_keybinds_axis(config_file_t *conf, unsigned user,
+      unsigned idx, struct retro_keybind *bind)
+{
+   if (input_config_bind_map[idx].valid && input_config_bind_map[idx].base)
+   {
+      const char *prefix = input_config_get_prefix(user,
+            input_config_bind_map[idx].meta);
+      if (prefix)
+         input_config_parse_joy_axis(conf, prefix,
+               input_config_bind_map[idx].base, bind);
+   }
+}
+
+static void read_keybinds_user(config_file_t *conf, unsigned user)
+{
+   unsigned i;
+   for (i = 0; input_config_bind_map[i].valid; i++)
+   {
+      struct retro_keybind *bind = (struct retro_keybind*)
+         &g_settings.input.binds[user][i];
+
+      if (!bind->valid)
+         continue;
+
+      read_keybinds_keyboard(conf, user, i, bind);
+      read_keybinds_button(conf, user, i, bind);
+      read_keybinds_axis(conf, user, i, bind);
+   }
+}
+
+static void config_read_keybinds_conf(config_file_t *conf)
+{
+   unsigned i;
+   for (i = 0; i < MAX_USERS; i++)
+      read_keybinds_user(conf, i);
+}
 
 /* Also dumps inherited values, useful for logging. */
 
@@ -1379,68 +1513,6 @@ static void parse_config_file(void)
 }
 
 
-static void read_keybinds_keyboard(config_file_t *conf, unsigned user,
-      unsigned idx, struct retro_keybind *bind)
-{
-   if (input_config_bind_map[idx].valid && input_config_bind_map[idx].base)
-   {
-      const char *prefix = input_config_get_prefix(user,
-            input_config_bind_map[idx].meta);
-      if (prefix)
-         input_config_parse_key(conf, prefix,
-               input_config_bind_map[idx].base, bind);
-   }
-}
-
-static void read_keybinds_button(config_file_t *conf, unsigned user,
-      unsigned idx, struct retro_keybind *bind)
-{
-   if (input_config_bind_map[idx].valid && input_config_bind_map[idx].base)
-   {
-      const char *prefix = input_config_get_prefix(user,
-            input_config_bind_map[idx].meta);
-      if (prefix)
-         input_config_parse_joy_button(conf, prefix,
-               input_config_bind_map[idx].base, bind);
-   }
-}
-
-static void read_keybinds_axis(config_file_t *conf, unsigned user,
-      unsigned idx, struct retro_keybind *bind)
-{
-   if (input_config_bind_map[idx].valid && input_config_bind_map[idx].base)
-   {
-      const char *prefix = input_config_get_prefix(user,
-            input_config_bind_map[idx].meta);
-      if (prefix)
-         input_config_parse_joy_axis(conf, prefix,
-               input_config_bind_map[idx].base, bind);
-   }
-}
-
-static void read_keybinds_user(config_file_t *conf, unsigned user)
-{
-   unsigned i;
-   for (i = 0; input_config_bind_map[i].valid; i++)
-   {
-      struct retro_keybind *bind = (struct retro_keybind*)
-         &g_settings.input.binds[user][i];
-
-      if (!bind->valid)
-         continue;
-
-      read_keybinds_keyboard(conf, user, i, bind);
-      read_keybinds_button(conf, user, i, bind);
-      read_keybinds_axis(conf, user, i, bind);
-   }
-}
-
-static void config_read_keybinds_conf(config_file_t *conf)
-{
-   unsigned i;
-   for (i = 0; i < MAX_USERS; i++)
-      read_keybinds_user(conf, i);
-}
 
 #if 0
 static bool config_read_keybinds(const char *path)
@@ -1574,10 +1646,12 @@ static void save_keybind(config_file_t *conf, const char *prefix,
 static void save_keybinds_user(config_file_t *conf, unsigned user)
 {
    unsigned i = 0;
+
    for (i = 0; input_config_bind_map[i].valid; i++)
    {
       const char *prefix = input_config_get_prefix(user,
             input_config_bind_map[i].meta);
+
       if (prefix)
          save_keybind(conf, prefix, input_config_bind_map[i].base,
                &g_settings.input.binds[user][i]);
@@ -1864,6 +1938,7 @@ bool config_save_file(const char *path)
    for (i = 0; i < MAX_USERS; i++)
    {
       char cfg[64];
+
       snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
       config_set_int(conf, cfg, g_settings.input.device[i]);
       snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
