@@ -910,6 +910,20 @@ static void thread_set_callbacks(thread_video_t *thr,
       thr->video_thread.poke_interface = NULL;
 }
 
+/**
+ * rarch_threaded_video_init:
+ * @out_driver                : Output video driver
+ * @out_data                  : Output video data
+ * @input                     : Input input driver
+ * @input_data                : Input input data 
+ * @driver                    : Input Video driver
+ * @info                      : Video info handle.
+ *
+ * Creates, initializes and starts a video driver in a new thread.
+ * Access to video driver will be mediated through this driver.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool rarch_threaded_video_init(const video_driver_t **out_driver,
       void **out_data,  const input_driver_t **input, void **input_data,
       const video_driver_t *drv, const video_info_t *info)
@@ -926,6 +940,18 @@ bool rarch_threaded_video_init(const video_driver_t **out_driver,
    return thread_init(thr, info, input, input_data);
 }
 
+/**
+ * rarch_threaded_video_resolve:
+ * @drv                       : Found driver.
+ *
+ * Gets the underlying video driver associated with the 
+ * threaded video wrapper. Sets @drv to the found
+ * video driver.
+ *
+ * Returns: Video driver data of the video driver associated
+ * with the threaded wrapper (if successful). If not successful,
+ * NULL.
+ **/
 void *rarch_threaded_video_resolve(const video_driver_t **drv)
 {
    const thread_video_t *thr = (const thread_video_t*)driver.video_data;
