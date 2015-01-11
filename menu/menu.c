@@ -299,6 +299,9 @@ void menu_free(void *data)
 void menu_ticker_line(char *buf, size_t len, unsigned idx,
       const char *str, bool selected)
 {
+   unsigned ticker_period, phase, phase_left_stop;
+   unsigned phase_left_moving, phase_right_stop;
+   unsigned left_offset, right_offset;
    size_t str_len = strlen(str);
 
    if (str_len <= len)
@@ -314,33 +317,31 @@ void menu_ticker_line(char *buf, size_t len, unsigned idx,
       return;
    }
 
-   {
-      /* Wrap long strings in options with some kind of ticker line. */
-      unsigned ticker_period = 2 * (str_len - len) + 4;
-      unsigned phase = idx % ticker_period;
+   /* Wrap long strings in options with some kind of ticker line. */
+   ticker_period = 2 * (str_len - len) + 4;
+   phase = idx % ticker_period;
 
-      unsigned phase_left_stop = 2;
-      unsigned phase_left_moving = phase_left_stop + (str_len - len);
-      unsigned phase_right_stop = phase_left_moving + 2;
+   phase_left_stop = 2;
+   phase_left_moving = phase_left_stop + (str_len - len);
+   phase_right_stop = phase_left_moving + 2;
 
-      unsigned left_offset = phase - phase_left_stop;
-      unsigned right_offset = (str_len - len) - (phase - phase_right_stop);
+   left_offset = phase - phase_left_stop;
+   right_offset = (str_len - len) - (phase - phase_right_stop);
 
-      /* Ticker period:
-       * [Wait at left (2 ticks),
-       * Progress to right(type_len - w),
-       * Wait at right (2 ticks),
-       * Progress to left].
-       */
-      if (phase < phase_left_stop)
-         strlcpy(buf, str, len + 1);
-      else if (phase < phase_left_moving)
-         strlcpy(buf, str + left_offset, len + 1);
-      else if (phase < phase_right_stop)
-         strlcpy(buf, str + str_len - len, len + 1);
-      else
-         strlcpy(buf, str + right_offset, len + 1);
-   }
+   /* Ticker period:
+    * [Wait at left (2 ticks),
+    * Progress to right(type_len - w),
+    * Wait at right (2 ticks),
+    * Progress to left].
+    */
+   if (phase < phase_left_stop)
+      strlcpy(buf, str, len + 1);
+   else if (phase < phase_left_moving)
+      strlcpy(buf, str + left_offset, len + 1);
+   else if (phase < phase_right_stop)
+      strlcpy(buf, str + str_len - len, len + 1);
+   else
+      strlcpy(buf, str + right_offset, len + 1);
 }
 
 void menu_apply_deferred_settings(void)
@@ -357,48 +358,51 @@ void menu_apply_deferred_settings(void)
 
    for (; setting->type != ST_NONE; setting++)
    {
-      if ((setting->type < ST_GROUP) && (setting->flags & SD_FLAG_IS_DEFERRED))
+      if (setting->type >= ST_GROUP)
+         continue;
+
+      if (!(setting->flags & SD_FLAG_IS_DEFERRED))
+         continue;
+
+      switch (setting->type)
       {
-         switch (setting->type)
-         {
-            case ST_BOOL:
-               if (*setting->value.boolean != setting->original_value.boolean)
-               {
-                  setting->original_value.boolean = *setting->value.boolean;
-                  setting->deferred_handler(setting);
-               }
-               break;
-            case ST_INT:
-               if (*setting->value.integer != setting->original_value.integer)
-               {
-                  setting->original_value.integer = *setting->value.integer;
-                  setting->deferred_handler(setting);
-               }
-               break;
-            case ST_UINT:
-               if (*setting->value.unsigned_integer != setting->original_value.unsigned_integer)
-               {
-                  setting->original_value.unsigned_integer = *setting->value.unsigned_integer;
-                  setting->deferred_handler(setting);
-               }
-               break;
-            case ST_FLOAT:
-               if (*setting->value.fraction != setting->original_value.fraction)
-               {
-                  setting->original_value.fraction = *setting->value.fraction;
-                  setting->deferred_handler(setting);
-               }
-               break;
-            case ST_PATH:
-            case ST_DIR:
-            case ST_STRING:
-            case ST_BIND:
-               /* always run the deferred write handler */
+         case ST_BOOL:
+            if (*setting->value.boolean != setting->original_value.boolean)
+            {
+               setting->original_value.boolean = *setting->value.boolean;
                setting->deferred_handler(setting);
-               break;
-            default:
-               break;
-         }
+            }
+            break;
+         case ST_INT:
+            if (*setting->value.integer != setting->original_value.integer)
+            {
+               setting->original_value.integer = *setting->value.integer;
+               setting->deferred_handler(setting);
+            }
+            break;
+         case ST_UINT:
+            if (*setting->value.unsigned_integer != setting->original_value.unsigned_integer)
+            {
+               setting->original_value.unsigned_integer = *setting->value.unsigned_integer;
+               setting->deferred_handler(setting);
+            }
+            break;
+         case ST_FLOAT:
+            if (*setting->value.fraction != setting->original_value.fraction)
+            {
+               setting->original_value.fraction = *setting->value.fraction;
+               setting->deferred_handler(setting);
+            }
+            break;
+         case ST_PATH:
+         case ST_DIR:
+         case ST_STRING:
+         case ST_BIND:
+            /* Always run the deferred write handler */
+            setting->deferred_handler(setting);
+            break;
+         default:
+            break;
       }
    }
 }
