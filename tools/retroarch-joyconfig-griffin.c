@@ -54,4 +54,4 @@
 #include "../input/input_common.c"
 #include "../input/input_keymaps.c"
 
-#include "../message_queue.c"
+#include "../libretro-sdk/queues/message_queue.c"

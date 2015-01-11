@@ -28,7 +28,6 @@
 #include "../../gfx/gfx_context.h"
 
 #include "../../settings_data.h"
-#include "../../message_queue.h"
 #include "../../general.h"
 
 #include "../../gfx/d3d/d3d.h"

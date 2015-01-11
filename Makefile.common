@@ -104,7 +104,7 @@ OBJ += frontend/frontend.o \
 		settings_data.o \
 		dynamic.o \
 		dynamic_dummy.o \
-		message_queue.o \
+		libretro-sdk/queues/message_queue.o \
 		rewind.o \
 		gfx/gfx_common.o \
 		gfx/fonts/bitmapfont.o \

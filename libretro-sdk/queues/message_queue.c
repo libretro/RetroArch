@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <boolean.h>
-#include "message_queue.h"
+#include <queues/message_queue.h>
 #include <compat/posix_string.h>
 
 struct queue_elem

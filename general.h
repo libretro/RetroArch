@@ -22,7 +22,7 @@
 #include <limits.h>
 #include <setjmp.h>
 #include "driver.h"
-#include "message_queue.h"
+#include <queues/message_queue.h>
 #include "rewind.h"
 #include "movie.h"
 #include "autosave.h"
