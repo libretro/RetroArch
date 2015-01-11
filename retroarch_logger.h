@@ -20,38 +20,42 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#if defined(RARCH_DUMMY_LOG)
-#define LOG_FILE (stderr)
-#elif defined(HAVE_FILE_LOGGER) && defined(RARCH_INTERNAL)
+#if defined(HAVE_FILE_LOGGER) && defined(RARCH_INTERNAL)
 #define LOG_FILE (g_extern.log_file)
 #else
 #define LOG_FILE (stderr)
 #endif
 
-#if defined(RARCH_CONSOLE) && defined(HAVE_LOGGER)
+#if defined(IS_SALAMANDER)
+#define PROGRAM_NAME "RetroArch Salamander"
+#elif defined(RARCH_INTERNAL)
+#define PROGRAM_NAME "RetroArch"
+#else
+#define PROGRAM_NAME "N/A"
+#endif
+
+#if defined(RARCH_INTERNAL)
+#define RARCH_LOG_VERBOSE g_extern.verbosity
+#else
+#define RARCH_LOG_VERBOSE (true)
+#endif
+
+#if defined(RARCH_CONSOLE) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
 #include <logger_override.h>
-#elif defined(IOS)
+#elif defined(IOS) && defined(RARCH_INTERNAL)
 #include "logger/ios_logger_override.h"
-#elif defined(_XBOX1)
+#elif defined(_XBOX1) && defined(RARCH_INTERNAL)
 #include "logger/xdk1_logger_override.h"
-#elif defined(IS_SALAMANDER)
-#include "logger/salamander_logger_override.h"
-#elif defined(ANDROID) && defined(HAVE_LOGGER)
+#elif defined(ANDROID) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
 #include "logger/android_logger_override.h"
 #else
-
-#if defined(RARCH_DUMMY_LOG) || !defined(RARCH_INTERNAL)
-#define RARCH_LOG_VERBOSE (true)
-#else
-#define RARCH_LOG_VERBOSE g_extern.verbosity
-#endif
 
 #ifndef RARCH_LOG
 #undef RARCH_LOG_V
 #define RARCH_LOG(...) do { \
       if (RARCH_LOG_VERBOSE) \
       { \
-         fprintf(LOG_FILE, "RetroArch: %s: ", __FUNCTION__); \
+         fprintf(LOG_FILE, "%s: %s: ", PROGRAM_NAME, __FUNCTION__); \
          fprintf(LOG_FILE, __VA_ARGS__); \
          fflush(LOG_FILE); \
       } \
@@ -59,7 +63,7 @@
 #define RARCH_LOG_V(tag, fmt, vp) do { \
       if (RARCH_LOG_VERBOSE) \
       { \
-         fprintf(LOG_FILE, "RetroArch: %s: ", __FUNCTION__); \
+         fprintf(LOG_FILE, "%s: %s: ", PROGRAM_NAME, __FUNCTION__); \
          fprintf(LOG_FILE, tag);\
          vfprintf(LOG_FILE, fmt, vp); \
          fflush(LOG_FILE); \
@@ -75,7 +79,7 @@
       fflush(LOG_FILE); \
    } while (0)
 #define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
-      fprintf(LOG_FILE, "RetroArch: %s: ", __FUNCTION__); \
+      fprintf(LOG_FILE, "%s: %s: ", PROGRAM_NAME, __FUNCTION__); \
       fprintf(LOG_FILE, tag); \
       vfprintf(LOG_FILE, fmt, vp); \
       fflush(LOG_FILE); \
@@ -85,12 +89,12 @@
 #ifndef RARCH_ERR
 #undef RARCH_ERR_V
 #define RARCH_ERR(...) do { \
-      fprintf(LOG_FILE, "RetroArch [ERROR] :: %s :: ", __FUNCTION__); \
+      fprintf(LOG_FILE, "%s [ERROR] :: %s :: ", PROGRAM_NAME, __FUNCTION__); \
       fprintf(LOG_FILE, __VA_ARGS__); \
       fflush(LOG_FILE); \
    } while (0)
 #define RARCH_ERR_V(tag, fmt, vp) do { \
-      fprintf(LOG_FILE, "RetroArch [ERROR] :: %s :: ", __FUNCTION__); \
+      fprintf(LOG_FILE, "%s [ERROR] :: %s :: ", PROGRAM_NAME, __FUNCTION__); \
       fprintf(LOG_FILE, tag); \
       vfprintf(LOG_FILE, fmt, vp); \
       fflush(LOG_FILE); \
@@ -100,12 +104,12 @@
 #ifndef RARCH_WARN
 #undef RARCH_WARN_V
 #define RARCH_WARN(...) do { \
-      fprintf(LOG_FILE, "RetroArch [WARN] :: %s :: ", __FUNCTION__); \
+      fprintf(LOG_FILE, "%s [WARN] :: %s :: ", PROGRAM_NAME, __FUNCTION__); \
       fprintf(LOG_FILE, __VA_ARGS__); \
       fflush(LOG_FILE); \
    } while (0)
 #define RARCH_WARN_V(tag, fmt, vp) do { \
-      fprintf(LOG_FILE, "RetroArch [WARN] :: %s :: ", __FUNCTION__); \
+      fprintf(LOG_FILE, "%s [WARN] :: %s :: ", PROGRAM_NAME, __FUNCTION__); \
       fprintf(LOG_FILE, tag); \
       vfprintf(LOG_FILE, fmt, vp); \
       fflush(LOG_FILE); \
@@ -113,5 +117,6 @@
 #endif
 
 #endif
+
 #endif
 
