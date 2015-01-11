@@ -35,19 +35,34 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    NULL
 };
 
+/**
+ * shader_ctx_find_driver:
+ * @ident                   : Identifier of shader context driver to find.
+ *
+ * Finds shader context driver and initializes.
+ *
+ * Returns: shader context driver if found, otherwise NULL.
+ **/
 const shader_backend_t *shader_ctx_find_driver(const char *ident)
 {
    unsigned i;
 
    for (i = 0; shader_ctx_drivers[i]; i++)
    {
-      if (strcmp(shader_ctx_drivers[i]->ident, ident) == 0)
+      if (!strcmp(shader_ctx_drivers[i]->ident, ident))
          return shader_ctx_drivers[i];
    }
 
    return NULL;
 }
 
+/**
+ * shader_ctx_init_first:
+ *
+ * Finds first suitable shader context driver and initializes.
+ *
+ * Returns: shader context driver if found, otherwise NULL.
+ **/
 const shader_backend_t *shader_ctx_init_first(void)
 {
    unsigned i;

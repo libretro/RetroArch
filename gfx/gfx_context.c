@@ -179,7 +179,7 @@ static const gfx_ctx_driver_t *gfx_ctx_init(void *data,
  * @hw_render_ctx           : Request a graphics context driver capable of
  *                            hardware rendering?
  *
- * Finds first suitable graphics context driver and initializes.
+ * Finds graphics context driver and initializes.
  *
  * Returns: graphics context driver if found, otherwise NULL.
  **/

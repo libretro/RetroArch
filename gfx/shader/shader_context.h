@@ -84,8 +84,23 @@ extern const shader_backend_t shader_null_backend;
 
 #endif
 
+/**
+ * shader_ctx_find_driver:
+ * @ident                   : Identifier of shader context driver to find.
+ *
+ * Finds shader context driver and initializes.
+ *
+ * Returns: shader context driver if found, otherwise NULL.
+ **/
 const shader_backend_t *shader_ctx_find_driver(const char *ident);
 
+/**
+ * shader_ctx_init_first:
+ *
+ * Finds first suitable shader context driver and initializes.
+ *
+ * Returns: shader context driver if found, otherwise NULL.
+ **/
 const shader_backend_t *shader_ctx_init_first(void);
 
 #endif
