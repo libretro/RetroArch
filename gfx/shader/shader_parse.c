@@ -415,6 +415,15 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
    return true;
 }
 
+/** 
+ * shader_parse_imports:
+ * @conf              : Preset file to read from.
+ * @shader            : Shader passes handle.
+ *
+ * Resolves import parameters belonging to shaders. 
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 static bool shader_parse_imports(config_file_t *conf,
       struct gfx_shader *shader)
 {
@@ -471,6 +480,7 @@ static bool shader_parse_imports(config_file_t *conf,
       if (var->type != RARCH_STATE_PYTHON)
       {
          unsigned input_slot = 0;
+
          if (config_get_uint(conf, input_slot_buf, &input_slot))
          {
             switch (input_slot)
@@ -514,6 +524,16 @@ static bool shader_parse_imports(config_file_t *conf,
    return true;
 }
 
+/** 
+ * gfx_shader_read_conf_cgp:
+ * @conf              : Preset file to read from.
+ * @shader            : Shader passes handle.
+ *
+ * Loads preset file and all associated state (passes,
+ * textures, imports, etc). 
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
 {
    unsigned shaders, i;
@@ -598,7 +618,15 @@ static void shader_write_fbo(config_file_t *conf,
    shader_write_scale_dim(conf, "y", fbo->type_y, fbo->scale_y, fbo->abs_y, i);
 }
 
-static const char *import_semantic_to_string(enum state_tracker_type type)
+/**
+ * import_semantic_to_string:
+ * @type              : Import semantic type from state tracker.
+ *
+ * Translates import semantic to human-readable string identifier.
+ *
+ * Returns: human-readable string identifier of import semantic.
+ **/
+static const char *import_semantic_to_str(enum state_tracker_type type)
 {
    switch (type)
    {
@@ -620,6 +648,13 @@ static const char *import_semantic_to_string(enum state_tracker_type type)
    }
 }
 
+/**
+ * shader_write_variable:
+ * @conf              : Preset file to read from.
+ * @info              : State tracker uniform info handle.
+ *
+ * Writes variable to shader preset file.
+ **/
 static void shader_write_variable(config_file_t *conf,
       const struct state_tracker_uniform_info *info)
 {
@@ -634,7 +669,7 @@ static void shader_write_variable(config_file_t *conf,
    snprintf(equal_buf, sizeof(equal_buf), "%s_equal", id);
 
    config_set_string(conf, semantic_buf,
-         import_semantic_to_string(info->type));
+         import_semantic_to_str(info->type));
    config_set_hex(conf, mask_buf, info->mask);
    config_set_hex(conf, equal_buf, info->equal);
 
@@ -657,6 +692,14 @@ static void shader_write_variable(config_file_t *conf,
    }
 }
 
+/** 
+ * gfx_shader_write_conf_cgp:
+ * @conf              : Preset file to read from.
+ * @shader            : Shader passes handle.
+ *
+ * Saves preset and all associated state (passes,
+ * textures, imports, etc) to disk. 
+ **/
 void gfx_shader_write_conf_cgp(config_file_t *conf,
       struct gfx_shader *shader)
 {

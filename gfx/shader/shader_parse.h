@@ -152,9 +152,27 @@ struct gfx_shader
    char script_class[512];
 };
 
+/** 
+ * gfx_shader_read_conf_cgp:
+ * @conf              : Preset file to read from.
+ * @shader            : Shader passes handle.
+ *
+ * Loads preset file and all associated state (passes,
+ * textures, imports, etc). 
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool gfx_shader_read_conf_cgp(config_file_t *conf,
       struct gfx_shader *shader);
 
+/** 
+ * gfx_shader_write_conf_cgp:
+ * @conf              : Preset file to read from.
+ * @shader            : Shader passes handle.
+ *
+ * Saves preset and all associated state (passes,
+ * textures, imports, etc) to disk. 
+ **/
 void gfx_shader_write_conf_cgp(config_file_t *conf,
       struct gfx_shader *shader);
 
