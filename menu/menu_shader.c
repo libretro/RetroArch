@@ -150,17 +150,17 @@ void menu_shader_manager_set_preset(struct gfx_shader *shader,
     * created from the menu itself. */
    conf = config_file_new(preset_path);
 
-   if (conf)
-   {
-      RARCH_LOG("Setting Menu shader: %s.\n", preset_path ? preset_path : "N/A (stock)");
+   if (!conf)
+      return;
 
-      if (gfx_shader_read_conf_cgp(conf, shader))
-      {
-         gfx_shader_resolve_relative(shader, preset_path);
-         gfx_shader_resolve_parameters(conf, shader);
-      }
-      config_file_free(conf);
+   RARCH_LOG("Setting Menu shader: %s.\n", preset_path ? preset_path : "N/A (stock)");
+
+   if (gfx_shader_read_conf_cgp(conf, shader))
+   {
+      gfx_shader_resolve_relative(shader, preset_path);
+      gfx_shader_resolve_parameters(conf, shader);
    }
+   config_file_free(conf);
 
    driver.menu->need_refresh = true;
 #endif
