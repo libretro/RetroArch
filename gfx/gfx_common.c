@@ -39,15 +39,17 @@
  **/
 bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps)
 {
+   retro_time_t        new_time;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps;
-   bool ret = false;
    *buf = '\0';
 
-   retro_time_t new_time = rarch_get_time_usec();
+   new_time = rarch_get_time_usec();
+
    if (g_extern.frame_count)
    {
+      bool ret = false;
       unsigned write_index = 
          g_extern.measure_data.frame_time_samples_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
@@ -68,17 +70,16 @@ bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps)
       if (buf_fps)
          snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: %u",
                last_fps, g_extern.frame_count);
-   }
-   else
-   {
-      curr_time = fps_time = new_time;
-      strlcpy(buf, g_extern.title_buf, size);
-      if (buf_fps)
-         strlcpy(buf_fps, "N/A", size_fps);
-      ret = true;
+
+      return ret;
    }
 
-   return ret;
+   curr_time = fps_time = new_time;
+   strlcpy(buf, g_extern.title_buf, size);
+   if (buf_fps)
+      strlcpy(buf_fps, "N/A", size_fps);
+
+   return true;
 }
 
 #if defined(_WIN32) && !defined(_XBOX)
