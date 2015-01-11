@@ -51,18 +51,6 @@
 #define MAX_ARGS 32
 
 /**
- * main_entry_decide:
- *
- * Runs RetroArch for one frame.
- *
- * Returns: 0 on success, -1 upon exiting.
- **/
-int main_entry_decide(signature(), args_type() args)
-{
-   return rarch_main_iterate();
-}
-
-/**
  * main_exit_save_config:
  *
  * Saves configuration file to disk, and (optionally)
@@ -307,7 +295,7 @@ returntype main_entry(signature())
    }
 
 #if defined(HAVE_MAIN_LOOP)
-   while (main_entry_decide(signature_expand(), args) != -1);
+   while (rarch_main_iterate() != -1);
 
    main_exit(args);
 #endif

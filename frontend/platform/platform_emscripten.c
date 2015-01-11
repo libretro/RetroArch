@@ -23,9 +23,7 @@
 
 static void emscripten_mainloop(void)
 {
-   int ret = main_entry_decide(0, NULL, NULL);
-
-   if (ret != -1)
+   if (rarch_main_iterate() != -1)
       return;
 
    main_exit(NULL);

@@ -34,7 +34,7 @@ static CFRunLoopObserverRef iterate_observer = NULL;
 
 static void do_iteration(void)
 {
-   int ret = main_entry_decide(0, NULL, NULL);
+   int ret = rarch_main_iterate();
 
    if (ret == -1)
    {
