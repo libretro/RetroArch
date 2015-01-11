@@ -96,7 +96,6 @@ OBJ += frontend/frontend.o \
 		libretro-sdk/string/string_list.o \
 		file_ops.o \
 		libretro-sdk/file/file_path.o \
-		rarch_compr_file_path.o \
 		hash.o \
 		driver.o \
 		settings.o \
