@@ -78,10 +78,37 @@ struct state_tracker_uniform
 
 typedef struct state_tracker state_tracker_t;
 
+/**
+ * state_tracker_init:
+ * @info                         : State tracker info handle.
+ *
+ * Creates and initializes graphics state tracker.
+ *
+ * Returns: new state tracker handle if successful, otherwise NULL.
+ **/
 state_tracker_t* state_tracker_init(const struct state_tracker_info *info);
 
+/**
+ * state_tracker_free:
+ * @tracker                      : State tracker handle.
+ *
+ * Frees a state tracker handle.
+ **/
 void state_tracker_free(state_tracker_t *tracker);
 
+/**
+ * state_get_uniform:
+ * @tracker                      : State tracker handle.
+ * @uniforms                     : State tracker uniforms.
+ * @elem                         : Amount of uniform elements.
+ * @frame_count                  : Frame count.
+ *
+ * Calls update_input(), and updates each uniform
+ * element accordingly.
+ *
+ * Returns: Amount of state elements (either equal to @elem
+ * or equal to @tracker->info_eleme).
+ **/
 unsigned state_get_uniform(state_tracker_t *tracker,
       struct state_tracker_uniform *uniforms,
       unsigned elem, unsigned frame_count);
