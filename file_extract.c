@@ -504,60 +504,6 @@ struct string_list *zlib_get_file_list(const char *path)
    return list;
 }
 
-#ifdef HAVE_COMPRESSION
-/* Generic compressed file loader.
- * Extracts to buf, unless optional_filename != 0
- * Then extracts to optional_filename and leaves buf alone.
- */
-long read_compressed_file(const char * path, void **buf,
-      const char* optional_filename)
-{
-   char archive_path[PATH_MAX_LENGTH], *archive_found = NULL;
-
-   /* Safety check.
-    * If optional_filename and optional_filename exists, we simply return 0,
-    * hoping that optional_filename is the same as requested.
-   */
-   if (optional_filename)
-      if(path_file_exists(optional_filename))
-         return 0;
-
-   //We split carchive path and relative path:
-   strlcpy(archive_path,path,sizeof(archive_path));
-   archive_found = (char*)strchr(archive_path,'#');
-   rarch_assert(archive_found != NULL);
-
-   //We assure that there is something after the '#' symbol
-   if (strlen(archive_found) <= 1)
-   {
-      /*
-       * This error condition happens for example, when
-       * path = /path/to/file.7z, or
-       * path = /path/to/file.7z#
-       */
-      RARCH_ERR("Could not extract image path and carchive path from "
-            "path: %s.\n", path);
-      return -1;
-   }
-
-   //We split the string in two, by putting a \0, where the hash was:
-   *archive_found = '\0';
-   archive_found+=1;
-
-
-   const char* file_ext = path_get_extension(archive_path);
-#ifdef HAVE_7ZIP
-   if (strcasecmp(file_ext,"7z") == 0)
-      return read_7zip_file(archive_path,archive_found,buf,optional_filename);
-#endif
-#ifdef HAVE_ZLIB
-   if (strcasecmp(file_ext,"zip") == 0)
-      return read_zip_file(archive_path,archive_found,buf,optional_filename);
-#endif
-   return -1;
-}
-#endif
-
 struct string_list *compressed_file_list_new(const char *path,
       const char* ext)
 {
