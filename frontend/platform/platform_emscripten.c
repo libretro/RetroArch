@@ -25,11 +25,11 @@ static void emscripten_mainloop(void)
 {
    int ret = main_entry_decide(0, NULL, NULL);
 
-   if (ret == -1)
-   {
-      main_exit(NULL);
-      exit(0);
-   }
+   if (ret != -1)
+      return;
+
+   main_exit(NULL);
+   exit(0);
 }
 
 int main(int argc, char *argv[])

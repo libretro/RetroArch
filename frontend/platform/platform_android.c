@@ -36,8 +36,8 @@ extern void android_app_entry(void *args);
 
 void engine_handle_cmd(void *data)
 {
-   struct android_app *android_app = (struct android_app*)g_android;
    int8_t cmd;
+   struct android_app *android_app = (struct android_app*)g_android;
 
    if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
       cmd = -1;
@@ -175,8 +175,10 @@ static void android_app_set_input(void *data, AInputQueue* inputQueue)
    slock_lock(android_app->mutex);
    android_app->pendingInputQueue = inputQueue;
    android_app_write_cmd(android_app, APP_CMD_INPUT_CHANGED);
+
    while (android_app->inputQueue != android_app->pendingInputQueue)
       scond_wait(android_app->cond, android_app->mutex);
+
    slock_unlock(android_app->mutex);
 }
 
@@ -524,16 +526,17 @@ static void frontend_android_get_environment_settings(int *argc,
          android_app->getIntent);
    RARCH_LOG("Checking arguments passed from intent ...\n");
 
-   // Config file
+   /* Config file. */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "CONFIGFILE"));
 
    if (android_app->getStringExtra && jstr)
    {
+      const char *argv = NULL;
       static char config_path[PATH_MAX_LENGTH];
       *config_path = '\0';
 
-      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
          strlcpy(config_path, argv, sizeof(config_path));
@@ -544,7 +547,7 @@ static void frontend_android_get_environment_settings(int *argc,
          args->config_path = config_path;
    }
 
-   // Current IME
+   /* Current IME. */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "IME"));
 
@@ -570,16 +573,17 @@ static void frontend_android_get_environment_settings(int *argc,
       RARCH_LOG("USED: [%s].\n", used ? "true" : "false");
    }
 
-   // LIBRETRO
+   /* LIBRETRO. */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "LIBRETRO"));
 
    if (android_app->getStringExtra && jstr)
    {
+      const char *argv = NULL;
       static char core_path[PATH_MAX_LENGTH];
-      *core_path = '\0';
 
-      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      *core_path = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
       if (argv && *argv)
          strlcpy(core_path, argv, sizeof(core_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
@@ -589,16 +593,17 @@ static void frontend_android_get_environment_settings(int *argc,
          args->libretro_path = core_path;
    }
 
-   // Content
+   /* Content. */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "ROM"));
 
    if (android_app->getStringExtra && jstr)
    {
+      const char *argv = NULL;
       static char path[PATH_MAX_LENGTH];
-      *path = '\0';
 
-      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      *path = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
          strlcpy(path, argv, sizeof(path));
@@ -612,16 +617,17 @@ static void frontend_android_get_environment_settings(int *argc,
       }
    }
 
-   // Content
+   /* Content. */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "DATADIR"));
 
    if (android_app->getStringExtra && jstr)
    {
+      const char *argv = NULL;
       static char path[PATH_MAX_LENGTH];
-      *path = '\0';
 
-      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      *path = '\0';
+      argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
          strlcpy(path, argv, sizeof(path));
@@ -745,6 +751,7 @@ static void frontend_android_init(void *data)
 
 static void frontend_android_deinit(void *data)
 {
+   JNIEnv *env;
    struct android_app *android_app = (struct android_app*)data;
 
    if (!android_app)
@@ -753,7 +760,8 @@ static void frontend_android_deinit(void *data)
    RARCH_LOG("Deinitializing RetroArch ...\n");
    android_app->activityState = APP_CMD_DEAD;
 
-   JNIEnv *env = jni_thread_getenv();
+   env = jni_thread_getenv();
+
    if (env && android_app->onRetroArchExit)
       CALL_VOID_METHOD(env, android_app->activity->clazz,
             android_app->onRetroArchExit);

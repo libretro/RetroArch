@@ -58,6 +58,7 @@ static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
 {
    unsigned i;
+
    for (i = 0; frontend_ctx_drivers[i]; i++)
    {
       if (strcmp(frontend_ctx_drivers[i]->ident, ident) == 0)
@@ -77,6 +78,7 @@ const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
 const frontend_ctx_driver_t *frontend_ctx_init_first(void)
 {
    unsigned i;
+
    for (i = 0; frontend_ctx_drivers[i]; i++)
       return frontend_ctx_drivers[i];
 
