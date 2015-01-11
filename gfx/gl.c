@@ -847,8 +847,8 @@ void gl_set_viewport(gl_t *gl, unsigned width,
    }
    else
    {
-      gl->vp.x = gl->vp.y = 0;
-      gl->vp.width = width;
+      gl->vp.x      = gl->vp.y = 0;
+      gl->vp.width  = width;
       gl->vp.height = height;
    }
 
@@ -1249,12 +1249,12 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
             gl->tex_w * gl->base_size,
             gl->tex_w * gl->tex_h * i * gl->base_size);
 #else
-      if (!gl->egl_images)
-      {
-         glTexImage2D(GL_TEXTURE_2D,
-               0, internal_fmt, gl->tex_w, gl->tex_h, 0, texture_type,
-               texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
-      }
+      if (gl->egl_images)
+         continue;
+
+      glTexImage2D(GL_TEXTURE_2D,
+            0, internal_fmt, gl->tex_w, gl->tex_h, 0, texture_type,
+            texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
 #endif
    }
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -1914,8 +1914,10 @@ static bool resolve_extensions(gl_t *gl)
       const char *ext = (const char*)glGetString(GL_EXTENSIONS);
       if (ext)
       {
+         size_t i;
          struct string_list *list = string_split(ext, " ");
-         for (size_t i = 0; i < list->size; i++)
+
+         for (i = 0; i < list->size; i++)
             RARCH_LOG("\t%s\n", list->elems[i].data);
          string_list_free(list);
       }
@@ -2368,6 +2370,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
 #if !defined(HAVE_PSGL)
    gl->conv_buffer = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
+
    if (!gl->conv_buffer)
    {
       gl->ctx_driver->destroy(gl);
@@ -2489,14 +2492,14 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    gl->wrap_mode = wrap_mode;
    for (i = 0; i < gl->textures; i++)
    {
-      if (gl->texture[i])
-      {
-         glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
-      }
+      if (!gl->texture[i])
+         continue;
+
+      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);

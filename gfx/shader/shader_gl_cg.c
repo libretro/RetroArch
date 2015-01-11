@@ -332,6 +332,7 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
 
       CGparameter vparam = cgGetNamedParameter(
             cg->prg[cg->active_idx].vprg, cg->cg_shader->lut[i].id);
+
       if (vparam)
       {
          cgGLSetTextureParameter(vparam, cg->lut_textures[i]);

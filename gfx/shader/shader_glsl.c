@@ -986,14 +986,14 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
 
    for (i = 0; i < glsl->glsl_shader->luts; i++)
    {
-      if (uni->lut_texture[i] >= 0)
-      {
-         /* Have to rebind as HW render could override this. */
-         glActiveTexture(GL_TEXTURE0 + texunit);
-         glBindTexture(GL_TEXTURE_2D, glsl->gl_teximage[i]);
-         glUniform1i(uni->lut_texture[i], texunit);
-         texunit++;
-      }
+      if (uni->lut_texture[i] < 0)
+         continue;
+
+      /* Have to rebind as HW render could override this. */
+      glActiveTexture(GL_TEXTURE0 + texunit);
+      glBindTexture(GL_TEXTURE_2D, glsl->gl_teximage[i]);
+      glUniform1i(uni->lut_texture[i], texunit);
+      texunit++;
    }
 
    /* Set original texture. */
