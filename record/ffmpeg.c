@@ -44,7 +44,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <boolean.h>
-#include "../fifo_buffer.h"
+#include <queues/fifo_buffer.h>
 #include <rthreads/rthreads.h>
 #include "../general.h"
 #include <gfx/scaler/scaler.h>

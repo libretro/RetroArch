@@ -26,7 +26,7 @@
 #include <rthreads/rthreads.h>
 
 #include "../general.h"
-#include "../fifo_buffer.h"
+#include <queues/fifo_buffer.h>
 
 typedef struct sdl_audio
 {

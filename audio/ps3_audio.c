@@ -19,7 +19,7 @@
 #include <stdlib.h>
 
 #include <string.h>
-#include "../fifo_buffer.h"
+#include <queues/fifo_buffer.h>
 
 #include "../ps3/sdk_defines.h"
 

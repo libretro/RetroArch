@@ -17,7 +17,7 @@
 #include "../driver.h"
 #include <stdlib.h>
 #include "rsound.h"
-#include "../fifo_buffer.h"
+#include <queues/fifo_buffer.h>
 #include <boolean.h>
 #include <rthreads/rthreads.h>
 

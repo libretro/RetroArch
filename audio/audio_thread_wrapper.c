@@ -18,7 +18,7 @@
 #include <rthreads/rthreads.h>
 #include "../general.h"
 #include "../performance.h"
-#include "../fifo_buffer.h"
+#include <queues/fifo_buffer.h>
 #include <stdlib.h>
 #include <string.h>
 

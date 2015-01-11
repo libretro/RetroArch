@@ -30,7 +30,7 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 
-#include "../fifo_buffer.h"
+#include <queues/fifo_buffer.h>
 
 #ifdef _WIN32
 #define RSD_DEFAULT_HOST "127.0.0.1" // Stupid Windows.

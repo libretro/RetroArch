@@ -52,7 +52,7 @@ static DSMIXBINS dsmb;
 #include <mmsystem.h>
 #endif
 #include <dsound.h>
-#include "../fifo_buffer.h"
+#include <queues/fifo_buffer.h>
 #include "../general.h"
 
 typedef struct dsound
