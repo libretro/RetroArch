@@ -50,9 +50,9 @@ void menu_entries_refresh(file_list_t *list)
 static inline bool menu_entries_list_elem_is_dir(file_list_t *list,
       unsigned offset)
 {
-   const char *path = NULL;
+   const char *path  = NULL;
    const char *label = NULL;
-   unsigned type = 0;
+   unsigned type     = 0;
 
    menu_list_get_at_offset(list, offset, &path, &label, &type);
 
@@ -183,36 +183,35 @@ int menu_entries_push_main_menu_list(menu_handle_t *menu,
 }
 
 static void menu_entries_content_list_push(
-      void *data, core_info_t *info, const char* path)
+      file_list_t *list, core_info_t *info, const char* path)
 {
    int num_items = 0, j;
-   struct string_list *list = NULL;
-   file_list_t *flist = (file_list_t*)data;
+   struct string_list *str_list = NULL;
 
    if (!info)
       return;
 
-   list = (struct string_list*)dir_list_new(path, info->supported_extensions, true);
+   str_list = (struct string_list*)dir_list_new(path, info->supported_extensions, true);
 
-   dir_list_sort(list, true);
+   dir_list_sort(str_list, true);
 
-   if (list)
-      num_items = list->size;
+   if (str_list)
+      num_items = str_list->size;
 
    for (j = 0; j < num_items; j++)
    {
-      if (list->elems[j].attr.i == RARCH_DIRECTORY)
-         menu_entries_content_list_push(flist, info, list->elems[j].data);
+      if (str_list->elems[j].attr.i == RARCH_DIRECTORY)
+         menu_entries_content_list_push(list, info, str_list->elems[j].data);
       else
          menu_list_push(
-               flist,
-               path_basename(list->elems[j].data),
+               list,
+               path_basename(str_list->elems[j].data),
                "content_actions",
                MENU_FILE_CONTENTLIST_ENTRY,
                0);
    }
 
-   string_list_free(list);
+   string_list_free(str_list);
 }
 
 int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
