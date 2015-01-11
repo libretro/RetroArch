@@ -662,7 +662,7 @@ PLAYLISTS
 MENU
 ============================================================ */
 #ifdef HAVE_MENU
-#include "../menu/menu_input_line_cb.c"
+#include "../menu/menu_input.c"
 #include "../menu/menu.c"
 #include "../menu/menu_common_list.c"
 #include "../menu/menu_action.c"

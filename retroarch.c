@@ -43,7 +43,7 @@
 #ifdef HAVE_MENU
 #include "menu/menu.h"
 #include "menu/menu_shader.h"
-#include "menu/menu_input_line_cb.h"
+#include "menu/menu_input.h"
 #endif
 
 #ifdef HAVE_NETPLAY

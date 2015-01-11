@@ -27,7 +27,7 @@
 #include "menu_navigation.h"
 #include "../../core_info.h"
 #include "../../playlist.h"
-#include "menu_input_line_cb.h"
+#include "menu_input.h"
 #include "../../gfx/shader/shader_context.h"
 
 #ifdef HAVE_RGUI

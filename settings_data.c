@@ -39,7 +39,7 @@
 #ifdef HAVE_MENU
 #include "menu/menu_list.h"
 #include "menu/menu_entries.h"
-#include "menu/menu_input_line_cb.h"
+#include "menu/menu_input.h"
 #include "menu/menu_shader.h"
 #endif
 

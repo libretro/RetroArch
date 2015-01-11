@@ -22,7 +22,7 @@
 #include <file/file_path.h>
 #include "menu_backend.h"
 #include "../menu_entries.h"
-#include "../menu_input_line_cb.h"
+#include "../menu_input.h"
 
 #include "../../input/input_autodetect.h"
 #include "../../retroarch.h"
