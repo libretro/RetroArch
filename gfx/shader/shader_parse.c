@@ -23,6 +23,14 @@
 #include <file/file_path.h>
 #include "../../general.h"
 
+/**
+ * wrap_mode_to_str:
+ * @type              : Wrap type.
+ *
+ * Translates wrap mode to human-readable string identifier.
+ *
+ * Returns: human-readable string identifier of wrap mode.
+ **/
 static const char *wrap_mode_to_str(enum gfx_wrap_type type)
 {
    switch (type)
@@ -40,6 +48,14 @@ static const char *wrap_mode_to_str(enum gfx_wrap_type type)
    }
 }
 
+/** 
+ * wrap_str_to_mode:
+ * @type              : Wrap type in human-readable string format.
+ *
+ * Translates wrap mode from human-readable string to enum mode value.
+ *
+ * Returns: enum mode value of wrap type.
+ **/
 static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
 {
    if (strcmp(wrap_mode, "clamp_to_border") == 0)
@@ -56,7 +72,16 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
    return RARCH_WRAP_DEFAULT;
 }
 
-/* CGP */
+/** 
+ * shader_parse_pass:
+ * @conf              : Preset file to read from.
+ * @pass              : Shader passes handle.
+ * @i                 : Index of shader pass.
+ *
+ * Parses shader pass from preset file.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass, unsigned i)
 {
    char shader_name[64], filter_name_buf[64], wrap_name_buf[64], wrap_mode[64];
@@ -218,6 +243,15 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    return true;
 }
 
+/** 
+ * shader_parse_textures:
+ * @conf              : Preset file to read from.
+ * @shader            : Shader pass handle.
+ *
+ * Parses shader textures.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 static bool shader_parse_textures(config_file_t *conf,
       struct gfx_shader *shader)
 {
@@ -268,7 +302,17 @@ static bool shader_parse_textures(config_file_t *conf,
    return true;
 }
 
-static struct gfx_shader_parameter *find_parameter(
+/** 
+ * shader_parse_find_parameter:
+ * @params            : Shader parameter handle.
+ * @num_params        : Number of shader params in @params.
+ * @id                : Identifier to search for.
+ *
+ * Finds a shader parameter with identifier @id in @params..
+ *
+ * Returns: handle to shader parameter if successful, otherwise NULL.
+ **/
+static struct gfx_shader_parameter *shader_parse_find_parameter(
       struct gfx_shader_parameter *params, unsigned num_params, const char *id)
 {
    unsigned i;
@@ -278,9 +322,19 @@ static struct gfx_shader_parameter *find_parameter(
       if (!strcmp(params[i].id, id))
          return &params[i];
    }
+
    return NULL;
 }
 
+/** 
+ * gfx_shader_resolve_parameters:
+ * @conf              : Preset file to read from.
+ * @shader            : Shader passes handle.
+ *
+ * Resolves all shader parameters belonging to shaders. 
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool gfx_shader_resolve_parameters(config_file_t *conf,
       struct gfx_shader *shader)
 {
@@ -292,6 +346,7 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
       &shader->parameters[shader->num_parameters];
 
    /* Find all parameters in our shaders. */
+
    for (i = 0; i < shader->passes; i++)
    {
       char line[4096];
@@ -308,22 +363,22 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
                param->id, param->desc, &param->initial,
                &param->minimum, &param->maximum, &param->step);
 
-         if (ret >= 5)
-         {
-            param->id[63] = '\0';
-            param->desc[63] = '\0';
+         if (ret < 5)
+            continue;
 
-            if (ret == 5)
-               param->step = 0.1f * (param->maximum - param->minimum);
+         param->id[63] = '\0';
+         param->desc[63] = '\0';
 
-            RARCH_LOG("Found #pragma parameter %s (%s) %f %f %f %f\n",
-                  param->desc, param->id, param->initial,
-                  param->minimum, param->maximum, param->step);
-            param->current = param->initial;
+         if (ret == 5)
+            param->step = 0.1f * (param->maximum - param->minimum);
 
-            shader->num_parameters++;
-            param++;
-         }
+         RARCH_LOG("Found #pragma parameter %s (%s) %f %f %f %f\n",
+               param->desc, param->id, param->initial,
+               param->minimum, param->maximum, param->step);
+         param->current = param->initial;
+
+         shader->num_parameters++;
+         param++;
       }
 
       fclose(file);
@@ -344,7 +399,7 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
             id = strtok_r(NULL, ";", &save))
       {
          struct gfx_shader_parameter *parameter = (struct gfx_shader_parameter*)
-            find_parameter(shader->parameters, shader->num_parameters, id);
+            shader_parsefind_parameter(shader->parameters, shader->num_parameters, id);
 
          if (!parameter)
          {

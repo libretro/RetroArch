@@ -161,6 +161,15 @@ void gfx_shader_write_conf_cgp(config_file_t *conf,
 void gfx_shader_resolve_relative(struct gfx_shader *shader,
       const char *ref_path);
 
+/** 
+ * gfx_shader_resolve_parameters:
+ * @conf              : Preset file to read from.
+ * @shader            : Shader passes handle.
+ *
+ * Resolves all shader parameters belonging to shaders. 
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool gfx_shader_resolve_parameters(config_file_t *conf,
       struct gfx_shader *shader);
 
