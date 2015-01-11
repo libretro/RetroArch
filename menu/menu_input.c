@@ -173,18 +173,20 @@ void menu_poll_bind_state(struct menu_bind_state *state)
    {
       for (b = 0; b < MENU_MAX_BUTTONS; b++)
          state->state[i].buttons[b] = input_joypad_button_raw(joypad, i, b);
+
       for (a = 0; a < MENU_MAX_AXES; a++)
          state->state[i].axes[a] = input_joypad_axis_raw(joypad, i, a);
+
       for (h = 0; h < MENU_MAX_HATS; h++)
       {
-         state->state[i].hats[h] |= 
-            input_joypad_hat_raw(joypad, i, HAT_UP_MASK, h) ? HAT_UP_MASK : 0;
-         state->state[i].hats[h] |=
-            input_joypad_hat_raw(joypad, i, HAT_DOWN_MASK, h) ? HAT_DOWN_MASK : 0;
-         state->state[i].hats[h] |=
-            input_joypad_hat_raw(joypad, i, HAT_LEFT_MASK, h) ? HAT_LEFT_MASK : 0;
-         state->state[i].hats[h] |=
-            input_joypad_hat_raw(joypad, i, HAT_RIGHT_MASK, h) ? HAT_RIGHT_MASK : 0;
+         if (input_joypad_hat_raw(joypad, i, HAT_UP_MASK, h))
+            state->state[i].hats[h] |= HAT_UP_MASK;
+         if (input_joypad_hat_raw(joypad, i, HAT_DOWN_MASK, h))
+            state->state[i].hats[h] |= HAT_DOWN_MASK;
+         if (input_joypad_hat_raw(joypad, i, HAT_LEFT_MASK, h))
+            state->state[i].hats[h] |= HAT_LEFT_MASK;
+         if (input_joypad_hat_raw(joypad, i, HAT_RIGHT_MASK, h))
+            state->state[i].hats[h] |= HAT_RIGHT_MASK;
       }
    }
 }
@@ -223,12 +225,14 @@ static bool menu_poll_find_trigger_pad(struct menu_bind_state *state,
 
    for (b = 0; b < MENU_MAX_BUTTONS; b++)
    {
-      if (n->buttons[b] && !o->buttons[b])
-      {
-         state->target->joykey = b;
-         state->target->joyaxis = AXIS_NONE;
-         return true;
-      }
+      bool iterate = n->buttons[b] && !o->buttons[b];
+
+      if (!iterate)
+         continue;
+
+      state->target->joykey = b;
+      state->target->joyaxis = AXIS_NONE;
+      return true;
    }
 
    /* Axes are a bit tricky ... */
@@ -292,13 +296,13 @@ bool menu_poll_find_trigger(struct menu_bind_state *state,
 
    for (i = 0; i < g_settings.input.max_users; i++)
    {
-      if (menu_poll_find_trigger_pad(state, new_state, i))
-      {
-         /* Update the joypad mapping automatically.
-          * More friendly that way. */
-         g_settings.input.joypad_map[state->user] = i;
-         return true;
-      }
+      if (!menu_poll_find_trigger_pad(state, new_state, i))
+         continue;
+
+      /* Update the joypad mapping automatically.
+       * More friendly that way. */
+      g_settings.input.joypad_map[state->user] = i;
+      return true;
    }
    return false;
 }
