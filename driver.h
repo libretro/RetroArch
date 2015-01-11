@@ -157,12 +157,6 @@ struct retro_keybind
    char     joyaxis_label[256];
 };
 
-struct platform_bind
-{
-   uint64_t joykey;
-   char desc[64];
-};
-
 typedef struct video_info
 {
    unsigned width;
