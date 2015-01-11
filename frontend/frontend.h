@@ -80,8 +80,7 @@ bool main_load_content(int argc, char **argv,
  *
  * Runs RetroArch for one frame.
  *
- * Returns: -1 upon exiting, 0 if we want to
- * iterate to the next frame.
+ * Returns: 0 on success, -1 upon exiting.
  **/
 int main_entry_decide(signature(), args_type() args);
 

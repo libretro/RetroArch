@@ -55,26 +55,23 @@
  *
  * Runs RetroArch for one frame.
  *
- * Returns: -1 upon exiting, 0 if we want to
- * iterate to the next frame.
+ * Returns: 0 on success, -1 upon exiting.
  **/
 int main_entry_decide(signature(), args_type() args)
 {
-   int ret = rarch_main_iterate();
+   if (rarch_main_iterate() == 0)
+      return 0;
 
-   if (ret == -1)
+   if (g_extern.core_shutdown_initiated 
+         && g_settings.load_dummy_on_core_shutdown)
    {
-      if (g_extern.core_shutdown_initiated 
-            && g_settings.load_dummy_on_core_shutdown)
-      {
-         /* Load dummy core instead of exiting RetroArch completely. */
-         rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
-         g_extern.core_shutdown_initiated = false;
-         return 0;
-      }
+      /* Load dummy core instead of exiting RetroArch completely. */
+      rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
+      g_extern.core_shutdown_initiated = false;
+      return 0;
    }
 
-   return ret;
+   return -1;
 }
 
 /**
