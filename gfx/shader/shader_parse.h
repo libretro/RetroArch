@@ -158,6 +158,14 @@ bool gfx_shader_read_conf_cgp(config_file_t *conf,
 void gfx_shader_write_conf_cgp(config_file_t *conf,
       struct gfx_shader *shader);
 
+/**
+ * gfx_shader_resolve_relative:
+ * @shader            : Shader pass handle.
+ * @ref_path          : Relative shader path.
+ *
+ * Resolves relative shader path (@ref_path) into absolute
+ * shader paths.
+ **/
 void gfx_shader_resolve_relative(struct gfx_shader *shader,
       const char *ref_path);
 
@@ -173,6 +181,17 @@ void gfx_shader_resolve_relative(struct gfx_shader *shader,
 bool gfx_shader_resolve_parameters(config_file_t *conf,
       struct gfx_shader *shader);
 
+/**
+ * gfx_shader_parse_type:
+ * @path              : Shader path.
+ * @fallback          : Fallback shader type in case no
+ *                      type could be found.
+ *
+ * Parses type of shader.
+ *
+ * Returns: value of shader type on success, otherwise will return
+ * user-supplied @fallback value. 
+ **/
 enum rarch_shader_type gfx_shader_parse_type(const char *path,
       enum rarch_shader_type fallback);
 

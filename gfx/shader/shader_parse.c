@@ -384,9 +384,9 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
       fclose(file);
    }
 
-   /* Read in parameters which override the defaults. */
    if (conf)
    {
+      /* Read in parameters which override the defaults. */
       char parameters[4096];
       const char *id;
       char *save = NULL;
@@ -399,7 +399,7 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
             id = strtok_r(NULL, ";", &save))
       {
          struct gfx_shader_parameter *parameter = (struct gfx_shader_parameter*)
-            shader_parsefind_parameter(shader->parameters, shader->num_parameters, id);
+            shader_parse_find_parameter(shader->parameters, shader->num_parameters, id);
 
          if (!parameter)
          {
@@ -775,10 +775,22 @@ void gfx_shader_write_conf_cgp(config_file_t *conf,
    }
 }
 
+/**
+ * gfx_shader_parse_type:
+ * @path              : Shader path.
+ * @fallback          : Fallback shader type in case no
+ *                      type could be found.
+ *
+ * Parses type of shader.
+ *
+ * Returns: value of shader type on success, otherwise will return
+ * user-supplied @fallback value. 
+ **/
 enum rarch_shader_type gfx_shader_parse_type(const char *path,
       enum rarch_shader_type fallback)
 {
    const char *ext = NULL;
+
    if (!path)
       return fallback;
 
@@ -792,6 +804,14 @@ enum rarch_shader_type gfx_shader_parse_type(const char *path,
    return fallback;
 }
 
+/**
+ * gfx_shader_resolve_relative:
+ * @shader            : Shader pass handle.
+ * @ref_path          : Relative shader path.
+ *
+ * Resolves relative shader path (@ref_path) into absolute
+ * shader paths.
+ **/
 void gfx_shader_resolve_relative(struct gfx_shader *shader,
       const char *ref_path)
 {
