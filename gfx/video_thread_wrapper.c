@@ -161,15 +161,14 @@ static void thread_loop(void *data)
 
                thr->cmd_data.b = ret;
                thr->frame.within_thread = false;
-               thread_reply(thr, CMD_READ_VIEWPORT);
             }
             else
             {
                /* Viewport dimensions changed right after main 
                 * thread read the async value. Cannot read safely. */
                thr->cmd_data.b = false;
-               thread_reply(thr, CMD_READ_VIEWPORT);
             }
+            thread_reply(thr, CMD_READ_VIEWPORT);
             break;
          }
             
