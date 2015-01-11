@@ -31,6 +31,7 @@ enum basic_event
    /* Loads content file. */
    RARCH_CMD_LOAD_CONTENT,
    RARCH_CMD_LOAD_CONTENT_PERSIST,
+   /* Loads core. */
    RARCH_CMD_LOAD_CORE,
    RARCH_CMD_LOAD_STATE,
    RARCH_CMD_SAVE_STATE,
@@ -63,7 +64,9 @@ enum basic_event
    RARCH_CMD_OVERLAY_INIT,
    /* Deinitializes overlay. */
    RARCH_CMD_OVERLAY_DEINIT,
+   /* Sets current scale factor for overlay. */
    RARCH_CMD_OVERLAY_SET_SCALE_FACTOR,
+   /* Sets current alpha modulation for overlay. */
    RARCH_CMD_OVERLAY_SET_ALPHA_MOD,
    /* Cycle to next overlay. */
    RARCH_CMD_OVERLAY_NEXT,
@@ -81,14 +84,23 @@ enum basic_event
    RARCH_CMD_HISTORY_DEINIT,
    /* Initializes history playlist. */
    RARCH_CMD_HISTORY_INIT,
+   /* Deinitializes core information. */
    RARCH_CMD_CORE_INFO_DEINIT,
+   /* Initializes core information. */
    RARCH_CMD_CORE_INFO_INIT,
+   /* Deinitializes core. */
    RARCH_CMD_CORE_DEINIT,
+   /* Initializes core. */
    RARCH_CMD_CORE_INIT,
+   /* Set audio blocking state. */
    RARCH_CMD_AUDIO_SET_BLOCKING_STATE,
+   /* Set audio nonblocking state. */
    RARCH_CMD_AUDIO_SET_NONBLOCKING_STATE,
+   /* Apply video state changes. */
    RARCH_CMD_VIDEO_APPLY_STATE_CHANGES,
+   /* Set video blocking state. */
    RARCH_CMD_VIDEO_SET_BLOCKING_STATE,
+   /* Set video nonblocking state. */
    RARCH_CMD_VIDEO_SET_NONBLOCKING_STATE,
    /* Sets current aspect ratio index. */
    RARCH_CMD_VIDEO_SET_ASPECT_RATIO,
@@ -119,11 +131,17 @@ enum basic_event
    /* Initializes controllers. */
    RARCH_CMD_CONTROLLERS_INIT,
    RARCH_CMD_SAVEFILES,
+   /* Initializes savefiles. */
    RARCH_CMD_SAVEFILES_INIT,
+   /* Deinitializes savefiles. */
    RARCH_CMD_SAVEFILES_DEINIT,
+   /* Initializes message queue. */
    RARCH_CMD_MSG_QUEUE_INIT,
+   /* Deinitializes message queue. */
    RARCH_CMD_MSG_QUEUE_DEINIT,
+   /* Initializes cheats. */
    RARCH_CMD_CHEATS_INIT,
+   /* Deinitializes cheats. */
    RARCH_CMD_CHEATS_DEINIT,
    /* Initializes netplay system. */
    RARCH_CMD_NETPLAY_INIT,
