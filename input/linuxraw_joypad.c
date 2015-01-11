@@ -48,6 +48,7 @@ static bool g_hotplug;
 static void poll_pad(struct linuxraw_joypad *pad)
 {
    struct js_event event;
+   
    while (read(pad->fd, &event, sizeof(event)) == (ssize_t)sizeof(event))
    {
       unsigned type = event.type & ~JS_EVENT_INIT;
@@ -120,21 +121,26 @@ static void handle_plugged_pad(void)
    int i, rc;
    size_t event_size = sizeof(struct inotify_event) + NAME_MAX + 1;
    uint8_t *event_buf = (uint8_t*)calloc(1, event_size);
+
    if (!event_buf)
       return;
 
    while ((rc = read(g_notify, event_buf, event_size)) >= 0)
    {
       struct inotify_event *event = NULL;
-      // Can read multiple events in one read() call.
+
+      /* Can read multiple events in one read() call. */
+
       for (i = 0; i < rc; i += event->len + sizeof(struct inotify_event))
       {
+         unsigned idx;
+
          event = (struct inotify_event*)&event_buf[i];
 
          if (strstr(event->name, "js") != event->name)
             continue;
 
-         unsigned idx = strtoul(event->name + 2, NULL, 0);
+         idx = strtoul(event->name + 2, NULL, 0);
          if (idx >= MAX_USERS)
             continue;
 
@@ -165,9 +171,10 @@ static void handle_plugged_pad(void)
          // Sometimes, device will be created before acess to it is established.
          else if (event->mask & (IN_CREATE | IN_ATTRIB))
          {
+            bool ret;
             char path[PATH_MAX];
             snprintf(path, sizeof(path), "/dev/input/%s", event->name);
-            bool ret = linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]);
+            ret = linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]);
 
             if (*linuxraw_pads[idx].ident && ret)
                /* TODO - implement VID/PID? */
@@ -207,17 +214,22 @@ static void linuxraw_joypad_setup_notify(void)
 static bool linuxraw_joypad_init(void)
 {
    unsigned i;
+
    g_epoll = epoll_create(MAX_USERS + 1);
    if (g_epoll < 0)
       return false;
 
    for (i = 0; i < MAX_USERS; i++)
    {
+      char path[PATH_MAX];
       struct linuxraw_joypad *pad = (struct linuxraw_joypad*)&linuxraw_pads[i];
+
+      if (!pad)
+         continue;
+
       pad->fd = -1;
       pad->ident = g_settings.input.device_names[i];
       
-      char path[PATH_MAX];
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
 
       /* TODO - implement VID/PID? */
@@ -233,9 +245,10 @@ static bool linuxraw_joypad_init(void)
    g_notify = inotify_init();
    if (g_notify >= 0)
    {
+      struct epoll_event event;
+
       linuxraw_joypad_setup_notify();
 
-      struct epoll_event event;
       event.events = EPOLLIN;
       event.data.ptr = NULL;
       epoll_ctl(g_epoll, EPOLL_CTL_ADD, g_notify, &event);
@@ -249,6 +262,7 @@ static bool linuxraw_joypad_init(void)
 static void linuxraw_joypad_destroy(void)
 {
    unsigned i;
+
    for (i = 0; i < MAX_USERS; i++)
    {
       if (linuxraw_pads[i].fd >= 0)
@@ -256,6 +270,7 @@ static void linuxraw_joypad_destroy(void)
    }
 
    memset(linuxraw_pads, 0, sizeof(linuxraw_pads));
+
    for (i = 0; i < MAX_USERS; i++)
       linuxraw_pads[i].fd = -1;
 
@@ -273,26 +288,27 @@ static void linuxraw_joypad_destroy(void)
 static bool linuxraw_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
-   if (pad)
-      return joykey < NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
-   return false;
+   if (!pad)
+      return false;
+   return joykey < NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
 }
 
 static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
 {
+   int16_t val = 0;
+   const struct linuxraw_joypad *pad = NULL;
+
    if (joyaxis == AXIS_NONE)
       return 0;
 
-   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)
-      &linuxraw_pads[port];
+   pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
 
-   int16_t val = 0;
    if (AXIS_NEG_GET(joyaxis) < NUM_AXES)
    {
       val = pad->axes[AXIS_NEG_GET(joyaxis)];
       if (val > 0)
          val = 0;
-      // Kernel returns values in range [-0x7fff, 0x7fff].
+      /* Kernel returns values in range [-0x7fff, 0x7fff]. */
    }
    else if (AXIS_POS_GET(joyaxis) < NUM_AXES)
    {

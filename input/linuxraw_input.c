@@ -57,7 +57,10 @@ static void linuxraw_exitGracefully(int sig)
 
 static void *linuxraw_input_init(void)
 {
-   // only work on terminals
+   linuxraw_input_t *linuxraw;
+   struct sigaction sa;
+
+   /* Only work on terminals. */
    if (!isatty(0))
       return NULL;
 
@@ -67,7 +70,7 @@ static void *linuxraw_input_init(void)
       return NULL;
    }
 
-   linuxraw_input_t *linuxraw = (linuxraw_input_t*)calloc(1, sizeof(*linuxraw));
+   linuxraw = (linuxraw_input_t*)calloc(1, sizeof(*linuxraw));
    if (!linuxraw)
       return NULL;
 
@@ -96,7 +99,6 @@ static void *linuxraw_input_init(void)
       return NULL;
    }
 
-   struct sigaction sa;
    sa.sa_handler = linuxraw_exitGracefully;
    sa.sa_flags = SA_RESTART | SA_RESETHAND;
    sigemptyset(&sa.sa_mask);
@@ -118,6 +120,7 @@ static void *linuxraw_input_init(void)
    /* We need to disable use of stdin command interface if 
     * stdin is supposed to be used for input. */
    driver.stdin_claimed = true; 
+
    return linuxraw;
 }
 
@@ -130,32 +133,37 @@ static bool linuxraw_key_pressed(linuxraw_input_t *linuxraw, int key)
 static bool linuxraw_is_pressed(linuxraw_input_t *linuxraw,
       const struct retro_keybind *binds, unsigned id)
 {
-   if (id < RARCH_BIND_LIST_END)
-   {
-      const struct retro_keybind *bind = &binds[id];
-      if (bind)
-         return bind->valid && linuxraw_key_pressed(linuxraw, binds[id].key);
-   }
-   return false;
+   const struct retro_keybind *bind = &binds[id];
+
+   if (id >= RARCH_BIND_LIST_END)
+      return false;
+   if (!bind)
+      return false;
+
+   return bind->valid && linuxraw_key_pressed(linuxraw, binds[id].key);
 }
 
 static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
       const struct retro_keybind *binds, unsigned idx, unsigned id)
 {
+   int16_t pressed_minus = 0, pressed_plus = 0;
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   int16_t pressed_minus = linuxraw_is_pressed(linuxraw,
-         binds, id_minus) ? -0x7fff : 0;
-   int16_t pressed_plus = linuxraw_is_pressed(linuxraw,
-         binds, id_plus) ? 0x7fff : 0;
+   if (linuxraw_is_pressed(linuxraw, binds, id_minus))
+      pressed_minus = -0x7fff;
+   if (linuxraw_is_pressed(linuxraw, binds, id_plus))
+      pressed_plus = 0x7fff;
+
    return pressed_plus + pressed_minus;
 }
 
 static bool linuxraw_bind_button_pressed(void *data, int key)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
+   if (!linuxraw)
+      return false;
    return linuxraw_is_pressed(linuxraw, g_settings.input.binds[0], key) ||
       input_joypad_pressed(linuxraw->joypad, 0, g_settings.input.binds[0], key);
 }
@@ -178,10 +186,9 @@ static int16_t linuxraw_input_state(void *data,
          if (!ret)
             ret = input_joypad_analog(linuxraw->joypad, port, idx, id, binds[port]);
          return ret;
-
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 static void linuxraw_input_free(void *data)
@@ -202,31 +209,33 @@ static bool linuxraw_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
-   if (linuxraw)
-      return input_joypad_set_rumble(linuxraw->joypad, port, effect, strength);
-   return false;
+   if (!linuxraw)
+      return false;
+   return input_joypad_set_rumble(linuxraw->joypad, port, effect, strength);
 }
 
 static const rarch_joypad_driver_t *linuxraw_get_joypad_driver(void *data)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
-   if (linuxraw)
-      return linuxraw->joypad;
-   return NULL;
+   if (!linuxraw)
+      return false;
+   return linuxraw->joypad;
 }
 
 static void linuxraw_input_poll(void *data)
 {
-   linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
    uint8_t c;
    uint16_t t;
+   linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
 
    while (read(STDIN_FILENO, &c, 1) > 0)
    {
+      bool pressed;
+
       if (c == KEY_C && (linuxraw->state[KEY_LEFTCTRL] || linuxraw->state[KEY_RIGHTCTRL]))
          kill(getpid(), SIGINT);
 
-      bool pressed = !(c & 0x80);
+      pressed = !(c & 0x80);
       c &= ~0x80;
 
       // ignore extended scancodes
@@ -242,8 +251,9 @@ static void linuxraw_input_poll(void *data)
 
 static uint64_t linuxraw_get_capabilities(void *data)
 {
-   (void)data;
    uint64_t caps = 0;
+
+   (void)data;
 
    caps |= (1 << RETRO_DEVICE_JOYPAD);
    caps |= (1 << RETRO_DEVICE_ANALOG);
