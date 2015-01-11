@@ -2835,7 +2835,8 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_NETPLAY_INIT:
          rarch_main_command(RARCH_CMD_NETPLAY_DEINIT);
 #ifdef HAVE_NETPLAY
-         return init_netplay();
+         if (!init_netplay())
+            return false;
 #endif
          break;
       case RARCH_CMD_NETPLAY_FLIP_PLAYERS:
