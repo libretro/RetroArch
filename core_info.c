@@ -446,7 +446,12 @@ static core_info_t *find_core_info(core_info_list_t *list,
    for (i = 0; i < list->count; i++)
    {
       core_info_t *info = (core_info_t*)&list->list[i];
-      if (info && info->path && !strcmp(info->path, core))
+
+      if (!info)
+         continue;
+      if (!info->path)
+         continue;
+      if (!strcmp(info->path, core))
          return info;
    }
 
@@ -479,12 +484,12 @@ void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
 
    for (i = 0; i < info->firmware_count; i++)
    {
-      if (info->firmware[i].path)
-      {
-         fill_pathname_join(path, systemdir,
-               info->firmware[i].path, sizeof(path));
-         info->firmware[i].missing = !path_file_exists(path);
-      }
+      if (!info->firmware[i].path)
+         continue;
+
+      fill_pathname_join(path, systemdir,
+            info->firmware[i].path, sizeof(path));
+      info->firmware[i].missing = !path_file_exists(path);
    }
 }
 
