@@ -835,11 +835,38 @@ static bool input_flush(retro_input_t *input)
 }
 
 /**
+ * rarch_main_load_dummy_core:
+ *
+ * Quits out of RetroArch main loop.
+ *
+ * On special case, loads dummy core 
+ * instead of exiting RetroArch completely.
+ * Aborts core shutdown if invoked.
+ *
+ * Returns: -1 if we are about to quit, otherwise 0.
+ **/
+static int rarch_main_iterate_quit(void)
+{
+   if (g_extern.core_shutdown_initiated
+         && g_settings.load_dummy_on_core_shutdown)
+   {
+      if (!rarch_main_command(RARCH_CMD_PREPARE_DUMMY))
+         return -1;
+
+      g_extern.core_shutdown_initiated = false;
+
+      return 0;
+   }
+
+   return -1;
+}
+
+/**
  * rarch_main_iterate:
  *
  * Run Libretro core in RetroArch for one frame.
  *
- * Returns: 0 on successful run, 1 if we have to wait until button input in order
+ * Returns: 0 on success, 1 if we have to wait until button input in order
  * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop. 
  **/
 int rarch_main_iterate(void)
@@ -850,7 +877,6 @@ int rarch_main_iterate(void)
    static retro_input_t last_input = 0;
    retro_input_t old_input         = last_input;
    retro_input_t input             = input_keys_pressed();
-
    last_input                      = input;
 
    if (driver.flushing_input)
@@ -859,7 +885,10 @@ int rarch_main_iterate(void)
    trigger_input = input & ~old_input;
 
    if (time_to_exit(input))
-      return -1;
+   {
+      ret = -1;
+      goto quit;
+   }
 
    if (g_extern.system.frame_time.callback)
       update_frame_time();
@@ -881,7 +910,8 @@ int rarch_main_iterate(void)
    if (g_extern.exec)
    {
       g_extern.exec = false;
-      return -1;
+      ret = -1;
+      goto quit;
    }
 
    if (do_state_checks(input, old_input, trigger_input))
@@ -890,7 +920,8 @@ int rarch_main_iterate(void)
       driver.retro_ctx.poll_cb();
       rarch_sleep(10);
 
-      return 1;
+      ret = 1;
+      goto quit;
    }
 
 #if defined(HAVE_THREADS)
@@ -951,6 +982,10 @@ int rarch_main_iterate(void)
 success:
    if (g_settings.fastforward_ratio_throttle_enable)
       limit_frame_time();
+
+quit:
+   if (ret == -1)
+      return rarch_main_iterate_quit();
 
    return ret;
 }
