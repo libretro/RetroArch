@@ -885,10 +885,7 @@ int rarch_main_iterate(void)
    trigger_input = input & ~old_input;
 
    if (time_to_exit(input))
-   {
-      ret = -1;
-      goto quit;
-   }
+      return rarch_main_iterate_quit();
 
    if (g_extern.system.frame_time.callback)
       update_frame_time();
@@ -910,8 +907,7 @@ int rarch_main_iterate(void)
    if (g_extern.exec)
    {
       g_extern.exec = false;
-      ret = -1;
-      goto quit;
+      return rarch_main_iterate_quit();
    }
 
    if (do_state_checks(input, old_input, trigger_input))
@@ -920,8 +916,7 @@ int rarch_main_iterate(void)
       driver.retro_ctx.poll_cb();
       rarch_sleep(10);
 
-      ret = 1;
-      goto quit;
+      return 1;
    }
 
 #if defined(HAVE_THREADS)
@@ -983,9 +978,5 @@ success:
    if (g_settings.fastforward_ratio_throttle_enable)
       limit_frame_time();
 
-quit:
-   if (ret != -1)
-      return ret;
-
-   return rarch_main_iterate_quit();
+   return ret;
 }
