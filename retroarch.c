@@ -2843,8 +2843,9 @@ bool rarch_main_command(unsigned cmd)
 #ifdef HAVE_NETPLAY
          {
             netplay_t *netplay = (netplay_t*)driver.netplay_data;
-            if (netplay)
-               netplay_flip_users(netplay);
+            if (!netplay)
+               return false;
+            netplay_flip_users(netplay);
          }
 #endif
          break;
