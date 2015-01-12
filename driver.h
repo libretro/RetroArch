@@ -32,6 +32,7 @@
 
 #include "menu/menu_driver.h"
 #include "osk/osk_driver.h"
+#include "camera_driver.h"
 #include "audio/resamplers/resampler.h"
 #include "record/ffemu.h"
 
@@ -161,27 +162,6 @@ enum analog_dpad_mode
    ANALOG_DPAD_LAST
 };
 
-typedef struct camera_driver
-{
-   /* FIXME: params for initialization - queries for resolution,
-    * framerate, color format which might or might not be honored. */
-   void *(*init)(const char *device, uint64_t buffer_types,
-         unsigned width, unsigned height);
-
-   void (*free)(void *data);
-
-   bool (*start)(void *data);
-   void (*stop)(void *data);
-
-   /* Polls the camera driver.
-    * Will call the appropriate callback if a new frame is ready.
-    * Returns true if a new frame was handled. */
-   bool (*poll)(void *data,
-         retro_camera_frame_raw_framebuffer_t frame_raw_cb,
-         retro_camera_frame_opengl_texture_t frame_gl_cb);
-
-   const char *ident;
-} camera_driver_t;
 
 typedef struct location_driver
 {
@@ -492,36 +472,6 @@ float driver_sensor_get_input(unsigned port, unsigned action);
 void *driver_video_resolve(const video_driver_t **drv);
 
 /**
- * driver_camera_start:
- *
- * Starts camera driver.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool driver_camera_start(void);
-
-/**
- * driver_camera_stop:
- *
- * Stops camera driver.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-void driver_camera_stop(void);
-
-/**
- * driver_camera_poll:
- *
- * Call camera driver's poll function.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-void driver_camera_poll(void);
-
-/**
  * driver_location_start:
  *
  * Starts location driver interface..
@@ -583,17 +533,6 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info);
 extern driver_t driver;
 
 /**
- * config_get_camera_driver_options:
- *
- * Get an enumerated list of all camera driver names,
- * separated by '|'.
- *
- * Returns: string listing of all camera driver names,
- * separated by '|'.
- **/
-const char* config_get_camera_driver_options(void);
-
-/**
  * config_get_video_driver_options:
  *
  * Get an enumerated list of all video driver names, separated by '|'.
@@ -638,12 +577,6 @@ const char* config_get_menu_driver_options(void);
  **/
 int find_driver_index(const char * label, const char *drv);
   
-extern camera_driver_t camera_v4l2;
-extern camera_driver_t camera_android;
-extern camera_driver_t camera_rwebcam;
-extern camera_driver_t camera_apple;
-extern camera_driver_t camera_null;
-
 extern location_driver_t location_apple;
 extern location_driver_t location_android;
 extern location_driver_t location_null;

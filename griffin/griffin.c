@@ -500,6 +500,7 @@ DRIVERS
 #include "../input/input_driver.c"
 #include "../audio/audio_driver.c"
 #include "../osk/osk_driver.c"
+#include "../camera_driver.c"
 #include "../driver.c"
 
 /*============================================================
