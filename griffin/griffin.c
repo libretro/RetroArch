@@ -188,7 +188,6 @@ VIDEO DRIVER
 
 #ifdef HAVE_OMAP
 #include "../gfx/drivers/omap_gfx.c"
-#include "../gfx/drivers/fbdev.c"
 #endif
 
 #include "../gfx/gfx_common.c"
