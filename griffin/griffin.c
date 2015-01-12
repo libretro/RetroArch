@@ -499,7 +499,7 @@ DRIVERS
 #include "../gfx/video_driver.c"
 #include "../input/input_driver.c"
 #include "../audio/audio_driver.c"
-#include "../osk_driver.c"
+#include "../osk/osk_driver.c"
 #include "../driver.c"
 
 /*============================================================

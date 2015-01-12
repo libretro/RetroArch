@@ -31,7 +31,7 @@
 #include "audio/audio_driver.h"
 
 #include "menu/menu_driver.h"
-#include "osk_driver.h"
+#include "osk/osk_driver.h"
 #include "audio/resamplers/resampler.h"
 #include "record/ffemu.h"
 

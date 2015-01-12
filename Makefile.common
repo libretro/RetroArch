@@ -100,7 +100,7 @@ OBJ += frontend/frontend.o \
 		audio/audio_driver.o \
 		input/input_driver.o \
 		gfx/video_driver.o \
-		osk_driver.o \
+		osk/osk_driver.o \
 		driver.o \
 		settings.o \
 		settings_list.o \

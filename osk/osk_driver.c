@@ -17,8 +17,8 @@
 #include <string.h>
 #include <string/string_list.h>
 #include "osk_driver.h"
-#include "driver.h"
-#include "general.h"
+#include "../driver.h"
+#include "../general.h"
 
 static const input_osk_driver_t *osk_drivers[] = {
 #ifdef __CELLOS_LV2__
