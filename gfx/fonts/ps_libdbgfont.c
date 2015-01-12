@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fonts.h"
+#include "../font_renderer_driver.h"
 #include "../gfx_common.h"
 #include "../gl_common.h"
 

@@ -22,7 +22,7 @@
 #include <gfx/scaler/scaler.h>
 #include "../gfx_common.h"
 #include "../video_context_driver.h"
-#include "../fonts/fonts.h"
+#include "../font_renderer_driver.h"
 
 #ifdef HAVE_X11
 #include "../drivers_context/x11_common.h"

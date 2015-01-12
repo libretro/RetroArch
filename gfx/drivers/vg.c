@@ -26,7 +26,7 @@
 #include "../../retroarch.h"
 #include "../../driver.h"
 #include "../../performance.h"
-#include "../fonts/fonts.h"
+#include "../font_renderer_driver.h"
 #include "../../content.h"
 
 typedef struct
