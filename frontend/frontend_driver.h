@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __FRONTEND_CONTEXT_H
-#define __FRONTEND_CONTEXT_H
+#ifndef __FRONTEND_DRIVER_H
+#define __FRONTEND_DRIVER_H
 
 #include <stddef.h>
 #include <boolean.h>

@@ -14,7 +14,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../frontend_context.h"
+#include "../frontend_driver.h"
 
 #include <stdint.h>
 #include <boolean.h>

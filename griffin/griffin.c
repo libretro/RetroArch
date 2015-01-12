@@ -581,7 +581,7 @@ REWIND
 FRONTEND
 ============================================================ */
 
-#include "../frontend/frontend_context.c"
+#include "../frontend/frontend_driver.c"
 
 #if defined(__CELLOS_LV2__)
 #include "../frontend/platform/platform_ps3.c"

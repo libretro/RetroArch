@@ -24,9 +24,9 @@
 #include <stdint.h>
 #include <compat/posix_string.h>
 
-#include "frontend/frontend_context.h"
 #include <retro_miscellaneous.h>
 
+#include "frontend/frontend_driver.h"
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
 
