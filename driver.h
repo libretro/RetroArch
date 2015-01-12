@@ -31,8 +31,6 @@
 #include "audio/audio_driver.h"
 
 #include "menu/menu_driver.h"
-#include "menu/backend/menu_backend.h"
-#include "menu/disp/menu_display.h"
 #include "audio/resamplers/resampler.h"
 #include "record/ffemu.h"
 

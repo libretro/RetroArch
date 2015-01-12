@@ -20,7 +20,7 @@
 #include <xui.h>
 #include <xuiapp.h>
 
-#include "menu_display.h"
+#include "../menu_driver.h"
 #include "../menu.h"
 #include "../menu_list.h"
 

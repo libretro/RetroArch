@@ -21,7 +21,7 @@
 #include <string.h>
 #include <limits.h>
 
-#include "menu_display.h"
+#include "../menu_driver.h"
 #include "../menu.h"
 #include "../../general.h"
 #include "../../gfx/gfx_common.h"
