@@ -9,13 +9,19 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#if defined(__GNUC__) && !defined(_WIN32)
+#define CO_USE_INLINE_ASM
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 static thread_local long long co_active_buffer[64];
 static thread_local cothread_t co_active_handle = 0;
+#ifndef CO_USE_INLINE_ASM
 static void (*co_swap)(cothread_t, cothread_t) = 0;
+#endif
 
 #ifdef _WIN32
 //ABI: Win64
@@ -76,6 +82,7 @@ void co_init(void)
 }
 #else
 //ABI: SystemV
+#ifndef CO_USE_INLINE_ASM
 static unsigned char co_swap_function[] = {
   0x48, 0x89, 0x26,                                 /* mov    [rsi],rsp      */
   0x48, 0x8b, 0x27,                                 /* mov    rsp,[rdi]      */
@@ -105,6 +112,9 @@ void co_init(void)
    unsigned long long size = (addr - base) + sizeof(co_swap_function);
    mprotect((void*)base, size, PROT_READ | PROT_WRITE | PROT_EXEC);
 }
+#else
+void co_init(void) {}
+#endif
 #endif
 
 static void crash(void)
@@ -123,11 +133,13 @@ cothread_t co_create(unsigned int size, void (*entrypoint)(void))
 {
    cothread_t handle;
 
+#ifndef CO_USE_INLINE_ASM
    if(!co_swap)
    {
       co_init();
       co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
    }
+#endif
 
    if (!co_active_handle)
       co_active_handle = &co_active_buffer;
@@ -150,11 +162,37 @@ void co_delete(cothread_t handle)
    free(handle);
 }
 
+#ifndef CO_USE_INLINE_ASM
 void co_switch(cothread_t handle)
 {
   register cothread_t co_previous_handle = co_active_handle;
   co_swap(co_active_handle = handle, co_previous_handle);
 }
+#else
+__asm__(
+".intel_syntax noprefix        \n"
+".globl co_switch              \n"
+"co_switch:                    \n"
+"mov rsi, co_active_handle[rip]\n"
+"mov [rsi],rsp                 \n"
+"mov [rsi+0x08],rbp            \n"
+"mov [rsi+0x10],rbx            \n"
+"mov [rsi+0x18],r12            \n"
+"mov [rsi+0x20],r13            \n"
+"mov [rsi+0x28],r14            \n"
+"mov [rsi+0x30],r15            \n"
+"mov co_active_handle[rip], rdi\n"
+"mov rsp,[rdi]                 \n"
+"mov rbp,[rdi+0x08]            \n"
+"mov rbx,[rdi+0x10]            \n"
+"mov r12,[rdi+0x18]            \n"
+"mov r13,[rdi+0x20]            \n"
+"mov r14,[rdi+0x28]            \n"
+"mov r15,[rdi+0x30]            \n"
+"ret                           \n"
+".att_syntax                   \n"
+);
+#endif
 
 #ifdef __cplusplus
 }
