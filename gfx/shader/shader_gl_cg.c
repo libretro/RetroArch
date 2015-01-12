@@ -20,7 +20,7 @@
 #endif
 
 #include <stdint.h>
-#include "shader_context.h"
+#include "../video_shader_driver.h"
 
 #include <Cg/cg.h>
 

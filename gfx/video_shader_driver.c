@@ -13,13 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "shader_context.h"
-#include "../../retroarch_logger.h"
+#include "video_shader_driver.h"
+#include "../retroarch_logger.h"
 #include <string.h>
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
 
 static const shader_backend_t *shader_ctx_drivers[] = {
 #ifdef HAVE_CG

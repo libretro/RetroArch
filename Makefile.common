@@ -132,7 +132,7 @@ OBJ += frontend/frontend.o \
 		screenshot.o \
 		libretro-sdk/gfx/scaler/scaler.o \
 		gfx/shader/shader_null.o \
-		gfx/shader/shader_context.o \
+		gfx/video_shader_driver.o \
 		gfx/shader/shader_parse.o \
 		libretro-sdk/gfx/scaler/pixconv.o \
 		libretro-sdk/gfx/scaler/scaler_int.o \

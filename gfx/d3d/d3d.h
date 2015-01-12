@@ -46,7 +46,7 @@
 #include "../../driver.h"
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-#include "../shader/shader_context.h"
+#include "../video_shader_driver.h"
 #endif
 
 #include "../fonts/d3d_font.h"

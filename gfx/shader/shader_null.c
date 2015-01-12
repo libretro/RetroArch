@@ -31,7 +31,7 @@
 #include "../gl_common.h"
 #endif
 
-#include "shader_context.h"
+#include "../video_shader_driver.h"
 #include <stdlib.h>
 
 static void shader_null_deinit(void) { }

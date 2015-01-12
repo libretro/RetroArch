@@ -28,7 +28,7 @@
 #include "../../core_info.h"
 #include "../../playlist.h"
 #include "menu_input.h"
-#include "../../gfx/shader/shader_context.h"
+#include "../../gfx/video_shader_driver.h"
 
 #ifdef HAVE_RGUI
 #define MENU_TEXTURE_FULLSCREEN false

@@ -134,7 +134,7 @@ VIDEO SHADERS
 ============================================================ */
 
 #ifdef HAVE_SHADERS
-#include "../gfx/shader/shader_context.c"
+#include "../gfx/video_shader_driver.c"
 #include "../gfx/shader/shader_parse.c"
 #include "../gfx/shader/shader_null.c"
 

@@ -13,16 +13,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SHADER_CONTEXT_H__
-#define SHADER_CONTEXT_H__
+#ifndef VIDEO_SHADER_DRIVER_H__
+#define VIDEO_SHADER_DRIVER_H__
 
 #include <boolean.h>
 
 #ifdef HAVE_CONFIG_H
-#include "../../config.h"
+#include "../config.h"
 #endif
 
-#include "../video_context.h"
+#include "video_context.h"
 #include <gfx/math/matrix_4x4.h>
 
 typedef struct shader_backend
@@ -78,7 +78,7 @@ extern const shader_backend_t shader_null_backend;
 #define HAVE_SHADER_MANAGER
 #endif
 
-#include "shader_parse.h"
+#include "shader/shader_parse.h"
 
 #define GL_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
 

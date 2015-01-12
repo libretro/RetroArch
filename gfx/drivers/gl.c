@@ -49,7 +49,7 @@
 #include <string/string_list.h>
 #endif
 
-#include "../shader/shader_context.h"
+#include "../video_shader_driver.h"
 
 /* Used for the last pass when rendering to the back buffer. */
 static const GLfloat vertexes_flipped[] = {
