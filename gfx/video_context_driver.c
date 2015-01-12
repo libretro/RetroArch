@@ -15,7 +15,7 @@
  */
 
 #include "../general.h"
-#include "video_context.h"
+#include "video_context_driver.h"
 #include <string.h>
 
 #ifdef HAVE_CONFIG_H

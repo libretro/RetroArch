@@ -19,7 +19,7 @@
 #include <VG/vgext.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include "../video_context.h"
+#include "../video_context_driver.h"
 #include <gfx/math/matrix_3x3.h>
 #include "../../libretro.h"
 #include "../../general.h"

@@ -22,7 +22,7 @@
 #endif
 
 #include "../../driver.h"
-#include "../video_context.h"
+#include "../video_context_driver.h"
 #include "../gl_common.h"
 #include "../gfx_common.h"
 #include "win32_common.h"

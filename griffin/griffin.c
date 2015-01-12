@@ -86,7 +86,7 @@ CHEATS
 VIDEO CONTEXT
 ============================================================ */
 
-#include "../gfx/video_context.c"
+#include "../gfx/video_context_driver.c"
 #include "../gfx/context/gfx_null_ctx.c"
 
 #if defined(__CELLOS_LV2__)

@@ -22,7 +22,7 @@
 #include "../config.h"
 #endif
 
-#include "video_context.h"
+#include "video_context_driver.h"
 #include <gfx/math/matrix_4x4.h>
 
 typedef struct shader_backend

@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __VIDEO_CONTEXT_H
-#define __VIDEO_CONTEXT_H
+#ifndef __VIDEO_CONTEXT_DRIVER_H
+#define __VIDEO_CONTEXT_DRIVER_H
 
 #include <boolean.h>
 #include "../driver.h"

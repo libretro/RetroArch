@@ -4,7 +4,7 @@
 #endif
 
 #include "../../gfx/gfx_common.h"
-#include "../../gfx/video_context.h"
+#include "../../gfx/video_context_driver.h"
 #include "../../gfx/gl_common.h"
 
 //#define HAVE_NSOPENGL

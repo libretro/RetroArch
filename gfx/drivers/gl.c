@@ -38,7 +38,7 @@
 
 #include "../gl_common.h"
 #include "../gfx_common.h"
-#include "../video_context.h"
+#include "../video_context_driver.h"
 #include <compat/strl.h>
 
 #ifdef HAVE_GLSL
