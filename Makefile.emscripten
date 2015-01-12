@@ -78,7 +78,8 @@ clean:
 	rm -f gfx/d3d/*.o
 	rm -f gfx/drivers_context/*.o
 	rm -f gfx/math/*.o
-	rm -f gfx/fonts/*.o
+	rm -f gfx/drivers_font/*.o
+	rm -f gfx/drivers_font_renderer/*.o
 	rm -f gfx/py_state/*.o
 	rm -f gfx/rpng/*.o
 	rm -f gfx/glsym/*.o

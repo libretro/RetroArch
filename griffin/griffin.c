@@ -257,23 +257,23 @@ FONTS
 #endif
 
 #if defined(HAVE_WIN32_D3D9)
-#include "../gfx/fonts/d3d_w32_font.cpp"
+#include "../gfx/drivers_font/d3d_w32_font.cpp"
 #endif
 
 #if defined(HAVE_LIBDBGFONT)
-#include "../gfx/fonts/ps_libdbgfont.c"
+#include "../gfx/drivers_font/ps_libdbgfont.c"
 #endif
 
 #if defined(HAVE_OPENGL)
-#include "../gfx/fonts/gl_raster_font.c"
+#include "../gfx/drivers_font/gl_raster_font.c"
 #endif
 
 #if defined(_XBOX1)
-#include "../gfx/fonts/xdk1_xfonts.c"
+#include "../gfx/drivers_font/xdk1_xfonts.c"
 #endif
 
 #if defined(_XBOX360)
-#include "../gfx/fonts/xdk360_fonts.cpp"
+#include "../gfx/drivers_font/xdk360_fonts.cpp"
 #endif
 
 /*============================================================

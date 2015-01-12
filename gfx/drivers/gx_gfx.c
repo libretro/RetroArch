@@ -17,7 +17,7 @@
 
 #include "../../driver.h"
 #include "../../general.h"
-#include "../fonts/bitmap.h"
+#include "../drivers_font_renderer/bitmap.h"
 #include "../../menu/menu.h"
 #include "../gfx_common.h"
 

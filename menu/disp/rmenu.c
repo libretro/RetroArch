@@ -31,7 +31,7 @@
 
 #include "../../settings_data.h"
 #include "../../screenshot.h"
-#include "../../gfx/fonts/bitmap.h"
+#include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #include "shared.h"
 
