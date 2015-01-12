@@ -81,16 +81,16 @@ rarch_joypad_driver_t *joypad_drivers[] = {
 const char* config_get_joypad_driver_options(void)
 {
    union string_list_elem_attr attr;
+   unsigned i;
    char *options = NULL;
-   int option_k = 0;
    int options_len = 0;
    struct string_list *options_l = string_list_new();
 
    attr.i = 0;
 
-   for (option_k = 0; joypad_drivers[option_k]; option_k++)
+   for (i = 0; joypad_drivers[i]; i++)
    {
-      const char *opt = joypad_drivers[option_k]->ident;
+      const char *opt = joypad_drivers[i]->ident;
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
