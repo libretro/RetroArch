@@ -66,8 +66,30 @@ void menu_navigation_set(menu_handle_t *menu, size_t i, bool scroll);
  **/
 void menu_navigation_set_last(menu_handle_t *menu);
 
+/**
+ * menu_navigation_descend_alphabet:
+ * @menu                  : menu handle
+ * @ptr_out               : Amount of indices to 'scroll' to get
+ *                          to the next entry.
+ *
+ * Descends alphabet.
+ * E.g.:
+ * If navigation points to an entry called 'Beta',
+ * navigation pointer will be set to an entry called 'Alpha'.
+ **/
 void menu_navigation_descend_alphabet(menu_handle_t *menu, size_t *ptr_out);
 
+/**
+ * menu_navigation_ascends_alphabet:
+ * @menu                  : menu handle
+ * @ptr_out               : Amount of indices to 'scroll' to get
+ *                          to the next entry.
+ *
+ * Ascends alphabet.
+ * E.g.:
+ * If navigation points to an entry called 'Alpha',
+ * navigation pointer will be set to an entry called 'Beta'.
+ **/
 void menu_navigation_ascend_alphabet(menu_handle_t *menu, size_t *ptr_out);
 
 #ifdef __cplusplus
