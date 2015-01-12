@@ -392,6 +392,36 @@ static const input_osk_driver_t *osk_drivers[] = {
 };
 
 /**
+ * osk_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to OSK driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *osk_driver_find_handle(int index)
+{
+   const void *drv = osk_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
+ * osk_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of OSK driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const char *osk_driver_find_ident(int index)
+{
+   const input_osk_driver_t *drv = osk_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv->ident;
+}
+
+/**
  * config_get_osk_driver_options:
  *
  * Get an enumerated list of all OSK (onscreen keyboard) driver names,
@@ -410,9 +440,9 @@ const char* config_get_osk_driver_options(void)
 
    attr.i = 0;
 
-   for (option_k = 0; osk_drivers[option_k]; option_k++)
+   for (option_k = 0; osk_driver_find_handle(option_k); option_k++)
    {
-      const char *opt = osk_drivers[option_k]->ident;
+      const char *opt = osk_driver_find_ident(option_k);
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -625,9 +655,9 @@ static const void *find_driver_nonempty(const char *label, int i,
    }
    else if (!strcmp(label, "osk_driver"))
    {
-      drv = osk_drivers[i];
+      drv = osk_driver_find_handle(i);
       if (drv)
-         strlcpy(str, osk_drivers[i]->ident, sizeof_str);
+         strlcpy(str, osk_driver_find_ident(i), sizeof_str);
    }
 #ifdef HAVE_MENU
    else if (!strcmp(label, "menu_driver"))
@@ -740,19 +770,19 @@ static void find_osk_driver(void)
 {
    int i = find_driver_index("osk_driver", g_settings.osk.driver);
    if (i >= 0)
-      driver.osk = osk_drivers[i];
+      driver.osk = osk_driver_find_handle(i);
    else
    {
       unsigned d;
       RARCH_ERR("Couldn't find any OSK driver named \"%s\"\n",
             g_settings.osk.driver);
       RARCH_LOG_OUTPUT("Available OSK drivers are:\n");
-      for (d = 0; osk_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", osk_drivers[d]->ident);
+      for (d = 0; osk_driver_find_handle(d); d++)
+         RARCH_LOG_OUTPUT("\t%s\n", osk_driver_find_ident(d));
 
       RARCH_WARN("Going to default to first OSK driver...\n");
        
-      driver.osk = osk_drivers[0];
+      driver.osk = osk_driver_find_handle(0);
        
       if (!driver.osk)
          rarch_fail(1, "find_osk_driver()");
