@@ -320,6 +320,36 @@ static const input_driver_t *input_drivers[] = {
 };
 
 /**
+ * input_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to input driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *input_driver_find_handle(int index)
+{
+   const void *drv = input_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
+ * input_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of input driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const char *input_driver_find_ident(int index)
+{
+   const input_driver_t *drv = input_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv->ident;
+}
+
+/**
  * config_get_input_driver_options:
  *
  * Get an enumerated list of all input driver names, separated by '|'.
@@ -336,9 +366,9 @@ const char* config_get_input_driver_options(void)
 
    attr.i = 0;
 
-   for (option_k = 0; input_drivers[option_k]; option_k++)
+   for (option_k = 0; input_driver_find_handle(option_k); option_k++)
    {
-      const char *opt = input_drivers[option_k]->ident;
+      const char *opt = input_driver_find_ident(option_k);
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -609,9 +639,9 @@ static const void *find_driver_nonempty(const char *label, int i,
 #endif
    else if (!strcmp(label, "input_driver"))
    {
-      drv = input_drivers[i];
+      drv = input_driver_find_handle(i);
       if (drv)
-         strlcpy(str, input_drivers[i]->ident, sizeof_str);
+         strlcpy(str, input_driver_find_ident(i), sizeof_str);
    }
    else if (!strcmp(label, "input_joypad_driver"))
    {
@@ -1099,18 +1129,18 @@ static void find_input_driver(void)
 {
    int i = find_driver_index("input_driver", g_settings.input.driver);
    if (i >= 0)
-      driver.input = input_drivers[i];
+      driver.input = input_driver_find_handle(i);
    else
    {
       unsigned d;
       RARCH_ERR("Couldn't find any input driver named \"%s\"\n",
             g_settings.input.driver);
       RARCH_LOG_OUTPUT("Available input drivers are:\n");
-      for (d = 0; input_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", input_drivers[d]->ident);
+      for (d = 0; input_driver_find_handle(d); d++)
+         RARCH_LOG_OUTPUT("\t%s\n", input_driver_find_ident(d));
       RARCH_WARN("Going to default to first input driver...\n");
 
-      driver.input = input_drivers[0];
+      driver.input = input_driver_find_handle(0);
 
       if (!driver.input)
          rarch_fail(1, "find_input_driver()");
