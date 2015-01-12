@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <compat/posix_string.h>
-#include <gfx/scaler/scaler.h>
 
 #include "frontend/frontend_context.h"
 #include <retro_miscellaneous.h>

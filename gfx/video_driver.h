@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include <boolean.h>
+#include <gfx/scaler/scaler.h>
 #include "../libretro.h"
 
 #include "../input/input_driver.h"
