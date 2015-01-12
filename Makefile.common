@@ -140,11 +140,11 @@ OBJ += frontend/frontend.o \
 		gfx/image/image_rpng.o \
 		gfx/fonts/fonts.o \
 		gfx/video_filter.o \
-		audio/resamplers/resampler.o \
+		audio/audio_resampler_driver.o \
 		audio/dsp_filter.o \
-		audio/resamplers/sinc.o \
-		audio/resamplers/nearest.o \
-		audio/resamplers/cc_resampler.o \
+		audio/drivers_resampler/sinc.o \
+		audio/drivers_resampler/nearest.o \
+		audio/drivers_resampler/cc_resampler.o \
 		location/drivers/nulllocation.o \
 		camera/drivers/nullcamera.o \
 		gfx/drivers/nullgfx.o \
@@ -257,8 +257,8 @@ endif
 # Audio Resamplers
 
 ifeq ($(HAVE_NEON),1)
-   OBJ += audio/resamplers/sinc_neon.o
-   OBJ += audio/resamplers/cc_resampler_neon.o
+   OBJ += audio/drivers_resampler/sinc_neon.o
+   OBJ += audio/drivers_resampler/cc_resampler_neon.o
    # When compiled without this, tries to attempt to compile sinc lerp,
    # which will error out
 	#

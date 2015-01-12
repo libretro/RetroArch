@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "resampler.h"
+#include "../audio_resampler_driver.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>

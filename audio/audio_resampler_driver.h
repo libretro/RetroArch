@@ -15,8 +15,8 @@
  */
 
 
-#ifndef __RARCH_RESAMPLER_H
-#define __RARCH_RESAMPLER_H
+#ifndef __AUDIO_RESAMPLER_DRIVER_H
+#define __AUDIO_RESAMPLER_DRIVER_H
 
 #ifdef __cplusplus
 extern "C" {

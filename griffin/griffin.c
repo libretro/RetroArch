@@ -409,10 +409,10 @@ FIFO BUFFER
 /*============================================================
 AUDIO RESAMPLER
 ============================================================ */
-#include "../audio/resamplers/resampler.c"
-#include "../audio/resamplers/sinc.c"
-#include "../audio/resamplers/nearest.c"
-#include "../audio/resamplers/cc_resampler.c"
+#include "../audio/audio_resampler_driver.c"
+#include "../audio/drivers_resampler/sinc.c"
+#include "../audio/drivers_resampler/nearest.c"
+#include "../audio/drivers_resampler/cc_resampler.c"
 
 /*============================================================
 CAMERA

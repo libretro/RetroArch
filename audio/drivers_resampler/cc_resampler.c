@@ -15,10 +15,13 @@
 
 /* Convoluted Cosine Resampler */
 
-#include "resampler.h"
+#include "../audio_resampler_driver.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
+#ifdef __SSE__
+#include <xmmintrin.h>
+#endif
 
 #if !defined(RESAMPLER_TEST) && defined(RARCH_INTERNAL)
 #include "../../general.h"
@@ -212,9 +215,6 @@ static void *resampler_CC_init(const struct resampler_config *config,
 
 
 #if defined(__SSE__)
-
-#include <xmmintrin.h>
-
 #define CC_RESAMPLER_IDENT "SSE"
 
 static void resampler_CC_downsample(void *re_, struct resampler_data *data)

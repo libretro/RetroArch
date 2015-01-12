@@ -14,9 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "resampler.h"
+#include "audio_resampler_driver.h"
 #ifdef RARCH_INTERNAL
-#include "../../performance.h"
+#include "../performance.h"
 #endif
 #include <file/config_file_userdata.h>
 #include <string.h>
