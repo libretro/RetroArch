@@ -25,7 +25,7 @@
 #include "../fonts/fonts.h"
 
 #ifdef HAVE_X11
-#include "../context/x11_common.h"
+#include "../drivers_context/x11_common.h"
 #endif
 
 #ifdef HAVE_CONFIG_H

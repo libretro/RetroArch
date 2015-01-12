@@ -24,7 +24,7 @@
 #include "gfx/gfx_common.h"
 
 #ifdef HAVE_X11
-#include "gfx/context/x11_common.h"
+#include "gfx/drivers_context/x11_common.h"
 #endif
 
 #ifdef HAVE_MENU

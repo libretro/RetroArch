@@ -26,7 +26,7 @@
 #endif
 #include "../gfx_common.h"
 
-#include "../context/win32_common.h"
+#include "../drivers_context/win32_common.h"
 
 #ifndef _XBOX
 #define HAVE_MONITOR

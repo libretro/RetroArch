@@ -346,7 +346,7 @@ ifeq ($(HAVE_WINXINPUT), 1)
 endif
 
 ifeq ($(HAVE_X11), 1)
-   OBJ += input/drivers/x11_input.o gfx/context/x11_common.o input/keyboard_event_x11.o
+   OBJ += input/drivers/x11_input.o gfx/drivers_context/x11_common.o input/keyboard_event_x11.o
    LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS)
    DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
 endif
@@ -375,7 +375,7 @@ ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/drivers/gl.o \
 			 gfx/gl_common.o \
 			 gfx/video_context_driver.o \
-			 gfx/context/gfx_null_ctx.o \
+			 gfx/drivers_context/gfx_null_ctx.o \
 			 gfx/fonts/gl_font.o \
 			 gfx/fonts/gl_raster_font.o \
 			 libretro-sdk/gfx/math/matrix_4x4.o \
@@ -383,39 +383,39 @@ ifeq ($(HAVE_OPENGL), 1)
 			 libretro-sdk/glsym/rglgen.o
 
    ifeq ($(HAVE_KMS), 1)
-      OBJ += gfx/context/drm_egl_ctx.o
+      OBJ += gfx/drivers_context/drm_egl_ctx.o
       DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
       LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
    endif
 
    ifeq ($(HAVE_VIDEOCORE), 1)
-      OBJ += gfx/context/vc_egl_ctx.o
+      OBJ += gfx/drivers_context/vc_egl_ctx.o
       DEFINES += $(EGL_CFLAGS)
       LIBS += $(EGL_LIBS)
    endif
 
    ifeq ($(HAVE_EMSCRIPTEN), 1)
-      OBJ += gfx/context/emscriptenegl_ctx.o
+      OBJ += gfx/drivers_context/emscriptenegl_ctx.o
    endif
 
    ifeq ($(HAVE_MALI_FBDEV), 1)
-      OBJ += gfx/context/mali_fbdev_ctx.o
+      OBJ += gfx/drivers_context/mali_fbdev_ctx.o
       DEFINES += $(EGL_CFLAGS)
       LIBS += $(EGL_LIBS)
    endif
 
    ifeq ($(HAVE_VIVANTE_FBDEV), 1)
-      OBJ += gfx/context/vivante_fbdev_ctx.o
+      OBJ += gfx/drivers_context/vivante_fbdev_ctx.o
       DEFINES += $(EGL_CFLAGS)
       LIBS += $(EGL_LIBS)
    endif
 
    ifeq ($(HAVE_X11), 1)
       ifeq ($(HAVE_GLES), 0)
-         OBJ += gfx/context/glx_ctx.o
+         OBJ += gfx/drivers_context/glx_ctx.o
       endif
       ifeq ($(HAVE_EGL), 1)
-         OBJ += gfx/context/xegl_ctx.o
+         OBJ += gfx/drivers_context/xegl_ctx.o
          DEFINES += $(EGL_CFLAGS)
          LIBS += $(EGL_LIBS)
       endif
@@ -423,7 +423,7 @@ ifeq ($(HAVE_OPENGL), 1)
 
    ifeq ($(HAVE_WAYLAND), 1)
 	   ifeq ($(HAVE_EGL), 1)
-	     OBJ += gfx/context/wayland_ctx.o
+	     OBJ += gfx/drivers_context/wayland_ctx.o
       endif
    endif
 	
@@ -441,7 +441,7 @@ ifeq ($(HAVE_OPENGL), 1)
          LIBS += -framework OpenGL
       else ifneq ($(findstring Win32,$(OS)),)
          LIBS += -lopengl32 -lgdi32 -lcomdlg32
-         OBJ += gfx/context/wgl_ctx.o
+         OBJ += gfx/drivers_context/wgl_ctx.o
       else
          LIBS += -lGL
       endif
@@ -459,7 +459,7 @@ ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/drivers/sdl_gfx.o input/drivers/sdl_input.o input/drivers_joypad/sdl_joypad.o audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_OPENGL), 1)
-     OBJ += gfx/context/sdl_gl_ctx.o
+     OBJ += gfx/drivers_context/sdl_gl_ctx.o
    endif
 
    JOYCONFIG_LIBS += $(SDL_LIBS)
@@ -471,7 +471,7 @@ ifeq ($(HAVE_SDL2), 1)
    OBJ += gfx/drivers/sdl2_gfx.o input/drivers/sdl_input.o input/drivers_joypad/sdl_joypad.o audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_OPENGL), 1)
-     OBJ += gfx/context/sdl_gl_ctx.o
+     OBJ += gfx/drivers_context/sdl_gl_ctx.o
    endif
 
    JOYCONFIG_LIBS += $(SDL2_LIBS)
@@ -514,7 +514,7 @@ ifeq ($(HAVE_D3D9), 1)
 			 gfx/d3d/d3d_wrapper.o \
 			 gfx/fonts/d3d_font.o \
 			 gfx/fonts/d3d_w32_font.o \
-			 gfx/context/d3d_ctx.o
+			 gfx/drivers_context/d3d_ctx.o
    DEFINES += -DHAVE_WIN32_D3D9
    LIBS += -ld3d9 -ld3dx9 -ldxguid
 

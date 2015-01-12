@@ -22,7 +22,7 @@
 #include "../gfx_common.h"
 #include "../fonts/fonts.h"
 
-#include "../context/x11_common.h"
+#include "../drivers_context/x11_common.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

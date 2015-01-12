@@ -87,45 +87,45 @@ VIDEO CONTEXT
 ============================================================ */
 
 #include "../gfx/video_context_driver.c"
-#include "../gfx/context/gfx_null_ctx.c"
+#include "../gfx/drivers_context/gfx_null_ctx.c"
 
 #if defined(__CELLOS_LV2__)
-#include "../gfx/context/ps3_ctx.c"
+#include "../gfx/drivers_context/ps3_ctx.c"
 #elif defined(_XBOX) || defined(HAVE_WIN32_D3D9)
-#include "../gfx/context/d3d_ctx.cpp"
+#include "../gfx/drivers_context/d3d_ctx.cpp"
 #elif defined(ANDROID)
-#include "../gfx/context/androidegl_ctx.c"
+#include "../gfx/drivers_context/androidegl_ctx.c"
 #elif defined(__QNX__)
-#include "../gfx/context/bbqnx_ctx.c"
+#include "../gfx/drivers_context/bbqnx_ctx.c"
 #elif defined(EMSCRIPTEN)
-#include "../gfx/context/emscriptenegl_ctx.c"
+#include "../gfx/drivers_context/emscriptenegl_ctx.c"
 #endif
 
 
 #if defined(HAVE_OPENGL)
 
 #if defined(HAVE_KMS)
-#include "../gfx/context/drm_egl_ctx.c"
+#include "../gfx/drivers_context/drm_egl_ctx.c"
 #endif
 #if defined(HAVE_VIDEOCORE)
-#include "../gfx/context/vc_egl_ctx.c"
+#include "../gfx/drivers_context/vc_egl_ctx.c"
 #endif
 #if defined(HAVE_X11) && !defined(HAVE_OPENGLES)
-#include "../gfx/context/glx_ctx.c"
+#include "../gfx/drivers_context/glx_ctx.c"
 #endif
 
 #if defined(HAVE_EGL)
-#include "../gfx/context/xegl_ctx.c"
+#include "../gfx/drivers_context/xegl_ctx.c"
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
-#include "../gfx/context/wgl_ctx.c"
+#include "../gfx/drivers_context/wgl_ctx.c"
 #endif
 
 #endif
 
 #ifdef HAVE_X11
-#include "../gfx/context/x11_common.c"
+#include "../gfx/drivers_context/x11_common.c"
 #endif
 
 
