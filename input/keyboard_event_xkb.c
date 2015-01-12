@@ -15,7 +15,7 @@
  */
 
 #include <xkbcommon/xkbcommon.h>
-#include "input_context.h"
+#include "input_joypad_driver.h"
 #include "input_keymaps.h"
 #include "keyboard_line.h"
 

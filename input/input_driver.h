@@ -23,7 +23,7 @@
 #include <boolean.h>
 #include "../libretro.h"
 
-#include "input_context.h"
+#include "input_joypad_driver.h"
 
 #ifdef HAVE_OVERLAY
 #include "overlay.h"

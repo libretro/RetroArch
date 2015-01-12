@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INPUT_CONTEXT_H__
-#define INPUT_CONTEXT_H__
+#ifndef INPUT_JOYPAD_DRIVER_H__
+#define INPUT_JOYPAD_DRIVER_H__
 
 #ifdef __cplusplus
 extern "C" {

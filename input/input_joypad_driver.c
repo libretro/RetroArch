@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_context.h"
+#include "input_joypad_driver.h"
 #include "input_keymaps.h"
 #include <string.h>
 #include <stdlib.h>
