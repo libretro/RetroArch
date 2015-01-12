@@ -102,6 +102,7 @@ OBJ += frontend/frontend.o \
 		gfx/video_driver.o \
 		osk/osk_driver.o \
 		camera/camera_driver.o \
+		menu_driver.o \
 		location/location_driver.o \
 		driver.o \
 		settings.o \

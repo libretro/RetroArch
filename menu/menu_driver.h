@@ -20,6 +20,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 #include "menu_list.h"
 #include "../settings_list.h"
 
@@ -194,6 +195,39 @@ typedef struct menu_ctx_driver
    const menu_ctx_driver_backend_t *backend;
    const char *ident;
 } menu_ctx_driver_t;
+
+/**
+ * menu_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to menu driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *menu_driver_find_handle(int index);
+
+/**
+ * menu_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of menu driver at index. Can be NULL
+ * if nothing found.
+ **/
+const char *menu_driver_find_ident(int index);
+
+/**
+ * config_get_menu_driver_options:
+ *
+ * Get an enumerated list of all menu driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all menu driver names,
+ * separated by '|'.
+ **/
+const char* config_get_menu_driver_options(void);
+
+void find_menu_driver(void);
+
+void init_menu(void);
 
 extern menu_ctx_driver_t menu_ctx_rmenu;
 extern menu_ctx_driver_t menu_ctx_rmenu_xui;

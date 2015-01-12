@@ -480,19 +480,6 @@ extern driver_t driver;
  **/
 const char* config_get_video_driver_options(void);
 
-#ifdef HAVE_MENU
-/**
- * config_get_menu_driver_options:
- *
- * Get an enumerated list of all menu driver names,
- * separated by '|'.
- *
- * Returns: string listing of all menu driver names,
- * separated by '|'.
- **/
-const char* config_get_menu_driver_options(void);
-#endif
-
 /**
  * find_driver_index:
  * @label              : string of driver type to be found.
