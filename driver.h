@@ -35,7 +35,7 @@
 #include "frontend/frontend_context.h"
 #include <retro_miscellaneous.h>
 
-#include "audio_driver.h"
+#include "audio/audio_driver.h"
 
 #include "menu/menu_driver.h"
 #include "menu/backend/menu_backend.h"

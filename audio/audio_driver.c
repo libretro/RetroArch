@@ -17,11 +17,11 @@
 #include <string.h>
 #include <string/string_list.h>
 #include "audio_driver.h"
-#include "audio/utils.h"
-#include "audio/audio_thread_wrapper.h"
-#include "driver.h"
-#include "general.h"
-#include "retroarch.h"
+#include "utils.h"
+#include "audio_thread_wrapper.h"
+#include "../driver.h"
+#include "../general.h"
+#include "../retroarch.h"
 
 static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
