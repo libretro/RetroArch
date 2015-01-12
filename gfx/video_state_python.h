@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_PY_STATE_H
-#define __RARCH_PY_STATE_H
+#ifndef __VIDEO_STATE_PYTHON_H
+#define __VIDEO_STATE_PYTHON_H
 
 #include <stdint.h>
 #include <boolean.h>

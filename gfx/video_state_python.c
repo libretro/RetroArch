@@ -19,14 +19,14 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "py_state.h"
-#include "../../dynamic.h"
-#include "../../libretro.h"
-#include "../../general.h"
+#include "video_state_python.h"
+#include "../dynamic.h"
+#include "../libretro.h"
+#include "../general.h"
 #include <compat/strl.h>
 #include <compat/posix_string.h>
-#include "../../input/input_common.h"
-#include "../../file_ops.h"
+#include "../input/input_common.h"
+#include "../file_ops.h"
 
 static PyObject* py_read_wram(PyObject *self, PyObject *args)
 {
@@ -95,6 +95,14 @@ static const struct retro_keybind *py_binds[MAX_USERS] = {
    g_settings.input.binds[5],
    g_settings.input.binds[6],
    g_settings.input.binds[7],
+   g_settings.input.binds[8],
+   g_settings.input.binds[9],
+   g_settings.input.binds[10],
+   g_settings.input.binds[11],
+   g_settings.input.binds[12],
+   g_settings.input.binds[13],
+   g_settings.input.binds[14],
+   g_settings.input.binds[15],
 };
 
 static PyObject *py_read_input(PyObject *self, PyObject *args)
@@ -397,4 +405,3 @@ float py_state_get(py_state_t *handle, const char *id,
    Py_DECREF(ret);
    return retval;
 }
-

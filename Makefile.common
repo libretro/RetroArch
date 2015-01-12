@@ -167,7 +167,7 @@ endif
 ifeq ($(HAVE_PYTHON), 1)
    DEFINES += $(PYTHON_CFLAGS) -Wno-unused-parameter
    LIBS += $(PYTHON_LIBS)
-   OBJ += gfx/py_state/py_state.o
+   OBJ += gfx/video_state_python.o
 endif
 
 ifeq ($(HAVE_EMSCRIPTEN), 1)
@@ -372,7 +372,7 @@ ifeq ($(HAVE_OPENGL), 1)
 			 gfx/fonts/gl_font.o \
 			 gfx/fonts/gl_raster_font.o \
 			 libretro-sdk/gfx/math/matrix_4x4.o \
-			 gfx/state_tracker.o \
+			 gfx/video_state_tracker.o \
 			 libretro-sdk/glsym/rglgen.o
 
    ifeq ($(HAVE_KMS), 1)

@@ -19,7 +19,7 @@
 
 #include <boolean.h>
 #include <file/config_file.h>
-#include "../state_tracker.h"
+#include "../video_state_tracker.h"
 #include <retro_miscellaneous.h>
 
 #ifdef __cplusplus

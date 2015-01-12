@@ -37,7 +37,7 @@
 #include "../../dynamic.h"
 #include <file/file_path.h>
 
-#include "../state_tracker.h"
+#include "../video_state_tracker.h"
 
 #if 0
 #define RARCH_CG_DEBUG

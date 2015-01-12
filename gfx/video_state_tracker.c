@@ -14,14 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "state_tracker.h"
+#include "video_state_tracker.h"
 #include <stdlib.h>
 #include <compat/strl.h>
 #include "../general.h"
 #include "../input/input_common.h"
 
 #ifdef HAVE_PYTHON
-#include "py_state/py_state.h"
+#include "video_state_python.h"
 #endif
 
 struct state_tracker_internal

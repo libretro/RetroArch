@@ -395,10 +395,10 @@ INPUT
 /*============================================================
 STATE TRACKER
 ============================================================ */
-#include "../gfx/state_tracker.c"
+#include "../gfx/video_state_tracker.c"
 
 #ifdef HAVE_PYTHON
-#include "../gfx/py_state/py_state.c"
+#include "../gfx/video_state_python.c"
 #endif
 
 /*============================================================

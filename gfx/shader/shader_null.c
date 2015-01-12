@@ -19,7 +19,7 @@
 #include "../../general.h"
 #include <compat/strl.h>
 #include <compat/posix_string.h>
-#include "../state_tracker.h"
+#include "../video_state_tracker.h"
 #include "../../dynamic.h"
 #include <gfx/math/matrix_4x4.h>
 

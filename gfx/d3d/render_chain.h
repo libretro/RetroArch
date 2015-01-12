@@ -18,7 +18,7 @@
 #define __D3D_RENDER_CHAIN_H
 
 #include "d3d.h"
-#include "../state_tracker.h"
+#include "../video_state_tracker.h"
 #include "../shader/shader_parse.h"
 
 struct Vertex

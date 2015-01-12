@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_LIBRETRO_TRACKER_H
-#define __RARCH_LIBRETRO_TRACKER_H
+#ifndef __VIDEO_STATE_TRACKER_H
+#define __VIDEO_STATE_TRACKER_H
 
 #ifdef __cplusplus
 extern "C" {
