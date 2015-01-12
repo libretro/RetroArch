@@ -154,7 +154,7 @@ OBJ += frontend/frontend.o \
 		osk/drivers/nullosk.o \
 		playlist.o \
 		movie.o \
-		record/ffemu.o \
+		record/record_driver.o \
 		performance.o
 
 # RarchDB

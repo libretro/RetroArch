@@ -50,7 +50,7 @@ extern "C" {
 #include <gfx/scaler/scaler.h>
 #include <file/config_file.h>
 #include "../audio/utils.h"
-#include "ffemu.h"
+#include "record_driver.h"
 #include <assert.h>
 
 #ifdef FFEMU_PERF

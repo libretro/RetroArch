@@ -15,7 +15,7 @@
  */
 
 #include <string.h>
-#include "ffemu.h"
+#include "record_driver.h"
 
 #include "../dynamic.h"
 

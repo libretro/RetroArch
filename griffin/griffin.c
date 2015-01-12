@@ -625,7 +625,7 @@ RETROARCH
 RECORDING
 ============================================================ */
 #include "../movie.c"
-#include "../record/ffemu.c"
+#include "../record/record_driver.c"
 
 /*============================================================
 THREAD

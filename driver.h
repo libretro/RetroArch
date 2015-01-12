@@ -35,7 +35,7 @@
 #include "camera/camera_driver.h"
 #include "location/location_driver.h"
 #include "audio/resamplers/resampler.h"
-#include "record/ffemu.h"
+#include "record/record_driver.h"
 
 #include "retro.h"
 

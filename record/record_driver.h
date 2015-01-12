@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __FFEMU_H
-#define __FFEMU_H
+#ifndef __RECORD_DRIVER_H
+#define __RECORD_DRIVER_H
 
 #include <stdint.h>
 #include <stddef.h>
