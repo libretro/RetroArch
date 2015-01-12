@@ -475,6 +475,36 @@ static const camera_driver_t *camera_drivers[] = {
 };
 
 /**
+ * camera_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to camera driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *camera_driver_find_handle(int index)
+{
+   const void *drv = camera_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
+ * camera_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of camera driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const char *camera_driver_find_ident(int index)
+{
+   const camera_driver_t *drv = camera_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv->ident;
+}
+
+/**
  * config_get_camera_driver_options:
  *
  * Get an enumerated list of all camera driver names,
@@ -493,9 +523,9 @@ const char* config_get_camera_driver_options(void)
 
    attr.i = 0;
 
-   for (option_k = 0; camera_drivers[option_k]; option_k++)
+   for (option_k = 0; camera_driver_find_handle(option_k); option_k++)
    {
-      const char *opt = camera_drivers[option_k]->ident;
+      const char *opt = camera_driver_find_ident(option_k);
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -643,9 +673,9 @@ static const void *find_driver_nonempty(const char *label, int i,
 
    if (!strcmp(label, "camera_driver"))
    {
-      drv = camera_drivers[i];
+      drv = camera_driver_find_handle(i);
       if (drv)
-         strlcpy(str, camera_drivers[i]->ident, sizeof_str);
+         strlcpy(str, camera_driver_find_ident(i), sizeof_str);
    }
    else if (!strcmp(label, "location_driver"))
    {
@@ -820,19 +850,19 @@ static void find_camera_driver(void)
 {
    int i = find_driver_index("camera_driver", g_settings.camera.driver);
    if (i >= 0)
-      driver.camera = camera_drivers[i];
+      driver.camera = camera_driver_find_handle(i);
    else
    {
       unsigned d;
       RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
             g_settings.camera.driver);
       RARCH_LOG_OUTPUT("Available camera drivers are:\n");
-      for (d = 0; camera_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", camera_drivers[d]->ident);
+      for (d = 0; camera_driver_find_handle(d); d++)
+         RARCH_LOG_OUTPUT("\t%s\n", camera_driver_find_ident(d));
        
       RARCH_WARN("Going to default to first camera driver...\n");
        
-      driver.camera = camera_drivers[0];
+      driver.camera = camera_driver_find_handle(0);
        
       if (!driver.camera)
          rarch_fail(1, "find_camera_driver()");
