@@ -273,7 +273,7 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
-				RelativePath="..\..\frontend\frontend_context.c">
+				RelativePath="..\..\frontend\frontend_driver.c">
 				<FileConfiguration
 					Name="Debug|Xbox">
 					<Tool
@@ -339,10 +339,10 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\frontend\platform\platform_null.c">
+				RelativePath="..\..\frontend\drivers\platform_null.c">
 			</File>
 			<File
-				RelativePath="..\..\frontend\platform\platform_xdk.c">
+				RelativePath="..\..\frontend\drivers\platform_xdk.c">
 				<FileConfiguration
 					Name="Debug|Xbox">
 					<Tool
