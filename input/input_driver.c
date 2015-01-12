@@ -136,7 +136,7 @@ void find_input_driver(void)
 {
    int i = find_driver_index("input_driver", g_settings.input.driver);
    if (i >= 0)
-      driver.input = input_driver_find_handle(i);
+      driver.input = (const input_driver_t*)input_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -147,7 +147,7 @@ void find_input_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", input_driver_find_ident(d));
       RARCH_WARN("Going to default to first input driver...\n");
 
-      driver.input = input_driver_find_handle(0);
+      driver.input = (const input_driver_t*)input_driver_find_handle(0);
 
       if (!driver.input)
          rarch_fail(1, "find_input_driver()");

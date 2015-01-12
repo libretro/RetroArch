@@ -116,7 +116,7 @@ void find_menu_driver(void)
 {
    int i = find_driver_index("menu_driver", g_settings.menu.driver);
    if (i >= 0)
-      driver.menu_ctx = menu_driver_find_handle(i);
+      driver.menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -127,7 +127,7 @@ void find_menu_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", menu_driver_find_ident(d));
       RARCH_WARN("Going to default to first menu driver...\n");
 
-      driver.menu_ctx = menu_driver_find_handle(0);
+      driver.menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(0);
 
       if (!driver.menu_ctx)
          rarch_fail(1, "find_menu_driver()");

@@ -36,7 +36,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
    if (latency < 8)
       latency = 8; /* Do not allow shenanigans. */
 
-   xa_t *xa = (xa_t*)calloc(1, sizeof(*xa));
+   xa = (xa_t*)calloc(1, sizeof(*xa));
    if (!xa)
       return NULL;
 

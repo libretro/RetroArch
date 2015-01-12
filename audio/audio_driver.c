@@ -201,7 +201,7 @@ void find_audio_driver(void)
 {
    int i = find_driver_index("audio_driver", g_settings.audio.driver);
    if (i >= 0)
-      driver.audio = audio_driver_find_handle(i);
+      driver.audio = (const audio_driver_t*)audio_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -212,7 +212,7 @@ void find_audio_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", audio_driver_find_ident(d));
       RARCH_WARN("Going to default to first audio driver...\n");
 
-      driver.audio = audio_driver_find_handle(0);
+      driver.audio = (const audio_driver_t*)audio_driver_find_handle(0);
 
       if (!driver.audio)
          rarch_fail(1, "find_audio_driver()");

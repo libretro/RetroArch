@@ -149,7 +149,7 @@ void find_video_driver(void)
 
    i = find_driver_index("video_driver", g_settings.video.driver);
    if (i >= 0)
-      driver.video = video_driver_find_handle(i);
+      driver.video = (const video_driver_t*)video_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -160,7 +160,7 @@ void find_video_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", video_driver_find_ident(d));
       RARCH_WARN("Going to default to first video driver...\n");
 
-      driver.video = video_driver_find_handle(0);
+      driver.video = (const video_driver_t*)video_driver_find_handle(0);
 
       if (!driver.video)
          rarch_fail(1, "find_video_driver()");

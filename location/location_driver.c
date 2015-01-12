@@ -103,7 +103,7 @@ void find_location_driver(void)
 {
    int i = find_driver_index("location_driver", g_settings.location.driver);
    if (i >= 0)
-      driver.location = location_driver_find_handle(i);
+      driver.location = (const location_driver_t*)location_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -115,7 +115,7 @@ void find_location_driver(void)
        
       RARCH_WARN("Going to default to first location driver...\n");
        
-      driver.location = location_driver_find_handle(0);
+      driver.location = (const location_driver_t*)location_driver_find_handle(0);
 
       if (!driver.location)
          rarch_fail(1, "find_location_driver()");

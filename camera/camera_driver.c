@@ -107,7 +107,7 @@ void find_camera_driver(void)
 {
    int i = find_driver_index("camera_driver", g_settings.camera.driver);
    if (i >= 0)
-      driver.camera = camera_driver_find_handle(i);
+      driver.camera = (const camera_driver_t*)camera_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -119,7 +119,7 @@ void find_camera_driver(void)
        
       RARCH_WARN("Going to default to first camera driver...\n");
        
-      driver.camera = camera_driver_find_handle(0);
+      driver.camera = (const camera_driver_t*)camera_driver_find_handle(0);
        
       if (!driver.camera)
          rarch_fail(1, "find_camera_driver()");

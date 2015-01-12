@@ -103,7 +103,7 @@ void find_osk_driver(void)
 {
    int i = find_driver_index("osk_driver", g_settings.osk.driver);
    if (i >= 0)
-      driver.osk = osk_driver_find_handle(i);
+      driver.osk = (const input_osk_driver_t*)osk_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -115,7 +115,7 @@ void find_osk_driver(void)
 
       RARCH_WARN("Going to default to first OSK driver...\n");
        
-      driver.osk = osk_driver_find_handle(0);
+      driver.osk = (const input_osk_driver_t*)osk_driver_find_handle(0);
        
       if (!driver.osk)
          rarch_fail(1, "find_osk_driver()");
