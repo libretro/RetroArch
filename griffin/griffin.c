@@ -433,10 +433,10 @@ CAMERA
 LOCATION
 ============================================================ */
 #if defined(ANDROID)
-#include "../location/android.c"
+#include "../location/drivers/android.c"
 #endif
 
-#include "../location/nulllocation.c"
+#include "../location/drivers/nulllocation.c"
 
 /*============================================================
 RSOUND

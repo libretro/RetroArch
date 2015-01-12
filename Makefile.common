@@ -141,7 +141,7 @@ OBJ += frontend/frontend.o \
 		audio/resamplers/sinc.o \
 		audio/resamplers/nearest.o \
 		audio/resamplers/cc_resampler.o \
-		location/nulllocation.o \
+		location/drivers/nulllocation.o \
 		camera/drivers/nullcamera.o \
 		gfx/drivers/nullgfx.o \
 		audio/drivers/nullaudio.o \
