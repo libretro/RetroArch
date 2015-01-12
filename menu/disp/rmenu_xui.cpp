@@ -28,7 +28,6 @@
 #include "../../gfx/gfx_context.h"
 
 #include "../../settings_data.h"
-#include "../../message_queue.h"
 #include "../../general.h"
 
 #include "../../gfx/d3d/d3d.h"
@@ -49,10 +48,10 @@
 HXUIOBJ m_menulist;
 HXUIOBJ m_menutitle;
 HXUIOBJ m_menutitlebottom;
+HXUIOBJ m_background;
 HXUIOBJ m_back;
 HXUIOBJ root_menu;
 HXUIOBJ current_menu;
-HXUIFONT m_menufont;
 static msg_queue_t *xui_msg_queue;
 
 class CRetroArch : public CXuiModule
@@ -146,7 +145,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiMenuList", &m_menulist);
    GetChildById(L"XuiTxtTitle", &m_menutitle);
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
-   XuiCreateFont(L"Arial Unicode MS", 14, XUI_FONT_STYLE_NORMAL, 0, &m_menufont);
+   GetChildById(L"XuiBackground", &m_background);
 
    if (XuiHandleIsValid(m_menutitlebottom))
    {
@@ -157,6 +156,106 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    }
 
    return 0;
+}
+
+HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName, XUIImageInfo *pImageInfo, IDirect3DTexture9 **ppTex)
+{
+	CONST BYTE  *pbTextureData = 0;
+    UINT         cbTextureData = 0;
+    HXUIRESOURCE hResource = 0;
+    BOOL         bIsMemoryResource = FALSE;
+    HRESULT      hr;
+    
+
+    hr = XuiResourceOpenNoLoc(szFileName, &hResource, &bIsMemoryResource);
+    if (FAILED(hr))
+        return hr; 
+	 
+    if (bIsMemoryResource)
+    {
+        hr = XuiResourceGetBuffer(hResource, &pbTextureData);
+        if (FAILED(hr))
+            goto cleanup;
+        cbTextureData = XuiResourceGetTotalSize(hResource);
+    }
+    else 
+    {
+        hr = XuiResourceRead(hResource, NULL, 0, &cbTextureData);
+        if (FAILED(hr))
+            goto cleanup;
+
+        pbTextureData = (BYTE *)XuiAlloc(cbTextureData);
+        if (pbTextureData == 0)
+        {
+            hr = E_OUTOFMEMORY;
+            goto cleanup;
+        }
+
+        hr = XuiResourceRead(hResource, (BYTE*)pbTextureData, cbTextureData, &cbTextureData);
+        if (FAILED(hr))
+            goto cleanup;
+        
+        XuiResourceClose(hResource);
+        hResource = 0;
+
+    }
+
+    //Format specific code to initialize pImageInfo and create our texture
+	D3DXIMAGE_INFO pSrc;
+
+	// Cast our d3d device into our IDirect3DDevice9* interface
+	IDirect3DDevice9 * d3dDevice = (IDirect3DDevice9*)pDevice->GetD3DDevice();
+	if( d3dDevice == NULL )
+		goto cleanup;
+
+	// Create our texture based on our conditions
+	hr = D3DXCreateTextureFromFileInMemoryEx(
+		d3dDevice,
+		pbTextureData,  
+		cbTextureData,
+		D3DX_DEFAULT_NONPOW2, 
+		D3DX_DEFAULT_NONPOW2,
+		1,
+		D3DUSAGE_CPU_CACHED_MEMORY,
+		D3DFMT_LIN_A8R8G8B8,
+		D3DPOOL_DEFAULT,
+		D3DX_FILTER_NONE,
+		D3DX_FILTER_NONE,
+		0,
+		&pSrc,
+		NULL,
+		ppTex
+	);
+
+	if(hr != D3DXERR_INVALIDDATA )
+	{
+		pImageInfo->Depth = pSrc.Depth;
+		pImageInfo->Format = pSrc.Format;
+		pImageInfo->Height = pSrc.Height;
+		pImageInfo->ImageFileFormat = pSrc.ImageFileFormat;
+		pImageInfo->MipLevels = pSrc.MipLevels;
+		pImageInfo->ResourceType = pSrc.ResourceType;
+		pImageInfo->Width = pSrc.Width;
+	}
+	else
+		RARCH_ERR("D3DXERR_INVALIDDATA Encountered\n");
+
+cleanup:
+
+    if (bIsMemoryResource && hResource != 0)
+    {
+        XuiResourceReleaseBuffer(hResource, pbTextureData);
+    }
+    else
+    {
+        XuiFree((LPVOID)pbTextureData);
+    }
+
+    if (hResource != 0)
+    {
+        XuiResourceClose(hResource);
+    }
+    return hr;
 }
 
 static void* rmenu_xui_init(void)
@@ -185,8 +284,8 @@ static void* rmenu_xui_init(void)
    video_info.rgb32 = false;
 
    d3d_make_d3dpp(d3d, &video_info, &d3dpp);
-
-   hr = app.InitShared(d3d->dev, &d3dpp, XuiPNGTextureLoader);
+   
+   hr = app.InitShared(d3d->dev, &d3dpp, (PFN_XUITEXTURELOADER)XuiTextureLoader);
 
    if (FAILED(hr))
    {
@@ -350,6 +449,10 @@ static void blit_line(int x, int y, const char *message, bool green)
 
 static void rmenu_xui_render_background(void)
 {
+	if (g_extern.content_is_init)
+		XuiElementSetShow(m_background, FALSE);
+	else
+		XuiElementSetShow(m_background, TRUE);
 }
 
 static void rmenu_xui_render_messagebox(const char *message)
@@ -363,7 +466,7 @@ static void rmenu_xui_set_list_text(int index, const wchar_t* leftText, const wc
 	HXUIOBJ hVisual = NULL, hControl = NULL, hTextLeft = NULL, hTextRight = NULL, hRightEdge = NULL;
 	LPCWSTR currText;
 	float width, height;
-	XUIRect* pRect;
+	XUIRect pRect;
 	D3DXVECTOR3 textPos, rightEdgePos;
 
 	hControl = XuiListGetItemControl(m_menulist, index);
@@ -378,9 +481,8 @@ static void rmenu_xui_set_list_text(int index, const wchar_t* leftText, const wc
 			XuiElementGetBounds(hTextLeft, &width, &height);
 			if (!currText || wcscmp(currText, leftText) || width <= 5)
 			{
-				pRect = new XUIRect();
-				XuiMeasureText(m_menufont, leftText, -1, XUI_FONT_STYLE_NO_WORDWRAP, 0, pRect);
-				XuiElementSetBounds(hTextLeft, pRect->GetWidth(), height);
+				XuiTextElementMeasureText(hTextLeft, leftText, &pRect);
+				XuiElementSetBounds(hTextLeft, pRect.GetWidth(), height);
 			}
 			XuiTextElementSetText(hTextLeft, leftText);
 			XuiElementGetChildById(hVisual, L"RightText", &hTextRight);
@@ -390,15 +492,14 @@ static void rmenu_xui_set_list_text(int index, const wchar_t* leftText, const wc
 				XuiElementGetBounds(hTextRight, &width, &height);
 				if (!currText || wcscmp(currText, rightText) || width <= 5)
 				{
-					pRect = new XUIRect();
-					XuiMeasureText(m_menufont, rightText, -1, XUI_FONT_STYLE_NO_WORDWRAP, 0, pRect);				
-					XuiElementSetBounds(hTextRight, pRect->GetWidth(), height);
+					XuiTextElementMeasureText(hTextRight, rightText, &pRect);
+					XuiElementSetBounds(hTextRight, pRect.GetWidth(), height);
 					XuiElementGetPosition(hTextLeft, &textPos);
 
 					XuiElementGetChildById(hVisual, L"graphic_CapRight", &hRightEdge);
 					XuiElementGetPosition(hRightEdge, &rightEdgePos);
 
-					textPos.x = rightEdgePos.x - (pRect->GetWidth() + textPos.x);
+					textPos.x = rightEdgePos.x - (pRect.GetWidth() + textPos.x);
 					XuiElementSetPosition(hTextRight, &textPos);
 				}
 				XuiTextElementSetText(hTextRight, rightText);
@@ -532,7 +633,9 @@ static void rmenu_xui_list_delete(void *data, size_t idx,
 {
    (void)data;
    (void)idx;
-   XuiListDeleteItems(m_menulist, 0, list_size);
+   int x = XuiListGetItemCount( m_menulist );
+   if( list_size > x ) list_size = x;
+   if( list_size > 0 )  XuiListDeleteItems(m_menulist, 0, list_size);
 }
 
 static void rmenu_xui_list_clear(void *data)
