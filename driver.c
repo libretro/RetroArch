@@ -967,25 +967,3 @@ bool driver_monitor_fps_statistics(double *refresh_rate,
 
    return true;
 }
-
-/**
- * driver_video_resolve:
- * @drv                : real video driver will be set to this.
- *
- * Use this if you need the real video driver 
- * and driver data pointers.
- *
- * Returns: video driver's userdata.
- **/
-void *driver_video_resolve(const video_driver_t **drv)
-{
-#ifdef HAVE_THREADS
-   if (g_settings.video.threaded
-         && !g_extern.system.hw_render_callback.context_type)
-      return rarch_threaded_video_resolve(drv);
-#endif
-   if (drv)
-      *drv = driver.video;
-
-   return driver.video_data;
-}

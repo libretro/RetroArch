@@ -446,18 +446,6 @@ bool driver_set_sensor_state(unsigned port,
 float driver_sensor_get_input(unsigned port, unsigned action);
 
 /**
- * driver_video_resolve:
- * @drv                : real video driver will be set to this.
- *
- * Use this if you need the real video driver 
- * and driver data pointers.
- *
- * Returns: video driver's userdata.
- **/
-void *driver_video_resolve(const video_driver_t **drv);
-
-
-/**
  * driver_update_system_av_info:
  * @info               : pointer to new A/V info
  *

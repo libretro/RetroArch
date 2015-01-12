@@ -213,6 +213,17 @@ const char* config_get_video_driver_options(void);
 
 void find_video_driver(void);
 
+/**
+ * driver_video_resolve:
+ * @drv                : real video driver will be set to this.
+ *
+ * Use this if you need the real video driver 
+ * and driver data pointers.
+ *
+ * Returns: video driver's userdata.
+ **/
+void *driver_video_resolve(const video_driver_t **drv);
+
 #ifdef __cplusplus
 }
 #endif

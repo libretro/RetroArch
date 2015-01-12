@@ -17,6 +17,7 @@
 #include <string.h>
 #include <string/string_list.h>
 #include "video_driver.h"
+#include "video_thread_wrapper.h"
 #include "../general.h"
 
 static const video_driver_t *video_drivers[] = {
@@ -164,4 +165,26 @@ void find_video_driver(void)
       if (!driver.video)
          rarch_fail(1, "find_video_driver()");
    }
+}
+
+/**
+ * driver_video_resolve:
+ * @drv                : real video driver will be set to this.
+ *
+ * Use this if you need the real video driver 
+ * and driver data pointers.
+ *
+ * Returns: video driver's userdata.
+ **/
+void *driver_video_resolve(const video_driver_t **drv)
+{
+#ifdef HAVE_THREADS
+   if (g_settings.video.threaded
+         && !g_extern.system.hw_render_callback.context_type)
+      return rarch_threaded_video_resolve(drv);
+#endif
+   if (drv)
+      *drv = driver.video;
+
+   return driver.video_data;
 }
