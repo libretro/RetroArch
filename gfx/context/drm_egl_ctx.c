@@ -265,15 +265,16 @@ static void gfx_ctx_drm_egl_set_resize(void *data,
 static void gfx_ctx_drm_egl_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
-   bool fps_draw = g_settings.fps_show;
+   bool fps_draw = g_settings.fps_show || g_settings.fps_monitor_enable;
 
    (void)data;
 
    if (!fps_draw)
       return;
 
-   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
-   msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+   gfx_get_fps(buf, sizeof(buf), g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps));
+   if (g_settings.fps_show)
+      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
 static void gfx_ctx_drm_egl_get_video_size(void *data, unsigned *width, unsigned *height)

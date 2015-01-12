@@ -277,12 +277,12 @@ static void sdl_ctx_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver.video_context_data;
-   bool fps_draw = g_settings.fps_show;
+   bool fps_draw = g_settings.fps_show || g_settings.fps_monitor_enable;
 
    if (!sdl)
       return;
 
-   if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
+   if (gfx_get_fps(buf, sizeof(buf), g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps)))
    {
 #ifdef HAVE_SDL2
       SDL_SetWindowTitle(sdl->g_win, buf);
@@ -290,8 +290,7 @@ static void sdl_ctx_update_window_title(void *data)
       SDL_WM_SetCaption(buf, NULL);
 #endif
    }
-
-   if (fps_draw)
+   if (g_settings.fps_show)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 

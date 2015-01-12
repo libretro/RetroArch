@@ -644,8 +644,11 @@ void driver_set_monitor_refresh_rate(float hz);
  * Gets the monitor FPS statistics based on the current
  * runtime.
  *
- * Returns: true (1) on success, false (0) if threaded
- * video mode is enabled and/or three are less than 2 frame time samples.
+ * Returns: true (1) on success.
+ * false (0) if:
+ * a) threaded video mode is enabled
+ * b) less than 2 frame time samples.
+ * c) FPS monitor enable is off.
  **/
 bool driver_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);

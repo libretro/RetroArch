@@ -192,18 +192,16 @@ static void gfx_ctx_glx_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
    gfx_ctx_glx_data_t *glx = NULL;
-   bool fps_draw = g_settings.fps_show;
+   bool fps_draw = g_settings.fps_show || g_settings.fps_monitor_enable;
 
    (void)data;
 
    glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
 
-   if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
+   if (gfx_get_fps(buf, sizeof(buf), g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps)))
       XStoreName(glx->g_dpy, glx->g_win, buf);
-
-   if (!fps_draw)
-      return;
-   msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+   if (g_settings.fps_show)
+      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
 static void gfx_ctx_glx_get_video_size(void *data,

@@ -114,16 +114,16 @@ static void gfx_ctx_d3d_update_title(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    char buf[128], buffer_fps[128];
-   bool fps_draw = g_settings.fps_show;
+   bool fps_draw = g_settings.fps_show || g_settings.fps_monitor_enable;
 
-   if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps)))
+   if (gfx_get_fps(buf, sizeof(buf), g_settings.fps_show ? buffer_fps : NULL, sizeof(buffer_fps)))
    {
 #ifndef _XBOX
       SetWindowText(d3d->hWnd, buf);
 #endif
    }
 
-   if (fps_draw)
+   if (g_settings.fps_show)
    {
 #ifdef _XBOX
       char mem[128];

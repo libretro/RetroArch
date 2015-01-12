@@ -2006,8 +2006,11 @@ void uninit_drivers(int flags)
  * Gets the monitor FPS statistics based on the current
  * runtime.
  *
- * Returns: true (1) on success, false (0) if threaded
- * video mode is enabled and/or three are less than 2 frame time samples.
+ * Returns: true (1) on success.
+ * false (0) if:
+ * a) threaded video mode is enabled
+ * b) less than 2 frame time samples.
+ * c) FPS monitor enable is off.
  **/
 bool driver_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points)
@@ -2017,7 +2020,8 @@ bool driver_monitor_fps_statistics(double *refresh_rate,
    unsigned samples   = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
          g_extern.measure_data.frame_time_samples_count);
 
-   if (g_settings.video.threaded || (samples < 2))
+   if (!g_settings.fps_monitor_enable || 
+         g_settings.video.threaded || (samples < 2))
       return false;
 
    /* Measure statistics on frame time (microsecs), *not* FPS. */

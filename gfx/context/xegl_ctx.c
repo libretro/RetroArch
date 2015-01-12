@@ -212,15 +212,14 @@ static void gfx_ctx_xegl_set_resize(void *data,
 static void gfx_ctx_xegl_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
-   bool fps_draw = g_settings.fps_show;
+   bool fps_draw = g_settings.fps_show || g_settings.fps_monitor_enable;
 
    (void)data;
 
    if (gfx_get_fps(buf, sizeof(buf),
-            fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
+            g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps)))
       XStoreName(g_dpy, g_win, buf);
-
-   if (fps_draw)
+   if (g_settings.fps_show)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
