@@ -20,6 +20,9 @@
 #endif
 #include <file/config_file_userdata.h>
 #include <string.h>
+#ifndef DONT_HAVE_STRING_LIST
+#include <string/string_list.h>
+#endif
 
 static const rarch_resampler_t *resampler_drivers[] = {
    &sinc_resampler,
@@ -93,7 +96,9 @@ void find_next_resampler_driver(void)
       RARCH_WARN("Couldn't find any next resampler driver (current one: \"%s\").\n",
             driver.resampler->ident);
 }
+#endif
 
+#ifndef DONT_HAVE_STRING_LIST
 /**
  * config_get_audio_resampler_driver_options:
  *
