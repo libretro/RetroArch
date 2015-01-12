@@ -17,7 +17,7 @@
 #include <compat/msvc.h>
 
 #ifdef HAVE_CONFIG_H
-#include "../config.h"
+#include "../../config.h"
 #endif
 
 #ifdef __cplusplus
@@ -46,11 +46,11 @@ extern "C" {
 #include <boolean.h>
 #include <queues/fifo_buffer.h>
 #include <rthreads/rthreads.h>
-#include "../general.h"
+#include "../../general.h"
 #include <gfx/scaler/scaler.h>
 #include <file/config_file.h>
-#include "../audio/utils.h"
-#include "record_driver.h"
+#include "../../audio/utils.h"
+#include "../record_driver.h"
 #include <assert.h>
 
 #ifdef FFEMU_PERF
