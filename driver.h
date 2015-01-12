@@ -32,7 +32,7 @@
 
 #include "menu/menu_driver.h"
 #include "osk/osk_driver.h"
-#include "camera_driver.h"
+#include "camera/camera_driver.h"
 #include "audio/resamplers/resampler.h"
 #include "record/ffemu.h"
 

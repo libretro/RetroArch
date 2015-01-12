@@ -101,7 +101,7 @@ OBJ += frontend/frontend.o \
 		input/input_driver.o \
 		gfx/video_driver.o \
 		osk/osk_driver.o \
-		camera_driver.o \
+		camera/camera_driver.o \
 		driver.o \
 		settings.o \
 		settings_list.o \
