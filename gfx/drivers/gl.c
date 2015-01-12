@@ -19,37 +19,37 @@
 #pragma comment(lib, "opengl32")
 #endif
 
-#include "../driver.h"
-#include "../performance.h"
+#include "../../driver.h"
+#include "../../performance.h"
 #include <gfx/scaler/scaler.h>
-#include "image/image.h"
+#include "../image/image.h"
 
 #include <stdint.h>
-#include "../libretro.h"
+#include "../../libretro.h"
 #include <stdio.h>
 #include <string.h>
-#include "../general.h"
-#include "../retroarch.h"
+#include "../../general.h"
+#include "../../retroarch.h"
 #include <math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "gl_common.h"
-#include "gfx_common.h"
-#include "gfx_context.h"
+#include "../gl_common.h"
+#include "../gfx_common.h"
+#include "../gfx_context.h"
 #include <compat/strl.h>
 
 #ifdef HAVE_GLSL
-#include "shader/shader_glsl.h"
+#include "../shader/shader_glsl.h"
 #endif
 
 #ifdef GL_DEBUG
 #include <string/string_list.h>
 #endif
 
-#include "shader/shader_context.h"
+#include "../shader/shader_context.h"
 
 /* Used for the last pass when rendering to the back buffer. */
 static const GLfloat vertexes_flipped[] = {

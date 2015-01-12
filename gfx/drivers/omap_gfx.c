@@ -14,15 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../driver.h"
+#include "../../driver.h"
 #include <stdlib.h>
 #include <string.h>
-#include "../general.h"
-#include "../retroarch.h"
+#include "../../general.h"
+#include "../../retroarch.h"
 #include <gfx/scaler/scaler.h>
-#include "gfx_common.h"
-#include "gfx_context.h"
-#include "fonts/fonts.h"
+#include "../gfx_common.h"
+#include "../gfx_context.h"
+#include "../fonts/fonts.h"
 
 #include <sys/ioctl.h>
 #include <sys/stat.h>

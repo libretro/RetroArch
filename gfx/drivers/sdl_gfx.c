@@ -15,17 +15,17 @@
  */
 
 #include "SDL.h"
-#include "../driver.h"
+#include "../../driver.h"
 #include <stdlib.h>
 #include <string.h>
-#include "../general.h"
+#include "../../general.h"
 #include <gfx/scaler/scaler.h>
-#include "gfx_common.h"
-#include "gfx_context.h"
-#include "fonts/fonts.h"
+#include "../gfx_common.h"
+#include "../gfx_context.h"
+#include "../fonts/fonts.h"
 
 #ifdef HAVE_X11
-#include "context/x11_common.h"
+#include "../context/x11_common.h"
 #endif
 
 #ifdef HAVE_CONFIG_H

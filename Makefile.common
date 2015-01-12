@@ -140,7 +140,7 @@ OBJ += frontend/frontend.o \
 		audio/resamplers/cc_resampler.o \
 		location/nulllocation.o \
 		camera/nullcamera.o \
-		gfx/nullgfx.o \
+		gfx/drivers/nullgfx.o \
 		audio/drivers/nullaudio.o \
 		input/drivers/nullinput.o \
 		input/drivers_joypad/nullinput_joypad.o \
@@ -365,7 +365,7 @@ endif
 #
 ifeq ($(HAVE_OPENGL), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
-   OBJ += gfx/gl.o \
+   OBJ += gfx/drivers/gl.o \
 			 gfx/gl_common.o \
 			 gfx/gfx_context.o \
 			 gfx/context/gfx_null_ctx.o \
@@ -449,7 +449,7 @@ ifeq ($(HAVE_SDL2), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o input/drivers/sdl_input.o input/drivers_joypad/sdl_joypad.o audio/drivers/sdl_audio.o
+   OBJ += gfx/drivers/sdl_gfx.o input/drivers/sdl_input.o input/drivers_joypad/sdl_joypad.o audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_OPENGL), 1)
      OBJ += gfx/context/sdl_gl_ctx.o
@@ -461,7 +461,7 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_SDL2), 1)
-   OBJ += gfx/sdl2_gfx.o input/drivers/sdl_input.o input/drivers_joypad/sdl_joypad.o audio/drivers/sdl_audio.o
+   OBJ += gfx/drivers/sdl2_gfx.o input/drivers/sdl_input.o input/drivers_joypad/sdl_joypad.o audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_OPENGL), 1)
      OBJ += gfx/context/sdl_gl_ctx.o
@@ -474,23 +474,23 @@ ifeq ($(HAVE_SDL2), 1)
 endif
 
 ifeq ($(HAVE_OMAP), 1)
-   OBJ += gfx/omap_gfx.o
+   OBJ += gfx/drivers/omap_gfx.o
 endif
 
 ifeq ($(HAVE_EXYNOS), 1)
-   OBJ += gfx/exynos_gfx.o mem/neon/memcpy-neon.o
+   OBJ += gfx/drivers/exynos_gfx.o mem/neon/memcpy-neon.o
    LIBS += $(DRM_LIBS) $(EXYNOS_LIBS)
    DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
 endif
 
 ifeq ($(HAVE_VG), 1)
-   OBJ += gfx/vg.o libretro-sdk/gfx/math/matrix_3x3.o
+   OBJ += gfx/drivers/vg.o libretro-sdk/gfx/math/matrix_3x3.o
    DEFINES += $(VG_CFLAGS)
    LIBS += $(VG_LIBS)
 endif
 
 ifeq ($(HAVE_XVIDEO), 1)
-   OBJ += gfx/xvideo.o
+   OBJ += gfx/drivers/xvideo.o
    LIBS += $(XVIDEO_LIBS) 
    DEFINES += $(XVIDEO_CFLAGS)
 endif

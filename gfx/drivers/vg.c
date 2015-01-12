@@ -19,15 +19,15 @@
 #include <VG/vgext.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include "gfx_context.h"
+#include "../gfx_context.h"
 #include <gfx/math/matrix_3x3.h>
-#include "../libretro.h"
-#include "../general.h"
-#include "../retroarch.h"
-#include "../driver.h"
-#include "../performance.h"
-#include "fonts/fonts.h"
-#include "../content.h"
+#include "../../libretro.h"
+#include "../../general.h"
+#include "../../retroarch.h"
+#include "../../driver.h"
+#include "../../performance.h"
+#include "../fonts/fonts.h"
+#include "../../content.h"
 
 typedef struct
 {

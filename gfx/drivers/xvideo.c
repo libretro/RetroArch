@@ -13,16 +13,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "driver.h"
-#include "general.h"
+#include "../../driver.h"
+#include "../../general.h"
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
 #include <math.h>
-#include "gfx_common.h"
-#include "fonts/fonts.h"
+#include "../gfx_common.h"
+#include "../fonts/fonts.h"
 
-#include "context/x11_common.h"
+#include "../context/x11_common.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -33,7 +33,7 @@
 #include <X11/extensions/Xv.h>
 #include <X11/extensions/Xvlib.h>
 
-// Adapted from bSNES and MPlayer source.
+/* Adapted from bSNES and MPlayer source. */
 
 typedef struct xv
 {
@@ -114,11 +114,11 @@ static void init_yuv_tables(xv_t *xv)
 
    for (i = 0; i < 0x10000; i++)
    {
-      // Extract RGB565 color data from i
+      /* Extract RGB565 color data from i */
       unsigned r = (i >> 11) & 0x1f, g = (i >> 5) & 0x3f, b = (i >> 0) & 0x1f;
-      r = (r << 3) | (r >> 2);  // R5->R8
-      g = (g << 2) | (g >> 4);  // G6->G8
-      b = (b << 3) | (b >> 2);  // B5->B8
+      r = (r << 3) | (r >> 2);  /* R5->R8 */
+      g = (g << 2) | (g >> 4);  /* G6->G8 */
+      b = (b << 3) | (b >> 2);  /* B5->B8 */
 
       calculate_yuv(&xv->ytable[i], &xv->utable[i], &xv->vtable[i], r, g, b);
    }
@@ -129,13 +129,16 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
    if (!g_settings.video.font_enable)
       return;
 
-   if (font_renderer_create_default(&xv->font_driver, &xv->font, *g_settings.video.font_path ? g_settings.video.font_path : NULL, g_settings.video.font_size))
+   if (font_renderer_create_default(&xv->font_driver, 
+            &xv->font, *g_settings.video.font_path 
+            ? g_settings.video.font_path : NULL, g_settings.video.font_size))
    {
-      int r = g_settings.video.msg_color_r * 255;
+      int r, g, b;
+      r = g_settings.video.msg_color_r * 255;
       r = (r < 0 ? 0 : (r > 255 ? 255 : r));
-      int g = g_settings.video.msg_color_g * 255;
+      g = g_settings.video.msg_color_g * 255;
       g = (g < 0 ? 0 : (g > 255 ? 255 : g));
-      int b = g_settings.video.msg_color_b * 255;
+      b = g_settings.video.msg_color_b * 255;
       b = (b < 0 ? 0 : (b > 255 ? 255 : b));
 
       calculate_yuv(&xv->font_y, &xv->font_u, &xv->font_v,
@@ -145,8 +148,10 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
       RARCH_LOG("Could not initialize fonts.\n");
 }
 
-// We render @ 2x scale to combat chroma downsampling. Also makes fonts more bearable :)
-static void render16_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch)
+/* We render @ 2x scale to combat chroma downsampling.
+ * Also makes fonts more bearable. */
+static void render16_yuy2(xv_t *xv, const void *input_,
+      unsigned width, unsigned height, unsigned pitch)
 {
    unsigned x, y;
    const uint16_t *input = (const uint16_t*)input_;
@@ -163,6 +168,7 @@ static void render16_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned
          uint8_t v = xv->vtable[p];
 
          unsigned img_width = xv->width << 1;
+
          output[0] = output[img_width] = y0;
          output[1] = output[img_width + 1] = u;
          output[2] = output[img_width + 2] = y0;
@@ -175,7 +181,8 @@ static void render16_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned
    }
 }
 
-static void render16_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch)
+static void render16_uyvy(xv_t *xv, const void *input_,
+      unsigned width, unsigned height, unsigned pitch)
 {
    unsigned x, y;
    const uint16_t *input = (const uint16_t*)input_;
@@ -192,6 +199,7 @@ static void render16_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned
          uint8_t v = xv->vtable[p];
 
          unsigned img_width = xv->width << 1;
+
          output[0] = output[img_width] = u;
          output[1] = output[img_width + 1] = y0;
          output[2] = output[img_width + 2] = v;
@@ -204,7 +212,8 @@ static void render16_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned
    }
 }
 
-static void render32_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch)
+static void render32_yuy2(xv_t *xv, const void *input_,
+      unsigned width, unsigned height, unsigned pitch)
 {
    unsigned x, y;
    const uint32_t *input = (const uint32_t*)input_;
@@ -214,14 +223,16 @@ static void render32_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned
    {
       for (x = 0; x < width; x++)
       {
+         uint8_t y0, u, v;
+         unsigned img_width;
          uint32_t p = *input++;
-         p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0) | ((p >> 3) & 0x1f); // ARGB -> RGB16
+         p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0) | ((p >> 3) & 0x1f); /* ARGB -> RGB16 */
 
-         uint8_t y0 = xv->ytable[p];
-         uint8_t u = xv->utable[p];
-         uint8_t v = xv->vtable[p];
+         y0 = xv->ytable[p];
+         u = xv->utable[p];
+         v = xv->vtable[p];
 
-         unsigned img_width = xv->width << 1;
+         img_width = xv->width << 1;
          output[0] = output[img_width] = y0;
          output[1] = output[img_width + 1] = u;
          output[2] = output[img_width + 2] = y0;
@@ -234,7 +245,8 @@ static void render32_yuy2(xv_t *xv, const void *input_, unsigned width, unsigned
    }
 }
 
-static void render32_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned height, unsigned pitch)
+static void render32_uyvy(xv_t *xv, const void *input_,
+      unsigned width, unsigned height, unsigned pitch)
 {
    unsigned x, y;
    const uint32_t *input = (const uint32_t*)input_;
@@ -244,14 +256,16 @@ static void render32_uyvy(xv_t *xv, const void *input_, unsigned width, unsigned
    {
       for (x = 0; x < width; x++)
       {
+         uint8_t y0, u, v;
+         unsigned img_width;
          uint32_t p = *input++;
-         p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0) | ((p >> 3) & 0x1f); // ARGB -> RGB16
+         p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0) | ((p >> 3) & 0x1f); /* ARGB -> RGB16 */
 
-         uint8_t y0 = xv->ytable[p];
-         uint8_t u = xv->utable[p];
-         uint8_t v = xv->vtable[p];
+         y0 = xv->ytable[p];
+         u = xv->utable[p];
+         v = xv->vtable[p];
 
-         unsigned img_width = xv->width << 1;
+         img_width = xv->width << 1;
          output[0] = output[img_width] = u;
          output[1] = output[img_width + 1] = y0;
          output[2] = output[img_width + 2] = v;
@@ -295,12 +309,14 @@ static const struct format_desc formats[] = {
    },
 };
 
-static bool adaptor_set_format(xv_t *xv, Display *dpy, XvPortID port, const video_info_t *video)
+static bool adaptor_set_format(xv_t *xv, Display *dpy,
+      XvPortID port, const video_info_t *video)
 {
    int i;
    unsigned j;
    int format_count;
    XvImageFormatValues *format = XvListImageFormats(xv->display, port, &format_count);
+
    if (!format)
       return false;
 
@@ -333,7 +349,8 @@ static bool adaptor_set_format(xv_t *xv, Display *dpy, XvPortID port, const vide
    return false;
 }
 
-static void calc_out_rect(bool keep_aspect, struct rarch_viewport *vp, unsigned vp_width, unsigned vp_height)
+static void calc_out_rect(bool keep_aspect, struct rarch_viewport *vp,
+      unsigned vp_width, unsigned vp_height)
 {
    vp->full_width  = vp_width;
    vp->full_height = vp_height;
@@ -353,8 +370,10 @@ static void calc_out_rect(bool keep_aspect, struct rarch_viewport *vp, unsigned 
       float desired_aspect = g_extern.system.aspect_ratio;
       float device_aspect = (float)vp_width / vp_height;
 
-      // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff),
-      // assume they are actually equal.
+      /* If the aspect ratios of screen and desired aspect ratio 
+       * are sufficiently equal (floating point stuff),
+       * assume they are actually equal.
+       */
       if (fabs(device_aspect - desired_aspect) < 0.0001)
       {
          vp->x = 0; vp->y = 0;
@@ -380,16 +399,10 @@ static void calc_out_rect(bool keep_aspect, struct rarch_viewport *vp, unsigned 
    }
 }
 
-static void *xv_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static void *xv_init(const video_info_t *video,
+      const input_driver_t **input, void **input_data)
 {
-   xv_t *xv = (xv_t*)calloc(1, sizeof(*xv));
-   if (!xv)
-      return NULL;
-
-   XInitThreads();
-
    unsigned i;
-   xv->display = XOpenDisplay(NULL);
    struct sigaction sa;
    unsigned adaptor_count = 0;
    int visualmatches = 0;
@@ -400,7 +413,15 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    void *xinput = NULL;
    XVisualInfo *visualinfo = NULL;
    XVisualInfo visualtemplate = {0};
-   const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+   const struct retro_game_geometry *geom = NULL;
+   xv_t *xv = (xv_t*)calloc(1, sizeof(*xv));
+   if (!xv)
+      return NULL;
+
+   XInitThreads();
+
+   xv->display = XOpenDisplay(NULL);
+   geom = &g_extern.system.av_info.geometry;
 
    if (!XShmQueryExtension(xv->display))
    {
@@ -410,17 +431,25 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
 
    xv->keep_aspect = video->force_aspect;
 
-   // Find an appropriate Xv port.
+   /* Find an appropriate Xv port. */
    xv->port = 0;
    XvAdaptorInfo *adaptor_info;
-   XvQueryAdaptors(xv->display, DefaultRootWindow(xv->display), &adaptor_count, &adaptor_info);
+   XvQueryAdaptors(xv->display,
+         DefaultRootWindow(xv->display), &adaptor_count, &adaptor_info);
+
    for (i = 0; i < adaptor_count; i++)
    {
-      // Find adaptor that supports both input (memory->drawable) and image (drawable->screen) masks.
-      if (adaptor_info[i].num_formats < 1) continue;
-      if (!(adaptor_info[i].type & XvInputMask)) continue;
-      if (!(adaptor_info[i].type & XvImageMask)) continue;
-      if (!adaptor_set_format(xv, xv->display, adaptor_info[i].base_id, video)) continue;
+      /* Find adaptor that supports both input (memory->drawable) 
+       * and image (drawable->screen) masks. */
+
+      if (adaptor_info[i].num_formats < 1)
+         continue;
+      if (!(adaptor_info[i].type & XvInputMask))
+         continue;
+      if (!(adaptor_info[i].type & XvImageMask))
+         continue;
+      if (!adaptor_set_format(xv, xv->display, adaptor_info[i].base_id, video))
+         continue;
 
       xv->port     = adaptor_info[i].base_id;
       xv->depth    = adaptor_info[i].formats->depth;
@@ -441,7 +470,9 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
    visualtemplate.screen   = DefaultScreen(xv->display);
    visualtemplate.depth    = xv->depth;
    visualtemplate.visual   = 0;
-   visualinfo = XGetVisualInfo(xv->display, VisualIDMask | VisualScreenMask | VisualDepthMask, &visualtemplate, &visualmatches);
+   visualinfo = XGetVisualInfo(xv->display, VisualIDMask | 
+         VisualScreenMask | VisualDepthMask, &visualtemplate, &visualmatches);
+
    if (visualmatches < 1 || !visualinfo->visual)
    {
       if (visualinfo) XFree(visualinfo);
@@ -449,10 +480,13 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
       goto error;
    }
 
-   xv->colormap = XCreateColormap(xv->display, DefaultRootWindow(xv->display), visualinfo->visual, AllocNone);
+   xv->colormap = XCreateColormap(xv->display,
+         DefaultRootWindow(xv->display), visualinfo->visual, AllocNone);
+
    attributes.colormap = xv->colormap;
    attributes.border_pixel = 0;
-   attributes.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask | DestroyNotify | ClientMessage;
+   attributes.event_mask = StructureNotifyMask | KeyPressMask | 
+      KeyReleaseMask | DestroyNotify | ClientMessage;
 
    width = video->fullscreen ? ((video->width == 0) ? geom->base_width : video->width) : video->width;
    height = video->fullscreen ? ((video->height == 0) ? geom->base_height : video->height) : video->height;
@@ -479,14 +513,17 @@ static void *xv_init(const video_info_t *video, const input_driver_t **input, vo
 
    xv->gc = XCreateGC(xv->display, xv->window, 0, 0);
 
-   // Set colorkey to auto paint, so that Xv video output is always visible
+   /* Set colorkey to auto paint, so that Xv video output is always visible. */
    atom = XInternAtom(xv->display, "XV_AUTOPAINT_COLORKEY", true);
-   if (atom != None) XvSetPortAttribute(xv->display, xv->port, atom, 1);
+   if (atom != None)
+      XvSetPortAttribute(xv->display, xv->port, atom, 1);
 
    xv->width = geom->max_width;
    xv->height = geom->max_height;
 
-   xv->image = XvShmCreateImage(xv->display, xv->port, xv->fourcc, NULL, xv->width, xv->height, &xv->shminfo);
+   xv->image = XvShmCreateImage(xv->display, xv->port, xv->fourcc,
+         NULL, xv->width, xv->height, &xv->shminfo);
+
    if (!xv->image)
    {
       RARCH_ERR("XVideo: XShmCreateImage failed.\n");
@@ -556,7 +593,7 @@ error:
 
 static bool check_resize(xv_t *xv, unsigned width, unsigned height)
 {
-   // We render @ 2x scale to combat chroma downsampling.
+   /* We render @ 2x scale to combat chroma downsampling. */
    if (xv->width != (width << 1) || xv->height != (height << 1))
    {
       xv->width = width << 1;
@@ -599,9 +636,10 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
    return true;
 }
 
-// TODO: Is there some way to render directly like GL? :(
-// Hacky C code is hacky :D Yay.
-static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned height)
+/* TODO: Is there some way to render directly like GL?
+ * Hacky C code is hacky. */
+static void xv_render_msg(xv_t *xv, const char *msg,
+      unsigned width, unsigned height)
 {
    if (!xv->font)
       return;
@@ -618,21 +656,25 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
    unsigned chroma_u_index = xv->chroma_u_index;
    unsigned chroma_v_index = xv->chroma_v_index;
 
-   unsigned pitch = width << 1; // YUV formats used are 16 bpp.
+   unsigned pitch = width << 1; /* YUV formats used are 16 bpp. */
 
    for (; *msg; msg++)
    {
+      int base_x, base_y, glyph_width, glyph_height, max_width, max_height;
+      const uint8_t *src = NULL;
+      uint8_t *out = NULL;
       const struct font_glyph *glyph = xv->font_driver->get_glyph(xv->font, (uint8_t)*msg);
       if (!glyph)
          continue;
 
-      int base_x = (msg_base_x + glyph->draw_offset_x + 1) & ~1; // Make sure we always start on the correct boundary so the indices are correct.
-      int base_y = msg_base_y + glyph->draw_offset_y;
+      /* Make sure we always start on the correct boundary so the indices are correct. */
+      base_x = (msg_base_x + glyph->draw_offset_x + 1) & ~1; 
+      base_y = msg_base_y + glyph->draw_offset_y;
 
-      int glyph_width  = glyph->width;
-      int glyph_height = glyph->height;
+      glyph_width  = glyph->width;
+      glyph_height = glyph->height;
 
-      const uint8_t *src = atlas->buffer + glyph->atlas_offset_x + glyph->atlas_offset_y * atlas->width;
+      src = atlas->buffer + glyph->atlas_offset_x + glyph->atlas_offset_y * atlas->width;
 
       if (base_x < 0)
       {
@@ -648,8 +690,8 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
          base_y = 0;
       }
 
-      int max_width  = width - base_x;
-      int max_height = height - base_y;
+      max_width  = width - base_x;
+      max_height = height - base_y;
 
       if (max_width <= 0 || max_height <= 0)
          continue;
@@ -659,16 +701,17 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
       if (glyph_height > max_height)
          glyph_height = max_height;
 
-      uint8_t *out = (uint8_t*)xv->image->data + base_y * pitch + (base_x << 1);
+      out = (uint8_t*)xv->image->data + base_y * pitch + (base_x << 1);
 
       for (y = 0; y < glyph_height; y++, src += atlas->width, out += pitch)
       {
-         // 2 input pixels => 4 bytes (2Y, 1U, 1V).
+         /* 2 input pixels => 4 bytes (2Y, 1U, 1V). */
+
          for (x = 0; x < glyph_width; x += 2)
          {
+            unsigned alpha[2], alpha_sub, blended;
             int out_x = x << 1;
 
-            unsigned alpha[2];
             alpha[0] = src[x + 0];
 
             if (x + 1 < glyph_width)
@@ -676,7 +719,8 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
             else
                alpha[1] = 0;
 
-            unsigned alpha_sub = (alpha[0] + alpha[1]) >> 1; // Blended alpha for the sub-sampled U/V channels.
+            /* Blended alpha for the sub-sampled U/V channels. */
+            alpha_sub = (alpha[0] + alpha[1]) >> 1; 
 
             for (i = 0; i < 2; i++)
             {
@@ -684,8 +728,8 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
                out[out_x + luma_index[i]] = blended;
             }
 
-            // Blend chroma channels
-            unsigned blended = (xv->font_u * alpha_sub + ((256 - alpha_sub) * out[out_x + chroma_u_index])) >> 8;
+            /* Blend chroma channels */
+            blended = (xv->font_u * alpha_sub + ((256 - alpha_sub) * out[out_x + chroma_u_index])) >> 8;
             out[out_x + chroma_u_index] = blended;
 
             blended = (xv->font_v * alpha_sub + ((256 - alpha_sub) * out[out_x + chroma_v_index])) >> 8;
@@ -698,17 +742,19 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
    }
 }
 
-static bool xv_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
+static bool xv_frame(void *data, const void *frame, unsigned width,
+      unsigned height, unsigned pitch, const char *msg)
 {
+   char buf[128];
+   XWindowAttributes target;
+   xv_t *xv = (xv_t*)data;
+
    if (!frame)
       return true;
-
-   xv_t *xv = (xv_t*)data;
 
    if (!check_resize(xv, width, height))
       return false;
 
-   XWindowAttributes target;
    XGetWindowAttributes(xv->display, xv->window, &target);
    xv->render_func(xv, frame, width, height, pitch);
 
@@ -725,7 +771,6 @@ static bool xv_frame(void *data, const void *frame, unsigned width, unsigned hei
          true);
    XSync(xv->display, False);
 
-   char buf[128];
    if (gfx_get_fps(buf, sizeof(buf), NULL, 0))
       XStoreName(xv->display, xv->window, buf);
 
@@ -735,13 +780,14 @@ static bool xv_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 static bool xv_alive(void *data)
 {
+   XEvent event;
    xv_t *xv = (xv_t*)data;
 
-   XEvent event;
    while (XPending(xv->display))
    {
+      bool filter;
       XNextEvent(xv->display, &event);
-      bool filter = XFilterEvent(&event, xv->window);
+      filter = XFilterEvent(&event, xv->window);
 
       switch (event.type)
       {
@@ -774,6 +820,8 @@ static bool xv_alive(void *data)
 static bool xv_focus(void *data)
 {
    xv_t *xv = (xv_t*)data;
+   if (!xv)
+      return false;
    return xv->focus;
 }
 

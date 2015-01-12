@@ -22,8 +22,8 @@
 #include <xenos/edram.h>
 #include <xenos/xenos.h>
 
-#include "driver.h"
-#include "general.h"
+#include "../../driver.h"
+#include "../../general.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

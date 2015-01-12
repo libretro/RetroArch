@@ -30,10 +30,10 @@
 
 #include <exynos/exynos_fimg2d.h>
 
-#include "../general.h"
-#include "../retroarch.h"
-#include "gfx_common.h"
-#include "fonts/fonts.h"
+#include "../../general.h"
+#include "../../retroarch.h"
+#include "../gfx_common.h"
+#include "../fonts/fonts.h"
 
 /* TODO: Honor these properties: vsync, menu rotation, menu alpha, aspect ratio change */
 

@@ -182,13 +182,13 @@ VIDEO DRIVER
 #endif
 
 #ifdef HAVE_VG
-#include "../gfx/vg.c"
+#include "../gfx/drivers/vg.c"
 #include "../libretro-sdk/gfx/math/matrix_3x3.c"
 #endif
 
 #ifdef HAVE_OMAP
-#include "../gfx/omap_gfx.c"
-#include "../gfx/fbdev.c"
+#include "../gfx/drivers/omap_gfx.c"
+#include "../gfx/drivers/fbdev.c"
 #endif
 
 #include "../gfx/gfx_common.c"
@@ -198,7 +198,7 @@ VIDEO DRIVER
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../gfx/gl.c"
+#include "../gfx/drivers/gl.c"
 #include "../gfx/gl_common.c"
 
 #ifndef HAVE_PSGL
@@ -213,7 +213,7 @@ VIDEO DRIVER
 #endif
 
 #ifdef HAVE_XVIDEO
-#include "../gfx/xvideo.c"
+#include "../gfx/drivers/xvideo.c"
 #endif
 
 #if defined(_XBOX) || defined(HAVE_WIN32_D3D9)
@@ -229,10 +229,10 @@ VIDEO DRIVER
 #elif defined(PSP)
 #include "../gfx/psp/psp1_gfx.c"
 #elif defined(XENON)
-#include "../gfx/xenon360_gfx.c"
+#include "../gfx/drivers/xenon360_gfx.c"
 #endif
 
-#include "../gfx/nullgfx.c"
+#include "../gfx/drivers/nullgfx.c"
 
 /*============================================================
 FONTS

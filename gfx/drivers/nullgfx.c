@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../general.h"
-#include "../driver.h"
+#include "../../general.h"
+#include "../../driver.h"
 
 static void *null_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
