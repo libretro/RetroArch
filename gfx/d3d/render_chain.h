@@ -19,7 +19,7 @@
 
 #include "d3d.h"
 #include "../video_state_tracker.h"
-#include "../drivers_shader/shader_parse.h"
+#include "../video_shader_parse.h"
 
 struct Vertex
 {

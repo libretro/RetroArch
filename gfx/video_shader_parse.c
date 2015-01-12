@@ -16,12 +16,12 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "shader_parse.h"
+#include "video_shader_parse.h"
 #include <compat/posix_string.h>
 #include <compat/msvc.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
-#include "../../general.h"
+#include "../general.h"
 
 /**
  * wrap_mode_to_str:

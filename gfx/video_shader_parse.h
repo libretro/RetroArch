@@ -14,12 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SHADER_PARSE_H
-#define SHADER_PARSE_H
+#ifndef __VIDEO_SHADER_PARSE_H
+#define __VIDEO_SHADER_PARSE_H
 
 #include <boolean.h>
 #include <file/config_file.h>
-#include "../video_state_tracker.h"
+#include "video_state_tracker.h"
 #include <retro_miscellaneous.h>
 
 #ifdef __cplusplus

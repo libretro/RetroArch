@@ -15,7 +15,7 @@
  */
 
 #include "shader_hlsl.h"
-#include "shader_parse.h"
+#include "../video_shader_parse.h"
 #include "../d3d/d3d.h"
 
 static const char *stock_hlsl_program =
