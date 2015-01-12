@@ -712,6 +712,35 @@ const char* config_get_menu_driver_options(void)
 }
 #endif
 
+/**
+ * joypad_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to joypad driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *joypad_driver_find_handle(int index)
+{
+   const void *drv = joypad_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
+ * joypad_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of joypad driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const char *joypad_driver_find_ident(int index)
+{
+   const rarch_joypad_driver_t *drv = joypad_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv->ident;
+}
 
 /**
  * find_driver_nonempty:
@@ -765,9 +794,9 @@ static const void *find_driver_nonempty(const char *label, int i,
    }
    else if (!strcmp(label, "input_joypad_driver"))
    {
-      drv = joypad_drivers[i];
+      drv = joypad_driver_find_handle(i);
       if (drv)
-         strlcpy(str, joypad_drivers[i]->ident, sizeof_str);
+         strlcpy(str, joypad_driver_find_ident(i), sizeof_str);
    }
    else if (!strcmp(label, "video_driver"))
    {
