@@ -21,6 +21,7 @@
 #include "config.def.h"
 #include <file/file_path.h>
 #include "input/input_common.h"
+#include "input/input_keymaps.h"
 #include "settings.h"
 
 #ifdef HAVE_CONFIG_H
@@ -1535,7 +1536,7 @@ static void save_keybind_key(config_file_t *conf, const char *prefix,
    char key[64], btn[64];
 
    snprintf(key, sizeof(key), "%s_%s", prefix, base);
-   input_translate_rk_to_str(bind->key, btn, sizeof(btn));
+   input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
    config_set_string(conf, key, btn);
 }
 

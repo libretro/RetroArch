@@ -378,7 +378,7 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
       input_get_bind_string_joyaxis(buf, "Auto: ", auto_bind, size);
 
 #ifndef RARCH_CONSOLE
-   input_translate_rk_to_str(bind->key, key, sizeof(key));
+   input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));
    if (!strcmp(key, "nul"))
       *key = '\0';
 

@@ -115,7 +115,7 @@ static void *linuxraw_input_init(void)
    atexit(linuxraw_resetKbmd);
 
    linuxraw->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
-   input_init_keyboard_lut(rarch_key_map_linux);
+   input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
    /* We need to disable use of stdin command interface if 
     * stdin is supposed to be used for input. */
@@ -126,7 +126,7 @@ static void *linuxraw_input_init(void)
 
 static bool linuxraw_key_pressed(linuxraw_input_t *linuxraw, int key)
 {
-   unsigned sym = input_translate_rk_to_keysym((enum retro_key)key);
+   unsigned sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
    return linuxraw->state[sym];
 }
 
@@ -149,6 +149,7 @@ static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
    int16_t pressed_minus = 0, pressed_plus = 0;
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
+
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
    if (linuxraw_is_pressed(linuxraw, binds, id_minus))
@@ -162,8 +163,6 @@ static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
 static bool linuxraw_bind_button_pressed(void *data, int key)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
-   if (!linuxraw)
-      return false;
    return linuxraw_is_pressed(linuxraw, g_settings.input.binds[0], key) ||
       input_joypad_pressed(linuxraw->joypad, 0, g_settings.input.binds[0], key);
 }
@@ -172,8 +171,8 @@ static int16_t linuxraw_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
    int16_t ret;
+   linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
 
    switch (device)
    {

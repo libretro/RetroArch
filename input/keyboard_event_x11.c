@@ -77,11 +77,13 @@ static size_t conv_utf8_utf32(uint32_t *out,
 void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
 {
    int i;
+   unsigned state;
+   uint16_t mod = 0;
    char keybuf[32] = {0};
    uint32_t chars[32] = {0};
 
    bool down    = event->type == KeyPress;
-   unsigned key = input_translate_keysym_to_rk(XLookupKeysym(&event->xkey, 0));
+   unsigned key = input_keymaps_translate_keysym_to_rk(XLookupKeysym(&event->xkey, 0));
    int num      = 0;
 
    if (down && !filter)
@@ -107,15 +109,21 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
 #endif
    }
 
-   unsigned state = event->xkey.state;
-   uint16_t mod = 0;
-   mod |= (state & ShiftMask) ? RETROKMOD_SHIFT : 0;
-   mod |= (state & LockMask) ? RETROKMOD_CAPSLOCK : 0;
-   mod |= (state & ControlMask) ? RETROKMOD_CTRL : 0;
-   mod |= (state & Mod1Mask) ? RETROKMOD_ALT : 0;
-   mod |= (state & Mod4Mask) ? RETROKMOD_META : 0;
+   state = event->xkey.state;
+
+   if (state & ShiftMask)
+      mod |= RETROKMOD_SHIFT;
+   if (state & LockMask)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (state & ControlMask)
+      mod |= RETROKMOD_CTRL;
+   if (state & Mod1Mask)
+      mod |= RETROKMOD_ALT;
+   if (state & Mod4Mask)
+      mod |= RETROKMOD_META;
 
    input_keyboard_event(down, key, chars[0], mod);
+
    for (i = 1; i < num; i++)
       input_keyboard_event(down, RETROK_UNKNOWN, chars[i], mod);
 }

@@ -558,7 +558,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       idx = self.setting->index - 1;
 
    if ((value = apple_input_find_any_key()))
-      BINDFOR(*self.setting).key = input_translate_keysym_to_rk(value);
+      BINDFOR(*self.setting).key = input_keymaps_translate_keysym_to_rk(value);
    else if ((value = apple_input_find_any_button(idx)) >= 0)
       BINDFOR(*self.setting).joykey = value;
    else if ((value = apple_input_find_any_axis(idx)))

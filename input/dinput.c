@@ -159,7 +159,7 @@ static void *dinput_init(void)
       IDirectInputDevice8_Acquire(di->mouse);
    }
 
-   input_init_keyboard_lut(rarch_key_map_dinput);
+   input_keymaps_init_keyboard_lut(rarch_key_map_dinput);
    di->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
 
    return di;
@@ -220,10 +220,11 @@ static void dinput_poll(void *data)
 static bool dinput_keyboard_pressed(struct dinput_input *di, unsigned key)
 {
    unsigned sym;
+
    if (key >= RETROK_LAST)
       return false;
 
-   sym = input_translate_rk_to_keysym((enum retro_key)key);
+   sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
    return di->state[sym] & 0x80;
 }
 
@@ -258,7 +259,7 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
    if (dinput_keyboard_pressed(di, bind_minus->key))
       pressed_minus = -0x7fff;
    if (dinput_keyboard_pressed(di, bind_plus->key))
-      pressed_plus = 0x7fff;
+      pressed_plus  = 0x7fff;
 
    return pressed_plus + pressed_minus;
 }
@@ -370,8 +371,8 @@ static int16_t dinput_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   struct dinput_input *di = (struct dinput_input*)data;
    int16_t ret;
+   struct dinput_input *di = (struct dinput_input*)data;
 
    switch (device)
    {
@@ -474,6 +475,7 @@ struct pointer_status *dinput_find_pointer(struct dinput_input *di,
          break;
       check_pos = check_pos->next;
    }
+
    return check_pos;
 }
 
@@ -646,6 +648,7 @@ bool g_xinput_block_pads;
 static void dinput_joypad_destroy(void)
 {
    unsigned i;
+
    for (i = 0; i < MAX_USERS; i++)
    {
       if (g_pads[i].joypad)

@@ -486,7 +486,7 @@ static bool udev_input_is_pressed(udev_input_t *udev, const struct retro_keybind
    if (id < RARCH_BIND_LIST_END)
    {
       const struct retro_keybind *bind = &binds[id];
-      unsigned bit = input_translate_rk_to_keysym(binds[id].key);
+      unsigned bit = input_keymaps_translate_rk_to_keysym(binds[id].key);
       return bind->valid && BIT_GET(udev->key_state, bit);
    }
    return false;
@@ -512,8 +512,8 @@ static int16_t udev_analog_pressed(udev_input_t *udev,
 static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   udev_input_t *udev = (udev_input_t*)data;
    int16_t ret;
+   udev_input_t *udev = (udev_input_t*)data;
 
    switch (device)
    {
@@ -529,7 +529,7 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
 
       case RETRO_DEVICE_KEYBOARD:
          {
-            unsigned bit = input_translate_rk_to_keysym((enum retro_key)id);
+            unsigned bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
             return id < RETROK_LAST && BIT_GET(udev->key_state, bit);
          }
       case RETRO_DEVICE_MOUSE:
@@ -603,19 +603,19 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
    udev_enumerate_add_match_property(enumerate, type, "1");
    udev_enumerate_scan_devices(enumerate);
    devs = udev_enumerate_get_list_entry(enumerate);
+
    for (item = devs; item; item = udev_list_entry_get_next(item))
    {
-      const char *name = udev_list_entry_get_name(item);
+      const char *name        = udev_list_entry_get_name(item);
 
       /* Get the filename of the /sys entry for the device
        * and create a udev_device object (dev) representing it. */
       struct udev_device *dev = udev_device_new_from_syspath(udev->udev, name);
       const char *devnode     = udev_device_get_devnode(dev);
 
-      int fd = devnode ? open(devnode, O_RDONLY | O_NONBLOCK) : -1;
-
       if (devnode)
       {
+         int fd = open(devnode, O_RDONLY | O_NONBLOCK);
          RARCH_LOG("[udev] Adding device %s as type %s.\n", devnode, type);
          if (!add_device(udev, devnode, cb))
             RARCH_ERR("[udev] Failed to open device: %s (%s).\n", devnode, strerror(errno));
@@ -802,7 +802,7 @@ static void *udev_input_init(void)
       RARCH_WARN("[udev]: Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event*?\n");
 
    udev->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
-   input_init_keyboard_lut(rarch_key_map_linux);
+   input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
    disable_terminal_input();
    return udev;

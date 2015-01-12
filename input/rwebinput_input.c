@@ -46,18 +46,22 @@ static void *rwebinput_input_init(void)
       return NULL;
    }
 
-   input_init_keyboard_lut(rarch_key_map_rwebinput);
+   input_keymaps_init_keyboard_lut(rarch_key_map_rwebinput);
 
    return rwebinput;
 }
 
 static bool rwebinput_key_pressed(rwebinput_input_t *rwebinput, int key)
 {
+   unsigned sym;
+   bool ret;
+   
    if (key >= RETROK_LAST)
       return false;
 
-   unsigned sym = input_translate_rk_to_keysym((enum retro_key)key);
-   bool ret = rwebinput->state.keys[sym >> 3] & (1 << (sym & 7));
+   sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
+   ret = rwebinput->state.keys[sym >> 3] & (1 << (sym & 7));
+
    return ret;
 }
 
@@ -68,8 +72,8 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput, const struct retr
       const struct retro_keybind *bind = &binds[id];
       return bind->valid && rwebinput_key_pressed(rwebinput, binds[id].key);
    }
-   else
-      return false;
+
+   return false;
 }
 
 static bool rwebinput_bind_button_pressed(void *data, int key)
@@ -90,20 +94,25 @@ static int16_t rwebinput_mouse_state(rwebinput_input_t *rwebinput, unsigned id)
          return rwebinput->state.mouse_l;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
          return rwebinput->state.mouse_r;
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 static int16_t rwebinput_analog_pressed(rwebinput_input_t *rwebinput,
       const struct retro_keybind *binds, unsigned idx, unsigned id)
 {
+   int16_t pressed_minus = 0, pressed_plus = 0;
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
+
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   int16_t pressed_minus = rwebinput_is_pressed(rwebinput, binds, id_minus) ? -0x7fff : 0;
-   int16_t pressed_plus = rwebinput_is_pressed(rwebinput, binds, id_plus) ? 0x7fff : 0;
+   if (rwebinput_is_pressed(rwebinput, binds, id_minus))
+      pressed_minus = -0x7fff;
+   if (rwebinput_is_pressed(rwebinput, binds, id_plus))
+      pressed_plus = 0x7fff;
+
    return pressed_plus + pressed_minus;
 }
 
@@ -125,10 +134,9 @@ static int16_t rwebinput_input_state(void *data, const struct retro_keybind **bi
 
       case RETRO_DEVICE_MOUSE:
          return rwebinput_mouse_state(rwebinput, id);
-
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 static void rwebinput_input_free(void *data)
@@ -146,23 +154,25 @@ static void rwebinput_input_free(void *data)
 
 static void rwebinput_input_poll(void *data)
 {
+   unsigned i;
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
+   rwebinput_state_t *state     = RWebInputPoll(rwebinput->context);
 
-   rwebinput_state_t *state = RWebInputPoll(rwebinput->context);
-
-   // get new keys
-   for (unsigned i = 0; i < 32; i++)
+   /* Get new keys. */
+   for (i = 0; i < 32; i++)
    {
-      if (state->keys[i] != rwebinput->state.keys[i])
+      unsigned k;
+      uint8_t diff;
+
+      if (state->keys[i] == rwebinput->state.keys[i])
+         continue;
+
+      diff = state->keys[i] ^ rwebinput->state.keys[i];
+
+      for (k = 0; diff; diff >>= 1, k++)
       {
-         uint8_t diff = state->keys[i] ^ rwebinput->state.keys[i];
-         for (unsigned k = 0; diff; diff >>= 1, k++)
-         {
-            if (diff & 1)
-            {
-               input_keyboard_event((state->keys[i] & (1 << k)) != 0, input_translate_keysym_to_rk(i * 8 + k), 0, 0);
-            }
-         }
+         if (diff & 1)
+            input_keyboard_event((state->keys[i] & (1 << k)) != 0, input_keymaps_translate_keysym_to_rk(i * 8 + k), 0, 0);
       }
    }
 

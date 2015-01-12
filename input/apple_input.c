@@ -217,7 +217,7 @@ static int16_t apple_input_is_pressed(apple_input_data_t *apple, unsigned port_n
    if (id < RARCH_BIND_LIST_END)
    {
       const struct retro_keybind *bind = &binds[id];
-      unsigned bit = input_translate_rk_to_keysym(bind->key);
+      unsigned bit = input_keymaps_translate_rk_to_keysym(bind->key);
       return bind->valid && apple->key_state[bit];
    }
    return 0;
@@ -231,7 +231,7 @@ static void *apple_input_init(void)
    if (!apple)
       return NULL;
     
-   input_init_keyboard_lut(rarch_key_map_apple_hid);
+   input_keymaps_init_keyboard_lut(rarch_key_map_apple_hid);
 
    apple->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
     
@@ -329,7 +329,7 @@ static int16_t apple_input_state(void *data,
                idx, id, binds[port]);
       case RETRO_DEVICE_KEYBOARD:
        {
-           unsigned bit = input_translate_rk_to_keysym((enum retro_key)id);
+           unsigned bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
            return (id < RETROK_LAST) && apple->key_state[bit];
        }
       case RETRO_DEVICE_MOUSE:

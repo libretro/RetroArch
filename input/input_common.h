@@ -54,7 +54,6 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
 void input_get_bind_string(char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size);
 
-void input_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
 
 enum retro_key input_translate_str_to_rk(const char *str);
 

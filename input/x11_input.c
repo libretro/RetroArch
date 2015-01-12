@@ -60,19 +60,23 @@ static void *x_input_init(void)
    x11->win     = (Window)driver.video_window;
 
    x11->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
-   input_init_keyboard_lut(rarch_key_map_x11);
+   input_keymaps_init_keyboard_lut(rarch_key_map_x11);
 
    return x11;
 }
 
 static bool x_key_pressed(x11_input_t *x11, int key)
 {
+   unsigned sym;
+   int keycode;
+   bool ret;
+
    if (key >= RETROK_LAST)
       return false;
 
-   unsigned sym = input_translate_rk_to_keysym((enum retro_key)key);
-   int keycode = XKeysymToKeycode(x11->display, sym);
-   bool ret = x11->state[keycode >> 3] & (1 << (keycode & 7));
+   sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
+   keycode = XKeysymToKeycode(x11->display, sym);
+   ret = x11->state[keycode >> 3] & (1 << (keycode & 7));
    return ret;
 }
 
@@ -90,18 +94,25 @@ static bool x_is_pressed(x11_input_t *x11,
 static int16_t x_pressed_analog(x11_input_t *x11,
       const struct retro_keybind *binds, unsigned idx, unsigned id)
 {
+   int16_t pressed_minus = 0, pressed_plus = 0;
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
+
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   int16_t pressed_minus = x_is_pressed(x11, binds, id_minus) ? -0x7fff : 0;
-   int16_t pressed_plus = x_is_pressed(x11, binds, id_plus) ? 0x7fff : 0;
+   if (x_is_pressed(x11, binds, id_minus))
+      pressed_minus = -0x7fff;
+   if (x_is_pressed(x11, binds, id_plus))
+      pressed_plus  =  0x7fff;
+
    return pressed_plus + pressed_minus;
 }
 
 static bool x_bind_button_pressed(void *data, int key)
 {
    x11_input_t *x11 = (x11_input_t*)data;
+   if (!x11)
+      return false;
    return x_is_pressed(x11, g_settings.input.binds[0], key) ||
       input_joypad_pressed(x11->joypad, 0, g_settings.input.binds[0], key);
 }
@@ -132,11 +143,13 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
 static int16_t x_pointer_state(x11_input_t *x11,
       unsigned idx, unsigned id, bool screen)
 {
+   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
+   bool valid, inside;
+
    if (idx != 0)
       return 0;
 
-   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
-   bool valid = input_translate_coord_viewport(x11->mouse_x, x11->mouse_y,
+   valid = input_translate_coord_viewport(x11->mouse_x, x11->mouse_y,
          &res_x, &res_y, &res_screen_x, &res_screen_y);
 
    if (!valid)
@@ -148,7 +161,7 @@ static int16_t x_pointer_state(x11_input_t *x11,
       res_y = res_screen_y;
    }
 
-   bool inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
+   inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
 
    if (!inside)
       return 0;
@@ -184,17 +197,17 @@ static int16_t x_lightgun_state(x11_input_t *x11, unsigned id)
          return x11->mouse_m && x11->mouse_r; 
       case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
          return x11->mouse_m && x11->mouse_l; 
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 static int16_t x_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   x11_input_t *x11 = (x11_input_t*)data;
    int16_t ret;
+   x11_input_t *x11 = (x11_input_t*)data;
 
    switch (device)
    {
@@ -304,13 +317,16 @@ static void x_input_poll(void *data)
 static void x_grab_mouse(void *data, bool state)
 {
    x11_input_t *x11 = (x11_input_t*)data;
-   x11->grab_mouse = state;
+   if (x11)
+      x11->grab_mouse = state;
 }
 
 static bool x_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
    x11_input_t *x11 = (x11_input_t*)data;
+   if (!x11)
+      return false;
    return input_joypad_set_rumble(x11->joypad, port, effect, strength);
 }
 

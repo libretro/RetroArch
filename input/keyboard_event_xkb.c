@@ -60,8 +60,9 @@ void handle_xkb(
                (enum xkb_state_component)((XKB_STATE_MODS_EFFECTIVE) > 0)) ? *map_bit : 0;
    }
 
-   input_keyboard_event(value, input_translate_keysym_to_rk(code),
+   input_keyboard_event(value, input_keymaps_translate_keysym_to_rk(code),
          num_syms ? xkb_keysym_to_utf32(syms[0]) : 0, mod);
+
    for (i = 1; i < num_syms; i++)
       input_keyboard_event(value, RETROK_UNKNOWN, xkb_keysym_to_utf32(syms[i]), mod);
 }

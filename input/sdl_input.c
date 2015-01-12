@@ -40,7 +40,7 @@ typedef struct sdl_input
 
 static void *sdl_input_init(void)
 {
-   input_init_keyboard_lut(rarch_key_map_sdl);
+   input_keymaps_init_keyboard_lut(rarch_key_map_sdl);
    sdl_input_t *sdl = (sdl_input_t*)calloc(1, sizeof(*sdl));
    if (!sdl)
       return NULL;
@@ -53,13 +53,15 @@ static void *sdl_input_init(void)
 
 static bool sdl_key_pressed(int key)
 {
+   int num_keys;
+   const uint8_t *keymap;
+   unsigned sym;
+
    if (key >= RETROK_LAST)
       return false;
 
-   unsigned sym = input_translate_rk_to_keysym((enum retro_key)key);
+   sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
 
-   int num_keys;
-   const uint8_t *keymap;
 #if HAVE_SDL2
    sym = SDL_GetScancodeFromKey(sym);
    keymap = SDL_GetKeyboardState(&num_keys);
@@ -83,12 +85,17 @@ static bool sdl_is_pressed(sdl_input_t *sdl, unsigned port_num, const struct ret
 static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *binds,
       unsigned idx, unsigned id)
 {
+   int16_t pressed_minus = 0, pressed_plus = 0;
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
+
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   int16_t pressed_minus = sdl_key_pressed(binds[id_minus].key) ? -0x7fff : 0;
-   int16_t pressed_plus = sdl_key_pressed(binds[id_plus].key) ? 0x7fff : 0;
+   if (sdl_key_pressed(binds[id_minus].key))
+      pressed_minus = -0x7fff;
+   if (sdl_key_pressed(binds[id_plus].key))
+      pressed_plus  = 0x7fff;
+
    return pressed_plus + pressed_minus;
 }
 
@@ -141,19 +148,21 @@ static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
          return sdl->mouse_y;
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return sdl->mouse_m;
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
       unsigned idx, unsigned id, bool screen)
 {
+   bool valid, inside;
+   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
+
    if (idx != 0)
       return 0;
 
-   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
-   bool valid = input_translate_coord_viewport(sdl->mouse_abs_x, sdl->mouse_abs_y,
+   valid = input_translate_coord_viewport(sdl->mouse_abs_x, sdl->mouse_abs_y,
          &res_x, &res_y, &res_screen_x, &res_screen_y);
 
    if (!valid)
@@ -165,7 +174,7 @@ static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
       res_y = res_screen_y;
    }
 
-   bool inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
+   inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
 
    if (!inside)
       return 0;
@@ -178,9 +187,9 @@ static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
          return res_y;
       case RETRO_DEVICE_ID_POINTER_PRESSED:
          return sdl->mouse_l;
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 static int16_t sdl_lightgun_device_state(sdl_input_t *sdl, unsigned id)
@@ -201,15 +210,16 @@ static int16_t sdl_lightgun_device_state(sdl_input_t *sdl, unsigned id)
          return sdl->mouse_m && sdl->mouse_r; 
       case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
          return sdl->mouse_m && sdl->mouse_l; 
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    sdl_input_t *data = (sdl_input_t*)data_;
+
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
@@ -232,18 +242,18 @@ static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds,
 
 static void sdl_input_free(void *data)
 {
+   sdl_input_t *sdl = (sdl_input_t*)data;
+
    if (!data)
       return;
 
-   // Flush out all pending events.
+   /* Flush out all pending events. */
 #ifdef HAVE_SDL2
    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 #else
    SDL_Event event;
    while (SDL_PollEvent(&event));
 #endif
-
-   sdl_input_t *sdl = (sdl_input_t*)data;
 
    if (sdl->joypad)
       sdl->joypad->destroy();
@@ -254,17 +264,17 @@ static void sdl_input_free(void *data)
 #ifdef HAVE_SDL2
 static void sdl_grab_mouse(void *data, bool state)
 {
+   struct temp{
+      SDL_Window *w;
+   };
    sdl_input_t *sdl = (sdl_input_t*)data;
 
-   if (driver.video == &video_sdl2)
-   {
-      /* first member of sdl2_video_t is the window */
-      struct temp{
-         SDL_Window *w;
-      };
-      SDL_SetWindowGrab(((struct temp*)driver.video_data)->w,
-                        state ? SDL_TRUE : SDL_FALSE);
-   }
+   if (driver.video != &video_sdl2)
+      return;
+
+   /* First member of sdl2_video_t is the window */
+   SDL_SetWindowGrab(((struct temp*)driver.video_data)->w,
+         state ? SDL_TRUE : SDL_FALSE);
 }
 #endif
 
@@ -272,6 +282,8 @@ static bool sdl_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
    sdl_input_t *sdl = (sdl_input_t*)data;
+   if (!sdl)
+      return false;
    return input_joypad_set_rumble(sdl->joypad, port, effect, strength);
 }
 
@@ -284,7 +296,9 @@ static const rarch_joypad_driver_t *sdl_get_joypad_driver(void *data)
 static void sdl_poll_mouse(sdl_input_t *sdl)
 {
    Uint8 btn = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
+
    SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
+
    sdl->mouse_l  = SDL_BUTTON(SDL_BUTTON_LEFT)      & btn ? 1 : 0;
    sdl->mouse_r  = SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn ? 1 : 0;
    sdl->mouse_m  = SDL_BUTTON(SDL_BUTTON_MIDDLE)    & btn ? 1 : 0;
@@ -296,8 +310,9 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
 
 static void sdl_input_poll(void *data)
 {
-   SDL_PumpEvents();
    sdl_input_t *sdl = (sdl_input_t*)data;
+
+   SDL_PumpEvents();
 
    if (sdl->joypad)
       sdl->joypad->poll();
@@ -313,7 +328,7 @@ static void sdl_input_poll(void *data)
       if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
       {
          uint16_t mod = 0;
-         unsigned code = input_translate_keysym_to_rk(event.key.keysym.sym);
+         unsigned code = input_keymaps_translate_keysym_to_rk(event.key.keysym.sym);
 
          if (event.key.keysym.mod & KMOD_SHIFT)
             mod |= RETROKMOD_SHIFT;
