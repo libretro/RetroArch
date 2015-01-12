@@ -142,16 +142,16 @@ static const char *audio_driver_find_ident(int index)
 const char* config_get_audio_driver_options(void)
 {
    union string_list_elem_attr attr;
+   unsigned i;
    char *options = NULL;
-   int option_k = 0;
    int options_len = 0;
    struct string_list *options_l = string_list_new();
 
    attr.i = 0;
 
-   for (option_k = 0; audio_driver_find_handle(option_k); option_k++)
+   for (i = 0; audio_driver_find_handle(i); i++)
    {
-      const char *opt = audio_driver_find_ident(option_k);
+      const char *opt = audio_driver_find_ident(i);
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -247,16 +247,16 @@ static const char *video_driver_find_ident(int index)
 const char* config_get_video_driver_options(void)
 {
    union string_list_elem_attr attr;
+   unsigned i;
    char *options = NULL;
-   int option_k = 0;
    int options_len = 0;
    struct string_list *options_l = string_list_new();
 
    attr.i = 0;
 
-   for (option_k = 0; video_driver_find_handle(option_k); option_k++)
+   for (i = 0; video_driver_find_handle(i); i++)
    {
-      const char *opt = video_driver_find_ident(option_k);
+      const char *opt = video_driver_find_ident(i);
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -359,16 +359,16 @@ static const char *input_driver_find_ident(int index)
 const char* config_get_input_driver_options(void)
 {
    union string_list_elem_attr attr;
+   unsigned i;
    char *options = NULL;
-   int option_k = 0;
    int options_len = 0;
    struct string_list *options_l = string_list_new();
 
    attr.i = 0;
 
-   for (option_k = 0; input_driver_find_handle(option_k); option_k++)
+   for (i = 0; input_driver_find_handle(i); i++)
    {
-      const char *opt = input_driver_find_ident(option_k);
+      const char *opt = input_driver_find_ident(i);
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -433,16 +433,16 @@ static const char *osk_driver_find_ident(int index)
 const char* config_get_osk_driver_options(void)
 {
    union string_list_elem_attr attr;
+   unsigned i;
    char *options = NULL;
-   int option_k = 0;
    int options_len = 0;
    struct string_list *options_l = string_list_new();
 
    attr.i = 0;
 
-   for (option_k = 0; osk_driver_find_handle(option_k); option_k++)
+   for (i = 0; osk_driver_find_handle(i); i++)
    {
-      const char *opt = osk_driver_find_ident(option_k);
+      const char *opt = osk_driver_find_ident(i);
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -516,16 +516,16 @@ static const char *camera_driver_find_ident(int index)
 const char* config_get_camera_driver_options(void)
 {
    union string_list_elem_attr attr;
+   unsigned i;
    char *options = NULL;
-   int option_k = 0;
    int options_len = 0;
    struct string_list *options_l = string_list_new();
 
    attr.i = 0;
 
-   for (option_k = 0; camera_driver_find_handle(option_k); option_k++)
+   for (i = 0; camera_driver_find_handle(i); i++)
    {
-      const char *opt = camera_driver_find_ident(option_k);
+      const char *opt = camera_driver_find_ident(i);
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -595,16 +595,16 @@ static const char *location_driver_find_ident(int index)
 const char* config_get_location_driver_options(void)
 {
    union string_list_elem_attr attr;
+   unsigned i;
    char *options = NULL;
-   int option_k = 0;
    int options_len = 0;
    struct string_list *options_l = string_list_new();
 
    attr.i = 0;
 
-   for (option_k = 0; location_driver_find_handle(option_k); option_k++)
+   for (i = 0; location_driver_find_handle(i); i++)
    {
-      const char *opt = location_driver_find_ident(option_k);
+      const char *opt = location_driver_find_ident(i);
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -687,16 +687,16 @@ static const char *menu_driver_find_ident(int index)
 const char* config_get_menu_driver_options(void)
 {
    union string_list_elem_attr attr;
+   unsigned i;
    char *options = NULL;
-   int option_k = 0;
    int options_len = 0;
    struct string_list *options_l = string_list_new();
 
    attr.i = 0;
 
-   for (option_k = 0; menu_driver_find_handle(option_k); option_k++)
+   for (i = 0; menu_driver_find_handle(i); i++)
    {
-      const char *opt = menu_driver_find_ident(option_k);
+      const char *opt = menu_driver_find_ident(i);
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
