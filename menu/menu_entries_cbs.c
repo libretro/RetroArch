@@ -1097,7 +1097,7 @@ static int action_toggle_save_state(unsigned type, const char *label,
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         // Slot -1 is (auto) slot.
+         /* Slot -1 is (auto) slot. */
          if (g_settings.state_slot >= 0)
             g_settings.state_slot--;
          break;
@@ -2754,6 +2754,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       case MENU_FILE_AUDIOFILTER:
       case MENU_FILE_CONFIG:
       case MENU_FILE_USE_DIRECTORY:
+      case MENU_FILE_PLAYLIST_ENTRY:
          cbs->action_toggle = action_toggle_scroll;
          break;
       case MENU_FILE_CONTENTLIST_ENTRY:
