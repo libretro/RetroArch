@@ -21,7 +21,7 @@
 
 #include <EGL/egl.h>
 
-#include "../../frontend/platform/platform_android.h"
+#include "../../frontend/drivers/platform_android.h"
 #include "../image/image.h"
 
 #include <stdint.h>

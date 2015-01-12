@@ -23,7 +23,7 @@
 #include <boolean.h>
 
 #if defined(ANDROID)
-#include "platform/platform_android.h"
+#include "drivers/platform_android.h"
 #define main_entry android_app_entry
 #define args_type() struct android_app*
 #define signature() void* data

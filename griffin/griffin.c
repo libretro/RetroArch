@@ -584,24 +584,24 @@ FRONTEND
 #include "../frontend/frontend_driver.c"
 
 #if defined(__CELLOS_LV2__)
-#include "../frontend/platform/platform_ps3.c"
+#include "../frontend/drivers/platform_ps3.c"
 #elif defined(GEKKO)
-#include "../frontend/platform/platform_gx.c"
+#include "../frontend/drivers/platform_gx.c"
 #ifdef HW_RVL
-#include "../frontend/platform/platform_wii.c"
+#include "../frontend/drivers/platform_wii.c"
 #endif
 #elif defined(_XBOX)
-#include "../frontend/platform/platform_xdk.c"
+#include "../frontend/drivers/platform_xdk.c"
 #elif defined(PSP)
-#include "../frontend/platform/platform_psp.c"
+#include "../frontend/drivers/platform_psp.c"
 #elif defined(__QNX__)
-#include "../frontend/platform/platform_qnx.c"
+#include "../frontend/drivers/platform_qnx.c"
 #elif defined(OSX) || defined(IOS)
-#include "../frontend/platform/platform_apple.c"
+#include "../frontend/drivers/platform_apple.c"
 #elif defined(ANDROID)
-#include "../frontend/platform/platform_android.c"
+#include "../frontend/drivers/platform_android.c"
 #endif
-#include "../frontend/platform/platform_null.c"
+#include "../frontend/drivers/platform_null.c"
 
 #include "../core_info.c"
 

@@ -19,7 +19,7 @@
 #include <android/keycodes.h>
 #include <unistd.h>
 #include <dlfcn.h>
-#include "../../frontend/platform/platform_android.h"
+#include "../../frontend/drivers/platform_android.h"
 #include "../input_autodetect.h"
 #include "../input_common.h"
 #include "../input_joypad.h"

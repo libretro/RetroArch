@@ -86,7 +86,7 @@ endif
 
 OBJ += frontend/frontend.o \
 		frontend/frontend_driver.o \
-		frontend/platform/platform_null.o \
+		frontend/drivers/platform_null.o \
 		libretro_version_1.o \
 		retroarch.o \
 		runloop.o \
@@ -178,7 +178,7 @@ ifeq ($(HAVE_PYTHON), 1)
 endif
 
 ifeq ($(HAVE_EMSCRIPTEN), 1)
-OBJ += frontend/platform/platform_emscripten.o \
+OBJ += frontend/drivers/platform_emscripten.o \
 		input/drivers/rwebinput_input.o \
 		audio/drivers/rwebaudio.o \
 		camera/drivers/rwebcam.o
