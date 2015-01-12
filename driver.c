@@ -103,6 +103,36 @@ static const audio_driver_t *audio_drivers[] = {
 };
 
 /**
+ * audio_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to audio driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *audio_driver_find_handle(int index)
+{
+   const void *drv = audio_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
+ * audio_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of audio driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const char *audio_driver_find_ident(int index)
+{
+   const audio_driver_t *drv = audio_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv->ident;
+}
+
+/**
  * config_get_audio_driver_options:
  *
  * Get an enumerated list of all audio driver names, separated by '|'.
@@ -119,9 +149,9 @@ const char* config_get_audio_driver_options(void)
 
    attr.i = 0;
 
-   for (option_k = 0; audio_drivers[option_k]; option_k++)
+   for (option_k = 0; audio_driver_find_handle(option_k); option_k++)
    {
-      const char *opt = audio_drivers[option_k]->ident;
+      const char *opt = audio_driver_find_ident(option_k);
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -597,9 +627,9 @@ static const void *find_driver_nonempty(const char *label, int i,
    }
    else if (!strcmp(label, "audio_driver"))
    {
-      drv = audio_drivers[i];
+      drv = audio_driver_find_handle(i);
       if (drv)
-         strlcpy(str, audio_drivers[i]->ident, sizeof_str);
+         strlcpy(str, audio_driver_find_ident(i), sizeof_str);
    }
 
    return drv;
@@ -1003,18 +1033,18 @@ static void find_audio_driver(void)
 {
    int i = find_driver_index("audio_driver", g_settings.audio.driver);
    if (i >= 0)
-      driver.audio = audio_drivers[i];
+      driver.audio = audio_driver_find_handle(i);
    else
    {
       unsigned d;
       RARCH_ERR("Couldn't find any audio driver named \"%s\"\n",
             g_settings.audio.driver);
       RARCH_LOG_OUTPUT("Available audio drivers are:\n");
-      for (d = 0; audio_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", audio_drivers[d]->ident);
+      for (d = 0; audio_driver_find_handle(d); d++)
+         RARCH_LOG_OUTPUT("\t%s\n", audio_driver_find_ident(d));
       RARCH_WARN("Going to default to first audio driver...\n");
 
-      driver.audio = audio_drivers[0];
+      driver.audio = audio_driver_find_handle(0);
 
       if (!driver.audio)
          rarch_fail(1, "find_audio_driver()");
