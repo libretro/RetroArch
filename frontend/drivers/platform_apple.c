@@ -19,7 +19,9 @@
 
 #include "../frontend.h"
 #include "../../runloop.h"
-#include "../../menu/disp/ios.h"
+#ifdef IOS
+#include "../../menu/drivers_display/ios.h"
+#endif
 
 #include <stdint.h>
 #include <boolean.h>

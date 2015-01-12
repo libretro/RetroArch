@@ -34,7 +34,7 @@
 #include "../../settings_data.h"
 #include "../../retroarch.h"
 
-#include "../disp/lakka.h"
+#include "../drivers_display/lakka.h"
 #include "../menu_animation.h"
 
 #ifdef HAVE_CONFIG_H

@@ -27,7 +27,7 @@
 #include "bluetooth/btdynamic.h"
 #include "bluetooth/btpad.h"
 
-#include "../../menu/disp/ios.h"
+#include "../../menu/drivers_display/ios.h"
 
 id<RetroArch_Platform> apple_platform;
 
