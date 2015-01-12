@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef RARCH_DSP_FILTER_H__
-#define RARCH_DSP_FILTER_H__
+#ifndef __AUDIO_DSP_FILTER_H__
+#define __AUDIO_DSP_FILTER_H__
 
 #ifdef __cplusplus
 extern "C" {

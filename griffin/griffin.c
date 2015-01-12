@@ -545,7 +545,7 @@ DYNAMIC
 #include "../dynamic.c"
 #include "../dynamic_dummy.c"
 #include "../gfx/video_filter.c"
-#include "../audio/dsp_filter.c"
+#include "../audio/audio_dsp_filter.c"
 
 
 /*============================================================

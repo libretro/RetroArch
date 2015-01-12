@@ -141,7 +141,7 @@ OBJ += frontend/frontend.o \
 		gfx/font_renderer_driver.o \
 		gfx/video_filter.o \
 		audio/audio_resampler_driver.o \
-		audio/dsp_filter.o \
+		audio/audio_dsp_filter.o \
 		audio/drivers_resampler/sinc.o \
 		audio/drivers_resampler/nearest.o \
 		audio/drivers_resampler/cc_resampler.o \

@@ -27,7 +27,7 @@
 #include "movie.h"
 #include "autosave.h"
 #include "cheats.h"
-#include "audio/dsp_filter.h"
+#include "audio/audio_dsp_filter.h"
 #include <compat/strl.h>
 #include "core_options.h"
 #include "core_info.h"

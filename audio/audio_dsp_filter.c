@@ -16,7 +16,7 @@
 
 #include "../performance.h"
 
-#include "dsp_filter.h"
+#include "audio_dsp_filter.h"
 #include "../dynamic.h"
 #include <file/config_file_userdata.h>
 #include "audio_filters/dspfilter.h"
