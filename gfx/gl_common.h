@@ -20,7 +20,6 @@
 #include "../general.h"
 #include "fonts/fonts.h"
 #include <gfx/math/matrix_4x4.h>
-#include "video_context.h"
 #include <gfx/scaler/scaler.h>
 #include "fonts/gl_font.h"
 #include "shader/shader_context.h"
