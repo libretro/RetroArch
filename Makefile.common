@@ -142,7 +142,7 @@ OBJ += frontend/frontend.o \
 		audio/resamplers/nearest.o \
 		audio/resamplers/cc_resampler.o \
 		location/nulllocation.o \
-		camera/nullcamera.o \
+		camera/drivers/nullcamera.o \
 		gfx/drivers/nullgfx.o \
 		audio/drivers/nullaudio.o \
 		input/drivers/nullinput.o \
@@ -177,7 +177,7 @@ ifeq ($(HAVE_EMSCRIPTEN), 1)
 OBJ += frontend/platform/platform_emscripten.o \
 		input/drivers/rwebinput_input.o \
 		audio/drivers/rwebaudio.o \
-		camera/rwebcam.o
+		camera/drivers/rwebcam.o
 endif
 
 # Audio
@@ -601,7 +601,7 @@ endif
 # Camera
 
 ifeq ($(HAVE_V4L2),1)
-   OBJ += camera/video4linux2.o
+   OBJ += camera/drivers/video4linux2.o
    DEFINES += -DHAVE_V4L2
 endif
 

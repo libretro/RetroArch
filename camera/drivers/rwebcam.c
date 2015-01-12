@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../driver.h"
-#include "../emscripten/RWebCam.h"
+#include "../../driver.h"
+#include "../../emscripten/RWebCam.h"
 
 static void *rwebcam_init(const char *device, uint64_t caps,
       unsigned width, unsigned height)

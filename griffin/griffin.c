@@ -418,16 +418,16 @@ AUDIO RESAMPLER
 CAMERA
 ============================================================ */
 #if defined(ANDROID)
-#include "../camera/android.c"
+#include "../camera/drivers/android.c"
 #elif defined(EMSCRIPTEN)
-#include "../camera/rwebcam.c"
+#include "../camera/drivers/rwebcam.c"
 #endif
 
 #ifdef HAVE_V4L2
-#include "../camera/video4linux2.c"
+#include "../camera/drivers/video4linux2.c"
 #endif
 
-#include "../camera/nullcamera.c"
+#include "../camera/drivers/nullcamera.c"
 
 /*============================================================
 LOCATION

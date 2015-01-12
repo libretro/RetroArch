@@ -20,7 +20,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stddef.h>
-#include "../performance.h"
+#include "../../performance.h"
 #include <retro_miscellaneous.h>
 #include <gfx/scaler/scaler.h>
 #include <stdlib.h>
