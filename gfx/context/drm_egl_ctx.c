@@ -19,7 +19,6 @@
  */
 
 #include "../../driver.h"
-#include "../video_context.h"
 #include "../gl_common.h"
 #include "../gfx_common.h"
 #include <file/dir_list.h>
