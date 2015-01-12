@@ -350,10 +350,10 @@ INPUT
 #endif
 
 #if defined(__CELLOS_LV2__)
-#include "../input/osk/ps3_osk.c"
+#include "../osk/drivers/ps3_osk.c"
 #endif
 
-#include "../input/osk/nullosk.c"
+#include "../osk/drivers/nullosk.c"
 
 #if defined(__linux__) && !defined(ANDROID) 
 #include "../input/drivers/linuxraw_input.c"
