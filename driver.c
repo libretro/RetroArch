@@ -178,6 +178,36 @@ static const video_driver_t *video_drivers[] = {
 };
 
 /**
+ * video_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to video driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *video_driver_find_handle(int index)
+{
+   const void *drv = video_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
+ * video_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of video driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const char *video_driver_find_ident(int index)
+{
+   const video_driver_t *drv = video_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv->ident;
+}
+
+/**
  * config_get_video_driver_options:
  *
  * Get an enumerated list of all video driver names, separated by '|'.
@@ -194,9 +224,9 @@ const char* config_get_video_driver_options(void)
 
    attr.i = 0;
 
-   for (option_k = 0; video_drivers[option_k]; option_k++)
+   for (option_k = 0; video_driver_find_handle(option_k); option_k++)
    {
-      const char *opt = video_drivers[option_k]->ident;
+      const char *opt = video_driver_find_ident(option_k);
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -502,6 +532,7 @@ const char* config_get_menu_driver_options(void)
 }
 #endif
 
+
 /**
  * find_driver_nonempty:
  * @label              : string of driver type to be found.
@@ -560,9 +591,9 @@ static const void *find_driver_nonempty(const char *label, int i,
    }
    else if (!strcmp(label, "video_driver"))
    {
-      drv = video_drivers[i];
+      drv = video_driver_find_handle(i);
       if (drv)
-         strlcpy(str, video_drivers[i]->ident, sizeof_str);
+         strlcpy(str, video_driver_find_ident(i), sizeof_str);
    }
    else if (!strcmp(label, "audio_driver"))
    {
@@ -603,6 +634,7 @@ static int find_driver_index(const char * label, const char *drv)
 
    return -1;
 }
+
 
 /**
  * find_prev_driver:
@@ -1014,18 +1046,18 @@ static void find_video_driver(void)
 
    i = find_driver_index("video_driver", g_settings.video.driver);
    if (i >= 0)
-      driver.video = video_drivers[i];
+      driver.video = video_driver_find_handle(i);
    else
    {
       unsigned d;
       RARCH_ERR("Couldn't find any video driver named \"%s\"\n",
             g_settings.video.driver);
       RARCH_LOG_OUTPUT("Available video drivers are:\n");
-      for (d = 0; video_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", video_drivers[d]->ident);
+      for (d = 0; video_driver_find_handle(d); d++)
+         RARCH_LOG_OUTPUT("\t%s\n", video_driver_find_ident(d));
       RARCH_WARN("Going to default to first video driver...\n");
 
-      driver.video = video_drivers[0];
+      driver.video = video_driver_find_handle(0);
 
       if (!driver.video)
          rarch_fail(1, "find_video_driver()");
