@@ -39,7 +39,7 @@ static DSMIXBINVOLUMEPAIR dsmbvp[8] = {
 static DSMIXBINS dsmb;
 #endif
 
-#include "../driver.h"
+#include "../../driver.h"
 #include <stdlib.h>
 #include <boolean.h>
 #include <stddef.h>
@@ -53,7 +53,7 @@ static DSMIXBINS dsmb;
 #endif
 #include <dsound.h>
 #include <queues/fifo_buffer.h>
-#include "../general.h"
+#include "../../general.h"
 
 typedef struct dsound
 {
@@ -93,21 +93,25 @@ struct audio_lock
    DWORD size2;
 };
 
-static inline bool grab_region(dsound_t *ds, DWORD write_ptr, struct audio_lock *region)
+static inline bool grab_region(dsound_t *ds, DWORD write_ptr,
+      struct audio_lock *region)
 {
-   HRESULT res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE, &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0);
+   const char *err;
+   HRESULT res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE, 
+         &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0);
+
    if (res == DSERR_BUFFERLOST)
    {
       res = IDirectSoundBuffer_Restore(ds->dsb);
       if (res != DS_OK)
          return false;
 
-      res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE, &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0);
+      res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
+            &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0);
       if (res != DS_OK)
          return false;
    }
 
-   const char *err;
    switch (res)
    {
       case DSERR_BUFFERLOST:
@@ -143,34 +147,43 @@ static inline void release_region(dsound_t *ds, const struct audio_lock *region)
 
 static DWORD CALLBACK dsound_thread(PVOID data)
 {
+   DWORD write_ptr;
    dsound_t *ds = (dsound_t*)data;
+
    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
-   DWORD write_ptr;
    get_positions(ds, NULL, &write_ptr);
    write_ptr = (write_ptr + ds->buffer_size / 2) % ds->buffer_size;
 
    while (ds->thread_alive)
    {
-      DWORD read_ptr;
+      struct audio_lock region;
+      DWORD read_ptr, avail, fifo_avail;
       get_positions(ds, &read_ptr, NULL);
       
-      DWORD avail = write_avail(read_ptr, write_ptr, ds->buffer_size);
+      avail = write_avail(read_ptr, write_ptr, ds->buffer_size);
 
       EnterCriticalSection(&ds->crit);
-      DWORD fifo_avail = fifo_read_avail(ds->buffer);
+      fifo_avail = fifo_read_avail(ds->buffer);
       LeaveCriticalSection(&ds->crit);
 
-      // No space to write, or we don't have data in our fifo, but we can wait some time before it underruns ...
       if (avail < CHUNK_SIZE || ((fifo_avail < CHUNK_SIZE) && (avail < ds->buffer_size / 2)))
       {
+         /* No space to write, or we don't have data in our fifo, 
+          * but we can wait some time before it underruns ... */
+
          Sleep(1);
-         // We could opt for using the notification interface,
-         // but it is not guaranteed to work, so use high priority sleeping patterns. :(
+
+         /* We could opt for using the notification interface,
+          * but it is not guaranteed to work, so use high 
+          * priority sleeping patterns.
+          */
       }
-      else if (fifo_avail < CHUNK_SIZE) // Got space to write, but nothing in FIFO (underrun), fill block with silence.
+      else if (fifo_avail < CHUNK_SIZE)
       {
-         struct audio_lock region;
+         /* Got space to write, but nothing in FIFO (underrun), 
+          * fill block with silence. */
+
          if (!grab_region(ds, write_ptr, &region))
          {
             ds->thread_alive = false;
@@ -184,9 +197,10 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          release_region(ds, &region);
          write_ptr = (write_ptr + region.size1 + region.size2) % ds->buffer_size;
       }
-      else // All is good. Pull from it and notify FIFO :D
+      else 
       {
-         struct audio_lock region;
+         /* All is good. Pull from it and notify FIFO. */
+
          if (!grab_region(ds, write_ptr, &region))
          {
             ds->thread_alive = false;
@@ -213,13 +227,13 @@ static DWORD CALLBACK dsound_thread(PVOID data)
 
 static void dsound_stop_thread(dsound_t *ds)
 {
-   if (ds->thread)
-   {
-      ds->thread_alive = false;
-      WaitForSingleObject(ds->thread, INFINITE);
-      CloseHandle(ds->thread);
-      ds->thread = NULL;
-   }
+   if (!ds->thread)
+      return;
+
+   ds->thread_alive = false;
+   WaitForSingleObject(ds->thread, INFINITE);
+   CloseHandle(ds->thread);
+   ds->thread = NULL;
 }
 
 static bool dsound_start_thread(dsound_t *ds)
@@ -237,11 +251,12 @@ static bool dsound_start_thread(dsound_t *ds)
 
 static void dsound_clear_buffer(dsound_t *ds)
 {
-   IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);
    void *ptr;
    DWORD size;
+   IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);
 
-   if (IDirectSoundBuffer_Lock(ds->dsb, 0, 0, &ptr, &size, NULL, NULL, DSBLOCK_ENTIREBUFFER) == DS_OK)
+   if (IDirectSoundBuffer_Lock(ds->dsb, 0, 0, &ptr, &size,
+            NULL, NULL, DSBLOCK_ENTIREBUFFER) == DS_OK)
    {
       memset(ptr, 0, size);
       IDirectSoundBuffer_Unlock(ds->dsb, ptr, size, NULL, 0);
@@ -251,34 +266,35 @@ static void dsound_clear_buffer(dsound_t *ds)
 static void dsound_free(void *data)
 {
    dsound_t *ds = (dsound_t*)data;
-   if (ds)
+
+   if (!ds)
+      return;
+
+   if (ds->thread)
    {
-      if (ds->thread)
-      {
-         ds->thread_alive = false;
-         WaitForSingleObject(ds->thread, INFINITE);
-         CloseHandle(ds->thread);
-      }
-
-      DeleteCriticalSection(&ds->crit);
-
-      if (ds->dsb)
-      {
-         IDirectSoundBuffer_Stop(ds->dsb);
-         IDirectSoundBuffer_Release(ds->dsb);
-      }
-
-      if (ds->ds)
-         IDirectSound_Release(ds->ds);
-
-      if (ds->event)
-         CloseHandle(ds->event);
-
-      if (ds->buffer)
-         fifo_free(ds->buffer);
-
-      free(ds);
+      ds->thread_alive = false;
+      WaitForSingleObject(ds->thread, INFINITE);
+      CloseHandle(ds->thread);
    }
+
+   DeleteCriticalSection(&ds->crit);
+
+   if (ds->dsb)
+   {
+      IDirectSoundBuffer_Stop(ds->dsb);
+      IDirectSoundBuffer_Release(ds->dsb);
+   }
+
+   if (ds->ds)
+      IDirectSound_Release(ds->ds);
+
+   if (ds->event)
+      CloseHandle(ds->event);
+
+   if (ds->buffer)
+      fifo_free(ds->buffer);
+
+   free(ds);
 }
 
 struct dsound_dev
@@ -291,7 +307,9 @@ struct dsound_dev
 static BOOL CALLBACK enumerate_cb(LPGUID guid, LPCSTR desc, LPCSTR module, LPVOID context)
 {
    struct dsound_dev *dev = (struct dsound_dev*)context;
+
    RARCH_LOG("\t%u: %s\n", dev->total_count, desc);
+
    if (dev->device == dev->total_count)
       dev->guid = guid;
    dev->total_count++;
@@ -303,8 +321,8 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
    WAVEFORMATEX wfx = {0};
    DSBUFFERDESC bufdesc = {0};
    struct dsound_dev dev = {0};
-
    dsound_t *ds = (dsound_t*)calloc(1, sizeof(*ds));
+
    if (!ds)
       goto error;
 
@@ -384,14 +402,17 @@ error:
 static bool dsound_stop(void *data)
 {
    dsound_t *ds = (dsound_t*)data;
+
    dsound_stop_thread(ds);
    ds->is_paused = (IDirectSoundBuffer_Stop(ds->dsb) == DS_OK) ? true : false;
+
    return (ds->is_paused) ? true : false;
 }
 
 static bool dsound_start(void *data)
 {
    dsound_t *ds = (dsound_t*)data;
+
    dsound_clear_buffer(ds);
 
    if (!dsound_start_thread(ds))
@@ -404,30 +425,34 @@ static bool dsound_start(void *data)
 static bool dsound_alive(void *data)
 {
    dsound_t *ds = (dsound_t*)data;
-   if (ds)
-      return !ds->is_paused;
-   return false;
+
+   if (!ds)
+      return false;
+   return !ds->is_paused;
 }
 
 static void dsound_set_nonblock_state(void *data, bool state)
 {
    dsound_t *ds = (dsound_t*)data;
-   ds->nonblock = state;
+   if (ds)
+      ds->nonblock = state;
 }
 
 static ssize_t dsound_write(void *data, const void *buf_, size_t size)
 {
+   size_t written = 0;
    dsound_t *ds = (dsound_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;
 
    if (!ds->thread_alive)
       return -1;
 
-   size_t written = 0;
    while (size > 0)
    {
+      size_t avail;
+
       EnterCriticalSection(&ds->crit);
-      size_t avail = fifo_write_avail(ds->buffer);
+      avail = fifo_write_avail(ds->buffer);
       if (avail > size)
          avail = size;
 
@@ -450,9 +475,11 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
 
 static size_t dsound_write_avail(void *data)
 {
+   size_t avail;
    dsound_t *ds = (dsound_t*)data;
+
    EnterCriticalSection(&ds->crit);
-   size_t avail = fifo_write_avail(ds->buffer);
+   avail = fifo_write_avail(ds->buffer);
    LeaveCriticalSection(&ds->crit);
    return avail;
 }

@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../driver.h"
-#include "../general.h"
+#include "../../driver.h"
+#include "../../general.h"
 #include <rthreads/rthreads.h>
 
 #include <SLES/OpenSLES.h>
@@ -23,7 +23,7 @@
 #include <SLES/OpenSLES_Android.h>
 #endif
 
-// Helper macros, COM-style!
+/* Helper macros, COM-style. */
 #define SLObjectItf_Realize(a, ...) ((*(a))->Realize(a, __VA_ARGS__))
 #define SLObjectItf_GetInterface(a, ...) ((*(a))->GetInterface(a, __VA_ARGS__))
 #define SLObjectItf_Destroy(a) ((*(a))->Destroy((a)))
@@ -100,20 +100,23 @@ static void sl_free(void *data)
 static void *sl_init(const char *device, unsigned rate, unsigned latency)
 {
    unsigned i;
-   (void)device;
-
+   SLInterfaceID id;
+   SLboolean req;
+   SLresult res;
+   sl_t *sl;
    SLDataFormat_PCM fmt_pcm = {0};
    SLDataSource audio_src   = {0};
    SLDataSink audio_sink    = {0};
-
    SLDataLocator_AndroidSimpleBufferQueue loc_bufq = {0};
    SLDataLocator_OutputMix loc_outmix              = {0};
 
-   SLInterfaceID id = SL_IID_ANDROIDSIMPLEBUFFERQUEUE;
-   SLboolean req    = SL_BOOLEAN_TRUE;
+   (void)device;
 
-   SLresult res = 0;
-   sl_t *sl = (sl_t*)calloc(1, sizeof(sl_t));
+   id = SL_IID_ANDROIDSIMPLEBUFFERQUEUE;
+   req    = SL_BOOLEAN_TRUE;
+
+   res = 0;
+   sl = (sl_t*)calloc(1, sizeof(sl_t));
    if (!sl)
       goto error;
 
@@ -154,7 +157,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    fmt_pcm.bitsPerSample = 16;
    fmt_pcm.containerSize = 16;
    fmt_pcm.channelMask   = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
-   fmt_pcm.endianness    = SL_BYTEORDER_LITTLEENDIAN; // Android only.
+   fmt_pcm.endianness    = SL_BYTEORDER_LITTLEENDIAN; /* Android only. */
 
    audio_src.pLocator = &loc_bufq;
    audio_src.pFormat  = &fmt_pcm;
@@ -180,7 +183,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
 
    (*sl->buffer_queue)->RegisterCallback(sl->buffer_queue, opensl_callback, sl);
 
-   // Enqueue a bit to get stuff rolling.
+   /* Enqueue a bit to get stuff rolling. */
    sl->buffered_blocks = sl->buf_count;
    sl->buffer_index = 0;
    for (i = 0; i < sl->buf_count; i++)
@@ -207,15 +210,16 @@ static bool sl_stop(void *data)
 static bool sl_alive(void *data)
 {
    sl_t *sl = (sl_t*)data;
-   if (sl)
-      return !sl->is_paused;
-   return false;
+   if (!sl)
+      return false;
+   return !sl->is_paused;
 }
 
 static void sl_set_nonblock_state(void *data, bool state)
 {
    sl_t *sl = (sl_t*)data;
-   sl->nonblock = state;
+   if (sl)
+      sl->nonblock = state;
 }
 
 static bool sl_start(void *data)
@@ -229,12 +233,13 @@ static bool sl_start(void *data)
 static ssize_t sl_write(void *data, const void *buf_, size_t size)
 {
    sl_t *sl = (sl_t*)data;
-
    size_t written = 0;
    const uint8_t *buf = (const uint8_t*)buf_;
 
    while (size)
    {
+      size_t avail_write;
+
       if (sl->nonblock)
       {
          if (sl->buffered_blocks == sl->buf_count)
@@ -248,7 +253,8 @@ static ssize_t sl_write(void *data, const void *buf_, size_t size)
          slock_unlock(sl->lock);
       }
 
-      size_t avail_write = min(sl->buf_size - sl->buffer_ptr, size);
+      avail_write = min(sl->buf_size - sl->buffer_ptr, size);
+
       if (avail_write)
       {
          memcpy(sl->buffer[sl->buffer_index] + sl->buffer_ptr, buf, avail_write);

@@ -14,10 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../driver.h"
+#include "../../driver.h"
 #include <stdlib.h>
 #include <boolean.h>
-#include "../general.h"
+#include "../../general.h"
 
 #include <xenon_sound/sound.h>
 
@@ -35,6 +35,7 @@ static void *xenon360_audio_init(const char *device,
       unsigned rate, unsigned latency)
 {
    static bool inited = false;
+
    if (!inited)
    {
       xenon_sound_init();
@@ -53,12 +54,11 @@ static inline uint32_t bswap_32(uint32_t val)
 
 static ssize_t xenon360_audio_write(void *data, const void *buf, size_t size)
 {
+   size_t written = 0, i;
+   const uint32_t *in_buf = buf;
    xenon_audio_t *xa = data;
 
-   size_t written = 0;
-
-   const uint32_t *in_buf = buf;
-   for (size_t i = 0; i < (size >> 2); i++)
+   for (i = 0; i < (size >> 2); i++)
       xa->buffer[i] = bswap_32(in_buf[i]);
 
    if (!xa->nonblock)
@@ -95,15 +95,16 @@ static bool xenon360_audio_stop(void *data)
 static bool xenon360_audio_alive(void *data)
 {
    xenon_audio_t *xa = data;
-   if (xa)
-      return !xa->is_paused;
-   return false;
+   if (!xa)
+      return false;
+   return !xa->is_paused;
 }
 
 static void xenon360_audio_set_nonblock_state(void *data, bool state)
 {
    xenon_audio_t *xa = data;
-   xa->nonblock = state;
+   if (xa)
+      xa->nonblock = state;
 }
 
 static bool xenon360_audio_start(void *data)

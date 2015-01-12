@@ -57,11 +57,13 @@ void x11_show_mouse(Display *dpy, Window win, bool state)
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
+
 #define XA_INIT(x) XA##x = XInternAtom(dpy, #x, False)
 #define _NET_WM_STATE_ADD 1
 #define MOVERESIZE_GRAVITY_CENTER 5
 #define MOVERESIZE_X_SHIFT 8
 #define MOVERESIZE_Y_SHIFT 9
+
 void x11_windowed_fullscreen(Display *dpy, Window win)
 {
    XA_INIT(_NET_WM_STATE);
@@ -82,7 +84,8 @@ void x11_windowed_fullscreen(Display *dpy, Window win)
          &xev);
 }
 
-// Try to be nice to tiling WMs if possible.
+/* Try to be nice to tiling WMs if possible. */
+
 void x11_move_window(Display *dpy, Window win, int x, int y,
       unsigned width, unsigned height)
 {
@@ -108,7 +111,7 @@ static void x11_set_window_class(Display *dpy, Window win)
 {
    XClassHint hint = {0};
 
-   hint.res_name   = (char*)"retroarch"; // Broken header.
+   hint.res_name   = (char*)"retroarch"; /* Broken header. */
    hint.res_class  = (char*)"retroarch";
    XSetClassHint(dpy, win, &hint);
 }
@@ -266,10 +269,12 @@ unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
 
       int len_x = min_rx - max_lx;
       int len_y = min_by - max_ty;
-      if (len_x < 0 || len_y < 0) // The whole window is outside the screen.
+
+      if (len_x < 0 || len_y < 0) /* The whole window is outside the screen. */
          continue;
 
       area = len_x * len_y;
+
       if (area > largest_area)
       {
          monitor = i;
@@ -285,6 +290,7 @@ unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
 bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xic)
 {
    *xim = XOpenIM(dpy, NULL, NULL, NULL);
+
    if (!*xim)
    {
       RARCH_ERR("[X11]: Failed to open input method.\n");
@@ -293,6 +299,7 @@ bool x11_create_input_context(Display *dpy, Window win, XIM *xim, XIC *xic)
 
    *xic = XCreateIC(*xim, XNInputStyle,
          XIMPreeditNothing | XIMStatusNothing, XNClientWindow, win, NULL);
+
    if (!*xic)
    {
       RARCH_ERR("[X11]: Failed to create input context.\n");

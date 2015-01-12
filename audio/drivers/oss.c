@@ -17,8 +17,8 @@
 #include "config.h"
 #endif
 
-#include "driver.h"
-#include "general.h"
+#include "../../driver.h"
+#include "../../general.h"
 #include <stdlib.h>
 
 #ifdef HAVE_OSS_BSD
@@ -43,7 +43,9 @@ static bool oss_is_paused;
 
 static void *oss_init(const char *device, unsigned rate, unsigned latency)
 {
+   int frags, frag, channels, format, new_rate;
    int *fd = (int*)calloc(1, sizeof(int));
+
    if (fd == NULL)
       return NULL;
 
@@ -59,15 +61,14 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
       return NULL;
    }
 
-   int frags = (latency * rate * 4) / (1000 * (1 << 10));
-   int frag = (frags << 16) | 10;
+   frags = (latency * rate * 4) / (1000 * (1 << 10));
+   frag = (frags << 16) | 10;
 
    if (ioctl(*fd, SNDCTL_DSP_SETFRAGMENT, &frag) < 0)
       RARCH_WARN("Cannot set fragment sizes. Latency might not be as expected ...\n");
 
-   int channels = 2;
-   int format = is_little_endian() ?
-      AFMT_S16_LE : AFMT_S16_BE;
+   channels = 2;
+   format = is_little_endian() ? AFMT_S16_LE : AFMT_S16_BE;
 
    if (ioctl(*fd, SNDCTL_DSP_CHANNELS, &channels) < 0)
    {
@@ -85,7 +86,8 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
       return NULL;
    }
 
-   int new_rate = rate;
+   new_rate = rate;
+
    if (ioctl(*fd, SNDCTL_DSP_SPEED, &new_rate) < 0)
    {
       close(*fd);
@@ -105,12 +107,12 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
 
 static ssize_t oss_write(void *data, const void *buf, size_t size)
 {
+   ssize_t ret;
    int *fd = (int*)data;
 
    if (size == 0)
       return 0;
 
-   ssize_t ret;
    if ((ret = write(*fd, buf, size)) < 0)
    {
       if (errno == EAGAIN && (fcntl(*fd, F_GETFL) & O_NONBLOCK))
@@ -125,6 +127,7 @@ static ssize_t oss_write(void *data, const void *buf, size_t size)
 static bool oss_stop(void *data)
 {
    int *fd = (int*)data;
+
    ioctl(*fd, SNDCTL_DSP_RESET, 0);
    oss_is_paused = true;
    return true;
@@ -145,8 +148,9 @@ static bool oss_alive(void *data)
 
 static void oss_set_nonblock_state(void *data, bool state)
 {
-   int *fd = (int*)data;
    int rc;
+   int *fd = (int*)data;
+
    if (state)
       rc = fcntl(*fd, F_SETFL, fcntl(*fd, F_GETFL) | O_NONBLOCK);
    else

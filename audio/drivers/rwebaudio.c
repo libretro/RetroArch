@@ -13,10 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../driver.h"
-#include "../general.h"
+#include "../../driver.h"
+#include "../../general.h"
 
-#include "../emscripten/RWebAudio.h"
+#include "../../emscripten/RWebAudio.h"
 
 static bool rwebaudio_is_paused;
 
@@ -27,9 +27,11 @@ static void rwebaudio_free(void *data)
 
 static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency)
 {
+   void *data;
    (void)device;
    (void)rate;
-   void *data = RWebAudioInit(latency);
+   data = RWebAudioInit(latency);
+
    if (data)
       g_settings.audio.out_rate = RWebAudioSampleRate();
    return data;

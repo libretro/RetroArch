@@ -14,9 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#include "../driver.h"
-#include "../general.h"
+#include "../../driver.h"
+#include "../../general.h"
 #include <queues/fifo_buffer.h>
 #include <stdlib.h>
 #include <boolean.h>
@@ -55,6 +54,7 @@ static bool g_interrupted;
 static void coreaudio_free(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
+
    if (!dev)
       return;
 
@@ -82,7 +82,10 @@ static OSStatus audio_write_cb(void *userdata,
       const AudioTimeStamp *time_stamp, UInt32 bus_number,
       UInt32 number_frames, AudioBufferList *io_data)
 {
+   void *outbuf;
+   unsigned write_avail;
    coreaudio_t *dev = (coreaudio_t*)userdata;
+
    (void)time_stamp;
    (void)bus_number;
    (void)number_frames;
@@ -92,10 +95,11 @@ static OSStatus audio_write_cb(void *userdata,
    if (io_data->mNumberBuffers != 1)
       return noErr;
 
-   unsigned write_avail = io_data->mBuffers[0].mDataByteSize;
-   void *outbuf = io_data->mBuffers[0].mData;
+   write_avail = io_data->mBuffers[0].mDataByteSize;
+   outbuf = io_data->mBuffers[0].mData;
 
    pthread_mutex_lock(&dev->lock);
+
    if (fifo_read_avail(dev->buffer) < write_avail)
    {
       *action_flags = kAudioUnitRenderAction_OutputIsSilence;
@@ -119,6 +123,8 @@ static OSStatus audio_write_cb(void *userdata,
 #ifdef OSX
 static void choose_output_device(coreaudio_t *dev, const char* device)
 {
+   unsigned i;
+   AudioDeviceID *devices;
    AudioObjectPropertyAddress propaddr =
    { 
       kAudioHardwarePropertyDevices, 
@@ -126,14 +132,14 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
       kAudioObjectPropertyElementMaster 
    };
 
-   UInt32 size = 0;
+   UInt32 size = 0, deviceCount;
 
    if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
             &propaddr, 0, 0, &size) != noErr)
       return;
 
-   UInt32 deviceCount = size / sizeof(AudioDeviceID);
-   AudioDeviceID *devices = malloc(size);
+   deviceCount = size / sizeof(AudioDeviceID);
+   devices = (AudioDeviceID*)malloc(size);
 
    if (!devices || AudioObjectGetPropertyData(kAudioObjectSystemObject,
             &propaddr, 0, 0, &size, devices) != noErr)
@@ -143,7 +149,7 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
    propaddr.mSelector = kAudioDevicePropertyDeviceName;
    size = 1024;
 
-   for (unsigned i = 0; i < deviceCount; i ++)
+   for (i = 0; i < deviceCount; i ++)
    {
       char device_name[1024];
       device_name[0] = 0;
@@ -174,6 +180,10 @@ static void coreaudio_interrupt_listener(void *data, UInt32 interrupt_state)
 static void *coreaudio_init(const char *device,
       unsigned rate, unsigned latency)
 {
+   static bool session_initialized = false;
+   UInt32 i_size;
+
+   (void)session_initialized;
    (void)device;
 
    coreaudio_t *dev = (coreaudio_t*)calloc(1, sizeof(*dev));
@@ -184,7 +194,6 @@ static void *coreaudio_init(const char *device,
    pthread_cond_init(&dev->cond, NULL);
 
 #ifdef IOS
-   static bool session_initialized = false;
    if (!session_initialized)
    {
       session_initialized = true;
@@ -249,7 +258,7 @@ static void *coreaudio_init(const char *device,
       goto error;
    
    /* Check returned audio format. */
-   UInt32 i_size = sizeof(real_desc);;
+   i_size = sizeof(real_desc);;
    if (AudioUnitGetProperty(dev->dev, kAudioUnitProperty_StreamFormat, 
             kAudioUnitScope_Input, 0, &real_desc, &i_size) != noErr)
       goto error;
@@ -333,9 +342,11 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
 
    while (!g_interrupted && size > 0)
    {
+      size_t write_avail;
+
       pthread_mutex_lock(&dev->lock);
 
-      size_t write_avail = fifo_write_avail(dev->buffer);
+      write_avail = fifo_write_avail(dev->buffer);
       if (write_avail > size)
          write_avail = size;
 
@@ -374,14 +385,16 @@ static void coreaudio_set_nonblock_state(void *data, bool state)
 static bool coreaudio_alive(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
-   if (dev)
-      return !dev->is_paused;
-   return false;
+   if (!dev)
+      return false;
+   return !dev->is_paused;
 }
 
 static bool coreaudio_stop(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
+   if (!dev)
+      return false;
    dev->is_paused = (AudioOutputUnitStop(dev->dev) == noErr) ? true : false;
    return dev->is_paused ? true : false;
 }
@@ -389,6 +402,8 @@ static bool coreaudio_stop(void *data)
 static bool coreaudio_start(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
+   if (!dev)
+      return false;
    dev->is_paused = (AudioOutputUnitStart(dev->dev) == noErr) ? false : true;
    return dev->is_paused ? false : true;
 }
@@ -401,10 +416,13 @@ static bool coreaudio_use_float(void *data)
 
 static size_t coreaudio_write_avail(void *data)
 {
+   size_t avail;
    coreaudio_t *dev = (coreaudio_t*)data;
+
    pthread_mutex_lock(&dev->lock);
-   size_t avail = fifo_write_avail(dev->buffer);
+   avail = fifo_write_avail(dev->buffer);
    pthread_mutex_unlock(&dev->lock);
+
    return avail;
 }
 

@@ -14,13 +14,13 @@
  */
 
 
-#include "driver.h"
+#include "../../driver.h"
 #include <stdlib.h>
 #include <roaraudio.h>
 #include <errno.h>
 #include <stdint.h>
 #include <boolean.h>
-#include "general.h"
+#include "../../general.h"
 
 typedef struct
 {
@@ -30,13 +30,15 @@ typedef struct
 
 static void *ra_init(const char *device, unsigned rate, unsigned latency)
 {
-   (void)latency;
    int err;
+   roar_vs_t *vss;
    roar_t *roar = (roar_t*)calloc(1, sizeof(roar_t));
-   if (roar == NULL)
+
+   if (!roar)
       return NULL;
 
-   roar_vs_t *vss;
+   (void)latency;
+
    if ((vss = roar_vs_new_simple(device, "RetroArch", rate, 2, ROAR_CODEC_PCM_S, 16, ROAR_DIR_PLAY, &err)) == NULL)
    {
       RARCH_ERR("RoarAudio: \"%s\"\n", roar_vs_strerr(err));
@@ -52,17 +54,18 @@ static void *ra_init(const char *device, unsigned rate, unsigned latency)
 
 static ssize_t ra_write(void *data, const void *buf, size_t size)
 {
-   roar_t *roar = (roar_t*)data;
+   int err;
    ssize_t rc;
+   size_t written = 0;
+   roar_t *roar = (roar_t*)data;
 
    if (size == 0)
       return 0;
 
-   int err;
-   size_t written = 0;
    while (written < size)
    {
       size_t write_amt = size - written;
+
       if ((rc = roar_vs_write(roar->vss, (const char*)buf + written, write_amt, &err)) < (ssize_t)write_amt)
       {
          if (roar->nonblocking)
@@ -87,9 +90,9 @@ static bool ra_stop(void *data)
 static bool ra_alive(void *data)
 {
    roar_t *roar = (roar_t*)data;
-   if (roar)
-      return !roar->is_paused;
-   return false;
+   if (!roar)
+      return false;
+   return !roar->is_paused;
 }
 
 static void ra_set_nonblock_state(void *data, bool state)

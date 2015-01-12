@@ -141,7 +141,7 @@ OBJ += frontend/frontend.o \
 		location/nulllocation.o \
 		camera/nullcamera.o \
 		gfx/nullgfx.o \
-		audio/nullaudio.o \
+		audio/drivers/nullaudio.o \
 		input/nullinput.o \
 		input/nullinput_joypad.o \
 		input/osk/nullosk.o \
@@ -173,39 +173,39 @@ endif
 ifeq ($(HAVE_EMSCRIPTEN), 1)
 OBJ += frontend/platform/platform_emscripten.o \
 		input/rwebinput_input.o \
-		audio/rwebaudio.o \
+		audio/drivers/rwebaudio.o \
 		camera/rwebcam.o
 endif
 
 # Audio
 #
 ifeq ($(HAVE_COREAUDIO), 1)
-   OBJ += audio/coreaudio.o
+   OBJ += audio/drivers/coreaudio.o
    LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
 endif
 
 ifeq ($(HAVE_OSS), 1)
-   OBJ += audio/oss.o
+   OBJ += audio/drivers/oss.o
 endif
 
 ifeq ($(HAVE_OSS_BSD), 1)
-   OBJ += audio/oss.o
+   OBJ += audio/drivers/oss.o
 endif
 
 ifeq ($(HAVE_ALSA), 1)
-   OBJ += audio/alsa.o audio/alsathread.o
+   OBJ += audio/drivers/alsa.o audio/drivers/alsathread.o
    LIBS += $(ALSA_LIBS)
    DEFINES += $(ALSA_CFLAGS)
 endif
 
 ifeq ($(HAVE_ROAR), 1)
-   OBJ += audio/roar.o
+   OBJ += audio/drivers/roar.o
    LIBS += $(ROAR_LIBS)
    DEFINES += $(ROAR_CFLAGS)
 endif
 
 ifeq ($(HAVE_AL), 1)
-   OBJ += audio/openal.o
+   OBJ += audio/drivers/openal.o
    ifeq ($(OSX),1)
       LIBS += -framework OpenAL
    else
@@ -214,13 +214,13 @@ ifeq ($(HAVE_AL), 1)
 endif
 
 ifeq ($(HAVE_JACK),1)
-   OBJ += audio/jack.o
+   OBJ += audio/drivers/jack.o
    LIBS += $(JACK_LIBS)
    DEFINES += $(JACK_CFLAGS)
 endif
 
 ifeq ($(HAVE_PULSE), 1)
-   OBJ += audio/pulse.o
+   OBJ += audio/drivers/pulse.o
    LIBS += $(PULSE_LIBS)
    DEFINES += $(PULSE_CFLAGS)
 endif
@@ -236,13 +236,13 @@ ifeq ($(HAVE_RSOUND), 1)
 endif
 
 ifeq ($(HAVE_DSOUND), 1)
-   OBJ += audio/dsound.o
+   OBJ += audio/drivers/dsound.o
    DEFINES += -DHAVE_DSOUND
    LIBS += -ldxguid -ldsound
 endif
 
 ifeq ($(HAVE_XAUDIO), 1)
-   OBJ += audio/xaudio.o audio/xaudio-c/xaudio-c.o
+   OBJ += audio/drivers/xaudio.o audio/xaudio-c/xaudio-c.o
    DEFINES += -DHAVE_XAUDIO
    LIBS += -lole32
 endif
@@ -449,7 +449,7 @@ ifeq ($(HAVE_SDL2), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
+   OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_OPENGL), 1)
      OBJ += gfx/context/sdl_gl_ctx.o
@@ -461,7 +461,7 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_SDL2), 1)
-   OBJ += gfx/sdl2_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
+   OBJ += gfx/sdl2_gfx.o input/sdl_input.o input/sdl_joypad.o audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_OPENGL), 1)
      OBJ += gfx/context/sdl_gl_ctx.o

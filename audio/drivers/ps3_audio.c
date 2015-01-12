@@ -46,16 +46,15 @@ static void event_loop(void *data)
 static void event_loop(uint64_t data)
 #endif
 {
-   ps3_audio_t *aud = data;
+   float out_tmp[CELL_AUDIO_BLOCK_SAMPLES * AUDIO_CHANNELS]
+      __attribute__((aligned(16)));
    sys_event_queue_t id;
    sys_ipc_key_t key;
    sys_event_t event;
+   ps3_audio_t *aud = data;
 
    cellAudioCreateNotifyEventQueue(&id, &key);
    cellAudioSetNotifyEventQueue(key);
-
-   float out_tmp[CELL_AUDIO_BLOCK_SAMPLES * AUDIO_CHANNELS]
-      __attribute__((aligned(16)));
 
    while (!aud->quit_thread)
    {
@@ -80,16 +79,19 @@ static void event_loop(uint64_t data)
 static void *ps3_audio_init(const char *device,
       unsigned rate, unsigned latency)
 {
+   CellAudioPortParam params;
+   ps3_audio_t *data;
+
    (void)latency;
    (void)device;
    (void)rate;
 
-   ps3_audio_t *data = calloc(1, sizeof(*data));
+   data = calloc(1, sizeof(*data));
    if (!data)
       return NULL;
 
-   CellAudioPortParam params;
    cellAudioInit();
+
    params.numChannels = AUDIO_CHANNELS;
    params.numBlocks = AUDIO_BLOCKS;
 #ifdef HAVE_HEADSET
@@ -151,15 +153,14 @@ static ssize_t ps3_audio_write(void *data, const void *buf, size_t size)
       if (fifo_write_avail(aud->buffer) < size)
          return 0;
    }
-   else
-   {
-      while (fifo_write_avail(aud->buffer) < size)
-         sys_lwcond_wait(&aud->cond, 0);
-   }
+
+   while (fifo_write_avail(aud->buffer) < size)
+      sys_lwcond_wait(&aud->cond, 0);
 
    sys_lwmutex_lock(&aud->lock, SYS_NO_TIMEOUT);
    fifo_write(aud->buffer, buf, size);
    sys_lwmutex_unlock(&aud->lock);
+
    return size;
 }
 
@@ -188,13 +189,16 @@ static bool ps3_audio_start(void *data)
 static bool ps3_audio_alive(void *data)
 {
    ps3_audio_t *aud = data;
+   if (!aud)
+      return false;
    return aud->started;
 }
 
 static void ps3_audio_set_nonblock_state(void *data, bool toggle)
 {
    ps3_audio_t *aud = data;
-   aud->nonblocking = toggle;
+   if (aud)
+      aud->nonblocking = toggle;
 }
 
 static void ps3_audio_free(void *data)

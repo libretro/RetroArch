@@ -14,10 +14,10 @@
  */
 
 
-#include "../driver.h"
+#include "../../driver.h"
 #include <stdlib.h>
 #include <alsa/asoundlib.h>
-#include "../general.h"
+#include "../../general.h"
 
 #define TRY_ALSA(x) if (x < 0) { \
                   goto error; \

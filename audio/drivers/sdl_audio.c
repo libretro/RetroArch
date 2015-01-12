@@ -14,7 +14,7 @@
  */
 
 
-#include "../driver.h"
+#include "../../driver.h"
 #include <stdlib.h>
 #include <boolean.h>
 #include <stddef.h>
@@ -25,7 +25,7 @@
 #include "SDL_audio.h"
 #include <rthreads/rthreads.h>
 
-#include "../general.h"
+#include "../../general.h"
 #include <queues/fifo_buffer.h>
 
 typedef struct sdl_audio
@@ -41,26 +41,36 @@ typedef struct sdl_audio
 static void sdl_audio_cb(void *data, Uint8 *stream, int len)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
-
    size_t avail = fifo_read_avail(sdl->buffer);
    size_t write_size = len > (int)avail ? avail : len;
+
    fifo_read(sdl->buffer, stream, write_size);
    scond_signal(sdl->cond);
 
-   // If underrun, fill rest with silence.
+   /* If underrun, fill rest with silence. */
    memset(stream + write_size, 0, len - write_size);
 }
 
 static inline int find_num_frames(int rate, int latency)
 {
    int frames = (rate * latency) / 1000;
-   // SDL only likes 2^n sized buffers.
+
+   /* SDL only likes 2^n sized buffers. */
+
    return next_pow2(frames);
 }
 
-static void *sdl_audio_init(const char *device, unsigned rate, unsigned latency)
+static void *sdl_audio_init(const char *device,
+      unsigned rate, unsigned latency)
 {
+   int frames;
+   size_t bufsize;
+   void *tmp;
+   SDL_AudioSpec out;
+   SDL_AudioSpec spec = {0};
+   sdl_audio_t *sdl = NULL;
    (void)device;
+
    if (SDL_WasInit(0) == 0)
    {
       if (SDL_Init(SDL_INIT_AUDIO) < 0)
@@ -69,22 +79,22 @@ static void *sdl_audio_init(const char *device, unsigned rate, unsigned latency)
    else if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
       return NULL;
 
-   sdl_audio_t *sdl = (sdl_audio_t*)calloc(1, sizeof(*sdl));
+   sdl = (sdl_audio_t*)calloc(1, sizeof(*sdl));
    if (!sdl)
       return NULL;
 
-   // We have to buffer up some data ourselves, so we let SDL carry approx half of the latency. SDL double buffers audio and we do as well.
-   int frames = find_num_frames(rate, latency / 4);
+   /* We have to buffer up some data ourselves, so we let SDL 
+    * carry approximately half of the latency.
+    *
+    * SDL double buffers audio and we do as well. */
+   frames = find_num_frames(rate, latency / 4);
 
-   SDL_AudioSpec spec = {0};
    spec.freq = rate;
    spec.format = AUDIO_S16SYS;
    spec.channels = 2;
    spec.samples = frames; // This is in audio frames, not samples ... :(
    spec.callback = sdl_audio_cb;
    spec.userdata = sdl;
-
-   SDL_AudioSpec out;
 
    if (SDL_OpenAudio(&spec, &out) < 0)
    {
@@ -97,12 +107,14 @@ static void *sdl_audio_init(const char *device, unsigned rate, unsigned latency)
    sdl->lock = slock_new();
    sdl->cond = scond_new();
 
-   RARCH_LOG("SDL audio: Requested %u ms latency, got %d ms\n", latency, (int)(out.samples * 4 * 1000 / g_settings.audio.out_rate));
+   RARCH_LOG("SDL audio: Requested %u ms latency, got %d ms\n", 
+         latency, (int)(out.samples * 4 * 1000 / g_settings.audio.out_rate));
 
-   // Create a buffer twice as big as needed and prefill the buffer.
-   size_t bufsize = out.samples * 4 * sizeof(int16_t);
-   void *tmp = calloc(1, bufsize);
+   /* Create a buffer twice as big as needed and prefill the buffer. */
+   bufsize = out.samples * 4 * sizeof(int16_t);
+   tmp = calloc(1, bufsize);
    sdl->buffer = fifo_new(bufsize);
+
    if (tmp)
    {
       fifo_write(sdl->buffer, tmp, bufsize);
@@ -115,14 +127,16 @@ static void *sdl_audio_init(const char *device, unsigned rate, unsigned latency)
 
 static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
 {
+   ssize_t ret = 0;
    sdl_audio_t *sdl = (sdl_audio_t*)data;
 
-   ssize_t ret = 0;
    if (sdl->nonblock)
    {
+      size_t avail, write_amt;
+
       SDL_LockAudio();
-      size_t avail = fifo_write_avail(sdl->buffer);
-      size_t write_amt = avail > size ? size : avail;
+      avail = fifo_write_avail(sdl->buffer);
+      write_amt = avail > size ? size : avail;
       fifo_write(sdl->buffer, buf, write_amt);
       SDL_UnlockAudio();
       ret = write_amt;
@@ -130,10 +144,13 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
    else
    {
       size_t written = 0;
+
       while (written < size)
       {
+         size_t avail;
+
          SDL_LockAudio();
-         size_t avail = fifo_write_avail(sdl->buffer);
+         avail = fifo_write_avail(sdl->buffer);
 
          if (avail == 0)
          {
@@ -167,9 +184,9 @@ static bool sdl_audio_stop(void *data)
 static bool sdl_audio_alive(void *data)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
-   if (sdl)
-      return !sdl->is_paused;
-   return false;
+   if (!sdl)
+      return false;
+   return !sdl->is_paused;
 }
 
 static bool sdl_audio_start(void *data)
@@ -184,15 +201,17 @@ static bool sdl_audio_start(void *data)
 static void sdl_audio_set_nonblock_state(void *data, bool state)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
-   sdl->nonblock = state;
+   if (sdl)
+      sdl->nonblock = state;
 }
 
 static void sdl_audio_free(void *data)
 {
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
+
    SDL_CloseAudio();
    SDL_QuitSubSystem(SDL_INIT_AUDIO);
 
-   sdl_audio_t *sdl = (sdl_audio_t*)data;
    if (sdl)
    {
       fifo_free(sdl->buffer);

@@ -15,10 +15,10 @@
  */
 
 
-#include "../driver.h"
+#include "../../driver.h"
 #include <stdlib.h>
 #include <alsa/asoundlib.h>
-#include "../general.h"
+#include "../../general.h"
 #include <rthreads/rthreads.h>
 #include <queues/fifo_buffer.h>
 
@@ -284,9 +284,9 @@ static ssize_t alsa_thread_write(void *data, const void *buf, size_t size)
 static bool alsa_thread_alive(void *data)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)data;
-   if (alsa)
-      return !alsa->is_paused;
-   return false;
+   if (!alsa)
+      return false;
+   return !alsa->is_paused;
 }
 
 static bool alsa_thread_stop(void *data)

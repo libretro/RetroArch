@@ -14,9 +14,9 @@
  */
 
 
-#include "../driver.h"
+#include "../../driver.h"
 #include <stdlib.h>
-#include "../general.h"
+#include "../../general.h"
 
 #include <jack/jack.h>
 #include <jack/types.h>
@@ -46,18 +46,18 @@ typedef struct jack
 static int process_cb(jack_nframes_t nframes, void *data)
 {
    int i;
-   jack_nframes_t f;
+   jack_nframes_t f, avail[2], min_avail;
    jack_t *jd = (jack_t*)data;
+
    if (nframes <= 0)
    {
       pthread_cond_signal(&jd->cond);
       return 0;
    }
 
-   jack_nframes_t avail[2];
    avail[0] = jack_ringbuffer_read_space(jd->buffer[0]);
    avail[1] = jack_ringbuffer_read_space(jd->buffer[1]);
-   jack_nframes_t min_avail = ((avail[0] < avail[1]) ? avail[0] : avail[1]) / sizeof(jack_default_audio_sample_t);
+   min_avail = ((avail[0] < avail[1]) ? avail[0] : avail[1]) / sizeof(jack_default_audio_sample_t);
 
    if (min_avail > nframes)
       min_avail = nframes;
@@ -69,9 +69,7 @@ static int process_cb(jack_nframes_t nframes, void *data)
       jack_ringbuffer_read(jd->buffer[i], (char*)out, min_avail * sizeof(jack_default_audio_sample_t));
 
       for (f = min_avail; f < nframes; f++)
-      {
          out[f] = 0.0f;
-      }
    }
    pthread_cond_signal(&jd->cond);
    return 0;
@@ -80,6 +78,10 @@ static int process_cb(jack_nframes_t nframes, void *data)
 static void shutdown_cb(void *data)
 {
    jack_t *jd = (jack_t*)data;
+
+   if (!jd)
+      return;
+
    jd->shutdown = true;
    pthread_cond_signal(&jd->cond);
 }
@@ -88,8 +90,8 @@ static int parse_ports(char **dest_ports, const char **jports)
 {
    int i;
    char *save;
-   const char *con = strtok_r(g_settings.audio.device, ",", &save);
    int parsed = 0;
+   const char *con = strtok_r(g_settings.audio.device, ",", &save);
 
    if (con)
       dest_ports[parsed++] = strdup(con);
@@ -105,11 +107,10 @@ static int parse_ports(char **dest_ports, const char **jports)
 
 static size_t find_buffersize(jack_t *jd, int latency)
 {
-   int i;
+   int i, buffer_frames, min_buffer_frames, jack_latency = 0;
+   jack_latency_range_t range;
    int frames = latency * g_settings.audio.out_rate / 1000;
 
-   jack_latency_range_t range;
-   int jack_latency = 0;
    for (i = 0; i < 2; i++)
    {
       jack_port_get_latency_range(jd->ports[i], JackPlaybackLatency, &range);
@@ -119,8 +120,9 @@ static size_t find_buffersize(jack_t *jd, int latency)
 
    RARCH_LOG("JACK: Jack latency is %d frames.\n", jack_latency);
 
-   int buffer_frames = frames - jack_latency;
-   int min_buffer_frames = jack_get_buffer_size(jd->client) * 2;
+   buffer_frames = frames - jack_latency;
+   min_buffer_frames = jack_get_buffer_size(jd->client) * 2;
+
    RARCH_LOG("JACK: Minimum buffer size is %d frames.\n", min_buffer_frames);
 
    if (buffer_frames < min_buffer_frames)
@@ -132,17 +134,17 @@ static size_t find_buffersize(jack_t *jd, int latency)
 static void *ja_init(const char *device, unsigned rate, unsigned latency)
 {
    int i;
+   const char **jports = NULL;
+   char *dest_ports[2];
+   size_t bufsize = 0;
+   int parsed = 0;
    jack_t *jd = (jack_t*)calloc(1, sizeof(jack_t));
+
    if (!jd)
       return NULL;
 
    pthread_cond_init(&jd->cond, NULL);
    pthread_mutex_init(&jd->cond_lock, NULL);
-   
-   const char **jports = NULL;
-   char *dest_ports[2];
-   size_t bufsize = 0;
-   int parsed = 0;
 
    jd->client = jack_client_open("RetroArch", JackNullOption, NULL);
    if (jd->client == NULL)
@@ -214,12 +216,12 @@ error:
 static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
 {
    int i;
-   size_t j;
+   size_t j, frames, written = 0;
    jack_default_audio_sample_t out_deinterleaved_buffer[2][AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO];
 
-   size_t frames = FRAMES(size);
+   frames = FRAMES(size);
 
-   // Avoid buffer overflow if a DSP plugin generated a huge number of frames
+   /* Avoid buffer overflow if a DSP plugin generated a huge number of frames. */
    if (frames > AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO)
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO;
 
@@ -227,21 +229,19 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
       for (j = 0; j < frames; j++)
          out_deinterleaved_buffer[i][j] = buf[j * 2 + i];
 
-   size_t written = 0;
    while (written < frames)
    {
+      size_t avail[2], min_avail, write_frames;
       if (jd->shutdown)
          return 0;
 
-      size_t avail[2] = {
-         jack_ringbuffer_write_space(jd->buffer[0]),
-         jack_ringbuffer_write_space(jd->buffer[1]),
-      };
+      avail[0] = jack_ringbuffer_write_space(jd->buffer[0]);
+      avail[1] = jack_ringbuffer_write_space(jd->buffer[1]);
 
-      size_t min_avail = avail[0] < avail[1] ? avail[0] : avail[1];
+      min_avail = avail[0] < avail[1] ? avail[0] : avail[1];
       min_avail /= sizeof(float);
 
-      size_t write_frames = frames - written > min_avail ? min_avail : frames - written;
+      write_frames = frames - written > min_avail ? min_avail : frames - written;
 
       if (write_frames > 0)
       {
@@ -284,15 +284,16 @@ static bool ja_stop(void *data)
 static bool ja_alive(void *data)
 {
    jack_t *jd = (jack_t*)data;
-   if (jd)
-      return !jd->is_paused;
-   return false;
+   if (!jd)
+      return false;
+   return !jd->is_paused;
 }
 
 static void ja_set_nonblock_state(void *data, bool state)
 {
    jack_t *jd = (jack_t*)data;
-   jd->nonblock = state;
+   if (jd)
+      jd->nonblock = state;
 }
 
 static bool ja_start(void *data)

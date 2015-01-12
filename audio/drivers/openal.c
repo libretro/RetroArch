@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../driver.h"
-#include "../general.h"
+#include "../../driver.h"
+#include "../../general.h"
 
 #ifdef __APPLE__
 #include <OpenAL/al.h>
@@ -56,6 +56,7 @@ typedef struct al
 static void al_free(void *data)
 {
    al_t *al = (al_t*)data;
+
    if (!al)
       return;
 
@@ -78,24 +79,27 @@ static void al_free(void *data)
 
 static void *al_init(const char *device, unsigned rate, unsigned latency)
 {
+   al_t *al;
+
    (void)device;
-   al_t *al = (al_t*)calloc(1, sizeof(al_t));
+
+   al = (al_t*)calloc(1, sizeof(al_t));
    if (!al)
       return NULL;
 
    al->handle = alcOpenDevice(NULL);
-   if (al->handle == NULL)
+   if (!al->handle)
       goto error;
 
    al->ctx = alcCreateContext(al->handle, NULL);
-   if (al->ctx == NULL)
+   if (!al->ctx)
       goto error;
 
    alcMakeContextCurrent(al->ctx);
 
    al->rate = rate;
 
-   // We already use one buffer for tmpbuf.
+   /* We already use one buffer for tmpbuf. */
    al->num_buffers = (latency * rate * 2 * sizeof(int16_t)) / (1000 * BUFSIZE) - 1;
    if (al->num_buffers < 2)
       al->num_buffers = 2;
@@ -126,14 +130,12 @@ static bool al_unqueue_buffers(al_t *al)
 
    alGetSourcei(al->source, AL_BUFFERS_PROCESSED, &val);
 
-   if (val > 0)
-   {
-      alSourceUnqueueBuffers(al->source, val, &al->res_buf[al->res_ptr]);
-      al->res_ptr += val;
-      return true;
-   }
+   if (val <= 0)
+      return false;
 
-   return false;
+   alSourceUnqueueBuffers(al->source, val, &al->res_buf[al->res_ptr]);
+   al->res_ptr += val;
+   return true;
 }
 
 static bool al_get_buffer(al_t *al, ALuint *buffer)
@@ -169,11 +171,14 @@ static ssize_t al_write(void *data, const void *buf_, size_t size)
 {
    al_t *al = (al_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;
-
    size_t written = 0;
+
    while (size)
    {
+      ALint val;
+      ALuint buffer;
       size_t rc = al_fill_internal_buf(al, buf, size);
+
       written += rc;
       buf     += rc;
       size    -= rc;
@@ -181,7 +186,6 @@ static ssize_t al_write(void *data, const void *buf_, size_t size)
       if (al->tmpbuf_ptr != BUFSIZE)
          break;
 
-      ALuint buffer;
       if (!al_get_buffer(al, &buffer))
          break;
 
@@ -191,7 +195,6 @@ static ssize_t al_write(void *data, const void *buf_, size_t size)
       if (alGetError() != AL_NO_ERROR)
          return -1;
 
-      ALint val;
       alGetSourcei(al->source, AL_SOURCE_STATE, &val);
       if (val != AL_PLAYING)
          alSourcePlay(al->source);
@@ -214,15 +217,16 @@ static bool al_stop(void *data)
 static bool al_alive(void *data)
 {
    al_t *al = (al_t*)data;
-   if (al)
-      return !al->is_paused;
-   return false;
+   if (!al)
+      return false;
+   return !al->is_paused;
 }
 
 static void al_set_nonblock_state(void *data, bool state)
 {
    al_t *al = (al_t*)data;
-   al->nonblock = state;
+   if (al)
+      al->nonblock = state;
 }
 
 static bool al_start(void *data)
@@ -243,7 +247,7 @@ static size_t al_write_avail(void *data)
 static size_t al_buffer_size(void *data)
 {
    al_t *al = (al_t*)data;
-   return (al->num_buffers + 1) * BUFSIZE; // Also got tmpbuf.
+   return (al->num_buffers + 1) * BUFSIZE; /* Also got tmpbuf. */
 }
 
 static bool al_use_float(void *data)

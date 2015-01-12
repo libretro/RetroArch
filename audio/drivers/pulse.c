@@ -14,8 +14,8 @@
  */
 
 
-#include "driver.h"
-#include "general.h"
+#include "../../driver.h"
+#include "../../general.h"
 #include <pulse/pulseaudio.h>
 #include <boolean.h>
 #include <string.h>
@@ -35,28 +35,29 @@ typedef struct
 static void pulse_free(void *data)
 {
    pa_t *pa = (pa_t*)data;
-   if (pa)
+
+   if (!pa)
+      return;
+
+   if (pa->mainloop)
+      pa_threaded_mainloop_stop(pa->mainloop);
+
+   if (pa->stream)
    {
-      if (pa->mainloop)
-         pa_threaded_mainloop_stop(pa->mainloop);
-
-      if (pa->stream)
-      {
-         pa_stream_disconnect(pa->stream);
-         pa_stream_unref(pa->stream);
-      }
-
-      if (pa->context)
-      {
-         pa_context_disconnect(pa->context);
-         pa_context_unref(pa->context);
-      }
-
-      if (pa->mainloop)
-         pa_threaded_mainloop_free(pa->mainloop);
-
-      free(pa);
+      pa_stream_disconnect(pa->stream);
+      pa_stream_unref(pa->stream);
    }
+
+   if (pa->context)
+   {
+      pa_context_disconnect(pa->context);
+      pa_context_unref(pa->context);
+   }
+
+   if (pa->mainloop)
+      pa_threaded_mainloop_free(pa->mainloop);
+
+   free(pa);
 }
 
 static void stream_success_cb(pa_stream *s, int success, void *data)
@@ -70,6 +71,7 @@ static void stream_success_cb(pa_stream *s, int success, void *data)
 static void context_state_cb(pa_context *c, void *data)
 {
    pa_t *pa = (pa_t*)data;
+
    switch (pa_context_get_state(c))
    {
       case PA_CONTEXT_READY:
@@ -85,6 +87,7 @@ static void context_state_cb(pa_context *c, void *data)
 static void stream_state_cb(pa_stream *s, void *data) 
 {
    pa_t *pa = (pa_t*)data;
+
    switch (pa_stream_get_state(s))
    {
       case PA_STREAM_READY:
@@ -99,23 +102,29 @@ static void stream_state_cb(pa_stream *s, void *data)
 
 static void stream_request_cb(pa_stream *s, size_t length, void *data) 
 {
+   pa_t *pa = (pa_t*)data;
+
    (void)length;
    (void)s;
-   pa_t *pa = (pa_t*)data;
+
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
 static void stream_latency_update_cb(pa_stream *s, void *data) 
 {
-   (void)s;
    pa_t *pa = (pa_t*)data;
+
+   (void)s;
+
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
 static void underrun_update_cb(pa_stream *s, void *data)
 {
-   (void)s;
    pa_t *pa = (pa_t*)data;
+
+   (void)s;
+
    RARCH_LOG("[PulseAudio]: Underrun (Buffer: %u, Writable size: %u).\n",
          (unsigned)pa->buffer_size,
          (unsigned)pa_stream_writable_size(pa->stream));
@@ -133,11 +142,14 @@ static void buffer_attr_cb(pa_stream *s, void *data)
 
 static void *pulse_init(const char *device, unsigned rate, unsigned latency)
 {
-   const pa_buffer_attr *server_attr = NULL;
    pa_sample_spec spec;
-   memset(&spec, 0, sizeof(spec));
+   pa_t *pa;
    pa_buffer_attr buffer_attr = {0};
-   pa_t *pa = (pa_t*)calloc(1, sizeof(*pa));
+   const pa_buffer_attr *server_attr = NULL;
+
+   memset(&spec, 0, sizeof(spec));
+   
+   pa = (pa_t*)calloc(1, sizeof(*pa));
    if (!pa)
       goto error;
 
@@ -217,13 +229,13 @@ static ssize_t pulse_write(void *data, const void *buf_, size_t size)
 {
    pa_t *pa = (pa_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;
-
    size_t written = 0;
 
    pa_threaded_mainloop_lock(pa->mainloop);
    while (size)
    {
       size_t writable = pa_stream_writable_size(pa->stream);
+
       writable = min(size, writable);
 
       if (writable)
@@ -246,13 +258,16 @@ static ssize_t pulse_write(void *data, const void *buf_, size_t size)
 
 static bool pulse_stop(void *data)
 {
-   RARCH_LOG("[PulseAudio]: Pausing.\n");
+   bool ret;
    pa_t *pa = (pa_t*)data;
-   pa->success = true; // In case of spurious wakeup. Not critical.
+
+   RARCH_LOG("[PulseAudio]: Pausing.\n");
+
+   pa->success = true; /* In case of spurious wakeup. Not critical. */
    pa_threaded_mainloop_lock(pa->mainloop);
    pa_stream_cork(pa->stream, true, stream_success_cb, pa);
    pa_threaded_mainloop_wait(pa->mainloop);
-   bool ret = pa->success;
+   ret = pa->success;
    pa_threaded_mainloop_unlock(pa->mainloop);
    pa->is_paused = true;
    return ret;
@@ -261,20 +276,24 @@ static bool pulse_stop(void *data)
 static bool pulse_alive(void *data)
 {
    pa_t *pa = (pa_t*)data;
-   if (pa)
-      return !pa->is_paused;
-   return false;
+
+   if (!pa)
+      return false;
+   return !pa->is_paused;
 }
 
 static bool pulse_start(void *data)
 {
-   RARCH_LOG("[PulseAudio]: Unpausing.\n");
+   bool ret;
    pa_t *pa = (pa_t*)data;
-   pa->success = true; // In case of spurious wakeup. Not critical.
+
+   RARCH_LOG("[PulseAudio]: Unpausing.\n");
+
+   pa->success = true; /* In case of spurious wakeup. Not critical. */
    pa_threaded_mainloop_lock(pa->mainloop);
    pa_stream_cork(pa->stream, false, stream_success_cb, pa);
    pa_threaded_mainloop_wait(pa->mainloop);
-   bool ret = pa->success;
+   ret = pa->success;
    pa_threaded_mainloop_unlock(pa->mainloop);
    pa->is_paused = false;
    return ret;
@@ -283,7 +302,8 @@ static bool pulse_start(void *data)
 static void pulse_set_nonblock_state(void *data, bool state)
 {
    pa_t *pa = (pa_t*)data;
-   pa->nonblock = state;
+   if (pa)
+      pa->nonblock = state;
 }
 
 static bool pulse_use_float(void *data)
@@ -294,10 +314,12 @@ static bool pulse_use_float(void *data)
 
 static size_t pulse_write_avail(void *data)
 {
+   size_t length;
    pa_t *pa = (pa_t*)data;
+
    pa_threaded_mainloop_lock(pa->mainloop);
-   size_t length = pa_stream_writable_size(pa->stream);
-   g_extern.audio_data.driver_buffer_size = pa->buffer_size; // Can change spuriously.
+   length = pa_stream_writable_size(pa->stream);
+   g_extern.audio_data.driver_buffer_size = pa->buffer_size; /* Can change spuriously. */
    pa_threaded_mainloop_unlock(pa->mainloop);
    return length;
 }

@@ -15,8 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../general.h"
-#include "../driver.h"
+#include "../../general.h"
+#include "../../driver.h"
 
 #include <pspkernel.h>
 #include <pspaudio.h>
@@ -71,10 +71,12 @@ static int audioMainLoop(SceSize args, void* argp)
 static void *psp_audio_init(const char *device,
       unsigned rate, unsigned latency)
 {
+   psp1_audio_t* psp;
+   
    (void)device;
    (void)latency;
 
-   psp1_audio_t* psp = (psp1_audio_t*)calloc(1, sizeof(psp1_audio_t));
+  psp = (psp1_audio_t*)calloc(1, sizeof(psp1_audio_t));
 
    if (!psp)
       return NULL;
@@ -103,12 +105,13 @@ static void *psp_audio_init(const char *device,
 
 static void psp_audio_free(void *data)
 {
+   SceUInt timeout = 100000;
    psp1_audio_t* psp = (psp1_audio_t*)data;
    if(!psp)
       return;
 
-   psp->running = false;
-   SceUInt timeout = 100000;
+   psp->running    = false;
+   
    sceKernelWaitThreadEnd(psp->thread, &timeout);
    sceKernelDeleteThread(psp->thread);
 
@@ -153,14 +156,15 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
 static bool psp_audio_alive(void *data)
 {
    psp1_audio_t* psp = (psp1_audio_t*)data;
-   if (psp)
-      return psp->running;
-   return false;
+   if (!psp)
+      return false;
+   return psp->running;
 }
 
 static bool psp_audio_stop(void *data)
 {
    SceKernelThreadRunStatus runStatus;
+   SceUInt timeout = 100000;
    psp1_audio_t* psp = (psp1_audio_t*)data;
 
    runStatus.size = sizeof(SceKernelThreadRunStatus);
@@ -172,7 +176,6 @@ static bool psp_audio_stop(void *data)
       return false;
 
    psp->running = false;
-   SceUInt timeout = 100000;
    sceKernelWaitThreadEnd(psp->thread, &timeout);
 
    return true;
@@ -201,7 +204,8 @@ static bool psp_audio_start(void *data)
 static void psp_audio_set_nonblock_state(void *data, bool toggle)
 {
    psp1_audio_t* psp = (psp1_audio_t*)data;
-   psp->nonblocking = toggle;
+   if (psp)
+      psp->nonblocking = toggle;
 }
 
 static bool psp_audio_use_float(void *data)

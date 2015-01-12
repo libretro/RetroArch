@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../general.h"
-#include "../driver.h"
+#include "../../general.h"
+#include "../../driver.h"
 
 static void *null_audio_init(const char *device, unsigned rate, unsigned latency)
 {

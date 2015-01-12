@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../driver.h"
+#include "../../driver.h"
 #include <stdlib.h>
 #include <boolean.h>
 #include "../general.h"
@@ -27,7 +27,7 @@
 #include <cafe/ai.h>
 #endif
 
-#include "../gfx/gx/sdk_defines.h"
+#include "../../gfx/gx/sdk_defines.h"
 
 #define CHUNK_FRAMES 64
 #define CHUNK_SIZE (CHUNK_FRAMES * sizeof(uint32_t))
@@ -63,20 +63,20 @@ static void dma_callback(void)
 {
    gx_audio_t *wa = (gx_audio_t*)gx_audio_data;
 
-   if (!stop_audio)
-   {
-      /* Erase last chunk to avoid repeating audio. */
-      memset(wa->data[wa->dma_busy], 0, CHUNK_SIZE);
+   if (stop_audio)
+      return;
 
-      wa->dma_busy = wa->dma_next;
-      wa->dma_next = (wa->dma_next + 1) & (BLOCKS - 1);
+   /* Erase last chunk to avoid repeating audio. */
+   memset(wa->data[wa->dma_busy], 0, CHUNK_SIZE);
 
-      DCFlushRange(wa->data[wa->dma_next], CHUNK_SIZE);
+   wa->dma_busy = wa->dma_next;
+   wa->dma_next = (wa->dma_next + 1) & (BLOCKS - 1);
 
-      AIInitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
+   DCFlushRange(wa->data[wa->dma_next], CHUNK_SIZE);
 
-      OSSignalCond(wa->cond);
-   }
+   AIInitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
+
+   OSSignalCond(wa->cond);
 }
 
 static void *gx_audio_init(const char *device,
@@ -135,6 +135,7 @@ static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
    while (frames)
    {
       size_t to_write = CHUNK_FRAMES - wa->write_ptr;
+
       if (frames < to_write)
          to_write = frames;
 
@@ -178,15 +179,17 @@ static void gx_audio_set_nonblock_state(void *data, bool state)
 {
    gx_audio_t *wa = (gx_audio_t*)data;
 
-   if (!wa)
-      return;
-
-   wa->nonblock = state;
+   if (wa)
+      wa->nonblock = state;
 }
 
 static bool gx_audio_start(void *data)
 {
    gx_audio_t *wa = (gx_audio_t*)data;
+
+   if (!wa)
+      return false;
+
    AIStartDMA();
    wa->is_paused = false;
    return true;
@@ -195,9 +198,9 @@ static bool gx_audio_start(void *data)
 static bool gx_audio_alive(void *data)
 {
    gx_audio_t *wa = (gx_audio_t*)data;
-   if (wa)
-      return !wa->is_paused;
-   return false;
+   if (!wa)
+      return false;
+   return !wa->is_paused;
 }
 
 static void gx_audio_free(void *data)

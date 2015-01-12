@@ -451,48 +451,48 @@ RSOUND
 AUDIO
 ============================================================ */
 #if defined(__CELLOS_LV2__)
-#include "../audio/ps3_audio.c"
+#include "../audio/drivers/ps3_audio.c"
 #elif defined(XENON)
-#include "../audio/xenon360_audio.c"
+#include "../audio/drivers/xenon360_audio.c"
 #elif defined(GEKKO)
-#include "../audio/gx_audio.c"
+#include "../audio/drivers/gx_audio.c"
 #elif defined(EMSCRIPTEN)
-#include "../audio/rwebaudio.c"
+#include "../audio/drivers/rwebaudio.c"
 #elif defined(PSP)
-#include "../audio/psp1_audio.c"
+#include "../audio/drivers/psp1_audio.c"
 #endif
 
 #ifdef HAVE_XAUDIO
-#include "../audio/xaudio.c"
+#include "../audio/drivers/xaudio.c"
 #include "../audio/xaudio-c/xaudio-c.cpp"
 #endif
 
 #ifdef HAVE_DSOUND
-#include "../audio/dsound.c"
+#include "../audio/drivers/dsound.c"
 #endif
 
 #ifdef HAVE_SL
-#include "../audio/opensl.c"
+#include "../audio/drivers/opensl.c"
 #endif
 
 #ifdef HAVE_ALSA
 #ifdef __QNX__
-#include "../audio/alsa_qsa.c"
+#include "../audio/drivers/alsa_qsa.c"
 #else
-#include "../audio/alsa.c"
-#include "../audio/alsathread.c"
+#include "../audio/drivers/alsa.c"
+#include "../audio/drivers/alsathread.c"
 #endif
 #endif
 
 #ifdef HAVE_AL
-#include "../audio/openal.c"
+#include "../audio/drivers/openal.c"
 #endif
 
 #ifdef HAVE_COREAUDIO
-#include "../audio/coreaudio.c"
+#include "../audio/drivers/coreaudio.c"
 #endif
 
-#include "../audio/nullaudio.c"
+#include "../audio/drivers/nullaudio.c"
 
 /*============================================================
 DRIVERS
