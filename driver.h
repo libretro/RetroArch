@@ -33,6 +33,7 @@
 #include "menu/menu_driver.h"
 #include "osk/osk_driver.h"
 #include "camera/camera_driver.h"
+#include "location_driver.h"
 #include "audio/resamplers/resampler.h"
 #include "record/ffemu.h"
 
@@ -161,22 +162,6 @@ enum analog_dpad_mode
    ANALOG_DPAD_RSTICK,
    ANALOG_DPAD_LAST
 };
-
-
-typedef struct location_driver
-{
-   void *(*init)(void);
-   void (*free)(void *data);
-
-   bool (*start)(void *data);
-   void (*stop)(void *data);
-
-   bool (*get_position)(void *data, double *lat, double *lon,
-         double *horiz_accuracy, double *vert_accuracy);
-   void (*set_interval)(void *data, unsigned interval_msecs,
-         unsigned interval_distance);
-   const char *ident;
-} location_driver_t;
 
 /* Flags for init_drivers/uninit_drivers */
 enum
@@ -471,52 +456,6 @@ float driver_sensor_get_input(unsigned port, unsigned action);
  **/
 void *driver_video_resolve(const video_driver_t **drv);
 
-/**
- * driver_location_start:
- *
- * Starts location driver interface..
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool driver_location_start(void);
-
-/**
- * driver_location_stop:
- *
- * Stops location driver interface..
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-void driver_location_stop(void);
-
-/**
- * driver_location_get_position:
- * @lat                : Latitude of current position.
- * @lon                : Longitude of current position.
- * @horiz_accuracy     : Horizontal accuracy.
- * @vert_accuracy      : Vertical accuracy.
- *
- * Gets current positioning information from 
- * location driver interface.
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: bool (1) if successful, otherwise false (0).
- **/
-bool driver_location_get_position(double *lat, double *lon,
-      double *horiz_accuracy, double *vert_accuracy);
-
-/**
- * driver_location_set_interval:
- * @interval_msecs     : Interval time in milliseconds.
- * @interval_distance  : Distance at which to update.
- *
- * Sets interval update time for location driver interface.
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- **/
-void driver_location_set_interval(unsigned interval_msecs,
-      unsigned interval_distance);
 
 /**
  * driver_update_system_av_info:
@@ -540,17 +479,6 @@ extern driver_t driver;
  * Returns: string listing of all video driver names, separated by '|'.
  **/
 const char* config_get_video_driver_options(void);
-
-/**
- * config_get_location_driver_options:
- *
- * Get an enumerated list of all location driver names,
- * separated by '|'.
- *
- * Returns: string listing of all location driver names,
- * separated by '|'.
- **/
-const char* config_get_location_driver_options(void);
 
 #ifdef HAVE_MENU
 /**
@@ -577,10 +505,6 @@ const char* config_get_menu_driver_options(void);
  **/
 int find_driver_index(const char * label, const char *drv);
   
-extern location_driver_t location_apple;
-extern location_driver_t location_android;
-extern location_driver_t location_null;
-
 extern rarch_joypad_driver_t *joypad_drivers[];
 
 #ifdef __cplusplus
