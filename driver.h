@@ -31,6 +31,7 @@
 #include "audio/audio_driver.h"
 
 #include "menu/menu_driver.h"
+#include "osk_driver.h"
 #include "audio/resamplers/resampler.h"
 #include "record/ffemu.h"
 
@@ -159,20 +160,6 @@ enum analog_dpad_mode
    ANALOG_DPAD_RSTICK,
    ANALOG_DPAD_LAST
 };
-
-typedef struct input_osk_driver
-{
-   void *(*init)(size_t size);
-   void (*free)(void *data);
-   bool (*enable_key_layout)(void *data);
-   void (*oskutil_create_activation_parameters)(void *data);
-   void (*write_msg)(void *data, const void *msg);
-   void (*write_initial_msg)(void *data, const void *msg);
-   bool (*start)(void *data);
-   void (*lifecycle)(void *data, uint64_t status);
-   void *(*get_text_buf)(void *data);
-   const char *ident;
-} input_osk_driver_t;
 
 typedef struct camera_driver
 {
@@ -616,17 +603,6 @@ const char* config_get_camera_driver_options(void);
 const char* config_get_video_driver_options(void);
 
 /**
- * config_get_osk_driver_options:
- *
- * Get an enumerated list of all OSK (onscreen keyboard) driver names,
- * separated by '|'.
- *
- * Returns: string listing of all OSK (onscreen keyboard) driver names,
- * separated by '|'.
- **/
-const char* config_get_osk_driver_options(void);
-
-/**
  * config_get_location_driver_options:
  *
  * Get an enumerated list of all location driver names,
@@ -671,9 +647,6 @@ extern camera_driver_t camera_null;
 extern location_driver_t location_apple;
 extern location_driver_t location_android;
 extern location_driver_t location_null;
-
-extern input_osk_driver_t input_ps3_osk;
-extern input_osk_driver_t input_null_osk;
 
 extern rarch_joypad_driver_t *joypad_drivers[];
 
