@@ -47,6 +47,12 @@ typedef struct camera_driver
    const char *ident;
 } camera_driver_t;
 
+extern camera_driver_t camera_v4l2;
+extern camera_driver_t camera_android;
+extern camera_driver_t camera_rwebcam;
+extern camera_driver_t camera_apple;
+extern camera_driver_t camera_null;
+
 /**
  * driver_camera_start:
  *
@@ -111,12 +117,6 @@ void find_camera_driver(void);
 void init_camera(void);
 
 void uninit_camera(void);
-
-extern camera_driver_t camera_v4l2;
-extern camera_driver_t camera_android;
-extern camera_driver_t camera_rwebcam;
-extern camera_driver_t camera_apple;
-extern camera_driver_t camera_null;
 
 #ifdef __cplusplus
 }

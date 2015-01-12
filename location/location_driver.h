@@ -40,6 +40,10 @@ typedef struct location_driver
    const char *ident;
 } location_driver_t;
 
+extern location_driver_t location_apple;
+extern location_driver_t location_android;
+extern location_driver_t location_null;
+
 /**
  * driver_location_start:
  *
@@ -121,10 +125,6 @@ void find_location_driver(void);
 void init_location(void);
 
 void uninit_location(void);
-
-extern location_driver_t location_apple;
-extern location_driver_t location_android;
-extern location_driver_t location_null;
 
 #ifdef __cplusplus
 }

@@ -158,17 +158,6 @@ typedef struct video_driver
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 } video_driver_t;
 
-enum rarch_display_type
-{
-   /* Non-bindable types like consoles, KMS, VideoCore, etc. */
-   RARCH_DISPLAY_NONE = 0,
-   /* video_display => Display*, video_window => Window */
-   RARCH_DISPLAY_X11,
-   /* video_display => N/A, video_window => HWND */
-   RARCH_DISPLAY_WIN32,
-   RARCH_DISPLAY_OSX
-};
-
 extern video_driver_t video_gl;
 extern video_driver_t video_psp1;
 extern video_driver_t video_vita;
@@ -183,6 +172,17 @@ extern video_driver_t video_vg;
 extern video_driver_t video_omap;
 extern video_driver_t video_exynos;
 extern video_driver_t video_null;
+
+enum rarch_display_type
+{
+   /* Non-bindable types like consoles, KMS, VideoCore, etc. */
+   RARCH_DISPLAY_NONE = 0,
+   /* video_display => Display*, video_window => Window */
+   RARCH_DISPLAY_X11,
+   /* video_display => N/A, video_window => HWND */
+   RARCH_DISPLAY_WIN32,
+   RARCH_DISPLAY_OSX
+};
 
 /**
  * video_driver_find_handle:

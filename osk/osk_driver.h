@@ -39,6 +39,9 @@ typedef struct input_osk_driver
    const char *ident;
 } input_osk_driver_t;
 
+extern input_osk_driver_t input_ps3_osk;
+extern input_osk_driver_t input_null_osk;
+
 /**
  * osk_driver_find_handle:
  * @index              : index of driver to get handle to.
@@ -78,9 +81,6 @@ void find_osk_driver(void);
 void init_osk(void);
 
 void uninit_osk(void);
-
-extern input_osk_driver_t input_ps3_osk;
-extern input_osk_driver_t input_null_osk;
 
 #ifdef __cplusplus
 }
