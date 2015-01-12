@@ -21,7 +21,7 @@
 #include "../general.h"
 #include <boolean.h>
 #include <rthreads/rthreads.h>
-#include "fonts/gl_font.h"
+#include "font_gl_driver.h"
 
 enum thread_cmd
 {

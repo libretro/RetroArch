@@ -249,11 +249,11 @@ FONTS
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../gfx/fonts/gl_font.c"
+#include "../gfx/font_gl_driver.c"
 #endif
 
 #if defined(_XBOX) || defined(HAVE_WIN32_D3D9)
-#include "../gfx/fonts/d3d_font.c"
+#include "../gfx/font_d3d_driver.c"
 #endif
 
 #if defined(HAVE_WIN32_D3D9)

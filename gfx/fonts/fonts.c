@@ -64,4 +64,3 @@ bool font_renderer_create_default(
    *handle = NULL;
    return false;
 }
-

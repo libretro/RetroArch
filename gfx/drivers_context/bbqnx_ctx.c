@@ -29,7 +29,6 @@
 
 #include "../image/image.h"
 
-#include "../fonts/gl_font.h"
 #include <stdint.h>
 
 #ifdef HAVE_GLSL

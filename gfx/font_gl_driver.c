@@ -14,31 +14,32 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GL_FONT_H__
-#define GL_FONT_H__
+#include "font_gl_driver.h"
+#include "../general.h"
 
-#include "../../driver.h"
-#include <boolean.h>
-
-struct font_glyph;
-
-typedef struct gl_font_renderer
-{
-   void *(*init)(void *data, const char *font_path, float font_size);
-   void (*free)(void *data);
-   void (*render_msg)(void *data, const char *msg,
-         const struct font_params *parms);
-   const char *ident;
-
-   const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
-} gl_font_renderer_t;
-
-extern gl_font_renderer_t gl_raster_font;
-extern gl_font_renderer_t libdbg_font;
-
-bool gl_font_init_first(const gl_font_renderer_t **font_driver,
-      void **font_handle, void *gl_data,
-      const char *font_path, float font_size);
-
+static const gl_font_renderer_t *gl_font_backends[] = {
+#if defined(HAVE_LIBDBGFONT)
+   &libdbg_font,
+#else
+   &gl_raster_font,
 #endif
+   NULL,
+};
 
+bool gl_font_init_first(const gl_font_renderer_t **font_driver, void **font_handle,
+      void *video_data, const char *font_path, float font_size)
+{
+   unsigned i;
+   for (i = 0; gl_font_backends[i]; i++)
+   {
+      void *data = gl_font_backends[i]->init(video_data, font_path, font_size);
+      if (data)
+      {
+         *font_driver = gl_font_backends[i];
+         *font_handle = data;
+         return true;
+      }
+   }
+
+   return false;
+}

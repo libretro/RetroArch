@@ -49,7 +49,7 @@
 #include "../video_shader_driver.h"
 #endif
 
-#include "../fonts/d3d_font.h"
+#include "../font_d3d_driver.h"
 #include "../video_context_driver.h"
 #include "../gfx_common.h"
 

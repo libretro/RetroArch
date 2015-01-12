@@ -14,36 +14,30 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef D3D_FONT_H__
-#define D3D_FONT_H__
+#include "font_d3d_driver.h"
+#include "../general.h"
 
-#include <stdint.h>
-#include <boolean.h>
-#include "../../driver.h"
-
-#ifdef __cplusplus
-extern "C" {
+static const d3d_font_renderer_t *d3d_font_backends[] = {
+#if defined(_XBOX1)
+   &d3d_xdk1_font,
+#elif defined(_XBOX360)
+   &d3d_xbox360_font,
+#elif defined(_WIN32)
+   &d3d_win32_font,
 #endif
-
-typedef struct d3d_font_renderer
-{
-   bool (*init)(void *data, const char *font_path, unsigned font_size);
-   void (*deinit)(void *data);
-   void (*render_msg)(void *data, const char *msg,
-         const struct font_params *params);
-   const char *ident;
-} d3d_font_renderer_t;
-
-extern d3d_font_renderer_t d3d_xbox360_font;
-extern d3d_font_renderer_t d3d_xdk1_font;
-extern d3d_font_renderer_t d3d_win32_font;
+};
 
 const d3d_font_renderer_t *d3d_font_init_first(void *data,
-      const char *font_path, unsigned font_size);
+      const char *font_path, unsigned font_size)
+{
+   unsigned i;
 
-#ifdef __cplusplus
+   for (i = 0; i < ARRAY_SIZE(d3d_font_backends); i++)
+   {
+      if (d3d_font_backends[i]->init(data, font_path, font_size))
+         return d3d_font_backends[i];
+   }
+
+   return NULL;
 }
-#endif
-
-#endif
 
