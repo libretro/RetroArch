@@ -195,6 +195,17 @@ typedef struct menu_ctx_driver
    const char *ident;
 } menu_ctx_driver_t;
 
+extern menu_ctx_driver_t menu_ctx_rmenu;
+extern menu_ctx_driver_t menu_ctx_rmenu_xui;
+extern menu_ctx_driver_t menu_ctx_rgui;
+extern menu_ctx_driver_t menu_ctx_glui;
+extern menu_ctx_driver_t menu_ctx_xmb;
+extern menu_ctx_driver_t menu_ctx_lakka;
+extern menu_ctx_driver_t menu_ctx_ios;
+
+extern menu_ctx_driver_backend_t menu_ctx_backend_common;
+extern menu_ctx_driver_backend_t menu_ctx_backend_lakka;
+
 #ifdef __cplusplus
 }
 #endif

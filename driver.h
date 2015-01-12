@@ -675,17 +675,6 @@ extern location_driver_t location_null;
 extern input_osk_driver_t input_ps3_osk;
 extern input_osk_driver_t input_null_osk;
 
-extern menu_ctx_driver_t menu_ctx_rmenu;
-extern menu_ctx_driver_t menu_ctx_rmenu_xui;
-extern menu_ctx_driver_t menu_ctx_rgui;
-extern menu_ctx_driver_t menu_ctx_glui;
-extern menu_ctx_driver_t menu_ctx_xmb;
-extern menu_ctx_driver_t menu_ctx_lakka;
-extern menu_ctx_driver_t menu_ctx_ios;
-
-extern menu_ctx_driver_backend_t menu_ctx_backend_common;
-extern menu_ctx_driver_backend_t menu_ctx_backend_lakka;
-
 extern rarch_joypad_driver_t *joypad_drivers[];
 
 #ifdef __cplusplus
