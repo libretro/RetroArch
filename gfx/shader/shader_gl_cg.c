@@ -391,7 +391,7 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
       static unsigned cnt = 0;
 
       if (cg->active_idx == 1)
-         cnt = state_get_uniform(cg->state_tracker, tracker_info,
+         cnt = state_tracker_get_uniform(cg->state_tracker, tracker_info,
                MAX_VARIABLES, frame_count);
 
       for (i = 0; i < cnt; i++)

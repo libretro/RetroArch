@@ -171,7 +171,8 @@ void state_tracker_free(state_tracker_t *tracker)
    free(tracker);
 }
 
-static inline uint16_t fetch(const struct state_tracker_internal *info)
+static inline uint16_t state_tracker_fetch(
+      const struct state_tracker_internal *info)
 {
    uint16_t val = info->ptr[info->addr];
 
@@ -186,7 +187,7 @@ static inline uint16_t fetch(const struct state_tracker_internal *info)
    return val;
 }
 
-static void update_element(
+static void state_tracker_update_element(
       struct state_tracker_uniform *uniform,
       struct state_tracker_internal *info,
       unsigned frame_count)
@@ -196,40 +197,40 @@ static void update_element(
    switch (info->type)
    {
       case RARCH_STATE_CAPTURE:
-         uniform->value = fetch(info);
+         uniform->value = state_tracker_fetch(info);
          break;
 
       case RARCH_STATE_CAPTURE_PREV:
-         if (info->prev[0] != fetch(info))
+         if (info->prev[0] != state_tracker_fetch(info))
          {
             info->prev[1] = info->prev[0];
-            info->prev[0] = fetch(info);
+            info->prev[0] = state_tracker_fetch(info);
          }
          uniform->value = info->prev[1];
          break;
 
       case RARCH_STATE_TRANSITION:
-         if (info->old_value != fetch(info))
+         if (info->old_value != state_tracker_fetch(info))
          {
-            info->old_value = fetch(info);
+            info->old_value = state_tracker_fetch(info);
             info->frame_count = frame_count;
          }
          uniform->value = info->frame_count;
          break;
 
       case RARCH_STATE_TRANSITION_COUNT:
-         if (info->old_value != fetch(info))
+         if (info->old_value != state_tracker_fetch(info))
          {
-            info->old_value = fetch(info);
+            info->old_value = state_tracker_fetch(info);
             info->transition_count++;
          }
          uniform->value = info->transition_count;
          break;
 
       case RARCH_STATE_TRANSITION_PREV:
-         if (info->old_value != fetch(info))
+         if (info->old_value != state_tracker_fetch(info))
          {
-            info->old_value = fetch(info);
+            info->old_value = state_tracker_fetch(info);
             info->frame_count_prev = info->frame_count;
             info->frame_count = frame_count;
          }
@@ -248,12 +249,12 @@ static void update_element(
 }
 
 /**
- * update_input:
+ * state_tracker_update_input:
  * @tracker                      : State tracker handle.
  *
  * Updates 16-bit input in same format as libretro API itself.
  **/
-static void update_input(state_tracker_t *tracker)
+static void state_tracker_update_input(state_tracker_t *tracker)
 {
    unsigned i;
    uint16_t state[2] = {0};
@@ -312,19 +313,19 @@ static void update_input(state_tracker_t *tracker)
 }
 
 /**
- * state_get_uniform:
+ * state_tracker_get_uniform:
  * @tracker                      : State tracker handle.
  * @uniforms                     : State tracker uniforms.
  * @elem                         : Amount of uniform elements.
  * @frame_count                  : Frame count.
  *
- * Calls update_input(), and updates each uniform
+ * Calls state_tracker_update_input(), and updates each uniform
  * element accordingly.
  *
  * Returns: Amount of state elements (either equal to @elem
  * or equal to @tracker->info_eleme).
  **/
-unsigned state_get_uniform(state_tracker_t *tracker,
+unsigned state_tracker_get_uniform(state_tracker_t *tracker,
       struct state_tracker_uniform *uniforms,
       unsigned elem, unsigned frame_count)
 {
@@ -333,10 +334,11 @@ unsigned state_get_uniform(state_tracker_t *tracker,
    if (tracker->info_elem < elem)
       elems = tracker->info_elem;
 
-   update_input(tracker);
+   state_tracker_update_input(tracker);
 
    for (i = 0; i < elems; i++)
-      update_element(&uniforms[i], &tracker->info[i], frame_count);
+      state_tracker_update_element(
+            &uniforms[i], &tracker->info[i], frame_count);
 
    return elems;
 }

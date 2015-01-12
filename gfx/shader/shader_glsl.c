@@ -1115,7 +1115,7 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
       static unsigned cnt = 0;
 
       if (glsl->glsl_active_index == 1)
-         cnt = state_get_uniform(glsl->gl_state_tracker, state_info,
+         cnt = state_tracker_get_uniform(glsl->gl_state_tracker, state_info,
                GFX_MAX_VARIABLES, frame_count);
 
       for (i = 0; i < cnt; i++)

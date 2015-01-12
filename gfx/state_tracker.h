@@ -97,7 +97,7 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info);
 void state_tracker_free(state_tracker_t *tracker);
 
 /**
- * state_get_uniform:
+ * state_tracker_get_uniform:
  * @tracker                      : State tracker handle.
  * @uniforms                     : State tracker uniforms.
  * @elem                         : Amount of uniform elements.
@@ -109,7 +109,7 @@ void state_tracker_free(state_tracker_t *tracker);
  * Returns: Amount of state elements (either equal to @elem
  * or equal to @tracker->info_eleme).
  **/
-unsigned state_get_uniform(state_tracker_t *tracker,
+unsigned state_tracker_get_uniform(state_tracker_t *tracker,
       struct state_tracker_uniform *uniforms,
       unsigned elem, unsigned frame_count);
 
