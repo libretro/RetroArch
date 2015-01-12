@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __DRIVER__H
 #define __DRIVER__H
 
@@ -35,6 +34,8 @@
 
 #include "frontend/frontend_context.h"
 #include <retro_miscellaneous.h>
+
+#include "audio_driver.h"
 
 #include "menu/menu_driver.h"
 #include "menu/backend/menu_backend.h"
@@ -179,30 +180,6 @@ typedef struct video_info
    /* Use 32bit RGBA rather than native XBGR1555. */
    bool rgb32;
 } video_info_t;
-
-typedef struct audio_driver
-{
-   void *(*init)(const char *device, unsigned rate, unsigned latency);
-   ssize_t (*write)(void *data, const void *buf, size_t size);
-   bool (*stop)(void *data);
-   bool (*start)(void *data);
-
-   /* Is the audio driver currently running? */
-   bool (*alive)(void *data);
-
-   /* Should we care about blocking in audio thread? Fast forwarding. */
-   void (*set_nonblock_state)(void *data, bool toggle);
-   void (*free)(void *data);
-
-   /* Defines if driver will take standard floating point samples,
-    * or int16_t samples. */
-   bool (*use_float)(void *data);
-   const char *ident;
-
-   /* Optional. */
-   size_t (*write_avail)(void *data);
-   size_t (*buffer_size)(void *data);
-} audio_driver_t;
 
 #define AXIS_NEG(x) (((uint32_t)(x) << 16) | UINT16_C(0xFFFF))
 #define AXIS_POS(x) ((uint32_t)(x) | UINT32_C(0xFFFF0000))
@@ -805,26 +782,6 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info);
 extern driver_t driver;
 
 /* Backends */
-extern audio_driver_t audio_rsound;
-extern audio_driver_t audio_oss;
-extern audio_driver_t audio_alsa;
-extern audio_driver_t audio_alsathread;
-extern audio_driver_t audio_roar;
-extern audio_driver_t audio_openal;
-extern audio_driver_t audio_opensl;
-extern audio_driver_t audio_jack;
-extern audio_driver_t audio_sdl;
-extern audio_driver_t audio_xa;
-extern audio_driver_t audio_pulse;
-extern audio_driver_t audio_dsound;
-extern audio_driver_t audio_coreaudio;
-extern audio_driver_t audio_xenon360;
-extern audio_driver_t audio_ps3;
-extern audio_driver_t audio_gx;
-extern audio_driver_t audio_psp1;
-extern audio_driver_t audio_rwebaudio;
-extern audio_driver_t audio_null;
-
 extern video_driver_t video_gl;
 extern video_driver_t video_psp1;
 extern video_driver_t video_vita;
@@ -887,15 +844,6 @@ const char* config_get_camera_driver_options(void);
 const char* config_get_video_driver_options(void);
 
 /**
- * config_get_audio_driver_options:
- *
- * Get an enumerated list of all audio driver names, separated by '|'.
- *
- * Returns: string listing of all audio driver names, separated by '|'.
- **/
-const char* config_get_audio_driver_options(void);
-
-/**
  * config_get_osk_driver_options:
  *
  * Get an enumerated list of all OSK (onscreen keyboard) driver names,
@@ -929,6 +877,18 @@ const char* config_get_location_driver_options(void);
  **/
 const char* config_get_menu_driver_options(void);
 #endif
+
+/**
+ * find_driver_index:
+ * @label              : string of driver type to be found.
+ * @drv                : identifier of driver to be found.
+ *
+ * Find index of the driver, based on @label.
+ *
+ * Returns: -1 if no driver based on @label and @drv found, otherwise
+ * index number of the driver found in the array.
+ **/
+int find_driver_index(const char * label, const char *drv);
   
 extern camera_driver_t camera_v4l2;
 extern camera_driver_t camera_android;
