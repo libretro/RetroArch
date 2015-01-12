@@ -21,7 +21,7 @@
 #include <fat.h>
 #include <gctypes.h>
 #include <ogc/cache.h>
-#include "../../gfx/gx/ppc_asm.h"
+#include "../../gfx/drivers/ppc_asm.h"
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 #include <ogc/system.h>

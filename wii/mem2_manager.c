@@ -5,7 +5,7 @@
 #include <ogc/machine/asm.h>
 #include <ogc/lwp_heap.h>
 #include <ogc/system.h>
-#include "../gfx/gx/ppc_asm.h"
+#include "../gfx/drivers/ppc_asm.h"
 #include <string.h>
 #include <malloc.h>
 #include <unistd.h>

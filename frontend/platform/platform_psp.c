@@ -25,7 +25,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "../../gfx/psp/psp_sdk_defines.h"
+#include "../../gfx/drivers/psp_sdk_defines.h"
 #include <file/file_path.h>
 #include "../../general.h"
 
