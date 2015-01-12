@@ -23,7 +23,7 @@
 #include <boolean.h>
 #include "../libretro.h"
 
-#include "../input_driver.h"
+#include "../input/input_driver.h"
 
 #include "../gfx/shader/shader_parse.h"
 

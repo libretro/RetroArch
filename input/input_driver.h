@@ -21,12 +21,12 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include <boolean.h>
-#include "libretro.h"
+#include "../libretro.h"
 
-#include "input/input_context.h"
+#include "input_context.h"
 
 #ifdef HAVE_OVERLAY
-#include "input/overlay.h"
+#include "overlay.h"
 #endif
 
 #ifdef __cplusplus
