@@ -501,7 +501,7 @@ DRIVERS
 #include "../audio/audio_driver.c"
 #include "../osk/osk_driver.c"
 #include "../camera/camera_driver.c"
-#include "../location_driver.c"
+#include "../location/location_driver.c"
 #include "../driver.c"
 
 /*============================================================

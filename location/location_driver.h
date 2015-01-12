@@ -17,6 +17,10 @@
 #ifndef __LOCATION_DRIVER__H
 #define __LOCATION_DRIVER__H
 
+#include <stdint.h>
+#include <stddef.h>
+#include <boolean.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
