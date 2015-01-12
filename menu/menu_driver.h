@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DRIVER_MENU_H__
-#define DRIVER_MENU_H__
+#ifndef __MENU_DRIVER_H__
+#define __MENU_DRIVER_H__
 
 #include <stddef.h>
 #include <stdint.h>
@@ -162,6 +162,9 @@ typedef struct menu_ctx_driver_backend
    const char *ident;
 } menu_ctx_driver_backend_t;
 
+extern menu_ctx_driver_backend_t menu_ctx_backend_common;
+extern menu_ctx_driver_backend_t menu_ctx_backend_lakka;
+
 typedef struct menu_ctx_driver
 {
    void  (*set_texture)(void*);
@@ -196,6 +199,14 @@ typedef struct menu_ctx_driver
    const char *ident;
 } menu_ctx_driver_t;
 
+extern menu_ctx_driver_t menu_ctx_rmenu;
+extern menu_ctx_driver_t menu_ctx_rmenu_xui;
+extern menu_ctx_driver_t menu_ctx_rgui;
+extern menu_ctx_driver_t menu_ctx_glui;
+extern menu_ctx_driver_t menu_ctx_xmb;
+extern menu_ctx_driver_t menu_ctx_lakka;
+extern menu_ctx_driver_t menu_ctx_ios;
+
 /**
  * menu_driver_find_handle:
  * @index              : index of driver to get handle to.
@@ -228,17 +239,6 @@ const char* config_get_menu_driver_options(void);
 void find_menu_driver(void);
 
 void init_menu(void);
-
-extern menu_ctx_driver_t menu_ctx_rmenu;
-extern menu_ctx_driver_t menu_ctx_rmenu_xui;
-extern menu_ctx_driver_t menu_ctx_rgui;
-extern menu_ctx_driver_t menu_ctx_glui;
-extern menu_ctx_driver_t menu_ctx_xmb;
-extern menu_ctx_driver_t menu_ctx_lakka;
-extern menu_ctx_driver_t menu_ctx_ios;
-
-extern menu_ctx_driver_backend_t menu_ctx_backend_common;
-extern menu_ctx_driver_backend_t menu_ctx_backend_lakka;
 
 #ifdef __cplusplus
 }
