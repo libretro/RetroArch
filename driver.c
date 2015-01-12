@@ -41,36 +41,6 @@
 driver_t driver;
 
 /**
- * joypad_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to joypad driver at index. Can be NULL
- * if nothing found.
- **/
-static const void *joypad_driver_find_handle(int index)
-{
-   const void *drv = joypad_drivers[index];
-   if (!drv)
-      return NULL;
-   return drv;
-}
-
-/**
- * joypad_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of joypad driver at index. Can be NULL
- * if nothing found.
- **/
-static const char *joypad_driver_find_ident(int index)
-{
-   const rarch_joypad_driver_t *drv = joypad_drivers[index];
-   if (!drv)
-      return NULL;
-   return drv->ident;
-}
-
-/**
  * find_driver_nonempty:
  * @label              : string of driver type to be found.
  * @i                  : index of driver.

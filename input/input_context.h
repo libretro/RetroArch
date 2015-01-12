@@ -60,6 +60,24 @@ extern rarch_joypad_driver_t qnx_joypad;
 extern rarch_joypad_driver_t null_joypad;
 
 /**
+ * joypad_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to joypad driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *joypad_driver_find_handle(int index);
+
+/**
+ * joypad_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of joypad driver at index. Can be NULL
+ * if nothing found.
+ **/
+const char *joypad_driver_find_ident(int index);
+
+/**
  * config_get_joypad_driver_options:
  *
  * Get an enumerated list of all joypad driver names, separated by '|'.

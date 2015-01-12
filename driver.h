@@ -471,8 +471,6 @@ extern driver_t driver;
  **/
 int find_driver_index(const char * label, const char *drv);
   
-extern rarch_joypad_driver_t *joypad_drivers[];
-
 #ifdef __cplusplus
 }
 #endif
