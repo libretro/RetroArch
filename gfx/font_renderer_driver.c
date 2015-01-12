@@ -14,11 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fonts.h"
-#include "../../general.h"
+#include "font_renderer_driver.h"
+#include "../general.h"
 
 #ifdef HAVE_CONFIG_H
-#include "../../config.h"
+#include "../config.h"
 #endif
 
 static const font_renderer_driver_t *font_backends[] = {

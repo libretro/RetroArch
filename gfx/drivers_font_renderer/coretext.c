@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fonts.h"
+#include "../font_renderer_driver.h"
 #include "../../general.h"
 #include <string.h>
 #include <stddef.h>

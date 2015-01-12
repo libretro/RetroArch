@@ -18,7 +18,7 @@
 #define __GL_COMMON_H
 
 #include "../general.h"
-#include "fonts/fonts.h"
+#include "font_renderer_driver.h"
 #include <gfx/math/matrix_4x4.h>
 #include <gfx/scaler/scaler.h>
 #include "font_gl_driver.h"

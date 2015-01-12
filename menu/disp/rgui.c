@@ -26,7 +26,7 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 
-#include "../../gfx/fonts/bitmap.h"
+#include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #include "shared.h"
 

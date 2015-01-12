@@ -20,7 +20,7 @@
 #include <signal.h>
 #include <math.h>
 #include "../gfx_common.h"
-#include "../fonts/fonts.h"
+#include "../font_renderer_driver.h"
 
 #include "../drivers_context/x11_common.h"
 

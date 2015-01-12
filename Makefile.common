@@ -113,7 +113,7 @@ OBJ += frontend/frontend.o \
 		libretro-sdk/queues/message_queue.o \
 		rewind.o \
 		gfx/gfx_common.o \
-		gfx/fonts/bitmapfont.o \
+		gfx/drivers_font_renderer/bitmapfont.o \
 		input/input_autodetect.o \
 		input/input_joypad_driver.o \
 		input/input_joypad.o \
@@ -138,7 +138,7 @@ OBJ += frontend/frontend.o \
 		libretro-sdk/gfx/scaler/scaler_int.o \
 		libretro-sdk/gfx/scaler/scaler_filter.o \
 		gfx/image/image_rpng.o \
-		gfx/fonts/fonts.o \
+		gfx/font_renderer_driver.o \
 		gfx/video_filter.o \
 		audio/audio_resampler_driver.o \
 		audio/dsp_filter.o \
@@ -307,7 +307,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)
-   OBJ += gfx/fonts/freetype.o
+   OBJ += gfx/drivers_font_renderer/freetype.o
    LIBS += $(FREETYPE_LIBS)
    DEFINES += $(FREETYPE_CFLAGS)
 endif

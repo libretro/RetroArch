@@ -237,15 +237,15 @@ VIDEO DRIVER
 FONTS
 ============================================================ */
 
-#include "../gfx/fonts/fonts.c"
-#include "../gfx/fonts/bitmapfont.c"
+#include "../gfx/font_renderer_driver.c"
+#include "../gfx/drivers_font_renderer/bitmapfont.c"
 
 #if defined(HAVE_FREETYPE)
-#include "../gfx/fonts/freetype.c"
+#include "../gfx/drivers_font_renderer/freetype.c"
 #endif
 
 #if defined(__APPLE__)
-#include "../gfx/fonts/coretext.c"
+#include "../gfx/drivers_font_renderer/coretext.c"
 #endif
 
 #ifdef HAVE_OPENGL
