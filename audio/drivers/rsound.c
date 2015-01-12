@@ -14,7 +14,7 @@
  */
 
 
-#include "../driver.h"
+#include "../audio_driver.h"
 #include <stdlib.h>
 #include "rsound.h"
 #include <queues/fifo_buffer.h>

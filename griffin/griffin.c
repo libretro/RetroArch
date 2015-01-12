@@ -443,7 +443,7 @@ RSOUND
 ============================================================ */
 #ifdef HAVE_RSOUND
 #include "../audio/librsound.c"
-#include "../audio/rsound.c"
+#include "../audio/drivers/rsound.c"
 #endif
 
 /*============================================================
