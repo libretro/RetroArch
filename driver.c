@@ -646,6 +646,36 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 };
 
 /**
+ * menu_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to menu driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *menu_driver_find_handle(int index)
+{
+   const void *drv = menu_ctx_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
+ * menu_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of menu driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const char *menu_driver_find_ident(int index)
+{
+   const menu_ctx_driver_t *drv = menu_ctx_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv->ident;
+}
+
+/**
  * config_get_menu_driver_options:
  *
  * Get an enumerated list of all menu driver names,
@@ -664,9 +694,9 @@ const char* config_get_menu_driver_options(void)
 
    attr.i = 0;
 
-   for (option_k = 0; menu_ctx_drivers[option_k]; option_k++)
+   for (option_k = 0; menu_driver_find_handle(option_k); option_k++)
    {
-      const char *opt = menu_ctx_drivers[option_k]->ident;
+      const char *opt = menu_driver_find_ident(option_k);
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -722,9 +752,9 @@ static const void *find_driver_nonempty(const char *label, int i,
 #ifdef HAVE_MENU
    else if (!strcmp(label, "menu_driver"))
    {
-      drv = menu_ctx_drivers[i];
+      drv = menu_driver_find_handle(i);
       if (drv)
-         strlcpy(str, menu_ctx_drivers[i]->ident, sizeof_str);
+         strlcpy(str, menu_driver_find_ident(i), sizeof_str);
    }
 #endif
    else if (!strcmp(label, "input_driver"))
@@ -1129,18 +1159,18 @@ static void find_menu_driver(void)
 {
    int i = find_driver_index("menu_driver", g_settings.menu.driver);
    if (i >= 0)
-      driver.menu_ctx = menu_ctx_drivers[i];
+      driver.menu_ctx = menu_driver_find_handle(i);
    else
    {
       unsigned d;
       RARCH_WARN("Couldn't find any menu driver named \"%s\"\n",
             g_settings.menu.driver);
       RARCH_LOG_OUTPUT("Available menu drivers are:\n");
-      for (d = 0; menu_ctx_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
+      for (d = 0; menu_driver_find_handle(d); d++)
+         RARCH_LOG_OUTPUT("\t%s\n", menu_driver_find_ident(d));
       RARCH_WARN("Going to default to first menu driver...\n");
 
-      driver.menu_ctx = menu_ctx_drivers[0];
+      driver.menu_ctx = menu_driver_find_handle(0);
 
       if (!driver.menu_ctx)
          rarch_fail(1, "find_menu_driver()");
