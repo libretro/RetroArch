@@ -28,7 +28,9 @@
 extern "C" {
 #endif
 
+#ifndef MAX_EGLIMAGE_TEXTURES
 #define MAX_EGLIMAGE_TEXTURES 32
+#endif
 
 enum gfx_ctx_api
 {

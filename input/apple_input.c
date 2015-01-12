@@ -185,7 +185,7 @@ int32_t apple_input_find_any_button(uint32_t port)
       BIT32_SET(buttons, apple->icade_buttons);
 
    if (buttons)
-      for (i = 0; i != 32; i ++)
+      for (i = 0; i < 32; i++)
          if (buttons & (1 << i))
             return i;
 

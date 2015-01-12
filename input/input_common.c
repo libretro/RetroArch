@@ -110,6 +110,21 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
 #endif
 };
 
+/**
+ * input_translate_coord_viewport:
+ * @mouse_x                        : Pointer X coordinate.
+ * @mouse_y                        : Pointer Y coordinate.
+ * @res_x                          : Scaled  X coordinate.
+ * @res_y                          : Scaled  Y coordinate.
+ * @res_screen_x                   : Scaled screen X coordinate.
+ * @res_screen_y                   : Scaled screen Y coordinate.
+ *
+ * Translates pointer [X,Y] coordinates into scaled screen
+ * coordinates based on viewport info.
+ *
+ * Returns: true (1) if successful, false if video driver doesn't support
+ * viewport info.
+ **/
 bool input_translate_coord_viewport(int mouse_x, int mouse_y,
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
       int16_t *res_screen_y)
@@ -183,6 +198,14 @@ static enum retro_key find_rk_bind(const char *str)
    return RETROK_UNKNOWN;
 }
 
+/**
+ * input_translate_str_to_rk:
+ * @str                            : String to translate to key ID.
+ *
+ * Translates tring representation to key identifier.
+ *
+ * Returns: key identifier.
+ **/
 enum retro_key input_translate_str_to_rk(const char *str)
 {
    if (strlen(str) == 1 && isalpha(*str))
@@ -201,6 +224,7 @@ enum retro_key input_translate_str_to_rk(const char *str)
 unsigned input_translate_str_to_bind_id(const char *str)
 {
    unsigned i;
+
    for (i = 0; input_config_bind_map[i].valid; i++)
       if (!strcmp(str, input_config_bind_map[i].base))
          return i;
@@ -303,6 +327,7 @@ static void input_get_bind_string_joykey(char *buf, const char *prefix,
    if (GET_HAT_DIR(bind->joykey))
    {
       const char *dir;
+
       switch (GET_HAT_DIR(bind->joykey))
       {
          case HAT_UP_MASK:
@@ -388,6 +413,16 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
 }
 #endif
 
+/**
+ * input_push_analog_dpad:
+ * @binds                          : Binds to modify.
+ * @mode                           : Which analog stick to bind D-Pad to.
+ *                                   E.g:
+ *                                   ANALOG_DPAD_LSTICK
+ *                                   ANALOG_DPAD_RSTICK
+ *
+ * Push analog to D-Pad mappings to binds.
+ **/
 void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
 {
    unsigned i, j;
@@ -423,6 +458,7 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
 void input_pop_analog_dpad(struct retro_keybind *binds)
 {
    unsigned i;
+
    for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
       binds[i].joyaxis = binds[i].orig_joyaxis;
 }
