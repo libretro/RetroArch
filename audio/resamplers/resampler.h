@@ -155,6 +155,24 @@ const char* config_get_audio_resampler_driver_options(void);
 #endif
 
 /**
+ * audio_resampler_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to audio resampler driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *audio_resampler_driver_find_handle(int index);
+
+/**
+ * audio_resampler_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of audio resampler driver at index.
+ * Can be NULL if nothing found.
+ **/
+const char *audio_resampler_driver_find_ident(int index);
+
+/**
  * rarch_resampler_realloc:
  * @re                         : Resampler handle
  * @backend                    : Resampler backend that is about to be set.

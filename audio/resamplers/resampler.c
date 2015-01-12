@@ -59,44 +59,35 @@ static int find_resampler_driver_index(const char *ident)
    return -1;
 }
 
-#if !defined(RESAMPLER_TEST) && defined(RARCH_INTERNAL)
-#include <string/string_list.h>
-#include "../../general.h"
-
 /**
- * find_prev_resampler_driver:
+ * audio_resampler_driver_find_handle:
+ * @index              : index of driver to get handle to.
  *
- * Finds previous driver in resampler driver array.
+ * Returns: handle to audio resampler driver at index. Can be NULL
+ * if nothing found.
  **/
-void find_prev_resampler_driver(void)
+const void *audio_resampler_driver_find_handle(int index)
 {
-   int i = find_resampler_driver_index(g_settings.audio.resampler);
-
-   if (i > 0)
-      strlcpy(g_settings.audio.resampler, resampler_drivers[i - 1]->ident,
-            sizeof(g_settings.audio.resampler));
-   else
-      RARCH_WARN("Couldn't find any previous resampler driver (current one: \"%s\").\n",
-            driver.resampler->ident);
+   const void *drv = resampler_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv;
 }
 
 /**
- * find_next_resampler_driver:
+ * audio_resampler_driver_find_ident:
+ * @index              : index of driver to get handle to.
  *
- * Finds next driver in resampler driver array.
+ * Returns: Human-readable identifier of audio resampler driver at index.
+ * Can be NULL if nothing found.
  **/
-void find_next_resampler_driver(void)
+const char *audio_resampler_driver_find_ident(int index)
 {
-   int i = find_resampler_driver_index(g_settings.audio.resampler);
-
-   if (i >= 0 && resampler_drivers[i + 1])
-      strlcpy(g_settings.audio.resampler, resampler_drivers[i + 1]->ident,
-            sizeof(g_settings.audio.resampler));
-   else
-      RARCH_WARN("Couldn't find any next resampler driver (current one: \"%s\").\n",
-            driver.resampler->ident);
+   const rarch_resampler_t *drv = resampler_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv->ident;
 }
-#endif
 
 #ifndef DONT_HAVE_STRING_LIST
 /**

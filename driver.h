@@ -348,20 +348,6 @@ void find_prev_driver(const char *label, char *str, size_t sizeof_str);
 void find_next_driver(const char *label, char *str, size_t sizeof_str);
 
 /**
- * find_prev_resampler_driver:
- *
- * Find previous driver in resampler driver array.
- **/
-void find_prev_resampler_driver(void);
-
-/**
- * find_next_resampler_driver:
- *
- * Find next driver in resampler driver array.
- **/
-void find_next_resampler_driver(void);
-
-/**
  * driver_set_monitor_refresh_rate:
  * @hz                 : New refresh rate for monitor.
  *

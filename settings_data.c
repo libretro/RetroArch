@@ -830,27 +830,6 @@ static int setting_data_string_action_toggle_driver(void *data,
    return 0;
 }
 
-static int setting_data_string_action_toggle_audio_resampler(void *data,
-      unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         find_prev_resampler_driver();
-         break;
-      case MENU_ACTION_RIGHT:
-         find_next_resampler_driver();
-         break;
-   }
-
-   return 0;
-}
-
 int core_list_action_toggle(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
@@ -3582,7 +3561,7 @@ static bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   (*list)[list_info->index - 1].action_toggle = &setting_data_string_action_toggle_audio_resampler;
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING_OPTIONS(
          g_settings.camera.driver,

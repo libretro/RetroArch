@@ -105,6 +105,12 @@ static const void *find_driver_nonempty(const char *label, int i,
       if (drv)
          strlcpy(str, audio_driver_find_ident(i), sizeof_str);
    }
+   else if (!strcmp(label, "audio_resampler_driver"))
+   {
+      drv = audio_resampler_driver_find_handle(i);
+      if (drv)
+         strlcpy(str, audio_resampler_driver_find_ident(i), sizeof_str);
+   }
 
    return drv;
 }
