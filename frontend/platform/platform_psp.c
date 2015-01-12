@@ -25,7 +25,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "../../gfx/psp/sdk_defines.h"
+#include "../../gfx/psp/psp_sdk_defines.h"
 #include <file/file_path.h>
 #include "../../general.h"
 
@@ -85,11 +85,14 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.config_path, g_defaults.port_dir,
          "retroarch.cfg", sizeof(g_defaults.config_path));
 
+#ifndef IS_SALAMANDER
    if (argv[1] && (argv[1][0] != '\0'))
    {
       static char path[PATH_MAX_LENGTH];
+      struct rarch_main_wrap *args = NULL;
+
       *path = '\0';
-      struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
+      args = (struct rarch_main_wrap*)params_data;
 
       if (args)
       {
@@ -111,6 +114,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          RARCH_LOG("Auto-start game %s.\n", argv[1]);
       }
    }
+#endif
 }
 
 static void frontend_psp_deinit(void *data)

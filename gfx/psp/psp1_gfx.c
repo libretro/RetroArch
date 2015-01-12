@@ -21,7 +21,7 @@
 #include <pspgum.h>
 #include <psprtc.h>
 
-#include "sdk_defines.h"
+#include "psp_sdk_defines.h"
 #include "../../general.h"
 #include "../../driver.h"
 #include "../gfx_common.h"

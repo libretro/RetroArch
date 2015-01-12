@@ -34,7 +34,7 @@
 
 #include "ppc_asm.h"
 #include "gx_gfx_inl.h"
-#include "sdk_defines.h"
+#include "gx_sdk_defines.h"
 
 #define SYSMEM1_SIZE 0x01800000
 
