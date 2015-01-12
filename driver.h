@@ -390,7 +390,10 @@ typedef struct video_driver
    bool (*set_shader)(void *data, enum rarch_shader_type type,
          const char *path);
 
+   /* Frees driver. */
    void (*free)(void *data);
+
+   /* Human-readable identifier. */
    const char *ident;
 
    void (*set_rotation)(void *data, unsigned rotation);
@@ -553,10 +556,32 @@ typedef struct driver
    const char *current_msg;
 } driver_t;
 
+/**
+ * init_drivers:
+ * @flags              : Bitmask of drivers to initialize.
+ *
+ * Initializes drivers.
+ * @flags determines which drivers get initialized.
+ **/
 void init_drivers(int flags);
 
+/**
+ * init_drivers_pre:
+ *
+ * Attempts to find a default driver for 
+ * all driver types.
+ *
+ * Should be run before init_drivers().
+ **/
 void init_drivers_pre(void);
 
+/**
+ * uninit_drivers:
+ * @flags              : Bitmask of drivers to deinitialize.
+ *
+ * Deinitializes drivers.
+ * @flags determines which drivers get deinitialized.
+ **/
 void uninit_drivers(int flags);
 
 /**
@@ -602,12 +627,39 @@ void find_prev_resampler_driver(void);
  **/
 void find_next_resampler_driver(void);
 
+/**
+ * driver_set_monitor_refresh_rate:
+ * @hz                 : New refresh rate for monitor.
+ *
+ * Sets monitor refresh rate to new value.
+ **/
 void driver_set_monitor_refresh_rate(float hz);
 
+/**
+ * driver_monitor_fps_statistics
+ * @refresh_rate       : Monitor refresh rate.
+ * @deviation          : Deviation from measured refresh rate.
+ * @sample_points      : Amount of sampled points.
+ *
+ * Gets the monitor FPS statistics based on the current
+ * runtime.
+ *
+ * Returns: true (1) on success, false (0) if threaded
+ * video mode is enabled and/or three are less than 2 frame time samples.
+ **/
 bool driver_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
 
-void driver_set_nonblock_state(bool nonblock);
+/**
+ * driver_set_nonblock_state:
+ * @enable             : Enable nonblock state?
+ *
+ * Sets audio and video drivers to nonblock state.
+ *
+ * If @enable is false, sets blocking state for both
+ * audio and video drivers instead.
+ **/
+void driver_set_nonblock_state(bool enable);
 
 /**
  * driver_get_current_framebuffer:

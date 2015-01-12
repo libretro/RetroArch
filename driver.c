@@ -1055,6 +1055,14 @@ static void find_input_driver(void)
    }
 }
 
+/**
+ * init_drivers_pre:
+ *
+ * Attempts to find a default driver for 
+ * all driver types.
+ *
+ * Should be run before init_drivers().
+ **/
 void init_drivers_pre(void)
 {
    find_audio_driver();
@@ -1114,6 +1122,12 @@ static void adjust_system_rates(void)
    }
 }
 
+/**
+ * driver_set_monitor_refresh_rate:
+ * @hz                 : New refresh rate for monitor.
+ *
+ * Sets monitor refresh rate to new value.
+ **/
 void driver_set_monitor_refresh_rate(float hz)
 {
    char msg[PATH_MAX_LENGTH];
@@ -1129,12 +1143,22 @@ void driver_set_monitor_refresh_rate(float hz)
       (double)g_settings.audio.out_rate / g_extern.audio_data.in_rate;
 }
 
-void driver_set_nonblock_state(bool nonblock)
+/**
+ * driver_set_nonblock_state:
+ * @enable             : Enable nonblock state?
+ *
+ * Sets audio and video drivers to nonblock state.
+ *
+ * If @enable is false, sets blocking state for both
+ * audio and video drivers instead.
+ **/
+void driver_set_nonblock_state(bool enable)
 {
    /* Only apply non-block-state for video if we're using vsync. */
    if (driver.video_active && driver.video_data)
    {
-      bool video_nonblock = nonblock;
+      bool video_nonblock = enable;
+
       if (!g_settings.video.vsync || g_extern.system.force_nonblock)
          video_nonblock = true;
       driver.video->set_nonblock_state(driver.video_data, video_nonblock);
@@ -1142,9 +1166,9 @@ void driver_set_nonblock_state(bool nonblock)
 
    if (driver.audio_active && driver.audio_data)
       driver.audio->set_nonblock_state(driver.audio_data,
-            g_settings.audio.sync ? nonblock : true);
+            g_settings.audio.sync ? enable : true);
 
-   g_extern.audio_data.chunk_size = nonblock ?
+   g_extern.audio_data.chunk_size = enable ?
       g_extern.audio_data.nonblock_chunk_size : 
       g_extern.audio_data.block_chunk_size;
 }
@@ -1448,6 +1472,7 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    struct retro_game_geometry *geom = NULL;
 
    deinit_video_filter();
+
    if (!*g_settings.video.softfilter_plugin)
       return;
 
@@ -1689,6 +1714,13 @@ static void init_video_input(void)
 
 }
 
+/**
+ * init_drivers:
+ * @flags              : Bitmask of drivers to initialize.
+ *
+ * Initializes drivers.
+ * @flags determines which drivers get initialized.
+ **/
 void init_drivers(int flags)
 {
    if (flags & DRIVER_VIDEO)
@@ -1758,6 +1790,11 @@ void init_drivers(int flags)
    }
 }
 
+/**
+ * compute_monitor_fps_statistics:
+ *
+ * Computes monitor FPS statistics.
+ **/
 static void compute_monitor_fps_statistics(void)
 {
    double avg_fps = 0.0, stddev = 0.0;
@@ -1785,6 +1822,12 @@ static void compute_monitor_fps_statistics(void)
    }
 }
 
+/**
+ * compute_audio_buffer_statistics:
+ *
+ * Computes audio buffer statistics.
+ *
+ **/
 static void compute_audio_buffer_statistics(void)
 {
    unsigned i, low_water_size, high_water_size, avg, stddev;
@@ -1888,6 +1931,13 @@ static void uninit_video_input(void)
    compute_monitor_fps_statistics();
 }
 
+/**
+ * uninit_drivers:
+ * @flags              : Bitmask of drivers to deinitialize.
+ *
+ * Deinitializes drivers.
+ * @flags determines which drivers get deinitialized.
+ **/
 void uninit_drivers(int flags)
 {
    if (flags & DRIVER_AUDIO)
@@ -1947,6 +1997,18 @@ void uninit_drivers(int flags)
 }
 
 
+/**
+ * driver_monitor_fps_statistics
+ * @refresh_rate       : Monitor refresh rate.
+ * @deviation          : Deviation from measured refresh rate.
+ * @sample_points      : Amount of sampled points.
+ *
+ * Gets the monitor FPS statistics based on the current
+ * runtime.
+ *
+ * Returns: true (1) on success, false (0) if threaded
+ * video mode is enabled and/or three are less than 2 frame time samples.
+ **/
 bool driver_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points)
 {
