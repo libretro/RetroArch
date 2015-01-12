@@ -17,7 +17,7 @@
 #include <string.h>
 #include <string/string_list.h>
 #include "video_driver.h"
-#include "general.h"
+#include "../general.h"
 
 static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OPENGL

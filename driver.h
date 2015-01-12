@@ -30,7 +30,7 @@
 #include "frontend/frontend_context.h"
 #include <retro_miscellaneous.h>
 
-#include "video_driver.h"
+#include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
 
 #include "menu/menu_driver.h"

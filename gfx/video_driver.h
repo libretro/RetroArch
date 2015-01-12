@@ -21,13 +21,13 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include <boolean.h>
-#include "libretro.h"
+#include "../libretro.h"
 
-#include "input/input_context.h"
-#include "gfx/shader/shader_parse.h"
+#include "../input/input_context.h"
+#include "../gfx/shader/shader_parse.h"
 
 #ifdef HAVE_OVERLAY
-#include "input/overlay.h"
+#include "../input/overlay.h"
 #endif
 
 #ifdef __cplusplus
