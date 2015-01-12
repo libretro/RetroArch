@@ -22,6 +22,7 @@
 #include <gfx/math/matrix_4x4.h>
 #include <gfx/scaler/scaler.h>
 #include "fonts/gl_font.h"
+#include "image/image.h"
 #include "video_shader_driver.h"
 
 #ifdef HAVE_CONFIG_H
