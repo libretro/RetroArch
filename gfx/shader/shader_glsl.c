@@ -27,7 +27,7 @@
 #include "../../config.h"
 #endif
 
-#include "../gfx_context.h"
+#include "../video_context.h"
 #include <stdlib.h>
 
 #ifdef HAVE_OPENGL

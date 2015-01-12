@@ -21,7 +21,7 @@
 #include "../../general.h"
 #include <gfx/scaler/scaler.h>
 #include "../gfx_common.h"
-#include "../gfx_context.h"
+#include "../video_context.h"
 #include "../fonts/fonts.h"
 
 #ifdef HAVE_X11

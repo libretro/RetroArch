@@ -15,8 +15,7 @@
  */
 
 #include "../general.h"
-#include "gfx_context.h"
-#include "../general.h"
+#include "video_context.h"
 #include <string.h>
 
 #ifdef HAVE_CONFIG_H

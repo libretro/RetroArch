@@ -25,7 +25,7 @@
 #include "../menu_list.h"
 
 #include "../../gfx/gfx_common.h"
-#include "../../gfx/gfx_context.h"
+#include "../../gfx/video_context.h"
 
 #include "../../settings_data.h"
 #include "../../general.h"

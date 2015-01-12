@@ -50,7 +50,7 @@
 #endif
 
 #include "../fonts/d3d_font.h"
-#include "../gfx_context.h"
+#include "../video_context.h"
 #include "../gfx_common.h"
 
 #ifdef HAVE_CG

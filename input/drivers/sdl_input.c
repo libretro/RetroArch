@@ -17,7 +17,7 @@
 #include "../../driver.h"
 
 #include "SDL.h"
-#include "../../gfx/gfx_context.h"
+#include "../../gfx/video_context.h"
 #include <boolean.h>
 #include "../../general.h"
 #include <stdint.h>

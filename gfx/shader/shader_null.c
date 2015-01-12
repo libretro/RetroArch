@@ -31,7 +31,7 @@
 #include "../gl_common.h"
 #endif
 
-#include "../gfx_context.h"
+#include "../video_context.h"
 #include "shader_context.h"
 #include <stdlib.h>
 

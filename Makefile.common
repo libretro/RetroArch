@@ -370,7 +370,7 @@ ifeq ($(HAVE_OPENGL), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
 			 gfx/gl_common.o \
-			 gfx/gfx_context.o \
+			 gfx/video_context.o \
 			 gfx/context/gfx_null_ctx.o \
 			 gfx/fonts/gl_font.o \
 			 gfx/fonts/gl_raster_font.o \
