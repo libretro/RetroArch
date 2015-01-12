@@ -49,7 +49,7 @@ extern "C" {
 #include "../../general.h"
 #include <gfx/scaler/scaler.h>
 #include <file/config_file.h>
-#include "../../audio/utils.h"
+#include "../../audio/audio_utils.h"
 #include "../record_driver.h"
 #include <assert.h>
 

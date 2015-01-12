@@ -28,7 +28,7 @@
 #include "retroarch.h"
 #include "performance.h"
 #include "input/keyboard_line.h"
-#include "audio/utils.h"
+#include "audio/audio_utils.h"
 #include "retroarch_logger.h"
 #include "intl/intl.h"
 

@@ -268,9 +268,9 @@ ifeq ($(HAVE_NEON),1)
    DEFINES += -DSINC_LOWER_QUALITY
 endif
 
-OBJ += audio/utils.o
+OBJ += audio/audio_utils.o
 ifeq ($(HAVE_NEON),1)
-   OBJ += audio/utils_neon.o
+   OBJ += audio/audio_utils_neon.o
 endif
 
 ifeq ($(HAVE_RGUI), 1)

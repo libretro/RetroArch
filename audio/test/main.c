@@ -17,7 +17,7 @@
 // Used for testing and performance benchmarking.
 
 #include "../resamplers/resampler.h"
-#include "../utils.h"
+#include "../audio_utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

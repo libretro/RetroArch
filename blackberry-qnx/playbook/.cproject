@@ -110,7 +110,7 @@
 							<outputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.outputtype.100731813" name="Resource Custom Build Step Output Type"/>
 						</tool>
 					</fileInfo>
-					<fileInfo id="com.qnx.qcc.configuration.exe.debug.507133694.1992358048" name="utils_neon.S" rcbsApplicability="disable" resourcePath="src/utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.722220103.552409735">
+					<fileInfo id="com.qnx.qcc.configuration.exe.debug.507133694.1992358048" name="audio_utils_neon.S" rcbsApplicability="disable" resourcePath="src/audio_utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.722220103.552409735">
 						<tool errorParsers="" id="com.qnx.qcc.tool.assembler.722220103.552409735" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.722220103">
 							<option id="com.qnx.qcc.option.assembler.qccoptions.932071200" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
 								<listOptionValue builtIn="false" value="-mfpu=neon"/>
@@ -232,7 +232,7 @@
 							<inputType id="com.qnx.qcc.inputType.assembler.905354291" superClass="com.qnx.qcc.inputType.assembler"/>
 						</tool>
 					</fileInfo>
-					<fileInfo id="com.qnx.qcc.configuration.exe.release.237026123.1399355246" name="utils_neon.S" rcbsApplicability="disable" resourcePath="src/utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.676105057.276341761">
+					<fileInfo id="com.qnx.qcc.configuration.exe.release.237026123.1399355246" name="audio_utils_neon.S" rcbsApplicability="disable" resourcePath="src/audio_utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.676105057.276341761">
 						<tool errorParsers="" id="com.qnx.qcc.tool.assembler.676105057.276341761" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.676105057">
 							<option id="com.qnx.qcc.option.assembler.qccoptions.1400744511" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
 								<listOptionValue builtIn="false" value="-mfpu=neon"/>
@@ -351,7 +351,7 @@
 							<inputType id="com.qnx.qcc.inputType.assembler.761454528" superClass="com.qnx.qcc.inputType.assembler"/>
 						</tool>
 					</fileInfo>
-					<fileInfo id="com.qnx.qcc.configuration.exe.profile.491517832.1495032052" name="utils_neon.S" rcbsApplicability="disable" resourcePath="src/utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.820786892.1413292621">
+					<fileInfo id="com.qnx.qcc.configuration.exe.profile.491517832.1495032052" name="audio_utils_neon.S" rcbsApplicability="disable" resourcePath="src/audio_utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.820786892.1413292621">
 						<tool errorParsers="" id="com.qnx.qcc.tool.assembler.820786892.1413292621" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.820786892">
 							<option id="com.qnx.qcc.option.assembler.qccoptions.1095049940" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
 								<listOptionValue builtIn="false" value="-mfpu=neon"/>
@@ -470,7 +470,7 @@
 							<inputType id="com.qnx.qcc.inputType.assembler.265652705" superClass="com.qnx.qcc.inputType.assembler"/>
 						</tool>
 					</fileInfo>
-					<fileInfo id="com.qnx.qcc.configuration.exe.profile.coverage.511003583.427866523" name="utils_neon.S" rcbsApplicability="disable" resourcePath="src/utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.1771923802.1770971197">
+					<fileInfo id="com.qnx.qcc.configuration.exe.profile.coverage.511003583.427866523" name="audio_utils_neon.S" rcbsApplicability="disable" resourcePath="src/audio_utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.1771923802.1770971197">
 						<tool errorParsers="" id="com.qnx.qcc.tool.assembler.1771923802.1770971197" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.1771923802">
 							<option id="com.qnx.qcc.option.assembler.qccoptions.80954895" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
 								<listOptionValue builtIn="false" value="-mfpu=neon"/>

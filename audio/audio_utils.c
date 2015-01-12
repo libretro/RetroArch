@@ -15,7 +15,7 @@
  */
 
 #include <boolean.h>
-#include "utils.h"
+#include "audio_utils.h"
 
 #include "../performance.h"
 
