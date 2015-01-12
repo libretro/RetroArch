@@ -502,7 +502,7 @@ DRIVERS
 #include "../osk/osk_driver.c"
 #include "../camera/camera_driver.c"
 #include "../location/location_driver.c"
-#include "../menu_driver.c"
+#include "../menu/menu_driver.c"
 #include "../driver.c"
 
 /*============================================================

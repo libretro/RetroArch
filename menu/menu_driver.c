@@ -16,10 +16,10 @@
 
 #include <string.h>
 #include <string/string_list.h>
-#include "menu/menu_driver.h"
-#include "menu/menu.h"
-#include "driver.h"
-#include "general.h"
+#include "menu_driver.h"
+#include "menu.h"
+#include "../driver.h"
+#include "../general.h"
 
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #ifdef IOS
