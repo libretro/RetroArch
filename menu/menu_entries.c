@@ -354,9 +354,9 @@ int menu_entries_parse_list(
       unsigned default_type_plain, const char *exts,
       rarch_setting_t *setting)
 {
-   int device;
    size_t i, list_size;
    bool path_is_compressed, push_dir;
+   int device = 0;
    struct string_list *str_list = NULL;
 
    (void)device;
