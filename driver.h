@@ -472,15 +472,6 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info);
 extern driver_t driver;
 
 /**
- * config_get_video_driver_options:
- *
- * Get an enumerated list of all video driver names, separated by '|'.
- *
- * Returns: string listing of all video driver names, separated by '|'.
- **/
-const char* config_get_video_driver_options(void);
-
-/**
  * find_driver_index:
  * @label              : string of driver type to be found.
  * @drv                : identifier of driver to be found.
