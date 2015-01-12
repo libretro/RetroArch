@@ -30,9 +30,19 @@ static const ffemu_backend_t *ffemu_backends[] = {
    NULL,
 };
 
+/**
+ * ffemu_find_backend:
+ * @ident                   : Identifier of driver to find.
+ *
+ * Finds a recording driver with the name @ident.
+ *
+ * Returns: recording driver handle if successful, otherwise
+ * NULL.
+ **/
 const ffemu_backend_t *ffemu_find_backend(const char *ident)
 {
    unsigned i;
+
    for (i = 0; ffemu_backends[i]; i++)
    {
       if (!strcmp(ffemu_backends[i]->ident, ident))
@@ -42,19 +52,31 @@ const ffemu_backend_t *ffemu_find_backend(const char *ident)
    return NULL;
 }
 
+/**
+ * gfx_ctx_init_first:
+ * @backend                 : Recording backend handle.
+ * @data                    : Recording data handle.
+ * @params                  : Recording info parameters.
+ *
+ * Finds first suitable recording context driver and initializes.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool ffemu_init_first(const ffemu_backend_t **backend, void **data,
       const struct ffemu_params *params)
 {
    unsigned i;
+
    for (i = 0; ffemu_backends[i]; i++)
    {
       void *handle = ffemu_backends[i]->init(params);
-      if (handle)
-      {
-         *backend = ffemu_backends[i];
-         *data = handle;
-         return true;
-      }
+
+      if (!handle)
+         continue;
+
+      *backend = ffemu_backends[i];
+      *data = handle;
+      return true;
    }
 
    return false;

@@ -93,7 +93,27 @@ typedef struct ffemu_backend
 
 extern const ffemu_backend_t ffemu_ffmpeg;
 
+/**
+ * ffemu_find_backend:
+ * @ident                   : Identifier of driver to find.
+ *
+ * Finds a recording driver with the name @ident.
+ *
+ * Returns: recording driver handle if successful, otherwise
+ * NULL.
+ **/
 const ffemu_backend_t *ffemu_find_backend(const char *ident);
+
+/**
+ * gfx_ctx_init_first:
+ * @backend                 : Recording backend handle.
+ * @data                    : Recording data handle.
+ * @params                  : Recording info parameters.
+ *
+ * Finds first suitable recording context driver and initializes.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool ffemu_init_first(const ffemu_backend_t **backend, void **data,
       const struct ffemu_params *params);
 
