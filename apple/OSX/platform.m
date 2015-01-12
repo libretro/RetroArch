@@ -19,7 +19,7 @@
 #include <objc/runtime.h>
 
 #import "../common/RetroArch_Apple.h"
-#include "../../input/apple_input.h"
+#include "../../input/drivers/apple_input.h"
 #include "../../frontend/frontend.h"
 #include "../../menu/menu.h"
 #include "../../retroarch.h"

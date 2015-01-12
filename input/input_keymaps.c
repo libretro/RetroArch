@@ -39,7 +39,7 @@
 #endif
 
 #ifdef __APPLE__
-#include "apple_keycode.h"
+#include "drivers/apple_keycode.h"
 #endif
 
 #ifdef __linux

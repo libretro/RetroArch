@@ -17,7 +17,7 @@
 #include <string.h>
 
 #include "../common/RetroArch_Apple.h"
-#include "../../input/apple_input.h"
+#include "../../input/drivers/apple_input.h"
 #include "../../settings_data.h"
 #include "../common/apple_gamecontroller.h"
 #include "menu.h"

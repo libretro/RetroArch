@@ -18,7 +18,7 @@
 #include "../common/RetroArch_Apple.h"
 #include "../../input/input_common.h"
 #include "../../input/input_keymaps.h"
-#include "../../input/apple_input.h"
+#include "../../input/drivers/apple_input.h"
 #include <file/file_path.h>
 #include "menu.h"
 

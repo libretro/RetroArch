@@ -19,11 +19,11 @@
 
 #include "input_common.h"
 #include "input_keymaps.h"
-#include "apple_input.h"
+#include "drivers/apple_input.h"
 #include "../general.h"
 #include "../driver.h"
 
-#include "apple_keycode.h"
+#include "drivers/apple_keycode.h"
 
 #if defined(IOS)
 #define HIDKEY(X) X

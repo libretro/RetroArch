@@ -17,7 +17,7 @@
 #include "RetroArch_Apple.h"
 #import <GameController/GameController.h>
 #include "apple_gamecontroller.h"
-#include "../../input/apple_input.h"
+#include "../../input/drivers/apple_input.h"
 
 static BOOL apple_gamecontroller_available(void)
 {

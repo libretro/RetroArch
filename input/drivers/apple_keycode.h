@@ -156,7 +156,7 @@ enum
    KEY_RightGUI = 231
 };
 
-#include "input_common.h"
+#include "../input_common.h"
 
 struct apple_key_name_map_entry
 {
