@@ -16,7 +16,7 @@
 
 #include "../../driver.h"
 #include <stdlib.h>
-#include "../xaudio-c/xaudio-c.h"
+#include "xaudio-c.h"
 #include "../../general.h"
 
 typedef struct

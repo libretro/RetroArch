@@ -67,12 +67,17 @@ struct xaudio2 : public IXAudio2VoiceCallback
 
 void xaudio2_enumerate_devices(xaudio2_t *xa)
 {
+   UINT32 dev_count = 0;
+   unsigned i = 0;
+
    (void)xa;
+   (void)i;
+   (void)dev_count;
 #ifndef _XBOX
-   UINT32 dev_count;
    xa->pXAudio2->GetDeviceCount(&dev_count);
    fprintf(stderr, "XAudio2 devices:\n");
-   for (unsigned i = 0; i < dev_count; i++)
+
+   for (i = 0; i < dev_count; i++)
    {
       XAUDIO2_DEVICE_DETAILS dev_detail;
       xa->pXAudio2->GetDeviceDetails(i, &dev_detail);
@@ -97,13 +102,14 @@ static void xaudio2_set_wavefmt(WAVEFORMATEX *wfx,
 xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
       size_t size, unsigned device)
 {
+   xaudio2_t *handle;
+   WAVEFORMATEX wfx = {0};
+
 #ifndef _XBOX
    CoInitializeEx(0, COINIT_MULTITHREADED);
 #endif
 
-   xaudio2_t *handle = new xaudio2;
-
-   WAVEFORMATEX wfx = {0};
+   handle = new xaudio2;
 
    if (FAILED(XAudio2Create(&handle->pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
       goto error;
@@ -147,9 +153,11 @@ size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
 {
    unsigned bytes = bytes_;
    const uint8_t *buffer = (const uint8_t*)buf;
+
    while (bytes)
    {
       unsigned need = min(bytes, handle->bufsize - handle->bufptr);
+
       memcpy(handle->buf + handle->write_buffer * handle->bufsize + handle->bufptr,
             buffer, need);
 
@@ -159,10 +167,11 @@ size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
 
       if (handle->bufptr == handle->bufsize)
       {
+         XAUDIO2_BUFFER xa2buffer = {0};
+
          while (handle->buffers == MAX_BUFFERS - 1)
             WaitForSingleObject(handle->hEvent, INFINITE);
 
-         XAUDIO2_BUFFER xa2buffer = {0};
          xa2buffer.AudioBytes = handle->bufsize;
          xa2buffer.pAudioData = handle->buf + handle->write_buffer * handle->bufsize;
 

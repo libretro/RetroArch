@@ -69,7 +69,6 @@ clean:
 	rm -f menu/*.o
 	rm -f menu/disp/*.o
 	rm -f audio/*.o
-	rm -f audio/xaudio-c/*.o
 	rm -f compat/*.o
 	rm -f compat/rxml/*.o
 	rm -f conf/*.o
