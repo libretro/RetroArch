@@ -131,9 +131,9 @@ OBJ += frontend/frontend.o \
 		libretro-sdk/file/config_file_userdata.o \
 		screenshot.o \
 		libretro-sdk/gfx/scaler/scaler.o \
-		gfx/shader/shader_null.o \
+		gfx/drivers_shader/shader_null.o \
 		gfx/video_shader_driver.o \
-		gfx/shader/shader_parse.o \
+		gfx/drivers_shader/shader_parse.o \
 		libretro-sdk/gfx/scaler/pixconv.o \
 		libretro-sdk/gfx/scaler/scaler_int.o \
 		libretro-sdk/gfx/scaler/scaler_filter.o \
@@ -447,7 +447,7 @@ ifeq ($(HAVE_OPENGL), 1)
       endif
    endif
 
-   OBJ += gfx/shader/shader_glsl.o 
+   OBJ += gfx/drivers_shader/shader_glsl.o 
    DEFINES += -DHAVE_GLSL
 endif
 
@@ -504,7 +504,7 @@ endif
 
 ifeq ($(HAVE_CG), 1)
 	DEFINES += -DHAVE_CG
-   OBJ += gfx/shader/shader_gl_cg.o
+   OBJ += gfx/drivers_shader/shader_gl_cg.o
    LIBS += $(CG_LIBS)
 endif
 

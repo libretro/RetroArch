@@ -26,7 +26,7 @@
 
 #include "../input/input_driver.h"
 
-#include "../gfx/shader/shader_parse.h"
+#include "drivers_shader/shader_parse.h"
 
 #ifdef __cplusplus
 extern "C" {

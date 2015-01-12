@@ -78,7 +78,7 @@ extern const shader_backend_t shader_null_backend;
 #define HAVE_SHADER_MANAGER
 #endif
 
-#include "shader/shader_parse.h"
+#include "drivers_shader/shader_parse.h"
 
 #define GL_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
 

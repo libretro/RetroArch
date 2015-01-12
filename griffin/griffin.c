@@ -135,21 +135,21 @@ VIDEO SHADERS
 
 #ifdef HAVE_SHADERS
 #include "../gfx/video_shader_driver.c"
-#include "../gfx/shader/shader_parse.c"
-#include "../gfx/shader/shader_null.c"
+#include "../gfx/drivers_shader/shader_parse.c"
+#include "../gfx/drivers_shader/shader_null.c"
 
 #ifdef HAVE_CG
 #ifdef HAVE_OPENGL
-#include "../gfx/shader/shader_gl_cg.c"
+#include "../gfx/drivers_shader/shader_gl_cg.c"
 #endif
 #endif
 
 #ifdef HAVE_HLSL
-#include "../gfx/shader/shader_hlsl.c"
+#include "../gfx/drivers_shader/shader_hlsl.c"
 #endif
 
 #ifdef HAVE_GLSL
-#include "../gfx/shader/shader_glsl.c"
+#include "../gfx/drivers_shader/shader_glsl.c"
 #endif
 
 #endif

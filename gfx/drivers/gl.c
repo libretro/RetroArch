@@ -42,7 +42,7 @@
 #include <compat/strl.h>
 
 #ifdef HAVE_GLSL
-#include "../shader/shader_glsl.h"
+#include "../drivers_shader/shader_glsl.h"
 #endif
 
 #ifdef GL_DEBUG
