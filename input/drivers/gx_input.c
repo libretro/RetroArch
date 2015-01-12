@@ -23,8 +23,8 @@
 #define M_PI 3.14159265358979323846264338327
 #endif
 
-#include "../driver.h"
-#include "../libretro.h"
+#include "../../driver.h"
+#include "../../libretro.h"
 #include <stdlib.h>
 
 #ifndef MAX_PADS

@@ -25,14 +25,14 @@
 #include <pspctrl.h>
 #endif
 
-#include "../gfx/psp/sdk_defines.h"
+#include "../../gfx/psp/sdk_defines.h"
 
-#include "../driver.h"
-#include "../libretro.h"
-#include "../general.h"
-#include "input_common.h"
+#include "../../driver.h"
+#include "../../libretro.h"
+#include "../../general.h"
+#include "../input_common.h"
 #ifdef HAVE_KERNEL_PRX
-#include "../psp1/kernel_functions.h"
+#include "../../psp1/kernel_functions.h"
 #endif
 
 #define MAX_PADS 1

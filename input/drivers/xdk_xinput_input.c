@@ -21,9 +21,9 @@
 #include <xtl.h>
 #endif
 
-#include "../driver.h"
-#include "../general.h"
-#include "../libretro.h"
+#include "../../driver.h"
+#include "../../general.h"
+#include "../../libretro.h"
 
 #define MAX_PADS 4
 

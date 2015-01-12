@@ -17,8 +17,8 @@
 #ifndef __APPLE_RARCH_INPUT_H__
 #define __APPLE_RARCH_INPUT_H__
 
-#include "../general.h"
-#include "connect/joypad_connection.h"
+#include "../../general.h"
+#include "../connect/joypad_connection.h"
 
 /* Input responder */
 #define MAX_TOUCHES 16

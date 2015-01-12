@@ -13,10 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_common.h"
-#include "input_joypad.h"
-#include "input_keymaps.h"
-#include "../general.h"
+#include "../input_common.h"
+#include "../input_joypad.h"
+#include "../input_keymaps.h"
+#include "../../general.h"
 #include <file/file_path.h>
 #include <unistd.h>
 #include <stdint.h>
@@ -36,7 +36,7 @@
 #include <signal.h>
 
 #ifdef HAVE_CONFIG_H
-#include "../config.h"
+#include "../../config.h"
 #endif
 
 /* Need libxkbcommon to translate raw evdev events to characters

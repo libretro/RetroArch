@@ -13,17 +13,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_autodetect.h"
-#include "input_common.h"
-#include "input_keymaps.h"
+#include "../input_autodetect.h"
+#include "../input_common.h"
+#include "../input_keymaps.h"
 
-#include "../driver.h"
+#include "../../driver.h"
 
 #include <boolean.h>
-#include "../general.h"
-#include "keyboard_line.h"
+#include "../../general.h"
+#include "../keyboard_line.h"
 
-#include "../emscripten/RWebInput.h"
+#include "../../emscripten/RWebInput.h"
 
 static bool uninited = false;
 

@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../driver.h"
+#include "../../driver.h"
 
 #include <sys/ioctl.h>
 #include <linux/input.h>
@@ -22,10 +22,10 @@
 #include <termios.h>
 #include <unistd.h>
 #include <signal.h>
-#include "../general.h"
-#include "input_keymaps.h"
-#include "input_common.h"
-#include "input_joypad.h"
+#include "../../general.h"
+#include "../input_keymaps.h"
+#include "../input_common.h"
+#include "../input_joypad.h"
 
 static long oldKbmd = 0xffff;
 static struct termios oldTerm, newTerm;

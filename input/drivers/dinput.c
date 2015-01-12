@@ -22,13 +22,13 @@
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 
-#include "../general.h"
+#include "../../general.h"
 #include <boolean.h>
-#include "input_autodetect.h"
-#include "input_common.h"
-#include "input_joypad.h"
-#include "input_keymaps.h"
-#include "retroarch_logger.h"
+#include "../input_autodetect.h"
+#include "../input_common.h"
+#include "../input_joypad.h"
+#include "../input_keymaps.h"
+#include "../../retroarch_logger.h"
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>

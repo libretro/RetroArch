@@ -14,20 +14,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../driver.h"
+#include "../../driver.h"
 
 #include "SDL.h"
-#include "../gfx/gfx_context.h"
+#include "../../gfx/gfx_context.h"
 #include <boolean.h>
-#include "../general.h"
+#include "../../general.h"
 #include <stdint.h>
 #include <stdlib.h>
-#include "../libretro.h"
-#include "input_autodetect.h"
-#include "input_common.h"
-#include "input_joypad.h"
-#include "input_keymaps.h"
-#include "keyboard_line.h"
+#include "../../libretro.h"
+#include "../input_autodetect.h"
+#include "../input_common.h"
+#include "../input_joypad.h"
+#include "../input_keymaps.h"
+#include "../keyboard_line.h"
 
 typedef struct sdl_input
 {

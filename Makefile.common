@@ -62,7 +62,7 @@ endif
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    JOYCONFIG_LIBS += -lrt
-   OBJ += input/linuxraw_input.o input/linuxraw_joypad.o
+   OBJ += input/drivers/linuxraw_input.o input/linuxraw_joypad.o
 endif
 
 ifeq ($(findstring Haiku,$(OS)),)
@@ -142,7 +142,7 @@ OBJ += frontend/frontend.o \
 		camera/nullcamera.o \
 		gfx/nullgfx.o \
 		audio/drivers/nullaudio.o \
-		input/nullinput.o \
+		input/drivers/nullinput.o \
 		input/nullinput_joypad.o \
 		input/osk/nullosk.o \
 		playlist.o \
@@ -172,7 +172,7 @@ endif
 
 ifeq ($(HAVE_EMSCRIPTEN), 1)
 OBJ += frontend/platform/platform_emscripten.o \
-		input/rwebinput_input.o \
+		input/drivers/rwebinput_input.o \
 		audio/drivers/rwebaudio.o \
 		camera/rwebcam.o
 endif
@@ -320,7 +320,7 @@ endif
 #Input
 
 ifeq ($(HAVE_WAYLAND), 1)
- #OBJ += input/wayland.o
+ #OBJ += input/drivers/wayland.o
  DEFINES += $(WAYLAND_CFLAGS)
  LIBS += $(WAYLAND_LIBS)
 endif
@@ -328,7 +328,7 @@ endif
 ifeq ($(HAVE_DINPUT), 1)
    LIBS += -ldinput8 -ldxguid -lole32
    DEFINES += -DHAVE_DINPUT
-   OBJ += input/dinput.o
+   OBJ += input/drivers/dinput.o
    JOYCONFIG_LIBS += -ldinput8 -ldxguid -lole32
 endif
 
@@ -339,7 +339,7 @@ ifeq ($(HAVE_WINXINPUT), 1)
 endif
 
 ifeq ($(HAVE_X11), 1)
-   OBJ += input/x11_input.o gfx/context/x11_common.o input/keyboard_event_x11.o
+   OBJ += input/drivers/x11_input.o gfx/context/x11_common.o input/keyboard_event_x11.o
    LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS)
    DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
 endif
@@ -354,7 +354,7 @@ ifeq ($(HAVE_UDEV), 1)
    DEFINES += $(UDEV_CFLAGS)
    LIBS += $(UDEV_LIBS)
    JOYCONFIG_LIBS += $(UDEV_LIBS)
-   OBJ += input/udev_input.o input/udev_joypad.o
+   OBJ += input/drivers/udev_input.o input/udev_joypad.o
 endif
 
 ifeq ($(HAVE_PARPORT), 1)
@@ -449,7 +449,7 @@ ifeq ($(HAVE_SDL2), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/drivers/sdl_audio.o
+   OBJ += gfx/sdl_gfx.o input/drivers/sdl_input.o input/sdl_joypad.o audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_OPENGL), 1)
      OBJ += gfx/context/sdl_gl_ctx.o
@@ -461,7 +461,7 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_SDL2), 1)
-   OBJ += gfx/sdl2_gfx.o input/sdl_input.o input/sdl_joypad.o audio/drivers/sdl_audio.o
+   OBJ += gfx/sdl2_gfx.o input/drivers/sdl_input.o input/sdl_joypad.o audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_OPENGL), 1)
      OBJ += gfx/context/sdl_gl_ctx.o

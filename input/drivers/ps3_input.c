@@ -20,11 +20,11 @@
 #include <sdk_version.h>
 #include <boolean.h>
 
-#include "../ps3/sdk_defines.h"
+#include "../../ps3/sdk_defines.h"
 
-#include "../driver.h"
-#include "../libretro.h"
-#include "../general.h"
+#include "../../driver.h"
+#include "../../libretro.h"
+#include "../../general.h"
 
 #ifdef HAVE_MOUSE
 #ifndef __PSL1GHT__

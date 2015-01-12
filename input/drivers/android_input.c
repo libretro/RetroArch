@@ -19,13 +19,13 @@
 #include <android/keycodes.h>
 #include <unistd.h>
 #include <dlfcn.h>
-#include "../frontend/platform/platform_android.h"
-#include "input_autodetect.h"
-#include "input_common.h"
-#include "input_joypad.h"
-#include "../performance.h"
-#include "../general.h"
-#include "../driver.h"
+#include "../../frontend/platform/platform_android.h"
+#include "../input_autodetect.h"
+#include "../input_common.h"
+#include "../input_joypad.h"
+#include "../../performance.h"
+#include "../../general.h"
+#include "../../driver.h"
 
 #define MAX_TOUCH 16
 #define MAX_PADS 8

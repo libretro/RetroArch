@@ -292,38 +292,38 @@ INPUT
 #endif
 
 #if defined(__CELLOS_LV2__)
-#include "../input/ps3_input.c"
+#include "../input/drivers/ps3_input.c"
 #include "../input/ps3_input_joypad.c"
 #include "../input/autoconf/builtin_ps3.c"
 #elif defined(SN_TARGET_PSP2) || defined(PSP)
-#include "../input/psp_input.c"
+#include "../input/drivers/psp_input.c"
 #include "../input/psp_input_joypad.c"
 #include "../input/autoconf/builtin_psp.c"
 #elif defined(GEKKO)
 #ifdef HAVE_LIBSICKSAXIS
 #include "../input/gx_input_sicksaxis.c"
 #endif
-#include "../input/gx_input.c"
+#include "../input/drivers/gx_input.c"
 #include "../input/gx_input_joypad.c"
 #include "../input/autoconf/builtin_gx.c"
 #elif defined(_XBOX)
-#include "../input/xdk_xinput_input.c"
+#include "../input/drivers/xdk_xinput_input.c"
 #include "../input/xdk_xinput_input_joypad.c"
 #include "../input/autoconf/builtin_xdk.c"
 #elif defined(_WIN32)
 #include "../input/autoconf/builtin_win.c"
 #elif defined(XENON)
-#include "../input/xenon360_input.c"
+#include "../input/drivers/xenon360_input.c"
 #elif defined(ANDROID)
-#include "../input/android_input.c"
+#include "../input/drivers/android_input.c"
 #include "../input/android_input_joypad.c"
 #elif defined(__APPLE__)
-#include "../input/apple_input.c"
+#include "../input/drivers/apple_input.c"
 #elif defined(__QNX__)
-#include "../input/qnx_input.c"
+#include "../input/drivers/qnx_input.c"
 #include "../input/qnx_input_joypad.c"
 #elif defined(EMSCRIPTEN)
-#include "../input/rwebinput_input.c"
+#include "../input/drivers/rwebinput_input.c"
 #endif
 
 #if defined(__APPLE__)
@@ -343,7 +343,7 @@ INPUT
 #endif
 
 #ifdef HAVE_DINPUT
-#include "../input/dinput.c"
+#include "../input/drivers/dinput.c"
 #endif
 
 #ifdef HAVE_WINXINPUT
@@ -357,20 +357,20 @@ INPUT
 #include "../input/osk/nullosk.c"
 
 #if defined(__linux__) && !defined(ANDROID) 
-#include "../input/linuxraw_input.c"
+#include "../input/drivers/linuxraw_input.c"
 #include "../input/linuxraw_joypad.c"
 #endif
 
 #ifdef HAVE_X11
-#include "../input/x11_input.c"
+#include "../input/drivers/x11_input.c"
 #endif
 
 #ifdef HAVE_UDEV
-#include "../input/udev_input.c"
+#include "../input/drivers/udev_input.c"
 #include "../input/udev_joypad.c"
 #endif
 
-#include "../input/nullinput.c"
+#include "../input/drivers/nullinput.c"
 #include "../input/nullinput_joypad.c"
 
 /*============================================================

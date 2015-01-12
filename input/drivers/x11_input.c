@@ -13,14 +13,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_common.h"
-#include "input_joypad.h"
-#include "input_keymaps.h"
+#include "../input_common.h"
+#include "../input_joypad.h"
+#include "../input_keymaps.h"
 
-#include "../driver.h"
+#include "../../driver.h"
 
 #include <boolean.h>
-#include "../general.h"
+#include "../../general.h"
 #include <stdint.h>
 #include <stdlib.h>
 

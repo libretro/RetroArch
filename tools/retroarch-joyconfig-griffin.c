@@ -17,12 +17,12 @@
 #include "retroarch-joyconfig.c"
 
 #if defined(__linux) && !defined(ANDROID)
-#include "../input/linuxraw_input.c"
+#include "../input/drivers/linuxraw_input.c"
 #include "../input/linuxraw_joypad.c"
 #endif
 
 #if defined(HAVE_DINPUT)
-#include "../input/dinput.c"
+#include "../input/drivers/dinput.c"
 #endif
 
 #if defined(HAVE_WINXINPUT)
@@ -46,7 +46,7 @@
 #include "../libretro-sdk/string/string_list.c"
 #include "../libretro-sdk/compat/compat.c"
 
-#include "../input/nullinput.c"
+#include "../input/drivers/nullinput.c"
 #include "../input/nullinput_joypad.c"
 
 #include "../input/input_context.c"

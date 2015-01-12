@@ -17,12 +17,12 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "input_common.h"
-#include "input_joypad.h"
-#include "input_keymaps.h"
+#include "../input_common.h"
+#include "../input_joypad.h"
+#include "../input_keymaps.h"
 #include "apple_input.h"
-#include "../general.h"
-#include "../driver.h"
+#include "../../general.h"
+#include "../../driver.h"
 
 #include "apple_keycode.h"
 
