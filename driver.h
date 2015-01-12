@@ -25,7 +25,6 @@
 #include <compat/posix_string.h>
 #include "gfx/scaler/scaler.h"
 #include "gfx/image/image.h"
-#include "input/input_context.h"
 
 #include "frontend/frontend_context.h"
 #include <retro_miscellaneous.h>
@@ -599,15 +598,6 @@ void driver_location_set_interval(unsigned interval_msecs,
 bool driver_update_system_av_info(const struct retro_system_av_info *info);
 
 extern driver_t driver;
-
-/**
- * config_get_input_driver_options:
- *
- * Get an enumerated list of all input driver names, separated by '|'.
- *
- * Returns: string listing of all input driver names, separated by '|'.
- **/
-const char* config_get_input_driver_options(void);
 
 /**
  * config_get_camera_driver_options:

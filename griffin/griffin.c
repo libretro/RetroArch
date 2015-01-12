@@ -497,6 +497,7 @@ AUDIO
 DRIVERS
 ============================================================ */
 #include "../gfx/video_driver.c"
+#include "../input_driver.c"
 #include "../audio/audio_driver.c"
 #include "../driver.c"
 
