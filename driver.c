@@ -554,6 +554,36 @@ static const location_driver_t *location_drivers[] = {
 };
 
 /**
+ * location_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to location driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const void *location_driver_find_handle(int index)
+{
+   const void *drv = location_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv;
+}
+
+/**
+ * location_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of location driver at index. Can be NULL
+ * if nothing found.
+ **/
+static const char *location_driver_find_ident(int index)
+{
+   const location_driver_t *drv = location_drivers[index];
+   if (!drv)
+      return NULL;
+   return drv->ident;
+}
+
+/**
  * config_get_location_driver_options:
  *
  * Get an enumerated list of all location driver names,
@@ -572,9 +602,9 @@ const char* config_get_location_driver_options(void)
 
    attr.i = 0;
 
-   for (option_k = 0; location_drivers[option_k]; option_k++)
+   for (option_k = 0; location_driver_find_handle(option_k); option_k++)
    {
-      const char *opt = location_drivers[option_k]->ident;
+      const char *opt = location_driver_find_ident(option_k);
       options_len += strlen(opt) + 1;
       string_list_append(options_l, opt, attr);
    }
@@ -679,9 +709,9 @@ static const void *find_driver_nonempty(const char *label, int i,
    }
    else if (!strcmp(label, "location_driver"))
    {
-      drv = location_drivers[i];
+      drv = location_driver_find_handle(i);
       if (drv)
-         strlcpy(str, location_drivers[i]->ident, sizeof_str);
+         strlcpy(str, location_driver_find_ident(i), sizeof_str);
    }
    else if (!strcmp(label, "osk_driver"))
    {
@@ -963,19 +993,19 @@ static void find_location_driver(void)
 {
    int i = find_driver_index("location_driver", g_settings.location.driver);
    if (i >= 0)
-      driver.location = location_drivers[i];
+      driver.location = location_driver_find_handle(i);
    else
    {
       unsigned d;
       RARCH_ERR("Couldn't find any location driver named \"%s\"\n",
             g_settings.location.driver);
       RARCH_LOG_OUTPUT("Available location drivers are:\n");
-      for (d = 0; location_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", location_drivers[d]->ident);
+      for (d = 0; location_driver_find_handle(d); d++)
+         RARCH_LOG_OUTPUT("\t%s\n", location_driver_find_ident(d));
        
       RARCH_WARN("Going to default to first location driver...\n");
        
-      driver.location = location_drivers[0];
+      driver.location = location_driver_find_handle(0);
 
       if (!driver.location)
          rarch_fail(1, "find_location_driver()");
