@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "overlay.h"
+#include "input_overlay.h"
 #include "../general.h"
 #include "../driver.h"
 #include <file/config_file.h>

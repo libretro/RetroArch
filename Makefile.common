@@ -120,7 +120,7 @@ OBJ += frontend/frontend.o \
 		input/input_common.o \
 		input/input_keymaps.o \
 		input/keyboard_line.o \
-		input/overlay.o \
+		input/input_overlay.o \
 		patch.o \
 		libretro-sdk/queues/fifo_buffer.o \
 		core_options.o \

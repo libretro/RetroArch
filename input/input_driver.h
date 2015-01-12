@@ -26,7 +26,7 @@
 #include "input_joypad_driver.h"
 
 #ifdef HAVE_OVERLAY
-#include "overlay.h"
+#include "input_overlay.h"
 #endif
 
 #ifdef __cplusplus

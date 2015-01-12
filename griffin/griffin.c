@@ -287,7 +287,7 @@ INPUT
 #include "../input/keyboard_line.c"
 
 #ifdef HAVE_OVERLAY
-#include "../input/overlay.c"
+#include "../input/input_overlay.c"
 #endif
 
 #if defined(__CELLOS_LV2__)
