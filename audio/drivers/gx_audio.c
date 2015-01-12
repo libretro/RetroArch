@@ -17,7 +17,7 @@
 #include "../../driver.h"
 #include <stdlib.h>
 #include <boolean.h>
-#include "../general.h"
+#include "../../general.h"
 #include <string.h>
 
 #ifdef GEKKO

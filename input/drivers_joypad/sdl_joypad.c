@@ -14,10 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_autodetect.h"
-#include "input_common.h"
+#include "../input_autodetect.h"
+#include "../input_common.h"
 #include "SDL.h"
-#include "../general.h"
+#include "../../general.h"
 
 typedef struct _sdl_joypad
 {

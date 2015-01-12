@@ -13,9 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_autodetect.h"
-#include "input_common.h"
-#include "../general.h"
+#include "../input_autodetect.h"
+#include "../input_common.h"
+#include "../../general.h"
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>

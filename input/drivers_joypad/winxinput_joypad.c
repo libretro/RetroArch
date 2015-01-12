@@ -20,10 +20,10 @@
 
 // Some wrappers for other controllers also simulate xinput (as it is easier to implement)
 // so this may be useful for those also.
-#include "input_autodetect.h"
-#include "input_common.h"
+#include "../input_autodetect.h"
+#include "../input_common.h"
 
-#include "../general.h"
+#include "../../general.h"
 #include <boolean.h>
 
 #include <stdlib.h>

@@ -62,7 +62,7 @@ endif
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    JOYCONFIG_LIBS += -lrt
-   OBJ += input/drivers/linuxraw_input.o input/linuxraw_joypad.o
+   OBJ += input/drivers/linuxraw_input.o input/drivers_joypad/linuxraw_joypad.o
 endif
 
 ifeq ($(findstring Haiku,$(OS)),)
@@ -143,7 +143,7 @@ OBJ += frontend/frontend.o \
 		gfx/nullgfx.o \
 		audio/drivers/nullaudio.o \
 		input/drivers/nullinput.o \
-		input/nullinput_joypad.o \
+		input/drivers_joypad/nullinput_joypad.o \
 		input/osk/nullosk.o \
 		playlist.o \
 		movie.o \
@@ -334,7 +334,7 @@ endif
 
 ifeq ($(HAVE_WINXINPUT), 1)
    DEFINES += -DHAVE_WINXINPUT -DHAVE_BUILTIN_AUTOCONFIG
-   OBJ += input/winxinput_joypad.o \
+   OBJ += input/drivers_joypad/winxinput_joypad.o \
           input/autoconf/builtin_win.o
 endif
 
@@ -354,11 +354,11 @@ ifeq ($(HAVE_UDEV), 1)
    DEFINES += $(UDEV_CFLAGS)
    LIBS += $(UDEV_LIBS)
    JOYCONFIG_LIBS += $(UDEV_LIBS)
-   OBJ += input/drivers/udev_input.o input/udev_joypad.o
+   OBJ += input/drivers/udev_input.o input/drivers_joypad/udev_joypad.o
 endif
 
 ifeq ($(HAVE_PARPORT), 1)
-   OBJ += input/parport_joypad.o
+   OBJ += input/drivers_joypad/parport_joypad.o
 endif
 
 # Video
@@ -449,7 +449,7 @@ ifeq ($(HAVE_SDL2), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o input/drivers/sdl_input.o input/sdl_joypad.o audio/drivers/sdl_audio.o
+   OBJ += gfx/sdl_gfx.o input/drivers/sdl_input.o input/drivers_joypad/sdl_joypad.o audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_OPENGL), 1)
      OBJ += gfx/context/sdl_gl_ctx.o
@@ -461,7 +461,7 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_SDL2), 1)
-   OBJ += gfx/sdl2_gfx.o input/drivers/sdl_input.o input/sdl_joypad.o audio/drivers/sdl_audio.o
+   OBJ += gfx/sdl2_gfx.o input/drivers/sdl_input.o input/drivers_joypad/sdl_joypad.o audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_OPENGL), 1)
      OBJ += gfx/context/sdl_gl_ctx.o

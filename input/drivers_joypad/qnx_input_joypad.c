@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_autodetect.h"
+#include "../input_autodetect.h"
 
 static const char *qnx_joypad_name(unsigned pad)
 {
