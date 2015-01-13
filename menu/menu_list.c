@@ -117,7 +117,7 @@ void *menu_list_get_last_stack_actiondata(const menu_list_t *list)
 {
    if (!list)
       return NULL;
-      return file_list_get_last_actiondata(list->menu_stack);
+   return file_list_get_last_actiondata(list->menu_stack);
 }
 
 void menu_list_flush_stack(menu_list_t *list,
@@ -132,6 +132,7 @@ void menu_list_flush_stack(menu_list_t *list,
 
    driver.menu->need_refresh = true;
    file_list_get_last(list->menu_stack, &path, &label, &type);
+
    while (type != final_type)
    {
       menu_list_pop(list->menu_stack, &driver.menu->selection_ptr);
@@ -151,6 +152,7 @@ void menu_list_flush_stack_by_needle(menu_list_t *list,
 
    driver.menu->need_refresh = true;
    file_list_get_last(list->menu_stack, &path, &label, &type);
+
    while (strcmp(needle, label) != 0)
    {
       menu_list_pop(list->menu_stack, &driver.menu->selection_ptr);

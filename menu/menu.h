@@ -27,8 +27,8 @@
 #include "menu_navigation.h"
 #include "../../core_info.h"
 #include "../../playlist.h"
-#include "menu_input_line_cb.h"
-#include "../../gfx/shader/shader_context.h"
+#include "menu_input.h"
+#include "../gfx/video_shader_driver.h"
 
 #ifdef HAVE_RGUI
 #define MENU_TEXTURE_FULLSCREEN false
@@ -93,25 +93,6 @@ typedef enum
    MENU_SETTING_HORIZONTAL_MENU,
    MENU_FILE_TYPE_T_LAST,
 } menu_file_type_t;
-
-typedef enum
-{
-   MENU_ACTION_UP,
-   MENU_ACTION_DOWN,
-   MENU_ACTION_LEFT,
-   MENU_ACTION_RIGHT,
-   MENU_ACTION_OK,
-   MENU_ACTION_Y,
-   MENU_ACTION_CANCEL,
-   MENU_ACTION_REFRESH,
-   MENU_ACTION_SELECT,
-   MENU_ACTION_START,
-   MENU_ACTION_MESSAGE,
-   MENU_ACTION_SCROLL_DOWN,
-   MENU_ACTION_SCROLL_UP,
-   MENU_ACTION_TOGGLE,
-   MENU_ACTION_NOOP
-} menu_action_t;
 
 typedef enum
 {

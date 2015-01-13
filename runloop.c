@@ -397,6 +397,17 @@ static bool check_movie(void)
    return check_movie_record();
 }
 
+/**
+ * check_shader_dir:
+ * @pressed_next         : was next shader key pressed?
+ * @pressed_previous     : was previous shader key pressed?
+ *
+ * Checks if any one of the shader keys has been pressed for this frame: 
+ * a) Next shader index.
+ * b) Previous shader index.
+ *
+ * Will also immediately apply the shader.
+ **/
 static void check_shader_dir(bool pressed_next, bool pressed_prev)
 {
    char msg[PATH_MAX_LENGTH];
@@ -461,6 +472,58 @@ static void check_cheats(retro_input_t trigger_input)
       cheat_manager_toggle(g_extern.cheat);
 }
 
+#ifdef HAVE_MENU
+static void do_state_check_menu_toggle(void)
+{
+   if (g_extern.is_menu)
+   {
+      if (g_extern.main_is_init && !g_extern.libretro_dummy)
+         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+      return;
+   }
+
+   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+}
+#endif
+
+/**
+ * do_pre_state_checks:
+ * @input                : input sample for this frame
+ * @old_input            : input sample of the previous frame
+ * @trigger_input        : difference' input sample - difference
+ *                         between 'input' and 'old_input'
+ *
+ * Checks for state changes in this frame.
+ *
+ * Unlike do_state_checks(), this is performed for both
+ * the menu and the regular loop.
+ *
+ * Returns: 0.
+ **/
+static int do_pre_state_checks(
+      retro_input_t input, retro_input_t old_input,
+      retro_input_t trigger_input)
+{
+   if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))
+      rarch_main_command(RARCH_CMD_OVERLAY_NEXT);
+
+   if (!g_extern.is_paused || g_extern.is_menu)
+   {
+      if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+         rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
+   }
+
+   if (BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
+      rarch_main_command(RARCH_CMD_GRAB_MOUSE_TOGGLE);
+
+#ifdef HAVE_MENU
+   if (check_enter_menu_func(trigger_input) || (g_extern.libretro_dummy))
+      do_state_check_menu_toggle();
+#endif
+
+   return 0;
+}
+
 /**
  * do_state_checks:
  * @input                : input sample for this frame
@@ -486,18 +549,6 @@ static int do_state_checks(
       set_volume(0.5f);
    else if (BIT64_GET(input, RARCH_VOLUME_DOWN))
       set_volume(-0.5f);
-
-   if (BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
-      rarch_main_command(RARCH_CMD_GRAB_MOUSE_TOGGLE);
-
-   if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))
-      rarch_main_command(RARCH_CMD_OVERLAY_NEXT);
-
-   if (!g_extern.is_paused)
-   {
-      if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
-         rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
-   }
 
 #ifdef HAVE_NETPLAY
    if (driver.netplay_data)
@@ -588,6 +639,11 @@ static inline int time_to_exit(retro_input_t input)
    return 0;
 }
 
+/**
+ * update_frame_time:
+ *
+ * Updates frame timing if frame timing callback is in use by the core.
+ **/
 static void update_frame_time(void)
 {
    retro_time_t curr_time = rarch_get_time_usec();
@@ -609,44 +665,39 @@ static void update_frame_time(void)
    g_extern.system.frame_time.callback(delta);
 }
 
-#ifdef HAVE_MENU
-static void do_state_check_menu_toggle(void)
-{
-   if (g_extern.is_menu)
-   {
-      if (g_extern.main_is_init && !g_extern.libretro_dummy)
-         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-      return;
-   }
 
-   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
-}
-#endif
-
+/**
+ * limit_frame_time:
+ *
+ * Limit frame time if fast forward ratio throttle is enabled.
+ **/
 static void limit_frame_time(void)
 {
-   retro_time_t current = rarch_get_time_usec();
-   retro_time_t target  = 0, to_sleep_ms = 0;
-   double effective_fps = g_extern.system.av_info.timing.fps 
+   double effective_fps, mft_f;
+   retro_time_t current, target = 0, to_sleep_ms = 0;
+
+   current       = rarch_get_time_usec();
+   effective_fps = g_extern.system.av_info.timing.fps 
       * g_settings.fastforward_ratio;
-   double mft_f = 1000000.0f / effective_fps;
+   mft_f         = 1000000.0f / effective_fps;
 
    g_extern.frame_limit.minimum_frame_time = (retro_time_t) roundf(mft_f);
 
-   target = g_extern.frame_limit.last_frame_time + 
-      g_extern.frame_limit.minimum_frame_time;
-   to_sleep_ms = (target - current) / 1000;
+   target        = g_extern.frame_limit.last_frame_time + 
+                   g_extern.frame_limit.minimum_frame_time;
+   to_sleep_ms   = (target - current) / 1000;
 
-   if (to_sleep_ms > 0)
+   if (to_sleep_ms <= 0)
    {
-      rarch_sleep((unsigned int)to_sleep_ms);
-
-      /* Combat jitter a bit. */
-      g_extern.frame_limit.last_frame_time += 
-         g_extern.frame_limit.minimum_frame_time;
-   }
-   else
       g_extern.frame_limit.last_frame_time = rarch_get_time_usec();
+      return;
+   }
+
+   rarch_sleep((unsigned int)to_sleep_ms);
+
+   /* Combat jitter a bit. */
+   g_extern.frame_limit.last_frame_time += 
+      g_extern.frame_limit.minimum_frame_time;
 }
 
 static void check_block_hotkey(bool enable_hotkey)
@@ -717,12 +768,10 @@ static inline retro_input_t input_keys_pressed(void)
    check_block_hotkey(driver.input->key_pressed(driver.input_data,
             RARCH_ENABLE_HOTKEY));
 
-   input_push_analog_dpad((struct retro_keybind*)binds[0],
-         (g_settings.input.analog_dpad_mode[0] == ANALOG_DPAD_NONE) ?
-         ANALOG_DPAD_LSTICK : g_settings.input.analog_dpad_mode[0]);
-
    for (i = 0; i < g_settings.input.max_users; i++)
    {
+      input_push_analog_dpad(g_settings.input.binds[i],
+            g_settings.input.analog_dpad_mode[i]);
       input_push_analog_dpad(g_settings.input.autoconf_binds[i],
             g_settings.input.analog_dpad_mode[i]);
 
@@ -731,7 +780,7 @@ static inline retro_input_t input_keys_pressed(void)
       else
          g_extern.turbo_frame_enable[i] = 
             driver.input->input_state(driver.input_data, binds, i,
-               RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+                  RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
@@ -756,9 +805,11 @@ static inline retro_input_t input_keys_pressed(void)
          ret |= (1ULL << key);
    }
 
-   input_pop_analog_dpad((struct retro_keybind*)binds[0]);
    for (i = 0; i < g_settings.input.max_users; i++)
+   {
+      input_pop_analog_dpad(g_settings.input.binds[i]);
       input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
+   }
 
    return ret;
 }
@@ -784,11 +835,38 @@ static bool input_flush(retro_input_t *input)
 }
 
 /**
+ * rarch_main_load_dummy_core:
+ *
+ * Quits out of RetroArch main loop.
+ *
+ * On special case, loads dummy core 
+ * instead of exiting RetroArch completely.
+ * Aborts core shutdown if invoked.
+ *
+ * Returns: -1 if we are about to quit, otherwise 0.
+ **/
+static int rarch_main_iterate_quit(void)
+{
+   if (g_extern.core_shutdown_initiated
+         && g_settings.load_dummy_on_core_shutdown)
+   {
+      if (!rarch_main_command(RARCH_CMD_PREPARE_DUMMY))
+         return -1;
+
+      g_extern.core_shutdown_initiated = false;
+
+      return 0;
+   }
+
+   return -1;
+}
+
+/**
  * rarch_main_iterate:
  *
  * Run Libretro core in RetroArch for one frame.
  *
- * Returns: 0 on successful run, 1 if we have to wait until button input in order
+ * Returns: 0 on success, 1 if we have to wait until button input in order
  * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop. 
  **/
 int rarch_main_iterate(void)
@@ -799,7 +877,6 @@ int rarch_main_iterate(void)
    static retro_input_t last_input = 0;
    retro_input_t old_input         = last_input;
    retro_input_t input             = input_keys_pressed();
-
    last_input                      = input;
 
    if (driver.flushing_input)
@@ -808,15 +885,14 @@ int rarch_main_iterate(void)
    trigger_input = input & ~old_input;
 
    if (time_to_exit(input))
-      return -1;
+      return rarch_main_iterate_quit();
 
    if (g_extern.system.frame_time.callback)
       update_frame_time();
 
-#ifdef HAVE_MENU
-   if (check_enter_menu_func(trigger_input) || (g_extern.libretro_dummy))
-      do_state_check_menu_toggle();
+   do_pre_state_checks(input, old_input, trigger_input);
 
+#ifdef HAVE_MENU
    if (g_extern.is_menu)
    {
       if (menu_iterate(input, old_input, trigger_input) == -1)
@@ -831,7 +907,7 @@ int rarch_main_iterate(void)
    if (g_extern.exec)
    {
       g_extern.exec = false;
-      return -1;
+      return rarch_main_iterate_quit();
    }
 
    if (do_state_checks(input, old_input, trigger_input))

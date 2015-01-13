@@ -37,8 +37,9 @@ static void core_info_list_resolve_all_extensions(
 
    for (i = 0; i < core_info_list->count; i++)
    {
-      all_ext_len += core_info_list->list[i].supported_extensions ?
-         (strlen(core_info_list->list[i].supported_extensions) + 2) : 0;
+      if (core_info_list->list[i].supported_extensions)
+         all_ext_len += 
+            (strlen(core_info_list->list[i].supported_extensions) + 2);
    }
 
    if (all_ext_len)
@@ -48,12 +49,12 @@ static void core_info_list_resolve_all_extensions(
    {
       for (i = 0; i < core_info_list->count; i++)
       {
-         if (core_info_list->list[i].supported_extensions)
-         {
-            strlcat(core_info_list->all_ext,
-                  core_info_list->list[i].supported_extensions, all_ext_len);
-            strlcat(core_info_list->all_ext, "|", all_ext_len);
-         }
+         if (!core_info_list->list[i].supported_extensions)
+            continue;
+
+         strlcat(core_info_list->all_ext,
+               core_info_list->list[i].supported_extensions, all_ext_len);
+         strlcat(core_info_list->all_ext, "|", all_ext_len);
       }
    }
 }
@@ -333,7 +334,12 @@ bool core_info_list_get_by_id(core_info_list_t *core_info_list,
    {
       core_info_t *info = (core_info_t*)&core_info_list->list[i];
 
-      if (info && info->path && strcmp(core_id, info->path) == 0)
+      if (!info)
+         continue;
+      if (!info->path)
+         continue;
+
+      if (!strcmp(core_id, info->path))
       {
          *out_info = *info;
          return true;
@@ -421,12 +427,15 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
       if (!core)
          continue;
 
-      if (!core_info_does_support_file(core, path)
+      if (core_info_does_support_file(core, path))
+         continue;
+
 #ifdef HAVE_ZLIB
-            && !core_info_does_support_any_file(core, list)
+      if (core_info_does_support_any_file(core, list))
+         continue;
 #endif
-         )
-         break;
+
+      break;
    }
 
 #ifdef HAVE_ZLIB
@@ -446,7 +455,12 @@ static core_info_t *find_core_info(core_info_list_t *list,
    for (i = 0; i < list->count; i++)
    {
       core_info_t *info = (core_info_t*)&list->list[i];
-      if (info && info->path && !strcmp(info->path, core))
+
+      if (!info)
+         continue;
+      if (!info->path)
+         continue;
+      if (!strcmp(info->path, core))
          return info;
    }
 
@@ -479,12 +493,12 @@ void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
 
    for (i = 0; i < info->firmware_count; i++)
    {
-      if (info->firmware[i].path)
-      {
-         fill_pathname_join(path, systemdir,
-               info->firmware[i].path, sizeof(path));
-         info->firmware[i].missing = !path_file_exists(path);
-      }
+      if (!info->firmware[i].path)
+         continue;
+
+      fill_pathname_join(path, systemdir,
+            info->firmware[i].path, sizeof(path));
+      info->firmware[i].missing = !path_file_exists(path);
    }
 }
 

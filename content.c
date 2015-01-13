@@ -532,7 +532,7 @@ static bool load_content(const struct retro_subsystem_info *special,
       ret = pretro_load_game(*content->elems[0].data ? info : NULL);
 
    if (!ret)
-      RARCH_ERR("Failed to load game.\n");
+      RARCH_ERR("Failed to load content.\n");
 
 end:
    for (i = 0; i < content->size; i++)

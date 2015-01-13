@@ -24,7 +24,7 @@
 #include "../file_ext.h"
 #include <file/file_path.h>
 #include <file/dir_list.h>
-#include "frontend_context.h"
+#include "frontend_driver.h"
 
 struct defaults g_defaults;
 

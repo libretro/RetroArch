@@ -33,6 +33,14 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
 
 int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list);
 
+/**
+ * menu_entries_init:
+ * @menu                     : Menu handle.
+ *
+ * Creates and initializes menu entries.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool menu_entries_init(menu_handle_t *menu);
 
 void menu_entries_refresh(file_list_t *list);

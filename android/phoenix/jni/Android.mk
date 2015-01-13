@@ -28,9 +28,9 @@ ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
 
 ifeq ($(HAVE_NEON),1)
 	LOCAL_CFLAGS += -D__ARM_NEON__
-   LOCAL_SRC_FILES += $(RARCH_DIR)/audio/utils_neon.S.neon
-   LOCAL_SRC_FILES += $(RARCH_DIR)/audio/resamplers/sinc_neon.S.neon
-   LOCAL_SRC_FILES += $(RARCH_DIR)/audio/resamplers/cc_resampler_neon.S.neon
+   LOCAL_SRC_FILES += $(RARCH_DIR)/audio/audio_utils_neon.S.neon
+   LOCAL_SRC_FILES += $(RARCH_DIR)/audio/drivers_resampler/sinc_neon.S.neon
+   LOCAL_SRC_FILES += $(RARCH_DIR)/audio/drivers_resampler/cc_resampler_neon.S.neon
 endif
 LOCAL_CFLAGS += -DSINC_LOWER_QUALITY 
 

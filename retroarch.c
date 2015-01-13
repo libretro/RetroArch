@@ -43,7 +43,7 @@
 #ifdef HAVE_MENU
 #include "menu/menu.h"
 #include "menu/menu_shader.h"
-#include "menu/menu_input_line_cb.h"
+#include "menu/menu_input.h"
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -126,15 +126,20 @@ static bool take_screenshot_raw(void)
          width, height, -pitch, false);
 }
 
-static void take_screenshot(void)
+/**
+ * take_screenshot:
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+static bool take_screenshot(void)
 {
    bool viewport_read = false;
-   bool ret = false;
+   bool ret = true;
    const char *msg = NULL;
 
    /* No way to infer screenshot directory. */
    if ((!*g_settings.screenshot_directory) && (!*g_extern.basename))
-      return;
+      return false;
 
    viewport_read = (g_settings.video.gpu_screenshot ||
          g_extern.system.hw_render_callback.context_type
@@ -180,6 +185,8 @@ static void take_screenshot(void)
 
    if (g_extern.is_paused)
       rarch_render_cached_frame();
+
+   return ret;
 }
 
 void rarch_recording_dump_frame(const void *data, unsigned width,
@@ -245,25 +252,32 @@ void rarch_recording_dump_frame(const void *data, unsigned width,
       driver.recording->push_video(driver.recording_data, &ffemu_data);
 }
 
-static void init_recording(void)
+/**
+ * init_recording:
+ *
+ * Initializes recording.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+static bool init_recording(void)
 {
    struct ffemu_params params = {0};
    const struct retro_system_av_info *info = &g_extern.system.av_info;
 
    if (!g_extern.recording_enable)
-      return;
+      return false;
 
    if (g_extern.libretro_dummy)
    {
       RARCH_WARN(RETRO_LOG_INIT_RECORDING_SKIPPED);
-      return;
+      return false;
    }
 
    if (!g_settings.video.gpu_record
          && g_extern.system.hw_render_callback.context_type)
    {
       RARCH_WARN("Libretro core is hardware rendered. Must use post-shaded recording as well.\n");
-      return;
+      return false;
    }
 
    RARCH_LOG("Custom timing given: FPS: %.4f, Sample rate: %.4f\n",
@@ -288,6 +302,7 @@ static void init_recording(void)
    if (g_settings.video.gpu_record && driver.video->read_viewport)
    {
       struct rarch_viewport vp = {0};
+
       if (driver.video && driver.video->viewport_info)
          driver.video->viewport_info(driver.video_data, &vp);
 
@@ -295,7 +310,7 @@ static void init_recording(void)
       {
          RARCH_ERR("Failed to get viewport information from video driver. "
                "Cannot start recording ...\n");
-         return;
+         return false;
       }
 
       params.out_width  = vp.width;
@@ -320,7 +335,7 @@ static void init_recording(void)
       if (!g_extern.record_gpu_buffer)
       {
          RARCH_ERR("Failed to allocate GPU record buffer.\n");
-         return;
+         return false;
       }
    }
    else
@@ -364,10 +379,18 @@ static void init_recording(void)
    {
       RARCH_ERR(RETRO_LOG_INIT_RECORDING_FAILED);
       rarch_main_command(RARCH_CMD_GPU_RECORD_DEINIT);
+
+      return false;
    }
+
+   return true;
 }
 
-
+/**
+ * rarch_render_cached_frame:
+ *
+ * Renders the current video frame.
+ **/
 void rarch_render_cached_frame(void)
 {
    void *recording   = driver.recording_data;
@@ -431,6 +454,11 @@ static void print_features(void)
 }
 #undef _PSUPP
 
+/**
+ * print_compiler:
+ *
+ * Prints compiler that was used for compiling RetroArch.
+ **/
 static void print_compiler(FILE *file)
 {
    fprintf(file, "\nCompiler: ");
@@ -458,6 +486,11 @@ static void print_compiler(FILE *file)
    fprintf(file, "Built: %s\n", __DATE__);
 }
 
+/**
+ * print_help:
+ *
+ * Prints help message explaining RetroArch's commandline switches.
+ **/
 static void print_help(void)
 {
    puts("===================================================================");
@@ -646,6 +679,14 @@ static void set_paths(const char *path)
             sizeof(g_settings.system_directory));
 }
 
+/**
+ * parse_input:
+ * @argc                 : Count of (commandline) arguments.
+ * @argv                 : (Commandline) arguments. 
+ *
+ * Parses (commandline) arguments passed to RetroArch.
+ *
+ **/
 static void parse_input(int argc, char *argv[])
 {
    g_extern.libretro_no_content = false;
@@ -1044,6 +1085,11 @@ static void parse_input(int argc, char *argv[])
             sizeof(g_extern.savestate_dir));
 }
 
+/**
+ * init_controllers:
+ *
+ * Initialize libretro controllers.
+ **/
 static void init_controllers(void)
 {
    unsigned i;
@@ -1219,17 +1265,27 @@ static void init_movie(void)
 #define RARCH_DEFAULT_PORT 55435
 
 #ifdef HAVE_NETPLAY
-static void init_netplay(void)
+/**
+ * init_netplay:
+ *
+ * Initializes netplay.
+ *
+ * If netplay is already initialized, will return false (0).
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+
+static bool init_netplay(void)
 {
    struct retro_callbacks cbs = {0};
 
    if (!g_extern.netplay_enable)
-      return;
+      return false;
 
    if (g_extern.bsv.movie_start_playback)
    {
       RARCH_WARN(RETRO_LOG_MOVIE_STARTED_INIT_NETPLAY_FAILED);
-      return;
+      return false;
    }
 
    retro_set_default_callbacks(&cbs);
@@ -1248,16 +1304,17 @@ static void init_netplay(void)
          g_extern.netplay_sync_frames, &cbs, g_extern.netplay_is_spectate,
          g_settings.username);
 
-   if (!driver.netplay_data)
-   {
-      g_extern.netplay_is_client = false;
-      RARCH_WARN(RETRO_LOG_INIT_NETPLAY_FAILED);
+   if (driver.netplay_data)
+      return true;
 
-      if (g_extern.msg_queue)
-         msg_queue_push(g_extern.msg_queue,
-               RETRO_MSG_INIT_NETPLAY_FAILED,
-               0, 180);
-   }
+   g_extern.netplay_is_client = false;
+   RARCH_WARN(RETRO_LOG_INIT_NETPLAY_FAILED);
+
+   if (g_extern.msg_queue)
+      msg_queue_push(g_extern.msg_queue,
+            RETRO_MSG_INIT_NETPLAY_FAILED,
+            0, 180);
+   return false;
 }
 #endif
 
@@ -1314,6 +1371,7 @@ static void init_autosave(void)
 static void deinit_autosave(void)
 {
    unsigned i;
+
    for (i = 0; i < g_extern.num_autosave; i++)
       autosave_free(g_extern.autosave[i]);
 
@@ -1352,7 +1410,9 @@ static void set_savestate_auto_index(void)
 
    for (i = 0; i < dir_list->size; i++)
    {
+      unsigned idx;
       char elem_base[PATH_MAX_LENGTH];
+      const char *end = NULL;
       const char *dir_elem = dir_list->elems[i].data;
 
       fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
@@ -1360,10 +1420,11 @@ static void set_savestate_auto_index(void)
       if (strstr(elem_base, state_base) != elem_base)
          continue;
 
-      const char *end = dir_elem + strlen(dir_elem);
-      while ((end > dir_elem) && isdigit(end[-1])) end--;
+      end = dir_elem + strlen(dir_elem);
+      while ((end > dir_elem) && isdigit(end[-1]))
+         end--;
 
-      unsigned idx = strtoul(end, NULL, 0);
+      idx = strtoul(end, NULL, 0);
       if (idx > max_idx)
          max_idx = idx;
    }
@@ -1588,6 +1649,12 @@ static void main_state(unsigned cmd)
    RARCH_LOG("%s\n", msg);
 }
 
+/**
+ * rarch_disk_control_append_image:
+ * @path                 : Path to disk image. 
+ *
+ * Appends disk image to disk image list.
+ **/
 void rarch_disk_control_append_image(const char *path)
 {
    char msg[PATH_MAX_LENGTH];
@@ -1629,6 +1696,15 @@ void rarch_disk_control_append_image(const char *path)
    rarch_disk_control_set_eject(false, false);
 }
 
+/**
+ * rarch_disk_control_set_eject:
+ * @new_state            : Eject or close the virtual drive tray.
+ *                         false (0) : Close
+ *                         true  (1) : Eject
+ * @print_log            : Show message onscreen.
+ *
+ * Ejects/closes of the virtual drive tray.
+ **/
 void rarch_disk_control_set_eject(bool new_state, bool print_log)
 {
    char msg[PATH_MAX_LENGTH];
@@ -1667,7 +1743,13 @@ void rarch_disk_control_set_eject(bool new_state, bool print_log)
    }
 }
 
-void rarch_disk_control_set_index(unsigned next_idx)
+/**
+ * rarch_disk_control_set_index:
+ * @index                : Index of disk to set as current.
+ *
+ * Sets current disk to @index.
+ **/
+void rarch_disk_control_set_index(unsigned index)
 {
    char msg[PATH_MAX_LENGTH];
    unsigned num_disks;
@@ -1682,19 +1764,19 @@ void rarch_disk_control_set_index(unsigned next_idx)
 
    num_disks = control->get_num_images();
 
-   if (control->set_image_index(next_idx))
+   if (control->set_image_index(index))
    {
-      if (next_idx < num_disks)
+      if (index < num_disks)
          snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.",
-               next_idx + 1, num_disks);
+               index + 1, num_disks);
       else
          strlcpy(msg, "Removed disk from tray.", sizeof(msg));
    }
    else
    {
-      if (next_idx < num_disks)
+      if (index < num_disks)
          snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.",
-               next_idx + 1, num_disks);
+               index + 1, num_disks);
       else
          strlcpy(msg, "Failed to remove disk from tray.", sizeof(msg));
       error = true;
@@ -1834,6 +1916,7 @@ static void init_system_info(void)
 {
    struct retro_system_info *info = (struct retro_system_info*)
       &g_extern.system.info;
+
    pretro_get_system_info(info);
 
    if (!info->library_name)
@@ -1859,11 +1942,18 @@ static void verify_api_version(void)
 {
    /* TODO - when libretro v2 gets added, allow for switching
     * between libretro version backend dynamically. */
+
    RARCH_LOG("Version of libretro API: %u\n", pretro_api_version());
    RARCH_LOG("Compiled against API: %u\n", RETRO_API_VERSION);
+
    if (pretro_api_version() != RETRO_API_VERSION)
       RARCH_WARN(RETRO_LOG_LIBRETRO_ABI_BREAK);
 }
+
+#define FAIL_CPU(simd_type) do { \
+   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
+   rarch_fail(1, "validate_cpu_features()"); \
+} while(0)
 
 /* Make sure we haven't compiled for something we cannot run.
  * Ideally, code would get swapped out depending on CPU support, 
@@ -1873,11 +1963,6 @@ static void validate_cpu_features(void)
 {
    uint64_t cpu = rarch_get_cpu_features();
    (void)cpu;
-
-#define FAIL_CPU(simd_type) do { \
-   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
-   rarch_fail(1, "validate_cpu_features()"); \
-} while(0)
 
 #ifdef __SSE__
    if (!(cpu & RETRO_SIMD_SSE))
@@ -1945,6 +2030,15 @@ static bool init_core(void)
    return true;
 }
 
+/**
+ * rarch_main_init:
+ * @argc                 : Count of (commandline) arguments.
+ * @argv                 : (Commandline) arguments. 
+ *
+ * Initializes RetroArch.
+ *
+ * Returns: 0 on success, otherwise 1 if there was an error.
+ **/
 int rarch_main_init(int argc, char *argv[])
 {
    int sjlj_ret;
@@ -2001,6 +2095,15 @@ error:
    return 1;
 }
 
+/**
+ * rarch_main_init_wrap:
+ * @args                 : Input arguments.
+ * @argc                 : Count of arguments.
+ * @argv                 : Arguments.
+ *
+ * Generates an @argc and @argv pair based on @args
+ * of type rarch_main_wrap.
+ **/
 void rarch_main_init_wrap(const struct rarch_main_wrap *args,
       int *argc, char **argv)
 {
@@ -2077,7 +2180,7 @@ void rarch_main_set_state(unsigned cmd)
           * We'll use this later for something ...
           * FIXME: This should probably be moved to menu_common somehow. */
          g_extern.frontend_key_event = g_extern.system.key_event;
-         g_extern.system.key_event = menu_key_event;
+         g_extern.system.key_event   = menu_input_key_event;
 
          driver.menu->need_refresh = true;
          g_extern.system.frame_time_last = 0;
@@ -2129,9 +2232,14 @@ void rarch_main_set_state(unsigned cmd)
    }
 }
 
-/* Save a new configuration to a file. Filename is based
- * on heuristics to avoid typing. */
-
+/**
+ * save_core_config:
+ *
+ * Saves a new (core) configuration to a file. Filename is based
+ * on heuristics to avoid typing.
+ *
+ * Returns: true (1) on success, otherwise false (0).
+ **/
 static bool save_core_config(void)
 {
    bool ret = false;
@@ -2165,6 +2273,7 @@ static bool save_core_config(void)
       for (i = 0; i < 16; i++)
       {
          char tmp[64];
+
          fill_pathname_base(config_name, g_settings.libretro,
                sizeof(config_name));
          path_remove_extension(config_name);
@@ -2218,6 +2327,14 @@ static bool save_core_config(void)
    return ret;
 }
 
+/**
+ * rarch_main_command:
+ * @cmd                  : Command index.
+ *
+ * Performs RetroArch command with index @cmd.
+ *
+ * Returns: true (1) on success, otherwise false (0).
+ **/
 bool rarch_main_command(unsigned cmd)
 {
    unsigned i   = 0;
@@ -2303,7 +2420,8 @@ bool rarch_main_command(unsigned cmd)
          main_state(cmd);
          break;
       case RARCH_CMD_TAKE_SCREENSHOT:
-         take_screenshot();
+         if (!take_screenshot())
+            return false;
          break;
       case RARCH_CMD_PREPARE_DUMMY:
          *g_extern.fullpath = '\0';
@@ -2481,7 +2599,8 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_RECORD_INIT:
          rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
-         init_recording();
+         if (!init_recording())
+            return false;
          break;
       case RARCH_CMD_HISTORY_DEINIT:
          if (g_defaults.history)
@@ -2716,15 +2835,17 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_NETPLAY_INIT:
          rarch_main_command(RARCH_CMD_NETPLAY_DEINIT);
 #ifdef HAVE_NETPLAY
-         init_netplay();
+         if (!init_netplay())
+            return false;
 #endif
          break;
       case RARCH_CMD_NETPLAY_FLIP_PLAYERS:
 #ifdef HAVE_NETPLAY
          {
             netplay_t *netplay = (netplay_t*)driver.netplay_data;
-            if (netplay)
-               netplay_flip_users(netplay);
+            if (!netplay)
+               return false;
+            netplay_flip_users(netplay);
          }
 #endif
          break;
@@ -2860,6 +2981,11 @@ bool rarch_main_command(unsigned cmd)
    return true;
 }
 
+/**
+ * rarch_main_deinit:
+ *
+ * Deinitializes RetroArch.
+ **/
 void rarch_main_deinit(void)
 {
    rarch_main_command(RARCH_CMD_NETPLAY_DEINIT);
@@ -2886,6 +3012,13 @@ void rarch_main_deinit(void)
    g_extern.main_is_init = false;
 }
 
+/**
+ * rarch_playlist_load_content:
+ * @playlist             : Playlist handle.
+ * @idx                  : Index in playlist.
+ *
+ * Initializes core and loads content based on playlist entry.
+ **/
 void rarch_playlist_load_content(content_playlist_t *playlist,
       unsigned idx)
 {
@@ -2904,9 +3037,22 @@ void rarch_playlist_load_content(content_playlist_t *playlist,
    rarch_main_command(RARCH_CMD_LOAD_CORE);
 }
 
-/* When selection is presented back, returns 0.
- * If it can make a decision right now, returns -1. */
-
+/**
+ * rarch_defer_core:
+ * @core_info            : Core info list handle.
+ * @dir                  : Directory. Gets joined with @path.
+ * @path                 : Path. Gets joined with @dir.
+ * @menu_label           : Label identifier of menu setting.
+ * @deferred_path        : Deferred core path. Will be filled in
+ *                         by function.
+ * @sizeof_deferred_path : Size of @deferred_path.
+ *
+ * Gets deferred core.
+ *
+ * Returns: 0 if there are multiple deferred cores and a 
+ * selection needs to be made from a list, otherwise
+ * returns -1 and fills in @deferred_path with path to core.
+ **/
 int rarch_defer_core(core_info_list_t *core_info, const char *dir,
       const char *path, const char *menu_label,
       char *deferred_path, size_t sizeof_deferred_path)
@@ -2937,29 +3083,41 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
       supported = 1;
    }
    else
-   {
       strlcpy(new_core_path, info->path, sizeof(new_core_path));
-   }
 
-   /* Can make a decision right now. */
-   if (supported == 1)
-   {
-      strlcpy(g_extern.fullpath, deferred_path,
-            sizeof(g_extern.fullpath));
-      if (path_file_exists(new_core_path))
-         strlcpy(g_settings.libretro, new_core_path,
-               sizeof(g_settings.libretro));
-      return -1;
-   }
-   return 0;
+   /* There are multiple deferred cores and a 
+    * selection needs to be made from a list, return 0. */
+   if (supported != 1)
+      return 0;
+
+   strlcpy(g_extern.fullpath, deferred_path,
+         sizeof(g_extern.fullpath));
+
+   if (path_file_exists(new_core_path))
+      strlcpy(g_settings.libretro, new_core_path,
+            sizeof(g_settings.libretro));
+   return -1;
 }
 
-/* Quite intrusive and error prone.
+/**
+ * rarch_replace_config:
+ * @path                 : Path to config file to replace
+ *                         current config file with.
+ *
+ * Replaces currently loaded configuration file with
+ * another one. Will load a dummy core to flush state
+ * properly.
+ *
+ * Quite intrusive and error prone.
  * Likely to have lots of small bugs.
  * Cleanly exit the main loop to ensure that all the tiny details
  * get set properly.
  *
- * This should mitigate most of the smaller bugs. */
+ * This should mitigate most of the smaller bugs.
+ *
+ * Returns: true (1) if successful, false (0) if @path was the
+ * same as the current config file.
+ **/
 
 bool rarch_replace_config(const char *path)
 {

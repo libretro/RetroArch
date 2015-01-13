@@ -39,13 +39,139 @@
 #endif
 
 #ifdef __APPLE__
-#include "apple_keycode.h"
+#include "drivers/apple_keycode.h"
 #endif
 
 #ifdef __linux
 #include <linux/input.h>
 #include <linux/kd.h>
 #endif
+
+const struct input_key_map input_config_key_map[] = {
+   { "left", RETROK_LEFT },
+   { "right", RETROK_RIGHT },
+   { "up", RETROK_UP },
+   { "down", RETROK_DOWN },
+   { "enter", RETROK_RETURN },
+   { "kp_enter", RETROK_KP_ENTER },
+   { "tab", RETROK_TAB },
+   { "insert", RETROK_INSERT },
+   { "del", RETROK_DELETE },
+   { "end", RETROK_END },
+   { "home", RETROK_HOME },
+   { "rshift", RETROK_RSHIFT },
+   { "shift", RETROK_LSHIFT },
+   { "ctrl", RETROK_LCTRL },
+   { "alt", RETROK_LALT },
+   { "space", RETROK_SPACE },
+   { "escape", RETROK_ESCAPE },
+   { "add", RETROK_KP_PLUS },
+   { "subtract", RETROK_KP_MINUS },
+   { "kp_plus", RETROK_KP_PLUS },
+   { "kp_minus", RETROK_KP_MINUS },
+   { "f1", RETROK_F1 },
+   { "f2", RETROK_F2 },
+   { "f3", RETROK_F3 },
+   { "f4", RETROK_F4 },
+   { "f5", RETROK_F5 },
+   { "f6", RETROK_F6 },
+   { "f7", RETROK_F7 },
+   { "f8", RETROK_F8 },
+   { "f9", RETROK_F9 },
+   { "f10", RETROK_F10 },
+   { "f11", RETROK_F11 },
+   { "f12", RETROK_F12 },
+   { "num0", RETROK_0 },
+   { "num1", RETROK_1 },
+   { "num2", RETROK_2 },
+   { "num3", RETROK_3 },
+   { "num4", RETROK_4 },
+   { "num5", RETROK_5 },
+   { "num6", RETROK_6 },
+   { "num7", RETROK_7 },
+   { "num8", RETROK_8 },
+   { "num9", RETROK_9 },
+   { "pageup", RETROK_PAGEUP },
+   { "pagedown", RETROK_PAGEDOWN },
+   { "keypad0", RETROK_KP0 },
+   { "keypad1", RETROK_KP1 },
+   { "keypad2", RETROK_KP2 },
+   { "keypad3", RETROK_KP3 },
+   { "keypad4", RETROK_KP4 },
+   { "keypad5", RETROK_KP5 },
+   { "keypad6", RETROK_KP6 },
+   { "keypad7", RETROK_KP7 },
+   { "keypad8", RETROK_KP8 },
+   { "keypad9", RETROK_KP9 },
+   { "period", RETROK_PERIOD },
+   { "capslock", RETROK_CAPSLOCK },
+   { "numlock", RETROK_NUMLOCK },
+   { "backspace", RETROK_BACKSPACE },
+   { "multiply", RETROK_KP_MULTIPLY },
+   { "divide", RETROK_KP_DIVIDE },
+   { "print_screen", RETROK_PRINT },
+   { "scroll_lock", RETROK_SCROLLOCK },
+   { "tilde", RETROK_BACKQUOTE },
+   { "backquote", RETROK_BACKQUOTE },
+   { "pause", RETROK_PAUSE },
+
+   /* Keys that weren't mappable before */
+   { "quote", RETROK_QUOTE },
+   { "comma", RETROK_COMMA },
+   { "minus", RETROK_MINUS },
+   { "slash", RETROK_SLASH },
+   { "semicolon", RETROK_SEMICOLON },
+   { "equals", RETROK_EQUALS },
+   { "leftbracket", RETROK_LEFTBRACKET },
+   { "backslash", RETROK_BACKSLASH },
+   { "rightbracket", RETROK_RIGHTBRACKET },
+   { "kp_period", RETROK_KP_PERIOD },
+   { "kp_equals", RETROK_KP_EQUALS },
+   { "rctrl", RETROK_RCTRL },
+   { "ralt", RETROK_RALT },
+
+   /* Keys not referenced in any keyboard mapping 
+    * (except perhaps rarch_key_map_apple_hid) */
+   { "caret", RETROK_CARET },
+   { "underscore", RETROK_UNDERSCORE },
+   { "exclaim", RETROK_EXCLAIM },
+   { "quotedbl", RETROK_QUOTEDBL },
+   { "hash", RETROK_HASH },
+   { "dollar", RETROK_DOLLAR },
+   { "ampersand", RETROK_AMPERSAND },
+   { "leftparen", RETROK_LEFTPAREN },
+   { "rightparen", RETROK_RIGHTPAREN },
+   { "asterisk", RETROK_ASTERISK },
+   { "plus", RETROK_PLUS },
+   { "colon", RETROK_COLON },
+   { "less", RETROK_LESS },
+   { "greater", RETROK_GREATER },
+   { "question", RETROK_QUESTION },
+   { "at", RETROK_AT },
+
+   { "f13", RETROK_F13 },
+   { "f14", RETROK_F14 },
+   { "f15", RETROK_F15 },
+
+   { "rmeta", RETROK_RMETA },
+   { "lmeta", RETROK_LMETA },
+   { "lsuper", RETROK_LSUPER },
+   { "rsuper", RETROK_RSUPER },
+   { "mode", RETROK_MODE },
+   { "compose", RETROK_COMPOSE },
+
+   { "help", RETROK_HELP },
+   { "sysreq", RETROK_SYSREQ },
+   { "break", RETROK_BREAK },
+   { "menu", RETROK_MENU },
+   { "power", RETROK_POWER },
+   { "euro", RETROK_EURO },
+   { "undo", RETROK_UNDO },
+   { "clear", RETROK_CLEAR },
+
+   { "nul", RETROK_UNKNOWN },
+   { NULL, RETROK_UNKNOWN },
+};
 
 #ifdef HAVE_X11
 const struct rarch_key_map rarch_key_map_x11[] = {
@@ -873,16 +999,33 @@ const struct rarch_key_map rarch_key_map_apple_hid[] = {
 
 static enum retro_key rarch_keysym_lut[RETROK_LAST];
 
-void input_init_keyboard_lut(const struct rarch_key_map *map)
+/**
+ * input_keymaps_init_keyboard_lut:
+ * @map                   : Keyboard map.
+ *
+ * Initializes and sets the keyboard layout to a keyboard map (@map).
+ **/
+void input_keymaps_init_keyboard_lut(const struct rarch_key_map *map)
 {
    memset(rarch_keysym_lut, 0, sizeof(rarch_keysym_lut));
+
    for (; map->rk != RETROK_UNKNOWN; map++)
       rarch_keysym_lut[map->rk] = (enum retro_key)map->sym;
 }
 
-enum retro_key input_translate_keysym_to_rk(unsigned sym)
+/**
+ * input_keymaps_translate_keysym_to_rk:
+ * @sym                   : Key symbol.
+ *
+ * Translates a key symbol from the keyboard layout table
+ * to an associated retro key identifier.
+ *
+ * Returns: Retro key identifier.
+ **/
+enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym)
 {
    unsigned i;
+
    for (i = 0; i < ARRAY_SIZE(rarch_keysym_lut); i++)
    {
       if (rarch_keysym_lut[i] == sym)
@@ -892,8 +1035,19 @@ enum retro_key input_translate_keysym_to_rk(unsigned sym)
    return RETROK_UNKNOWN;
 }
 
-void input_translate_rk_to_str(enum retro_key key, char *buf, size_t size)
+/**
+ * input_keymaps_translate_rk_to_str:
+ * @key                   : Retro key identifier.
+ * @buf                   : Buffer.
+ * @size                  : Size of @buf.
+ *
+ * Translates a retro key identifier to a human-readable 
+ * identifier string.
+ **/
+void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t size)
 {
+   unsigned i;
+
    rarch_assert(size >= 2);
    *buf = '\0';
 
@@ -901,22 +1055,29 @@ void input_translate_rk_to_str(enum retro_key key, char *buf, size_t size)
    {
       buf[0] = (key - RETROK_a) + 'a';
       buf[1] = '\0';
+      return;
    }
-   else
+
+   for (i = 0; input_config_key_map[i].str; i++)
    {
-      unsigned i;
-      for (i = 0; input_config_key_map[i].str; i++)
-      {
-         if (input_config_key_map[i].key == key)
-         {
-            strlcpy(buf, input_config_key_map[i].str, size);
-            break;
-         }
-      }
+      if (input_config_key_map[i].key != key)
+         continue;
+
+      strlcpy(buf, input_config_key_map[i].str, size);
+      break;
    }
 }
 
-unsigned input_translate_rk_to_keysym(enum retro_key key)
+/**
+ * input_keymaps_translate_rk_to_keysym:
+ * @key                   : Retro key identifier
+ *
+ * Translates a retro key identifier to a key symbol
+ * from the keyboard layout table.
+ *
+ * Returns: key symbol from the keyboard layout table.
+ **/
+unsigned input_keymaps_translate_rk_to_keysym(enum retro_key key)
 {
    return rarch_keysym_lut[key];
 }

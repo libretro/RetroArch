@@ -17,7 +17,7 @@
 #ifndef _MENU_SHADER_MANAGER_H
 #define _MENU_SHADER_MANAGER_H
 
-#include "../gfx/shader/shader_context.h"
+#include "../gfx/video_shader_driver.h"
 
 #ifdef __cplusplus
 extern "C" {

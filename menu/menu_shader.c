@@ -123,43 +123,46 @@ void menu_shader_manager_set_preset(struct gfx_shader *shader,
       unsigned type, const char *preset_path)
 {
 #ifdef HAVE_SHADER_MANAGER
-   RARCH_LOG("Setting Menu shader: %s.\n", preset_path ? preset_path : "N/A (stock)");
+   config_file_t *conf = NULL;
+
    g_settings.video.shader_enable = false;
 
-   if (driver.video->set_shader && driver.video->set_shader(driver.video_data,
+   if (!driver.video->set_shader)
+      return;
+   if (!driver.video->set_shader(driver.video_data,
             (enum rarch_shader_type)type, preset_path))
+      return;
+
+   /* Makes sure that we use Menu Preset shader on driver reinit.
+    * Only do this when the cgp actually works to avoid potential errors. */
+   strlcpy(g_settings.video.shader_path, preset_path ? preset_path : "",
+         sizeof(g_settings.video.shader_path));
+   g_settings.video.shader_enable = true;
+
+   if (!preset_path)
+      return;
+   if (!shader)
+      return;
+
+   /* Load stored Preset into menu on success. 
+    * Used when a preset is directly loaded.
+    * No point in updating when the Preset was 
+    * created from the menu itself. */
+   conf = config_file_new(preset_path);
+
+   if (!conf)
+      return;
+
+   RARCH_LOG("Setting Menu shader: %s.\n", preset_path ? preset_path : "N/A (stock)");
+
+   if (gfx_shader_read_conf_cgp(conf, shader))
    {
-      config_file_t *conf = NULL;
-
-      /* Makes sure that we use Menu Preset shader on driver reinit.
-       * Only do this when the cgp actually works to avoid potential errors. */
-      strlcpy(g_settings.video.shader_path, preset_path ? preset_path : "",
-            sizeof(g_settings.video.shader_path));
-      g_settings.video.shader_enable = true;
-
-      if (!preset_path)
-         return;
-      if (!shader)
-         return;
-
-      /* Load stored Preset into menu on success.
-       * Used when a preset is directly loaded.
-       * No point in updating when the Preset was 
-       * created from the menu itself. */
-      conf = config_file_new(preset_path);
-
-      if (conf)
-      {
-         if (gfx_shader_read_conf_cgp(conf, shader))
-         {
-            gfx_shader_resolve_relative(shader, preset_path);
-            gfx_shader_resolve_parameters(conf, shader);
-         }
-         config_file_free(conf);
-      }
-
-      driver.menu->need_refresh = true;
+      gfx_shader_resolve_relative(shader, preset_path);
+      gfx_shader_resolve_parameters(conf, shader);
    }
+   config_file_free(conf);
+
+   driver.menu->need_refresh = true;
 #endif
 }
 

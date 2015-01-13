@@ -51,33 +51,6 @@
 #define MAX_ARGS 32
 
 /**
- * main_entry_decide:
- *
- * Runs RetroArch for one frame.
- *
- * Returns: -1 upon exiting, 0 if we want to
- * iterate to the next frame.
- **/
-int main_entry_decide(signature(), args_type() args)
-{
-   int ret = rarch_main_iterate();
-
-   if (ret == -1)
-   {
-      if (g_extern.core_shutdown_initiated 
-            && g_settings.load_dummy_on_core_shutdown)
-      {
-         /* Load dummy core instead of exiting RetroArch completely. */
-         rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
-         g_extern.core_shutdown_initiated = false;
-         return 0;
-      }
-   }
-
-   return ret;
-}
-
-/**
  * main_exit_save_config:
  *
  * Saves configuration file to disk, and (optionally)
@@ -322,7 +295,7 @@ returntype main_entry(signature())
    }
 
 #if defined(HAVE_MAIN_LOOP)
-   while (main_entry_decide(signature_expand(), args) != -1);
+   while (rarch_main_iterate() != -1);
 
    main_exit(args);
 #endif

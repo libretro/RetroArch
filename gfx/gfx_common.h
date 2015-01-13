@@ -31,6 +31,19 @@ extern "C" {
 #include "../config.h"
 #endif
 
+/**
+ * gfx_get_fps:
+ * @buf           : string suitable for Window title
+ * @size          : size of buffer.
+ * @buf_fps       : string of raw FPS only (optional).
+ * @size_fps      : size of raw FPS buffer.
+ *
+ * Get the amount of frames per seconds.
+ *
+ * Returns: true if framerate per seconds could be obtained,
+ * otherwise false.
+ *
+ **/
 bool gfx_get_fps(char *buf, size_t size,
       char *buf_fps, size_t size_fps);
 
@@ -38,6 +51,17 @@ bool gfx_get_fps(char *buf, size_t size,
 void gfx_set_dwm(void);
 #endif
 
+/**
+ * gfx_scale_integer:
+ * @vp            : Viewport handle
+ * @width         : Width.
+ * @height        : Height.
+ * @aspect_ratio  : Aspect ratio (in float).
+ * @keep_aspect   : Preserve aspect ratio?
+ *
+ * Gets new viewport scaling dimensions based on 
+ * scaled integer aspect ratio.
+ **/
 void gfx_scale_integer(struct rarch_viewport *vp,
       unsigned win_width, unsigned win_height,
       float aspect_ratio, bool keep_aspect);
@@ -106,8 +130,22 @@ struct aspect_ratio_elem
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
+/**
+ * gfx_set_square_pixel_viewport:
+ * @width         : Width.
+ * @height        : Height.
+ *
+ * Sets viewport to square pixel aspect ratio based on @width and @height. 
+ **/
 void gfx_set_square_pixel_viewport(unsigned width, unsigned height);
+
+/**
+ * gfx_set_core_viewport:
+ *
+ * Sets viewport to aspect ratio set by core A/V info. 
+ **/
 void gfx_set_core_viewport(void);
+
 void gfx_set_config_viewport(void);
 
 #ifdef __cplusplus

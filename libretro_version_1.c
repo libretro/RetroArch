@@ -28,7 +28,7 @@
 #include "retroarch.h"
 #include "performance.h"
 #include "input/keyboard_line.h"
-#include "audio/utils.h"
+#include "audio/audio_utils.h"
 #include "retroarch_logger.h"
 #include "intl/intl.h"
 
@@ -186,6 +186,9 @@ static bool audio_flush(const int16_t *data, size_t samples)
          g_extern.audio_data.volume_gain);
    RARCH_PERFORMANCE_STOP(audio_convert_s16);
 
+   src_data.data_in               = g_extern.audio_data.data;
+   src_data.input_frames          = samples >> 1;
+
    dsp_data.input                 = g_extern.audio_data.data;
    dsp_data.input_frames          = samples >> 1;
 
@@ -195,12 +198,13 @@ static bool audio_flush(const int16_t *data, size_t samples)
       RARCH_PERFORMANCE_START(audio_dsp);
       rarch_dsp_filter_process(g_extern.audio_data.dsp, &dsp_data);
       RARCH_PERFORMANCE_STOP(audio_dsp);
-   }
 
-   src_data.data_in      = dsp_data.output ?
-      dsp_data.output : g_extern.audio_data.data;
-   src_data.input_frames = dsp_data.output ?
-      dsp_data.output_frames : (samples >> 1);
+      if (dsp_data.output)
+      {
+         src_data.data_in      = dsp_data.output;
+         src_data.input_frames = dsp_data.output_frames;
+      }
+   }
 
    src_data.data_out = g_extern.audio_data.outsamples;
 
@@ -414,7 +418,10 @@ static int16_t input_state(unsigned port, unsigned device,
    }
 
    if (g_settings.input.remap_binds_enable)
-      id = g_settings.input.remap_ids[port][id];
+   {
+      if (id < RARCH_FIRST_CUSTOM_BIND)
+         id = g_settings.input.remap_ids[port][id];
+   }
 
    if (!driver.block_libretro_input)
    {
@@ -428,16 +435,24 @@ static int16_t input_state(unsigned port, unsigned device,
          switch (device)
          {
             case RETRO_DEVICE_JOYPAD:
-               res |= driver.overlay_state.buttons & (UINT64_C(1) << id) ? 1 : 0;
+               if (driver.overlay_state.buttons & (UINT64_C(1) << id))
+                  res |= 1;
                break;
             case RETRO_DEVICE_KEYBOARD:
                if (id < RETROK_LAST)
-                  res |= OVERLAY_GET_KEY(&driver.overlay_state, id) ? 1 : 0;
+               {
+                  if (OVERLAY_GET_KEY(&driver.overlay_state, id))
+                     res |= 1;
+               }
                break;
             case RETRO_DEVICE_ANALOG:
                {
-                  unsigned base = (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT) ? 2 : 0;
-                  base += (id == RETRO_DEVICE_ID_ANALOG_Y) ? 1 : 0;
+                  unsigned base = 0;
+                  
+                  if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                     base = 2;
+                  if (id == RETRO_DEVICE_ID_ANALOG_Y)
+                     base += 1;
                   if (driver.overlay_state.analog[base])
                      res = driver.overlay_state.analog[base];
                }
@@ -488,12 +503,12 @@ static inline void input_poll_overlay(void)
             RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
    {
+      input_overlay_state_t polled_data;
       int16_t x = driver.input->input_state(driver.input_data, NULL, 0,
             device, i, RETRO_DEVICE_ID_POINTER_X);
       int16_t y = driver.input->input_state(driver.input_data, NULL, 0,
             device, i, RETRO_DEVICE_ID_POINTER_Y);
 
-      input_overlay_state_t polled_data;
       input_overlay_poll(driver.overlay, &polled_data, x, y);
 
       driver.overlay_state.buttons |= polled_data.buttons;
@@ -510,18 +525,21 @@ static inline void input_poll_overlay(void)
       polled = true;
    }
 
-   key_mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LSHIFT) ||
-         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RSHIFT)) ?
-      RETROKMOD_SHIFT : 0;
-   key_mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LCTRL) ||
-         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RCTRL)) ?
-      RETROKMOD_CTRL : 0;
-   key_mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LALT) ||
-         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RALT)) ?
-      RETROKMOD_ALT : 0;
-   key_mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LMETA) ||
-         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RMETA)) ?
-      RETROKMOD_META : 0;
+   if (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LSHIFT) ||
+         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RSHIFT))
+      key_mod |= RETROKMOD_SHIFT;
+
+   if (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LCTRL) ||
+    OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RCTRL))
+      key_mod |= RETROKMOD_CTRL;
+
+   if (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LALT) ||
+         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RALT))
+      key_mod |= RETROKMOD_ALT;
+
+   if (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LMETA) ||
+         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RMETA))
+      key_mod |= RETROKMOD_META;
 
    /* CAPSLOCK SCROLLOCK NUMLOCK */
    for (i = 0; i < ARRAY_SIZE(driver.overlay_state.keys); i++)
@@ -545,10 +563,10 @@ static inline void input_poll_overlay(void)
          unsigned bind_plus  = RARCH_ANALOG_LEFT_X_PLUS + 2 * j;
          unsigned bind_minus = bind_plus + 1;
 
-         driver.overlay_state.analog[j] += (driver.overlay_state.buttons &
-               (1ULL << bind_plus)) ? 0x7fff : 0;
-         driver.overlay_state.analog[j] -= (driver.overlay_state.buttons &
-               (1ULL << bind_minus)) ? 0x7fff : 0;
+         if (driver.overlay_state.buttons & (1ULL << bind_plus))
+            driver.overlay_state.analog[j] += 0x7fff;
+         if (driver.overlay_state.buttons & (1ULL << bind_minus))
+            driver.overlay_state.analog[j] -= 0x7fff;
       }
    }
 
@@ -559,23 +577,23 @@ static inline void input_poll_overlay(void)
       case ANALOG_DPAD_LSTICK:
       case ANALOG_DPAD_RSTICK:
       {
-         unsigned analog_base = g_settings.input.analog_dpad_mode[0] == 
-            ANALOG_DPAD_LSTICK ? 0 : 2;
-         float analog_x = (float)driver.overlay_state.analog[analog_base + 0] / 0x7fff;
-         float analog_y = (float)driver.overlay_state.analog[analog_base + 1] / 0x7fff;
+         float analog_x, analog_y;
+         unsigned analog_base = 2;
 
-         driver.overlay_state.buttons |=
-            (analog_x <= -g_settings.input.axis_threshold) ?
-            (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-         driver.overlay_state.buttons |=
-            (analog_x >=  g_settings.input.axis_threshold) ?
-            (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-         driver.overlay_state.buttons |=
-            (analog_y <= -g_settings.input.axis_threshold) ?
-            (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-         driver.overlay_state.buttons |=
-            (analog_y >=  g_settings.input.axis_threshold) ?
-            (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+         if (g_settings.input.analog_dpad_mode[0] == ANALOG_DPAD_LSTICK)
+            analog_base = 0;
+
+         analog_x = (float)driver.overlay_state.analog[analog_base + 0] / 0x7fff;
+         analog_y = (float)driver.overlay_state.analog[analog_base + 1] / 0x7fff;
+
+         if (analog_x <= -g_settings.input.axis_threshold)
+            driver.overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
+         if (analog_x >=  g_settings.input.axis_threshold)
+            driver.overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+         if (analog_y <= -g_settings.input.axis_threshold)
+            driver.overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
+         if (analog_y >=  g_settings.input.axis_threshold)
+            driver.overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
          break;
       }
 

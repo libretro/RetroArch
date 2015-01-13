@@ -16,7 +16,7 @@
 
 #include "../general.h"
 #include "keyboard_line.h"
-#include "../gfx/context/win32_common.h"
+#include "../gfx/drivers_context/win32_common.h"
 #include "input_common.h"
 #include "input_keymaps.h"
 
@@ -24,15 +24,21 @@ LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 		WPARAM wparam, LPARAM lparam)
 {
    unsigned scancode = (lparam >> 16) & 0xff;
-   unsigned keycode = input_translate_keysym_to_rk(scancode);
+   unsigned keycode = input_keymaps_translate_keysym_to_rk(scancode);
    uint16_t mod = 0;
-   mod |= (GetKeyState(VK_SHIFT)   & 0x80) ? RETROKMOD_SHIFT : 0;
-   mod |= (GetKeyState(VK_CONTROL) & 0x80) ? RETROKMOD_CTRL : 0;
-   mod |= (GetKeyState(VK_MENU)    & 0x80) ? RETROKMOD_ALT : 0;
-   mod |= (GetKeyState(VK_CAPITAL) & 0x81) ? RETROKMOD_CAPSLOCK : 0;
-   mod |= (GetKeyState(VK_SCROLL)  & 0x81) ? RETROKMOD_SCROLLOCK : 0;
-   mod |= ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80) ? 
-	   RETROKMOD_META : 0;
+
+   if (GetKeyState(VK_SHIFT)   & 0x80)
+      mod |= RETROKMOD_SHIFT;
+   if (GetKeyState(VK_CONTROL) & 0x80)
+      mod |=  RETROKMOD_CTRL;
+   if (GetKeyState(VK_MENU)    & 0x80)
+      mod |=  RETROKMOD_ALT;
+   if (GetKeyState(VK_CAPITAL) & 0x81)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (GetKeyState(VK_SCROLL)  & 0x81)
+      mod |= RETROKMOD_SCROLLOCK;
+   if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
+      mod |= RETROKMOD_META;
 
    switch (message)
    {

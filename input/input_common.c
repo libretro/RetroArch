@@ -15,6 +15,7 @@
  */
 
 #include "input_common.h"
+#include "input_keymaps.h"
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -23,199 +24,6 @@
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
-
-const char *input_joypad_name(const rarch_joypad_driver_t *drv,
-      unsigned joypad)
-{
-   if (!drv)
-      return NULL;
-   return drv->name(joypad);
-}
-
-bool input_joypad_set_rumble(const rarch_joypad_driver_t *drv,
-      unsigned port, enum retro_rumble_effect effect, uint16_t strength)
-{
-   unsigned joy_idx = g_settings.input.joypad_map[port];
-   
-   if (!drv || !drv->set_rumble)
-      return false;
-
-   if (joy_idx >= MAX_USERS)
-      return false;
-
-   return drv->set_rumble(joy_idx, effect, strength);
-}
-
-static bool input_joypad_is_pressed(
-      const rarch_joypad_driver_t *drv,
-      unsigned port,
-      const struct retro_keybind *binds,
-      unsigned key)
-{
-   const struct retro_keybind *auto_binds;
-   float scaled_axis;
-   int16_t  axis;
-   uint32_t joyaxis;
-   uint64_t joykey;
-   unsigned joy_idx = g_settings.input.joypad_map[port];
-
-   if (joy_idx >= MAX_USERS)
-      return false;
-
-   /* Auto-binds are per joypad, not per user. */
-   auto_binds = g_settings.input.autoconf_binds[joy_idx];
-
-   joykey = binds[key].joykey;
-   if (joykey == NO_BTN)
-      joykey = auto_binds[key].joykey;
-
-   if (drv->button(joy_idx, (uint16_t)joykey))
-      return true;
-
-   joyaxis = binds[key].joyaxis;
-   if (joyaxis == AXIS_NONE)
-      joyaxis = auto_binds[key].joyaxis;
-
-   axis        = drv->axis(joy_idx, joyaxis);
-   scaled_axis = (float)abs(axis) / 0x8000;
-   return scaled_axis > g_settings.input.axis_threshold;
-}
-
-bool input_joypad_pressed(const rarch_joypad_driver_t *drv,
-      unsigned port, const struct retro_keybind *binds, unsigned key)
-{
-   if (!drv)
-      return false;
-
-   if (!binds[key].valid)
-      return false;
-
-   if (input_joypad_is_pressed(drv, port, binds, key))
-      return true;
-
-   return false;
-}
-
-int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
-      unsigned port, unsigned idx, unsigned ident,
-      const struct retro_keybind *binds)
-{
-   uint32_t axis_minus, axis_plus;
-   uint64_t key_minus, key_plus;
-   int16_t  pressed_minus, pressed_plus, res;
-   unsigned ident_minus = 0, ident_plus = 0;
-   int16_t digital_left = 0, digital_right = 0;
-   const struct retro_keybind *auto_binds = NULL;
-   const struct retro_keybind *bind_minus = NULL;
-   const struct retro_keybind *bind_plus  = NULL;
-   unsigned joy_idx = g_settings.input.joypad_map[port];
-
-   if (!drv)
-      return 0;
-
-   if (joy_idx >= MAX_USERS)
-      return 0;
-
-   /* Auto-binds are per joypad, not per user. */
-   auto_binds = g_settings.input.autoconf_binds[joy_idx];
-
-   input_conv_analog_id_to_bind_id(idx, ident, &ident_minus, &ident_plus);
-
-   bind_minus = &binds[ident_minus];
-   bind_plus  = &binds[ident_plus];
-   if (!bind_minus->valid || !bind_plus->valid)
-      return 0;
-
-   axis_minus = bind_minus->joyaxis;
-   axis_plus  = bind_plus->joyaxis;
-   if (axis_minus == AXIS_NONE)
-      axis_minus = auto_binds[ident_minus].joyaxis;
-   if (axis_plus == AXIS_NONE)
-      axis_plus = auto_binds[ident_plus].joyaxis;
-
-   pressed_minus = abs(drv->axis(joy_idx, axis_minus));
-   pressed_plus  = abs(drv->axis(joy_idx, axis_plus));
-   res           = pressed_plus - pressed_minus;
-
-   if (res != 0)
-      return res;
-
-   key_minus = bind_minus->joykey;
-   key_plus  = bind_plus->joykey;
-   if (key_minus == NO_BTN)
-      key_minus = auto_binds[ident_minus].joykey;
-   if (key_plus == NO_BTN)
-      key_plus = auto_binds[ident_plus].joykey;
-
-   if (drv->button(joy_idx, (uint16_t)key_minus))
-      digital_left  = -0x7fff;
-   if (drv->button(joy_idx, (uint16_t)key_plus))
-      digital_right = 0x7fff;
-   return digital_right + digital_left;
-}
-
-int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *drv,
-      unsigned joypad, unsigned axis)
-{
-   if (!drv)
-      return 0;
-   return drv->axis(joypad, AXIS_POS(axis)) +
-      drv->axis(joypad, AXIS_NEG(axis));
-}
-
-bool input_joypad_button_raw(const rarch_joypad_driver_t *drv,
-      unsigned joypad, unsigned button)
-{
-   if (!drv)
-      return false;
-   return drv->button(joypad, button);
-}
-
-bool input_joypad_hat_raw(const rarch_joypad_driver_t *drv,
-      unsigned joypad, unsigned hat_dir, unsigned hat)
-{
-   if (!drv)
-      return false;
-   return drv->button(joypad, HAT_MAP(hat, hat_dir));
-}
-
-bool input_translate_coord_viewport(int mouse_x, int mouse_y,
-      int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
-      int16_t *res_screen_y)
-{
-   int scaled_screen_x, scaled_screen_y, scaled_x, scaled_y;
-   struct rarch_viewport vp = {0};
-   bool have_viewport_info = driver.video && driver.video->viewport_info;
-
-   if (!have_viewport_info)
-      return false;
-
-   driver.video->viewport_info(driver.video_data, &vp);
-
-   scaled_screen_x = (2 * mouse_x * 0x7fff) / (int)vp.full_width - 0x7fff;
-   scaled_screen_y = (2 * mouse_y * 0x7fff) / (int)vp.full_height - 0x7fff;
-   if (scaled_screen_x < -0x7fff || scaled_screen_x > 0x7fff)
-      scaled_screen_x = -0x8000; /* OOB */
-   if (scaled_screen_y < -0x7fff || scaled_screen_y > 0x7fff)
-      scaled_screen_y = -0x8000; /* OOB */
-
-   mouse_x -= vp.x;
-   mouse_y -= vp.y;
-
-   scaled_x = (2 * mouse_x * 0x7fff) / (int)vp.width - 0x7fff;
-   scaled_y = (2 * mouse_y * 0x7fff) / (int)vp.height - 0x7fff;
-   if (scaled_x < -0x7fff || scaled_x > 0x7fff)
-      scaled_x = -0x8000; /* OOB */
-   if (scaled_y < -0x7fff || scaled_y > 0x7fff)
-      scaled_y = -0x8000; /* OOB */
-
-   *res_x = scaled_x;
-   *res_y = scaled_y;
-   *res_screen_x = scaled_screen_x;
-   *res_screen_y = scaled_screen_y;
-
-   return true;
-}
 
 static const char *bind_user_prefix[MAX_USERS] = {
    "input_player1",
@@ -295,13 +103,65 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, overlay_next,          RARCH_OVERLAY_NEXT, "Overlay next"),
       DECLARE_META_BIND(2, disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE, "Disk eject toggle"),
       DECLARE_META_BIND(2, disk_next,             RARCH_DISK_NEXT, "Disk next"),
-	  DECLARE_META_BIND(2, disk_prev,             RARCH_DISK_NEXT, "Disk prev"),
+	   DECLARE_META_BIND(2, disk_prev,             RARCH_DISK_NEXT, "Disk prev"),
       DECLARE_META_BIND(2, grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE, "Grab mouse toggle"),
 #ifdef HAVE_MENU
       DECLARE_META_BIND(1, menu_toggle,           RARCH_MENU_TOGGLE, "Menu toggle"),
 #endif
 };
 
+/**
+ * input_translate_coord_viewport:
+ * @mouse_x                        : Pointer X coordinate.
+ * @mouse_y                        : Pointer Y coordinate.
+ * @res_x                          : Scaled  X coordinate.
+ * @res_y                          : Scaled  Y coordinate.
+ * @res_screen_x                   : Scaled screen X coordinate.
+ * @res_screen_y                   : Scaled screen Y coordinate.
+ *
+ * Translates pointer [X,Y] coordinates into scaled screen
+ * coordinates based on viewport info.
+ *
+ * Returns: true (1) if successful, false if video driver doesn't support
+ * viewport info.
+ **/
+bool input_translate_coord_viewport(int mouse_x, int mouse_y,
+      int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
+      int16_t *res_screen_y)
+{
+   int scaled_screen_x, scaled_screen_y, scaled_x, scaled_y;
+   struct rarch_viewport vp = {0};
+   bool have_viewport_info = driver.video && driver.video->viewport_info;
+
+   if (!have_viewport_info)
+      return false;
+
+   driver.video->viewport_info(driver.video_data, &vp);
+
+   scaled_screen_x = (2 * mouse_x * 0x7fff) / (int)vp.full_width - 0x7fff;
+   scaled_screen_y = (2 * mouse_y * 0x7fff) / (int)vp.full_height - 0x7fff;
+   if (scaled_screen_x < -0x7fff || scaled_screen_x > 0x7fff)
+      scaled_screen_x = -0x8000; /* OOB */
+   if (scaled_screen_y < -0x7fff || scaled_screen_y > 0x7fff)
+      scaled_screen_y = -0x8000; /* OOB */
+
+   mouse_x -= vp.x;
+   mouse_y -= vp.y;
+
+   scaled_x = (2 * mouse_x * 0x7fff) / (int)vp.width - 0x7fff;
+   scaled_y = (2 * mouse_y * 0x7fff) / (int)vp.height - 0x7fff;
+   if (scaled_x < -0x7fff || scaled_x > 0x7fff)
+      scaled_x = -0x8000; /* OOB */
+   if (scaled_y < -0x7fff || scaled_y > 0x7fff)
+      scaled_y = -0x8000; /* OOB */
+
+   *res_x = scaled_x;
+   *res_y = scaled_y;
+   *res_screen_x = scaled_screen_x;
+   *res_screen_y = scaled_screen_y;
+
+   return true;
+}
 
 void input_config_parse_key(config_file_t *conf,
       const char *prefix, const char *btn,
@@ -324,9 +184,47 @@ const char *input_config_get_prefix(unsigned user, bool meta)
    return NULL;
 }
 
+static enum retro_key find_rk_bind(const char *str)
+{
+   size_t i;
+
+   for (i = 0; input_config_key_map[i].str; i++)
+   {
+      if (strcasecmp(input_config_key_map[i].str, str) == 0)
+         return input_config_key_map[i].key;
+   }
+
+   RARCH_WARN("Key name %s not found.\n", str);
+   return RETROK_UNKNOWN;
+}
+
+/**
+ * input_translate_str_to_rk:
+ * @str                            : String to translate to key ID.
+ *
+ * Translates tring representation to key identifier.
+ *
+ * Returns: key identifier.
+ **/
+enum retro_key input_translate_str_to_rk(const char *str)
+{
+   if (strlen(str) == 1 && isalpha(*str))
+      return (enum retro_key)(RETROK_a + (tolower(*str) - (int)'a'));
+   return find_rk_bind(str);
+}
+
+/**
+ * input_translate_str_to_bind_id:
+ * @str                            : String to translate to bind ID.
+ *
+ * Translate string representation to bind ID.
+ *
+ * Returns: Bind ID value on success, otherwise RARCH_BIND_LIST_END on not found.
+ **/
 unsigned input_translate_str_to_bind_id(const char *str)
 {
    unsigned i;
+
    for (i = 0; input_config_bind_map[i].valid; i++)
       if (!strcmp(str, input_config_bind_map[i].base))
          return i;
@@ -337,6 +235,7 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
 {
    char *dir = NULL;
    uint16_t hat_dir = 0, hat;
+
    if (!bind || !str)
       return;
 
@@ -413,7 +312,7 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
             bind->joyaxis = AXIS_NEG(i_axis);
       }
 
-      /* Ensure that d-pad emulation doesn't screw this over. */
+      /* Ensure that D-pad emulation doesn't screw this over. */
       bind->orig_joyaxis = bind->joyaxis;
    }
 
@@ -428,6 +327,7 @@ static void input_get_bind_string_joykey(char *buf, const char *prefix,
    if (GET_HAT_DIR(bind->joykey))
    {
       const char *dir;
+
       switch (GET_HAT_DIR(bind->joykey))
       {
          case HAT_UP_MASK:
@@ -503,7 +403,7 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
       input_get_bind_string_joyaxis(buf, "Auto: ", auto_bind, size);
 
 #ifndef RARCH_CONSOLE
-   input_translate_rk_to_str(bind->key, key, sizeof(key));
+   input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));
    if (!strcmp(key, "nul"))
       *key = '\0';
 
@@ -513,6 +413,16 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
 }
 #endif
 
+/**
+ * input_push_analog_dpad:
+ * @binds                          : Binds to modify.
+ * @mode                           : Which analog stick to bind D-Pad to.
+ *                                   E.g:
+ *                                   ANALOG_DPAD_LSTICK
+ *                                   ANALOG_DPAD_RSTICK
+ *
+ * Push analog to D-Pad mappings to binds.
+ **/
 void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
 {
    unsigned i, j;
@@ -539,10 +449,16 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
    }
 }
 
-/* Restore binds temporarily overridden by input_push_analog_dpad. */
+/**
+ * input_pop_analog_dpad:
+ * @binds                          : Binds to modify.
+ *
+ * Restores binds temporarily overridden by input_push_analog_dpad().
+ **/
 void input_pop_analog_dpad(struct retro_keybind *binds)
 {
    unsigned i;
+
    for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
       binds[i].joyaxis = binds[i].orig_joyaxis;
 }

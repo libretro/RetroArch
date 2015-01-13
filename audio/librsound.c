@@ -29,14 +29,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "rsound.h"
+#include "drivers/rsound.h"
 
 #if defined(__CELLOS_LV2__)
 #include <cell/sysmodule.h>
 #include <sys/timer.h>
 #include <sys/sys_time.h>
 
-// network headers
+/* Network headers */
 #include <netex/net.h>
 #include <netex/errno.h>
 #define NETWORK_COMPAT_HEADERS 1

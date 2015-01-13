@@ -86,46 +86,46 @@ CHEATS
 VIDEO CONTEXT
 ============================================================ */
 
-#include "../gfx/gfx_context.c"
-#include "../gfx/context/gfx_null_ctx.c"
+#include "../gfx/video_context_driver.c"
+#include "../gfx/drivers_context/gfx_null_ctx.c"
 
 #if defined(__CELLOS_LV2__)
-#include "../gfx/context/ps3_ctx.c"
+#include "../gfx/drivers_context/ps3_ctx.c"
 #elif defined(_XBOX) || defined(HAVE_WIN32_D3D9)
-#include "../gfx/context/d3d_ctx.cpp"
+#include "../gfx/drivers_context/d3d_ctx.cpp"
 #elif defined(ANDROID)
-#include "../gfx/context/androidegl_ctx.c"
+#include "../gfx/drivers_context/androidegl_ctx.c"
 #elif defined(__QNX__)
-#include "../gfx/context/bbqnx_ctx.c"
+#include "../gfx/drivers_context/bbqnx_ctx.c"
 #elif defined(EMSCRIPTEN)
-#include "../gfx/context/emscriptenegl_ctx.c"
+#include "../gfx/drivers_context/emscriptenegl_ctx.c"
 #endif
 
 
 #if defined(HAVE_OPENGL)
 
 #if defined(HAVE_KMS)
-#include "../gfx/context/drm_egl_ctx.c"
+#include "../gfx/drivers_context/drm_egl_ctx.c"
 #endif
 #if defined(HAVE_VIDEOCORE)
-#include "../gfx/context/vc_egl_ctx.c"
+#include "../gfx/drivers_context/vc_egl_ctx.c"
 #endif
 #if defined(HAVE_X11) && !defined(HAVE_OPENGLES)
-#include "../gfx/context/glx_ctx.c"
+#include "../gfx/drivers_context/glx_ctx.c"
 #endif
 
 #if defined(HAVE_EGL)
-#include "../gfx/context/xegl_ctx.c"
+#include "../gfx/drivers_context/xegl_ctx.c"
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
-#include "../gfx/context/wgl_ctx.c"
+#include "../gfx/drivers_context/wgl_ctx.c"
 #endif
 
 #endif
 
 #ifdef HAVE_X11
-#include "../gfx/context/x11_common.c"
+#include "../gfx/drivers_context/x11_common.c"
 #endif
 
 
@@ -134,22 +134,23 @@ VIDEO SHADERS
 ============================================================ */
 
 #ifdef HAVE_SHADERS
-#include "../gfx/shader/shader_context.c"
-#include "../gfx/shader/shader_parse.c"
-#include "../gfx/shader/shader_null.c"
+#include "../gfx/video_shader_driver.c"
+#include "../gfx/video_shader_parse.c"
+
+#include "../gfx/drivers_shader/shader_null.c"
 
 #ifdef HAVE_CG
 #ifdef HAVE_OPENGL
-#include "../gfx/shader/shader_gl_cg.c"
+#include "../gfx/drivers_shader/shader_gl_cg.c"
 #endif
 #endif
 
 #ifdef HAVE_HLSL
-#include "../gfx/shader/shader_hlsl.c"
+#include "../gfx/drivers_shader/shader_hlsl.c"
 #endif
 
 #ifdef HAVE_GLSL
-#include "../gfx/shader/shader_glsl.c"
+#include "../gfx/drivers_shader/shader_glsl.c"
 #endif
 
 #endif
@@ -182,13 +183,12 @@ VIDEO DRIVER
 #endif
 
 #ifdef HAVE_VG
-#include "../gfx/vg.c"
+#include "../gfx/drivers/vg.c"
 #include "../libretro-sdk/gfx/math/matrix_3x3.c"
 #endif
 
 #ifdef HAVE_OMAP
-#include "../gfx/omap_gfx.c"
-#include "../gfx/fbdev.c"
+#include "../gfx/drivers/omap_gfx.c"
 #endif
 
 #include "../gfx/gfx_common.c"
@@ -198,7 +198,7 @@ VIDEO DRIVER
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../gfx/gl.c"
+#include "../gfx/drivers/gl.c"
 #include "../gfx/gl_common.c"
 
 #ifndef HAVE_PSGL
@@ -213,7 +213,7 @@ VIDEO DRIVER
 #endif
 
 #ifdef HAVE_XVIDEO
-#include "../gfx/xvideo.c"
+#include "../gfx/drivers/xvideo.c"
 #endif
 
 #if defined(_XBOX) || defined(HAVE_WIN32_D3D9)
@@ -225,104 +225,105 @@ VIDEO DRIVER
 #endif
 
 #if defined(GEKKO)
-#include "../gfx/gx/gx_gfx.c"
+#include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
-#include "../gfx/psp/psp1_gfx.c"
+#include "../gfx/drivers/psp1_gfx.c"
 #elif defined(XENON)
-#include "../gfx/xenon360_gfx.c"
+#include "../gfx/drivers/xenon360_gfx.c"
 #endif
 
-#include "../gfx/nullgfx.c"
+#include "../gfx/drivers/nullgfx.c"
 
 /*============================================================
 FONTS
 ============================================================ */
 
-#include "../gfx/fonts/fonts.c"
-#include "../gfx/fonts/bitmapfont.c"
+#include "../gfx/font_renderer_driver.c"
+#include "../gfx/drivers_font_renderer/bitmapfont.c"
 
 #if defined(HAVE_FREETYPE)
-#include "../gfx/fonts/freetype.c"
+#include "../gfx/drivers_font_renderer/freetype.c"
 #endif
 
 #if defined(__APPLE__)
-#include "../gfx/fonts/coretext.c"
+#include "../gfx/drivers_font_renderer/coretext.c"
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../gfx/fonts/gl_font.c"
+#include "../gfx/font_gl_driver.c"
 #endif
 
 #if defined(_XBOX) || defined(HAVE_WIN32_D3D9)
-#include "../gfx/fonts/d3d_font.c"
+#include "../gfx/font_d3d_driver.c"
 #endif
 
 #if defined(HAVE_WIN32_D3D9)
-#include "../gfx/fonts/d3d_w32_font.cpp"
+#include "../gfx/drivers_font/d3d_w32_font.cpp"
 #endif
 
 #if defined(HAVE_LIBDBGFONT)
-#include "../gfx/fonts/ps_libdbgfont.c"
+#include "../gfx/drivers_font/ps_libdbgfont.c"
 #endif
 
 #if defined(HAVE_OPENGL)
-#include "../gfx/fonts/gl_raster_font.c"
+#include "../gfx/drivers_font/gl_raster_font.c"
 #endif
 
 #if defined(_XBOX1)
-#include "../gfx/fonts/xdk1_xfonts.c"
+#include "../gfx/drivers_font/xdk1_xfonts.c"
 #endif
 
 #if defined(_XBOX360)
-#include "../gfx/fonts/xdk360_fonts.cpp"
+#include "../gfx/drivers_font/xdk360_fonts.cpp"
 #endif
 
 /*============================================================
 INPUT
 ============================================================ */
 #include "../input/input_autodetect.c"
-#include "../input/input_context.c"
+#include "../input/input_joypad_driver.c"
+#include "../input/input_joypad.c"
 #include "../input/input_common.c"
 #include "../input/input_keymaps.c"
 #include "../input/keyboard_line.c"
 
 #ifdef HAVE_OVERLAY
-#include "../input/overlay.c"
+#include "../input/input_overlay.c"
 #endif
 
 #if defined(__CELLOS_LV2__)
-#include "../input/ps3_input.c"
-#include "../input/ps3_input_joypad.c"
+#include "../input/drivers/ps3_input.c"
+#include "../input/drivers_joypad/ps3_input_joypad.c"
 #include "../input/autoconf/builtin_ps3.c"
 #elif defined(SN_TARGET_PSP2) || defined(PSP)
-#include "../input/psp_input.c"
-#include "../input/psp_input_joypad.c"
+#include "../input/drivers/psp_input.c"
+#include "../input/drivers_joypad/psp_input_joypad.c"
 #include "../input/autoconf/builtin_psp.c"
 #elif defined(GEKKO)
 #ifdef HAVE_LIBSICKSAXIS
-#include "../input/gx_input_sicksaxis.c"
+#include "../input/drivers_joypad/gx_input_sicksaxis.c"
 #endif
-#include "../input/gx_input.c"
-#include "../input/gx_input_joypad.c"
+#include "../input/drivers/gx_input.c"
+#include "../input/drivers_joypad/gx_input_joypad.c"
 #include "../input/autoconf/builtin_gx.c"
 #elif defined(_XBOX)
-#include "../input/xdk_xinput_input.c"
-#include "../input/xdk_xinput_input_joypad.c"
+#include "../input/drivers/xdk_xinput_input.c"
+#include "../input/drivers_joypad/xdk_xinput_input_joypad.c"
 #include "../input/autoconf/builtin_xdk.c"
 #elif defined(_WIN32)
 #include "../input/autoconf/builtin_win.c"
 #elif defined(XENON)
-#include "../input/xenon360_input.c"
+#include "../input/drivers/xenon360_input.c"
 #elif defined(ANDROID)
-#include "../input/android_input.c"
-#include "../input/android_input_joypad.c"
+#include "../input/drivers/android_input.c"
+#include "../input/drivers_joypad/android_input_joypad.c"
 #elif defined(__APPLE__)
-#include "../input/apple_input.c"
+#include "../input/drivers/apple_input.c"
 #elif defined(__QNX__)
-#include "../input/qnx_input.c"
-#include "../input/qnx_input_joypad.c"
+#include "../input/drivers/qnx_input.c"
+#include "../input/drivers_joypad/qnx_input_joypad.c"
 #elif defined(EMSCRIPTEN)
-#include "../input/rwebinput_input.c"
+#include "../input/drivers/rwebinput_input.c"
 #endif
 
 #if defined(__APPLE__)
@@ -332,45 +333,45 @@ INPUT
 #include "../input/connect/connect_wii.c"
 
 #ifdef HAVE_HID
-#include "../input/apple_joypad_hid.c"
+#include "../input/drivers_joypad/apple_joypad_hid.c"
 #endif
 
 #ifdef IOS
-#include "../input/apple_joypad_ios.c"
+#include "../input/drivers_joypad/apple_joypad_ios.c"
 #endif
 
 #endif
 
 #ifdef HAVE_DINPUT
-#include "../input/dinput.c"
+#include "../input/drivers/dinput.c"
 #endif
 
 #ifdef HAVE_WINXINPUT
-#include "../input/winxinput_joypad.c"
+#include "../input/drivers_joypad/winxinput_joypad.c"
 #endif
 
 #if defined(__CELLOS_LV2__)
-#include "../input/osk/ps3_osk.c"
+#include "../osk/drivers/ps3_osk.c"
 #endif
 
-#include "../input/osk/nullosk.c"
+#include "../osk/drivers/nullosk.c"
 
 #if defined(__linux__) && !defined(ANDROID) 
-#include "../input/linuxraw_input.c"
-#include "../input/linuxraw_joypad.c"
+#include "../input/drivers/linuxraw_input.c"
+#include "../input/drivers_joypad/linuxraw_joypad.c"
 #endif
 
 #ifdef HAVE_X11
-#include "../input/x11_input.c"
+#include "../input/drivers/x11_input.c"
 #endif
 
 #ifdef HAVE_UDEV
-#include "../input/udev_input.c"
-#include "../input/udev_joypad.c"
+#include "../input/drivers/udev_input.c"
+#include "../input/drivers_joypad/udev_joypad.c"
 #endif
 
-#include "../input/nullinput.c"
-#include "../input/nullinput_joypad.c"
+#include "../input/drivers/nullinput.c"
+#include "../input/drivers_joypad/nullinput_joypad.c"
 
 /*============================================================
  KEYBOARD EVENT
@@ -395,107 +396,114 @@ INPUT
 /*============================================================
 STATE TRACKER
 ============================================================ */
-#include "../gfx/state_tracker.c"
+#include "../gfx/video_state_tracker.c"
 
 #ifdef HAVE_PYTHON
-#include "../gfx/py_state/py_state.c"
+#include "../gfx/video_state_python.c"
 #endif
 
 /*============================================================
 FIFO BUFFER
 ============================================================ */
-#include "../fifo_buffer.c"
+#include "../libretro-sdk/queues/fifo_buffer.c"
 
 /*============================================================
 AUDIO RESAMPLER
 ============================================================ */
-#include "../audio/resamplers/resampler.c"
-#include "../audio/resamplers/sinc.c"
-#include "../audio/resamplers/nearest.c"
-#include "../audio/resamplers/cc_resampler.c"
+#include "../audio/audio_resampler_driver.c"
+#include "../audio/drivers_resampler/sinc.c"
+#include "../audio/drivers_resampler/nearest.c"
+#include "../audio/drivers_resampler/cc_resampler.c"
 
 /*============================================================
 CAMERA
 ============================================================ */
 #if defined(ANDROID)
-#include "../camera/android.c"
+#include "../camera/drivers/android.c"
 #elif defined(EMSCRIPTEN)
-#include "../camera/rwebcam.c"
+#include "../camera/drivers/rwebcam.c"
 #endif
 
 #ifdef HAVE_V4L2
-#include "../camera/video4linux2.c"
+#include "../camera/drivers/video4linux2.c"
 #endif
 
-#include "../camera/nullcamera.c"
+#include "../camera/drivers/nullcamera.c"
 
 /*============================================================
 LOCATION
 ============================================================ */
 #if defined(ANDROID)
-#include "../location/android.c"
+#include "../location/drivers/android.c"
 #endif
 
-#include "../location/nulllocation.c"
+#include "../location/drivers/nulllocation.c"
 
 /*============================================================
 RSOUND
 ============================================================ */
 #ifdef HAVE_RSOUND
 #include "../audio/librsound.c"
-#include "../audio/rsound.c"
+#include "../audio/drivers/rsound.c"
 #endif
 
 /*============================================================
 AUDIO
 ============================================================ */
 #if defined(__CELLOS_LV2__)
-#include "../audio/ps3_audio.c"
+#include "../audio/drivers/ps3_audio.c"
 #elif defined(XENON)
-#include "../audio/xenon360_audio.c"
+#include "../audio/drivers/xenon360_audio.c"
 #elif defined(GEKKO)
-#include "../audio/gx_audio.c"
+#include "../audio/drivers/gx_audio.c"
 #elif defined(EMSCRIPTEN)
-#include "../audio/rwebaudio.c"
+#include "../audio/drivers/rwebaudio.c"
 #elif defined(PSP)
-#include "../audio/psp1_audio.c"
+#include "../audio/drivers/psp1_audio.c"
 #endif
 
 #ifdef HAVE_XAUDIO
-#include "../audio/xaudio.c"
-#include "../audio/xaudio-c/xaudio-c.cpp"
+#include "../audio/drivers/xaudio.c"
+#include "../audio/drivers/xaudio-c.cpp"
 #endif
 
 #ifdef HAVE_DSOUND
-#include "../audio/dsound.c"
+#include "../audio/drivers/dsound.c"
 #endif
 
 #ifdef HAVE_SL
-#include "../audio/opensl.c"
+#include "../audio/drivers/opensl.c"
 #endif
 
 #ifdef HAVE_ALSA
 #ifdef __QNX__
-#include "../audio/alsa_qsa.c"
+#include "../audio/drivers/alsa_qsa.c"
 #else
-#include "../audio/alsa.c"
-#include "../audio/alsathread.c"
+#include "../audio/drivers/alsa.c"
+#include "../audio/drivers/alsathread.c"
 #endif
 #endif
 
 #ifdef HAVE_AL
-#include "../audio/openal.c"
+#include "../audio/drivers/openal.c"
 #endif
 
 #ifdef HAVE_COREAUDIO
-#include "../audio/coreaudio.c"
+#include "../audio/drivers/coreaudio.c"
 #endif
 
-#include "../audio/nullaudio.c"
+#include "../audio/drivers/nullaudio.c"
 
 /*============================================================
 DRIVERS
 ============================================================ */
+#include "../gfx/video_driver.c"
+#include "../input/input_driver.c"
+#include "../audio/audio_driver.c"
+#include "../osk/osk_driver.c"
+#include "../camera/camera_driver.c"
+#include "../location/location_driver.c"
+#include "../menu/menu_driver.c"
 #include "../driver.c"
 
 /*============================================================
@@ -537,7 +545,7 @@ DYNAMIC
 #include "../dynamic.c"
 #include "../dynamic_dummy.c"
 #include "../gfx/video_filter.c"
-#include "../audio/dsp_filter.c"
+#include "../audio/audio_dsp_filter.c"
 
 
 /*============================================================
@@ -548,13 +556,12 @@ FILE
 #include "../libretro-sdk/file/dir_list.c"
 #include "../libretro-sdk/string/string_list.c"
 #include "../file_ops.c"
-#include "../rarch_compr_file_path.c"
 #include "../libretro-sdk/file/file_list.c"
 
 /*============================================================
 MESSAGE
 ============================================================ */
-#include "../message_queue.c"
+#include "../libretro-sdk/queues/message_queue.c"
 
 /*============================================================
 PATCH
@@ -575,27 +582,27 @@ REWIND
 FRONTEND
 ============================================================ */
 
-#include "../frontend/frontend_context.c"
+#include "../frontend/frontend_driver.c"
 
 #if defined(__CELLOS_LV2__)
-#include "../frontend/platform/platform_ps3.c"
+#include "../frontend/drivers/platform_ps3.c"
 #elif defined(GEKKO)
-#include "../frontend/platform/platform_gx.c"
+#include "../frontend/drivers/platform_gx.c"
 #ifdef HW_RVL
-#include "../frontend/platform/platform_wii.c"
+#include "../frontend/drivers/platform_wii.c"
 #endif
 #elif defined(_XBOX)
-#include "../frontend/platform/platform_xdk.c"
+#include "../frontend/drivers/platform_xdk.c"
 #elif defined(PSP)
-#include "../frontend/platform/platform_psp.c"
+#include "../frontend/drivers/platform_psp.c"
 #elif defined(__QNX__)
-#include "../frontend/platform/platform_qnx.c"
+#include "../frontend/drivers/platform_qnx.c"
 #elif defined(OSX) || defined(IOS)
-#include "../frontend/platform/platform_apple.c"
+#include "../frontend/drivers/platform_apple.c"
 #elif defined(ANDROID)
-#include "../frontend/platform/platform_android.c"
+#include "../frontend/drivers/platform_android.c"
 #endif
-#include "../frontend/platform/platform_null.c"
+#include "../frontend/drivers/platform_null.c"
 
 #include "../core_info.c"
 
@@ -619,7 +626,7 @@ RETROARCH
 RECORDING
 ============================================================ */
 #include "../movie.c"
-#include "../record/ffemu.c"
+#include "../record/record_driver.c"
 
 /*============================================================
 THREAD
@@ -661,7 +668,7 @@ PLAYLISTS
 MENU
 ============================================================ */
 #ifdef HAVE_MENU
-#include "../menu/menu_input_line_cb.c"
+#include "../menu/menu_input.c"
 #include "../menu/menu.c"
 #include "../menu/menu_common_list.c"
 #include "../menu/menu_action.c"
@@ -672,40 +679,40 @@ MENU
 #include "../menu/menu_navigation.c"
 #include "../menu/menu_animation.c"
 
-#include "../menu/backend/menu_common_backend.c"
+#include "../menu/drivers_backend/menu_common_backend.c"
 #endif
 
 #ifdef HAVE_RMENU
-#include "../menu/disp/rmenu.c"
+#include "../menu/drivers_display/rmenu.c"
 #endif
 
 #ifdef HAVE_RGUI
-#include "../menu/disp/rgui.c"
+#include "../menu/drivers_display/rgui.c"
 #endif
 
 #ifdef HAVE_RMENU_XUI
-#include "../menu/disp/rmenu_xui.cpp"
+#include "../menu/drivers_display/rmenu_xui.cpp"
 #endif
 
 #ifdef HAVE_OPENGL
 
 #ifdef HAVE_LAKKA
-#include "../menu/backend/menu_lakka_backend.c"
-#include "../menu/disp/lakka.c"
+#include "../menu/drivers_backend/menu_lakka_backend.c"
+#include "../menu/drivers_display/lakka.c"
 #endif
 
 #ifdef HAVE_XMB
-#include "../menu/disp/xmb.c"
+#include "../menu/drivers_display/xmb.c"
 #endif
 
 #ifdef HAVE_GLUI
-#include "../menu/disp/glui.c"
+#include "../menu/drivers_display/glui.c"
 #endif
 
 #endif
 
 #ifdef IOS
-#include "../menu/disp/ios.c"
+#include "../menu/drivers_display/ios.c"
 #endif
 
 #ifdef HAVE_COMMAND
@@ -780,7 +787,7 @@ XML
 /*============================================================
  AUDIO UTILS
 ============================================================ */
-#include "../audio/utils.c"
+#include "../audio/audio_utils.c"
 
 /*============================================================
  RARCHDB

@@ -21,66 +21,11 @@
 extern "C" {
 #endif
 
-#include "input_context.h"
 #include <file/config_file.h>
 #include <stdint.h>
 #include "../driver.h"
 
-
 typedef uint64_t retro_input_t ;
-
-static inline void input_conv_analog_id_to_bind_id(unsigned idx, unsigned ident,
-      unsigned *ident_minus, unsigned *ident_plus)
-{
-   switch ((idx << 1) | ident)
-   {
-      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-         *ident_minus = RARCH_ANALOG_LEFT_X_MINUS;
-         *ident_plus  = RARCH_ANALOG_LEFT_X_PLUS;
-         break;
-
-      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-         *ident_minus = RARCH_ANALOG_LEFT_Y_MINUS;
-         *ident_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
-         break;
-
-      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-         *ident_minus = RARCH_ANALOG_RIGHT_X_MINUS;
-         *ident_plus  = RARCH_ANALOG_RIGHT_X_PLUS;
-         break;
-
-      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-         *ident_minus = RARCH_ANALOG_RIGHT_Y_MINUS;
-         *ident_plus  = RARCH_ANALOG_RIGHT_Y_PLUS;
-         break;
-   }
-}
-
-bool input_translate_coord_viewport(int mouse_x, int mouse_y,
-      int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
-      int16_t *res_screen_y);
-
-bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
-      unsigned port, const struct retro_keybind *binds, unsigned key);
-
-int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
-      unsigned port, unsigned idx, unsigned ident,
-      const struct retro_keybind *binds);
-
-bool input_joypad_set_rumble(const rarch_joypad_driver_t *driver,
-      unsigned port, enum retro_rumble_effect effect, uint16_t strength);
-
-int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *driver,
-      unsigned joypad, unsigned axis);
-
-bool input_joypad_button_raw(const rarch_joypad_driver_t *driver,
-      unsigned joypad, unsigned button);
-
-bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
-      unsigned joypad, unsigned hat_dir, unsigned hat);
-
-const char *input_joypad_name(const rarch_joypad_driver_t *driver,
-      unsigned joypad);
 
 /* Input config. */
 struct input_bind_map
@@ -101,16 +46,49 @@ struct input_bind_map
 
 extern const struct input_bind_map input_config_bind_map[];
 
+/**
+ * input_translate_coord_viewport:
+ * @mouse_x                        : Pointer X coordinate.
+ * @mouse_y                        : Pointer Y coordinate.
+ * @res_x                          : Scaled  X coordinate.
+ * @res_y                          : Scaled  Y coordinate.
+ * @res_screen_x                   : Scaled screen X coordinate.
+ * @res_screen_y                   : Scaled screen Y coordinate.
+ *
+ * Translates pointer [X,Y] coordinates into scaled screen
+ * coordinates based on viewport info.
+ *
+ * Returns: true (1) if successful, false if video driver doesn't support
+ * viewport info.
+ **/
+bool input_translate_coord_viewport(int mouse_x, int mouse_y,
+      int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
+      int16_t *res_screen_y);
+
 /* auto_bind can be NULL. */
 void input_get_bind_string(char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size);
 
-void input_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
+/**
+ * input_translate_str_to_rk:
+ * @str                            : String to translate to key ID.
+ *
+ * Translates tring representation to key identifier.
+ *
+ * Returns: key identifier.
+ **/
 enum retro_key input_translate_str_to_rk(const char *str);
 
 const char *input_config_get_prefix(unsigned user, bool meta);
 
-/* Returns RARCH_BIND_LIST_END on not found. */
+/**
+ * input_translate_str_to_bind_id:
+ * @str                            : String to translate to bind ID.
+ *
+ * Translate string representation to bind ID.
+ *
+ * Returns: Bind ID value on success, otherwise RARCH_BIND_LIST_END on not found.
+ **/
 unsigned input_translate_str_to_bind_id(const char *str);
 
 void input_config_parse_key(config_file_t *conf,
@@ -123,8 +101,24 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
 void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
       const char *axis, struct retro_keybind *bind);
 
+/**
+ * input_push_analog_dpad:
+ * @binds                          : Binds to modify.
+ * @mode                           : Which analog stick to bind D-Pad to.
+ *                                   E.g:
+ *                                   ANALOG_DPAD_LSTICK
+ *                                   ANALOG_DPAD_RSTICK
+ *
+ * Push analog to D-Pad mappings to binds.
+ **/
 void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode);
 
+/**
+ * input_pop_analog_dpad:
+ * @binds                          : Binds to modify.
+ *
+ * Restores binds temporarily overridden by input_push_analog_dpad().
+ **/
 void input_pop_analog_dpad(struct retro_keybind *binds);
 
 #ifdef __cplusplus

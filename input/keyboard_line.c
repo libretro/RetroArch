@@ -28,10 +28,20 @@ struct input_keyboard_line
    size_t ptr;
    size_t size;
 
+   /** Line complete callback. 
+    * Calls back after return is pressed with the completed line.
+    * Line can be NULL.
+    **/
    input_keyboard_line_complete_t cb;
    void *userdata;
 };
 
+/**
+ * input_keyboard_line_free:
+ * @state                    : Input keyboard line handle.
+ *
+ * Frees input keyboard line handle.
+ **/
 void input_keyboard_line_free(input_keyboard_line_t *state)
 {
    if (!state)
@@ -41,6 +51,17 @@ void input_keyboard_line_free(input_keyboard_line_t *state)
    free(state);
 }
 
+/**
+ * input_keyboard_line_new:
+ * @userdata                 : Userdata.
+ * @cb                       : Callback function.
+ *
+ * Creates and initializes input keyboard line handle.
+ * Also sets callback function for keyboard line handle
+ * to provided callback @cb.
+ *
+ * Returns: keyboard handle on success, otherwise NULL.
+ **/
 input_keyboard_line_t *input_keyboard_line_new(void *userdata,
       input_keyboard_line_complete_t cb)
 {
@@ -54,12 +75,22 @@ input_keyboard_line_t *input_keyboard_line_new(void *userdata,
    return state;
 }
 
+/**
+ * input_keyboard_line_event:
+ * @state                    : Input keyboard line handle.
+ * @character                : Inputted character.
+ *
+ * Called on every keyboard character event.
+ *
+ * Returns: true (1) on success, otherwise false (0).
+ **/
 bool input_keyboard_line_event(
       input_keyboard_line_t *state, uint32_t character)
 {
+   char c = character >= 128 ? '?' : character;
    /* Treat extended chars as ? as we cannot support 
     * printable characters for unicode stuff. */
-   char c = character >= 128 ? '?' : character;
+
    if (c == '\r' || c == '\n')
    {
       state->cb(state->userdata, state->buffer);
@@ -76,10 +107,10 @@ bool input_keyboard_line_event(
          state->size--;
       }
    }
-
-   /* Handle left/right here when suitable */
    else if (isprint(c))
    {
+      /* Handle left/right here when suitable */
+
       char *newbuf = (char*)realloc(state->buffer, state->size + 2);
       if (!newbuf)
          return false;
@@ -97,6 +128,18 @@ bool input_keyboard_line_event(
    return false;
 }
 
+/**
+ * input_keyboard_line_get_buffer:
+ * @state                    : Input keyboard line handle.
+ *
+ * Gets the underlying buffer of the keyboard line.
+ *
+ * The underlying buffer can be reallocated at any time 
+ * (or be NULL), but the pointer to it remains constant 
+ * throughout the objects lifetime.
+ *
+ * Returns: pointer to string.
+ **/
 const char **input_keyboard_line_get_buffer(
       const input_keyboard_line_t *state)
 {
@@ -106,8 +149,19 @@ const char **input_keyboard_line_get_buffer(
 static input_keyboard_line_t *g_keyboard_line;
 
 static input_keyboard_press_t g_keyboard_press_cb;
+
 static void *g_keyboard_press_data;
 
+/**
+ * input_keyboard_start_line:
+ * @userdata                 : Userdata.
+ * @cb                       : Line complete callback function.
+ *
+ * Sets function pointer for keyboard line handle.
+ *
+ * Returns: underlying buffer returned by 
+ * input_keyboard_line_get_buffer().
+ **/
 const char **input_keyboard_start_line(void *userdata,
       input_keyboard_line_complete_t cb)
 {
@@ -122,6 +176,14 @@ const char **input_keyboard_start_line(void *userdata,
    return input_keyboard_line_get_buffer(g_keyboard_line);
 }
 
+/**
+ * input_keyboard_wait_keys:
+ * @userdata                 : Userdata.
+ * @cb                       : Callback function.
+ *
+ * Waits for keys to be pressed (used for binding keys in the menu).
+ * Callback returns false when all polling is done.
+ **/
 void input_keyboard_wait_keys(void *userdata, input_keyboard_press_t cb)
 {
    g_keyboard_press_cb = cb;
@@ -131,6 +193,11 @@ void input_keyboard_wait_keys(void *userdata, input_keyboard_press_t cb)
    driver.block_input = true;
 }
 
+/**
+ * input_keyboard_wait_keys_cancel:
+ *
+ * Cancels function callback set by input_keyboard_wait_keys().
+ **/
 void input_keyboard_wait_keys_cancel(void)
 {
    g_keyboard_press_cb = NULL;
@@ -138,6 +205,16 @@ void input_keyboard_wait_keys_cancel(void)
    driver.block_input = false;
 }
 
+/**
+ * input_keyboard_event:
+ * @down                     : Keycode was pressed down?
+ * @code                     : Keycode.
+ * @character                : Character inputted.
+ * @mod                      : TODO/FIXME: ???
+ *
+ * Keyboard event utils. Called by drivers when keyboard events are fired.
+ * This interfaces with the global driver struct and libretro callbacks.
+ **/
 void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod)
 {

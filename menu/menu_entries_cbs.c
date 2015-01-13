@@ -17,7 +17,7 @@
 #include "menu.h"
 #include "menu_entries_cbs.h"
 #include "menu_action.h"
-#include "menu_input_line_cb.h"
+#include "menu_input.h"
 #include "menu_entries.h"
 #include "menu_shader.h"
 
@@ -166,8 +166,8 @@ static int action_ok_load_state(const char *path,
 static int action_ok_cheat(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_key_start_line(driver.menu, "Input Cheat",
-         label, type, idx, st_cheat_callback);
+   menu_input_key_start_line(driver.menu, "Input Cheat",
+         label, type, idx, menu_input_st_cheat_callback);
    return 0;
 }
 
@@ -384,8 +384,8 @@ static int action_ok_shader_preset_save_as(const char *path,
    if (!driver.menu)
       return -1;
 
-   menu_key_start_line(driver.menu, "Preset Filename",
-         label, type, idx, st_string_callback);
+   menu_input_key_start_line(driver.menu, "Preset Filename",
+         label, type, idx, menu_input_st_string_callback);
    return 0;
 }
 
@@ -1097,7 +1097,7 @@ static int action_toggle_save_state(unsigned type, const char *label,
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         // Slot -1 is (auto) slot.
+         /* Slot -1 is (auto) slot. */
          if (g_settings.state_slot >= 0)
             g_settings.state_slot--;
          break;
@@ -2754,6 +2754,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       case MENU_FILE_AUDIOFILTER:
       case MENU_FILE_CONFIG:
       case MENU_FILE_USE_DIRECTORY:
+      case MENU_FILE_PLAYLIST_ENTRY:
          cbs->action_toggle = action_toggle_scroll;
          break;
       case MENU_FILE_CONTENTLIST_ENTRY:

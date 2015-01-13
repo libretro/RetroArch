@@ -40,8 +40,9 @@ clean:
 	rm -f audio/*.o
 	rm -f conf/*.o
 	rm -f gfx/*.o
-	rm -f gfx/fonts/*.o
-	rm -f gfx/context/*.o
+	rm -f gfx/drivers_font/*.o
+	rm -f gfx/drivers_font_renderer/*.o
+	rm -f gfx/drivers_context/*.o
 	rm -f gfx/py_state/*.o
 	rm -f compat/*.o
 	rm -f record/*.o

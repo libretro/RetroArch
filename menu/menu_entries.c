@@ -38,25 +38,44 @@ void menu_entries_refresh(file_list_t *list)
       menu_navigation_clear(driver.menu, true);
 }
 
-static inline bool entries_list_elem_is_dir(file_list_t *buf,
+/**
+ * menu_entries_list_elem_is_dir:
+ * @list                     : File list handle.
+ * @offset                   : Offset index of element.
+ *
+ * Is the current entry at offset @offset a directory?
+ *
+ * Returns: true (1) if entry is a directory, otherwise false (0).
+ **/
+static inline bool menu_entries_list_elem_is_dir(file_list_t *list,
       unsigned offset)
 {
-   const char *path = NULL;
+   const char *path  = NULL;
    const char *label = NULL;
-   unsigned type = 0;
+   unsigned type     = 0;
 
-   menu_list_get_at_offset(buf, offset, &path, &label, &type);
+   menu_list_get_at_offset(list, offset, &path, &label, &type);
 
    return type != MENU_FILE_PLAIN;
 }
 
-static inline int entries_list_get_first_char(file_list_t *buf,
-      unsigned offset)
+/**
+ * menu_entries_list_get_first_char:
+ * @list                     : File list handle.
+ * @offset                   : Offset index of element.
+ *
+ * Gets the first character of an element in the
+ * file list.
+ *
+ * Returns: first character of element in file list.
+ **/
+static inline int menu_entries_list_get_first_char(
+      file_list_t *list, unsigned offset)
 {
    int ret;
    const char *path = NULL;
 
-   menu_list_get_alt_at_offset(buf, offset, &path);
+   menu_list_get_alt_at_offset(list, offset, &path);
    ret = tolower(*path);
 
    /* "Normalize" non-alphabetical entries so they 
@@ -83,13 +102,13 @@ void menu_entries_build_scroll_indices(file_list_t *list)
 
    driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 0;
 
-   current        = entries_list_get_first_char(list, 0);
-   current_is_dir = entries_list_elem_is_dir(list, 0);
+   current        = menu_entries_list_get_first_char(list, 0);
+   current_is_dir = menu_entries_list_elem_is_dir(list, 0);
 
    for (i = 1; i < list->size; i++)
    {
-      int first   = entries_list_get_first_char(list, i);
-      bool is_dir = entries_list_elem_is_dir(list, i);
+      int first   = menu_entries_list_get_first_char(list, i);
+      bool is_dir = menu_entries_list_elem_is_dir(list, i);
 
       if ((current_is_dir && !is_dir) || (first > current))
          driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = i;
@@ -109,21 +128,19 @@ int menu_entries_setting_set_flags(rarch_setting_t *setting)
 
    if (setting->flags & SD_FLAG_IS_DRIVER)
       return MENU_SETTING_DRIVER;
-   else
+
+   switch (setting->type)
    {
-      switch (setting->type)
-      {
-         case ST_ACTION:
-            return MENU_SETTING_ACTION;
-         case ST_PATH:
-            return MENU_FILE_PATH;
-         case ST_GROUP:
-            return MENU_SETTING_GROUP;
-         case ST_SUB_GROUP:
-            return MENU_SETTING_SUBGROUP;
-         default:
-            break;
-      }
+      case ST_ACTION:
+         return MENU_SETTING_ACTION;
+      case ST_PATH:
+         return MENU_FILE_PATH;
+      case ST_GROUP:
+         return MENU_SETTING_GROUP;
+      case ST_SUB_GROUP:
+         return MENU_SETTING_SUBGROUP;
+      default:
+         break;
    }
 
    return 0;
@@ -165,35 +182,36 @@ int menu_entries_push_main_menu_list(menu_handle_t *menu,
    return 0;
 }
 
-static void content_list_push(void *data, core_info_t *info, const char* path)
+static void menu_entries_content_list_push(
+      file_list_t *list, core_info_t *info, const char* path)
 {
-   int num_items, j;
-   struct string_list *list = NULL;
-   file_list_t *flist = (file_list_t*)data;
+   int num_items = 0, j;
+   struct string_list *str_list = NULL;
 
    if (!info)
       return;
 
-   list = (struct string_list*)dir_list_new(path, info->supported_extensions, true);
+   str_list = (struct string_list*)dir_list_new(path, info->supported_extensions, true);
 
-   dir_list_sort(list, true);
+   dir_list_sort(str_list, true);
 
-   num_items = list ? list->size : 0;
+   if (str_list)
+      num_items = str_list->size;
 
    for (j = 0; j < num_items; j++)
    {
-      if (list->elems[j].attr.i == RARCH_DIRECTORY)
-         content_list_push(flist, info, list->elems[j].data);
+      if (str_list->elems[j].attr.i == RARCH_DIRECTORY)
+         menu_entries_content_list_push(list, info, str_list->elems[j].data);
       else
          menu_list_push(
-               flist,
-               path_basename(list->elems[j].data),
+               list,
+               path_basename(str_list->elems[j].data),
                "content_actions",
                MENU_FILE_CONTENTLIST_ENTRY,
                0);
    }
 
-   string_list_free(list);
+   string_list_free(str_list);
 }
 
 int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
@@ -217,7 +235,7 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
       return -1;
 
    if (!info->supports_no_game)
-      content_list_push(list, info, g_settings.content_directory);
+      menu_entries_content_list_push(list, info, g_settings.content_directory);
    else
       menu_list_push(
             list,
@@ -236,7 +254,15 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
    return 0;
 }
 
-static void parse_drive_list(file_list_t *list)
+/**
+ * menu_entries_parse_drive_list:
+ * @list                     : File list handle.
+ *
+ * Generates default directory drive list.
+ * Platform-specific.
+ *
+ **/
+static void menu_entries_parse_drive_list(file_list_t *list)
 {
    size_t i = 0;
 
@@ -322,31 +348,35 @@ static void parse_drive_list(file_list_t *list)
 #endif
 }
 
-int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
+int menu_entries_parse_list(
+      file_list_t *list, file_list_t *menu_list,
       const char *dir, const char *label, unsigned type,
       unsigned default_type_plain, const char *exts,
       rarch_setting_t *setting)
 {
    size_t i, list_size;
    bool path_is_compressed, push_dir;
+   int device = 0;
    struct string_list *str_list = NULL;
+
+   (void)device;
 
    menu_list_clear(list);
 
    if (!*dir)
    {
-      parse_drive_list(list);
+      menu_entries_parse_drive_list(list);
       if (driver.menu_ctx && driver.menu_ctx->populate_entries)
          driver.menu_ctx->populate_entries(driver.menu, dir, label, type);
       return 0;
    }
 #if defined(GEKKO) && defined(HW_RVL)
    LWP_MutexLock(gx_device_mutex);
-   int dev = gx_get_device_from_path(dir);
+   device = gx_get_device_from_path(dir);
 
-   if (dev != -1 && !gx_devices[dev].mounted &&
-         gx_devices[dev].interface->isInserted())
-      fatMountSimple(gx_devices[dev].name, gx_devices[dev].interface);
+   if (device != -1 && !gx_devices[device].mounted &&
+         gx_devices[device].interface->isInserted())
+      fatMountSimple(gx_devices[device].name, gx_devices[device].interface);
 
    LWP_MutexUnlock(gx_device_mutex);
 #endif
@@ -357,7 +387,9 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
    if (path_is_compressed)
       str_list = compressed_file_list_new(dir,exts);
    else
-      str_list = dir_list_new(dir, g_settings.menu.navigation.browser.filter.supported_extensions_enable ? exts : NULL, true);
+      str_list = dir_list_new(dir,
+            g_settings.menu.navigation.browser.filter.supported_extensions_enable 
+            ? exts : NULL, true);
 
    if (!str_list)
       return -1;
@@ -452,6 +484,7 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
          const char *path = NULL;
 
          menu_list_get_at_offset(list, i, &path, NULL, &type);
+
          if (type != MENU_FILE_CORE)
             continue;
 
@@ -492,12 +525,20 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_last_stack_actiondata(driver.menu->menu_list);
 
-   if (cbs->action_deferred_push)
-      return cbs->action_deferred_push(list, menu_list, path, label, type);
+   if (!cbs->action_deferred_push)
+      return 0;
 
-   return 0;
+   return cbs->action_deferred_push(list, menu_list, path, label, type);
 }
 
+/**
+ * menu_entries_init:
+ * @menu                     : Menu handle.
+ *
+ * Creates and initializes menu entries.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool menu_entries_init(menu_handle_t *menu)
 {
    if (!menu)

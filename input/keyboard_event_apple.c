@@ -19,11 +19,11 @@
 
 #include "input_common.h"
 #include "input_keymaps.h"
-#include "apple_input.h"
+#include "drivers/apple_input.h"
 #include "../general.h"
 #include "../driver.h"
 
-#include "apple_keycode.h"
+#include "drivers/apple_keycode.h"
 
 #if defined(IOS)
 #define HIDKEY(X) X
@@ -72,7 +72,8 @@ static bool handle_small_keyboard(unsigned* code, bool down)
    
    if (!map_initialized)
    {
-      for (int i = 0; mapping_def[i].orig; i ++)
+      int i;
+      for (i = 0; mapping_def[i].orig; i ++)
          mapping[mapping_def[i].orig] = mapping_def[i].mod;
       map_initialized = true;
    }
@@ -157,5 +158,5 @@ void apple_input_keyboard_event(bool down,
    apple->key_state[code] = down;
     
    input_keyboard_event(down,
-         input_translate_keysym_to_rk(code), character, (enum retro_mod)mod);
+         input_keymaps_translate_keysym_to_rk(code), character, (enum retro_mod)mod);
 }

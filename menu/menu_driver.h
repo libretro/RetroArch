@@ -14,12 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DRIVER_MENU_H__
-#define DRIVER_MENU_H__
+#ifndef __MENU_DRIVER_H__
+#define __MENU_DRIVER_H__
 
 #include <stddef.h>
 #include <stdint.h>
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 #include "menu_list.h"
 #include "../settings_list.h"
 
@@ -140,6 +141,104 @@ typedef struct
    rarch_setting_t *list_mainmenu;
    rarch_setting_t *list_settings;
 } menu_handle_t;
+
+typedef struct menu_file_list_cbs
+{
+   int (*action_deferred_push)(void *data, void *userdata, const char
+         *path, const char *label, unsigned type);
+   int (*action_ok)(const char *path, const char *label, unsigned type,
+         size_t idx);
+   int (*action_cancel)(const char *path, const char *label, unsigned type,
+         size_t idx);
+   int (*action_start)(unsigned type,  const char *label, unsigned action);
+   int (*action_content_list_switch)(void *data, void *userdata, const char
+         *path, const char *label, unsigned type);
+   int (*action_toggle)(unsigned type, const char *label, unsigned action);
+} menu_file_list_cbs_t;
+
+typedef struct menu_ctx_driver_backend
+{
+   int      (*iterate)(unsigned);
+   const char *ident;
+} menu_ctx_driver_backend_t;
+
+extern menu_ctx_driver_backend_t menu_ctx_backend_common;
+extern menu_ctx_driver_backend_t menu_ctx_backend_lakka;
+
+typedef struct menu_ctx_driver
+{
+   void  (*set_texture)(void*);
+   void  (*render_messagebox)(const char*);
+   void  (*render)(void);
+   void  (*frame)(void);
+   void* (*init)(void);
+   bool  (*init_lists)(void*);
+   void  (*free)(void*);
+   void  (*context_reset)(void*);
+   void  (*context_destroy)(void*);
+   void  (*populate_entries)(void*, const char *, const char *,
+         unsigned);
+   void  (*iterate)(void*, unsigned);
+   int   (*input_postprocess)(uint64_t, uint64_t);
+   void  (*navigation_clear)(void *, bool);
+   void  (*navigation_decrement)(void *);
+   void  (*navigation_increment)(void *);
+   void  (*navigation_set)(void *, bool);
+   void  (*navigation_set_last)(void *);
+   void  (*navigation_descend_alphabet)(void *, size_t *);
+   void  (*navigation_ascend_alphabet)(void *, size_t *);
+   void  (*list_insert)(void *, const char *, const char *, size_t);
+   void  (*list_delete)(void *, size_t, size_t);
+   void  (*list_clear)(void *);
+   void  (*list_cache)(bool, unsigned);
+   void  (*list_set_selection)(void *);
+   void  (*init_core_info)(void *);
+   void  (*update_core_info)(void *);
+
+   const menu_ctx_driver_backend_t *backend;
+   const char *ident;
+} menu_ctx_driver_t;
+
+extern menu_ctx_driver_t menu_ctx_rmenu;
+extern menu_ctx_driver_t menu_ctx_rmenu_xui;
+extern menu_ctx_driver_t menu_ctx_rgui;
+extern menu_ctx_driver_t menu_ctx_glui;
+extern menu_ctx_driver_t menu_ctx_xmb;
+extern menu_ctx_driver_t menu_ctx_lakka;
+extern menu_ctx_driver_t menu_ctx_ios;
+
+/**
+ * menu_driver_find_handle:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: handle to menu driver at index. Can be NULL
+ * if nothing found.
+ **/
+const void *menu_driver_find_handle(int index);
+
+/**
+ * menu_driver_find_ident:
+ * @index              : index of driver to get handle to.
+ *
+ * Returns: Human-readable identifier of menu driver at index. Can be NULL
+ * if nothing found.
+ **/
+const char *menu_driver_find_ident(int index);
+
+/**
+ * config_get_menu_driver_options:
+ *
+ * Get an enumerated list of all menu driver names,
+ * separated by '|'.
+ *
+ * Returns: string listing of all menu driver names,
+ * separated by '|'.
+ **/
+const char* config_get_menu_driver_options(void);
+
+void find_menu_driver(void);
+
+void init_menu(void);
 
 #ifdef __cplusplus
 }

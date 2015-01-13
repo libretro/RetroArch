@@ -46,9 +46,46 @@ extern const struct rarch_key_map rarch_key_map_rwebinput[];
 extern const struct rarch_key_map rarch_key_map_linux[];
 extern const struct rarch_key_map rarch_key_map_apple_hid[];
 
-void input_init_keyboard_lut(const struct rarch_key_map *map);
-enum retro_key input_translate_keysym_to_rk(unsigned sym);
-unsigned input_translate_rk_to_keysym(enum retro_key key);
+/**
+ * input_keymaps_init_keyboard_lut:
+ * @map                   : Keyboard map.
+ *
+ * Initializes and sets the keyboard layout to a keyboard map (@map).
+ **/
+void input_keymaps_init_keyboard_lut(const struct rarch_key_map *map);
+
+/**
+ * input_keymaps_translate_keysym_to_rk:
+ * @sym                   : Key symbol.
+ *
+ * Translates a key symbol from the keyboard layout table
+ * to an associated retro key identifier.
+ *
+ * Returns: Retro key identifier.
+ **/
+enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym);
+
+/**
+ * input_keymaps_translate_rk_to_keysym:
+ * @key                   : Retro key identifier
+ *
+ * Translates a retro key identifier to a key symbol
+ * from the keyboard layout table.
+ *
+ * Returns: key symbol from the keyboard layout table.
+ **/
+unsigned input_keymaps_translate_rk_to_keysym(enum retro_key key);
+
+/**
+ * input_keymaps_translate_rk_to_str:
+ * @key                   : Retro key identifier.
+ * @buf                   : Buffer.
+ * @size                  : Size of @buf.
+ *
+ * Translates a retro key identifier to a human-readable 
+ * identifier string.
+ **/
+void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
 
 #ifdef __cplusplus
 }

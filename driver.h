@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef __DRIVER__H
 #define __DRIVER__H
 
@@ -24,23 +23,19 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <compat/posix_string.h>
-#include "gfx/scaler/scaler.h"
-#include "gfx/image/image.h"
-#include "gfx/shader/shader_parse.h"
-#include "input/input_context.h"
 
-#ifdef HAVE_OVERLAY
-#include "input/overlay.h"
-#endif
-
-#include "frontend/frontend_context.h"
 #include <retro_miscellaneous.h>
 
+#include "frontend/frontend_driver.h"
+#include "gfx/video_driver.h"
+#include "audio/audio_driver.h"
+
 #include "menu/menu_driver.h"
-#include "menu/backend/menu_backend.h"
-#include "menu/disp/menu_display.h"
-#include "audio/resamplers/resampler.h"
-#include "record/ffemu.h"
+#include "osk/osk_driver.h"
+#include "camera/camera_driver.h"
+#include "location/location_driver.h"
+#include "audio/audio_resampler_driver.h"
+#include "record/record_driver.h"
 
 #include "retro.h"
 
@@ -136,80 +131,6 @@ enum
    RARCH_BIND_LIST_END_NULL
 };
 
-struct retro_keybind
-{
-   bool valid;
-   unsigned id;
-   const char *desc;
-   enum retro_key key;
-
-   uint64_t joykey;
-   /* Default key binding value - for resetting bind to default */
-   uint64_t def_joykey;
-
-   uint32_t joyaxis;
-   uint32_t def_joyaxis;
-
-   /* Used by input_{push,pop}_analog_dpad(). */
-   uint32_t orig_joyaxis;
-
-   char     joykey_label[256];
-   char     joyaxis_label[256];
-};
-
-struct platform_bind
-{
-   uint64_t joykey;
-   char desc[64];
-};
-
-typedef struct video_info
-{
-   unsigned width;
-   unsigned height;
-   bool fullscreen;
-   bool vsync;
-   bool force_aspect;
-#ifdef GEKKO
-   /* TODO - we can't really have driver system-specific
-    * variables in here. There should be some
-    * kind of publicly accessible driver implementation
-    * video struct for specific things like this.
-    */
-   unsigned viwidth;
-#endif
-   bool vfilter;
-   bool smooth;
-   /* Maximum input size: RARCH_SCALE_BASE * input_scale */
-   unsigned input_scale;
-   /* Use 32bit RGBA rather than native XBGR1555. */
-   bool rgb32;
-} video_info_t;
-
-typedef struct audio_driver
-{
-   void *(*init)(const char *device, unsigned rate, unsigned latency);
-   ssize_t (*write)(void *data, const void *buf, size_t size);
-   bool (*stop)(void *data);
-   bool (*start)(void *data);
-
-   /* Is the audio driver currently running? */
-   bool (*alive)(void *data);
-
-   /* Should we care about blocking in audio thread? Fast forwarding. */
-   void (*set_nonblock_state)(void *data, bool toggle);
-   void (*free)(void *data);
-
-   /* Defines if driver will take standard floating point samples,
-    * or int16_t samples. */
-   bool (*use_float)(void *data);
-   const char *ident;
-
-   /* Optional. */
-   size_t (*write_avail)(void *data);
-   size_t (*buffer_size)(void *data);
-} audio_driver_t;
-
 #define AXIS_NEG(x) (((uint32_t)(x) << 16) | UINT16_C(0xFFFF))
 #define AXIS_POS(x) ((uint32_t)(x) | UINT32_C(0xFFFF0000))
 #define AXIS_NONE UINT32_C(0xFFFFFFFF)
@@ -240,187 +161,6 @@ enum analog_dpad_mode
    ANALOG_DPAD_LSTICK,
    ANALOG_DPAD_RSTICK,
    ANALOG_DPAD_LAST
-};
-
-typedef struct input_driver
-{
-   void *(*init)(void);
-   void (*poll)(void *data);
-   int16_t (*input_state)(void *data,
-         const struct retro_keybind **retro_keybinds,
-         unsigned port, unsigned device, unsigned index, unsigned id);
-   bool (*key_pressed)(void *data, int key);
-   void (*free)(void *data);
-   bool (*set_sensor_state)(void *data, unsigned port,
-         enum retro_sensor_action action, unsigned rate);
-   float (*get_sensor_input)(void *data, unsigned port, unsigned id);
-   uint64_t (*get_capabilities)(void *data);
-   const char *ident;
-
-   void (*grab_mouse)(void *data, bool state);
-   bool (*set_rumble)(void *data, unsigned port,
-         enum retro_rumble_effect effect, uint16_t state);
-   const rarch_joypad_driver_t *(*get_joypad_driver)(void *data);
-} input_driver_t;
-
-typedef struct input_osk_driver
-{
-   void *(*init)(size_t size);
-   void (*free)(void *data);
-   bool (*enable_key_layout)(void *data);
-   void (*oskutil_create_activation_parameters)(void *data);
-   void (*write_msg)(void *data, const void *msg);
-   void (*write_initial_msg)(void *data, const void *msg);
-   bool (*start)(void *data);
-   void (*lifecycle)(void *data, uint64_t status);
-   void *(*get_text_buf)(void *data);
-   const char *ident;
-} input_osk_driver_t;
-
-typedef struct camera_driver
-{
-   /* FIXME: params for initialization - queries for resolution,
-    * framerate, color format which might or might not be honored. */
-   void *(*init)(const char *device, uint64_t buffer_types,
-         unsigned width, unsigned height);
-
-   void (*free)(void *data);
-
-   bool (*start)(void *data);
-   void (*stop)(void *data);
-
-   /* Polls the camera driver.
-    * Will call the appropriate callback if a new frame is ready.
-    * Returns true if a new frame was handled. */
-   bool (*poll)(void *data,
-         retro_camera_frame_raw_framebuffer_t frame_raw_cb,
-         retro_camera_frame_opengl_texture_t frame_gl_cb);
-
-   const char *ident;
-} camera_driver_t;
-
-typedef struct location_driver
-{
-   void *(*init)(void);
-   void (*free)(void *data);
-
-   bool (*start)(void *data);
-   void (*stop)(void *data);
-
-   bool (*get_position)(void *data, double *lat, double *lon,
-         double *horiz_accuracy, double *vert_accuracy);
-   void (*set_interval)(void *data, unsigned interval_msecs,
-         unsigned interval_distance);
-   const char *ident;
-} location_driver_t;
-
-struct rarch_viewport;
-
-struct font_params
-{
-   float x;
-   float y;
-   float scale;
-   /* Drop shadow color multiplier. */
-   float drop_mod;
-   /* Drop shadow offset.
-    * If both are 0, no drop shadow will be rendered. */
-   int drop_x, drop_y;
-   /* ABGR. Use the macros. */
-   uint32_t color;
-   bool full_screen;
-};
-#define FONT_COLOR_RGBA(r, g, b, a) (((r) << 0) | ((g) << 8) | ((b) << 16) | ((a) << 24))
-#define FONT_COLOR_GET_RED(col)   (((col) >>  0) & 0xff)
-#define FONT_COLOR_GET_GREEN(col) (((col) >>  8) & 0xff)
-#define FONT_COLOR_GET_BLUE(col)  (((col) >> 16) & 0xff)
-#define FONT_COLOR_GET_ALPHA(col) (((col) >> 24) & 0xff)
-
-/* Optionally implemented interface to poke more
- * deeply into video driver. */
-
-typedef struct video_poke_interface
-{
-   void (*set_filtering)(void *data, unsigned index, bool smooth);
-#ifdef HAVE_FBO
-   uintptr_t (*get_current_framebuffer)(void *data);
-   retro_proc_address_t (*get_proc_address)(void *data, const char *sym);
-#endif
-   void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
-   void (*apply_state_changes)(void *data);
-
-#ifdef HAVE_MENU
-   /* Update texture. */
-   void (*set_texture_frame)(void *data, const void *frame, bool rgb32,
-         unsigned width, unsigned height, float alpha);
-
-   /* Enable or disable rendering. */
-   void (*set_texture_enable)(void *data, bool enable, bool full_screen);
-#endif
-   void (*set_osd_msg)(void *data, const char *msg,
-         const struct font_params *params, void *font);
-
-   void (*show_mouse)(void *data, bool state);
-   void (*grab_mouse_toggle)(void *data);
-
-   struct gfx_shader *(*get_current_shader)(void *data);
-} video_poke_interface_t;
-
-typedef struct video_driver
-{
-   /* Should the video driver act as an input driver as well?
-    * The video initialization might preinitialize an input driver 
-    * to override the settings in case the video driver relies on 
-    * input driver for event handling. */
-   void *(*init)(const video_info_t *video, const input_driver_t **input,
-         void **input_data); 
-
-   /* msg is for showing a message on the screen along with the video frame. */
-   bool (*frame)(void *data, const void *frame, unsigned width,
-         unsigned height, unsigned pitch, const char *msg);
-
-   /* Should we care about syncing to vblank? Fast forwarding. */
-   void (*set_nonblock_state)(void *data, bool toggle);
-
-   /* Is the window still active? */
-   bool (*alive)(void *data);
-
-   /* Does the window have focus? */
-   bool (*focus)(void *data);
-
-   /* Does the graphics conext support windowed mode? */
-   bool (*has_windowed)(void *data);
-
-   /* Sets shader. Might not be implemented. Will be moved to
-    * poke_interface later. */
-   bool (*set_shader)(void *data, enum rarch_shader_type type,
-         const char *path);
-
-   void (*free)(void *data);
-   const char *ident;
-
-   void (*set_rotation)(void *data, unsigned rotation);
-   void (*viewport_info)(void *data, struct rarch_viewport *vp);
-
-   /* Reads out in BGR byte order (24bpp). */
-   bool (*read_viewport)(void *data, uint8_t *buffer);
-
-#ifdef HAVE_OVERLAY
-   void (*overlay_interface)(void *data, const video_overlay_interface_t **iface);
-#endif
-   void (*poke_interface)(void *data, const video_poke_interface_t **iface);
-   unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
-} video_driver_t;
-
-enum rarch_display_type
-{
-   /* Non-bindable types like consoles, KMS, VideoCore, etc. */
-   RARCH_DISPLAY_NONE = 0,
-   /* video_display => Display*, video_window => Window */
-   RARCH_DISPLAY_X11,
-   /* video_display => N/A, video_window => HWND */
-   RARCH_DISPLAY_WIN32,
-   RARCH_DISPLAY_OSX
 };
 
 /* Flags for init_drivers/uninit_drivers */
@@ -559,10 +299,32 @@ typedef struct driver
    const char *current_msg;
 } driver_t;
 
+/**
+ * init_drivers:
+ * @flags              : Bitmask of drivers to initialize.
+ *
+ * Initializes drivers.
+ * @flags determines which drivers get initialized.
+ **/
 void init_drivers(int flags);
 
+/**
+ * init_drivers_pre:
+ *
+ * Attempts to find a default driver for 
+ * all driver types.
+ *
+ * Should be run before init_drivers().
+ **/
 void init_drivers_pre(void);
 
+/**
+ * uninit_drivers:
+ * @flags              : Bitmask of drivers to deinitialize.
+ *
+ * Deinitializes drivers.
+ * @flags determines which drivers get deinitialized.
+ **/
 void uninit_drivers(int flags);
 
 /**
@@ -586,34 +348,41 @@ void find_prev_driver(const char *label, char *str, size_t sizeof_str);
 void find_next_driver(const char *label, char *str, size_t sizeof_str);
 
 /**
- * config_get_audio_resampler_driver_options:
+ * driver_set_monitor_refresh_rate:
+ * @hz                 : New refresh rate for monitor.
  *
- * Get an enumerated list of all resampler driver names, separated by '|'.
- *
- * Returns: string listing of all resampler driver names, separated by '|'.
+ * Sets monitor refresh rate to new value.
  **/
-const char* config_get_audio_resampler_driver_options(void);
-
-/**
- * find_prev_resampler_driver:
- *
- * Find previous driver in resampler driver array.
- **/
-void find_prev_resampler_driver(void);
-
-/**
- * find_next_resampler_driver:
- *
- * Find next driver in resampler driver array.
- **/
-void find_next_resampler_driver(void);
-
 void driver_set_monitor_refresh_rate(float hz);
 
+/**
+ * driver_monitor_fps_statistics
+ * @refresh_rate       : Monitor refresh rate.
+ * @deviation          : Deviation from measured refresh rate.
+ * @sample_points      : Amount of sampled points.
+ *
+ * Gets the monitor FPS statistics based on the current
+ * runtime.
+ *
+ * Returns: true (1) on success.
+ * false (0) if:
+ * a) threaded video mode is enabled
+ * b) less than 2 frame time samples.
+ * c) FPS monitor enable is off.
+ **/
 bool driver_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
 
-void driver_set_nonblock_state(bool nonblock);
+/**
+ * driver_set_nonblock_state:
+ * @enable             : Enable nonblock state?
+ *
+ * Sets audio and video drivers to nonblock state.
+ *
+ * If @enable is false, sets blocking state for both
+ * audio and video drivers instead.
+ **/
+void driver_set_nonblock_state(bool enable);
 
 /**
  * driver_get_current_framebuffer:
@@ -654,94 +423,6 @@ bool driver_set_sensor_state(unsigned port,
 float driver_sensor_get_input(unsigned port, unsigned action);
 
 /**
- * driver_video_resolve:
- * @drv                : real video driver will be set to this.
- *
- * Use this if you need the real video driver 
- * and driver data pointers.
- *
- * Returns: video driver's userdata.
- **/
-void *driver_video_resolve(const video_driver_t **drv);
-
-/**
- * driver_camera_start:
- *
- * Starts camera driver.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool driver_camera_start(void);
-
-/**
- * driver_camera_stop:
- *
- * Stops camera driver.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-void driver_camera_stop(void);
-
-/**
- * driver_camera_poll:
- *
- * Call camera driver's poll function.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-void driver_camera_poll(void);
-
-/**
- * driver_location_start:
- *
- * Starts location driver interface..
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool driver_location_start(void);
-
-/**
- * driver_location_stop:
- *
- * Stops location driver interface..
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-void driver_location_stop(void);
-
-/**
- * driver_location_get_position:
- * @lat                : Latitude of current position.
- * @lon                : Longitude of current position.
- * @horiz_accuracy     : Horizontal accuracy.
- * @vert_accuracy      : Vertical accuracy.
- *
- * Gets current positioning information from 
- * location driver interface.
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: bool (1) if successful, otherwise false (0).
- **/
-bool driver_location_get_position(double *lat, double *lon,
-      double *horiz_accuracy, double *vert_accuracy);
-
-/**
- * driver_location_set_interval:
- * @interval_msecs     : Interval time in milliseconds.
- * @interval_distance  : Distance at which to update.
- *
- * Sets interval update time for location driver interface.
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- **/
-void driver_location_set_interval(unsigned interval_msecs,
-      unsigned interval_distance);
-
-/**
  * driver_update_system_av_info:
  * @info               : pointer to new A/V info
  *
@@ -755,158 +436,18 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info);
 
 extern driver_t driver;
 
-/* Backends */
-extern audio_driver_t audio_rsound;
-extern audio_driver_t audio_oss;
-extern audio_driver_t audio_alsa;
-extern audio_driver_t audio_alsathread;
-extern audio_driver_t audio_roar;
-extern audio_driver_t audio_openal;
-extern audio_driver_t audio_opensl;
-extern audio_driver_t audio_jack;
-extern audio_driver_t audio_sdl;
-extern audio_driver_t audio_xa;
-extern audio_driver_t audio_pulse;
-extern audio_driver_t audio_dsound;
-extern audio_driver_t audio_coreaudio;
-extern audio_driver_t audio_xenon360;
-extern audio_driver_t audio_ps3;
-extern audio_driver_t audio_gx;
-extern audio_driver_t audio_psp1;
-extern audio_driver_t audio_rwebaudio;
-extern audio_driver_t audio_null;
-
-extern video_driver_t video_gl;
-extern video_driver_t video_psp1;
-extern video_driver_t video_vita;
-extern video_driver_t video_d3d;
-extern video_driver_t video_gx;
-extern video_driver_t video_xenon360;
-extern video_driver_t video_xvideo;
-extern video_driver_t video_xdk_d3d;
-extern video_driver_t video_sdl;
-extern video_driver_t video_sdl2;
-extern video_driver_t video_vg;
-extern video_driver_t video_omap;
-extern video_driver_t video_exynos;
-extern video_driver_t video_null;
-
-extern input_driver_t input_android;
-extern input_driver_t input_sdl;
-extern input_driver_t input_dinput;
-extern input_driver_t input_x;
-extern input_driver_t input_wayland;
-extern input_driver_t input_ps3;
-extern input_driver_t input_psp;
-extern input_driver_t input_xenon360;
-extern input_driver_t input_gx;
-extern input_driver_t input_xinput;
-extern input_driver_t input_linuxraw;
-extern input_driver_t input_udev;
-extern input_driver_t input_apple;
-extern input_driver_t input_qnx;
-extern input_driver_t input_rwebinput;
-extern input_driver_t input_null;
-
 /**
- * config_get_input_driver_options:
+ * find_driver_index:
+ * @label              : string of driver type to be found.
+ * @drv                : identifier of driver to be found.
  *
- * Get an enumerated list of all input driver names, separated by '|'.
+ * Find index of the driver, based on @label.
  *
- * Returns: string listing of all input driver names, separated by '|'.
+ * Returns: -1 if no driver based on @label and @drv found, otherwise
+ * index number of the driver found in the array.
  **/
-const char* config_get_input_driver_options(void);
-
-/**
- * config_get_camera_driver_options:
- *
- * Get an enumerated list of all camera driver names,
- * separated by '|'.
- *
- * Returns: string listing of all camera driver names,
- * separated by '|'.
- **/
-const char* config_get_camera_driver_options(void);
-
-/**
- * config_get_video_driver_options:
- *
- * Get an enumerated list of all video driver names, separated by '|'.
- *
- * Returns: string listing of all video driver names, separated by '|'.
- **/
-const char* config_get_video_driver_options(void);
-
-/**
- * config_get_audio_driver_options:
- *
- * Get an enumerated list of all audio driver names, separated by '|'.
- *
- * Returns: string listing of all audio driver names, separated by '|'.
- **/
-const char* config_get_audio_driver_options(void);
-
-/**
- * config_get_osk_driver_options:
- *
- * Get an enumerated list of all OSK (onscreen keyboard) driver names,
- * separated by '|'.
- *
- * Returns: string listing of all OSK (onscreen keyboard) driver names,
- * separated by '|'.
- **/
-const char* config_get_osk_driver_options(void);
-
-/**
- * config_get_location_driver_options:
- *
- * Get an enumerated list of all location driver names,
- * separated by '|'.
- *
- * Returns: string listing of all location driver names,
- * separated by '|'.
- **/
-const char* config_get_location_driver_options(void);
-
-#ifdef HAVE_MENU
-/**
- * config_get_menu_driver_options:
- *
- * Get an enumerated list of all menu driver names,
- * separated by '|'.
- *
- * Returns: string listing of all menu driver names,
- * separated by '|'.
- **/
-const char* config_get_menu_driver_options(void);
-#endif
+int find_driver_index(const char * label, const char *drv);
   
-extern camera_driver_t camera_v4l2;
-extern camera_driver_t camera_android;
-extern camera_driver_t camera_rwebcam;
-extern camera_driver_t camera_apple;
-extern camera_driver_t camera_null;
-
-extern location_driver_t location_apple;
-extern location_driver_t location_android;
-extern location_driver_t location_null;
-
-extern input_osk_driver_t input_ps3_osk;
-extern input_osk_driver_t input_null_osk;
-
-extern menu_ctx_driver_t menu_ctx_rmenu;
-extern menu_ctx_driver_t menu_ctx_rmenu_xui;
-extern menu_ctx_driver_t menu_ctx_rgui;
-extern menu_ctx_driver_t menu_ctx_glui;
-extern menu_ctx_driver_t menu_ctx_xmb;
-extern menu_ctx_driver_t menu_ctx_lakka;
-extern menu_ctx_driver_t menu_ctx_ios;
-
-extern menu_ctx_driver_backend_t menu_ctx_backend_common;
-extern menu_ctx_driver_backend_t menu_ctx_backend_lakka;
-
-extern rarch_joypad_driver_t *joypad_drivers[];
-
 #ifdef __cplusplus
 }
 #endif

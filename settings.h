@@ -21,24 +21,86 @@
 extern "C" {
 #endif
 
-
+/**
+ * config_get_default_camera:
+ *
+ * Gets default camera driver.
+ *
+ * Returns: Default camera driver.
+ **/
 const char *config_get_default_camera(void);
 
+/**
+ * config_get_default_location:
+ *
+ * Gets default location driver.
+ *
+ * Returns: Default location driver.
+ **/
 const char *config_get_default_location(void);
 
+/**
+ * config_get_default_osk:
+ *
+ * Gets default OSK driver.
+ *
+ * Returns: Default OSK driver.
+ **/
 const char *config_get_default_osk(void);
 
+/**
+ * config_get_default_video:
+ *
+ * Gets default video driver.
+ *
+ * Returns: Default video driver.
+ **/
 const char *config_get_default_video(void);
 
+/**
+ * config_get_default_audio:
+ *
+ * Gets default audio driver.
+ *
+ * Returns: Default audio driver.
+ **/
 const char *config_get_default_audio(void);
 
+/**
+ * config_get_default_audio_resampler:
+ *
+ * Gets default audio resampler driver.
+ *
+ * Returns: Default audio resampler driver.
+ **/
 const char *config_get_default_audio_resampler(void);
 
+/**
+ * config_get_default_input:
+ *
+ * Gets default input driver.
+ *
+ * Returns: Default input driver.
+ **/
 const char *config_get_default_input(void);
 
+/**
+ * config_get_default_joypad:
+ *
+ * Gets default input joypad driver.
+ *
+ * Returns: Default input joypad driver.
+ **/
 const char *config_get_default_joypad(void);
 
 #ifdef HAVE_MENU
+/**
+ * config_get_default_menu:
+ *
+ * Gets default menu driver.
+ *
+ * Returns: Default menu driver.
+ **/
 const char *config_get_default_menu(void);
 #endif
 

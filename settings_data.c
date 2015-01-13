@@ -39,7 +39,7 @@
 #ifdef HAVE_MENU
 #include "menu/menu_list.h"
 #include "menu/menu_entries.h"
-#include "menu/menu_input_line_cb.h"
+#include "menu/menu_input.h"
 #include "menu/menu_shader.h"
 #endif
 
@@ -830,27 +830,6 @@ static int setting_data_string_action_toggle_driver(void *data,
    return 0;
 }
 
-static int setting_data_string_action_toggle_audio_resampler(void *data,
-      unsigned action)
-{
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting)
-      return -1;
-
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         find_prev_resampler_driver();
-         break;
-      case MENU_ACTION_RIGHT:
-         find_next_resampler_driver();
-         break;
-   }
-
-   return 0;
-}
-
 int core_list_action_toggle(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
@@ -927,12 +906,12 @@ static int setting_data_action_ok_bind_all(void *data, unsigned action)
          rarch_get_time_usec() + 
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
       input_keyboard_wait_keys(driver.menu,
-            menu_custom_bind_keyboard_cb);
+            menu_input_custom_bind_keyboard_cb);
    }
    else
    {
-      menu_poll_bind_get_rested_axes(&driver.menu->binds);
-      menu_poll_bind_state(&driver.menu->binds);
+      menu_input_poll_bind_get_rested_axes(&driver.menu->binds);
+      menu_input_poll_bind_state(&driver.menu->binds);
    }
    return 0;
 }
@@ -1067,8 +1046,8 @@ static int setting_data_uint_action_ok_linefeed(void *data, unsigned action)
    if (!setting)
       return -1;
 
-   menu_key_start_line(driver.menu, setting->short_description,
-         setting->name, 0, 0, st_uint_callback);
+   menu_input_key_start_line(driver.menu, setting->short_description,
+         setting->name, 0, 0, menu_input_st_uint_callback);
 
    return 0;
 }
@@ -1119,12 +1098,12 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
       driver.menu->binds.timeout_end = rarch_get_time_usec() +
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
       input_keyboard_wait_keys(driver.menu,
-            menu_custom_bind_keyboard_cb);
+            menu_input_custom_bind_keyboard_cb);
    }
    else
    {
-      menu_poll_bind_get_rested_axes(&driver.menu->binds);
-      menu_poll_bind_state(&driver.menu->binds);
+      menu_input_poll_bind_get_rested_axes(&driver.menu->binds);
+      menu_input_poll_bind_state(&driver.menu->binds);
    }
 
    return 0;
@@ -1138,8 +1117,8 @@ static int setting_data_string_action_ok_allow_input(void *data,
    if (!setting || !driver.menu)
       return -1;
 
-   menu_key_start_line(driver.menu, setting->short_description,
-         setting->name, 0, 0, st_string_callback);
+   menu_input_key_start_line(driver.menu, setting->short_description,
+         setting->name, 0, 0, menu_input_st_string_callback);
 
    return 0;
 }
@@ -3582,7 +3561,7 @@ static bool setting_data_append_list_driver_options(
          subgroup_info.name,
          NULL,
          NULL);
-   (*list)[list_info->index - 1].action_toggle = &setting_data_string_action_toggle_audio_resampler;
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING_OPTIONS(
          g_settings.camera.driver,
@@ -4012,6 +3991,17 @@ static bool setting_data_append_list_video_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
+
+   CONFIG_BOOL(g_settings.fps_monitor_enable,
+         "fps_monitor_enable",
+         "Monitor FPS Enable",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 
    CONFIG_FLOAT(
          g_settings.video.refresh_rate,

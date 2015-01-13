@@ -23,7 +23,7 @@
 #include "general.h"
 #include "autosave.h"
 #include "dynamic.h"
-#include "message_queue.h"
+#include <queues/message_queue.h>
 #include <stdlib.h>
 #include <string.h>
 

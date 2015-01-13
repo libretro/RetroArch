@@ -18,12 +18,12 @@
 #define __GL_COMMON_H
 
 #include "../general.h"
-#include "fonts/fonts.h"
+#include "font_renderer_driver.h"
 #include <gfx/math/matrix_4x4.h>
-#include "gfx_context.h"
 #include <gfx/scaler/scaler.h>
-#include "fonts/gl_font.h"
-#include "shader/shader_context.h"
+#include "font_gl_driver.h"
+#include "image/image.h"
+#include "video_shader_driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -100,30 +100,121 @@
 
 #endif
 
-static inline bool gl_check_error(void)
-{
-   int error = glGetError();
-   switch (error)
-   {
-      case GL_INVALID_ENUM:
-         RARCH_ERR("GL: Invalid enum.\n");
-         break;
-      case GL_INVALID_VALUE:
-         RARCH_ERR("GL: Invalid value.\n");
-         break;
-      case GL_INVALID_OPERATION:
-         RARCH_ERR("GL: Invalid operation.\n");
-         break;
-      case GL_OUT_OF_MEMORY:
-         RARCH_ERR("GL: Out of memory.\n");
-         break;
-      case GL_NO_ERROR:
-         return true;
-   }
+#ifndef MAX_SHADERS
+#define MAX_SHADERS 16
+#endif
 
-   RARCH_ERR("Non specified GL error.\n");
-   return false;
-}
+#ifndef MAX_TEXTURES
+#define MAX_TEXTURES 8
+#endif
+
+#if defined(HAVE_PSGL)
+#define RARCH_GL_INTERNAL_FORMAT32 GL_ARGB_SCE
+#define RARCH_GL_INTERNAL_FORMAT16 GL_RGB5 /* TODO: Verify if this is really 565 or just 555. */
+#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA
+#define RARCH_GL_TEXTURE_TYPE16 GL_BGRA
+#define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
+#define RARCH_GL_FORMAT16 GL_RGB5
+#elif defined(HAVE_OPENGLES)
+/* Imgtec/SGX headers have this missing. */
+#ifndef GL_BGRA_EXT
+#define GL_BGRA_EXT 0x80E1
+#endif
+#ifdef IOS
+/* Stupid Apple. */
+#define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA
+#else
+#define RARCH_GL_INTERNAL_FORMAT32 GL_BGRA_EXT
+#endif
+#define RARCH_GL_INTERNAL_FORMAT16 GL_RGB
+#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA_EXT
+#define RARCH_GL_TEXTURE_TYPE16 GL_RGB
+#define RARCH_GL_FORMAT32 GL_UNSIGNED_BYTE
+#define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_5_6_5
+#else
+/* On desktop, we always use 32-bit. */
+#define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA8
+#define RARCH_GL_INTERNAL_FORMAT16 GL_RGBA8
+#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA
+#define RARCH_GL_TEXTURE_TYPE16 GL_BGRA
+#define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
+#define RARCH_GL_FORMAT16 GL_UNSIGNED_INT_8_8_8_8_REV
+
+/* GL_RGB565 internal format isn't in desktop GL 
+ * until 4.1 core (ARB_ES2_compatibility).
+ * Check for this. */
+#ifndef GL_RGB565
+#define GL_RGB565 0x8D62
+#endif
+#define RARCH_GL_INTERNAL_FORMAT16_565 GL_RGB565
+#define RARCH_GL_TEXTURE_TYPE16_565 GL_RGB
+#define RARCH_GL_FORMAT16_565 GL_UNSIGNED_SHORT_5_6_5
+#endif
+
+/* Platform specific workarounds/hacks. */
+#if defined(__CELLOS_LV2__)
+#define NO_GL_READ_PIXELS
+
+/* Performance hacks. */
+#ifdef HAVE_GCMGL
+
+extern GLvoid* glMapBufferTextureReferenceRA( GLenum target, GLenum access );
+
+extern GLboolean glUnmapBufferTextureReferenceRA( GLenum target );
+
+extern void glBufferSubDataTextureReferenceRA( GLenum target,
+      GLintptr offset, GLsizeiptr size, const GLvoid *data );
+#define glMapBuffer(target, access) glMapBufferTextureReferenceRA(target, access)
+#define glUnmapBuffer(target) glUnmapBufferTextureReferenceRA(target)
+#define glBufferSubData(target, offset, size, data) glBufferSubDataTextureReferenceRA(target, offset, size, data)
+#endif
+#endif
+
+#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
+#ifndef NO_GL_FF_VERTEX
+#define NO_GL_FF_VERTEX
+#endif
+#endif
+
+#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
+#ifndef NO_GL_FF_MATRIX
+#define NO_GL_FF_MATRIX
+#endif
+#endif
+
+#if defined(HAVE_OPENGLES2) /* TODO: Figure out exactly what. */
+#define NO_GL_CLAMP_TO_BORDER
+#endif
+
+#if defined(HAVE_OPENGLES)
+#ifndef GL_UNPACK_ROW_LENGTH
+#define GL_UNPACK_ROW_LENGTH  0x0CF2
+#endif
+
+#ifndef GL_SRGB_ALPHA_EXT
+#define GL_SRGB_ALPHA_EXT 0x8C42
+#endif
+#endif
+
+/* Fall back to FF-style if needed and possible. */
+#define gl_ff_vertex(coords) \
+      glClientActiveTexture(GL_TEXTURE1); \
+      glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord); \
+      glEnableClientState(GL_TEXTURE_COORD_ARRAY); \
+      glClientActiveTexture(GL_TEXTURE0); \
+      glVertexPointer(2, GL_FLOAT, 0, coords->vertex); \
+      glEnableClientState(GL_VERTEX_ARRAY); \
+      glColorPointer(4, GL_FLOAT, 0, coords->color); \
+      glEnableClientState(GL_COLOR_ARRAY); \
+      glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord); \
+      glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+
+/* Fall back to FF-style if needed and possible. */
+#define gl_ff_matrix(mat) \
+      glMatrixMode(GL_PROJECTION); \
+      glLoadMatrixf(mat->data); \
+      glMatrixMode(GL_MODELVIEW); \
+      glLoadIdentity()
 
 struct gl_fbo_rect
 {
@@ -161,9 +252,6 @@ struct gl_coords
    const GLfloat *lut_tex_coord;
    unsigned vertices;
 };
-
-#define MAX_SHADERS 16
-#define MAX_TEXTURES 8
 
 typedef struct gl
 {
@@ -287,113 +375,30 @@ typedef struct gl
    GLuint vao;
 } gl_t;
 
-#if defined(HAVE_PSGL)
-#define RARCH_GL_INTERNAL_FORMAT32 GL_ARGB_SCE
-#define RARCH_GL_INTERNAL_FORMAT16 GL_RGB5 /* TODO: Verify if this is really 565 or just 555. */
-#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA
-#define RARCH_GL_TEXTURE_TYPE16 GL_BGRA
-#define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
-#define RARCH_GL_FORMAT16 GL_RGB5
-#elif defined(HAVE_OPENGLES)
-/* Imgtec/SGX headers have this missing. */
-#ifndef GL_BGRA_EXT
-#define GL_BGRA_EXT 0x80E1
-#endif
-#ifdef IOS
-/* Stupid Apple. */
-#define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA
-#else
-#define RARCH_GL_INTERNAL_FORMAT32 GL_BGRA_EXT
-#endif
-#define RARCH_GL_INTERNAL_FORMAT16 GL_RGB
-#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA_EXT
-#define RARCH_GL_TEXTURE_TYPE16 GL_RGB
-#define RARCH_GL_FORMAT32 GL_UNSIGNED_BYTE
-#define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_5_6_5
-#else
-/* On desktop, we always use 32-bit. */
-#define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA8
-#define RARCH_GL_INTERNAL_FORMAT16 GL_RGBA8
-#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA
-#define RARCH_GL_TEXTURE_TYPE16 GL_BGRA
-#define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
-#define RARCH_GL_FORMAT16 GL_UNSIGNED_INT_8_8_8_8_REV
+static inline bool gl_check_error(void)
+{
+   int error = glGetError();
+   switch (error)
+   {
+      case GL_INVALID_ENUM:
+         RARCH_ERR("GL: Invalid enum.\n");
+         break;
+      case GL_INVALID_VALUE:
+         RARCH_ERR("GL: Invalid value.\n");
+         break;
+      case GL_INVALID_OPERATION:
+         RARCH_ERR("GL: Invalid operation.\n");
+         break;
+      case GL_OUT_OF_MEMORY:
+         RARCH_ERR("GL: Out of memory.\n");
+         break;
+      case GL_NO_ERROR:
+         return true;
+   }
 
-/* GL_RGB565 internal format isn't in desktop GL 
- * until 4.1 core (ARB_ES2_compatibility).
- * Check for this. */
-#ifndef GL_RGB565
-#define GL_RGB565 0x8D62
-#endif
-#define RARCH_GL_INTERNAL_FORMAT16_565 GL_RGB565
-#define RARCH_GL_TEXTURE_TYPE16_565 GL_RGB
-#define RARCH_GL_FORMAT16_565 GL_UNSIGNED_SHORT_5_6_5
-#endif
-
-/* Platform specific workarounds/hacks. */
-#if defined(__CELLOS_LV2__)
-#define NO_GL_READ_PIXELS
-
-/* Performance hacks. */
-#ifdef HAVE_GCMGL
-
-extern GLvoid* glMapBufferTextureReferenceRA( GLenum target, GLenum access );
-
-extern GLboolean glUnmapBufferTextureReferenceRA( GLenum target );
-
-extern void glBufferSubDataTextureReferenceRA( GLenum target,
-      GLintptr offset, GLsizeiptr size, const GLvoid *data );
-#define glMapBuffer(target, access) glMapBufferTextureReferenceRA(target, access)
-#define glUnmapBuffer(target) glUnmapBufferTextureReferenceRA(target)
-#define glBufferSubData(target, offset, size, data) glBufferSubDataTextureReferenceRA(target, offset, size, data)
-#endif
-#endif
-
-#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
-#ifndef NO_GL_FF_VERTEX
-#define NO_GL_FF_VERTEX
-#endif
-#endif
-
-#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
-#ifndef NO_GL_FF_MATRIX
-#define NO_GL_FF_MATRIX
-#endif
-#endif
-
-#if defined(HAVE_OPENGLES2) /* TODO: Figure out exactly what. */
-#define NO_GL_CLAMP_TO_BORDER
-#endif
-
-#if defined(HAVE_OPENGLES)
-#ifndef GL_UNPACK_ROW_LENGTH
-#define GL_UNPACK_ROW_LENGTH  0x0CF2
-#endif
-
-#ifndef GL_SRGB_ALPHA_EXT
-#define GL_SRGB_ALPHA_EXT 0x8C42
-#endif
-#endif
-
-/* Fall back to FF-style if needed and possible. */
-#define gl_ff_vertex(coords) \
-      glClientActiveTexture(GL_TEXTURE1); \
-      glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord); \
-      glEnableClientState(GL_TEXTURE_COORD_ARRAY); \
-      glClientActiveTexture(GL_TEXTURE0); \
-      glVertexPointer(2, GL_FLOAT, 0, coords->vertex); \
-      glEnableClientState(GL_VERTEX_ARRAY); \
-      glColorPointer(4, GL_FLOAT, 0, coords->color); \
-      glEnableClientState(GL_COLOR_ARRAY); \
-      glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord); \
-      glEnableClientState(GL_TEXTURE_COORD_ARRAY)
-
-/* Fall back to FF-style if needed and possible. */
-#define gl_ff_matrix(mat) \
-      glMatrixMode(GL_PROJECTION); \
-      glLoadMatrixf(mat->data); \
-      glMatrixMode(GL_MODELVIEW); \
-      glLoadIdentity()
+   RARCH_ERR("Non specified GL error.\n");
+   return false;
+}
 
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height,
       bool force_full, bool allow_rotate);

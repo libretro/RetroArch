@@ -18,13 +18,13 @@
 #include "../common/RetroArch_Apple.h"
 #include "../../input/input_common.h"
 #include "../../input/input_keymaps.h"
-#include "../../input/apple_input.h"
+#include "../../input/drivers/apple_input.h"
 #include <file/file_path.h>
 #include "menu.h"
 
 #include "../../menu/menu.h"
 #include "../../menu/menu_entries.h"
-#include "../../menu/disp/shared.h"
+#include "../../menu/drivers_display/shared.h"
 
 /*********************************************/
 /* RunActionSheet                            */
@@ -558,7 +558,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       idx = self.setting->index - 1;
 
    if ((value = apple_input_find_any_key()))
-      BINDFOR(*self.setting).key = input_translate_keysym_to_rk(value);
+      BINDFOR(*self.setting).key = input_keymaps_translate_keysym_to_rk(value);
    else if ((value = apple_input_find_any_button(idx)) >= 0)
       BINDFOR(*self.setting).joykey = value;
    else if ((value = apple_input_find_any_axis(idx)))
@@ -717,7 +717,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)menuBack
 {
-  apply_deferred_settings();
+  menu_apply_deferred_settings();
   menu_list_pop_stack(driver.menu->menu_list);
   [self menuRefresh];
   [self reloadData];

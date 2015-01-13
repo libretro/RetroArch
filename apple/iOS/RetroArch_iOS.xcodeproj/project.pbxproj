@@ -10,7 +10,7 @@
 		501232C8192E5FB00063A359 /* apple_gamecontroller.m in Sources */ = {isa = PBXBuildFile; fileRef = 501232C7192E5FB00063A359 /* apple_gamecontroller.m */; };
 		501232CA192E5FC40063A359 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		501232CC192E5FDC0063A359 /* sinc_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CB192E5FDC0063A359 /* sinc_neon.S */; };
-		501232CE192E5FE30063A359 /* utils_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CD192E5FE30063A359 /* utils_neon.S */; };
+		501232CE192E5FE30063A359 /* audio_utils_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CD192E5FE30063A359 /* audio_utils_neon.S */; };
 		501232D6192E60580063A359 /* platform.m in Sources */ = {isa = PBXBuildFile; fileRef = 501232D5192E60580063A359 /* platform.m */; };
 		501232D8192E605F0063A359 /* browser.m in Sources */ = {isa = PBXBuildFile; fileRef = 501232D7192E605F0063A359 /* browser.m */; };
 		501232DA192E606D0063A359 /* menu.m in Sources */ = {isa = PBXBuildFile; fileRef = 501232D9192E606D0063A359 /* menu.m */; };
@@ -42,8 +42,8 @@
 /* Begin PBXFileReference section */
 		501232C7192E5FB00063A359 /* apple_gamecontroller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = apple_gamecontroller.m; path = ../common/apple_gamecontroller.m; sourceTree = "<group>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = "<group>"; };
-		501232CB192E5FDC0063A359 /* sinc_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_neon.S; path = ../../audio/resamplers/sinc_neon.S; sourceTree = "<group>"; };
-		501232CD192E5FE30063A359 /* utils_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = utils_neon.S; path = ../../audio/utils_neon.S; sourceTree = "<group>"; };
+		501232CB192E5FDC0063A359 /* sinc_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_neon.S; path = ../../audio/drivers_resampler/sinc_neon.S; sourceTree = "<group>"; };
+		501232CD192E5FE30063A359 /* audio_utils_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = audio_utils_neon.S; path = ../../audio/audio_utils_neon.S; sourceTree = "<group>"; };
 		501232D5192E60580063A359 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = platform.m; sourceTree = "<group>"; };
 		501232D7192E605F0063A359 /* browser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = browser.m; sourceTree = "<group>"; };
 		501232D9192E606D0063A359 /* menu.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = menu.m; sourceTree = "<group>"; };
@@ -52,7 +52,7 @@
 		5073C587196C0BA40026E146 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RAGameView.m; path = ../common/RAGameView.m; sourceTree = SOURCE_ROOT; };
 		5073C588196C0BA40026E146 /* utility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = utility.m; path = ../common/utility.m; sourceTree = SOURCE_ROOT; };
 		50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
-		50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; name = cc_resampler_neon.S; path = ../../audio/resamplers/cc_resampler_neon.S; sourceTree = "<group>"; };
+		50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; name = cc_resampler_neon.S; path = ../../audio/drivers_resampler/cc_resampler_neon.S; sourceTree = "<group>"; };
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		6949E72219FABADC00CC7F42 /* CFExtensions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = CFExtensions.m; path = ../common/CFExtensions.m; sourceTree = "<group>"; };
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
@@ -201,7 +201,7 @@
 		96AFAEE516C1DC73009DE44C /* audio */ = {
 			isa = PBXGroup;
 			children = (
-				501232CD192E5FE30063A359 /* utils_neon.S */,
+				501232CD192E5FE30063A359 /* audio_utils_neon.S */,
 				501232CB192E5FDC0063A359 /* sinc_neon.S */,
 			);
 			name = audio;
@@ -312,7 +312,7 @@
 				501232DA192E606D0063A359 /* menu.m in Sources */,
 				501232D8192E605F0063A359 /* browser.m in Sources */,
 				501232D6192E60580063A359 /* platform.m in Sources */,
-				501232CE192E5FE30063A359 /* utils_neon.S in Sources */,
+				501232CE192E5FE30063A359 /* audio_utils_neon.S in Sources */,
 				501232C8192E5FB00063A359 /* apple_gamecontroller.m in Sources */,
 				5073C58A196C0BA40026E146 /* RAGameView.m in Sources */,
 				501232CC192E5FDC0063A359 /* sinc_neon.S in Sources */,

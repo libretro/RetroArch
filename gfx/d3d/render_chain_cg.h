@@ -221,7 +221,7 @@ void renderchain_bind_tracker(void *data, Pass *pass, unsigned pass_index)
       return;
 
    if (pass_index == 1)
-      chain->uniform_cnt = state_get_uniform(chain->tracker,
+      chain->uniform_cnt = state_tracker_get_uniform(chain->tracker,
             chain->uniform_info, MAX_VARIABLES, chain->frame_count);
 
    for (unsigned i = 0; i < chain->uniform_cnt; i++)

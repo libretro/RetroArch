@@ -62,7 +62,7 @@ endif
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    JOYCONFIG_LIBS += -lrt
-   OBJ += input/linuxraw_input.o input/linuxraw_joypad.o
+   OBJ += input/drivers/linuxraw_input.o input/drivers_joypad/linuxraw_joypad.o
 endif
 
 ifeq ($(findstring Haiku,$(OS)),)
@@ -85,8 +85,8 @@ endif
 # General object files
 
 OBJ += frontend/frontend.o \
-		frontend/frontend_context.o \
-		frontend/platform/platform_null.o \
+		frontend/frontend_driver.o \
+		frontend/drivers/platform_null.o \
 		libretro_version_1.o \
 		retroarch.o \
 		runloop.o \
@@ -96,26 +96,33 @@ OBJ += frontend/frontend.o \
 		libretro-sdk/string/string_list.o \
 		file_ops.o \
 		libretro-sdk/file/file_path.o \
-		rarch_compr_file_path.o \
 		hash.o \
+		audio/audio_driver.o \
+		input/input_driver.o \
+		gfx/video_driver.o \
+		osk/osk_driver.o \
+		camera/camera_driver.o \
+		menu/menu_driver.o \
+		location/location_driver.o \
 		driver.o \
 		settings.o \
 		settings_list.o \
 		settings_data.o \
 		dynamic.o \
 		dynamic_dummy.o \
-		message_queue.o \
+		libretro-sdk/queues/message_queue.o \
 		rewind.o \
 		gfx/gfx_common.o \
-		gfx/fonts/bitmapfont.o \
+		gfx/drivers_font_renderer/bitmapfont.o \
 		input/input_autodetect.o \
-		input/input_context.o \
+		input/input_joypad_driver.o \
+		input/input_joypad.o \
 		input/input_common.o \
 		input/input_keymaps.o \
 		input/keyboard_line.o \
-		input/overlay.o \
+		input/input_overlay.o \
 		patch.o \
-		fifo_buffer.o \
+		libretro-sdk/queues/fifo_buffer.o \
 		core_options.o \
 		libretro-sdk/compat/compat.o \
 		cheats.o \
@@ -124,30 +131,30 @@ OBJ += frontend/frontend.o \
 		libretro-sdk/file/config_file_userdata.o \
 		screenshot.o \
 		libretro-sdk/gfx/scaler/scaler.o \
-		gfx/shader/shader_null.o \
-		gfx/shader/shader_context.o \
-		gfx/shader/shader_parse.o \
+		gfx/drivers_shader/shader_null.o \
+		gfx/video_shader_driver.o \
+		gfx/video_shader_parse.o \
 		libretro-sdk/gfx/scaler/pixconv.o \
 		libretro-sdk/gfx/scaler/scaler_int.o \
 		libretro-sdk/gfx/scaler/scaler_filter.o \
 		gfx/image/image_rpng.o \
-		gfx/fonts/fonts.o \
+		gfx/font_renderer_driver.o \
 		gfx/video_filter.o \
-		audio/resamplers/resampler.o \
-		audio/dsp_filter.o \
-		audio/resamplers/sinc.o \
-		audio/resamplers/nearest.o \
-		audio/resamplers/cc_resampler.o \
-		location/nulllocation.o \
-		camera/nullcamera.o \
-		gfx/nullgfx.o \
-		audio/nullaudio.o \
-		input/nullinput.o \
-		input/nullinput_joypad.o \
-		input/osk/nullosk.o \
+		audio/audio_resampler_driver.o \
+		audio/audio_dsp_filter.o \
+		audio/drivers_resampler/sinc.o \
+		audio/drivers_resampler/nearest.o \
+		audio/drivers_resampler/cc_resampler.o \
+		location/drivers/nulllocation.o \
+		camera/drivers/nullcamera.o \
+		gfx/drivers/nullgfx.o \
+		audio/drivers/nullaudio.o \
+		input/drivers/nullinput.o \
+		input/drivers_joypad/nullinput_joypad.o \
+		osk/drivers/nullosk.o \
 		playlist.o \
 		movie.o \
-		record/ffemu.o \
+		record/record_driver.o \
 		performance.o
 
 # RarchDB
@@ -167,45 +174,45 @@ endif
 ifeq ($(HAVE_PYTHON), 1)
    DEFINES += $(PYTHON_CFLAGS) -Wno-unused-parameter
    LIBS += $(PYTHON_LIBS)
-   OBJ += gfx/py_state/py_state.o
+   OBJ += gfx/video_state_python.o
 endif
 
 ifeq ($(HAVE_EMSCRIPTEN), 1)
-OBJ += frontend/platform/platform_emscripten.o \
-		input/rwebinput_input.o \
-		audio/rwebaudio.o \
-		camera/rwebcam.o
+OBJ += frontend/drivers/platform_emscripten.o \
+		input/drivers/rwebinput_input.o \
+		audio/drivers/rwebaudio.o \
+		camera/drivers/rwebcam.o
 endif
 
 # Audio
 #
 ifeq ($(HAVE_COREAUDIO), 1)
-   OBJ += audio/coreaudio.o
+   OBJ += audio/drivers/coreaudio.o
    LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
 endif
 
 ifeq ($(HAVE_OSS), 1)
-   OBJ += audio/oss.o
+   OBJ += audio/drivers/oss.o
 endif
 
 ifeq ($(HAVE_OSS_BSD), 1)
-   OBJ += audio/oss.o
+   OBJ += audio/drivers/oss.o
 endif
 
 ifeq ($(HAVE_ALSA), 1)
-   OBJ += audio/alsa.o audio/alsathread.o
+   OBJ += audio/drivers/alsa.o audio/drivers/alsathread.o
    LIBS += $(ALSA_LIBS)
    DEFINES += $(ALSA_CFLAGS)
 endif
 
 ifeq ($(HAVE_ROAR), 1)
-   OBJ += audio/roar.o
+   OBJ += audio/drivers/roar.o
    LIBS += $(ROAR_LIBS)
    DEFINES += $(ROAR_CFLAGS)
 endif
 
 ifeq ($(HAVE_AL), 1)
-   OBJ += audio/openal.o
+   OBJ += audio/drivers/openal.o
    ifeq ($(OSX),1)
       LIBS += -framework OpenAL
    else
@@ -214,13 +221,13 @@ ifeq ($(HAVE_AL), 1)
 endif
 
 ifeq ($(HAVE_JACK),1)
-   OBJ += audio/jack.o
+   OBJ += audio/drivers/jack.o
    LIBS += $(JACK_LIBS)
    DEFINES += $(JACK_CFLAGS)
 endif
 
 ifeq ($(HAVE_PULSE), 1)
-   OBJ += audio/pulse.o
+   OBJ += audio/drivers/pulse.o
    LIBS += $(PULSE_LIBS)
    DEFINES += $(PULSE_CFLAGS)
 endif
@@ -236,13 +243,13 @@ ifeq ($(HAVE_RSOUND), 1)
 endif
 
 ifeq ($(HAVE_DSOUND), 1)
-   OBJ += audio/dsound.o
+   OBJ += audio/drivers/dsound.o
    DEFINES += -DHAVE_DSOUND
    LIBS += -ldxguid -ldsound
 endif
 
 ifeq ($(HAVE_XAUDIO), 1)
-   OBJ += audio/xaudio.o audio/xaudio-c/xaudio-c.o
+   OBJ += audio/drivers/xaudio.o audio/drivers/xaudio-c.o
    DEFINES += -DHAVE_XAUDIO
    LIBS += -lole32
 endif
@@ -250,8 +257,8 @@ endif
 # Audio Resamplers
 
 ifeq ($(HAVE_NEON),1)
-   OBJ += audio/resamplers/sinc_neon.o
-   OBJ += audio/resamplers/cc_resampler_neon.o
+   OBJ += audio/drivers_resampler/sinc_neon.o
+   OBJ += audio/drivers_resampler/cc_resampler_neon.o
    # When compiled without this, tries to attempt to compile sinc lerp,
    # which will error out
 	#
@@ -261,33 +268,33 @@ ifeq ($(HAVE_NEON),1)
    DEFINES += -DSINC_LOWER_QUALITY
 endif
 
-OBJ += audio/utils.o
+OBJ += audio/audio_utils.o
 ifeq ($(HAVE_NEON),1)
-   OBJ += audio/utils_neon.o
+   OBJ += audio/audio_utils_neon.o
 endif
 
 ifeq ($(HAVE_RGUI), 1)
-   OBJ += menu/disp/rgui.o
+   OBJ += menu/drivers_display/rgui.o
    DEFINES += -DHAVE_MENU -DHAVE_RGUI
    HAVE_MENU_COMMON = 1
 ifeq ($(HAVE_GLUI), 1)
-   OBJ += menu/disp/glui.o
+   OBJ += menu/drivers_display/glui.o
    DEFINES += -DHAVE_GLUI
 endif
 ifeq ($(HAVE_XMB), 1)
-   OBJ += menu/disp/xmb.o
+   OBJ += menu/drivers_display/xmb.o
    DEFINES += -DHAVE_XMB
 endif
 ifeq ($(HAVE_LAKKA), 1)
-   OBJ += menu/backend/menu_lakka_backend.o \
-          menu/disp/lakka.o
+   OBJ += menu/drivers_backend/menu_lakka_backend.o \
+          menu/drivers_display/lakka.o
    DEFINES += -DHAVE_LAKKA
 endif
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
-   OBJ += menu/backend/menu_common_backend.o \
-			 menu/menu_input_line_cb.o \
+   OBJ += menu/drivers_backend/menu_common_backend.o \
+			 menu/menu_input.o \
 			 menu/menu.o \
 			 menu/menu_common_list.o \
 			 menu/menu_navigation.o  \
@@ -300,7 +307,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)
-   OBJ += gfx/fonts/freetype.o
+   OBJ += gfx/drivers_font_renderer/freetype.o
    LIBS += $(FREETYPE_LIBS)
    DEFINES += $(FREETYPE_CFLAGS)
 endif
@@ -320,7 +327,7 @@ endif
 #Input
 
 ifeq ($(HAVE_WAYLAND), 1)
- #OBJ += input/wayland.o
+ #OBJ += input/drivers/wayland.o
  DEFINES += $(WAYLAND_CFLAGS)
  LIBS += $(WAYLAND_LIBS)
 endif
@@ -328,18 +335,18 @@ endif
 ifeq ($(HAVE_DINPUT), 1)
    LIBS += -ldinput8 -ldxguid -lole32
    DEFINES += -DHAVE_DINPUT
-   OBJ += input/dinput.o
+   OBJ += input/drivers/dinput.o
    JOYCONFIG_LIBS += -ldinput8 -ldxguid -lole32
 endif
 
 ifeq ($(HAVE_WINXINPUT), 1)
    DEFINES += -DHAVE_WINXINPUT -DHAVE_BUILTIN_AUTOCONFIG
-   OBJ += input/winxinput_joypad.o \
+   OBJ += input/drivers_joypad/winxinput_joypad.o \
           input/autoconf/builtin_win.o
 endif
 
 ifeq ($(HAVE_X11), 1)
-   OBJ += input/x11_input.o gfx/context/x11_common.o input/keyboard_event_x11.o
+   OBJ += input/drivers/x11_input.o gfx/drivers_context/x11_common.o input/keyboard_event_x11.o
    LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS)
    DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
 endif
@@ -354,61 +361,61 @@ ifeq ($(HAVE_UDEV), 1)
    DEFINES += $(UDEV_CFLAGS)
    LIBS += $(UDEV_LIBS)
    JOYCONFIG_LIBS += $(UDEV_LIBS)
-   OBJ += input/udev_input.o input/udev_joypad.o
+   OBJ += input/drivers/udev_input.o input/drivers_joypad/udev_joypad.o
 endif
 
 ifeq ($(HAVE_PARPORT), 1)
-   OBJ += input/parport_joypad.o
+   OBJ += input/drivers_joypad/parport_joypad.o
 endif
 
 # Video
 #
 ifeq ($(HAVE_OPENGL), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
-   OBJ += gfx/gl.o \
+   OBJ += gfx/drivers/gl.o \
 			 gfx/gl_common.o \
-			 gfx/gfx_context.o \
-			 gfx/context/gfx_null_ctx.o \
-			 gfx/fonts/gl_font.o \
-			 gfx/fonts/gl_raster_font.o \
+			 gfx/video_context_driver.o \
+			 gfx/drivers_context/gfx_null_ctx.o \
+			 gfx/font_gl_driver.o \
+			 gfx/drivers_font/gl_raster_font.o \
 			 libretro-sdk/gfx/math/matrix_4x4.o \
-			 gfx/state_tracker.o \
+			 gfx/video_state_tracker.o \
 			 libretro-sdk/glsym/rglgen.o
 
    ifeq ($(HAVE_KMS), 1)
-      OBJ += gfx/context/drm_egl_ctx.o
+      OBJ += gfx/drivers_context/drm_egl_ctx.o
       DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
       LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
    endif
 
    ifeq ($(HAVE_VIDEOCORE), 1)
-      OBJ += gfx/context/vc_egl_ctx.o
+      OBJ += gfx/drivers_context/vc_egl_ctx.o
       DEFINES += $(EGL_CFLAGS)
       LIBS += $(EGL_LIBS)
    endif
 
    ifeq ($(HAVE_EMSCRIPTEN), 1)
-      OBJ += gfx/context/emscriptenegl_ctx.o
+      OBJ += gfx/drivers_context/emscriptenegl_ctx.o
    endif
 
    ifeq ($(HAVE_MALI_FBDEV), 1)
-      OBJ += gfx/context/mali_fbdev_ctx.o
+      OBJ += gfx/drivers_context/mali_fbdev_ctx.o
       DEFINES += $(EGL_CFLAGS)
       LIBS += $(EGL_LIBS)
    endif
 
    ifeq ($(HAVE_VIVANTE_FBDEV), 1)
-      OBJ += gfx/context/vivante_fbdev_ctx.o
+      OBJ += gfx/drivers_context/vivante_fbdev_ctx.o
       DEFINES += $(EGL_CFLAGS)
       LIBS += $(EGL_LIBS)
    endif
 
    ifeq ($(HAVE_X11), 1)
       ifeq ($(HAVE_GLES), 0)
-         OBJ += gfx/context/glx_ctx.o
+         OBJ += gfx/drivers_context/glx_ctx.o
       endif
       ifeq ($(HAVE_EGL), 1)
-         OBJ += gfx/context/xegl_ctx.o
+         OBJ += gfx/drivers_context/xegl_ctx.o
          DEFINES += $(EGL_CFLAGS)
          LIBS += $(EGL_LIBS)
       endif
@@ -416,7 +423,7 @@ ifeq ($(HAVE_OPENGL), 1)
 
    ifeq ($(HAVE_WAYLAND), 1)
 	   ifeq ($(HAVE_EGL), 1)
-	     OBJ += gfx/context/wayland_ctx.o
+	     OBJ += gfx/drivers_context/wayland_ctx.o
       endif
    endif
 	
@@ -434,13 +441,13 @@ ifeq ($(HAVE_OPENGL), 1)
          LIBS += -framework OpenGL
       else ifneq ($(findstring Win32,$(OS)),)
          LIBS += -lopengl32 -lgdi32 -lcomdlg32
-         OBJ += gfx/context/wgl_ctx.o
+         OBJ += gfx/drivers_context/wgl_ctx.o
       else
          LIBS += -lGL
       endif
    endif
 
-   OBJ += gfx/shader/shader_glsl.o 
+   OBJ += gfx/drivers_shader/shader_glsl.o 
    DEFINES += -DHAVE_GLSL
 endif
 
@@ -449,10 +456,10 @@ ifeq ($(HAVE_SDL2), 1)
 endif
 
 ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
+   OBJ += gfx/drivers/sdl_gfx.o input/drivers/sdl_input.o input/drivers_joypad/sdl_joypad.o audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_OPENGL), 1)
-     OBJ += gfx/context/sdl_gl_ctx.o
+     OBJ += gfx/drivers_context/sdl_gl_ctx.o
    endif
 
    JOYCONFIG_LIBS += $(SDL_LIBS)
@@ -461,10 +468,10 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_SDL2), 1)
-   OBJ += gfx/sdl2_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
+   OBJ += gfx/drivers/sdl2_gfx.o input/drivers/sdl_input.o input/drivers_joypad/sdl_joypad.o audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_OPENGL), 1)
-     OBJ += gfx/context/sdl_gl_ctx.o
+     OBJ += gfx/drivers_context/sdl_gl_ctx.o
    endif
 
    JOYCONFIG_LIBS += $(SDL2_LIBS)
@@ -474,30 +481,30 @@ ifeq ($(HAVE_SDL2), 1)
 endif
 
 ifeq ($(HAVE_OMAP), 1)
-   OBJ += gfx/omap_gfx.o
+   OBJ += gfx/drivers/omap_gfx.o
 endif
 
 ifeq ($(HAVE_EXYNOS), 1)
-   OBJ += gfx/exynos_gfx.o mem/neon/memcpy-neon.o
+   OBJ += gfx/drivers/exynos_gfx.o mem/neon/memcpy-neon.o
    LIBS += $(DRM_LIBS) $(EXYNOS_LIBS)
    DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
 endif
 
 ifeq ($(HAVE_VG), 1)
-   OBJ += gfx/vg.o libretro-sdk/gfx/math/matrix_3x3.o
+   OBJ += gfx/drivers/vg.o libretro-sdk/gfx/math/matrix_3x3.o
    DEFINES += $(VG_CFLAGS)
    LIBS += $(VG_LIBS)
 endif
 
 ifeq ($(HAVE_XVIDEO), 1)
-   OBJ += gfx/xvideo.o
+   OBJ += gfx/drivers/xvideo.o
    LIBS += $(XVIDEO_LIBS) 
    DEFINES += $(XVIDEO_CFLAGS)
 endif
 
 ifeq ($(HAVE_CG), 1)
 	DEFINES += -DHAVE_CG
-   OBJ += gfx/shader/shader_gl_cg.o
+   OBJ += gfx/drivers_shader/shader_gl_cg.o
    LIBS += $(CG_LIBS)
 endif
 
@@ -505,9 +512,9 @@ ifeq ($(HAVE_D3D9), 1)
    OBJ += gfx/d3d/d3d.o \
 			 gfx/d3d/render_chain.o \
 			 gfx/d3d/d3d_wrapper.o \
-			 gfx/fonts/d3d_font.o \
-			 gfx/fonts/d3d_w32_font.o \
-			 gfx/context/d3d_ctx.o
+			 gfx/font_d3d_driver.o \
+			 gfx/drivers_font/d3d_w32_font.o \
+			 gfx/drivers_context/d3d_ctx.o
    DEFINES += -DHAVE_WIN32_D3D9
    LIBS += -ld3d9 -ld3dx9 -ldxguid
 
@@ -598,7 +605,7 @@ endif
 # Camera
 
 ifeq ($(HAVE_V4L2),1)
-   OBJ += camera/video4linux2.o
+   OBJ += camera/drivers/video4linux2.o
    DEFINES += -DHAVE_V4L2
 endif
 
@@ -622,7 +629,7 @@ endif
 # Record
 
 ifeq ($(HAVE_FFMPEG), 1)
-   OBJ += record/ffmpeg.o
+   OBJ += record/drivers/ffmpeg.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(FFMPEG_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS)
 	DEFINES += -DHAVE_FFMPEG -Iffmpeg

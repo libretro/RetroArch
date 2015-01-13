@@ -16,6 +16,7 @@
 
 #include "menu_action.h"
 #include "menu_entries.h"
+#include "../retroarch.h"
 
 static int setting_extra_handler(rarch_setting_t *setting)
 {

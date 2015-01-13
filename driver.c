@@ -14,23 +14,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "driver.h"
 #include "general.h"
 #include "retroarch.h"
-#include "libretro.h"
 #include <stdint.h>
 #include <string.h>
-#include <math.h>
 #include "compat/posix_string.h"
-#include "audio/utils.h"
 #include "gfx/video_thread_wrapper.h"
-#include "audio/audio_thread_wrapper.h"
 #include "gfx/gfx_common.h"
-#include <string/string_list.h>
 
 #ifdef HAVE_X11
-#include "gfx/context/x11_common.h"
+#include "gfx/drivers_context/x11_common.h"
 #endif
 
 #ifdef HAVE_MENU
@@ -42,465 +36,6 @@
 #endif
 
 driver_t driver;
-
-static const audio_driver_t *audio_drivers[] = {
-#ifdef HAVE_ALSA
-   &audio_alsa,
-#ifndef __QNX__
-   &audio_alsathread,
-#endif
-#endif
-#if defined(HAVE_OSS) || defined(HAVE_OSS_BSD)
-   &audio_oss,
-#endif
-#ifdef HAVE_RSOUND
-   &audio_rsound,
-#endif
-#ifdef HAVE_COREAUDIO
-   &audio_coreaudio,
-#endif
-#ifdef HAVE_AL
-   &audio_openal,
-#endif
-#ifdef HAVE_SL
-   &audio_opensl,
-#endif
-#ifdef HAVE_ROAR
-   &audio_roar,
-#endif
-#ifdef HAVE_JACK
-   &audio_jack,
-#endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
-   &audio_sdl,
-#endif
-#ifdef HAVE_XAUDIO
-   &audio_xa,
-#endif
-#ifdef HAVE_DSOUND
-   &audio_dsound,
-#endif
-#ifdef HAVE_PULSE
-   &audio_pulse,
-#endif
-#ifdef __CELLOS_LV2__
-   &audio_ps3,
-#endif
-#ifdef XENON
-   &audio_xenon360,
-#endif
-#ifdef GEKKO
-   &audio_gx,
-#endif
-#ifdef EMSCRIPTEN
-   &audio_rwebaudio,
-#endif
-#ifdef PSP
-   &audio_psp1,
-#endif   
-   &audio_null,
-   NULL,
-};
-
-/**
- * config_get_audio_driver_options:
- *
- * Get an enumerated list of all audio driver names, separated by '|'.
- *
- * Returns: string listing of all audio driver names, separated by '|'.
- **/
-const char* config_get_audio_driver_options(void)
-{
-   union string_list_elem_attr attr;
-   char *options = NULL;
-   int option_k = 0;
-   int options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   for (option_k = 0; audio_drivers[option_k]; option_k++)
-   {
-      const char *opt = audio_drivers[option_k]->ident;
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
-}
-
-static const video_driver_t *video_drivers[] = {
-#ifdef HAVE_OPENGL
-   &video_gl,
-#endif
-#ifdef XENON
-   &video_xenon360,
-#endif
-#if defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9)) || defined(HAVE_WIN32_D3D9)
-   &video_d3d,
-#endif
-#ifdef SN_TARGET_PSP2
-   &video_vita,
-#endif
-#ifdef PSP
-   &video_psp1,
-#endif
-#ifdef HAVE_SDL
-   &video_sdl,
-#endif
-#ifdef HAVE_SDL2
-   &video_sdl2,
-#endif
-#ifdef HAVE_XVIDEO
-   &video_xvideo,
-#endif
-#ifdef GEKKO
-   &video_gx,
-#endif
-#ifdef HAVE_VG
-   &video_vg,
-#endif
-#ifdef HAVE_OMAP
-   &video_omap,
-#endif
-#ifdef HAVE_EXYNOS
-   &video_exynos,
-#endif
-   &video_null,
-   NULL,
-};
-
-/**
- * config_get_video_driver_options:
- *
- * Get an enumerated list of all video driver names, separated by '|'.
- *
- * Returns: string listing of all video driver names, separated by '|'.
- **/
-const char* config_get_video_driver_options(void)
-{
-   union string_list_elem_attr attr;
-   char *options = NULL;
-   int option_k = 0;
-   int options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   for (option_k = 0; video_drivers[option_k]; option_k++)
-   {
-      const char *opt = video_drivers[option_k]->ident;
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
-}
-
-static const input_driver_t *input_drivers[] = {
-#ifdef __CELLOS_LV2__
-   &input_ps3,
-#endif
-#if defined(SN_TARGET_PSP2) || defined(PSP)
-   &input_psp,
-#endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
-   &input_sdl,
-#endif
-#ifdef HAVE_DINPUT
-   &input_dinput,
-#endif
-#ifdef HAVE_X11
-   &input_x,
-#endif
-#ifdef XENON
-   &input_xenon360,
-#endif
-#if defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1)
-   &input_xinput,
-#endif
-#ifdef GEKKO
-   &input_gx,
-#endif
-#ifdef ANDROID
-   &input_android,
-#endif
-#ifdef HAVE_UDEV
-   &input_udev,
-#endif
-#if defined(__linux__) && !defined(ANDROID)
-   &input_linuxraw,
-#endif
-#if defined(IOS) || defined(OSX)
-   /* Don't use __APPLE__ as it breaks basic SDL builds */
-   &input_apple,
-#endif
-#ifdef __QNX__
-   &input_qnx,
-#endif
-#ifdef EMSCRIPTEN
-   &input_rwebinput,
-#endif
-   &input_null,
-   NULL,
-};
-
-/**
- * config_get_input_driver_options:
- *
- * Get an enumerated list of all input driver names, separated by '|'.
- *
- * Returns: string listing of all input driver names, separated by '|'.
- **/
-const char* config_get_input_driver_options(void)
-{
-   union string_list_elem_attr attr;
-   char *options = NULL;
-   int option_k = 0;
-   int options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   for (option_k = 0; input_drivers[option_k]; option_k++)
-   {
-      const char *opt = input_drivers[option_k]->ident;
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
-}
-
-static const input_osk_driver_t *osk_drivers[] = {
-#ifdef __CELLOS_LV2__
-   &input_ps3_osk,
-#endif
-   &input_null_osk,
-   NULL,
-};
-
-/**
- * config_get_osk_driver_options:
- *
- * Get an enumerated list of all OSK (onscreen keyboard) driver names,
- * separated by '|'.
- *
- * Returns: string listing of all OSK (onscreen keyboard) driver names,
- * separated by '|'.
- **/
-const char* config_get_osk_driver_options(void)
-{
-   union string_list_elem_attr attr;
-   char *options = NULL;
-   int option_k = 0;
-   int options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   for (option_k = 0; osk_drivers[option_k]; option_k++)
-   {
-      const char *opt = osk_drivers[option_k]->ident;
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
-}
-
-static const camera_driver_t *camera_drivers[] = {
-#ifdef HAVE_V4L2
-   &camera_v4l2,
-#endif
-#ifdef EMSCRIPTEN
-   &camera_rwebcam,
-#endif
-#ifdef ANDROID
-   &camera_android,
-#endif
-#if defined(MAC_OS_X_VERSION_10_7) || defined(__IPHONE_4_0)
-   &camera_apple,
-#endif
-   &camera_null,
-   NULL,
-};
-
-/**
- * config_get_camera_driver_options:
- *
- * Get an enumerated list of all camera driver names,
- * separated by '|'.
- *
- * Returns: string listing of all camera driver names,
- * separated by '|'.
- **/
-const char* config_get_camera_driver_options(void)
-{
-   union string_list_elem_attr attr;
-   char *options = NULL;
-   int option_k = 0;
-   int options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   for (option_k = 0; camera_drivers[option_k]; option_k++)
-   {
-      const char *opt = camera_drivers[option_k]->ident;
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
-}
-
-static const location_driver_t *location_drivers[] = {
-#ifdef ANDROID
-   &location_android,
-#endif
-#if defined(IOS) || defined(OSX)
-#ifdef HAVE_LOCATION
-   &location_apple,
-#endif
-#endif
-   &location_null,
-   NULL,
-};
-
-/**
- * config_get_location_driver_options:
- *
- * Get an enumerated list of all location driver names,
- * separated by '|'.
- *
- * Returns: string listing of all location driver names,
- * separated by '|'.
- **/
-const char* config_get_location_driver_options(void)
-{
-   union string_list_elem_attr attr;
-   char *options = NULL;
-   int option_k = 0;
-   int options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   for (option_k = 0; location_drivers[option_k]; option_k++)
-   {
-      const char *opt = location_drivers[option_k]->ident;
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
-}
-
-#ifdef HAVE_MENU
-static const menu_ctx_driver_t *menu_ctx_drivers[] = {
-#ifdef IOS
-   &menu_ctx_ios,
-#endif
-#if defined(HAVE_RMENU)
-   &menu_ctx_rmenu,
-#endif
-#if defined(HAVE_RMENU_XUI)
-   &menu_ctx_rmenu_xui,
-#endif
-#if defined(HAVE_LAKKA)
-   &menu_ctx_lakka,
-#endif
-#if defined(HAVE_GLUI)
-   &menu_ctx_glui,
-#endif
-#if defined(HAVE_XMB)
-   &menu_ctx_xmb,
-#endif
-#if defined(HAVE_RGUI)
-   &menu_ctx_rgui,
-#endif
-   NULL
-};
-
-/**
- * config_get_menu_driver_options:
- *
- * Get an enumerated list of all menu driver names,
- * separated by '|'.
- *
- * Returns: string listing of all menu driver names,
- * separated by '|'.
- **/
-const char* config_get_menu_driver_options(void)
-{
-   union string_list_elem_attr attr;
-   char *options = NULL;
-   int option_k = 0;
-   int options_len = 0;
-   struct string_list *options_l = string_list_new();
-
-   attr.i = 0;
-
-   for (option_k = 0; menu_ctx_drivers[option_k]; option_k++)
-   {
-      const char *opt = menu_ctx_drivers[option_k]->ident;
-      options_len += strlen(opt) + 1;
-      string_list_append(options_l, opt, attr);
-   }
-
-   options = (char*)calloc(options_len, sizeof(char));
-
-   string_list_join_concat(options, options_len, options_l, "|");
-
-   string_list_free(options_l);
-   options_l = NULL;
-
-   return options;
-}
-#endif
 
 /**
  * find_driver_nonempty:
@@ -522,53 +57,59 @@ static const void *find_driver_nonempty(const char *label, int i,
 
    if (!strcmp(label, "camera_driver"))
    {
-      drv = camera_drivers[i];
+      drv = camera_driver_find_handle(i);
       if (drv)
-         strlcpy(str, camera_drivers[i]->ident, sizeof_str);
+         strlcpy(str, camera_driver_find_ident(i), sizeof_str);
    }
    else if (!strcmp(label, "location_driver"))
    {
-      drv = location_drivers[i];
+      drv = location_driver_find_handle(i);
       if (drv)
-         strlcpy(str, location_drivers[i]->ident, sizeof_str);
+         strlcpy(str, location_driver_find_ident(i), sizeof_str);
    }
    else if (!strcmp(label, "osk_driver"))
    {
-      drv = osk_drivers[i];
+      drv = osk_driver_find_handle(i);
       if (drv)
-         strlcpy(str, osk_drivers[i]->ident, sizeof_str);
+         strlcpy(str, osk_driver_find_ident(i), sizeof_str);
    }
 #ifdef HAVE_MENU
    else if (!strcmp(label, "menu_driver"))
    {
-      drv = menu_ctx_drivers[i];
+      drv = menu_driver_find_handle(i);
       if (drv)
-         strlcpy(str, menu_ctx_drivers[i]->ident, sizeof_str);
+         strlcpy(str, menu_driver_find_ident(i), sizeof_str);
    }
 #endif
    else if (!strcmp(label, "input_driver"))
    {
-      drv = input_drivers[i];
+      drv = input_driver_find_handle(i);
       if (drv)
-         strlcpy(str, input_drivers[i]->ident, sizeof_str);
+         strlcpy(str, input_driver_find_ident(i), sizeof_str);
    }
    else if (!strcmp(label, "input_joypad_driver"))
    {
-      drv = joypad_drivers[i];
+      drv = joypad_driver_find_handle(i);
       if (drv)
-         strlcpy(str, joypad_drivers[i]->ident, sizeof_str);
+         strlcpy(str, joypad_driver_find_ident(i), sizeof_str);
    }
    else if (!strcmp(label, "video_driver"))
    {
-      drv = video_drivers[i];
+      drv = video_driver_find_handle(i);
       if (drv)
-         strlcpy(str, video_drivers[i]->ident, sizeof_str);
+         strlcpy(str, video_driver_find_ident(i), sizeof_str);
    }
    else if (!strcmp(label, "audio_driver"))
    {
-      drv = audio_drivers[i];
+      drv = audio_driver_find_handle(i);
       if (drv)
-         strlcpy(str, audio_drivers[i]->ident, sizeof_str);
+         strlcpy(str, audio_driver_find_ident(i), sizeof_str);
+   }
+   else if (!strcmp(label, "audio_resampler_driver"))
+   {
+      drv = audio_resampler_driver_find_handle(i);
+      if (drv)
+         strlcpy(str, audio_resampler_driver_find_ident(i), sizeof_str);
    }
 
    return drv;
@@ -584,7 +125,7 @@ static const void *find_driver_nonempty(const char *label, int i,
  * Returns: -1 if no driver based on @label and @drv found, otherwise
  * index number of the driver found in the array.
  **/
-static int find_driver_index(const char * label, const char *drv)
+int find_driver_index(const char * label, const char *drv)
 {
    unsigned i;
    char str[PATH_MAX_LENGTH];
@@ -603,6 +144,7 @@ static int find_driver_index(const char * label, const char *drv)
 
    return -1;
 }
+
 
 /**
  * find_prev_driver:
@@ -640,421 +182,13 @@ void find_next_driver(const char *label, char *str, size_t sizeof_str)
 }
 
 /**
- * find_osk_driver:
+ * init_drivers_pre:
  *
- * Find OSK (onscreen keyboard) driver.
+ * Attempts to find a default driver for 
+ * all driver types.
+ *
+ * Should be run before init_drivers().
  **/
-static void find_osk_driver(void)
-{
-   int i = find_driver_index("osk_driver", g_settings.osk.driver);
-   if (i >= 0)
-      driver.osk = osk_drivers[i];
-   else
-   {
-      unsigned d;
-      RARCH_ERR("Couldn't find any OSK driver named \"%s\"\n",
-            g_settings.osk.driver);
-      RARCH_LOG_OUTPUT("Available OSK drivers are:\n");
-      for (d = 0; osk_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", osk_drivers[d]->ident);
-
-      RARCH_WARN("Going to default to first OSK driver...\n");
-       
-      driver.osk = osk_drivers[0];
-       
-      if (!driver.osk)
-         rarch_fail(1, "find_osk_driver()");
-   }
-}
-
-static void init_osk(void)
-{
-   /* Resource leaks will follow if osk is initialized twice. */
-   if (driver.osk_data)
-      return;
-
-   find_osk_driver();
-
-   /* FIXME - refactor params later based on semantics  */
-   driver.osk_data = driver.osk->init(0);
-
-   if (!driver.osk_data)
-   {
-      RARCH_ERR("Failed to initialize OSK driver. Will continue without OSK.\n");
-      driver.osk_active = false;
-   }
-}
-
-static void uninit_osk(void)
-{
-   if (driver.osk_data && driver.osk && driver.osk->free)
-      driver.osk->free(driver.osk_data);
-   driver.osk_data = NULL;
-}
-
-
-
-static void find_camera_driver(void)
-{
-   int i = find_driver_index("camera_driver", g_settings.camera.driver);
-   if (i >= 0)
-      driver.camera = camera_drivers[i];
-   else
-   {
-      unsigned d;
-      RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
-            g_settings.camera.driver);
-      RARCH_LOG_OUTPUT("Available camera drivers are:\n");
-      for (d = 0; camera_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", camera_drivers[d]->ident);
-       
-      RARCH_WARN("Going to default to first camera driver...\n");
-       
-      driver.camera = camera_drivers[0];
-       
-      if (!driver.camera)
-         rarch_fail(1, "find_camera_driver()");
-   }
-}
-
-/**
- * driver_camera_start:
- *
- * Starts camera driver interface.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool driver_camera_start(void)
-{
-   if (driver.camera && driver.camera_data && driver.camera->start)
-   {
-      if (g_settings.camera.allow)
-         return driver.camera->start(driver.camera_data);
-
-      msg_queue_push(g_extern.msg_queue,
-            "Camera is explicitly disabled.\n", 1, 180);
-   }
-   return false;
-}
-
-/**
- * driver_camera_stop:
- *
- * Stops camera driver.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-void driver_camera_stop(void)
-{
-   if (driver.camera && driver.camera->stop && driver.camera_data)
-      driver.camera->stop(driver.camera_data);
-}
-
-/**
- * driver_camera_poll:
- *
- * Call camera driver's poll function.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-void driver_camera_poll(void)
-{
-   if (driver.camera && driver.camera->poll && driver.camera_data)
-      driver.camera->poll(driver.camera_data,
-            g_extern.system.camera_callback.frame_raw_framebuffer,
-            g_extern.system.camera_callback.frame_opengl_texture);
-}
-
-static void init_camera(void)
-{
-   /* Resource leaks will follow if camera is initialized twice. */
-   if (driver.camera_data)
-      return;
-
-   find_camera_driver();
-
-   driver.camera_data = driver.camera->init(
-         *g_settings.camera.device ? g_settings.camera.device : NULL,
-         g_extern.system.camera_callback.caps,
-         g_settings.camera.width ?
-         g_settings.camera.width : g_extern.system.camera_callback.width,
-         g_settings.camera.height ?
-         g_settings.camera.height : g_extern.system.camera_callback.height);
-
-   if (!driver.camera_data)
-   {
-      RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
-      driver.camera_active = false;
-   }
-
-   if (g_extern.system.camera_callback.initialized)
-      g_extern.system.camera_callback.initialized();
-}
-
-static void uninit_camera(void)
-{
-   if (driver.camera_data && driver.camera)
-   {
-      if (g_extern.system.camera_callback.deinitialized)
-         g_extern.system.camera_callback.deinitialized();
-
-      if (driver.camera->free)
-         driver.camera->free(driver.camera_data);
-   }
-   driver.camera_data = NULL;
-}
-
-static void find_location_driver(void)
-{
-   int i = find_driver_index("location_driver", g_settings.location.driver);
-   if (i >= 0)
-      driver.location = location_drivers[i];
-   else
-   {
-      unsigned d;
-      RARCH_ERR("Couldn't find any location driver named \"%s\"\n",
-            g_settings.location.driver);
-      RARCH_LOG_OUTPUT("Available location drivers are:\n");
-      for (d = 0; location_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", location_drivers[d]->ident);
-       
-      RARCH_WARN("Going to default to first location driver...\n");
-       
-      driver.location = location_drivers[0];
-
-      if (!driver.location)
-         rarch_fail(1, "find_location_driver()");
-   }
-}
-
-/**
- * driver_location_start:
- *
- * Starts location driver interface..
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool driver_location_start(void)
-{
-   if (driver.location && driver.location_data && driver.location->start)
-   {
-      if (g_settings.location.allow)
-         return driver.location->start(driver.location_data);
-
-      msg_queue_push(g_extern.msg_queue, "Location is explicitly disabled.\n", 1, 180);
-   }
-   return false;
-}
-
-/**
- * driver_location_stop:
- *
- * Stops location driver interface..
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-void driver_location_stop(void)
-{
-   if (driver.location && driver.location->stop && driver.location_data)
-      driver.location->stop(driver.location_data);
-}
-
-/**
- * driver_location_set_interval:
- * @interval_msecs     : Interval time in milliseconds.
- * @interval_distance  : Distance at which to update.
- *
- * Sets interval update time for location driver interface.
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- **/
-void driver_location_set_interval(unsigned interval_msecs,
-      unsigned interval_distance)
-{
-   if (driver.location && driver.location->set_interval
-         && driver.location_data)
-      driver.location->set_interval(driver.location_data,
-            interval_msecs, interval_distance);
-}
-
-/**
- * driver_location_get_position:
- * @lat                : Latitude of current position.
- * @lon                : Longitude of current position.
- * @horiz_accuracy     : Horizontal accuracy.
- * @vert_accuracy      : Vertical accuracy.
- *
- * Gets current positioning information from 
- * location driver interface.
- * Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE.
- *
- * Returns: bool (1) if successful, otherwise false (0).
- **/
-bool driver_location_get_position(double *lat, double *lon,
-      double *horiz_accuracy, double *vert_accuracy)
-{
-   if (driver.location && driver.location->get_position
-         && driver.location_data)
-      return driver.location->get_position(driver.location_data,
-            lat, lon, horiz_accuracy, vert_accuracy);
-
-   *lat = 0.0;
-   *lon = 0.0;
-   *horiz_accuracy = 0.0;
-   *vert_accuracy = 0.0;
-   return false;
-}
-
-static void init_location(void)
-{
-   /* Resource leaks will follow if location interface is initialized twice. */
-   if (driver.location_data)
-      return;
-
-   find_location_driver();
-
-   driver.location_data = driver.location->init();
-
-   if (!driver.location_data)
-   {
-      RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
-      driver.location_active = false;
-   }
-
-   if (g_extern.system.location_callback.initialized)
-      g_extern.system.location_callback.initialized();
-}
-
-static void uninit_location(void)
-{
-   if (driver.location_data && driver.location)
-   {
-      if (g_extern.system.location_callback.deinitialized)
-         g_extern.system.location_callback.deinitialized();
-
-      if (driver.location->free)
-         driver.location->free(driver.location_data);
-   }
-   driver.location_data = NULL;
-}
-
-#ifdef HAVE_MENU
-static void find_menu_driver(void)
-{
-   int i = find_driver_index("menu_driver", g_settings.menu.driver);
-   if (i >= 0)
-      driver.menu_ctx = menu_ctx_drivers[i];
-   else
-   {
-      unsigned d;
-      RARCH_WARN("Couldn't find any menu driver named \"%s\"\n",
-            g_settings.menu.driver);
-      RARCH_LOG_OUTPUT("Available menu drivers are:\n");
-      for (d = 0; menu_ctx_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
-      RARCH_WARN("Going to default to first menu driver...\n");
-
-      driver.menu_ctx = menu_ctx_drivers[0];
-
-      if (!driver.menu_ctx)
-         rarch_fail(1, "find_menu_driver()");
-   }
-}
-#endif
-
-
-static void find_audio_driver(void)
-{
-   int i = find_driver_index("audio_driver", g_settings.audio.driver);
-   if (i >= 0)
-      driver.audio = audio_drivers[i];
-   else
-   {
-      unsigned d;
-      RARCH_ERR("Couldn't find any audio driver named \"%s\"\n",
-            g_settings.audio.driver);
-      RARCH_LOG_OUTPUT("Available audio drivers are:\n");
-      for (d = 0; audio_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", audio_drivers[d]->ident);
-      RARCH_WARN("Going to default to first audio driver...\n");
-
-      driver.audio = audio_drivers[0];
-
-      if (!driver.audio)
-         rarch_fail(1, "find_audio_driver()");
-   }
-}
-
-
-static void find_video_driver(void)
-{
-   int i;
-#if defined(HAVE_OPENGL) && defined(HAVE_FBO)
-   if (g_extern.system.hw_render_callback.context_type)
-   {
-      RARCH_LOG("Using HW render, OpenGL driver forced.\n");
-      driver.video = &video_gl;
-      return;
-   }
-#endif
-
-   if (driver.frontend_ctx &&
-       driver.frontend_ctx->get_video_driver)
-   {
-      driver.video = driver.frontend_ctx->get_video_driver();
-
-      if (driver.video)
-         return;
-      RARCH_WARN("Frontend supports get_video_driver() but did not specify one.\n");
-   }
-
-   i = find_driver_index("video_driver", g_settings.video.driver);
-   if (i >= 0)
-      driver.video = video_drivers[i];
-   else
-   {
-      unsigned d;
-      RARCH_ERR("Couldn't find any video driver named \"%s\"\n",
-            g_settings.video.driver);
-      RARCH_LOG_OUTPUT("Available video drivers are:\n");
-      for (d = 0; video_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", video_drivers[d]->ident);
-      RARCH_WARN("Going to default to first video driver...\n");
-
-      driver.video = video_drivers[0];
-
-      if (!driver.video)
-         rarch_fail(1, "find_video_driver()");
-   }
-}
-
-
-static void find_input_driver(void)
-{
-   int i = find_driver_index("input_driver", g_settings.input.driver);
-   if (i >= 0)
-      driver.input = input_drivers[i];
-   else
-   {
-      unsigned d;
-      RARCH_ERR("Couldn't find any input driver named \"%s\"\n",
-            g_settings.input.driver);
-      RARCH_LOG_OUTPUT("Available input drivers are:\n");
-      for (d = 0; input_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", input_drivers[d]->ident);
-      RARCH_WARN("Going to default to first input driver...\n");
-
-      driver.input = input_drivers[0];
-
-      if (!driver.input)
-         rarch_fail(1, "find_input_driver()");
-   }
-}
-
 void init_drivers_pre(void)
 {
    find_audio_driver();
@@ -1114,6 +248,12 @@ static void adjust_system_rates(void)
    }
 }
 
+/**
+ * driver_set_monitor_refresh_rate:
+ * @hz                 : New refresh rate for monitor.
+ *
+ * Sets monitor refresh rate to new value.
+ **/
 void driver_set_monitor_refresh_rate(float hz)
 {
    char msg[PATH_MAX_LENGTH];
@@ -1129,12 +269,22 @@ void driver_set_monitor_refresh_rate(float hz)
       (double)g_settings.audio.out_rate / g_extern.audio_data.in_rate;
 }
 
-void driver_set_nonblock_state(bool nonblock)
+/**
+ * driver_set_nonblock_state:
+ * @enable             : Enable nonblock state?
+ *
+ * Sets audio and video drivers to nonblock state.
+ *
+ * If @enable is false, sets blocking state for both
+ * audio and video drivers instead.
+ **/
+void driver_set_nonblock_state(bool enable)
 {
    /* Only apply non-block-state for video if we're using vsync. */
    if (driver.video_active && driver.video_data)
    {
-      bool video_nonblock = nonblock;
+      bool video_nonblock = enable;
+
       if (!g_settings.video.vsync || g_extern.system.force_nonblock)
          video_nonblock = true;
       driver.video->set_nonblock_state(driver.video_data, video_nonblock);
@@ -1142,9 +292,9 @@ void driver_set_nonblock_state(bool nonblock)
 
    if (driver.audio_active && driver.audio_data)
       driver.audio->set_nonblock_state(driver.audio_data,
-            g_settings.audio.sync ? nonblock : true);
+            g_settings.audio.sync ? enable : true);
 
-   g_extern.audio_data.chunk_size = nonblock ?
+   g_extern.audio_data.chunk_size = enable ?
       g_extern.audio_data.nonblock_chunk_size : 
       g_extern.audio_data.block_chunk_size;
 }
@@ -1250,158 +400,6 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
    return true;
 }
 
-#ifdef HAVE_MENU
-static void init_menu(void)
-{
-   if (driver.menu)
-      return;
-
-   find_menu_driver();
-   if (!(driver.menu = (menu_handle_t*)menu_init(driver.menu_ctx)))
-   {
-      RARCH_ERR("Cannot initialize menu.\n");
-      rarch_fail(1, "init_menu()");
-   }
-
-   if (!(menu_init_list(driver.menu)))
-   {
-      RARCH_ERR("Cannot initialize menu lists.\n");
-      rarch_fail(1, "init_menu()");
-   }
-}
-#endif
-
-static void init_audio(void)
-{
-   size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
-
-   audio_convert_init_simd();
-
-   /* Resource leaks will follow if audio is initialized twice. */
-   if (driver.audio_data)
-      return;
-
-   /* Accomodate rewind since at some point we might have two full buffers. */
-   outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * 
-      g_settings.slowmotion_ratio;
-
-   /* Used for recording even if audio isn't enabled. */
-   rarch_assert(g_extern.audio_data.conv_outsamples =
-         (int16_t*)malloc(outsamples_max * sizeof(int16_t)));
-
-   g_extern.audio_data.block_chunk_size    = AUDIO_CHUNK_SIZE_BLOCKING;
-   g_extern.audio_data.nonblock_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
-   g_extern.audio_data.chunk_size          = 
-      g_extern.audio_data.block_chunk_size;
-
-   /* Needs to be able to hold full content of a full max_bufsamples
-    * in addition to its own. */
-   rarch_assert(g_extern.audio_data.rewind_buf = (int16_t*)
-         malloc(max_bufsamples * sizeof(int16_t)));
-   g_extern.audio_data.rewind_size             = max_bufsamples;
-
-   if (!g_settings.audio.enable)
-   {
-      driver.audio_active = false;
-      return;
-   }
-
-   find_audio_driver();
-#ifdef HAVE_THREADS
-   if (g_extern.system.audio_callback.callback)
-   {
-      RARCH_LOG("Starting threaded audio driver ...\n");
-      if (!rarch_threaded_audio_init(&driver.audio, &driver.audio_data,
-               *g_settings.audio.device ? g_settings.audio.device : NULL,
-               g_settings.audio.out_rate, g_settings.audio.latency,
-               driver.audio))
-      {
-         RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
-         rarch_fail(1, "init_audio()");
-      }
-   }
-   else
-#endif
-   {
-      driver.audio_data = driver.audio->init(*g_settings.audio.device ?
-            g_settings.audio.device : NULL,
-            g_settings.audio.out_rate, g_settings.audio.latency);
-   }
-
-   if (!driver.audio_data)
-   {
-      RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
-      driver.audio_active = false;
-   }
-
-   g_extern.audio_data.use_float = false;
-   if (driver.audio_active && driver.audio->use_float(driver.audio_data))
-      g_extern.audio_data.use_float = true;
-
-   if (!g_settings.audio.sync && driver.audio_active)
-   {
-      rarch_main_command(RARCH_CMD_AUDIO_SET_NONBLOCKING_STATE);
-      g_extern.audio_data.chunk_size = 
-         g_extern.audio_data.nonblock_chunk_size;
-   }
-
-   if (g_extern.audio_data.in_rate <= 0.0f)
-   {
-      /* Should never happen. */
-      RARCH_WARN("Input rate is invalid (%.3f Hz). Using output rate (%u Hz).\n",
-            g_extern.audio_data.in_rate, g_settings.audio.out_rate);
-      g_extern.audio_data.in_rate = g_settings.audio.out_rate;
-   }
-
-   g_extern.audio_data.orig_src_ratio =
-      g_extern.audio_data.src_ratio =
-      (double)g_settings.audio.out_rate / g_extern.audio_data.in_rate;
-
-   if (!rarch_resampler_realloc(&driver.resampler_data,
-            &driver.resampler,
-         g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio))
-   {
-      RARCH_ERR("Failed to initialize resampler \"%s\".\n",
-            g_settings.audio.resampler);
-      driver.audio_active = false;
-   }
-
-   rarch_assert(g_extern.audio_data.data = (float*)
-         malloc(max_bufsamples * sizeof(float)));
-
-   g_extern.audio_data.data_ptr = 0;
-
-   rarch_assert(g_settings.audio.out_rate <
-         g_extern.audio_data.in_rate * AUDIO_MAX_RATIO);
-   rarch_assert(g_extern.audio_data.outsamples = (float*)
-         malloc(outsamples_max * sizeof(float)));
-
-   g_extern.audio_data.rate_control = false;
-   if (!g_extern.system.audio_callback.callback && driver.audio_active &&
-         g_settings.audio.rate_control)
-   {
-      if (driver.audio->buffer_size && driver.audio->write_avail)
-      {
-         g_extern.audio_data.driver_buffer_size = 
-            driver.audio->buffer_size(driver.audio_data);
-         g_extern.audio_data.rate_control = true;
-      }
-      else
-         RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
-   }
-
-   rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
-
-   g_extern.measure_data.buffer_free_samples_count = 0;
-
-   if (driver.audio_active && !g_extern.audio_data.mute &&
-         g_extern.system.audio_callback.callback)
-   {
-      /* Threaded driver is initially stopped. */
-      driver.audio->start(driver.audio_data);
-   }
-}
-
 static void deinit_pixel_converter(void)
 {
    scaler_ctx_gen_reset(&driver.scaler);
@@ -1448,6 +446,7 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    struct retro_game_geometry *geom = NULL;
 
    deinit_video_filter();
+
    if (!*g_settings.video.softfilter_plugin)
       return;
 
@@ -1689,6 +688,13 @@ static void init_video_input(void)
 
 }
 
+/**
+ * init_drivers:
+ * @flags              : Bitmask of drivers to initialize.
+ *
+ * Initializes drivers.
+ * @flags determines which drivers get initialized.
+ **/
 void init_drivers(int flags)
 {
    if (flags & DRIVER_VIDEO)
@@ -1758,6 +764,11 @@ void init_drivers(int flags)
    }
 }
 
+/**
+ * compute_monitor_fps_statistics:
+ *
+ * Computes monitor FPS statistics.
+ **/
 static void compute_monitor_fps_statistics(void)
 {
    double avg_fps = 0.0, stddev = 0.0;
@@ -1783,83 +794,6 @@ static void compute_monitor_fps_statistics(void)
       RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
             avg_fps, 100.0 * stddev, samples);
    }
-}
-
-static void compute_audio_buffer_statistics(void)
-{
-   unsigned i, low_water_size, high_water_size, avg, stddev;
-   float avg_filled, deviation;
-   uint64_t accum = 0, accum_var = 0;
-   unsigned low_water_count = 0, high_water_count = 0;
-   unsigned samples = min(g_extern.measure_data.buffer_free_samples_count,
-         AUDIO_BUFFER_FREE_SAMPLES_COUNT);
-
-   if (samples < 3)
-      return;
-
-   for (i = 1; i < samples; i++)
-      accum += g_extern.measure_data.buffer_free_samples[i];
-
-   avg = accum / (samples - 1);
-
-   for (i = 1; i < samples; i++)
-   {
-      int diff = avg - g_extern.measure_data.buffer_free_samples[i];
-      accum_var += diff * diff;
-   }
-
-   stddev          = (unsigned)sqrt((double)accum_var / (samples - 2));
-   avg_filled      = 1.0f - (float)avg / g_extern.audio_data.driver_buffer_size;
-   deviation       = (float)stddev / g_extern.audio_data.driver_buffer_size;
-
-   low_water_size  = g_extern.audio_data.driver_buffer_size * 3 / 4;
-   high_water_size = g_extern.audio_data.driver_buffer_size / 4;
-
-   for (i = 1; i < samples; i++)
-   {
-      if (g_extern.measure_data.buffer_free_samples[i] >= low_water_size)
-         low_water_count++;
-      else if (g_extern.measure_data.buffer_free_samples[i] <= high_water_size)
-         high_water_count++;
-   }
-
-   RARCH_LOG("Average audio buffer saturation: %.2f %%, standard deviation (percentage points): %.2f %%.\n",
-         avg_filled * 100.0, deviation * 100.0);
-   RARCH_LOG("Amount of time spent close to underrun: %.2f %%. Close to blocking: %.2f %%.\n",
-         (100.0 * low_water_count) / (samples - 1),
-         (100.0 * high_water_count) / (samples - 1));
-}
-
-static void uninit_audio(void)
-{
-   if (driver.audio_data && driver.audio)
-      driver.audio->free(driver.audio_data);
-
-   free(g_extern.audio_data.conv_outsamples);
-   g_extern.audio_data.conv_outsamples = NULL;
-   g_extern.audio_data.data_ptr        = 0;
-
-   free(g_extern.audio_data.rewind_buf);
-   g_extern.audio_data.rewind_buf = NULL;
-
-   if (!g_settings.audio.enable)
-   {
-      driver.audio_active = false;
-      return;
-   }
-
-   rarch_resampler_freep(&driver.resampler,
-         &driver.resampler_data);
-
-   free(g_extern.audio_data.data);
-   g_extern.audio_data.data = NULL;
-
-   free(g_extern.audio_data.outsamples);
-   g_extern.audio_data.outsamples = NULL;
-
-   rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
-
-   compute_audio_buffer_statistics();
 }
 
 static void uninit_video_input(void)
@@ -1888,6 +822,13 @@ static void uninit_video_input(void)
    compute_monitor_fps_statistics();
 }
 
+/**
+ * uninit_drivers:
+ * @flags              : Bitmask of drivers to deinitialize.
+ *
+ * Deinitializes drivers.
+ * @flags determines which drivers get deinitialized.
+ **/
 void uninit_drivers(int flags)
 {
    if (flags & DRIVER_AUDIO)
@@ -1947,6 +888,21 @@ void uninit_drivers(int flags)
 }
 
 
+/**
+ * driver_monitor_fps_statistics
+ * @refresh_rate       : Monitor refresh rate.
+ * @deviation          : Deviation from measured refresh rate.
+ * @sample_points      : Amount of sampled points.
+ *
+ * Gets the monitor FPS statistics based on the current
+ * runtime.
+ *
+ * Returns: true (1) on success.
+ * false (0) if:
+ * a) threaded video mode is enabled
+ * b) less than 2 frame time samples.
+ * c) FPS monitor enable is off.
+ **/
 bool driver_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points)
 {
@@ -1955,7 +911,8 @@ bool driver_monitor_fps_statistics(double *refresh_rate,
    unsigned samples   = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
          g_extern.measure_data.frame_time_samples_count);
 
-   if (g_settings.video.threaded || (samples < 2))
+   if (!g_settings.fps_monitor_enable || 
+         g_settings.video.threaded || (samples < 2))
       return false;
 
    /* Measure statistics on frame time (microsecs), *not* FPS. */
@@ -1982,26 +939,4 @@ bool driver_monitor_fps_statistics(double *refresh_rate,
    *sample_points = samples;
 
    return true;
-}
-
-/**
- * driver_video_resolve:
- * @drv                : real video driver will be set to this.
- *
- * Use this if you need the real video driver 
- * and driver data pointers.
- *
- * Returns: video driver's userdata.
- **/
-void *driver_video_resolve(const video_driver_t **drv)
-{
-#ifdef HAVE_THREADS
-   if (g_settings.video.threaded
-         && !g_extern.system.hw_render_callback.context_type)
-      return rarch_threaded_video_resolve(drv);
-#endif
-   if (drv)
-      *drv = driver.video;
-
-   return driver.video_data;
 }

@@ -93,6 +93,8 @@ static void thread_loop(void *data)
    {
       bool ret = false;
       bool updated = false;
+      enum thread_cmd send_cmd;
+
       slock_lock(thr->lock);
       while (thr->send_cmd == CMD_NONE && !thr->frame.updated)
          scond_wait(thr->cond_thread, thr->lock);
@@ -102,7 +104,7 @@ static void thread_loop(void *data)
       /* To avoid race condition where send_cmd is updated 
        * right after the switch is checked. */
 
-      enum thread_cmd send_cmd = thr->send_cmd;
+      send_cmd = thr->send_cmd;
       slock_unlock(thr->lock);
 
       switch (send_cmd)
@@ -134,7 +136,9 @@ static void thread_loop(void *data)
          case CMD_READ_VIEWPORT:
          {
             struct rarch_viewport vp = {0};
+
             thr->driver->viewport_info(thr->driver_data, &vp);
+
             if (memcmp(&vp, &thr->read_vp, sizeof(vp)) == 0)
             {
                /* We can read safely
@@ -157,15 +161,14 @@ static void thread_loop(void *data)
 
                thr->cmd_data.b = ret;
                thr->frame.within_thread = false;
-               thread_reply(thr, CMD_READ_VIEWPORT);
             }
             else
             {
                /* Viewport dimensions changed right after main 
                 * thread read the async value. Cannot read safely. */
                thr->cmd_data.b = false;
-               thread_reply(thr, CMD_READ_VIEWPORT);
             }
+            thread_reply(thr, CMD_READ_VIEWPORT);
             break;
          }
             
@@ -532,6 +535,7 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info,
    thr->thread = sthread_create(thread_loop, thr);
    if (!thr->thread)
       return false;
+
    thread_send_cmd(thr, CMD_INIT);
    thread_wait_reply(thr, CMD_INIT);
 
@@ -546,6 +550,9 @@ static bool thread_set_shader(void *data,
 {
    thread_video_t *thr = (thread_video_t*)data;
 
+   if (!thr)
+      return false;
+
    thr->cmd_data.set_shader.type = type;
    thr->cmd_data.set_shader.path = path;
    thread_send_cmd(thr, CMD_SET_SHADER);
@@ -557,6 +564,9 @@ static bool thread_set_shader(void *data,
 static void thread_set_rotation(void *data, unsigned rotation)
 {
    thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr)
+      return;
 
    thr->cmd_data.i = rotation;
    thread_send_cmd(thr, CMD_SET_ROTATION);
@@ -571,6 +581,10 @@ static void thread_set_rotation(void *data, unsigned rotation)
 static void thread_viewport_info(void *data, struct rarch_viewport *vp)
 {
    thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr)
+      return;
+
    slock_lock(thr->lock);
    *vp = thr->vp;
 
@@ -582,6 +596,8 @@ static void thread_viewport_info(void *data, struct rarch_viewport *vp)
 static bool thread_read_viewport(void *data, uint8_t *buffer)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   if (!thr)
+      return false;
 
    thr->cmd_data.v = buffer;
    thread_send_cmd(thr, CMD_READ_VIEWPORT);
@@ -622,6 +638,9 @@ static void thread_free(void *data)
 static void thread_overlay_enable(void *data, bool state)
 {
    thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr)
+      return;
    thr->cmd_data.b = state;
    thread_send_cmd(thr, CMD_OVERLAY_ENABLE);
    thread_wait_reply(thr, CMD_OVERLAY_ENABLE);
@@ -645,6 +664,8 @@ static void thread_overlay_tex_geom(void *data,
 {
    thread_video_t *thr = (thread_video_t*)data;
 
+   if (!thr)
+      return;
    thr->cmd_data.rect.index = idx;
    thr->cmd_data.rect.x = x;
    thr->cmd_data.rect.y = y;
@@ -659,6 +680,8 @@ static void thread_overlay_vertex_geom(void *data,
 {
    thread_video_t *thr = (thread_video_t*)data;
 
+   if (!thr)
+      return;
    thr->cmd_data.rect.index = idx;
    thr->cmd_data.rect.x = x;
    thr->cmd_data.rect.y = y;
@@ -682,6 +705,8 @@ static void thread_overlay_set_alpha(void *data, unsigned idx, float mod)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
+   if (!thr)
+      return;
    slock_lock(thr->alpha_lock);
    thr->alpha_mod[idx] = mod;
    thr->alpha_update = true;
@@ -711,6 +736,9 @@ static void thread_get_overlay_interface(void *data,
 static void thread_set_filtering(void *data, unsigned idx, bool smooth)
 {
    thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr)
+      return;
    thr->cmd_data.filtering.index = idx;
    thr->cmd_data.filtering.smooth = smooth;
    thread_send_cmd(thr, CMD_POKE_SET_FILTERING);
@@ -720,6 +748,9 @@ static void thread_set_filtering(void *data, unsigned idx, bool smooth)
 static void thread_set_aspect_ratio(void *data, unsigned aspectratio_idx)
 {
    thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr)
+      return;
    thr->cmd_data.i = aspectratio_idx;
    thread_send_cmd(thr, CMD_POKE_SET_ASPECT_RATIO);
    thread_wait_reply(thr, CMD_POKE_SET_ASPECT_RATIO);
@@ -772,24 +803,13 @@ static void thread_set_osd_msg(void *data, const char *msg,
 {
    thread_video_t *thr = (thread_video_t*)data;
 
+   if (!thr)
+      return;
+
    /* TODO : find a way to determine if the calling
     * thread is the driver thread or not. */
-#if 0
-   if (thr->frame.within_thread)
-#endif
-   {
-      if (thr->poke && thr->poke->set_osd_msg)
-         thr->poke->set_osd_msg(thr->driver_data, msg, params, font);
-   }
-#if 0
-   else
-   {
-      strncpy(thr->cmd_data.osd_message.msg, msg, sizeof(thr->cmd_data.osd_message.msg));
-      thr->cmd_data.osd_message.params = *params;
-      thread_send_cmd(thr, CMD_POKE_SET_OSD_MSG);
-      thread_wait_reply(thr, CMD_POKE_SET_OSD_MSG);
-   }
-#endif
+   if (thr->poke && thr->poke->set_osd_msg)
+      thr->poke->set_osd_msg(thr->driver_data, msg, params, font);
 }
 
 static void thread_apply_state_changes(void *data)
@@ -889,6 +909,20 @@ static void thread_set_callbacks(thread_video_t *thr,
       thr->video_thread.poke_interface = NULL;
 }
 
+/**
+ * rarch_threaded_video_init:
+ * @out_driver                : Output video driver
+ * @out_data                  : Output video data
+ * @input                     : Input input driver
+ * @input_data                : Input input data 
+ * @driver                    : Input Video driver
+ * @info                      : Video info handle.
+ *
+ * Creates, initializes and starts a video driver in a new thread.
+ * Access to video driver will be mediated through this driver.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
 bool rarch_threaded_video_init(const video_driver_t **out_driver,
       void **out_data,  const input_driver_t **input, void **input_data,
       const video_driver_t *drv, const video_info_t *info)
@@ -905,6 +939,18 @@ bool rarch_threaded_video_init(const video_driver_t **out_driver,
    return thread_init(thr, info, input, input_data);
 }
 
+/**
+ * rarch_threaded_video_resolve:
+ * @drv                       : Found driver.
+ *
+ * Gets the underlying video driver associated with the 
+ * threaded video wrapper. Sets @drv to the found
+ * video driver.
+ *
+ * Returns: Video driver data of the video driver associated
+ * with the threaded wrapper (if successful). If not successful,
+ * NULL.
+ **/
 void *rarch_threaded_video_resolve(const video_driver_t **drv)
 {
    const thread_video_t *thr = (const thread_video_t*)driver.video_data;

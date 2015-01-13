@@ -17,7 +17,7 @@
 #include <string.h>
 
 #include "../common/RetroArch_Apple.h"
-#include "../../input/apple_input.h"
+#include "../../input/drivers/apple_input.h"
 #include "../../settings_data.h"
 #include "../common/apple_gamecontroller.h"
 #include "menu.h"
@@ -27,7 +27,7 @@
 #include "bluetooth/btdynamic.h"
 #include "bluetooth/btpad.h"
 
-#include "../../menu/disp/ios.h"
+#include "../../menu/drivers_display/ios.h"
 
 id<RetroArch_Platform> apple_platform;
 

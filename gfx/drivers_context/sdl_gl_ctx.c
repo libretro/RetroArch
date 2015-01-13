@@ -1,0 +1,432 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "../../driver.h"
+#include "../gl_common.h"
+#include "../gfx_common.h"
+
+#include "SDL.h"
+
+static enum gfx_ctx_api g_api = GFX_CTX_OPENGL_API;
+static unsigned       g_major = 2;
+static unsigned       g_minor = 1;
+
+typedef struct gfx_ctx_sdl_data
+{
+   int  g_width;
+   int  g_height;
+   int  g_new_width;
+   int  g_new_height;
+
+   bool g_full;
+   bool g_resized;
+
+   int g_frame_count;
+#ifdef HAVE_SDL2
+   SDL_Window    *g_win;
+   SDL_GLContext  g_ctx;
+#else
+   SDL_Surface *g_win;
+#endif
+} gfx_ctx_sdl_data_t;
+
+static void sdl_ctx_destroy_resources(gfx_ctx_sdl_data_t *sdl)
+{
+   if (!sdl)
+      return;
+
+#ifdef HAVE_SDL2
+   if (sdl->g_ctx)
+      SDL_GL_DeleteContext(sdl->g_ctx);
+
+   if (sdl->g_win)
+      SDL_DestroyWindow(sdl->g_win);
+
+   sdl->g_ctx = NULL;
+#else
+   if (sdl->g_win)
+      SDL_FreeSurface(sdl->g_win);
+#endif
+   sdl->g_win = NULL;
+
+   SDL_QuitSubSystem(SDL_INIT_VIDEO);
+}
+
+static bool sdl_ctx_init(void *data)
+{
+   gfx_ctx_sdl_data_t *sdl;
+
+   (void)data;
+
+   sdl = (gfx_ctx_sdl_data_t*)
+      calloc(1, sizeof(gfx_ctx_sdl_data_t));
+
+   if (!sdl)
+      return false;
+
+#ifdef HAVE_X11
+   XInitThreads();
+#endif
+
+   if (SDL_WasInit(0) == 0)
+   {
+      if (SDL_Init(SDL_INIT_VIDEO) < 0)
+         goto error;
+   }
+   else if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+      goto error;
+
+   RARCH_LOG("[SDL_GL] SDL %i.%i.%i gfx context driver initialized.\n",
+           SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
+
+   driver.video_context_data = sdl;
+
+   return true;
+
+error:
+   RARCH_WARN("[SDL_GL]: Failed to initialize SDL gfx context driver: %s\n",
+              SDL_GetError());
+
+   sdl_ctx_destroy_resources(sdl);
+
+   if (sdl)
+      free(sdl);
+
+   return false;
+}
+
+static void sdl_ctx_destroy(void *data)
+{
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver.video_context_data;
+
+   if (!sdl)
+      return;
+
+   (void)data;
+   
+   sdl_ctx_destroy_resources(sdl);
+
+   if (driver.video_context_data)
+      free(driver.video_context_data);
+   driver.video_context_data = NULL;
+}
+
+static bool sdl_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major,
+                             unsigned minor)
+{
+   unsigned profile;
+
+   (void)data;
+
+#ifdef HAVE_SDL2
+   if (api != GFX_CTX_OPENGL_API && api != GFX_CTX_OPENGL_ES_API)
+      return false;
+
+   profile = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
+
+   if (api == GFX_CTX_OPENGL_ES_API)
+      profile = SDL_GL_CONTEXT_PROFILE_ES;
+
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profile);
+
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major);
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);
+#endif
+   g_api   = api;
+   g_major = major;
+   g_minor = minor;
+
+#ifdef HAVE_SDL2
+   return true;
+#else
+   return api == GFX_CTX_OPENGL_API;
+#endif
+}
+
+static void sdl_ctx_swap_interval(void *data, unsigned interval)
+{
+   (void)data;
+#ifdef HAVE_SDL2
+   SDL_GL_SetSwapInterval(interval);
+#else
+   SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, interval);
+#endif
+}
+
+static bool sdl_ctx_set_video_mode(void *data, unsigned width, unsigned height,
+                                   bool fullscreen)
+{
+   unsigned fsflag = 0;
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver.video_context_data;
+
+   (void)data;
+
+   sdl->g_new_width  = width;
+   sdl->g_new_height = height;
+
+#ifdef HAVE_SDL2
+
+   if (fullscreen)
+   {
+      if (g_settings.video.windowed_fullscreen)
+         fsflag = SDL_WINDOW_FULLSCREEN_DESKTOP;
+      else
+         fsflag = SDL_WINDOW_FULLSCREEN;
+   }
+
+   if (sdl->g_win)
+   {
+      SDL_SetWindowSize(sdl->g_win, width, height);
+
+      if (fullscreen)
+         SDL_SetWindowFullscreen(sdl->g_win, fsflag);
+   }
+   else
+   {
+      unsigned display = g_settings.video.monitor_index;
+
+      sdl->g_win = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
+                               SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
+                               width, height, SDL_WINDOW_OPENGL | fsflag);
+   }
+#else
+   if (fullscreen)
+      fsflag = SDL_FULLSCREEN;
+
+   sdl->g_win = SDL_SetVideoMode(width, height, 0, SDL_OPENGL | fsflag);
+#endif
+
+   if (!sdl->g_win)
+      goto error;
+
+#ifdef HAVE_SDL2
+   if (sdl->g_ctx)
+      driver.video_cache_context_ack = true;
+   else
+   {
+      sdl->g_ctx = SDL_GL_CreateContext(sdl->g_win);
+
+      if (!sdl->g_ctx)
+         goto error;
+   }
+#endif
+
+   sdl->g_full   = fullscreen;
+   sdl->g_width  = width;
+   sdl->g_height = height;
+
+   return true;
+
+error:
+   RARCH_WARN("[SDL_GL]: Failed to set video mode: %s\n", SDL_GetError());
+   return false;
+}
+
+static void sdl_ctx_get_video_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver.video_context_data;
+
+   if (!sdl)
+      return;
+
+   *width  = sdl->g_width;
+   *height = sdl->g_height;
+
+   if (!sdl->g_win)
+   {
+      int i = g_settings.video.monitor_index;
+
+#ifdef HAVE_SDL2
+      SDL_DisplayMode mode = {0};
+
+      if (SDL_GetCurrentDisplayMode(i, &mode) < 0)
+         RARCH_WARN("[SDL_GL]: Failed to get display #%i mode: %s\n", i,
+                    SDL_GetError());
+#else
+      SDL_Rect **modes = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_HWSURFACE);
+      SDL_Rect mode = {0};
+
+      if (!modes)
+         RARCH_WARN("[SDL_GL]: Failed to detect available video modes: %s\n",
+                    SDL_GetError());
+      else if (*modes)
+         mode = **modes;
+#endif
+
+      *width  = mode.w;
+      *height = mode.h;
+   }
+}
+
+static void sdl_ctx_update_window_title(void *data)
+{
+   char buf[128], buf_fps[128];
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver.video_context_data;
+   bool fps_draw = g_settings.fps_show || g_settings.fps_monitor_enable;
+
+   if (!sdl)
+      return;
+
+   if (gfx_get_fps(buf, sizeof(buf), g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps)))
+   {
+#ifdef HAVE_SDL2
+      SDL_SetWindowTitle(sdl->g_win, buf);
+#else
+      SDL_WM_SetCaption(buf, NULL);
+#endif
+   }
+   if (g_settings.fps_show)
+      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+}
+
+static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *width,
+                            unsigned *height, unsigned frame_count)
+{
+   SDL_Event event;
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver.video_context_data;
+
+   (void)data;
+
+   SDL_PumpEvents();
+
+#ifdef HAVE_SDL2
+   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_QUIT, SDL_WINDOWEVENT) > 0)
+#else
+   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_QUITMASK|SDL_VIDEORESIZEMASK) > 0)
+#endif
+   {
+      switch (event.type)
+      {
+         case SDL_QUIT:
+#ifdef HAVE_SDL2
+         case SDL_APP_TERMINATING:
+#endif
+            *quit = true;
+            break;
+#ifdef HAVE_SDL2
+         case SDL_WINDOWEVENT:
+            if (event.window.event == SDL_WINDOWEVENT_RESIZED)
+            {
+               sdl->g_resized = true;
+               sdl->g_new_width  = event.window.data1;
+               sdl->g_new_height = event.window.data2;
+            }
+#else
+         case SDL_VIDEORESIZE:
+            sdl->g_resized = true;
+            sdl->g_new_width  = event.resize.w;
+            sdl->g_new_height = event.resize.h;
+#endif
+            break;
+         default:
+            break;
+      }
+   }
+
+   if (sdl->g_resized)
+   {
+      *width    = sdl->g_new_width;
+      *height   = sdl->g_new_height;
+      *resize   = true;
+      sdl->g_resized = false;
+   }
+
+   sdl->g_frame_count = frame_count;
+}
+
+static void sdl_ctx_set_resize(void *data, unsigned width, unsigned height)
+{
+   (void)data;
+   (void)width;
+   (void)height;
+}
+
+static bool sdl_ctx_has_focus(void *data)
+{
+   unsigned flags;
+   (void)data;
+
+#ifdef HAVE_SDL2
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver.video_context_data;
+   flags = (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS);
+   return (SDL_GetWindowFlags(sdl->g_win) & flags) == flags;
+#else
+   flags = (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
+   return (SDL_GetAppState() & flags) == flags;
+#endif
+}
+
+static bool sdl_ctx_has_windowed(void *data)
+{
+   (void)data;
+   return true;
+}
+
+static void sdl_ctx_swap_buffers(void *data)
+{
+#ifdef HAVE_SDL2
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver.video_context_data;
+   SDL_GL_SwapWindow(sdl->g_win);
+#else
+   SDL_GL_SwapBuffers();
+#endif
+   (void)data;
+}
+
+static void sdl_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
+{
+   (void)data;
+   *input = NULL;
+   *input_data = NULL;
+}
+
+static gfx_ctx_proc_t sdl_ctx_get_proc_address(const char *name)
+{
+   return (gfx_ctx_proc_t)SDL_GL_GetProcAddress(name);
+}
+
+static void sdl_ctx_show_mouse(void *data, bool state)
+{
+   (void)data;
+   SDL_ShowCursor(state);
+}
+
+const gfx_ctx_driver_t gfx_ctx_sdl_gl =
+{
+   sdl_ctx_init,
+   sdl_ctx_destroy,
+   sdl_ctx_bind_api,
+   sdl_ctx_swap_interval,
+   sdl_ctx_set_video_mode,
+   sdl_ctx_get_video_size,
+   NULL, /* translate_aspect */
+   sdl_ctx_update_window_title,
+   sdl_ctx_check_window,
+   sdl_ctx_set_resize,
+   sdl_ctx_has_focus,
+   sdl_ctx_has_windowed,
+   sdl_ctx_swap_buffers,
+   sdl_ctx_input_driver,
+   sdl_ctx_get_proc_address,
+#ifdef HAVE_EGL
+   NULL,
+   NULL,
+#endif
+   sdl_ctx_show_mouse,
+   "sdl_gl",
+   NULL /* bind_hw_render */
+};

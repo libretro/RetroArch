@@ -26,7 +26,7 @@
 #endif
 #include "../gfx_common.h"
 
-#include "../context/win32_common.h"
+#include "../drivers_context/win32_common.h"
 
 #ifndef _XBOX
 #define HAVE_MONITOR
@@ -42,14 +42,14 @@
 #endif
 
 #ifdef HAVE_HLSL
-#include "../../gfx/shader/shader_hlsl.h"
+#include "../drivers_shader/shader_hlsl.h"
 #endif
 
 #include "d3d_defines.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 
 #ifdef HAVE_HLSL
-#include "../shader/shader_hlsl.h"
+#include "../drivers_shader/shader_hlsl.h"
 #endif
 
 #endif
