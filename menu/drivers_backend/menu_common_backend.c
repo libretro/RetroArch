@@ -95,14 +95,6 @@ static int menu_info_screen_iterate(unsigned action)
 static int menu_start_screen_iterate(unsigned action)
 {
    unsigned i;
-   char msg[PATH_MAX_LENGTH];
-
-   if (!driver.menu)
-      return 0;
-
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render();
-
    static const unsigned binds[] = {
       RETRO_DEVICE_ID_JOYPAD_UP,
       RETRO_DEVICE_ID_JOYPAD_DOWN,
@@ -113,6 +105,13 @@ static int menu_start_screen_iterate(unsigned action)
       RARCH_QUIT_KEY,
    };
    char desc[ARRAY_SIZE(binds)][64];
+   char msg[PATH_MAX_LENGTH];
+
+   if (!driver.menu)
+      return 0;
+
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
+      driver.menu_ctx->render();
 
    for (i = 0; i < ARRAY_SIZE(binds); i++)
    {
