@@ -2001,6 +2001,35 @@ static void deinit_core(void)
    uninit_libretro_sym();
 }
 
+static bool init_content(void)
+{
+   /* No content to be loaded for dummy core,
+    * just successfully exit. */
+   if (g_extern.libretro_dummy) 
+      return true;
+
+   if (!g_extern.libretro_no_content)
+      fill_pathnames();
+
+   if (!init_content_file())
+      return false;
+
+   if (!g_extern.libretro_no_content)
+   {
+      set_savestate_auto_index();
+
+      if (load_save_files())
+         RARCH_LOG("Skipping SRAM load.\n");
+
+      load_auto_state();
+
+      rarch_main_command(RARCH_CMD_BSV_MOVIE_INIT);
+      rarch_main_command(RARCH_CMD_NETPLAY_INIT);
+   }
+
+   return true;
+}
+
 static bool init_core(void)
 {
    verify_api_version();
@@ -2009,27 +2038,8 @@ static bool init_core(void)
    g_extern.use_sram = !g_extern.libretro_dummy &&
       !g_extern.libretro_no_content;
 
-   if (!g_extern.libretro_dummy)
-   {
-      if (!g_extern.libretro_no_content)
-         fill_pathnames();
-
-      if (!init_content_file())
-         return false;
-
-      if (!g_extern.libretro_no_content)
-      {
-         set_savestate_auto_index();
-
-         if (load_save_files())
-            RARCH_LOG("Skipping SRAM load.\n");
-
-         load_auto_state();
-
-         rarch_main_command(RARCH_CMD_BSV_MOVIE_INIT);
-         rarch_main_command(RARCH_CMD_NETPLAY_INIT);
-      }
-   }
+   if (!init_content())
+      return false;
 
    retro_init_libretro_cbs(&driver.retro_ctx);
    init_system_av_info();
