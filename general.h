@@ -60,16 +60,6 @@
 #include <compat/posix_string.h>
 #endif
 
-/* Wii and PSL1GHT - for usleep (among others) */
-#if defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
-#include <unistd.h>
-#endif
-
-/* PSP */
-#if defined(PSP)
-#include <pspthreadman.h>
-#endif
-
 #ifdef HAVE_COMMAND
 #include "command.h"
 #endif
