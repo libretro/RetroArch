@@ -68,8 +68,10 @@ void retro_set_rewind_callbacks(void);
  *
  * driver.audio_active will be set to false (0) in case
  * of an error, otherwise will be set to true (1).
+ *
+ * Returns: true (1) on success, otherwise false (0).
  **/
-void retro_flush_audio(const int16_t *data, size_t samples);
+bool retro_flush_audio(const int16_t *data, size_t samples);
 
 #ifdef __cplusplus
 }

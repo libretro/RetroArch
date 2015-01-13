@@ -147,7 +147,7 @@ static void readjust_audio_input_rate(void)
 }
 
 /**
- * audio_flush:
+ * retro_flush_audio:
  * @data                 : pointer to audio buffer.
  * @right                : amount of samples to write.
  *
@@ -157,7 +157,7 @@ static void readjust_audio_input_rate(void)
  * Returns: true (1) if audio samples were written to the audio
  * driver, false (0) in case of an error.
  **/
-static bool audio_flush(const int16_t *data, size_t samples)
+bool retro_flush_audio(const int16_t *data, size_t samples)
 {
    const void *output_data        = NULL;
    unsigned output_frames         = 0;
@@ -240,28 +240,12 @@ static bool audio_flush(const int16_t *data, size_t samples)
             output_frames * output_size * 2) < 0)
    {
       RARCH_ERR(RETRO_LOG_AUDIO_WRITE_FAILED);
+
+      driver.audio_active = false;
       return false;
    }
 
    return true;
-}
-
-#define write_audio(data, samples) (driver.audio_active = audio_flush((data), (samples)) && driver.audio_active)
-
-/**
- * retro_flush_audio:
- * @data                 : pointer to audio buffer.
- * @samples              : amount of samples to write.
- *
- * Writes audio samples to audio driver. Will first
- * perform DSP processing (if enabled) and resampling.
- *
- * driver.audio_active will be set to false (0) in case
- * of an error, otherwise will be set to true (1).
- **/
-void retro_flush_audio(const int16_t *data, size_t samples)
-{
-   write_audio(data, samples);
 }
 
 /**
@@ -279,7 +263,7 @@ static void audio_sample(int16_t left, int16_t right)
    if (g_extern.audio_data.data_ptr < g_extern.audio_data.chunk_size)
       return;
 
-   write_audio(g_extern.audio_data.conv_outsamples, g_extern.audio_data.data_ptr);
+   retro_flush_audio(g_extern.audio_data.conv_outsamples, g_extern.audio_data.data_ptr);
 
    g_extern.audio_data.data_ptr = 0;
 }
@@ -299,7 +283,7 @@ static size_t audio_sample_batch(const int16_t *data, size_t frames)
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
 
-   write_audio(data, frames << 1);
+   retro_flush_audio(data, frames << 1);
 
    return frames;
 }
@@ -710,4 +694,3 @@ void retro_set_rewind_callbacks(void)
       pretro_set_audio_sample_batch(audio_sample_batch);
    }
 }
-
