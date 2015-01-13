@@ -735,11 +735,13 @@ static void config_set_defaults(void)
  **/
 static config_file_t *open_default_config_file(void)
 {
+   bool saved = false;
    char conf_path[PATH_MAX_LENGTH], app_path[PATH_MAX_LENGTH];
    config_file_t *conf = NULL;
 
    (void)conf_path;
    (void)app_path;
+   (void)saved;
 
 #if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, sizeof(app_path));
@@ -760,11 +762,13 @@ static config_file_t *open_default_config_file(void)
       }
    }
 
+   if (conf)
+      goto exit;
+
    /* Try to create a new config file. */
-   if (!conf)
    {
       conf = config_file_new(NULL);
-      bool saved = false;
+
       if (conf)
       {
          /* Since this is a clean config file, we can 
@@ -775,9 +779,7 @@ static config_file_t *open_default_config_file(void)
          saved = config_file_write(conf, conf_path);
       }
 
-      if (saved)
-         RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
-      else
+      if (!saved)
       {
          /* WARN here to make sure user has a good chance of seeing it. */
          RARCH_ERR("Failed to create new config file in: \"%s\".\n",
@@ -785,6 +787,8 @@ static config_file_t *open_default_config_file(void)
          config_file_free(conf);
          return NULL;
       }
+
+      RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
    }
 #elif defined(OSX)
    const char *home = getenv("HOME");
@@ -800,29 +804,28 @@ static config_file_t *open_default_config_file(void)
          "retroarch.cfg", sizeof(conf_path));
    conf = config_file_new(conf_path);
 
-   if (!conf)
+   if (conf)
+      goto exit;
+
+   conf = config_file_new(NULL);
+
+   if (conf)
    {
-      bool saved = false;
-      conf = config_file_new(NULL);
-
-      if (conf)
-      {
-         config_set_bool(conf, "config_save_on_exit", true);
-         saved = config_file_write(conf, conf_path);
-      }
-      
-      if (saved)
-         RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
-      else
-      {
-         /* WARN here to make sure user has a good chance of seeing it. */
-         RARCH_ERR("Failed to create new config file in: \"%s\".\n",
-               conf_path);
-         config_file_free(conf);
-
-         return NULL;
-      }
+      config_set_bool(conf, "config_save_on_exit", true);
+      saved = config_file_write(conf, conf_path);
    }
+
+   if (!saved)
+   {
+      /* WARN here to make sure user has a good chance of seeing it. */
+      RARCH_ERR("Failed to create new config file in: \"%s\".\n",
+            conf_path);
+      config_file_free(conf);
+
+      return NULL;
+   }
+
+   RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
 #elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
    const char *xdg  = getenv("XDG_CONFIG_HOME");
    const char *home = getenv("HOME");
@@ -855,9 +858,13 @@ static config_file_t *open_default_config_file(void)
       conf = config_file_new(conf_path);
    }
 
-   /* Try to create a new config file. */
-   if (!conf && (home || xdg))
+   if (conf)
+      goto exit;
+
+   if (home || xdg)
    {
+      /* Try to create a new config file. */
+
       char basedir[PATH_MAX_LENGTH];
 
       /* XDG_CONFIG_HOME falls back to $HOME/.config. */
@@ -886,7 +893,6 @@ static config_file_t *open_default_config_file(void)
          else
             conf = config_file_new(NULL);
 
-         bool saved = false;
          if (conf)
          {
             /* Since this is a clean config file, we can safely use config_save_on_exit. */
@@ -894,9 +900,7 @@ static config_file_t *open_default_config_file(void)
             saved = config_file_write(conf, conf_path);
          }
 
-         if (saved)
-            RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
-         else
+         if (!saved)
          {
             /* WARN here to make sure user has a good chance of seeing it. */
             RARCH_ERR("Failed to create new config file in: \"%s\".\n", conf_path);
@@ -904,10 +908,13 @@ static config_file_t *open_default_config_file(void)
 
             return NULL;
          }
+
+         RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
       }
    }
 #endif
 
+exit:
    if (!conf)
       return NULL;
 
