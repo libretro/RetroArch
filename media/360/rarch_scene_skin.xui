@@ -17956,4 +17956,351 @@
 </Timeline>
 </Timelines>
 </XuiVisual>
+<XuiVisual>
+<Properties>
+<Id>XuiControl_PanelGlow</Id>
+<Width>1024.000000</Width>
+<Height>516.000000</Height>
+</Properties>
+<XuiFigure>
+<Properties>
+<Id>figGlow_BL</Id>
+<Width>40.000000</Width>
+<Height>40.000000</Height>
+<Position>-40.000000,516.000000,0.000000</Position>
+<Anchor>9</Anchor>
+<Stroke>
+<Properties>
+<StrokeColor>0xff0f0f80</StrokeColor>
+</Properties>
+</Stroke>
+<Fill>
+<Properties>
+<FillType>3</FillType>
+<FillColor>0xffebebeb</FillColor>
+<Gradient>
+<Properties>
+<Radial>true</Radial>
+<NumStops>2</NumStops>
+<StopColor index="0">0x64000000</StopColor>
+<StopColor index="1">0x00000000</StopColor>
+<StopPos index="0">0.000000</StopPos>
+<StopPos index="1">1.000000</StopPos>
+</Properties>
+</Gradient>
+<Translation>0.500000,0.500000,0.000000</Translation>
+<Rotation>270.000000</Rotation>
+</Properties>
+</Fill>
+<Closed>true</Closed>
+<Points>4,0.000000,0.000000,0.000000,0.000000,12.000000,0.000000,0,12.000000,0.000000,12.000000,0.000000,12.000000,12.000000,0,12.000000,12.000000,12.000000,12.000000,0.000000,12.000000,0,0.000000,12.000000,0.000000,12.000000,0.000000,0.000000,0,</Points>
+</Properties>
+</XuiFigure>
+<XuiFigure>
+<Properties>
+<Id>figGlow_L</Id>
+<Width>20.000000</Width>
+<Height>516.000000</Height>
+<Position>-20.000000,0.000000,0.000000</Position>
+<Anchor>11</Anchor>
+<Stroke>
+<Properties>
+<StrokeColor>0xff0f0f80</StrokeColor>
+</Properties>
+</Stroke>
+<Fill>
+<Properties>
+<FillType>2</FillType>
+<FillColor>0xffebebeb</FillColor>
+<Gradient>
+<Properties>
+<NumStops>2</NumStops>
+<StopColor index="0">0x64000000</StopColor>
+<StopColor index="1">0x00000000</StopColor>
+<StopPos index="0">0.000000</StopPos>
+<StopPos index="1">1.000000</StopPos>
+</Properties>
+</Gradient>
+<Rotation>180.000000</Rotation>
+</Properties>
+</Fill>
+<Closed>true</Closed>
+<Points>4,0.000000,0.000000,0.000000,0.000000,12.000000,0.000000,0,12.000000,0.000000,12.000000,0.000000,12.000000,12.000000,0,12.000000,12.000000,12.000000,12.000000,0.000000,12.000000,0,0.000000,12.000000,0.000000,12.000000,0.000000,0.000000,0,</Points>
+</Properties>
+</XuiFigure>
+<XuiFigure>
+<Properties>
+<Id>figGlow_TL</Id>
+<Width>40.000000</Width>
+<Height>40.000000</Height>
+<Position>-40.000000,-40.000000,0.000000</Position>
+<Anchor>3</Anchor>
+<Stroke>
+<Properties>
+<StrokeColor>0xff0f0f80</StrokeColor>
+</Properties>
+</Stroke>
+<Fill>
+<Properties>
+<FillType>3</FillType>
+<FillColor>0xffebebeb</FillColor>
+<Gradient>
+<Properties>
+<Radial>true</Radial>
+<NumStops>2</NumStops>
+<StopColor index="0">0x64000000</StopColor>
+<StopColor index="1">0x00000000</StopColor>
+<StopPos index="0">0.000000</StopPos>
+<StopPos index="1">1.000000</StopPos>
+</Properties>
+</Gradient>
+<Translation>0.500000,0.500000,0.000000</Translation>
+<Rotation>180.000000</Rotation>
+</Properties>
+</Fill>
+<Closed>true</Closed>
+<Points>4,0.000000,0.000000,0.000000,0.000000,12.000000,0.000000,0,12.000000,0.000000,12.000000,0.000000,12.000000,12.000000,0,12.000000,12.000000,12.000000,12.000000,0.000000,12.000000,0,0.000000,12.000000,0.000000,12.000000,0.000000,0.000000,0,</Points>
+</Properties>
+</XuiFigure>
+<XuiFigure>
+<Properties>
+<Id>figGlow_T</Id>
+<Width>1024.000000</Width>
+<Height>20.000000</Height>
+<Position>0.000000,-20.000000,0.000000</Position>
+<Anchor>7</Anchor>
+<Stroke>
+<Properties>
+<StrokeColor>0xff0f0f80</StrokeColor>
+</Properties>
+</Stroke>
+<Fill>
+<Properties>
+<FillType>2</FillType>
+<FillColor>0x00000000</FillColor>
+<Gradient>
+<Properties>
+<NumStops>2</NumStops>
+<StopColor index="0">0x64000000</StopColor>
+<StopColor index="1">0x00000000</StopColor>
+<StopPos index="0">0.000000</StopPos>
+<StopPos index="1">1.000000</StopPos>
+</Properties>
+</Gradient>
+<Rotation>90.000000</Rotation>
+<TransformVersion>1</TransformVersion>
+</Properties>
+</Fill>
+<Closed>true</Closed>
+<Points>4,0.000000,0.000000,0.000000,0.000000,580.000000,0.000000,0,580.000000,0.000000,580.000000,0.000000,580.000000,41.000000,0,580.000000,41.000000,580.000000,41.000000,0.000000,41.000000,0,0.000000,41.000000,0.000000,41.000000,0.000000,0.000000,0,</Points>
+</Properties>
+</XuiFigure>
+<XuiFigure>
+<Properties>
+<Id>figGlow_TR</Id>
+<Width>40.000000</Width>
+<Height>40.000000</Height>
+<Position>1024.000000,-40.000000,0.000000</Position>
+<Anchor>6</Anchor>
+<Stroke>
+<Properties>
+<StrokeColor>0xff0f0f80</StrokeColor>
+</Properties>
+</Stroke>
+<Fill>
+<Properties>
+<FillType>3</FillType>
+<FillColor>0xffebebeb</FillColor>
+<Gradient>
+<Properties>
+<Radial>true</Radial>
+<NumStops>2</NumStops>
+<StopColor index="0">0x64000000</StopColor>
+<StopColor index="1">0x00000000</StopColor>
+<StopPos index="0">0.000000</StopPos>
+<StopPos index="1">1.000000</StopPos>
+</Properties>
+</Gradient>
+<Translation>0.500000,0.500000,0.000000</Translation>
+<Rotation>90.000000</Rotation>
+</Properties>
+</Fill>
+<Closed>true</Closed>
+<Points>4,0.000000,0.000000,0.000000,0.000000,12.000000,0.000000,0,12.000000,0.000000,12.000000,0.000000,12.000000,12.000000,0,12.000000,12.000000,12.000000,12.000000,0.000000,12.000000,0,0.000000,12.000000,0.000000,12.000000,0.000000,0.000000,0,</Points>
+</Properties>
+</XuiFigure>
+<XuiFigure>
+<Properties>
+<Id>figGlow_BR</Id>
+<Width>40.000000</Width>
+<Height>40.000000</Height>
+<Position>1024.000000,516.000000,0.000000</Position>
+<Anchor>12</Anchor>
+<Stroke>
+<Properties>
+<StrokeColor>0xff0f0f80</StrokeColor>
+</Properties>
+</Stroke>
+<Fill>
+<Properties>
+<FillType>3</FillType>
+<FillColor>0xffebebeb</FillColor>
+<Gradient>
+<Properties>
+<Radial>true</Radial>
+<NumStops>2</NumStops>
+<StopColor index="0">0x64000000</StopColor>
+<StopColor index="1">0x00000000</StopColor>
+<StopPos index="0">0.000000</StopPos>
+<StopPos index="1">1.000000</StopPos>
+</Properties>
+</Gradient>
+<Translation>0.500000,0.500000,0.000000</Translation>
+</Properties>
+</Fill>
+<Closed>true</Closed>
+<Points>4,0.000000,0.000000,0.000000,0.000000,12.000000,0.000000,0,12.000000,0.000000,12.000000,0.000000,12.000000,12.000000,0,12.000000,12.000000,12.000000,12.000000,0.000000,12.000000,0,0.000000,12.000000,0.000000,12.000000,0.000000,0.000000,0,</Points>
+</Properties>
+</XuiFigure>
+<XuiFigure>
+<Properties>
+<Id>figGlow_B</Id>
+<Width>1024.000000</Width>
+<Height>20.000000</Height>
+<Position>0.000000,516.000000,0.000000</Position>
+<Anchor>13</Anchor>
+<Stroke>
+<Properties>
+<StrokeColor>0xff0f0f80</StrokeColor>
+</Properties>
+</Stroke>
+<Fill>
+<Properties>
+<FillType>2</FillType>
+<FillColor>0x00000000</FillColor>
+<Gradient>
+<Properties>
+<NumStops>2</NumStops>
+<StopColor index="0">0x64000000</StopColor>
+<StopColor index="1">0x00000000</StopColor>
+<StopPos index="0">0.000000</StopPos>
+<StopPos index="1">1.000000</StopPos>
+</Properties>
+</Gradient>
+<Rotation>270.000000</Rotation>
+<TransformVersion>1</TransformVersion>
+</Properties>
+</Fill>
+<Closed>true</Closed>
+<Points>4,0.000000,0.000000,0.000000,0.000000,580.000000,0.000000,0,580.000000,0.000000,580.000000,0.000000,580.000000,41.000000,0,580.000000,41.000000,580.000000,41.000000,0.000000,41.000000,0,0.000000,41.000000,0.000000,41.000000,0.000000,0.000000,0,</Points>
+</Properties>
+</XuiFigure>
+<XuiFigure>
+<Properties>
+<Id>figGlow_R</Id>
+<Width>20.000000</Width>
+<Height>516.000000</Height>
+<Position>1024.000000,0.000000,0.000000</Position>
+<Anchor>14</Anchor>
+<Stroke>
+<Properties>
+<StrokeColor>0xff0f0f80</StrokeColor>
+</Properties>
+</Stroke>
+<Fill>
+<Properties>
+<FillType>2</FillType>
+<FillColor>0xffebebeb</FillColor>
+<Gradient>
+<Properties>
+<NumStops>2</NumStops>
+<StopColor index="0">0x64000000</StopColor>
+<StopColor index="1">0x00000000</StopColor>
+<StopPos index="0">0.000000</StopPos>
+<StopPos index="1">1.000000</StopPos>
+</Properties>
+</Gradient>
+</Properties>
+</Fill>
+<Closed>true</Closed>
+<Points>4,0.000000,0.000000,0.000000,0.000000,12.000000,0.000000,0,12.000000,0.000000,12.000000,0.000000,12.000000,12.000000,0,12.000000,12.000000,12.000000,12.000000,0.000000,12.000000,0,0.000000,12.000000,0.000000,12.000000,0.000000,0.000000,0,</Points>
+</Properties>
+</XuiFigure>
+</XuiVisual>
+<XuiVisual>
+<Properties>
+<Id>XuiScene_WhitePanel</Id>
+<Width>525.000000</Width>
+<Height>454.000031</Height>
+</Properties>
+<XuiControl>
+<Properties>
+<Id>PanelGlow</Id>
+<Width>525.000000</Width>
+<Height>454.000000</Height>
+<Anchor>15</Anchor>
+<Visual>XuiControl_PanelGlow</Visual>
+</Properties>
+</XuiControl>
+<XuiFigure>
+<Properties>
+<Id>Panel</Id>
+<Width>525.000000</Width>
+<Height>454.000000</Height>
+<Anchor>15</Anchor>
+<Stroke>
+<Properties>
+<StrokeColor>0xff000000</StrokeColor>
+</Properties>
+</Stroke>
+<Fill>
+<Properties>
+<FillColor>0xff968d96</FillColor>
+<Gradient>
+<Properties>
+<NumStops>2</NumStops>
+<StopColor index="0">0xffebebeb</StopColor>
+<StopColor index="1">0xff0f0f0f</StopColor>
+<StopPos index="0">0.000000</StopPos>
+<StopPos index="1">1.000000</StopPos>
+</Properties>
+</Gradient>
+<TransformVersion>1</TransformVersion>
+</Properties>
+</Fill>
+<Closed>true</Closed>
+<Points>4,0.000000,0.000000,0.000000,0.000000,177.000000,0.000000,0,177.000000,0.000000,177.000000,0.000000,177.000000,132.000000,0,177.000000,132.000000,177.000000,132.000000,0.000000,132.000000,0,0.000000,132.000000,0.000000,132.000000,0.000000,0.000000,0,</Points>
+</Properties>
+</XuiFigure>
+<XuiFigure>
+<Properties>
+<Id>Border</Id>
+<Width>525.000000</Width>
+<Height>454.000000</Height>
+<Anchor>15</Anchor>
+<Stroke>
+<Properties>
+<StrokeWidth>1.000000</StrokeWidth>
+<StrokeColor>0xff444444</StrokeColor>
+</Properties>
+</Stroke>
+<Fill>
+<Properties>
+<FillType>0</FillType>
+<FillColor>0xffffffff</FillColor>
+<Gradient>
+<Properties>
+<NumStops>1</NumStops>
+<StopColor index="0">0x00000000</StopColor>
+<StopPos index="0">0.000000</StopPos>
+</Properties>
+</Gradient>
+<TransformVersion>1</TransformVersion>
+</Properties>
+</Fill>
+<Closed>true</Closed>
+<Points>4,0.000000,0.000000,0.000000,0.000000,736.000000,0.000000,0,736.000000,0.000000,736.000000,0.000000,736.000000,405.000000,0,736.000000,405.000000,736.000000,405.000000,0.000000,405.000000,0,0.000000,405.000000,0.000000,405.000000,0.000000,0.000000,0,</Points>
+</Properties>
+</XuiFigure>
+</XuiVisual>
 </XuiCanvas>

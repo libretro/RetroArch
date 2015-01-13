@@ -8,11 +8,6 @@ static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, 
 static void renderchain_clear(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-
-#ifdef _XBOX360
-	for (int i = 0; i < 4; i++)
-		d3d_set_stream_source(d3d->dev, i, NULL, 0, 0);
-#endif
    d3d_texture_free(d3d->tex);
    d3d_vertex_buffer_free(d3d->vertex_buf);
 
