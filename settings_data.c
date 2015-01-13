@@ -3285,6 +3285,19 @@ void load_content_change_handler(void *data)
    rarch_main_command(RARCH_CMD_LOAD_CONTENT);
 }
 
+static void overlay_enable_toggle_change_handler(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t *)data;
+
+   if (!setting)
+      return;
+
+   if (setting->value.boolean)
+      rarch_main_command(RARCH_CMD_OVERLAY_INIT);
+   else
+      rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
+}
+
 static bool setting_data_append_list_main_menu_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -5177,6 +5190,7 @@ static bool setting_data_append_list_overlay_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
    CONFIG_PATH(
          g_settings.input.overlay,
