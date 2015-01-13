@@ -727,20 +727,23 @@ static void config_set_defaults(void)
  **/
 static config_file_t *open_default_config_file(void)
 {
+   char conf_path[PATH_MAX_LENGTH], app_path[PATH_MAX_LENGTH];
    config_file_t *conf = NULL;
 
-#if defined(_WIN32) && !defined(_XBOX)
-   char conf_path[PATH_MAX_LENGTH];
+   (void)conf_path;
+   (void)app_path;
 
-   char app_path[PATH_MAX_LENGTH];
+#if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, sizeof(app_path));
    fill_pathname_resolve_relative(conf_path, app_path,
          "retroarch.cfg", sizeof(conf_path));
 
    conf = config_file_new(conf_path);
+
    if (!conf)
    {
       const char *appdata = getenv("APPDATA");
+
       if (appdata)
       {
          fill_pathname_join(conf_path, appdata,
@@ -772,15 +775,10 @@ static config_file_t *open_default_config_file(void)
          RARCH_ERR("Failed to create new config file in: \"%s\".\n",
                conf_path);
          config_file_free(conf);
-         conf = NULL;
+         return NULL;
       }
    }
-
-   if (conf)
-      strlcpy(g_extern.config_path, conf_path,
-            sizeof(g_extern.config_path));
 #elif defined(OSX)
-   char conf_path[PATH_MAX_LENGTH];
    const char *home = getenv("HOME");
 
    if (!home)
@@ -813,15 +811,11 @@ static config_file_t *open_default_config_file(void)
          RARCH_ERR("Failed to create new config file in: \"%s\".\n",
                conf_path);
          config_file_free(conf);
-         conf = NULL;
+
+         return NULL;
       }
    }
-
-   if (conf)
-      strlcpy(g_extern.config_path, conf_path, sizeof(g_extern.config_path));
-
 #elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
-   char conf_path[PATH_MAX_LENGTH];
    const char *xdg  = getenv("XDG_CONFIG_HOME");
    const char *home = getenv("HOME");
 
@@ -906,14 +900,18 @@ static config_file_t *open_default_config_file(void)
             /* WARN here to make sure user has a good chance of seeing it. */
             RARCH_ERR("Failed to create new config file in: \"%s\".\n", conf_path);
             config_file_free(conf);
-            conf = NULL;
+
+            return NULL;
          }
       }
    }
-
-   if (conf)
-      strlcpy(g_extern.config_path, conf_path, sizeof(g_extern.config_path));
 #endif
+
+   if (!conf)
+      return NULL;
+
+   strlcpy(g_extern.config_path, conf_path,
+         sizeof(g_extern.config_path));
    
    return conf;
 }
