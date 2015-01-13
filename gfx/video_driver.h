@@ -22,11 +22,12 @@
 #include <sys/types.h>
 #include <boolean.h>
 #include <gfx/scaler/scaler.h>
-#include "../libretro.h"
+#include "video_filter.h"
+#include "video_shader_parse.h"
 
+#include "../libretro.h"
 #include "../input/input_driver.h"
 
-#include "video_shader_parse.h"
 
 #ifdef __cplusplus
 extern "C" {

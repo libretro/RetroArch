@@ -27,12 +27,10 @@
 #include "movie.h"
 #include "autosave.h"
 #include "cheats.h"
-#include "audio/audio_dsp_filter.h"
 #include <compat/strl.h>
 #include "core_options.h"
 #include "core_info.h"
 #include <retro_miscellaneous.h>
-#include "gfx/video_filter.h"
 
 #include "playlist.h"
 
