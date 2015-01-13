@@ -738,11 +738,26 @@ int rarch_main(int argc, char *argv[]);
 }
 #endif
 
+/**
+ * db_to_gain:
+ * @db          : Decibels.
+ *
+ * Converts decibels to voltage gain.
+ *
+ * Returns: voltage gain value.
+ **/
 static inline float db_to_gain(float db)
 {
    return powf(10.0f, db / 20.0f);
 }
 
+/**
+ * rarch_fail:
+ * @error_code  : Error code.
+ * @error       : Error message to show.
+ *
+ * Sanely kills the program.
+ **/
 static inline void rarch_fail(int error_code, const char *error)
 {
    /* We cannot longjmp unless we're in rarch_main_init().
