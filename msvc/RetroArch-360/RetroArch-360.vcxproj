@@ -434,11 +434,6 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">xui2bin /D /NOLOGO "%(RelativeDir)rarch_main.xui" "$(OutDir)media\hd\rarch_main.xur"</Command>
     </CustomBuild>
   </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="..\..\media\360\background.png">
-      <FileType>Document</FileType>
-    </CustomBuild>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
