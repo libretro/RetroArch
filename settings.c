@@ -718,6 +718,14 @@ static void config_set_defaults(void)
    g_extern.block_config_read = default_block_config_read;
 }
 
+#ifndef GLOBAL_CONFIG_DIR
+#if defined(__HAIKU__)
+#define GLOBAL_CONFIG_DIR "/system/settings"
+#else
+#define GLOBAL_CONFIG_DIR "/etc"
+#endif
+#endif
+
 /**
  * open_default_config_file
  *
@@ -869,13 +877,6 @@ static config_file_t *open_default_config_file(void)
 
       if (path_mkdir(basedir))
       {
-#ifndef GLOBAL_CONFIG_DIR
-#if defined(__HAIKU__)
-#define GLOBAL_CONFIG_DIR "/system/settings"
-#else
-#define GLOBAL_CONFIG_DIR "/etc"
-#endif
-#endif
          char skeleton_conf[PATH_MAX_LENGTH];
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
                "retroarch.cfg", sizeof(skeleton_conf));
