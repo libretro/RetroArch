@@ -5485,6 +5485,58 @@ static bool setting_data_append_list_netplay_options(
    return true;
 }
 
+static bool setting_data_append_list_patch_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info)
+{
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+
+   START_GROUP(group_info, "Patch Options");
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(
+         g_extern.ups_pref,
+         "ups_pref",
+         "UPS Patching Enable",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_extern.bps_pref,
+         "bps_pref",
+         "BPS Patching Enable",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_extern.ips_pref,
+         "ips_pref",
+         "IPS Patching Enable",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   END_SUB_GROUP(list, list_info);
+   END_GROUP(list, list_info);
+
+   return true;
+}
+
 static bool setting_data_append_list_playlist_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -6028,6 +6080,12 @@ rarch_setting_t *setting_data_new(unsigned mask)
    if (mask & SL_FLAG_MENU_OPTIONS)
    {
       if (!setting_data_append_list_menu_options(&list, list_info))
+         goto error;
+   }
+
+   if (mask & SL_FLAG_PATCH_OPTIONS)
+   {
+      if (!setting_data_append_list_patch_options(&list, list_info))
          goto error;
    }
 

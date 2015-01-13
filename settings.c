@@ -1197,6 +1197,19 @@ static bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
+   if (!g_extern.has_set_ups_pref)
+   {
+      CONFIG_GET_BOOL_EXTERN(ups_pref, "ups_pref");
+   }
+   if (!g_extern.has_set_bps_pref)
+   {
+      CONFIG_GET_BOOL_EXTERN(bps_pref, "bps_pref");
+   }
+   if (!g_extern.has_set_ips_pref)
+   {
+      CONFIG_GET_BOOL_EXTERN(ips_pref, "ips_pref");
+   }
+
    /* Audio settings. */
    CONFIG_GET_BOOL(audio.enable, "audio_enable");
    CONFIG_GET_INT(audio.out_rate, "audio_out_rate");
@@ -1805,6 +1818,13 @@ bool config_save_file(const char *path)
 
    config_set_float(conf, "video_font_size", g_settings.video.font_size);
    config_set_bool(conf,  "video_font_enable", g_settings.video.font_enable);
+
+   if (!g_extern.has_set_ups_pref)
+      config_set_bool(conf, "ups_pref", g_extern.ups_pref);
+   if (!g_extern.has_set_bps_pref)
+      config_set_bool(conf, "bps_pref", g_extern.bps_pref);
+   if (!g_extern.has_set_ips_pref)
+      config_set_bool(conf, "ips_pref", g_extern.ips_pref);
 
    config_set_path(conf, "system_directory",
          *g_settings.system_directory ?

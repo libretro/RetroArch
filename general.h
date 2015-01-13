@@ -418,6 +418,10 @@ struct global
    bool has_set_netplay_delay_frames;
    bool has_set_netplay_ip_port;
 
+   bool has_set_ups_pref;
+   bool has_set_bps_pref;
+   bool has_set_ips_pref;
+
    /* Config associated with global "default" config. */
    char config_path[PATH_MAX_LENGTH];
    char append_config_path[PATH_MAX_LENGTH];

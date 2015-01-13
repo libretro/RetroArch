@@ -703,6 +703,10 @@ static void parse_input(int argc, char *argv[])
    g_extern.has_set_netplay_delay_frames = false;
    g_extern.has_set_netplay_ip_port = false;
 
+   g_extern.has_set_ups_pref = false;
+   g_extern.has_set_bps_pref = false;
+   g_extern.has_set_ips_pref = false;
+
    g_extern.ups_pref = false;
    g_extern.bps_pref = false;
    g_extern.ips_pref = false;
@@ -953,6 +957,7 @@ static void parse_input(int argc, char *argv[])
             strlcpy(g_extern.ups_name, optarg,
                   sizeof(g_extern.ups_name));
             g_extern.ups_pref = true;
+            g_extern.has_set_ups_pref = true;
             break;
 
          case 'D':
@@ -1008,12 +1013,14 @@ static void parse_input(int argc, char *argv[])
                   strlcpy(g_extern.bps_name, optarg,
                         sizeof(g_extern.bps_name));
                   g_extern.bps_pref = true;
+                  g_extern.has_set_bps_pref = true;
                   break;
 
                case 'I':
                   strlcpy(g_extern.ips_name, optarg,
                         sizeof(g_extern.ips_name));
                   g_extern.ips_pref = true;
+                  g_extern.has_set_ips_pref = true;
                   break;
 
                case 'n':

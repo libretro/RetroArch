@@ -77,7 +77,8 @@ enum setting_list_flags
    SL_FLAG_PRIVACY_OPTIONS  =  (1 << 13),
    SL_FLAG_PLAYLIST_OPTIONS =  (1 << 14),
    SL_FLAG_ARCHIVE_OPTIONS  =  (1 << 15),
-   SL_FLAG_ALL              =  (1 << 16),
+   SL_FLAG_PATCH_OPTIONS    =  (1 << 16),
+   SL_FLAG_ALL              =  (1 << 17),
 };
 
 #define SL_FLAG_ALL_SETTINGS (SL_FLAG_ALL - SL_FLAG_MAIN_MENU)
