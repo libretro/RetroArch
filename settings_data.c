@@ -830,7 +830,7 @@ static int setting_data_string_action_toggle_driver(void *data,
    return 0;
 }
 
-int core_list_action_toggle(void *data, unsigned action)
+static int core_list_action_toggle(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
 
@@ -858,7 +858,7 @@ int core_list_action_toggle(void *data, unsigned action)
  *
  * Returns: 0 on success, -1 on error.
  **/
-int load_content_action_toggle(void *data, unsigned action)
+static int load_content_action_toggle(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
 
@@ -3255,8 +3255,7 @@ static void settings_data_list_current_add_flags(
    setting_data_add_special_callbacks(list, list_info, values);
 }
 
-
-void core_list_change_handler(void *data)
+static void core_list_change_handler(void *data)
 {
   rarch_setting_t *setting = (rarch_setting_t *)data;
   (void)setting;
@@ -3271,7 +3270,7 @@ void core_list_change_handler(void *data)
  * Function callback for 'Load Content' action's 'Change Handler'
  * function pointer.
  **/
-void load_content_change_handler(void *data)
+static void load_content_change_handler(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
 

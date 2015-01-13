@@ -270,21 +270,6 @@ rarch_setting_t setting_data_string_setting_options(enum setting_type type,
 int setting_data_get_description(const char *label, char *msg,
       size_t msg_sizeof);
 
-int core_list_action_toggle(void *data, unsigned action);
-
-int load_content_action_toggle(void *data, unsigned action);
-
-void core_list_change_handler(void *data);
-
-/**
- * load_content_change_handler:
- * @data               : pointer to setting
- *
- * Function callback for 'Load Content' action's 'Change Handler'
- * function pointer.
- **/
-void load_content_change_handler(void *data);
-
 #ifdef HAVE_MENU
 /**
  * setting_data_get_label:
