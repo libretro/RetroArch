@@ -593,6 +593,13 @@ static void config_set_defaults(void)
    if (!g_extern.has_set_libretro_directory)
       *g_settings.libretro_directory = '\0';
 
+   if (!g_extern.has_set_ups_pref)
+      g_extern.ups_pref = false;
+   if (!g_extern.has_set_bps_pref)
+      g_extern.bps_pref = false;
+   if (!g_extern.has_set_ips_pref)
+      g_extern.ips_pref = false;
+
    *g_settings.core_options_path = '\0';
    *g_settings.content_history_path = '\0';
    *g_settings.content_history_directory = '\0';
