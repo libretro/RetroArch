@@ -36,8 +36,5 @@
     <CustomBuild Include="..\..\media\360\rarch_scene_skin.xui">
       <Filter>Source Files\media</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\..\media\360\background.png">
-      <Filter>Source Files\media</Filter>
-    </CustomBuild>
   </ItemGroup>
 </Project>
