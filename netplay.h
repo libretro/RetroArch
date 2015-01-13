@@ -22,7 +22,7 @@
 #include <stddef.h>
 #include <boolean.h>
 #include "libretro.h"
-#include "retro.h"
+#include "libretro_version_1.h"
 
 typedef struct netplay netplay_t;
 

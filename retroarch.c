@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <boolean.h>
-#include "retro.h"
+#include "libretro_version_1.h"
 #include "dynamic.h"
 #include "content.h"
 #include "file_ops.h"

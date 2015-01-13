@@ -37,7 +37,7 @@
 #include "audio/audio_resampler_driver.h"
 #include "record/record_driver.h"
 
-#include "retro.h"
+#include "libretro_version_1.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
