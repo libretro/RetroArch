@@ -1724,6 +1724,25 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
    return result;
 }
 
+/**
+ * setting_data_string_setting_options:
+ * @type               : type of settting.
+ * @name               : name of setting.
+ * @short_description  : Short description of setting.
+ * @target             : Target of bind setting.
+ * @size               : Size of string setting.
+ * @default_value      : Default value.
+ * @empty              : N/A.
+ * @values             : Values, separated by a delimiter.
+ * @group              : Group that the setting belongs to.
+ * @subgroup           : Subgroup that the setting belongs to.
+ * @change_handler     : Function callback for change handler function pointer.
+ * @read_handler       : Function callback for read handler function pointer.
+ *
+ * Initializes a string options list setting. 
+ *
+ * Returns: string option list setting.
+ **/
 rarch_setting_t setting_data_string_setting_options(enum setting_type type,
  const char* name, const char* short_description, char* target,
  unsigned size, const char* default_value,
