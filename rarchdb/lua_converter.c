@@ -94,7 +94,7 @@ static int value_provider(void *ctx, struct rmsgpack_dom_value *out) {
 						tmp_value->bool_ = lua_toboolean(L, value_idx);
 						break;
 					case LUA_TSTRING:
-						tmp_buff = strdup(lua_tostring(L, key_idx));
+						tmp_buff = strdup(lua_tostring(L, value_idx));
 						tmp_value->type = RDT_STRING;
 						tmp_value->string.len = strlen(tmp_buff);
 						tmp_value->string.buff = tmp_buff;

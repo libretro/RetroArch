@@ -73,8 +73,8 @@ end
 
 local function unhex(s)
     if not s then return nil end
-    return (s:gsub('.', function (c)
-        return string.format('%02X', string.byte(c))
+    return (s:gsub('..', function (c)
+        return string.char(tonumber(c, 16))
     end))
 end
 
