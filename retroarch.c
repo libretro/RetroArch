@@ -1800,6 +1800,12 @@ void rarch_disk_control_set_index(unsigned index)
    }
 }
 
+/**
+ * check_disk_eject:
+ * @control              : Handle to disk control handle.
+ *
+ * Perform disk eject (Core Disk Options).
+ **/
 static void check_disk_eject(
       const struct retro_disk_control_callback *control)
 {
@@ -1807,6 +1813,12 @@ static void check_disk_eject(
    rarch_disk_control_set_eject(new_state, true);
 }
 
+/**
+ * check_disk_next:
+ * @control              : Handle to disk control handle.
+ *
+ * Perform disk cycle to next index action (Core Disk Options).
+ **/
 static void check_disk_next(
       const struct retro_disk_control_callback *control)
 {
@@ -1824,6 +1836,12 @@ static void check_disk_next(
       RARCH_ERR("Got invalid disk index from libretro.\n");
 }
 
+/**
+ * check_disk_prev:
+ * @control              : Handle to disk control handle.
+ *
+ * Perform disk cycle to previous index action (Core Disk Options).
+ **/
 static void check_disk_prev(
       const struct retro_disk_control_callback *control)
 {
