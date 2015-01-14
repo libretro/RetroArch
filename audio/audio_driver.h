@@ -29,12 +29,25 @@ extern "C" {
 
 typedef struct audio_driver
 {
+   /* Creates and initializes handle to audio driver.
+    *
+    * Returns: audio driver handle on success, otherwise NULL.
+    **/
    void *(*init)(const char *device, unsigned rate, unsigned latency);
 
+   /*
+    * @data         : Pointer to audio data handle.
+    * @buf          : Audio buffer data.
+    * @size         : Size of audio buffer.
+    *
+    * Write samples to audio driver.
+    **/
    ssize_t (*write)(void *data, const void *buf, size_t size);
 
+   /* Stops driver. */
    bool (*stop)(void *data);
 
+   /* Starts driver. */
    bool (*start)(void *data);
 
    /* Is the audio driver currently running? */
@@ -43,6 +56,7 @@ typedef struct audio_driver
    /* Should we care about blocking in audio thread? Fast forwarding. */
    void (*set_nonblock_state)(void *data, bool toggle);
 
+   /* Frees driver data. */
    void (*free)(void *data);
 
    /* Defines if driver will take standard floating point samples,
