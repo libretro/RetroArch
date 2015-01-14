@@ -28,6 +28,7 @@
 static void input_overlay_scale(struct overlay *overlay, float scale)
 {
    size_t i;
+
    if (overlay->block_scale)
       scale = 1.0f;
 
@@ -41,16 +42,17 @@ static void input_overlay_scale(struct overlay *overlay, float scale)
 
    for (i = 0; i < overlay->size; i++)
    {
+      float scale_w, scale_h, adj_center_x, adj_center_y;
       struct overlay_desc *desc = &overlay->descs[i];
 
-      float scale_w = overlay->mod_w * desc->range_x;
-      float scale_h = overlay->mod_h * desc->range_y;
+      scale_w = overlay->mod_w * desc->range_x;
+      scale_h = overlay->mod_h * desc->range_y;
 
       desc->mod_w = 2.0f * scale_w;
       desc->mod_h = 2.0f * scale_h;
 
-      float adj_center_x = overlay->mod_x + desc->x * overlay->mod_w;
-      float adj_center_y = overlay->mod_y + desc->y * overlay->mod_h;
+      adj_center_x = overlay->mod_x + desc->x * overlay->mod_w;
+      adj_center_y = overlay->mod_y + desc->y * overlay->mod_h;
       desc->mod_x = adj_center_x - scale_w;
       desc->mod_y = adj_center_y - scale_h;
    }
@@ -72,9 +74,11 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
       if (!desc)
          continue;
 
-      if (desc->image.pixels)
-         ol->iface->vertex_geom(ol->iface_data, desc->image_index,
-               desc->mod_x, desc->mod_y, desc->mod_w, desc->mod_h);
+      if (!desc->image.pixels)
+         continue;
+
+      ol->iface->vertex_geom(ol->iface_data, desc->image_index,
+            desc->mod_x, desc->mod_y, desc->mod_w, desc->mod_h);
    }
 }
 
@@ -180,6 +184,7 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
    }
 
    list = string_split(overlay, ", ");
+
    if (!list)
    {
       RARCH_ERR("[Overlay]: Failed to split overlay desc.\n");
@@ -200,9 +205,9 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
    key = list->elems[0].data;
    desc->key_mask = 0;
 
-   if (strcmp(key, "analog_left") == 0)
+   if (!strcmp(key, "analog_left"))
       desc->type = OVERLAY_TYPE_ANALOG_LEFT;
-   else if (strcmp(key, "analog_right") == 0)
+   else if (!strcmp(key, "analog_right"))
       desc->type = OVERLAY_TYPE_ANALOG_RIGHT;
    else if (strstr(key, "retrok_") == key)
    {
@@ -429,11 +434,11 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
 
    for (i = 0; i < overlay->size; i++)
    {
-      if (overlay->descs[i].image.pixels)
-      {
-         overlay->descs[i].image_index = overlay->load_images_size;
-         overlay->load_images[overlay->load_images_size++] = overlay->descs[i].image;
-      }
+      if (!overlay->descs[i].image.pixels)
+         continue;
+
+      overlay->descs[i].image_index = overlay->load_images_size;
+      overlay->load_images[overlay->load_images_size++] = overlay->descs[i].image;
    }
 
    /* Assume for now that scaling center is in the middle.
@@ -452,7 +457,7 @@ static ssize_t input_overlay_find_index(const struct overlay *ol,
 
    for (i = 0; i < size; i++)
    {
-      if (strcmp(ol[i].name, name) == 0)
+      if (!strcmp(ol[i].name, name))
          return i;
    }
 
@@ -553,6 +558,7 @@ static void input_overlay_load_active(input_overlay_t *ol)
 {
    if (!ol)
       return;
+
    ol->iface->load(ol->iface_data, ol->active->load_images,
          ol->active->load_images_size);
 
@@ -649,10 +655,10 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
       case OVERLAY_HITBOX_RADIAL:
       {
          /* Ellipsis. */
-         float x_dist = (x - desc->x) / desc->range_x_mod;
-         float y_dist = (y - desc->y) / desc->range_y_mod;
+         float x_dist  = (x - desc->x) / desc->range_x_mod;
+         float y_dist  = (y - desc->y) / desc->range_y_mod;
          float sq_dist = x_dist * x_dist + y_dist * y_dist;
-         return sq_dist <= 1.0f;
+         return (sq_dist <= 1.0f);
       }
 
       case OVERLAY_HITBOX_RECT:
@@ -732,6 +738,7 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out,
          float y_val_sat = y_val / desc->analog_saturate_pct;
 
          unsigned int base = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
+
          out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f) * 32767.0f;
          out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f) * 32767.0f;
       }
@@ -740,6 +747,7 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out,
       {
          float x_dist = x - desc->x;
          float y_dist = y - desc->y;
+
          desc->delta_x = clamp_float(x_dist, -desc->range_x, desc->range_x)
             * ol->active->mod_w;
          desc->delta_y = clamp_float(y_dist, -desc->range_y, desc->range_y)
@@ -788,20 +796,18 @@ void input_overlay_post_poll(input_overlay_t *ol)
       if (!desc)
          continue;
 
+      desc->range_x_mod = desc->range_x;
+      desc->range_y_mod = desc->range_y;
+
       if (desc->updated)
       {
          /* If pressed this frame, change the hitbox. */
-         desc->range_x_mod = desc->range_x * desc->range_mod;
-         desc->range_y_mod = desc->range_y * desc->range_mod;
+         desc->range_x_mod *= desc->range_mod;
+         desc->range_y_mod *= desc->range_mod;
 
          if (desc->image.pixels)
             ol->iface->set_alpha(ol->iface_data, desc->image_index,
                   desc->alpha_mod * g_settings.input.overlay_opacity);
-      }
-      else
-      {
-         desc->range_x_mod = desc->range_x;
-         desc->range_y_mod = desc->range_y;
       }
 
       input_overlay_update_desc_geom(ol, desc);

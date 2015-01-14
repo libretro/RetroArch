@@ -1028,8 +1028,10 @@ enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym)
 
    for (i = 0; i < ARRAY_SIZE(rarch_keysym_lut); i++)
    {
-      if (rarch_keysym_lut[i] == sym)
-         return (enum retro_key)i;
+      if (rarch_keysym_lut[i] != sym)
+         continue;
+
+      return (enum retro_key)i;
    }
 
    return RETROK_UNKNOWN;
