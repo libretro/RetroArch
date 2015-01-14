@@ -98,7 +98,9 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section
 {
-   return self.hidesHeaders ? nil : self.sections[section][0];
+   if (self.hidesHeaders)
+       return nil;
+   return self.sections[section][0];
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -255,11 +257,12 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
    char buffer[PATH_MAX];
+   UITableViewCell* result;
    static NSString* const cell_id = @"string_setting";
 
    self.parentTable = tableView;
 
-   UITableViewCell* result = [tableView dequeueReusableCellWithIdentifier:cell_id];
+   result = [tableView dequeueReusableCellWithIdentifier:cell_id];
    if (!result)
    {
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
@@ -317,11 +320,13 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    NSString* text = (NSString*)[alertView textFieldAtIndex:0].text;
 
-   if (buttonIndex == alertView.firstOtherButtonIndex && text.length)
-   {
-      setting_data_set_with_string_representation(self.setting, [text UTF8String]);
-      [self.parentTable reloadData];
-   }
+   if (buttonIndex != alertView.firstOtherButtonIndex)
+       return;
+    if (!text.length)
+        return;
+    
+    setting_data_set_with_string_representation(self.setting, [text UTF8String]);
+    [self.parentTable reloadData];
 }
 
 - (void)attachDefaultingGestureTo:(UIView*)view
