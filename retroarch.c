@@ -1592,40 +1592,57 @@ static bool save_auto_state(void)
    return true;
 }
 
-/* Save or load state here. */
-
+/**
+ * rarch_load_state
+ * @path            : Path to state.
+ * @msg             : Message.
+ * @sizeof_msg      : Size of @msg.
+ *
+ * Loads a state with path being @path.
+ **/
 static void rarch_load_state(const char *path,
       char *msg, size_t sizeof_msg)
 {
-   if (load_state(path))
+   if (!load_state(path))
    {
-      if (g_settings.state_slot < 0)
-         snprintf(msg, sizeof_msg,
-               "Loaded state from slot #-1 (auto).");
-      else
-         snprintf(msg, sizeof_msg,
-               "Loaded state from slot #%d.", g_settings.state_slot);
-   }
-   else
       snprintf(msg, sizeof_msg,
             "Failed to load state from \"%s\".", path);
+      return;
+
+   }
+
+   if (g_settings.state_slot < 0)
+      snprintf(msg, sizeof_msg,
+            "Loaded state from slot #-1 (auto).");
+   else
+      snprintf(msg, sizeof_msg,
+            "Loaded state from slot #%d.", g_settings.state_slot);
 }
 
+/**
+ * rarch_save_state
+ * @path            : Path to state.
+ * @msg             : Message.
+ * @sizeof_msg      : Size of @msg.
+ *
+ * Saves a state with path being @path.
+ **/
 static void rarch_save_state(const char *path,
       char *msg, size_t sizeof_msg)
 {
-   if (save_state(path))
+   if (!save_state(path))
    {
-      if (g_settings.state_slot < 0)
-         snprintf(msg, sizeof_msg,
-               "Saved state to slot #-1 (auto).");
-      else
-         snprintf(msg, sizeof_msg,
-               "Saved state to slot #%d.", g_settings.state_slot);
-   }
-   else
       snprintf(msg, sizeof_msg,
             "Failed to save state to \"%s\".", path);
+      return;
+   }
+
+   if (g_settings.state_slot < 0)
+      snprintf(msg, sizeof_msg,
+            "Saved state to slot #-1 (auto).");
+   else
+      snprintf(msg, sizeof_msg,
+            "Saved state to slot #%d.", g_settings.state_slot);
 }
 
 static void main_state(unsigned cmd)
