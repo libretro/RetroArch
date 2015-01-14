@@ -1846,6 +1846,11 @@ static void init_state(void)
    driver.audio_active = true;
 }
 
+/**
+ * free_temporary_content:
+ *
+ * Frees temporary content handle.
+ **/
 static void free_temporary_content(void)
 {
    unsigned i;
@@ -1860,15 +1865,19 @@ static void free_temporary_content(void)
    string_list_free(g_extern.temporary_content);
 }
 
+/* main_clear_state_extern:
+ *
+ * Clears all external state.
+ *
+ * XXX This memset is really dangerous.
+ *
+ * (a) it can leak memory because the pointers 
+ * in g_extern aren't freed.
+ * (b) it can zero pointers that the rest of 
+ * the code will look at.
+ */
 static void main_clear_state_extern(void)
 {
-   /* XXX This memset is really dangerous.
-    *
-    * (a) it can leak memory because the pointers 
-    * in g_extern aren't freed.
-    * (b) it can zero pointers that the rest of 
-    * the code will look at.
-    */
    rarch_main_command(RARCH_CMD_TEMPORARY_CONTENT_DEINIT);
    rarch_main_command(RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
    rarch_main_command(RARCH_CMD_RECORD_DEINIT);
@@ -1878,6 +1887,15 @@ static void main_clear_state_extern(void)
    memset(&g_extern, 0, sizeof(g_extern));
 }
 
+/**
+ * main_clear_state:
+ * @inited               : Init the drivers after teardown?
+ *
+ * Will teardown drivers and clears all 
+ * internal state of RetroArch.
+ * If @inited is true, will initialize all
+ * drivers again after teardown.
+ **/
 static void main_clear_state(bool inited)
 {
    unsigned i;
@@ -1945,10 +1963,17 @@ static void init_system_info(void)
    g_extern.system.block_extract = info->block_extract;
 }
 
+/* 
+ * verify_api_version:
+ *
+ * Compare libretro core API version against API version
+ * used by RetroArch.
+ *
+ * TODO - when libretro v2 gets added, allow for switching
+ * between libretro version backend dynamically.
+ **/
 static void verify_api_version(void)
 {
-   /* TODO - when libretro v2 gets added, allow for switching
-    * between libretro version backend dynamically. */
 
    RARCH_LOG("Version of libretro API: %u\n", pretro_api_version());
    RARCH_LOG("Compiled against API: %u\n", RETRO_API_VERSION);
@@ -1962,7 +1987,11 @@ static void verify_api_version(void)
    rarch_fail(1, "validate_cpu_features()"); \
 } while(0)
 
-/* Make sure we haven't compiled for something we cannot run.
+/* validate_cpu_features:
+ *
+ * Validates CPU features for given processor architecture.
+ *
+ * Make sure we haven't compiled for something we cannot run.
  * Ideally, code would get swapped out depending on CPU support, 
  * but this will do for now.
  */
@@ -1985,6 +2014,12 @@ static void validate_cpu_features(void)
 #endif
 }
 
+/**
+ * init_system_av_info:
+ *
+ * Initialize system A/V information by calling the libretro core's
+ * get_system_av_info function.
+ **/
 static void init_system_av_info(void)
 {
    pretro_get_system_av_info(&g_extern.system.av_info);
