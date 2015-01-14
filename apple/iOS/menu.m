@@ -334,21 +334,24 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)resetValue:(UIGestureRecognizer*)gesture
 {
-   if (gesture.state == UIGestureRecognizerStateBegan)
-   {
-      struct string_list* items;
-      RAMenuItemGeneralSetting __weak* weakSelf = self;
-
-      items = (struct string_list*)string_split("OK", "|");
-      RunActionSheet("Really Reset Value?", items, self.parentTable,
+   struct string_list* items;
+   RAMenuItemGeneralSetting __weak* weakSelf;
+   
+   if (gesture.state != UIGestureRecognizerStateBegan)
+      return;
+   
+   weakSelf = self;
+   items = (struct string_list*)string_split("OK", "|");
+   
+   RunActionSheet("Really Reset Value?", items, self.parentTable,
          ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
          {
             if (buttonIndex != actionSheet.cancelButtonIndex)
                setting_data_reset_setting(self.setting);
             [weakSelf.parentTable reloadData];
          });
-      string_list_free(items);
-   }
+   
+   string_list_free(items);
 }
 
 @end
@@ -363,7 +366,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (id)initWithSetting:(rarch_setting_t*)setting action:(void (^)())action
 {
-  if ((self = [super init])) {
+  if ((self = [super init]))
+  {
     _setting = setting;
     _action = action;
   }
@@ -423,18 +427,18 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    if (self.setting && self.setting->type == ST_ACTION &&
        self.setting->flags & SD_FLAG_BROWSER_ACTION &&
        self.setting->action_toggle &&
-       self.setting->change_handler ) {
+       self.setting->change_handler )
      self.setting->action_toggle( self.setting, MENU_ACTION_RIGHT );
-   }
 
    path = BOXSTRING(self.setting->value.string);
-   if ( self.setting->type == ST_PATH ) {
+   
+   if ( self.setting->type == ST_PATH )
      path = [path stringByDeletingLastPathComponent];
-   }
+      
    list = [[RADirectoryList alloc] initWithPath:path extensions:self.setting->values action:
       ^(RADirectoryList* list, RADirectoryItem* item)
       {
-        const char *newval = NULL;
+        const char *newval = "";
         if (item)
         {
           if (list.forDirectory && !item.isDirectory)
@@ -446,8 +450,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
         {
           if (!list.allowBlank)
             return;
-          
-          newval = "";
         }
 
         setting_data_set_with_string_representation(weakSelf.setting, newval);
@@ -483,11 +485,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    RunActionSheet(self.setting->short_description, items, self.parentTable,
       ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
       {
-         if (buttonIndex != actionSheet.cancelButtonIndex)
-         {
-            setting_data_set_with_string_representation(self.setting, [[actionSheet buttonTitleAtIndex:buttonIndex] UTF8String]);
-            [weakSelf.parentTable reloadData];
-         }
+         if (buttonIndex == actionSheet.cancelButtonIndex)
+            return;
+         
+         setting_data_set_with_string_representation(self.setting, [[actionSheet buttonTitleAtIndex:buttonIndex] UTF8String]);
+         [weakSelf.parentTable reloadData];
       });
    string_list_free(items);
 }
@@ -593,26 +595,29 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)willReloadData
 {
-   RAMainMenu* __weak weakSelf = self;
-   self.sections = [NSMutableArray array];
-
    size_t i, end;
    char title[256], title_msg[256];
+   NSMutableArray *everything;
+   RAMainMenu* __weak weakSelf;
+   const char *core_name = g_extern.menu.info.library_name;
+   const char *core_version = g_extern.menu.info.library_version;
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
+   
    menu_list_get_last_stack(driver.menu->menu_list,
                             &dir, &label, &menu_type);
 
    get_title(label, dir, menu_type, title, sizeof(title));
+   
+   weakSelf = self;
+   self.sections = [NSMutableArray array];
 
-   const char *core_name = g_extern.menu.info.library_name;
    if (!core_name)
      core_name = g_extern.system.info.library_name;
    if (!core_name)
      core_name = "No Core";
 
-   const char *core_version = g_extern.menu.info.library_version;
    if (!core_version)
      core_version = g_extern.system.info.library_version;
    if (!core_version)
@@ -622,26 +627,28 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
             core_name, core_version);
    self.title = BOXSTRING(title_msg);
 
-   NSMutableArray *everything = [NSMutableArray array];
+   everything = [NSMutableArray array];
    [everything addObject:BOXSTRING(title)];
   
    end = menu_list_get_size(driver.menu->menu_list);
    
    for (i = driver.menu->begin; i < end; i++)
    {
+     rarch_setting_t *setting;
      char type_str[PATH_MAX], path_buf[PATH_MAX];
+     menu_file_list_cbs_t *cbs = NULL;
      const char *path = NULL, *entry_label = NULL;
      unsigned type = 0, w = 0;
      
      menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
                              &entry_label, &type);
-     rarch_setting_t *setting =
+     setting =
        (rarch_setting_t*)setting_data_find_setting
        (driver.menu->list_settings,
         driver.menu->menu_list->selection_buf->list[i].label);
 
-     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-       menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf, i);
+     cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
+            driver.menu->menu_list->selection_buf, i);
 
      disp_set_label
        (driver.menu->menu_list->selection_buf, &w, type, i, label,
@@ -652,13 +659,16 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
      if (setting && setting->type == ST_ACTION &&
          setting->flags & SD_FLAG_BROWSER_ACTION &&
          setting->action_toggle &&
-         setting->change_handler ) {
+         setting->change_handler )
+     {
        [everything
          addObject:
            [[RAMenuItemPathSetting alloc]
                        initWithSetting:setting
                                 action:^{}]];
-     } else if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP) {
+     }
+     else if (setting && ST_ACTION < setting->type && setting->type < ST_GROUP)
+     {
        [everything
          addObject:
            [RAMenuItemGeneralSetting
@@ -668,7 +678,9 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                if (cbs && cbs->action_ok)
                  cbs->action_ok(path, entry_label, type, i);
              }]];
-     } else {
+     }
+     else
+     {
        [everything
          addObject:
            [RAMenuItemBasic
@@ -706,13 +718,12 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)menuRefresh
 {
-  if (driver.menu->need_refresh)
-  {
+  if (!driver.menu->need_refresh)
+     return;
+   
     menu_entries_deferred_push(driver.menu->menu_list->selection_buf,
                                driver.menu->menu_list->menu_stack);
-
     driver.menu->need_refresh = false;
-  }
 }
 
 - (void)menuBack
