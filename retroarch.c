@@ -674,9 +674,11 @@ static void set_paths(const char *path)
 
    /* If this is already set, do not overwrite it
     * as this was initialized before in a menu or otherwise. */
-   if (!*g_settings.system_directory)
-      fill_pathname_basedir(g_settings.system_directory, path,
-            sizeof(g_settings.system_directory));
+   if (*g_settings.system_directory)
+      return;
+
+   fill_pathname_basedir(g_settings.system_directory, path,
+         sizeof(g_settings.system_directory));
 }
 
 /**
@@ -1118,6 +1120,7 @@ static void init_controllers(void)
       {
          /* If we're trying to connect a completely unknown device,
           * revert back to JOYPAD. */
+         
          if (device != RETRO_DEVICE_JOYPAD && device != RETRO_DEVICE_NONE)
          {
             /* Do not fix g_settings.input.libretro_device[i],
@@ -1129,19 +1132,22 @@ static void init_controllers(void)
          ident = "Joypad";
       }
 
-      if (device == RETRO_DEVICE_NONE)
+      switch (device)
       {
-         RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
-         pretro_set_controller_port_device(i, device);
-      }
-      else if (device != RETRO_DEVICE_JOYPAD)
-      {
-         /* Some cores do not properly range check port argument.
-          * This is broken behavior of course, but avoid breaking
-          * cores needlessly. */
-         RARCH_LOG("Connecting %s (ID: %u) to port %u.\n", ident,
-               device, i + 1);
-         pretro_set_controller_port_device(i, device);
+         case RETRO_DEVICE_NONE:
+            RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
+            pretro_set_controller_port_device(i, device);
+            break;
+         case RETRO_DEVICE_JOYPAD:
+            break;
+         default:
+            /* Some cores do not properly range check port argument.
+             * This is broken behavior of course, but avoid breaking
+             * cores needlessly. */
+            RARCH_LOG("Connecting %s (ID: %u) to port %u.\n", ident,
+                  device, i + 1);
+            pretro_set_controller_port_device(i, device);
+            break;
       }
    }
 }
@@ -1253,19 +1259,19 @@ static void init_movie(void)
             g_extern.bsv.movie_start_path);
 
       msg_queue_clear(g_extern.msg_queue);
-      if ((g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path,
+
+      if (!(g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path,
                   RARCH_MOVIE_RECORD)))
-      {
-         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-         RARCH_LOG("Starting movie record to \"%s\".\n",
-               g_extern.bsv.movie_start_path);
-         g_settings.rewind_granularity = 1;
-      }
-      else
       {
          msg_queue_push(g_extern.msg_queue, "Failed to start movie record.", 1, 180);
          RARCH_ERR("Failed to start movie record.\n");
+         return;
       }
+
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      RARCH_LOG("Starting movie record to \"%s\".\n",
+            g_extern.bsv.movie_start_path);
+      g_settings.rewind_granularity = 1;
    }
 }
 
@@ -1363,15 +1369,15 @@ static void init_autosave(void)
       const char *path = g_extern.savefiles->elems[i].data;
       unsigned    type = g_extern.savefiles->elems[i].attr.i;
 
-      if (pretro_get_memory_size(type) > 0)
-      {
-         g_extern.autosave[i] = autosave_new(path,
-               pretro_get_memory_data(type),
-               pretro_get_memory_size(type),
-               g_settings.autosave_interval);
-         if (!g_extern.autosave[i])
-            RARCH_WARN(RETRO_LOG_INIT_AUTOSAVE_FAILED);
-      }
+      if (pretro_get_memory_size(type) <= 0)
+         continue;
+
+      g_extern.autosave[i] = autosave_new(path,
+            pretro_get_memory_data(type),
+            pretro_get_memory_size(type),
+            g_settings.autosave_interval);
+      if (!g_extern.autosave[i])
+         RARCH_WARN(RETRO_LOG_INIT_AUTOSAVE_FAILED);
    }
 }
 
@@ -1531,23 +1537,25 @@ static void fill_pathnames(void)
    fill_pathname(g_extern.bsv.movie_path, g_extern.savefile_name, "",
          sizeof(g_extern.bsv.movie_path));
 
-   if (*g_extern.basename)
-   {
-      if (!*g_extern.ups_name)
-         fill_pathname_noext(g_extern.ups_name, g_extern.basename, ".ups",
-               sizeof(g_extern.ups_name));
-      if (!*g_extern.bps_name)
-         fill_pathname_noext(g_extern.bps_name, g_extern.basename, ".bps",
-               sizeof(g_extern.bps_name));
-      if (!*g_extern.ips_name)
-         fill_pathname_noext(g_extern.ips_name, g_extern.basename, ".ips",
-               sizeof(g_extern.ips_name));
-   }
+   if (!*g_extern.basename)
+      return;
+
+   if (!*g_extern.ups_name)
+      fill_pathname_noext(g_extern.ups_name, g_extern.basename, ".ups",
+            sizeof(g_extern.ups_name));
+   if (!*g_extern.bps_name)
+      fill_pathname_noext(g_extern.bps_name, g_extern.basename, ".bps",
+            sizeof(g_extern.bps_name));
+   if (!*g_extern.ips_name)
+      fill_pathname_noext(g_extern.ips_name, g_extern.basename, ".ips",
+            sizeof(g_extern.ips_name));
 }
 
 static void load_auto_state(void)
 {
+   char msg[PATH_MAX_LENGTH];
    char savestate_name_auto[PATH_MAX_LENGTH];
+   bool ret;
 
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay_enable && !g_extern.netplay_is_spectate)
@@ -1560,22 +1568,22 @@ static void load_auto_state(void)
    fill_pathname_noext(savestate_name_auto, g_extern.savestate_name,
          ".auto", sizeof(savestate_name_auto));
 
-   if (path_file_exists(savestate_name_auto))
-   {
-      char msg[PATH_MAX_LENGTH];
-      bool ret = load_state(savestate_name_auto);
+   if (!path_file_exists(savestate_name_auto))
+      return;
 
-      RARCH_LOG("Found auto savestate in: %s\n", savestate_name_auto);
+   ret = load_state(savestate_name_auto);
 
-      snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" %s.",
-            savestate_name_auto, ret ? "succeeded" : "failed");
-      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-      RARCH_LOG("%s\n", msg);
-   }
+   RARCH_LOG("Found auto savestate in: %s\n", savestate_name_auto);
+
+   snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" %s.",
+         savestate_name_auto, ret ? "succeeded" : "failed");
+   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   RARCH_LOG("%s\n", msg);
 }
 
 static bool save_auto_state(void)
 {
+   bool ret;
    char savestate_name_auto[PATH_MAX_LENGTH];
 
    if (!g_settings.savestate_auto_save || g_extern.libretro_dummy ||
@@ -1585,7 +1593,7 @@ static bool save_auto_state(void)
    fill_pathname_noext(savestate_name_auto, g_extern.savestate_name,
          ".auto", sizeof(savestate_name_auto));
 
-   bool ret = save_state(savestate_name_auto);
+   ret = save_state(savestate_name_auto);
    RARCH_LOG("Auto save state to \"%s\" %s.\n", savestate_name_auto, ret ?
          "succeeded" : "failed");
     
@@ -1839,18 +1847,19 @@ static void check_disk_eject(
 static void check_disk_next(
       const struct retro_disk_control_callback *control)
 {
-   unsigned num_disks = control->get_num_images();
-   unsigned current   = control->get_image_index();
+   unsigned num_disks       = control->get_num_images();
+   unsigned current         = control->get_image_index();
+   bool     check_disk_next = num_disks && num_disks != UINT_MAX;
 
-   if (num_disks && num_disks != UINT_MAX)
+   if (!check_disk_next)
    {
-      unsigned new_idx = current;
-      if (current < num_disks - 1)
-         new_idx++;
-      rarch_disk_control_set_index(new_idx);
-   }
-   else
       RARCH_ERR("Got invalid disk index from libretro.\n");
+      return;
+   }
+
+   if (current < num_disks - 1)
+      current++;
+   rarch_disk_control_set_index(current);
 }
 
 /**
@@ -1862,17 +1871,19 @@ static void check_disk_next(
 static void check_disk_prev(
       const struct retro_disk_control_callback *control)
 {
-   unsigned num_disks = control->get_num_images();
-   unsigned current   = control->get_image_index();
-   if (num_disks && num_disks != UINT_MAX)
+   unsigned num_disks   = control->get_num_images();
+   unsigned current     = control->get_image_index();
+   bool check_disk_prev = num_disks && num_disks != UINT_MAX;
+
+   if (!check_disk_prev)
    {
-      unsigned new_idx = current;
-      if (current > 0)
-         new_idx--;
-      rarch_disk_control_set_index(new_idx);
-   }
-   else
       RARCH_ERR("Got invalid disk index from libretro.\n");
+      return;
+   }
+
+   if (current > 0)
+      current--;
+   rarch_disk_control_set_index(current);
 }
 
 static void init_state(void)
@@ -2084,18 +2095,18 @@ static bool init_content(void)
    if (!init_content_file())
       return false;
 
-   if (!g_extern.libretro_no_content)
-   {
-      set_savestate_auto_index();
+   if (g_extern.libretro_no_content)
+      return true;
 
-      if (load_save_files())
-         RARCH_LOG("Skipping SRAM load.\n");
+   set_savestate_auto_index();
 
-      load_auto_state();
+   if (load_save_files())
+      RARCH_LOG("Skipping SRAM load.\n");
 
-      rarch_main_command(RARCH_CMD_BSV_MOVIE_INIT);
-      rarch_main_command(RARCH_CMD_NETPLAY_INIT);
-   }
+   load_auto_state();
+
+   rarch_main_command(RARCH_CMD_BSV_MOVIE_INIT);
+   rarch_main_command(RARCH_CMD_NETPLAY_INIT);
 
    return true;
 }
