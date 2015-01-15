@@ -27,6 +27,7 @@ BEGIN
       MENUITEM "Reset",                  ID_M_RESET
       MENUITEM "Menu Toggle",            ID_M_MENU_TOGGLE
       MENUITEM "Pause Toggle",           ID_M_PAUSE_TOGGLE
+	  MENUITEM "Mouse Grab Toggle",		 ID_M_MOUSE_GRAB
    END
    POPUP "Window"
    BEGIN

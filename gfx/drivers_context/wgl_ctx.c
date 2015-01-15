@@ -322,6 +322,9 @@ static LRESULT win32_menu_loop(WPARAM wparam)
 		case ID_M_FULL_SCREEN:
 			cmd = RARCH_CMD_FULLSCREEN_TOGGLE;
 			break;
+		case ID_M_MOUSE_GRAB:
+			cmd = RARCH_CMD_GRAB_MOUSE_TOGGLE;
+			break;
 		case ID_M_QUIT:
 			do_wm_close = true;
 			break;
