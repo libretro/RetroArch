@@ -12,7 +12,7 @@
 		</object>
 		<object class="NSMutableArray" key="IBDocument.EditedObjectIDs">
 			<bool key="EncodedWithXMLCoder">YES</bool>
-			<integer value="81"/>
+			<integer value="603"/>
 		</object>
 		<object class="NSArray" key="IBDocument.PluginDependencies">
 			<bool key="EncodedWithXMLCoder">YES</bool>
@@ -322,18 +322,10 @@
 												<string key="NSTitle">Cycle Tray</string>
 												<string key="NSKeyEquiv"/>
 												<int key="NSMnemonicLoc">2147483647</int>
+												<int key="NSState">1</int>
 												<reference key="NSOnImage" ref="35465992"/>
 												<reference key="NSMixedImage" ref="502551668"/>
 												<int key="NSTag">4</int>
-											</object>
-											<object class="NSMenuItem" id="291565286">
-												<reference key="NSMenu" ref="79435345"/>
-												<string key="NSTitle">Previous Disk</string>
-												<string key="NSKeyEquiv"/>
-												<int key="NSMnemonicLoc">2147483647</int>
-												<reference key="NSOnImage" ref="35465992"/>
-												<reference key="NSMixedImage" ref="502551668"/>
-												<int key="NSTag">5</int>
 											</object>
 											<object class="NSMenuItem" id="189555851">
 												<reference key="NSMenu" ref="79435345"/>
@@ -343,6 +335,15 @@
 												<reference key="NSOnImage" ref="35465992"/>
 												<reference key="NSMixedImage" ref="502551668"/>
 												<int key="NSTag">6</int>
+											</object>
+											<object class="NSMenuItem" id="291565286">
+												<reference key="NSMenu" ref="79435345"/>
+												<string key="NSTitle">Previous Disk</string>
+												<string key="NSKeyEquiv"/>
+												<int key="NSMnemonicLoc">2147483647</int>
+												<reference key="NSOnImage" ref="35465992"/>
+												<reference key="NSMixedImage" ref="502551668"/>
+												<int key="NSTag">5</int>
 											</object>
 										</object>
 									</object>
@@ -365,7 +366,6 @@
 												<string key="NSTitle">Mouse Grab Toggle</string>
 												<string key="NSKeyEquiv"/>
 												<int key="NSMnemonicLoc">2147483647</int>
-												<int key="NSState">1</int>
 												<reference key="NSOnImage" ref="35465992"/>
 												<reference key="NSMixedImage" ref="502551668"/>
 												<int key="NSTag">7</int>
@@ -1413,12 +1413,12 @@
 						<reference key="object" ref="604031057"/>
 						<object class="NSMutableArray" key="children">
 							<bool key="EncodedWithXMLCoder">YES</bool>
-							<reference ref="191361579"/>
 							<reference ref="140877964"/>
 							<reference ref="347361677"/>
 							<reference ref="161299339"/>
 							<reference ref="330055564"/>
 							<reference ref="1027971327"/>
+							<reference ref="191361579"/>
 						</object>
 						<reference key="parent" ref="265357942"/>
 					</object>
@@ -1522,8 +1522,8 @@
 						<object class="NSMutableArray" key="children">
 							<bool key="EncodedWithXMLCoder">YES</bool>
 							<reference ref="593697668"/>
-							<reference ref="291565286"/>
 							<reference ref="189555851"/>
+							<reference ref="291565286"/>
 						</object>
 						<reference key="parent" ref="191361579"/>
 					</object>
@@ -1860,7 +1860,7 @@
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>{{836, 427}, {284, 133}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{497, 559}, {420, 20}}</string>
+					<string>{{497, 558}, {420, 20}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>{{507, 199}, {480, 360}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -1874,7 +1874,7 @@
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{642, 436}, {192, 123}}</string>
+					<string>{{642, 435}, {192, 123}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -1901,9 +1901,9 @@
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>{{702, 491}, {144, 63}}</string>
-					<string>{{851, 539}, {185, 23}}</string>
-					<string>{{833, 517}, {123, 43}}</string>
+					<string>{{834, 476}, {144, 63}}</string>
+					<string>{{834, 495}, {185, 23}}</string>
+					<string>{{834, 516}, {123, 43}}</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
