@@ -223,13 +223,122 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
 
 static void *dinput_wgl;
 
+#if !defined(_XBOX) && defined(_WIN32)
+#include "../../retroarch.h"
+
+static bool win32_browser(char *filename, const char *extensions)
+{
+	OPENFILENAME ofn;
+
+	memset((void*)&ofn, 0, sizeof(OPENFILENAME));
+
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.hwndOwner   = g_hwnd;
+	ofn.lpstrFilter = extensions;
+	ofn.lpstrFile   = filename;
+	ofn.lpstrTitle  = "Load Content";
+	ofn.lpstrDefExt = "";
+	ofn.nMaxFile    = PATH_MAX;
+	ofn.Flags       = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+
+	if (GetOpenFileName(&ofn))
+		return true;
+
+	return false;
+}
+
+static LRESULT win32_menu_loop(WPARAM wparam)
+{
+    WPARAM mode      = wparam & 0xffff;
+	unsigned cmd     = RARCH_CMD_NONE;
+	bool do_wm_close = false;
+
+	switch (mode)
+    {
+		case ID_M_LOAD_CORE:
+		case ID_M_LOAD_CONTENT:
+			{
+				char win32_file[PATH_MAX_LENGTH] = {0};
+				const char *extensions = NULL;
+				
+				if      (mode == ID_M_LOAD_CORE)
+					extensions = "All Files\0*.*\0 Libretro core(.dll)\0*.dll\0";
+				else if (mode == ID_M_LOAD_CONTENT)
+					extensions = "All Files\0*.*\0\0";
+
+				if (win32_browser(win32_file, extensions))
+				{
+					switch (mode)
+					{
+					case ID_M_LOAD_CORE:
+						strlcpy(g_settings.libretro, win32_file, sizeof(g_settings.libretro));
+						cmd = RARCH_CMD_LOAD_CORE;
+						break;
+					case ID_M_LOAD_CONTENT:
+						strlcpy(g_extern.fullpath, win32_file, sizeof(g_extern.fullpath));
+						cmd = RARCH_CMD_LOAD_CONTENT;
+						do_wm_close = true;
+						break;
+					}
+				}
+			}
+			break;
+		case ID_M_RESET:
+			cmd = RARCH_CMD_RESET;
+			break;
+		case ID_M_MENU_TOGGLE:
+			cmd = RARCH_CMD_MENU_TOGGLE;
+			break;
+		case ID_M_PAUSE_TOGGLE:
+			cmd = RARCH_CMD_PAUSE_TOGGLE;
+			break;
+		case ID_M_LOAD_STATE:
+			cmd = RARCH_CMD_LOAD_STATE;
+			break;
+		case ID_M_SAVE_STATE:
+			cmd = RARCH_CMD_SAVE_STATE;
+			break;
+		case ID_M_DISK_CYCLE:
+			cmd = RARCH_CMD_DISK_EJECT_TOGGLE;
+			break;
+		case ID_M_DISK_NEXT:
+			cmd = RARCH_CMD_DISK_NEXT;
+			break;
+		case ID_M_DISK_PREV:
+			cmd = RARCH_CMD_DISK_PREV;
+			break;
+		case ID_M_FULL_SCREEN:
+			cmd = RARCH_CMD_FULLSCREEN_TOGGLE;
+			break;
+		case ID_M_QUIT:
+			do_wm_close = true;
+			break;
+	}
+
+	if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
+	{
+		unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
+		g_extern.pending.windowed_scale = idx;
+		cmd = RARCH_CMD_RESIZE_WINDOWED_SCALE;
+	}
+
+	if (cmd != RARCH_CMD_NONE)
+		rarch_main_command(cmd);
+
+	if (do_wm_close)
+		PostMessage(g_hwnd, WM_CLOSE, 0, 0);
+	
+	return 0L;
+}
+#endif
+
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    switch (message)
    {
       case WM_SYSCOMMAND:
-         // Prevent screensavers, etc, while running.
+         /* Prevent screensavers, etc, while running. */
          switch (wparam)
          {
             case SC_SCREENSAVE:
@@ -262,7 +371,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
       }
 
       case WM_SIZE:
-         // Do not send resize message if we minimize.
+         /* Do not send resize message if we minimize. */
          if (wparam != SIZE_MAXHIDE && wparam != SIZE_MINIMIZED)
          {
             g_resize_width  = LOWORD(lparam);
@@ -270,6 +379,11 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
             g_resized = true;
          }
          return 0;
+	  case WM_COMMAND:
+		  {
+			  LRESULT ret = win32_menu_loop(wparam);
+		  }
+
    }
    if (dinput_handle_message(dinput_wgl, message, wparam, lparam))
       return 0;
@@ -503,6 +617,15 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
 
    if (!fullscreen || windowed_full)
    {
+      if (!fullscreen)
+	  {
+		  RECT rc_temp = {0, 0, g_resize_height, 0x7FFF};
+		  SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
+		  SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
+		  g_resize_height += rc_temp.top + rect.top;
+		  SetWindowPos(g_hwnd, NULL, 0, 0, g_resize_width, g_resize_height, SWP_NOMOVE);
+	  }
+
       ShowWindow(g_hwnd, SW_RESTORE);
       UpdateWindow(g_hwnd);
       SetForegroundWindow(g_hwnd);
