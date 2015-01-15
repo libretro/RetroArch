@@ -155,6 +155,14 @@ static void sha256_subhash(struct sha256_ctx *p, uint32_t *t)
       store32be(t++, p->h[i]);
 }
 
+/** 
+ * sha256_hash:
+ * @out               : Output.
+ * @in                : Input.
+ * @size              : Size of @out.
+ *
+ * Hashes SHA256 and outputs a human readable string.
+ **/
 void sha256_hash(char *out, const uint8_t *in, size_t size)
 {
    unsigned i;
@@ -399,23 +407,18 @@ static void SHA1PadMessage(SHA1Context *context)
     *  block, process it, and then continue padding into a second
     *  block.
     */
+   context->Message_Block[context->Message_Block_Index++] = 0x80;
+
    if (context->Message_Block_Index > 55)
    {
-      context->Message_Block[context->Message_Block_Index++] = 0x80;
       while(context->Message_Block_Index < 64)
          context->Message_Block[context->Message_Block_Index++] = 0;
 
       SHA1ProcessMessageBlock(context);
+   }
 
-      while(context->Message_Block_Index < 56)
-         context->Message_Block[context->Message_Block_Index++] = 0;
-   }
-   else
-   {
-      context->Message_Block[context->Message_Block_Index++] = 0x80;
-      while(context->Message_Block_Index < 56)
-         context->Message_Block[context->Message_Block_Index++] = 0;
-   }
+   while(context->Message_Block_Index < 56)
+      context->Message_Block[context->Message_Block_Index++] = 0;
 
    /*  Store the message length as the last 8 octets */
    context->Message_Block[56] = (context->Length_High >> 24) & 0xFF;

@@ -48,8 +48,14 @@
 #include "config.h"
 #endif
 
-/* Hashes sha256 and outputs a human readable string
- * for comparing with the cheat XML values. */
+/** 
+ * sha256_hash:
+ * @out               : Output.
+ * @in                : Input.
+ * @size              : Size of @out.
+ *
+ * Hashes SHA256 and outputs a human readable string.
+ **/
 void sha256_hash(char *out, const uint8_t *in, size_t size);
 
 #ifdef HAVE_ZLIB
