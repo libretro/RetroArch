@@ -610,8 +610,8 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       rect.right  = width;
       rect.bottom = height;
       AdjustWindowRect(&rect, style, FALSE);
-      width  = rect.right - rect.left;
-      height = rect.bottom - rect.top;
+      g_resize_width  = width  = rect.right - rect.left;
+      g_resize_height = height = rect.bottom - rect.top;
    }
 
    g_hwnd = CreateWindowEx(0, "RetroArch", "RetroArch", style,
@@ -626,13 +626,13 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
    if (!fullscreen || windowed_full)
    {
       if (!fullscreen)
-	  {
-		  RECT rc_temp = {0, 0, g_resize_height, 0x7FFF};
-		  SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
-		  SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
-		  g_resize_height += rc_temp.top + rect.top;
-		  SetWindowPos(g_hwnd, NULL, 0, 0, g_resize_width, g_resize_height, SWP_NOMOVE);
-	  }
+      {
+         RECT rc_temp = {0, 0, height, 0x7FFF};
+         SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
+         SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
+         g_resize_height = height += rc_temp.top + rect.top;
+         SetWindowPos(g_hwnd, NULL, 0, 0, width, height, SWP_NOMOVE);
+      }
 
       ShowWindow(g_hwnd, SW_RESTORE);
       UpdateWindow(g_hwnd);
