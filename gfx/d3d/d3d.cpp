@@ -549,10 +549,10 @@ static bool d3d_construct(d3d_video_t *d3d,
 #if defined(HAVE_WINDOW) && !defined(_XBOX)
    unsigned win_width  = d3d->screen_width;
    unsigned win_height = d3d->screen_height;
+   RECT rect = {0};
 
    if (!info->fullscreen)
    {
-      RECT rect   = {0};
       rect.right  = d3d->screen_width;
       rect.bottom = d3d->screen_height;
       AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
@@ -586,6 +586,15 @@ static bool d3d_construct(d3d_video_t *d3d,
    );
 
 #if defined(HAVE_WINDOW) && !defined(_XBOX)
+   if (!info->fullscreen)
+   {
+	   RECT rc_temp = {0, 0, win_height, 0x7FFF};
+	   SetMenu(d3d->hWnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
+	   SendMessage(d3d->hWnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
+	   win_height += rc_temp.top + rect.top;
+	   SetWindowPos(d3d->hWnd, NULL, 0, 0, win_width, win_height, SWP_NOMOVE);
+   }
+
    ShowWindow(d3d->hWnd, SW_RESTORE);
    UpdateWindow(d3d->hWnd);
    SetForegroundWindow(d3d->hWnd);
