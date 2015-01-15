@@ -44,10 +44,10 @@ static bool win32_browser(HWND owner, char *filename, const char *extensions,
 	ofn.nMaxFile        = PATH_MAX;
 	ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
 
-	if (GetOpenFileName(&ofn))
-		return true;
+	if (!GetOpenFileName(&ofn))
+		return false;
 
-	return false;
+	return true;
 }
 
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
