@@ -226,7 +226,8 @@ static void *dinput_wgl;
 #if !defined(_XBOX) && defined(_WIN32)
 #include "../../retroarch.h"
 
-static bool win32_browser(char *filename, const char *extensions)
+static bool win32_browser(char *filename, const char *extensions,
+	const char *title)
 {
 	OPENFILENAME ofn;
 
@@ -236,7 +237,7 @@ static bool win32_browser(char *filename, const char *extensions)
 	ofn.hwndOwner   = g_hwnd;
 	ofn.lpstrFilter = extensions;
 	ofn.lpstrFile   = filename;
-	ofn.lpstrTitle  = "Load Content";
+	ofn.lpstrTitle  = title;
 	ofn.lpstrDefExt = "";
 	ofn.nMaxFile    = PATH_MAX;
 	ofn.Flags       = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
@@ -260,13 +261,20 @@ static LRESULT win32_menu_loop(WPARAM wparam)
 			{
 				char win32_file[PATH_MAX_LENGTH] = {0};
 				const char *extensions = NULL;
+				const char *title      = NULL;
 				
 				if      (mode == ID_M_LOAD_CORE)
+				{
 					extensions = "All Files\0*.*\0 Libretro core(.dll)\0*.dll\0";
+					title      = "Load Core";
+				}
 				else if (mode == ID_M_LOAD_CONTENT)
+				{
 					extensions = "All Files\0*.*\0\0";
+					title      = "Load Content";
+				}
 
-				if (win32_browser(win32_file, extensions))
+				if (win32_browser(win32_file, extensions, title))
 				{
 					switch (mode)
 					{
