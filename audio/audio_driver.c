@@ -135,14 +135,14 @@ static void compute_audio_buffer_statistics(void)
 
 /**
  * audio_driver_find_handle:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: handle to audio driver at index. Can be NULL
  * if nothing found.
  **/
-const void *audio_driver_find_handle(int index)
+const void *audio_driver_find_handle(int idx)
 {
-   const void *drv = audio_drivers[index];
+   const void *drv = audio_drivers[idx];
    if (!drv)
       return NULL;
    return drv;
@@ -150,14 +150,14 @@ const void *audio_driver_find_handle(int index)
 
 /**
  * audio_driver_find_ident:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: Human-readable identifier of audio driver at index. Can be NULL
  * if nothing found.
  **/
-const char *audio_driver_find_ident(int index)
+const char *audio_driver_find_ident(int idx)
 {
-   const audio_driver_t *drv = audio_drivers[index];
+   const audio_driver_t *drv = audio_drivers[idx];
    if (!drv)
       return NULL;
    return drv->ident;

@@ -35,14 +35,14 @@ static const location_driver_t *location_drivers[] = {
 
 /**
  * location_driver_find_handle:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: handle to location driver at index. Can be NULL
  * if nothing found.
  **/
-const void *location_driver_find_handle(int index)
+const void *location_driver_find_handle(int idx)
 {
-   const void *drv = location_drivers[index];
+   const void *drv = location_drivers[idx];
    if (!drv)
       return NULL;
    return drv;
@@ -50,14 +50,14 @@ const void *location_driver_find_handle(int index)
 
 /**
  * location_driver_find_ident:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: Human-readable identifier of location driver at index. Can be NULL
  * if nothing found.
  **/
-const char *location_driver_find_ident(int index)
+const char *location_driver_find_ident(int idx)
 {
-   const location_driver_t *drv = location_drivers[index];
+   const location_driver_t *drv = location_drivers[idx];
    if (!drv)
       return NULL;
    return drv->ident;

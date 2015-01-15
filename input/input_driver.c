@@ -70,14 +70,14 @@ static const input_driver_t *input_drivers[] = {
 
 /**
  * input_driver_find_handle:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: handle to input driver at index. Can be NULL
  * if nothing found.
  **/
-const void *input_driver_find_handle(int index)
+const void *input_driver_find_handle(int idx)
 {
-   const void *drv = input_drivers[index];
+   const void *drv = input_drivers[idx];
    if (!drv)
       return NULL;
    return drv;
@@ -85,14 +85,14 @@ const void *input_driver_find_handle(int index)
 
 /**
  * input_driver_find_ident:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: Human-readable identifier of input driver at index. Can be NULL
  * if nothing found.
  **/
-const char *input_driver_find_ident(int index)
+const char *input_driver_find_ident(int idx)
 {
-   const input_driver_t *drv = input_drivers[index];
+   const input_driver_t *drv = input_drivers[idx];
    if (!drv)
       return NULL;
    return drv->ident;

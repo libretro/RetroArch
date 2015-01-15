@@ -61,14 +61,14 @@ static int find_resampler_driver_index(const char *ident)
 
 /**
  * audio_resampler_driver_find_handle:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: handle to audio resampler driver at index. Can be NULL
  * if nothing found.
  **/
-const void *audio_resampler_driver_find_handle(int index)
+const void *audio_resampler_driver_find_handle(int idx)
 {
-   const void *drv = resampler_drivers[index];
+   const void *drv = resampler_drivers[idx];
    if (!drv)
       return NULL;
    return drv;
@@ -76,14 +76,14 @@ const void *audio_resampler_driver_find_handle(int index)
 
 /**
  * audio_resampler_driver_find_ident:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: Human-readable identifier of audio resampler driver at index.
  * Can be NULL if nothing found.
  **/
-const char *audio_resampler_driver_find_ident(int index)
+const char *audio_resampler_driver_find_ident(int idx)
 {
-   const rarch_resampler_t *drv = resampler_drivers[index];
+   const rarch_resampler_t *drv = resampler_drivers[idx];
    if (!drv)
       return NULL;
    return drv->ident;

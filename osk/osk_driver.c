@@ -30,14 +30,14 @@ static const input_osk_driver_t *osk_drivers[] = {
 
 /**
  * osk_driver_find_handle:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: handle to OSK driver at index. Can be NULL
  * if nothing found.
  **/
-const void *osk_driver_find_handle(int index)
+const void *osk_driver_find_handle(int idx)
 {
-   const void *drv = osk_drivers[index];
+   const void *drv = osk_drivers[idx];
    if (!drv)
       return NULL;
    return drv;
@@ -45,14 +45,14 @@ const void *osk_driver_find_handle(int index)
 
 /**
  * osk_driver_find_ident:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: Human-readable identifier of OSK driver at index. Can be NULL
  * if nothing found.
  **/
-const char *osk_driver_find_ident(int index)
+const char *osk_driver_find_ident(int idx)
 {
-   const input_osk_driver_t *drv = osk_drivers[index];
+   const input_osk_driver_t *drv = osk_drivers[idx];
    if (!drv)
       return NULL;
    return drv->ident;

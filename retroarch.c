@@ -1777,11 +1777,11 @@ void rarch_disk_control_set_eject(bool new_state, bool print_log)
 
 /**
  * rarch_disk_control_set_index:
- * @index                : Index of disk to set as current.
+ * @idx                : Index of disk to set as current.
  *
  * Sets current disk to @index.
  **/
-void rarch_disk_control_set_index(unsigned index)
+void rarch_disk_control_set_index(unsigned idx)
 {
    char msg[PATH_MAX_LENGTH];
    unsigned num_disks;
@@ -1796,19 +1796,19 @@ void rarch_disk_control_set_index(unsigned index)
 
    num_disks = control->get_num_images();
 
-   if (control->set_image_index(index))
+   if (control->set_image_index(idx))
    {
-      if (index < num_disks)
+      if (idx < num_disks)
          snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.",
-               index + 1, num_disks);
+               idx + 1, num_disks);
       else
          strlcpy(msg, "Removed disk from tray.", sizeof(msg));
    }
    else
    {
-      if (index < num_disks)
+      if (idx < num_disks)
          snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.",
-               index + 1, num_disks);
+               idx + 1, num_disks);
       else
          strlcpy(msg, "Failed to remove disk from tray.", sizeof(msg));
       error = true;
@@ -1847,11 +1847,11 @@ static void check_disk_eject(
 static void check_disk_next(
       const struct retro_disk_control_callback *control)
 {
-   unsigned num_disks       = control->get_num_images();
-   unsigned current         = control->get_image_index();
-   bool     check_disk_next = num_disks && num_disks != UINT_MAX;
+   unsigned num_disks        = control->get_num_images();
+   unsigned current          = control->get_image_index();
+   bool     disk_next_enable = num_disks && num_disks != UINT_MAX;
 
-   if (!check_disk_next)
+   if (!disk_next_enable)
    {
       RARCH_ERR("Got invalid disk index from libretro.\n");
       return;
@@ -1871,11 +1871,11 @@ static void check_disk_next(
 static void check_disk_prev(
       const struct retro_disk_control_callback *control)
 {
-   unsigned num_disks   = control->get_num_images();
-   unsigned current     = control->get_image_index();
-   bool check_disk_prev = num_disks && num_disks != UINT_MAX;
+   unsigned num_disks    = control->get_num_images();
+   unsigned current      = control->get_image_index();
+   bool disk_prev_enable = num_disks && num_disks != UINT_MAX;
 
-   if (!check_disk_prev)
+   if (!disk_prev_enable)
    {
       RARCH_ERR("Got invalid disk index from libretro.\n");
       return;

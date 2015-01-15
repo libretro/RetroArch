@@ -39,14 +39,14 @@ static const camera_driver_t *camera_drivers[] = {
 
 /**
  * camera_driver_find_handle:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: handle to camera driver at index. Can be NULL
  * if nothing found.
  **/
-const void *camera_driver_find_handle(int index)
+const void *camera_driver_find_handle(int idx)
 {
-   const void *drv = camera_drivers[index];
+   const void *drv = camera_drivers[idx];
    if (!drv)
       return NULL;
    return drv;
@@ -54,14 +54,14 @@ const void *camera_driver_find_handle(int index)
 
 /**
  * camera_driver_find_ident:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: Human-readable identifier of camera driver at index. Can be NULL
  * if nothing found.
  **/
-const char *camera_driver_find_ident(int index)
+const char *camera_driver_find_ident(int idx)
 {
-   const camera_driver_t *drv = camera_drivers[index];
+   const camera_driver_t *drv = camera_drivers[idx];
    if (!drv)
       return NULL;
    return drv->ident;

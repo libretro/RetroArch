@@ -63,14 +63,14 @@ static const video_driver_t *video_drivers[] = {
 
 /**
  * video_driver_find_handle:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: handle to video driver at index. Can be NULL
  * if nothing found.
  **/
-const void *video_driver_find_handle(int index)
+const void *video_driver_find_handle(int idx)
 {
-   const void *drv = video_drivers[index];
+   const void *drv = video_drivers[idx];
    if (!drv)
       return NULL;
    return drv;
@@ -78,14 +78,14 @@ const void *video_driver_find_handle(int index)
 
 /**
  * video_driver_find_ident:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: Human-readable identifier of video driver at index. Can be NULL
  * if nothing found.
  **/
-const char *video_driver_find_ident(int index)
+const char *video_driver_find_ident(int idx)
 {
-   const video_driver_t *drv = video_drivers[index];
+   const video_driver_t *drv = video_drivers[idx];
    if (!drv)
       return NULL;
    return drv->ident;

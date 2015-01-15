@@ -73,14 +73,14 @@ static rarch_joypad_driver_t *joypad_drivers[] = {
 
 /**
  * joypad_driver_find_handle:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: handle to joypad driver at index. Can be NULL
  * if nothing found.
  **/
-const void *joypad_driver_find_handle(int index)
+const void *joypad_driver_find_handle(int idx)
 {
-   const void *drv = joypad_drivers[index];
+   const void *drv = joypad_drivers[idx];
    if (!drv)
       return NULL;
    return drv;
@@ -88,14 +88,14 @@ const void *joypad_driver_find_handle(int index)
 
 /**
  * joypad_driver_find_ident:
- * @index              : index of driver to get handle to.
+ * @idx                : index of driver to get handle to.
  *
  * Returns: Human-readable identifier of joypad driver at index. Can be NULL
  * if nothing found.
  **/
-const char *joypad_driver_find_ident(int index)
+const char *joypad_driver_find_ident(int idx)
 {
-   const rarch_joypad_driver_t *drv = joypad_drivers[index];
+   const rarch_joypad_driver_t *drv = joypad_drivers[idx];
    if (!drv)
       return NULL;
    return drv->ident;

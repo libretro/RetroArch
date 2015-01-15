@@ -48,14 +48,14 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 
 /**
  * menu_driver_find_handle:
- * @index              : index of driver to get handle to.
+ * @idx              : index of driver to get handle to.
  *
  * Returns: handle to menu driver at index. Can be NULL
  * if nothing found.
  **/
-const void *menu_driver_find_handle(int index)
+const void *menu_driver_find_handle(int idx)
 {
-   const void *drv = menu_ctx_drivers[index];
+   const void *drv = menu_ctx_drivers[idx];
    if (!drv)
       return NULL;
    return drv;
@@ -63,14 +63,14 @@ const void *menu_driver_find_handle(int index)
 
 /**
  * menu_driver_find_ident:
- * @index              : index of driver to get handle to.
+ * @idx              : index of driver to get handle to.
  *
  * Returns: Human-readable identifier of menu driver at index. Can be NULL
  * if nothing found.
  **/
-const char *menu_driver_find_ident(int index)
+const char *menu_driver_find_ident(int idx)
 {
-   const menu_ctx_driver_t *drv = menu_ctx_drivers[index];
+   const menu_ctx_driver_t *drv = menu_ctx_drivers[idx];
    if (!drv)
       return NULL;
    return drv->ident;
