@@ -30,6 +30,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
@@ -73,7 +74,8 @@ public final class DownloadableCoresFragment extends ListFragment
 	}
 
 	private static final String BUILDBOT_BASE_URL = "http://buildbot.libretro.com";
-	private static final String BUILDBOT_CORE_URL = BUILDBOT_BASE_URL + "/nightly/android/latest/armeabi-v7a/";
+	private static final String BUILDBOT_CORE_URL_ARM = BUILDBOT_BASE_URL + "/nightly/android/latest/armeabi-v7a/";
+	private static final String BUILDBOT_CORE_URL_X86 = BUILDBOT_BASE_URL + "/nightly/android/latest/x86/";
 	private static final String BUILDBOT_INFO_URL = BUILDBOT_BASE_URL + "/nightly/android/latest/info/";
 
 	private OnCoreDownloadedListener coreDownloadedListener = null;
@@ -170,7 +172,8 @@ public final class DownloadableCoresFragment extends ListFragment
 		{
 			try
 			{
-				final Connection core_connection = Jsoup.connect(BUILDBOT_CORE_URL);
+				final Connection core_connection = Build.CPU_ABI.startsWith("arm") ? Jsoup.connect(BUILDBOT_CORE_URL_ARM)
+				                                                                   : Jsoup.connect(BUILDBOT_CORE_URL_X86);
 				final Elements coreElements = core_connection.get().body().getElementsByClass("fb-n").select("a");
 
 				final ArrayList<DownloadableCore> downloadableCores = new ArrayList<DownloadableCore>();
