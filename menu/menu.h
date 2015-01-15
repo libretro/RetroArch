@@ -30,12 +30,6 @@
 #include "menu_input.h"
 #include "../gfx/video_shader_driver.h"
 
-#ifdef HAVE_RGUI
-#define MENU_TEXTURE_FULLSCREEN false
-#else
-#define MENU_TEXTURE_FULLSCREEN true
-#endif
-
 #ifndef GFX_MAX_SHADERS
 #define GFX_MAX_SHADERS 16
 #endif
