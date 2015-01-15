@@ -37,8 +37,24 @@ extern "C" {
 typedef void *dylib_t;
 typedef void (*function_t)(void);
 
+/**
+ * init_libretro_sym:
+ * @dummy                        : Load dummy symbols if true
+ *
+ * Initializes libretro symbols and
+ * setups environment callback functions.
+ **/
 void init_libretro_sym(bool dummy);
 
+/**
+ * uninit_libretro_sym:
+ *
+ * Frees libretro core.
+ *
+ * Frees all core options,
+ * associated state, and
+ * unbind all libretro callback symbols.
+ **/
 void uninit_libretro_sym(void);
 
 #ifdef NEED_DYNAMIC
@@ -121,9 +137,32 @@ const struct retro_subsystem_info *libretro_find_subsystem_info(
       const struct retro_subsystem_info *info,
       unsigned num_info, const char *ident);
 
+/**
+ * libretro_find_controller_description:
+ * @info                         : Pointer to controller info handle.
+ * @id                           : Identifier of controller to search
+ *                                 for.
+ *
+ * Search for a controller of type @id in @info.
+ *
+ * Returns: controller description of found controller on success,
+ * otherwise NULL.
+ **/
 const struct retro_controller_description *
    libretro_find_controller_description(
          const struct retro_controller_info *info, unsigned id);
+
+/**
+ * rarch_environment_cb:
+ * @cmd                          : Identifier of command.
+ * @data                         : Pointer to data.
+ *
+ * Environment callback function implementation.
+ *
+ * Returns: true (1) if environment callback command could
+ * be performed, otherwise false (0).
+ **/
+bool rarch_environment_cb(unsigned cmd, void *data);
 
 extern void (*pretro_init)(void);
 
@@ -176,7 +215,6 @@ extern void *(*pretro_get_memory_data)(unsigned);
 
 extern size_t (*pretro_get_memory_size)(unsigned);
 
-extern bool rarch_environment_cb(unsigned cmd, void *data);
 
 #ifdef __cplusplus
 }

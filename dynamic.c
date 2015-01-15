@@ -245,6 +245,17 @@ const struct retro_subsystem_info *libretro_find_subsystem_info(
    return NULL;
 }
 
+/**
+ * libretro_find_controller_description:
+ * @info                         : Pointer to controller info handle.
+ * @id                           : Identifier of controller to search
+ *                                 for.
+ *
+ * Search for a controller of type @id in @info.
+ *
+ * Returns: controller description of found controller on success,
+ * otherwise NULL.
+ **/
 const struct retro_controller_description *
 libretro_find_controller_description(
       const struct retro_controller_info *info, unsigned id)
@@ -253,13 +264,21 @@ libretro_find_controller_description(
 
    for (i = 0; i < info->num_types; i++)
    {
-      if (info->types[i].id == id)
-         return &info->types[i];
+      if (info->types[i].id != id)
+         continue;
+
+      return &info->types[i];
    }
 
    return NULL;
 }
 
+/**
+ * load_symbols:
+ * @dummy                        : Load dummy symbols if true
+ *
+ * Setup libretro callback symbols.
+ **/
 static void load_symbols(bool is_dummy)
 {
    if (is_dummy)
@@ -384,6 +403,7 @@ void libretro_get_current_core_pathname(char *name, size_t size)
    for (i = 0; id[i] != '\0'; i++)
    {
       char c = id[i];
+
       if (isspace(c) || isblank(c))
          name[i] = '_';
       else
@@ -391,6 +411,13 @@ void libretro_get_current_core_pathname(char *name, size_t size)
    }
 }
 
+/**
+ * init_libretro_sym:
+ * @dummy                        : Load dummy symbols if true
+ *
+ * Initializes libretro symbols and
+ * setups environment callback functions.
+ **/
 void init_libretro_sym(bool dummy)
 {
    /* Guarantee that we can do "dirty" casting.
@@ -424,6 +451,15 @@ void init_libretro_sym(bool dummy)
    pretro_set_environment(rarch_environment_cb);
 }
 
+/**
+ * uninit_libretro_sym:
+ *
+ * Frees libretro core.
+ *
+ * Frees all core options,
+ * associated state, and
+ * unbind all libretro callback symbols.
+ **/
 void uninit_libretro_sym(void)
 {
 #ifdef HAVE_DYNAMIC
@@ -557,6 +593,16 @@ static void rarch_log_libretro(enum retro_log_level level,
    va_end(vp);
 }
 
+/**
+ * rarch_environment_cb:
+ * @cmd                          : Identifier of command.
+ * @data                         : Pointer to data.
+ *
+ * Environment callback function implementation.
+ *
+ * Returns: true (1) if environment callback command could
+ * be performed, otherwise false (0).
+ **/
 bool rarch_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
@@ -731,6 +777,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          {
             retro_port = desc->port;
             retro_id   = desc->id;
+
             if (desc->port >= MAX_USERS)
                continue;
 
@@ -794,11 +841,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             {
                const char *description = g_extern.system.input_desc_btn[p][retro_id];
 
-               if (description)
-               {
-                  RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
-                        p + 1, libretro_btn_desc[retro_id], description);
-               }
+               if (!description)
+                  continue;
+
+               RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
+                     p + 1, libretro_btn_desc[retro_id], description);
             }
          }
 

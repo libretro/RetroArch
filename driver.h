@@ -173,7 +173,7 @@ enum
    DRIVER_CAMERA       = 1 << 4,
    DRIVER_LOCATION     = 1 << 5,
    DRIVER_MENU         = 1 << 6,
-   DRIVERS_VIDEO_INPUT = 1 << 7 /* note multiple drivers */
+   DRIVERS_VIDEO_INPUT = 1 << 7
 };
 
 /* Drivers for RARCH_CMD_DRIVERS_DEINIT and RARCH_CMD_DRIVERS_INIT */
