@@ -99,6 +99,9 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 		case ID_M_RESET:
 			cmd = RARCH_CMD_RESET;
 			break;
+		case ID_M_MUTE_TOGGLE:
+			cmd = RARCH_CMD_AUDIO_MUTE_TOGGLE;
+			break;
 		case ID_M_MENU_TOGGLE:
 			cmd = RARCH_CMD_MENU_TOGGLE;
 			break;

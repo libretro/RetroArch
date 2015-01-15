@@ -13,6 +13,16 @@ BEGIN
    END
    POPUP "Command"
    BEGIN
+	  POPUP "Audio Options"
+	  BEGIN
+		MENUITEM "Audio Mute Toggle",	ID_M_MUTE_TOGGLE
+	  END
+      POPUP "Disk Options"
+      BEGIN
+         MENUITEM "Disk Eject Toggle",   ID_M_DISK_CYCLE
+         MENUITEM "Disk Previous",       ID_M_DISK_PREV
+         MENUITEM "Disk Next",           ID_M_DISK_NEXT
+      END
       POPUP "Save State Options"
       BEGIN
 		 POPUP "State Index"
@@ -31,12 +41,6 @@ BEGIN
 		 END
          MENUITEM "Load State",   ID_M_LOAD_STATE
          MENUITEM "Save State",   ID_M_SAVE_STATE
-      END
-      POPUP "Disk Options"
-      BEGIN
-         MENUITEM "Disk Eject Toggle",   ID_M_DISK_CYCLE
-         MENUITEM "Disk Previous",       ID_M_DISK_PREV
-         MENUITEM "Disk Next",           ID_M_DISK_NEXT
       END
       MENUITEM "Reset",                  ID_M_RESET
       MENUITEM "Menu Toggle",            ID_M_MENU_TOGGLE
