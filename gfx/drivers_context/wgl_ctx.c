@@ -227,20 +227,21 @@ static void *dinput_wgl;
 #include "../../retroarch.h"
 
 static bool win32_browser(char *filename, const char *extensions,
-	const char *title)
+	const char *title, const char *initial_dir)
 {
 	OPENFILENAME ofn;
 
 	memset((void*)&ofn, 0, sizeof(OPENFILENAME));
 
-	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.hwndOwner   = g_hwnd;
-	ofn.lpstrFilter = extensions;
-	ofn.lpstrFile   = filename;
-	ofn.lpstrTitle  = title;
-	ofn.lpstrDefExt = "";
-	ofn.nMaxFile    = PATH_MAX;
-	ofn.Flags       = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+	ofn.lStructSize     = sizeof(OPENFILENAME);
+	ofn.hwndOwner       = g_hwnd;
+	ofn.lpstrFilter     = extensions;
+	ofn.lpstrFile       = filename;
+	ofn.lpstrTitle      = title;
+	ofn.lpstrInitialDir = TEXT(initial_dir);
+	ofn.lpstrDefExt     = "";
+	ofn.nMaxFile        = PATH_MAX;
+	ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
 
 	if (GetOpenFileName(&ofn))
 		return true;
@@ -260,21 +261,24 @@ static LRESULT win32_menu_loop(WPARAM wparam)
 		case ID_M_LOAD_CONTENT:
 			{
 				char win32_file[PATH_MAX_LENGTH] = {0};
-				const char *extensions = NULL;
-				const char *title      = NULL;
+				const char *extensions  = NULL;
+				const char *title       = NULL;
+				const char *initial_dir = NULL;
 				
 				if      (mode == ID_M_LOAD_CORE)
 				{
-					extensions = "All Files\0*.*\0 Libretro core(.dll)\0*.dll\0";
-					title      = "Load Core";
+					extensions  = "All Files\0*.*\0 Libretro core(.dll)\0*.dll\0";
+					title       = "Load Core";
+					initial_dir = g_settings.libretro_directory;
 				}
 				else if (mode == ID_M_LOAD_CONTENT)
 				{
-					extensions = "All Files\0*.*\0\0";
-					title      = "Load Content";
+					extensions  = "All Files\0*.*\0\0";
+					title       = "Load Content";
+					initial_dir = g_settings.menu_content_directory;
 				}
 
-				if (win32_browser(win32_file, extensions, title))
+				if (win32_browser(win32_file, extensions, title, initial_dir))
 				{
 					switch (mode)
 					{
