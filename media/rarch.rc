@@ -4,45 +4,45 @@
 
 IDR_MENU MENU
 BEGIN
-	POPUP "File"
-	BEGIN
-		MENUITEM "Load Core",       ID_M_LOAD_CORE
-		MENUITEM "Load Content",	ID_M_LOAD_CONTENT
-		MENUITEM SEPARATOR
-		MENUITEM "Close",			ID_M_QUIT
-	END
-	POPUP "Command"
-	BEGIN
-		POPUP "Save State Options"
-		BEGIN
-			MENUITEM "Load State"	ID_M_LOAD_STATE
-			MENUITEM "Save State"	ID_M_SAVE_STATE
-		END
-		POPUP "Disk Options"
-		BEGIN
-			MENUITEM "Disk Eject Toggle"	ID_M_DISK_CYCLE
-			MENUITEM "Disk Previous"		ID_M_DISK_PREV
-			MENUITEM "Disk Next"			ID_M_DISK_NEXT
-		END
-		MENUITEM "Reset",			ID_M_RESET
-		MENUITEM "Menu Toggle",		ID_M_MENU_TOGGLE,
-		MENUITEM "Pause Toggle",	ID_M_PAUSE_TOGGLE,
-	END
-	POPUP "Window"
-	BEGIN
-		POPUP "Windowed Scale"
-		BEGIN
-			MENUITEM "1x"			ID_M_WINDOW_SCALE_1X
-			MENUITEM "2x"			ID_M_WINDOW_SCALE_2X
-			MENUITEM "3x"			ID_M_WINDOW_SCALE_3X
-			MENUITEM "4x"			ID_M_WINDOW_SCALE_4X
-			MENUITEM "5x"			ID_M_WINDOW_SCALE_5X
-			MENUITEM "6x"			ID_M_WINDOW_SCALE_6X
-			MENUITEM "7x"			ID_M_WINDOW_SCALE_7X
-			MENUITEM "8x"			ID_M_WINDOW_SCALE_8X
-			MENUITEM "9x"			ID_M_WINDOW_SCALE_9X
-			MENUITEM "10x"			ID_M_WINDOW_SCALE_10X
-		END
-		MENUITEM "Toggle Exclusive Full Screen" ID_M_FULL_SCREEN
-	END
+   POPUP "File"
+   BEGIN
+      MENUITEM "Load Core",      ID_M_LOAD_CORE
+      MENUITEM "Load Content",   ID_M_LOAD_CONTENT
+      MENUITEM SEPARATOR
+      MENUITEM "Close",         ID_M_QUIT
+   END
+   POPUP "Command"
+   BEGIN
+      POPUP "Save State Options"
+      BEGIN
+         MENUITEM "Load State",   ID_M_LOAD_STATE
+         MENUITEM "Save State",   ID_M_SAVE_STATE
+      END
+      POPUP "Disk Options"
+      BEGIN
+         MENUITEM "Disk Eject Toggle",   ID_M_DISK_CYCLE
+         MENUITEM "Disk Previous",       ID_M_DISK_PREV
+         MENUITEM "Disk Next",           ID_M_DISK_NEXT
+      END
+      MENUITEM "Reset",                  ID_M_RESET
+      MENUITEM "Menu Toggle",            ID_M_MENU_TOGGLE
+      MENUITEM "Pause Toggle",           ID_M_PAUSE_TOGGLE
+   END
+   POPUP "Window"
+   BEGIN
+      POPUP "Windowed Scale"
+      BEGIN
+         MENUITEM "1x",         ID_M_WINDOW_SCALE_1X
+         MENUITEM "2x",         ID_M_WINDOW_SCALE_2X
+         MENUITEM "3x",         ID_M_WINDOW_SCALE_3X
+         MENUITEM "4x",         ID_M_WINDOW_SCALE_4X
+         MENUITEM "5x",         ID_M_WINDOW_SCALE_5X
+         MENUITEM "6x",         ID_M_WINDOW_SCALE_6X
+         MENUITEM "7x",         ID_M_WINDOW_SCALE_7X
+         MENUITEM "8x",         ID_M_WINDOW_SCALE_8X
+         MENUITEM "9x",         ID_M_WINDOW_SCALE_9X
+         MENUITEM "10x",         ID_M_WINDOW_SCALE_10X
+      END
+      MENUITEM "Toggle Exclusive Full Screen", ID_M_FULL_SCREEN
+   END
 END
