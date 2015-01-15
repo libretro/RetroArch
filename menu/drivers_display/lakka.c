@@ -218,7 +218,7 @@ static void lakka_draw_icon(lakka_handle_t *lakka,
       return;
 
    if (x < -lakka->icon_size || x > gl->win_width
-         || y < 0 || y > gl->win_height + lakka->icon_size)
+         || y < lakka->icon_size/2 || y > gl->win_height + lakka->icon_size)
       return;
 
    GLfloat color[] = {
