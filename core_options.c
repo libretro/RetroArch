@@ -43,6 +43,7 @@ struct core_option_manager
 void core_option_free(core_option_manager_t *opt)
 {
    size_t i;
+
    if (!opt)
       return;
 
@@ -62,10 +63,12 @@ void core_option_free(core_option_manager_t *opt)
 void core_option_get(core_option_manager_t *opt, struct retro_variable *var)
 {
    size_t i;
+
    opt->updated = false;
+
    for (i = 0; i < opt->size; i++)
    {
-      if (strcmp(opt->opts[i].key, var->key) == 0)
+      if (!strcmp(opt->opts[i].key, var->key))
       {
          var->value = core_option_get_val(opt, i);
          return;
@@ -78,18 +81,17 @@ void core_option_get(core_option_manager_t *opt, struct retro_variable *var)
 static bool parse_variable(core_option_manager_t *opt, size_t idx,
       const struct retro_variable *var)
 {
-   char *value, *desc_end, *config_val = NULL;
-   const char *val_start;
    size_t i;
+   const char *val_start;
+   char *value, *desc_end, *config_val = NULL;
    struct core_option *option = (struct core_option*)&opt->opts[idx];
 
    if (!option)
       return false;
 
    option->key = strdup(var->key);
-
-   value = strdup(var->value);
-   desc_end = strstr(value, "; ");
+   value       = strdup(var->value);
+   desc_end    = strstr(value, "; ");
 
    if (!desc_end)
    {
@@ -97,10 +99,10 @@ static bool parse_variable(core_option_manager_t *opt, size_t idx,
       return false;
    }
 
-   *desc_end = '\0';
+   *desc_end    = '\0';
    option->desc = strdup(value);
 
-   val_start = desc_end + 2;
+   val_start    = desc_end + 2;
    option->vals = string_split(val_start, "|");
 
    if (!option->vals)
@@ -238,6 +240,16 @@ const char *core_option_get_val(core_option_manager_t *opt, size_t idx)
    return option->vals->elems[option->index].data;
 }
 
+/**
+ * core_option_get_vals:
+ * @opt                   : pointer to core option manager object.
+ * @idx                   : idx of core option.
+ *
+ * Gets list of core option values from core option at index @idx.
+ *
+ * Returns: string list of core option values if successful, otherwise
+ * NULL.
+ **/
 struct string_list *core_option_get_vals(
       core_option_manager_t *opt, size_t idx)
 {
@@ -255,7 +267,7 @@ void core_option_set_val(core_option_manager_t *opt,
       return;
 
    option->index = val_idx % option->vals->size;
-   opt->updated = true;
+   opt->updated  = true;
 }
 
 /**
@@ -274,7 +286,7 @@ void core_option_next(core_option_manager_t *opt, size_t idx)
       return;
 
    option->index = (option->index + 1) % option->vals->size;
-   opt->updated = true;
+   opt->updated  = true;
 }
 
 /**
@@ -295,7 +307,7 @@ void core_option_prev(core_option_manager_t *opt, size_t idx)
 
    option->index = (option->index + option->vals->size - 1) %
       option->vals->size;
-   opt->updated = true;
+   opt->updated  = true;
 }
 
 /**
@@ -311,5 +323,5 @@ void core_option_set_default(core_option_manager_t *opt, size_t idx)
       return;
 
    opt->opts[idx].index = 0;
-   opt->updated = true;
+   opt->updated         = true;
 }

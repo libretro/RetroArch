@@ -20,6 +20,7 @@
 #include <boolean.h>
 #include "libretro.h"
 #include <stddef.h>
+#include <string/string_list.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,61 +52,70 @@ size_t core_option_size(core_option_manager_t *opt);
 /**
  * core_option_get_desc:
  * @opt              : options manager handle
- * @index            : index identifier of the option
+ * @idx              : idx identifier of the option
  *
  * Gets description for an option.
  *
  * Returns: Description for an option.
  **/
-const char *core_option_get_desc(core_option_manager_t *opt, size_t index);
+const char *core_option_get_desc(core_option_manager_t *opt, size_t idx);
 
 /**
  * core_option_get_val:
  * @opt              : options manager handle
- * @index            : index identifier of the option
+ * @idx              : idx identifier of the option
  *
  * Gets value for an option.
  *
  * Returns: Value for an option.
  **/
-const char *core_option_get_val(core_option_manager_t *opt, size_t index);
+const char *core_option_get_val(core_option_manager_t *opt, size_t idx);
 
-/* Helpers to present a list of options */
+/**
+ * core_option_get_vals:
+ * @opt                   : pointer to core option manager object.
+ * @idx                   : idx of core option.
+ *
+ * Gets list of core option values from core option at index @idx.
+ *
+ * Returns: string list of core option values if successful, otherwise
+ * NULL.
+ **/
 struct string_list *core_option_get_vals(
-      core_option_manager_t *opt, size_t index);
+      core_option_manager_t *opt, size_t idx);
 
 void core_option_set_val(core_option_manager_t *opt,
-      size_t index, size_t val_index);
+      size_t idx, size_t val_idx);
 
 /**
  * core_option_next:
  * @opt                   : pointer to core option manager object.
- * @idx                   : index of core option to be reset to defaults.
+ * @idx                   : idx of core option to be reset to defaults.
  *
  * Get next value for core option specified by @idx.
  * Options wrap around.
  **/
-void core_option_next(core_option_manager_t *opt, size_t index);
+void core_option_next(core_option_manager_t *opt, size_t idx);
 
 /**
  * core_option_prev:
  * @opt                   : pointer to core option manager object.
- * @idx                   : index of core option to be reset to defaults.
+ * @idx                   : idx of core option to be reset to defaults.
  * Options wrap around.
  *
  * Get previous value for core option specified by @idx.
  * Options wrap around.
  **/
-void core_option_prev(core_option_manager_t *opt, size_t index);
+void core_option_prev(core_option_manager_t *opt, size_t idx);
 
 /**
  * core_option_set_default:
  * @opt                   : pointer to core option manager object.
- * @idx                   : index of core option to be reset to defaults.
+ * @idx                   : idx of core option to be reset to defaults.
  *
  * Reset core option specified by @idx and sets default value for option.
  **/
-void core_option_set_default(core_option_manager_t *opt, size_t index);
+void core_option_set_default(core_option_manager_t *opt, size_t idx);
 
 #ifdef __cplusplus
 }
