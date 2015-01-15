@@ -3343,11 +3343,13 @@ static bool setting_data_append_list_main_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 #endif
 
+#if 0
    CONFIG_ACTION(
          "core_manager_list",
          "Core Manager",
          group_info.name,
          subgroup_info.name);
+#endif
 
    if (g_settings.history_list_enable)
    {
