@@ -101,7 +101,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 			{
 				d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
 				HWND        d3dr = d3d->hWnd;
-				LRESULT      ret = win32_menu_loop(d3dr, message);
+				LRESULT      ret = win32_menu_loop(d3dr, wParam);
 			}
 			break;
     }
