@@ -126,6 +126,9 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 		case ID_M_MOUSE_GRAB:
 			cmd = RARCH_CMD_GRAB_MOUSE_TOGGLE;
 			break;
+		case ID_M_TAKE_SCREENSHOT:
+			cmd = RARCH_CMD_TAKE_SCREENSHOT;
+			break;
 		case ID_M_QUIT:
 			do_wm_close = true;
 			break;

@@ -42,6 +42,7 @@ BEGIN
       MENUITEM "Menu Toggle",            ID_M_MENU_TOGGLE
       MENUITEM "Pause Toggle",           ID_M_PAUSE_TOGGLE
 	  MENUITEM "Mouse Grab Toggle",		 ID_M_MOUSE_GRAB
+	  MENUITEM "Take Screenshot",        ID_M_TAKE_SCREENSHOT
    END
    POPUP "Window"
    BEGIN
