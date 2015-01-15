@@ -60,15 +60,23 @@ void apple_rarch_exited(void)
          
          if (ch && ch.length != 0)
          {
+            NSUInteger i;
             character = [ch characterAtIndex:0];
-            mod |= (event.modifierFlags & NSAlphaShiftKeyMask) ? RETROKMOD_CAPSLOCK : 0;
-            mod |= (event.modifierFlags & NSShiftKeyMask     ) ? RETROKMOD_SHIFT    : 0;
-            mod |= (event.modifierFlags & NSControlKeyMask   ) ? RETROKMOD_CTRL     : 0;
-            mod |= (event.modifierFlags & NSAlternateKeyMask ) ? RETROKMOD_ALT      : 0;
-            mod |= (event.modifierFlags & NSCommandKeyMask   ) ? RETROKMOD_META     : 0;
-            mod |= (event.modifierFlags & NSNumericPadKeyMask) ? RETROKMOD_NUMLOCK  : 0;
+
+            if (event.modifierFlags & NSAlphaShiftKeyMask)
+               mod |= RETROKMOD_CAPSLOCK;
+            if (event.modifierFlags & NSShiftKeyMask)
+               mod |=  RETROKMOD_SHIFT;
+            if (event.modifierFlags & NSControlKeyMask)
+               mod |=  RETROKMOD_CTRL;
+            if (event.modifierFlags & NSAlternateKeyMask)
+               mod |= RETROKMOD_ALT;
+            if (event.modifierFlags & NSCommandKeyMask)
+               mod |= RETROKMOD_META;
+            if (event.modifierFlags & NSNumericPadKeyMask)
+               mod |=  RETROKMOD_NUMLOCK;
             
-            for (NSUInteger i = 1; i < ch.length; i ++)
+            for (i = 1; i < ch.length; i ++)
                apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:i], mod);
          }
          
