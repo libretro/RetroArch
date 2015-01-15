@@ -18,8 +18,6 @@
 #endif
 
 #include "../../driver.h"
-#include "../video_context_driver.h"
-#include "../gl_common.h"
 #include "../gfx_common.h"
 #include "win32_common.h"
 #include <windows.h>
@@ -29,7 +27,7 @@
 #if !defined(_XBOX) && defined(_WIN32)
 #include "../../retroarch.h"
 
-static bool win32_browser(char *filename, const char *extensions,
+static bool win32_browser(HWND owner, char *filename, const char *extensions,
 	const char *title, const char *initial_dir)
 {
 	OPENFILENAME ofn;
@@ -37,7 +35,7 @@ static bool win32_browser(char *filename, const char *extensions,
 	memset((void*)&ofn, 0, sizeof(OPENFILENAME));
 
 	ofn.lStructSize     = sizeof(OPENFILENAME);
-	ofn.hwndOwner       = g_hwnd;
+	ofn.hwndOwner       = owner;
 	ofn.lpstrFilter     = extensions;
 	ofn.lpstrFile       = filename;
 	ofn.lpstrTitle      = title;
@@ -52,7 +50,7 @@ static bool win32_browser(char *filename, const char *extensions,
 	return false;
 }
 
-LRESULT win32_menu_loop(WPARAM wparam)
+LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 {
     WPARAM mode      = wparam & 0xffff;
 	unsigned cmd     = RARCH_CMD_NONE;
@@ -81,7 +79,7 @@ LRESULT win32_menu_loop(WPARAM wparam)
 					initial_dir = g_settings.menu_content_directory;
 				}
 
-				if (win32_browser(win32_file, extensions, title, initial_dir))
+				if (win32_browser(owner, win32_file, extensions, title, initial_dir))
 				{
 					switch (mode)
 					{
@@ -149,7 +147,7 @@ LRESULT win32_menu_loop(WPARAM wparam)
 		rarch_main_command(cmd);
 
 	if (do_wm_close)
-		PostMessage(g_hwnd, WM_CLOSE, 0, 0);
+		PostMessage(owner, WM_CLOSE, 0, 0);
 	
 	return 0L;
 }

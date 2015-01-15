@@ -272,7 +272,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
          return 0;
 	  case WM_COMMAND:
 		  {
-			  LRESULT ret = win32_menu_loop(wparam);
+			  LRESULT ret = win32_menu_loop(g_hwnd, wparam);
 		  }
 
    }

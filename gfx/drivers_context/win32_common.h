@@ -29,7 +29,7 @@ extern "C" {
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 
-LRESULT win32_menu_loop(WPARAM wparam);
+LRESULT win32_menu_loop(HWND handle, WPARAM wparam);
 #endif
 
 #ifdef __cplusplus
