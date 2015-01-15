@@ -336,6 +336,11 @@ static LRESULT win32_menu_loop(WPARAM wparam)
 		g_extern.pending.windowed_scale = idx;
 		cmd = RARCH_CMD_RESIZE_WINDOWED_SCALE;
 	}
+	if (mode >= ID_M_STATE_INDEX_AUTO && mode <= (ID_M_STATE_INDEX_AUTO+10))
+	{
+		signed idx = (mode - (ID_M_STATE_INDEX_AUTO));
+		g_settings.state_slot = idx;
+	}
 
 	if (cmd != RARCH_CMD_NONE)
 		rarch_main_command(cmd);
