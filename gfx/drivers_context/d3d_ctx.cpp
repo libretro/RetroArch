@@ -71,12 +71,13 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 {
     switch (message)
     {
-        case WM_CREATE:
-            LPCREATESTRUCT p_cs;
-            p_cs = (LPCREATESTRUCT)lParam;
-            curD3D = (d3d_video_t*)p_cs->lpCreateParams;
+		case WM_CREATE:
+			{
+				LPCREATESTRUCT p_cs;
+				p_cs = (LPCREATESTRUCT)lParam;
+				curD3D = (d3d_video_t*)p_cs->lpCreateParams;
+			}
             break;
-
         case WM_CHAR:
         case WM_KEYDOWN:
         case WM_KEYUP:
@@ -88,14 +89,23 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
             d3d_quit = true;
             return 0;
         case WM_SIZE:
-            unsigned new_width, new_height;
-            new_width = LOWORD(lParam);
-            new_height = HIWORD(lParam);
+			{
+				unsigned new_width  = LOWORD(lParam);
+				unsigned new_height = HIWORD(lParam);
 
-            if (new_width && new_height)
-                d3d_resize(driver.video_data, new_width, new_height);
-            return 0;
+				if (new_width && new_height)
+					d3d_resize(driver.video_data, new_width, new_height);
+			}
+			return 0;
+		case WM_COMMAND:
+			{
+				d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+				HWND        d3dr = d3d->hWnd;
+				LRESULT      ret = win32_menu_loop(d3dr, message);
+			}
+			break;
     }
+
     if (dinput_handle_message(dinput, message, wParam, lParam))
         return 0;
     return DefWindowProc(hWnd, message, wParam, lParam);
