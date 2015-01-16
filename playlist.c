@@ -98,6 +98,8 @@ void content_playlist_push(content_playlist_t *playlist,
       if (strcmp(playlist->entries[i].core_path, core_path))
          continue;
 
+      /* If top entry, we don't want to push a new entry since
+       * the top and the entry to be pushed are the same. */
       if (i == 0)
          return;
 
