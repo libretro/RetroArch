@@ -84,6 +84,15 @@ static void content_playlist_free_entry(
    memset(entry, 0, sizeof(*entry));
 }
 
+/**
+ * content_playlist_push:
+ * @playlist        	: Playlist handle.
+ * @path                : Path of new playlist entry.
+ * @core_path           : Core path of new playlist entry.
+ * @core_name           : Core name of new playlist entry.
+ *
+ * Push entry to top of playlist.
+ **/
 void content_playlist_push(content_playlist_t *playlist,
       const char *path, const char *core_path,
       const char *core_name)
@@ -170,6 +179,7 @@ static void content_playlist_write_file(content_playlist_t *playlist)
 void content_playlist_free(content_playlist_t *playlist)
 {
    size_t i;
+
    if (!playlist)
       return;
 
