@@ -26,6 +26,9 @@ BASE_DIR=$(dirname "$SCRIPT")
 RETROARCH_DIR=${BASE_DIR}/../..
 IOSDIR=${BASE_DIR}/iOS
 APP_BUNDLE_DIR=${BASE_DIR}/obj/${APP_BUNDLE_NAME}
+APP_BUNDLE_DIR_MEDIA=${APP_BUNDLE_DIR}/Media.xcassets
+APP_BUNDLE_DIR_APPICONSET=${APP_BUNDLE_DIR_MEDIA}/AppIcon.appiconset
+APP_BUNDLE_DIR_LAUNCHIMAGE=${APP_BUNDLE_DIR_MEDIA}/LaunchImage.launchimage
 OVERLAY_DIR=${RETROARCH_DIR}/media/overlays
 SHADERS_DIR=${RETROARCH_DIR}/media/shaders_glsl
 
@@ -43,3 +46,25 @@ if [ -f "${APP_BUNDLE_DIR}/PauseIndicatorView.xib" ]; then
 fi
 
 cp -r ${IOSDIR}/en.lproj ${APP_BUNDLE_DIR}
+
+if [ -d "${APP_BUNDLE_DIR_MEDIA}" ]; then
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-29-1.png ${APP_BUNDLE_DIR}/AppIcon29x29.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-29-2.png ${APP_BUNDLE_DIR}/AppIcon29x29@2x.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-29-2.png ${APP_BUNDLE_DIR}/AppIcon29x29@2x~ipad.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-29-3.png ${APP_BUNDLE_DIR}/AppIcon29x29@3x.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-29-1.png ${APP_BUNDLE_DIR}/AppIcon29x29~ipad.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-40-2.png ${APP_BUNDLE_DIR}/AppIcon40x40@2x.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-40-2.png ${APP_BUNDLE_DIR}/AppIcon40x40@2x~ipad.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-40-3.png ${APP_BUNDLE_DIR}/AppIcon40x40@3x.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-40-1.png ${APP_BUNDLE_DIR}/AppIcon40x40~ipad.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-50-2.png ${APP_BUNDLE_DIR}/AppIcon50x50@2x~ipad.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-50-1.png ${APP_BUNDLE_DIR}/AppIcon50x50~ipad.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-57-1.png ${APP_BUNDLE_DIR}/AppIcon57x57.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-57-2.png ${APP_BUNDLE_DIR}/AppIcon57x57@2x.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-60-2.png ${APP_BUNDLE_DIR}/AppIcon60x60@2x.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-60-3.png ${APP_BUNDLE_DIR}/AppIcon60x60@3x.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-72-2.png ${APP_BUNDLE_DIR}/AppIcon72x72@2x~ipad.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-72-1.png ${APP_BUNDLE_DIR}/AppIcon72x72~ipad.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-76-2.png ${APP_BUNDLE_DIR}/AppIcon76x76@2x~ipad.png
+   cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-76-1.png ${APP_BUNDLE_DIR}/AppIcon76x76~ipad.png
+fi
