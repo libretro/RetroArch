@@ -6,9 +6,9 @@ include $(THEOS)/makefiles/common.mk
 
 SRC_DIR := ../..
 
-APPLICATION_NAME = retroarch
-retroarch_FRAMEWORKS = Foundation UIKit CoreGraphics AudioToolbox GLKit OpenGLES CoreText CoreLocation CoreAudio AVFoundation CoreMedia CoreVideo GameController
-retroarch_FILES = $(SRC_DIR)/griffin/griffin.c \
+APPLICATION_NAME = RetroArch
+${APPLICATION_NAME}_FRAMEWORKS = Foundation UIKit CoreGraphics AudioToolbox GLKit OpenGLES CoreText CoreLocation CoreAudio AVFoundation CoreMedia CoreVideo GameController
+${APPLICATION_NAME}_FILES = $(SRC_DIR)/griffin/griffin.c \
 		  $(SRC_DIR)/audio/audio_utils_neon.S \
 		  $(SRC_DIR)/audio/drivers_resampler/sinc_neon.S \
 		  $(SRC_DIR)/audio/drivers_resampler/cc_resampler_neon.S \
@@ -25,7 +25,7 @@ COMMON_FLAGS += -DHAVE_CAMERA
 COMMON_IOS_FLAGS := -Wno-deprecated-declarations -Wno-error
 COMMON_IOS_OBJCFLAGS := -fobjc-arc 
 INCFLAGS       := -I$(SRC_DIR) -I$(SRC_DIR)/libretro-sdk/include
-retroarch_CFLAGS  += $(COMMON_FLAGS) $(COMMON_IOS_FLAGS) $(COMMON_IOS_OBJCFLAGS) $(INCFLAGS)
-retroarch_CCFLAGS += $(COMMON_FLAGS) $(COMMON_IOS_FLAGS) $(COMMON_IOS_OBJCFLAGS) $(INCFLAGS)
+${APPLICATION_NAME}_CFLAGS  += $(COMMON_FLAGS) $(COMMON_IOS_FLAGS) $(COMMON_IOS_OBJCFLAGS) $(INCFLAGS)
+${APPLICATION_NAME}_CCFLAGS += $(COMMON_FLAGS) $(COMMON_IOS_FLAGS) $(COMMON_IOS_OBJCFLAGS) $(INCFLAGS)
 
 include $(THEOS_MAKE_PATH)/application.mk
