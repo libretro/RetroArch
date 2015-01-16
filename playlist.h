@@ -28,6 +28,8 @@ typedef struct content_playlist content_playlist_t;
 
 /**
  * content_playlist_init:
+ * @path            	: Path to playlist contents file.
+ * @size                : Maximum capacity of playlist size.
  *
  * Creates and initializes a playlist.
  *
@@ -51,8 +53,25 @@ void content_playlist_free(content_playlist_t *playlist);
  **/
 void content_playlist_clear(content_playlist_t *playlist);
 
+/**
+ * content_playlist_size:
+ * @playlist        	: Playlist handle.
+ *
+ * Gets size of playlist.
+ * Returns: size of playlist.
+ **/
 size_t content_playlist_size(content_playlist_t *playlist);
 
+/**
+ * content_playlist_get_index:
+ * @playlist        	: Playlist handle.
+ * @idx                 : Index of playlist entry.
+ * @path                : Path of playlist entry.
+ * @core_path           : Core path of playlist entry.
+ * @core_name           : Core name of playlist entry.
+ * 
+ * Gets values of playlist index: 
+ **/
 void content_playlist_get_index(content_playlist_t *playlist,
       size_t index,
       const char **path, const char **core_path,

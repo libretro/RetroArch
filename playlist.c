@@ -39,6 +39,16 @@ struct content_playlist
    char *conf_path;
 };
 
+/**
+ * content_playlist_get_index:
+ * @playlist        	: Playlist handle.
+ * @idx                 : Index of playlist entry.
+ * @path                : Path of playlist entry.
+ * @core_path           : Core path of playlist entry.
+ * @core_name           : Core name of playlist entry.
+ * 
+ * Gets values of playlist index: 
+ **/
 void content_playlist_get_index(content_playlist_t *playlist,
       size_t idx,
       const char **path, const char **core_path,
@@ -191,11 +201,18 @@ void content_playlist_clear(content_playlist_t *playlist)
    playlist->size = 0;
 }
 
+/**
+ * content_playlist_size:
+ * @playlist        	: Playlist handle.
+ *
+ * Gets size of playlist.
+ * Returns: size of playlist.
+ **/
 size_t content_playlist_size(content_playlist_t *playlist)
 {
-   if (playlist)
-      return playlist->size;
-   return 0;
+   if (!playlist)
+      return 0;
+   return playlist->size;
 }
 
 static bool content_playlist_read_file(
