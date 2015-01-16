@@ -3794,32 +3794,6 @@ static bool setting_data_append_list_general_options(
 #endif
 
    CONFIG_BOOL(
-         g_settings.video.disable_composition,
-         "video_disable_composition",
-         "Window Compositing Disable",
-         disable_composition,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-   settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-
-   CONFIG_BOOL(
-         g_settings.pause_nonactive,
-         "pause_nonactive",
-         "Window Unfocus Pause",
-         pause_nonactive,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-
-   CONFIG_BOOL(
          g_settings.fastforward_ratio_throttle_enable,
          "fastforward_ratio_throttle_enable",
          "Limit Maximum Run Speed",
@@ -5339,6 +5313,49 @@ static bool setting_data_append_list_menu_options(
    return true;
 }
 
+static bool setting_data_append_list_ui_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info)
+{
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+
+   START_GROUP(group_info, "UI Options");
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(
+         g_settings.video.disable_composition,
+         "video_disable_composition",
+         "Window Compositing Disable",
+         disable_composition,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+   CONFIG_BOOL(
+         g_settings.pause_nonactive,
+         "pause_nonactive",
+         "Window Unfocus Pause",
+         pause_nonactive,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   END_SUB_GROUP(list, list_info);
+
+   END_GROUP(list, list_info);
+
+   return true;
+}
+
 static bool setting_data_append_list_archive_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -6092,6 +6109,12 @@ rarch_setting_t *setting_data_new(unsigned mask)
    if (mask & SL_FLAG_MENU_OPTIONS)
    {
       if (!setting_data_append_list_menu_options(&list, list_info))
+         goto error;
+   }
+
+   if (mask & SL_FLAG_UI_OPTIONS)
+   {
+      if (!setting_data_append_list_ui_options(&list, list_info))
          goto error;
    }
 

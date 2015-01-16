@@ -71,14 +71,15 @@ enum setting_list_flags
    SL_FLAG_INPUT_OPTIONS    =  (1 << 7),
    SL_FLAG_OVERLAY_OPTIONS  =  (1 << 8),
    SL_FLAG_MENU_OPTIONS     =  (1 << 9),
-   SL_FLAG_NETPLAY_OPTIONS  =  (1 << 10),
-   SL_FLAG_USER_OPTIONS     =  (1 << 11),
-   SL_FLAG_PATH_OPTIONS     =  (1 << 12),
-   SL_FLAG_PRIVACY_OPTIONS  =  (1 << 13),
-   SL_FLAG_PLAYLIST_OPTIONS =  (1 << 14),
-   SL_FLAG_ARCHIVE_OPTIONS  =  (1 << 15),
-   SL_FLAG_PATCH_OPTIONS    =  (1 << 16),
-   SL_FLAG_ALL              =  (1 << 17),
+   SL_FLAG_UI_OPTIONS       =  (1 << 10),
+   SL_FLAG_NETPLAY_OPTIONS  =  (1 << 11),
+   SL_FLAG_USER_OPTIONS     =  (1 << 12),
+   SL_FLAG_PATH_OPTIONS     =  (1 << 13),
+   SL_FLAG_PRIVACY_OPTIONS  =  (1 << 14),
+   SL_FLAG_PLAYLIST_OPTIONS =  (1 << 15),
+   SL_FLAG_ARCHIVE_OPTIONS  =  (1 << 16),
+   SL_FLAG_PATCH_OPTIONS    =  (1 << 17),
+   SL_FLAG_ALL              =  (1 << 18),
 };
 
 #define SL_FLAG_ALL_SETTINGS (SL_FLAG_ALL - SL_FLAG_MAIN_MENU)
