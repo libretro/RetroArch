@@ -7,18 +7,18 @@ include $(THEOS)/makefiles/common.mk
 SRC_DIR := ../..
 
 APPLICATION_NAME = retroarch
+retroarch_FRAMEWORKS = Foundation UIKit CoreGraphics AudioToolbox GLKit OpenGLES CoreText CoreLocation CoreAudio AVFoundation CoreMedia CoreVideo GameController
 retroarch_FILES = $(SRC_DIR)/griffin/griffin.c \
-		  $(SRC_DIR)/audio/utils_neon.S \
-		  $(SRC_DIR)/audio/resamplers/sinc_neon.S \
-		  $(SRC_DIR)/audio/resamplers/cc_resampler_neon.S \
+		  $(SRC_DIR)/audio/audio_utils_neon.S \
+		  $(SRC_DIR)/audio/drivers_resampler/sinc_neon.S \
+		  $(SRC_DIR)/audio/drivers_resampler/cc_resampler_neon.S \
 		  $(SRC_DIR)/apple/iOS/browser.m \
 		  $(SRC_DIR)/apple/iOS/menu.m \
 		  $(SRC_DIR)/apple/iOS/platform.m \
 		  $(SRC_DIR)/apple/common/apple_gamecontroller.m \
-	          $(SRC_DIR)/apple/common/CFExtensions.m \
+		  $(SRC_DIR)/apple/common/CFExtensions.m \
 		  $(SRC_DIR)/apple/common/RAGameView.m \
-		  $(SRC_DIR)/apple/common/utility.m
-retroarch_FRAMEWORKS = Foundation UIKit CoreGraphics AudioToolbox GLKit OpenGLES CoreText CoreLocation CoreAudio AVFoundation CoreMedia CoreVideo GameController
+		  $(SRC_DIR)/apple/common/utility.m \
 
 COMMON_FLAGS := -DIOS -DHAVE_GRIFFIN -DHAVE_LOCATION -DHAVE_RGUI -DHAVE_MENU -DHAVE_DYNAMIC -DHAVE_OPENGL -DHAVE_FBO -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_GLSL -DINLINE=inline -DLSB_FIRST -DHAVE_THREADS -D__LIBRETRO__ -DRARCH_MOBILE -std=gnu99 -DHAVE_COREAUDIO -DHAVE_FBO -DHAVE_OVERLAY -DHAVE_ZLIB -DWANT_MINIZ -DSINC_LOWER_QUALITY -DRARCH_INTERNAL -DHAVE_FILTERS_BUILTIN -DHAVE_LAKKA -DHAVE_XMB -D_LZMA_UINT32_IS_ULONG -DHAVE_STRL
 COMMON_FLAGS += -DHAVE_CAMERA
