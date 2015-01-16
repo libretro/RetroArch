@@ -403,15 +403,15 @@ void save_ram_file(const char *path, int type)
    if (size <= 0)
       return;
 
-   if (write_file(path, data, size))
+   if (!write_file(path, data, size))
    {
-      RARCH_LOG("Saved successfully to \"%s\".\n", path);
+      RARCH_ERR("Failed to save SRAM.\n");
+      RARCH_WARN("Attempting to recover ...\n");
+      dump_to_file_desperate(data, size, type);
       return;
    }
 
-   RARCH_ERR("Failed to save SRAM.\n");
-   RARCH_WARN("Attempting to recover ...\n");
-   dump_to_file_desperate(data, size, type);
+   RARCH_LOG("Saved successfully to \"%s\".\n", path);
 }
 
 /**
@@ -642,7 +642,7 @@ bool init_content_file(void)
       if (content->elems[i].attr.i & 1)
          continue;
 
-      ext = path_get_extension(content->elems[i].data);
+      ext       = path_get_extension(content->elems[i].data);
       valid_ext = special ? special->roms[i].valid_extensions :
          g_extern.system.info.valid_extensions;
 
