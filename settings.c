@@ -1783,6 +1783,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf,  "video_shader_enable",
          g_settings.video.shader_enable);
    config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
+   config_set_bool(conf,  "video_aspect_ratio_auto", g_settings.video.aspect_ratio_auto);
    config_set_bool(conf,  "video_windowed_fullscreen",
          g_settings.video.windowed_fullscreen);
    config_set_float(conf, "video_scale", g_settings.video.scale);
