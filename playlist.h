@@ -26,10 +26,29 @@ extern "C" {
 
 typedef struct content_playlist content_playlist_t;
 
+/**
+ * content_playlist_init:
+ *
+ * Creates and initializes a playlist.
+ *
+ * Returns: handle to new playlist if successful, otherwise NULL
+ **/
 content_playlist_t *content_playlist_init(const char *path, size_t size);
 
+/**
+ * content_playlist_free:
+ * @playlist        	: Playlist handle.
+ *
+ * Frees playlist handle.
+ */
 void content_playlist_free(content_playlist_t *playlist);
 
+/**
+ * content_playlist_clear:
+ * @playlist        	: Playlist handle.
+ *
+ * Clears all playlist entries in playlist.
+ **/
 void content_playlist_clear(content_playlist_t *playlist);
 
 size_t content_playlist_size(content_playlist_t *playlist);

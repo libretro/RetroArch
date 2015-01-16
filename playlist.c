@@ -85,24 +85,29 @@ void content_playlist_push(content_playlist_t *playlist,
 
    for (i = 0; i < playlist->size; i++)
    {
+      struct content_playlist_entry tmp;
       bool equal_path = (!path && !playlist->entries[i].path) ||
          (path && playlist->entries[i].path &&
           !strcmp(path,playlist->entries[i].path));
 
       /* Core name can have changed while still being the same core.
        * Differentiate based on the core path only. */
-      if (equal_path && !strcmp(playlist->entries[i].core_path, core_path))
-      {
-         if (i == 0)
-            return;
+      if (!equal_path)
+         continue;
 
-         /* Seen it before, bump to top. */
-         struct content_playlist_entry tmp = playlist->entries[i];
-         memmove(playlist->entries + 1, playlist->entries,
-               i * sizeof(struct content_playlist_entry));
-         playlist->entries[0] = tmp;
+      if (strcmp(playlist->entries[i].core_path, core_path))
+         continue;
+
+      if (i == 0)
          return;
-      }
+
+      /* Seen it before, bump to top. */
+      tmp = playlist->entries[i];
+      memmove(playlist->entries + 1, playlist->entries,
+		      i * sizeof(struct content_playlist_entry));
+      playlist->entries[0] = tmp;
+
+      return;
    }
 
    if (playlist->size == playlist->cap)
@@ -144,6 +149,12 @@ static void content_playlist_write_file(content_playlist_t *playlist)
    fclose(file);
 }
 
+/**
+ * content_playlist_free:
+ * @playlist        	: Playlist handle.
+ *
+ * Frees playlist handle.
+ */
 void content_playlist_free(content_playlist_t *playlist)
 {
    size_t i;
@@ -161,6 +172,12 @@ void content_playlist_free(content_playlist_t *playlist)
    free(playlist);
 }
 
+/**
+ * content_playlist_clear:
+ * @playlist        	: Playlist handle.
+ *
+ * Clears all playlist entries in playlist.
+ **/
 void content_playlist_clear(content_playlist_t *playlist)
 {
    size_t i;
@@ -188,19 +205,18 @@ static bool content_playlist_read_file(
    char *last = NULL;
    FILE *file = fopen(path, "r");
 
+   /* If playlist file does not exist,
+    * create an empty playlist instead.
+    */
    if (!file)
-   {
-      /* Playlist file does not exist,
-       * creating an empty playlist instead.
-       */
       return true;
-   }
 
    for (playlist->size = 0; playlist->size < playlist->cap; )
    {
       for (i = 0; i < 3; i++)
       {
          *buf[i] = '\0';
+
          if (!fgets(buf[i], sizeof(buf[i]), file))
             goto end;
 
@@ -226,6 +242,15 @@ end:
    return true;
 }
 
+/**
+ * content_playlist_init:
+ * @path            	: Path to playlist contents file.
+ * @size                : Maximum capacity of playlist size.
+ *
+ * Creates and initializes a playlist.
+ *
+ * Returns: handle to new playlist if successful, otherwise NULL
+ **/
 content_playlist_t *content_playlist_init(const char *path, size_t size)
 {
    content_playlist_t *playlist = (content_playlist_t*)
