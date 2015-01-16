@@ -39,8 +39,6 @@ bool read_file_string(const char *path, char **buf);
 
 bool write_file(const char *path, const void *buf, size_t size);
 
-bool write_empty_file(const char *path);
-
 struct string_list *compressed_file_list_new(const char *filename,
       const char* ext);
 

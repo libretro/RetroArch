@@ -88,25 +88,6 @@ bool write_file(const char *path, const void *data, size_t size)
 }
 
 /**
- * write_empty_file:
- * @path             : path to file.
- *
- * Creates an empty file.
- *
- * Returns: true (1) on success, false (0) otherwise.
- */
-bool write_empty_file(const char *path)
-{
-   FILE *file = fopen(path, "w");
-   if (!file)
-      return false;
-
-   fclose(file);
-
-   return true;
-}
-
-/**
  * read_generic_file:
  * @path             : path to file.
  * @buf              : buffer to allocate and read the contents of the
