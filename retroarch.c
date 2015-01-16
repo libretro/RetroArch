@@ -2604,7 +2604,7 @@ bool rarch_main_command(unsigned cmd)
          if (!driver.audio_data || driver.audio->alive(driver.audio_data))
             return false;
 
-         if (!g_extern.audio_data.mute
+         if (!g_settings.audio.mute_enable
                && !driver.audio->start(driver.audio_data))
          {
             RARCH_ERR("Failed to start audio driver. Will continue without audio.\n");
@@ -2613,18 +2613,18 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_AUDIO_MUTE_TOGGLE:
          {
-            const char *msg = !g_extern.audio_data.mute ?
+            const char *msg = !g_settings.audio.mute_enable ?
                "Audio muted." : "Audio unmuted.";
 
             if (!driver.audio_data || !driver.audio_active)
                return false;
 
-            g_extern.audio_data.mute = !g_extern.audio_data.mute;
+            g_settings.audio.mute_enable = !g_settings.audio.mute_enable;
 
             msg_queue_clear(g_extern.msg_queue);
             msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
-            if (g_extern.audio_data.mute)
+            if (g_settings.audio.mute_enable)
                rarch_main_command(RARCH_CMD_AUDIO_STOP);
             else if (!rarch_main_command(RARCH_CMD_AUDIO_START))
             {

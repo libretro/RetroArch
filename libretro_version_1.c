@@ -175,7 +175,7 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
          driver.recording->push_audio(driver.recording_data, &ffemu_data);
    }
 
-   if (g_extern.is_paused || g_extern.audio_data.mute)
+   if (g_extern.is_paused || g_settings.audio.mute_enable)
       return true;
    if (!driver.audio_active || !g_extern.audio_data.data)
       return false;

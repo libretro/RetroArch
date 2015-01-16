@@ -467,6 +467,7 @@ static void config_set_defaults(void)
    g_settings.video.rotation = ORIENTATION_NORMAL;
 
    g_settings.audio.enable = audio_enable;
+   g_settings.audio.mute_enable = false;
    g_settings.audio.out_rate = out_rate;
    g_settings.audio.block_frames = 0;
    if (audio_device)
@@ -1243,6 +1244,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    /* Audio settings. */
    CONFIG_GET_BOOL(audio.enable, "audio_enable");
+   CONFIG_GET_BOOL(audio.mute_enable, "audio_mute_enable");
    CONFIG_GET_INT(audio.out_rate, "audio_out_rate");
    CONFIG_GET_INT(audio.block_frames, "audio_block_frames");
    CONFIG_GET_STRING(audio.device, "audio_device");
@@ -1843,6 +1845,7 @@ bool config_save_file(const char *path)
    config_set_string(conf, "video_context_driver", g_settings.video.context_driver);
    config_set_string(conf, "audio_driver", g_settings.audio.driver);
    config_set_bool(conf, "audio_enable", g_settings.audio.enable);
+   config_set_bool(conf, "audio_mute_enable", g_settings.audio.mute_enable);
    config_set_int(conf, "audio_out_rate", g_settings.audio.out_rate);
 
    config_set_bool(conf, "location_allow", g_settings.location.allow);

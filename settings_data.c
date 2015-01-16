@@ -4587,7 +4587,7 @@ static bool setting_data_append_list_audio_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_extern.audio_data.mute,
+         g_settings.audio.mute_enable,
          "audio_mute_enable",
          "Audio Mute",
          false,

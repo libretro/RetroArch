@@ -374,7 +374,7 @@ void init_audio(void)
 
    g_extern.measure_data.buffer_free_samples_count = 0;
 
-   if (driver.audio_active && !g_extern.audio_data.mute &&
+   if (driver.audio_active && !g_settings.audio.mute_enable &&
          g_extern.system.audio_callback.callback)
    {
       /* Threaded driver is initially stopped. */

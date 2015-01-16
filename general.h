@@ -230,6 +230,7 @@ struct settings
    {
       char driver[32];
       bool enable;
+      bool mute_enable;
       unsigned out_rate;
       unsigned block_frames;
       char device[PATH_MAX_LENGTH];
@@ -512,7 +513,6 @@ struct global
       float in_rate;
 
       bool use_float;
-      bool mute;
 
       float *outsamples;
       int16_t *conv_outsamples;
