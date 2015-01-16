@@ -196,7 +196,7 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
    if (!gl)
       return;
 
-   if (x < -xmb->icon_size || x > gl->win_width
+   if (x < -xmb->icon_size/2 || x > gl->win_width
          || y < xmb->icon_size/2 || y > gl->win_height + xmb->icon_size)
       return;
 

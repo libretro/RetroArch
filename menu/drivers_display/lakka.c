@@ -217,7 +217,7 @@ static void lakka_draw_icon(lakka_handle_t *lakka,
    if (!gl)
       return;
 
-   if (x < -lakka->icon_size || x > gl->win_width
+   if (x < -lakka->icon_size/2 || x > gl->win_width
          || y < lakka->icon_size/2 || y > gl->win_height + lakka->icon_size)
       return;
 
