@@ -67,4 +67,22 @@ if [ -d "${APP_BUNDLE_DIR_MEDIA}" ]; then
    cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-72-1.png ${APP_BUNDLE_DIR}/AppIcon72x72~ipad.png
    cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-76-2.png ${APP_BUNDLE_DIR}/AppIcon76x76@2x~ipad.png
    cp ${APP_BUNDLE_DIR_APPICONSET}/Icon-76-1.png ${APP_BUNDLE_DIR}/AppIcon76x76~ipad.png
+
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-640x1136.png ${APP_BUNDLE_DIR}/Default-568h@2x.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-640x1136.png ${APP_BUNDLE_DIR}/LaunchImage-568h@2x.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-640x1136.png ${APP_BUNDLE_DIR}/LaunchImage-700-568h@2x.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/landscape-2048x1536.png ${APP_BUNDLE_DIR}/LaunchImage-700-Landscape@2x~ipad.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/landscape-1024x768.png ${APP_BUNDLE_DIR}/LaunchImage-700-Landscape~ipad.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-1536x2048.png ${APP_BUNDLE_DIR}/LaunchImage-700-Portrait@2x~ipad.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-768x1024.png ${APP_BUNDLE_DIR}/LaunchImage-700-Portrait~ipad.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-640x960.png ${APP_BUNDLE_DIR}/LaunchImage-700@2x.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-750x1334.png ${APP_BUNDLE_DIR}/LaunchImage-800-667h@2x.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/landscape-2208x1242.png ${APP_BUNDLE_DIR}/LaunchImage-800-Landscape-736h@3x.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-1242x2208.png ${APP_BUNDLE_DIR}/LaunchImage-800-Portrait-736h@3x.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/landscape-2048x1496.png ${APP_BUNDLE_DIR}/LaunchImage-Landscape@2x~ipad.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/landscape-1024x748.png ${APP_BUNDLE_DIR}/LaunchImage-Landscape~ipad.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-1536x2008.png ${APP_BUNDLE_DIR}/LaunchImage-Portrait@2x~ipad.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-768x1004.png ${APP_BUNDLE_DIR}/LaunchImage-Portrait~ipad.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-320x480.png ${APP_BUNDLE_DIR}/LaunchImage.png
+   cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-640x960.png ${APP_BUNDLE_DIR}/LaunchImage@2x.png
 fi
