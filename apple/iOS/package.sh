@@ -85,4 +85,6 @@ if [ -d "${APP_BUNDLE_DIR_MEDIA}" ]; then
    cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-768x1004.png ${APP_BUNDLE_DIR}/LaunchImage-Portrait~ipad.png
    cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-320x480.png ${APP_BUNDLE_DIR}/LaunchImage.png
    cp ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-640x960.png ${APP_BUNDLE_DIR}/LaunchImage@2x.png
+
+   rm -rf ${APP_BUNDLE_DIR_MEDIA}
 fi
