@@ -85,5 +85,8 @@ struct string_list *zlib_get_file_list(const char *path);
 bool zlib_inflate_data_to_file(const char *path, const uint8_t *data,
       uint32_t csize, uint32_t size, uint32_t crc32);
 
+struct string_list *compressed_file_list_new(const char *filename,
+      const char* ext);
+
 #endif
 

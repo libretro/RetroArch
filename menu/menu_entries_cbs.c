@@ -22,6 +22,7 @@
 #include "menu_shader.h"
 
 #include "../file_ext.h"
+#include "../file_extract.h"
 #include "../config.def.h"
 #include "../cheats.h"
 #include "../retroarch.h"
