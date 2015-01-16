@@ -135,8 +135,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 		case ID_M_QUIT:
 			do_wm_close = true;
 			break;
-	}
-
+		default:
 	if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
 	{
 		unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
@@ -152,6 +151,8 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 	{
 		signed idx = (mode - (ID_M_STATE_INDEX_AUTO+1));
 		g_settings.state_slot = idx;
+	}
+	break;
 	}
 
 	if (cmd != RARCH_CMD_NONE)
