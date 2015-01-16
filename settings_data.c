@@ -3561,17 +3561,6 @@ static bool setting_data_append_list_driver_options(
          NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
-   CONFIG_STRING(
-         g_settings.video.context_driver,
-         "video_context_driver",
-         "Video Context Driver",
-         "",
-         group_info.name,
-         subgroup_info.name,
-         NULL,
-         NULL);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-
    CONFIG_STRING_OPTIONS(
          g_settings.audio.driver,
          "audio_driver",
@@ -3640,17 +3629,6 @@ static bool setting_data_append_list_driver_options(
          "Joypad Driver",
          config_get_default_joypad(),
          config_get_joypad_driver_options(),
-         group_info.name,
-         subgroup_info.name,
-         NULL,
-         NULL);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-
-   CONFIG_STRING(
-         g_settings.input.keyboard_layout,
-         "input_keyboard_layout",
-         "Keyboard Layout",
-         "",
          group_info.name,
          subgroup_info.name,
          NULL,
