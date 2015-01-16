@@ -36,6 +36,7 @@
 #include "softfilter.h"
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #ifdef RARCH_INTERNAL
 #define softfilter_get_implementation twoxbr_get_implementation
