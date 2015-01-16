@@ -24,14 +24,22 @@ echo "Script: $SCRIPT"
 APP_BUNDLE_NAME=RetroArch.app
 BASE_DIR=$(dirname "$SCRIPT")
 RETROARCH_DIR=${BASE_DIR}/../..
+IOSDIR=${BASE_DIR}/iOS
+APP_BUNDLE_DIR=${BASE_DIR}/obj/${APP_BUNDLE_NAME}
 OVERLAY_DIR=${RETROARCH_DIR}/media/overlays
 SHADERS_DIR=${RETROARCH_DIR}/media/shaders_glsl
 
 if [ -d "${OVERLAY_DIR}" ]; then
    mv  ${OVERLAY_DIR}/.git ${OVERLAY_DIR}/../.git
-   cp -r ${OVERLAY_DIR} ${BASE_DIR}/obj/${APP_BUNDLE_NAME}/
+   cp -r ${OVERLAY_DIR} ${APP_BUNDLE_DIR}/
    mv  ${OVERLAY_DIR}/../.git ${OVERLAY_DIR}/.git
 fi
 if [ -d "${SHADERS_DIR}" ]; then
-   cp -r ${SHADERS_DIR} ${BASE_DIR}/obj/${APP_BUNDLE_NAME}/
+   cp -r ${SHADERS_DIR} ${APP_BUNDLE_DIR}/
 fi
+
+if [ -f "${APP_BUNDLE_DIR}/PauseIndicatorView.xib" ]; then
+   rm ${APP_BUNDLE_DIR}/PauseIndicatorView.xib
+fi
+
+cp -r ${IOSDIR}/en.lproj ${APP_BUNDLE_DIR}
