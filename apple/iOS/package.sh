@@ -47,7 +47,7 @@ fi
 
 cp -r ${IOSDIR}/en.lproj ${APP_BUNDLE_DIR}
 
-$THEOSSDK/bin/plistutil -i ${IOSDIR}/RetroArch-Info.plist -o ${APP_BUNDLE_DIR}/Info.plist
+plistutil -i ${IOSDIR}/RetroArch-Info.plist -o ${APP_BUNDLE_DIR}/Info.plist
 
 if [ -d "${APP_BUNDLE_DIR_MEDIA}" ]; then
    cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-29-1.png ${APP_BUNDLE_DIR}/AppIcon29x29.png
