@@ -40,6 +40,12 @@ struct core_option_manager
    bool updated;
 };
 
+/**
+ * core_option_free:
+ * @opt              : options manager handle
+ *
+ * Frees core option manager handle.
+ **/
 void core_option_free(core_option_manager_t *opt)
 {
    size_t i;
@@ -115,7 +121,7 @@ static bool parse_variable(core_option_manager_t *opt, size_t idx,
    {
       for (i = 0; i < option->vals->size; i++)
       {
-         if (strcmp(option->vals->elems[i].data, config_val) == 0)
+         if (!strcmp(option->vals->elems[i].data, config_val))
          {
             option->index = i;
             break;
@@ -130,6 +136,15 @@ static bool parse_variable(core_option_manager_t *opt, size_t idx,
    return true;
 }
 
+/**
+ * core_option_new:
+ * @conf_path        : Filesystem path to write core option config file to.
+ * @vars             : Pointer to variable array handle.
+ *
+ * Creates and initializes a core manager handle.
+ *
+ * Returns: handle to new core manager handle, otherwise NULL.
+ **/
 core_option_manager_t *core_option_new(const char *conf_path,
       const struct retro_variable *vars)
 {
@@ -173,6 +188,15 @@ error:
    return NULL;
 }
 
+/**
+ * core_option_updated:
+ * @opt              : options manager handle
+ *
+ * Has a core option been updated?
+ *
+ * Returns: true (1) if a core option has been updated,
+ * otherwise false (0).
+ **/
 bool core_option_updated(core_option_manager_t *opt)
 {
    if (!opt)
@@ -180,16 +204,28 @@ bool core_option_updated(core_option_manager_t *opt)
    return opt->updated;
 }
 
-void core_option_flush(core_option_manager_t *opt)
+/**
+ * core_option_flush:
+ * @opt              : options manager handle
+ *
+ * Writes core option key-pair values to file.
+ *
+ * Returns: true (1) if core option values could be
+ * successfully saved to disk, otherwise false (0).
+ **/
+bool core_option_flush(core_option_manager_t *opt)
 {
    size_t i;
+
    for (i = 0; i < opt->size; i++)
    {
       struct core_option *option = (struct core_option*)&opt->opts[i];
+
       if (option)
          config_set_string(opt->conf, option->key, core_option_get_val(opt, i));
    }
-   config_file_write(opt->conf, opt->conf_path);
+
+   return config_file_write(opt->conf, opt->conf_path);
 }
 
 /**

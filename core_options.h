@@ -28,13 +28,46 @@ extern "C" {
 
 typedef struct core_option_manager core_option_manager_t;
 
+/**
+ * core_option_new:
+ * @conf_path        : Filesystem path to write core option config file to.
+ * @vars             : Pointer to variable array handle.
+ *
+ * Creates and initializes a core manager handle.
+ *
+ * Returns: handle to new core manager handle, otherwise NULL.
+ **/
 core_option_manager_t *core_option_new(const char *conf_path,
       const struct retro_variable *vars);
 
+/**
+ * core_option_updated:
+ * @opt              : options manager handle
+ *
+ * Has a core option been updated?
+ *
+ * Returns: true (1) if a core option has been updated,
+ * otherwise false (0).
+ **/
 bool core_option_updated(core_option_manager_t *opt);
 
-void core_option_flush(core_option_manager_t *opt);
+/**
+ * core_option_flush:
+ * @opt              : options manager handle
+ *
+ * Writes core option key-pair values to file.
+ *
+ * Returns: true (1) if core option values could be
+ * successfully saved to disk, otherwise false (0).
+ **/
+bool core_option_flush(core_option_manager_t *opt);
 
+/**
+ * core_option_free:
+ * @opt              : options manager handle
+ *
+ * Frees core option manager handle.
+ **/
 void core_option_free(core_option_manager_t *opt);
 
 void core_option_get(core_option_manager_t *opt, struct retro_variable *var);
