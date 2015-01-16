@@ -57,103 +57,103 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 	bool do_wm_close = false;
 
 	switch (mode)
-    {
-		case ID_M_LOAD_CORE:
-		case ID_M_LOAD_CONTENT:
-			{
-				char win32_file[PATH_MAX_LENGTH] = {0};
-				const char *extensions  = NULL;
-				const char *title       = NULL;
-				const char *initial_dir = NULL;
-				
-				if      (mode == ID_M_LOAD_CORE)
-				{
-					extensions  = "All Files\0*.*\0 Libretro core(.dll)\0*.dll\0";
-					title       = "Load Core";
-					initial_dir = g_settings.libretro_directory;
-				}
-				else if (mode == ID_M_LOAD_CONTENT)
-				{
-					extensions  = "All Files\0*.*\0\0";
-					title       = "Load Content";
-					initial_dir = g_settings.menu_content_directory;
-				}
+   {
+      case ID_M_LOAD_CORE:
+      case ID_M_LOAD_CONTENT:
+         {
+            char win32_file[PATH_MAX_LENGTH] = {0};
+            const char *extensions  = NULL;
+            const char *title       = NULL;
+            const char *initial_dir = NULL;
 
-				if (win32_browser(owner, win32_file, extensions, title, initial_dir))
-				{
-					switch (mode)
-					{
-					case ID_M_LOAD_CORE:
-						strlcpy(g_settings.libretro, win32_file, sizeof(g_settings.libretro));
-						cmd = RARCH_CMD_LOAD_CORE;
-						break;
-					case ID_M_LOAD_CONTENT:
-						strlcpy(g_extern.fullpath, win32_file, sizeof(g_extern.fullpath));
-						cmd = RARCH_CMD_LOAD_CONTENT;
-						do_wm_close = true;
-						break;
-					}
-				}
-			}
-			break;
-		case ID_M_RESET:
-			cmd = RARCH_CMD_RESET;
-			break;
-		case ID_M_MUTE_TOGGLE:
-			cmd = RARCH_CMD_AUDIO_MUTE_TOGGLE;
-			break;
-		case ID_M_MENU_TOGGLE:
-			cmd = RARCH_CMD_MENU_TOGGLE;
-			break;
-		case ID_M_PAUSE_TOGGLE:
-			cmd = RARCH_CMD_PAUSE_TOGGLE;
-			break;
-		case ID_M_LOAD_STATE:
-			cmd = RARCH_CMD_LOAD_STATE;
-			break;
-		case ID_M_SAVE_STATE:
-			cmd = RARCH_CMD_SAVE_STATE;
-			break;
-		case ID_M_DISK_CYCLE:
-			cmd = RARCH_CMD_DISK_EJECT_TOGGLE;
-			break;
-		case ID_M_DISK_NEXT:
-			cmd = RARCH_CMD_DISK_NEXT;
-			break;
-		case ID_M_DISK_PREV:
-			cmd = RARCH_CMD_DISK_PREV;
-			break;
-		case ID_M_FULL_SCREEN:
-			cmd = RARCH_CMD_FULLSCREEN_TOGGLE;
-			break;
-		case ID_M_MOUSE_GRAB:
-			cmd = RARCH_CMD_GRAB_MOUSE_TOGGLE;
-			break;
-		case ID_M_TAKE_SCREENSHOT:
-			cmd = RARCH_CMD_TAKE_SCREENSHOT;
-			break;
-		case ID_M_QUIT:
-			do_wm_close = true;
-			break;
-		default:
-	if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
-	{
-		unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
-		g_extern.pending.windowed_scale = idx;
-		cmd = RARCH_CMD_RESIZE_WINDOWED_SCALE;
-	}
-	else if (mode == ID_M_STATE_INDEX_AUTO)
-	{
-		signed idx = -1;
-		g_settings.state_slot = idx;
-	}
-	else if (mode >= (ID_M_STATE_INDEX_AUTO+1) && mode <= (ID_M_STATE_INDEX_AUTO+10))
-	{
-		signed idx = (mode - (ID_M_STATE_INDEX_AUTO+1));
-		g_settings.state_slot = idx;
-	}
-	break;
-	}
+            if      (mode == ID_M_LOAD_CORE)
+            {
+               extensions  = "All Files\0*.*\0 Libretro core(.dll)\0*.dll\0";
+               title       = "Load Core";
+               initial_dir = g_settings.libretro_directory;
+            }
+            else if (mode == ID_M_LOAD_CONTENT)
+            {
+               extensions  = "All Files\0*.*\0\0";
+               title       = "Load Content";
+               initial_dir = g_settings.menu_content_directory;
+            }
+
+            if (win32_browser(owner, win32_file, extensions, title, initial_dir))
+            {
+               switch (mode)
+               {
+                  case ID_M_LOAD_CORE:
+                     strlcpy(g_settings.libretro, win32_file, sizeof(g_settings.libretro));
+                     cmd = RARCH_CMD_LOAD_CORE;
+                     break;
+                  case ID_M_LOAD_CONTENT:
+                     strlcpy(g_extern.fullpath, win32_file, sizeof(g_extern.fullpath));
+                     cmd = RARCH_CMD_LOAD_CONTENT;
+                     do_wm_close = true;
+                     break;
+               }
+            }
+         }
+         break;
+      case ID_M_RESET:
+         cmd = RARCH_CMD_RESET;
+         break;
+      case ID_M_MUTE_TOGGLE:
+         cmd = RARCH_CMD_AUDIO_MUTE_TOGGLE;
+         break;
+      case ID_M_MENU_TOGGLE:
+         cmd = RARCH_CMD_MENU_TOGGLE;
+         break;
+      case ID_M_PAUSE_TOGGLE:
+         cmd = RARCH_CMD_PAUSE_TOGGLE;
+         break;
+      case ID_M_LOAD_STATE:
+         cmd = RARCH_CMD_LOAD_STATE;
+         break;
+      case ID_M_SAVE_STATE:
+         cmd = RARCH_CMD_SAVE_STATE;
+         break;
+      case ID_M_DISK_CYCLE:
+         cmd = RARCH_CMD_DISK_EJECT_TOGGLE;
+         break;
+      case ID_M_DISK_NEXT:
+         cmd = RARCH_CMD_DISK_NEXT;
+         break;
+      case ID_M_DISK_PREV:
+         cmd = RARCH_CMD_DISK_PREV;
+         break;
+      case ID_M_FULL_SCREEN:
+         cmd = RARCH_CMD_FULLSCREEN_TOGGLE;
+         break;
+      case ID_M_MOUSE_GRAB:
+         cmd = RARCH_CMD_GRAB_MOUSE_TOGGLE;
+         break;
+      case ID_M_TAKE_SCREENSHOT:
+         cmd = RARCH_CMD_TAKE_SCREENSHOT;
+         break;
+      case ID_M_QUIT:
+         do_wm_close = true;
+         break;
+      default:
+         if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
+         {
+            unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
+            g_extern.pending.windowed_scale = idx;
+            cmd = RARCH_CMD_RESIZE_WINDOWED_SCALE;
+         }
+         else if (mode == ID_M_STATE_INDEX_AUTO)
+         {
+            signed idx = -1;
+            g_settings.state_slot = idx;
+         }
+         else if (mode >= (ID_M_STATE_INDEX_AUTO+1) && mode <= (ID_M_STATE_INDEX_AUTO+10))
+         {
+            signed idx = (mode - (ID_M_STATE_INDEX_AUTO+1));
+            g_settings.state_slot = idx;
+         }
+         break;
+   }
 
 	if (cmd != RARCH_CMD_NONE)
 		rarch_main_command(cmd);
