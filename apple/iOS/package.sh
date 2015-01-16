@@ -69,6 +69,10 @@ if [ -d "${APP_BUNDLE_DIR_MEDIA}" ]; then
    cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-76-1.png ${APP_BUNDLE_DIR}/AppIcon76x76~ipad.png
 
    cp -v ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-640x1136.png ${APP_BUNDLE_DIR}/Default-568h@2x.png
+   cp -v ${APP_BUNDLE_DIR_LAUNCHIMAGE}/landscape-1024x748.png ${APP_BUNDLE_DIR}/Default-Landscape.png
+   cp -v ${APP_BUNDLE_DIR_LAUNCHIMAGE}/landscape-2048x1496.png ${APP_BUNDLE_DIR}/Default-Landscape@2x.png
+   cp -v ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-768x1004.png ${APP_BUNDLE_DIR}/Default-Portrait.png
+   cp -v ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-1536x2008.png ${APP_BUNDLE_DIR}/Default-Portrait@2x.png
    cp -v ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-640x1136.png ${APP_BUNDLE_DIR}/LaunchImage-568h@2x.png
    cp -v ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-640x1136.png ${APP_BUNDLE_DIR}/LaunchImage-700-568h@2x.png
    cp -v ${APP_BUNDLE_DIR_LAUNCHIMAGE}/landscape-2048x1536.png ${APP_BUNDLE_DIR}/LaunchImage-700-Landscape@2x~ipad.png
