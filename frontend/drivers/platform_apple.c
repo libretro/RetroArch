@@ -44,8 +44,7 @@ static void do_iteration(void)
       return;
    }
 
-   if (ret == 0) 
-      CFRunLoopWakeUp(CFRunLoopGetMain());
+   CFRunLoopWakeUp(CFRunLoopGetMain());
 
    /* TODO/FIXME
       I am almost positive that this is not necessary and is actually a

@@ -30,12 +30,18 @@
 #endif
 
 #ifdef HAVE_ZLIB_DEFLATE
+
 #include "gfx/rpng/rpng.h"
+#define IMG_EXT "png"
+
 #else
+
+#define IMG_EXT "bmp"
+
 static bool write_header_bmp(FILE *file, unsigned width, unsigned height)
 {
-   unsigned line_size = (width * 3 + 3) & ~3;
-   unsigned size = line_size * height + 54;
+   unsigned line_size  = (width * 3 + 3) & ~3;
+   unsigned size       = line_size * height + 54;
    unsigned size_array = line_size * height;
 
    /* Generic BMP stuff. */
@@ -68,6 +74,7 @@ static void dump_lines_file(FILE *file, uint8_t **lines,
       size_t line_size, unsigned height)
 {
    unsigned i;
+
    for (i = 0; i < height; i++)
       fwrite(lines[i], 1, line_size, file);
 }
@@ -80,6 +87,7 @@ static void dump_line_bgr(uint8_t *line, const uint8_t *src, unsigned width)
 static void dump_line_16(uint8_t *line, const uint16_t *src, unsigned width)
 {
    unsigned i;
+
    for (i = 0; i < width; i++)
    {
       uint16_t pixel = *src++;
@@ -95,6 +103,7 @@ static void dump_line_16(uint8_t *line, const uint16_t *src, unsigned width)
 static void dump_line_32(uint8_t *line, const uint32_t *src, unsigned width)
 {
    unsigned i;
+
    for (i = 0; i < width; i++)
    {
       uint32_t pixel = *src++;
@@ -107,7 +116,9 @@ static void dump_line_32(uint8_t *line, const uint32_t *src, unsigned width)
 static void dump_content(FILE *file, const void *frame,
       int width, int height, int pitch, bool bgr24)
 {
+   size_t line_size;
    int i, j;
+   uint8_t **lines;
    union
    {
       const uint8_t *u8;
@@ -116,11 +127,11 @@ static void dump_content(FILE *file, const void *frame,
    } u;
    u.u8 = (const uint8_t*)frame;
 
-   uint8_t **lines = (uint8_t**)calloc(height, sizeof(uint8_t*));
+   lines = (uint8_t**)calloc(height, sizeof(uint8_t*));
    if (!lines)
       return;
 
-   size_t line_size = (width * 3 + 3) & ~3;
+   line_size = (width * 3 + 3) & ~3;
 
    for (i = 0; i < height; i++)
    {
@@ -154,28 +165,30 @@ end:
 }
 #endif
 
+
 /* Take frame bottom-up. */
 bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
 {
    char filename[PATH_MAX_LENGTH];
    char shotname[PATH_MAX_LENGTH];
+   struct scaler_ctx scaler = {0};
+   FILE *file          = NULL;
+   uint8_t *out_buffer = NULL;
+   bool ret            = false;
 
-#ifdef HAVE_ZLIB_DEFLATE
-#define IMG_EXT "png"
-#else
-#define IMG_EXT "bmp"
-#endif
+   (void)file;
+   (void)out_buffer;
+   (void)scaler;
 
    fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
    fill_pathname_join(filename, folder, shotname, sizeof(filename));
 
 #ifdef HAVE_ZLIB_DEFLATE
-   uint8_t *out_buffer = (uint8_t*)malloc(width * height * 3);
+   out_buffer = (uint8_t*)malloc(width * height * 3);
    if (!out_buffer)
       return false;
 
-   struct scaler_ctx scaler = {0};
    scaler.in_width   = width;
    scaler.in_height  = height;
    scaler.out_width  = width;
@@ -198,21 +211,20 @@ bool screenshot_dump(const char *folder, const void *frame,
    scaler_ctx_gen_reset(&scaler);
 
    RARCH_LOG("Using RPNG for PNG screenshots.\n");
-   bool ret = rpng_save_image_bgr24(filename,
+   ret = rpng_save_image_bgr24(filename,
          out_buffer, width, height, width * 3);
    if (!ret)
       RARCH_ERR("Failed to take screenshot.\n");
    free(out_buffer);
-   return ret;
 #else
-   FILE *file = fopen(filename, "wb");
+   file = fopen(filename, "wb");
    if (!file)
    {
       RARCH_ERR("Failed to open file \"%s\" for screenshot.\n", filename);
       return false;
    }
 
-   bool ret = write_header_bmp(file, width, height);
+   ret = write_header_bmp(file, width, height);
 
    if (ret)
       dump_content(file, frame, width, height, pitch, bgr24);
@@ -220,7 +232,8 @@ bool screenshot_dump(const char *folder, const void *frame,
       RARCH_ERR("Failed to write image header.\n");
 
    fclose(file);
-   return ret;
 #endif
+
+   return ret;
 }
 
