@@ -354,11 +354,12 @@ static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *he
 
    if (!g_hwnd)
    {
-      HMONITOR hm_to_use = NULL;
+      RECT mon_rect;
       MONITORINFOEX current_mon;
+      HMONITOR hm_to_use = NULL;
 
       monitor_info(&current_mon, &hm_to_use);
-      RECT mon_rect = current_mon.rcMonitor;
+      mon_rect = current_mon.rcMonitor;
       *width  = mon_rect.right - mon_rect.left;
       *height = mon_rect.bottom - mon_rect.top;
    }
