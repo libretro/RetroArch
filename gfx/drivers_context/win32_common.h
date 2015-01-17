@@ -17,23 +17,23 @@
 #ifndef WIN32_COMMON_H__
 #define WIN32_COMMON_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifndef _XBOX
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "../../win32/resource.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 
-LRESULT win32_menu_loop(HWND handle, WPARAM wparam);
-#endif
-
 #ifdef __cplusplus
 }
+#endif
+
+LRESULT win32_menu_loop(HWND handle, WPARAM wparam);
 #endif
 
 #endif
