@@ -509,6 +509,7 @@ static void config_set_defaults(void)
    g_settings.menu_show_start_screen = menu_show_start_screen;
    g_settings.menu.pause_libretro = true;
    g_settings.menu.mouse_enable = false;
+   g_settings.menu.timedate_enable = true;
    g_settings.menu.navigation.wraparound.horizontal_enable = true;
    g_settings.menu.navigation.wraparound.vertical_enable = true;
    g_settings.menu.navigation.browser.filter.supported_extensions_enable = true;
@@ -1100,6 +1101,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 #ifdef HAVE_MENU
    CONFIG_GET_BOOL(menu.pause_libretro, "menu_pause_libretro");
    CONFIG_GET_BOOL(menu.mouse_enable,   "menu_mouse_enable");
+   CONFIG_GET_BOOL(menu.timedate_enable,   "menu_timedate_enable");
    CONFIG_GET_BOOL(menu.navigation.wraparound.horizontal_enable, "menu_navigation_wraparound_horizontal_enable");
    CONFIG_GET_BOOL(menu.navigation.wraparound.vertical_enable,   "menu_navigation_wraparound_vertical_enable");
    CONFIG_GET_BOOL(menu.navigation.browser.filter.supported_extensions_enable,   "menu_navigation_browser_filter_supported_extensions_enable");
@@ -1816,6 +1818,7 @@ bool config_save_file(const char *path)
    config_set_string(conf,"menu_driver", g_settings.menu.driver);
    config_set_bool(conf,"menu_pause_libretro", g_settings.menu.pause_libretro);
    config_set_bool(conf,"menu_mouse_enable", g_settings.menu.mouse_enable);
+   config_set_bool(conf,"menu_timedate_enable", g_settings.menu.timedate_enable);
 #endif
    config_set_bool(conf,  "video_vsync", g_settings.video.vsync);
    config_set_bool(conf,  "video_hard_sync", g_settings.video.hard_sync);

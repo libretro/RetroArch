@@ -330,6 +330,7 @@ static void rgui_render(void)
 {
    size_t i, end;
    char title[256], title_buf[256], title_msg[64];
+   char timedate[PATH_MAX_LENGTH];
    unsigned x, y, menu_type  = 0;
    const char *dir     = NULL;
    const char *label   = NULL;
@@ -392,12 +393,20 @@ static void rgui_render(void)
    if (!core_version)
       core_version = "";
 
+   disp_timedate_set_label(timedate, sizeof(timedate), 3);
+
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
    blit_line(
          RGUI_TERM_START_X + RGUI_TERM_START_X,
          (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
          RGUI_TERM_START_Y + 2, title_msg, true);
+
+   if (g_settings.menu.timedate_enable)
+      blit_line(
+            (RGUI_TERM_WIDTH * FONT_HEIGHT_STRIDE) + (60),
+            (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
+            RGUI_TERM_START_Y + 2, timedate, true);
 
 
    x = RGUI_TERM_START_X;

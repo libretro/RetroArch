@@ -29,6 +29,7 @@
 #include "../../gfx/gl_common.h"
 #include "../../gfx/video_thread_wrapper.h"
 #include <compat/posix_string.h>
+#include "shared.h"
 
 #include "../../settings_data.h"
 
@@ -558,6 +559,7 @@ static void lakka_draw_fbo(lakka_handle_t *lakka)
 
 static void lakka_frame(void)
 {
+   char timedate[PATH_MAX_LENGTH];
    menu_item_t *active_item = NULL;
    menu_category_t *active_category = NULL;
    lakka_handle_t *lakka = NULL;
@@ -602,12 +604,19 @@ static void lakka_frame(void)
    lakka_draw_arrow(lakka);
 #endif
 
+   disp_timedate_set_label(timedate, sizeof(timedate), 0);
+
    if (lakka->depth == 0)
       lakka_draw_text(lakka, active_category->name,
             lakka->title_margin_left, lakka->title_margin_top, 1, 1.0);
    else if (active_item)
       lakka_draw_text(lakka, active_item->name,
             lakka->title_margin_left, lakka->title_margin_top, 1, 1.0);
+
+   if (g_settings.menu.timedate_enable)
+      lakka_draw_text(lakka, timedate,
+            (lakka->title_margin_left * 25) - lakka->title_margin_left,
+            lakka->title_margin_top, 1, 1.0);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 
@@ -1310,6 +1319,9 @@ static bool lakka_init_lists(void *data)
          lakka_init_item(lakka, i, 0, category, info, NULL, 
                info->display_name);
    }
+
+   (void)get_title;
+   (void)disp_set_label;
 
    return true;
 }

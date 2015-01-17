@@ -263,6 +263,7 @@ static void glui_frame(void)
    size_t i;
    char title[PATH_MAX_LENGTH], title_buf[PATH_MAX_LENGTH], 
         title_msg[PATH_MAX_LENGTH];
+   char timedate[PATH_MAX_LENGTH];
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
@@ -337,10 +338,19 @@ static void glui_frame(void)
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
+
+   disp_timedate_set_label(timedate, sizeof(timedate), 0);
+
    glui_blit_line(
          glui->margin * 2,
          glui->margin + glui->term_height * glui->line_height 
          + glui->line_height * 2, title_msg, true);
+
+   if (g_settings.menu.timedate_enable)
+      glui_blit_line(
+            glui->margin * 14,
+            glui->margin + glui->term_height * glui->line_height 
+            + glui->line_height * 2, timedate, true);
 
 
    x = glui->margin;

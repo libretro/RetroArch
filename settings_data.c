@@ -5305,6 +5305,18 @@ static bool setting_data_append_list_menu_options(
          general_write_handler,
          general_read_handler);
 
+   CONFIG_BOOL(
+         g_settings.menu.timedate_enable,
+         "menu_timedate_enable",
+         "Time / date enable",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
    END_SUB_GROUP(list, list_info);
 
    END_GROUP(list, list_info);

@@ -674,7 +674,7 @@ static void xmb_list_switch_new(file_list_t *list, int dir, size_t current)
    }
 }
 
-static void xmb_set_title()
+static void xmb_set_title(void)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
@@ -818,6 +818,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             entry_label, path,
             path_buf, sizeof(path_buf));
 
+
       GLuint icon = 0;
       switch(type)
       {
@@ -927,7 +928,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
 static void xmb_frame(void)
 {
    int i, depth;
-   char title_msg[64];
+   char title_msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
    const char *core_name = NULL;
    const char *core_version = NULL;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
@@ -953,6 +954,13 @@ static void xmb_frame(void)
    xmb_draw_text(
          xmb->title, xmb->title_margin_left, xmb->title_margin_top, 1, 1);
 
+   disp_timedate_set_label(timedate, sizeof(timedate), 0);
+
+   if (g_settings.menu.timedate_enable)
+      xmb_draw_text(
+            timedate, (xmb->title_margin_left * 25) - xmb->title_margin_left, 
+            xmb->title_margin_top, 1, 1);
+
    core_version = g_extern.menu.info.library_version;
 
    if (!core_version)
@@ -964,6 +972,7 @@ static void xmb_frame(void)
          core_name, core_version);
    xmb_draw_text(title_msg, xmb->title_margin_left, 
          gl->win_height - xmb->title_margin_bottom, 1, 1);
+
 
    xmb_draw_icon(xmb->textures[XMB_TEXTURE_ARROW].id,
          xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0 + xmb->icon_size,

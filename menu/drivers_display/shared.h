@@ -17,6 +17,7 @@
 #define _DISP_SHARED_H
 
 #include "../../settings_data.h"
+#include <time.h>
 
 static void get_title(const char *label, const char *dir,
       unsigned menu_type, char *title, size_t sizeof_title)
@@ -159,6 +160,30 @@ static void get_title(const char *label, const char *dir,
             core_name = "No Core";
          snprintf(title, sizeof_title, "CONTENT (%s) %s", core_name, dir);
       }
+   }
+}
+
+static void disp_timedate_set_label(char *label, size_t label_size,
+      unsigned time_mode)
+{
+   char datetime[PATH_MAX_LENGTH];
+   time_t time_;
+   time(&time_);
+
+   switch (time_mode)
+   {
+      case 0: /* Date and time */
+         strftime(label, label_size, "%Y-%m-%d %H:%M:%S", localtime(&time_));
+         break;
+      case 1: /* Date */
+         strftime(label, label_size, "%Y-%m-%d", localtime(&time_));
+         break;
+      case 2: /* Time */
+         strftime(label, label_size, "%H:%M:%S", localtime(&time_));
+         break;
+      case 3: /* Time (hours-minutes) */
+         strftime(label, label_size, "%H:%M", localtime(&time_));
+         break;
    }
 }
 
