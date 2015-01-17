@@ -320,11 +320,15 @@ NSWindowDelegate>
 
 - (IBAction)outlineViewClicked:(id)sender
 {
-   if ([self.outline clickedColumn] == 1)
-   {
-      id item = [self.outline itemAtRow:[self.outline clickedRow]];
+   id item;
+   if ([self.outline clickedColumn] != 1)
+      return;
+   
+   item = [self.outline itemAtRow:[self.outline clickedRow]];
       
-      if ([item isKindOfClass:[NSNumber class]])
+   if (![item isKindOfClass:[NSNumber class]])
+      return;
+   
       {
           rarch_setting_t *setting_data = (rarch_setting_t*)driver.menu->list_settings;
           rarch_setting_t *setting      = (rarch_setting_t*)&setting_data[[item intValue]];
@@ -344,7 +348,6 @@ NSWindowDelegate>
           if (setting->change_handler)
               setting->change_handler(setting);
       }
-   }
 }
 
 - (void)controlTextDidEndEditing:(NSNotification*)notification
@@ -358,7 +361,9 @@ NSWindowDelegate>
    editor = [[notification userInfo] objectForKey:BOXSTRING("NSFieldEditor")];
    item        = [self.outline itemAtRow:[self.outline selectedRow]];
 
-   if ([item isKindOfClass:[NSNumber class]])
+   if (![item isKindOfClass:[NSNumber class]])
+      return;
+   
    {
       rarch_setting_t *setting_data = (rarch_setting_t *)driver.menu->list_settings;
       rarch_setting_t *setting      = (rarch_setting_t*)&setting_data[[item intValue]];
