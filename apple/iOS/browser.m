@@ -24,6 +24,7 @@
 #include <file/dir_list.h>
 #include "../../file_ops.h"
 #include <file/file_path.h>
+#include <retro_miscellaneous.h>
 
 static const void* const associated_module_key = &associated_module_key;
 
@@ -31,9 +32,9 @@ static bool zlib_extract_callback(const char *name,
                                 const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
                                 uint32_t crc32, void *userdata)
 {
-    char path[PATH_MAX];
+    char path[PATH_MAX_LENGTH];
    
-   // Make directory
+   /* Make directory */
    fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
    path_basedir(path);
 

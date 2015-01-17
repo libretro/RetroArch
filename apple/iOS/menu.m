@@ -20,6 +20,7 @@
 #include "../../input/input_keymaps.h"
 #include "../../input/drivers/apple_input.h"
 #include <file/file_path.h>
+#include <retro_miscellaneous.h>
 #include "menu.h"
 
 #include "../../menu/menu.h"
@@ -256,7 +257,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
-   char buffer[PATH_MAX];
+   char buffer[PATH_MAX_LENGTH];
    UITableViewCell* result;
    static NSString* const cell_id = @"string_setting";
 
@@ -292,7 +293,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
-   char buffer[PATH_MAX];
+   char buffer[PATH_MAX_LENGTH];
    NSString *desc = BOXSTRING("N/A");
    UIAlertView *alertView;
    UITextField *field;
@@ -640,7 +641,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    for (i = driver.menu->begin; i < end; i++)
    {
      rarch_setting_t *setting;
-     char type_str[PATH_MAX], path_buf[PATH_MAX];
+     char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
      menu_file_list_cbs_t *cbs = NULL;
      const char *path = NULL, *entry_label = NULL;
      unsigned type = 0, w = 0;

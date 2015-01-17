@@ -16,6 +16,7 @@
 
 #import <objc/runtime.h>
 #import "../common/RetroArch_Apple.h"
+#include <retro_miscellaneous.h>
 #include "../../settings_data.h"
 #include "../../input/drivers/apple_input.h"
 
@@ -69,7 +70,10 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 - (void)checkBind:(NSTimer*)send
 {
    int32_t value = 0;
-   int32_t idx = self.setting->index ? self.setting->index - 1 : 0;
+   int32_t idx   = 0;
+   
+   if (self.setting->index)
+      idx = self.setting->index - 1;
 
    if ((value = apple_input_find_any_key()))
       BINDFOR(*[self setting]).key = input_keymaps_translate_keysym_to_rk(value);
@@ -143,13 +147,14 @@ NSWindowDelegate>
 
 - (void)awakeFromNib
 {
-   const rarch_setting_t *setting_data;
+   int i;
    NSMutableArray* thisGroup = nil;
    NSMutableArray* thisSubGroup = nil;
-   self.settings = [NSMutableArray array];
-   setting_data = (const rarch_setting_t *)driver.menu->list_settings;
+   const rarch_setting_t *setting_data = (const rarch_setting_t *)driver.menu->list_settings;
 
-   for (int i = 0; setting_data[i].type; i ++)
+   self.settings = [NSMutableArray array];
+
+   for (i = 0; setting_data[i].type; i ++)
    {
       switch (setting_data[i].type)
       {
@@ -257,34 +262,30 @@ NSWindowDelegate>
 	  /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
       if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
          return objc_getAssociatedObject(item, associated_name_tag);
-      else
 #endif
-         return BOXSTRING("");
+      return BOXSTRING("");
    }
    else
    {
-       char buffer[PATH_MAX];
-       rarch_setting_t *setting_data = NULL, *setting = NULL;
-       setting_data = (rarch_setting_t*)driver.menu->list_settings;
-       setting = (rarch_setting_t*)&setting_data[[item intValue]];
-       
-       if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
-           return BOXSTRING(setting->short_description);
-       else
-       {
-           switch (setting->type)
-           {
-               case ST_BOOL:
-                   return BOXINT(*setting->value.boolean);
-               default:
-               {
-                   setting_data_get_string_representation(setting, buffer, sizeof(buffer));
-                   if (buffer[0] == '\0')
-                       strlcpy(buffer, "N/A", sizeof(buffer));
-                   return BOXSTRING(buffer);
-               }
-           }
-       }
+      char buffer[PATH_MAX_LENGTH];
+      rarch_setting_t *setting_data = (rarch_setting_t*)driver.menu->list_settings;
+      rarch_setting_t *setting = (rarch_setting_t*)&setting_data[[item intValue]];
+
+      if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
+         return BOXSTRING(setting->short_description);
+
+      switch (setting->type)
+      {
+         case ST_BOOL:
+            return BOXINT(*setting->value.boolean);
+         default:
+            {
+               setting_data_get_string_representation(setting, buffer, sizeof(buffer));
+               if (buffer[0] == '\0')
+                  strlcpy(buffer, "N/A", sizeof(buffer));
+               return BOXSTRING(buffer);
+            }
+      }
    }
 }
 
@@ -311,8 +312,10 @@ NSWindowDelegate>
       case ST_BIND:
            return self.binderCell;
       default:
-           return tableColumn.dataCell;
+           break;
    }
+
+   return tableColumn.dataCell;
 }
 
 - (IBAction)outlineViewClicked:(id)sender
@@ -346,19 +349,22 @@ NSWindowDelegate>
 
 - (void)controlTextDidEndEditing:(NSNotification*)notification
 {
-   if ([notification object] == self.outline)
-   {
-      NSText* editor = [[notification userInfo] objectForKey:BOXSTRING("NSFieldEditor")];
-      id item = [self.outline itemAtRow:[self.outline selectedRow]];
+   NSText* editor;
+   id item;
 
-      if ([item isKindOfClass:[NSNumber class]])
-      {
-          rarch_setting_t *setting_data = (rarch_setting_t *)driver.menu->list_settings;
-          rarch_setting_t *setting = (rarch_setting_t*)&setting_data[[item intValue]];
-          NSString *editor_string = (NSString*)editor.string;
-          
-          setting_data_set_with_string_representation(setting, editor_string.UTF8String);
-      }
+   if ([notification object] != self.outline)
+      return;
+
+   editor = [[notification userInfo] objectForKey:BOXSTRING("NSFieldEditor")];
+   item        = [self.outline itemAtRow:[self.outline selectedRow]];
+
+   if ([item isKindOfClass:[NSNumber class]])
+   {
+      rarch_setting_t *setting_data = (rarch_setting_t *)driver.menu->list_settings;
+      rarch_setting_t *setting      = (rarch_setting_t*)&setting_data[[item intValue]];
+      NSString *editor_string       = (NSString*)editor.string;
+
+      setting_data_set_with_string_representation(setting, editor_string.UTF8String);
    }
 }
 

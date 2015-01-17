@@ -58,7 +58,7 @@ struct input_device
    int fd;
    dev_t dev;
    device_handle_cb handle_cb;
-   char devnode[PATH_MAX];
+   char devnode[PATH_MAX_LENGTH];
 
    union
    {

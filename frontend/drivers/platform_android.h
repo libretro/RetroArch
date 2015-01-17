@@ -47,7 +47,7 @@ struct android_app
    const ASensor* accelerometerSensor;
    uint64_t sensor_state_mask;
    sthread_t *thread;
-   char current_ime[PATH_MAX];
+   char current_ime[PATH_MAX_LENGTH];
    jmethodID getIntent;
    jmethodID onRetroArchExit;
    jmethodID getStringExtra;

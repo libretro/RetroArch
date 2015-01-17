@@ -15,6 +15,7 @@
 
 #include <xtl.h>
 #include <xgraphics.h>
+#include <retro_miscellaneous.h>
 #include "../screenshot.h"
 
 bool screenshot_dump(const char *folder, const void *frame,
@@ -29,8 +30,8 @@ bool screenshot_dump(const char *folder, const void *frame,
 
    d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    HRESULT ret = S_OK;
-   char filename[PATH_MAX];
-   char shotname[PATH_MAX];
+   char filename[PATH_MAX_LENGTH];
+   char shotname[PATH_MAX_LENGTH];
 
    fill_dated_filename(shotname, "bmp", sizeof(shotname));
    snprintf(filename, sizeof(filename), "%s\\%s", g_settings.screenshot_directory, shotname);

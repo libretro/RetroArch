@@ -25,6 +25,7 @@
 
 #include "../../general.h"
 #include <file/file_path.h>
+#include <retro_miscellaneous.h>
 
 static bool exit_spawn;
 static bool exitspawn_start_game;
@@ -200,7 +201,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 #endif
 
 #ifndef IS_SALAMANDER
-   static char path[PATH_MAX];
+   static char path[PATH_MAX_LENGTH];
    *path = '\0';
 #if defined(_XBOX1)
    RARCH_LOG("Gets here top.\n");

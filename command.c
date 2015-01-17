@@ -25,6 +25,7 @@
 #include "compat/strl.h"
 #include "compat/posix_string.h"
 #include <file/file_path.h>
+#include <retro_miscellaneous.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -220,7 +221,7 @@ static const struct cmd_map map[] = {
 
 static bool cmd_set_shader(const char *arg)
 {
-   char msg[PATH_MAX];
+   char msg[PATH_MAX_LENGTH];
    const char *ext;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
 

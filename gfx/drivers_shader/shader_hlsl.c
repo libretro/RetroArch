@@ -226,7 +226,7 @@ static void set_program_attributes(hlsl_shader_data_t *hlsl, unsigned i)
 static bool load_shader(hlsl_shader_data_t *hlsl,
 	void *data, const char *cgp_path, unsigned i)
 {
-   char path_buf[PATH_MAX];
+   char path_buf[PATH_MAX_LENGTH];
    fill_pathname_resolve_relative(path_buf, cgp_path,
       hlsl->cg_shader->pass[i].source.path, sizeof(path_buf));
 

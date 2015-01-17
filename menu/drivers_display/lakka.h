@@ -61,7 +61,7 @@ typedef struct
 typedef struct
 {
    char  name[256];
-   char  rom[PATH_MAX];
+   char  rom[PATH_MAX_LENGTH];
    float  alpha;
    float  zoom;
    float  y;
@@ -73,7 +73,7 @@ typedef struct
 typedef struct
 {
    char  name[256];
-   char  libretro[PATH_MAX];
+   char  libretro[PATH_MAX_LENGTH];
    GLuint icon;
    GLuint item_icon;
    float  alpha;
@@ -87,7 +87,7 @@ typedef struct
 struct lakka_texture_item
 {
    GLuint id;
-   char path[PATH_MAX];
+   char path[PATH_MAX_LENGTH];
 };
 
 typedef struct lakka_handle
