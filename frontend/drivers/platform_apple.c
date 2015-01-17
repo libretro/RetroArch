@@ -152,6 +152,9 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    
    fill_pathname_join(g_defaults.system_dir, home_dir_buf, ".RetroArch", sizeof(g_defaults.system_dir));
    fill_pathname_join(g_defaults.core_dir, bundle_path_buf, "modules", sizeof(g_defaults.core_dir));
+   fill_pathname_join(g_defaults.core_info_dir, bundle_path_buf, "info", sizeof(g_defaults.core_info_dir));
+   fill_pathname_join(g_defaults.shader_dir, bundle_path_buf, "shaders_glsl", sizeof(g_defaults.shader_dir));
+    fill_pathname_join(g_defaults.overlay_dir, bundle_path_buf, "overlays", sizeof(g_defaults.overlay_dir));
 
    strlcpy(g_defaults.menu_config_dir, g_defaults.system_dir, sizeof(g_defaults.menu_config_dir));
    fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
@@ -174,7 +177,7 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
     CFSearchPathForDirectoriesInDomains(CFApplicationSupportDirectory, CFUserDomainMask, 1, support_path_buf, sizeof(support_path_buf));
     
     fill_pathname_join(g_defaults.core_dir, bundle_path_buf, "Contents/Resources/modules", sizeof(g_defaults.core_dir));
-    fill_pathname_join(g_defaults.core_info_dir, bundle_path_buf, "Contents/Resources/modules", sizeof(g_defaults.core_info_dir));
+    fill_pathname_join(g_defaults.core_info_dir, bundle_path_buf, "Contents/Resources/info", sizeof(g_defaults.core_info_dir));
     fill_pathname_join(g_defaults.overlay_dir, bundle_path_buf, "Contents/Resources/modules/overlays", sizeof(g_defaults.overlay_dir));
     fill_pathname_join(g_defaults.autoconfig_dir, bundle_path_buf, "Contents/Resources/modules/autoconfig/apple", sizeof(g_defaults.autoconfig_dir));
     fill_pathname_join(g_defaults.assets_dir, bundle_path_buf, "Contents/Resources/modules/assets", sizeof(g_defaults.assets_dir));
