@@ -271,11 +271,13 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
          }
          return 0;
 	  case WM_COMMAND:
-		  {
-			  LRESULT ret = win32_menu_loop(g_hwnd, wparam);
-		  }
-
+         if (g_settings.ui.menubar_enable)
+         {
+            LRESULT ret = win32_menu_loop(g_hwnd, wparam);
+         }
+         break;
    }
+
    if (dinput_handle_message(dinput_wgl, message, wparam, lparam))
       return 0;
    return DefWindowProc(hwnd, message, wparam, lparam);
@@ -509,7 +511,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
 
    if (!fullscreen || windowed_full)
    {
-      if (!fullscreen)
+      if (!fullscreen && g_settings.ui.menubar_enable)
       {
          RECT rc_temp = {0, 0, height, 0x7FFF};
          SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));

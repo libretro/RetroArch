@@ -179,6 +179,11 @@ struct settings
       bool force_srgb_disable;
    } video;
 
+   struct
+   {
+      bool menubar_enable;
+   } ui;
+
 #ifdef HAVE_MENU
    struct 
    {

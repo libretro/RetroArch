@@ -586,7 +586,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    );
 
 #if defined(HAVE_WINDOW) && !defined(_XBOX)
-   if (!info->fullscreen)
+   if (!info->fullscreen && g_settings.ui.menubar_enable)
    {
 	   RECT rc_temp = {0, 0, win_height, 0x7FFF};
 	   SetMenu(d3d->hWnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));

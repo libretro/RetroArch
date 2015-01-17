@@ -5326,7 +5326,7 @@ static bool setting_data_append_list_ui_options(
    CONFIG_BOOL(
          g_settings.video.disable_composition,
          "video_disable_composition",
-         "Window Compositing Disable",
+         "Window Compositing Disable Hint",
          disable_composition,
          "OFF",
          "ON",
@@ -5340,8 +5340,20 @@ static bool setting_data_append_list_ui_options(
    CONFIG_BOOL(
          g_settings.pause_nonactive,
          "pause_nonactive",
-         "Window Unfocus Pause",
+         "Window Unfocus Pause Hint",
          pause_nonactive,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.ui.menubar_enable,
+         "ui_menubar_enable",
+         "Menubar Enable Hint",
+         true,
          "OFF",
          "ON",
          group_info.name,

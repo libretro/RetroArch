@@ -98,6 +98,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 			}
 			return 0;
 		case WM_COMMAND:
+         if (g_settings.ui.menubar_enable)
 			{
 				d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
 				HWND        d3dr = d3d->hWnd;
