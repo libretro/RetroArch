@@ -191,6 +191,7 @@ struct settings
       bool pause_libretro;
       bool mouse_enable;
       bool timedate_enable;
+      char wallpaper[PATH_MAX_LENGTH];
 
       struct
       {

@@ -270,6 +270,18 @@ void rmenu_set_texture(void *data)
    }
 }
 
+static void rmenu_wallpaper_set_defaults(char *menu_bg, size_t sizeof_menu_bg)
+{
+   fill_pathname_join(menu_bg, g_settings.assets_directory,
+         "rmenu", sizeof_menu_bg);
+#ifdef _XBOX1
+   fill_pathname_join(menu_bg, menu_bg, "sd", sizeof_menu_bg);
+#else
+   fill_pathname_join(menu_bg, menu_bg, "hd", sizeof_menu_bg);
+#endif
+   fill_pathname_join(menu_bg, menu_bg, "main_menu.png", sizeof_menu_bg);
+}
+
 static void rmenu_context_reset(void *data)
 {
    char menu_bg[PATH_MAX_LENGTH];
@@ -278,14 +290,10 @@ static void rmenu_context_reset(void *data)
    if (!menu)
       return;
 
-   fill_pathname_join(menu_bg, g_settings.assets_directory,
-         "rmenu", sizeof(menu_bg));
-#ifdef _XBOX1
-   fill_pathname_join(menu_bg, menu_bg, "sd", sizeof(menu_bg));
-#else
-   fill_pathname_join(menu_bg, menu_bg, "hd", sizeof(menu_bg));
-#endif
-   fill_pathname_join(menu_bg, menu_bg, "main_menu.png", sizeof(menu_bg));
+   if (*g_settings.menu.wallpaper)
+      strlcpy(menu_bg, g_settings.menu.wallpaper, sizeof(menu_bg));
+   else
+      rmenu_set_default_wallpaper(menu_bg, sizeof(menu_bg));
 
    if (path_file_exists(menu_bg))
       texture_image_load(menu_texture, menu_bg);

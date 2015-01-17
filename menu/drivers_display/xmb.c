@@ -1232,8 +1232,12 @@ static void xmb_context_reset(void *data)
 
    xmb_font_init_first(&gl->font_driver, &xmb->font, gl, fontpath, xmb->font_size);
 
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_BG].path, iconpath,
-         "bg.png", sizeof(xmb->textures[XMB_TEXTURE_BG].path));
+   if (*g_settings.menu.wallpaper)
+      strlcpy(xmb->textures[XMB_TEXTURE_BG].path, g_settings.menu.wallpaper,
+            sizeof(xmb->textures[XMB_TEXTURE_BG].path));
+   else
+      fill_pathname_join(xmb->textures[XMB_TEXTURE_BG].path, iconpath,
+            "bg.png", sizeof(xmb->textures[XMB_TEXTURE_BG].path));
    fill_pathname_join(xmb->textures[XMB_TEXTURE_SETTINGS].path, iconpath,
          "settings.png", sizeof(xmb->textures[XMB_TEXTURE_SETTINGS].path));
    fill_pathname_join(xmb->textures[XMB_TEXTURE_SETTING].path, iconpath,

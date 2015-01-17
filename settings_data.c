@@ -5223,6 +5223,18 @@ static bool setting_data_append_list_menu_options(
    START_GROUP(group_info, "Menu Options");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
+   CONFIG_PATH(
+         g_settings.menu.wallpaper,
+         "menu_wallpaper",
+         "Menu Wallpaper",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_list_current_add_values(list, list_info, "png");
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+
    CONFIG_BOOL(
          g_settings.menu_show_start_screen,
          "rgui_show_start_screen",

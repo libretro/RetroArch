@@ -354,6 +354,34 @@ static int action_ok_cheat_file_load(const char *path,
    return 0;
 }
 
+static int action_ok_menu_wallpaper_load(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   const char *menu_label   = NULL;
+   const char *menu_path = NULL;
+   rarch_setting_t *setting = NULL;
+   char wallpaper_path[PATH_MAX_LENGTH];
+
+   if (!driver.menu)
+      return -1;
+
+   menu_list_get_last_stack(driver.menu->menu_list, &menu_path, &menu_label,
+         NULL);
+
+   setting = (rarch_setting_t*)
+      setting_data_find_setting(driver.menu->list_settings, menu_label);
+
+   if (!setting)
+      return -1;
+
+   fill_pathname_join(wallpaper_path, menu_path, path, sizeof(wallpaper_path));
+
+   strlcpy(g_settings.menu.wallpaper, wallpaper_path, sizeof(g_settings.menu.wallpaper));
+   menu_list_pop_stack_by_needle(driver.menu->menu_list, setting->name);
+
+   return 0;
+}
+
 static int action_ok_shader_preset_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -2316,6 +2344,21 @@ static int deferred_push_video_filter(void *data, void *userdata,
    return 0;
 }
 
+static int deferred_push_images(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_entries_parse_list(list, menu_list, path, label,
+         type, MENU_FILE_IMAGE, "png", NULL);
+
+   return 0;
+}
+
 static int deferred_push_audio_dsp_plugin(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -2495,6 +2538,9 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
          break;
       case MENU_FILE_SHADER:
          cbs->action_ok = action_ok_shader_pass_load;
+         break;
+      case MENU_FILE_IMAGE:
+         cbs->action_ok = action_ok_menu_wallpaper_load;
          break;
       case MENU_FILE_USE_DIRECTORY:
          cbs->action_ok = action_ok_path_use_directory;
@@ -2750,6 +2796,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       case MENU_FILE_CARCHIVE:
       case MENU_FILE_CORE:
       case MENU_FILE_SHADER:
+      case MENU_FILE_IMAGE:
       case MENU_FILE_OVERLAY:
       case MENU_FILE_VIDEOFILTER:
       case MENU_FILE_AUDIOFILTER:
@@ -2823,6 +2870,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_video_shader_pass;
    else if (!strcmp(label, "video_filter"))
       cbs->action_deferred_push = deferred_push_video_filter;
+   else if (!strcmp(label, "menu_wallpaper"))
+      cbs->action_deferred_push = deferred_push_images;
    else if (!strcmp(label, "audio_dsp_plugin"))
       cbs->action_deferred_push = deferred_push_audio_dsp_plugin;
    else if (!strcmp(label, "input_overlay"))
