@@ -565,7 +565,10 @@ static void glui_context_reset(void *data)
    fill_pathname_join(bgpath, g_settings.assets_directory,
          "glui", sizeof(bgpath));
 
-   fill_pathname_join(bgpath, bgpath, "bg.png", sizeof(bgpath));
+   if (*g_settings.menu.wallpaper)
+      strlcpy(bgpath, g_settings.menu.wallpaper, sizeof(bgpath));
+   else
+      fill_pathname_join(bgpath, bgpath, "bg.png", sizeof(bgpath));
 
    if (path_file_exists(bgpath))
       glui->bg = glui_png_texture_load(bgpath);

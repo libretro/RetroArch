@@ -618,8 +618,8 @@ static xmb_node_t* xmb_node_for_core(int i)
 
       node = (xmb_node_t*)info->userdata;
 
-      node->alpha = i + 1 == xmb->active_category ? xmb->c_active_alpha : xmb->c_passive_alpha;
-      node->zoom = i + 1 == xmb->active_category ? xmb->c_active_zoom : xmb->c_passive_zoom;
+      node->alpha = ((i + 1) == xmb->active_category) ? xmb->c_active_alpha : xmb->c_passive_alpha;
+      node->zoom  = ((i + 1) == xmb->active_category) ? xmb->c_active_zoom : xmb->c_passive_zoom;
    }
 
    return node;
@@ -1315,9 +1315,9 @@ static void xmb_context_reset(void *data)
       strlcat(content_texturepath, core_id, sizeof(content_texturepath));
       strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
 
-      node->alpha = i == xmb->active_category ? xmb->c_active_alpha : xmb->c_passive_alpha;
-      node->zoom = i == xmb->active_category ? xmb->c_active_zoom : xmb->c_passive_zoom;
-      node->icon = xmb_png_texture_load(texturepath);
+      node->alpha = (i == xmb->active_category) ? xmb->c_active_alpha : xmb->c_passive_alpha;
+      node->zoom  = (i == xmb->active_category) ? xmb->c_active_zoom : xmb->c_passive_zoom;
+      node->icon  = xmb_png_texture_load(texturepath);
       node->content_icon = xmb_png_texture_load(content_texturepath);
    }
 }
