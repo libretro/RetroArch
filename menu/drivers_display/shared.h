@@ -166,7 +166,6 @@ static void get_title(const char *label, const char *dir,
 static void disp_timedate_set_label(char *label, size_t label_size,
       unsigned time_mode)
 {
-   char datetime[PATH_MAX_LENGTH];
    time_t time_;
    time(&time_);
 
