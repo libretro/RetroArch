@@ -226,6 +226,7 @@ static bool d3d_initialize(void *data, const video_info_t *info)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    bool ret = true;
+
    if (!d3d->g_pD3D)
       ret = d3d_init_base(d3d, info);
    else if (d3d->needs_restore)
@@ -234,7 +235,7 @@ static bool d3d_initialize(void *data, const video_info_t *info)
       d3d_make_d3dpp(d3d, info, &d3dpp);
       if (d3d->dev->Reset(&d3dpp) != D3D_OK)
       {
-         // Try to recreate the device completely ..
+         /* Try to recreate the device completely. */
 #ifndef _XBOX
          HRESULT res = d3d->dev->TestCooperativeLevel();
          const char *err;
@@ -396,10 +397,8 @@ static void d3d_set_nonblock_state(void *data, bool state)
 static bool d3d_alive(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   bool quit, resize;
-
-   quit = false;
-   resize = false;
+   bool quit        = false;
+   bool resize      = false;
 
    if (d3d->ctx_driver && d3d->ctx_driver->check_window)
       d3d->ctx_driver->check_window(d3d, &quit, &resize,
@@ -461,7 +460,8 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 static void d3d_apply_state_changes(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d->should_resize = true;
+   if (d3d)
+      d3d->should_resize = true;
 }
 
 static void d3d_set_osd_msg(void *data, const char *msg,
@@ -484,6 +484,8 @@ static bool d3d_construct(d3d_video_t *d3d,
       const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
+   unsigned full_x, full_y;
+
    d3d->should_resize = false;
 #ifndef _XBOX
    gfx_set_dwm();
@@ -526,7 +528,6 @@ static bool d3d_construct(d3d_video_t *d3d,
    RegisterClassEx(&d3d->windowClass);
 #endif
 
-   unsigned full_x, full_y;
 #ifdef HAVE_MONITOR
    RECT mon_rect = d3d_monitor_rect(d3d);
 
@@ -632,6 +633,9 @@ static void d3d_viewport_info(void *data, struct rarch_viewport *vp)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
+   if (!d3d || !vp)
+      return;
+
    vp->x           = d3d->final_viewport.X;
    vp->y           = d3d->final_viewport.Y;
    vp->width       = d3d->final_viewport.Width;
@@ -644,7 +648,8 @@ static void d3d_viewport_info(void *data, struct rarch_viewport *vp)
 static void d3d_set_rotation(void *data, unsigned rot)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d->dev_rotation = rot;
+   if (d3d)
+      d3d->dev_rotation = rot;
 }
 
 static void d3d_show_mouse(void *data, bool state)
@@ -674,6 +679,8 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
 static void *d3d_init(const video_info_t *info,
       const input_driver_t **input, void **input_data)
 {
+   d3d_video_t *vid = NULL;
+
 #ifdef _XBOX
    if (driver.video_data)
    {
@@ -695,7 +702,7 @@ static void *d3d_init(const video_info_t *info,
    }
 #endif
 
-   d3d_video_t *vid = new d3d_video_t();
+   vid = new d3d_video_t();
    if (!vid)
       return NULL;
 
@@ -790,18 +797,23 @@ static BOOL CALLBACK d3d_monitor_enum_proc(HMONITOR hMonitor,
    return TRUE;
 }
 
-// Multi-monitor support.
+/* Multi-monitor support. */
 static RECT d3d_monitor_rect(d3d_video_t *d3d)
 {
+   unsigned fs_monitor, i;
+   MONITORINFOEX current_mon;
+   HMONITOR hm_to_use;
    Monitor::num_mons = 0;
+
    EnumDisplayMonitors(NULL, NULL, d3d_monitor_enum_proc, 0);
 
    if (!Monitor::last_hm)
       Monitor::last_hm = MonitorFromWindow(
             GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
-   HMONITOR hm_to_use = Monitor::last_hm;
 
-   unsigned fs_monitor = g_settings.video.monitor_index;
+   hm_to_use  = Monitor::last_hm;
+   fs_monitor = g_settings.video.monitor_index;
+
    if (fs_monitor && fs_monitor <= Monitor::num_mons 
          && Monitor::all_hms[fs_monitor - 1])
    {
@@ -810,17 +822,16 @@ static RECT d3d_monitor_rect(d3d_video_t *d3d)
    }
    else
    {
-      for (unsigned i = 0; i < Monitor::num_mons; i++)
+      for (i = 0; i < Monitor::num_mons; i++)
       {
-         if (Monitor::all_hms[i] == hm_to_use)
-         {
-            d3d->cur_mon_id = i;
-            break;
-         }
+         if (Monitor::all_hms[i] != hm_to_use)
+            continue;
+
+         d3d->cur_mon_id = i;
+         break;
       }
    }
 
-   MONITORINFOEX current_mon;
    memset(&current_mon, 0, sizeof(current_mon));
    current_mon.cbSize = sizeof(MONITORINFOEX);
    GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
@@ -832,6 +843,7 @@ static RECT d3d_monitor_rect(d3d_video_t *d3d)
 #ifndef _XBOX
 static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
 {
+   unsigned i;
    LinkInfo link_info = {0};
    link_info.pass = &d3d->shader.pass[0];
    link_info.tex_w = link_info.tex_h = 
@@ -849,7 +861,7 @@ static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
       return;
    }
 
-   for (unsigned i = 1; i < d3d->shader.passes; i++)
+   for (i = 1; i < d3d->shader.passes; i++)
    {
       renderchain_convert_geometry(d3d->chain, &link_info,
             out_width, out_height,
@@ -877,10 +889,10 @@ static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
 #ifndef _XBOX
 static bool d3d_init_imports(d3d_video_t *d3d)
 {
+   state_tracker_info tracker_info = {0};
+
    if (!d3d->shader.variables)
       return true;
-
-   state_tracker_info tracker_info = {0};
 
    tracker_info.wram = (uint8_t*)
       pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
@@ -913,6 +925,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
 
 static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
+   unsigned i;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    /* Setup information for first pass. */
 #ifdef _XBOX
@@ -953,7 +966,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    unsigned out_width = 0;
    unsigned out_height = 0;
 
-   for (unsigned i = 1; i < d3d->shader.passes; i++)
+   for (i = 1; i < d3d->shader.passes; i++)
    {
       renderchain_convert_geometry(d3d->chain, &link_info,
             out_width, out_height,
@@ -999,7 +1012,7 @@ static void d3d_reinit_renderchain(void *data,
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-   d3d->pixel_size   = video->rgb32 ?
+   d3d->pixel_size        = video->rgb32 ?
       sizeof(uint32_t) : sizeof(uint16_t);
    d3d->tex_w = d3d->tex_h = 
       RARCH_SCALE_BASE * video->input_scale;
@@ -1023,14 +1036,16 @@ static bool texture_image_render(void *data,
       struct texture_image *out_img,
       int x, int y, int w, int h, bool force_fullscreen)
 {
+   float fX, fY;
+   void *verts = NULL;
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
-   if (out_img->pixels == NULL || out_img->vertex_buf == NULL)
+   if (!out_img->pixels || !out_img->vertex_buf)
       return false;
 
-   float fX = static_cast<float>(x);
-   float fY = static_cast<float>(y);
+   fX = (float)(x);
+   fY = (float)(y);
 
    // create the new vertices
    Vertex newVerts[] =
@@ -1042,13 +1057,13 @@ static bool texture_image_render(void *data,
       {fX,            fY + h,         0.0f,  0,     0, 1}
    };
 
-   /* load the existing vertices */
-   void *verts = d3d_vertex_buffer_lock(out_img->vertex_buf);
+   /* Load the existing vertices */
+   verts = d3d_vertex_buffer_lock(out_img->vertex_buf);
 
    if (!verts)
       return false;
 
-   /* copy the new verts over the old verts */
+   /* Copy the new verts over the old verts */
    memcpy(verts, newVerts, sizeof(newVerts));
    d3d_vertex_buffer_unlock(out_img->vertex_buf);
 
@@ -1088,6 +1103,7 @@ static bool texture_image_render(void *data,
 static void d3d_draw_texture(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+
 #if defined(HAVE_RMENU)
    menu_texture->x = 0;
    menu_texture->y = 0;
@@ -1110,7 +1126,9 @@ static void d3d_draw_texture(void *data)
 #ifdef HAVE_FBO
 static bool d3d_init_multipass(d3d_video_t *d3d)
 {
+   unsigned i;
    config_file_t *conf = config_file_new(d3d->cg_shader.c_str());
+
    if (!conf)
    {
       RARCH_ERR("Failed to load preset.\n");
@@ -1132,15 +1150,15 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 
    RARCH_LOG("[D3D9 Meta-Cg] Found %u shaders.\n", d3d->shader.passes);
 
-   for (unsigned i = 0; i < d3d->shader.passes; i++)
+   for (i = 0; i < d3d->shader.passes; i++)
    {
-      if (!d3d->shader.pass[i].fbo.valid)
-      {
-         d3d->shader.pass[i].fbo.scale_x = 
-            d3d->shader.pass[i].fbo.scale_y = 1.0f;
-         d3d->shader.pass[i].fbo.type_x = 
-            d3d->shader.pass[i].fbo.type_y = RARCH_SCALE_INPUT;
-      }
+      if (d3d->shader.pass[i].fbo.valid)
+         continue;
+
+      d3d->shader.pass[i].fbo.scale_x = 
+         d3d->shader.pass[i].fbo.scale_y = 1.0f;
+      d3d->shader.pass[i].fbo.type_x = 
+         d3d->shader.pass[i].fbo.type_y = RARCH_SCALE_INPUT;
    }
 
    bool use_extra_pass = d3d->shader.passes < GFX_MAX_SHADERS && 
@@ -1203,9 +1221,11 @@ static void d3d_set_font_rect(d3d_video_t *d3d,
 static bool d3d_init_singlepass(d3d_video_t *d3d)
 {
 #ifndef _XBOX
+   gfx_shader_pass *pass = NULL;
+
    memset(&d3d->shader, 0, sizeof(d3d->shader));
    d3d->shader.passes = 1;
-   gfx_shader_pass *pass = (gfx_shader_pass*)&d3d->shader.pass[0];
+   pass = (gfx_shader_pass*)&d3d->shader.pass[0];
 
    pass->fbo.valid = true;
    pass->fbo.scale_x = pass->fbo.scale_y = 1.0;
@@ -1231,7 +1251,9 @@ static bool d3d_process_shader(d3d_video_t *d3d)
 #ifndef _XBOX
 static bool d3d_init_luts(d3d_video_t *d3d)
 {
-   for (unsigned i = 0; i < d3d->shader.luts; i++)
+   unsigned i;
+
+   for (i = 0; i < d3d->shader.luts; i++)
    {
       bool ret = renderchain_add_lut(
             d3d->chain, d3d->shader.lut[i].id, d3d->shader.lut[i].path,
@@ -1252,17 +1274,17 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
 {
    void *verts;
    unsigned i;
-   d3d_video_t *d3d = (d3d_video_t*)data;
-
-   if (!overlay || !overlay->tex)
-      return;
-
    struct overlay_vertex
    {
       float x, y, z;
       float u, v;
       float r, g, b, a;
    } vert[4];
+   float overlay_width, overlay_height;
+   d3d_video_t *d3d = (d3d_video_t*)data;
+
+   if (!overlay || !overlay->tex)
+      return;
 
    if (!overlay->vert_buf)
    {
@@ -1281,8 +1303,8 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
       vert[i].a = overlay->alpha_mod;
    }
 
-   float overlay_width = d3d->final_viewport.Width;
-   float overlay_height = d3d->final_viewport.Height;
+   overlay_width  = d3d->final_viewport.Width;
+   overlay_height = d3d->final_viewport.Height;
 
    vert[0].x = overlay->vert_coords.x * overlay_width;
    vert[1].x = (overlay->vert_coords.x + overlay->vert_coords.w)
@@ -1345,7 +1367,8 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
    if (overlay->fullscreen)
    {
       /* Set viewport to full window. */
-      D3DVIEWPORT vp_full;
+      D3DVIEWPORT vp_full = {0};
+
       vp_full.X = 0;
       vp_full.Y = 0;
       vp_full.Width = d3d->screen_width;
@@ -1425,11 +1448,13 @@ static bool d3d_overlay_load(void *data,
 {
    unsigned i, y;
    d3d_video_t *d3d = (d3d_video_t*)data;
+
    d3d_free_overlays(data);
    d3d->overlays.resize(num_images);
 
    for (i = 0; i < num_images; i++)
    {
+      D3DLOCKED_RECT d3dlr;
       unsigned width = images[i].width;
       unsigned height = images[i].height;
       overlay_t *overlay = (overlay_t*)&d3d->overlays[i];
@@ -1448,13 +1473,13 @@ static bool d3d_overlay_load(void *data,
          return false;
       }
 
-      D3DLOCKED_RECT d3dlr;
       if (SUCCEEDED(overlay->tex->LockRect(0, &d3dlr,
                   NULL, D3DLOCK_NOSYSLOCK)))
       {
-         uint32_t *dst = static_cast<uint32_t*>(d3dlr.pBits);
+         uint32_t       *dst = (uint32_t*)(d3dlr.pBits);
          const uint32_t *src = images[i].pixels;
-         unsigned pitch = d3dlr.Pitch >> 2;
+         unsigned      pitch = d3dlr.Pitch >> 2;
+
          for (y = 0; y < height; y++, dst += pitch, src += width)
             memcpy(dst, src, width << 2);
          overlay->tex->UnlockRect(0);
@@ -1499,7 +1524,8 @@ static void d3d_overlay_full_screen(void *data, bool enable)
 static void d3d_overlay_set_alpha(void *data, unsigned index, float mod)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d->overlays[index].alpha_mod = mod;
+   if (d3d)
+      d3d->overlays[index].alpha_mod = mod;
 }
 
 static const video_overlay_interface_t d3d_overlay_interface = {
@@ -1523,6 +1549,7 @@ static bool d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
+   unsigned i;
    D3DVIEWPORT screen_vp;
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
@@ -1619,7 +1646,7 @@ static bool d3d_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled)
    {
-      for (unsigned i = 0; i < d3d->overlays.size(); i++)
+      for (i = 0; i < d3d->overlays.size(); i++)
          d3d_overlay_render(d3d, &d3d->overlays[i]);
    }
 #endif
@@ -1649,12 +1676,12 @@ static bool d3d_frame(void *data, const void *frame,
 
 static bool d3d_read_viewport(void *data, uint8_t *buffer)
 {
+   bool ret = true;
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
    RARCH_PERFORMANCE_INIT(d3d_read_viewport);
    RARCH_PERFORMANCE_START(d3d_read_viewport);
-   bool ret = true;
 
    (void)data;
    (void)buffer;
@@ -1690,16 +1717,17 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
    D3DLOCKED_RECT rect;
    if (SUCCEEDED(dest->LockRect(&rect, NULL, D3DLOCK_READONLY)))
    {
-      unsigned pitchpix = rect.Pitch / 4;
+      unsigned x, y;
+      unsigned pitchpix      = rect.Pitch / 4;
       const uint32_t *pixels = (const uint32_t*)rect.pBits;
+
       pixels += d3d->final_viewport.X;
       pixels += (d3d->final_viewport.Height - 1) * pitchpix;
       pixels -= d3d->final_viewport.Y * pitchpix;
 
-      for (unsigned y = 0; y < d3d->final_viewport.Height;
-            y++, pixels -= pitchpix)
+      for (y = 0; y < d3d->final_viewport.Height; y++, pixels -= pitchpix)
       {
-         for (unsigned x = 0; x < d3d->final_viewport.Width; x++)
+         for (x = 0; x < d3d->final_viewport.Width; x++)
          {
             *buffer++ = (pixels[x] >>  0) & 0xff;
             *buffer++ = (pixels[x] >>  8) & 0xff;
@@ -1725,7 +1753,8 @@ end:
 static bool d3d_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   bool restore_old   = false;
+   d3d_video_t *d3d   = (d3d_video_t*)data;
    std::string shader = "";
 
    switch (type)
@@ -1742,7 +1771,6 @@ static bool d3d_set_shader(void *data,
    }
 
    std::string old_shader = d3d->cg_shader;
-   bool restore_old = false;
 #ifdef HAVE_CG
    d3d->cg_shader = shader;
 #endif
@@ -1812,12 +1840,13 @@ static void d3d_set_menu_texture_frame(void *data,
    D3DLOCKED_RECT d3dlr;
    if (SUCCEEDED(d3d->menu->tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
+      unsigned h, w;
       if (rgb32)
       {
-         uint8_t *dst = (uint8_t*)d3dlr.pBits;
+         uint8_t        *dst = (uint8_t*)d3dlr.pBits;
          const uint32_t *src = (const uint32_t*)frame;
-         for (unsigned h = 0; h < height;
-               h++, dst += d3dlr.Pitch, src += width)
+
+         for (h = 0; h < height; h++, dst += d3dlr.Pitch, src += width)
          {
             memcpy(dst, src, width * sizeof(uint32_t));
             memset(dst + width * sizeof(uint32_t), 0,
@@ -1826,12 +1855,12 @@ static void d3d_set_menu_texture_frame(void *data,
       }
       else
       {
-         uint32_t *dst = (uint32_t*)d3dlr.pBits;
+         uint32_t       *dst = (uint32_t*)d3dlr.pBits;
          const uint16_t *src = (const uint16_t*)frame;
-         for (unsigned h = 0; h < height;
-               h++, dst += d3dlr.Pitch >> 2, src += width)
+
+         for (h = 0; h < height; h++, dst += d3dlr.Pitch >> 2, src += width)
          {
-            for (unsigned w = 0; w < width; w++)
+            for (w = 0; w < width; w++)
             {
                uint16_t c = src[w];
                uint32_t r = (c >> 12) & 0xf;

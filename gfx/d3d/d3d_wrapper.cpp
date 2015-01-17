@@ -323,9 +323,12 @@ void d3d_texture_blit(void *data, void *renderchain_data,
       LPDIRECT3DTEXTURE tex, D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
+   unsigned y;
 	d3d_video_t *d3d = (d3d_video_t*)data;
+
    (void)data;
    (void)d3d;
+   (void)y;
 
    if (!d3d)
 	   return;
@@ -339,7 +342,7 @@ void d3d_texture_blit(void *data, void *renderchain_data,
    XGCopySurface(lr->pBits, lr->Pitch, width, height, desc.Format, NULL,
       frame, pitch, desc.Format, NULL, 0, 0);
 #elif defined(_XBOX1)
-   for (unsigned y = 0; y < height; y++)
+   for (y = 0; y < height; y++)
    {
       const uint8_t *in = (const uint8_t*)frame + y * pitch;
       uint8_t *out = (uint8_t*)lr->pBits + y * lr->Pitch;
@@ -355,7 +358,7 @@ void d3d_texture_blit(void *data, void *renderchain_data,
 
    if (SUCCEEDED(tex->LockRect(0, lr, NULL, D3DLOCK_NOSYSLOCK)))
    {
-      for (unsigned y = 0; y < height; y++)
+      for (y = 0; y < height; y++)
       { 
          const uint8_t *in = (const uint8_t*)frame + y * pitch;
          uint8_t *out = (uint8_t*)lr->pBits + y * lr->Pitch;

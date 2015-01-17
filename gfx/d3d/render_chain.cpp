@@ -26,7 +26,9 @@ static inline D3DTEXTUREFILTERTYPE translate_filter(unsigned type)
 
 static inline D3DTEXTUREFILTERTYPE translate_filter(bool smooth)
 {
-   return smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
+   if (smooth)
+      return D3DTEXF_LINEAR;
+   return D3DTEXF_POINT;
 }
 
 #ifdef HAVE_CG
@@ -77,8 +79,10 @@ bool renderchain_init(void *data, const video_info_t *video_info,
 
 void renderchain_clear(void *data)
 {
+   unsigned i;
    renderchain_t *chain = (renderchain_t*)data;
-   for (unsigned i = 0; i < TEXTURES; i++)
+
+   for (i = 0; i < TEXTURES; i++)
    {
       if (chain->prev.tex[i])
          d3d_texture_free(chain->prev.tex[i]);
@@ -88,7 +92,8 @@ void renderchain_clear(void *data)
 
    if (chain->passes[0].vertex_decl)
       chain->passes[0].vertex_decl->Release();
-   for (unsigned i = 1; i < chain->passes.size(); i++)
+
+   for (i = 1; i < chain->passes.size(); i++)
    {
       if (chain->passes[i].tex)
          d3d_texture_free(chain->passes[i].tex);
@@ -99,7 +104,7 @@ void renderchain_clear(void *data)
       renderchain_destroy_shader(chain, i);
    }
 
-   for (unsigned i = 0; i < chain->luts.size(); i++)
+   for (i = 0; i < chain->luts.size(); i++)
    {
       if (chain->luts[i].tex)
          d3d_texture_free(chain->luts[i].tex);
@@ -113,7 +118,9 @@ void renderchain_set_final_viewport(void *data,
       const D3DVIEWPORT *final_viewport)
 {
    renderchain_t *chain = (renderchain_t*)data;
-   chain->final_viewport = (D3DVIEWPORT*)final_viewport;
+
+   if (chain)
+      chain->final_viewport = (D3DVIEWPORT*)final_viewport;
 }
 
 bool renderchain_set_pass_size(void *data, unsigned pass_index,
@@ -122,6 +129,7 @@ bool renderchain_set_pass_size(void *data, unsigned pass_index,
    renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = chain->dev;
    Pass *pass = (Pass*)&chain->passes[pass_index];
+
    if (width != pass->info.tex_w || height != pass->info.tex_h)
    {
       d3d_texture_free(pass->tex);
@@ -151,9 +159,10 @@ bool renderchain_set_pass_size(void *data, unsigned pass_index,
 
 bool renderchain_add_pass(void *data, const LinkInfo *info)
 {
+   Pass pass;
    renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-   Pass pass;
+
    pass.info = *info;
    pass.last_width = 0;
    pass.last_height = 0;
@@ -195,9 +204,10 @@ bool renderchain_add_lut(void *data, const std::string &id,
       const std::string &path,
       bool smooth)
 {
-   renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DTEXTURE lut;
+   renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = chain->dev;
+   lut_info info         = { lut, id, smooth };
 
    RARCH_LOG("[D3D]: Loading LUT texture: %s.\n", path.c_str());
 
@@ -224,7 +234,6 @@ bool renderchain_add_lut(void *data, const std::string &id,
    d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
    d3d_set_texture(d3dr, 0, NULL);
 
-   lut_info info = { lut, id, smooth };
    chain->luts.push_back(info);
    return true;
 }
@@ -240,6 +249,10 @@ void renderchain_add_state_tracker(void *data, state_tracker_t *tracker)
 void renderchain_start_render(void *data)
 {
    renderchain_t *chain = (renderchain_t*)data;
+
+   if (!chain)
+      return;
+
    chain->passes[0].tex         = chain->prev.tex[chain->prev.ptr];
    chain->passes[0].vertex_buf  = chain->prev.vertex_buf[chain->prev.ptr];
    chain->passes[0].last_width  = chain->prev.last_width[chain->prev.ptr];
@@ -249,6 +262,10 @@ void renderchain_start_render(void *data)
 void renderchain_end_render(void *data)
 {
    renderchain_t *chain = (renderchain_t*)data;
+
+   if (!chain)
+      return;
+
    chain->prev.last_width[chain->prev.ptr]  = chain->passes[0].last_width;
    chain->prev.last_height[chain->prev.ptr] = chain->passes[0].last_height;
    chain->prev.ptr                          = (chain->prev.ptr + 1) & TEXTURESMASK;
@@ -257,34 +274,35 @@ void renderchain_end_render(void *data)
 bool renderchain_render(void *chain_data, const void *data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
+   LPDIRECT3DSURFACE back_buffer, target;
+   unsigned i, current_width, current_height, out_width = 0, out_height = 0;
    renderchain_t *chain = (renderchain_t*)chain_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+
    renderchain_start_render(chain);
 
-   unsigned current_width = width;
-   unsigned current_height = height;
-   unsigned out_width = 0;
-   unsigned out_height = 0;
+   current_width = width;
+   current_height = height;
    renderchain_convert_geometry(chain, &chain->passes[0].info,
          out_width, out_height,
          current_width, current_height, chain->final_viewport);
+
 #ifdef _XBOX1
    d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
    d3dr->SetSoftDisplayFilter(g_extern.console.softfilter_enable);
 #endif
    renderchain_blit_to_texture(chain, data, width, height, pitch);
 
-   // Grab back buffer.
-   LPDIRECT3DSURFACE back_buffer;
+   /* Grab back buffer. */
    d3dr->GetRenderTarget(0, &back_buffer);
 
-   // In-between render target passes.
-   for (unsigned i = 0; i < chain->passes.size() - 1; i++)
+   /* In-between render target passes. */
+   for (i = 0; i < chain->passes.size() - 1; i++)
    {
+      D3DVIEWPORT viewport = {0};
       Pass *from_pass = (Pass*)&chain->passes[i];
       Pass *to_pass   = (Pass*)&chain->passes[i + 1];
 
-      LPDIRECT3DSURFACE target;
       to_pass->tex->GetSurfaceLevel(0, &target);
       d3dr->SetRenderTarget(0, target);
 
@@ -293,7 +311,6 @@ bool renderchain_render(void *chain_data, const void *data,
             current_width, current_height, chain->final_viewport);
 
       /* Clear out whole FBO. */
-      D3DVIEWPORT viewport = {0};
       viewport.Width = to_pass->info.tex_w;
       viewport.Height = to_pass->info.tex_h;
       viewport.MinZ = 0.0f;
@@ -340,26 +357,31 @@ bool renderchain_render(void *chain_data, const void *data,
    renderchain_set_shaders(chain, chain->fStock, chain->vStock);
    renderchain_set_mvp(chain, chain->vStock, chain->final_viewport->Width,
          chain->final_viewport->Height, 0);
+
    return true;
 }
 
 bool renderchain_create_first_pass(void *data, const LinkInfo *info,
       PixelFormat fmt)
 {
-   renderchain_t *chain = (renderchain_t*)data;
+   unsigned i;
+   Pass pass;
    D3DXMATRIX ident;
-   D3DXMatrixIdentity(&ident);
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+   renderchain_t *chain = (renderchain_t*)data;
+
+   D3DXMatrixIdentity(&ident);
+
    d3d_set_transform(d3dr, D3DTS_WORLD, &ident);
    d3d_set_transform(d3dr, D3DTS_VIEW, &ident);
 
-   Pass pass;
    pass.info = *info;
    pass.last_width = 0;
    pass.last_height = 0;
 
    chain->prev.ptr = 0;
-   for (unsigned i = 0; i < TEXTURES; i++)
+
+   for (i = 0; i < TEXTURES; i++)
    {
       chain->prev.last_width[i] = 0;
       chain->prev.last_height[i] = 0;
@@ -413,13 +435,18 @@ void renderchain_set_vertices(void *data, Pass *pass,
 
    if (pass->last_width != width || pass->last_height != height)
    {
+      Vertex vert[4];
+      float _u, _v;
+      unsigned i;
+      void *verts = NULL;
+
       pass->last_width = width;
       pass->last_height = height;
 
-      float _u = static_cast<float>(width) / info->tex_w;
-      float _v = static_cast<float>(height) / info->tex_h;
-      Vertex vert[4];
-      for (unsigned i = 0; i < 4; i++)
+      _u = float(width)  / info->tex_w;
+      _v = float(height) / info->tex_h;
+
+      for (i = 0; i < 4; i++)
       {
          vert[i].z = 0.5f;
          vert[i].r = vert[i].g = vert[i].b = vert[i].a = 1.0f;
@@ -453,13 +480,13 @@ void renderchain_set_vertices(void *data, Pass *pass,
       vert[3].lut_v = 1.0f;
 
       /* Align texels and vertices. */
-      for (unsigned i = 0; i < 4; i++)
+      for (i = 0; i < 4; i++)
       {
          vert[i].x -= 0.5f;
          vert[i].y += 0.5f;
       }
 
-      void *verts = d3d_vertex_buffer_lock(pass->vertex_buf);
+      verts = d3d_vertex_buffer_lock(pass->vertex_buf);
       memcpy(verts, vert, sizeof(vert));
       d3d_vertex_buffer_unlock(pass->vertex_buf);
    }
@@ -482,8 +509,9 @@ void renderchain_set_mvp(void *data, CGprogram &vPrg,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
-   renderchain_t *chain = (renderchain_t*)data;
    D3DXMATRIX proj, ortho, rot, tmp;
+   renderchain_t *chain = (renderchain_t*)data;
+
    D3DXMatrixOrthoOffCenterLH(&ortho, 0, vp_width, 0, vp_height, 0, 1);
 
    if (rotation)
@@ -503,6 +531,7 @@ void renderchain_convert_geometry(void *data, const LinkInfo *info,
       D3DVIEWPORT *final_viewport)
 {
    renderchain_t *chain = (renderchain_t*)data;
+
    switch (info->pass->fbo.type_x)
    {
       case RARCH_SCALE_VIEWPORT:
@@ -554,6 +583,7 @@ void renderchain_blit_to_texture(void *data, const void *frame,
 
 void renderchain_render_pass(void *data, Pass *pass, unsigned pass_index)
 {
+   unsigned i;
    renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
    renderchain_set_shaders(chain, pass->fPrg, pass->vPrg);
@@ -569,7 +599,7 @@ void renderchain_render_pass(void *data, Pass *pass, unsigned pass_index)
 #else
    d3dr->SetVertexDeclaration(pass->vertex_decl);
 #endif
-   for (unsigned i = 0; i < 4; i++)
+   for (i = 0; i < 4; i++)
       d3d_set_stream_source(d3dr, i,
             pass->vertex_buf, 0, sizeof(Vertex));
 
@@ -581,8 +611,8 @@ void renderchain_render_pass(void *data, Pass *pass, unsigned pass_index)
 
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 
-   // So we don't render with linear filter into render targets,
-   // which apparently looked odd (too blurry).
+   /* So we don't render with linear filter into render targets,
+    * which apparently looked odd (too blurry). */
    d3d_set_sampler_minfilter(d3dr, 0, D3DTEXF_POINT);
    d3d_set_sampler_magfilter(d3dr, 0, D3DTEXF_POINT);
 
@@ -633,13 +663,14 @@ void renderchain_log_info(void *data, const LinkInfo *info)
 
 void renderchain_unbind_all(void *data)
 {
+   unsigned i;
    renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
    /* Have to be a bit anal about it.
     * Render targets hate it when they have filters apparently.
     */
-   for (unsigned i = 0; i < chain->bound_tex.size(); i++)
+   for (i = 0; i < chain->bound_tex.size(); i++)
    {
       d3d_set_sampler_minfilter(d3dr,
             chain->bound_tex[i], D3DTEXF_POINT);
@@ -648,7 +679,7 @@ void renderchain_unbind_all(void *data)
       d3d_set_texture(d3dr, chain->bound_tex[i], NULL);
    }
 
-   for (unsigned i = 0; i < chain->bound_vert.size(); i++)
+   for (i = 0; i < chain->bound_vert.size(); i++)
       d3d_set_stream_source(d3dr, chain->bound_vert[i], 0, 0, 0);
 
    chain->bound_tex.clear();
