@@ -514,6 +514,7 @@ static void config_set_defaults(void)
    g_settings.menu.navigation.browser.filter.supported_extensions_enable = true;
 #endif
 
+   g_settings.ui.menubar_enable = true;
 
    g_settings.location.allow = false;
    g_settings.camera.allow = false;
