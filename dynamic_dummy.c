@@ -79,10 +79,11 @@ static retro_input_state_t dummy_input_state_cb;
 
 void libretro_dummy_retro_set_environment(retro_environment_t cb)
 {
+   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
+
    dummy_environ_cb = cb;
 
    /* We know it's supported, it's internal to RetroArch. */
-   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
    dummy_environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
 }
 
@@ -118,6 +119,7 @@ void libretro_dummy_retro_reset(void)
 void libretro_dummy_retro_run(void)
 {
    unsigned i;
+
    dummy_input_poll_cb();
    for (i = 0; i < 320 * 240; i++)
       frame_buf[i] = 4 << 5;
