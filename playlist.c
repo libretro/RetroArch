@@ -41,7 +41,7 @@ struct content_playlist
 
 /**
  * content_playlist_get_index:
- * @playlist        	: Playlist handle.
+ * @playlist        	   : Playlist handle.
  * @idx                 : Index of playlist entry.
  * @path                : Path of playlist entry.
  * @core_path           : Core path of playlist entry.
@@ -65,6 +65,12 @@ void content_playlist_get_index(content_playlist_t *playlist,
       *core_name = playlist->entries[idx].core_name;
 }
 
+/**
+ * content_playlist_free_entry:
+ * @entry           	   : Playlist entry handle.
+ *
+ * Frees playlist entry.
+ **/
 static void content_playlist_free_entry(
       struct content_playlist_entry *entry)
 {
@@ -86,7 +92,7 @@ static void content_playlist_free_entry(
 
 /**
  * content_playlist_push:
- * @playlist        	: Playlist handle.
+ * @playlist        	   : Playlist handle.
  * @path                : Path of new playlist entry.
  * @core_path           : Core path of new playlist entry.
  * @core_name           : Core name of new playlist entry.
@@ -172,7 +178,7 @@ static void content_playlist_write_file(content_playlist_t *playlist)
 
 /**
  * content_playlist_free:
- * @playlist        	: Playlist handle.
+ * @playlist        	   : Playlist handle.
  *
  * Frees playlist handle.
  */
@@ -196,7 +202,7 @@ void content_playlist_free(content_playlist_t *playlist)
 
 /**
  * content_playlist_clear:
- * @playlist        	: Playlist handle.
+ * @playlist        	   : Playlist handle.
  *
  * Clears all playlist entries in playlist.
  **/
@@ -213,7 +219,7 @@ void content_playlist_clear(content_playlist_t *playlist)
 
 /**
  * content_playlist_size:
- * @playlist        	: Playlist handle.
+ * @playlist        	   : Playlist handle.
  *
  * Gets size of playlist.
  * Returns: size of playlist.
@@ -273,7 +279,7 @@ end:
 
 /**
  * content_playlist_init:
- * @path            	: Path to playlist contents file.
+ * @path            	   : Path to playlist contents file.
  * @size                : Maximum capacity of playlist size.
  *
  * Creates and initializes a playlist.
