@@ -207,7 +207,6 @@ bool renderchain_add_lut(void *data, const std::string &id,
    LPDIRECT3DTEXTURE lut;
    renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = chain->dev;
-   lut_info info         = { lut, id, smooth };
 
    RARCH_LOG("[D3D]: Loading LUT texture: %s.\n", path.c_str());
 
@@ -226,6 +225,7 @@ bool renderchain_add_lut(void *data, const std::string &id,
          NULL
          );
 
+   lut_info info         = { lut, id, smooth };
    if (!lut)
       return false;
 
@@ -367,8 +367,13 @@ bool renderchain_create_first_pass(void *data, const LinkInfo *info,
    unsigned i;
    Pass pass;
    D3DXMATRIX ident;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-   renderchain_t *chain = (renderchain_t*)data;
+   renderchain_t *chain  = (renderchain_t*)data;
+   LPDIRECT3DDEVICE d3dr = NULL;
+
+   if (!chain)
+	   return false;
+   
+   d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
    D3DXMatrixIdentity(&ident);
 
