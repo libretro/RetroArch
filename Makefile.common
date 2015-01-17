@@ -623,7 +623,8 @@ endif
 
 ifneq ($(findstring Win32,$(OS)),)
    OBJ += media/rarch.o \
-          input/keyboard_event_win32.o
+          input/keyboard_event_win32.o \
+			 gfx/drivers_context\win32_common.o
 endif
 
 # Record
