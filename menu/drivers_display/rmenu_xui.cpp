@@ -556,7 +556,7 @@ static void rmenu_xui_render(void)
 	for (i = 0; i < end; i++)
 	{
 		wchar_t msg_left[PATH_MAX_LENGTH], msg_right[PATH_MAX_LENGTH];
-		char type_str[PATH_MAX_LENGTH], entry_title_buf[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
+		char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
 		const char *path = NULL, *entry_label = NULL;
 		unsigned type = 0, w = 0;
 

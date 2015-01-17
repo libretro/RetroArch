@@ -925,8 +925,10 @@ static bool d3d_init_imports(d3d_video_t *d3d)
 
 static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
-   unsigned i;
+   unsigned i = 0;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+
+   (void)i;
    /* Setup information for first pass. */
 #ifdef _XBOX
    /* TODO - properly implement this. */
@@ -1549,10 +1551,12 @@ static bool d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
-   unsigned i;
+   unsigned i = 0;
    D3DVIEWPORT screen_vp;
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+
+   (void)i;
 
   if (!frame)
       return true;
