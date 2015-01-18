@@ -434,7 +434,35 @@ error:
    deinit_video_filter();
 }
 
-static void init_video_input(void)
+static void init_video_input(const input_driver_t *tmp)
+{
+   /* Video driver didn't provide an input driver,
+    * so we use configured one. */
+   RARCH_LOG("Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
+
+   if (tmp)
+      driver.input = tmp;
+   else
+      find_input_driver();
+
+   if (!driver.input)
+   {
+      /* This should never really happen as tmp (driver.input) is always 
+       * found before this in find_driver_input(), or we have aborted 
+       * in a similar fashion anyways. */
+      rarch_fail(1, "init_video_input()");
+   }
+
+   driver.input_data = driver.input->init();
+
+   if (driver.input_data)
+      return;
+
+   RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
+   rarch_fail(1, "init_video_input()");
+}
+
+static void init_video(void)
 {
    unsigned max_dim, scale, width, height;
    rarch_viewport_t *custom_vp;
@@ -506,7 +534,7 @@ static void init_video_input(void)
    if (!init_video_pixel_converter(RARCH_SCALE_BASE * scale))
    {
       RARCH_ERR("Failed to initialize pixel converter.\n");
-      rarch_fail(1, "init_video_input()");
+      rarch_fail(1, "init_video()");
    }
 
    video.width = width;
@@ -539,7 +567,7 @@ static void init_video_input(void)
                driver.video, &video))
       {
          RARCH_ERR("Cannot open threaded video driver ... Exiting ...\n");
-         rarch_fail(1, "init_video_input()");
+         rarch_fail(1, "init_video()");
       }
    }
    else
@@ -550,7 +578,7 @@ static void init_video_input(void)
    if (!driver.video_data)
    {
       RARCH_ERR("Cannot open video driver ... Exiting ...\n");
-      rarch_fail(1, "init_video_input()");
+      rarch_fail(1, "init_video()");
    }
 
    driver.video_poke = NULL;
@@ -575,32 +603,7 @@ static void init_video_input(void)
             g_settings.ui.suspend_screensaver_enable);
 
    if (!driver.input)
-   {
-      /* Video driver didn't provide an input driver,
-       * so we use configured one. */
-      RARCH_LOG("Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
-
-      if (tmp)
-         driver.input = tmp;
-      else
-         find_input_driver();
-
-      if (!driver.input)
-      {
-         /* This should never really happen as tmp (driver.input) is always 
-          * found before this in find_driver_input(), or we have aborted 
-          * in a similar fashion anyways. */
-         rarch_fail(1, "init_video_input()");
-      }
-
-      driver.input_data = driver.input->init();
-
-      if (!driver.input_data)
-      {
-         RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
-         rarch_fail(1, "init_video_input()");
-      }
-   }
+      init_video_input(tmp);
 
    rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
    rarch_main_command(RARCH_CMD_OVERLAY_INIT);
@@ -615,7 +618,6 @@ static void init_video_input(void)
    if (driver.video_poke && driver.video_poke->set_texture_frame)
       driver.video_poke->set_texture_frame(driver.video_data,
                &dummy_pixels, false, 1, 1, 1.0f);
-
 }
 
 /**
@@ -652,7 +654,7 @@ void init_drivers(int flags)
    {
       g_extern.frame_count = 0;
 
-      init_video_input();
+      init_video();
 
       if (!driver.video_cache_context_ack
             && g_extern.system.hw_render_callback.context_reset)
