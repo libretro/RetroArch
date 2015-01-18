@@ -182,6 +182,7 @@ struct settings
    struct
    {
       bool menubar_enable;
+      bool suspend_screensaver_enable;
    } ui;
 
 #ifdef HAVE_MENU

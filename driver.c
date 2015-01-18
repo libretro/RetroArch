@@ -571,7 +571,8 @@ static void init_video_input(void)
             (g_settings.video.rotation + g_extern.system.rotation) % 4);
 
    if (driver.video->suppress_screensaver)
-      driver.video->suppress_screensaver(driver.video_data, true);
+      driver.video->suppress_screensaver(driver.video_data,
+            g_settings.ui.suspend_screensaver_enable);
 
    if (!driver.input)
    {

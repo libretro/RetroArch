@@ -517,6 +517,7 @@ static void config_set_defaults(void)
 #endif
 
    g_settings.ui.menubar_enable = true;
+   g_settings.ui.suspend_screensaver_enable = true;
 
    g_settings.location.allow = false;
    g_settings.camera.allow = false;
@@ -1295,6 +1296,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    }
 
    CONFIG_GET_BOOL(ui.menubar_enable, "ui_menubar_enable");
+   CONFIG_GET_BOOL(ui.suspend_screensaver_enable, "suspend_screensaver_enable");
    CONFIG_GET_BOOL(fps_show, "fps_show");
    CONFIG_GET_BOOL(fps_monitor_enable, "fps_monitor_enable");
    CONFIG_GET_BOOL(load_dummy_on_core_shutdown, "load_dummy_on_core_shutdown");
@@ -1778,6 +1780,7 @@ bool config_save_file(const char *path)
          g_settings.load_dummy_on_core_shutdown);
    config_set_bool(conf,  "fps_show", g_settings.fps_show);
    config_set_bool(conf,  "ui_menubar_enable", g_settings.ui.menubar_enable);
+   config_set_bool(conf,  "suspend_screensaver_enable", g_settings.ui.suspend_screensaver_enable);
    config_set_bool(conf,  "fps_monitor_enable", g_settings.fps_monitor_enable);
    config_set_path(conf,  "libretro_path", g_settings.libretro);
    config_set_path(conf,  "libretro_directory", g_settings.libretro_directory);
