@@ -98,6 +98,7 @@ OBJ += frontend/frontend.o \
 		libretro-sdk/file/file_path.o \
 		hash.o \
 		audio/audio_driver.o \
+		audio/audio_monitor.o \
 		input/input_driver.o \
 		gfx/video_driver.o \
 		gfx/video_monitor.o \

@@ -22,6 +22,7 @@
 #include "compat/posix_string.h"
 #include "gfx/video_thread_wrapper.h"
 #include "gfx/video_monitor.h"
+#include "audio/audio_monitor.h"
 #include "gfx/gfx_common.h"
 
 #ifdef HAVE_X11
@@ -205,6 +206,7 @@ void init_drivers_pre(void)
 
 void driver_adjust_system_rates(void)
 {
+   audio_monitor_adjust_system_rates();
    video_monitor_adjust_system_rates();
 }
 

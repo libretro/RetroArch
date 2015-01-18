@@ -15,6 +15,7 @@
  */
 
 #include "video_monitor.h"
+#include "../audio/audio_monitor.h"
 #include "../driver.h"
 #include "../general.h"
 #include "../retroarch.h"
@@ -27,7 +28,7 @@ void video_monitor_adjust_system_rates(void)
 
    g_extern.system.force_nonblock = false;
 
-   if (info->fps <= 0.0 || info->sample_rate <= 0.0)
+   if (info->fps <= 0.0)
       return;
 
    timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
@@ -46,15 +47,7 @@ void video_monitor_adjust_system_rates(void)
          g_extern.system.force_nonblock = true;
          RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
       }
-
-      g_extern.audio_data.in_rate = info->sample_rate;
    }
-   else
-      g_extern.audio_data.in_rate = info->sample_rate *
-         (g_settings.video.refresh_rate / info->fps);
-
-   RARCH_LOG("Set audio input rate to: %.2f Hz.\n",
-         g_extern.audio_data.in_rate);
 
    if (!driver.video_data)
       return;
@@ -80,10 +73,7 @@ void video_monitor_set_refresh_rate(float hz)
 
    g_settings.video.refresh_rate = hz;
    driver_adjust_system_rates();
-
-   g_extern.audio_data.orig_src_ratio =
-      g_extern.audio_data.src_ratio =
-      (double)g_settings.audio.out_rate / g_extern.audio_data.in_rate;
+   audio_monitor_set_refresh_rate();
 }
 
 /**
