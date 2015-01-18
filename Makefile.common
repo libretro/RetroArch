@@ -121,6 +121,7 @@ OBJ += frontend/frontend.o \
 		input/input_joypad.o \
 		input/input_common.o \
 		input/input_keymaps.o \
+		input/input_sensor.o \
 		input/keyboard_line.o \
 		input/input_overlay.o \
 		patch.o \

@@ -32,6 +32,8 @@
 #include "dynamic_dummy.h"
 #include "retroarch.h"
 
+#include "input/input_sensor.h"
+
 #ifdef NEED_DYNAMIC
 #ifdef _WIN32
 #include <windows.h>
@@ -1031,8 +1033,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             (struct retro_sensor_interface*)data;
 
          RARCH_LOG("Environ GET_SENSOR_INTERFACE.\n");
-         iface->set_sensor_state = driver_set_sensor_state;
-         iface->get_sensor_input = driver_sensor_get_input;
+         iface->set_sensor_state = input_sensor_set_state;
+         iface->get_sensor_input = input_sensor_get_input;
          break;
       }
 

@@ -395,20 +395,6 @@ bool driver_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
 
 /**
- * driver_set_sensor_state:
- * @port               : User number.
- * @effect             : Sensor action.
- * @rate               : Sensor rate update.
- *
- * Sets the sensor state.
- * Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE.
- **/
-bool driver_set_sensor_state(unsigned port,
-      enum retro_sensor_action action, unsigned rate);
-
-float driver_sensor_get_input(unsigned port, unsigned action);
-
-/**
  * driver_update_system_av_info:
  * @info               : pointer to new A/V info
  *

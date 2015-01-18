@@ -292,6 +292,7 @@ INPUT
 #include "../input/input_joypad.c"
 #include "../input/input_common.c"
 #include "../input/input_keymaps.c"
+#include "../input/input_sensor.c"
 #include "../input/keyboard_line.c"
 
 #ifdef HAVE_OVERLAY

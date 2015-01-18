@@ -282,34 +282,6 @@ bool driver_set_rumble_state(unsigned port,
 }
 
 /**
- * driver_set_sensor_state:
- * @port               : User number.
- * @effect             : Sensor action.
- * @rate               : Sensor rate update.
- *
- * Sets the sensor state.
- * Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE.
- **/
-bool driver_set_sensor_state(unsigned port,
-      enum retro_sensor_action action, unsigned rate)
-{
-   if (driver.input && driver.input_data &&
-         driver.input->set_sensor_state)
-      return driver.input->set_sensor_state(driver.input_data,
-            port, action, rate);
-   return false;
-}
-
-float driver_sensor_get_input(unsigned port, unsigned id)
-{
-   if (driver.input && driver.input_data &&
-         driver.input->get_sensor_input)
-      return driver.input->get_sensor_input(driver.input_data,
-            port, id);
-   return 0.0f;
-}
-
-/**
  * driver_get_current_framebuffer:
  *
  * Gets pointer to current hardware renderer framebuffer object.
