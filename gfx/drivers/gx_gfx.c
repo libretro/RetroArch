@@ -292,16 +292,16 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    if (tvmode == VI_PAL)
    {
       if (modetype == VI_NON_INTERLACE)
-         driver_set_monitor_refresh_rate(50.0801f);
+         video_monitor_set_refresh_rate(50.0801f);
       else
-         driver_set_monitor_refresh_rate(50.0f);
+         video_monitor_set_refresh_rate(50.0f);
    }
    else
    {
       if (modetype == VI_NON_INTERLACE)
-         driver_set_monitor_refresh_rate(59.8261f);
+         video_monitor_set_refresh_rate(59.8261f);
       else
-         driver_set_monitor_refresh_rate(59.94f);
+         video_monitor_set_refresh_rate(59.94f);
    }
 
    /* Don't spam the queue when scrolling through resolutions. */

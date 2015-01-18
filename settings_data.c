@@ -1009,10 +1009,10 @@ static int setting_data_action_ok_video_refresh_rate_auto(
    if (!setting)
       return -1;
 
-   if (driver_monitor_fps_statistics(&video_refresh_rate,
+   if (video_monitor_fps_statistics(&video_refresh_rate,
             &deviation, &sample_points))
    {
-      driver_set_monitor_refresh_rate(video_refresh_rate);
+      video_monitor_set_refresh_rate(video_refresh_rate);
       /* Incase refresh rate update forced non-block video. */
       rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
    }
@@ -1317,7 +1317,7 @@ static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
       double deviation = 0.0;
       unsigned sample_points = 0;
 
-      if (driver_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
+      if (video_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
          snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
                video_refresh_rate, 100.0 * deviation, sample_points);
       else
@@ -3098,7 +3098,7 @@ static void general_write_handler(void *data)
    {
       if (driver.video && driver.video_data)
       {
-         driver_set_monitor_refresh_rate(*setting->value.fraction);
+         video_monitor_set_refresh_rate(*setting->value.fraction);
 
          /* In case refresh rate update forced non-block video. */
          rarch_cmd = RARCH_CMD_VIDEO_SET_BLOCKING_STATE;

@@ -249,12 +249,12 @@ static void adjust_system_rates(void)
 }
 
 /**
- * driver_set_monitor_refresh_rate:
+ * video_monitor_set_refresh_rate:
  * @hz                 : New refresh rate for monitor.
  *
  * Sets monitor refresh rate to new value.
  **/
-void driver_set_monitor_refresh_rate(float hz)
+void video_monitor_set_refresh_rate(float hz)
 {
    char msg[PATH_MAX_LENGTH];
    snprintf(msg, sizeof(msg), "Setting refresh rate to: %.3f Hz.", hz);
@@ -765,11 +765,11 @@ void init_drivers(int flags)
 }
 
 /**
- * compute_monitor_fps_statistics:
+ * video_monitor_compute_fps_statistics:
  *
  * Computes monitor FPS statistics.
  **/
-static void compute_monitor_fps_statistics(void)
+static void video_monitor_compute_fps_statistics(void)
 {
    double avg_fps = 0.0, stddev = 0.0;
    unsigned samples = 0;
@@ -789,7 +789,7 @@ static void compute_monitor_fps_statistics(void)
       return;
    }
 
-   if (driver_monitor_fps_statistics(&avg_fps, &stddev, &samples))
+   if (video_monitor_fps_statistics(&avg_fps, &stddev, &samples))
    {
       RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
             avg_fps, 100.0 * stddev, samples);
@@ -819,7 +819,7 @@ static void uninit_video_input(void)
    deinit_video_filter();
 
    rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
-   compute_monitor_fps_statistics();
+   video_monitor_compute_fps_statistics();
 }
 
 /**
@@ -889,7 +889,7 @@ void uninit_drivers(int flags)
 
 
 /**
- * driver_monitor_fps_statistics
+ * video_monitor_fps_statistics
  * @refresh_rate       : Monitor refresh rate.
  * @deviation          : Deviation from measured refresh rate.
  * @sample_points      : Amount of sampled points.
@@ -903,7 +903,7 @@ void uninit_drivers(int flags)
  * b) less than 2 frame time samples.
  * c) FPS monitor enable is off.
  **/
-bool driver_monitor_fps_statistics(double *refresh_rate,
+bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points)
 {
    unsigned i;

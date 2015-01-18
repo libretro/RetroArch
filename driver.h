@@ -348,15 +348,15 @@ void find_prev_driver(const char *label, char *str, size_t sizeof_str);
 void find_next_driver(const char *label, char *str, size_t sizeof_str);
 
 /**
- * driver_set_monitor_refresh_rate:
+ * video_monitor_set_refresh_rate:
  * @hz                 : New refresh rate for monitor.
  *
  * Sets monitor refresh rate to new value.
  **/
-void driver_set_monitor_refresh_rate(float hz);
+void video_monitor_set_refresh_rate(float hz);
 
 /**
- * driver_monitor_fps_statistics
+ * video_monitor_fps_statistics
  * @refresh_rate       : Monitor refresh rate.
  * @deviation          : Deviation from measured refresh rate.
  * @sample_points      : Amount of sampled points.
@@ -370,7 +370,7 @@ void driver_set_monitor_refresh_rate(float hz);
  * b) less than 2 frame time samples.
  * c) FPS monitor enable is off.
  **/
-bool driver_monitor_fps_statistics(double *refresh_rate,
+bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
 
 /**
