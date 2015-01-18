@@ -229,8 +229,8 @@ void driver_adjust_system_rates(void)
 void driver_set_refresh_rate(float hz)
 {
    video_monitor_set_refresh_rate(hz);
-   driver_adjust_system_rates();
    audio_monitor_set_refresh_rate();
+   driver_adjust_system_rates();
 }
 
 /**

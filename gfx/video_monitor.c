@@ -40,10 +40,10 @@ void video_monitor_adjust_system_rates(void)
          g_settings.video.refresh_rate,
          (float)info->fps);
 
-   /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
    if (info->fps <= g_settings.video.refresh_rate)
       return;
 
+   /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
    g_extern.system.force_nonblock = true;
    RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 }
