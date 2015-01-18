@@ -22,6 +22,7 @@
 #include "compat/posix_string.h"
 #include "gfx/video_thread_wrapper.h"
 #include "gfx/video_monitor.h"
+#include "gfx/video_viewport.h"
 #include "gfx/video_pixel_converter.h"
 #include "audio/audio_monitor.h"
 #include "gfx/gfx_common.h"

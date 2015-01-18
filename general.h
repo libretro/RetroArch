@@ -31,7 +31,6 @@
 #include "core_options.h"
 #include "core_info.h"
 #include <retro_miscellaneous.h>
-#include "gfx/video_viewport.h"
 
 #include "playlist.h"
 
