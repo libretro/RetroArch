@@ -426,6 +426,7 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
 void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
 {
    unsigned i, j;
+   bool inherit_joyaxis = false;
 
    for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
       binds[i].orig_joyaxis = binds[i].joyaxis;
@@ -434,19 +435,20 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
    {
       case ANALOG_DPAD_LSTICK:
          j = RARCH_ANALOG_LEFT_X_PLUS + 3;
-
-         /* Inherit joyaxis from analogs. */
-         for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
-            binds[i].joyaxis = binds[j--].joyaxis;
+         inherit_joyaxis = true;
          break;
       case ANALOG_DPAD_RSTICK:
          j = RARCH_ANALOG_RIGHT_X_PLUS + 3;
-
-         /* Inherit joyaxis from analogs. */
-         for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
-            binds[i].joyaxis = binds[j--].joyaxis;
+         inherit_joyaxis = true;
          break;
    }
+
+   if (!inherit_joyaxis)
+      return;
+
+   /* Inherit joyaxis from analogs. */
+   for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
+      binds[i].joyaxis = binds[j--].joyaxis;
 }
 
 /**
