@@ -222,29 +222,35 @@ void input_keyboard_event(bool down, unsigned code,
 
    if (deferred_wait_keys)
    {
-      if (!down)
-      {
-         input_keyboard_wait_keys_cancel();
-         deferred_wait_keys = false;
-      }
+      if (down)
+         return;
+
+      input_keyboard_wait_keys_cancel();
+      deferred_wait_keys = false;
    }
    else if (g_keyboard_press_cb)
    {
-      if (down && code != RETROK_UNKNOWN
-            && !g_keyboard_press_cb(g_keyboard_press_data, code))
-         deferred_wait_keys = true;
+      if (!down)
+         return;
+      if (code == RETROK_UNKNOWN)
+         return;
+      if (g_keyboard_press_cb(g_keyboard_press_data, code))
+         return;
+      deferred_wait_keys = true;
    }
    else if (g_keyboard_line)
    {
-      if (down && input_keyboard_line_event(g_keyboard_line, character))
-      {
-         /* Line is complete, can free it now. */
-         input_keyboard_line_free(g_keyboard_line);
-         g_keyboard_line = NULL;
+      if (!down)
+         return;
+      if (!input_keyboard_line_event(g_keyboard_line, character))
+         return;
 
-         /* Unblock all hotkeys. */
-         driver.block_input = false;
-      }
+      /* Line is complete, can free it now. */
+      input_keyboard_line_free(g_keyboard_line);
+      g_keyboard_line = NULL;
+
+      /* Unblock all hotkeys. */
+      driver.block_input = false;
    }
    else if (g_extern.system.key_event)
       g_extern.system.key_event(down, code, character, mod);
