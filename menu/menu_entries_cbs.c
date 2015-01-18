@@ -26,6 +26,7 @@
 #include "../config.def.h"
 #include "../cheats.h"
 #include "../retroarch.h"
+#include "../performance.h"
 
 #ifdef GEKKO
 enum

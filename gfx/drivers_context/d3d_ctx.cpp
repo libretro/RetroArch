@@ -19,6 +19,7 @@
 #include "win32_common.h"
 
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 
 #ifdef _MSC_VER
 #ifndef _XBOX
@@ -127,7 +128,8 @@ static void gfx_ctx_d3d_update_title(void *data)
    char buf[128], buffer_fps[128];
    bool fps_draw = g_settings.fps_show || g_settings.fps_monitor_enable;
 
-   if (gfx_get_fps(buf, sizeof(buf), g_settings.fps_show ? buffer_fps : NULL, sizeof(buffer_fps)))
+   if (video_monitor_get_fps(buf, sizeof(buf),
+            g_settings.fps_show ? buffer_fps : NULL, sizeof(buffer_fps)))
    {
 #ifndef _XBOX
       SetWindowText(d3d->hWnd, buf);

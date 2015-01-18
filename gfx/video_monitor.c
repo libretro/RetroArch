@@ -17,6 +17,7 @@
 #include "video_monitor.h"
 #include "../general.h"
 #include "../retroarch.h"
+#include "../performance.h"
 
 void video_monitor_adjust_system_rates(void)
 {
@@ -145,6 +146,71 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    *deviation     = sqrt((double)accum_var / (samples - 1)) / avg;
    *refresh_rate  = 1000000.0 / avg;
    *sample_points = samples;
+
+   return true;
+}
+
+#ifndef TIME_TO_FPS
+#define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
+#endif
+
+#define FPS_UPDATE_INTERVAL 256
+
+/**
+ * video_monitor_get_fps:
+ * @buf           : string suitable for Window title
+ * @size          : size of buffer.
+ * @buf_fps       : string of raw FPS only (optional).
+ * @size_fps      : size of raw FPS buffer.
+ *
+ * Get the amount of frames per seconds.
+ *
+ * Returns: true if framerate per seconds could be obtained,
+ * otherwise false.
+ *
+ **/
+bool video_monitor_get_fps(char *buf, size_t size,
+      char *buf_fps, size_t size_fps)
+{
+   retro_time_t        new_time;
+   static retro_time_t curr_time;
+   static retro_time_t fps_time;
+   static float last_fps;
+   *buf = '\0';
+
+   new_time = rarch_get_time_usec();
+
+   if (g_extern.frame_count)
+   {
+      bool ret = false;
+      unsigned write_index = 
+         g_extern.measure_data.frame_time_samples_count++ &
+         (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
+      g_extern.measure_data.frame_time_samples[write_index] = 
+         new_time - fps_time;
+      fps_time = new_time;
+
+      if ((g_extern.frame_count % FPS_UPDATE_INTERVAL) == 0)
+      {
+         last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
+         curr_time = new_time;
+
+         snprintf(buf, size, "%s || FPS: %6.1f || Frames: %u",
+               g_extern.title_buf, last_fps, g_extern.frame_count);
+         ret = true;
+      }
+
+      if (buf_fps)
+         snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: %u",
+               last_fps, g_extern.frame_count);
+
+      return ret;
+   }
+
+   curr_time = fps_time = new_time;
+   strlcpy(buf, g_extern.title_buf, size);
+   if (buf_fps)
+      strlcpy(buf_fps, "N/A", size_fps);
 
    return true;
 }

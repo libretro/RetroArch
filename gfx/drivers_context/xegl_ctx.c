@@ -21,6 +21,7 @@
 #include "../../driver.h"
 #include "../gl_common.h"
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 #include "x11_common.h"
 
 #include <signal.h>
@@ -215,7 +216,7 @@ static void gfx_ctx_xegl_update_window_title(void *data)
 
    (void)data;
 
-   if (gfx_get_fps(buf, sizeof(buf),
+   if (video_monitor_get_fps(buf, sizeof(buf),
             g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps)))
       XStoreName(g_dpy, g_win, buf);
    if (g_settings.fps_show)

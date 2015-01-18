@@ -20,6 +20,7 @@
 #include <signal.h>
 #include <math.h>
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 #include "../font_renderer_driver.h"
 
 #include "../drivers_context/x11_common.h"
@@ -500,7 +501,7 @@ static void *xv_init(const video_info_t *video,
 
    XMapWindow(xv->display, xv->window);
 
-   if (gfx_get_fps(buf, sizeof(buf), NULL, 0))
+   if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
       XStoreName(xv->display, xv->window, buf);
 
    x11_set_window_attr(xv->display, xv->window);
@@ -771,7 +772,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
          true);
    XSync(xv->display, False);
 
-   if (gfx_get_fps(buf, sizeof(buf), NULL, 0))
+   if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
       XStoreName(xv->display, xv->window, buf);
 
    g_extern.frame_count++;

@@ -20,6 +20,7 @@
 #include "../drivers_font_renderer/bitmap.h"
 #include "../../menu/menu.h"
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 
 #ifdef HW_RVL
 #include "../../wii/mem2_manager.h"
@@ -903,7 +904,8 @@ static bool gx_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
-
+   char fps_txt[128], fps_text_buf[128];
+   bool fps_draw = g_settings.fps_show;
    gx_video_t *gx = (gx_video_t*)data;
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
    u8 clear_efb = GX_FALSE;
@@ -984,9 +986,7 @@ static bool gx_frame(void *data, const void *frame,
 
    GX_DrawDone();
 
-   char fps_txt[128], fps_text_buf[128];
-   bool fps_draw = g_settings.fps_show;
-   gfx_get_fps(fps_txt, sizeof(fps_txt),
+   video_monitor_get_fps(fps_txt, sizeof(fps_txt),
          fps_draw ? fps_text_buf : NULL, sizeof(fps_text_buf));
 
    if (fps_draw)

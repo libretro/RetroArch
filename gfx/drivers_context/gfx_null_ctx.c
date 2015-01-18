@@ -19,6 +19,7 @@
 #include "../../driver.h"
 #include "../video_context_driver.h"
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 
 static void gfx_ctx_null_swap_interval(void *data, unsigned interval)
 {

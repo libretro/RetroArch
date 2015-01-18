@@ -548,6 +548,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    d3d->screen_height = info->fullscreen ? full_y : info->height;
 
 #if defined(HAVE_WINDOW) && !defined(_XBOX)
+   char buffer[128];
    unsigned win_width  = d3d->screen_width;
    unsigned win_height = d3d->screen_height;
    RECT rect = {0};
@@ -561,8 +562,7 @@ static bool d3d_construct(d3d_video_t *d3d,
       win_height = rect.bottom - rect.top;
    }
 
-   char buffer[128];
-   gfx_get_fps(buffer, sizeof(buffer), NULL, 0);
+   video_monitor_get_fps(buffer, sizeof(buffer), NULL, 0);
    std::string title = buffer;
    title += " || Direct3D";
 

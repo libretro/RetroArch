@@ -17,6 +17,7 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 #include "../gl_common.h"
 
 #include <wayland-client.h>
@@ -337,7 +338,7 @@ static void gfx_ctx_wl_update_window_title(void *data)
 
    (void)data;
 
-   if (gfx_get_fps(buf, sizeof(buf), g_settings.fps_show ? 
+   if (video_monitor_get_fps(buf, sizeof(buf), g_settings.fps_show ? 
             buf_fps : NULL, sizeof(buf_fps)))
       wl_shell_surface_set_title(wl->g_shell_surf, buf);
 

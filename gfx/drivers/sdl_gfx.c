@@ -21,6 +21,7 @@
 #include "../../general.h"
 #include <gfx/scaler/scaler.h>
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 #include "../video_context_driver.h"
 #include "../font_renderer_driver.h"
 
@@ -335,10 +336,11 @@ static void check_window(sdl_video_t *vid)
 static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
                           unsigned height, unsigned pitch, const char *msg)
 {
+   char buf[128];
+   sdl_video_t *vid = (sdl_video_t*)data;
+
    if (!frame)
       return true;
-
-   sdl_video_t *vid = (sdl_video_t*)data;
 
    sdl_update_scaler(vid->screen, &vid->scaler, vid->scaler.in_fmt, width, height, pitch);
 
@@ -359,8 +361,7 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
    if (SDL_MUSTLOCK(vid->screen))
       SDL_UnlockSurface(vid->screen);
 
-   char buf[128];
-   if (gfx_get_fps(buf, sizeof(buf), NULL, 0))
+   if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
       SDL_WM_SetCaption(buf, NULL);
 
    SDL_Flip(vid->screen);

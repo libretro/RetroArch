@@ -25,6 +25,7 @@
 #include "../../general.h"
 #include "../../driver.h"
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 
 #ifndef SCEGU_SCR_WIDTH
 #define SCEGU_SCR_WIDTH 480
@@ -491,15 +492,16 @@ static bool psp_frame(void *data, const void *frame,
 
    pspDebugScreenSetXY(0,0);
 
+   video_monitor_get_fps(fps_txt, sizeof(fps_txt),
+         g_settings.fps_show ? fps_text_buf : NULL,
+         g_settings.fps_show ? sizeof(fps_text_buf) : 0);
+
    if(g_settings.fps_show)
    {
-      gfx_get_fps(fps_txt, sizeof(fps_txt), fps_text_buf, sizeof(fps_text_buf));
       pspDebugScreenSetXY(68 - strlen(fps_text_buf) - 1,0);
       pspDebugScreenPuts(fps_text_buf);
       pspDebugScreenSetXY(0,1);
    }
-   else
-      gfx_get_fps(fps_txt, sizeof(fps_txt), NULL, 0);
 
    if (msg)
       pspDebugScreenPuts(msg);

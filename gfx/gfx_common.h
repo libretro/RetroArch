@@ -25,27 +25,10 @@ extern "C" {
 #include <stdint.h>
 #include "../general.h"
 #include <boolean.h>
-#include "../performance.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
-
-/**
- * gfx_get_fps:
- * @buf           : string suitable for Window title
- * @size          : size of buffer.
- * @buf_fps       : string of raw FPS only (optional).
- * @size_fps      : size of raw FPS buffer.
- *
- * Get the amount of frames per seconds.
- *
- * Returns: true if framerate per seconds could be obtained,
- * otherwise false.
- *
- **/
-bool gfx_get_fps(char *buf, size_t size,
-      char *buf_fps, size_t size_fps);
 
 #ifdef _WIN32
 void gfx_set_dwm(void);

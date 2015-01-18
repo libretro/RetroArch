@@ -4,6 +4,7 @@
 #endif
 
 #include "../../gfx/gfx_common.h"
+#include "../../gfx/video_monitor.h"
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/gl_common.h"
 
@@ -249,8 +250,9 @@ static void apple_gfx_ctx_update_window_title(void *data)
 {
 #ifdef OSX
    static char buf[128], buf_fps[128];
-   bool got_text = gfx_get_fps(buf, sizeof(buf), g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps));
-   static const char* const text = buf; // < Can't access buf directly in the block
+   bool got_text = video_monitor_get_fps(buf, sizeof(buf),
+         g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps));
+   static const char* const text = buf; /* < Can't access buffer directly in the block */
    if (got_text)
        [[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
     if (g_settings.fps_show)

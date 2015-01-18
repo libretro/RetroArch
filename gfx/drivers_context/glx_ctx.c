@@ -17,6 +17,7 @@
 #include "../../driver.h"
 #include "../gl_common.h"
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 #include "x11_common.h"
 
 #include <signal.h>
@@ -197,7 +198,8 @@ static void gfx_ctx_glx_update_window_title(void *data)
 
    glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
 
-   if (gfx_get_fps(buf, sizeof(buf), g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps)))
+   if (video_monitor_get_fps(buf, sizeof(buf),
+            g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps)))
       XStoreName(glx->g_dpy, glx->g_win, buf);
    if (g_settings.fps_show)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);

@@ -17,6 +17,7 @@
 #include "../../driver.h"
 #include "../gl_common.h"
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 
 #include "SDL.h"
 
@@ -281,7 +282,8 @@ static void sdl_ctx_update_window_title(void *data)
    if (!sdl)
       return;
 
-   if (gfx_get_fps(buf, sizeof(buf), g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps)))
+   if (video_monitor_get_fps(buf, sizeof(buf),
+            g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps)))
    {
 #ifdef HAVE_SDL2
       SDL_SetWindowTitle(sdl->g_win, buf);

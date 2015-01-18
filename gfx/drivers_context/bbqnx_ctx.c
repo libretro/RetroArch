@@ -17,6 +17,7 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 #include "../gl_common.h"
 
 #include <EGL/egl.h>
@@ -359,7 +360,8 @@ static void gfx_ctx_qnx_update_window_title(void *data)
    if (!fps_draw)
       return;
 
-   gfx_get_fps(buf, sizeof(buf), g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps));
+   video_monitor_get_fps(buf, sizeof(buf),
+         g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps));
    if (g_settings.fps_show)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }

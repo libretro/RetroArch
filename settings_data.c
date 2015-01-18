@@ -27,6 +27,7 @@
 #include "file_ext.h"
 #include "settings.h"
 #include "retroarch.h"
+#include "performance.h"
 
 #if defined(__CELLOS_LV2__)
 #include <sdk_version.h>

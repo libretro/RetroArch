@@ -18,6 +18,7 @@
 #define __VIDEO_MONITOR_H
 
 #include <boolean.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,6 +58,22 @@ void video_monitor_compute_fps_statistics(void);
  **/
 bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
+
+/**
+ * video_monitor_get_fps:
+ * @buf           : string suitable for Window title
+ * @size          : size of buffer.
+ * @buf_fps       : string of raw FPS only (optional).
+ * @size_fps      : size of raw FPS buffer.
+ *
+ * Get the amount of frames per seconds.
+ *
+ * Returns: true if framerate per seconds could be obtained,
+ * otherwise false.
+ *
+ **/
+bool video_monitor_get_fps(char *buf, size_t size,
+      char *buf_fps, size_t size_fps);
 
 #ifdef __cplusplus
 }

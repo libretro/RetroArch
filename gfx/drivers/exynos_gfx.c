@@ -33,6 +33,7 @@
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 #include "../font_renderer_driver.h"
 
 /* TODO: Honor these properties: vsync, menu rotation, menu alpha, aspect ratio change */
@@ -1284,10 +1285,11 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
       goto fail;
   }
 
-  if (g_settings.fps_show) {
+  if (g_settings.fps_show)
+  {
     char buffer[128], buffer_fps[128];
-
-    gfx_get_fps(buffer, sizeof(buffer), g_settings.fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
+    video_monitor_get_fps(buffer, sizeof(buffer),
+          g_settings.fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
     msg_queue_push(g_extern.msg_queue, buffer_fps, 1, 1);
   }
 

@@ -24,6 +24,7 @@
 #endif
 
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 
 #ifndef __PSL1GHT__
 #include <sys/spu_initialize.h>
@@ -214,7 +215,8 @@ static void gfx_ctx_ps3_update_window_title(void *data)
    if (!fps_draw)
       return;
 
-   gfx_get_fps(buf, sizeof(buf), g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps));
+   video_monitor_get_fps(buf, sizeof(buf),
+         g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps));
    if (g_settings.fps_show)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }

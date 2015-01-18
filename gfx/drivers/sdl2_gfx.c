@@ -21,8 +21,10 @@
 #include <string.h>
 #include "../../general.h"
 #include "../../retroarch.h"
+#include "../../performance.h"
 #include <gfx/scaler/scaler.h>
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 #include "../video_context_driver.h"
 #include "../font_renderer_driver.h"
 
@@ -470,6 +472,7 @@ static void check_window(sdl2_video_t *vid)
 static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
                            unsigned height, unsigned pitch, const char *msg)
 {
+   char buf[128];
    sdl2_video_t *vid = (sdl2_video_t*)data;
 
    if (vid->should_resize)
@@ -503,8 +506,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
    SDL_RenderPresent(vid->renderer);
 
-   char buf[128];
-   if (gfx_get_fps(buf, sizeof(buf), NULL, 0))
+   if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
       SDL_SetWindowTitle(vid->window, buf);
 
    g_extern.frame_count++;
