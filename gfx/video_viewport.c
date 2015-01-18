@@ -15,7 +15,7 @@
  */
 
 #include "video_viewport.h"
-#include "general.h"
+#include "../general.h"
 
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "4:3",           1.3333f },
