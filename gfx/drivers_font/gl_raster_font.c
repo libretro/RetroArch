@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../gfx_common.h"
 #include "../gl_common.h"
 #include "../video_shader_driver.h"
 

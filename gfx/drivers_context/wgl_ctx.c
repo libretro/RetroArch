@@ -24,7 +24,6 @@
 #include "../../driver.h"
 #include "../video_context_driver.h"
 #include "../gl_common.h"
-#include "../gfx_common.h"
 #include "../video_monitor.h"
 #include "win32_common.h"
 #include <windows.h>

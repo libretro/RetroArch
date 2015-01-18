@@ -24,7 +24,6 @@
 #include "../menu.h"
 #include "../menu_list.h"
 
-#include "../../gfx/gfx_common.h"
 #include "../../gfx/video_context_driver.h"
 
 #include "../../settings_data.h"

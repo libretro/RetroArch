@@ -19,7 +19,7 @@
 #include <string.h>
 #include <signal.h>
 #include <math.h>
-#include "../gfx_common.h"
+#include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../font_renderer_driver.h"
 
@@ -358,7 +358,7 @@ static void calc_out_rect(bool keep_aspect, struct rarch_viewport *vp,
 
    if (g_settings.video.scale_integer)
    {
-      gfx_scale_integer(vp, vp_width, vp_height, g_extern.system.aspect_ratio, keep_aspect);
+      video_viewport_get_scaled_integer(vp, vp_width, vp_height, g_extern.system.aspect_ratio, keep_aspect);
    }
    else if (!keep_aspect)
    {

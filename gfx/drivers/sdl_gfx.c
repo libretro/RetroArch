@@ -20,7 +20,7 @@
 #include <string.h>
 #include "../../general.h"
 #include <gfx/scaler/scaler.h>
-#include "../gfx_common.h"
+#include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../video_context_driver.h"
 #include "../font_renderer_driver.h"
@@ -434,16 +434,16 @@ static void sdl_set_aspect_ratio(void *data, unsigned aspectratio_index)
    switch (aspectratio_index)
    {
       case ASPECT_RATIO_SQUARE:
-         gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width,
+         video_viewport_set_square_pixel(g_extern.system.av_info.geometry.base_width,
                                        g_extern.system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
-         gfx_set_core_viewport();
+         video_viewport_set_core();
          break;
 
       case ASPECT_RATIO_CONFIG:
-         gfx_set_config_viewport();
+         video_viewport_set_config();
          break;
 
       default:

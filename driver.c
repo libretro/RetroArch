@@ -449,9 +449,9 @@ static void init_video(void)
       scale = g_extern.filter.scale;
 
    /* Update core-dependent aspect ratio values. */
-   gfx_set_square_pixel_viewport(geom->base_width, geom->base_height);
-   gfx_set_core_viewport();
-   gfx_set_config_viewport();
+   video_viewport_set_square_pixel(geom->base_width, geom->base_height);
+   video_viewport_set_core();
+   video_viewport_set_config();
 
    /* Update CUSTOM viewport. */
    custom_vp = (rarch_viewport_t*)&g_extern.console.screen.viewports.custom_vp;

@@ -103,6 +103,7 @@ OBJ += frontend/frontend.o \
 		gfx/video_driver.o \
 		gfx/video_monitor.o \
 		gfx/video_pixel_converter.o \
+		gfx/video_viewport.o \
 		osk/osk_driver.o \
 		camera/camera_driver.o \
 		menu/menu_driver.o \

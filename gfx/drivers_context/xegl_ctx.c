@@ -20,7 +20,6 @@
 
 #include "../../driver.h"
 #include "../gl_common.h"
-#include "../gfx_common.h"
 #include "../video_monitor.h"
 #include "x11_common.h"
 

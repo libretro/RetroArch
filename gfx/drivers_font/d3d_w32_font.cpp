@@ -16,7 +16,6 @@
 
 #include "../d3d/d3d.h"
 #include "../font_d3d_driver.h"
-#include "../gfx_common.h"
 #include "../../general.h"
 
 static LPD3DXFONT d3d_font;

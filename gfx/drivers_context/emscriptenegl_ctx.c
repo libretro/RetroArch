@@ -17,7 +17,6 @@
 #include "../../driver.h"
 #include "../video_context_driver.h"
 #include "../gl_common.h"
-#include "../gfx_common.h"
 #include "../video_monitor.h"
 
 #ifdef HAVE_CONFIG_H

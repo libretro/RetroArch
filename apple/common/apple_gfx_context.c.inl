@@ -3,7 +3,7 @@
 #include <OpenGL/OpenGL.h>
 #endif
 
-#include "../../gfx/gfx_common.h"
+#include "../../gfx/video_viewport.h"
 #include "../../gfx/video_monitor.h"
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/gl_common.h"

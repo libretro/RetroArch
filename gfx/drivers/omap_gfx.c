@@ -20,7 +20,7 @@
 #include "../../general.h"
 #include "../../retroarch.h"
 #include <gfx/scaler/scaler.h>
-#include "../gfx_common.h"
+#include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../video_context_driver.h"
 #include "../font_renderer_driver.h"

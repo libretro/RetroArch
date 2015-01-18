@@ -18,7 +18,6 @@
 #include "../d3d/d3d.h"
 #include "win32_common.h"
 
-#include "../gfx_common.h"
 #include "../video_monitor.h"
 
 #ifdef _MSC_VER

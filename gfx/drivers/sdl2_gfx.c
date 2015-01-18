@@ -23,7 +23,7 @@
 #include "../../retroarch.h"
 #include "../../performance.h"
 #include <gfx/scaler/scaler.h>
-#include "../gfx_common.h"
+#include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../video_context_driver.h"
 #include "../font_renderer_driver.h"
@@ -264,7 +264,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
    vid->vp.full_height = win_h;
 
    if (g_settings.video.scale_integer)
-      gfx_scale_integer(&vid->vp, win_w, win_h, g_extern.system.aspect_ratio,
+      video_viewport_get_scaled_integer(&vid->vp, win_w, win_h, g_extern.system.aspect_ratio,
                         vid->video.force_aspect);
    else if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
@@ -635,16 +635,16 @@ static void sdl2_poke_set_aspect_ratio(void *data, unsigned aspectratio_index)
    switch (aspectratio_index)
    {
       case ASPECT_RATIO_SQUARE:
-         gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width,
+         video_viewport_set_square_pixel(g_extern.system.av_info.geometry.base_width,
                                        g_extern.system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
-         gfx_set_core_viewport();
+         video_viewport_set_core();
          break;
 
       case ASPECT_RATIO_CONFIG:
-         gfx_set_config_viewport();
+         video_viewport_set_config();
          break;
 
       default:

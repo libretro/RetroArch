@@ -31,6 +31,7 @@
 #include "core_options.h"
 #include "core_info.h"
 #include <retro_miscellaneous.h>
+#include "gfx/video_viewport.h"
 
 #include "playlist.h"
 
@@ -83,6 +84,16 @@ enum sound_mode_enums
 #endif
    SOUND_MODE_LAST
 };
+
+typedef struct rarch_viewport
+{
+   int x;
+   int y;
+   unsigned width;
+   unsigned height;
+   unsigned full_width;
+   unsigned full_height;
+} rarch_viewport_t;
 
 struct defaults
 {
@@ -369,16 +380,6 @@ typedef struct rarch_resolution
    unsigned idx;
    unsigned id;
 } rarch_resolution_t;
-
-typedef struct rarch_viewport
-{
-   int x;
-   int y;
-   unsigned width;
-   unsigned height;
-   unsigned full_width;
-   unsigned full_height;
-} rarch_viewport_t;
 
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)

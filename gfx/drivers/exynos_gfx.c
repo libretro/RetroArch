@@ -32,7 +32,7 @@
 
 #include "../../general.h"
 #include "../../retroarch.h"
-#include "../gfx_common.h"
+#include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../font_renderer_driver.h"
 
@@ -1389,17 +1389,17 @@ static void exynos_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         gfx_set_square_pixel_viewport(
+         video_viewport_set_square_pixel(
                g_extern.system.av_info.geometry.base_width,
                g_extern.system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
-         gfx_set_core_viewport();
+         video_viewport_set_core();
          break;
 
       case ASPECT_RATIO_CONFIG:
-         gfx_set_config_viewport();
+         video_viewport_set_config();
          break;
 
       default:

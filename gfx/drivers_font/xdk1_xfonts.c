@@ -16,7 +16,6 @@
 
 #include <xtl.h>
 #include "../font_d3d_driver.h"
-#include "../gfx_common.h"
 #include "../../general.h"
 
 static XFONT *debug_font;

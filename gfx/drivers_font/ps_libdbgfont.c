@@ -15,7 +15,6 @@
  */
 
 #include "../font_renderer_driver.h"
-#include "../gfx_common.h"
 #include "../gl_common.h"
 
 #if defined(SN_TARGET_PSP2)

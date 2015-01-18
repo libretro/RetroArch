@@ -23,7 +23,6 @@
 #endif
 #endif
 
-#include "../gfx_common.h"
 #include "../video_monitor.h"
 
 #ifndef __PSL1GHT__

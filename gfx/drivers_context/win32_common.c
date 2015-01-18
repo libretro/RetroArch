@@ -18,7 +18,6 @@
 #endif
 
 #include "../../driver.h"
-#include "../gfx_common.h"
 #include "win32_common.h"
 #include <windows.h>
 #include <commdlg.h>

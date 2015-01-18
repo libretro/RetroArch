@@ -24,7 +24,6 @@
 #include "../menu_action.h"
 #include "../menu_navigation.h"
 
-#include "../../gfx/gfx_common.h"
 #include "../../driver.h"
 #include "../../file_ext.h"
 #include "../../input/input_common.h"

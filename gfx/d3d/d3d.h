@@ -51,7 +51,6 @@
 
 #include "../font_d3d_driver.h"
 #include "../video_context_driver.h"
-#include "../gfx_common.h"
 
 #ifdef HAVE_CG
 #include <Cg/cg.h>

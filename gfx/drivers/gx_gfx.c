@@ -19,7 +19,7 @@
 #include "../../general.h"
 #include "../drivers_font_renderer/bitmap.h"
 #include "../../menu/menu.h"
-#include "../gfx_common.h"
+#include "../video_viewport.h"
 #include "../video_monitor.h"
 
 #ifdef HW_RVL
@@ -316,13 +316,13 @@ static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    gx_video_t *gx = (gx_video_t*)driver.video_data;
 
    if (aspect_ratio_idx == ASPECT_RATIO_SQUARE)
-      gfx_set_square_pixel_viewport(
+      video_viewport_set_square_pixel(
             g_extern.system.av_info.geometry.base_width,
             g_extern.system.av_info.geometry.base_height);
    else if (aspect_ratio_idx == ASPECT_RATIO_CORE)
-      gfx_set_core_viewport();
+      video_viewport_set_core();
    else if (aspect_ratio_idx == ASPECT_RATIO_CONFIG)
-      gfx_set_config_viewport();
+      video_viewport_set_config();
 
    g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
 

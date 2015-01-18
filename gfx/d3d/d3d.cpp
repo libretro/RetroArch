@@ -24,7 +24,7 @@
 #ifndef _XBOX
 #include "render_chain.h"
 #endif
-#include "../gfx_common.h"
+#include "../video_viewport.h"
 
 #include "../drivers_context/win32_common.h"
 
@@ -348,7 +348,7 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
    if (g_settings.video.scale_integer)
    {
       struct rarch_viewport vp = {0};
-      gfx_scale_integer(&vp, width, height, desired_aspect, keep);
+      video_viewport_get_scaled_integer(&vp, width, height, desired_aspect, keep);
       d3d_set_viewport(d3d, vp.x, vp.y, vp.width, vp.height);
    }
    else if (!keep)
@@ -443,17 +443,17 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         gfx_set_square_pixel_viewport(
+         video_viewport_set_square_pixel(
                g_extern.system.av_info.geometry.base_width,
                g_extern.system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
-         gfx_set_core_viewport();
+         video_viewport_set_core();
          break;
 
       case ASPECT_RATIO_CONFIG:
-         gfx_set_config_viewport();
+         video_viewport_set_config();
          break;
 
       default:

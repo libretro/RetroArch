@@ -24,7 +24,6 @@
 #include "../menu_driver.h"
 #include "../menu.h"
 #include "../../general.h"
-#include "../../gfx/gfx_common.h"
 #include "../../config.def.h"
 #include <compat/posix_string.h>
 #include "../../performance.h"
