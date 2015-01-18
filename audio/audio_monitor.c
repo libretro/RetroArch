@@ -44,7 +44,9 @@ void audio_monitor_adjust_system_rates(void)
  **/
 void audio_monitor_set_refresh_rate(void)
 {
-   g_extern.audio_data.orig_src_ratio =
-      g_extern.audio_data.src_ratio =
-      (double)g_settings.audio.out_rate / g_extern.audio_data.in_rate;
+   double new_src_ratio = (double)g_settings.audio.out_rate / 
+                           g_extern.audio_data.in_rate;
+
+   g_extern.audio_data.orig_src_ratio = new_src_ratio;
+   g_extern.audio_data.src_ratio      = new_src_ratio;
 }
