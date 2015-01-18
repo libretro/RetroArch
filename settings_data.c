@@ -16,6 +16,7 @@
  */
 
 #include "driver.h"
+#include "gfx/video_monitor.h"
 #include "settings_data.h"
 #include "dynamic.h"
 #include <file/file_path.h>
