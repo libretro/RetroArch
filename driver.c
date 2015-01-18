@@ -350,21 +350,23 @@ static bool init_video_pixel_converter(unsigned size)
     * without deiniting first on consoles. */
    deinit_pixel_converter();
 
-   if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
-   {
-      RARCH_WARN("0RGB1555 pixel format is deprecated, and will be slower. For 15/16-bit, RGB565 format is preferred.\n");
+   /* If pixel format is not 0RGB1555, we don't need to do
+    * any internal pixel conversion. */
+   if (g_extern.system.pix_fmt != RETRO_PIXEL_FORMAT_0RGB1555)
+      return true;
 
-      driver.scaler.scaler_type = SCALER_TYPE_POINT;
-      driver.scaler.in_fmt      = SCALER_FMT_0RGB1555;
+   RARCH_WARN("0RGB1555 pixel format is deprecated, and will be slower. For 15/16-bit, RGB565 format is preferred.\n");
 
-      /* TODO: Pick either ARGB8888 or RGB565 depending on driver. */
-      driver.scaler.out_fmt     = SCALER_FMT_RGB565;
+   driver.scaler.scaler_type = SCALER_TYPE_POINT;
+   driver.scaler.in_fmt      = SCALER_FMT_0RGB1555;
 
-      if (!scaler_ctx_gen_filter(&driver.scaler))
-         return false;
+   /* TODO: Pick either ARGB8888 or RGB565 depending on driver. */
+   driver.scaler.out_fmt     = SCALER_FMT_RGB565;
 
-      driver.scaler_out = calloc(sizeof(uint16_t), size * size);
-   }
+   if (!scaler_ctx_gen_filter(&driver.scaler))
+      return false;
+
+   driver.scaler_out = calloc(sizeof(uint16_t), size * size);
 
    return true;
 }
