@@ -148,11 +148,12 @@ void video_viewport_set_config(void)
  * Gets viewport scaling dimensions based on 
  * scaled integer aspect ratio.
  **/
-void video_viewport_get_scaled_integer(struct rarch_viewport *vp,
+void video_viewport_get_scaled_integer(void *data,
       unsigned width, unsigned height,
       float aspect_ratio, bool keep_aspect)
 {
    int padding_x = 0, padding_y = 0;
+   struct rarch_viewport *vp = (struct rarch_viewport*)data;
 
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
