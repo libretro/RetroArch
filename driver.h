@@ -358,8 +358,6 @@ void find_next_driver(const char *label, char *str, size_t sizeof_str);
  **/
 void driver_set_nonblock_state(bool enable);
 
-void driver_adjust_system_rates(void);
-
 /**
  * driver_set_refresh_rate:
  * @hz                 : New refresh rate for monitor.

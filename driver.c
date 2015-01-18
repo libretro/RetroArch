@@ -204,7 +204,7 @@ void init_drivers_pre(void)
 #endif
 }
 
-void driver_adjust_system_rates(void)
+static void driver_adjust_system_rates(void)
 {
    audio_monitor_adjust_system_rates();
    video_monitor_adjust_system_rates();
