@@ -166,12 +166,10 @@ static void content_playlist_write_file(content_playlist_t *playlist)
       return;
 
    for (i = 0; i < playlist->size; i++)
-   {
       fprintf(file, "%s\n%s\n%s\n",
             playlist->entries[i].path ? playlist->entries[i].path : "",
             playlist->entries[i].core_path,
             playlist->entries[i].core_name);
-   }
 
    fclose(file);
 }

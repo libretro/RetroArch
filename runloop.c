@@ -158,7 +158,6 @@ static void check_fast_forward_button(bool fastforward_pressed,
  *
  * Checks if the state increase/decrease keys have been pressed 
  * for this frame. 
- *
  **/
 static void check_stateslots(bool pressed_increase, bool pressed_decrease)
 {
@@ -700,6 +699,12 @@ static void limit_frame_time(void)
       g_extern.frame_limit.minimum_frame_time;
 }
 
+/**
+ * check_block_hotkey:
+ * @enable_hotkey        : Is hotkey enable key enabled?
+ *
+ * Checks if 'hotkey enable' key is pressed.
+ **/
 static void check_block_hotkey(bool enable_hotkey)
 {
    bool use_hotkey_enable;
@@ -821,7 +826,7 @@ static inline retro_input_t input_keys_pressed(void)
  * Resets input sample.
  *
  * Returns: always true (1).
- */
+ **/
 static bool input_flush(retro_input_t *input)
 {
    *input = 0;
