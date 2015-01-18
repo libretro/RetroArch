@@ -15,8 +15,6 @@
  */
 
 #include "video_monitor.h"
-#include "../audio/audio_monitor.h"
-#include "../driver.h"
 #include "../general.h"
 #include "../retroarch.h"
 
@@ -33,29 +31,21 @@ void video_monitor_adjust_system_rates(void)
 
    timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
 
-   if (timing_skew > g_settings.audio.max_timing_skew)
-   {
-      /* We don't want to adjust pitch too much. If we have extreme cases,
-       * just don't readjust at all. */
-      RARCH_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
-            g_settings.video.refresh_rate,
-            (float)info->fps);
-
-      /* We won't be able to do VSync reliably as game FPS > monitor FPS. */
-      if (info->fps > g_settings.video.refresh_rate)
-      {
-         g_extern.system.force_nonblock = true;
-         RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
-      }
-   }
-
-   if (!driver.video_data)
+   /* We don't want to adjust pitch too much. If we have extreme cases,
+    * just don't readjust at all. */
+   if (timing_skew <= g_settings.audio.max_timing_skew)
       return;
 
-   if (g_extern.system.force_nonblock)
-      rarch_main_command(RARCH_CMD_VIDEO_SET_NONBLOCKING_STATE);
-   else
-      driver_set_nonblock_state(driver.nonblock_state);
+   RARCH_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
+         g_settings.video.refresh_rate,
+         (float)info->fps);
+
+   /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
+   if (info->fps <= g_settings.video.refresh_rate)
+      return;
+
+   g_extern.system.force_nonblock = true;
+   RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 }
 
 /**
@@ -72,8 +62,6 @@ void video_monitor_set_refresh_rate(float hz)
    RARCH_LOG("%s\n", msg);
 
    g_settings.video.refresh_rate = hz;
-   driver_adjust_system_rates();
-   audio_monitor_set_refresh_rate();
 }
 
 /**

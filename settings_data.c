@@ -19,7 +19,6 @@
 #include "settings_data.h"
 #include "dynamic.h"
 #include <file/file_path.h>
-#include "gfx/video_monitor.h"
 #include "input/input_autodetect.h"
 #include "input/input_common.h"
 #include "config.def.h"
@@ -1013,7 +1012,7 @@ static int setting_data_action_ok_video_refresh_rate_auto(
    if (video_monitor_fps_statistics(&video_refresh_rate,
             &deviation, &sample_points))
    {
-      video_monitor_set_refresh_rate(video_refresh_rate);
+      driver_set_refresh_rate(video_refresh_rate);
       /* Incase refresh rate update forced non-block video. */
       rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
    }
@@ -3099,7 +3098,7 @@ static void general_write_handler(void *data)
    {
       if (driver.video && driver.video_data)
       {
-         video_monitor_set_refresh_rate(*setting->value.fraction);
+         driver_set_refresh_rate(*setting->value.fraction);
 
          /* In case refresh rate update forced non-block video. */
          rarch_cmd = RARCH_CMD_VIDEO_SET_BLOCKING_STATE;

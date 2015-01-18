@@ -15,9 +15,7 @@
  */
 
 #include "audio_monitor.h"
-#include "../driver.h"
 #include "../general.h"
-#include "../retroarch.h"
 
 void audio_monitor_adjust_system_rates(void)
 {

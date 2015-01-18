@@ -20,7 +20,6 @@
 #include "../drivers_font_renderer/bitmap.h"
 #include "../../menu/menu.h"
 #include "../gfx_common.h"
-#include "../video_monitor.h"
 
 #ifdef HW_RVL
 #include "../../wii/mem2_manager.h"
@@ -293,16 +292,16 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    if (tvmode == VI_PAL)
    {
       if (modetype == VI_NON_INTERLACE)
-         video_monitor_set_refresh_rate(50.0801f);
+         driver_set_refresh_rate(50.0801f);
       else
-         video_monitor_set_refresh_rate(50.0f);
+         driver_set_refresh_rate(50.0f);
    }
    else
    {
       if (modetype == VI_NON_INTERLACE)
-         video_monitor_set_refresh_rate(59.8261f);
+         driver_set_refresh_rate(59.8261f);
       else
-         video_monitor_set_refresh_rate(59.94f);
+         driver_set_refresh_rate(59.94f);
    }
 
    /* Don't spam the queue when scrolling through resolutions. */

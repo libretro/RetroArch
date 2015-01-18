@@ -361,6 +361,16 @@ void driver_set_nonblock_state(bool enable);
 void driver_adjust_system_rates(void);
 
 /**
+ * driver_set_refresh_rate:
+ * @hz                 : New refresh rate for monitor.
+ *
+ * Sets monitor refresh rate to new value by calling
+ * video_monitor_set_refresh_rate(). Subsequently
+ * calls audio_monitor_set_refresh_rate().
+ **/
+void driver_set_refresh_rate(float hz);
+
+/**
  * driver_get_current_framebuffer:
  *
  * Gets pointer to current hardware renderer framebuffer object.

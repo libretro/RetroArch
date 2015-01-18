@@ -208,6 +208,29 @@ void driver_adjust_system_rates(void)
 {
    audio_monitor_adjust_system_rates();
    video_monitor_adjust_system_rates();
+
+   if (!driver.video_data)
+      return;
+
+   if (g_extern.system.force_nonblock)
+      rarch_main_command(RARCH_CMD_VIDEO_SET_NONBLOCKING_STATE);
+   else
+      driver_set_nonblock_state(driver.nonblock_state);
+}
+
+/**
+ * driver_set_refresh_rate:
+ * @hz                 : New refresh rate for monitor.
+ *
+ * Sets monitor refresh rate to new value by calling
+ * video_monitor_set_refresh_rate(). Subsequently
+ * calls audio_monitor_set_refresh_rate().
+ **/
+void driver_set_refresh_rate(float hz)
+{
+   video_monitor_set_refresh_rate(hz);
+   driver_adjust_system_rates();
+   audio_monitor_set_refresh_rate();
 }
 
 /**
