@@ -22,6 +22,7 @@
 #include "compat/posix_string.h"
 #include "gfx/video_thread_wrapper.h"
 #include "gfx/video_monitor.h"
+#include "gfx/video_pixel_converter.h"
 #include "audio/audio_monitor.h"
 #include "gfx/gfx_common.h"
 
@@ -328,41 +329,6 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
       rarch_main_command(RARCH_CMD_RECORD_DEINIT);
       rarch_main_command(RARCH_CMD_RECORD_INIT);
    }
-
-   return true;
-}
-
-static void deinit_pixel_converter(void)
-{
-   scaler_ctx_gen_reset(&driver.scaler);
-   memset(&driver.scaler, 0, sizeof(driver.scaler));
-   free(driver.scaler_out);
-   driver.scaler_out = NULL;
-}
-
-static bool init_video_pixel_converter(unsigned size)
-{
-   /* This function can be called multiple times
-    * without deiniting first on consoles. */
-   deinit_pixel_converter();
-
-   /* If pixel format is not 0RGB1555, we don't need to do
-    * any internal pixel conversion. */
-   if (g_extern.system.pix_fmt != RETRO_PIXEL_FORMAT_0RGB1555)
-      return true;
-
-   RARCH_WARN("0RGB1555 pixel format is deprecated, and will be slower. For 15/16-bit, RGB565 format is preferred.\n");
-
-   driver.scaler.scaler_type = SCALER_TYPE_POINT;
-   driver.scaler.in_fmt      = SCALER_FMT_0RGB1555;
-
-   /* TODO: Pick either ARGB8888 or RGB565 depending on driver. */
-   driver.scaler.out_fmt     = SCALER_FMT_RGB565;
-
-   if (!scaler_ctx_gen_filter(&driver.scaler))
-      return false;
-
-   driver.scaler_out = calloc(sizeof(uint16_t), size * size);
 
    return true;
 }
