@@ -139,10 +139,8 @@ static bool android_gfx_ctx_init(void *data)
       EGL_ALPHA_SIZE, 8,
       EGL_NONE
    };
-   struct android_app *android_app = NULL;
    gfx_ctx_android_data_t *android = NULL;
-   
-   android_app = (struct android_app*)g_android;
+   struct android_app *android_app = (struct android_app*)g_android;
    
    if (!android_app)
       return false;
