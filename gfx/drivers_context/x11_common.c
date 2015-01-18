@@ -160,23 +160,26 @@ static bool get_video_mode(Display *dpy, unsigned width, unsigned height,
 
    for (i = 0; i < num_modes; i++)
    {
+      float refresh, diff;
       const XF86VidModeModeInfo *m = modes[i];
 
       if (!m)
          continue;
 
-      if (m->hdisplay == width && m->vdisplay == height)
-      {
-         float refresh = refresh_mod * m->dotclock * 1000.0f / (m->htotal * m->vtotal);
-         float diff = fabsf(refresh - g_settings.video.refresh_rate);
+      if (m->hdisplay != width)
+         continue;
+      if (m->vdisplay != height)
+         continue;
 
-         if (!ret || diff < minimum_fps_diff)
-         {
-            *mode = *m;
-            minimum_fps_diff = diff;
-         }
-         ret = true;
+      refresh = refresh_mod * m->dotclock * 1000.0f / (m->htotal * m->vtotal);
+      diff    = fabsf(refresh - g_settings.video.refresh_rate);
+
+      if (!ret || diff < minimum_fps_diff)
+      {
+         *mode = *m;
+         minimum_fps_diff = diff;
       }
+      ret = true;
    }
 
    XFree(modes);
@@ -188,16 +191,14 @@ bool x11_enter_fullscreen(Display *dpy, unsigned width,
 {
    XF86VidModeModeInfo mode;
 
-   if (get_video_mode(dpy, width, height, &mode, desktop_mode))
-   {
-      if (XF86VidModeSwitchToMode(dpy, DefaultScreen(dpy), &mode))
-      {
-         XF86VidModeSetViewPort(dpy, DefaultScreen(dpy), 0, 0);
-         return true;
-      }
-   }
+   if (!get_video_mode(dpy, width, height, &mode, desktop_mode))
+      return false;
 
-   return false;
+   if (!XF86VidModeSwitchToMode(dpy, DefaultScreen(dpy), &mode))
+      return false;
+
+   XF86VidModeSetViewPort(dpy, DefaultScreen(dpy), 0, 0);
+   return true;
 }
 
 void x11_exit_fullscreen(Display *dpy, XF86VidModeModeInfo *desktop_mode)
@@ -234,15 +235,15 @@ bool x11_get_xinerama_coord(Display *dpy, int screen,
 
    for (i = 0; i < num_screens; i++)
    {
-      if (info[i].screen_number == screen)
-      {
-         *x = info[i].x_org;
-         *y = info[i].y_org;
-         *w = info[i].width;
-         *h = info[i].height;
-         ret = true;
-         break;
-      }
+      if (info[i].screen_number != screen)
+         continue;
+
+      *x = info[i].x_org;
+      *y = info[i].y_org;
+      *w = info[i].width;
+      *h = info[i].height;
+      ret = true;
+      break;
    }
 
    XFree(info);
@@ -270,7 +271,8 @@ unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
       int len_x = min_rx - max_lx;
       int len_y = min_by - max_ty;
 
-      if (len_x < 0 || len_y < 0) /* The whole window is outside the screen. */
+      /* The whole window is outside the screen. */
+      if (len_x < 0 || len_y < 0)
          continue;
 
       area = len_x * len_y;
