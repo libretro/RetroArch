@@ -20,6 +20,7 @@
 #include "../drivers_font_renderer/bitmap.h"
 #include "../../menu/menu.h"
 #include "../gfx_common.h"
+#include "../video_monitor.h"
 
 #ifdef HW_RVL
 #include "../../wii/mem2_manager.h"

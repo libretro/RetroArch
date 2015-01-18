@@ -348,32 +348,6 @@ void find_prev_driver(const char *label, char *str, size_t sizeof_str);
 void find_next_driver(const char *label, char *str, size_t sizeof_str);
 
 /**
- * video_monitor_set_refresh_rate:
- * @hz                 : New refresh rate for monitor.
- *
- * Sets monitor refresh rate to new value.
- **/
-void video_monitor_set_refresh_rate(float hz);
-
-/**
- * video_monitor_fps_statistics
- * @refresh_rate       : Monitor refresh rate.
- * @deviation          : Deviation from measured refresh rate.
- * @sample_points      : Amount of sampled points.
- *
- * Gets the monitor FPS statistics based on the current
- * runtime.
- *
- * Returns: true (1) on success.
- * false (0) if:
- * a) threaded video mode is enabled
- * b) less than 2 frame time samples.
- * c) FPS monitor enable is off.
- **/
-bool video_monitor_fps_statistics(double *refresh_rate,
-      double *deviation, unsigned *sample_points);
-
-/**
  * driver_set_nonblock_state:
  * @enable             : Enable nonblock state?
  *
@@ -383,6 +357,8 @@ bool video_monitor_fps_statistics(double *refresh_rate,
  * audio and video drivers instead.
  **/
 void driver_set_nonblock_state(bool enable);
+
+void driver_adjust_system_rates(void);
 
 /**
  * driver_get_current_framebuffer:
