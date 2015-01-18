@@ -58,6 +58,13 @@ static bool null_gfx_focus(void *data)
    return true;
 }
 
+static bool null_gfx_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+   return false;
+}
+
 static bool null_gfx_has_windowed(void *data)
 {
    (void)data;
@@ -114,6 +121,7 @@ video_driver_t video_null = {
    null_gfx_set_nonblock_state,
    null_gfx_alive,
    null_gfx_focus,
+   null_gfx_suppress_screensaver,
    null_gfx_has_windowed,
    null_gfx_set_shader,
    null_gfx_free,

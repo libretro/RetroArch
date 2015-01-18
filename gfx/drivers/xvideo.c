@@ -826,6 +826,20 @@ static bool xv_focus(void *data)
    return xv->focus;
 }
 
+static bool xv_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+
+   if (driver.display_type == RARCH_DISPLAY_X11)
+   {
+      x11_suspend_screensaver(driver.video_window);
+      return true;
+   }
+
+   return false;
+}
+
 static bool xv_has_windowed(void *data)
 {
    (void)data;
@@ -907,6 +921,7 @@ video_driver_t video_xvideo = {
    xv_set_nonblock_state,
    xv_alive,
    xv_focus,
+   xv_suppress_screensaver,
    xv_has_windowed,
    xv_set_shader,
    xv_free,

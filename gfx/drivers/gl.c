@@ -2453,6 +2453,15 @@ static bool gl_focus(void *data)
    return gl->ctx_driver->has_focus(gl);
 }
 
+static bool gl_suppress_screensaver(void *data, bool enable)
+{
+   gl_t *gl = (gl_t*)data;
+
+   if (gl && gl->ctx_driver)
+      return gl->ctx_driver->suppress_screensaver(gl, enable);
+   return false;
+}
+
 static bool gl_has_windowed(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -3121,6 +3130,7 @@ video_driver_t video_gl = {
    gl_set_nonblock_state,
    gl_alive,
    gl_focus,
+   gl_suppress_screensaver,
    gl_has_windowed,
 
    gl_set_shader,

@@ -92,6 +92,9 @@ typedef struct gfx_ctx_driver
    /* Checks if window has input focus. */
    bool (*has_focus)(void*);
 
+   /* Should the screensaver be suppressed? */
+   bool (*suppress_screensaver)(void *data, bool enable);
+
    /* Checks if context driver has windowed support. */
    bool (*has_windowed)(void*);
 
@@ -123,7 +126,7 @@ typedef struct gfx_ctx_driver
 
    /* Shows or hides mouse. Can be NULL if context doesn't 
     * have a concept of mouse pointer. */
-   void (*show_mouse)(void*, bool state);
+   void (*show_mouse)(void *data, bool state);
 
    /* Human readable string. */
    const char *ident;

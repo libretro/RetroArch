@@ -25,10 +25,6 @@
 #include "audio/audio_monitor.h"
 #include "gfx/gfx_common.h"
 
-#ifdef HAVE_X11
-#include "gfx/drivers_context/x11_common.h"
-#endif
-
 #ifdef HAVE_MENU
 #include "menu/menu.h"
 #endif
@@ -574,13 +570,8 @@ static void init_video_input(void)
       driver.video->set_rotation(driver.video_data,
             (g_settings.video.rotation + g_extern.system.rotation) % 4);
 
-#ifdef HAVE_X11
-   if (driver.display_type == RARCH_DISPLAY_X11)
-   {
-      RARCH_LOG("Suspending screensaver (X11).\n");
-      x11_suspend_screensaver(driver.video_window);
-   }
-#endif
+   if (driver.video->suppress_screensaver)
+      driver.video->suppress_screensaver(driver.video_data, true);
 
    if (!driver.input)
    {

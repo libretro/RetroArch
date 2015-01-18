@@ -1347,6 +1347,14 @@ static bool exynos_gfx_focus(void *data)
    return true; /* drm device always has focus */
 }
 
+static bool exynos_gfx_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+
+   return false;
+}
+
 static bool exynos_gfx_has_windowed(void *data)
 {
    (void)data;
@@ -1508,6 +1516,7 @@ video_driver_t video_exynos = {
   exynos_gfx_set_nonblock_state,
   exynos_gfx_alive,
   exynos_gfx_focus,
+  exynos_gfx_suppress_screensaver,
   exynos_gfx_has_windowed,
   exynos_gfx_set_shader,
   exynos_gfx_free,

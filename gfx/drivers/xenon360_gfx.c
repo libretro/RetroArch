@@ -257,6 +257,13 @@ static bool xenon360_gfx_focus(void *data)
    return true;
 }
 
+static bool xenon360_gfx_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+   return false;
+}
+
 static bool xenon360_gfx_has_windowed(void *data)
 {
    (void)data;
@@ -312,6 +319,7 @@ video_driver_t video_xenon360 = {
    xenon360_gfx_set_nonblock_state,
    xenon360_gfx_alive,
    xenon360_gfx_focus,
+   xenon360_gfx_suppress_screensaver,
    xenon360_gfx_has_windowed,
    xenon360_gfx_set_shader,
    xenon360_gfx_free,

@@ -126,6 +126,8 @@ void x11_suspend_screensaver(Window wnd)
    int ret;
    char cmd[64];
 
+   RARCH_LOG("Suspending screensaver (X11).\n");
+
    snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend %d", (int)wnd);
 
    ret = system(cmd);

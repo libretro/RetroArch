@@ -417,6 +417,13 @@ static bool gfx_ctx_qnx_has_focus(void *data)
    return true;
 }
 
+static bool gfx_ctx_qnx_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+   return false;
+}
+
 static bool gfx_ctx_qnx_has_windowed(void *data)
 {
    (void)data;
@@ -450,6 +457,7 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    gfx_ctx_qnx_check_window,
    gfx_ctx_qnx_set_resize,
    gfx_ctx_qnx_has_focus,
+   gfx_ctx_qnx_suppress_screensaver,
    gfx_ctx_qnx_has_windowed,
    gfx_ctx_qnx_swap_buffers,
    gfx_ctx_qnx_input_driver,

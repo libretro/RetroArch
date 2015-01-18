@@ -420,6 +420,14 @@ static bool vg_focus(void *data)
    return false;
 }
 
+static bool vg_suppress_screensaver(void *data, bool enable)
+{
+   vg_t *vg = (vg_t*)data;
+   if (vg && vg->driver)
+      return vg->driver->suppress_screensaver(vg);
+   return false;
+}
+
 static bool vg_has_windowed(void *data)
 {
    vg_t *vg = (vg_t*)data;
@@ -472,6 +480,7 @@ video_driver_t video_vg = {
    vg_set_nonblock_state,
    vg_alive,
    vg_focus,
+   vg_suppress_screensaver,
    vg_has_windowed,
    vg_set_shader,
    vg_free,

@@ -306,6 +306,7 @@ static void thread_loop(void *data)
          bool alive = false;
          bool focus = false;
          bool has_windowed = true;
+         bool suppress_screensaver = true;
          struct rarch_viewport vp = {0};
 
          slock_lock(thr->frame.lock);
@@ -328,6 +329,9 @@ static void thread_loop(void *data)
          if (thr->driver && thr->driver->has_windowed)
             has_windowed = ret && thr->driver->has_windowed(thr->driver_data);
 
+         if (thr->driver && thr->driver->suppress_screensaver)
+            suppress_screensaver = ret && thr->driver->suppress_screensaver(thr->driver_data, true);
+
          if (thr->driver && thr->driver->viewport_info)
             thr->driver->viewport_info(thr->driver_data, &vp);
 
@@ -335,6 +339,7 @@ static void thread_loop(void *data)
          thr->alive = alive;
          thr->focus = focus;
          thr->has_windowed = has_windowed;
+         thr->suppress_screensaver = suppress_screensaver;
          thr->frame.updated = false;
          thr->vp = vp;
          scond_signal(thr->cond_cmd);
@@ -386,6 +391,18 @@ static bool thread_focus(void *data)
 
    slock_lock(thr->lock);
    ret = thr->focus;
+   slock_unlock(thr->lock);
+
+   return ret;
+}
+
+static bool thread_suppress_screensaver(void *data, bool enable)
+{
+   bool ret;
+   thread_video_t *thr = (thread_video_t*)data;
+
+   slock_lock(thr->lock);
+   ret = thr->suppress_screensaver;
    slock_unlock(thr->lock);
 
    return ret;
@@ -520,6 +537,7 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info,
    thr->alive = true;
    thr->focus = true;
    thr->has_windowed = true;
+   thr->suppress_screensaver = true;
 
    max_size = info->input_scale * RARCH_SCALE_BASE;
    max_size *= max_size;
@@ -874,6 +892,7 @@ static const video_driver_t video_thread = {
    thread_set_nonblock_state,
    thread_alive,
    thread_focus,
+   thread_suppress_screensaver,
    thread_has_windowed,
    thread_set_shader,
    thread_free,

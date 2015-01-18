@@ -132,7 +132,10 @@ typedef struct video_driver
    /* Does the window have focus? */
    bool (*focus)(void *data);
 
-   /* Does the graphics conext support windowed mode? */
+   /* Should the screensaver be suppressed? */
+   bool (*suppress_screensaver)(void *data, bool enable);
+
+   /* Does the graphics context support windowed mode? */
    bool (*has_windowed)(void *data);
 
    /* Sets shader. Might not be implemented. Will be moved to

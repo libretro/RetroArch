@@ -270,6 +270,14 @@ static bool apple_gfx_ctx_has_focus(void *data)
 #endif
 }
 
+static bool apple_gfx_ctx_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+
+   return false;
+}
+
 static bool apple_gfx_ctx_has_windowed(void *data)
 {
    (void)data;
@@ -371,6 +379,7 @@ const gfx_ctx_driver_t gfx_ctx_apple = {
    apple_gfx_ctx_check_window,
    apple_gfx_ctx_set_resize,
    apple_gfx_ctx_has_focus,
+   apple_gfx_ctx_suppress_screensaver,
    apple_gfx_ctx_has_windowed,
    apple_gfx_ctx_swap_buffers,
    apple_gfx_ctx_input_driver,

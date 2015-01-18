@@ -91,6 +91,7 @@ typedef struct thread_video
 
    bool alive;
    bool focus;
+   bool suppress_screensaver;
    bool has_windowed;
    bool nonblock;
 

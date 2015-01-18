@@ -341,6 +341,13 @@ static bool android_gfx_ctx_has_focus(void *data)
    return true;
 }
 
+static bool android_gfx_ctx_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+   return false;
+}
+
 static bool android_gfx_ctx_has_windowed(void *data)
 {
    (void)data;
@@ -381,6 +388,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_check_window,
    android_gfx_ctx_set_resize,
    android_gfx_ctx_has_focus,
+   android_gfx_ctx_suppress_screensaver,
    android_gfx_ctx_has_windowed,
    android_gfx_ctx_swap_buffers,
    android_gfx_ctx_input_driver,

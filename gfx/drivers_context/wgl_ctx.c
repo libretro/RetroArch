@@ -624,6 +624,14 @@ static bool gfx_ctx_wgl_has_focus(void *data)
    return GetFocus() == g_hwnd;
 }
 
+static bool gfx_ctx_wgl_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+
+   return false;
+}
+
 static bool gfx_ctx_wgl_has_windowed(void *data)
 {
    (void)data;
@@ -673,6 +681,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_check_window,
    gfx_ctx_wgl_set_resize,
    gfx_ctx_wgl_has_focus,
+   gfx_ctx_wgl_suppress_screensaver,
    gfx_ctx_wgl_has_windowed,
    gfx_ctx_wgl_swap_buffers,
    gfx_ctx_wgl_input_driver,

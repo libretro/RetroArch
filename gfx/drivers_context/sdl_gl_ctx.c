@@ -372,6 +372,13 @@ static bool sdl_ctx_has_focus(void *data)
 #endif
 }
 
+static bool sdl_ctx_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+   return false;
+}
+
 static bool sdl_ctx_has_windowed(void *data)
 {
    (void)data;
@@ -420,6 +427,7 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl =
    sdl_ctx_check_window,
    sdl_ctx_set_resize,
    sdl_ctx_has_focus,
+   sdl_ctx_suppress_screensaver,
    sdl_ctx_has_windowed,
    sdl_ctx_swap_buffers,
    sdl_ctx_input_driver,

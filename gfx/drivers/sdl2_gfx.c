@@ -536,6 +536,22 @@ static bool sdl2_gfx_focus(void *data)
    return (SDL_GetWindowFlags(vid->window) & flags) == flags;
 }
 
+static bool sdl2_gfx_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+
+   if (driver.display_type == RARCH_DISPLAY_X11)
+   {
+#ifdef HAVE_X11
+      x11_suspend_screensaver(driver.video_window);
+#endif
+      return true;
+   }
+
+   return false;
+}
+
 static bool sdl2_gfx_has_windowed(void *data)
 {
    (void)data;
@@ -732,6 +748,7 @@ video_driver_t video_sdl2 = {
    sdl2_gfx_set_nonblock_state,
    sdl2_gfx_alive,
    sdl2_gfx_focus,
+   sdl2_gfx_suppress_screensaver,
    sdl2_gfx_has_windowed,
    sdl2_gfx_set_shader,
    sdl2_gfx_free,

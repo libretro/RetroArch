@@ -425,6 +425,13 @@ static bool gfx_ctx_vc_has_focus(void *data)
    return g_inited;
 }
 
+static bool gfx_ctx_vc_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+   return false;
+}
+
 static bool gfx_ctx_vc_has_windowed(void *data)
 {
    (void)data;
@@ -595,6 +602,7 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_check_window,
    gfx_ctx_vc_set_resize,
    gfx_ctx_vc_has_focus,
+   gfx_ctx_vc_suppress_screensaver,
    gfx_ctx_vc_has_windowed,
    gfx_ctx_vc_swap_buffers,
    gfx_ctx_vc_input_driver,

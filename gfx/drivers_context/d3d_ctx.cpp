@@ -321,6 +321,14 @@ static bool gfx_ctx_d3d_has_focus(void *data)
    return GetFocus() == d3d->hWnd;
 }
 
+static bool gfx_ctx_d3d_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+
+   return false;
+}
+
 static bool gfx_ctx_d3d_has_windowed(void *data)
 {
    (void)data;
@@ -497,6 +505,7 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_check_window,
    d3d_resize,
    gfx_ctx_d3d_has_focus,
+   gfx_ctx_d3d_suppress_screensaver,
    gfx_ctx_d3d_has_windowed,
    gfx_ctx_d3d_swap_buffers,
    gfx_ctx_d3d_input_driver,

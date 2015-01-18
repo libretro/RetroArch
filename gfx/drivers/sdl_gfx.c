@@ -389,6 +389,22 @@ static bool sdl_gfx_focus(void *data)
    return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
 }
 
+static bool sdl_gfx_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+
+#ifdef HAVE_X11
+   if (driver.display_type == RARCH_DISPLAY_X11)
+   {
+      x11_suspend_screensaver(driver.video_window);
+      return true;
+   }
+#endif
+
+   return false;
+}
+
 static bool sdl_gfx_has_windowed(void *data)
 {
    (void)data;
@@ -532,6 +548,7 @@ video_driver_t video_sdl = {
    sdl_gfx_set_nonblock_state,
    sdl_gfx_alive,
    sdl_gfx_focus,
+   sdl_gfx_suppress_screensaver,
    sdl_gfx_has_windowed,
    sdl_gfx_set_shader,
    sdl_gfx_free,

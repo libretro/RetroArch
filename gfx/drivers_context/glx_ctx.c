@@ -666,6 +666,16 @@ static bool gfx_ctx_glx_has_focus(void *data)
    return (win == glx->g_win && glx->g_has_focus) || glx->g_true_full;
 }
 
+static bool gfx_ctx_glx_suppress_screensaver(void *data, bool enable)
+{
+   if (driver.display_type != RARCH_DISPLAY_X11)
+      return false;
+
+   x11_suspend_screensaver(driver.video_window);
+
+   return true;
+}
+
 static bool gfx_ctx_glx_has_windowed(void *data)
 {
    (void)data;
@@ -729,6 +739,7 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_glx_check_window,
    gfx_ctx_glx_set_resize,
    gfx_ctx_glx_has_focus,
+   gfx_ctx_glx_suppress_screensaver,
    gfx_ctx_glx_has_windowed,
    gfx_ctx_glx_swap_buffers,
    gfx_ctx_glx_input_driver,

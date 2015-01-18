@@ -1047,6 +1047,14 @@ static bool gx_focus(void *data)
    return true;
 }
 
+static bool gx_suppress_screensaver(void *data, bool enable)
+{
+   (void)data;
+   (void)enable;
+
+   return false;
+}
+
 static bool gx_has_windowed(void *data)
 {
    (void)data;
@@ -1330,6 +1338,7 @@ video_driver_t video_gx = {
    gx_set_nonblock_state,
    gx_alive,
    gx_focus,
+   gx_suppress_screensaver,
    gx_has_windowed,
    gx_set_shader,
    gx_free,
