@@ -222,37 +222,7 @@ static int action_ok_playlist_entry(const char *path,
    return -1;
 }
 
-static int action_ok_contentlist_entry(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   if (!driver.menu)
-      return -1;
-
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         "",
-         label,
-         type,
-         driver.menu->selection_ptr);
-   return 0;
-}
-
-static int action_ok_push_history_list(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   if (!driver.menu)
-      return -1;
-
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         "",
-         label,
-         type,
-         driver.menu->selection_ptr);
-   return 0;
-}
-
-static int action_ok_push_path_list(const char *path,
+static int action_ok_push_generic_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    if (!driver.menu)
@@ -2451,7 +2421,7 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
          cbs->action_ok = action_ok_playlist_entry;
          break;
       case MENU_FILE_CONTENTLIST_ENTRY:
-         cbs->action_ok = action_ok_contentlist_entry;
+         cbs->action_ok = action_ok_push_generic_list;
          break;
       case MENU_FILE_CHEAT:
          cbs->action_ok = action_ok_cheat_file_load;
@@ -2633,10 +2603,10 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          !strcmp(label, "detect_core_list")
          )
       cbs->action_ok = action_ok_push_content_list;
-   else if (!strcmp(label, "history_list"))
-      cbs->action_ok = action_ok_push_history_list;
-   else if (setting && setting->browser_selection_type == ST_DIR)
-      cbs->action_ok = action_ok_push_path_list;
+   else if (!strcmp(label, "history_list") ||
+         (setting && setting->browser_selection_type == ST_DIR)
+         )
+      cbs->action_ok = action_ok_push_generic_list;
    else if (!strcmp(label, "shader_apply_changes"))
       cbs->action_ok = action_ok_shader_apply_changes;
    else if (!strcmp(label, "cheat_apply_changes"))
