@@ -460,6 +460,17 @@ static int action_ok_shader_preset_save_as(const char *path,
    return 0;
 }
 
+static int action_ok_remap_file_save_as(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   if (!driver.menu)
+      return -1;
+
+   menu_input_key_start_line(driver.menu, "Remapping Filename",
+         label, type, idx, menu_input_st_string_callback);
+   return 0;
+}
+
 static int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -2114,12 +2125,8 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
    menu_list_clear(list);
    menu_list_push(list, "Remap File Load", "remap_file_load",
          MENU_SETTING_ACTION, 0);
-#if 0
-   menu_list_push(list, "Cheat Passes", "cheat_num_passes",
-         0, 0);
-   menu_list_push(list, "Apply Cheat Changes", "cheat_apply_changes",
-         MENU_SETTING_ACTION, 0);
-#endif
+   menu_list_push(list, "Remap File Save As",
+         "remap_file_save_as", MENU_SETTING_ACTION, 0);
 
    for (p = 0; p < g_settings.input.max_users; p++)
    {
@@ -2692,6 +2699,8 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_cheat_apply_changes;
    else if (!strcmp(label, "video_shader_preset_save_as"))
       cbs->action_ok = action_ok_shader_preset_save_as;
+   else if (!strcmp(label, "remap_file_save_as"))
+      cbs->action_ok = action_ok_remap_file_save_as;
    else if (!strcmp(label, "core_list"))
       cbs->action_ok = action_ok_core_list;
    else if (!strcmp(label, "core_manager_list"))
