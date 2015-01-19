@@ -146,20 +146,20 @@ static void blit_line(int x, int y, const char *message, bool green)
          for (i = 0; i < FONT_WIDTH; i++)
          {
             uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
-            int offset = (i + j * FONT_WIDTH) >> 3;
-            bool col = (driver.menu->font[FONT_OFFSET
+            int offset  = (i + j * FONT_WIDTH) >> 3;
+            bool col    = (driver.menu->font[FONT_OFFSET
                   ((unsigned char)*message) + offset] & rem);
 
-            if (col)
-            {
-               rgui->frame_buf[(y + j) *
-                  (rgui->frame_buf_pitch >> 1) + (x + i)] = green ?
+            if (!col)
+               continue;
+
+            rgui->frame_buf[(y + j) *
+               (rgui->frame_buf_pitch >> 1) + (x + i)] = green ?
 #if defined(GEKKO)|| defined(PSP)
                (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
 #else
-               (15 << 0) | (7 << 4) | (15 << 8) | (7 << 12) : 0xFFFF;
+            (15 << 0) | (7 << 4) | (15 << 8) | (7 << 12) : 0xFFFF;
 #endif
-            }
          }
       }
 

@@ -51,13 +51,13 @@ static void ios_free(void *data)
 
 static int menu_ios_iterate(unsigned action)
 {
-   ios_handle_t *ih = NULL;
+   ios_handle_t *ios = NULL;
    if (!driver.menu)
       return 0;
 
-   ih = (ios_handle_t*)driver.menu->userdata;
-   if (ih->switch_to_ios)
-      ih->switch_to_ios();
+   ios = (ios_handle_t*)driver.menu->userdata;
+   if (ios->switch_to_ios)
+      ios->switch_to_ios();
 
    return 0;
 }

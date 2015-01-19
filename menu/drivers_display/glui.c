@@ -49,13 +49,14 @@ static void glui_blit_line(float x, float y, const char *message, bool green)
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 
-   params.x = x / gl->win_width;
-   params.y = 1.0f - y / gl->win_height;
-
-   params.scale = 1.0;
-   params.color = green ? FONT_COLOR_RGBA(100, 255, 100, 255)
-      : FONT_COLOR_RGBA(255, 255, 255, 255);
+   params.x           = x / gl->win_width;
+   params.y           = 1.0f - y / gl->win_height;
+   params.scale       = 1.0;
+   params.color       = FONT_COLOR_RGBA(255, 255, 255, 255);
    params.full_screen = true;
+
+   if (green)
+      params.color = FONT_COLOR_RGBA(100, 255, 100, 255);
     
    if (driver.video_data && driver.video_poke
        && driver.video_poke->set_osd_msg)
@@ -245,7 +246,7 @@ static void glui_render_messagebox(const char *message)
       return;
    }
 
-   x = gl->win_width / 2 - strlen(list->elems[0].data) * glui->glyph_width / 2;
+   x = gl->win_width  / 2 - strlen(list->elems[0].data) * glui->glyph_width / 2;
    y = gl->win_height / 2 - list->size * glui->line_height / 2;
 
    for (i = 0; i < list->size; i++)
