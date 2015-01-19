@@ -12,8 +12,6 @@
 #ifndef _HTTP_LIB_H
 #define _HTTP_LIB_H
 
- /* declarations */
-
 extern char *http_server;
 
 extern int http_port;
@@ -22,10 +20,8 @@ extern char *http_proxy_server;
 
 extern int http_proxy_port;
 
-
-/* return type */
-typedef enum {
-
+typedef enum
+{
   /* Client side errors */
   ERRHOST=-1, /* No such host */
   ERRSOCK=-2, /* Can't create socket */

@@ -307,6 +307,11 @@ struct settings
       unsigned mode;
    } archive;
 
+   struct
+   {
+      char buildbot_url[PATH_MAX_LENGTH];
+   } network;
+
    int state_slot;
 
    char core_options_path[PATH_MAX_LENGTH];

@@ -5442,6 +5442,22 @@ static bool setting_data_append_list_netplay_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Network Options");
+
+   START_SUB_GROUP(list, list_info, "Buildbot", group_info.name, subgroup_info);
+
+   CONFIG_STRING(
+         g_settings.network.buildbot_url,
+         "core_management_buildbot_url",
+         "Core Management Buildbot URL",
+         "",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+   END_SUB_GROUP(list, list_info);
+
    START_SUB_GROUP(list, list_info, "Netplay", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -5455,6 +5471,7 @@ static bool setting_data_append_list_netplay_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+
 
    CONFIG_STRING(
          g_extern.netplay_server,
