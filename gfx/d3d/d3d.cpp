@@ -25,6 +25,7 @@
 #include "render_chain.h"
 #endif
 #include "../video_viewport.h"
+#include "../video_monitor.h"
 
 #ifndef _XBOX
 #include "../drivers_context/win32_common.h"
