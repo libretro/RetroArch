@@ -168,7 +168,7 @@ void find_video_driver(void)
 }
 
 /**
- * driver_video_resolve:
+ * video_driver_resolve:
  * @drv                : real video driver will be set to this.
  *
  * Use this if you need the real video driver 
@@ -176,7 +176,7 @@ void find_video_driver(void)
  *
  * Returns: video driver's userdata.
  **/
-void *driver_video_resolve(const video_driver_t **drv)
+void *video_driver_resolve(const video_driver_t **drv)
 {
 #ifdef HAVE_THREADS
    if (g_settings.video.threaded

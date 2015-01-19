@@ -102,7 +102,7 @@ static void lakka_draw_text(lakka_handle_t *lakka,
    if (a8 == 0)
       return;
 
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
 
    if (!gl)
       return;
@@ -158,7 +158,7 @@ static void lakka_draw_background(bool force_transparency)
       0.0f, 0.0f, 0.0f, alpha,
    };
 
-   gl = (gl_t*)driver_video_resolve(NULL);
+   gl = (gl_t*)video_driver_resolve(NULL);
 
    if (!gl)
       return;
@@ -213,7 +213,7 @@ static void lakka_draw_icon(lakka_handle_t *lakka,
    if (alpha == 0)
       return;
 
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
 
    if (!gl)
       return;
@@ -482,7 +482,7 @@ static void lakka_check_fb_status(void)
 
 static void lakka_fbo_reset(lakka_handle_t *lakka)
 {
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
    if (!gl)
       return;
 
@@ -517,7 +517,7 @@ static void lakka_fbo_reset(lakka_handle_t *lakka)
 
 static void lakka_draw_fbo(lakka_handle_t *lakka)
 {
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
    if (!gl)
       return;
 
@@ -563,7 +563,7 @@ static void lakka_frame(void)
    menu_item_t *active_item = NULL;
    menu_category_t *active_category = NULL;
    lakka_handle_t *lakka = NULL;
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
 
    if (!gl)
       return;
@@ -906,7 +906,7 @@ static void lakka_context_reset(void *data)
    if (!lakka)
       return;
 
-   gl = (gl_t*)driver_video_resolve(NULL);
+   gl = (gl_t*)video_driver_resolve(NULL);
 
    if (!gl)
       return;
@@ -1192,7 +1192,7 @@ static void *lakka_init(void)
    menu_handle_t *menu = NULL;
    lakka_handle_t *lakka = NULL;
    const video_driver_t *video_driver = NULL;
-   gl_t *gl = (gl_t*)driver_video_resolve(&video_driver);
+   gl_t *gl = (gl_t*)video_driver_resolve(&video_driver);
 
    if (video_driver != &video_gl || !gl)
    {

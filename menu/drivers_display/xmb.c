@@ -191,7 +191,7 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
    if (alpha == 0)
       return;
 
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
 
    if (!gl)
       return;
@@ -251,7 +251,7 @@ static void xmb_draw_text(const char *str, float x,
    if (a8 == 0)
       return;
 
-   gl = (gl_t*)driver_video_resolve(NULL);
+   gl = (gl_t*)video_driver_resolve(NULL);
 
    if (!gl)
       return;
@@ -321,7 +321,7 @@ static void xmb_render_background(bool force_transparency)
       0.0f, 0.0f, 0.0f, alpha,
    };
 
-   gl = (gl_t*)driver_video_resolve(NULL);
+   gl = (gl_t*)video_driver_resolve(NULL);
 
    if (!gl)
       return;
@@ -374,7 +374,7 @@ static void xmb_render_messagebox(const char *message)
    int x, y;
    unsigned i;
    struct string_list *list = NULL;
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!gl || !xmb)
@@ -933,7 +933,7 @@ static void xmb_frame(void)
    const char *core_version = NULL;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
 
    if (!xmb || !gl)
       return;
@@ -1067,7 +1067,7 @@ static void *xmb_init(void)
    xmb_handle_t *xmb = NULL;
    const video_driver_t *video_driver = NULL;
    float scale_factor = 1;
-   gl_t *gl = (gl_t*)driver_video_resolve(&video_driver);
+   gl_t *gl = (gl_t*)video_driver_resolve(&video_driver);
 
    if (video_driver != &video_gl || !gl)
    {
@@ -1207,7 +1207,7 @@ static void xmb_context_reset(void *data)
    if (!menu)
       return;
 
-   gl = (gl_t*)driver_video_resolve(NULL);
+   gl = (gl_t*)video_driver_resolve(NULL);
    if (!gl)
       return;
 

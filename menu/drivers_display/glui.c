@@ -42,7 +42,7 @@ typedef struct glui_handle
 static void glui_blit_line(float x, float y, const char *message, bool green)
 {
    struct font_params params = {0};
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
 
    if (!driver.menu || !gl)
       return;
@@ -105,7 +105,7 @@ static void glui_render_background(bool force_transparency)
       0.0f, 0.0f, 0.0f, alpha,
    };
 
-   gl = (gl_t*)driver_video_resolve(NULL);
+   gl = (gl_t*)video_driver_resolve(NULL);
 
    if (!gl)
       return;
@@ -175,7 +175,7 @@ static void glui_draw_cursor(float x, float y)
    if (!glui)
       return;
 
-   gl = (gl_t*)driver_video_resolve(NULL);
+   gl = (gl_t*)video_driver_resolve(NULL);
 
    if (!gl)
       return;
@@ -224,7 +224,7 @@ static void glui_render_messagebox(const char *message)
    int x, y;
    struct string_list *list = NULL;
    glui_handle_t *glui = NULL;
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
 
    if (!driver.menu || !gl)
       return;
@@ -268,7 +268,7 @@ static void glui_frame(void)
    const char *label = NULL;
    unsigned menu_type = 0;
    size_t end;
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
    glui_handle_t *glui = NULL;
    const char *core_name = NULL;
    const char *core_version = NULL;
@@ -452,7 +452,7 @@ static void *glui_init(void)
    menu_handle_t *menu;
    glui_handle_t *glui = NULL;
    const video_driver_t *video_driver = NULL;
-   gl_t *gl = (gl_t*)driver_video_resolve(&video_driver);
+   gl_t *gl = (gl_t*)video_driver_resolve(&video_driver);
 
    if (video_driver != &video_gl || !gl)
    {
@@ -548,7 +548,7 @@ static void glui_context_reset(void *data)
    char bgpath[PATH_MAX_LENGTH];
    glui_handle_t *glui = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
-   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
     
    (void)gl;
 
