@@ -28,6 +28,8 @@
 #include "../retroarch.h"
 #include "../performance.h"
 
+#include <file/config_file.h>
+
 #ifdef GEKKO
 enum
 {
@@ -320,6 +322,8 @@ static int action_ok_remap_file(const char *path,
 static int action_ok_remap_file_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   unsigned i, j;
+   config_file_t *conf = NULL;
    const char *menu_path = NULL;
    char remap_path[PATH_MAX_LENGTH];
    if (!driver.menu)
@@ -330,18 +334,35 @@ static int action_ok_remap_file_load(const char *path,
    menu_list_get_last_stack(driver.menu->menu_list, &menu_path, NULL,
          NULL);
 
-#if 0
    fill_pathname_join(remap_path, menu_path, path, sizeof(remap_path));
 
-   if (g_extern.cheat)
-      cheat_manager_free(g_extern.cheat);
+   conf = config_file_new(remap_path);
 
-   g_extern.cheat = cheat_manager_load(remap_path);
+   if (!conf)
+      goto exit;
 
-   if (!g_extern.cheat)
-      return -1;
-#endif
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      char buf[64];
+      char key_ident[RARCH_FIRST_META_KEY][128];
+      char key_strings[RARCH_FIRST_META_KEY][128] = { "b", "y", "select", "start",
+         "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3"};
 
+      snprintf(buf, sizeof(buf), "input_player%u", i + 1);
+
+      for (j = 0; j < RARCH_FIRST_META_KEY; j++)
+      {
+         int key_remap = -1;
+
+         snprintf(key_ident[j], sizeof(key_ident[j]), "%s_%s", buf, key_strings[j]);
+         if (config_get_int(conf, key_ident[j], &key_remap))
+            g_settings.input.remap_ids[i][j] = key_remap;
+      }
+   }
+
+   config_file_free(conf);
+
+exit:
    menu_list_flush_stack_by_needle(driver.menu->menu_list, "core_input_remapping_options");
 
    return 0;
