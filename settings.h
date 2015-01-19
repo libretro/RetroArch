@@ -113,13 +113,23 @@ const char *config_get_default_menu(void);
 void config_load(void);
 
 /**
+ * config_save_keybinds_file:
+ * @path            : Path that shall be written to.
+ *
+ * Writes a keybinds config file to disk.
+ *
+ * Returns: true (1) on success, otherwise returns false (0).
+ **/
+bool config_save_keybinds_file(const char *path);
+
+/**
  * config_save_file:
  * @path            : Path that shall be written to.
  *
  * Writes a config file to disk.
  *
  * Returns: true (1) on success, otherwise returns false (0).
- */
+ **/
 bool config_save_file(const char *path);
 
 #ifdef __cplusplus

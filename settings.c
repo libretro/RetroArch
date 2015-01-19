@@ -1699,6 +1699,8 @@ static void save_keybind(config_file_t *conf, const char *prefix,
    save_keybind_axis(conf, prefix, base, bind);
 }
 
+
+
 /**
  * save_keybinds_user:
  * @conf               : pointer to config file object
@@ -1748,13 +1750,43 @@ void config_load(void)
 }
 
 /**
+ * config_save_keybinds_file:
+ * @path            : Path that shall be written to.
+ *
+ * Writes a keybinds config file to disk.
+ *
+ * Returns: true (1) on success, otherwise returns false (0).
+ **/
+bool config_save_keybinds_file(const char *path)
+{
+   unsigned i = 0;
+   bool ret = false;
+   config_file_t *conf = config_file_new(path);
+
+   if (!conf)
+      conf = config_file_new(NULL);
+
+   if (!conf)
+      return false;
+
+   RARCH_LOG("Saving keybinds config at path: \"%s\"\n", path);
+
+   for (i = 0; i < MAX_USERS; i++)
+      save_keybinds_user(conf, i);
+
+   ret = config_file_write(conf, path);
+   config_file_free(conf);
+   return ret;
+}
+
+/**
  * config_save_file:
  * @path            : Path that shall be written to.
  *
  * Writes a config file to disk.
  *
  * Returns: true (1) on success, otherwise returns false (0).
- */
+ **/
 bool config_save_file(const char *path)
 {
    unsigned i = 0;
