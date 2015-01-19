@@ -87,13 +87,13 @@ int http_intf_command(unsigned mode, char *url)
       case HTTP_INTF_GET:
          /* *** GET *** */
          ret = http_get(filename, &data, &lg, typebuf);
-         RARCH_LOG("res=%d,type='%s',lg=%d\n", ret, typebuf, lg);
+         RARCH_LOG("res=%d, type='%s', lg=%d\n", ret, typebuf, lg);
          fwrite(data, lg, 1, stdout);
          break;
       case HTTP_INTF_HEAD:
          /* *** HEAD *** */
          ret = http_head(filename, &lg, typebuf);
-         RARCH_LOG("res=%d,type='%s',lg=%d\n",ret, typebuf, lg);
+         RARCH_LOG("res=%d, type='%s', lg=%d\n",ret, typebuf, lg);
          break;
       case HTTP_INTF_DELETE:
          /* *** DELETE *** */
@@ -102,7 +102,7 @@ int http_intf_command(unsigned mode, char *url)
          break;
          /* impossible... */
       default:
-         RARCH_LOG("impossible mode value=%d\n", mode);
+         RARCH_LOG("Impossible mode value=%d\n", mode);
          return 5;
    }
    if (data)
@@ -112,8 +112,10 @@ int http_intf_command(unsigned mode, char *url)
    if (proxy)
       free(http_proxy_server);
 
+   /* Resource successfully created? */
    if (ret == 200)
       return 0;
+   /* Resource successfully read? */
    if (ret == 201)
       return 0;
    return ret;

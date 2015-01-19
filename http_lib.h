@@ -34,15 +34,15 @@ typedef enum {
   ERRWRDT=-5, /* Write error on socket while writing data */
   ERRRDHD=-6, /* Read error on socket while reading result */
   ERRPAHD=-7, /* Invalid answer from data server */
-  ERRNULL=-8, /* Null data pointer */
+  ERRNULL=-8, /* NULL data pointer */
   ERRNOLG=-9, /* No/Bad length in header */
   ERRMEM=-10, /* Can't allocate memory */
   ERRRDDT=-11,/* Read error while reading data */
-  ERRURLH=-12,/* Invalid url - must start with 'http://' */
-  ERRURLP=-13,/* Invalid port in url */
+  ERRURLH=-12,/* Invalid URL - must start with 'http://' */
+  ERRURLP=-13,/* Invalid port in URL */
   
-
   /* Return code by the server */
+
   ERR400=400, /* Invalid query */
   ERR403=403, /* Forbidden */
   ERR408=408, /* Request timeout */
@@ -51,9 +51,9 @@ typedef enum {
   ERR503=503, /* Service overloaded */
 
   /* Succesful results */
-  OK0 = 0,   /* successfull parse */
-  OK201=201, /* Ressource succesfully created */
-  OK200=200  /* Ressource succesfully read */
+  OK0 = 0,   /* successfully parsed */
+  OK201=201, /* Resource succesfully created */
+  OK200=200  /* Resource succesfully read */
 
 } http_retcode;
 
