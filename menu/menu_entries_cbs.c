@@ -116,11 +116,8 @@ unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
-int menu_action_setting_set_current_string(
-      rarch_setting_t *setting, const char *str)
+static int menu_action_generic_setting(rarch_setting_t *setting)
 {
-   strlcpy(setting->value.string, str, setting->size);
-
    if (setting->change_handler)
       setting->change_handler(setting);
 
@@ -132,6 +129,13 @@ int menu_action_setting_set_current_string(
    }
 
    return 0;
+}
+
+int menu_action_setting_set_current_string(
+      rarch_setting_t *setting, const char *str)
+{
+   strlcpy(setting->value.string, str, setting->size);
+   return menu_action_generic_setting(setting);
 }
 
 static void common_load_content(bool persist)
@@ -637,18 +641,7 @@ static int menu_action_setting_set_current_string_path(
       rarch_setting_t *setting, const char *dir, const char *path)
 {
    fill_pathname_join(setting->value.string, dir, path, setting->size);
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   if (setting->flags & SD_FLAG_EXIT
-         && setting->cmd_trigger.triggered)
-   {
-      setting->cmd_trigger.triggered = false;
-      return -1;
-   }
-
-   return 0;
+   return menu_action_generic_setting(setting);
 }
 
 static int action_ok_file_load(const char *path,
