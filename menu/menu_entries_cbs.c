@@ -301,6 +301,52 @@ static int action_ok_cheat_file(const char *path,
    return 0;
 }
 
+static int action_ok_remap_file(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   if (!driver.menu)
+      return -1;
+
+   menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         g_settings.input_remapping_directory, 
+         "remap_file_load",
+         type,
+         driver.menu->selection_ptr);
+
+   return 0;
+}
+
+static int action_ok_remap_file_load(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   const char *menu_path = NULL;
+   char remap_path[PATH_MAX_LENGTH];
+   if (!driver.menu)
+      return -1;
+
+   (void)remap_path;
+   (void)menu_path;
+   menu_list_get_last_stack(driver.menu->menu_list, &menu_path, NULL,
+         NULL);
+
+#if 0
+   fill_pathname_join(remap_path, menu_path, path, sizeof(remap_path));
+
+   if (g_extern.cheat)
+      cheat_manager_free(g_extern.cheat);
+
+   g_extern.cheat = cheat_manager_load(remap_path);
+
+   if (!g_extern.cheat)
+      return -1;
+#endif
+
+   menu_list_flush_stack_by_needle(driver.menu->menu_list, "core_input_remapping_options");
+
+   return 0;
+}
+
 static int action_ok_cheat_file_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -2045,9 +2091,9 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
       return -1;
 
    menu_list_clear(list);
-#if 0
-   menu_list_push(list, "Cheat File Load", "cheat_file_load",
+   menu_list_push(list, "Remap File Load", "remap_file_load",
          MENU_SETTING_ACTION, 0);
+#if 0
    menu_list_push(list, "Cheat Passes", "cheat_num_passes",
          0, 0);
    menu_list_push(list, "Apply Cheat Changes", "cheat_apply_changes",
@@ -2306,6 +2352,13 @@ static int deferred_push_cheat_file_load(void *data, void *userdata,
          MENU_FILE_CHEAT, "cht");
 }
 
+static int deferred_push_remap_file_load(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   return generic_deferred_push(data, userdata, path, label, type,
+         MENU_FILE_REMAP, "rmp");
+}
+
 static int deferred_push_input_overlay(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -2425,6 +2478,9 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
          break;
       case MENU_FILE_CHEAT:
          cbs->action_ok = action_ok_cheat_file_load;
+         break;
+      case MENU_FILE_REMAP:
+         cbs->action_ok = action_ok_remap_file_load;
          break;
       case MENU_FILE_SHADER_PRESET:
          cbs->action_ok = action_ok_shader_preset_load;
@@ -2580,6 +2636,8 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_shader_preset;
    else if (!strcmp(label, "cheat_file_load"))
       cbs->action_ok = action_ok_cheat_file;
+   else if (!strcmp(label, "remap_file_load"))
+      cbs->action_ok = action_ok_remap_file;
    else if (!strcmp(label, "video_shader_parameters"))
       cbs->action_ok = action_ok_shader_parameters;
    else if (!strcmp(label, "video_shader_preset_parameters"))
@@ -2703,6 +2761,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_history_list;
    else if (!strcmp(label, "cheat_file_load"))
       cbs->action_deferred_push = deferred_push_cheat_file_load;
+   else if (!strcmp(label, "remap_file_load"))
+      cbs->action_deferred_push = deferred_push_remap_file_load;
    else if (!strcmp(label, "content_actions"))
       cbs->action_deferred_push = deferred_push_content_actions;
    else if (!strcmp(label, "Shader Options"))
