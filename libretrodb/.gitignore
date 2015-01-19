@@ -1,0 +1,9 @@
+*.swp
+*~
+*.o
+*.pyc
+rmsgpack_test
+lua_converter
+rarchdb_tool
+testlib.so
+*.uncrustify

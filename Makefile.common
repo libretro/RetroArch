@@ -164,11 +164,11 @@ OBJ += frontend/frontend.o \
 
 # RarchDB
 
-OBJ += rarchdb/bintree.o \
-		 rarchdb/db_parser.o \
-		 rarchdb/rarchdb.o \
-		 rarchdb/rmsgpack.o \
-		 rarchdb/rmsgpack_dom.o
+OBJ += libretrodb/bintree.o \
+		 libretrodb/rarchdb.o \
+		 libretrodb/query.o \
+		 libretrodb/rmsgpack.o \
+		 libretrodb/rmsgpack_dom.o
 
 # Miscellaneous
 

@@ -147,20 +147,6 @@ static void common_load_content(bool persist)
    driver.menu->msg_force = true;
 }
 
-static int action_ok_push_content_list(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   if (!driver.menu)
-      return -1;
-
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         g_settings.menu_content_directory,
-         label,
-         MENU_FILE_DIRECTORY,
-         driver.menu->selection_ptr);
-   return 0;
-}
 
 static int action_ok_load_state(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -824,6 +810,21 @@ static int action_ok_push_default(const char *path,
    menu_list_push_stack_refresh(
          driver.menu->menu_list,
          label, label, type,
+         driver.menu->selection_ptr);
+   return 0;
+}
+
+static int action_ok_push_content_list(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   if (!driver.menu)
+      return -1;
+
+   menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         g_settings.menu_content_directory,
+         label,
+         MENU_FILE_DIRECTORY,
          driver.menu->selection_ptr);
    return 0;
 }

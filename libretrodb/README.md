@@ -3,13 +3,11 @@ A small read only database
 Mainly to be used by retroarch
 
 # Usage
-To convert a dat file use `dat_converter <dat file> <db file>`
+Files specified later in the chain **will override** earlier ones if the same key exists multiple times.
 
 To list out the content of a db `rarchdb_tool <db file> list`
 To create an index `rarchdb_tool <db file> create-index <index name> <field name>`
 To find an entry with an index `rarchdb_tool <db file> find <index name> <value>`
-
-The util `mkdb.sh <dat file> <db file>` will create a db file with indexes for crc sha1 and md5
 
 # lua converters
 In order to write you own converter you must have a lua file that implements the following functions:
@@ -35,3 +33,23 @@ function get_value()
 	}
 end
 ~~~
+
+# dat file converter
+To convert a dat file use:
+
+~~~
+dat_converter <db file> <dat file>
+~~~
+
+If you want to merge multiple dat files you need to run:
+
+~~~
+dat_converter <db file> <match key> <dat file> ...
+~~~
+
+for example:
+
+~~~
+dat_converter snes.rdb rom.crc snes1.dat snes2.dat
+~~~
+

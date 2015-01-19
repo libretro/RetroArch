@@ -3,20 +3,34 @@ INCFLAGS = -I. -I../libretro-sdk/include
 
 LUA_CONVERTER_OBJ = rmsgpack.o \
 		    rmsgpack_dom.o \
+		    lua_common.o \
 		    rarchdb.o \
 		    bintree.o \
+		    query.o \
 		    lua_converter.o \
 		    $(NULL)
 
 RARCHDB_TOOL_OBJ = rmsgpack.o \
-		    rmsgpack_dom.o \
-		    db_parser.o \
-		    rarchdb_tool.o \
-		    bintree.o \
-		    rarchdb.o \
-		    $(NULL)
+		   rmsgpack_dom.o \
+		   rarchdb_tool.o \
+		   bintree.o \
+		   query.o \
+		   rarchdb.o \
+		   $(NULL)
+
+TESTLIB_C = testlib.c \
+	      lua_common.c \
+	      query.c \
+	      rarchdb.c \
+	      bintree.c \
+	      rmsgpack.c \
+	      rmsgpack_dom.c \
+	      $(NULL)
 
 LUA_FLAGS = `pkg-config lua --libs`
+TESTLIB_FLAGS = ${CFLAGS} ${LUA_FLAGS} -shared -fpic
+
+.PHONY: all clean check
 
 all: rmsgpack_test rarchdb_tool lua_converter
 
@@ -31,5 +45,12 @@ rarchdb_tool: ${RARCHDB_TOOL_OBJ}
 
 rmsgpack_test:
 	${CC} $(INCFLAGS) rmsgpack.c rmsgpack_test.c -g -o $@
+
+testlib.so: ${TESTLIB_C}
+	${CC} ${INCFLAGS} ${TESTLIB_FLAGS} ${TESTLIB_C} -o $@
+
+check: testlib.so tests.lua
+	lua ./tests.lua
+
 clean:
-	rm -rf *.o rmsgpack_test lua_converter rarchdb_tool
+	rm -rf *.o rmsgpack_test lua_converter rarchdb_tool testlib.so

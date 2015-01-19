@@ -1,4 +1,5 @@
-local dat_obj = nil
+local dat_obj = {}
+local match_key = nil
 
 local function dat_lexer(f)
     local line, err = f:read("*l")
@@ -78,18 +79,59 @@ local function unhex(s)
     end))
 end
 
+local function get_match_key(mk, t)
+    for p in string.gmatch(mk, "(%w+)[.]?") do
+        if p == nil or t == nil then
+            error("Invalid match key '"..mk.."'")
+        end
+        t = t[p]
+    end
+    return t
+end
+
+table.update = function(a, b)
+    for k,v in pairs(b) do
+        a[k] = v
+    end
+end
+
 function init(...)
     local args = {...}
-    local dat_path = args[2]
-    assert(dat_path, "dat file argument is missing")
-    local dat_file, err = io.open(dat_path, "r")
-    if err then
-        error("could not open dat file '" .. dat_path .. "':" .. err)
+    table.remove(args, 1)
+    if #args == 0 then
+        assert(dat_path, "dat file argument is missing")
     end
 
-    print("Parsing dat file '" .. dat_path .. "'...")
-    dat_obj = dat_parser(dat_lexer(dat_file))
-    dat_file:close()
+    if #args > 1 then
+        match_key = table.remove(args, 1)
+    end
+
+    local dat_hash = {}
+    for _, dat_path in ipairs(args) do
+        local dat_file, err = io.open(dat_path, "r")
+        if err then
+            error("could not open dat file '" .. dat_path .. "':" .. err)
+        end
+
+        print("Parsing dat file '" .. dat_path .. "'...")
+        local objs = dat_parser(dat_lexer(dat_file))
+        dat_file:close()
+        for _, obj in pairs(objs) do
+            if match_key then
+                local mk = get_match_key(match_key, obj)
+                if mk == nil then
+                    error("missing match key '" .. match_key .. "' in one of the entries")
+                end
+                if dat_hash[mk] == nil then
+                    dat_hash[mk] = {}
+                    table.insert(dat_obj, dat_hash[mk])
+                end
+                table.update(dat_hash[mk], obj)
+            else
+                table.insert(dat_obj, obj)
+            end
+        end
+    end
 end
 
 function get_value()
@@ -124,4 +166,3 @@ function get_value()
         }
     end
 end
-
