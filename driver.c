@@ -25,7 +25,7 @@
 #include "gfx/video_viewport.h"
 #include "gfx/video_pixel_converter.h"
 #include "audio/audio_monitor.h"
-#include "gfx/gfx_common.h"
+#include "gfx/drivers_context/win32_dwm_common.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu.h"

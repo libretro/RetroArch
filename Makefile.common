@@ -116,7 +116,6 @@ OBJ += frontend/frontend.o \
 		dynamic_dummy.o \
 		libretro-sdk/queues/message_queue.o \
 		rewind.o \
-		gfx/gfx_common.o \
 		gfx/drivers_font_renderer/bitmapfont.o \
 		input/input_autodetect.o \
 		input/input_joypad_driver.o \
@@ -629,7 +628,8 @@ endif
 ifneq ($(findstring Win32,$(OS)),)
    OBJ += media/rarch.o \
           input/keyboard_event_win32.o \
-			 gfx/drivers_context/win32_common.o
+			 gfx/drivers_context/win32_common.o \
+			 gfx/drivers_context/win32_dwm_common.o
 endif
 
 # Record

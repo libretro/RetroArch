@@ -14,12 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gfx_common.h"
-#include "../general.h"
+#include "win32_dwm_common.h"
+#include "../../general.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
-#include "../dynamic.h"
+#include "../../dynamic.h"
 
 /* We only load this library once, so we let it be 
  * unloaded at application shutdown, since unloading 

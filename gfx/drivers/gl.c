@@ -49,6 +49,10 @@
 #include <string/string_list.h>
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../drivers_context/win32_dwm_common.h"
+#endif
+
 #include "../video_shader_driver.h"
 
 /* Used for the last pass when rendering to the back buffer. */

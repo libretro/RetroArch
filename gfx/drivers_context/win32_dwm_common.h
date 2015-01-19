@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GFX_COMMON_H
-#define __GFX_COMMON_H
+#ifndef __WIN32_DWM_COMMON_H
+#define __WIN32_DWM_COMMON_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,12 +23,7 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdint.h>
-#include "../general.h"
 #include <boolean.h>
-
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
 
 #ifdef _WIN32
 void gfx_set_dwm(void);

@@ -87,6 +87,7 @@ UI COMMON CONTEXT
 ============================================================ */
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/drivers_context/win32_common.c"
+#include "../gfx/drivers_context/win32_dwm_common.c"
 #endif
 
 /*============================================================
@@ -197,8 +198,6 @@ VIDEO DRIVER
 #ifdef HAVE_OMAP
 #include "../gfx/drivers/omap_gfx.c"
 #endif
-
-#include "../gfx/gfx_common.c"
 
 #ifdef _XBOX
 #include "../xdk/xdk_resources.cpp"

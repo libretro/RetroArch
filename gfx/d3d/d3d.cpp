@@ -26,9 +26,10 @@
 #endif
 #include "../video_viewport.h"
 
-#include "../drivers_context/win32_common.h"
-
 #ifndef _XBOX
+#include "../drivers_context/win32_common.h"
+#include "../drivers_context/win32_dwm_common.h"
+
 #define HAVE_MONITOR
 #define HAVE_WINDOW
 #endif
