@@ -412,6 +412,12 @@ static struct buffer expect_eof(
 	return buff;
 }
 
+static struct buffer parse_table(
+        struct buffer buff,
+        struct invocation * invocation,
+        const char ** error
+);
+
 static int peek(
         struct buffer buff,
         const char * data
@@ -531,7 +537,6 @@ static struct buffer parse_value(
 		buff.offset += strlen("false");
 		value->type = RDT_BOOL;
 		value->bool_ = 0;
-		//} else if (peek(buff, "{")) {
 		//} else if (peek(buff, "[")) {
 		//} else if (peek(buff, "b\"") || peek(buff, "b'")) {
 	} else if (peek(buff, "\"") || peek(buff, "'")) {
@@ -622,7 +627,7 @@ static struct buffer parse_method_call(
 	}
 
 	buff = chomp(buff);
-	while (1) {
+	while (!peek(buff, ")")) {
 		if (argi >= MAX_ARGS) {
 			raise_too_many_arguments(error);
 			goto clean;
@@ -678,6 +683,9 @@ static struct buffer parse_argument(
 	) {
 		arg->type = AT_FUNCTION;
 		buff = parse_method_call(buff, &arg->invocation, error);
+	} else if (peek(buff, "{")){
+		arg->type = AT_FUNCTION;
+		buff = parse_table(buff, &arg->invocation, error);
 	} else {
 		arg->type = AT_VALUE;
 		buff = parse_value(buff, &arg->value, error);
@@ -694,6 +702,9 @@ static struct buffer parse_table(
 	unsigned argi = 0;
 	unsigned i;
 
+	const char * ident_name;
+	size_t ident_len;
+
 	memset(args, 0, sizeof(struct argument) * MAX_ARGS);
 	buff = chomp(buff);
 	buff = expect_char(buff, '{', error);
@@ -702,12 +713,32 @@ static struct buffer parse_table(
 	}
 
 	buff = chomp(buff);
-	while (1) {
+	while (!peek(buff, "}")) {
 		if (argi >= MAX_ARGS) {
 			raise_too_many_arguments(error);
 			goto clean;
 		}
-		buff = parse_string(buff, &args[argi].value, error);
+		if (isalpha(buff.data[buff.offset])) {
+			buff = get_ident(buff, &ident_name, &ident_len, error);
+			if (!*error) {
+				args[argi].value.type = RDT_STRING;
+				args[argi].value.string.len = ident_len;
+				args[argi].value.string.buff = calloc(
+					ident_len + 1,
+					sizeof(char)
+				);
+				if (!args[argi].value.string.buff) {
+					goto clean;
+				}
+				strncpy(
+					args[argi].value.string.buff,
+					ident_name,
+					ident_len
+				);
+			}
+		} else {
+			buff = parse_string(buff, &args[argi].value, error);
+		}
 		if (*error) {
 			goto clean;
 		}
@@ -800,10 +831,18 @@ rarchdb_query * rarchdb_query_compile(
 		if (*error) {
 			goto clean;
 		}
+	} else if (isalpha(buff.data[buff.offset])) {
+		buff = parse_method_call(buff, &q->root, error);
 	}
+
 	buff = expect_eof(buff, error);
 	if (*error) {
 		goto clean;
+	}
+
+	if (q->root.func == NULL) {
+		raise_unexpected_eof(buff.offset, error);
+		return NULL;
 	}
 	goto success;
 clean:

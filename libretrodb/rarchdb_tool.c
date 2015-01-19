@@ -27,8 +27,7 @@ int main(
 	if ((rv = rarchdb_open(path, &db)) != 0) {
 		printf("Could not open db file '%s': %s\n", path, strerror(-rv));
 		return 1;
-	}
-	else if (strcmp(command, "list") == 0) {
+	} else if (strcmp(command, "list") == 0) {
 		if ((rv = rarchdb_cursor_open(&db, &cur, NULL)) != 0) {
 			printf("Could not open cursor: %s\n", strerror(-rv));
 			return 1;
@@ -43,8 +42,7 @@ int main(
 			printf("\n");
 			rmsgpack_dom_value_free(&item);
 		}
-	}
-	else if (strcmp(command, "find") == 0) {
+	} else if (strcmp(command, "find") == 0) {
 		if (argc != 4) {
 			printf("Usage: %s <db file> find <query expression>\n", argv[0]);
 			return 1;
@@ -80,7 +78,7 @@ int main(
 
 		rarchdb_create_index(&db, index_name, field_name);
 	} else {
-		printf("Unkown command %s\n", argv[1]);
+		printf("Unkonwn command %s\n", argv[1]);
 		return 1;
 	}
 	rarchdb_close(&db);
