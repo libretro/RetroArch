@@ -54,17 +54,21 @@ int http_intf_command(unsigned mode, char *url)
    {
       /* *** PUT *** */
       case HTTP_INTF_PUT:
-         RARCH_LOG("reading stdin...\n");
          /* read stdin into memory */
-         blocksize=16384;
-         lg=0;
-         if (!(data=(char*)malloc(blocksize)))
+         RARCH_LOG("reading stdin...\n");
+         blocksize = 16384;
+         lg        = 0;
+
+         if (!(data = (char*)malloc(blocksize)))
             return 3;
+
          while (1)
          {
             r=read(0, data + lg, blocksize - lg);
+
             if (r<=0)
                break;
+
             lg+=r;
 
             if ((3 * lg / 2) > blocksize)
@@ -72,29 +76,29 @@ int http_intf_command(unsigned mode, char *url)
                blocksize *= 4;
                RARCH_LOG("read to date: %9d bytes, reallocating buffer to %9d\n",
                      lg, blocksize);
-               if (!(data=(char*)realloc(data,blocksize)))
+               if (!(data = (char*)realloc(data,blocksize)))
                   return 4;
             }
          }
          RARCH_LOG("read %d bytes\n", lg);
-         ret=http_put(filename,data,lg,0,NULL);
-         RARCH_LOG("res=%d\n",ret);
+         ret = http_put(filename,data, lg, 0, NULL);
+         RARCH_LOG("res=%d\n", ret);
          break;
       case HTTP_INTF_GET:
          /* *** GET *** */
          ret = http_get(filename, &data, &lg, typebuf);
-         RARCH_LOG("res=%d,type='%s',lg=%d\n",ret,typebuf,lg);
-         fwrite(data,lg,1,stdout);
+         RARCH_LOG("res=%d,type='%s',lg=%d\n", ret, typebuf, lg);
+         fwrite(data, lg, 1, stdout);
          break;
       case HTTP_INTF_HEAD:
          /* *** HEAD *** */
-         ret=http_head(filename,&lg,typebuf);
-         RARCH_LOG("res=%d,type='%s',lg=%d\n",ret,typebuf,lg);
+         ret = http_head(filename, &lg, typebuf);
+         RARCH_LOG("res=%d,type='%s',lg=%d\n",ret, typebuf, lg);
          break;
       case HTTP_INTF_DELETE:
          /* *** DELETE *** */
-         ret=http_delete(filename);
-         RARCH_LOG("res=%d\n",ret);
+         ret = http_delete(filename);
+         RARCH_LOG("res=%d\n", ret);
          break;
          /* impossible... */
       default:
