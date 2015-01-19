@@ -2751,24 +2751,6 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
       cbs->action_toggle = action_toggle_input_desc;
-   else if (
-         !strcmp(label, "core_list") ||
-         !strcmp(label, "core_manager_list") ||
-         !strcmp(label, "history_list") ||
-         !strcmp(label, "detect_core_list") ||
-         !strcmp(label, "load_content") ||
-         !strcmp(label, "core_options") ||
-         !strcmp(label, "disk_options") ||
-         !strcmp(label, "performance_counters") ||
-         !strcmp(label, "configurations") ||
-         !strcmp(label, "quit_retroarch") ||
-         !strcmp(label, "core_information") ||
-         !strcmp(label, "settings") ||
-         !strcmp(label, "help") ||
-         !strcmp(label, "resume_content") ||
-         !strcmp(label, "restart_content")
-         )
-      cbs->action_toggle = action_toggle_mainmenu;
    else if (!strcmp(label, "savestate") ||
          !strcmp(label, "loadstate"))
       cbs->action_toggle = action_toggle_save_state;
@@ -2806,11 +2788,11 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       case MENU_FILE_PLAYLIST_ENTRY:
          cbs->action_toggle = action_toggle_scroll;
          break;
+      case MENU_SETTING_ACTION:
       case MENU_FILE_CONTENTLIST_ENTRY:
          cbs->action_toggle = action_toggle_mainmenu;
          break;
    }
-
 }
 
 static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
