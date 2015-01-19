@@ -316,7 +316,7 @@ static bool load_preset(hlsl_shader_data_t *hlsl, void *data, const char *path)
    if (!hlsl->cg_shader)
       return false;
 
-   if (!gfx_shader_read_conf_cgp(conf, hlsl->cg_shader))
+   if (!video_shader_read_conf_cgp(conf, hlsl->cg_shader))
    {
       RARCH_ERR("Failed to parse CGP file.\n");
       config_file_free(conf);

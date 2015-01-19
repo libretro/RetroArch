@@ -764,7 +764,7 @@ static bool gl_glsl_init(void *data, const char *path)
          conf = config_file_new(path);
          if (conf)
          {
-            ret = gfx_shader_read_conf_cgp(conf, glsl->glsl_shader);
+            ret = video_shader_read_conf_cgp(conf, glsl->glsl_shader);
             glsl->glsl_shader->modern = true;
          }
          else
@@ -792,8 +792,8 @@ static bool gl_glsl_init(void *data, const char *path)
       glsl->glsl_shader->modern = true;
    }
 
-   gfx_shader_resolve_relative(glsl->glsl_shader, path);
-   gfx_shader_resolve_parameters(conf, glsl->glsl_shader);
+   video_shader_resolve_relative(glsl->glsl_shader, path);
+   video_shader_resolve_parameters(conf, glsl->glsl_shader);
 
    if (conf)
    {

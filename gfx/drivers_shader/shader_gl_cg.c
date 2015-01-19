@@ -590,7 +590,7 @@ static bool load_plain(cg_shader_data_t *cg, const char *path)
       cg->prg[1] = cg->prg[0];
    }
 
-   gfx_shader_resolve_parameters(NULL, cg->cg_shader);
+   video_shader_resolve_parameters(NULL, cg->cg_shader);
    return true;
 }
 
@@ -676,15 +676,15 @@ static bool load_preset(cg_shader_data_t *cg, const char *path)
    if (!cg->cg_shader)
       return false;
 
-   if (!gfx_shader_read_conf_cgp(conf, cg->cg_shader))
+   if (!video_shader_read_conf_cgp(conf, cg->cg_shader))
    {
       RARCH_ERR("Failed to parse CGP file.\n");
       config_file_free(conf);
       return false;
    }
 
-   gfx_shader_resolve_relative(cg->cg_shader, path);
-   gfx_shader_resolve_parameters(conf, cg->cg_shader);
+   video_shader_resolve_relative(cg->cg_shader, path);
+   video_shader_resolve_parameters(conf, cg->cg_shader);
    config_file_free(conf);
 
    if (cg->cg_shader->passes > GFX_MAX_SHADERS - 3)

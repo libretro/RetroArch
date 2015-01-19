@@ -73,7 +73,7 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
 }
 
 /** 
- * shader_parse_pass:
+ * video_shader_parse_pass:
  * @conf              : Preset file to read from.
  * @pass              : Shader passes handle.
  * @i                 : Index of shader pass.
@@ -82,7 +82,7 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass, unsigned i)
+static bool video_shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass, unsigned i)
 {
    char shader_name[64], filter_name_buf[64], wrap_name_buf[64], wrap_mode[64];
    char frame_count_mod_buf[64], srgb_output_buf[64], fp_fbo_buf[64];
@@ -244,7 +244,7 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
 }
 
 /** 
- * shader_parse_textures:
+ * video_shader_parse_textures:
  * @conf              : Preset file to read from.
  * @shader            : Shader pass handle.
  *
@@ -252,7 +252,7 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool shader_parse_textures(config_file_t *conf,
+static bool video_shader_parse_textures(config_file_t *conf,
       struct gfx_shader *shader)
 {
    const char *id;
@@ -303,7 +303,7 @@ static bool shader_parse_textures(config_file_t *conf,
 }
 
 /** 
- * shader_parse_find_parameter:
+ * video_shader_parse_find_parameter:
  * @params            : Shader parameter handle.
  * @num_params        : Number of shader params in @params.
  * @id                : Identifier to search for.
@@ -312,7 +312,7 @@ static bool shader_parse_textures(config_file_t *conf,
  *
  * Returns: handle to shader parameter if successful, otherwise NULL.
  **/
-static struct gfx_shader_parameter *shader_parse_find_parameter(
+static struct video_shader_parameter *video_shader_parse_find_parameter(
       struct gfx_shader_parameter *params, unsigned num_params, const char *id)
 {
    unsigned i;
@@ -327,7 +327,7 @@ static struct gfx_shader_parameter *shader_parse_find_parameter(
 }
 
 /** 
- * gfx_shader_resolve_parameters:
+ * video_shader_resolve_parameters:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
@@ -335,7 +335,7 @@ static struct gfx_shader_parameter *shader_parse_find_parameter(
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool gfx_shader_resolve_parameters(config_file_t *conf,
+bool video_shader_resolve_parameters(config_file_t *conf,
       struct gfx_shader *shader)
 {
    unsigned i;
@@ -399,7 +399,7 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
             id = strtok_r(NULL, ";", &save))
       {
          struct gfx_shader_parameter *parameter = (struct gfx_shader_parameter*)
-            shader_parse_find_parameter(shader->parameters, shader->num_parameters, id);
+            video_shader_parse_find_parameter(shader->parameters, shader->num_parameters, id);
 
          if (!parameter)
          {
@@ -416,7 +416,7 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
 }
 
 /** 
- * shader_parse_imports:
+ * video_shader_parse_imports:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
@@ -424,7 +424,7 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool shader_parse_imports(config_file_t *conf,
+static bool video_shader_parse_imports(config_file_t *conf,
       struct gfx_shader *shader)
 {
    char imports[1024];
@@ -525,7 +525,7 @@ static bool shader_parse_imports(config_file_t *conf,
 }
 
 /** 
- * gfx_shader_read_conf_cgp:
+ * video_shader_read_conf_cgp:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
@@ -534,7 +534,7 @@ static bool shader_parse_imports(config_file_t *conf,
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
+bool video_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
 {
    unsigned shaders, i;
 
@@ -557,14 +557,14 @@ bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
    shader->passes = min(shaders, GFX_MAX_SHADERS);
    for (i = 0; i < shader->passes; i++)
    {
-      if (!shader_parse_pass(conf, &shader->pass[i], i))
+      if (!video_shader_parse_pass(conf, &shader->pass[i], i))
          return false;
    }
 
-   if (!shader_parse_textures(conf, shader))
+   if (!video_shader_parse_textures(conf, shader))
       return false;
 
-   if (!shader_parse_imports(conf, shader))
+   if (!video_shader_parse_imports(conf, shader))
       return false;
 
    return true;
@@ -693,14 +693,14 @@ static void shader_write_variable(config_file_t *conf,
 }
 
 /** 
- * gfx_shader_write_conf_cgp:
+ * video_shader_write_conf_cgp:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
  * Saves preset and all associated state (passes,
  * textures, imports, etc) to disk. 
  **/
-void gfx_shader_write_conf_cgp(config_file_t *conf,
+void video_shader_write_conf_cgp(config_file_t *conf,
       struct gfx_shader *shader)
 {
    unsigned i;
@@ -819,7 +819,7 @@ void gfx_shader_write_conf_cgp(config_file_t *conf,
 }
 
 /**
- * gfx_shader_parse_type:
+ * video_shader_parse_type:
  * @path              : Shader path.
  * @fallback          : Fallback shader type in case no
  *                      type could be found.
@@ -829,7 +829,7 @@ void gfx_shader_write_conf_cgp(config_file_t *conf,
  * Returns: value of shader type on success, otherwise will return
  * user-supplied @fallback value. 
  **/
-enum rarch_shader_type gfx_shader_parse_type(const char *path,
+enum rarch_shader_type video_shader_parse_type(const char *path,
       enum rarch_shader_type fallback)
 {
    const char *ext = NULL;
@@ -848,14 +848,14 @@ enum rarch_shader_type gfx_shader_parse_type(const char *path,
 }
 
 /**
- * gfx_shader_resolve_relative:
+ * video_shader_resolve_relative:
  * @shader            : Shader pass handle.
  * @ref_path          : Relative shader path.
  *
  * Resolves relative shader path (@ref_path) into absolute
  * shader paths.
  **/
-void gfx_shader_resolve_relative(struct gfx_shader *shader,
+void video_shader_resolve_relative(struct gfx_shader *shader,
       const char *ref_path)
 {
    unsigned i;

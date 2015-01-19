@@ -618,7 +618,7 @@ static bool d3d_construct(d3d_video_t *d3d,
     * to avoid set_shader() to be overridden
     * later. */
    enum rarch_shader_type type = 
-      gfx_shader_parse_type(g_settings.video.shader_path, RARCH_SHADER_NONE);
+      video_shader_parse_type(g_settings.video.shader_path, RARCH_SHADER_NONE);
    if (g_settings.video.shader_enable && type == RARCH_SHADER_CG)
       d3d->cg_shader = g_settings.video.shader_path;
 
@@ -1149,7 +1149,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 
    memset(&d3d->shader, 0, sizeof(d3d->shader));
 
-   if (!gfx_shader_read_conf_cgp(conf, &d3d->shader))
+   if (!video_shader_read_conf_cgp(conf, &d3d->shader))
    {
       config_file_free(conf);
       RARCH_ERR("Failed to parse CGP file.\n");
@@ -1158,7 +1158,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 
    config_file_free(conf);
 
-   gfx_shader_resolve_relative(&d3d->shader, d3d->cg_shader.c_str());
+   video_shader_resolve_relative(&d3d->shader, d3d->cg_shader.c_str());
 
    RARCH_LOG("[D3D9 Meta-Cg] Found %u shaders.\n", d3d->shader.passes);
 

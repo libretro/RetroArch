@@ -70,10 +70,10 @@ void menu_shader_manager_init(void *data)
       conf = config_file_new(g_settings.video.shader_path);
       if (conf)
       {
-         if (gfx_shader_read_conf_cgp(conf, shader))
+         if (video_shader_read_conf_cgp(conf, shader))
          {
-            gfx_shader_resolve_relative(shader, g_settings.video.shader_path);
-            gfx_shader_resolve_parameters(conf, shader);
+            video_shader_resolve_relative(shader, g_settings.video.shader_path);
+            video_shader_resolve_parameters(conf, shader);
          }
          config_file_free(conf);
       }
@@ -100,10 +100,10 @@ void menu_shader_manager_init(void *data)
 
       if (conf)
       {
-         if (gfx_shader_read_conf_cgp(conf, shader))
+         if (video_shader_read_conf_cgp(conf, shader))
          {
-            gfx_shader_resolve_relative(shader, preset_path);
-            gfx_shader_resolve_parameters(conf, shader);
+            video_shader_resolve_relative(shader, preset_path);
+            video_shader_resolve_parameters(conf, shader);
          }
          config_file_free(conf);
       }
@@ -155,10 +155,10 @@ void menu_shader_manager_set_preset(struct gfx_shader *shader,
 
    RARCH_LOG("Setting Menu shader: %s.\n", preset_path ? preset_path : "N/A (stock)");
 
-   if (gfx_shader_read_conf_cgp(conf, shader))
+   if (video_shader_read_conf_cgp(conf, shader))
    {
-      gfx_shader_resolve_relative(shader, preset_path);
-      gfx_shader_resolve_parameters(conf, shader);
+      video_shader_resolve_relative(shader, preset_path);
+      video_shader_resolve_parameters(conf, shader);
    }
    config_file_free(conf);
 
@@ -227,7 +227,7 @@ void menu_shader_manager_save_preset(
 
    if (!(conf = (config_file_t*)config_file_new(NULL)))
       return;
-   gfx_shader_write_conf_cgp(conf, driver.menu->shader);
+   video_shader_write_conf_cgp(conf, driver.menu->shader);
 
    for (d = 0; d < ARRAY_SIZE(dirs); d++)
    {
@@ -275,7 +275,7 @@ unsigned menu_shader_manager_get_type(const struct gfx_shader *shader)
    for (i = 0; i < shader->passes; i++)
    {
       enum rarch_shader_type pass_type = 
-         gfx_shader_parse_type(shader->pass[i].source.path,
+         video_shader_parse_type(shader->pass[i].source.path,
             RARCH_SHADER_NONE);
 
       switch (pass_type)
@@ -315,7 +315,7 @@ void menu_shader_manager_apply_changes(void)
 
    /* Fall-back */
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-   shader_type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
+   shader_type = video_shader_parse_type("", DEFAULT_SHADER_TYPE);
 #endif
 
    if (shader_type == RARCH_SHADER_NONE)

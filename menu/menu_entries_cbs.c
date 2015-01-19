@@ -279,7 +279,7 @@ static int action_ok_shader_pass_load(const char *path,
          sizeof(driver.menu->shader->pass[hack_shader_pass].source.path));
 
    /* This will reset any changed parameters. */
-   gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+   video_shader_resolve_parameters(NULL, driver.menu->shader);
    menu_list_flush_stack_by_needle(driver.menu->menu_list, "Shader Options");
    return 0;
 #else
@@ -414,7 +414,7 @@ static int action_ok_shader_preset_load(const char *path,
 
    fill_pathname_join(shader_path, menu_path, path, sizeof(shader_path));
    menu_shader_manager_set_preset(driver.menu->shader,
-         gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
+         video_shader_parse_type(shader_path, RARCH_SHADER_NONE),
          shader_path);
    menu_list_flush_stack_by_needle(driver.menu->menu_list, "Shader Options");
    return 0;
@@ -1349,7 +1349,7 @@ static int action_start_shader_num_passes(unsigned type, const char *label,
       shader->passes = 0;
    driver.menu->need_refresh = true;
 
-   gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+   video_shader_resolve_parameters(NULL, driver.menu->shader);
 #endif
    return 0;
 }
@@ -1425,7 +1425,7 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
    }
 
    if (driver.menu->need_refresh)
-      gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+      video_shader_resolve_parameters(NULL, driver.menu->shader);
 
 #endif
    return 0;

@@ -224,7 +224,7 @@ static bool gl_shader_init(gl_t *gl)
       return false;
    }
 
-   type = gfx_shader_parse_type(shader_path,
+   type = video_shader_parse_type(shader_path,
       gl->core_context ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
 
    if (type == RARCH_SHADER_NONE)

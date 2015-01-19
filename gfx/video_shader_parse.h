@@ -153,7 +153,7 @@ struct gfx_shader
 };
 
 /** 
- * gfx_shader_read_conf_cgp:
+ * video_shader_read_conf_cgp:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
@@ -162,33 +162,33 @@ struct gfx_shader
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool gfx_shader_read_conf_cgp(config_file_t *conf,
+bool video_shader_read_conf_cgp(config_file_t *conf,
       struct gfx_shader *shader);
 
 /** 
- * gfx_shader_write_conf_cgp:
+ * video_shader_write_conf_cgp:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
  * Saves preset and all associated state (passes,
  * textures, imports, etc) to disk. 
  **/
-void gfx_shader_write_conf_cgp(config_file_t *conf,
+void video_shader_write_conf_cgp(config_file_t *conf,
       struct gfx_shader *shader);
 
 /**
- * gfx_shader_resolve_relative:
+ * video_shader_resolve_relative:
  * @shader            : Shader pass handle.
  * @ref_path          : Relative shader path.
  *
  * Resolves relative shader path (@ref_path) into absolute
  * shader paths.
  **/
-void gfx_shader_resolve_relative(struct gfx_shader *shader,
+void video_shader_resolve_relative(struct gfx_shader *shader,
       const char *ref_path);
 
 /** 
- * gfx_shader_resolve_parameters:
+ * video_shader_resolve_parameters:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
@@ -196,11 +196,11 @@ void gfx_shader_resolve_relative(struct gfx_shader *shader,
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool gfx_shader_resolve_parameters(config_file_t *conf,
+bool video_shader_resolve_parameters(config_file_t *conf,
       struct gfx_shader *shader);
 
 /**
- * gfx_shader_parse_type:
+ * video_shader_parse_type:
  * @path              : Shader path.
  * @fallback          : Fallback shader type in case no
  *                      type could be found.
@@ -210,7 +210,7 @@ bool gfx_shader_resolve_parameters(config_file_t *conf,
  * Returns: value of shader type on success, otherwise will return
  * user-supplied @fallback value. 
  **/
-enum rarch_shader_type gfx_shader_parse_type(const char *path,
+enum rarch_shader_type video_shader_parse_type(const char *path,
       enum rarch_shader_type fallback);
 
 #ifdef __cplusplus
