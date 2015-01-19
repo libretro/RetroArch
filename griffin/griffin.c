@@ -809,6 +809,7 @@ XML
 #include "../libretrodb/rarchdb.c"
 #include "../libretrodb/rmsgpack.c"
 #include "../libretrodb/rmsgpack_dom.c"
+#include "../libretrodb/query.c"
 
 #ifdef __cplusplus
 }
