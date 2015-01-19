@@ -80,8 +80,6 @@ bool cheat_manager_save(cheat_manager_t *handle, const char *path)
    for (i = 0; i < handle->size; i++)
    {
       char key[64], desc_key[256], code_key[256], enable_key[256];
-      char *tmp = NULL;
-      bool tmp_bool = false;
 
       snprintf(key, sizeof(key), "cheat%u", i);
       snprintf(desc_key, sizeof(desc_key), "cheat%u_desc", i);

@@ -322,8 +322,6 @@ static int action_ok_remap_file(const char *path,
 static int action_ok_remap_file_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   unsigned i, j;
-   config_file_t *conf = NULL;
    const char *menu_path = NULL;
    char remap_path[PATH_MAX_LENGTH];
    if (!driver.menu)

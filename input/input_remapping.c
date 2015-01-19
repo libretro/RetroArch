@@ -88,7 +88,6 @@ void input_remapping_save_file(const char *path)
 
    for (i = 0; i < g_settings.input.max_users; i++)
    {
-      char buf[64];
       char key_ident[RARCH_FIRST_META_KEY][128];
       char key_strings[RARCH_FIRST_META_KEY][128] = { "b", "y", "select", "start",
          "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3"};

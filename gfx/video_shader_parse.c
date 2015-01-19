@@ -312,7 +312,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
  *
  * Returns: handle to shader parameter if successful, otherwise NULL.
  **/
-static struct video_shader_parameter *video_shader_parse_find_parameter(
+static struct gfx_shader_parameter *video_shader_parse_find_parameter(
       struct gfx_shader_parameter *params, unsigned num_params, const char *id)
 {
    unsigned i;
