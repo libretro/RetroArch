@@ -102,10 +102,6 @@ void input_remapping_save_file(const char *path)
       }
    }
 
-   if (!config_file_write(conf, remap_file))
-   {
-      RARCH_ERR("Could not write remapping file to disk.\n");
-   }
-
+   config_file_write(conf, remap_file);
    config_file_free(conf);
 }
