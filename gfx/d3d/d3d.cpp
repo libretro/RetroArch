@@ -1179,7 +1179,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    if (use_extra_pass)
    {
       d3d->shader.passes++;
-      gfx_shader_pass *dummy_pass = (gfx_shader_pass*)
+      video_shader_pass *dummy_pass = (video_shader_pass*)
          &d3d->shader.pass[d3d->shader.passes - 1];
 
       dummy_pass->fbo.scale_x = dummy_pass->fbo.scale_y = 1.0f;
@@ -1188,7 +1188,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    }
    else
    {
-      gfx_shader_pass *pass = (gfx_shader_pass*)
+      video_shader_pass *pass = (video_shader_pass*)
          &d3d->shader.pass[d3d->shader.passes - 1];
 
       pass->fbo.scale_x = pass->fbo.scale_y = 1.0f;
@@ -1233,11 +1233,11 @@ static void d3d_set_font_rect(d3d_video_t *d3d,
 static bool d3d_init_singlepass(d3d_video_t *d3d)
 {
 #ifndef _XBOX
-   gfx_shader_pass *pass = NULL;
+   video_shader_pass *pass = NULL;
 
    memset(&d3d->shader, 0, sizeof(d3d->shader));
    d3d->shader.passes = 1;
-   pass = (gfx_shader_pass*)&d3d->shader.pass[0];
+   pass = (video_shader_pass*)&d3d->shader.pass[0];
 
    pass->fbo.valid = true;
    pass->fbo.scale_x = pass->fbo.scale_y = 1.0;

@@ -2844,13 +2844,13 @@ void setting_data_get_label(char *type_str,
       else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
             && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       {
-         struct gfx_shader *shader = NULL;
+         struct video_shader *shader = NULL;
          if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
             shader = driver.video_poke->get_current_shader(driver.video_data);
 
          if (shader)
          {
-            const struct gfx_shader_parameter *param =
+            const struct video_shader_parameter *param =
                &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
             snprintf(type_str, type_str_size, "%.2f [%.2f %.2f]",
                   param->current, param->minimum, param->maximum);
@@ -2861,7 +2861,7 @@ void setting_data_get_label(char *type_str,
       {
          if (driver.menu->shader)
          {
-            const struct gfx_shader_parameter *param =
+            const struct video_shader_parameter *param =
                &driver.menu->shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
             snprintf(type_str, type_str_size, "%.2f [%.2f %.2f]",
                   param->current, param->minimum, param->maximum);

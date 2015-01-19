@@ -39,7 +39,7 @@ void menu_shader_manager_init(void *data);
  * Sets shader preset.
  **/
 void menu_shader_manager_set_preset(
-      struct gfx_shader *shader,
+      struct video_shader *shader,
       unsigned type, const char *preset_path);
 
 /**
@@ -61,7 +61,7 @@ void menu_shader_manager_save_preset(
  * Returns: type of shader. 
  **/
 unsigned menu_shader_manager_get_type(
-      const struct gfx_shader *shader);
+      const struct video_shader *shader);
 
 /**
  * menu_shader_manager_apply_changes:

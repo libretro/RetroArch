@@ -32,7 +32,7 @@ struct Vertex
 struct LinkInfo
 {
    unsigned tex_w, tex_h;
-   struct gfx_shader_pass *pass;
+   struct video_shader_pass *pass;
 };
 
 enum PixelFormat

@@ -205,7 +205,7 @@ static const char *stock_fragment_core_blend =
 
 typedef struct glsl_shader_data
 {
-   struct gfx_shader *glsl_shader;
+   struct video_shader *glsl_shader;
    struct shader_uniforms gl_uniforms[GFX_MAX_SHADERS];
    struct cache_vbo glsl_vbo[GFX_MAX_SHADERS];
    char glsl_alias_define[1024];
@@ -430,7 +430,7 @@ static GLuint compile_program(glsl_shader_data_t *glsl,
    return prog;
 }
 
-static bool load_source_path(struct gfx_shader_pass *pass,
+static bool load_source_path(struct video_shader_pass *pass,
       const char *path)
 {
    if (read_file(path, (void**)&pass->source.string.vertex) <= 0)
@@ -448,7 +448,7 @@ static bool compile_programs(glsl_shader_data_t *glsl, GLuint *gl_prog)
    {
       const char *vertex           = NULL;
       const char *fragment         = NULL;
-      struct gfx_shader_pass *pass = (struct gfx_shader_pass*)
+      struct video_shader_pass *pass = (struct video_shader_pass*)
          &glsl->glsl_shader->pass[i];
 
       /* If we load from GLSLP (CGP),
@@ -741,7 +741,7 @@ static bool gl_glsl_init(void *data, const char *path)
    }
 #endif
 
-   glsl->glsl_shader = (struct gfx_shader*)calloc(1, sizeof(*glsl->glsl_shader));
+   glsl->glsl_shader = (struct video_shader*)calloc(1, sizeof(*glsl->glsl_shader));
    if (!glsl->glsl_shader)
    {
       free(glsl);
@@ -1332,7 +1332,7 @@ static bool gl_glsl_mipmap_input(unsigned idx)
    return false;
 }
 
-static struct gfx_shader *gl_glsl_get_current_shader(void)
+static struct video_shader *gl_glsl_get_current_shader(void)
 {
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
    if (!glsl)

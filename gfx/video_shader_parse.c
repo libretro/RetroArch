@@ -82,7 +82,7 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool video_shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass, unsigned i)
+static bool video_shader_parse_pass(config_file_t *conf, struct video_shader_pass *pass, unsigned i)
 {
    char shader_name[64], filter_name_buf[64], wrap_name_buf[64], wrap_mode[64];
    char frame_count_mod_buf[64], srgb_output_buf[64], fp_fbo_buf[64];
@@ -253,7 +253,7 @@ static bool video_shader_parse_pass(config_file_t *conf, struct gfx_shader_pass 
  * Returns: true (1) if successful, otherwise false (0).
  **/
 static bool video_shader_parse_textures(config_file_t *conf,
-      struct gfx_shader *shader)
+      struct video_shader *shader)
 {
    const char *id;
    char *save;
@@ -312,8 +312,8 @@ static bool video_shader_parse_textures(config_file_t *conf,
  *
  * Returns: handle to shader parameter if successful, otherwise NULL.
  **/
-static struct gfx_shader_parameter *video_shader_parse_find_parameter(
-      struct gfx_shader_parameter *params, unsigned num_params, const char *id)
+static struct video_shader_parameter *video_shader_parse_find_parameter(
+      struct video_shader_parameter *params, unsigned num_params, const char *id)
 {
    unsigned i;
 
@@ -336,13 +336,13 @@ static struct gfx_shader_parameter *video_shader_parse_find_parameter(
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool video_shader_resolve_parameters(config_file_t *conf,
-      struct gfx_shader *shader)
+      struct video_shader *shader)
 {
    unsigned i;
-   struct gfx_shader_parameter *param = NULL;
+   struct video_shader_parameter *param = NULL;
 
    shader->num_parameters = 0;
-   param = (struct gfx_shader_parameter*)
+   param = (struct video_shader_parameter*)
       &shader->parameters[shader->num_parameters];
 
    /* Find all parameters in our shaders. */
@@ -398,7 +398,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       for (id = strtok_r(parameters, ";", &save); id; 
             id = strtok_r(NULL, ";", &save))
       {
-         struct gfx_shader_parameter *parameter = (struct gfx_shader_parameter*)
+         struct video_shader_parameter *parameter = (struct video_shader_parameter*)
             video_shader_parse_find_parameter(shader->parameters, shader->num_parameters, id);
 
          if (!parameter)
@@ -425,7 +425,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
  * Returns: true (1) if successful, otherwise false (0).
  **/
 static bool video_shader_parse_imports(config_file_t *conf,
-      struct gfx_shader *shader)
+      struct video_shader *shader)
 {
    char imports[1024];
    const char *id;
@@ -534,7 +534,7 @@ static bool video_shader_parse_imports(config_file_t *conf,
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool video_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
+bool video_shader_read_conf_cgp(config_file_t *conf, struct video_shader *shader)
 {
    unsigned shaders, i;
 
@@ -701,7 +701,7 @@ static void shader_write_variable(config_file_t *conf,
  * textures, imports, etc) to disk. 
  **/
 void video_shader_write_conf_cgp(config_file_t *conf,
-      struct gfx_shader *shader)
+      struct video_shader *shader)
 {
    unsigned i;
 
@@ -710,7 +710,7 @@ void video_shader_write_conf_cgp(config_file_t *conf,
    for (i = 0; i < shader->passes; i++)
    {
       char key[64];
-      const struct gfx_shader_pass *pass = &shader->pass[i];
+      const struct video_shader_pass *pass = &shader->pass[i];
 
       snprintf(key, sizeof(key), "shader%u", i);
       config_set_string(conf, key, pass->source.path);
@@ -855,7 +855,7 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
  * Resolves relative shader path (@ref_path) into absolute
  * shader paths.
  **/
-void video_shader_resolve_relative(struct gfx_shader *shader,
+void video_shader_resolve_relative(struct video_shader *shader,
       const char *ref_path)
 {
    unsigned i;

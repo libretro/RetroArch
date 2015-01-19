@@ -47,7 +47,7 @@ void gl_load_texture_data(GLuint obj, const struct texture_image *img,
 #endif
 }
 
-bool gl_load_luts(const struct gfx_shader *generic_shader,
+bool gl_load_luts(const struct video_shader *generic_shader,
       GLuint *textures_lut)
 {
    unsigned i;

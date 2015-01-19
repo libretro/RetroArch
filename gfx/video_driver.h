@@ -107,7 +107,7 @@ typedef struct video_poke_interface
    void (*show_mouse)(void *data, bool state);
    void (*grab_mouse_toggle)(void *data);
 
-   struct gfx_shader *(*get_current_shader)(void *data);
+   struct video_shader *(*get_current_shader)(void *data);
 } video_poke_interface_t;
 
 typedef struct video_driver

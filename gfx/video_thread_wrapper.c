@@ -844,7 +844,7 @@ static void thread_apply_state_changes(void *data)
 
 /* This is read-only state which should not 
  * have any kind of race condition. */
-static struct gfx_shader *thread_get_current_shader(void *data)
+static struct video_shader *thread_get_current_shader(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
    if (!thr)

@@ -29,7 +29,7 @@ void menu_shader_manager_init(void *data)
 #ifdef HAVE_SHADER_MANAGER
    char preset_path[PATH_MAX_LENGTH];
    const char *ext;
-   struct gfx_shader *shader = NULL;
+   struct video_shader *shader = NULL;
    config_file_t *conf = NULL;
    const char *config_path = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
@@ -37,7 +37,7 @@ void menu_shader_manager_init(void *data)
    if (!menu)
       return;
 
-   shader = (struct gfx_shader*)menu->shader;
+   shader = (struct video_shader*)menu->shader;
 
    if (*g_extern.core_specific_config_path
          && g_settings.core_specific_config)
@@ -119,7 +119,7 @@ void menu_shader_manager_init(void *data)
  *
  * Sets shader preset.
  **/
-void menu_shader_manager_set_preset(struct gfx_shader *shader,
+void menu_shader_manager_set_preset(struct video_shader *shader,
       unsigned type, const char *preset_path)
 {
 #ifdef HAVE_SHADER_MANAGER
@@ -261,7 +261,7 @@ void menu_shader_manager_save_preset(
  *
  * Returns: type of shader. 
  **/
-unsigned menu_shader_manager_get_type(const struct gfx_shader *shader)
+unsigned menu_shader_manager_get_type(const struct video_shader *shader)
 {
 #ifndef HAVE_SHADER_MANAGER
    return RARCH_SHADER_NONE;

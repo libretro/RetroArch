@@ -118,7 +118,7 @@ static bool shader_null_mipmap_input(unsigned idx)
    return false;
 }
 
-static struct gfx_shader *shader_null_get_current_shader(void)
+static struct video_shader *shader_null_get_current_shader(void)
 {
    return NULL;
 }

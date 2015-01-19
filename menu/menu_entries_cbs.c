@@ -927,8 +927,8 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct gfx_shader *shader = NULL;
-   struct gfx_shader_parameter *param = NULL;
+   struct video_shader *shader = NULL;
+   struct video_shader_parameter *param = NULL;
 
    if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
       shader = driver.video_poke->get_current_shader(driver.video_data);
@@ -948,8 +948,8 @@ static int action_start_shader_action_preset_parameter(unsigned type, const char
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct gfx_shader *shader = NULL;
-   struct gfx_shader_parameter *param = NULL;
+   struct video_shader *shader = NULL;
+   struct video_shader_parameter *param = NULL;
 
    if (!(shader = driver.menu->shader))
       return 0;
@@ -966,8 +966,8 @@ static int shader_action_parameter_toggle(unsigned type, const char *label,
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct gfx_shader *shader = NULL;
-   struct gfx_shader_parameter *param = NULL;
+   struct video_shader *shader = NULL;
+   struct video_shader_parameter *param = NULL;
 
    if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
       shader = driver.video_poke->get_current_shader(driver.video_data);
@@ -1001,8 +1001,8 @@ static int shader_action_parameter_preset_toggle(unsigned type, const char *labe
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct gfx_shader *shader = NULL;
-   struct gfx_shader_parameter *param = NULL;
+   struct video_shader *shader = NULL;
+   struct video_shader_parameter *param = NULL;
 
    if (!(shader = driver.menu->shader))
       return 0;
@@ -1098,8 +1098,8 @@ static int action_start_shader_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
-   struct gfx_shader *shader = driver.menu->shader;
-   struct gfx_shader_pass *shader_pass = NULL;
+   struct video_shader *shader = driver.menu->shader;
+   struct video_shader_pass *shader_pass = NULL;
 
    if (shader)
       shader_pass = &shader->pass[hack_shader_pass];
@@ -1132,8 +1132,8 @@ static int action_start_shader_scale_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
-   struct gfx_shader *shader = driver.menu->shader;
-   struct gfx_shader_pass *shader_pass = &shader->pass[pass];
+   struct video_shader *shader = driver.menu->shader;
+   struct video_shader_pass *shader_pass = &shader->pass[pass];
 
    if (shader)
    {
@@ -1260,8 +1260,8 @@ static int action_toggle_shader_scale_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
-   struct gfx_shader *shader = driver.menu->shader;
-   struct gfx_shader_pass *shader_pass = &shader->pass[pass];
+   struct video_shader *shader = driver.menu->shader;
+   struct video_shader_pass *shader_pass = &shader->pass[pass];
 
    switch (action)
    {
@@ -1289,8 +1289,8 @@ static int action_start_shader_filter_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
-   struct gfx_shader *shader = driver.menu->shader;
-   struct gfx_shader_pass *shader_pass = &shader->pass[pass];
+   struct video_shader *shader = driver.menu->shader;
+   struct video_shader_pass *shader_pass = &shader->pass[pass];
 
    if (shader && shader_pass)
       shader_pass->filter = RARCH_FILTER_UNSPEC;
@@ -1304,8 +1304,8 @@ static int action_toggle_shader_filter_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
-   struct gfx_shader *shader = driver.menu->shader;
-   struct gfx_shader_pass *shader_pass = &shader->pass[pass];
+   struct video_shader *shader = driver.menu->shader;
+   struct video_shader_pass *shader_pass = &shader->pass[pass];
 
    switch (action)
    {
@@ -1338,7 +1338,7 @@ static int action_start_shader_num_passes(unsigned type, const char *label,
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct gfx_shader *shader = driver.menu->shader;
+   struct video_shader *shader = driver.menu->shader;
 
    if (!shader)
       return -1;
@@ -1402,7 +1402,7 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct gfx_shader *shader = driver.menu->shader;
+   struct video_shader *shader = driver.menu->shader;
 
    if (!shader)
       return -1;
@@ -1804,7 +1804,7 @@ static int deferred_push_performance_counters(void *data, void *userdata,
    return 0;
 }
 
-static inline struct gfx_shader *shader_manager_get_current_shader(
+static inline struct video_shader *shader_manager_get_current_shader(
       menu_handle_t *menu, const char *label, unsigned type)
 {
    if (!strcmp(label, "video_shader_preset_parameters"))
@@ -1817,7 +1817,7 @@ static inline struct gfx_shader *shader_manager_get_current_shader(
 
 static int deferred_push_video_shader_parameters_common(void *data, void *userdata,
       const char *path, const char *label, unsigned type,
-      struct gfx_shader *shader, unsigned base_parameter)
+      struct video_shader *shader, unsigned base_parameter)
 {
    unsigned i;
    file_list_t *list      = (file_list_t*)data;
@@ -1855,7 +1855,7 @@ static int deferred_push_video_shader_preset_parameters(void *data, void *userda
 static int deferred_push_video_shader_parameters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   struct gfx_shader *shader = NULL;
+   struct video_shader *shader = NULL;
    if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
       shader = driver.video_poke->get_current_shader(driver.video_data);
 
@@ -1945,9 +1945,9 @@ static int deferred_push_shader_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
    unsigned i;
-   struct gfx_shader *shader = NULL;
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
+   struct video_shader *shader = NULL;
+   file_list_t *list           = (file_list_t*)data;
+   file_list_t *menu_list      = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;

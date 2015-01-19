@@ -147,7 +147,7 @@ typedef struct cg_shader_data
    unsigned cg_attrib_idx;
    CGprofile cgVProf;
    CGprofile cgFProf;
-   struct gfx_shader *cg_shader;
+   struct video_shader *cg_shader;
    state_tracker_t *state_tracker;
    GLuint lut_textures[GFX_MAX_TEXTURES];
    CGparameter cg_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
@@ -570,7 +570,7 @@ static bool load_plain(cg_shader_data_t *cg, const char *path)
    if (!load_stock(cg))
       return false;
 
-   cg->cg_shader = (struct gfx_shader*)calloc(1, sizeof(*cg->cg_shader));
+   cg->cg_shader = (struct video_shader*)calloc(1, sizeof(*cg->cg_shader));
    if (!cg->cg_shader)
       return false;
 
@@ -672,7 +672,7 @@ static bool load_preset(cg_shader_data_t *cg, const char *path)
       return false;
    }
 
-   cg->cg_shader = (struct gfx_shader*)calloc(1, sizeof(*cg->cg_shader));
+   cg->cg_shader = (struct video_shader*)calloc(1, sizeof(*cg->cg_shader));
    if (!cg->cg_shader)
       return false;
 
@@ -1051,7 +1051,7 @@ static bool gl_cg_mipmap_input(unsigned idx)
    return false;
 }
 
-static struct gfx_shader *gl_cg_get_current_shader(void)
+static struct video_shader *gl_cg_get_current_shader(void)
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
    if (!cg)

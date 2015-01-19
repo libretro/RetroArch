@@ -84,7 +84,7 @@ typedef struct hlsl_shader_data
 {
    struct hlsl_program prg[RARCH_HLSL_MAX_SHADERS];
    unsigned active_idx;
-   struct gfx_shader *cg_shader;
+   struct video_shader *cg_shader;
 } hlsl_shader_data_t;
 
 
@@ -243,7 +243,7 @@ static bool load_plain(hlsl_shader_data_t *hlsl, void *data, const char *path)
    if (!load_stock(hlsl, data))
       return false;
 
-   hlsl->cg_shader = (struct gfx_shader*)calloc(1, sizeof(*hlsl->cg_shader));
+   hlsl->cg_shader = (struct video_shader*)calloc(1, sizeof(*hlsl->cg_shader));
    if (!hlsl->cg_shader)
       return false;
 
@@ -312,7 +312,7 @@ static bool load_preset(hlsl_shader_data_t *hlsl, void *data, const char *path)
    }
 
    if (!hlsl->cg_shader)
-      hlsl->cg_shader = (struct gfx_shader*)calloc(1, sizeof(*hlsl->cg_shader));
+      hlsl->cg_shader = (struct video_shader*)calloc(1, sizeof(*hlsl->cg_shader));
    if (!hlsl->cg_shader)
       return false;
 
@@ -463,7 +463,7 @@ static bool hlsl_mipmap_input(unsigned idx)
    return false;
 }
 
-static struct gfx_shader *hlsl_get_current_shader(void)
+static struct video_shader *hlsl_get_current_shader(void)
 {
    return NULL;
 }

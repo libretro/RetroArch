@@ -3094,7 +3094,7 @@ static void gl_show_mouse(void *data, bool state)
       gl->ctx_driver->show_mouse(gl, state);
 }
 
-static struct gfx_shader *gl_get_current_shader(void *data)
+static struct video_shader *gl_get_current_shader(void *data)
 {
    gl_t *gl = (gl_t*)data;
    return (gl && gl->shader) ? gl->shader->get_current_shader() : NULL;

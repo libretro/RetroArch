@@ -131,7 +131,7 @@ typedef struct d3d_video
       std::string cg_shader;
 
 #ifndef _XBOX
-      struct gfx_shader shader;
+      struct video_shader shader;
 #endif
 
       video_info_t video_info;

@@ -108,7 +108,7 @@ typedef struct
 
    bool load_no_content;
 
-   struct gfx_shader *shader;
+   struct video_shader *shader;
 
    struct menu_bind_state binds;
 
