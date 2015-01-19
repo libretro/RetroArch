@@ -369,18 +369,6 @@ void driver_set_nonblock_state(bool enable);
 void driver_set_refresh_rate(float hz);
 
 /**
- * driver_get_current_framebuffer:
- *
- * Gets pointer to current hardware renderer framebuffer object.
- * Used by RETRO_ENVIRONMENT_SET_HW_RENDER.
- *
- * Returns: pointer to hardware framebuffer object, otherwise 0.
- **/
-uintptr_t driver_get_current_framebuffer(void);
-
-retro_proc_address_t driver_get_proc_address(const char *sym);
-
-/**
  * driver_update_system_av_info:
  * @info               : pointer to new A/V info
  *

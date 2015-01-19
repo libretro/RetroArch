@@ -188,3 +188,29 @@ void *driver_video_resolve(const video_driver_t **drv)
 
    return driver.video_data;
 }
+
+/**
+ * video_driver_get_current_framebuffer:
+ *
+ * Gets pointer to current hardware renderer framebuffer object.
+ * Used by RETRO_ENVIRONMENT_SET_HW_RENDER.
+ *
+ * Returns: pointer to hardware framebuffer object, otherwise 0.
+ **/
+uintptr_t video_driver_get_current_framebuffer(void)
+{
+#ifdef HAVE_FBO
+   if (driver.video_poke && driver.video_poke->get_current_framebuffer)
+      return driver.video_poke->get_current_framebuffer(driver.video_data);
+#endif
+   return 0;
+}
+
+retro_proc_address_t video_driver_get_proc_address(const char *sym)
+{
+#ifdef HAVE_FBO
+   if (driver.video_poke && driver.video_poke->get_proc_address)
+      return driver.video_poke->get_proc_address(driver.video_data, sym);
+#endif
+   return NULL;
+}

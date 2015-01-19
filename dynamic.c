@@ -933,8 +933,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                RARCH_LOG("Requesting unknown context.\n");
                return false;
          }
-         cb->get_current_framebuffer = driver_get_current_framebuffer;
-         cb->get_proc_address = driver_get_proc_address;
+         cb->get_current_framebuffer = video_driver_get_current_framebuffer;
+         cb->get_proc_address        = video_driver_get_proc_address;
 
          if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL) /* Old ABI. Don't copy garbage. */
             memcpy(&g_extern.system.hw_render_callback,
