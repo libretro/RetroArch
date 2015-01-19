@@ -434,6 +434,17 @@ static int action_ok_shader_preset_save_as(const char *path,
    return 0;
 }
 
+static int action_ok_cheat_file_save_as(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   if (!driver.menu)
+      return -1;
+
+   menu_input_key_start_line(driver.menu, "Cheat Filename",
+         label, type, idx, menu_input_st_string_callback);
+   return 0;
+}
+
 static int action_ok_remap_file_save_as(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -2064,6 +2075,8 @@ static int deferred_push_core_cheat_options(void *data, void *userdata,
    menu_list_clear(list);
    menu_list_push(list, "Cheat File Load", "cheat_file_load",
          MENU_SETTING_ACTION, 0);
+   menu_list_push(list, "Cheat File Save As",
+         "cheat_file_save_as", MENU_SETTING_ACTION, 0);
    menu_list_push(list, "Cheat Passes", "cheat_num_passes",
          0, 0);
    menu_list_push(list, "Apply Cheat Changes", "cheat_apply_changes",
@@ -2673,6 +2686,8 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_cheat_apply_changes;
    else if (!strcmp(label, "video_shader_preset_save_as"))
       cbs->action_ok = action_ok_shader_preset_save_as;
+   else if (!strcmp(label, "cheat_file_save_as"))
+      cbs->action_ok = action_ok_cheat_file_save_as;
    else if (!strcmp(label, "remap_file_save_as"))
       cbs->action_ok = action_ok_remap_file_save_as;
    else if (!strcmp(label, "core_list"))

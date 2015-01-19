@@ -44,6 +44,16 @@ cheat_manager_t *cheat_manager_new(unsigned size);
 
 cheat_manager_t *cheat_manager_load(const char *path);
 
+/**
+ * cheat_manager_save:
+ * @path                      : Path to cheats file (absolute path).
+ *
+ * Saves cheats to file on disk.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool cheat_manager_save(cheat_manager_t *handle, const char *path);
+
 bool cheat_manager_realloc(cheat_manager_t *handle, unsigned new_size);
 
 void cheat_manager_free(cheat_manager_t *handle);

@@ -18,7 +18,7 @@
 #include "general.h"
 #include "dynamic.h"
 #include <file/config_file.h>
-#include <file/config_file_macros.h>
+#include <file/file_path.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
@@ -41,6 +41,65 @@ void cheat_manager_apply_cheats(cheat_manager_t *handle)
       if (handle->cheats[i].state)
          pretro_cheat_set(idx++, true, handle->cheats[i].code);
    }
+}
+
+/**
+ * cheat_manager_save:
+ * @path                      : Path to cheats file (relative path).
+ *
+ * Saves cheats to file on disk.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool cheat_manager_save(cheat_manager_t *handle, const char *path)
+{
+   bool ret;
+   unsigned i;
+   char buf[PATH_MAX_LENGTH];
+   char cheats_file[PATH_MAX_LENGTH];
+   config_file_t *conf = NULL;
+
+   fill_pathname_join(buf, g_settings.cheat_database,
+         path, sizeof(buf));
+
+   fill_pathname_noext(cheats_file, buf, ".cht", sizeof(cheats_file));
+   
+   conf = config_file_new(cheats_file);
+
+   if (!conf)
+      conf = config_file_new(NULL);
+
+   if (!conf)
+      return false;
+
+   if (!handle)
+      return false;
+
+   config_set_int(conf, "cheats", handle->size);
+
+   for (i = 0; i < handle->size; i++)
+   {
+      char key[64], desc_key[256], code_key[256], enable_key[256];
+      char *tmp = NULL;
+      bool tmp_bool = false;
+
+      snprintf(key, sizeof(key), "cheat%u", i);
+      snprintf(desc_key, sizeof(desc_key), "cheat%u_desc", i);
+      snprintf(code_key, sizeof(code_key), "cheat%u_code", i);
+      snprintf(enable_key, sizeof(enable_key), "cheat%u_enable", i);
+
+      if (handle->cheats[i].desc)
+         config_set_string(conf, desc_key, handle->cheats[i].desc);
+      else
+         config_set_string(conf, desc_key, handle->cheats[i].code);
+      config_set_string(conf, code_key, handle->cheats[i].code);
+      config_set_bool(conf, enable_key, handle->cheats[i].state);
+   }
+
+   ret = config_file_write(conf, cheats_file);
+   config_file_free(conf);
+
+   return ret;
 }
 
 cheat_manager_t *cheat_manager_load(const char *path)

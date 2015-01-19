@@ -26,6 +26,7 @@
 #include "menu.h"
 #include "menu_action.h"
 #include "menu_shader.h"
+#include "../cheats.h"
 #include "../performance.h"
 #include "../settings_data.h"
 #include "../input/input_joypad.h"
@@ -107,6 +108,8 @@ void menu_input_st_string_callback(void *userdata, const char *str)
             menu_shader_manager_save_preset(str, false);
          else if (!strcmp(menu->keyboard.label_setting, "remap_file_save_as"))
             input_remapping_save_file(str);
+         else if (!strcmp(menu->keyboard.label_setting, "cheat_file_save_as"))
+            cheat_manager_save(g_extern.cheat, str);
       }
    }
 
