@@ -107,5 +107,10 @@ int http_intf_command(unsigned mode, char *url)
    free(http_server);
    if (proxy)
       free(http_proxy_server);
-   return ( (ret == 201) || (ret == 200) ) ? 0 : ret;
+
+   if (ret == 200)
+      return 0;
+   if (ret == 201)
+      return 0;
+   return ret;
 }
