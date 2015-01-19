@@ -425,7 +425,7 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
  **/
 void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
 {
-   unsigned i, j;
+   unsigned i, j = 0;
    bool inherit_joyaxis = false;
 
    for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
