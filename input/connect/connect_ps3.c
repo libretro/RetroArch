@@ -172,7 +172,7 @@ static void hidpad_ps3_set_rumble(void *data,
 
    if (!device)
       return;
-   if ((device->motors[idx] == strength))
+   if (device->motors[idx] == strength)
       return;
 
    device->motors[idx] = strength;

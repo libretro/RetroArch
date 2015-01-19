@@ -35,6 +35,8 @@ static int wiimote_send(struct wiimote_t* wm,
     int x = 2;
     byte buf[32];
     
+    (void)x;
+    
     buf[0] = WM_SET_REPORT | WM_BT_OUTPUT;
     buf[1] = report_type;
     
@@ -197,6 +199,8 @@ static int wiimote_write_data(struct wiimote_t* wm,
     int i = 0;
     byte buf[21] = {0};		/* the payload is always 23 */
     
+    (void)i;
+    
     if (!wm || !WIIMOTE_IS_CONNECTED(wm))
         return 0;
     if (!data || !len)
@@ -343,12 +347,12 @@ static int wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data,
                    * 0x00 to 0x(4)A400FB. (support clones) */
                   buf = 0x55;
                   wiimote_write_data(wm, 0x04A400F0, &buf, 1);
-                  retro_sleep(100000);
+                  usleep(100000);
                   buf = 0x00;
                   wiimote_write_data(wm, 0x04A400FB, &buf, 1);
 
                   /* check extension type! */
-                  retro_sleep(100000);
+                  usleep(100000);
                   wiimote_read_data(wm, WM_EXP_MEM_CALIBR+220, 4);
 #if 0
                   wiimote_read_data(wm, WM_EXP_MEM_CALIBR, EXP_HANDSHAKE_LEN);
@@ -422,7 +426,7 @@ static int wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data,
                }
                else
                {
-                  retro_sleep(100000);
+                  usleep(100000);
                   /* pedimos datos de calibracion del JOY! */
                   wiimote_read_data(wm, WM_EXP_MEM_CALIBR, 16);
                   wm->handshake_state = 5;

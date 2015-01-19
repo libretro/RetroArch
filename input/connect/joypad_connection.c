@@ -177,7 +177,7 @@ bool pad_connection_rumble(joypad_connection_t *s,
    if (!s->iface)
       return false;
    if (!s->iface->set_rumble)
-      return;
+      return false;
 
    s->iface->set_rumble(s->data, effect, strength);
    return true;
