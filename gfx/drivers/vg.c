@@ -424,7 +424,7 @@ static bool vg_suppress_screensaver(void *data, bool enable)
 {
    vg_t *vg = (vg_t*)data;
    if (vg && vg->driver)
-      return vg->driver->suppress_screensaver(vg);
+      return vg->driver->suppress_screensaver(vg, enable);
    return false;
 }
 
