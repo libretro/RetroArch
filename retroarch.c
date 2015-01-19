@@ -3050,8 +3050,8 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_RUMBLE_STOP:
          for (i = 0; i < MAX_USERS; i++)
          {
-            driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
-            driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
+            input_driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
+            input_driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
          }
          break;
       case RARCH_CMD_GRAB_MOUSE_TOGGLE:

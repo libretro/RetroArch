@@ -121,6 +121,18 @@ const char* config_get_input_driver_options(void);
 
 void find_input_driver(void);
 
+/**
+ * input_driver_set_rumble_state:
+ * @port               : User number.
+ * @effect             : Rumble effect.
+ * @strength           : Strength of rumble effect.
+ *
+ * Sets the rumble state.
+ * Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE.
+ **/
+bool input_driver_set_rumble_state(unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength);
+
 #ifdef __cplusplus
 }
 #endif

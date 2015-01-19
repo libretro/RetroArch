@@ -1010,7 +1010,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             (struct retro_rumble_interface*)data;
 
          RARCH_LOG("Environ GET_RUMBLE_INTERFACE.\n");
-         iface->set_rumble_state = driver_set_rumble_state;
+         iface->set_rumble_state = input_driver_set_rumble_state;
          break;
       }
 

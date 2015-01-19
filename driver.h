@@ -381,18 +381,6 @@ uintptr_t driver_get_current_framebuffer(void);
 retro_proc_address_t driver_get_proc_address(const char *sym);
 
 /**
- * driver_set_rumble_state:
- * @port               : User number.
- * @effect             : Rumble effect.
- * @strength           : Strength of rumble effect.
- *
- * Sets the rumble state.
- * Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE.
- **/
-bool driver_set_rumble_state(unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength);
-
-/**
  * driver_update_system_av_info:
  * @info               : pointer to new A/V info
  *

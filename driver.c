@@ -262,24 +262,6 @@ void driver_set_nonblock_state(bool enable)
 }
 
 /**
- * driver_set_rumble_state:
- * @port               : User number.
- * @effect             : Rumble effect.
- * @strength           : Strength of rumble effect.
- *
- * Sets the rumble state.
- * Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE.
- **/
-bool driver_set_rumble_state(unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   if (driver.input && driver.input_data && driver.input->set_rumble)
-      return driver.input->set_rumble(driver.input_data,
-            port, effect, strength);
-   return false;
-}
-
-/**
  * driver_get_current_framebuffer:
  *
  * Gets pointer to current hardware renderer framebuffer object.

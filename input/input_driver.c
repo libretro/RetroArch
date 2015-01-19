@@ -19,6 +19,7 @@
 #include "input_driver.h"
 #include "../driver.h"
 #include "../general.h"
+#include "../libretro.h"
 
 static const input_driver_t *input_drivers[] = {
 #ifdef __CELLOS_LV2__
@@ -152,4 +153,22 @@ void find_input_driver(void)
       if (!driver.input)
          rarch_fail(1, "find_input_driver()");
    }
+}
+
+/**
+ * input_driver_set_rumble_state:
+ * @port               : User number.
+ * @effect             : Rumble effect.
+ * @strength           : Strength of rumble effect.
+ *
+ * Sets the rumble state.
+ * Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE.
+ **/
+bool input_driver_set_rumble_state(unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   if (driver.input && driver.input_data && driver.input->set_rumble)
+      return driver.input->set_rumble(driver.input_data,
+            port, effect, strength);
+   return false;
 }
