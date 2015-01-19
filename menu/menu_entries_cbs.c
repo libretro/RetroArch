@@ -2160,20 +2160,6 @@ static int deferred_push_disk_options(void *data, void *userdata,
    return 0;
 }
 
-static int deferred_push_core_list(void *data, void *userdata,
-      const char *path, const char *label, unsigned type)
-{
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_PLAIN, EXT_EXECUTABLES, NULL);
-
-   return 0;
-}
 
 static int deferred_push_core_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
@@ -2278,8 +2264,9 @@ static int deferred_push_content_list(void *data, void *userdata,
          "", "Horizontal Menu", 0);
 }
 
-static int deferred_push_configurations(void *data, void *userdata,
-      const char *path, const char *label, unsigned type)
+static int generic_deferred_push(void *data, void *userdata,
+      const char *path, const char *label, unsigned type,
+      unsigned push_type, const char *ext)
 {
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
@@ -2288,144 +2275,86 @@ static int deferred_push_configurations(void *data, void *userdata,
       return -1;
 
    menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_CONFIG, "cfg", NULL);
+         type, push_type, ext, NULL);
 
    return 0;
+}
+
+static int deferred_push_core_list(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   return generic_deferred_push(data, userdata, path, label, type,
+         MENU_FILE_PLAIN, EXT_EXECUTABLES);
+}
+
+static int deferred_push_configurations(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   return generic_deferred_push(data, userdata, path, label, type,
+         MENU_FILE_CONFIG, "cfg");
 }
 
 static int deferred_push_video_shader_preset(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_SHADER_PRESET, "cgp|glslp", NULL);
-
-   return 0;
+   return generic_deferred_push(data, userdata, path, label, type,
+         MENU_FILE_SHADER_PRESET, "cgp|glslp");
 }
 
 static int deferred_push_video_shader_pass(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_SHADER, "cg|glsl", NULL);
-
-   return 0;
+   return generic_deferred_push(data, userdata, path, label, type,
+         MENU_FILE_SHADER, "cg|glsl");
 }
 
 static int deferred_push_video_filter(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_VIDEOFILTER, "filt", NULL);
-
-   return 0;
+   return generic_deferred_push(data, userdata, path, label, type,
+         MENU_FILE_VIDEOFILTER, "filt");
 }
 
 static int deferred_push_images(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_IMAGE, "png", NULL);
-
-   return 0;
+   return generic_deferred_push(data, userdata, path, label, type,
+         MENU_FILE_IMAGE, "png");
 }
 
 static int deferred_push_audio_dsp_plugin(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_AUDIOFILTER, "dsp", NULL);
-
-   return 0;
+   return generic_deferred_push(data, userdata, path, label, type,
+         MENU_FILE_AUDIOFILTER, "dsp");
 }
 
 static int deferred_push_cheat_file_load(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_CHEAT, "cht", NULL);
-
-   return 0;
+   return generic_deferred_push(data, userdata, path, label, type,
+         MENU_FILE_CHEAT, "cht");
 }
 
 static int deferred_push_input_overlay(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_OVERLAY, "cfg", NULL);
-
-   return 0;
+   return generic_deferred_push(data, userdata, path, label, type,
+         MENU_FILE_OVERLAY, "cfg");
 }
 
 static int deferred_push_video_font_path(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_FONT, "ttf", NULL);
-
-   return 0;
+   return generic_deferred_push(data, userdata, path, label, type,
+         MENU_FILE_FONT, "ttf");
 }
 
 static int deferred_push_content_history_path(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_PLAIN, "cfg", NULL);
-
-   return 0;
+   return generic_deferred_push(data, userdata, path, label, type,
+         MENU_FILE_PLAIN, "cfg");
 }
 
 static int deferred_push_detect_core_list(void *data, void *userdata,
