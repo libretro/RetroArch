@@ -2739,6 +2739,31 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
 
    cbs->action_toggle = menu_action_setting_set;
 
+   switch (type)
+   {
+      case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
+         cbs->action_toggle = disk_options_disk_idx_toggle;
+         break;
+      case MENU_FILE_PLAIN:
+      case MENU_FILE_DIRECTORY:
+      case MENU_FILE_CARCHIVE:
+      case MENU_FILE_CORE:
+      case MENU_FILE_SHADER:
+      case MENU_FILE_IMAGE:
+      case MENU_FILE_OVERLAY:
+      case MENU_FILE_VIDEOFILTER:
+      case MENU_FILE_AUDIOFILTER:
+      case MENU_FILE_CONFIG:
+      case MENU_FILE_USE_DIRECTORY:
+      case MENU_FILE_PLAYLIST_ENTRY:
+         cbs->action_toggle = action_toggle_scroll;
+         break;
+      case MENU_SETTING_ACTION:
+      case MENU_FILE_CONTENTLIST_ENTRY:
+         cbs->action_toggle = action_toggle_mainmenu;
+         break;
+   }
+
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_toggle = shader_action_parameter_toggle;
@@ -2768,31 +2793,6 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_toggle = action_toggle_video_resolution;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       cbs->action_toggle = core_setting_toggle;
-
-   switch (type)
-   {
-      case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
-         cbs->action_toggle = disk_options_disk_idx_toggle;
-         break;
-      case MENU_FILE_PLAIN:
-      case MENU_FILE_DIRECTORY:
-      case MENU_FILE_CARCHIVE:
-      case MENU_FILE_CORE:
-      case MENU_FILE_SHADER:
-      case MENU_FILE_IMAGE:
-      case MENU_FILE_OVERLAY:
-      case MENU_FILE_VIDEOFILTER:
-      case MENU_FILE_AUDIOFILTER:
-      case MENU_FILE_CONFIG:
-      case MENU_FILE_USE_DIRECTORY:
-      case MENU_FILE_PLAYLIST_ENTRY:
-         cbs->action_toggle = action_toggle_scroll;
-         break;
-      case MENU_SETTING_ACTION:
-      case MENU_FILE_CONTENTLIST_ENTRY:
-         cbs->action_toggle = action_toggle_mainmenu;
-         break;
-   }
 }
 
 static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
