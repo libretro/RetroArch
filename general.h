@@ -326,6 +326,7 @@ struct settings
    char content_database[PATH_MAX_LENGTH];
    char cheat_database[PATH_MAX_LENGTH];
    char cheat_settings_path[PATH_MAX_LENGTH];
+   char input_remapping_directory[PATH_MAX_LENGTH];
 
    char resampler_directory[PATH_MAX_LENGTH];
    char screenshot_directory[PATH_MAX_LENGTH];

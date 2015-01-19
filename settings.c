@@ -617,6 +617,7 @@ static void config_set_defaults(void)
    *g_settings.screenshot_directory = '\0';
    *g_settings.system_directory = '\0';
    *g_settings.extraction_directory = '\0';
+   *g_settings.input_remapping_directory = '\0';
    *g_settings.input.autoconfig_dir = '\0';
    *g_settings.input.overlay = '\0';
    *g_settings.content_directory = '\0';
@@ -1322,6 +1323,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_PATH(resampler_directory, "resampler_directory");
    CONFIG_GET_PATH(extraction_directory, "extraction_directory");
+   CONFIG_GET_PATH(input_remapping_directory, "input_remapping_directory");
    CONFIG_GET_PATH(content_directory, "content_directory");
    CONFIG_GET_PATH(assets_directory, "assets_directory");
    CONFIG_GET_PATH(playlist_directory, "playlist_directory");
@@ -1884,6 +1886,8 @@ bool config_save_file(const char *path)
          g_settings.system_directory : "default");
    config_set_path(conf, "extraction_directory",
          g_settings.extraction_directory);
+   config_set_path(conf, "input_remapping_directory",
+         g_settings.input_remapping_directory);
    config_set_path(conf, "resampler_directory",
          g_settings.resampler_directory);
    config_set_string(conf, "audio_resampler", g_settings.audio.resampler);
