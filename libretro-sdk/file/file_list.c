@@ -168,9 +168,26 @@ static int file_list_alt_cmp(const void *a_, const void *b_)
    return strcasecmp(cmp_a, cmp_b);
 }
 
+static int file_list_type_cmp(const void *a_, const void *b_)
+{
+   const struct item_file *a = (const struct item_file*)a_;
+   const struct item_file *b = (const struct item_file*)b_;
+   if (a->type < b->type)
+      return -1;
+   if (a->type == b->type)
+      return 0;
+
+   return 1;
+}
+
 void file_list_sort_on_alt(file_list_t *list)
 {
    qsort(list->list, list->size, sizeof(list->list[0]), file_list_alt_cmp);
+}
+
+void file_list_sort_on_type(file_list_t *list)
+{
+   qsort(list->list, list->size, sizeof(list->list[0]), file_list_type_cmp);
 }
 
 void *file_list_get_userdata_at_offset(const file_list_t *list, size_t idx)
