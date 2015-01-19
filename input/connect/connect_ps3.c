@@ -57,6 +57,10 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
 
 static void* hidpad_ps3_init(void *data, uint32_t slot, send_control_t ptr)
 {
+#ifdef IOS
+   /* Magic packet to start reports. */
+   static uint8_t magic_data[] = {0x53, 0xF4, 0x42, 0x03, 0x00, 0x00};
+#endif
    struct pad_connection* connection = (struct pad_connection*)data;
    struct hidpad_ps3_data* device = (struct hidpad_ps3_data*)
     calloc(1, sizeof(struct hidpad_ps3_data));
@@ -75,8 +79,6 @@ static void* hidpad_ps3_init(void *data, uint32_t slot, send_control_t ptr)
    device->send_control = ptr;
    
 #ifdef IOS
-   /* Magic packet to start reports. */
-   static uint8_t magic_data[] = {0x53, 0xF4, 0x42, 0x03, 0x00, 0x00};
    device->send_control(device->connection, magic_data, 6);
 #endif
 
@@ -97,23 +99,23 @@ static void hidpad_ps3_deinit(void *data)
 static uint32_t hidpad_ps3_get_buttons(void *data)
 {
    struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
-   if (device)
-      return device->buttons;
-   return 0;
+   if (!device)
+      return 0;
+   return device->buttons;
 }
 
 static int16_t hidpad_ps3_get_axis(void *data, unsigned axis)
 {
+   int val;
    struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
-    
-   if (device && (axis < 4))
-   {
-      int val = device->data[7 + axis];
-      val = (val << 8) - 0x8000;
-      return (abs(val) > 0x1000) ? val : 0;
-   }
 
-   return 0;
+   if (!device || axis >= 4)
+      return 0;
+
+   val = device->data[7 + axis];
+   val = (val << 8) - 0x8000;
+
+   return (abs(val) > 0x1000) ? val : 0;
 }
 
 static void hidpad_ps3_packet_handler(void *data, uint8_t *packet, uint16_t size)
@@ -168,11 +170,13 @@ static void hidpad_ps3_set_rumble(void *data,
    struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
    unsigned idx = (effect == RETRO_RUMBLE_STRONG) ? 0 : 1;
 
-   if (device && (device->motors[idx] != strength))
-   {
-      device->motors[idx] = strength;
-      hidpad_ps3_send_control(device);
-   }
+   if (!device)
+      return;
+   if ((device->motors[idx] == strength))
+      return;
+
+   device->motors[idx] = strength;
+   hidpad_ps3_send_control(device);
 }
 
 pad_connection_interface_t pad_connection_ps3 = {

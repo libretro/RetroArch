@@ -48,73 +48,71 @@ static void hid_pad_connection_send_control(void *data, uint8_t* data_buf, size_
 static void hid_device_input_callback(void* context, IOReturn result,
       void* sender, IOHIDValueRef value)
 {
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   apple_input_data_t *apple         = (apple_input_data_t*)driver.input_data;
    struct pad_connection* connection = (struct pad_connection*)context;
-   IOHIDElementRef element = IOHIDValueGetElement(value);
-   uint32_t type    = IOHIDElementGetType(element);
-   uint32_t page    = IOHIDElementGetUsagePage(element);
-   uint32_t use     = IOHIDElementGetUsage(element);
+   IOHIDElementRef element           = IOHIDValueGetElement(value);
+   uint32_t type                     = IOHIDElementGetType(element);
+   uint32_t page                     = IOHIDElementGetUsagePage(element);
+   uint32_t use                      = IOHIDElementGetUsage(element);
+
+   if (type != kIOHIDElementTypeInput_Misc)
+      if (type != kIOHIDElementTypeInput_Button)
+         if (type != kIOHIDElementTypeInput_Axis)
+            return;
 
    /* Joystick handler.
     * TODO: Can GamePad work the same? */
 
-   if (
-         (type == kIOHIDElementTypeInput_Misc) ||
-         (type == kIOHIDElementTypeInput_Button) ||
-         (type == kIOHIDElementTypeInput_Axis)
-      )
+   switch (page)
    {
-      switch (page)
-      {
-         case kHIDPage_GenericDesktop:
-            switch (type)
-            {
-               case kIOHIDElementTypeInput_Misc:
-                  switch (use)
-                  {
-                     case kHIDUsage_GD_Hatswitch:
-                        break;
-                     default:
+      case kHIDPage_GenericDesktop:
+         switch (type)
+         {
+            case kIOHIDElementTypeInput_Misc:
+               switch (use)
+               {
+                  case kHIDUsage_GD_Hatswitch:
+                     break;
+                  default:
+                     {
+                        int i;
+                        static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
+
+                        for (i = 0; i < 4; i ++)
                         {
-                           static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
-                           int i;
+                           CFIndex min   = IOHIDElementGetPhysicalMin(element);
+                           CFIndex max   = IOHIDElementGetPhysicalMax(element) - min;
+                           CFIndex state = IOHIDValueGetIntegerValue(value) - min;
+                           float val     = (float)state / (float)max;
 
-                           for (i = 0; i < 4; i ++)
-                           {
-                              CFIndex min   = IOHIDElementGetPhysicalMin(element);
-                              CFIndex max   = IOHIDElementGetPhysicalMax(element) - min;
-                              CFIndex state = IOHIDValueGetIntegerValue(value) - min;
-                              float val     = (float)state / (float)max;
+                           if (use != axis_use_ids[i])
+                              continue;
 
-                              if (use != axis_use_ids[i])
-                                 continue;
-
-                              apple->axes[connection->slot][i] =
-                                 ((val * 2.0f) - 1.0f) * 32767.0f;
-                           }
+                           apple->axes[connection->slot][i] =
+                              ((val * 2.0f) - 1.0f) * 32767.0f;
                         }
-                        break;
-                  }
-                  break;
-            }
-            break;
-         case kHIDPage_Button:
-            switch (type)
-            {
-               case kIOHIDElementTypeInput_Button:
-                  {
-                     CFIndex state = IOHIDValueGetIntegerValue(value);
-                     unsigned id = use - 1;
+                     }
+                     break;
+               }
+               break;
+         }
+         break;
+      case kHIDPage_Button:
+         switch (type)
+         {
+            case kIOHIDElementTypeInput_Button:
+               {
+                  CFIndex state = IOHIDValueGetIntegerValue(value);
+                  unsigned id = use - 1;
 
-                     if (state)
-                        BIT32_SET(apple->buttons[connection->slot], id);
-                     else
-                        BIT32_CLEAR(apple->buttons[connection->slot], id);
-                  }
-                  break;
-            }
-            break;
-      }
+                  if (state)
+                     BIT32_SET(apple->buttons[connection->slot], id);
+                  else
+                     BIT32_CLEAR(apple->buttons[connection->slot], id);
+               }
+               break;
+         }
+         break;
    }
 }
 
@@ -125,7 +123,8 @@ static void remove_device(void* context, IOReturn result, void* sender)
 
    if (connection && connection->slot < MAX_USERS)
    {
-      char msg[512];
+      char msg[PATH_MAX_LENGTH];
+
       snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.",
             connection->slot, "N/A");
       msg_queue_push(g_extern.msg_queue, msg, 0, 60);
@@ -196,25 +195,25 @@ static void add_device(void* context, IOReturn result,
       IOHIDDeviceRegisterInputValueCallback(device,
             hid_device_input_callback, connection);
 
-   if (device_name[0] != '\0')
-   {
-      strlcpy(g_settings.input.device_names[connection->slot],
-            device_name, sizeof(g_settings.input.device_names));
+   if (device_name[0] == '\0')
+      return;
 
-      input_config_autoconfigure_joypad(connection->slot,
-            device_name, connection->v_id, connection->p_id, apple_hid_joypad.ident);
-      RARCH_LOG("Port %d: %s.\n", connection->slot, device_name);
-   }
+   strlcpy(g_settings.input.device_names[connection->slot],
+         device_name, sizeof(g_settings.input.device_names));
+
+   input_config_autoconfigure_joypad(connection->slot,
+         device_name, connection->v_id, connection->p_id, apple_hid_joypad.ident);
+   RARCH_LOG("Port %d: %s.\n", connection->slot, device_name);
 }
 
 static void append_matching_dictionary(CFMutableArrayRef array,
       uint32_t page, uint32_t use)
 {
-   CFNumberRef usen;
+   CFNumberRef usen, pagen;
    CFMutableDictionaryRef matcher = CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
          &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-   CFNumberRef pagen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &page);
 
+   pagen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &page);
    CFDictionarySetValue(matcher, CFSTR(kIOHIDDeviceUsagePageKey), pagen);
    CFRelease(pagen);
 
@@ -285,7 +284,7 @@ static void apple_joypad_destroy(void)
 static bool apple_joypad_button(unsigned port, uint16_t joykey)
 {
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-   uint32_t buttons = pad_connection_get_buttons(&slots[port], port);
+   uint32_t buttons          = pad_connection_get_buttons(&slots[port], port);
 
    if (!apple || joykey == NO_BTN)
       return false;
@@ -313,13 +312,17 @@ static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
    {
       val = apple->axes[port][AXIS_NEG_GET(joyaxis)];
       val += pad_connection_get_axis(&slots[port], port, AXIS_NEG_GET(joyaxis));
-      val = (val < 0) ? val : 0;
+
+      if (val >= 0)
+         val = 0;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
       val = apple->axes[port][AXIS_POS_GET(joyaxis)];
       val += pad_connection_get_axis(&slots[port], port, AXIS_POS_GET(joyaxis));
-      val = (val > 0) ? val : 0;
+
+      if (val <= 0)
+         val = 0;
    }
 
    return val;

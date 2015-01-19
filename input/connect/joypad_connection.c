@@ -26,27 +26,30 @@ static int find_vacant_pad(joypad_connection_t *joyconn)
       if (conn && !conn->used)
          return i;
    }
+
    return -1;
 }
 
 void *pad_connection_init(unsigned pads)
 {
-    int i;
-    joypad_connection_t *joyconn = (joypad_connection_t*)
-       calloc(pads, sizeof(*joyconn));
-    if (!joyconn)
-        return NULL;
-    
-    for (i = 0; i < pads; i++)
-    {
-        joypad_connection_t *conn = (joypad_connection_t*)&joyconn[i];
-        conn->used     = false;
-        conn->iface    = NULL;
-        conn->is_gcapi = false;
-        conn->data     = NULL;
-    }
-    
-    return joyconn;
+   int i;
+   joypad_connection_t *joyconn = (joypad_connection_t*)
+      calloc(pads, sizeof(*joyconn));
+
+   if (!joyconn)
+      return NULL;
+
+   for (i = 0; i < pads; i++)
+   {
+      joypad_connection_t *conn = (joypad_connection_t*)&joyconn[i];
+
+      conn->used     = false;
+      conn->iface    = NULL;
+      conn->is_gcapi = false;
+      conn->data     = NULL;
+   }
+
+   return joyconn;
 }
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
@@ -97,8 +100,8 @@ int32_t apple_joypad_connect_gcapi(joypad_connection_t *joyconn)
 
       if (s)
       {
-          s->used = true;
-          s->is_gcapi = true;
+         s->used = true;
+         s->is_gcapi = true;
       }
    }
 
@@ -110,17 +113,17 @@ void pad_connection_pad_deinit(joypad_connection_t *s, uint32_t pad)
    if (!s || !s->used)
        return;
     
-      if (s->iface)
-      {
-          s->iface->set_rumble(s->data, RETRO_RUMBLE_STRONG, 0);
-          s->iface->set_rumble(s->data, RETRO_RUMBLE_WEAK, 0);
-          if (s->iface->deinit)
-              s->iface->deinit(s->data);
-      }
-       
-       s->iface    = NULL;
-       s->used     = false;
-       s->is_gcapi = false;
+   if (s->iface)
+   {
+      s->iface->set_rumble(s->data, RETRO_RUMBLE_STRONG, 0);
+      s->iface->set_rumble(s->data, RETRO_RUMBLE_WEAK, 0);
+      if (s->iface->deinit)
+         s->iface->deinit(s->data);
+   }
+
+   s->iface    = NULL;
+   s->used     = false;
+   s->is_gcapi = false;
 }
 
 void pad_connection_packet(joypad_connection_t *s, uint32_t pad,
@@ -135,17 +138,17 @@ void pad_connection_packet(joypad_connection_t *s, uint32_t pad,
 
 uint32_t pad_connection_get_buttons(joypad_connection_t *s, unsigned pad)
 {
-   if (s->iface)
-      return s->iface->get_buttons(s->data);
-   return 0;
+   if (!s->iface)
+      return 0;
+   return s->iface->get_buttons(s->data);
 }
 
 int16_t pad_connection_get_axis(joypad_connection_t *s,
    unsigned idx, unsigned i)
 {
-   if (s->iface)
-      return s->iface->get_axis(s->data, i);
-   return 0;
+   if (!s->iface)
+      return 0;
+   return s->iface->get_axis(s->data, i);
 }
 
 bool pad_connection_has_interface(joypad_connection_t *s, unsigned pad)
@@ -169,11 +172,13 @@ void pad_connection_destroy(joypad_connection_t *joyconn)
 bool pad_connection_rumble(joypad_connection_t *s,
    unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
 {
-   if (s->used && s->iface && s->iface->set_rumble)
-   {
-      s->iface->set_rumble(s->data, effect, strength);
-      return true;
-   }
+   if (!s->used)
+      return false;
+   if (!s->iface)
+      return false;
+   if (!s->iface->set_rumble)
+      return;
 
-   return false;
+   s->iface->set_rumble(s->data, effect, strength);
+   return true;
 }

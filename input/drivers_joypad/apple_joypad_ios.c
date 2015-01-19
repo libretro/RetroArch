@@ -53,10 +53,10 @@ static bool apple_joypad_button(unsigned port, uint16_t joykey)
    if (!apple || joykey == NO_BTN)
       return false;
 
-   // Check hat.
+   /* Check hat. */
    if (GET_HAT_DIR(joykey))
       return false;
-   // Check the button
+   /* Check the button */
    if ((port < MAX_USERS) && (joykey < 32))
        return ((apple->buttons[port] & (1 << joykey)) != 0) ||
               ((buttons & (1 << joykey)) != 0);
@@ -75,13 +75,15 @@ static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
    {
       val = apple->axes[port][AXIS_NEG_GET(joyaxis)];
       val += pad_connection_get_axis(&slots[port], port, AXIS_NEG_GET(joyaxis));
-      val = (val < 0) ? val : 0;
+      if (val >= 0)
+         val = 0;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
       val = apple->axes[port][AXIS_POS_GET(joyaxis)];
       val += pad_connection_get_axis(&slots[port], port, AXIS_POS_GET(joyaxis));
-      val = (val > 0) ? val : 0;
+      if (val <= 0)
+         val = 0;
    }
 
    return val;
