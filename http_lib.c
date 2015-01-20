@@ -219,7 +219,8 @@ static http_retcode http_query(const char *command, const char *url,
       /* create header */
       if (proxy)
       {
-         sprintf(header,
+         snprintf(header,
+               sizeof(header),
                "%s http://%.128s:%d/%.256s HTTP/1.0\015\012User-Agent: %s\015\012Host: %s\015\012%s\015\012",
                command,
                http_server,
@@ -232,7 +233,8 @@ static http_retcode http_query(const char *command, const char *url,
       }
       else
       {
-         sprintf(header,
+         snprintf(header,
+               sizeof(header),
                "%s /%.256s HTTP/1.0\015\012User-Agent: %s\015\012Host: %s\015\012%s\015\012",
                command,
                url,
@@ -298,10 +300,10 @@ http_retcode http_put(const char *filename, const char *data,
 {
    char header[MAXBUF];
    if (type) 
-      sprintf(header, "Content-length: %d\015\012Content-type: %.64s\015\012%s",
+      snprintf(header, sizeof(header), "Content-length: %d\015\012Content-type: %.64s\015\012%s",
             length, type, overwrite ? "Control: overwrite=1\015\012" : "");
    else
-      sprintf(header, "Content-length: %d\015\012%s",length,
+      snprintf(header, sizeof(header), "Content-length: %d\015\012%s",length,
             overwrite ? "Control: overwrite=1\015\012" : "");
    return http_query("PUT", filename, header, CLOSE, data, length, NULL);
 }
@@ -370,9 +372,9 @@ http_retcode http_get(const char *filename,
          /* convert to lower case 'till a : is found or end of string */
          for (pc=header; (*pc != ':' && *pc) ; pc++)
             *pc=tolower(*pc);
-         sscanf(header,"content-length: %d",&length);
+         sscanf(header,"content-length: %d", &length);
          if (typebuf)
-            sscanf(header,"content-type: %s",typebuf);
+            sscanf(header,"content-type: %s", typebuf);
       }
 
       if (length<=0)
@@ -382,6 +384,7 @@ http_retcode http_get(const char *filename,
       }
       if (plength)
          *plength = length;
+
       if (!(*pdata = (char*)malloc(length)))
       {
          close(fd);
