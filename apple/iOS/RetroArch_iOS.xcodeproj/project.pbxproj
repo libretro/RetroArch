@@ -27,7 +27,6 @@
 		83D632E219ECFCC4009E3161 /* ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DB19ECFCC4009E3161 /* ic_pause.png */; };
 		83D632E519ECFCC4009E3161 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */; };
 		83EB676019EEAF050096F441 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* modules */; };
-		83EB676219EEAF1B0096F441 /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 83EB676119EEAF1B0096F441 /* overlays */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
 		963C3C34186E3DED00A6EB1E /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 963C3C33186E3DED00A6EB1E /* GameController.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
@@ -60,7 +59,6 @@
 		83D632DB19ECFCC4009E3161 /* ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ic_pause.png; sourceTree = "<group>"; };
 		83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseIndicatorView.xib; sourceTree = "<group>"; };
 		83EB675F19EEAF050096F441 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = SOURCE_ROOT; };
-		83EB676119EEAF1B0096F441 /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../../media/overlays; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		963C3C33186E3DED00A6EB1E /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
@@ -114,7 +112,6 @@
 		83D632D719ECFCC4009E3161 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
-				83EB676119EEAF1B0096F441 /* overlays */,
 				83EB675F19EEAF050096F441 /* modules */,
 				83D632DB19ECFCC4009E3161 /* ic_pause.png */,
 				83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */,
@@ -291,7 +288,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				83D632E219ECFCC4009E3161 /* ic_pause.png in Resources */,
-				83EB676219EEAF1B0096F441 /* overlays in Resources */,
 				967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */,
 				83EB676019EEAF050096F441 /* modules in Resources */,
 				69D31DE41A547EC800EF4C92 /* Media.xcassets in Resources */,
