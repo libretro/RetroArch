@@ -292,7 +292,7 @@ static void rmenu_context_reset(void *data)
    if (*g_settings.menu.wallpaper)
       strlcpy(menu_bg, g_settings.menu.wallpaper, sizeof(menu_bg));
    else
-      rmenu_set_default_wallpaper(menu_bg, sizeof(menu_bg));
+      rmenu_wallpaper_set_defaults(menu_bg, sizeof(menu_bg));
 
    if (path_file_exists(menu_bg))
       texture_image_load(menu_texture, menu_bg);
