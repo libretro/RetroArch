@@ -78,8 +78,8 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
    if (pad->fd >= 0)
       return false;
 
-   // Device can have just been created, but not made accessible (yet).
-   // IN_ATTRIB will signal when permissions change.
+   /* Device can have just been created, but not made accessible (yet).
+      IN_ATTRIB will signal when permissions change. */
    if (access(path, R_OK) < 0)
       return false;
 
@@ -168,7 +168,7 @@ static void handle_plugged_pad(void)
                input_config_autoconfigure_joypad(idx, NULL, 0, 0, NULL);
             }
          }
-         // Sometimes, device will be created before acess to it is established.
+         /* Sometimes, device will be created before acess to it is established. */
          else if (event->mask & (IN_CREATE | IN_ATTRIB))
          {
             bool ret;
