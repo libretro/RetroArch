@@ -56,7 +56,11 @@ int rarchdb_cursor_open(
         struct rarchdb_cursor * cursor,
         rarchdb_query * query
 );
+
+int rarchdb_cursor_reset(struct rarchdb_cursor * cursor);
+
 void rarchdb_cursor_close(struct rarchdb_cursor * cursor);
+
 rarchdb_query * rarchdb_query_compile(
         struct rarchdb * db,
         const char * query,
