@@ -111,7 +111,11 @@ static int stub_read_uint(
         void * data
 ){
 	stub_state_pre_print(data);
-	printf("%lu", value);
+#ifdef _WIN32
+   printf("%I64u", (unsigned long long)value);
+#else
+	printf("%llu", (unsigned long long)value);
+#endif
 	stub_state_post_print(data);
 	return 0;
 }
@@ -127,7 +131,11 @@ static int stub_read_int(
         void * data
 ){
 	stub_state_pre_print(data);
-	printf("%ld", value);
+#ifdef _WIN32
+   printf("%I64d", (signed long long)value);
+#else
+	printf("%lld", (signed long long)value);
+#endif
 	stub_state_post_print(data);
 	return 0;
 }
