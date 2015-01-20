@@ -53,3 +53,16 @@ for example:
 dat_converter snes.rdb rom.crc snes1.dat snes2.dat
 ~~~
 
+# Query examples
+Some examples of queries you can use with rarchdbtool:
+
+1) Glob pattern matching
+Usecase : Search for all games containing 'Street Fighter' in the 'name' field (glob pattern matching)
+
+`rarchdb_tool <db file> find "{'name':glob('Street Fighter*')}"`
+
+2) Combined number matching query
+Usecase: Search for all games released on October 1995.
+
+`rarchdb_tool <db file> find "{'releasemonth':10,'releaseyear':1995}"`
+
