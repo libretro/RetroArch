@@ -210,20 +210,6 @@ static int action_ok_playlist_entry(const char *path,
    return -1;
 }
 
-static int action_ok_push_generic_list(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   if (!driver.menu)
-      return -1;
-
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         "",
-         label,
-         type,
-         driver.menu->selection_ptr);
-   return 0;
-}
 
 static int action_ok_shader_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -273,7 +259,7 @@ static int action_ok_shader_pass_load(const char *path,
 #endif
 }
 
-static int action_ok_cheat_file(const char *path,
+static int action_ok_file_generic(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    if (!driver.menu)
@@ -281,28 +267,83 @@ static int action_ok_cheat_file(const char *path,
 
    menu_list_push_stack_refresh(
          driver.menu->menu_list,
-         g_settings.cheat_database, 
-         "cheat_file_load",
+         path, 
+         label,
          type,
          driver.menu->selection_ptr);
 
    return 0;
 }
 
+static int action_ok_push_generic_list(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_file_generic(
+         "", label, type, idx);
+}
+
+static int action_ok_push_default(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_file_generic(
+         label, label, type, idx);
+}
+
+static int action_ok_shader_preset(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_file_generic(
+         g_settings.video.shader_dir, 
+         "video_shader_preset",
+         type, idx);
+}
+
+static int action_ok_push_content_list(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_file_generic(
+         g_settings.menu_content_directory,
+         label,
+         MENU_FILE_DIRECTORY, idx);
+}
+
+static int action_ok_disk_image_append_list(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_file_generic(
+         g_settings.menu_content_directory, label, type, idx);
+}
+
+static int action_ok_configurations_list(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   const char *dir = g_settings.menu_config_directory;
+   return action_ok_file_generic(
+         dir ? dir : label, label, type, idx);
+}
+
+static int action_ok_cheat_file(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_file_generic(
+         g_settings.cheat_database,
+         label, type, idx);
+}
+
 static int action_ok_remap_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   if (!driver.menu)
-      return -1;
+   return action_ok_file_generic(
+         g_settings.input_remapping_directory,
+         label, type, idx);
+}
 
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         g_settings.input_remapping_directory, 
-         "remap_file_load",
-         type,
-         driver.menu->selection_ptr);
-
-   return 0;
+static int action_ok_core_list(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_file_generic(
+         g_settings.libretro_directory,
+         label, type, idx);
 }
 
 static int action_ok_remap_file_load(const char *path,
@@ -750,21 +791,6 @@ static int action_ok_custom_viewport(const char *path,
    return 0;
 }
 
-static int action_ok_core_list(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   const char *dir = g_settings.libretro_directory;
-
-   if (!driver.menu)
-      return -1;
-
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         dir, label, type,
-         driver.menu->selection_ptr);
-
-   return 0;
-}
 
 static int action_ok_core_manager_list(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -772,62 +798,7 @@ static int action_ok_core_manager_list(const char *path,
    return 0;
 }
 
-static int action_ok_disk_image_append_list(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   const char *dir = g_settings.menu_content_directory;
 
-   if (!driver.menu)
-      return -1;
-
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         dir, label, type,
-         driver.menu->selection_ptr);
-   return 0;
-}
-
-static int action_ok_configurations_list(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   const char *dir = g_settings.menu_config_directory;
-   if (!driver.menu)
-      return -1;
-
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         dir ? dir : label, label, type,
-         driver.menu->selection_ptr);
-   return 0;
-}
-
-static int action_ok_push_default(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   if (!driver.menu)
-      return -1;
-
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         label, label, type,
-         driver.menu->selection_ptr);
-   return 0;
-}
-
-static int action_ok_push_content_list(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   if (!driver.menu)
-      return -1;
-
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         g_settings.menu_content_directory,
-         label,
-         MENU_FILE_DIRECTORY,
-         driver.menu->selection_ptr);
-   return 0;
-}
 
 static int action_ok_disk_cycle_tray_status(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -1112,21 +1083,6 @@ static int action_start_shader_pass(unsigned type, const char *label,
    return 0;
 }
 
-static int action_ok_shader_preset(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   if (!driver.menu)
-      return -1;
-
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         g_settings.video.shader_dir, 
-         "video_shader_preset",
-         type,
-         driver.menu->selection_ptr);
-
-   return 0;
-}
 
 static int action_start_shader_scale_pass(unsigned type, const char *label,
       unsigned action)
