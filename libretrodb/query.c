@@ -10,6 +10,7 @@
 #include <compat/fnmatch.h>
 
 #define MAX_ERROR_LEN 256
+#undef  MAX_ARGS
 #define MAX_ARGS 50
 
 static char tmp_error_buff [MAX_ERROR_LEN] = {};
@@ -260,9 +261,12 @@ static struct rmsgpack_dom_value between (
         const struct argument * argv
 ) {
 	struct rmsgpack_dom_value res;
-	unsigned i;
+	unsigned i = 0;
 	res.type = RDT_BOOL;
 	res.bool_ = 0;
+
+   (void)i;
+
 	if (argc != 2) {
 		return res;
 	}
@@ -321,9 +325,12 @@ static struct rmsgpack_dom_value q_glob (
         const struct argument * argv
 ) {
 	struct rmsgpack_dom_value res;
-	unsigned i;
+	unsigned i = 0;
 	res.type = RDT_BOOL;
 	res.bool_ = 0;
+
+   (void)i;
+
 	if (argc != 1) {
 		return res;
 	}
@@ -355,6 +362,8 @@ static struct rmsgpack_dom_value all_map (
 	nil_value.type = RDT_NULL;
 	res.type = RDT_BOOL;
 	res.bool_ = 1;
+
+   (void)key;
 
 	if (argc % 2 != 0) {
 		res.bool_ = 0;
@@ -405,6 +414,7 @@ struct registered_func registered_functions[100] = {
 
 static struct buffer chomp(struct buffer buff) {
 	off_t i = 0;
+   (void)i;
 	for (; buff.offset < buff.len && isspace(buff.data[buff.offset]); buff.offset++) ;
 	return buff;
 }
@@ -497,8 +507,11 @@ static struct buffer parse_string(
         const char ** error
 ) {
 	char terminator = '\0';
-	char c;
+	char c = '\0';
 	const char * str_start;
+
+   (void)c;
+
 	buff = get_char(buff, &terminator, error);
 	if (*error) {
 		return buff;
