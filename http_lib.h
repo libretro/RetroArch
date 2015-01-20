@@ -91,9 +91,9 @@ http_retcode http_put(const char *filename, const char *data, int length,
  *                      type is returned. If NULL, the type is
  *                      not returned.
  *
- * Gets data from the server
+ * Gets data from the server.
  *
- * This function gets data from the http data server.
+ * This function gets data from the HTTP data server.
  * The data is read from the ressource named filename.
  * Address of new new allocated memory block is filled in pdata
  * whose length is returned via plength.
@@ -149,7 +149,7 @@ http_retcode http_delete(const char *filename) ;
  *
  * Requests the header.
  *
- * This function outputs the header of thehttp data server.
+ * This function outputs the header of the HTTP data server.
  * The header is from the ressource named filename.
  * The length and type of data is eventually returned (like for http_get(3))
  *

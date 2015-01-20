@@ -281,7 +281,7 @@ static http_retcode http_query(const char *command, const char *url,
  *
  * Put data on the server
  *
- * This function sends data to the http data server.
+ * This function sends data to the HTTP data server.
  * The data will be stored under the ressource name filename.
  * returns a negative error code or a positive code from the server
  *
@@ -316,7 +316,7 @@ http_retcode http_put(const char *filename, const char *data,
  *
  * Gets data from the server
  *
- * This function gets data from the http data server.
+ * This function gets data from the HTTP data server.
  * The data is read from the ressource named filename.
  * Address of new new allocated memory block is filled in pdata
  * whose length is returned via plength.
@@ -410,7 +410,7 @@ http_retcode http_get(const char *filename,
  *
  * Requests the header.
  *
- * This function outputs the header of thehttp data server.
+ * This function outputs the header of the HTTP data server.
  * The header is from the ressource named filename.
  * The length and type of data is eventually returned (like for http_get(3))
  *
