@@ -588,7 +588,7 @@ static struct buffer parse_integer(
 #else
                "%lld",
 #endif
-               &value->int_) == 0)
+               (signed long long*)&value->int_) == 0)
     {
 		raise_expected_number(buff.offset, error);
 	} else {
