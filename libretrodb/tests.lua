@@ -71,6 +71,7 @@ tests = {
     test_string_field = query_test({{a="test"}, {a=4}}, {{a="test"}}, "{'a':'test'}"),
     test_or_operator = query_test({{a="test"}, {a=4}, {a=5}}, {{a="test"}, {a=4}}, "{'a':or('test', 4)}"),
     test_or_between = query_test({{a="test"}, {a=4}, {a=5}, {}}, {{a="test"}, {a=4}, {a=5}}, "{'a':or('test', between(2, 7))}"),
+    test_glob = query_test({{a="abc"}, {a="acd"}}, {{a="abc"}}, "{'a':glob('*b*')}"),
     test_root_function = query_test({{a=1}, {b=4}, {a=5}, {}}, {{a=1}, {b=4}}, "or({a:1},{b:4})"),
 }
 for name, cb in pairs(tests) do

@@ -8,6 +8,7 @@ LUA_CONVERTER_OBJ = rmsgpack.o \
 		    bintree.o \
 		    query.o \
 		    lua_converter.o \
+		    rl_fnmatch.c \
 		    $(NULL)
 
 RARCHDB_TOOL_OBJ = rmsgpack.o \
@@ -16,11 +17,13 @@ RARCHDB_TOOL_OBJ = rmsgpack.o \
 		   bintree.o \
 		   query.o \
 		   rarchdb.o \
+		   rl_fnmatch.c \
 		   $(NULL)
 
 TESTLIB_C = testlib.c \
 	      lua_common.c \
 	      query.c \
+	      rl_fnmatch.c \
 	      rarchdb.c \
 	      bintree.c \
 	      rmsgpack.c \

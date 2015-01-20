@@ -130,6 +130,7 @@ OBJ += frontend/frontend.o \
 		libretro-sdk/queues/fifo_buffer.o \
 		core_options.o \
 		libretro-sdk/compat/compat.o \
+		libretro-sdk/compat/compat_fnmatch.o \
 		cheats.o \
 		core_info.o \
 		libretro-sdk/file/config_file.o \
@@ -162,7 +163,7 @@ OBJ += frontend/frontend.o \
 		record/record_driver.o \
 		performance.o
 
-# RarchDB
+# LibretroDB
 
 OBJ += libretrodb/bintree.o \
 		 libretrodb/rarchdb.o \

@@ -7,6 +7,7 @@
 #include "rarchdb.h"
 
 #include "rmsgpack_dom.h"
+#include <compat/fnmatch.h>
 
 #define MAX_ERROR_LEN 256
 #define MAX_ARGS 50
@@ -314,6 +315,32 @@ static struct rmsgpack_dom_value operator_and (
 	return res;
 }
 
+static struct rmsgpack_dom_value q_glob (
+        struct rmsgpack_dom_value input,
+        unsigned argc,
+        const struct argument * argv
+) {
+	struct rmsgpack_dom_value res;
+	unsigned i;
+	res.type = RDT_BOOL;
+	res.bool_ = 0;
+	if (argc != 1) {
+		return res;
+	}
+	if (argv[0].type != AT_VALUE || argv[0].value.type != RDT_STRING) {
+		return res;
+	}
+	if (input.type != RDT_STRING) {
+		return res;
+	}
+	res.bool_ = rl_fnmatch(
+		argv[0].value.string.buff,
+		input.string.buff,
+		0
+	) == 0;
+	return res;
+}
+
 static struct rmsgpack_dom_value all_map (
         struct rmsgpack_dom_value input,
         unsigned argc,
@@ -372,6 +399,7 @@ struct registered_func registered_functions[100] = {
 	{"or", operator_or},
 	{"and", operator_and},
 	{"between", between},
+	{"glob", q_glob},
 	{NULL, NULL}
 };
 
@@ -468,10 +496,13 @@ static struct buffer parse_string(
         struct rmsgpack_dom_value * value,
         const char ** error
 ) {
-	char terminator;
+	char terminator = '\0';
 	char c;
 	const char * str_start;
 	buff = get_char(buff, &terminator, error);
+	if (*error) {
+		return buff;
+	}
 	if (terminator != '"' && terminator != '\'') {
 		buff.offset--;
 		raise_expected_string(buff.offset, error);
@@ -683,7 +714,7 @@ static struct buffer parse_argument(
 	) {
 		arg->type = AT_FUNCTION;
 		buff = parse_method_call(buff, &arg->invocation, error);
-	} else if (peek(buff, "{")){
+	} else if (peek(buff, "{")) {
 		arg->type = AT_FUNCTION;
 		buff = parse_table(buff, &arg->invocation, error);
 	} else {
@@ -724,16 +755,16 @@ static struct buffer parse_table(
 				args[argi].value.type = RDT_STRING;
 				args[argi].value.string.len = ident_len;
 				args[argi].value.string.buff = calloc(
-					ident_len + 1,
-					sizeof(char)
-				);
+				                ident_len + 1,
+				                sizeof(char)
+				        );
 				if (!args[argi].value.string.buff) {
 					goto clean;
 				}
 				strncpy(
-					args[argi].value.string.buff,
-					ident_name,
-					ident_len
+				        args[argi].value.string.buff,
+				        ident_name,
+				        ident_len
 				);
 			}
 		} else {

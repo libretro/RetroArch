@@ -78,7 +78,7 @@ int main(
 
 		rarchdb_create_index(&db, index_name, field_name);
 	} else {
-		printf("Unkonwn command %s\n", argv[1]);
+		printf("Unkonwn command %s\n", argv[2]);
 		return 1;
 	}
 	rarchdb_close(&db);

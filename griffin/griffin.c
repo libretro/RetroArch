@@ -62,6 +62,7 @@ PERFORMANCE
 COMPATIBILITY
 ============================================================ */
 #include "../compat/compat.c"
+#include "../libretro-sdk/compat/compat_fnmatch.c"
 
 /*============================================================
 CONFIG FILE
