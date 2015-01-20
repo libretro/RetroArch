@@ -806,7 +806,6 @@ XML
  LIBRETRODB
 ============================================================ */
 #include "../libretrodb/bintree.c"
-#include "../libretrodb/db_parser.c"
 #include "../libretrodb/rarchdb.c"
 #include "../libretrodb/rmsgpack.c"
 #include "../libretrodb/rmsgpack_dom.c"
