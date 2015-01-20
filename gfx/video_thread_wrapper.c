@@ -306,7 +306,6 @@ static void thread_loop(void *data)
          bool alive = false;
          bool focus = false;
          bool has_windowed = true;
-         bool suppress_screensaver = true;
          struct rarch_viewport vp = {0};
 
          slock_lock(thr->frame.lock);
@@ -329,9 +328,6 @@ static void thread_loop(void *data)
          if (thr->driver && thr->driver->has_windowed)
             has_windowed = ret && thr->driver->has_windowed(thr->driver_data);
 
-         if (thr->driver && thr->driver->suppress_screensaver)
-            suppress_screensaver = ret && thr->driver->suppress_screensaver(thr->driver_data, true);
-
          if (thr->driver && thr->driver->viewport_info)
             thr->driver->viewport_info(thr->driver_data, &vp);
 
@@ -339,7 +335,6 @@ static void thread_loop(void *data)
          thr->alive = alive;
          thr->focus = focus;
          thr->has_windowed = has_windowed;
-         thr->suppress_screensaver = suppress_screensaver;
          thr->frame.updated = false;
          thr->vp = vp;
          scond_signal(thr->cond_cmd);
