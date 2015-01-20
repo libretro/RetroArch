@@ -1,4 +1,8 @@
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -555,7 +559,7 @@ static struct buffer parse_string(
 	if (!*error) {
 		value->type = RDT_STRING;
 		value->string.len = (buff.data + buff.offset) - str_start - 1;
-		value->string.buff = calloc(
+		value->string.buff = (char*)calloc(
 		                value->string.len + 1,
 		                sizeof(char)
 		        );
@@ -726,7 +730,7 @@ static struct buffer parse_method_call(
 	}
 
 	invocation->argc = argi;
-	invocation->argv = malloc(sizeof(struct argument) * argi);
+	invocation->argv = (struct argument*)malloc(sizeof(struct argument) * argi);
 	if (!invocation->argv) {
 		raise_enomem(error);
 		goto clean;
@@ -798,7 +802,7 @@ static struct buffer parse_table(
 			if (!*error) {
 				args[argi].value.type = RDT_STRING;
 				args[argi].value.string.len = ident_len;
-				args[argi].value.string.buff = calloc(
+				args[argi].value.string.buff = (char*)calloc(
 				                ident_len + 1,
 				                sizeof(char)
 				        );
@@ -849,7 +853,7 @@ static struct buffer parse_table(
 
 	invocation->func = all_map;
 	invocation->argc = argi;
-	invocation->argv = malloc(sizeof(struct argument) * argi);
+	invocation->argv = (struct argument*)malloc(sizeof(struct argument) * argi);
 	if (!invocation->argv) {
 		raise_enomem(error);
 		goto clean;
@@ -867,8 +871,8 @@ success:
 
 
 void rarchdb_query_free(rarchdb_query * q) {
-	struct query * real_q = q;
 	unsigned i;
+	struct query * real_q = (struct query*)q;
 
 	real_q->ref_count--;
 	if (real_q->ref_count > 0) {
@@ -887,8 +891,7 @@ rarchdb_query * rarchdb_query_compile(
         const char ** error
 ) {
 	struct buffer buff;
-	struct query * q;
-	q = malloc(sizeof(struct query));
+	struct query *q = (struct query*)malloc(sizeof(struct query));
 	if (!q) {
 		goto clean;
 	}
@@ -929,7 +932,7 @@ success:
 }
 
 void rarchdb_query_inc_ref(rarchdb_query * q) {
-	struct query * rq = q;
+	struct query * rq = (struct query*)q;
 	rq->ref_count += 1;
 }
 

@@ -2,7 +2,11 @@
 #define __RARCHDB_H__
 
 #include <stdint.h>
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
+#endif
 #include "rmsgpack_dom.h"
 
 typedef void rarchdb_query;
