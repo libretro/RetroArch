@@ -157,13 +157,6 @@ static int action_ok_load_state(const char *path,
    return 0;
 }
 
-static int action_ok_cheat(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   menu_input_key_start_line(driver.menu, "Input Cheat",
-         label, type, idx, menu_input_st_cheat_callback);
-   return 0;
-}
 
 static int action_ok_save_state(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -448,37 +441,44 @@ static int action_ok_shader_preset_load(const char *path,
 #endif
 }
 
-static int action_ok_shader_preset_save_as(const char *path,
-      const char *label, unsigned type, size_t idx)
+static int action_ok_save_as_generic(const char *desc,
+      const char *label, unsigned type, size_t idx,
+      input_keyboard_line_complete_t cb)
 {
    if (!driver.menu)
       return -1;
 
-   menu_input_key_start_line(driver.menu, "Preset Filename",
-         label, type, idx, menu_input_st_string_callback);
+   menu_input_key_start_line(driver.menu, desc,
+         label, type, idx, cb);
    return 0;
+}
+
+static int action_ok_cheat(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_save_as_generic("Input Cheat",
+         label, type, idx, menu_input_st_cheat_callback);
+}
+
+static int action_ok_shader_preset_save_as(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_save_as_generic("Preset Filename",
+         label, type, idx, menu_input_st_string_callback);
 }
 
 static int action_ok_cheat_file_save_as(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   if (!driver.menu)
-      return -1;
-
-   menu_input_key_start_line(driver.menu, "Cheat Filename",
+   return action_ok_save_as_generic("Cheat Filename",
          label, type, idx, menu_input_st_string_callback);
-   return 0;
 }
 
 static int action_ok_remap_file_save_as(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   if (!driver.menu)
-      return -1;
-
-   menu_input_key_start_line(driver.menu, "Remapping Filename",
+   return action_ok_save_as_generic("Remapping Filename",
          label, type, idx, menu_input_st_string_callback);
-   return 0;
 }
 
 static int action_ok_path_use_directory(const char *path,
