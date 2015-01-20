@@ -927,8 +927,12 @@ static void lakka_context_reset(void *data)
 
    lakka_font_init_first(&gl->font_driver, &lakka->font, gl, fontpath, lakka->font_size);
 
-   fill_pathname_join(lakka->textures[TEXTURE_BG].path, iconpath,
-         "bg.png", sizeof(lakka->textures[TEXTURE_BG].path));
+   if (*g_settings.menu.wallpaper)
+      strlcpy(lakka->textures[TEXTURE_BG].path, g_settings.menu.wallpaper,
+            sizeof(lakka->textures[TEXTURE_BG].path));
+   else
+      fill_pathname_join(lakka->textures[TEXTURE_BG].path, iconpath,
+            "bg.png", sizeof(lakka->textures[TEXTURE_BG].path));
    fill_pathname_join(lakka->textures[TEXTURE_SETTINGS].path, iconpath,
          "settings.png", sizeof(lakka->textures[TEXTURE_SETTINGS].path));
    fill_pathname_join(lakka->textures[TEXTURE_SETTING].path, iconpath,
