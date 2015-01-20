@@ -2353,20 +2353,10 @@ static int deferred_push_content_history_path(void *data, void *userdata,
 static int deferred_push_detect_core_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   const char *exts = NULL;
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   exts = g_extern.core_info ? core_info_list_get_all_extensions(
-         g_extern.core_info) : "";
-
-   menu_entries_parse_list(list, menu_list, path, label,
-         type, MENU_FILE_PLAIN, exts, NULL);
-
-   return 0;
+   return generic_deferred_push(data, userdata, path, label, type,
+         MENU_FILE_PLAIN, 
+         g_extern.core_info ? core_info_list_get_all_extensions(
+         g_extern.core_info) : "");
 }
 
 static int deferred_push_default(void *data, void *userdata,
