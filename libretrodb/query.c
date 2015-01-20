@@ -43,7 +43,7 @@ static void raise_expected_number(
 #else
 	        "%llu::Expected number",
 #endif
-	        where
+	        (unsigned long long)where
 	);
 	*error = tmp_error_buff;
 }
@@ -60,7 +60,7 @@ static void raise_expected_string(
 #else
 	        "%llu::Expected string",
 #endif
-	        where
+	        (unsigned long long)where
 	);
 	*error = tmp_error_buff;
 }
@@ -77,7 +77,7 @@ static void raise_unexpected_eof(
 #else
 	        "%llu::Unexpected EOF",
 #endif
-	        where
+	        (unsigned long long)where
 	);
 	*error = tmp_error_buff;
 }
@@ -105,7 +105,7 @@ static void raise_unknown_function(
 #else
 	                "%llu::Unknown function '",
 #endif
-	                where
+	                (unsigned long long)where
 	        );
 	if (len < (MAX_ERROR_LEN - n - 3)) {
 		strncpy(tmp_error_buff + n, name, len);
@@ -126,7 +126,7 @@ static void raise_expected_eof(
 #else
 	        "%llu::Expected EOF found '%c'",
 #endif
-	        where,
+	        (unsigned long long)where,
 	        found
 	);
 	*error = tmp_error_buff;
@@ -146,7 +146,7 @@ static void raise_unexpected_char(
 #else
 	        "%llu::Expected '%c' found '%c'",
 #endif
-	        where,
+	        (unsigned long long)where,
 	        expected,
 	        found
 	);
