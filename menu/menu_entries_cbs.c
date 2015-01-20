@@ -268,6 +268,22 @@ static int action_ok_file_generic(const char *path,
    return 0;
 }
 
+static int action_ok_shader_preset_parameters(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_file_generic(
+         "", "video_shader_preset_parameters",
+         MENU_SETTING_ACTION, idx);
+}
+
+static int action_ok_shader_parameters(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_file_generic(
+         "", "video_shader_parameters",
+         MENU_SETTING_ACTION, idx);
+}
+
 static int action_ok_push_generic_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -1386,35 +1402,6 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
    return 0;
 }
 
-static int action_ok_shader_preset_parameters(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-#ifdef HAVE_SHADER_MANAGER
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         "",
-         "video_shader_preset_parameters",
-         MENU_SETTING_ACTION,
-         driver.menu->selection_ptr);
-#endif
-
-   return 0;
-}
-
-static int action_ok_shader_parameters(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-#ifdef HAVE_SHADER_MANAGER
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         "",
-         "video_shader_parameters",
-         MENU_SETTING_ACTION,
-         driver.menu->selection_ptr);
-#endif
-
-   return 0;
-}
 
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx)
