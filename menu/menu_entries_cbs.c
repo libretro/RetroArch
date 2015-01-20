@@ -167,29 +167,6 @@ static int action_ok_save_state(const char *path,
    return 0;
 }
 
-static int action_ok_resume_content(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   rarch_main_command(RARCH_CMD_RESUME);
-
-   return 0;
-}
-
-static int action_ok_restart_content(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   rarch_main_command(RARCH_CMD_RESET);
-
-   return -1;
-}
-
-static int action_ok_screenshot(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
-
-   return 0;
-}
 
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -204,12 +181,6 @@ static int action_ok_playlist_entry(const char *path,
 }
 
 
-static int action_ok_shader_apply_changes(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
-   return 0;
-}
 
 static int action_ok_cheat_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -808,29 +779,62 @@ static int action_ok_custom_viewport(const char *path,
 }
 
 
+static int generic_action_ok_command(unsigned cmd)
+{
+   if (!driver.menu)
+      return -1;
+
+   if (!rarch_main_command(cmd))
+      return -1;
+   return 0;
+}
+
 static int action_ok_core_manager_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    return 0;
 }
 
-
-
 static int action_ok_disk_cycle_tray_status(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   if (!driver.menu)
-      return -1;
-
-   rarch_main_command(RARCH_CMD_DISK_EJECT_TOGGLE);
-   return 0;
+   return generic_action_ok_command(RARCH_CMD_DISK_EJECT_TOGGLE);
 }
 
 static int action_ok_quit(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   rarch_main_command(RARCH_CMD_QUIT);
-   return 0;
+   return generic_action_ok_command(RARCH_CMD_QUIT);
+}
+
+static int action_ok_save_new_config(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return generic_action_ok_command(RARCH_CMD_MENU_SAVE_CONFIG);
+}
+
+static int action_ok_resume_content(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return generic_action_ok_command(RARCH_CMD_RESUME);
+}
+
+static int action_ok_restart_content(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return generic_action_ok_command(RARCH_CMD_RESET);
+}
+
+static int action_ok_screenshot(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return generic_action_ok_command(RARCH_CMD_TAKE_SCREENSHOT);
+}
+
+static int action_ok_shader_apply_changes(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return generic_action_ok_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
 }
 
 static int action_ok_lookup_setting(const char *path,
@@ -853,12 +857,6 @@ static int action_cancel_pop_default(const char *path,
    return 0;
 }
 
-static int action_ok_save_new_config(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   rarch_main_command(RARCH_CMD_MENU_SAVE_CONFIG);
-   return 0;
-}
 
 static int action_ok_help(const char *path,
       const char *label, unsigned type, size_t idx)
