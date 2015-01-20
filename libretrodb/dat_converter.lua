@@ -158,7 +158,6 @@ function get_value()
             elspa_rating = t.elspa_rating,
             pegi_rating = t.pegi_rating,
             cero_rating = t.cero_rating,
-            serial = binary(t.serial),
 
             developers = t.developers,
             publisher = t.publisher,
@@ -167,7 +166,7 @@ function get_value()
             crc = binary(unhex(t.rom.crc)),
             md5 = binary(unhex(t.rom.md5)),
             sha1 = binary(unhex(t.rom.sha1)),
-            serial = binary(t.rom.serial),
+            serial = binary(t.serial or t.rom.serial),
         }
     end
 end

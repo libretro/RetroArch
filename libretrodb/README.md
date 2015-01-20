@@ -57,7 +57,7 @@ dat_converter snes.rdb rom.crc snes1.dat snes2.dat
 Some examples of queries you can use with rarchdbtool:
 
 1) Glob pattern matching
-Usecase : Search for all games containing 'Street Fighter' in the 'name' field (glob pattern matching)
+Usecase : Search for all games starting with 'Street Fighter' in the 'name' field (glob pattern matching)
 
 `rarchdb_tool <db file> find "{'name':glob('Street Fighter*')}"`
 
