@@ -18,6 +18,7 @@
 #endif
 
 #include "../../driver.h"
+#include "../../general.h"
 #include "win32_common.h"
 #include <windows.h>
 #include <commdlg.h>
