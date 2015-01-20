@@ -50,25 +50,22 @@ cp -r ${IOSDIR}/en.lproj ${APP_BUNDLE_DIR}
 plistutil -i ${IOSDIR}/RetroArch-Info.plist -o ${APP_BUNDLE_DIR}/Info.plist
 
 if [ -d "${APP_BUNDLE_DIR_MEDIA}" ]; then
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-29-1.png ${APP_BUNDLE_DIR}/AppIcon29x29.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-29-2.png ${APP_BUNDLE_DIR}/AppIcon29x29@2x.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-29-2.png ${APP_BUNDLE_DIR}/AppIcon29x29@2x~ipad.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-29-3.png ${APP_BUNDLE_DIR}/AppIcon29x29@3x.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-29-1.png ${APP_BUNDLE_DIR}/AppIcon29x29~ipad.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-40-2.png ${APP_BUNDLE_DIR}/AppIcon40x40@2x.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-40-2.png ${APP_BUNDLE_DIR}/AppIcon40x40@2x~ipad.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-40-3.png ${APP_BUNDLE_DIR}/AppIcon40x40@3x.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-40-1.png ${APP_BUNDLE_DIR}/AppIcon40x40~ipad.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-50-2.png ${APP_BUNDLE_DIR}/AppIcon50x50@2x~ipad.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-50-1.png ${APP_BUNDLE_DIR}/AppIcon50x50~ipad.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-57-1.png ${APP_BUNDLE_DIR}/AppIcon57x57.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-57-2.png ${APP_BUNDLE_DIR}/AppIcon57x57@2x.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-60-2.png ${APP_BUNDLE_DIR}/AppIcon60x60@2x.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-60-3.png ${APP_BUNDLE_DIR}/AppIcon60x60@3x.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-72-2.png ${APP_BUNDLE_DIR}/AppIcon72x72@2x~ipad.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-72-1.png ${APP_BUNDLE_DIR}/AppIcon72x72~ipad.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-76-2.png ${APP_BUNDLE_DIR}/AppIcon76x76@2x~ipad.png
-   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-76-1.png ${APP_BUNDLE_DIR}/AppIcon76x76~ipad.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-29-1.png ${APP_BUNDLE_DIR}/Icon-Small.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-29-2.png ${APP_BUNDLE_DIR}/Icon-Small@2x.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-29-3.png ${APP_BUNDLE_DIR}/Icon-Small@3x.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-40-1.png ${APP_BUNDLE_DIR}/Icon-Small-40.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-40-2.png ${APP_BUNDLE_DIR}/Icon-Small-40@2x.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-40-3.png ${APP_BUNDLE_DIR}/Icon-Small-40@3x.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-50-1.png ${APP_BUNDLE_DIR}/Icon-Small-50.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-50-2.png ${APP_BUNDLE_DIR}/Icon-Small-50@2x.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-57-1.png ${APP_BUNDLE_DIR}/Icon.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-57-2.png ${APP_BUNDLE_DIR}/Icon@2x.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-60-2.png ${APP_BUNDLE_DIR}/Icon-60@2x.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-60-3.png ${APP_BUNDLE_DIR}/Icon-60@3x.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-72-1.png ${APP_BUNDLE_DIR}/Icon-72.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-72-2.png ${APP_BUNDLE_DIR}/Icon-72@2x.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-76-1.png ${APP_BUNDLE_DIR}/Icon-76.png
+   cp -v ${APP_BUNDLE_DIR_APPICONSET}/Icon-76-2.png ${APP_BUNDLE_DIR}/Icon-76@2x.png
 
    cp -v ${APP_BUNDLE_DIR_LAUNCHIMAGE}/portrait-640x1136.png ${APP_BUNDLE_DIR}/Default-568h@2x.png
    cp -v ${APP_BUNDLE_DIR_LAUNCHIMAGE}/landscape-1024x748.png ${APP_BUNDLE_DIR}/Default-Landscape.png
