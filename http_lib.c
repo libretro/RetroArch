@@ -84,7 +84,7 @@ static int http_read_line (int fd, char *buffer, int max)
    {
       if (read(fd, buffer, 1) != 1)
       {
-         n= -n;
+         n = -n;
          break;
       }
       n++;
@@ -211,7 +211,10 @@ static http_retcode http_query(const char *command, const char *url,
       ret=ERRCONN;
    else
    {
-      if (pfd) *pfd=s;
+      int n;
+
+      if (pfd)
+         *pfd=s;
 
       /* create header */
       if (proxy)
@@ -251,15 +254,15 @@ static http_retcode http_query(const char *command, const char *url,
       else
       {
          /* read result & check */
-         int linelen=http_read_line(s,header,MAXBUF-1);
+         n = http_read_line(s,header,MAXBUF-1);
 #ifdef VERBOSE
          fputs(header,stderr);
          putc('\n',stderr);
 #endif	
-         if (linelen<=0) 
-            ret=ERRRDHD;
+         if (n <= 0) 
+            ret = ERRRDHD;
          else if (sscanf(header, "HTTP/1.%*d %03d", (int*)&ret) != 1) 
-            ret=ERRPAHD;
+            ret = ERRPAHD;
          else if (mode == KEEP_OPEN)
             return ret;
       }
@@ -331,11 +334,8 @@ http_retcode http_get(const char *filename,
       char **pdata, int *plength, char *typebuf) 
 {
    http_retcode ret;
-
-   char header[MAXBUF];
-   char *pc;
-   int  fd;
-   int  n,length=-1;
+   char header[MAXBUF], *pc;
+   int  fd, n, length = -1;
 
    if (!pdata)
       return ERRNULL;
@@ -353,7 +353,7 @@ http_retcode http_get(const char *filename,
    {
       while (1)
       {
-         n=http_read_line(fd,header,MAXBUF-1);
+         n = http_read_line(fd,header,MAXBUF-1);
 #ifdef VERBOSE
          fputs(header,stderr);
          putc('\n',stderr);
@@ -381,13 +381,15 @@ http_retcode http_get(const char *filename,
          return ERRNOLG;
       }
       if (plength)
-         *plength=length;
+         *plength = length;
       if (!(*pdata = (char*)malloc(length)))
       {
          close(fd);
          return ERRMEM;
       }
-      n=http_read_buffer(fd, *pdata, length);
+
+      n = http_read_buffer(fd, *pdata, length);
+
       close(fd);
       if (n != length)
          ret = ERRRDDT;
@@ -422,13 +424,9 @@ http_retcode http_get(const char *filename,
  **/
 http_retcode http_head(const char *filename, int *plength, char *typebuf) 
 {
-   /* mostly copied from http_get : */
    http_retcode ret;
-
-   char header[MAXBUF];
-   char *pc;
-   int  fd;
-   int  n,length=-1;
+   char header[MAXBUF], *pc;
+   int  fd, n, length = -1;
 
    if (plength)
       *plength=0;
@@ -436,6 +434,7 @@ http_retcode http_head(const char *filename, int *plength, char *typebuf)
       *typebuf='\0';
 
    ret=http_query("HEAD", filename, "", KEEP_OPEN, NULL, 0, &fd);
+
    if (ret == 200)
    {
       while (1)
@@ -445,7 +444,7 @@ http_retcode http_head(const char *filename, int *plength, char *typebuf)
          fputs(header, stderr);
          putc('\n', stderr);
 #endif	
-         if (n<=0)
+         if (n <= 0)
          {
             close(fd);
             return ERRRDHD;
@@ -458,17 +457,17 @@ http_retcode http_head(const char *filename, int *plength, char *typebuf)
          /* Try to parse some keywords : */
          /* convert to lower case 'till a : is found or end of string */
          for (pc=header; (*pc != ':' && *pc) ; pc++)
-            *pc=tolower(*pc);
+            *pc = tolower(*pc);
          sscanf(header, "content-length: %d", &length);
 
          if (typebuf)
             sscanf(header, "content-type: %s", typebuf);
       }
       if (plength)
-         *plength=length;
+         *plength = length;
       close(fd);
    }
-   else if (ret>=0)
+   else if (ret >= 0)
       close(fd);
    return ret;
 }
@@ -559,5 +558,5 @@ http_retcode http_parse_url(char *url, char **pfilename)
    fprintf(stderr,"host=(%s), port=%d, filename=(%s)\n",
          http_server, http_port, *pfilename);
 #endif
-   return OK0;
+   return 0;
 }

@@ -48,7 +48,6 @@ typedef enum
   ERR503  = 503, /* Service overloaded */
 
   /* Succesful results */
-  OK0     = 0,   /* successfully parsed */
   OK201   = 201, /* Resource succesfully created */
   OK200   = 200  /* Resource succesfully read */
 
