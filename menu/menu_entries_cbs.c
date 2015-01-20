@@ -239,6 +239,21 @@ static int action_ok_file_generic(const char *path,
    return 0;
 }
 
+#ifdef HAVE_SHADER_MANAGER
+extern size_t hack_shader_pass;
+#endif
+
+static int action_ok_shader_pass(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
+   return action_ok_file_generic(
+         g_settings.video.shader_dir, 
+         "video_shader_pass",
+         type,
+         idx);
+}
+
 static int action_ok_shader_preset_parameters(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -559,14 +574,8 @@ static int action_ok_core_download(const char *path,
 static int action_ok_compressed_archive_push(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   const char *menu_path  = NULL;
-   const char *menu_label = NULL;
-
    if (!driver.menu)
       return -1;
-
-   menu_list_get_last_stack(driver.menu->menu_list,
-         &menu_path, &menu_label, NULL);
 
    menu_list_push_stack(
          driver.menu->menu_list,
@@ -1058,26 +1067,6 @@ static int action_toggle_input_desc(unsigned type, const char *label,
    return 0;
 }
 
-#ifdef HAVE_SHADER_MANAGER
-extern size_t hack_shader_pass;
-#endif
-
-static int action_ok_shader_pass(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   if (!driver.menu)
-      return -1;
-
-   hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         g_settings.video.shader_dir, 
-         "video_shader_pass",
-         type,
-         driver.menu->selection_ptr);
-
-   return 0;
-}
 
 static int action_start_shader_pass(unsigned type, const char *label,
       unsigned action)
