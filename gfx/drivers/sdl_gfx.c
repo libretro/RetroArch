@@ -110,27 +110,29 @@ static void sdl_update_scaler(SDL_Surface *surf, struct scaler_ctx *scaler,
 
 static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font_size)
 {
+   int r, g, b;
    if (!g_settings.video.font_enable)
       return;
 
-   if (font_renderer_create_default(&vid->font_driver, &vid->font,
+   if (!font_renderer_create_default(&vid->font_driver, &vid->font,
             *g_settings.video.font_path ? g_settings.video.font_path : NULL,
             g_settings.video.font_size))
    {
-         int r = g_settings.video.msg_color_r * 255;
-         int g = g_settings.video.msg_color_g * 255;
-         int b = g_settings.video.msg_color_b * 255;
-
-         r = r < 0 ? 0 : (r > 255 ? 255 : r);
-         g = g < 0 ? 0 : (g > 255 ? 255 : g);
-         b = b < 0 ? 0 : (b > 255 ? 255 : b);
-
-         vid->font_r = r;
-         vid->font_g = g;
-         vid->font_b = b;
-   }
-   else
       RARCH_LOG("[SDL]: Could not initialize fonts.\n");
+      return;
+   }
+
+   r = g_settings.video.msg_color_r * 255;
+   g = g_settings.video.msg_color_g * 255;
+   b = g_settings.video.msg_color_b * 255;
+
+   r = (r < 0) ? 0 : (r > 255 ? 255 : r);
+   g = (g < 0) ? 0 : (g > 255 ? 255 : g);
+   b = (b < 0) ? 0 : (b > 255 ? 255 : b);
+
+   vid->font_r = r;
+   vid->font_g = g;
+   vid->font_b = b;
 }
 
 static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
@@ -216,28 +218,30 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
 
 static void sdl_gfx_set_handles(void)
 {
-   // SysWMinfo headers are broken on OSX. :(
+   /* SysWMinfo headers are broken on OSX. */
 #if defined(_WIN32) || defined(HAVE_X11)
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
 
-   if (SDL_GetWMInfo(&info) == 1)
-   {
+   if (SDL_GetWMInfo(&info) != 1)
+      return;
+
 #if defined(_WIN32)
-      driver.display_type  = RARCH_DISPLAY_WIN32;
-      driver.video_display = 0;
-      driver.video_window  = (uintptr_t)info.window;
+   driver.display_type  = RARCH_DISPLAY_WIN32;
+   driver.video_display = 0;
+   driver.video_window  = (uintptr_t)info.window;
 #elif defined(HAVE_X11)
-      driver.display_type  = RARCH_DISPLAY_X11;
-      driver.video_display = (uintptr_t)info.info.x11.display;
-      driver.video_window  = (uintptr_t)info.info.x11.window;
+   driver.display_type  = RARCH_DISPLAY_X11;
+   driver.video_display = (uintptr_t)info.info.x11.display;
+   driver.video_window  = (uintptr_t)info.info.x11.window;
 #endif
-   }
 #endif
 }
 
 static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   unsigned full_x, full_y;
+   sdl_video_t *vid = NULL;
 #ifdef _WIN32
    gfx_set_dwm();
 #endif
@@ -254,14 +258,14 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    else if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
       return NULL;
 
-   sdl_video_t *vid = (sdl_video_t*)calloc(1, sizeof(*vid));
+   vid = (sdl_video_t*)calloc(1, sizeof(*vid));
    if (!vid)
       return NULL;
 
    const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
    rarch_assert(video_info);
-   unsigned full_x = video_info->current_w;
-   unsigned full_y = video_info->current_h;
+   full_x = video_info->current_w;
+   full_y = video_info->current_h;
    RARCH_LOG("[SDL]: Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
    if (!video->fullscreen)
@@ -270,8 +274,9 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    vid->screen = SDL_SetVideoMode(video->width, video->height, 32,
          SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
 
-   // We assume that SDL chooses ARGB8888.
-   // Assuming this simplifies the driver *a ton*.
+   /* We assume that SDL chooses ARGB8888.
+    * Assuming this simplifies the driver *a ton*.
+    */
 
    if (!vid->screen)
    {
@@ -287,6 +292,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    if (input && input_data)
    {
       void *sdl_input = input_sdl.init();
+
       if (sdl_input)
       {
          *input = &input_sdl;
@@ -330,11 +336,11 @@ static void check_window(sdl_video_t *vid)
    SDL_PumpEvents();
    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_QUITMASK))
    {
-      if (event.type == SDL_QUIT)
-      {
-         vid->quitting = true;
-         break;
-      }
+      if (event.type != SDL_QUIT)
+         continue;
+
+      vid->quitting = true;
+      break;
    }
 }
 
