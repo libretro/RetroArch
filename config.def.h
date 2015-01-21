@@ -652,9 +652,9 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/androi
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/ios/latest/";
 #elif defined(_WIN32) && !defined(_XBOX)
 #if defined(__x86_64__)
-static char buildbot_server_url[] = "http://http://buildbot.libretro.com/nightly/win-x86_64/latest/";
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/win-x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__)
-static char buildbot_server_url[] = "http://http://buildbot.libretro.com/nightly/win-x86/latest/";
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/win-x86/latest/";
 #endif
 #else
 static char buildbot_server_url[] = "";
