@@ -595,7 +595,7 @@ static bool psp_focus(void *data)
    return true;
 }
 
-static bool psp_suppress_screensaver(void *data)
+static bool psp_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
    (void)enable;
