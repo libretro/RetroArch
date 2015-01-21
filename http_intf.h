@@ -17,6 +17,7 @@
 #ifndef _HTTP_INTF_H
 #define _HTTP_INTF_H
 
+#include <boolean.h>
 #include "netplay_compat.h"
 #include "http_lib.h"
 
@@ -28,6 +29,19 @@ enum
    HTTP_INTF_DELETE,
    HTTP_INTF_HEAD
 };
+
+/**
+ * http_download_file:
+ * @url                 : URL to file.
+ * @output_dir          : Output directory for new file.
+ * @output_basename     : Output basename  for new file.
+ *
+ * Downloads a file at specified URL.
+ *
+ * Returns: bool (1) if successful, otherwise false (0).
+ **/
+bool http_download_file(char *url, const char *output_dir,
+      const char *output_basename);
 
 int http_intf_command(unsigned mode, char *url);
 

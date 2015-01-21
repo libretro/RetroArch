@@ -18,7 +18,54 @@
 #include <assert.h>
 #include "http_intf.h"
 #include "retroarch_logger.h"
+#include <retro_miscellaneous.h>
 #include "general.h"
+
+#include <file/file_path.h>
+
+/**
+ * http_download_file:
+ * @url                 : URL to file.
+ * @output_dir          : Output directory for new file.
+ * @output_basename     : Output basename  for new file.
+ *
+ * Downloads a file at specified URL.
+ *
+ * Returns: bool (1) if successful, otherwise false (0).
+ **/
+bool http_download_file(char *url, const char *output_dir,
+      const char *output_basename)
+{
+   http_retcode status;
+	int len;
+	FILE * f;
+   char output_path[PATH_MAX_LENGTH];
+	char *urlfilename = NULL, *out;
+
+	http_parse_url(url, &urlfilename);
+
+	status = http_get(urlfilename, &out, &len, NULL);
+
+	if (status < 0)
+   {
+      RARCH_ERR("%i - Failure.\n", status);
+      return false;
+   }
+
+   fill_pathname_join(output_path, output_dir, output_basename,
+         sizeof(output_path));
+
+	f = fopen(output_path, "wb");
+
+   if (!f)
+      return false;
+
+	fwrite(out, 1,len, f);
+
+	fclose(f);
+
+   return true;
+}
 
 int http_intf_command(unsigned mode, char *url)
 {

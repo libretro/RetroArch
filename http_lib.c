@@ -33,7 +33,7 @@
 
 #define VERBOSE
 
-/* http_lib - Http data exchanges mini library.
+/* http_lib - HTTP data exchanges mini library.
 */
 
 #include <stdio.h>
@@ -80,7 +80,7 @@ static int http_read_line (int fd, char *buffer, int max)
    /* not efficient on long lines (multiple unbuffered 1 char reads) */
    int n = 0;
 
-   while (n<max)
+   while (n < max)
    {
       if (read(fd, buffer, 1) != 1)
       {
@@ -269,8 +269,9 @@ static http_retcode http_query(const char *command, const char *url,
             return ret;
       }
    }
-   /* close socket */
-   close(s);
+
+   close(s); /* close socket */
+
    return ret;
 }
 
@@ -305,9 +306,41 @@ http_retcode http_put(const char *filename, const char *data,
    else
       snprintf(header, sizeof(header), "Content-length: %d\015\012%s",length,
             overwrite ? "Control: overwrite=1\015\012" : "");
+
    return http_query("PUT", filename, header, CLOSE, data, length, NULL);
 }
 
+static http_retcode http_read_line_loop(int fd, char *header,
+      int *length, char *typebuf)
+{
+   int n;
+   char *pc;
+
+   while (1)
+   {
+      n = http_read_line(fd, header, MAXBUF-1);
+#ifdef VERBOSE
+      fputs(header, stderr);
+      putc('\n', stderr);
+#endif	
+      if (n <= 0)
+         return ERRRDHD;
+
+      /* Empty line ? (=> end of header) */
+      if (n > 0 && (*header) == '\0')
+         break;
+
+      /* Try to parse some keywords : */
+      /* convert to lower case 'till a : is found or end of string */
+      for (pc=header; (*pc != ':' && *pc) ; pc++)
+         *pc = tolower(*pc);
+      sscanf(header, "content-length: %d", length);
+
+      if (typebuf)
+         sscanf(header, "content-type: %s", typebuf);
+   }
+   return 0;
+}
 
 /**
  * http_get:
@@ -353,35 +386,18 @@ http_retcode http_get(const char *filename,
 
    if (ret == 200)
    {
-      while (1)
+      if ((ret = http_read_line_loop(fd, header, &length, typebuf)) != 0)
       {
-         n = http_read_line(fd,header,MAXBUF-1);
-#ifdef VERBOSE
-         fputs(header,stderr);
-         putc('\n',stderr);
-#endif	
-         if (n <= 0)
-         {
-            close(fd);
-            return ERRRDHD;
-         }
-         /* empty line ? (=> end of header) */
-         if ( n>0 && (*header) == '\0')
-            break;
-         /* try to parse some keywords : */
-         /* convert to lower case 'till a : is found or end of string */
-         for (pc=header; (*pc != ':' && *pc) ; pc++)
-            *pc=tolower(*pc);
-         sscanf(header,"content-length: %d", &length);
-         if (typebuf)
-            sscanf(header,"content-type: %s", typebuf);
+         close(fd);
+         return ret;
       }
 
-      if (length<=0)
+      if (length <= 0)
       {
          close(fd);
          return ERRNOLG;
       }
+
       if (plength)
          *plength = length;
 
@@ -428,8 +444,8 @@ http_retcode http_get(const char *filename,
 http_retcode http_head(const char *filename, int *plength, char *typebuf) 
 {
    http_retcode ret;
-   char header[MAXBUF], *pc;
-   int  fd, n, length = -1;
+   char header[MAXBUF];
+   int  fd, length = -1;
 
    if (plength)
       *plength=0;
@@ -440,32 +456,12 @@ http_retcode http_head(const char *filename, int *plength, char *typebuf)
 
    if (ret == 200)
    {
-      while (1)
+      if ((ret = http_read_line_loop(fd, header, &length, typebuf)) != 0)
       {
-         n = http_read_line(fd, header, MAXBUF-1);
-#ifdef VERBOSE
-         fputs(header, stderr);
-         putc('\n', stderr);
-#endif	
-         if (n <= 0)
-         {
-            close(fd);
-            return ERRRDHD;
-         }
-
-         /* Empty line ? (=> end of header) */
-         if (n > 0 && (*header) == '\0')
-            break;
-
-         /* Try to parse some keywords : */
-         /* convert to lower case 'till a : is found or end of string */
-         for (pc=header; (*pc != ':' && *pc) ; pc++)
-            *pc = tolower(*pc);
-         sscanf(header, "content-length: %d", &length);
-
-         if (typebuf)
-            sscanf(header, "content-type: %s", typebuf);
+         close(fd);
+         return ret;
       }
+
       if (plength)
          *plength = length;
       close(fd);

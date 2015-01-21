@@ -28,6 +28,7 @@
 #include "../retroarch.h"
 #include "../performance.h"
 
+#include "../http_intf.h"
 #include "../input/input_remapping.h"
 
 #ifdef GEKKO
@@ -798,9 +799,14 @@ static int generic_action_ok_command(unsigned cmd)
    return 0;
 }
 
+
 static int action_ok_core_manager_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   char url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/2048_libretro.so.zip";
+
+   if (!http_download_file(url, "/home/squarepusher", "2048_libretro.so.zip"))
+         return -1;
    return 0;
 }
 
