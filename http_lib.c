@@ -339,7 +339,7 @@ static http_retcode http_read_line_loop(int fd, char *header,
       if (typebuf)
          sscanf(header, "content-type: %s", typebuf);
    }
-   return 0;
+   return OK0;
 }
 
 /**
@@ -559,5 +559,5 @@ http_retcode http_parse_url(char *url, char **pfilename)
    fprintf(stderr,"host=(%s), port=%d, filename=(%s)\n",
          http_server, http_port, *pfilename);
 #endif
-   return 0;
+   return OK0;
 }
