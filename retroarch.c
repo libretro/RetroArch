@@ -2930,6 +2930,16 @@ bool rarch_main_command(unsigned cmd)
          }
 #endif
          break;
+      case RARCH_CMD_NETWORK_DEINIT:
+#ifdef HAVE_NETPLAY
+         network_deinit();
+#endif
+         break;
+      case RARCH_CMD_NETWORK_INIT:
+#ifdef HAVE_NETPLAY
+         network_init();
+#endif
+         break;
       case RARCH_CMD_NETPLAY_INIT:
          rarch_main_command(RARCH_CMD_NETPLAY_DEINIT);
 #ifdef HAVE_NETPLAY

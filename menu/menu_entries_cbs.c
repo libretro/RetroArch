@@ -2188,6 +2188,7 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
 
    (void)buf;
 
+
    menu_list_clear(list);
 
    if (g_settings.network.buildbot_url[0] == '\0')
@@ -2205,6 +2206,8 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
    }
 
 #ifdef HAVE_NETPLAY
+   rarch_main_command(RARCH_CMD_NETWORK_INIT);
+
    fill_pathname_join(url, g_settings.network.buildbot_url,
          ".index", sizeof(url));
 

@@ -143,6 +143,10 @@ enum basic_event
    RARCH_CMD_CHEATS_INIT,
    /* Deinitializes cheats. */
    RARCH_CMD_CHEATS_DEINIT,
+   /* Deinitializes network system. */
+   RARCH_CMD_NETWORK_DEINIT,
+   /* Initializes network system. */
+   RARCH_CMD_NETWORK_INIT,
    /* Initializes netplay system. */
    RARCH_CMD_NETPLAY_INIT,
    /* Deinitializes netplay system. */
