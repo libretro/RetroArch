@@ -805,7 +805,7 @@ static int action_ok_core_manager_list(const char *path,
 {
    char url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/2048_libretro.so.zip";
 
-   if (!http_download_file(url, "/home/squarepusher", "2048_libretro.so.zip"))
+   if (!http_download_file(url, g_settings.libretro_info_path, "2048_libretro.so.zip"))
          return -1;
    return 0;
 }

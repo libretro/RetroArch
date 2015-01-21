@@ -37,16 +37,16 @@ bool http_download_file(char *url, const char *output_dir,
       const char *output_basename)
 {
    http_retcode status;
-	int len;
-	FILE * f;
+   int len;
+   FILE *f;
    char output_path[PATH_MAX_LENGTH];
-	char *urlfilename = NULL, *out;
+   char *buf, *urlfilename = NULL;
 
-	http_parse_url(url, &urlfilename);
+   http_parse_url(url, &urlfilename);
 
-	status = http_get(urlfilename, &out, &len, NULL);
+   status = http_get(urlfilename, &buf, &len, NULL);
 
-	if (status < 0)
+   if (status < 0)
    {
       RARCH_ERR("%i - Failure.\n", status);
       return false;
@@ -55,14 +55,14 @@ bool http_download_file(char *url, const char *output_dir,
    fill_pathname_join(output_path, output_dir, output_basename,
          sizeof(output_path));
 
-	f = fopen(output_path, "wb");
+   f = fopen(output_path, "wb");
 
    if (!f)
       return false;
 
-	fwrite(out, 1,len, f);
+   fwrite(buf, 1, len, f);
 
-	fclose(f);
+   fclose(f);
 
    return true;
 }
