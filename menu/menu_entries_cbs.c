@@ -2178,11 +2178,11 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
 #ifdef HAVE_NETPLAY
-   char *buf;
    int len;
    unsigned i;
    char url[PATH_MAX_LENGTH];
 #endif
+   char *buf;
    file_list_t *list      = (file_list_t*)data;
 
    menu_list_clear(list);
@@ -2198,7 +2198,7 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
             "Network not available.", "",
             0, 0);
 #endif
-      return 0;
+      goto exit;
    }
 
 #ifdef HAVE_NETPLAY
@@ -2212,7 +2212,9 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
       return -1;
 
    print_buf_lines(list, buf, len, MENU_FILE_DOWNLOAD_CORE);
+#endif
 
+exit:
    driver.menu->scroll_indices_size = 0;
    menu_entries_build_scroll_indices(list);
    menu_entries_refresh(list);
@@ -2222,7 +2224,6 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
 
    if (buf)
       free(buf);
-#endif
    return 0;
 }
 
