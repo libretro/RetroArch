@@ -78,11 +78,15 @@ bool http_download_file(char *url, const char *output_dir,
    f = fopen(output_path, "wb");
 
    if (!f)
-      return false;
+      goto cleanup;
 
    fwrite(buf, 1, len, f);
 
    fclose(f);
+
+cleanup:
+   if (buf)
+      free(buf);
 
    return true;
 }
