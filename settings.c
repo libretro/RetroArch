@@ -567,7 +567,8 @@ static void config_set_defaults(void)
    g_settings.input.turbo_period = turbo_period;
    g_settings.input.turbo_duty_cycle = turbo_duty_cycle;
 
-   *g_settings.network.buildbot_url = '\0';
+   strlcpy(g_settings.network.buildbot_url, buildbot_server_url,
+         sizeof(g_settings.network.buildbot_url));
 
    g_settings.input.overlay_enable = true;
    g_settings.input.overlay_opacity = 0.7f;

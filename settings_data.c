@@ -5449,7 +5449,7 @@ static bool setting_data_append_list_netplay_options(
          g_settings.network.buildbot_url,
          "core_management_buildbot_url",
          "Core Management Buildbot URL",
-         "",
+         buildbot_server_url, 
          group_info.name,
          subgroup_info.name,
          general_write_handler,

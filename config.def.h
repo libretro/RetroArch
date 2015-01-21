@@ -642,6 +642,24 @@ static const bool input_descriptor_label_show = true;
 
 static const bool input_descriptor_hide_unbound = false;
 
+#if defined(ANDROID)
+#if defined(ANDROID_ARM)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/";
+#elif defined(ANDROID_X86)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86/";
+#endif
+#elif defined(IOS)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/ios/latest/";
+#elif defined(_WIN32) && !defined(_XBOX)
+#if defined(__x86_64__)
+static char buildbot_server_url[] = "http://http://buildbot.libretro.com/nightly/win-x86_64/latest/";
+#elif defined(__i386__) || defined(__i486__) || defined(__i686__)
+static char buildbot_server_url[] = "http://http://buildbot.libretro.com/nightly/win-x86/latest/";
+#endif
+#else
+static char buildbot_server_url[] = "";
+#endif
+
 #ifndef IS_SALAMANDER
 #include "intl/intl.h"
 
