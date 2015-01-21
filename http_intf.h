@@ -21,6 +21,10 @@
 #include "netplay_compat.h"
 #include "http_lib.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum
 {
    HTTP_INTF_ERROR = 0,
@@ -29,6 +33,20 @@ enum
    HTTP_INTF_DELETE,
    HTTP_INTF_HEAD
 };
+
+/**
+ * http_get_file:
+ * @url                 : URL to file.
+ * @buf                 : Buffer.
+ * @len                 : Size of @buf.
+ *
+ * Loads the contents of a file at specified URL into
+ * buffer @buf. Sets length of data buffer as well.
+ *
+ * Returns: HTTP return code on success, otherwise 
+ * negative on failure.
+ **/
+http_retcode http_get_file(char *url, char **buf, int *len);
 
 /**
  * http_download_file:
@@ -44,5 +62,9 @@ bool http_download_file(char *url, const char *output_dir,
       const char *output_basename);
 
 int http_intf_command(unsigned mode, char *url);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

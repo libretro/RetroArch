@@ -24,6 +24,28 @@
 #include <file/file_path.h>
 
 /**
+ * http_get_file:
+ * @url                 : URL to file.
+ * @buf                 : Buffer.
+ * @len                 : Size of @buf.
+ *
+ * Loads the contents of a file at specified URL into
+ * buffer @buf. Sets length of data buffer as well.
+ *
+ * Returns: HTTP return code on success, otherwise 
+ * negative on failure.
+ **/
+http_retcode http_get_file(char *url, char **buf, int *len)
+{
+   char *urlfilename = NULL;
+
+   if (!http_parse_url(url, &urlfilename))
+      return ERRRDDT;
+
+   return http_get(urlfilename, buf, len, NULL);
+}
+
+/**
  * http_download_file:
  * @url                 : URL to file.
  * @output_dir          : Output directory for new file.
@@ -40,11 +62,9 @@ bool http_download_file(char *url, const char *output_dir,
    int len;
    FILE *f;
    char output_path[PATH_MAX_LENGTH];
-   char *buf, *urlfilename = NULL;
+   char *buf;
 
-   http_parse_url(url, &urlfilename);
-
-   status = http_get(urlfilename, &buf, &len, NULL);
+   status = http_get_file(url, &buf, &len);
 
    if (status < 0)
    {
