@@ -2181,8 +2181,27 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
    char *buf;
    int len;
    unsigned i;
-   file_list_t *list      = (file_list_t*)data;
    char url[PATH_MAX_LENGTH];
+#endif
+   file_list_t *list      = (file_list_t*)data;
+
+   menu_list_clear(list);
+
+   if (g_settings.network.buildbot_url[0] == '\0')
+   {
+#ifdef HAVE_NETPLAY
+      menu_list_push(list,
+            "Buildbot URL not configured.", "",
+            0, 0);
+#else
+      menu_list_push(list,
+            "Network not available.", "",
+            0, 0);
+#endif
+      return 0;
+   }
+
+#ifdef HAVE_NETPLAY
    fill_pathname_join(url, g_settings.network.buildbot_url,
          ".index", sizeof(url));
 
@@ -2191,8 +2210,6 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
 
    if (http_get_file(url, &buf, &len) < 0)
       return -1;
-
-   menu_list_clear(list);
 
    print_buf_lines(list, buf, len, MENU_FILE_DOWNLOAD_CORE);
 
