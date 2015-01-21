@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../../general.h"
+#include "../../performance.h"
 #include <gfx/scaler/scaler.h>
 #include "../video_viewport.h"
 #include "../video_monitor.h"
