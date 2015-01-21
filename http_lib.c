@@ -369,8 +369,10 @@ http_retcode http_get(const char *filename,
       char **pdata, int *plength, char *typebuf) 
 {
    http_retcode ret;
-   char header[MAXBUF], *pc;
+   char header[MAXBUF], *pc = NULL;
    int  fd, n, length = -1;
+    
+   (void)pc;
 
    if (!pdata)
       return ERRNULL;

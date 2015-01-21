@@ -48,8 +48,10 @@ typedef enum
   ERR503  = 503, /* Service overloaded */
 
   /* Succesful results */
-  OK201   = 201, /* Resource succesfully created */
-  OK200   = 200  /* Resource succesfully read */
+  OK201   = 201, /* Resource successfully created */
+  OK200   = 200, /* Resource successfully read */
+    
+  OK0     = 0
 
 } http_retcode;
 

@@ -2181,7 +2181,6 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
 {
 #ifdef HAVE_NETPLAY
    int len;
-   unsigned i;
    char url[PATH_MAX_LENGTH];
 #endif
    char *buf = NULL;
