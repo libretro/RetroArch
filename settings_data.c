@@ -3345,7 +3345,7 @@ static bool setting_data_append_list_main_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 #endif
 
-#if 0
+#ifdef HAVE_NETPLAY
    CONFIG_ACTION(
          "core_manager_list",
          "Core Manager",

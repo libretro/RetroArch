@@ -806,9 +806,11 @@ static int action_ok_core_manager_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
 #ifdef HAVE_NETPLAY
-   char url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/2048_libretro.so.zip";
+   char core_path[PATH_MAX_LENGTH];
+   fill_pathname_join(core_path, g_settings.network.buildbot_url,
+         path, sizeof(core_path));
 
-   if (!http_download_file(url, g_settings.libretro_info_path, "2048_libretro.so.zip"))
+   if (!http_download_file(core_path, g_settings.libretro_directory, path))
          return -1;
 #endif
    return 0;
@@ -2130,10 +2132,80 @@ static int deferred_push_disk_options(void *data, void *userdata,
    return 0;
 }
 
+static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
+      unsigned type)
+{
+   int i;
+   char c, *line_start = buf;
+
+   for (i = 0; i < buf_size; i++)
+   {
+      if (*(buf + i) == '\n')
+      {
+         /* Found a line ending, print the line and compute new line_start */
+
+         size_t ln;
+         
+         /* Save the next char  */
+         c = *(buf + i + 1);
+         /* replace with \0 */
+         *(buf + i + 1) = '\0';
+
+         /* We need to strip the newline. */
+         ln = strlen(line_start) - 1;
+         if (line_start[ln] == '\n')
+            line_start[ln] = '\0';
+
+         menu_list_push(list, line_start, "",
+               type, 0);
+
+         /* Restore the saved char */
+         *(buf + i + 1) = c;
+         line_start = buf + i + 1;
+      }
+      else if (*(buf + i) == '\0')
+      {
+         /* The end of the buffer, print the last bit */
+         break;
+      }
+   }
+   /* If the buffer was completely full, and didn't end with a newline, just
+    * ignore the partial last line.
+    */
+}
 
 static int deferred_push_core_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+#ifdef HAVE_NETPLAY
+   char *buf;
+   int len;
+   unsigned i;
+   file_list_t *list      = (file_list_t*)data;
+   char url[PATH_MAX_LENGTH];
+   fill_pathname_join(url, g_settings.network.buildbot_url,
+         ".index", sizeof(url));
+
+   if (!list)
+      return -1;
+
+   if (http_get_file(url, &buf, &len) < 0)
+      return -1;
+
+   menu_list_clear(list);
+
+   print_buf_lines(list, buf, len, MENU_FILE_DOWNLOAD_CORE);
+
+   driver.menu->scroll_indices_size = 0;
+   menu_entries_build_scroll_indices(list);
+   menu_entries_refresh(list);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   if (buf)
+      free(buf);
+#endif
    return 0;
 }
 
@@ -2457,6 +2529,11 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
          else
             return -1;
          break;
+      case MENU_FILE_DOWNLOAD_CORE:
+         cbs->action_ok = action_ok_core_manager_list;
+         break;
+      case MENU_FILE_DOWNLOAD_CORE_INFO:
+         break;
       case MENU_FILE_FONT:
       case MENU_FILE_OVERLAY:
       case MENU_FILE_AUDIOFILTER:
@@ -2606,6 +2683,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          )
       cbs->action_ok = action_ok_push_content_list;
    else if (!strcmp(label, "history_list") ||
+         !strcmp(label, "core_manager_list") ||
          (setting && setting->browser_selection_type == ST_DIR)
          )
       cbs->action_ok = action_ok_push_generic_list;
@@ -2621,8 +2699,6 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_remap_file_save_as;
    else if (!strcmp(label, "core_list"))
       cbs->action_ok = action_ok_core_list;
-   else if (!strcmp(label, "core_manager_list"))
-      cbs->action_ok = action_ok_core_manager_list;
    else if (!strcmp(label, "disk_image_append"))
       cbs->action_ok = action_ok_disk_image_append_list;
    else if (!strcmp(label, "configurations"))
@@ -2705,7 +2781,9 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    cbs->action_deferred_push = deferred_push_default;
 
-   if (!strcmp(label, "history_list"))
+   if (!strcmp(label, "core_manager_list"))
+      cbs->action_deferred_push = deferred_push_core_manager_list;
+   else if (!strcmp(label, "history_list"))
       cbs->action_deferred_push = deferred_push_history_list;
    else if (!strcmp(label, "cheat_file_load"))
       cbs->action_deferred_push = deferred_push_cheat_file_load;
@@ -2743,8 +2821,6 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_disk_options;
    else if (!strcmp(label, "core_list"))
       cbs->action_deferred_push = deferred_push_core_list;
-   else if (!strcmp(label, "core_manager_list"))
-      cbs->action_deferred_push = deferred_push_core_manager_list;
    else if (!strcmp(label, "configurations"))
       cbs->action_deferred_push = deferred_push_configurations;
    else if (!strcmp(label, "video_shader_preset"))
