@@ -39,7 +39,7 @@ http_retcode http_get_file(char *url, char **buf, int *len)
 {
    char *urlfilename = NULL;
 
-   if (!http_parse_url(url, &urlfilename))
+   if (http_parse_url(url, &urlfilename) != 0)
       return ERRRDDT;
 
    return http_get(urlfilename, buf, len, NULL);
