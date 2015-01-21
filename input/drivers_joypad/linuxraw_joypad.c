@@ -59,7 +59,7 @@ static void poll_pad(struct linuxraw_joypad *pad)
             if (event.number < NUM_BUTTONS)
             {
                if (event.value)
-                  BIT32_SET(pad->buttons, event.value);
+                  BIT32_SET(pad->buttons, event.number);
                else
                   BIT32_CLEAR(pad->buttons, event.number);
             }
