@@ -647,6 +647,8 @@ static const bool input_descriptor_hide_unbound = false;
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/";
 #elif defined(ANDROID_X86)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86/";
+#else
+static char buildbot_server_url[] = "";
 #endif
 #elif defined(IOS)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/ios/latest/";
