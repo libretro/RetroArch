@@ -2132,6 +2132,7 @@ static int deferred_push_disk_options(void *data, void *userdata,
    return 0;
 }
 
+#ifdef HAVE_NETPLAY
 static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
       unsigned type)
 {
@@ -2173,6 +2174,7 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
     * ignore the partial last line.
     */
 }
+#endif
 
 static int deferred_push_core_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
@@ -2182,8 +2184,10 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
    unsigned i;
    char url[PATH_MAX_LENGTH];
 #endif
-   char *buf;
+   char *buf = NULL;
    file_list_t *list      = (file_list_t*)data;
+
+   (void)buf;
 
    menu_list_clear(list);
 
