@@ -528,7 +528,6 @@ static int menu_common_iterate(unsigned action)
    const char *label = NULL;
    const char *label_offset = NULL;
    const char *path_offset = NULL;
-   unsigned scroll_speed = 0;
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
             driver.menu->selection_ptr);
@@ -584,27 +583,13 @@ static int menu_common_iterate(unsigned action)
    if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_REFRESH;
 
-   scroll_speed = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
-
    switch (action)
    {
       case MENU_ACTION_UP:
-         if (driver.menu->selection_ptr >= scroll_speed)
-               menu_navigation_set(driver.menu,
-                     driver.menu->selection_ptr - scroll_speed, true);
-         else
-            menu_navigation_set(driver.menu,
-                  menu_list_get_size(driver.menu->menu_list) - 1, true);
-         break;
-
       case MENU_ACTION_DOWN:
-         if (driver.menu->selection_ptr + scroll_speed < (menu_list_get_size(driver.menu->menu_list)))
-            menu_navigation_set(driver.menu,
-                  driver.menu->selection_ptr + scroll_speed, true);
-         else
-            menu_navigation_clear(driver.menu, false);
+         if (cbs && cbs->action_up_or_down)
+            ret = cbs->action_up_or_down(type_offset, label_offset, action);
          break;
-
       case MENU_ACTION_SCROLL_UP:
          menu_navigation_descend_alphabet(driver.menu, &driver.menu->selection_ptr);
          break;

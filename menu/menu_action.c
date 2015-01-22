@@ -48,6 +48,11 @@ static void process_setting_handler(
 
    switch (action)
    {
+      case MENU_ACTION_UP:
+      case MENU_ACTION_DOWN:
+         if (setting->action_up_or_down)
+            setting->action_up_or_down(setting, action);
+         break;
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
          if (setting->action_toggle)

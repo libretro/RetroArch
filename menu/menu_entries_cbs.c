@@ -2546,6 +2546,33 @@ static int deferred_push_default(void *data, void *userdata,
    return 0;
 }
 
+static int action_bind_up_or_down_generic(unsigned type, const char *label,
+      unsigned action)
+{
+   unsigned scroll_speed = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
+
+   switch (action)
+   {
+      case MENU_ACTION_UP:
+         if (driver.menu->selection_ptr >= scroll_speed)
+               menu_navigation_set(driver.menu,
+                     driver.menu->selection_ptr - scroll_speed, true);
+         else
+            menu_navigation_set(driver.menu,
+                  menu_list_get_size(driver.menu->menu_list) - 1, true);
+         break;
+      case MENU_ACTION_DOWN:
+         if (driver.menu->selection_ptr + scroll_speed < (menu_list_get_size(driver.menu->menu_list)))
+            menu_navigation_set(driver.menu,
+                  driver.menu->selection_ptr + scroll_speed, true);
+         else
+            menu_navigation_clear(driver.menu, false);
+         break;
+   }
+
+   return 0;
+}
+
 /* Bind the OK callback function */
 
 static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
@@ -2812,6 +2839,16 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_configurations_list;
 }
 
+
+static void menu_entries_cbs_init_bind_up_or_down(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx)
+{
+   if (!cbs)
+      return;
+
+   cbs->action_up_or_down = action_bind_up_or_down_generic;
+}
+
 static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -2974,6 +3011,7 @@ void menu_entries_cbs_init(void *data,
       menu_entries_cbs_init_bind_cancel(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_start(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx);
+      menu_entries_cbs_init_bind_up_or_down(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_toggle(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx);
    }
