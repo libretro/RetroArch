@@ -3353,11 +3353,13 @@ static bool setting_data_append_list_main_menu_options(
          subgroup_info.name);
 #endif
 
+#ifdef HAVE_LIBRETRODB
    CONFIG_ACTION(
          "database_manager_list",
          "Database Manager",
          group_info.name,
          subgroup_info.name);
+#endif
 
    if (g_settings.history_list_enable)
    {
@@ -5832,6 +5834,7 @@ static bool setting_data_append_list_path_options(
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
+#ifdef HAVE_LIBRETRODB
    CONFIG_DIR(
          g_settings.content_database,
          "content_database_path",
@@ -5846,6 +5849,7 @@ static bool setting_data_append_list_path_options(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
+#endif
 
    CONFIG_DIR(
          g_settings.cheat_database,

@@ -1,3 +1,9 @@
+HAVE_LIBRETRODB = 1
+
+ifeq ($(HAVE_LIBRETRODB), 1)
+	DEFINES += -DHAVE_LIBRETRODB
+endif
+
 ifeq ($(HAVE_FBO), 1)
    DEFINES += -DHAVE_FBO
 endif
@@ -165,11 +171,13 @@ OBJ += frontend/frontend.o \
 
 # LibretroDB
 
+ifeq ($(HAVE_LIBRETRODB), 1)
 OBJ += libretrodb/bintree.o \
 		 libretrodb/rarchdb.o \
 		 libretrodb/query.o \
 		 libretrodb/rmsgpack.o \
 		 libretrodb/rmsgpack_dom.o
+endif
 
 # Miscellaneous
 

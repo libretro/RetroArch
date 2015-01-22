@@ -14,6 +14,8 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define HAVE_LIBRETRODB
+
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #define HAVE_SHADERS
 #endif
@@ -805,11 +807,13 @@ XML
 /*============================================================
  LIBRETRODB
 ============================================================ */
+#ifdef HAVE_LIBRETRODB
 #include "../libretrodb/bintree.c"
 #include "../libretrodb/rarchdb.c"
 #include "../libretrodb/rmsgpack.c"
 #include "../libretrodb/rmsgpack_dom.c"
 #include "../libretrodb/query.c"
+#endif
 
 #ifdef __cplusplus
 }
