@@ -31,6 +31,11 @@
 #ifdef HAVE_NETPLAY
 #include "../http_intf.h"
 #endif
+
+#ifdef HAVE_LIBRETRODB
+#include "../libretrodb/rarchdb.h"
+#endif
+
 #include "../input/input_remapping.h"
 
 #ifdef GEKKO
@@ -529,6 +534,13 @@ static int action_ok_core_load_deferred(const char *path,
    return -1;
 }
 
+static int action_ok_database_manager_list_deferred(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   RARCH_LOG("path: %s, label: %s\n", path, label);
+   return 0;
+}
+
 static int action_ok_core_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -692,6 +704,22 @@ static int action_ok_file_load_with_detect_core(const char *path,
             0, driver.menu->selection_ptr);
 
    return ret;
+}
+
+static int action_ok_database_manager_list(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   char rdb_path[PATH_MAX_LENGTH];
+
+   fill_pathname_join(rdb_path, g_settings.content_database,
+         path, sizeof(rdb_path));
+
+   menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         rdb_path,
+         "deferred_database_manager_list",
+         0, driver.menu->selection_ptr);
+   return 0;
 }
 
 static int menu_action_setting_set_current_string_path(
@@ -1573,6 +1601,62 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
 
    menu_list_sort_on_alt(list);
 
+   driver.menu->scroll_indices_size = 0;
+   menu_entries_build_scroll_indices(list);
+   menu_entries_refresh(list);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
+}
+
+static int deferred_push_database_manager_list_deferred(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+#ifdef HAVE_LIBRETRODB
+	int rv;
+	struct rarchdb db;
+	struct rarchdb_cursor cur;
+	struct rmsgpack_dom_value item;
+#endif
+   unsigned i;
+   size_t list_size = 0;
+   const core_info_t *info = NULL;
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_list_clear(list);
+#ifdef HAVE_LIBRETRODB
+   if ((rv = rarchdb_open(path, &db)) != 0)
+      return -1;
+
+   if ((rv = rarchdb_cursor_open(&db, &cur, NULL)) != 0)
+      return -1;
+
+   while (rarchdb_cursor_read_item(&cur, &item) == 0)
+   {
+      if (item.type != RDT_MAP)
+         continue;
+
+		for (i = 0; i < item.map.len; i++)
+      {
+         struct rmsgpack_dom_value *key = &item.map.items[i].key;
+         struct rmsgpack_dom_value *val = &item.map.items[i].value;
+
+         if (!strcmp(key->string.buff, "description"))
+         {
+            menu_list_push(list, val->string.buff, "",
+                  MENU_FILE_RDB_ENTRY, 0);
+            break;
+         }
+		}
+   }
+#endif
+   menu_list_sort_on_alt(list);
    driver.menu->scroll_indices_size = 0;
    menu_entries_build_scroll_indices(list);
    menu_entries_refresh(list);
@@ -2566,6 +2650,12 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
       case MENU_FILE_DOWNLOAD_CORE_INFO:
          break;
       case MENU_FILE_RDB:
+         if (!strcmp(menu_label, "deferred_database_manager_list"))
+            cbs->action_ok = action_ok_database_manager_list_deferred;
+         else if (!strcmp(menu_label, "database_manager_list"))
+            cbs->action_ok = action_ok_database_manager_list;
+         else
+            return -1;
          break;
       case MENU_FILE_FONT:
       case MENU_FILE_OVERLAY:
@@ -2833,6 +2923,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_category;
    else if (!strcmp(label, "deferred_core_list"))
       cbs->action_deferred_push = deferred_push_core_list_deferred;
+   else if (!strcmp(label, "deferred_database_manager_list"))
+      cbs->action_deferred_push = deferred_push_database_manager_list_deferred;
    else if (!strcmp(label, "core_information"))
       cbs->action_deferred_push = deferred_push_core_information;
    else if (!strcmp(label, "performance_counters"))
