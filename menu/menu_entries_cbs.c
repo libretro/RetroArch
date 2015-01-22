@@ -244,19 +244,11 @@ static int action_ok_shader_pass(const char *path,
          idx);
 }
 
-static int action_ok_shader_preset_parameters(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   return action_ok_file_generic(
-         "", "video_shader_preset_parameters",
-         MENU_SETTING_ACTION, idx);
-}
-
 static int action_ok_shader_parameters(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    return action_ok_file_generic(
-         "", "video_shader_parameters",
+         "", label,
          MENU_SETTING_ACTION, idx);
 }
 
@@ -2784,10 +2776,10 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_cheat_file;
    else if (!strcmp(label, "remap_file_load"))
       cbs->action_ok = action_ok_remap_file;
-   else if (!strcmp(label, "video_shader_parameters"))
+   else if (!strcmp(label, "video_shader_parameters") ||
+         !strcmp(label, "video_shader_preset_parameters")
+         )
       cbs->action_ok = action_ok_shader_parameters;
-   else if (!strcmp(label, "video_shader_preset_parameters"))
-      cbs->action_ok = action_ok_shader_preset_parameters;
    else if (
          !strcmp(label, "Shader Options") ||
          !strcmp(label, "Input Options") ||
