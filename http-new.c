@@ -45,7 +45,7 @@ int main()
 	while (!http_poll(http3, NULL, NULL)) {}
 	
 	size_t q;
-	char*w=http_data(http3,&q,false);
+	char*w=(char*)http_data(http3,&q,false);
 	printf("%.*s\n",(int)256,w);
 	//struct http* http1=http_new("http://floating.muncher.se:22/");
 	//struct http* http2=http_new("http://floating.muncher.se/sepulcher/");
@@ -218,7 +218,7 @@ static ssize_t http_recv(int fd, bool * error, uint8_t* data, size_t maxlen)
 
 struct http* http_new(const char * url)
 {
-	char* urlcopy=malloc(strlen(url)+1);
+	char* urlcopy=(char*)malloc(strlen(url)+1);
 	char* domain;
 	int port;
 	char* location;
@@ -255,7 +255,7 @@ struct http* http_new(const char * url)
 	
 	free(urlcopy);
 	
-	state=malloc(sizeof(struct http));
+	state=(struct http*)malloc(sizeof(struct http));
 	state->fd=fd;
 	state->status=-1;
 	state->data=NULL;
@@ -265,7 +265,7 @@ struct http* http_new(const char * url)
 	state->pos=0;
 	state->len=0;
 	state->buflen=512;
-	state->data=malloc(state->buflen);
+	state->data=(char*)malloc(state->buflen);
 	return state;
 	
 fail:
@@ -287,19 +287,19 @@ bool http_poll(struct http* state, size_t* progress, size_t* total)
 	
 	if (state->part < p_body)
 	{
-		newlen=http_recv(state->fd, &state->error, state->data + state->pos, state->buflen - state->pos);
-		//newlen=http_recv(state->fd, &state->error, state->data + state->pos, 1);
+		newlen=http_recv(state->fd, &state->error, (uint8_t*)state->data + state->pos, state->buflen - state->pos);
+		//newlen=http_recv(state->fd, &state->error, (uint8_t*)state->data + state->pos, 1);
 		if (newlen<0) goto fail;
 		if (state->pos + newlen >= state->buflen - 64)
 		{
 			state->buflen *= 2;
-			state->data = realloc(state->data, state->buflen);
+			state->data = (char*)realloc(state->data, state->buflen);
 		}
 		state->pos += newlen;
 		while (state->part < p_body)
 		{
 			char * dataend = state->data + state->pos;
-			char * lineend = memchr(state->data, '\n', state->pos);
+			char * lineend = (char*)memchr(state->data, '\n', state->pos);
 			if (!lineend) break;
 			*lineend='\0';
 			if (lineend != state->data && lineend[-1]=='\r') lineend[-1]='\0';
@@ -342,8 +342,8 @@ bool http_poll(struct http* state, size_t* progress, size_t* total)
 	{
 		if (!newlen)
 		{
-			newlen=http_recv(state->fd, &state->error, state->data + state->pos, state->buflen - state->pos);
-			//newlen=http_recv(state->fd, &state->error, state->data + state->pos, 1);
+			newlen=http_recv(state->fd, &state->error, (uint8_t*)state->data + state->pos, state->buflen - state->pos);
+			//newlen=http_recv(state->fd, &state->error, (uint8_t*)state->data + state->pos, 1);
 			if (newlen<0)
 			{
 				if (state->bodytype==t_full) state->part=p_done;
@@ -353,7 +353,7 @@ bool http_poll(struct http* state, size_t* progress, size_t* total)
 			if (state->pos + newlen >= state->buflen - 64)
 			{
 				state->buflen *= 2;
-				state->data = realloc(state->data, state->buflen);
+				state->data = (char*)realloc(state->data, state->buflen);
 			}
 		}
 		
@@ -368,7 +368,7 @@ parse_again:
 					//len=start of chunk including \r\n
 					//pos=end of data
 					char * fullend = state->data + state->pos;
-					char * end=memchr(state->data + state->len + 2, '\n', state->pos - state->len - 2);
+					char * end = (char*)memchr(state->data + state->len + 2, '\n', state->pos - state->len - 2);
 					if (end)
 					{
 						size_t chunklen = strtoul(state->data+state->len, NULL, 16);
@@ -444,7 +444,7 @@ uint8_t* http_data(struct http* state, size_t* len, bool accept_error)
 		return NULL;
 	}
 	if (len) *len=state->len;
-	return state->data;
+	return (uint8_t*)state->data;
 }
 
 void http_delete(struct http* state)
