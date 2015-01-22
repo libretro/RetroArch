@@ -12,7 +12,7 @@ struct http* http_new(const char * url);
 //You can use this to call http_poll only when something will happen; select() it for reading.
 int http_fd(struct http* state);
 
-//Returns true if it's done. 'total' will be SIZE_MAX if it's not known.
+//Returns true if it's done, or if something broke. 'total' will be 0 if it's not known.
 bool http_poll(struct http* state, size_t* progress, size_t* total);
 
 //200, 404, or whatever.
@@ -31,12 +31,22 @@ void http_delete(struct http* state);
 #include<stdio.h>
 int main()
 {
-	struct http* http3=http_new("http://www.wikipedia.org/");
+	struct http* http1;
+	struct http* http2;
+	struct http* http3;
+	size_t pos=0; size_t tot=0;
+	http1=http_new("http://buildbot.libretro.com/nightly/win-x86/latest/mednafen_psx_libretro.dll.zip");
+	while (!http_poll(http1, &pos, &tot))
+	{
+		printf("%.9lu / %.9lu        \r",pos,tot);
+	}
+	
+	http3=http_new("http://www.wikipedia.org/");
 	while (!http_poll(http3, NULL, NULL)) {}
 	
 	size_t q;
 	char*w=http_data(http3,&q,false);
-	printf("%.*s\n",(int)q,w);
+	printf("%.*s\n",(int)256,w);
 	//struct http* http1=http_new("http://floating.muncher.se:22/");
 	//struct http* http2=http_new("http://floating.muncher.se/sepulcher/");
 	//struct http* http3=http_new("http://www.wikipedia.org/");
@@ -46,6 +56,8 @@ int main()
 	//printf("%i %i %i %p %s %s\n",
 	//http_status(http1),http_status(http2),http_status(http3),
 	//(char*)http_data(http1, NULL, false),http_data(http2, NULL, true),http_data(http3, NULL, true));
+	http_delete(http1);
+	http_delete(http3);
 }
 ////////////////////////////////
 //http.c
@@ -278,7 +290,6 @@ bool http_poll(struct http* state, size_t* progress, size_t* total)
 		newlen=http_recv(state->fd, &state->error, state->data + state->pos, state->buflen - state->pos);
 		//newlen=http_recv(state->fd, &state->error, state->data + state->pos, 1);
 		if (newlen<0) goto fail;
-		if (newlen==0) return false;
 		if (state->pos + newlen >= state->buflen - 64)
 		{
 			state->buflen *= 2;
@@ -339,7 +350,6 @@ bool http_poll(struct http* state, size_t* progress, size_t* total)
 				else goto fail;
 				newlen=0;
 			}
-			if (newlen==0) return false;
 			if (state->pos + newlen >= state->buflen - 64)
 			{
 				state->buflen *= 2;
@@ -404,6 +414,14 @@ parse_again:
 			if (state->pos > state->len) goto fail;
 		}
 	}
+	
+	if (progress) *progress = state->pos;
+	if (total)
+	{
+		if (state->bodytype == t_len) *total=state->len;
+		else *total=0;
+	}
+	
 	return (state->part==p_done);
 	
 fail:
@@ -420,7 +438,7 @@ int http_status(struct http* state)
 
 uint8_t* http_data(struct http* state, size_t* len, bool accept_error)
 {
-	if (!accept_error && state->error)
+	if (!accept_error && (state->error || state->status<200 || state->status>299))
 	{
 		if (len) *len=0;
 		return NULL;
