@@ -508,7 +508,6 @@ static int action_ok_core_load_deferred(const char *path,
 static int action_ok_database_manager_list_deferred(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   RARCH_LOG("path: %s, label: %s\n", path, label);
    return 0;
 }
 
@@ -590,14 +589,22 @@ static int action_ok_directory_push(const char *path,
          &menu_path, &menu_label, NULL);
 
    fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         cat_path,
-         menu_label,
-         type,
-         driver.menu->selection_ptr);
 
-   return 0;
+   return action_ok_file_generic(cat_path, menu_label, type, idx);
+}
+
+static int action_ok_database_manager_list(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   char rdb_path[PATH_MAX_LENGTH];
+
+   fill_pathname_join(rdb_path, g_settings.content_database,
+         path, sizeof(rdb_path));
+
+   return action_ok_file_generic(
+         rdb_path,
+         "deferred_database_manager_list",
+         0, driver.menu->selection_ptr);
 }
 
 static int action_ok_config_load(const char *path,
@@ -677,21 +684,6 @@ static int action_ok_file_load_with_detect_core(const char *path,
    return ret;
 }
 
-static int action_ok_database_manager_list(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   char rdb_path[PATH_MAX_LENGTH];
-
-   fill_pathname_join(rdb_path, g_settings.content_database,
-         path, sizeof(rdb_path));
-
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         rdb_path,
-         "deferred_database_manager_list",
-         0, driver.menu->selection_ptr);
-   return 0;
-}
 
 static int menu_action_setting_set_current_string_path(
       rarch_setting_t *setting, const char *dir, const char *path)
