@@ -239,9 +239,7 @@ static int action_ok_shader_pass(const char *path,
    hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
    return action_ok_file_generic(
          g_settings.video.shader_dir, 
-         "video_shader_pass",
-         type,
-         idx);
+         label, type, idx);
 }
 
 static int action_ok_shader_parameters(const char *path,
@@ -271,8 +269,7 @@ static int action_ok_shader_preset(const char *path,
 {
    return action_ok_file_generic(
          g_settings.video.shader_dir, 
-         "video_shader_preset",
-         type, idx);
+         label, type, idx);
 }
 
 static int action_ok_push_content_list(const char *path,
