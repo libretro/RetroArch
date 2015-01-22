@@ -156,24 +156,6 @@ static void common_load_content(bool persist)
 }
 
 
-static int action_ok_load_state(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   rarch_main_command(RARCH_CMD_LOAD_STATE);
-   rarch_main_command(RARCH_CMD_RESUME);
-
-   return 0;
-}
-
-
-static int action_ok_save_state(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   rarch_main_command(RARCH_CMD_SAVE_STATE);
-   rarch_main_command(RARCH_CMD_RESUME);
-
-   return 0;
-}
 
 
 static int action_ok_playlist_entry(const char *path,
@@ -827,6 +809,23 @@ static int generic_action_ok_command(unsigned cmd)
    if (!rarch_main_command(cmd))
       return -1;
    return 0;
+}
+
+static int action_ok_load_state(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   if (generic_action_ok_command(RARCH_CMD_LOAD_STATE) == -1)
+      return -1;
+   return generic_action_ok_command(RARCH_CMD_RESUME);
+}
+
+
+static int action_ok_save_state(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   if (generic_action_ok_command(RARCH_CMD_SAVE_STATE) == -1)
+      return -1;
+   return generic_action_ok_command(RARCH_CMD_RESUME);
 }
 
 
