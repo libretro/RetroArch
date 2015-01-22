@@ -92,37 +92,39 @@ static inline void sdl_tex_zero(sdl2_tex_t *t)
 static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
                           unsigned font_size)
 {
+   int i, r, g, b;
+   SDL_Color colors[256];
+   SDL_Surface *tmp;
+   SDL_Palette *pal = NULL;
+   const struct font_atlas *atlas = NULL;
+
    if (!g_settings.video.font_enable)
       return;
 
-   if (font_renderer_create_default(&vid->font_driver, &vid->font_data,
+   if (!font_renderer_create_default(&vid->font_driver, &vid->font_data,
                                     *font_path ? font_path : NULL, font_size))
-   {
-         int r = g_settings.video.msg_color_r * 255;
-         int g = g_settings.video.msg_color_g * 255;
-         int b = g_settings.video.msg_color_b * 255;
-
-         r = r < 0 ? 0 : (r > 255 ? 255 : r);
-         g = g < 0 ? 0 : (g > 255 ? 255 : g);
-         b = b < 0 ? 0 : (b > 255 ? 255 : b);
-
-         vid->font_r = r;
-         vid->font_g = g;
-         vid->font_b = b;
-   }
-   else
    {
       RARCH_WARN("[SDL]: Could not initialize fonts.\n");
       return;
    }
 
-   const struct font_atlas *atlas = vid->font_driver->get_atlas(vid->font_data);
+   r = g_settings.video.msg_color_r * 255;
+   g = g_settings.video.msg_color_g * 255;
+   b = g_settings.video.msg_color_b * 255;
 
-   SDL_Surface *tmp = SDL_CreateRGBSurfaceFrom(atlas->buffer, atlas->width,
-                                               atlas->height, 8, atlas->width,
-                                               0, 0, 0, 0);
-   SDL_Color colors[256];
-   int i;
+   r = (r < 0) ? 0 : (r > 255 ? 255 : r);
+   g = (g < 0) ? 0 : (g > 255 ? 255 : g);
+   b = (b < 0) ? 0 : (b > 255 ? 255 : b);
+
+   vid->font_r = r;
+   vid->font_g = g;
+   vid->font_b = b;
+
+   atlas = vid->font_driver->get_atlas(vid->font_data);
+
+   tmp = SDL_CreateRGBSurfaceFrom(atlas->buffer, atlas->width,
+         atlas->height, 8, atlas->width,
+         0, 0, 0, 0);
 
    for (i = 0; i < 256; ++i)
    {
@@ -130,7 +132,7 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
       colors[i].a = 255;
    }
 
-   SDL_Palette *pal = SDL_AllocPalette(256);
+   pal = SDL_AllocPalette(256);
    SDL_SetPaletteColors(pal, colors, 0, 256);
    SDL_SetSurfacePalette(tmp, pal);
    SDL_SetColorKey(tmp, SDL_TRUE, 0);
@@ -154,16 +156,15 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
 
 static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
 {
+   int x, y, delta_x, delta_y;
    unsigned width  = vid->vp.width;
    unsigned height = vid->vp.height;
-
-   int x, y, delta_x, delta_y;
 
    if (!vid->font_data)
       return;
 
-   x = g_settings.video.msg_pos_x * width;
-   y = (1.0f - g_settings.video.msg_pos_y) * height;
+   x       = g_settings.video.msg_pos_x * width;
+   y       = (1.0f - g_settings.video.msg_pos_y) * height;
    delta_x = 0;
    delta_y = 0;
 
@@ -171,6 +172,7 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
 
    for (; *msg; msg++)
    {
+      int off_x, off_y, tex_x, tex_y;
       const struct font_glyph *gly = vid->font_driver->get_glyph(vid->font_data, (uint8_t)*msg);
 
       if (!gly)
@@ -179,10 +181,10 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
       if (!gly)
          continue;
 
-      int off_x  = gly->draw_offset_x;
-      int off_y  = gly->draw_offset_y;
-      int tex_x  = gly->atlas_offset_x;
-      int tex_y  = gly->atlas_offset_y;
+      off_x  = gly->draw_offset_x;
+      off_y  = gly->draw_offset_y;
+      tex_x  = gly->atlas_offset_x;
+      tex_y  = gly->atlas_offset_y;
 
       SDL_Rect srcrect = {
          tex_x, tex_y,
@@ -203,23 +205,23 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
 
 static void sdl2_gfx_set_handles(sdl2_video_t *vid)
 {
-   // SysWMinfo headers are broken on OSX. :(
+   /* SysWMinfo headers are broken on OSX. */
 #if defined(_WIN32) || defined(HAVE_X11)
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
 
-   if (SDL_GetWindowWMInfo(vid->window, &info) == 1)
-   {
+   if (SDL_GetWindowWMInfo(vid->window, &info) != 1)
+      return;
+
 #if defined(_WIN32)
-      driver.display_type  = RARCH_DISPLAY_WIN32;
-      driver.video_display = 0;
-      driver.video_window  = (uintptr_t)info.info.win.window;
+   driver.display_type  = RARCH_DISPLAY_WIN32;
+   driver.video_display = 0;
+   driver.video_window  = (uintptr_t)info.info.win.window;
 #elif defined(HAVE_X11)
-      driver.display_type  = RARCH_DISPLAY_X11;
-      driver.video_display = (uintptr_t)info.info.x11.display;
-      driver.video_window  = (uintptr_t)info.info.x11.window;
+   driver.display_type  = RARCH_DISPLAY_X11;
+   driver.video_display = (uintptr_t)info.info.x11.display;
+   driver.video_window  = (uintptr_t)info.info.x11.window;
 #endif
-   }
 #endif
 }
 
@@ -359,6 +361,8 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
 
 static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   int i;
+   unsigned flags;
 #ifdef _WIN32
    gfx_set_dwm();
 #endif
@@ -366,8 +370,6 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
 #ifdef HAVE_X11
    XInitThreads();
 #endif
-
-   int i;
 
    if (SDL_WasInit(0) == 0)
    {
@@ -406,7 +408,6 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
    if (!video->fullscreen)
       RARCH_LOG("[SDL]: Creating window @ %ux%u\n", video->width, video->height);
 
-   unsigned flags;
 
    if (video->fullscreen)
    {
@@ -762,7 +763,7 @@ video_driver_t video_sdl2 = {
    sdl2_gfx_viewport_info,
    sdl2_gfx_read_viewport,
 #ifdef HAVE_OVERLAY
-    NULL, //void (*overlay_interface)(void *data, const video_overlay_interface_t **iface);
+    NULL,
 #endif
     sdl2_gfx_poke_interface
 };
