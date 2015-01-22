@@ -33,6 +33,10 @@ int main()
 {
 	struct http* http3=http_new("http://www.wikipedia.org/");
 	while (!http_poll(http3, NULL, NULL)) {}
+	
+	size_t q;
+	char*w=http_data(http3,&q,false);
+	printf("%.*s\n",(int)q,w);
 	//struct http* http1=http_new("http://floating.muncher.se:22/");
 	//struct http* http2=http_new("http://floating.muncher.se/sepulcher/");
 	//struct http* http3=http_new("http://www.wikipedia.org/");
@@ -81,10 +85,19 @@ int main()
 struct http {
 	int fd;
 	int status;
-	uint8_t* data;
+	
+	char part;
+	char bodytype;
+	bool error;
+	//char padding[5];
+	
 	size_t pos;
 	size_t len;
+	size_t buflen;
+	char * data;
 };
+enum { p_header_top, p_header, p_body, p_body_chunklen, p_done, p_error };
+enum { t_full, t_len, t_chunk };
 
 static bool http_parse_url(char * url, char* * domain, int* port, char* * location)
 {
@@ -234,6 +247,13 @@ struct http* http_new(const char * url)
 	state->fd=fd;
 	state->status=-1;
 	state->data=NULL;
+	state->part=p_header_top;
+	state->bodytype=t_full;
+	state->error=false;
+	state->pos=0;
+	state->len=0;
+	state->buflen=512;
+	state->data=malloc(state->buflen);
 	return state;
 	
 fail:
@@ -249,171 +269,147 @@ int http_fd(struct http* state)
 
 bool http_poll(struct http* state, size_t* progress, size_t* total)
 {
-	//TODO: these variables belong in struct http - they're here for now because that's easier.
-	enum { p_header_top, p_header, p_body, p_body_chunklen, p_done, p_error };
-	enum { t_full, t_len, t_chunk };
-	char part = p_header_top;
-	char bodytype = t_full;
-	bool error=false;
-	size_t pos=0;
-	size_t len=0;
-	size_t buflen=512;
-	char * data=malloc(buflen);
-	//end of struct http
+	ssize_t newlen=0;
 	
-	ssize_t newlen;
-again:
-	newlen=0;
+	if (state->error) goto fail;
 	
-	if (part < p_body)
+	if (state->part < p_body)
 	{
-		//newlen=http_recv(state->fd, &error, data+pos, buflen-pos);
-		newlen=http_recv(state->fd, &error, data+pos, 1);
+		newlen=http_recv(state->fd, &state->error, state->data + state->pos, state->buflen - state->pos);
+		//newlen=http_recv(state->fd, &state->error, state->data + state->pos, 1);
 		if (newlen<0) goto fail;
-		if (newlen==0) goto again;
-		if (pos+newlen >= buflen-64)
+		if (newlen==0) return false;
+		if (state->pos + newlen >= state->buflen - 64)
 		{
-			buflen*=2;
-			data=realloc(data, buflen);
+			state->buflen *= 2;
+			state->data = realloc(state->data, state->buflen);
 		}
-		pos+=newlen;
-		while (part < p_body)
+		state->pos += newlen;
+		while (state->part < p_body)
 		{
-			char * dataend=data+pos;
-//printf("%li\n",pos);
-			char * lineend=memchr(data, '\n', pos);
-//printf("%i '%s'\n",pos,data);
+			char * dataend = state->data + state->pos;
+			char * lineend = memchr(state->data, '\n', state->pos);
 			if (!lineend) break;
 			*lineend='\0';
-			if (lineend!=data && lineend[-1]=='\r') lineend[-1]='\0';
+			if (lineend != state->data && lineend[-1]=='\r') lineend[-1]='\0';
 			
-//puts(data);
-			if (part==p_header_top)
+			if (state->part == p_header_top)
 			{
-				if (strncmp(data, "HTTP/1.", strlen("HTTP/1."))!=0) goto fail;
-				state->status=strtoul(data+strlen("HTTP/1.1 "), NULL, 10);
-				part=p_header;
+				if (strncmp(state->data, "HTTP/1.", strlen("HTTP/1."))!=0) goto fail;
+				state->status=strtoul(state->data + strlen("HTTP/1.1 "), NULL, 10);
+				state->part = p_header;
 			}
 			else
 			{
-				if (!strncmp(data, "Content-Length: ", strlen("Content-Length: ")))
+				if (!strncmp(state->data, "Content-Length: ", strlen("Content-Length: ")))
 				{
-					bodytype=t_len;
-					len=strtol(data+strlen("Content-Length: "), NULL, 10);
+					state->bodytype = t_len;
+					state->len = strtol(state->data + strlen("Content-Length: "), NULL, 10);
 				}
-				if (!strcmp(data, "Transfer-Encoding: chunked"))
+				if (!strcmp(state->data, "Transfer-Encoding: chunked"))
 				{
-					bodytype=t_chunk;
+					state->bodytype=t_chunk;
 				}
 				//TODO: save headers somewhere
-				if (*data=='\0')
+				if (state->data[0]=='\0')
 				{
-					part=p_body;
-					if (bodytype==t_chunk) part=p_body_chunklen;
+					state->part = p_body;
+					if (state->bodytype == t_chunk) state->part = p_body_chunklen;
 				}
 			}
 			
-			memmove(data, lineend+1, dataend-(lineend+1));
-			pos=(dataend-(lineend+1));
-//printf("[%s] %li\n",data,pos);
+			memmove(state->data, lineend+1, dataend-(lineend+1));
+			state->pos = (dataend-(lineend+1));
 		}
-		if (part>=p_body)
+		if (state->part >= p_body)
 		{
-			newlen=pos;
-			pos=0;
+			newlen = state->pos;
+			state->pos = 0;
 		}
 	}
-	if (part >= p_body && part < p_done)
+	if (state->part >= p_body && state->part < p_done)
 	{
-//printf("%li/%li %.*s\n",pos,len,pos,data);
 		if (!newlen)
 		{
-			//newlen=http_recv(state->fd, &error, data+pos, buflen-pos);
-			newlen=http_recv(state->fd, &error, data+pos, 1);
+			newlen=http_recv(state->fd, &state->error, state->data + state->pos, state->buflen - state->pos);
+			//newlen=http_recv(state->fd, &state->error, state->data + state->pos, 1);
 			if (newlen<0)
 			{
-				if (bodytype==t_full) part=p_done;
+				if (state->bodytype==t_full) state->part=p_done;
 				else goto fail;
 				newlen=0;
 			}
-			if (newlen==0) goto again;
-//printf("%lu+%lu >= %lu-64\n",pos,newlen,buflen);
-			if (pos+newlen >= buflen-64)
+			if (newlen==0) return false;
+			if (state->pos + newlen >= state->buflen - 64)
 			{
-				buflen*=2;
-				data=realloc(data, buflen);
+				state->buflen *= 2;
+				state->data = realloc(state->data, state->buflen);
 			}
 		}
 		
 parse_again:
-		if (bodytype==t_chunk)
+		if (state->bodytype == t_chunk)
 		{
-			if (part==p_body_chunklen)
+			if (state->part == p_body_chunklen)
 			{
-				pos+=newlen;
-				if (pos-len >= 2)
+				state->pos += newlen;
+				if (state->pos - state->len >= 2)
 				{
 					//len=start of chunk including \r\n
 					//pos=end of data
-					char * fullend=data+pos;
-					char * end=memchr(data+len+2, '\n', pos-len-2);
+					char * fullend = state->data + state->pos;
+					char * end=memchr(state->data + state->len + 2, '\n', state->pos - state->len - 2);
 					if (end)
 					{
-						size_t chunklen=strtoul(data+len, NULL, 16);
-						pos=len;
+						size_t chunklen = strtoul(state->data+state->len, NULL, 16);
+						state->pos = state->len;
 						end++;
-						memmove(data+len, end, fullend-end);
-						len=chunklen;
-						newlen=(fullend-end);
+						memmove(state->data+state->len, end, fullend-end);
+						state->len = chunklen;
+						newlen = (fullend-end);
 						//len=num bytes
 						//newlen=unparsed bytes after \n
 						//pos=start of chunk including \r\n
-						part=p_body;
-						if (len==0)
+						state->part = p_body;
+						if (state->len == 0)
 						{
-							part=p_done;
-							len=pos;
+							state->part = p_done;
+							state->len = state->pos;
 						}
 						goto parse_again;
 					}
 				}
 			}
-			else if (part==p_body)
+			else if (state->part == p_body)
 			{
-				if (newlen >= len)
+				if (newlen >= state->len)
 				{
-					pos+=len;
-					newlen-=len;
-					len=pos;
-					part=p_body_chunklen;
+					state->pos += state->len;
+					newlen -= state->len;
+					state->len = state->pos;
+					state->part = p_body_chunklen;
 					goto parse_again;
 				}
 				else
 				{
-					pos+=newlen;
-					len-=newlen;
+					state->pos += newlen;
+					state->len -= newlen;
 				}
 			}
 		}
 		else
 		{
-			pos+=newlen;
-			if (pos==len) part=p_done;
-			if (pos>len) goto fail;
+			state->pos += newlen;
+			if (state->pos == state->len) state->part=p_done;
+			if (state->pos > state->len) goto fail;
 		}
 	}
-
-if (part==p_done)
-{
-data[len]='\0';
-puts(data);
-	return true;
-}
-else goto again;
+	return (state->part==p_done);
 	
 fail:
-puts("ERR");
-	part=p_error;
+	state->error = true;
+	state->part = p_error;
+	state->status = -1;
 	return true;
 }
 
@@ -424,6 +420,11 @@ int http_status(struct http* state)
 
 uint8_t* http_data(struct http* state, size_t* len, bool accept_error)
 {
+	if (!accept_error && state->error)
+	{
+		if (len) *len=0;
+		return NULL;
+	}
 	if (len) *len=state->len;
 	return state->data;
 }
