@@ -31,11 +31,17 @@ void http_delete(struct http* state);
 #include<stdio.h>
 int main()
 {
-	struct http* http1=http_new("http://floating.muncher.se:22/");
-	struct http* http2=http_new("http://floating.muncher.se/sepulcher/");
-	while (!http_poll(http2, NULL, NULL)) {}
-	while (!http_poll(http1, NULL, NULL)) {}
-	printf("%i %i %p %s\n",http_status(http1),http_status(http2),(char*)http_data(http1, NULL, false),http_data(http2, NULL, true));
+	struct http* http3=http_new("http://www.wikipedia.org/");
+	while (!http_poll(http3, NULL, NULL)) {}
+	//struct http* http1=http_new("http://floating.muncher.se:22/");
+	//struct http* http2=http_new("http://floating.muncher.se/sepulcher/");
+	//struct http* http3=http_new("http://www.wikipedia.org/");
+	//while (!http_poll(http3, NULL, NULL)) {}
+	//while (!http_poll(http2, NULL, NULL)) {}
+	//while (!http_poll(http1, NULL, NULL)) {}
+	//printf("%i %i %i %p %s %s\n",
+	//http_status(http1),http_status(http2),http_status(http3),
+	//(char*)http_data(http1, NULL, false),http_data(http2, NULL, true),http_data(http3, NULL, true));
 }
 ////////////////////////////////
 //http.c
@@ -201,6 +207,7 @@ struct http* http_new(const char * url)
 	
 	error=false;
 	
+	//this is a bit lazy, but it works
 	http_send_str(fd, &error, "GET /");
 	http_send_str(fd, &error, location);
 	http_send_str(fd, &error, " HTTP/1.1\r\n");
@@ -242,64 +249,171 @@ int http_fd(struct http* state)
 
 bool http_poll(struct http* state, size_t* progress, size_t* total)
 {
-	enum { p_header_top, p_header, p_body };
+	//TODO: these variables belong in struct http - they're here for now because that's easier.
+	enum { p_header_top, p_header, p_body, p_body_chunklen, p_done, p_error };
 	enum { t_full, t_len, t_chunk };
-#define MAX_HEADER_LEN 512
-	char header[MAX_HEADER_LEN];
-	size_t headerpos=0;
 	char part = p_header_top;
 	char bodytype = t_full;
 	bool error=false;
+	size_t pos=0;
+	size_t len=0;
+	size_t buflen=512;
+	char * data=malloc(buflen);
+	//end of struct http
 	
-	while (part != p_body)
+	ssize_t newlen;
+again:
+	newlen=0;
+	
+	if (part < p_body)
 	{
-		//ssize_t newlen=http_recv(state->fd, &error, header+headerpos, MAX_HEADER_LEN-headerpos);
-		ssize_t newlen=http_recv(state->fd, &error, header+headerpos, 1);
+		//newlen=http_recv(state->fd, &error, data+pos, buflen-pos);
+		newlen=http_recv(state->fd, &error, data+pos, 1);
 		if (newlen<0) goto fail;
-		if (headerpos+newlen>=MAX_HEADER_LEN) goto fail;
-		headerpos+=newlen;
-		char * dataend=header+headerpos;
-		while (true)
+		if (newlen==0) goto again;
+		if (pos+newlen >= buflen-64)
 		{
-			char * lineend=memchr(header+headerpos-newlen, '\n', newlen);
+			buflen*=2;
+			data=realloc(data, buflen);
+		}
+		pos+=newlen;
+		while (part < p_body)
+		{
+			char * dataend=data+pos;
+//printf("%li\n",pos);
+			char * lineend=memchr(data, '\n', pos);
+//printf("%i '%s'\n",pos,data);
 			if (!lineend) break;
 			*lineend='\0';
-			if (lineend!=header && lineend[-1]=='\r') lineend[-1]='\0';
+			if (lineend!=data && lineend[-1]=='\r') lineend[-1]='\0';
 			
+//puts(data);
 			if (part==p_header_top)
 			{
-				if (strncmp(header, "HTTP/1.", strlen("HTTP/1."))!=0) goto fail;
-				state->status=strtoul(header+strlen("HTTP/1.1 "), NULL, 10);
+				if (strncmp(data, "HTTP/1.", strlen("HTTP/1."))!=0) goto fail;
+				state->status=strtoul(data+strlen("HTTP/1.1 "), NULL, 10);
 				part=p_header;
 			}
 			else
 			{
-				if (*header=='\0')
+				if (!strncmp(data, "Content-Length: ", strlen("Content-Length: ")))
+				{
+					bodytype=t_len;
+					len=strtol(data+strlen("Content-Length: "), NULL, 10);
+				}
+				if (!strcmp(data, "Transfer-Encoding: chunked"))
+				{
+					bodytype=t_chunk;
+				}
+				//TODO: save headers somewhere
+				if (*data=='\0')
 				{
 					part=p_body;
+					if (bodytype==t_chunk) part=p_body_chunklen;
 				}
-				if (!strncmp(header, "Content-Length: ", strlen("Content-Length: ")))
-				{
-					
-				}
-				if (!strcmp(header, "Transfer-Encoding: chunked"))
-				{
-					
-				}
-printf("//%s//\n",header);
 			}
 			
-			memmove(header, lineend+1, dataend-(lineend+1));
-			headerpos-=(lineend+1-header);
+			memmove(data, lineend+1, dataend-(lineend+1));
+			pos=(dataend-(lineend+1));
+//printf("[%s] %li\n",data,pos);
+		}
+		if (part>=p_body)
+		{
+			newlen=pos;
+			pos=0;
 		}
 	}
-	//while (true)
-	//{
-	//	
-	//}
+	if (part >= p_body && part < p_done)
+	{
+//printf("%li/%li %.*s\n",pos,len,pos,data);
+		if (!newlen)
+		{
+			//newlen=http_recv(state->fd, &error, data+pos, buflen-pos);
+			newlen=http_recv(state->fd, &error, data+pos, 1);
+			if (newlen<0)
+			{
+				if (bodytype==t_full) part=p_done;
+				else goto fail;
+				newlen=0;
+			}
+			if (newlen==0) goto again;
+//printf("%lu+%lu >= %lu-64\n",pos,newlen,buflen);
+			if (pos+newlen >= buflen-64)
+			{
+				buflen*=2;
+				data=realloc(data, buflen);
+			}
+		}
+		
+parse_again:
+		if (bodytype==t_chunk)
+		{
+			if (part==p_body_chunklen)
+			{
+				pos+=newlen;
+				if (pos-len >= 2)
+				{
+					//len=start of chunk including \r\n
+					//pos=end of data
+					char * fullend=data+pos;
+					char * end=memchr(data+len+2, '\n', pos-len-2);
+					if (end)
+					{
+						size_t chunklen=strtoul(data+len, NULL, 16);
+						pos=len;
+						end++;
+						memmove(data+len, end, fullend-end);
+						len=chunklen;
+						newlen=(fullend-end);
+						//len=num bytes
+						//newlen=unparsed bytes after \n
+						//pos=start of chunk including \r\n
+						part=p_body;
+						if (len==0)
+						{
+							part=p_done;
+							len=pos;
+						}
+						goto parse_again;
+					}
+				}
+			}
+			else if (part==p_body)
+			{
+				if (newlen >= len)
+				{
+					pos+=len;
+					newlen-=len;
+					len=pos;
+					part=p_body_chunklen;
+					goto parse_again;
+				}
+				else
+				{
+					pos+=newlen;
+					len-=newlen;
+				}
+			}
+		}
+		else
+		{
+			pos+=newlen;
+			if (pos==len) part=p_done;
+			if (pos>len) goto fail;
+		}
+	}
+
+if (part==p_done)
+{
+data[len]='\0';
+puts(data);
 	return true;
+}
+else goto again;
 	
 fail:
+puts("ERR");
+	part=p_error;
 	return true;
 }
 
