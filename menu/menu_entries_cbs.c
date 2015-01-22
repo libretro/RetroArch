@@ -1655,6 +1655,9 @@ static int deferred_push_database_manager_list_deferred(void *data, void *userda
          }
 		}
    }
+
+   rarchdb_cursor_close(&cur);
+   rarchdb_close(&db);
 #endif
    menu_list_sort_on_alt(list);
    driver.menu->scroll_indices_size = 0;
