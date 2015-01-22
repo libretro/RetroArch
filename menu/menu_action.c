@@ -131,9 +131,8 @@ int menu_action_setting_set(unsigned type, const char *label,
       unsigned action)
 {
    rarch_setting_t *setting = find_setting();
+   if (!setting)
+      return 0;
 
-   if (setting)
-      return menu_action_handle_setting(setting, type, action);
-
-   return 0;
+   return menu_action_handle_setting(setting, type, action);
 }
