@@ -9,11 +9,11 @@
 struct http;
 struct http* http_new(const char * url);
 
-//You can use this to call http_poll only when something will happen; select() it for reading.
+//You can use this to call http_update only when something will happen; select() it for reading.
 int http_fd(struct http* state);
 
 //Returns true if it's done, or if something broke. 'total' will be 0 if it's not known.
-bool http_poll(struct http* state, size_t* progress, size_t* total);
+bool http_update(struct http* state, size_t* progress, size_t* total);
 
 //200, 404, or whatever.
 int http_status(struct http* state);
@@ -36,13 +36,13 @@ int main()
 	struct http* http3;
 	size_t pos=0; size_t tot=0;
 	http1=http_new("http://buildbot.libretro.com/nightly/win-x86/latest/mednafen_psx_libretro.dll.zip");
-	while (!http_poll(http1, &pos, &tot))
+	while (!http_update(http1, &pos, &tot))
 	{
 		printf("%.9lu / %.9lu        \r",pos,tot);
 	}
 	
 	http3=http_new("http://www.wikipedia.org/");
-	while (!http_poll(http3, NULL, NULL)) {}
+	while (!http_update(http3, NULL, NULL)) {}
 	
 	size_t q;
 	char*w=(char*)http_data(http3,&q,false);
@@ -50,9 +50,9 @@ int main()
 	//struct http* http1=http_new("http://floating.muncher.se:22/");
 	//struct http* http2=http_new("http://floating.muncher.se/sepulcher/");
 	//struct http* http3=http_new("http://www.wikipedia.org/");
-	//while (!http_poll(http3, NULL, NULL)) {}
-	//while (!http_poll(http2, NULL, NULL)) {}
-	//while (!http_poll(http1, NULL, NULL)) {}
+	//while (!http_update(http3, NULL, NULL)) {}
+	//while (!http_update(http2, NULL, NULL)) {}
+	//while (!http_update(http1, NULL, NULL)) {}
 	//printf("%i %i %i %p %s %s\n",
 	//http_status(http1),http_status(http2),http_status(http3),
 	//(char*)http_data(http1, NULL, false),http_data(http2, NULL, true),http_data(http3, NULL, true));
@@ -279,7 +279,7 @@ int http_fd(struct http* state)
 	return state->fd;
 }
 
-bool http_poll(struct http* state, size_t* progress, size_t* total)
+bool http_update(struct http* state, size_t* progress, size_t* total)
 {
 	ssize_t newlen=0;
 	
