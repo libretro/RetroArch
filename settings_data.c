@@ -5441,7 +5441,7 @@ static bool setting_data_append_list_archive_options(
    return true;
 }
 
-static bool setting_data_append_list_netplay_options(
+static bool setting_data_append_list_core_manager_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -5449,9 +5449,9 @@ static bool setting_data_append_list_netplay_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Network Options");
+   START_GROUP(group_info, "Core Manager Options");
 
-   START_SUB_GROUP(list, list_info, "Buildbot", group_info.name, subgroup_info);
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_STRING(
          g_settings.network.buildbot_url,
@@ -5465,6 +5465,21 @@ static bool setting_data_append_list_netplay_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    END_SUB_GROUP(list, list_info);
+   END_GROUP(list, list_info);
+#endif
+
+   return true;
+}
+
+static bool setting_data_append_list_netplay_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info)
+{
+#ifdef HAVE_NETPLAY
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+
+   START_GROUP(group_info, "Network Options");
 
    START_SUB_GROUP(list, list_info, "Netplay", group_info.name, subgroup_info);
 
@@ -6219,6 +6234,12 @@ rarch_setting_t *setting_data_new(unsigned mask)
    if (mask & SL_FLAG_PLAYLIST_OPTIONS)
    {
       if (!setting_data_append_list_playlist_options(&list, list_info))
+         goto error;
+   }
+
+   if (mask & SL_FLAG_CORE_MANAGER_OPTIONS)
+   {
+      if (!setting_data_append_list_core_manager_options(&list, list_info))
          goto error;
    }
 

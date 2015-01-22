@@ -22,11 +22,12 @@
 static void get_title(const char *label, const char *dir,
       unsigned menu_type, char *title, size_t sizeof_title)
 {
+   RARCH_LOG("label %s, title %s\n", label, title);
    if (!strcmp(label, "core_list"))
       snprintf(title, sizeof_title, "CORE SELECTION %s", dir);
-   if (!strcmp(label, "core_manager_list"))
+   else if (!strcmp(label, "core_manager_list"))
       snprintf(title, sizeof_title, "CORE MANAGER %s", dir);
-   if (!strcmp(label, "database_manager_list"))
+   else if (!strcmp(label, "database_manager_list"))
       snprintf(title, sizeof_title, "DATABASE SELECTION %s", dir);
    else if (!strcmp(label, "deferred_core_list"))
       snprintf(title, sizeof_title, "DETECTED CORES %s", dir);
@@ -52,6 +53,8 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "PLAYLIST OPTIONS", sizeof_title);
    else if (!strcmp(label, "Network Options"))
       strlcpy(title, "NETWORK OPTIONS", sizeof_title);
+   else if (!strcmp(label, "Core Manager Options"))
+      strlcpy(title, "CORE MANAGER OPTIONS", sizeof_title);
    else if (!strcmp(label, "User Options"))
       strlcpy(title, "USER OPTIONS", sizeof_title);
    else if (!strcmp(label, "Path Options"))
