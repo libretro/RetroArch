@@ -3330,7 +3330,7 @@ static bool setting_data_append_list_main_menu_options(
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
    CONFIG_ACTION(
          "core_list",
-         "Core",
+         "Core Selection",
          group_info.name,
          subgroup_info.name);
    (*list)[list_info->index - 1].size = sizeof(g_settings.libretro);
@@ -3352,6 +3352,12 @@ static bool setting_data_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
 #endif
+
+   CONFIG_ACTION(
+         "database_manager_list",
+         "Database Manager",
+         group_info.name,
+         subgroup_info.name);
 
    if (g_settings.history_list_enable)
    {

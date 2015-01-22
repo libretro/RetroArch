@@ -2346,6 +2346,13 @@ static int generic_deferred_push(void *data, void *userdata,
    return 0;
 }
 
+static int deferred_push_database_manager_list(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   return generic_deferred_push(data, userdata, g_settings.content_database, label, type,
+         MENU_FILE_RDB, "rdb");
+}
+
 static int deferred_push_core_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -2558,6 +2565,8 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
          break;
       case MENU_FILE_DOWNLOAD_CORE_INFO:
          break;
+      case MENU_FILE_RDB:
+         break;
       case MENU_FILE_FONT:
       case MENU_FILE_OVERLAY:
       case MENU_FILE_AUDIOFILTER:
@@ -2708,6 +2717,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_push_content_list;
    else if (!strcmp(label, "history_list") ||
          !strcmp(label, "core_manager_list") ||
+         !strcmp(label, "database_manager_list") ||
          (setting && setting->browser_selection_type == ST_DIR)
          )
       cbs->action_ok = action_ok_push_generic_list;
@@ -2809,6 +2819,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_core_manager_list;
    else if (!strcmp(label, "history_list"))
       cbs->action_deferred_push = deferred_push_history_list;
+   else if (!strcmp(label, "database_manager_list"))
+      cbs->action_deferred_push = deferred_push_database_manager_list;
    else if (!strcmp(label, "cheat_file_load"))
       cbs->action_deferred_push = deferred_push_cheat_file_load;
    else if (!strcmp(label, "remap_file_load"))

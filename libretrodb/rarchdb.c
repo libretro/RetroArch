@@ -297,7 +297,16 @@ int rarchdb_find_entry(
 	return rv;
 }
 
-int rarchdb_cursor_reset(struct rarchdb_cursor * cursor) {
+/**
+ * rarchdb_cursor_reset:
+ * @cursor              : Handle to database cursor.
+ *
+ * Resets cursor.
+ *
+ * Returns: ???.
+ **/
+int rarchdb_cursor_reset(struct rarchdb_cursor * cursor)
+{
 	cursor->eof = 0;
 	return lseek(
 	        cursor->fd,
@@ -333,41 +342,58 @@ retry:
 	return 0;
 }
 
-void rarchdb_cursor_close(struct rarchdb_cursor * cursor) {
+/**
+ * rarchdb_cursor_close:
+ * @cursor              : Handle to database cursor.
+ *
+ * Closes cursor and frees up allocated memory.
+ **/
+void rarchdb_cursor_close(struct rarchdb_cursor * cursor)
+{
 	close(cursor->fd);
 	cursor->is_valid = 0;
 	cursor->fd = -1;
 	cursor->eof = 1;
 	cursor->db = NULL;
-	if (cursor->query) {
+	if (cursor->query)
 		rarchdb_query_free(cursor->query);
-	}
 	cursor->query = NULL;
 }
 
+/**
+ * rarchdb_cursor_open:
+ * @db                  : Handle to database.
+ * @cursor              : Handle to database cursor.
+ * @q                   : Query to execute.
+ *
+ * Opens cursor to database based on query @q.
+ *
+ * Returns: 0 if successful, otherwise negative.
+ **/
 int rarchdb_cursor_open(
         struct rarchdb * db,
         struct rarchdb_cursor * cursor,
         rarchdb_query * q
-) {
+)
+{
 	cursor->fd = dup(db->fd);
-	if (cursor->fd == -1) {
+
+	if (cursor->fd == -1)
 		return -errno;
-	}
+
 	cursor->db = db;
 	cursor->is_valid = 1;
 	rarchdb_cursor_reset(cursor);
 	cursor->query = q;
-	if (q) {
+
+	if (q)
 		rarchdb_query_inc_ref(q);
-	}
+
 	return 0;
 }
 
-static int node_iter(
-        void * value,
-        void * ctx
-){
+static int node_iter(void * value, void * ctx)
+{
 	struct node_iter_ctx * nictx = (struct node_iter_ctx *)ctx;
 
 	if (write(nictx->db->fd, value, nictx->idx->key_size + sizeof(uint64_t)) > 0)
@@ -376,7 +402,8 @@ static int node_iter(
 	return -1;
 }
 
-static uint64_t rarchdb_tell(struct rarchdb * db) {
+static uint64_t rarchdb_tell(struct rarchdb * db)
+{
 	return lseek(db->fd, 0, SEEK_CUR);
 }
 
