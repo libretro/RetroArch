@@ -2846,6 +2846,8 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       case MENU_FILE_DIRECTORY:
       case MENU_FILE_CARCHIVE:
       case MENU_FILE_CORE:
+      case MENU_FILE_RDB:
+      case MENU_FILE_RDB_ENTRY:
       case MENU_FILE_SHADER:
       case MENU_FILE_IMAGE:
       case MENU_FILE_OVERLAY:
