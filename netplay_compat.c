@@ -110,3 +110,13 @@ int socket_close(int fd)
    return close(fd);
 #endif
 }
+
+int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
+      fd_set *errorfds, struct timeval *timeout)
+{
+#if defined(__CELLOS_LV2__)
+   return socketselect(nfds, readfs, writefds, errorfds, timeout);
+#else
+   return select(nfds, readfs, writefds, errorfds, timeout);
+#endif
+}

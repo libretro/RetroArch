@@ -348,7 +348,7 @@ static int poll_input(netplay_t *netplay, bool block)
       FD_SET(netplay->udp_fd, &fds);
       FD_SET(netplay->fd, &fds);
 
-      if (select(max_fd, &fds, NULL, NULL, &tmp_tv) < 0)
+      if (socket_select(max_fd, &fds, NULL, NULL, &tmp_tv) < 0)
          return -1;
 
       /* Somewhat hacky,
@@ -1485,7 +1485,7 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
    FD_ZERO(&fds);
    FD_SET(netplay->fd, &fds);
 
-   if (select(netplay->fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
+   if (socket_select(netplay->fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
       return;
 
    if (!FD_ISSET(netplay->fd, &fds))

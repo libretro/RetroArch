@@ -336,7 +336,7 @@ static void network_cmd_poll(rarch_cmd_t *handle)
    FD_ZERO(&fds);
    FD_SET(handle->net_fd, &fds);
 
-   if (select(handle->net_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
+   if (socket_select(handle->net_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
       return;
 
    if (!FD_ISSET(handle->net_fd, &fds))

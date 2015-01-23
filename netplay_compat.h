@@ -81,9 +81,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#if defined(__CELLOS_LV2__)
-#define select(nfds, readfds, writefds, errorfds, timeout) socketselect(nfds, readfds, writefds, errorfds, timeout)
-#endif
 #endif
 
 /* Compatibility layer for legacy or incomplete BSD socket implementations.
@@ -124,6 +121,9 @@ void freeaddrinfo_rarch(struct addrinfo *res);
 bool socket_nonblock(int fd);
 
 int socket_close(int fd);
+
+int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
+      fd_set *errorfds, struct timeval *timeout);
 
 #endif
 
