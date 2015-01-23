@@ -25,15 +25,6 @@
 extern "C" {
 #endif
 
-enum
-{
-   HTTP_INTF_ERROR = 0,
-   HTTP_INTF_PUT,
-   HTTP_INTF_GET,
-   HTTP_INTF_DELETE,
-   HTTP_INTF_HEAD
-};
-
 /**
  * http_get_file:
  * @url                 : URL to file.
@@ -60,8 +51,6 @@ http_retcode http_get_file(char *url, char **buf, int *len);
  **/
 bool http_download_file(char *url, const char *output_dir,
       const char *output_basename);
-
-int http_intf_command(unsigned mode, char *url);
 
 #ifdef __cplusplus
 }
