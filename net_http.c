@@ -18,7 +18,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <fcntl.h>
 #include "netplay_compat.h"
 
 enum
@@ -117,16 +116,11 @@ static int net_http_new_socket(const char * domain, int port)
 
 	freeaddrinfo_rarch(addr);
 
-#if defined(__CELLOS_LV2__)
-   setsockopt(fd, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
-   setsockopt(fd, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
-#elif defined(_WIN32)
-   ioctlsocket(fd, FIONBIO, &mode);
-#else
-   fcntl(fd, F_SETFL, O_NONBLOCK);
-   fcntl(fd, F_SETFL, O_NONBLOCK);
-#endif
-   
+   if (!socket_nonblock(fd))
+   {
+		close(fd);
+      return -1;
+   }
 
 	return fd;
 }

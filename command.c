@@ -52,16 +52,6 @@ struct rarch_cmd
    bool state[RARCH_BIND_LIST_END];
 };
 
-static bool socket_nonblock(int fd)
-{
-#ifdef _WIN32
-   u_long mode = 1;
-   return ioctlsocket(fd, FIONBIO, &mode) == 0;
-#else
-   return fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) == 0;
-#endif
-}
-
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
 {

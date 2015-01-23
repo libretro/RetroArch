@@ -21,6 +21,8 @@
 #include "config.h"
 #endif
 
+#include <boolean.h>
+
 #if defined(_WIN32) && !defined(_XBOX)
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
@@ -129,5 +131,8 @@ int getaddrinfo_rarch(const char *node, const char *service,
       struct addrinfo **res);
 
 void freeaddrinfo_rarch(struct addrinfo *res);
+
+bool socket_nonblock(int fd);
+
 #endif
 
