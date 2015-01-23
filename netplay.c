@@ -392,6 +392,7 @@ static bool receive_data(netplay_t *netplay, uint32_t *buffer, size_t size)
 static void parse_packet(netplay_t *netplay, uint32_t *buffer, unsigned size)
 {
    unsigned i;
+
    for (i = 0; i < size * 2; i++)
       buffer[i] = ntohl(buffer[i]);
 
@@ -599,16 +600,18 @@ static void log_connection(const struct sockaddr_storage *their_addr,
       const struct sockaddr_in *v4;
       const struct sockaddr_in6 *v6;
    } u;
-   u.storage = their_addr;
-
    const char *str = NULL;
    char buf_v4[INET_ADDRSTRLEN] = {0};
    char buf_v6[INET6_ADDRSTRLEN] = {0};
 
+   u.storage = their_addr;
+
    if (their_addr->ss_family == AF_INET)
    {
-      str = buf_v4;
       struct sockaddr_in in;
+
+      str = buf_v4;
+
       memset(&in, 0, sizeof(in));
       in.sin_family = AF_INET;
       memcpy(&in.sin_addr, &u.v4->sin_addr, sizeof(struct in_addr));
@@ -619,8 +622,9 @@ static void log_connection(const struct sockaddr_storage *their_addr,
    }
    else if (their_addr->ss_family == AF_INET6)
    {
-      str = buf_v6;
       struct sockaddr_in6 in;
+
+      str = buf_v6;
       memset(&in, 0, sizeof(in));
       in.sin6_family = AF_INET6;
       memcpy(&in.sin6_addr, &u.v6->sin6_addr, sizeof(struct in6_addr));
@@ -646,6 +650,7 @@ static int init_tcp_connection(const struct addrinfo *res,
 {
    bool ret = true;
    int fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+
    if (fd < 0)
    {
       ret = false;
@@ -703,6 +708,7 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    bool ret = false;
    const struct addrinfo *tmp_info = NULL;
    struct addrinfo hints, *res = NULL;
+
    memset(&hints, 0, sizeof(hints));
 
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
@@ -767,6 +773,7 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
       hints.ai_flags = AI_PASSIVE;
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
+
    if (getaddrinfo_rarch(server, port_buf, &hints, &netplay->addr) < 0)
       return false;
 
@@ -1229,11 +1236,11 @@ netplay_t *netplay_new(const char *server, uint16_t port,
    if (!netplay)
       return NULL;
 
-   netplay->fd = -1;
-   netplay->udp_fd = -1;
-   netplay->cbs = *cb;
-   netplay->port = server ? 0 : 1;
-   netplay->spectate = spectate;
+   netplay->fd              = -1;
+   netplay->udp_fd          = -1;
+   netplay->cbs             = *cb;
+   netplay->port            = server ? 0 : 1;
+   netplay->spectate        = spectate;
    netplay->spectate_client = server != NULL;
    strlcpy(netplay->nick, nick, sizeof(netplay->nick));
 
@@ -1310,7 +1317,7 @@ static bool netplay_send_cmd(netplay_t *netplay, uint32_t cmd,
  **/
 void netplay_flip_users(netplay_t *netplay)
 {
-   uint32_t flip_frame = netplay->frame_count + 2 * UDP_FRAME_PACKETS;
+   uint32_t flip_frame     = netplay->frame_count + 2 * UDP_FRAME_PACKETS;
    uint32_t flip_frame_net = htonl(flip_frame);
    const char *msg = NULL;
 
@@ -1588,6 +1595,7 @@ static void netplay_post_frame_net(netplay_t *netplay)
    while (netplay->other_frame_count < netplay->read_frame_count)
    {
       const struct delta_frame *ptr = &netplay->buffer[netplay->other_ptr];
+
       if ((ptr->simulated_input_state != ptr->real_input_state)
             && !ptr->used_real)
          break;
@@ -1639,29 +1647,30 @@ static void netplay_post_frame_net(netplay_t *netplay)
 static void netplay_post_frame_spectate(netplay_t *netplay)
 {
    unsigned i;
+
    if (netplay->spectate_client)
       return;
 
    for (i = 0; i < MAX_SPECTATORS; i++)
    {
+      char msg[PATH_MAX_LENGTH];
+
       if (netplay->spectate_fds[i] == -1)
          continue;
 
-      if (!send_all(netplay->spectate_fds[i],
+      if (send_all(netplay->spectate_fds[i],
                netplay->spectate_input,
                netplay->spectate_input_ptr * sizeof(int16_t)))
-      {
-         char msg[512];
+         continue;
 
-         RARCH_LOG("Client (#%u) disconnected ...\n", i);
+      RARCH_LOG("Client (#%u) disconnected ...\n", i);
 
-         snprintf(msg, sizeof(msg), "Client (#%u) disconnected.", i);
-         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      snprintf(msg, sizeof(msg), "Client (#%u) disconnected.", i);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
-         close(netplay->spectate_fds[i]);
-         netplay->spectate_fds[i] = -1;
-         break;
-      }
+      close(netplay->spectate_fds[i]);
+      netplay->spectate_fds[i] = -1;
+      break;
    }
 
    netplay->spectate_input_ptr = 0;
@@ -1705,9 +1714,11 @@ struct hostent
 
 static struct hostent *gethostbyname(const char *name)
 {
+   WSAEVENT event;
    static struct hostent he;
    static struct in_addr addr;
    static char *addr_ptr;
+   XNDNS *dns = NULL;
 
    he.h_addr_list = &addr_ptr;
    addr_ptr = (char*)&addr;
@@ -1715,8 +1726,7 @@ static struct hostent *gethostbyname(const char *name)
    if (!name)
       return NULL;
 
-   XNDNS *dns = NULL;
-   WSAEVENT event = WSACreateEvent();
+   event = WSACreateEvent();
    XNetDnsLookup(name, event, &dns);
    if (!dns)
       goto error;
