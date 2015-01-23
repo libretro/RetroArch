@@ -1594,20 +1594,21 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
 static int deferred_push_database_manager_list_deferred(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   unsigned i;
 #ifdef HAVE_LIBRETRODB
 	int rv;
 	libretrodb_t db;
 	libretrodb_cursor_t cur;
 	struct rmsgpack_dom_value item;
-#endif
-   unsigned i;
-   size_t list_size = 0;
    const core_info_t *info = NULL;
+#endif
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
+
+   (void)info;
 
    menu_list_clear(list);
 #ifdef HAVE_LIBRETRODB

@@ -99,8 +99,6 @@
 
 #define sockaddr_storage sockaddr_in
 #define addrinfo addrinfo_rarch__
-#define getaddrinfo(serv, port, hints, res) getaddrinfo_rarch__(serv, port, hints, res)
-#define freeaddrinfo(res) freeaddrinfo_rarch__(res)
 
 struct addrinfo
 {
@@ -113,12 +111,6 @@ struct addrinfo
    char *ai_canonname;
    struct addrinfo *ai_next;
 };
-
-int getaddrinfo(const char *node, const char *service,
-      const struct addrinfo *hints,
-      struct addrinfo **res);
-
-void freeaddrinfo(struct addrinfo *res);
 
 #ifndef AI_PASSIVE
 #define AI_PASSIVE 1
