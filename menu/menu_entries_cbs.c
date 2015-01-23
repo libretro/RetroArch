@@ -1596,7 +1596,7 @@ static int deferred_push_database_manager_list_deferred(void *data, void *userda
 {
    unsigned i;
 #ifdef HAVE_LIBRETRODB
-	int rv;
+	int rv = 1;
 	libretrodb_t db;
 	libretrodb_cursor_t cur;
 	struct rmsgpack_dom_value item;
@@ -1609,6 +1609,7 @@ static int deferred_push_database_manager_list_deferred(void *data, void *userda
       return -1;
 
    (void)info;
+   (void)rv;
 
    menu_list_clear(list);
 #ifdef HAVE_LIBRETRODB

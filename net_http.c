@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <fcntl.h>
 #include "netplay_compat.h"
 
 enum
@@ -77,7 +78,7 @@ static bool net_http_parse_url(char *url, char **domain,
 
 static int net_http_new_socket(const char * domain, int port)
 {
-   int fd;
+   int fd, i = 1;
 #ifndef _WIN32
 	struct timeval timeout;
 #endif
@@ -111,11 +112,15 @@ static int net_http_new_socket(const char * domain, int port)
 	}
 
 	freeaddrinfo_rarch(addr);
-#ifndef _WIN32
-	/* Linux claims to not know that select() should only 
-    * give sockets where read() is nonblocking */
-	fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0)|O_NONBLOCK);
+
+#ifdef __CELLOS_LV2__
+   setsockopt(fd, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
+   setsockopt(fd, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
+#else
+   fcntl(fd, F_SETFL, O_NONBLOCK);
+   fcntl(fd, F_SETFL, O_NONBLOCK);
 #endif
+   
 
 	return fd;
 }
@@ -132,8 +137,12 @@ static void net_http_send(int fd, bool * error,
 
 		if (thislen <= 0)
       {
+#if 0
+         /* FIXME - EWOULDBLOCK is not there on PS3, and this is kinda ugly code anyway.
+          * Can we get rid of the ugly macro here and do something sensible here? */
          if (!isagain(thislen))
             continue;
+#endif
 
          *error=true;
          return;
@@ -163,8 +172,12 @@ static ssize_t net_http_recv(int fd, bool *error,
       return bytes;
    else if (bytes == 0)
       return -1;
+#if 0
+   /* FIXME - EWOULDBLOCK is not there on PS3, and this is kinda ugly code anyway.
+    * Can we get rid of the ugly macro here and do something sensible here? */
    else if (isagain(bytes))
       return 0;
+#endif
 
    *error=true;
    return -1;
