@@ -99,12 +99,15 @@ int rarchdb_create(
         void * ctx
 ){
 	int rv;
+	struct rarchdb_metadata md;
+	off_t root;
 	uint64_t item_count = 0;
 	struct rmsgpack_dom_value item = {};
 	struct rarchdb_header header = {};
-	struct rarchdb_metadata md;
+
 	memcpy(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)-1);
-	off_t root = lseek(fd, 0, SEEK_CUR);
+	root = lseek(fd, 0, SEEK_CUR);
+
 	// We write the header in the end because we need to know the size of
 	// the db first
 	lseek(fd, sizeof(struct rarchdb_header), SEEK_CUR);
@@ -162,7 +165,8 @@ static void rarchdb_write_index_header(
 	rmsgpack_write_uint(fd, idx->next);
 }
 
-void rarchdb_close(struct rarchdb * db) {
+void rarchdb_close(struct rarchdb * db)
+{
 	close(db->fd);
 	db->fd = -1;
 }
