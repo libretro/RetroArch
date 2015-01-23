@@ -304,14 +304,14 @@ static int poll_input(netplay_t *netplay, bool block)
 
    do
    { 
-      netplay->timeout_cnt++;
-
+      fd_set fds;
       /* select() does not take pointer to const struct timeval.
        * Technically possible for select() to modify tmp_tv, so 
        * we go paranoia mode. */
       struct timeval tmp_tv = tv;
 
-      fd_set fds;
+      netplay->timeout_cnt++;
+
       FD_ZERO(&fds);
       FD_SET(netplay->udp_fd, &fds);
       FD_SET(netplay->fd, &fds);
@@ -327,18 +327,18 @@ static int poll_input(netplay_t *netplay, bool block)
       if (FD_ISSET(netplay->udp_fd, &fds))
          return 1;
 
-      if (block && !send_chunk(netplay))
+      if (!block)
+         continue;
+
+      if (!send_chunk(netplay))
       {
          warn_hangup();
          netplay->has_connection = false;
          return -1;
       }
 
-      if (block)
-      {
-         RARCH_LOG("Network is stalling, resending packet... Count %u of %d ...\n",
-               netplay->timeout_cnt, MAX_RETRIES);
-      }
+      RARCH_LOG("Network is stalling, resending packet... Count %u of %d ...\n",
+            netplay->timeout_cnt, MAX_RETRIES);
    } while ((netplay->timeout_cnt < MAX_RETRIES) && block);
 
    if (block)
