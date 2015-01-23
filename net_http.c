@@ -79,7 +79,9 @@ static bool net_http_parse_url(char *url, char **domain,
 static int net_http_new_socket(const char * domain, int port)
 {
    int fd, i = 1;
-#ifndef _WIN32
+#ifdef _WIN32
+   u_long mode = 1;
+#else
 	struct timeval timeout;
 #endif
 	struct addrinfo hints, *addr = NULL;
@@ -113,9 +115,11 @@ static int net_http_new_socket(const char * domain, int port)
 
 	freeaddrinfo_rarch(addr);
 
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__)
    setsockopt(fd, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
    setsockopt(fd, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
+#elif defined(_WIN32)
+   ioctlsocket(fd, FIONBIO, &mode);
 #else
    fcntl(fd, F_SETFL, O_NONBLOCK);
    fcntl(fd, F_SETFL, O_NONBLOCK);
