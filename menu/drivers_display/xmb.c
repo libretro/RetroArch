@@ -235,7 +235,7 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
 }
 
 static void xmb_draw_text(const char *str, float x,
-      float y, float scale_factor, float alpha)
+      float y, float scale_factor, float alpha, bool align_right)
 {
    gl_t *gl;
    uint8_t a8 = 0;
@@ -268,6 +268,7 @@ static void xmb_draw_text(const char *str, float x,
    params.scale = scale_factor;
    params.color = FONT_COLOR_RGBA(255, 255, 255, a8);
    params.full_screen = true;
+   params.align_right = align_right;
 
    if (driver.video_data && driver.video_poke
        && driver.video_poke->set_osd_msg)
@@ -398,7 +399,7 @@ static void xmb_render_messagebox(const char *message)
       const char *msg = list->elems[i].data;
 
       if (msg)
-         xmb_draw_text(msg, x, y + i * xmb->font_size, 1, 1);
+         xmb_draw_text(msg, x, y + i * xmb->font_size, 1, 1, 0);
    }
 
    string_list_free(list);
@@ -882,7 +883,8 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             node->x + xmb->margin_left + xmb->hspacing + xmb->label_margin_left, 
             xmb->margin_top + node->y + xmb->label_margin_top, 
             1, 
-            node->label_alpha);
+            node->label_alpha,
+            0);
 
       menu_ticker_line(value, 35, g_extern.frame_count / 20, val_buf,
             (i == current));
@@ -903,7 +905,8 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
                xmb->label_margin_left + xmb->setting_margin_left, 
                xmb->margin_top + node->y + xmb->label_margin_top, 
                1, 
-               node->label_alpha);
+               node->label_alpha,
+               0);
 
       if (!strcmp(val_buf, "ON") && xmb->textures[XMB_TEXTURE_SWITCH_ON].id)
          xmb_draw_icon(xmb->textures[XMB_TEXTURE_SWITCH_ON].id,
@@ -952,14 +955,14 @@ static void xmb_frame(void)
       core_name = "No Core";
 
    xmb_draw_text(
-         xmb->title, xmb->title_margin_left, xmb->title_margin_top, 1, 1);
+         xmb->title, xmb->title_margin_left, xmb->title_margin_top, 1, 1, 0);
 
    disp_timedate_set_label(timedate, sizeof(timedate), 0);
 
    if (g_settings.menu.timedate_enable)
       xmb_draw_text(
-            timedate, (xmb->title_margin_left * 25) - xmb->title_margin_left, 
-            xmb->title_margin_top, 1, 1);
+            timedate, gl->win_width - xmb->title_margin_left, 
+            xmb->title_margin_top, 1, 1, 1);
 
    core_version = g_extern.menu.info.library_version;
 
@@ -971,7 +974,7 @@ static void xmb_frame(void)
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
    xmb_draw_text(title_msg, xmb->title_margin_left, 
-         gl->win_height - xmb->title_margin_bottom, 1, 1);
+         gl->win_height - xmb->title_margin_bottom, 1, 1, 0);
 
 
    xmb_draw_icon(xmb->textures[XMB_TEXTURE_ARROW].id,

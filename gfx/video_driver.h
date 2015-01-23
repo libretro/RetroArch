@@ -71,6 +71,7 @@ struct font_params
    /* ABGR. Use the macros. */
    uint32_t color;
    bool full_screen;
+   bool align_right;
 };
 
 

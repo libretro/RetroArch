@@ -90,7 +90,7 @@ static char *str_replace (const char *string,
 
 static void lakka_draw_text(lakka_handle_t *lakka,
       const char *str, float x,
-      float y, float scale_factor, float alpha)
+      float y, float scale_factor, float alpha, bool align_right)
 {
    if (!lakka)
       return;
@@ -120,6 +120,7 @@ static void lakka_draw_text(lakka_handle_t *lakka,
    params.scale = scale_factor;
    params.color = FONT_COLOR_RGBA(255, 255, 255, a8);
    params.full_screen = true;
+   params.align_right = align_right;
 
    if (driver.video_data && driver.video_poke
        && driver.video_poke->set_osd_msg)
@@ -300,7 +301,8 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
             lakka->all_categories_x + lakka->label_margin_left,
             lakka->margin_top + subitem->y + lakka->label_margin_top,
             1, 
-            subitem->alpha);
+            subitem->alpha,
+            0);
       }
       else if (k == 0 ||
             lakka->menu_active_category == 0 ||
@@ -321,7 +323,8 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
                lakka->all_categories_x + lakka->label_margin_left, 
                lakka->margin_top + subitem->y + lakka->label_margin_top, 
                1, 
-               subitem->alpha);
+               subitem->alpha,
+               0);
 
          if (i && (k == 1 || k == 2))
          {
@@ -336,7 +339,8 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
                   lakka->all_categories_x + lakka->label_margin_left + lakka->setting_margin_left, 
                   lakka->margin_top + subitem->y + lakka->label_margin_top, 
                   1, 
-                  subitem->alpha);
+                  subitem->alpha,
+                  0);
          }
       }
 
@@ -357,7 +361,8 @@ static void lakka_draw_subitems(lakka_handle_t *lakka, int i, int j)
                   + lakka->setting_margin_left, 
                   lakka->margin_top + subitem->y + lakka->label_margin_top, 
                   1, 
-                  subitem->alpha);
+                  subitem->alpha,
+                  0);
 
          if (!strcmp(val, "ON") && lakka->textures[TEXTURE_SWITCH_ON].id)
             lakka_draw_icon(lakka, lakka->textures[TEXTURE_SWITCH_ON].id, 
@@ -424,7 +429,8 @@ static void lakka_draw_items(lakka_handle_t *lakka, int i)
                lakka->all_categories_x + lakka->label_margin_left, 
                lakka->margin_top + item->y + lakka->label_margin_top, 
                1, 
-               item->alpha);
+               item->alpha,
+               0);
       }
 
       /* performance improvement */
@@ -608,15 +614,15 @@ static void lakka_frame(void)
 
    if (lakka->depth == 0)
       lakka_draw_text(lakka, active_category->name,
-            lakka->title_margin_left, lakka->title_margin_top, 1, 1.0);
+            lakka->title_margin_left, lakka->title_margin_top, 1, 1.0, 0);
    else if (active_item)
       lakka_draw_text(lakka, active_item->name,
-            lakka->title_margin_left, lakka->title_margin_top, 1, 1.0);
+            lakka->title_margin_left, lakka->title_margin_top, 1, 1.0, 0);
 
    if (g_settings.menu.timedate_enable)
       lakka_draw_text(lakka, timedate,
-            (lakka->title_margin_left * 25) - lakka->title_margin_left,
-            lakka->title_margin_top, 1, 1.0);
+            gl->win_width - lakka->title_margin_left,
+            lakka->title_margin_top, 1, 1.0, 1);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 
