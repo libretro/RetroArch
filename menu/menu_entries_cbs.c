@@ -29,7 +29,6 @@
 #include "../performance.h"
 
 #ifdef HAVE_NETPLAY
-#include "../http_intf.h"
 #include "../net_http.h"
 #endif
 
@@ -2278,18 +2277,61 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 }
 #endif
 
+/* HACK - we have to find some way to pass state inbetween
+ * function pointer callback functions that don't necessarily
+ * call each other. */
+static char core_manager_path[PATH_MAX_LENGTH];
+static void *core_manager_list_data;
+static char core_manager_list_path[PATH_MAX_LENGTH];
+static char core_manager_list_label[PATH_MAX_LENGTH];
+static unsigned core_manager_list_type;
+
+static int cb_core_manager_list(void *data_, size_t len)
+{
+   char *data = (char*)data_;
+   file_list_t *list = NULL;
+
+   if (!data || !core_manager_list_data)
+      return -1;
+
+   list      = (file_list_t*)core_manager_list_data;
+
+   if (!list)
+      return -1;
+
+   menu_list_clear(list);
+
+   rarch_main_command(RARCH_CMD_NETWORK_INIT);
+
+   print_buf_lines(list, data, len, MENU_FILE_DOWNLOAD_CORE);
+
+   driver.menu->scroll_indices_size = 0;
+   menu_entries_build_scroll_indices(list);
+   menu_entries_refresh(list);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu,
+            core_manager_list_path,
+            core_manager_list_label,
+            core_manager_list_type);
+
+   return 0;
+}
+
 static int deferred_push_core_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
 #ifdef HAVE_NETPLAY
-   int len;
-   char url[PATH_MAX_LENGTH];
+   char url_path[PATH_MAX_LENGTH];
 #endif
-   char *buf = NULL;
    file_list_t *list      = (file_list_t*)data;
 
-   (void)buf;
-
+   core_manager_list_data = data;
+   strlcpy(core_manager_list_path, path,
+         sizeof(core_manager_list_path));
+   strlcpy(core_manager_list_label, label,
+         sizeof(core_manager_list_label));
+   core_manager_list_type = type;
 
    menu_list_clear(list);
 
@@ -2304,34 +2346,27 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
             "Network not available.", "",
             0, 0);
 #endif
-      goto exit;
+      driver.menu->scroll_indices_size = 0;
+      menu_entries_build_scroll_indices(list);
+      menu_entries_refresh(list);
+
+      if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+         driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+      return 0;
    }
 
 #ifdef HAVE_NETPLAY
-   rarch_main_command(RARCH_CMD_NETWORK_INIT);
 
-   fill_pathname_join(url, g_settings.network.buildbot_url,
-         ".index", sizeof(url));
+   fill_pathname_join(url_path, g_settings.network.buildbot_url,
+         ".index", sizeof(url_path));
 
-   if (!list)
-      return -1;
+   msg_queue_clear(g_extern.http_msg_queue);
+   msg_queue_push(g_extern.http_msg_queue, url_path, 0, 180);
 
-   if (http_get_file(url, &buf, &len) < 0)
-      return -1;
-
-   print_buf_lines(list, buf, len, MENU_FILE_DOWNLOAD_CORE);
+   net_http_set_pending_cb(cb_core_manager_list);
 #endif
 
-exit:
-   driver.menu->scroll_indices_size = 0;
-   menu_entries_build_scroll_indices(list);
-   menu_entries_refresh(list);
-
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
-
-   if (buf)
-      free(buf);
    return 0;
 }
 
