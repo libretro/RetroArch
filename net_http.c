@@ -90,15 +90,14 @@ static int net_http_new_socket(const char * domain, int port)
 	sprintf(portstr, "%i", port);
 	
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family=AF_UNSPEC;
-	hints.ai_socktype=SOCK_STREAM;
-	hints.ai_flags=0;
+	hints.ai_family   = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags    = 0;
 	
-	getaddrinfo_rarch(domain, portstr, &hints, &addr);
-	if (!addr)
+	if (getaddrinfo_rarch(domain, portstr, &hints, &addr) < 0)
       return -1;
     
-    (void)i;
+   (void)i;
 	
 	fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 
