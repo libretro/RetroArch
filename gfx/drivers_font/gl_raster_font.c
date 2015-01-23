@@ -120,9 +120,40 @@ static void gl_raster_font_free_font(void *data)
    free(font);
 }
 
+static int get_message_width(gl_raster_t *font, const char *msg)
+{
+   int delta_x;
+   unsigned i, msg_len_full, msg_len;
+
+   msg_len_full   = strlen(msg);
+   msg_len        = min(msg_len_full, MAX_MSG_LEN_CHUNK);
+
+   delta_x        = 0;
+
+   while (msg_len_full)
+   {
+      for (i = 0; i < msg_len; i++)
+      {
+         const struct font_glyph *glyph = 
+            font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
+         if (!glyph)
+            glyph = font->font_driver->get_glyph(font->font_data, '?'); /* Do something smarter here ... */
+         if (!glyph)
+            continue;
+
+         delta_x += glyph->advance_x;
+      }
+
+      msg_len_full -= msg_len;
+      msg += msg_len;
+      msg_len = min(msg_len_full, MAX_MSG_LEN_CHUNK);
+   }
+
+   return delta_x;
+}
 
 static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
-      const GLfloat color[4], GLfloat pos_x, GLfloat pos_y)
+      const GLfloat color[4], GLfloat pos_x, GLfloat pos_y, bool align_right)
 {
    int x, y, delta_x, delta_y;
    float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
@@ -141,6 +172,9 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
    y              = roundf(pos_y * gl->vp.height);
    delta_x        = 0;
    delta_y        = 0;
+
+   if (align_right)
+      x -= get_message_width(font, msg);
 
    inv_tex_size_x = 1.0f / font->tex_width;
    inv_tex_size_y = 1.0f / font->tex_height;
@@ -211,6 +245,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
    GLfloat color[4], color_dark[4];
    int drop_x, drop_y;
    bool full_screen;
+   bool align_right;
    gl_t *gl = NULL;
    gl_raster_t *font = (gl_raster_t*)data;
 
@@ -225,6 +260,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       y = params->y;
       scale = params->scale;
       full_screen = params->full_screen;
+      align_right = params->align_right;
       drop_x = params->drop_x;
       drop_y = params->drop_y;
       drop_mod = params->drop_mod;
@@ -244,6 +280,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       y = g_settings.video.msg_pos_y;
       scale = 1.0f;
       full_screen = false;
+      align_right = false;
 
       color[0] = g_settings.video.msg_color_r;
       color[1] = g_settings.video.msg_color_g;
@@ -270,9 +307,9 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
 
       render_message(font, msg, scale, color_dark,
             x + scale * drop_x / gl->vp.width, y + 
-            scale * drop_y / gl->vp.height);
+            scale * drop_y / gl->vp.height, align_right);
    }
-   render_message(font, msg, scale, color, x, y);
+   render_message(font, msg, scale, color, x, y, align_right);
 
    glDisable(GL_BLEND);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
