@@ -26,7 +26,8 @@ enum
    p_header,
    p_body,
    p_body_chunklen,
-   p_done, p_error
+   p_done,
+   p_error
 };
 
 enum
@@ -357,7 +358,10 @@ bool net_http_update(http_t *state, size_t* progress, size_t* total)
 			if (newlen < 0)
 			{
 				if (state->bodytype == t_full)
+				{
                state->part = p_done;
+               state->data = realloc(state->data, state->len);
+				}
 				else
                goto fail;
 				newlen=0;
@@ -409,6 +413,7 @@ parse_again:
 						{
 							state->part = p_done;
 							state->len = state->pos;
+							state->data = realloc(state->data, state->len);
 						}
 						goto parse_again;
 					}
@@ -436,7 +441,10 @@ parse_again:
 			state->pos += newlen;
 
 			if (state->pos == state->len)
+			{
             state->part=p_done;
+            state->data = realloc(state->data, state->len);
+			}
 			if (state->pos > state->len)
             goto fail;
 		}
