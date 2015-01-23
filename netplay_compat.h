@@ -71,6 +71,10 @@
 #endif
 #endif
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
 #if defined(_WIN32)
 /* Woohoo, Winsock has headers 
  * from the STONE AGE. :D */
