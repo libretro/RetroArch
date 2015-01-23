@@ -2299,7 +2299,6 @@ static int cb_core_manager_list(void *data_, size_t len)
 
    menu_list_clear(list);
 
-   rarch_main_command(RARCH_CMD_NETWORK_INIT);
 
    print_buf_lines(list, data, len, MENU_FILE_DOWNLOAD_CORE);
 
@@ -2354,6 +2353,7 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
    }
 
 #ifdef HAVE_NETPLAY
+   rarch_main_command(RARCH_CMD_NETWORK_INIT);
 
    fill_pathname_join(url_path, g_settings.network.buildbot_url,
          ".index", sizeof(url_path));
