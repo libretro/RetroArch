@@ -663,7 +663,7 @@ NETPLAY
 #include "../netplay.c"
 #include "../http_lib.c"
 #include "../http_intf.c"
-//#include "../http-new.c"
+#include "../net_http.c"
 #endif
 
 /*============================================================

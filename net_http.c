@@ -14,9 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "http_parser.h"
-#include <ctype.h>
+#include "net_http.h"
+#include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #if defined(_WIN32)
 	/* Much of this is copypasta from elsewhere, I don't know if it works. */
@@ -79,7 +80,7 @@ enum
    t_len, t_chunk
 };
 
-static bool http_parse_url(char *url, char **domain,
+static bool net_http_parse_url(char *url, char **domain,
       int *port, char **location)
 {
 	char* scan;
@@ -119,7 +120,7 @@ static bool http_parse_url(char *url, char **domain,
 	return true;
 }
 
-static int http_new_socket(const char * domain, int port)
+static int net_http_new_socket(const char * domain, int port)
 {
    int fd;
 #ifndef _WIN32
@@ -164,7 +165,7 @@ static int http_new_socket(const char * domain, int port)
 	return fd;
 }
 
-static void http_send(int fd, bool * error,
+static void net_http_send(int fd, bool * error,
       const char * data, size_t len)
 {
 	if (*error)
@@ -188,12 +189,12 @@ static void http_send(int fd, bool * error,
 	}
 }
 
-static void http_send_str(int fd, bool *error, const char *text)
+static void net_http_send_str(int fd, bool *error, const char *text)
 {
-	http_send(fd, error, text, strlen(text));
+	net_http_send(fd, error, text, strlen(text));
 }
 
-static ssize_t http_recv(int fd, bool *error,
+static ssize_t net_http_recv(int fd, bool *error,
       uint8_t *data, size_t maxlen)
 {
    ssize_t bytes;
@@ -214,7 +215,7 @@ static ssize_t http_recv(int fd, bool *error,
    return -1;
 }
 
-struct http* http_new(const char * url)
+struct http* net_http_new(const char * url)
 {
 	bool error;
    char *domain, *location;
@@ -224,33 +225,34 @@ struct http* http_new(const char * url)
 
 	strcpy(urlcopy, url);
 
-	if (!http_parse_url(urlcopy, &domain, &port, &location))
+	if (!net_http_parse_url(urlcopy, &domain, &port, &location))
       goto fail;
 
-	fd = http_new_socket(domain, port);
+	fd = net_http_new_socket(domain, port);
 	if (fd == -1)
       goto fail;
 	
 	error=false;
 	
 	/* This is a bit lazy, but it works. */
-	http_send_str(fd, &error, "GET /");
-	http_send_str(fd, &error, location);
-	http_send_str(fd, &error, " HTTP/1.1\r\n");
+	net_http_send_str(fd, &error, "GET /");
+	net_http_send_str(fd, &error, location);
+	net_http_send_str(fd, &error, " HTTP/1.1\r\n");
 	
-	http_send_str(fd, &error, "Host: ");
-	http_send_str(fd, &error, domain);
+	net_http_send_str(fd, &error, "Host: ");
+	net_http_send_str(fd, &error, domain);
 
 	if (port!=80)
 	{
 		char portstr[16];
+
 		sprintf(portstr, ":%i", port);
-		http_send_str(fd, &error, portstr);
+		net_http_send_str(fd, &error, portstr);
 	}
 
-	http_send_str(fd, &error, "\r\n");
-	http_send_str(fd, &error, "Connection: close\r\n");
-	http_send_str(fd, &error, "\r\n");
+	net_http_send_str(fd, &error, "\r\n");
+	net_http_send_str(fd, &error, "Connection: close\r\n");
+	net_http_send_str(fd, &error, "\r\n");
 	
 	if (error)
       goto fail;
@@ -278,12 +280,12 @@ fail:
 	return NULL;
 }
 
-int http_fd(struct http *state)
+int net_http_fd(struct http *state)
 {
 	return state->fd;
 }
 
-bool http_update(struct http* state, size_t* progress, size_t* total)
+bool net_http_update(struct http* state, size_t* progress, size_t* total)
 {
 	ssize_t newlen = 0;
 	
@@ -292,7 +294,7 @@ bool http_update(struct http* state, size_t* progress, size_t* total)
 	
 	if (state->part < p_body)
 	{
-		newlen = http_recv(state->fd, &state->error,
+		newlen = net_http_recv(state->fd, &state->error,
             (uint8_t*)state->data + state->pos, state->buflen - state->pos);
 
 		if (newlen < 0)
@@ -360,7 +362,7 @@ bool http_update(struct http* state, size_t* progress, size_t* total)
 	{
 		if (!newlen)
 		{
-			newlen = http_recv(state->fd, &state->error,
+			newlen = net_http_recv(state->fd, &state->error,
                (uint8_t*)state->data + state->pos,
                state->buflen - state->pos);
 
@@ -473,12 +475,12 @@ fail:
 	return true;
 }
 
-int http_status(struct http* state)
+int net_http_status(struct http* state)
 {
 	return state->status;
 }
 
-uint8_t* http_data(struct http* state, size_t* len, bool accept_error)
+uint8_t* net_http_data(struct http* state, size_t* len, bool accept_error)
 {
 	if (!accept_error && 
          (state->error || state->status<200 || state->status>299))
@@ -494,7 +496,7 @@ uint8_t* http_data(struct http* state, size_t* len, bool accept_error)
 	return (uint8_t*)state->data;
 }
 
-void http_delete(struct http* state)
+void net_http_delete(struct http* state)
 {
 	if (state->fd != -1)
       close(state->fd);

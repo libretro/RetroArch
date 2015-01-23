@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _HTTP_PARSER_H
-#define _HTTP_PARSER_H
+#ifndef _NET_HTTP_H
+#define _NET_HTTP_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -27,27 +27,27 @@ extern "C" {
 
 struct http;
 
-struct http* http_new(const char * url);
+struct http* net_http_new(const char * url);
 
-/* You can use this to call http_update 
+/* You can use this to call net_http_update 
  * only when something will happen; select() it for reading. */
-int http_fd(struct http* state);
+int net_http_fd(struct http* state);
 
 /* Returns true if it's done, or if something broke.
  * 'total' will be 0 if it's not known. */
-bool http_update(struct http* state, size_t* progress, size_t* total);
+bool net_http_update(struct http* state, size_t* progress, size_t* total);
 
 /* 200, 404, or whatever.  */
-int http_status(struct http* state);
+int net_http_status(struct http* state);
 
 /* Returns the downloaded data. The returned buffer is owned by the 
- * HTTP handler; it's freed by http_delete. 
+ * HTTP handler; it's freed by net_http_delete. 
  *
  * If the status is not 20x and accept_error is false, it returns NULL. */
-uint8_t* http_data(struct http* state, size_t* len, bool accept_error);
+uint8_t* net_http_data(struct http* state, size_t* len, bool accept_error);
 
 /* Cleans up all memory. */
-void http_delete(struct http* state);
+void net_http_delete(struct http* state);
 
 #ifdef __cplusplus
 }
