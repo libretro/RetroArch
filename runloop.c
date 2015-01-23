@@ -891,10 +891,10 @@ static int rarch_main_iterate_http_transfer(void)
 static int rarch_main_iterate_http_parse(void)
 {
    size_t len;
-   char *w = (char*)net_http_data(g_extern.http_handle, &len, false);
+   char *data = (char*)net_http_data(g_extern.http_handle, &len, false);
 
-   if (w && g_extern.http_handle->cb)
-      g_extern.http_handle->cb(w, len);
+   if (data && g_extern.http_handle->cb)
+      g_extern.http_handle->cb(data, len);
 
    net_http_delete(g_extern.http_handle);
 
