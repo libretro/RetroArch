@@ -382,7 +382,6 @@ static struct rmsgpack_dom_value all_map (
         const struct argument * argv
 ) {
 	struct rmsgpack_dom_value res;
-	struct rmsgpack_dom_value key;
 	struct rmsgpack_dom_value * value = NULL;
 	struct argument arg;
 	struct rmsgpack_dom_value nil_value;
@@ -391,31 +390,30 @@ static struct rmsgpack_dom_value all_map (
 	res.type = RDT_BOOL;
 	res.bool_ = 1;
 
-   (void)key;
-
-	if (argc % 2 != 0) {
+	if (argc % 2 != 0)
+   {
 		res.bool_ = 0;
 		return res;
 	}
-	if (input.type != RDT_MAP) {
+	if (input.type != RDT_MAP)
 		return res;
-	}
 
-	for (i = 0; i < argc; i += 2) {
+	for (i = 0; i < argc; i += 2)
+   {
 		arg = argv[i];
-		if (arg.type != AT_VALUE) {
+		if (arg.type != AT_VALUE)
+      {
 			res.bool_ = 0;
 			goto clean;
 		}
 		value = rmsgpack_dom_value_map_value(&input, &arg.value);
-		if (!value) {
-			// All missing fields are nil
+		if (!value) /* All missing fields are nil */
 			value = &nil_value;
-		}
 		arg = argv[i + 1];
-		if (arg.type == AT_VALUE) {
+		if (arg.type == AT_VALUE)
 			res = equals(*value, 1, &arg);
-		} else {
+		else
+      {
 			res = is_true(arg.invocation.func(
 			                      *value,
 			                      arg.invocation.argc,
@@ -423,9 +421,8 @@ static struct rmsgpack_dom_value all_map (
 			              ), 0, NULL);
 			value = NULL;
 		}
-		if (!res.bool_) {
+		if (!res.bool_)
 			break;
-		}
 	}
 clean:
 	return res;
@@ -508,7 +505,8 @@ static void peek_char(
         char * c,
         const char ** error
 ) {
-	if (is_eot(buff)) {
+	if (is_eot(buff))
+   {
 		raise_unexpected_eof(buff.offset, error);
 		return;
 	}
