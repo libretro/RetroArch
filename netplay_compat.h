@@ -29,6 +29,10 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+#define isagain(bytes) (false)
 #elif defined(_XBOX)
 #define NOD3D
 #include <xtl.h>

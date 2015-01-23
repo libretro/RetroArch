@@ -11,6 +11,10 @@
 
 #define MAGIC_NUMBER "RARCHDB"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct libretrodb_query libretrodb_query_t;
 
 typedef struct libretrodb
@@ -125,5 +129,9 @@ int libretrodb_cursor_read_item(
         libretrodb_cursor_t * cursor,
         struct rmsgpack_dom_value * out
 );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

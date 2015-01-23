@@ -18,34 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-
-#if defined(_WIN32)
-	/* Much of this is copypasta from elsewhere, I don't know if it works. */
-	#define _WIN32_WINNT 0x501
-	#include <winsock2.h>
-	#include <ws2tcpip.h>
-	#define isagain(bytes) (false)
-	#define MSG_NOSIGNAL 0
-	#define close closesocket
-	#ifdef _MSC_VER
-		#pragma comment(lib, "ws2_32.lib")
-	#endif
-#else
-	//#include <sys/types.h>
-	#include <sys/socket.h>
-	#include <sys/time.h>
-	//#include <sys/un.h>
-	//#include <sys/stat.h>
-	//#include <netinet/in.h>
-	//#include <netinet/tcp.h>
-	//#include <arpa/inet.h>
-	#include <netdb.h>
-	#include <fcntl.h>
-	//#include <signal.h>
-	#include <errno.h>
-	#include <unistd.h>
-	#define isagain(bytes) (bytes<0 && (errno==EAGAIN || errno==EWOULDBLOCK))
-#endif
+#include "netplay_compat.h"
 
 enum
 {

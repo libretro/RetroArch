@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum rmsgpack_dom_type {
 	RDT_NULL = 0,
 	RDT_BOOL,
@@ -64,8 +68,11 @@ int rmsgpack_dom_write(
         int fd,
         const struct rmsgpack_dom_value * obj
 );
-int rmsgpack_dom_read_into(
-        int fd,
-        ...
-);
+
+int rmsgpack_dom_read_into(int fd, ...);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

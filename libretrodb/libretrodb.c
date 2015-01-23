@@ -82,9 +82,9 @@ int libretrodb_create(
         void * ctx
 ){
 	int rv;
-   off_t root;
-	uint64_t item_count = 0;
+    off_t root;
 	libretrodb_metadata_t md;
+	uint64_t item_count = 0;
 	struct rmsgpack_dom_value item = {};
 	libretrodb_header_t header = {};
 
