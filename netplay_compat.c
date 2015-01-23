@@ -98,3 +98,15 @@ bool socket_nonblock(int fd)
    return fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) == 0;
 #endif
 }
+
+int socket_close(int fd)
+{ 
+#if defined(_WIN32) && !defined(_XBOX360)
+   /* WinSock has headers from the stone age. */
+   return closesocket(fd);
+#elif defined(__CELLOS_LV2__)
+   return socketclose(fd);
+#else
+   return close(fd);
+#endif
+}

@@ -686,7 +686,7 @@ static int init_tcp_connection(const struct addrinfo *res,
             goto end;
          }
 
-         close(fd);
+         socket_close(fd);
          fd = new_fd;
       }
    }
@@ -694,7 +694,7 @@ static int init_tcp_connection(const struct addrinfo *res,
 end:
    if (!ret && fd >= 0)
    {
-      close(fd);
+      socket_close(fd);
       fd = -1;
    }
 
@@ -801,7 +801,7 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
                netplay->addr->ai_addrlen) < 0)
       {
          RARCH_ERR("Failed to bind socket.\n");
-         close(netplay->udp_fd);
+         socket_close(netplay->udp_fd);
          netplay->udp_fd = -1;
       }
 
@@ -1286,9 +1286,9 @@ netplay_t *netplay_new(const char *server, uint16_t port,
 
 error:
    if (netplay->fd >= 0)
-      close(netplay->fd);
+      socket_close(netplay->fd);
    if (netplay->udp_fd >= 0)
-      close(netplay->udp_fd);
+      socket_close(netplay->udp_fd);
 
    free(netplay);
    return NULL;
@@ -1374,19 +1374,19 @@ void netplay_free(netplay_t *netplay)
 {
    unsigned i;
 
-   close(netplay->fd);
+   socket_close(netplay->fd);
 
    if (netplay->spectate)
    {
       for (i = 0; i < MAX_SPECTATORS; i++)
          if (netplay->spectate_fds[i] >= 0)
-            close(netplay->spectate_fds[i]);
+            socket_close(netplay->spectate_fds[i]);
 
       free(netplay->spectate_input);
    }
    else
    {
-      close(netplay->udp_fd);
+      socket_close(netplay->udp_fd);
 
       for (i = 0; i < netplay->buffer_size; i++)
          free(netplay->buffer[i].state);
@@ -1512,21 +1512,21 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
    /* No vacant client streams :( */
    if (idx == -1)
    {
-      close(new_fd);
+      socket_close(new_fd);
       return;
    }
 
    if (!get_nickname(netplay, new_fd))
    {
       RARCH_ERR("Failed to get nickname from client.\n");
-      close(new_fd);
+      socket_close(new_fd);
       return;
    }
 
    if (!send_nickname(netplay, new_fd))
    {
       RARCH_ERR("Failed to send nickname to client.\n");
-      close(new_fd);
+      socket_close(new_fd);
       return;
    }
 
@@ -1536,7 +1536,7 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
    if (!header)
    {
       RARCH_ERR("Failed to generate BSV header.\n");
-      close(new_fd);
+      socket_close(new_fd);
       return;
    }
 
@@ -1547,7 +1547,7 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
    if (!send_all(new_fd, header, header_size))
    {
       RARCH_ERR("Failed to send header to client.\n");
-      close(new_fd);
+      socket_close(new_fd);
       free(header);
       return;
    }
@@ -1668,7 +1668,7 @@ static void netplay_post_frame_spectate(netplay_t *netplay)
       snprintf(msg, sizeof(msg), "Client (#%u) disconnected.", i);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
-      close(netplay->spectate_fds[i]);
+      socket_close(netplay->spectate_fds[i]);
       netplay->spectate_fds[i] = -1;
       break;
    }

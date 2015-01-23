@@ -110,7 +110,7 @@ static int net_http_new_socket(const char * domain, int port)
 	if (connect(fd, addr->ai_addr, addr->ai_addrlen) != 0)
 	{
 		freeaddrinfo_rarch(addr);
-		close(fd);
+		socket_close(fd);
 		return -1;
 	}
 
@@ -118,7 +118,7 @@ static int net_http_new_socket(const char * domain, int port)
 
    if (!socket_nonblock(fd))
    {
-		close(fd);
+		socket_close(fd);
       return -1;
    }
 
@@ -243,7 +243,7 @@ http_t *net_http_new(const char * url)
 	
 fail:
 	if (fd != -1)
-      close(fd);
+      socket_close(fd);
 	free(urlcopy);
 	return NULL;
 }
@@ -467,7 +467,7 @@ uint8_t* net_http_data(http_t *state, size_t* len, bool accept_error)
 void net_http_delete(http_t *state)
 {
 	if (state->fd != -1)
-      close(state->fd);
+      socket_close(state->fd);
 	if (state->data)
       free(state->data);
 	free(state);

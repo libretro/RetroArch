@@ -153,7 +153,7 @@ void rarch_cmd_free(rarch_cmd_t *handle)
 {
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
    if (handle && handle->net_fd >= 0)
-      close(handle->net_fd);
+      socket_close(handle->net_fd);
 #endif
 
    free(handle);
@@ -564,7 +564,7 @@ static bool send_udp_packet(const char *host,
          goto end;
       }
 
-      close(fd);
+      socket_close(fd);
       fd = -1;
       tmp = tmp->ai_next;
    }
@@ -572,7 +572,7 @@ static bool send_udp_packet(const char *host,
 end:
    freeaddrinfo_rarch(res);
    if (fd >= 0)
-      close(fd);
+      socket_close(fd);
    return ret;
 }
 

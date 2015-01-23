@@ -77,18 +77,11 @@
 #define MSG_NOSIGNAL 0
 #endif
 
-#if defined(_WIN32)
-/* Woohoo, Winsock has headers 
- * from the STONE AGE. :D */
-#ifndef _XBOX360
-#define close(x) closesocket(x)
-#endif
-#else
+#ifndef _WIN32
 #include <sys/time.h>
 #include <unistd.h>
 
 #if defined(__CELLOS_LV2__)
-#define close(x) socketclose(x)
 #define select(nfds, readfds, writefds, errorfds, timeout) socketselect(nfds, readfds, writefds, errorfds, timeout)
 #endif
 #endif
@@ -129,6 +122,8 @@ int getaddrinfo_rarch(const char *node, const char *service,
 void freeaddrinfo_rarch(struct addrinfo *res);
 
 bool socket_nonblock(int fd);
+
+int socket_close(int fd);
 
 #endif
 
