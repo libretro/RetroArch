@@ -22,6 +22,7 @@
 #endif
 
 #include <boolean.h>
+#include <retro_inline.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
 #ifndef _WIN32_WINNT
@@ -34,7 +35,7 @@
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif
-inline bool isagain(int bytes) { return (bytes==SOCKET_ERROR && WSAGetLastError()==WSAEWOULDBLOCK); }
+static INLINE bool isagain(int bytes) { return (bytes==SOCKET_ERROR && WSAGetLastError()==WSAEWOULDBLOCK); }
 #elif defined(_XBOX)
 #define NOD3D
 #include <xtl.h>
@@ -52,7 +53,7 @@ inline bool isagain(int bytes) { return (bytes==SOCKET_ERROR && WSAGetLastError(
 #include <fcntl.h>
 #include <errno.h>
 
-inline bool isagain(int bytes) { return (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)); }
+static INLINE bool isagain(int bytes) { return (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)); }
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <cell/sysmodule.h>
 #include <netex/net.h>
