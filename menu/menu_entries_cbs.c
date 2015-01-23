@@ -849,7 +849,7 @@ static int action_ok_core_manager_list(const char *path,
    strlcpy(core_manager_path, path, sizeof(core_manager_path));
 
    msg_queue_clear(g_extern.http_msg_queue);
-   msg_queue_push(g_extern.http_msg_queue, core_path, 0, 180);
+   msg_queue_push(g_extern.http_msg_queue, core_path, 0, 1);
 
    net_http_set_pending_cb(cb_core_manager_download);
 #endif
@@ -2359,7 +2359,7 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
          ".index", sizeof(url_path));
 
    msg_queue_clear(g_extern.http_msg_queue);
-   msg_queue_push(g_extern.http_msg_queue, url_path, 0, 180);
+   msg_queue_push(g_extern.http_msg_queue, url_path, 0, 1);
 
    net_http_set_pending_cb(cb_core_manager_list);
 #endif
