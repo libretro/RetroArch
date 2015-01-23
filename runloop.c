@@ -898,6 +898,9 @@ static int rarch_main_iterate_http_parse(void)
 
    net_http_delete(g_extern.http_handle);
 
+   g_extern.http_handle = NULL;
+   msg_queue_clear(g_extern.http_msg_queue);
+
    return 0;
 }
 
