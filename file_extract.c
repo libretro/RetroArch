@@ -159,6 +159,7 @@ static void *zlib_file_open(const char *path)
       return NULL;
 
    ret = read_file(path, &data->data);
+
    if (ret < 0)
    {
       RARCH_ERR("Failed to open archive: %s.\n",
@@ -235,9 +236,9 @@ bool zlib_inflate_data_to_file(const char *path, const uint8_t *cdata,
    if (inflateInit2(&stream, -MAX_WBITS) != Z_OK)
       GOTO_END_ERROR();
 
-   stream.next_in = (uint8_t*)cdata;
-   stream.avail_in = csize;
-   stream.next_out = out_data;
+   stream.next_in   = (uint8_t*)cdata;
+   stream.avail_in  = csize;
+   stream.next_out  = out_data;
    stream.avail_out = size;
 
    if (inflate(&stream, Z_FINISH) != Z_STREAM_END)
@@ -321,10 +322,10 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
       if (signature != 0x02014b50)
          break;
 
-      cmode    = read_le(directory + 10, 2);
-      checksum = read_le(directory + 16, 4);
-      csize    = read_le(directory + 20, 4);
-      size     = read_le(directory + 24, 4);
+      cmode         = read_le(directory + 10, 2);
+      checksum      = read_le(directory + 16, 4);
+      csize         = read_le(directory + 20, 4);
+      size          = read_le(directory + 24, 4);
 
       namelength    = read_le(directory + 28, 2);
       extralength   = read_le(directory + 30, 2);
@@ -335,9 +336,9 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
 
       memcpy(filename, directory + 46, namelength);
 
-      offset   = read_le(directory + 42, 4);
-      offsetNL = read_le(data + offset + 26, 2);
-      offsetEL = read_le(data + offset + 28, 2);
+      offset        = read_le(directory + 42, 4);
+      offsetNL      = read_le(data + offset + 26, 2);
+      offsetEL      = read_le(data + offset + 28, 2);
 
       cdata = data + offset + 30 + offsetNL + offsetEL;
 
@@ -440,10 +441,10 @@ bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
    if (!list)
       GOTO_END_ERROR();
 
-   userdata.zip_path = zip_path;
-   userdata.zip_path_size = zip_path_size;
+   userdata.zip_path             = zip_path;
+   userdata.zip_path_size        = zip_path_size;
    userdata.extraction_directory = extraction_directory;
-   userdata.ext = list;
+   userdata.ext                  = list;
 
    if (!zlib_parse_file(zip_path, zip_extract_cb, &userdata))
    {
