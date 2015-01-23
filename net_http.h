@@ -35,9 +35,6 @@ typedef struct
 	char part;
 	char bodytype;
 	bool error;
-#if 0
-	char padding[5];
-#endif
 	
 	size_t pos;
 	size_t len;

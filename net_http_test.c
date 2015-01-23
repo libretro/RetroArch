@@ -1,8 +1,16 @@
 #include <stdio.h>
 #include "net_http.h"
 
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
+
 int main(void)
 {
+#ifdef _WIN32
+	WSADATA wsaData;
+	WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
    char *w;
 	http_t *http1, *http2, *http3;
 	size_t len, pos = 0; size_t tot = 0;

@@ -34,7 +34,7 @@
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif
-#define isagain(bytes) (false)
+#define isagain(bytes) (bytes==SOCKET_ERROR && WSAGetLastError()==WSAEWOULDBLOCK)
 #elif defined(_XBOX)
 #define NOD3D
 #include <xtl.h>
