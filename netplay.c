@@ -114,38 +114,6 @@ struct netplay
    uint32_t flip_frame;
 };
 
-static bool send_all(int fd, const void *data_, size_t size)
-{
-   const uint8_t *data = (const uint8_t*)data_;
-   while (size)
-   {
-      ssize_t ret = send(fd, (const char*)data, size, 0);
-      if (ret <= 0)
-         return false;
-
-      data += ret;
-      size -= ret;
-   }
-
-   return true;
-}
-
-static bool recv_all(int fd, void *data_, size_t size)
-{
-   uint8_t *data = (uint8_t*)data_;
-   while (size)
-   {
-      ssize_t ret = recv(fd, (char*)data, size, 0);
-      if (ret <= 0)
-         return false;
-
-      data += ret;
-      size -= ret;
-   }
-
-   return true;
-}
-
 /**
  * warn_hangup:
  *
@@ -253,19 +221,19 @@ static bool get_self_input_state(netplay_t *netplay)
 static bool netplay_cmd_ack(netplay_t *netplay)
 {
    uint32_t cmd = htonl(NETPLAY_CMD_ACK);
-   return send_all(netplay->fd, &cmd, sizeof(cmd));
+   return socket_send_all_blocking(netplay->fd, &cmd, sizeof(cmd));
 }
 
 static bool netplay_cmd_nak(netplay_t *netplay)
 {
    uint32_t cmd = htonl(NETPLAY_CMD_NAK);
-   return send_all(netplay->fd, &cmd, sizeof(cmd));
+   return socket_send_all_blocking(netplay->fd, &cmd, sizeof(cmd));
 }
 
 static bool netplay_get_response(netplay_t *netplay)
 {
    uint32_t response;
-   if (!recv_all(netplay->fd, &response, sizeof(response)))
+   if (!socket_receive_all_blocking(netplay->fd, &response, sizeof(response)))
       return false;
 
    return ntohl(response) == NETPLAY_CMD_ACK;
@@ -276,7 +244,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
    uint32_t cmd, flip_frame;
    size_t cmd_size;
 
-   if (!recv_all(netplay->fd, &cmd, sizeof(cmd)))
+   if (!socket_receive_all_blocking(netplay->fd, &cmd, sizeof(cmd)))
       return false;
 
    cmd = ntohl(cmd);
@@ -293,7 +261,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
             return netplay_cmd_nak(netplay);
          }
 
-         if (!recv_all(netplay->fd, &flip_frame, sizeof(flip_frame)))
+         if (!socket_receive_all_blocking(netplay->fd, &flip_frame, sizeof(flip_frame)))
          {
             RARCH_ERR("Failed to receive CMD_FLIP_PLAYERS argument.\n");
             return netplay_cmd_nak(netplay);
@@ -914,13 +882,13 @@ static bool send_nickname(netplay_t *netplay, int fd)
 {
    uint8_t nick_size = strlen(netplay->nick);
 
-   if (!send_all(fd, &nick_size, sizeof(nick_size)))
+   if (!socket_send_all_blocking(fd, &nick_size, sizeof(nick_size)))
    {
       RARCH_ERR("Failed to send nick size.\n");
       return false;
    }
 
-   if (!send_all(fd, netplay->nick, nick_size))
+   if (!socket_send_all_blocking(fd, netplay->nick, nick_size))
    {
       RARCH_ERR("Failed to send nick.\n");
       return false;
@@ -933,7 +901,7 @@ static bool get_nickname(netplay_t *netplay, int fd)
 {
    uint8_t nick_size;
 
-   if (!recv_all(fd, &nick_size, sizeof(nick_size)))
+   if (!socket_receive_all_blocking(fd, &nick_size, sizeof(nick_size)))
    {
       RARCH_ERR("Failed to receive nick size from host.\n");
       return false;
@@ -945,7 +913,7 @@ static bool get_nickname(netplay_t *netplay, int fd)
       return false;
    }
 
-   if (!recv_all(fd, netplay->other_nick, nick_size))
+   if (!socket_receive_all_blocking(fd, netplay->other_nick, nick_size))
    {
       RARCH_ERR("Failed to receive nick.\n");
       return false;
@@ -965,7 +933,7 @@ static bool send_info(netplay_t *netplay)
       htonl(pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM))
    };
 
-   if (!send_all(netplay->fd, header, sizeof(header)))
+   if (!socket_send_all_blocking(netplay->fd, header, sizeof(header)))
       return false;
 
    if (!send_nickname(netplay, netplay->fd))
@@ -978,7 +946,7 @@ static bool send_info(netplay_t *netplay)
    sram      = pretro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
    sram_size = pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
 
-   if (!recv_all(netplay->fd, sram, sram_size))
+   if (!socket_receive_all_blocking(netplay->fd, sram, sram_size))
    {
       RARCH_ERR("Failed to receive SRAM data from host.\n");
       return false;
@@ -1003,7 +971,7 @@ static bool get_info(netplay_t *netplay)
    unsigned sram_size;
    uint32_t header[3];
 
-   if (!recv_all(netplay->fd, header, sizeof(header)))
+   if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
    {
       RARCH_ERR("Failed to receive header from client.\n");
       return false;
@@ -1037,7 +1005,7 @@ static bool get_info(netplay_t *netplay)
    sram      = pretro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
    sram_size = pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
 
-   if (!send_all(netplay->fd, sram, sram_size))
+   if (!socket_send_all_blocking(netplay->fd, sram, sram_size))
    {
       RARCH_ERR("Failed to send SRAM data to client.\n");
       return false;
@@ -1146,7 +1114,7 @@ static bool get_info_spectate(netplay_t *netplay)
    RARCH_LOG("%s\n", msg);
 
 
-   if (!recv_all(netplay->fd, header, sizeof(header)))
+   if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
    {
       RARCH_ERR("Cannot get header from host.\n");
       return false;
@@ -1165,7 +1133,7 @@ static bool get_info_spectate(netplay_t *netplay)
 
    size = save_state_size;
 
-   if (!recv_all(netplay->fd, buf, size))
+   if (!socket_receive_all_blocking(netplay->fd, buf, size))
    {
       RARCH_ERR("Failed to receive save state from host.\n");
       free(buf);
@@ -1300,10 +1268,10 @@ static bool netplay_send_cmd(netplay_t *netplay, uint32_t cmd,
    cmd = (cmd << 16) | (size & 0xffff);
    cmd = htonl(cmd);
 
-   if (!send_all(netplay->fd, &cmd, sizeof(cmd)))
+   if (!socket_send_all_blocking(netplay->fd, &cmd, sizeof(cmd)))
       return false;
 
-   if (!send_all(netplay->fd, data, size))
+   if (!socket_send_all_blocking(netplay->fd, data, size))
       return false;
 
    return true;
@@ -1443,7 +1411,7 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
 {
    int16_t inp;
 
-   if (recv_all(netplay->fd, (char*)&inp, sizeof(inp)))
+   if (socket_receive_all_blocking(netplay->fd, (char*)&inp, sizeof(inp)))
       return swap_if_big16(inp);
 
    RARCH_ERR("Connection with host was cut.\n");
@@ -1544,7 +1512,7 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
    setsockopt(new_fd, SOL_SOCKET, SO_SNDBUF, (const char*)&bufsize,
          sizeof(int));
 
-   if (!send_all(new_fd, header, header_size))
+   if (!socket_send_all_blocking(new_fd, header, header_size))
    {
       RARCH_ERR("Failed to send header to client.\n");
       socket_close(new_fd);
@@ -1658,7 +1626,7 @@ static void netplay_post_frame_spectate(netplay_t *netplay)
       if (netplay->spectate_fds[i] == -1)
          continue;
 
-      if (send_all(netplay->spectate_fds[i],
+      if (socket_send_all_blocking(netplay->spectate_fds[i],
                netplay->spectate_input,
                netplay->spectate_input_ptr * sizeof(int16_t)))
          continue;

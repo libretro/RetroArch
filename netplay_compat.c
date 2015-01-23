@@ -119,3 +119,37 @@ int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
    return select(nfds, readfs, writefds, errorfds, timeout);
 #endif
 }
+
+int socket_send_all_blocking(int fd, const void *data_, size_t size)
+{
+   const uint8_t *data = (const uint8_t*)data_;
+
+   while (size)
+   {
+      ssize_t ret = send(fd, (const char*)data, size, 0);
+      if (ret <= 0)
+         return false;
+
+      data += ret;
+      size -= ret;
+   }
+
+   return true;
+}
+
+int socket_receive_all_blocking(int fd, void *data_, size_t size)
+{
+   const uint8_t *data = (const uint8_t*)data_;
+
+   while (size)
+   {
+      ssize_t ret = recv(fd, (char*)data, size, 0);
+      if (ret <= 0)
+         return false;
+
+      data += ret;
+      size -= ret;
+   }
+
+   return true;
+}
