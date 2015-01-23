@@ -86,7 +86,7 @@ static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
 
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-   if (getaddrinfo(NULL, port_buf, &hints, &res) < 0)
+   if (getaddrinfo_rarch(NULL, port_buf, &hints, &res) < 0)
       goto error;
 
    handle->net_fd = socket(res->ai_family,
@@ -105,12 +105,12 @@ static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
       goto error;
    }
 
-   freeaddrinfo(res);
+   freeaddrinfo_rarch(res);
    return true;
 
 error:
    if (res)
-      freeaddrinfo(res);
+      freeaddrinfo_rarch(res);
    return false;
 }
 #endif
@@ -548,7 +548,7 @@ static bool send_udp_packet(const char *host,
    hints.ai_socktype = SOCK_DGRAM;
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-   if (getaddrinfo(host, port_buf, &hints, &res) < 0)
+   if (getaddrinfo_rarch(host, port_buf, &hints, &res) < 0)
       return false;
 
    /* Send to all possible targets.
@@ -580,7 +580,7 @@ static bool send_udp_packet(const char *host,
    }
 
 end:
-   freeaddrinfo(res);
+   freeaddrinfo_rarch(res);
    if (fd >= 0)
       close(fd);
    return ret;
