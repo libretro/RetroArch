@@ -89,7 +89,6 @@ bool socket_nonblock(int fd)
 #if defined(__CELLOS_LV2__)
    int i = 1;
    setsockopt(fd, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
-   setsockopt(fd, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
    return true;
 #elif defined(_WIN32)
    u_long mode = 1;
