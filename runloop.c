@@ -867,6 +867,24 @@ static int rarch_main_iterate_quit(void)
 }
 
 #ifdef HAVE_NETPLAY
+
+static http_cb_t pending_cb;
+
+void net_http_set_pending_cb(http_cb_t cb)
+{
+   pending_cb = cb;
+}
+
+static http_cb_t net_http_get_pending_cb(void)
+{
+   return pending_cb;
+}
+
+static void net_http_clear_pending_cb(void)
+{
+   pending_cb = NULL;
+}
+
 /**
  * rarch_main_iterate_http_transfer:
  *
@@ -893,8 +911,8 @@ static int rarch_main_iterate_http_parse(void)
    size_t len;
    char *data = (char*)net_http_data(g_extern.http_handle, &len, false);
 
-   if (data && g_extern.http_handle->cb)
-      g_extern.http_handle->cb(data, len);
+   if (data && g_extern.http_cb)
+      g_extern.http_cb(data, len);
 
    net_http_delete(g_extern.http_handle);
 
@@ -928,6 +946,13 @@ static int rarch_main_iterate_http_poll(void)
       return -1; 
 
    g_extern.http_handle = net_http_new(url);
+
+   if (!g_extern.http_handle)
+      return -1;
+
+   g_extern.http_cb      = net_http_get_pending_cb();
+   
+   net_http_clear_pending_cb();
 
    return 0;
 }

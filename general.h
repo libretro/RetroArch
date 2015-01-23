@@ -388,6 +388,10 @@ typedef struct rarch_resolution
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
+#ifdef HAVE_NETPLAY
+typedef int (*http_cb_t               )(void *data, size_t len);
+#endif
+
 /* All run-time- / command line flag-related globals go here. */
 
 struct global
@@ -575,6 +579,7 @@ struct global
 #ifdef HAVE_NETPLAY
    msg_queue_t *http_msg_queue;
    http_t      *http_handle;
+   http_cb_t    http_cb;
 #endif
 
    bool exec;
@@ -775,6 +780,10 @@ static inline void rarch_fail(int error_code, const char *error)
          sizeof(g_extern.error_string));
    longjmp(g_extern.error_sjlj_context, error_code);
 }
+
+#ifdef HAVE_NETPLAY
+void net_http_set_pending_cb(http_cb_t cb);
+#endif
 
 #endif
 

@@ -184,23 +184,6 @@ static ssize_t net_http_recv(int fd, bool *error,
    return -1;
 }
 
-static http_cb_t pending_cb;
-
-void net_http_set_pending_cb(http_cb_t cb)
-{
-   pending_cb = cb;
-}
-
-static http_cb_t net_http_get_pending_cb(void)
-{
-   return pending_cb;
-}
-
-static void net_http_clear_pending_cb(void)
-{
-   pending_cb = NULL;
-}
-
 http_t *net_http_new(const char * url)
 {
 	bool error;
@@ -256,9 +239,6 @@ http_t *net_http_new(const char * url)
 	state->len     = 0;
 	state->buflen  = 512;
 	state->data    = (char*)malloc(state->buflen);
-   state->cb      = net_http_get_pending_cb();
-   
-   net_http_clear_pending_cb();
 
 	return state;
 	
