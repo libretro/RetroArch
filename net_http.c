@@ -186,8 +186,7 @@ static ssize_t net_http_recv(int fd, bool *error,
 http_t *net_http_new(const char * url)
 {
 	bool error;
-   char *domain, *location;
-
+   char *domain = NULL, *location = NULL;
 	int port, fd       = -1;
 	http_t *state      = NULL;
 	char *urlcopy      =(char*)malloc(strlen(url)+1);
