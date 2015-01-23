@@ -1,80 +1,22 @@
-////////////////////////////////
-//http.h
-////////////////////////////////
-#define _POSIX_SOURCE
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
-
-struct http;
-struct http* http_new(const char * url);
-
-/* You can use this to call http_update 
- * only when something will happen; select() it for reading. */
-int http_fd(struct http* state);
-
-/* Returns true if it's done, or if something broke.
- * 'total' will be 0 if it's not known. */
-bool http_update(struct http* state, size_t* progress, size_t* total);
-
-/* 200, 404, or whatever.  */
-int http_status(struct http* state);
-
-/* Returns the downloaded data. The returned buffer is owned by the 
- * HTTP handler; it's freed by http_delete. 
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2011-2015 - Daniel De Matteis
+ *  Copyright (C) 2014-2015 - Alfred Agrell
+ * 
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
  *
- * If the status is not 20x and accept_error is false, it returns NULL. */
-uint8_t* http_data(struct http* state, size_t* len, bool accept_error);
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
 
-/* Cleans up all memory. */
-void http_delete(struct http* state);
-
-////////////////////////////////
-//test.c
-////////////////////////////////
-
-#ifndef RARCH_INTERNAL
-#include<stdio.h>
-int main(void)
-{
-   char *w;
-	struct http* http1, *http2, *http3;
-	size_t q, pos = 0; size_t tot = 0;
-
-	http1 = http_new("http://buildbot.libretro.com/nightly/win-x86/latest/mednafen_psx_libretro.dll.zip");
-
-	while (!http_update(http1, &pos, &tot))
-		printf("%.9lu / %.9lu        \r",pos,tot);
-	
-	http3 = http_new("http://www.wikipedia.org/");
-	while (!http_update(http3, NULL, NULL)) {}
-	
-	w     = (char*)http_data(http3, &q, false);
-
-	printf("%.*s\n", (int)256, w);
-
-#if 0
-	struct http* http1=http_new("http://floating.muncher.se:22/");
-	struct http* http2=http_new("http://floating.muncher.se/sepulcher/");
-	struct http* http3=http_new("http://www.wikipedia.org/");
-	while (!http_update(http3, NULL, NULL)) {}
-	while (!http_update(http2, NULL, NULL)) {}
-	while (!http_update(http1, NULL, NULL)) {}
-	printf("%i %i %i %p %s %s\n",
-	http_status(http1),http_status(http2),http_status(http3),
-	(char*)http_data(http1, NULL, false),http_data(http2, NULL, true),http_data(http3, NULL, true));
-#endif
-	http_delete(http1);
-	http_delete(http3);
-}
-#endif
-
-////////////////////////////////
-//http.c
-////////////////////////////////
+#include "http_parser.h"
 #include <ctype.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 #if defined(_WIN32)
 	/* Much of this is copypasta from elsewhere, I don't know if it works. */
