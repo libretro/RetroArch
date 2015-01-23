@@ -83,11 +83,7 @@
 #ifndef _XBOX360
 #define close(x) closesocket(x)
 #endif
-#define CONST_CAST (const char*)
-#define NONCONST_CAST (char*)
 #else
-#define CONST_CAST
-#define NONCONST_CAST
 #include <sys/time.h>
 #include <unistd.h>
 

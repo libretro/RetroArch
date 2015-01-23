@@ -119,7 +119,7 @@ static bool send_all(int fd, const void *data_, size_t size)
    const uint8_t *data = (const uint8_t*)data_;
    while (size)
    {
-      ssize_t ret = send(fd, CONST_CAST data, size, 0);
+      ssize_t ret = send(fd, (const char*)data, size, 0);
       if (ret <= 0)
          return false;
 
@@ -135,7 +135,7 @@ static bool recv_all(int fd, void *data_, size_t size)
    uint8_t *data = (uint8_t*)data_;
    while (size)
    {
-      ssize_t ret = recv(fd, NONCONST_CAST data, size, 0);
+      ssize_t ret = recv(fd, (char*)data, size, 0);
       if (ret <= 0)
          return false;
 
@@ -193,7 +193,7 @@ static bool send_chunk(netplay_t *netplay)
 
    if (addr)
    {
-      if (sendto(netplay->udp_fd, CONST_CAST netplay->packet_buffer,
+      if (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
                sizeof(netplay->packet_buffer), 0, addr,
                sizeof(struct sockaddr)) != sizeof(netplay->packet_buffer))
       {
@@ -382,7 +382,7 @@ static bool receive_data(netplay_t *netplay, uint32_t *buffer, size_t size)
 {
    socklen_t addrlen = sizeof(netplay->their_addr);
 
-   if (recvfrom(netplay->udp_fd, NONCONST_CAST buffer, size, 0,
+   if (recvfrom(netplay->udp_fd, (char*)buffer, size, 0,
             (struct sockaddr*)&netplay->their_addr, &addrlen) != (ssize_t)size)
       return false;
    netplay->has_client_addr = true;
@@ -668,7 +668,7 @@ static int init_tcp_connection(const struct addrinfo *res,
    else
    {
       int yes = 1;
-      setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, CONST_CAST &yes, sizeof(int));
+      setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&yes, sizeof(int));
 
       if (bind(fd, res->ai_addr, res->ai_addrlen) < 0 ||
             listen(fd, spectate ? MAX_SPECTATORS : 1) < 0)
@@ -795,7 +795,7 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
       int yes = 1;
 
       setsockopt(netplay->udp_fd, SOL_SOCKET, SO_REUSEADDR,
-            CONST_CAST &yes, sizeof(int));
+            (const char*)&yes, sizeof(int));
 
       if (bind(netplay->udp_fd, netplay->addr->ai_addr,
                netplay->addr->ai_addrlen) < 0)
@@ -1443,7 +1443,7 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
 {
    int16_t inp;
 
-   if (recv_all(netplay->fd, NONCONST_CAST &inp, sizeof(inp)))
+   if (recv_all(netplay->fd, (char*)&inp, sizeof(inp)))
       return swap_if_big16(inp);
 
    RARCH_ERR("Connection with host was cut.\n");
@@ -1541,7 +1541,7 @@ static void netplay_pre_frame_spectate(netplay_t *netplay)
    }
 
    bufsize = header_size;
-   setsockopt(new_fd, SOL_SOCKET, SO_SNDBUF, CONST_CAST &bufsize,
+   setsockopt(new_fd, SOL_SOCKET, SO_SNDBUF, (const char*)&bufsize,
          sizeof(int));
 
    if (!send_all(new_fd, header, header_size))
