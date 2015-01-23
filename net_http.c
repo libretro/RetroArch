@@ -97,6 +97,8 @@ static int net_http_new_socket(const char * domain, int port)
 	getaddrinfo_rarch(domain, portstr, &hints, &addr);
 	if (!addr)
       return -1;
+    
+    (void)i;
 	
 	fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 
