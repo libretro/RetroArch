@@ -867,6 +867,14 @@ static int rarch_main_iterate_quit(void)
 }
 
 #ifdef HAVE_NETPLAY
+/**
+ * rarch_main_iterate_http_transfer:
+ *
+ * Resumes HTTP transfer update.
+ *
+ * Returns: 0 when finished, -1 when we should continue
+ * with the transfer on the next frame.
+ **/
 static int rarch_main_iterate_http_transfer(void)
 {
    size_t pos = 0, tot = 0;
@@ -880,6 +888,19 @@ static int rarch_main_iterate_http_transfer(void)
    return 0;
 }
 
+/**
+ * rarch_main_iterate_http_transfer:
+ *
+ * Polls HTTP message queue to see if any new URLs 
+ * are pending.
+ *
+ * If handle is freed, will set up a new http handle. 
+ * The transfer will be started on the next frame.
+ *
+ * Returns: 0 when an URL has been pulled and we will
+ * begin transferring on the next frame. Returns -1 if
+ * no HTTP URL has been pulled. Do nothing in that case.
+ **/
 static int rarch_main_iterate_http_poll(void)
 {
    const char *url = msg_queue_pull(g_extern.http_msg_queue);
