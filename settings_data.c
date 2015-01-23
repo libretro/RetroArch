@@ -5456,7 +5456,7 @@ static bool setting_data_append_list_core_manager_options(
    CONFIG_STRING(
          g_settings.network.buildbot_url,
          "core_management_buildbot_url",
-         "Core Management Buildbot URL",
+         "Buildbot URL",
          buildbot_server_url, 
          group_info.name,
          subgroup_info.name,
