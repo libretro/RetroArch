@@ -948,7 +948,10 @@ static int rarch_main_iterate_http_poll(void)
    g_extern.http_handle = net_http_new(url);
 
    if (!g_extern.http_handle)
+   {
+      RARCH_ERR("Could not create new HTTP session handle.\n");
       return -1;
+   }
 
    g_extern.http_cb      = net_http_get_pending_cb();
    
