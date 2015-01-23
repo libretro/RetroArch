@@ -10,7 +10,7 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
-#include "rarchdb.h"
+#include "libretrodb.h"
 #include "lua_common.h"
 
 int master_key = 1;
@@ -62,7 +62,7 @@ static int value_provider(
 	if (lua_isnil(L, -1)) {
 		rv = 1;
 	} else if (lua_istable(L, -1)) {
-		rv = rarchdb_lua_to_rmsgpack_value(L, -1, out);
+		rv = libretrodb_lua_to_rmsgpack_value(L, -1, out);
 	} else {
 		printf("function `get_value' must return a table or nil\n");
 	}
@@ -108,7 +108,7 @@ int main(
 		goto clean;
 	}
 
-	rv = rarchdb_create(dst, &value_provider, L);
+	rv = libretrodb_create(dst, &value_provider, L);
 clean:
 	lua_close(L);
 	if (dst != -1) {

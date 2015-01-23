@@ -33,7 +33,7 @@
 #endif
 
 #ifdef HAVE_LIBRETRODB
-#include "../libretrodb/rarchdb.h"
+#include "../libretrodb/libretrodb.h"
 #endif
 
 #include "../input/input_remapping.h"
@@ -1596,8 +1596,8 @@ static int deferred_push_database_manager_list_deferred(void *data, void *userda
 {
 #ifdef HAVE_LIBRETRODB
 	int rv;
-	struct rarchdb db;
-	struct rarchdb_cursor cur;
+	libretrodb_t db;
+	libretrodb_cursor_t cur;
 	struct rmsgpack_dom_value item;
 #endif
    unsigned i;
@@ -1611,13 +1611,13 @@ static int deferred_push_database_manager_list_deferred(void *data, void *userda
 
    menu_list_clear(list);
 #ifdef HAVE_LIBRETRODB
-   if ((rv = rarchdb_open(path, &db)) != 0)
+   if ((rv = libretrodb_open(path, &db)) != 0)
       return -1;
 
-   if ((rv = rarchdb_cursor_open(&db, &cur, NULL)) != 0)
+   if ((rv = libretrodb_cursor_open(&db, &cur, NULL)) != 0)
       return -1;
 
-   while (rarchdb_cursor_read_item(&cur, &item) == 0)
+   while (libretrodb_cursor_read_item(&cur, &item) == 0)
    {
       if (item.type != RDT_MAP)
          continue;
@@ -1636,8 +1636,8 @@ static int deferred_push_database_manager_list_deferred(void *data, void *userda
 		}
    }
 
-   rarchdb_cursor_close(&cur);
-   rarchdb_close(&db);
+   libretrodb_cursor_close(&cur);
+   libretrodb_close(&db);
 #endif
    menu_list_sort_on_alt(list);
    driver.menu->scroll_indices_size = 0;

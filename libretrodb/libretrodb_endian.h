@@ -1,5 +1,5 @@
-#ifndef __RARCHDB_MSGPACK_ENDIAN_H
-#define __RARCHDB_MSGPACK_ENDIAN_H
+#ifndef __LIBRETRODB_MSGPACK_ENDIAN_H
+#define __LIBRETRODB_MSGPACK_ENDIAN_H
 
 #include <stdint.h>
 #include <retro_endianness.h>

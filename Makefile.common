@@ -173,7 +173,7 @@ OBJ += frontend/frontend.o \
 
 ifeq ($(HAVE_LIBRETRODB), 1)
 OBJ += libretrodb/bintree.o \
-		 libretrodb/rarchdb.o \
+		 libretrodb/libretrodb.o \
 		 libretrodb/query.o \
 		 libretrodb/rmsgpack.o \
 		 libretrodb/rmsgpack_dom.o

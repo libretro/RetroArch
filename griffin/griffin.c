@@ -810,7 +810,7 @@ XML
 ============================================================ */
 #ifdef HAVE_LIBRETRODB
 #include "../libretrodb/bintree.c"
-#include "../libretrodb/rarchdb.c"
+#include "../libretrodb/libretrodb.c"
 #include "../libretrodb/rmsgpack.c"
 #include "../libretrodb/rmsgpack_dom.c"
 #include "../libretrodb/query.c"

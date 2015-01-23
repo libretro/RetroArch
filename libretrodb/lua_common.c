@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int rarchdb_lua_to_rmsgpack_value(
+int libretrodb_lua_to_rmsgpack_value(
         lua_State * L,
         int index,
         struct rmsgpack_dom_value * out

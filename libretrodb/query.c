@@ -8,7 +8,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "rarchdb.h"
+#include "libretrodb.h"
 
 #include "rmsgpack_dom.h"
 #include <compat/fnmatch.h>
@@ -870,31 +870,30 @@ success:
 }
 
 
-void rarchdb_query_free(rarchdb_query * q) {
+void libretrodb_query_free(void *q)
+{
 	unsigned i;
 	struct query * real_q = (struct query*)q;
 
 	real_q->ref_count--;
-	if (real_q->ref_count > 0) {
+	if (real_q->ref_count > 0)
 		return;
-	}
 
-	for (i = 0; i < real_q->root.argc; i++) {
+	for (i = 0; i < real_q->root.argc; i++)
 		argument_free(&real_q->root.argv[i]);
-	}
 }
 
-rarchdb_query * rarchdb_query_compile(
-        struct rarchdb * db,
+void *libretrodb_query_compile(
+        libretrodb_t * db,
         const char * query,
         size_t buff_len,
         const char ** error
-) {
+)
+{
 	struct buffer buff;
 	struct query *q = (struct query*)malloc(sizeof(struct query));
-	if (!q) {
+	if (!q)
 		goto clean;
-	}
 	memset(q, 0, sizeof(struct query));
 	q->ref_count = 1;
 	buff.data = query;
@@ -914,9 +913,8 @@ rarchdb_query * rarchdb_query_compile(
 	}
 
 	buff = expect_eof(buff, error);
-	if (*error) {
+	if (*error)
 		goto clean;
-	}
 
 	if (q->root.func == NULL) {
 		raise_unexpected_eof(buff.offset, error);
@@ -924,20 +922,20 @@ rarchdb_query * rarchdb_query_compile(
 	}
 	goto success;
 clean:
-	if (q) {
-		rarchdb_query_free(q);
-	}
+	if (q)
+		libretrodb_query_free(q);
 success:
 	return q;
 }
 
-void rarchdb_query_inc_ref(rarchdb_query * q) {
+void libretrodb_query_inc_ref(libretrodb_query_t *q)
+{
 	struct query * rq = (struct query*)q;
 	rq->ref_count += 1;
 }
 
-int rarchdb_query_filter(
-        rarchdb_query * q,
+int libretrodb_query_filter(
+        libretrodb_query_t * q,
         struct rmsgpack_dom_value * v
 ) {
 	struct invocation inv = ((struct query *)q)->root;

@@ -1,13 +1,13 @@
-# rarchdb
+# libretrodb
 A small read only database
 Mainly to be used by retroarch
 
 # Usage
 Files specified later in the chain **will override** earlier ones if the same key exists multiple times.
 
-To list out the content of a db `rarchdb_tool <db file> list`
-To create an index `rarchdb_tool <db file> create-index <index name> <field name>`
-To find an entry with an index `rarchdb_tool <db file> find <index name> <value>`
+To list out the content of a db `libretrodb_tool <db file> list`
+To create an index `libretrodb_tool <db file> create-index <index name> <field name>`
+To find an entry with an index `libretrodb_tool <db file> find <index name> <value>`
 
 # lua converters
 In order to write you own converter you must have a lua file that implements the following functions:
@@ -54,15 +54,15 @@ dat_converter snes.rdb rom.crc snes1.dat snes2.dat
 ~~~
 
 # Query examples
-Some examples of queries you can use with rarchdbtool:
+Some examples of queries you can use with libretrodbtool:
 
 1) Glob pattern matching
 Usecase : Search for all games starting with 'Street Fighter' in the 'name' field (glob pattern matching)
 
-`rarchdb_tool <db file> find "{'name':glob('Street Fighter*')}"`
+`libretrodb_tool <db file> find "{'name':glob('Street Fighter*')}"`
 
 2) Combined number matching query
 Usecase: Search for all games released on October 1995.
 
-`rarchdb_tool <db file> find "{'releasemonth':10,'releaseyear':1995}"`
+`libretrodb_tool <db file> find "{'releasemonth':10,'releaseyear':1995}"`
 

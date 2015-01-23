@@ -1,4 +1,4 @@
-#include "rarchdb.h"
+#include "libretrodb.h"
 
 #include <sys/types.h>
 #ifdef _WIN32
@@ -17,43 +17,26 @@
 #include "rmsgpack_dom.h"
 #include "rmsgpack.h"
 #include "bintree.h"
-#include "rarchdb_endian.h"
+#include "libretrodb_endian.h"
 #include "query.h"
 
-#define MAGIC_NUMBER "RARCHDB"
-
-struct rarchdb_header {
-	char magic_number[sizeof(MAGIC_NUMBER)-1];
-	uint64_t metadata_offset;
-};
-
-struct rarchdb_metadata {
-	uint64_t count;
-};
-
-struct rarchdb_index {
-	char name[50];
-	uint64_t key_size;
-	uint64_t next;
-};
-
 struct node_iter_ctx {
-	struct rarchdb * db;
-	struct rarchdb_index * idx;
+	libretrodb_t *db;
+	libretrodb_index_t *idx;
 };
 
 static struct rmsgpack_dom_value sentinal;
 
-static int rarchdb_read_metadata(
+static int libretrodb_read_metadata(
         int fd,
-        struct rarchdb_metadata * md
+        libretrodb_metadata_t *md
 ){
 	return rmsgpack_dom_read_into(fd, "count", &md->count, NULL);
 }
 
-static int rarchdb_write_metadata(
+static int libretrodb_write_metadata(
         int fd,
-        struct rarchdb_metadata * md
+        libretrodb_metadata_t *md
 ){
 	rmsgpack_write_map_header(fd, 1);
 	rmsgpack_write_string(fd, "count", strlen("count"));
@@ -93,24 +76,26 @@ static int validate_document(const struct rmsgpack_dom_value * doc) {
 	return rv;
 }
 
-int rarchdb_create(
+int libretrodb_create(
         int fd,
-        rarchdb_value_provider value_provider,
+        libretrodb_value_provider value_provider,
         void * ctx
 ){
 	int rv;
-	struct rarchdb_metadata md;
-	off_t root;
+   off_t root;
 	uint64_t item_count = 0;
+	libretrodb_metadata_t md;
 	struct rmsgpack_dom_value item = {};
-	struct rarchdb_header header = {};
+	libretrodb_header_t header = {};
 
 	memcpy(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)-1);
 	root = lseek(fd, 0, SEEK_CUR);
 
-	// We write the header in the end because we need to know the size of
-	// the db first
-	lseek(fd, sizeof(struct rarchdb_header), SEEK_CUR);
+	/* We write the header in the end because we need to know the size of
+    * the db first */
+
+	lseek(fd, sizeof(libretrodb_header_t), SEEK_CUR);
+
 	while ((rv = value_provider(ctx, &item)) == 0) {
 
 		if ((rv = validate_document(&item)) < 0)
@@ -130,7 +115,7 @@ int rarchdb_create(
 
 	header.metadata_offset = httobe64(lseek(fd, 0, SEEK_CUR));
 	md.count = item_count;
-	rarchdb_write_metadata(fd, &md);
+	libretrodb_write_metadata(fd, &md);
 	lseek(fd, root, SEEK_SET);
 	write(fd, &header, sizeof(header));
 clean:
@@ -138,10 +123,9 @@ clean:
 	return rv;
 }
 
-static int rarchdb_read_index_header(
-        int fd,
-        struct rarchdb_index * idx
-){
+static int libretrodb_read_index_header(
+        int fd, libretrodb_index_t *idx)
+{
 	uint64_t name_len = 50;
 	return rmsgpack_dom_read_into(
 	        fd,
@@ -152,10 +136,9 @@ static int rarchdb_read_index_header(
 	);
 }
 
-static void rarchdb_write_index_header(
-        int fd,
-        struct rarchdb_index * idx
-){
+static void libretrodb_write_index_header(
+        int fd, libretrodb_index_t * idx)
+{
 	rmsgpack_write_map_header(fd, 3);
 	rmsgpack_write_string(fd, "name", strlen("name"));
 	rmsgpack_write_string(fd, idx->name, strlen(idx->name));
@@ -165,20 +148,22 @@ static void rarchdb_write_index_header(
 	rmsgpack_write_uint(fd, idx->next);
 }
 
-void rarchdb_close(struct rarchdb * db)
+void libretrodb_close(libretrodb_t * db)
 {
 	close(db->fd);
 	db->fd = -1;
 }
 
-int rarchdb_open(
+int libretrodb_open(
         const char * path,
-        struct rarchdb * db
-){
-	struct rarchdb_header header;
-	struct rarchdb_metadata md;
+        libretrodb_t * db
+)
+{
+	libretrodb_header_t header;
+	libretrodb_metadata_t md;
 	int rv;
 	int fd = open(path, O_RDWR);
+
 	if (fd == -1)
 		return -errno;
 
@@ -195,7 +180,7 @@ int rarchdb_open(
 
 	header.metadata_offset = betoht64(header.metadata_offset);
 	lseek(fd, header.metadata_offset, SEEK_SET);
-	if (rarchdb_read_metadata(fd, &md) < 0) {
+	if (libretrodb_read_metadata(fd, &md) < 0) {
 		rv = -EINVAL;
 		goto error;
 	}
@@ -208,19 +193,22 @@ error:
 	return rv;
 }
 
-static int rarchdb_find_index(
-        struct rarchdb * db,
-        const char * index_name,
-        struct rarchdb_index * idx
+static int libretrodb_find_index(
+        libretrodb_t *db,
+        const char *index_name,
+        libretrodb_index_t *idx
 ){
 	off_t eof = lseek(db->fd, 0, SEEK_END);
 	off_t offset = lseek(db->fd, db->first_index_offset, SEEK_SET);
-	while (offset < eof) {
-		rarchdb_read_index_header(db->fd, idx);
-		if (strncmp(index_name, idx->name, strlen(idx->name)) == 0)
-			return 0;
-		offset = lseek(db->fd, idx->next, SEEK_CUR);
-	}
+
+	while (offset < eof)
+   {
+      libretrodb_read_index_header(db->fd, idx);
+      if (strncmp(index_name, idx->name, strlen(idx->name)) == 0)
+         return 0;
+      offset = lseek(db->fd, idx->next, SEEK_CUR);
+   }
+
 	return -1;
 }
 
@@ -255,21 +243,20 @@ static int binsearch(
 	return binsearch(current + item_size, item, count - mid, field_size, offset);
 }
 
-int rarchdb_find_entry(
-        struct rarchdb * db,
-        const char * index_name,
-        const void * key,
+int libretrodb_find_entry(
+        libretrodb_t *db,
+        const char *index_name,
+        const void *key,
         struct rmsgpack_dom_value * out
 ) {
-	struct rarchdb_index idx;
+	libretrodb_index_t idx;
 	int rv;
 	void * buff;
 	uint64_t offset;
 	ssize_t bufflen, nread = 0;
 
-	if (rarchdb_find_index(db, index_name, &idx) < 0) {
+	if (libretrodb_find_index(db, index_name, &idx) < 0)
 		return -1;
-	}
 
 	bufflen = idx.next;
 	buff = malloc(bufflen);
@@ -302,25 +289,25 @@ int rarchdb_find_entry(
 }
 
 /**
- * rarchdb_cursor_reset:
+ * libretrodb_cursor_reset:
  * @cursor              : Handle to database cursor.
  *
  * Resets cursor.
  *
  * Returns: ???.
  **/
-int rarchdb_cursor_reset(struct rarchdb_cursor * cursor)
+int libretrodb_cursor_reset(libretrodb_cursor_t *cursor)
 {
 	cursor->eof = 0;
 	return lseek(
 	        cursor->fd,
-	        cursor->db->root + sizeof(struct rarchdb_header),
+	        cursor->db->root + sizeof(libretrodb_header_t),
 	        SEEK_SET
 	);
 }
 
-int rarchdb_cursor_read_item(
-        struct rarchdb_cursor * cursor,
+int libretrodb_cursor_read_item(
+        libretrodb_cursor_t *cursor,
         struct rmsgpack_dom_value * out
 ) {
 	int rv;
@@ -338,7 +325,7 @@ retry:
 	}
 
 	if (cursor->query) {
-		if (!rarchdb_query_filter(cursor->query, out)) {
+		if (!libretrodb_query_filter(cursor->query, out)) {
 			goto retry;
 		}
 	}
@@ -347,12 +334,12 @@ retry:
 }
 
 /**
- * rarchdb_cursor_close:
+ * libretrodb_cursor_close:
  * @cursor              : Handle to database cursor.
  *
  * Closes cursor and frees up allocated memory.
  **/
-void rarchdb_cursor_close(struct rarchdb_cursor * cursor)
+void libretrodb_cursor_close(libretrodb_cursor_t *cursor)
 {
 	close(cursor->fd);
 	cursor->is_valid = 0;
@@ -360,12 +347,12 @@ void rarchdb_cursor_close(struct rarchdb_cursor * cursor)
 	cursor->eof = 1;
 	cursor->db = NULL;
 	if (cursor->query)
-		rarchdb_query_free(cursor->query);
+		libretrodb_query_free(cursor->query);
 	cursor->query = NULL;
 }
 
 /**
- * rarchdb_cursor_open:
+ * libretrodb_cursor_open:
  * @db                  : Handle to database.
  * @cursor              : Handle to database cursor.
  * @q                   : Query to execute.
@@ -374,10 +361,10 @@ void rarchdb_cursor_close(struct rarchdb_cursor * cursor)
  *
  * Returns: 0 if successful, otherwise negative.
  **/
-int rarchdb_cursor_open(
-        struct rarchdb * db,
-        struct rarchdb_cursor * cursor,
-        rarchdb_query * q
+int libretrodb_cursor_open(
+        libretrodb_t *db,
+        libretrodb_cursor_t *cursor,
+        libretrodb_query_t *q
 )
 {
 	cursor->fd = dup(db->fd);
@@ -387,11 +374,11 @@ int rarchdb_cursor_open(
 
 	cursor->db = db;
 	cursor->is_valid = 1;
-	rarchdb_cursor_reset(cursor);
+	libretrodb_cursor_reset(cursor);
 	cursor->query = q;
 
 	if (q)
-		rarchdb_query_inc_ref(q);
+		libretrodb_query_inc_ref(q);
 
 	return 0;
 }
@@ -406,41 +393,41 @@ static int node_iter(void * value, void * ctx)
 	return -1;
 }
 
-static uint64_t rarchdb_tell(struct rarchdb * db)
+static uint64_t libretrodb_tell(libretrodb_t *db)
 {
 	return lseek(db->fd, 0, SEEK_CUR);
 }
 
-int rarchdb_create_index(
-        struct rarchdb * db,
-        const char * name,
-        const char * field_name
+int libretrodb_create_index(
+        libretrodb_t *db,
+        const char *name,
+        const char *field_name
 ){
 	int rv;
 	struct node_iter_ctx nictx;
 	struct rmsgpack_dom_value key;
-	struct rarchdb_index idx;
+	libretrodb_index_t idx;
 	struct rmsgpack_dom_value item;
 	struct rmsgpack_dom_value * field;
+	struct bintree tree;
+	libretrodb_cursor_t cur;
 	void * buff = NULL;
 	uint64_t * buff_u64 = NULL;
 	uint8_t field_size = 0;
-	struct bintree tree;
-	uint64_t item_loc = rarchdb_tell(db);
 	uint64_t idx_header_offset;
-	struct rarchdb_cursor cur;
+	uint64_t item_loc = libretrodb_tell(db);
 
 	bintree_new(&tree, node_compare, &field_size);
-	if (rarchdb_cursor_open(db, &cur, NULL) != 0) {
+	if (libretrodb_cursor_open(db, &cur, NULL) != 0) {
 		rv = -1;
 		goto clean;
 	}
 
 	key.type = RDT_STRING;
 	key.string.len = strlen(field_name);
-	// We know we aren't going to change it
+	/* We know we aren't going to change it */
 	key.string.buff = (char *) field_name;
-	while (rarchdb_cursor_read_item(&cur, &item) == 0) {
+	while (libretrodb_cursor_read_item(&cur, &item) == 0) {
 		if (item.type != RDT_MAP) {
 			rv = -EINVAL;
 			printf("Only map keys are supported\n");
@@ -491,7 +478,7 @@ int rarchdb_create_index(
 		}
 		buff = NULL;
 		rmsgpack_dom_value_free(&item);
-		item_loc = rarchdb_tell(db);
+		item_loc = libretrodb_tell(db);
 	}
 
 	(void)rv;
@@ -503,7 +490,7 @@ int rarchdb_create_index(
 	idx.name[49] = '\0';
 	idx.key_size = field_size;
 	idx.next = db->count * (field_size + sizeof(uint64_t));
-	rarchdb_write_index_header(db->fd, &idx);
+	libretrodb_write_index_header(db->fd, &idx);
 
 	nictx.db = db;
 	nictx.idx = &idx;
@@ -514,7 +501,7 @@ clean:
 	if (buff)
 		free(buff);
 	if (cur.is_valid) {
-		rarchdb_cursor_close(&cur);
+		libretrodb_cursor_close(&cur);
 	}
 	return 0;
 }

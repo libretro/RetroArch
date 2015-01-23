@@ -10,7 +10,7 @@
 #include "lua.h"
 #include "lauxlib.h"
 
-#include "rarchdb.h"
+#include "libretrodb.h"
 #include "lua_common.h"
 
 static int create_db (lua_State * L);
@@ -36,7 +36,7 @@ static const struct luaL_Reg cursor_mt [] = {
 	{NULL, NULL}
 };
 
-static const struct luaL_Reg rarchdb_mt [] = {
+static const struct luaL_Reg libretrodb_mt [] = {
 	{"__gc", db_close},
 	{"list_all", db_cursor_open},
 	{"query", db_query},
@@ -49,7 +49,7 @@ LUALIB_API int luaopen_testlib (lua_State * L) {
 	lua_pushstring(L, "__index");
 	lua_pushvalue(L, -2);
 	lua_settable(L, -3);
-	luaL_openlib(L, NULL, rarchdb_mt, 0);
+	luaL_openlib(L, NULL, libretrodb_mt, 0);
 
 	luaL_newmetatable(L, "RarchDB.Cursor");
 	lua_pushstring(L, "__index");
@@ -61,13 +61,13 @@ LUALIB_API int luaopen_testlib (lua_State * L) {
 	return 1;
 }
 
-static struct rarchdb_cursor * checkcursor(lua_State * L) {
+static libretrodb_cursor * checkcursor(lua_State * L) {
 	void * ud = luaL_checkudata(L, 1, "RarchDB.Cursor");
 	luaL_argcheck(L, ud != NULL, 1, "`RarchDB.Cursor' expected");
 	return ud;
 }
 
-static struct rarchdb * checkdb(lua_State * L) {
+static libretrodb * checkdb(lua_State * L) {
 	void * ud = luaL_checkudata(L, 1, "RarchDB.DB");
 	luaL_argcheck(L, ud != NULL, 1, "`RarchDB.DB' expected");
 	return ud;
@@ -92,7 +92,7 @@ static int value_provider(
 	if (lua_isnil(L, -1)) {
 		rv = 1;
 	} else if (lua_istable(L, -1)) {
-		rv = rarchdb_lua_to_rmsgpack_value(L, -1, out);
+		rv = libretrodb_lua_to_rmsgpack_value(L, -1, out);
 	} else {
 		printf("function `get_value' must return a table or nil\n");
 	}
@@ -117,18 +117,18 @@ static int create_db (lua_State * L) {
 		lua_error(L);
 	}
 
-	rv = rarchdb_create(dst, &value_provider, L);
+	rv = libretrodb_create(dst, &value_provider, L);
 	close(dst);
 	return 0;
 }
 
 static int db_new (lua_State * L) {
-	struct rarchdb * db = NULL;
+	libretrodb_t * db = NULL;
 	const char * db_file = NULL;
 	int rv;
 	db_file = luaL_checkstring(L, -1);
-	db = lua_newuserdata(L, sizeof(struct rarchdb));
-	if ((rv = rarchdb_open(db_file, db)) == 0) {
+	db = lua_newuserdata(L, sizeof(libretrodb_t));
+	if ((rv = libretrodb_open(db_file, db)) == 0) {
 		luaL_getmetatable(L, "RarchDB.DB");
 		lua_setmetatable(L, -2);
 		lua_pushnil(L);
@@ -141,18 +141,18 @@ static int db_new (lua_State * L) {
 }
 
 static int db_close (lua_State * L) {
-	struct rarchdb * db = checkdb(L);
-	rarchdb_close(db);
+	libretrodb_t *db = checkdb(L);
+	libretrodb_close(db);
 	return 0;
 }
 
 static int db_query (lua_State * L) {
 	int rv;
-	struct rarchdb_cursor * cursor = NULL;
-	struct rarchdb * db = checkdb(L);
+	libretrodb_cursor_t *cursor = NULL;
+	libretrodb_t *db = checkdb(L);
 	const char * query = luaL_checkstring(L, -1);
 	const char * error = NULL;
-	rarchdb_query * q = rarchdb_query_compile(
+	libretrodb_query_t *q = libretrodb_query_compile(
 	                db,
 	                query,
 	                strlen(query),
@@ -162,8 +162,8 @@ static int db_query (lua_State * L) {
 		lua_pushnil(L);
 		lua_pushstring(L, error);
 	} else {
-		cursor = lua_newuserdata(L, sizeof(struct rarchdb));
-		if ((rv = rarchdb_cursor_open(db, cursor, q)) == 0) {
+		cursor = lua_newuserdata(L, sizeof(libretrodb_t));
+		if ((rv = libretrodb_cursor_open(db, cursor, q)) == 0) {
 			luaL_getmetatable(L, "RarchDB.Cursor");
 			lua_setmetatable(L, -2);
 			lua_pushnil(L);
@@ -172,16 +172,16 @@ static int db_query (lua_State * L) {
 			lua_pushnil(L);
 			lua_pushstring(L, strerror(-rv));
 		}
-		rarchdb_query_free(q);
+		libretrodb_query_free(q);
 	}
 	return 2;
 }
 static int db_cursor_open (lua_State * L) {
 	int rv;
-	struct rarchdb_cursor * cursor = NULL;
-	struct rarchdb * db = checkdb(L);
-	cursor = lua_newuserdata(L, sizeof(struct rarchdb));
-	if ((rv = rarchdb_cursor_open(db, cursor, NULL)) == 0) {
+	libretrodb_cursor_t *cursor = NULL;
+	libretrodb_t *db = checkdb(L);
+	cursor = lua_newuserdata(L, sizeof(libretrodb_t));
+	if ((rv = libretrodb_cursor_open(db, cursor, NULL)) == 0) {
 		luaL_getmetatable(L, "RarchDB.Cursor");
 		lua_setmetatable(L, -2);
 		lua_pushnil(L);
@@ -193,8 +193,8 @@ static int db_cursor_open (lua_State * L) {
 	return 2;
 }
 static int cursor_close (lua_State * L) {
-	struct rarchdb_cursor * cursor = checkcursor(L);
-	rarchdb_cursor_close(cursor);
+	libretrodb_cursor_t *cursor = checkcursor(L);
+	libretrodb_cursor_close(cursor);
 	return 0;
 }
 
@@ -272,9 +272,9 @@ static void push_rmsgpack_value(
 }
 
 static int cursor_read (lua_State * L) {
-	struct rarchdb_cursor * cursor = checkcursor(L);
+	libretrodb_cursor_t *cursor = checkcursor(L);
 	struct rmsgpack_dom_value value;
-	if (rarchdb_cursor_read_item(cursor, &value) == 0) {
+	if (libretrodb_cursor_read_item(cursor, &value) == 0) {
 		push_rmsgpack_value(L, &value);
 	} else {
 		lua_pushnil(L);
@@ -283,7 +283,7 @@ static int cursor_read (lua_State * L) {
 }
 
 static int cursor_iter (lua_State * L) {
-	struct rarchdb_cursor * cursor = checkcursor(L);
+	libretrodb_cursor_t * cursor = checkcursor(L);
 	luaL_getmetafield(L, -1, "read");
 	lua_pushvalue(L, -2);
 	return 2;

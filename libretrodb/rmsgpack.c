@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "rarchdb_endian.h"
+#include "libretrodb_endian.h"
 
 static const uint8_t MPF_FIXMAP = 0x80;
 static const uint8_t MPF_MAP16 = 0xde;
