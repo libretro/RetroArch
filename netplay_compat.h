@@ -127,5 +127,11 @@ void freeaddrinfo(struct addrinfo *res);
 /* gai_strerror() not used, so we skip that. */
 
 #endif
+
+int getaddrinfo_rarch(const char *node, const char *service,
+      const struct addrinfo *hints,
+      struct addrinfo **res);
+
+void freeaddrinfo_rarch(struct addrinfo *res);
 #endif
 

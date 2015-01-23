@@ -715,7 +715,7 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    bool ret = false;
    char port_buf[16];
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-   if (getaddrinfo(server, port_buf, &hints, &res) < 0)
+   if (getaddrinfo_rarch(server, port_buf, &hints, &res) < 0)
       return false;
 
    if (!res)
@@ -740,7 +740,7 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    }
 
    if (res)
-      freeaddrinfo(res);
+      freeaddrinfo_rarch(res);
 
    if (!ret)
       RARCH_ERR("Failed to set up netplay sockets.\n");
@@ -764,7 +764,7 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
 
    char port_buf[16];
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-   if (getaddrinfo(server, port_buf, &hints, &netplay->addr) < 0)
+   if (getaddrinfo_rarch(server, port_buf, &hints, &netplay->addr) < 0)
       return false;
 
    if (!netplay->addr)
@@ -794,7 +794,7 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
          netplay->udp_fd = -1;
       }
 
-      freeaddrinfo(netplay->addr);
+      freeaddrinfo_rarch(netplay->addr);
       netplay->addr = NULL;
    }
 
@@ -1382,7 +1382,7 @@ void netplay_free(netplay_t *netplay)
    }
 
    if (netplay->addr)
-      freeaddrinfo(netplay->addr);
+      freeaddrinfo_rarch(netplay->addr);
 
    free(netplay);
 }
@@ -1679,8 +1679,6 @@ void netplay_post_frame(netplay_t *netplay)
 
 #ifdef HAVE_SOCKET_LEGACY
 
-#undef getaddrinfo
-#undef freeaddrinfo
 #undef sockaddr_storage
 #undef addrinfo
 
@@ -1735,61 +1733,5 @@ error:
 }
 #endif
 
-int getaddrinfo_rarch__(const char *node, const char *service,
-      const struct addrinfo *hints,
-      struct addrinfo **res)
-{
-   struct sockaddr_in *in_addr;
-   struct addrinfo *info = (struct addrinfo*)calloc(1, sizeof(*info));
-   if (!info)
-      return -1;
-
-   info->ai_family = AF_INET;
-   info->ai_socktype = hints->ai_socktype;
-
-   in_addr = (struct sockaddr_in*)calloc(1, sizeof(*in_addr));
-
-   if (!in_addr)
-   {
-      free(info);
-      return -1;
-   }
-
-   info->ai_addrlen = sizeof(*in_addr);
-
-   in_addr->sin_family = AF_INET;
-   in_addr->sin_port = htons(strtoul(service, NULL, 0));
-
-   if (!node && (hints->ai_flags & AI_PASSIVE))
-      in_addr->sin_addr.s_addr = INADDR_ANY;
-   else if (node && isdigit(*node))
-      in_addr->sin_addr.s_addr = inet_addr(node);
-   else if (node && !isdigit(*node))
-   {
-      struct hostent *host = gethostbyname(node);
-      if (!host || !host->h_addr_list[0])
-         goto error;
-
-      in_addr->sin_addr.s_addr = inet_addr(host->h_addr_list[0]);
-   }
-   else
-      goto error;
-
-   info->ai_addr = (struct sockaddr*)in_addr;
-   *res = info;
-
-   return 0;
-
-error:
-   free(in_addr);
-   free(info);
-   return -1;
-}
-
-void freeaddrinfo_rarch__(struct addrinfo *res)
-{
-   free(res->ai_addr);
-   free(res);
-}
 
 #endif

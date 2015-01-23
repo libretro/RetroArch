@@ -627,10 +627,11 @@ endif
 
 ifeq ($(HAVE_NETPLAY), 1)
    DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD
-   OBJ += netplay.o
-	OBJ += http_lib.o \
-			 http_intf.o \
-			 net_http.o
+   OBJ += netplay.o \
+			netplay_compat.o \
+		 	http_lib.o \
+			http_intf.o \
+			net_http.o
    ifneq ($(findstring Win32,$(OS)),)
       LIBS += -lws2_32
    endif

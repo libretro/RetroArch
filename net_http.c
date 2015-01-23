@@ -91,7 +91,7 @@ static int net_http_new_socket(const char * domain, int port)
 	hints.ai_socktype=SOCK_STREAM;
 	hints.ai_flags=0;
 	
-	getaddrinfo(domain, portstr, &hints, &addr);
+	getaddrinfo_rarch(domain, portstr, &hints, &addr);
 	if (!addr)
       return -1;
 	
@@ -105,12 +105,12 @@ static int net_http_new_socket(const char * domain, int port)
 
 	if (connect(fd, addr->ai_addr, addr->ai_addrlen) != 0)
 	{
-		freeaddrinfo(addr);
+		freeaddrinfo_rarch(addr);
 		close(fd);
 		return -1;
 	}
 
-	freeaddrinfo(addr);
+	freeaddrinfo_rarch(addr);
 #ifndef _WIN32
 	/* Linux claims to not know that select() should only 
     * give sockets where read() is nonblocking */
