@@ -360,10 +360,11 @@ int menu_input_bind_iterate(void *data)
       driver.flushing_input = true;
 
       binds.begin++;
-      if (binds.begin <= binds.last)
-         binds.target++;
-      else
+
+      if (binds.begin > binds.last)
          return 1;
+
+      binds.target++;
    }
    menu->binds = binds;
 
