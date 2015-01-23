@@ -34,7 +34,7 @@
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif
-#define isagain(bytes) (bytes==SOCKET_ERROR && WSAGetLastError()==WSAEWOULDBLOCK)
+inline bool isagain(int bytes) { return (bytes==SOCKET_ERROR && WSAGetLastError()==WSAEWOULDBLOCK); }
 #elif defined(_XBOX)
 #define NOD3D
 #include <xtl.h>
@@ -52,7 +52,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#define isagain(bytes) (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+inline bool isagain(int bytes) { return (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)); }
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <cell/sysmodule.h>
 #include <netex/net.h>
