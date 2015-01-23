@@ -48,7 +48,9 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <fcntl.h>
+#include <errno.h>
 
+#define isagain(bytes) (bytes<0 && (errno==EAGAIN || errno==EWOULDBLOCK))
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <cell/sysmodule.h>
 #include <netex/net.h>
