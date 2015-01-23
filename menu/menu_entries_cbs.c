@@ -2280,7 +2280,6 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
-static void *core_manager_list_data;
 static char core_manager_list_path[PATH_MAX_LENGTH];
 static char core_manager_list_label[PATH_MAX_LENGTH];
 static unsigned core_manager_list_type;
@@ -2290,10 +2289,10 @@ static int cb_core_manager_list(void *data_, size_t len)
    char *data = (char*)data_;
    file_list_t *list = NULL;
 
-   if (!data || !core_manager_list_data)
+   if (!data)
       return -1;
 
-   list      = (file_list_t*)core_manager_list_data;
+   list      = (file_list_t*)driver.menu->menu_list->selection_buf;
 
    if (!list)
       return -1;
@@ -2325,7 +2324,6 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
 #endif
    file_list_t *list      = (file_list_t*)data;
 
-   core_manager_list_data = data;
    strlcpy(core_manager_list_path, path,
          sizeof(core_manager_list_path));
    strlcpy(core_manager_list_label, label,
