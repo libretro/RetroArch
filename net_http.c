@@ -184,7 +184,7 @@ static ssize_t net_http_recv(int fd, bool *error,
    if (*error)
       return -1;
 
-   bytes = recv(fd, data, maxlen, 0);
+   bytes = recv(fd, (char*)data, maxlen, 0);
 
    if (bytes > 0)
       return bytes;

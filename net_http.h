@@ -18,7 +18,7 @@
 #define _NET_HTTP_H
 
 #include <stdint.h>
-#include <stdbool.h>
+#include <boolean.h>
 #include <string.h>
 
 #ifdef __cplusplus
