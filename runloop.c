@@ -866,6 +866,36 @@ static int rarch_main_iterate_quit(void)
    return -1;
 }
 
+#ifdef HAVE_NETPLAY
+static int rarch_main_iterate_http_transfer(void)
+{
+   size_t pos = 0, tot = 0;
+
+   if (!net_http_update(g_extern.http_handle, &pos, &tot))
+   {
+		RARCH_LOG("%.9lu / %.9lu        \r", pos, tot);
+      return -1;
+   }
+
+   return 0;
+}
+
+static int rarch_main_iterate_http_poll(void)
+{
+   const char *url = msg_queue_pull(g_extern.http_msg_queue);
+
+   if (!url)
+      return -1;
+   /* Can only deal with one HTTP transfer at a time for now */
+   if (g_extern.http_handle)
+      return -1; 
+
+   g_extern.http_handle = net_http_new(url);
+
+   return 0;
+}
+#endif
+
 /**
  * rarch_main_iterate:
  *
@@ -896,6 +926,19 @@ int rarch_main_iterate(void)
       update_frame_time();
 
    do_pre_state_checks(input, old_input, trigger_input);
+
+#ifdef HAVE_NETPLAY
+   if (g_extern.http_handle)
+   {
+      if (!rarch_main_iterate_http_transfer())
+      {
+         /* TODO - we should have some function pointer
+          * we can call here. */
+      }
+   }
+   else
+      rarch_main_iterate_http_poll();
+#endif
 
 #ifdef HAVE_MENU
    if (g_extern.is_menu)

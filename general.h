@@ -59,6 +59,10 @@
 #include "command.h"
 #endif
 
+#ifdef HAVE_NETPLAY
+#include "net_http.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -568,6 +572,10 @@ struct global
 #endif
 
    msg_queue_t *msg_queue;
+#ifdef HAVE_NETPLAY
+   msg_queue_t *http_msg_queue;
+   http_t      *http_handle;
+#endif
 
    bool exec;
 

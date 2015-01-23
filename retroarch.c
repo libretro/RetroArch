@@ -2910,6 +2910,10 @@ bool rarch_main_command(unsigned cmd)
          rarch_main_command(RARCH_CMD_MSG_QUEUE_DEINIT);
          if (!g_extern.msg_queue)
             rarch_assert(g_extern.msg_queue = msg_queue_new(8));
+#ifdef HAVE_NETPLAY
+         if (!g_extern.http_msg_queue)
+            rarch_assert(g_extern.http_msg_queue = msg_queue_new(8));
+#endif
          break;
       case RARCH_CMD_BSV_MOVIE_DEINIT:
          if (g_extern.bsv.movie)
