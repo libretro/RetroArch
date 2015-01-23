@@ -2322,7 +2322,6 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
 #ifdef HAVE_NETPLAY
    char url_path[PATH_MAX_LENGTH];
 #endif
-   file_list_t *list      = (file_list_t*)data;
 
    strlcpy(core_manager_list_path, path,
          sizeof(core_manager_list_path));
@@ -2330,10 +2329,11 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
          sizeof(core_manager_list_label));
    core_manager_list_type = type;
 
-   menu_list_clear(list);
-
    if (g_settings.network.buildbot_url[0] == '\0')
    {
+      file_list_t *list      = (file_list_t*)data;
+
+      menu_list_clear(list);
 #ifdef HAVE_NETPLAY
       menu_list_push(list,
             "Buildbot URL not configured.", "",
