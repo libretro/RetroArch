@@ -400,14 +400,14 @@ static void parse_packet(netplay_t *netplay, uint32_t *buffer, unsigned size)
       uint32_t frame = buffer[2 * i + 0];
       uint32_t state = buffer[2 * i + 1];
 
-      if (frame == netplay->read_frame_count)
-      {
-         netplay->buffer[netplay->read_ptr].is_simulated = false;
-         netplay->buffer[netplay->read_ptr].real_input_state = state;
-         netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
-         netplay->read_frame_count++;
-         netplay->timeout_cnt = 0;
-      }
+      if (frame != netplay->read_frame_count)
+         continue;
+
+      netplay->buffer[netplay->read_ptr].is_simulated = false;
+      netplay->buffer[netplay->read_ptr].real_input_state = state;
+      netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
+      netplay->read_frame_count++;
+      netplay->timeout_cnt = 0;
    }
 }
 
@@ -699,6 +699,9 @@ end:
 static bool init_tcp_socket(netplay_t *netplay, const char *server,
       uint16_t port, bool spectate)
 {
+   char port_buf[16];
+   bool ret = false;
+   const struct addrinfo *tmp_info = NULL;
    struct addrinfo hints, *res = NULL;
    memset(&hints, 0, sizeof(hints));
 
@@ -712,8 +715,6 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    if (!server)
       hints.ai_flags = AI_PASSIVE;
 
-   bool ret = false;
-   char port_buf[16];
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
    if (getaddrinfo_rarch(server, port_buf, &hints, &res) < 0)
       return false;
@@ -723,7 +724,8 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
 
    /* If "localhost" is used, it is important to check every possible 
     * address for IPv4/IPv6. */
-   const struct addrinfo *tmp_info = res;
+   tmp_info = res;
+
    while (tmp_info)
    {
       int fd;
@@ -751,7 +753,9 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
 static bool init_udp_socket(netplay_t *netplay, const char *server,
       uint16_t port)
 {
+   char port_buf[16];
    struct addrinfo hints;
+
    memset(&hints, 0, sizeof(hints));
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    hints.ai_family = AF_INET;
@@ -762,7 +766,6 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
    if (!server)
       hints.ai_flags = AI_PASSIVE;
 
-   char port_buf[16];
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
    if (getaddrinfo_rarch(server, port_buf, &hints, &netplay->addr) < 0)
       return false;
@@ -783,6 +786,7 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
    {
       /* Not sure if we have to do this for UDP, but hey :) */
       int yes = 1;
+
       setsockopt(netplay->udp_fd, SOL_SOCKET, SO_REUSEADDR,
             CONST_CAST &yes, sizeof(int));
 
@@ -810,12 +814,14 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
  **/
 bool network_init(void)
 {
+#ifdef _WIN32
+   WSADATA wsaData;
+#endif
    static bool inited = false;
    if (inited)
       return true;
 
 #if defined(_WIN32)
-   WSADATA wsaData;
    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
    {
       network_deinit();
