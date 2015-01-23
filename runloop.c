@@ -888,6 +888,19 @@ static int rarch_main_iterate_http_transfer(void)
    return 0;
 }
 
+static int rarch_main_iterate_http_parse(void)
+{
+   size_t len;
+   char *w = (char*)net_http_data(g_extern.http_handle, &len, false);
+
+   if (w && g_extern.http_handle->cb)
+      g_extern.http_handle->cb(w, len);
+
+   net_http_delete(g_extern.http_handle);
+
+   return 0;
+}
+
 /**
  * rarch_main_iterate_http_transfer:
  *
@@ -952,10 +965,7 @@ int rarch_main_iterate(void)
    if (g_extern.http_handle)
    {
       if (!rarch_main_iterate_http_transfer())
-      {
-         /* TODO - we should have some function pointer
-          * we can call here. */
-      }
+         rarch_main_iterate_http_parse();
    }
    else
       rarch_main_iterate_http_poll();

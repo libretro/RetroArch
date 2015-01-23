@@ -30,6 +30,7 @@
 
 #ifdef HAVE_NETPLAY
 #include "../http_intf.h"
+#include "../net_http.h"
 #endif
 
 #ifdef HAVE_LIBRETRODB
@@ -810,6 +811,34 @@ static int action_ok_save_state(const char *path,
 }
 
 
+/* HACK - we have to find some way to pass state inbetween
+ * function pointer callback functions that don't necessarily
+ * call each other. */
+static char core_manager_path[PATH_MAX_LENGTH];
+
+static int cb_core_manager_download(void *data_, size_t len)
+{
+   FILE *f;
+   char output_path[PATH_MAX_LENGTH];
+   char *data = (char*)data_;
+
+   if (!data)
+      return -1;
+
+   fill_pathname_join(output_path, g_settings.libretro_directory,
+         core_manager_path, sizeof(output_path));
+   
+   f = fopen(output_path, "wb");
+
+   if (!f)
+      return -1;
+
+   fwrite(data, 1, len, f);
+   fclose(f);
+
+   return 0;
+}
+
 static int action_ok_core_manager_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -818,8 +847,12 @@ static int action_ok_core_manager_list(const char *path,
    fill_pathname_join(core_path, g_settings.network.buildbot_url,
          path, sizeof(core_path));
 
-   if (!http_download_file(core_path, g_settings.libretro_directory, path))
-         return -1;
+   strlcpy(core_manager_path, path, sizeof(core_manager_path));
+
+   msg_queue_clear(g_extern.http_msg_queue);
+   msg_queue_push(g_extern.http_msg_queue, core_path, 0, 180);
+
+   net_http_set_pending_cb(cb_core_manager_download);
 #endif
    return 0;
 }

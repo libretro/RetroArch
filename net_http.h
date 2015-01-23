@@ -25,6 +25,8 @@
 extern "C" {
 #endif
 
+typedef int (*http_cb_t               )(void *data, size_t len);
+
 typedef struct
 {
 	int fd;
@@ -41,9 +43,12 @@ typedef struct
 	size_t len;
 	size_t buflen;
 	char * data;
+   http_cb_t cb;
 } http_t;
 
 http_t *net_http_new(const char * url);
+
+void net_http_set_pending_cb(http_cb_t cb);
 
 /* You can use this to call net_http_update 
  * only when something will happen; select() it for reading. */
