@@ -360,7 +360,7 @@ bool net_http_update(http_t *state, size_t* progress, size_t* total)
 				if (state->bodytype == t_full)
 				{
                state->part = p_done;
-               state->data = realloc(state->data, state->len);
+               state->data = (char*)realloc(state->data, state->len);
 				}
 				else
                goto fail;
@@ -413,7 +413,7 @@ parse_again:
 						{
 							state->part = p_done;
 							state->len = state->pos;
-							state->data = realloc(state->data, state->len);
+							state->data = (char*)realloc(state->data, state->len);
 						}
 						goto parse_again;
 					}
@@ -443,7 +443,7 @@ parse_again:
 			if (state->pos == state->len)
 			{
             state->part=p_done;
-            state->data = realloc(state->data, state->len);
+            state->data = (char*)realloc(state->data, state->len);
 			}
 			if (state->pos > state->len)
             goto fail;

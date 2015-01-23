@@ -2280,7 +2280,6 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
-static char core_manager_path[PATH_MAX_LENGTH];
 static void *core_manager_list_data;
 static char core_manager_list_path[PATH_MAX_LENGTH];
 static char core_manager_list_label[PATH_MAX_LENGTH];
