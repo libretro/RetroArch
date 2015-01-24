@@ -818,7 +818,7 @@ static char core_manager_path[PATH_MAX_LENGTH];
 static int cb_core_manager_download(void *data_, size_t len)
 {
    FILE *f;
-   char output_path[PATH_MAX_LENGTH];
+   char output_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
    char *data = (char*)data_;
 
    if (!data)
@@ -835,6 +835,12 @@ static int cb_core_manager_download(void *data_, size_t len)
    fwrite(data, 1, len, f);
    fclose(f);
 
+   snprintf(msg, sizeof(msg), "Download complete: %s.",
+         core_manager_path);
+
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, msg, 1, 90);
+
    return 0;
 }
 #endif
@@ -843,11 +849,15 @@ static int action_ok_core_manager_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
 #ifdef HAVE_NETPLAY
-   char core_path[PATH_MAX_LENGTH];
+   char core_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
    fill_pathname_join(core_path, g_settings.network.buildbot_url,
          path, sizeof(core_path));
 
    strlcpy(core_manager_path, path, sizeof(core_manager_path));
+   snprintf(msg, sizeof(msg), "Starting download: %s.", path);
+
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, msg, 1, 90);
 
    msg_queue_clear(g_extern.http_msg_queue);
    msg_queue_push(g_extern.http_msg_queue, core_path, 0, 1);
