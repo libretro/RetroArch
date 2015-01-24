@@ -693,6 +693,7 @@ MENU
 #include "../menu/menu_shader.c"
 #include "../menu/menu_navigation.c"
 #include "../menu/menu_animation.c"
+#include "../menu/menu_database.c"
 
 #include "../menu/drivers_backend/menu_common_backend.c"
 #endif
