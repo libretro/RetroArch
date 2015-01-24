@@ -137,12 +137,8 @@ static void net_http_send(int fd, bool * error,
 
 		if (thislen <= 0)
       {
-#ifndef __CELLOS_LV2__
-         /* FIXME - EWOULDBLOCK is not there on PS3, and this is kinda ugly code anyway.
-          * Can we get rid of the ugly macro here and do something sensible here? */
          if (!isagain(thislen))
             continue;
-#endif
 
          *error=true;
          return;
@@ -172,12 +168,8 @@ static ssize_t net_http_recv(int fd, bool *error,
       return bytes;
    else if (bytes == 0)
       return -1;
-#ifndef __CELLOS_LV2__
-   /* FIXME - EWOULDBLOCK is not there on PS3, and this is kinda ugly code anyway.
-    * Can we get rid of the ugly macro here and do something sensible here? */
    else if (isagain(bytes))
       return 0;
-#endif
 
    *error=true;
    return -1;
