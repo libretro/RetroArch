@@ -187,7 +187,7 @@ http_t *net_http_new(const char * url)
 {
 	bool error;
    char *domain = NULL, *location = NULL;
-	int port, fd       = -1;
+	int port = 0, fd = -1;
 	http_t *state      = NULL;
 	char *urlcopy      =(char*)malloc(strlen(url)+1);
 
