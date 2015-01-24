@@ -2943,6 +2943,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       case MENU_FILE_CONFIG:
       case MENU_FILE_USE_DIRECTORY:
       case MENU_FILE_PLAYLIST_ENTRY:
+      case MENU_FILE_DOWNLOAD_CORE:
          cbs->action_toggle = action_toggle_scroll;
          break;
       case MENU_SETTING_ACTION:
