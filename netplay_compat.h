@@ -64,6 +64,11 @@
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <cell/sysmodule.h>
 #include <netex/net.h>
+
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK SYS_NET_EWOULDBLOCK
+#endif
+
 #else
 #include <signal.h>
 #endif
