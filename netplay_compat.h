@@ -28,39 +28,58 @@
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
 #endif
+
 #define WIN32_LEAN_AND_MEAN
+
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
+
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif
-static INLINE bool isagain(int bytes) { return (bytes==SOCKET_ERROR && WSAGetLastError()==WSAEWOULDBLOCK); }
+
+
 #elif defined(_XBOX)
+
 #define NOD3D
 #include <xtl.h>
 #include <io.h>
+
 #else
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+
 #ifndef __PSL1GHT__
 #include <netinet/tcp.h>
 #endif
+
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <fcntl.h>
 #include <errno.h>
 
-static INLINE bool isagain(int bytes) { return (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)); }
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <cell/sysmodule.h>
 #include <netex/net.h>
 #else
 #include <signal.h>
 #endif
+
 #endif
+
+static INLINE bool isagain(int bytes)
+{
+#if defined(_WIN32) && !defined(_XBOX)
+   return (bytes == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK);
+#elif defined(_XBOX)
+   return (bytes == SOCKET_ERROR);
+#else
+   return (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK));
+#endif
+}
 
 #ifdef _XBOX
 #define socklen_t int
@@ -81,7 +100,6 @@ static INLINE bool isagain(int bytes) { return (bytes < 0 && (errno == EAGAIN ||
 #ifndef _WIN32
 #include <sys/time.h>
 #include <unistd.h>
-
 #endif
 
 /* Compatibility layer for legacy or incomplete BSD socket implementations.
