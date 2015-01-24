@@ -16,15 +16,15 @@
 #ifndef _MENU_DATABASE_H
 #define _MENU_DATABASE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stddef.h>
 #include "../core_info.h"
 #include <file/file_list.h>
 #ifdef HAVE_LIBRETRODB
 #include "../libretrodb/libretrodb.h"
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 int menu_database_populate_list(file_list_t *list, const char *path);
