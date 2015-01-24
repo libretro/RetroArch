@@ -40,4 +40,3 @@ const d3d_font_renderer_t *d3d_font_init_first(void *data,
 
    return NULL;
 }
-

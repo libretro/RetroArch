@@ -30,15 +30,17 @@ bool gl_font_init_first(const gl_font_renderer_t **font_driver, void **font_hand
       void *video_data, const char *font_path, float font_size)
 {
    unsigned i;
+
    for (i = 0; gl_font_backends[i]; i++)
    {
       void *data = gl_font_backends[i]->init(video_data, font_path, font_size);
-      if (data)
-      {
-         *font_driver = gl_font_backends[i];
-         *font_handle = data;
-         return true;
-      }
+
+      if (!data)
+         continue;
+
+      *font_driver = gl_font_backends[i];
+      *font_handle = data;
+      return true;
    }
 
    return false;
