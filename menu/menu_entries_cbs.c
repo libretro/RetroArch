@@ -1622,7 +1622,7 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
 
    menu_list_sort_on_alt(list);
 
-   menu_list_populate_generic(list, path, label, type);
+   menu_list_populate_generic(driver.menu, list, path, label, type);
 
    return 0;
 }
@@ -1642,7 +1642,7 @@ static int deferred_push_database_manager_list_deferred(void *data, void *userda
 
    menu_list_sort_on_alt(list);
 
-   menu_list_populate_generic(list, path, label, type);
+   menu_list_populate_generic(driver.menu, list, path, label, type);
 
    return 0;
 }
@@ -2307,7 +2307,7 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
             0, 0);
 #endif
 
-      menu_list_populate_generic(list, path, label, type);
+      menu_list_populate_generic(driver.menu, list, path, label, type);
 
       return 0;
    }
@@ -2363,7 +2363,7 @@ static int deferred_push_history_list(void *data, void *userdata,
             MENU_FILE_PLAYLIST_ENTRY, 0);
    }
 
-   menu_list_populate_generic(list, path, label, type);
+   menu_list_populate_generic(driver.menu, list, path, label, type);
 
    return 0;
 }
@@ -2390,7 +2390,7 @@ static int deferred_push_content_actions(void *data, void *userdata,
       menu_list_push(list, "Reset", "restart_content", MENU_SETTING_ACTION_RESET, 0);
    }
 
-   menu_list_populate_generic(list, path, label, type);
+   menu_list_populate_generic(driver.menu, list, path, label, type);
 
    return 0;
 }

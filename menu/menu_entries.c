@@ -245,12 +245,7 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
             MENU_FILE_CONTENTLIST_ENTRY,
             0);
 
-   driver.menu->scroll_indices_size = 0;
-   menu_entries_build_scroll_indices(list);
-   menu_entries_refresh(list);
-
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(menu, path, label, menu_type);
+   menu_list_populate_generic(menu, list, path, label, menu_type);
 
    return 0;
 }
@@ -499,12 +494,7 @@ int menu_entries_parse_list(
       menu_list_sort_on_alt(list);
    }
 
-   driver.menu->scroll_indices_size = 0;
-   menu_entries_build_scroll_indices(list);
-   menu_entries_refresh(list);
-
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, dir, label, type);
+   menu_list_populate_generic(driver.menu, list, dir, label, type);
 
    return 0;
 }

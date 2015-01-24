@@ -306,15 +306,21 @@ void menu_list_sort_on_alt(file_list_t *list)
    file_list_sort_on_alt(list);
 }
 
-int menu_list_populate_generic(file_list_t *list, const char *path,
+int menu_list_populate_generic(void *data,
+      file_list_t *list, const char *path,
       const char *label, unsigned type)
 {
+   menu_handle_t *menu = (menu_handle_t*)data;
+
+   if (!menu)
+      return -1;
+
    driver.menu->scroll_indices_size = 0;
    menu_entries_build_scroll_indices(list);
    menu_entries_refresh(list);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(menu, path, label, type);
 
    return 0;
 }
