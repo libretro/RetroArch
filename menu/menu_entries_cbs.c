@@ -2893,10 +2893,16 @@ static void menu_entries_cbs_init_bind_up_or_down(menu_file_list_cbs_t *cbs,
 static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
+   rarch_setting_t *setting = (rarch_setting_t*)
+      setting_data_find_setting(driver.menu->list_settings, label);
+
    if (!cbs)
       return;
 
    cbs->action_toggle = menu_action_setting_set;
+
+   if (setting && setting->action_toggle)
+      return;
 
    switch (type)
    {
@@ -2955,6 +2961,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       cbs->action_toggle = action_toggle_video_resolution;
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       cbs->action_toggle = core_setting_toggle;
+
 }
 
 static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
