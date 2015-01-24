@@ -39,41 +39,38 @@ enum
 static bool net_http_parse_url(char *url, char **domain,
       int *port, char **location)
 {
-	char* scan;
+   char* scan;
 
-	if (strncmp(url, "http://", strlen("http://")) != 0)
+   if (strncmp(url, "http://", strlen("http://")) != 0)
       return false;
 
-	scan    = url + strlen("http://");
-	*domain = scan;
+   scan    = url + strlen("http://");
+   *domain = scan;
 
-	while (*scan!='/' && *scan!=':' && *scan!='\0')
+   while (*scan != '/' && *scan != ':' && *scan != '\0')
       scan++;
 
-	if (*scan == '\0')
+   if (*scan == '\0')
       return false;
 
-	if (*scan == ':')
-	{
-		*scan='\0';
+   *scan   = '\0';
+   *port   = 80;
 
-		if (!isdigit(scan[1]))
+   if (*scan == ':')
+   {
+
+      if (!isdigit(scan[1]))
          return false;
 
-		*port = strtoul(scan+1, &scan, 10);
+      *port = strtoul(scan + 1, &scan, 10);
 
-		if (*scan != '/')
+      if (*scan != '/')
          return false;
-	}
-	else /* known '/' */
-	{
-		*scan='\0';
-		*port=80;
-	}
+   }
 
-	*location=scan+1;
+   *location = scan + 1;
 
-	return true;
+   return true;
 }
 
 static int net_http_new_socket(const char * domain, int port)
