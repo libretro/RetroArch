@@ -100,7 +100,7 @@ int main(int argc, char ** argv)
    }
    else
    {
-      printf("Unkonwn command %s\n", argv[2]);
+      printf("Unknown command %s\n", argv[2]);
       return 1;
    }
    libretrodb_close(&db);
