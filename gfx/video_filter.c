@@ -130,11 +130,23 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    snprintf(key, sizeof(key), "filter");
 
    if (!config_get_array(filt->conf, key, name, sizeof(name)))
+   {
+      RARCH_ERR("Could not find 'filter' array in config.\n");
       return false;
+   }
+
+   if (filt->num_plugs == 0)
+   {
+      RARCH_ERR("No filter plugs found. Exiting...\n");
+      return false;
+   }
 
    filt->impl = softfilter_find_implementation(filt, name);
    if (!filt->impl)
+   {
+      RARCH_ERR("Could not find implementation.\n");
       return false;
+   }
 
    userdata.conf = filt->conf;
    /* Index-specific configs take priority over ident-specific. */
@@ -384,10 +396,16 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
 
    plugs = dir_list_new(basedir, EXT_EXECUTABLES, false);
    if (!plugs)
+   {
+      RARCH_ERR("[SoftFilter]: Could not build up string list...\n");
       goto error;
+   }
 #endif
    if (!append_softfilter_plugs(filt, plugs))
+   {
+      RARCH_ERR("[SoftFitler]: Failed to append softfilter plugins...\n");
       goto error;
+   }
 
    if (plugs)
       string_list_free(plugs);
@@ -395,7 +413,10 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
 
    if (!create_softfilter_graph(filt, in_pixel_format,
             max_width, max_height, cpu_features, threads))
+   {
+      RARCH_ERR("[SoftFitler]: Failed to create softfilter graph...\n");
       goto error;
+   }
 
    return filt;
 
