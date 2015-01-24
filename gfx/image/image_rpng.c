@@ -32,16 +32,21 @@ static bool rpng_image_load_tga_shift(const char *path,
       unsigned a_shift, unsigned r_shift,
       unsigned g_shift, unsigned b_shift)
 {
-   unsigned i;
+   unsigned i, bits, size;
+   uint8_t info[6], *buf;
+   unsigned width = 0;
+   unsigned height = 0;
+   const uint8_t *tmp = NULL;
    void *raw_buf = NULL;
    ssize_t len = read_file(path, &raw_buf);
+
    if (len < 0)
    {
       RARCH_ERR("Failed to read image: %s.\n", path);
       return false;
    }
 
-   uint8_t *buf = (uint8_t*)raw_buf;
+   buf = (uint8_t*)raw_buf;
 
    if (buf[2] != 2)
    {
@@ -50,22 +55,19 @@ static bool rpng_image_load_tga_shift(const char *path,
       return false;
    }
 
-   unsigned width = 0;
-   unsigned height = 0;
-
-   uint8_t info[6];
    memcpy(info, buf + 12, 6);
 
-   width = info[0] + ((unsigned)info[1] * 256);
+   width  = info[0] + ((unsigned)info[1] * 256);
    height = info[2] + ((unsigned)info[3] * 256);
-   unsigned bits = info[4];
+   bits   = info[4];
 
    RARCH_LOG("Loaded TGA: (%ux%u @ %u bpp)\n", width, height, bits);
 
-   unsigned size = width * height * sizeof(uint32_t);
+   size            = width * height * sizeof(uint32_t);
    out_img->pixels = (uint32_t*)malloc(size);
-   out_img->width = width;
+   out_img->width  = width;
    out_img->height = height;
+
    if (!out_img->pixels)
    {
       RARCH_ERR("Failed to allocate TGA pixels.\n");
@@ -73,7 +75,8 @@ static bool rpng_image_load_tga_shift(const char *path,
       return false;
    }
 
-   const uint8_t *tmp = buf + 18;
+   tmp = buf + 18;
+
    if (bits == 32)
    {
       for (i = 0; i < width * height; i++)
@@ -126,15 +129,16 @@ static bool rpng_image_load_argb_shift(const char *path,
    {
       bool ret = rpng_load_image_argb(path,
             &out_img->pixels, &out_img->width, &out_img->height);
+
       if (!ret)
          return false;
 
       // This is quite uncommon ...
       if (a_shift != 24 || r_shift != 16 || g_shift != 8 || b_shift != 0)
       {
-         uint32_t i, num_pixels, *pixels;
-         num_pixels = out_img->width * out_img->height;
-         pixels = (uint32_t*)out_img->pixels;
+         uint32_t i;
+         uint32_t num_pixels = out_img->width * out_img->height;
+         uint32_t *pixels = (uint32_t*)out_img->pixels;
 
          for (i = 0; i < num_pixels; i++)
          {
@@ -177,6 +181,9 @@ static bool rpng_image_load_argb_shift(const char *path,
 
 static bool rpng_gx_convert_texture32(struct texture_image *image)
 {
+   unsigned tmp_pitch, width2, i;
+   const uint16_t *src;
+   uint16_t *dst;
    /* Memory allocation in libogc is extremely primitive so try 
     * to avoid gaps in memory when converting by copying over to 
     * a temporary buffer first, then converting over into 
@@ -190,14 +197,17 @@ static bool rpng_gx_convert_texture32(struct texture_image *image)
    }
 
    memcpy(tmp, image->pixels, image->width * image->height * sizeof(uint32_t));
-   unsigned tmp_pitch = (image->width * sizeof(uint32_t)) >> 1;
+   tmp_pitch = (image->width * sizeof(uint32_t)) >> 1;
+
    image->width &= ~3;
    image->height &= ~3;
-   unsigned width2 = image->width << 1;
 
-   const uint16_t *src = (uint16_t *) tmp;
-   uint16_t *dst = (uint16_t *) image->pixels;
-   for (unsigned i = 0; i < image->height; i += 4, dst += 4 * width2)
+   width2 = image->width << 1;
+
+   src = (uint16_t *) tmp;
+   dst = (uint16_t *) image->pixels;
+
+   for (i = 0; i < image->height; i += 4, dst += 4 * width2)
    {
       GX_BLIT_LINE_32(0)
       GX_BLIT_LINE_32(4)
