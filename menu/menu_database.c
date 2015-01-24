@@ -23,64 +23,67 @@ static int menu_database_fetch_from_query(libretrodb_t *db,
    libretrodb_cursor_t *cur, libretrodb_query_t *query,
    file_list_t *list)
 {
-    int i;
-	struct rmsgpack_dom_value item;
+   int i;
+   struct rmsgpack_dom_value item;
     
-    if ((libretrodb_cursor_open(db, cur, query)) != 0)
-        return -1;
+   if ((libretrodb_cursor_open(db, cur, query)) != 0)
+      return -1;
     
-    while (libretrodb_cursor_read_item(cur, &item) == 0)
-    {
-        if (item.type != RDT_MAP)
-            continue;
+   while (libretrodb_cursor_read_item(cur, &item) == 0)
+   {
+      if (item.type != RDT_MAP)
+         continue;
         
-        for (i = 0; i < item.map.len; i++)
-        {
-            struct rmsgpack_dom_value *key = &item.map.items[i].key;
-            struct rmsgpack_dom_value *val = &item.map.items[i].value;
+      for (i = 0; i < item.map.len; i++)
+      {
+         struct rmsgpack_dom_value *key = &item.map.items[i].key;
+         struct rmsgpack_dom_value *val = &item.map.items[i].value;
             
-            if (!strcmp(key->string.buff, "description"))
-            {
-                menu_list_push(list, val->string.buff, "",
-                               MENU_FILE_RDB_ENTRY, 0);
-                break;
-            }
-        }
-    }
+         if (!strcmp(key->string.buff, "description"))
+         {
+            menu_list_push(list, val->string.buff, "",
+            MENU_FILE_RDB_ENTRY, 0);
+            break;
+         }
+      }
+   }
     
-    return 0;
+   return 0;
 }
 #endif
 
 int menu_database_populate_query(file_list_t *list, const char *path,
     const char *query)
 {
-    libretrodb_t db;
-    libretrodb_cursor_t cur;
-    libretrodb_query_t *q;
-    const char *error = NULL;
+#ifdef HAVE_LIBRETRODB
+   libretrodb_t db;
+   libretrodb_cursor_t cur;
+   libretrodb_query_t *q;
+   const char *error = NULL;
     
-    if ((libretrodb_open(path, &db)) != 0)
-        return -1;
+   if ((libretrodb_open(path, &db)) != 0)
+      return -1;
     
-    q = libretrodb_query_compile(&db, query, strlen(query), &error);
+   q = libretrodb_query_compile(&db, query, strlen(query), &error);
     
-    if (error)
-        return -1;
+   if (error)
+      return -1;
     
-    if ((menu_database_fetch_from_query(&db, &cur, q, list)) != 0)
-        return -1;
+   if ((menu_database_fetch_from_query(&db, &cur, q, list)) != 0)
+      return -1;
     
-    libretrodb_cursor_close(&cur);
-    libretrodb_close(&db);
+   libretrodb_cursor_close(&cur);
+   libretrodb_close(&db);
+#endif
+
    return 0;
 }
 
 int menu_database_populate_list(file_list_t *list, const char *path)
 {
 #ifdef HAVE_LIBRETRODB
-	libretrodb_t db;
-	libretrodb_cursor_t cur;
+   libretrodb_t db;
+   libretrodb_cursor_t cur;
 
    if ((libretrodb_open(path, &db)) != 0)
       return -1;
