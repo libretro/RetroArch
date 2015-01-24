@@ -13,7 +13,7 @@ To find an entry with an index `libretrodb_tool <db file> find <index name> <val
 In order to write you own converter you must have a lua file that implements the following functions:
 
 ~~~.lua
--- this function gets called before the db is created and shuold validate the
+-- this function gets called before the db is created and should validate the
 -- arguments and set up the ground for db insertion
 function init(...)
 	local args = {...}
