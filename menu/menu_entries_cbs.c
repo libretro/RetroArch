@@ -2264,15 +2264,9 @@ static int cb_core_manager_list(void *data_, size_t len)
 
    print_buf_lines(list, data, len, MENU_FILE_DOWNLOAD_CORE);
 
-   driver.menu->scroll_indices_size = 0;
-   menu_entries_build_scroll_indices(list);
-   menu_entries_refresh(list);
-
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu,
-            core_manager_list_path,
-            core_manager_list_label,
-            core_manager_list_type);
+   menu_list_populate_generic(driver.menu,
+         list, core_manager_list_path,
+         core_manager_list_label, core_manager_list_type);
 
    return 0;
 }
