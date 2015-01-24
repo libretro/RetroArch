@@ -1635,7 +1635,6 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
 static int deferred_push_database_manager_list_deferred(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   unsigned i;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
 
