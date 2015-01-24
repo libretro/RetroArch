@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "netplay_compat.h"
+#include <compat/strl.h>
 
 enum
 {
@@ -84,7 +85,7 @@ static int net_http_new_socket(const char * domain, int port)
 	struct addrinfo hints, *addr = NULL;
 	char portstr[16];
 
-	sprintf(portstr, "%i", port);
+	snprintf(portstr, sizeof(portstr), "%i", port);
 	
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family   = AF_UNSPEC;
@@ -180,7 +181,7 @@ http_t *net_http_new(const char * url)
 	http_t *state      = NULL;
 	char *urlcopy      =(char*)malloc(strlen(url)+1);
 
-	strcpy(urlcopy, url);
+	strlcpy(urlcopy, url, sizeof(urlcopy));
 
 	if (!net_http_parse_url(urlcopy, &domain, &port, &location))
       goto fail;
@@ -203,7 +204,7 @@ http_t *net_http_new(const char * url)
 	{
 		char portstr[16];
 
-		sprintf(portstr, ":%i", port);
+		snprintf(portstr, sizeof(portstr), ":%i", port);
 		net_http_send_str(fd, &error, portstr);
 	}
 
