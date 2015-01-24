@@ -899,7 +899,11 @@ static int rarch_main_iterate_http_transfer(void)
 
    if (!net_http_update(g_extern.http_handle, &pos, &tot))
    {
-		RARCH_LOG("%.9lu / %.9lu        \r", pos, tot);
+#ifdef _WIN32
+		RARCH_LOG("%.9I64u / %.9I64u       \r", (unsigned long long)pos, (unsigned long long)tot);
+#else
+		RARCH_LOG("%.9llu / %.9llu        \r", (unsigned long long)pos, (unsigned long long)tot);
+#endif
       return -1;
    }
 
