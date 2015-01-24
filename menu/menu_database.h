@@ -17,7 +17,6 @@
 #define _MENU_DATABASE_H
 
 #include <stddef.h>
-#include "../core_info.h"
 #include <file/file_list.h>
 #ifdef HAVE_LIBRETRODB
 #include "../libretrodb/libretrodb.h"
