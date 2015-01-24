@@ -159,7 +159,7 @@ function get_value()
             pegi_rating = t.pegi_rating,
             cero_rating = t.cero_rating,
 
-            developers = t.developers,
+            developer = t.developer,
             publisher = t.publisher,
             origin = t.origin,
 

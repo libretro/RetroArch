@@ -181,7 +181,7 @@ static int dat_value_provider(void *ctx, struct rmsgpack_dom_value *out)
          if ((rv = load_string(fd, &out->map.items[i].value)) < 0)
             goto failed;
       }
-      else if (strncmp(key, "developers", sizeof("developers")) == 0)
+      else if (strncmp(key, "developer", sizeof("developer")) == 0)
       {
          if ((rv = load_string(fd, &out->map.items[i].value)) < 0)
             goto failed;
