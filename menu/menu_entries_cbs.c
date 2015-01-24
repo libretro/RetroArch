@@ -2893,6 +2893,7 @@ static void menu_entries_cbs_init_bind_up_or_down(menu_file_list_cbs_t *cbs,
 static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
+   int i;
    rarch_setting_t *setting = (rarch_setting_t*)
       setting_data_find_setting(driver.menu->list_settings, label);
 
@@ -2900,9 +2901,6 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       return;
 
    cbs->action_toggle = menu_action_setting_set;
-
-   if (setting && setting->action_toggle)
-      return;
 
    switch (type)
    {
@@ -2962,6 +2960,14 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       cbs->action_toggle = core_setting_toggle;
 
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      char label_setting[PATH_MAX_LENGTH];
+      snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
+
+      if (!strcmp(label, label_setting))
+         cbs->action_toggle = menu_action_setting_set;
+   }
 }
 
 static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
