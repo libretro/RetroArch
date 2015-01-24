@@ -809,7 +809,7 @@ static int action_ok_save_state(const char *path,
    return generic_action_ok_command(RARCH_CMD_RESUME);
 }
 
-
+#ifdef HAVE_NETPLAY
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
@@ -837,6 +837,7 @@ static int cb_core_manager_download(void *data_, size_t len)
 
    return 0;
 }
+#endif
 
 static int action_ok_core_manager_list(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -2275,7 +2276,6 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
     * ignore the partial last line.
     */
 }
-#endif
 
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
@@ -2314,19 +2314,21 @@ static int cb_core_manager_list(void *data_, size_t len)
 
    return 0;
 }
+#endif
+
 
 static int deferred_push_core_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
 #ifdef HAVE_NETPLAY
    char url_path[PATH_MAX_LENGTH];
-#endif
 
    strlcpy(core_manager_list_path, path,
          sizeof(core_manager_list_path));
    strlcpy(core_manager_list_label, label,
          sizeof(core_manager_list_label));
    core_manager_list_type = type;
+#endif
 
    if (g_settings.network.buildbot_url[0] == '\0')
    {
