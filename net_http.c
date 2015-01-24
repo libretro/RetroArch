@@ -181,7 +181,7 @@ http_t *net_http_new(const char * url)
 	http_t *state      = NULL;
 	char *urlcopy      =(char*)malloc(strlen(url)+1);
 
-	strlcpy(urlcopy, url, sizeof(urlcopy));
+	strcpy(urlcopy, url);
 
 	if (!net_http_parse_url(urlcopy, &domain, &port, &location))
       goto fail;
