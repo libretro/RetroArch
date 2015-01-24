@@ -32,9 +32,7 @@
 #include "../net_http.h"
 #endif
 
-#ifdef HAVE_LIBRETRODB
-#include "../libretrodb/libretrodb.h"
-#endif
+#include "menu_database.h"
 
 #include "../input/input_remapping.h"
 
@@ -1638,53 +1636,18 @@ static int deferred_push_database_manager_list_deferred(void *data, void *userda
       const char *path, const char *label, unsigned type)
 {
    unsigned i;
-#ifdef HAVE_LIBRETRODB
-	int rv = 1;
-	libretrodb_t db;
-	libretrodb_cursor_t cur;
-	struct rmsgpack_dom_value item;
-   const core_info_t *info = NULL;
-#endif
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
 
-   (void)info;
-   (void)rv;
-
    menu_list_clear(list);
-#ifdef HAVE_LIBRETRODB
-   if ((rv = libretrodb_open(path, &db)) != 0)
-      return -1;
 
-   if ((rv = libretrodb_cursor_open(&db, &cur, NULL)) != 0)
-      return -1;
+   menu_database_populate_list(list, path);
 
-   while (libretrodb_cursor_read_item(&cur, &item) == 0)
-   {
-      if (item.type != RDT_MAP)
-         continue;
-
-		for (i = 0; i < item.map.len; i++)
-      {
-         struct rmsgpack_dom_value *key = &item.map.items[i].key;
-         struct rmsgpack_dom_value *val = &item.map.items[i].value;
-
-         if (!strcmp(key->string.buff, "description"))
-         {
-            menu_list_push(list, val->string.buff, "",
-                  MENU_FILE_RDB_ENTRY, 0);
-            break;
-         }
-		}
-   }
-
-   libretrodb_cursor_close(&cur);
-   libretrodb_close(&db);
-#endif
    menu_list_sort_on_alt(list);
+
    driver.menu->scroll_indices_size = 0;
    menu_entries_build_scroll_indices(list);
    menu_entries_refresh(list);

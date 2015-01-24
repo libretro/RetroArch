@@ -313,6 +313,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/menu_common_list.o \
 			 menu/menu_navigation.o  \
 			 menu/menu_action.o \
+			 menu/menu_database.o \
 			 menu/menu_shader.o \
 			 menu/menu_entries.o \
 			 menu/menu_entries_cbs.o \
