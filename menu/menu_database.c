@@ -25,7 +25,6 @@ int menu_database_populate_list(file_list_t *list, const char *path)
 	libretrodb_t db;
 	libretrodb_cursor_t cur;
 	struct rmsgpack_dom_value item;
-   const core_info_t *info = NULL;
 
    if ((rv = libretrodb_open(path, &db)) != 0)
       return -1;
