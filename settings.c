@@ -22,6 +22,7 @@
 #include <file/file_path.h>
 #include "input/input_common.h"
 #include "input/input_keymaps.h"
+#include "input/input_remapping.h"
 #include "settings.h"
 
 #ifdef HAVE_CONFIG_H
@@ -537,11 +538,7 @@ static void config_set_defaults(void)
       memcpy(g_settings.input.binds[i], retro_keybinds_rest,
             sizeof(retro_keybinds_rest));
 
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      for (j = 0; j < RARCH_BIND_LIST_END; j++)
-         g_settings.input.remap_ids[i][j] = g_settings.input.binds[i][j].id;
-   }
+   input_remapping_set_defaults();
 
    for (i = 0; i < MAX_USERS; i++)
    {

@@ -945,6 +945,14 @@ static int action_ok_help(const char *path,
    return 0;
 }
 
+static int action_start_remap_file_load(unsigned type, const char *label,
+      unsigned action)
+{
+   g_settings.input.remapping_path[0] = '\0';
+   input_remapping_set_defaults();
+   return 0;
+}
+
 static int action_start_performance_counters_core(unsigned type, const char *label,
       unsigned action)
 {
@@ -2726,7 +2734,9 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
 
    cbs->action_start = action_start_lookup_setting;
 
-   if (!strcmp(label, "video_shader_pass"))
+   if (!strcmp(label, "remap_file_load"))
+      cbs->action_start = action_start_remap_file_load;
+   else if (!strcmp(label, "video_shader_pass"))
       cbs->action_start = action_start_shader_pass;
    else if (!strcmp(label, "video_shader_scale_pass"))
       cbs->action_start = action_start_shader_scale_pass;
