@@ -23,7 +23,8 @@ static char *strndup_(const char *s, size_t n)
 	return buff;
 }
 
-static struct rmsgpack_dom_value *get_map_value(const struct rmsgpack_dom_value *m, char* key)
+static struct rmsgpack_dom_value *get_map_value(
+      const struct rmsgpack_dom_value *m, char* key)
 {
    struct rmsgpack_dom_value v;
 
@@ -261,10 +262,12 @@ int main(int argc, char **argv)
 	int rv = 0;
 	int src = -1;
 	int dst = -1;
+
 	if (argc != 3)
 		printf("Usage: %s <dat file> <output file>\n", argv[0]);
 
 	src = open(argv[1], O_RDONLY);
+
 	if (src == -1)
    {
 		printf("Could not open source file '%s': %s\n", argv[1], strerror(errno));
@@ -273,6 +276,7 @@ int main(int argc, char **argv)
 	}
 
 	dst = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+
 	if (dst == -1)
    {
 		printf("Could not open destination file '%s': %s\n", argv[1], strerror(errno));

@@ -55,32 +55,36 @@ static const uint8_t MPF_UINT64 = 0xcf;
 
 static const uint8_t MPF_NIL = 0xc0;
 
-int rmsgpack_write_array_header(
-        int fd,
-        uint32_t size
-){
-	uint16_t tmp_i16;
-	uint32_t tmp_i32;
-	if (size < 16) {
-		size = (size | MPF_FIXARRAY);
-		if (write(fd, &size, sizeof(int8_t)) == -1)
-			return -errno;
-		return sizeof(int8_t);
-	} else if (size == (uint16_t)size) {
-		if (write(fd, &MPF_ARRAY16, sizeof(MPF_ARRAY16)) == -1)
-			return -errno;
-		tmp_i16 = httobe16(size);
-		if (write(fd, (void *)(&tmp_i16), sizeof(uint16_t)) == -1)
-			return -errno;
-		return sizeof(int8_t) + sizeof(uint16_t);
-	} else {
-		if (write(fd, &MPF_ARRAY32, sizeof(MPF_ARRAY32)) == -1)
-			return -errno;
-		tmp_i32 = httobe32(size);
-		if (write(fd, (void *)(&tmp_i32), sizeof(uint32_t)) == -1)
-			return -errno;
-		return sizeof(int8_t) + sizeof(uint32_t);
-	}
+int rmsgpack_write_array_header(int fd, uint32_t size)
+{
+   uint16_t tmp_i16;
+   uint32_t tmp_i32;
+
+   if (size < 16)
+   {
+      size = (size | MPF_FIXARRAY);
+      if (write(fd, &size, sizeof(int8_t)) == -1)
+         return -errno;
+      return sizeof(int8_t);
+   }
+   else if (size == (uint16_t)size)
+   {
+      if (write(fd, &MPF_ARRAY16, sizeof(MPF_ARRAY16)) == -1)
+         return -errno;
+      tmp_i16 = httobe16(size);
+      if (write(fd, (void *)(&tmp_i16), sizeof(uint16_t)) == -1)
+         return -errno;
+      return sizeof(int8_t) + sizeof(uint16_t);
+   }
+   else
+   {
+      if (write(fd, &MPF_ARRAY32, sizeof(MPF_ARRAY32)) == -1)
+         return -errno;
+      tmp_i32 = httobe32(size);
+      if (write(fd, (void *)(&tmp_i32), sizeof(uint32_t)) == -1)
+         return -errno;
+      return sizeof(int8_t) + sizeof(uint32_t);
+   }
 }
 
 int rmsgpack_write_map_header(

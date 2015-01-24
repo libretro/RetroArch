@@ -35,8 +35,9 @@
 int rl_fnmatch(const char *pattern, const char *string, int flags)
 {
    const char *c;
-   int charmatch = 0;
    int rv;
+   int charmatch = 0;
+
    for (c = pattern; *c != '\0'; c++)
    {
       /* String ended before pattern */
