@@ -1643,7 +1643,7 @@ static int deferred_push_database_manager_list_deferred(void *data, void *userda
 
    menu_list_clear(list);
 
-   menu_database_populate_list(list, path);
+   menu_database_populate_query(list, path, NULL);
 
    menu_list_sort_on_alt(list);
 

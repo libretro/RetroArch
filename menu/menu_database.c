@@ -86,23 +86,3 @@ int menu_database_populate_query(file_list_t *list, const char *path,
 
    return 0;
 }
-
-int menu_database_populate_list(file_list_t *list, const char *path)
-{
-#ifdef HAVE_LIBRETRODB
-   libretrodb_t db;
-   libretrodb_cursor_t cur;
-
-   if ((libretrodb_open(path, &db)) != 0)
-      return -1;
-   if ((menu_database_open_cursor(&db, &cur, NULL) != 0))
-      return -1;
-   if ((menu_database_fetch_from_query(&db, &cur, list)) != 0)
-      return -1;
-
-   libretrodb_cursor_close(&cur);
-   libretrodb_close(&db);
-#endif
-
-   return 0;
-}
