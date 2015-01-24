@@ -18,6 +18,7 @@
 #include "menu_common_list.h"
 #include "menu_list.h"
 #include "menu_navigation.h"
+#include "menu_entries.h"
 #include <string.h>
 
 void menu_list_destroy(file_list_t *list)
@@ -303,4 +304,17 @@ void menu_list_get_alt_at_offset(const file_list_t *list, size_t idx,
 void menu_list_sort_on_alt(file_list_t *list)
 {
    file_list_sort_on_alt(list);
+}
+
+int menu_list_populate_generic(file_list_t *list, const char *path,
+      const char *label, unsigned type)
+{
+   driver.menu->scroll_indices_size = 0;
+   menu_entries_build_scroll_indices(list);
+   menu_entries_refresh(list);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
 }
