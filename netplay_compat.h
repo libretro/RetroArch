@@ -72,10 +72,14 @@
 
 static INLINE bool isagain(int bytes)
 {
-#if defined(_WIN32) && !defined(_XBOX)
-   return (bytes == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK);
-#elif defined(_XBOX)
-   return (bytes == SOCKET_ERROR);
+#if defined(_WIN32)
+   if (bytes != SOCKET_ERROR)
+      return false;
+#ifndef _XBOX
+   if (WSAGetLastError() != WSAEWOULDBLOCK)
+      return false;
+#endif
+   return true;
 #else
    return (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK));
 #endif
