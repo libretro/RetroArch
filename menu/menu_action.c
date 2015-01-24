@@ -73,8 +73,7 @@ static void process_setting_handler(
    }
 }
 
-int menu_action_setting_handler(
-      rarch_setting_t *setting, unsigned action)
+int menu_action_setting_handler(rarch_setting_t *setting, unsigned action)
 {
    process_setting_handler(setting, action);
 
@@ -117,23 +116,25 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 
 static rarch_setting_t *find_setting(void)
 {
-   const file_list_t *list = (const file_list_t*)driver.menu->menu_list->selection_buf;
+   const file_list_t *list = (const file_list_t*)
+      driver.menu->menu_list->selection_buf;
 
    /* Check if setting belongs to settings menu. */
 
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
-         driver.menu->list_settings, list->list[driver.menu->selection_ptr].label);
+         driver.menu->list_settings,
+         list->list[driver.menu->selection_ptr].label);
 
    /* Check if setting belongs to main menu. */
    if (!setting)
       setting = (rarch_setting_t*)setting_data_find_setting(
-            driver.menu->list_mainmenu, list->list[driver.menu->selection_ptr].label);
+            driver.menu->list_mainmenu,
+            list->list[driver.menu->selection_ptr].label);
 
    return setting;
 }
 
-int menu_action_setting_set(unsigned type, const char *label,
-      unsigned action)
+int menu_action_setting_set(unsigned type, const char *label, unsigned action)
 {
    rarch_setting_t *setting = find_setting();
    if (!setting)
