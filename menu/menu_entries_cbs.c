@@ -1596,6 +1596,19 @@ static int disk_options_disk_idx_toggle(unsigned type, const char *label,
    return 0;
 }
 
+static int list_populate_generic(file_list_t *list, const char *path,
+      const char *label, unsigned type)
+{
+   driver.menu->scroll_indices_size = 0;
+   menu_entries_build_scroll_indices(list);
+   menu_entries_refresh(list);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
+}
+
 static int deferred_push_core_list_deferred(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -1622,12 +1635,7 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
 
    menu_list_sort_on_alt(list);
 
-   driver.menu->scroll_indices_size = 0;
-   menu_entries_build_scroll_indices(list);
-   menu_entries_refresh(list);
-
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+   list_populate_generic(list, path, label, type);
 
    return 0;
 }
@@ -1647,12 +1655,7 @@ static int deferred_push_database_manager_list_deferred(void *data, void *userda
 
    menu_list_sort_on_alt(list);
 
-   driver.menu->scroll_indices_size = 0;
-   menu_entries_build_scroll_indices(list);
-   menu_entries_refresh(list);
-
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+   list_populate_generic(list, path, label, type);
 
    return 0;
 }
@@ -2316,12 +2319,8 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
             "Network not available.", "",
             0, 0);
 #endif
-      driver.menu->scroll_indices_size = 0;
-      menu_entries_build_scroll_indices(list);
-      menu_entries_refresh(list);
 
-      if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-         driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      list_populate_generic(list, path, label, type);
 
       return 0;
    }
@@ -2377,12 +2376,7 @@ static int deferred_push_history_list(void *data, void *userdata,
             MENU_FILE_PLAYLIST_ENTRY, 0);
    }
 
-   driver.menu->scroll_indices_size = 0;
-   menu_entries_build_scroll_indices(list);
-   menu_entries_refresh(list);
-
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+   list_populate_generic(list, path, label, type);
 
    return 0;
 }
@@ -2409,12 +2403,7 @@ static int deferred_push_content_actions(void *data, void *userdata,
       menu_list_push(list, "Reset", "restart_content", MENU_SETTING_ACTION_RESET, 0);
    }
 
-   driver.menu->scroll_indices_size = 0;
-   menu_entries_build_scroll_indices(list);
-   menu_entries_refresh(list);
-
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+   list_populate_generic(list, path, label, type);
 
    return 0;
 }
