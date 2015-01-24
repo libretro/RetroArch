@@ -43,10 +43,6 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list);
  **/
 bool menu_entries_init(menu_handle_t *menu);
 
-void menu_entries_refresh(file_list_t *list);
-
-void menu_entries_build_scroll_indices(file_list_t *list);
-
 int menu_entries_setting_set_flags(rarch_setting_t *setting);
 
 int menu_entries_push_main_menu_list(menu_handle_t *menu,

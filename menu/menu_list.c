@@ -21,6 +21,107 @@
 #include "menu_entries.h"
 #include <string.h>
 
+static void menu_entries_refresh(file_list_t *list)
+{
+   if (!list || !driver.menu)
+      return;
+
+   (void)list;
+
+   /* Before a refresh, we could have deleted a file on disk, causing
+    * selection_ptr to suddendly be out of range.
+    * Ensure it doesn't overflow. */
+
+   if (driver.menu->selection_ptr >= menu_list_get_size(driver.menu->menu_list)
+         && menu_list_get_size(driver.menu->menu_list))
+      menu_navigation_set(driver.menu, menu_list_get_size(driver.menu->menu_list) - 1, true);
+   else if (!menu_list_get_size(driver.menu->menu_list))
+      menu_navigation_clear(driver.menu, true);
+}
+
+/**
+ * menu_entries_list_elem_is_dir:
+ * @list                     : File list handle.
+ * @offset                   : Offset index of element.
+ *
+ * Is the current entry at offset @offset a directory?
+ *
+ * Returns: true (1) if entry is a directory, otherwise false (0).
+ **/
+static inline bool menu_entries_list_elem_is_dir(file_list_t *list,
+      unsigned offset)
+{
+   const char *path  = NULL;
+   const char *label = NULL;
+   unsigned type     = 0;
+
+   menu_list_get_at_offset(list, offset, &path, &label, &type);
+
+   return type != MENU_FILE_PLAIN;
+}
+
+/**
+ * menu_entries_list_get_first_char:
+ * @list                     : File list handle.
+ * @offset                   : Offset index of element.
+ *
+ * Gets the first character of an element in the
+ * file list.
+ *
+ * Returns: first character of element in file list.
+ **/
+static inline int menu_entries_list_get_first_char(
+      file_list_t *list, unsigned offset)
+{
+   int ret;
+   const char *path = NULL;
+
+   menu_list_get_alt_at_offset(list, offset, &path);
+   ret = tolower(*path);
+
+   /* "Normalize" non-alphabetical entries so they 
+    * are lumped together for purposes of jumping. */
+   if (ret < 'a')
+      ret = 'a' - 1;
+   else if (ret > 'z')
+      ret = 'z' + 1;
+   return ret;
+}
+
+static void menu_entries_build_scroll_indices(file_list_t *list)
+{
+   size_t i;
+   int current;
+   bool current_is_dir;
+
+   if (!driver.menu || !list)
+      return;
+
+   driver.menu->scroll_indices_size = 0;
+   if (!list->size)
+      return;
+
+   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 0;
+
+   current        = menu_entries_list_get_first_char(list, 0);
+   current_is_dir = menu_entries_list_elem_is_dir(list, 0);
+
+   for (i = 1; i < list->size; i++)
+   {
+      int first   = menu_entries_list_get_first_char(list, i);
+      bool is_dir = menu_entries_list_elem_is_dir(list, i);
+
+      if ((current_is_dir && !is_dir) || (first > current))
+         driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = i;
+
+      current = first;
+      current_is_dir = is_dir;
+   }
+
+   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 
+      list->size - 1;
+}
+
 void menu_list_destroy(file_list_t *list)
 {
    unsigned i;
