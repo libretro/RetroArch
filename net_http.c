@@ -400,7 +400,7 @@ parse_again:
 			}
 			else if (state->part == p_body)
 			{
-				if (newlen >= state->len)
+				if ((size_t)newlen >= state->len)
 				{
 					state->pos += state->len;
 					newlen     -= state->len;
