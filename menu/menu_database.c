@@ -19,15 +19,29 @@
 #include <string.h>
 
 #ifdef HAVE_LIBRETRODB
-static int menu_database_fetch_from_query(libretrodb_t *db,
-   libretrodb_cursor_t *cur, libretrodb_query_t *query,
-   file_list_t *list)
+static int menu_database_open_cursor(libretrodb_t *db,
+   libretrodb_cursor_t *cur, const char *query)
 {
-   int i;
-   struct rmsgpack_dom_value item;
+   const char *error     = NULL;
+   libretrodb_query_t *q = NULL;
+
+   if (query) 
+      q = libretrodb_query_compile(db, query,
+      strlen(query), &error);
     
-   if ((libretrodb_cursor_open(db, cur, query)) != 0)
+   if (error)
       return -1;
+   if ((libretrodb_cursor_open(db, cur, q)) != 0)
+      return -1;
+
+   return 0;
+}
+
+static int menu_database_fetch_from_query(libretrodb_t *db,
+   libretrodb_cursor_t *cur, file_list_t *list)
+{
+   unsigned i;
+   struct rmsgpack_dom_value item;
     
    while (libretrodb_cursor_read_item(cur, &item) == 0)
    {
@@ -58,18 +72,12 @@ int menu_database_populate_query(file_list_t *list, const char *path,
 #ifdef HAVE_LIBRETRODB
    libretrodb_t db;
    libretrodb_cursor_t cur;
-   libretrodb_query_t *q;
-   const char *error = NULL;
     
    if ((libretrodb_open(path, &db)) != 0)
       return -1;
-    
-   q = libretrodb_query_compile(&db, query, strlen(query), &error);
-    
-   if (error)
+   if ((menu_database_open_cursor(&db, &cur, query) != 0))
       return -1;
-    
-   if ((menu_database_fetch_from_query(&db, &cur, q, list)) != 0)
+   if ((menu_database_fetch_from_query(&db, &cur, list)) != 0)
       return -1;
     
    libretrodb_cursor_close(&cur);
@@ -87,9 +95,10 @@ int menu_database_populate_list(file_list_t *list, const char *path)
 
    if ((libretrodb_open(path, &db)) != 0)
       return -1;
-    
-   if ((menu_database_fetch_from_query(&db, &cur, NULL, list)) != 0)
-       return -1;
+   if ((menu_database_open_cursor(&db, &cur, NULL) != 0))
+      return -1;
+   if ((menu_database_fetch_from_query(&db, &cur, list)) != 0)
+      return -1;
 
    libretrodb_cursor_close(&cur);
    libretrodb_close(&db);
