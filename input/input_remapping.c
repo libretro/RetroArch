@@ -36,6 +36,9 @@ bool input_remapping_load_file(const char *path)
    if (!conf)
       return false;
 
+   strlcpy(g_settings.input.remapping_path, path,
+         sizeof(g_settings.input.remapping_path));
+
    for (i = 0; i < MAX_USERS; i++)
    {
       char buf[64];

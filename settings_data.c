@@ -2905,6 +2905,9 @@ void setting_data_get_label(char *type_str,
 #endif
    if (!strcmp(label, "cheat_num_passes"))
       snprintf(type_str, type_str_size, "%u", g_extern.cheat->buf_size);
+   else if (!strcmp(label, "remap_file_load"))
+      fill_pathname_base(type_str, g_settings.input.remapping_path,
+            type_str_size);
    else if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
    {

@@ -304,6 +304,8 @@ struct settings
       bool autoconfig_descriptor_label_show;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
+
+      char remapping_path[PATH_MAX_LENGTH];
    } input;
 
    struct

@@ -186,6 +186,8 @@ enum basic_event
    /* Toggles fullscreen mode. */
    RARCH_CMD_FULLSCREEN_TOGGLE,
    RARCH_CMD_PERFCNT_REPORT_FRONTEND_LOG,
+   RARCH_CMD_REMAPPING_INIT,
+   RARCH_CMD_REMAPPING_DEINIT,
 };
 
 enum action_state

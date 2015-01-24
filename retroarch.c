@@ -36,7 +36,10 @@
 #include "cheats.h"
 #include <compat/getopt.h>
 #include <compat/posix_string.h>
+
 #include "input/keyboard_line.h"
+#include "input/input_remapping.h"
+
 #include "git_version.h"
 #include "intl/intl.h"
 
@@ -1182,6 +1185,14 @@ static void save_files(void)
    }
 }
 
+static void init_remapping(void)
+{
+   if (!g_settings.input.remap_binds_enable)
+      return;
+
+   input_remapping_load_file(g_settings.input.remapping_path);
+}
+
 static void init_cheats(void)
 {
    bool allow_cheats = true;
@@ -2179,6 +2190,7 @@ int rarch_main_init(int argc, char *argv[])
    rarch_main_command(RARCH_CMD_CONTROLLERS_INIT);
    rarch_main_command(RARCH_CMD_RECORD_INIT);
    rarch_main_command(RARCH_CMD_CHEATS_INIT);
+   rarch_main_command(RARCH_CMD_REMAPPING_INIT);
 
    rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
 
@@ -2559,6 +2571,12 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_CHEATS_INIT:
          rarch_main_command(RARCH_CMD_CHEATS_DEINIT);
          init_cheats();
+         break;
+      case RARCH_CMD_REMAPPING_DEINIT:
+         break;
+      case RARCH_CMD_REMAPPING_INIT:
+         rarch_main_command(RARCH_CMD_REMAPPING_DEINIT);
+         init_remapping();
          break;
       case RARCH_CMD_REWIND_DEINIT:
 #ifdef HAVE_NETPLAY

@@ -1322,6 +1322,8 @@ static bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
+   CONFIG_GET_PATH(input.remapping_path, "input_remapping_path");
+
    CONFIG_GET_PATH(resampler_directory, "resampler_directory");
    CONFIG_GET_PATH(extraction_directory, "extraction_directory");
    CONFIG_GET_PATH(input_remapping_directory, "input_remapping_directory");
@@ -1556,25 +1558,25 @@ static void config_load_core_specific(void)
 
 static void parse_config_file(void)
 {
-   bool ret;
+   bool ret = config_load_file((*g_extern.config_path) 
+         ? g_extern.config_path : NULL, false);
+
    if (*g_extern.config_path)
    {
       RARCH_LOG("Loading config from: %s.\n", g_extern.config_path);
-      ret = config_load_file(g_extern.config_path, false);
    }
    else
    {
       RARCH_LOG("Loading default config.\n");
-      ret = config_load_file(NULL, false);
       if (*g_extern.config_path)
          RARCH_LOG("Found default config: %s.\n", g_extern.config_path);
    }
 
-   if (!ret)
-   {
-      RARCH_ERR("Couldn't find config at path: \"%s\"\n",
-            g_extern.config_path);
-   }
+   if (ret)
+      return;
+
+   RARCH_ERR("Couldn't find config at path: \"%s\"\n",
+         g_extern.config_path);
 }
 
 
@@ -1921,6 +1923,8 @@ bool config_save_file(const char *path)
          g_settings.extraction_directory);
    config_set_path(conf, "input_remapping_directory",
          g_settings.input_remapping_directory);
+   config_set_path(conf, "input_remapping_path",
+        g_settings.input.remapping_path);
    config_set_path(conf, "resampler_directory",
          g_settings.resampler_directory);
    config_set_string(conf, "audio_resampler", g_settings.audio.resampler);
