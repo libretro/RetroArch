@@ -2908,7 +2908,6 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
 {
    int i;
    const char *menu_label = NULL;
-   rarch_setting_t *setting = menu_action_find_setting(label);
 
    if (!cbs)
       return;
