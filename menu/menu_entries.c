@@ -434,7 +434,7 @@ bool menu_entries_init(menu_handle_t *menu)
    if (!menu)
       return false;
 
-   menu->list_settings = setting_data_new(SL_FLAG_ALL_SETTINGS);
+   menu->list_settings = setting_data_new(SL_FLAG_ALL);
 
    menu_list_push_stack(menu->menu_list, "", "Main Menu", MENU_SETTINGS, 0);
    menu_navigation_clear(menu, true);
