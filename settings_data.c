@@ -5867,6 +5867,21 @@ static bool setting_data_append_list_path_options(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
+
+   CONFIG_DIR(
+         g_settings.cursor_directory,
+         "cursor_directory",
+         "Cursor Directory",
+         "",
+         "<None>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 #endif
 
    CONFIG_DIR(
