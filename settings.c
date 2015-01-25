@@ -527,7 +527,6 @@ static void config_set_defaults(void)
    g_settings.input.input_descriptor_label_show = input_descriptor_label_show;
    g_settings.input.input_descriptor_hide_unbound = input_descriptor_hide_unbound;
    g_settings.input.remap_binds_enable = true;
-   g_settings.input.menu_remap_binds_enable = true;
    g_settings.input.max_users = MAX_USERS;
 
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
@@ -540,7 +539,6 @@ static void config_set_defaults(void)
             sizeof(retro_keybinds_rest));
 
    input_remapping_set_defaults();
-   input_menu_remapping_set_defaults();
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -1213,8 +1211,6 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_BOOL(input.remap_binds_enable,
          "input_remap_binds_enable");
-   CONFIG_GET_BOOL(input.menu_remap_binds_enable,
-         "menu_input_remap_binds_enable");
    CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_BOOL(input.netplay_client_swap_input,
          "netplay_client_swap_input");
@@ -1810,8 +1806,6 @@ bool config_save_file(const char *path)
          g_settings.input.axis_threshold);
    config_set_bool(conf, "input_remap_binds_enable",
          g_settings.input.remap_binds_enable);
-   config_set_bool(conf, "menu_input_remap_binds_enable",
-         g_settings.input.menu_remap_binds_enable);
    config_set_bool(conf, "netplay_client_swap_input",
          g_settings.input.netplay_client_swap_input);
    config_set_bool(conf, "input_descriptor_label_show",

@@ -425,68 +425,29 @@ int menu_input_bind_iterate_keyboard(void *data)
 
 unsigned menu_input_frame(retro_input_t trigger_state)
 {
-   int16_t libretro_id  = -1;
-   unsigned menu_id     = 0;
-
    if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
-      libretro_id = RETRO_DEVICE_ID_JOYPAD_UP;
-   else if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
-      libretro_id = RETRO_DEVICE_ID_JOYPAD_DOWN;
-   else if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT))
-      libretro_id = RETRO_DEVICE_ID_JOYPAD_LEFT;
-   else if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT))
-      libretro_id = RETRO_DEVICE_ID_JOYPAD_RIGHT;
-   else if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
-      libretro_id = RETRO_DEVICE_ID_JOYPAD_L;
-   else if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
-      libretro_id = RETRO_DEVICE_ID_JOYPAD_R;
-   else if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_B))
-      libretro_id = RETRO_DEVICE_ID_JOYPAD_B;
-   else if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
-      libretro_id = RETRO_DEVICE_ID_JOYPAD_A;
-   else if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_Y))
-      libretro_id = RETRO_DEVICE_ID_JOYPAD_Y;
-   else if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
-      libretro_id = MENU_ACTION_START;
-   else if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
-      libretro_id = MENU_ACTION_SELECT;
-   else if (trigger_state & (1ULL << RARCH_MENU_TOGGLE))
-      libretro_id = MENU_ACTION_TOGGLE;
-
-   if (g_settings.input.menu_remap_binds_enable)
-   {
-      unsigned port = 0;
-      if (libretro_id != -1)
-         libretro_id = g_settings.input.menu_remap_ids[0][libretro_id];
-   }
-
-   switch (libretro_id)
-   {
-      case RETRO_DEVICE_ID_JOYPAD_UP:
-         return MENU_ACTION_UP;
-      case RETRO_DEVICE_ID_JOYPAD_DOWN:
-         return MENU_ACTION_DOWN;
-      case RETRO_DEVICE_ID_JOYPAD_LEFT:
-         return MENU_ACTION_LEFT;
-      case RETRO_DEVICE_ID_JOYPAD_RIGHT:
-         return MENU_ACTION_RIGHT;
-      case RETRO_DEVICE_ID_JOYPAD_L:
-         return MENU_ACTION_SCROLL_UP;
-      case RETRO_DEVICE_ID_JOYPAD_R:
-         return MENU_ACTION_SCROLL_DOWN;
-      case RETRO_DEVICE_ID_JOYPAD_B:
-         return MENU_ACTION_CANCEL;
-      case RETRO_DEVICE_ID_JOYPAD_A:
-         return MENU_ACTION_OK;
-      case RETRO_DEVICE_ID_JOYPAD_Y:
-         return MENU_ACTION_Y;
-      case RETRO_DEVICE_ID_JOYPAD_START:
-         return MENU_ACTION_START;
-      case RETRO_DEVICE_ID_JOYPAD_SELECT:
-         return MENU_ACTION_SELECT;
-      case RARCH_MENU_TOGGLE:
-         return MENU_ACTION_TOGGLE;
-   }
-
+      return MENU_ACTION_UP;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
+      return MENU_ACTION_DOWN;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT))
+      return MENU_ACTION_LEFT;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      return MENU_ACTION_RIGHT;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
+      return MENU_ACTION_SCROLL_UP;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
+      return MENU_ACTION_SCROLL_DOWN;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_B))
+      return MENU_ACTION_CANCEL;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
+      return MENU_ACTION_OK;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_Y))
+      return MENU_ACTION_Y;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
+      return MENU_ACTION_START;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
+      return MENU_ACTION_SELECT;
+   if (trigger_state & (1ULL << RARCH_MENU_TOGGLE))
+      return MENU_ACTION_TOGGLE;
    return MENU_ACTION_NOOP;
 }

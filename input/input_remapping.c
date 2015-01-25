@@ -118,14 +118,3 @@ void input_remapping_set_defaults(void)
          g_settings.input.remap_ids[i][j] = g_settings.input.binds[i][j].id;
    }
 }
-
-void input_menu_remapping_set_defaults(void)
-{
-   unsigned i, j;
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      for (j = 0; j < RARCH_BIND_LIST_END; j++)
-         g_settings.input.menu_remap_ids[i][j] = g_settings.input.binds[i][j].id;
-   }
-}
