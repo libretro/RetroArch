@@ -266,14 +266,14 @@ void menu_list_pop_stack(menu_list_t *list)
    if (!list)
       return;
 
-   if (file_list_get_size(list->menu_stack) > 1)
-   {
-      if (driver.menu_ctx->list_cache)
-         driver.menu_ctx->list_cache(false, 0);
+   if (file_list_get_size(list->menu_stack) <= 1)
+      return;
 
-      menu_list_pop(list->menu_stack, &driver.menu->selection_ptr);
-      driver.menu->need_refresh = true;
-   }
+   if (driver.menu_ctx->list_cache)
+      driver.menu_ctx->list_cache(false, 0);
+
+   menu_list_pop(list->menu_stack, &driver.menu->selection_ptr);
+   driver.menu->need_refresh = true;
 }
 
 void menu_list_pop_stack_by_needle(menu_list_t *list,
@@ -288,6 +288,7 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
 
    driver.menu->need_refresh = true;
    file_list_get_last(list->menu_stack, &path, &label, &type);
+
    while (strcmp(needle, label) == 0)
    {
       menu_list_pop(list->menu_stack, &driver.menu->selection_ptr);

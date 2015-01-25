@@ -479,11 +479,11 @@ static int action_ok_path_use_directory(const char *path,
    if (!setting)
       return -1;
 
-   if (setting->type == ST_DIR)
-   {
-      menu_action_setting_set_current_string(setting, menu_path);
-      menu_list_pop_stack_by_needle(driver.menu->menu_list, setting->name);
-   }
+   if (setting->type != ST_DIR)
+      return -1;
+
+   menu_action_setting_set_current_string(setting, menu_path);
+   menu_list_pop_stack_by_needle(driver.menu->menu_list, setting->name);
 
    return 0;
 }
