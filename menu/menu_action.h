@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+int menu_action_generic_setting(rarch_setting_t *setting);
+
 int menu_action_setting_handler(
       rarch_setting_t *setting, unsigned action);
 

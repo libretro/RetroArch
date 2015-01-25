@@ -124,21 +124,6 @@ unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
-static int menu_action_generic_setting(rarch_setting_t *setting)
-{
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   if (setting->flags & SD_FLAG_EXIT
-         && setting->cmd_trigger.triggered)
-   {
-      setting->cmd_trigger.triggered = false;
-      return -1;
-   }
-
-   return 0;
-}
-
 int menu_action_setting_set_current_string(
       rarch_setting_t *setting, const char *str)
 {

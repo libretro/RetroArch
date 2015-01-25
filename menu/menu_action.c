@@ -18,7 +18,7 @@
 #include "menu_entries.h"
 #include "../retroarch.h"
 
-static int setting_extra_handler(rarch_setting_t *setting)
+int menu_action_generic_setting(rarch_setting_t *setting)
 {
    if (!setting)
       return -1;
@@ -77,7 +77,7 @@ int menu_action_setting_handler(rarch_setting_t *setting, unsigned action)
 {
    process_setting_handler(setting, action);
 
-   return setting_extra_handler(setting);
+   return menu_action_generic_setting(setting);
 }
 
 int menu_action_handle_setting(rarch_setting_t *setting,
@@ -111,7 +111,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
          break;
    }
 
-   return setting_extra_handler(setting);
+   return menu_action_generic_setting(setting);
 }
 
 rarch_setting_t *menu_action_find_setting(const char *label)
