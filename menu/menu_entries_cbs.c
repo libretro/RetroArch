@@ -488,6 +488,12 @@ static int action_ok_database_manager_list_deferred(const char *path,
    return 0;
 }
 
+static int action_ok_cursor_manager_list_deferred(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return 0;
+}
+
 static int action_ok_core_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -583,6 +589,21 @@ static int action_ok_database_manager_list(const char *path,
          driver.menu->menu_list,
          rdb_path,
          "deferred_database_manager_list",
+         0, idx);
+}
+
+static int action_ok_cursor_manager_list(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   char cursor_path[PATH_MAX_LENGTH];
+
+   fill_pathname_join(cursor_path, g_settings.cursor_directory,
+         path, sizeof(cursor_path));
+
+   return menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         cursor_path,
+         "deferred_cursor_manager_list",
          0, idx);
 }
 
@@ -1634,6 +1655,43 @@ static int deferred_push_database_manager_list_deferred(void *data, void *userda
    return 0;
 }
 
+static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   char *query = NULL, *rdb = NULL;
+   char rdb_path[PATH_MAX_LENGTH];
+   config_file_t *conf    = NULL;
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_list_clear(list);
+
+   conf = config_file_new(path);
+
+   if (!conf)
+      return -1;
+
+   if (!config_get_string(conf, "query", &query))
+      return -1;
+
+   if (!config_get_string(conf, "rdb", &rdb))
+      return -1;
+
+   fill_pathname_join(rdb_path, g_settings.content_database,
+         rdb, sizeof(rdb_path));
+
+   menu_database_populate_query(list, rdb_path, query);
+
+   menu_list_sort_on_alt(list);
+
+   menu_list_populate_generic(driver.menu, list, path, label, type);
+
+   return 0;
+}
+
 static int deferred_push_core_information(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -2388,6 +2446,13 @@ static int deferred_push_database_manager_list(void *data, void *userdata,
          MENU_FILE_RDB, "rdb");
 }
 
+static int deferred_push_cursor_manager_list(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   return generic_deferred_push(data, userdata, g_settings.cursor_directory, label, type,
+         MENU_FILE_CURSOR, "dbc");
+}
+
 static int deferred_push_core_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -2648,6 +2713,12 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
          else
             return -1;
          break;
+      case MENU_FILE_CURSOR:
+         if (!strcmp(menu_label, "deferred_database_manager_list"))
+            cbs->action_ok = action_ok_cursor_manager_list_deferred;
+         else if (!strcmp(menu_label, "cursor_manager_list"))
+            cbs->action_ok = action_ok_cursor_manager_list;
+         break;
       case MENU_FILE_FONT:
       case MENU_FILE_OVERLAY:
       case MENU_FILE_AUDIOFILTER:
@@ -2799,6 +2870,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_push_content_list;
    else if (!strcmp(label, "history_list") ||
          !strcmp(label, "core_manager_list") ||
+         !strcmp(label, "cursor_manager_list") ||
          !strcmp(label, "database_manager_list") ||
          (setting && setting->browser_selection_type == ST_DIR)
          )
@@ -2857,6 +2929,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       case MENU_FILE_CORE:
       case MENU_FILE_RDB:
       case MENU_FILE_RDB_ENTRY:
+      case MENU_FILE_CURSOR:
       case MENU_FILE_SHADER:
       case MENU_FILE_IMAGE:
       case MENU_FILE_OVERLAY:
@@ -2935,6 +3008,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_history_list;
    else if (!strcmp(label, "database_manager_list"))
       cbs->action_deferred_push = deferred_push_database_manager_list;
+   else if (!strcmp(label, "cursor_manager_list"))
+      cbs->action_deferred_push = deferred_push_cursor_manager_list;
    else if (!strcmp(label, "cheat_file_load"))
       cbs->action_deferred_push = deferred_push_cheat_file_load;
    else if (!strcmp(label, "remap_file_load"))
@@ -2949,6 +3024,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_core_list_deferred;
    else if (!strcmp(label, "deferred_database_manager_list"))
       cbs->action_deferred_push = deferred_push_database_manager_list_deferred;
+   else if (!strcmp(label, "deferred_cursor_manager_list"))
+      cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred;
    else if (!strcmp(label, "core_information"))
       cbs->action_deferred_push = deferred_push_core_information;
    else if (!strcmp(label, "performance_counters"))
