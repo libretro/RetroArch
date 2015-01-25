@@ -1,48 +1,82 @@
 local dat_obj = {}
 local match_key = nil
 
-local function dat_lexer(f)
+local function dat_lexer(f, fname)
     local line, err = f:read("*l")
+    local location = {line_no = 1, column = 1, fname = fname}
     return function()
         local tok = nil
         while not tok do
             if not line then
                 return nil
             end
-            tok, line = string.match(line, "^%s*(..-)(%s.*)")
+            pre_space, tok, line = string.match(line, "^(%s*)(..-)([()]*%s.*)")
             if tok and string.match(tok, "^\"") then
                 tok, line = string.match(tok..line, "^\"([^\"]-)\"(.*)")
+            elseif tok and string.match(tok, "^[()]") then
+                line = tok:sub(2) .. line
+                tok = tok:sub(1,1)
             end
+            location.column = location.column  + #(pre_space or "")
+            tok_loc = {
+                line_no = location.line_no,
+                column = location.column,
+                fname = location.fname
+            }
             if not line then
                 line = f:read("*l")
+                location.line_no = location.line_no + 1
+                location.column = 1
+            else
+                location.column = location.column + #tok
             end
         end
-        return tok
+        print(tok)
+        return tok, tok_loc
     end
 end
 
-local function dat_parse_table(lexer)
+local function dat_parse_table(lexer, start_loc)
     local res = {}
     local state = "key"
     local key = nil
-    for tok in lexer do
+    for tok, loc in lexer do
         if state == "key" then
             if tok == ")" then
                 return res
+            elseif tok == "(" then
+                error(string.format(
+                    "%s:%d:%d: fatal error: Unexpected '(' instead of key",
+                    loc.fname,
+                    loc.line_no,
+                    loc.column
+                ))
             else
                 key = tok
                 state = "value"
             end
         else
             if tok == "(" then
-                res[key] = dat_parse_table(lexer)
+                res[key] = dat_parse_table(lexer, loc)
+            elseif tok == ")" then
+                error(string.format(
+                    "%s:%d:%d: fatal error: Unexpected ')' instead of value",
+                    loc.fname,
+                    loc.line_no,
+                    loc.column
+                ))
             else
                 res[key] = tok
             end
             state = "key"
         end
     end
-    return res
+    error(string.format(
+        "%s:%d:%d: fatal error: Missing ')' for '('",
+        start_loc.fname,
+        start_loc.line_no,
+        start_loc.column
+    ))
 end
 
 local function dat_parser(lexer)
@@ -50,7 +84,7 @@ local function dat_parser(lexer)
     local state = "key"
     local key = nil
     local skip = true
-    for tok in lexer do
+    for tok, loc in lexer do
         if state == "key" then
             if tok == "game" then
                 skip = false
@@ -58,13 +92,19 @@ local function dat_parser(lexer)
             state = "value"
         else
             if tok == "(" then
-                local v = dat_parse_table(lexer)
+                local v = dat_parse_table(lexer, loc)
                 if not skip then
                     table.insert(res, v)
                     skip = true
                 end
             else
-                error("Expected '(' found '"..tok.."'")
+                error(string.format(
+                    "%s:%d:%d: fatal error: Expected '(' found '%s'",
+                    loc.fname,
+                    loc.line_no,
+                    loc.column,
+                    tok
+                ))
             end
             state = "key"
         end
@@ -114,7 +154,7 @@ function init(...)
         end
 
         print("Parsing dat file '" .. dat_path .. "'...")
-        local objs = dat_parser(dat_lexer(dat_file))
+        local objs = dat_parser(dat_lexer(dat_file, dat_path))
         dat_file:close()
         for _, obj in pairs(objs) do
             if match_key then
@@ -149,7 +189,7 @@ function get_value()
             releaseyear = uint(tonumber(t.releaseyear)),
             rumble = uint(tonumber(t.rumble)),
             analog = uint(tonumber(t.analog)),
-            
+
             edge_rating = uint(tonumber(t.edge_rating)),
             edge_issue = uint(tonumber(t.edge_issue)),
 
