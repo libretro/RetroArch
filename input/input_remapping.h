@@ -35,16 +35,6 @@ extern "C" {
 bool input_remapping_load_file(const char *path);
 
 /**
- * input_menu_remapping_load_file:
- * @path                     : Path to menu remapping file (absolute path).
- *
- * Loads a menu remap file from disk to memory.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool input_menu_remapping_load_file(const char *path);
-
-/**
  * input_remapping_save_file:
  * @path                     : Path to remapping file (relative path).
  *
