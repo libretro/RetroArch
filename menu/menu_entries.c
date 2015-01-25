@@ -15,6 +15,7 @@
  */
 
 #include "menu_entries.h"
+#include "menu_action.h"
 #include <file/file_list.h>
 #include <file/file_path.h>
 #include "../file_extract.h"
@@ -46,22 +47,32 @@ int menu_entries_setting_set_flags(rarch_setting_t *setting)
    return 0;
 }
 
-int menu_entries_push_main_menu_list(menu_handle_t *menu,
+int menu_entries_push_list(menu_handle_t *menu,
       file_list_t *list,
       const char *path, const char *label,
-      unsigned menu_type)
+      unsigned type, unsigned setting_flags)
 {
    rarch_setting_t *setting = NULL;
    
    settings_list_free(menu->list_settings);
-   menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_MAIN_MENU);
-   setting = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
-         label);
+   menu->list_settings = (rarch_setting_t *)setting_data_new(setting_flags);
 
-   if (!setting)
+   if (!(setting = (rarch_setting_t*)menu_action_find_setting(label)))
       return -1;
 
    menu_list_clear(list);
+
+   /* Hack - should come up with something cleaner
+    * here. */
+   if (!strcmp(label, "Video Options"))
+   {
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
+      menu_list_push(list, "Screen Resolution", "",
+            MENU_SETTINGS_VIDEO_RESOLUTION, 0);
+#endif
+      menu_list_push(list, "Custom Ratio", "",
+            MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
+   }
 
    for (; setting->type != ST_END_GROUP; setting++)
    {
@@ -77,7 +88,7 @@ int menu_entries_push_main_menu_list(menu_handle_t *menu,
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(menu, path, label, menu_type);
+      driver.menu_ctx->populate_entries(menu, path, label, type);
 
    return 0;
 }
@@ -408,7 +419,8 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
    menu_list_get_last_stack(driver.menu->menu_list, &path, &label, &type);
 
    if (!strcmp(label, "Main Menu"))
-      return menu_entries_push_main_menu_list(driver.menu, list, path, label, type);
+      return menu_entries_push_list(driver.menu, list, path, label, type,
+            SL_FLAG_MAIN_MENU);
    else if (!strcmp(label, "Horizontal Menu"))
       return menu_entries_push_horizontal_menu_list(driver.menu, list, path, label, type);
 
@@ -438,8 +450,8 @@ bool menu_entries_init(menu_handle_t *menu)
 
    menu_list_push_stack(menu->menu_list, "", "Main Menu", MENU_SETTINGS, 0);
    menu_navigation_clear(menu, true);
-   menu_entries_push_main_menu_list(menu, menu->menu_list->selection_buf,
-         "", "Main Menu", 0);
+   menu_entries_push_list(menu, menu->menu_list->selection_buf,
+         "", "Main Menu", 0, SL_FLAG_MAIN_MENU);
 
    return true;
 }

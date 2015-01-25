@@ -138,9 +138,6 @@ static void common_load_content(bool persist)
    driver.menu->msg_force = true;
 }
 
-
-
-
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -1894,49 +1891,8 @@ static int deferred_push_settings(void *data, void *userdata,
 static int deferred_push_category(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   rarch_setting_t *setting = NULL;
-   file_list_t *list        = (file_list_t*)data;
-   file_list_t *menu_list   = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   settings_list_free(driver.menu->list_settings);
-
-   driver.menu->list_settings = (rarch_setting_t *)
-      setting_data_new(SL_FLAG_ALL_SETTINGS);
-
-   setting = (rarch_setting_t*)menu_action_find_setting(label);
-
-   menu_list_clear(list);
-
-   if (!strcmp(label, "Video Options"))
-   {
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
-      menu_list_push(list, "Screen Resolution", "",
-            MENU_SETTINGS_VIDEO_RESOLUTION, 0);
-#endif
-      menu_list_push(list, "Custom Ratio", "",
-            MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
-   }
-
-   for (; setting->type != ST_END_GROUP; setting++)
-   {
-      if (
-            setting->type == ST_GROUP ||
-            setting->type == ST_SUB_GROUP ||
-            setting->type == ST_END_SUB_GROUP
-         )
-         continue;
-
-      menu_list_push(list, setting->short_description,
-            setting->name, menu_entries_setting_set_flags(setting), 0);
-   }
-
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
-
-   return 0;
+   return menu_entries_push_list(driver.menu, data,
+         path, label, type, SL_FLAG_ALL_SETTINGS);
 }
 
 static int deferred_push_shader_options(void *data, void *userdata,
@@ -2397,8 +2353,8 @@ static int deferred_push_content_list(void *data, void *userdata,
 
    menu_navigation_clear(driver.menu, true);
    if (driver.menu->cat_selection_ptr == 0)
-      return menu_entries_push_main_menu_list(driver.menu, driver.menu->menu_list->selection_buf,
-         "", "Main Menu", 0);
+      return menu_entries_push_list(driver.menu, driver.menu->menu_list->selection_buf,
+         "", "Main Menu", 0, SL_FLAG_MAIN_MENU);
    else
       return menu_entries_push_horizontal_menu_list(driver.menu, driver.menu->menu_list->selection_buf,
          "", "Horizontal Menu", 0);
