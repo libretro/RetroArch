@@ -2163,34 +2163,33 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 
    for (i = 0; i < buf_size; i++)
    {
-      if (*(buf + i) == '\n')
-      {
-         /* Found a line ending, print the line and compute new line_start */
+      size_t ln;
 
-         size_t ln;
-         
-         /* Save the next char  */
-         c = *(buf + i + 1);
-         /* replace with \0 */
-         *(buf + i + 1) = '\0';
-
-         /* We need to strip the newline. */
-         ln = strlen(line_start) - 1;
-         if (line_start[ln] == '\n')
-            line_start[ln] = '\0';
-
-         menu_list_push(list, line_start, "",
-               type, 0);
-
-         /* Restore the saved char */
-         *(buf + i + 1) = c;
-         line_start = buf + i + 1;
-      }
-      else if (*(buf + i) == '\0')
-      {
-         /* The end of the buffer, print the last bit */
+      /* The end of the buffer, print the last bit */
+      if (*(buf + i) == '\0')
          break;
-      }
+
+      if (*(buf + i) != '\n')
+         continue;
+
+      /* Found a line ending, print the line and compute new line_start */
+
+      /* Save the next char  */
+      c = *(buf + i + 1);
+      /* replace with \0 */
+      *(buf + i + 1) = '\0';
+
+      /* We need to strip the newline. */
+      ln = strlen(line_start) - 1;
+      if (line_start[ln] == '\n')
+         line_start[ln] = '\0';
+
+      menu_list_push(list, line_start, "",
+            type, 0);
+
+      /* Restore the saved char */
+      *(buf + i + 1) = c;
+      line_start = buf + i + 1;
    }
    /* If the buffer was completely full, and didn't end with a newline, just
     * ignore the partial last line.
