@@ -2423,127 +2423,111 @@ static int deferred_push_content_list(void *data, void *userdata,
          "", "Horizontal Menu", 0);
 }
 
-static int generic_deferred_push(void *data, void *userdata,
-      const char *path, const char *label, unsigned type,
-      unsigned push_type, const char *ext)
-{
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-
-   if (!list || !menu_list)
-      return -1;
-
-   menu_entries_parse_list(list, menu_list, path, label,
-         type, push_type, ext, NULL);
-
-   return 0;
-}
-
 static int deferred_push_database_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, g_settings.content_database, label, type,
-         MENU_FILE_RDB, "rdb");
+   return menu_entries_parse_list(data, userdata, g_settings.content_database, label, type,
+         MENU_FILE_RDB, "rdb", NULL);
 }
 
 static int deferred_push_cursor_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, g_settings.cursor_directory, label, type,
-         MENU_FILE_CURSOR, "dbc");
+   return menu_entries_parse_list(data, userdata, g_settings.cursor_directory, label, type,
+         MENU_FILE_CURSOR, "dbc", NULL);
 }
 
 static int deferred_push_core_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, path, label, type,
-         MENU_FILE_PLAIN, EXT_EXECUTABLES);
+   return menu_entries_parse_list(data, userdata, path, label, type,
+         MENU_FILE_PLAIN, EXT_EXECUTABLES, NULL);
 }
 
 static int deferred_push_configurations(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, path, label, type,
-         MENU_FILE_CONFIG, "cfg");
+   return menu_entries_parse_list(data, userdata, path, label, type,
+         MENU_FILE_CONFIG, "cfg", NULL);
 }
 
 static int deferred_push_video_shader_preset(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, path, label, type,
-         MENU_FILE_SHADER_PRESET, "cgp|glslp");
+   return menu_entries_parse_list(data, userdata, path, label, type,
+         MENU_FILE_SHADER_PRESET, "cgp|glslp", NULL);
 }
 
 static int deferred_push_video_shader_pass(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, path, label, type,
-         MENU_FILE_SHADER, "cg|glsl");
+   return menu_entries_parse_list(data, userdata, path, label, type,
+         MENU_FILE_SHADER, "cg|glsl", NULL);
 }
 
 static int deferred_push_video_filter(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, path, label, type,
-         MENU_FILE_VIDEOFILTER, "filt");
+   return menu_entries_parse_list(data, userdata, path, label, type,
+         MENU_FILE_VIDEOFILTER, "filt", NULL);
 }
 
 static int deferred_push_images(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, path, label, type,
-         MENU_FILE_IMAGE, "png");
+   return menu_entries_parse_list(data, userdata, path, label, type,
+         MENU_FILE_IMAGE, "png", NULL);
 }
 
 static int deferred_push_audio_dsp_plugin(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, path, label, type,
-         MENU_FILE_AUDIOFILTER, "dsp");
+   return menu_entries_parse_list(data, userdata, path, label, type,
+         MENU_FILE_AUDIOFILTER, "dsp", NULL);
 }
 
 static int deferred_push_cheat_file_load(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, path, label, type,
-         MENU_FILE_CHEAT, "cht");
+   return menu_entries_parse_list(data, userdata, path, label, type,
+         MENU_FILE_CHEAT, "cht", NULL);
 }
 
 static int deferred_push_remap_file_load(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, path, label, type,
-         MENU_FILE_REMAP, "rmp");
+   return menu_entries_parse_list(data, userdata, path, label, type,
+         MENU_FILE_REMAP, "rmp", NULL);
 }
 
 static int deferred_push_input_overlay(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, path, label, type,
-         MENU_FILE_OVERLAY, "cfg");
+   return menu_entries_parse_list(data, userdata, path, label, type,
+         MENU_FILE_OVERLAY, "cfg", NULL);
 }
 
 static int deferred_push_video_font_path(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, path, label, type,
-         MENU_FILE_FONT, "ttf");
+   return menu_entries_parse_list(data, userdata, path, label, type,
+         MENU_FILE_FONT, "ttf", NULL);
 }
 
 static int deferred_push_content_history_path(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, path, label, type,
-         MENU_FILE_PLAIN, "cfg");
+   return menu_entries_parse_list(data, userdata, path, label, type,
+         MENU_FILE_PLAIN, "cfg", NULL);
 }
 
 static int deferred_push_detect_core_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return generic_deferred_push(data, userdata, path, label, type,
+   return menu_entries_parse_list(data, userdata, path, label, type,
          MENU_FILE_PLAIN, 
          g_extern.core_info ? core_info_list_get_all_extensions(
-         g_extern.core_info) : "");
+         g_extern.core_info) : "", NULL);
 }
 
 static int deferred_push_default(void *data, void *userdata,

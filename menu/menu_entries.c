@@ -285,6 +285,9 @@ int menu_entries_parse_list(
 
    (void)device;
 
+   if (!list || !menu_list)
+      return -1;
+
    menu_list_clear(list);
 
    if (!*dir)
