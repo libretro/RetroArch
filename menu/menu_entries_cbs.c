@@ -1196,10 +1196,8 @@ static int action_toggle_scroll(unsigned type, const char *label,
    if (!driver.menu)
       return -1;
 
-   scroll_speed = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
+   scroll_speed      = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
    fast_scroll_speed = 4 + 4 * scroll_speed;
-
-   (void)scroll_speed;
 
    switch (action)
    {
@@ -2582,15 +2580,27 @@ static int action_bind_up_or_down_generic(unsigned type, const char *label,
                menu_navigation_set(driver.menu,
                      driver.menu->selection_ptr - scroll_speed, true);
          else
-            menu_navigation_set(driver.menu,
-                  menu_list_get_size(driver.menu->menu_list) - 1, true);
+         {
+            if (g_settings.menu.navigation.wraparound.vertical_enable)
+               menu_navigation_set(driver.menu,
+                     menu_list_get_size(driver.menu->menu_list) - 1, true);
+            else
+               menu_navigation_set(driver.menu,
+                     0, true);
+         }
          break;
       case MENU_ACTION_DOWN:
          if (driver.menu->selection_ptr + scroll_speed < (menu_list_get_size(driver.menu->menu_list)))
             menu_navigation_set(driver.menu,
                   driver.menu->selection_ptr + scroll_speed, true);
          else
-            menu_navigation_clear(driver.menu, false);
+         {
+            if (g_settings.menu.navigation.wraparound.vertical_enable)
+               menu_navigation_clear(driver.menu, false);
+            else
+               menu_navigation_set(driver.menu,
+                     menu_list_get_size(driver.menu->menu_list) - 1, true);
+         }
          break;
    }
 
