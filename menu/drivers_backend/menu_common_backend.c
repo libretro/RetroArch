@@ -60,7 +60,7 @@ static int menu_info_screen_iterate(unsigned action)
    if (current_setting)
       strlcpy(needle, current_setting->name, sizeof(needle));
    else if ((current_setting = (rarch_setting_t*)setting_data_find_setting(
-               driver.menu->list_mainmenu,
+               driver.menu->list_settings,
                list->list[driver.menu->selection_ptr].label)))
    {
       if (current_setting)

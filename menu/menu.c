@@ -212,10 +212,7 @@ void menu_free_list(void *data)
    if (!menu)
       return;
 
-   settings_list_free(menu->list_mainmenu);
    settings_list_free(menu->list_settings);
-
-   menu->list_mainmenu = NULL;
    menu->list_settings = NULL;
 }
 

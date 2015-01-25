@@ -119,17 +119,9 @@ static rarch_setting_t *find_setting(void)
    const file_list_t *list = (const file_list_t*)
       driver.menu->menu_list->selection_buf;
 
-   /* Check if setting belongs to settings menu. */
-
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
          driver.menu->list_settings,
          list->list[driver.menu->selection_ptr].label);
-
-   /* Check if setting belongs to main menu. */
-   if (!setting)
-      setting = (rarch_setting_t*)setting_data_find_setting(
-            driver.menu->list_mainmenu,
-            list->list[driver.menu->selection_ptr].label);
 
    return setting;
 }

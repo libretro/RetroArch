@@ -53,9 +53,9 @@ int menu_entries_push_main_menu_list(menu_handle_t *menu,
 {
    rarch_setting_t *setting = NULL;
    
-   settings_list_free(menu->list_mainmenu);
-   menu->list_mainmenu = (rarch_setting_t *)setting_data_new(SL_FLAG_MAIN_MENU);
-   setting = (rarch_setting_t*)setting_data_find_setting(menu->list_mainmenu,
+   settings_list_free(menu->list_settings);
+   menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_MAIN_MENU);
+   setting = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
          label);
 
    if (!setting)
@@ -434,7 +434,6 @@ bool menu_entries_init(menu_handle_t *menu)
    if (!menu)
       return false;
 
-   menu->list_mainmenu = setting_data_new(SL_FLAG_MAIN_MENU);
    menu->list_settings = setting_data_new(SL_FLAG_ALL_SETTINGS);
 
    menu_list_push_stack(menu->menu_list, "", "Main Menu", MENU_SETTINGS, 0);

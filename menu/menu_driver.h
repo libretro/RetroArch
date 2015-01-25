@@ -138,7 +138,6 @@ typedef struct
       unsigned idx;
    } keyboard;
 
-   rarch_setting_t *list_mainmenu;
    rarch_setting_t *list_settings;
 } menu_handle_t;
 
