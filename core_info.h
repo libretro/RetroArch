@@ -48,8 +48,10 @@ typedef struct
    char *permissions;
    char *licenses;
    char *categories;
+   char *databases;
    char *notes;
    struct string_list *categories_list;
+   struct string_list *databases_list;
    struct string_list *note_list;   
    struct string_list *supported_extensions_list;
    struct string_list *authors_list;

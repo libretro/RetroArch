@@ -191,6 +191,12 @@ core_info_list_t *core_info_list_new(const char *modules_path)
             core_info[i].categories_list =
                string_split(core_info[i].categories, "|");
 
+         if (config_get_string(core_info[i].data, "database",
+                  &core_info[i].databases) &&
+               core_info[i].databases)
+            core_info[i].databases_list =
+               string_split(core_info[i].databases, "|");
+
          if (config_get_string(core_info[i].data, "notes",
                   &core_info[i].notes) &&
                core_info[i].notes)
@@ -240,6 +246,7 @@ void core_info_list_free(core_info_list_t *core_info_list)
       free(info->permissions);
       free(info->licenses);
       free(info->categories);
+      free(info->databases);
       free(info->notes);
       if (info->supported_extensions_list)
          string_list_free(info->supported_extensions_list);
@@ -248,6 +255,7 @@ void core_info_list_free(core_info_list_t *core_info_list)
       string_list_free(info->permissions_list);
       string_list_free(info->licenses_list);
       string_list_free(info->categories_list);
+      string_list_free(info->databases_list);
       config_file_free(info->data);
 
       for (j = 0; j < info->firmware_count; j++)
