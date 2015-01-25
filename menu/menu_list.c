@@ -376,12 +376,12 @@ void menu_list_push_stack(menu_list_t *list,
       menu_list_push(list->menu_stack, path, label, type, directory_ptr);
 }
 
-void menu_list_push_stack_refresh(menu_list_t *list,
+int menu_list_push_stack_refresh(menu_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr)
 {
    if (!list)
-      return;
+      return -1;
 
    if (driver.menu_ctx->list_cache)
       driver.menu_ctx->list_cache(false, 0);
@@ -389,6 +389,8 @@ void menu_list_push_stack_refresh(menu_list_t *list,
    menu_list_push_stack(list, path, label, type, directory_ptr);
    menu_navigation_clear(driver.menu, true);
    driver.menu->need_refresh = true;
+
+   return 0;
 }
 
 void menu_list_set_alt_at_offset(file_list_t *list, size_t idx,

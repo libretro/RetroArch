@@ -84,7 +84,7 @@ void menu_list_push_stack(menu_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr);
 
-void menu_list_push_stack_refresh(menu_list_t *list,
+int menu_list_push_stack_refresh(menu_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr);
 

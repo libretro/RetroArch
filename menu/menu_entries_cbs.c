@@ -193,22 +193,6 @@ static int action_ok_shader_pass_load(const char *path,
 #endif
 }
 
-static int action_ok_file_generic(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   if (!driver.menu)
-      return -1;
-
-   menu_list_push_stack_refresh(
-         driver.menu->menu_list,
-         path, 
-         label,
-         type,
-         driver.menu->selection_ptr);
-
-   return 0;
-}
-
 #ifdef HAVE_SHADER_MANAGER
 extern size_t hack_shader_pass;
 #endif
@@ -217,87 +201,102 @@ static int action_ok_shader_pass(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
-   return action_ok_file_generic(
+
+   return menu_list_push_stack_refresh(
+         driver.menu->menu_list,
          g_settings.video.shader_dir, 
-         label, type, idx);
+         label,
+         type,
+         driver.menu->selection_ptr);
 }
 
 static int action_ok_shader_parameters(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return action_ok_file_generic(
-         "", label,
-         MENU_SETTING_ACTION, idx);
+   return menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         "", label, MENU_SETTING_ACTION,
+         driver.menu->selection_ptr);
 }
 
 static int action_ok_push_generic_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return action_ok_file_generic(
-         "", label, type, idx);
+   return menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         "", label, type, driver.menu->selection_ptr);
 }
 
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return action_ok_file_generic(
-         label, label, type, idx);
+   return menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         label, label, type, driver.menu->selection_ptr);
 }
 
 static int action_ok_shader_preset(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return action_ok_file_generic(
+   return menu_list_push_stack_refresh(
+         driver.menu->menu_list,
          g_settings.video.shader_dir, 
-         label, type, idx);
+         label, type, driver.menu->selection_ptr);
 }
 
 static int action_ok_push_content_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return action_ok_file_generic(
+   return menu_list_push_stack_refresh(
+         driver.menu->menu_list,
          g_settings.menu_content_directory,
-         label,
-         MENU_FILE_DIRECTORY, idx);
+         label, MENU_FILE_DIRECTORY, driver.menu->selection_ptr);
 }
 
 static int action_ok_disk_image_append_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return action_ok_file_generic(
-         g_settings.menu_content_directory, label, type, idx);
+   return menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         g_settings.menu_content_directory, label, type,
+         driver.menu->selection_ptr);
 }
 
 static int action_ok_configurations_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *dir = g_settings.menu_config_directory;
-   return action_ok_file_generic(
-         dir ? dir : label, label, type, idx);
+   return menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         dir ? dir : label, label, type,
+         driver.menu->selection_ptr);
 }
 
 static int action_ok_cheat_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return action_ok_file_generic(
+   return menu_list_push_stack_refresh(
+         driver.menu->menu_list,
          g_settings.cheat_database,
-         label, type, idx);
+         label, type, driver.menu->selection_ptr);
 }
 
 static int action_ok_remap_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return action_ok_file_generic(
+   return menu_list_push_stack_refresh(
+         driver.menu->menu_list,
          g_settings.input_remapping_directory,
-         label, type, idx);
+         label, type, driver.menu->selection_ptr);
 }
 
 static int action_ok_core_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return action_ok_file_generic(
+   return menu_list_push_stack_refresh(
+         driver.menu->menu_list,
          g_settings.libretro_directory,
-         label, type, idx);
+         label, type, driver.menu->selection_ptr);
 }
 
 static int action_ok_remap_file_load(const char *path,
@@ -568,7 +567,8 @@ static int action_ok_directory_push(const char *path,
 
    fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
 
-   return action_ok_file_generic(cat_path, menu_label, type, idx);
+   return menu_list_push_stack_refresh(driver.menu->menu_list,
+         cat_path, menu_label, type, driver.menu->selection_ptr);
 }
 
 static int action_ok_database_manager_list(const char *path,
@@ -579,7 +579,8 @@ static int action_ok_database_manager_list(const char *path,
    fill_pathname_join(rdb_path, g_settings.content_database,
          path, sizeof(rdb_path));
 
-   return action_ok_file_generic(
+   return menu_list_push_stack_refresh(
+         driver.menu->menu_list,
          rdb_path,
          "deferred_database_manager_list",
          0, driver.menu->selection_ptr);
