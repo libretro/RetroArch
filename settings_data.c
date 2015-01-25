@@ -3351,7 +3351,7 @@ static bool setting_data_append_list_main_menu_options(
 #ifdef HAVE_NETPLAY
    CONFIG_ACTION(
          "core_manager_list",
-         "Core Manager",
+         "Core Update Manager",
          group_info.name,
          subgroup_info.name);
 #endif
