@@ -155,6 +155,24 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
             MENU_FILE_CONTENTLIST_ENTRY,
             0);
 
+   if (info->databases_list)
+   {
+      size_t i;
+      char db_path[PATH_MAX_LENGTH];
+
+      for (i = 0; i < info->databases_list->size; i++)
+      {
+         struct string_list *strlist = info->databases_list;
+
+         fill_pathname_join(db_path, g_settings.content_database, strlist->elems[i].data, sizeof(db_path));
+         strlcat(db_path, ".rdb", sizeof(db_path));
+
+         if (path_file_exists(db_path))
+            menu_list_push(list, path_basename(db_path), "core_database",
+                  MENU_FILE_RDB, 0);
+      }
+   }
+
    menu_list_populate_generic(menu, list, path, label, menu_type);
 
    return 0;

@@ -2642,7 +2642,8 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
       case MENU_FILE_RDB:
          if (!strcmp(menu_label, "deferred_database_manager_list"))
             cbs->action_ok = action_ok_database_manager_list_deferred;
-         else if (!strcmp(menu_label, "database_manager_list"))
+         else if (!strcmp(menu_label, "database_manager_list") 
+               || !strcmp(menu_label, "Horizontal Menu"))
             cbs->action_ok = action_ok_database_manager_list;
          else
             return -1;
@@ -2834,10 +2835,14 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
    int i;
+   const char *menu_label = NULL;
    rarch_setting_t *setting = menu_action_find_setting(label);
 
    if (!cbs)
       return;
+
+   menu_list_get_last_stack(driver.menu->menu_list,
+         NULL, &menu_label, NULL);
 
    cbs->action_toggle = menu_action_setting_set;
 
@@ -2861,7 +2866,10 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       case MENU_FILE_USE_DIRECTORY:
       case MENU_FILE_PLAYLIST_ENTRY:
       case MENU_FILE_DOWNLOAD_CORE:
-         cbs->action_toggle = action_toggle_scroll;
+         if (!strcmp(menu_label, "Horizontal Menu"))
+            cbs->action_toggle = action_toggle_mainmenu;
+         else
+            cbs->action_toggle = action_toggle_scroll;
          break;
       case MENU_SETTING_ACTION:
       case MENU_FILE_CONTENTLIST_ENTRY:
