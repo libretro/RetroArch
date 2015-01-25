@@ -307,6 +307,7 @@ struct settings
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
 
+      char menu_remapping_path[PATH_MAX_LENGTH];
       char remapping_path[PATH_MAX_LENGTH];
    } input;
 
@@ -334,6 +335,7 @@ struct settings
    char content_database[PATH_MAX_LENGTH];
    char cheat_database[PATH_MAX_LENGTH];
    char cheat_settings_path[PATH_MAX_LENGTH];
+   char menu_input_remapping_directory[PATH_MAX_LENGTH];
    char input_remapping_directory[PATH_MAX_LENGTH];
 
    char resampler_directory[PATH_MAX_LENGTH];

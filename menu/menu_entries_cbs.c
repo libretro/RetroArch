@@ -20,6 +20,7 @@
 #include "menu_input.h"
 #include "menu_entries.h"
 #include "menu_shader.h"
+#include "menu_database.h"
 
 #include "../file_ext.h"
 #include "../file_extract.h"
@@ -31,8 +32,6 @@
 #ifdef HAVE_NETPLAY
 #include "../net_http.h"
 #endif
-
-#include "menu_database.h"
 
 #include "../input/input_remapping.h"
 
@@ -302,6 +301,14 @@ static int action_ok_cheat_file(const char *path,
          label, type, idx);
 }
 
+static int action_ok_menu_remap_file(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_file_generic(
+         g_settings.menu_input_remapping_directory,
+         label, type, idx);
+}
+
 static int action_ok_remap_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -335,6 +342,27 @@ static int action_ok_remap_file_load(const char *path,
    input_remapping_load_file(remap_path);
 
    menu_list_flush_stack_by_needle(driver.menu->menu_list, "core_input_remapping_options");
+
+   return 0;
+}
+
+static int action_ok_menu_remap_file_load(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   const char *menu_path = NULL;
+   char remap_path[PATH_MAX_LENGTH];
+   if (!driver.menu)
+      return -1;
+
+   (void)remap_path;
+   (void)menu_path;
+   menu_list_get_last_stack(driver.menu->menu_list, &menu_path, NULL,
+         NULL);
+
+   fill_pathname_join(remap_path, menu_path, path, sizeof(remap_path));
+   input_menu_remapping_load_file(remap_path);
+
+   menu_list_flush_stack_by_needle(driver.menu->menu_list, "menu_input_remapping_options");
 
    return 0;
 }
@@ -457,6 +485,13 @@ static int action_ok_remap_file_save_as(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    return action_ok_save_as_generic("Remapping Filename",
+         label, type, idx, menu_input_st_string_callback);
+}
+
+static int action_ok_menu_remap_file_save_as(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   return action_ok_save_as_generic("Menu Remapping Filename",
          label, type, idx, menu_input_st_string_callback);
 }
 
@@ -2150,6 +2185,43 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
    return 0;
 }
 
+static int deferred_push_menu_input_remapping_options(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   unsigned p = 0, retro_id;
+   file_list_t *list      = (file_list_t*)data;
+
+   (void)userdata;
+   (void)type;
+
+   if (!list)
+      return -1;
+
+   menu_list_clear(list);
+   menu_list_push(list, "Menu Remap File Load", "remap_menu_file_load",
+         MENU_SETTING_ACTION, 0);
+   menu_list_push(list, "Menu Remap File Save As",
+         "remap_menu_file_save_as", MENU_SETTING_ACTION, 0);
+
+   for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+   {
+      char desc_label[64];
+      unsigned user = p + 1;
+      const char *description = g_extern.system.input_desc_btn[p][retro_id];
+
+      if (!description)
+         continue;
+
+      snprintf(desc_label, sizeof(desc_label), "%s : ", description);
+      menu_list_push(list, desc_label, "", MENU_SETTINGS_INPUT_DESC_BEGIN + (p * RARCH_FIRST_CUSTOM_BIND) +  retro_id, 0);
+   }
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
+}
+
 static int deferred_push_core_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -2642,6 +2714,9 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
       case MENU_FILE_REMAP:
          cbs->action_ok = action_ok_remap_file_load;
          break;
+      case MENU_FILE_MENU_REMAP:
+         cbs->action_ok = action_ok_menu_remap_file_load;
+         break;
       case MENU_FILE_SHADER_PRESET:
          cbs->action_ok = action_ok_shader_preset_load;
          break;
@@ -2813,6 +2888,8 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_cheat_file;
    else if (!strcmp(label, "remap_file_load"))
       cbs->action_ok = action_ok_remap_file;
+   else if (!strcmp(label, "remap_menu_file_load"))
+      cbs->action_ok = action_ok_menu_remap_file;
    else if (!strcmp(label, "video_shader_parameters") ||
          !strcmp(label, "video_shader_preset_parameters")
          )
@@ -2823,6 +2900,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          !strcmp(label, "core_options") ||
          !strcmp(label, "core_cheat_options") ||
          !strcmp(label, "core_input_remapping_options") ||
+         !strcmp(label, "menu_input_remapping_options") ||
          !strcmp(label, "core_information") ||
          !strcmp(label, "disk_options") ||
          !strcmp(label, "settings") ||
@@ -2852,6 +2930,8 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_cheat_file_save_as;
    else if (!strcmp(label, "remap_file_save_as"))
       cbs->action_ok = action_ok_remap_file_save_as;
+   else if (!strcmp(label, "remap_menu_file_save_as"))
+      cbs->action_ok = action_ok_menu_remap_file_save_as;
    else if (!strcmp(label, "core_list"))
       cbs->action_ok = action_ok_core_list;
    else if (!strcmp(label, "disk_image_append"))
@@ -3002,6 +3082,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_core_cheat_options;
    else if (!strcmp(label, "core_input_remapping_options"))
       cbs->action_deferred_push = deferred_push_core_input_remapping_options;
+   else if (!strcmp(label, "menu_input_remapping_options"))
+      cbs->action_deferred_push = deferred_push_menu_input_remapping_options;
    else if (!strcmp(label, "disk_options"))
       cbs->action_deferred_push = deferred_push_disk_options;
    else if (!strcmp(label, "core_list"))

@@ -3408,6 +3408,12 @@ static bool setting_data_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
 
+   CONFIG_ACTION(
+         "menu_input_remapping_options",
+         "Menu Input Remapping Options",
+         group_info.name,
+         subgroup_info.name);
+
    if (g_extern.main_is_init)
    {
       if (g_extern.has_set_input_descriptors)

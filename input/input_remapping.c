@@ -108,6 +108,45 @@ void input_remapping_save_file(const char *path)
    config_file_free(conf);
 }
 
+/**
+ * input_menu_remapping_load_file:
+ * @path                     : Path to menu remapping file (absolute path).
+ *
+ * Loads a menu remap file from disk to memory.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool input_menu_remapping_load_file(const char *path)
+{
+   unsigned j;
+   char buf[64];
+   char key_ident[RARCH_FIRST_META_KEY][128];
+   char key_strings[RARCH_FIRST_META_KEY][128] = { "b", "y", "select", "start",
+      "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3"};
+   config_file_t *conf = config_file_new(path);
+
+   if (!conf)
+      return false;
+
+   strlcpy(g_settings.input.menu_remapping_path, path,
+         sizeof(g_settings.input.menu_remapping_path));
+
+   snprintf(buf, sizeof(buf), "input_player%u", 1);
+
+   for (j = 0; j < RARCH_FIRST_META_KEY; j++)
+   {
+      int key_remap = -1;
+
+      snprintf(key_ident[j], sizeof(key_ident[j]), "%s_%s", buf, key_strings[j]);
+      if (config_get_int(conf, key_ident[j], &key_remap))
+         g_settings.input.menu_remap_ids[0][j] = key_remap;
+   }
+
+   config_file_free(conf);
+
+   return true;
+}
+
 void input_remapping_set_defaults(void)
 {
    unsigned i, j;
