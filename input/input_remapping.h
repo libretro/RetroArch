@@ -44,6 +44,8 @@ void input_remapping_save_file(const char *path);
 
 void input_remapping_set_defaults(void);
 
+void input_menu_remapping_set_defaults(void);
+
 #ifdef __cplusplus
 }
 #endif
