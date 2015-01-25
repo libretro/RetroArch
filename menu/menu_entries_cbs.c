@@ -381,8 +381,7 @@ static int action_ok_menu_wallpaper_load(const char *path,
    menu_list_get_last_stack(driver.menu->menu_list, &menu_path, &menu_label,
          NULL);
 
-   setting = (rarch_setting_t*)
-      setting_data_find_setting(driver.menu->list_settings, menu_label);
+   setting = menu_action_find_setting(menu_label);
 
    if (!setting)
       return -1;
@@ -473,8 +472,7 @@ static int action_ok_path_use_directory(const char *path,
    menu_list_get_last_stack(driver.menu->menu_list,
          &menu_path, &menu_label, NULL);
 
-   setting = (rarch_setting_t*)
-      setting_data_find_setting(driver.menu->list_settings, menu_label);
+   setting = menu_action_find_setting(menu_label);
 
    if (!setting)
       return -1;
@@ -703,8 +701,7 @@ static int action_ok_file_load(const char *path,
    menu_list_get_last(driver.menu->menu_list->menu_stack,
          &menu_path, &menu_label, NULL);
 
-   setting = (rarch_setting_t*)
-      setting_data_find_setting(driver.menu->list_settings, menu_label);
+   setting = menu_action_find_setting(menu_label);
 
    if (setting && setting->type == ST_PATH)
    {
@@ -741,8 +738,7 @@ static int action_ok_set_path(const char *path,
    menu_list_get_last_stack(driver.menu->menu_list,
          &menu_path, &menu_label, NULL);
 
-   setting = (rarch_setting_t*)
-      setting_data_find_setting(driver.menu->list_settings, menu_label);
+   setting = menu_action_find_setting(menu_label);
 
    if (!setting)
       return -1;
@@ -1355,10 +1351,9 @@ static int action_toggle_shader_filter_default(unsigned type, const char *label,
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   rarch_setting_t *current_setting = NULL;
-   if ((current_setting = setting_data_find_setting(
-               driver.menu->list_settings, "video_smooth")))
-      menu_action_setting_handler(current_setting, action);
+   rarch_setting_t *setting = menu_action_find_setting("video_smooth");
+   if (setting)
+      menu_action_setting_handler(setting, action);
 #endif
    return 0;
 }
@@ -1885,16 +1880,17 @@ static int deferred_push_video_shader_parameters(void *data, void *userdata,
 static int deferred_push_settings(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
+   rarch_setting_t *setting = NULL;
+   file_list_t *list        = (file_list_t*)data;
+   file_list_t *menu_list   = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
 
    settings_list_free(driver.menu->list_settings);
    driver.menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
-   rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(driver.menu->list_settings,
-         "Driver Options");
+
+   setting = menu_action_find_setting("Driver Options");
 
    menu_list_clear(list);
 
@@ -1914,16 +1910,19 @@ static int deferred_push_settings(void *data, void *userdata,
 static int deferred_push_category(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
+   rarch_setting_t *setting = NULL;
+   file_list_t *list        = (file_list_t*)data;
+   file_list_t *menu_list   = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
 
    settings_list_free(driver.menu->list_settings);
-   driver.menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
-   rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
-         driver.menu->list_settings, label);
+
+   driver.menu->list_settings = (rarch_setting_t *)
+      setting_data_new(SL_FLAG_ALL_SETTINGS);
+
+   setting = (rarch_setting_t*)menu_action_find_setting(label);
 
    menu_list_clear(list);
 
@@ -2540,7 +2539,7 @@ static int deferred_push_default(void *data, void *userdata,
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
    rarch_setting_t *setting = (rarch_setting_t*)
-      setting_data_find_setting(driver.menu->list_settings, label);
+      menu_action_find_setting(label);
 
    if (!list || !menu_list)
       return -1;
@@ -2789,8 +2788,7 @@ static void menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
 static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)
-      setting_data_find_setting(driver.menu->list_settings, label);
+   rarch_setting_t *setting = menu_action_find_setting(label);
 
    if (!cbs)
       return;
@@ -2874,8 +2872,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
    int i;
-   rarch_setting_t *setting = (rarch_setting_t*)
-      setting_data_find_setting(driver.menu->list_settings, label);
+   rarch_setting_t *setting = menu_action_find_setting(label);
 
    if (!cbs)
       return;

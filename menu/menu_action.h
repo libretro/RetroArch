@@ -32,6 +32,8 @@ int menu_action_setting_set_current_string(
 int menu_action_setting_set(unsigned type, const char *label,
       unsigned action);
 
+rarch_setting_t *menu_action_find_setting(const char *label);
+
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action);
 

@@ -114,21 +114,18 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    return setting_extra_handler(setting);
 }
 
-static rarch_setting_t *find_setting(void)
+rarch_setting_t *menu_action_find_setting(const char *label)
 {
-   const file_list_t *list = (const file_list_t*)
-      driver.menu->menu_list->selection_buf;
-
-   rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
-         driver.menu->list_settings,
-         list->list[driver.menu->selection_ptr].label);
-
-   return setting;
+   return (rarch_setting_t*)setting_data_find_setting(
+         driver.menu->list_settings, label);
 }
 
 int menu_action_setting_set(unsigned type, const char *label, unsigned action)
 {
-   rarch_setting_t *setting = find_setting();
+   rarch_setting_t *setting = menu_action_find_setting(
+         driver.menu->menu_list->selection_buf->list
+         [driver.menu->selection_ptr].label);
+
    if (!setting)
       return 0;
 
