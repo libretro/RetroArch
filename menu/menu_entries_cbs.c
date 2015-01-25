@@ -978,7 +978,8 @@ static int action_start_input_desc(unsigned type, const char *label,
    (void)label;
    (void)action;
 
-   g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset] = g_settings.input.binds[inp_desc_user][inp_desc_button_index_offset].id;
+   g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset] = 
+      g_settings.input.binds[inp_desc_user][inp_desc_button_index_offset].id;
 
    return 0;
 }
@@ -2138,8 +2139,11 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
          if (!description)
             continue;
 
-         snprintf(desc_label, sizeof(desc_label), "User %u %s : ", user, description);
-         menu_list_push(list, desc_label, "", MENU_SETTINGS_INPUT_DESC_BEGIN + (p * RARCH_FIRST_CUSTOM_BIND) +  retro_id, 0);
+         snprintf(desc_label, sizeof(desc_label),
+               "User %u %s : ", user, description);
+         menu_list_push(list, desc_label, "",
+               MENU_SETTINGS_INPUT_DESC_BEGIN + 
+               (p * RARCH_FIRST_CUSTOM_BIND) +  retro_id, 0);
       }
    }
 
@@ -2161,9 +2165,11 @@ static int deferred_push_core_options(void *data, void *userdata,
       return -1;
 
    menu_list_clear(list);
+
    if (g_extern.system.core_options)
    {
       size_t opts = core_option_size(g_extern.system.core_options);
+
       for (i = 0; i < opts; i++)
          menu_list_push(list,
                core_option_get_desc(g_extern.system.core_options, i), "",
