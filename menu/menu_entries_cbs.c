@@ -653,7 +653,8 @@ static int action_ok_file_load_with_detect_core(const char *path,
       common_load_content(false);
       return -1;
    }
-   else if (ret == 0)
+
+   if (ret == 0)
       menu_list_push_stack_refresh(
             driver.menu->menu_list,
             g_settings.libretro_directory,
@@ -735,6 +736,10 @@ static int action_ok_set_path(const char *path,
 static int action_ok_custom_viewport(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   /* Start with something sane. */
+   rarch_viewport_t *custom = (rarch_viewport_t*)
+      &g_extern.console.screen.viewports.custom_vp;
+
    menu_list_push_stack(
          driver.menu->menu_list,
          "",
@@ -742,13 +747,10 @@ static int action_ok_custom_viewport(const char *path,
          MENU_SETTINGS_CUSTOM_VIEWPORT,
          idx);
 
-   /* Start with something sane. */
-   rarch_viewport_t *custom = (rarch_viewport_t*)
-      &g_extern.console.screen.viewports.custom_vp;
-
    if (driver.video_data && driver.video &&
          driver.video->viewport_info)
       driver.video->viewport_info(driver.video_data, custom);
+
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
       (float)custom->width / custom->height;
 
