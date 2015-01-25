@@ -31,7 +31,7 @@ local function dat_lexer(f, fname)
                 location.column = location.column + #tok
             end
         end
-        print(tok)
+        -- print(tok)
         return tok, tok_loc
     end
 end
