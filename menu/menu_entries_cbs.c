@@ -207,7 +207,7 @@ static int action_ok_shader_pass(const char *path,
          g_settings.video.shader_dir, 
          label,
          type,
-         driver.menu->selection_ptr);
+         idx);
 }
 
 static int action_ok_shader_parameters(const char *path,
@@ -216,7 +216,7 @@ static int action_ok_shader_parameters(const char *path,
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
          "", label, MENU_SETTING_ACTION,
-         driver.menu->selection_ptr);
+         idx);
 }
 
 static int action_ok_push_generic_list(const char *path,
@@ -224,7 +224,7 @@ static int action_ok_push_generic_list(const char *path,
 {
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
-         "", label, type, driver.menu->selection_ptr);
+         "", label, type, idx);
 }
 
 static int action_ok_push_default(const char *path,
@@ -232,7 +232,7 @@ static int action_ok_push_default(const char *path,
 {
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
-         label, label, type, driver.menu->selection_ptr);
+         label, label, type, idx);
 }
 
 static int action_ok_shader_preset(const char *path,
@@ -241,7 +241,7 @@ static int action_ok_shader_preset(const char *path,
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
          g_settings.video.shader_dir, 
-         label, type, driver.menu->selection_ptr);
+         label, type, idx);
 }
 
 static int action_ok_push_content_list(const char *path,
@@ -250,7 +250,7 @@ static int action_ok_push_content_list(const char *path,
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
          g_settings.menu_content_directory,
-         label, MENU_FILE_DIRECTORY, driver.menu->selection_ptr);
+         label, MENU_FILE_DIRECTORY, idx);
 }
 
 static int action_ok_disk_image_append_list(const char *path,
@@ -259,7 +259,7 @@ static int action_ok_disk_image_append_list(const char *path,
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
          g_settings.menu_content_directory, label, type,
-         driver.menu->selection_ptr);
+         idx);
 }
 
 static int action_ok_configurations_list(const char *path,
@@ -269,7 +269,7 @@ static int action_ok_configurations_list(const char *path,
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
          dir ? dir : label, label, type,
-         driver.menu->selection_ptr);
+         idx);
 }
 
 static int action_ok_cheat_file(const char *path,
@@ -278,7 +278,7 @@ static int action_ok_cheat_file(const char *path,
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
          g_settings.cheat_database,
-         label, type, driver.menu->selection_ptr);
+         label, type, idx);
 }
 
 static int action_ok_remap_file(const char *path,
@@ -287,7 +287,7 @@ static int action_ok_remap_file(const char *path,
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
          g_settings.input_remapping_directory,
-         label, type, driver.menu->selection_ptr);
+         label, type, idx);
 }
 
 static int action_ok_core_list(const char *path,
@@ -296,7 +296,7 @@ static int action_ok_core_list(const char *path,
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
          g_settings.libretro_directory,
-         label, type, driver.menu->selection_ptr);
+         label, type, idx);
 }
 
 static int action_ok_remap_file_load(const char *path,
@@ -544,7 +544,7 @@ static int action_ok_compressed_archive_push(const char *path,
          path,
          "load_open_zip",
          0,
-         driver.menu->selection_ptr);
+         idx);
 
    return 0;
 }
@@ -568,7 +568,7 @@ static int action_ok_directory_push(const char *path,
    fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
 
    return menu_list_push_stack_refresh(driver.menu->menu_list,
-         cat_path, menu_label, type, driver.menu->selection_ptr);
+         cat_path, menu_label, type, idx);
 }
 
 static int action_ok_database_manager_list(const char *path,
@@ -583,7 +583,7 @@ static int action_ok_database_manager_list(const char *path,
          driver.menu->menu_list,
          rdb_path,
          "deferred_database_manager_list",
-         0, driver.menu->selection_ptr);
+         0, idx);
 }
 
 static int action_ok_config_load(const char *path,
@@ -658,7 +658,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
             driver.menu->menu_list,
             g_settings.libretro_directory,
             "deferred_core_list",
-            0, driver.menu->selection_ptr);
+            0, idx);
 
    return ret;
 }
@@ -740,7 +740,7 @@ static int action_ok_custom_viewport(const char *path,
          "",
          "",
          MENU_SETTINGS_CUSTOM_VIEWPORT,
-         driver.menu->selection_ptr);
+         idx);
 
    /* Start with something sane. */
    rarch_viewport_t *custom = (rarch_viewport_t*)
