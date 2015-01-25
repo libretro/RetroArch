@@ -1953,6 +1953,7 @@ static int deferred_push_shader_options(void *data, void *userdata,
    return 0;
 }
 
+
 static void push_perfcounter(menu_handle_t *menu,
       file_list_t *list,
       const struct retro_perf_counter **counters,
@@ -1968,8 +1969,13 @@ static void push_perfcounter(menu_handle_t *menu,
                id + i, 0);
 }
 
-static int deferred_push_core_counters(void *data, void *userdata,
-      const char *path, const char *label, unsigned type)
+static int push_perfcounter_generic(
+      void *data,
+      void *userdata,
+      const char *path, const char *label,
+      const struct retro_perf_counter **counters,
+      unsigned num, unsigned ident,
+      unsigned type)
 {
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
@@ -1978,8 +1984,7 @@ static int deferred_push_core_counters(void *data, void *userdata,
       return -1;
 
    menu_list_clear(list);
-   push_perfcounter(driver.menu, list, perf_counters_libretro,
-         perf_ptr_libretro, MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
+   push_perfcounter(driver.menu, list, counters, num, ident);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(driver.menu, path, label, type);
@@ -1987,22 +1992,20 @@ static int deferred_push_core_counters(void *data, void *userdata,
    return 0;
 }
 
+static int deferred_push_core_counters(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   return push_perfcounter_generic(data, userdata, path, label,
+         perf_counters_libretro, perf_ptr_libretro, 
+         MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN, type);
+}
+
 static int deferred_push_frontend_counters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-
-   if (!list)
-      return -1;
-
-   menu_list_clear(list);
-   push_perfcounter(driver.menu, list, perf_counters_rarch,
-         perf_ptr_rarch, MENU_SETTINGS_PERF_COUNTERS_BEGIN);
-
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
-
-   return 0;
+   return push_perfcounter_generic(data, userdata, path, label,
+         perf_counters_rarch, perf_ptr_rarch, 
+         MENU_SETTINGS_PERF_COUNTERS_BEGIN, type);
 }
 
 static int deferred_push_core_cheat_options(void *data, void *userdata,
