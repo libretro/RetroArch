@@ -380,6 +380,7 @@ menu_ctx_driver_t menu_ctx_rmenu = {
    NULL,
    NULL,
    NULL,
+   NULL,
    rmenu_update_core_info,
    rmenu_entry_iterate,
    "rmenu",

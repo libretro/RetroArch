@@ -2278,6 +2278,9 @@ void rarch_main_set_state(unsigned cmd)
          if (!driver.menu)
             return;
 
+         if (driver.menu && driver.menu_ctx && driver.menu_ctx->toggle)
+            driver.menu_ctx->toggle(true);
+
          /* Menu should always run with vsync on. */
          rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
          /* Stop all rumbling before entering the menu. */
@@ -2309,6 +2312,9 @@ void rarch_main_set_state(unsigned cmd)
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU
          menu_apply_deferred_settings();
+
+         if (driver.menu && driver.menu_ctx && driver.menu_ctx->toggle)
+            driver.menu_ctx->toggle(false);
 
          g_extern.is_menu = false;
 

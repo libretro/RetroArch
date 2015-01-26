@@ -174,6 +174,7 @@ typedef struct menu_ctx_driver
          unsigned);
    void  (*iterate)(void*, unsigned);
    int   (*input_postprocess)(uint64_t, uint64_t);
+   void  (*toggle)(bool);
    void  (*navigation_clear)(void *, bool);
    void  (*navigation_decrement)(void *);
    void  (*navigation_increment)(void *);
