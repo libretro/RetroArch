@@ -2488,6 +2488,11 @@ static int deferred_push_content_actions(void *data, void *userdata,
 
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
+      menu_list_push(list, "Core Informations", "core_information", MENU_SETTING_ACTION_CORE_INFORMATION, 0);
+      menu_list_push(list, "Core Options", "core_options", MENU_SETTING_ACTION_CORE_OPTIONS, 0);
+      menu_list_push(list, "Core Cheat Options", "core_cheat_options", MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS, 0);
+      if ( !g_extern.libretro_dummy && g_extern.system.disk_control.get_num_images)
+         menu_list_push(list, "Core Disk Options", "disk_options", MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0);
       menu_list_push(list, "Save State", "savestate", MENU_SETTING_ACTION_SAVESTATE, 0);
       menu_list_push(list, "Load State", "loadstate", MENU_SETTING_ACTION_LOADSTATE, 0);
       menu_list_push(list, "Take Screenshot", "take_screenshot", MENU_SETTING_ACTION_SCREENSHOT, 0);

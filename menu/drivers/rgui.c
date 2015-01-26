@@ -656,6 +656,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_populate_entries,
    NULL,
    NULL,
+   NULL,
    rgui_navigation_clear,
    NULL,
    NULL,

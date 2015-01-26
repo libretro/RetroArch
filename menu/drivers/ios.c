@@ -107,6 +107,7 @@ menu_ctx_driver_t menu_ctx_ios = {
   NULL, // populate_entries
   NULL, // iterate
   NULL, // input_postprocess
+  NULL, // toggle
   NULL, // navigation_clear
   NULL, // navigation_decrement
   NULL, // navigation_increment

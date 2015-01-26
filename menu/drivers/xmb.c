@@ -1163,6 +1163,7 @@ static void *xmb_init(void)
    xmb->arrow_alpha     = 0;
    xmb->depth           = 1;
    xmb->old_depth       = 1;
+   xmb->alpha           = 0;
 
    xmb->c_active_zoom   = 1.0;
    xmb->c_passive_zoom  = 0.5;
@@ -1563,6 +1564,25 @@ static void xmb_context_destroy(void *data)
    }
 }
 
+static void xmb_toggle(bool menu_on)
+{
+   xmb_handle_t *xmb = NULL;
+   menu_handle_t *menu = (menu_handle_t*)driver.menu;
+
+   if (!menu)
+      return;
+
+   xmb = (xmb_handle_t*)menu->userdata;
+
+   if (!xmb)
+      return;
+
+   if (menu_on)
+      add_tween(XMB_DELAY, 1.0f, &xmb->alpha, &inOutQuad, NULL);
+   else
+      xmb->alpha = 0;
+}
+
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_get_message,
@@ -1576,6 +1596,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_populate_entries,
    NULL,
    NULL,
+   xmb_toggle,
    xmb_navigation_clear,
    xmb_navigation_decrement,
    xmb_navigation_increment,
