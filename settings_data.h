@@ -292,6 +292,7 @@ int setting_data_get_description(const char *label, char *msg,
 #ifdef HAVE_MENU
 /**
  * setting_data_get_label:
+ * @list               : File list on which to perform the search
  * @type_str           : String for the type to be represented on-screen as
  *                       a label.
  * @type_str_size      : Size of @type_str
@@ -304,7 +305,7 @@ int setting_data_get_description(const char *label, char *msg,
  *
  * Get associated label of a setting.
  **/
-void setting_data_get_label(char *type_str,
+void setting_data_get_label(file_list_t* list, char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx);
 #endif

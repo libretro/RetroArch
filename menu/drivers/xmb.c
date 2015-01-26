@@ -515,10 +515,13 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
        
       if (!xmb)
           continue;
-       
-      node->label_alpha = 0;
+
       if (dir == 1 || (dir == -1 && i != current))
          node->alpha = 0;
+
+      if (dir == 1 || dir == -1)
+         node->label_alpha = 0;
+
       //if (dir == 1 || (dir == -1 && i == current))
          node->x = xmb->icon_size*dir*2;
       //else
@@ -741,8 +744,7 @@ static void xmb_set_title(void)
    }
 }
 
-static void xmb_populate_entries(void *data, const char *path,
-      const char *label, unsigned k)
+static void xmb_list_open()
 {
    int dir;
    unsigned j;
@@ -751,35 +753,39 @@ static void xmb_populate_entries(void *data, const char *path,
    if (!xmb)
       return;
 
-   xmb_set_title();
+   dir = driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old ? 1 : -1;
 
-   if (driver.menu->cat_selection_ptr != xmb->active_category_old)
+   xmb->active_category += dir;
+
+   for (j = 0; j < xmb->num_categories; j++)
    {
-      dir = driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old ? 1 : -1;
+      float ia, iz;
+      xmb_node_t *node = j ? xmb_node_for_core(j-1) : &xmb->settings_node;
 
-      xmb->active_category += dir;
+      if (!node)
+         continue;
 
-      for (j = 0; j < xmb->num_categories; j++)
-      {
-         float ia, iz;
-         xmb_node_t *node = j ? xmb_node_for_core(j-1) : &xmb->settings_node;
-
-         if (!node)
-            continue;
-
-         ia = (j == xmb->active_category) ? xmb->c_active_alpha : xmb->c_passive_alpha;
-         iz = (j == xmb->active_category) ? xmb->c_active_zoom : xmb->c_passive_zoom;
-         add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
-         add_tween(XMB_DELAY, iz, &node->zoom, &inOutQuad, NULL);
-      }
-
-      add_tween(XMB_DELAY, xmb->hspacing*-(float)driver.menu->cat_selection_ptr, &xmb->categories_x, &inOutQuad, NULL);
-      dir = driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old ? 1 : -1;
-      xmb_list_switch_old(xmb->selection_buf_old, dir, xmb->selection_ptr_old);
-      xmb_list_switch_new(driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
-      xmb->active_category_old = driver.menu->cat_selection_ptr;
-      return;
+      ia = (j == xmb->active_category) ? xmb->c_active_alpha : xmb->c_passive_alpha;
+      iz = (j == xmb->active_category) ? xmb->c_active_zoom : xmb->c_passive_zoom;
+      add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
+      add_tween(XMB_DELAY, iz, &node->zoom, &inOutQuad, NULL);
    }
+
+   add_tween(XMB_DELAY, xmb->hspacing*-(float)driver.menu->cat_selection_ptr, &xmb->categories_x, &inOutQuad, NULL);
+   dir = driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old ? 1 : -1;
+   xmb_list_switch_old(xmb->selection_buf_old, dir, xmb->selection_ptr_old);
+   xmb_list_switch_new(driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
+   xmb->active_category_old = driver.menu->cat_selection_ptr;
+}
+
+static void xmb_list_switch()
+{
+   int dir;
+   unsigned j;
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+
+   if (!xmb)
+      return;
 
    xmb->depth = file_list_get_size(driver.menu->menu_list->menu_stack);
 
@@ -815,6 +821,26 @@ static void xmb_populate_entries(void *data, const char *path,
       add_tween(XMB_DELAY, 1, &xmb->arrow_alpha, &inOutQuad, NULL);
 
    xmb->old_depth = xmb->depth;
+}
+
+static void xmb_populate_entries(void *data, const char *path,
+      const char *label, unsigned k)
+{
+   int dir;
+   unsigned j;
+   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+
+   if (!xmb)
+      return;
+
+   xmb_set_title();
+
+   // horizontal list switching
+   if (driver.menu->cat_selection_ptr != xmb->active_category_old)
+      xmb_list_open();
+   // list open
+   else
+      xmb_list_switch();
 }
 
 static void xmb_draw_items(file_list_t *list, file_list_t *stack,

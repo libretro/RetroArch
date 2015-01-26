@@ -2804,6 +2804,7 @@ static void get_string_representation_savestate(void * data, char *type_str,
 
 /**
  * setting_data_get_label:
+ * @list               : File list on which to perform the search
  * @type_str           : String for the type to be represented on-screen as
  *                       a label.
  * @type_str_size      : Size of @type_str
@@ -2816,7 +2817,7 @@ static void get_string_representation_savestate(void * data, char *type_str,
  *
  * Get associated label of a setting.
  **/
-void setting_data_get_label(char *type_str,
+void setting_data_get_label(file_list_t* list, char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx)
 {
@@ -2828,7 +2829,7 @@ void setting_data_get_label(char *type_str,
 
    setting_data = (rarch_setting_t*)driver.menu->list_settings;
    setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
-         driver.menu->menu_list->selection_buf->list[idx].label);
+         list->list[idx].label);
 
    if ((get_fallback_label(type_str, type_str_size, w, type, menu_label,
          label, idx)) == 0)
