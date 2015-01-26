@@ -19,9 +19,8 @@
 
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
-
    D3DXIMAGE_INFO m_imageInfo;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
 
    out_img->vertex_buf  = NULL;
 

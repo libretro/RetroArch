@@ -182,14 +182,13 @@ error:
 
 static bool ps3_load_png(const char *path, struct texture_image *out_img)
 {
-   size_t img_size;
-#ifndef __PSL1GHT__
-   CtrlMallocArg              MallocArg;
-   CtrlFreeArg                FreeArg;
+#ifdef __PSL1GHT__
+   uint64_t output_bytes_per_line;
+#else
+   CtrlMallocArg                 MallocArg;
+   CtrlFreeArg                   FreeArg;
    CellPngDecDataCtrlParam       dCtrlParam;
 #endif
-   CellPngDecMainHandle          mHandle = PTR_NULL;
-   CellPngDecSubHandle           sHandle = PTR_NULL;
    CellPngDecThreadInParam       InParam;
    CellPngDecThreadOutParam      OutParam;
    CellPngDecSrc                 src;
@@ -198,15 +197,19 @@ static bool ps3_load_png(const char *path, struct texture_image *out_img)
    CellPngDecInParam             inParam;
    CellPngDecOutParam            outParam;
    CellPngDecDataOutInfo         dOutInfo;
+   size_t                        img_size;
+   int                           ret_png, ret = -1;
+   CellPngDecMainHandle          mHandle = PTR_NULL;
+   CellPngDecSubHandle           sHandle = PTR_NULL;
 
    InParam.spu_enable         = CELL_PNGDEC_SPU_THREAD_ENABLE;
    InParam.ppu_prio           = 512;
    InParam.spu_prio           = 200;
 #ifdef __PSL1GHT__
-   InParam.malloc_func = __get_addr32(__get_opd32(img_malloc));
-   InParam.free_func = __get_addr32(__get_opd32(img_free));
-   InParam.malloc_arg = 0;
-   InParam.free_arg = 0;
+   InParam.malloc_func        = __get_addr32(__get_opd32(img_malloc));
+   InParam.free_func          = __get_addr32(__get_opd32(img_free));
+   InParam.malloc_arg         = 0;
+   InParam.free_arg           = 0;
 #else
    MallocArg.mallocCallCounts = 0;
    FreeArg.freeCallCounts     = 0;
@@ -216,13 +219,13 @@ static bool ps3_load_png(const char *path, struct texture_image *out_img)
    InParam.free_arg           = &FreeArg;
 #endif
 
-   int ret_png, ret = -1;
    ret_png = cellPngDecCreate(&mHandle, &InParam, &OutParam);
 
    if (ret_png != CELL_OK)
       goto error;
 
    memset(&src, 0, sizeof(CellPngDecSrc));
+
    src.stream_select    = CELL_PNGDEC_FILE;
 #ifdef __PSL1GHT__
    src.file_name        = __get_addr32(path);
@@ -233,8 +236,7 @@ static bool ps3_load_png(const char *path, struct texture_image *out_img)
    src.file_size        = 0;
    src.stream_ptr       = 0;
    src.stream_size      = 0;
-
-   src.spu_enable  = CELL_PNGDEC_SPU_THREAD_ENABLE;
+   src.spu_enable       = CELL_PNGDEC_SPU_THREAD_ENABLE;
 
    ret = cellPngDecOpen(mHandle, &sHandle, &src, &opnInfo);
 
@@ -252,6 +254,7 @@ static bool ps3_load_png(const char *path, struct texture_image *out_img)
    inParam.bit_depth          = 8;
    inParam.pack_flag          = CELL_PNGDEC_1BYTE_PER_1PIXEL;
    inParam.alpha_select       = CELL_PNGDEC_STREAM_ALPHA;
+
    ret = cellPngDecSetParameter(mHandle, sHandle, &inParam, &outParam);
 
    if (ret != CELL_OK)
@@ -263,7 +266,7 @@ static bool ps3_load_png(const char *path, struct texture_image *out_img)
    memset(out_img->pixels, 0, img_size);
 
 #ifdef __PSL1GHT__
-   uint64_t output_bytes_per_line = outParam.output_width * 4;
+   output_bytes_per_line = outParam.output_width * 4;
    ret = cellPngDecDecodeData(mHandle, sHandle, (uint8_t*)
          out_img->pixels, &output_bytes_per_line, &dOutInfo);
 #else
@@ -305,11 +308,9 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
       if (!ps3_load_png(path, out_img))
          return false;
    }
-   else
-   {
-      if (!ps3_load_jpeg(path, out_img))
-         return false;
-   }
+
+   if (!ps3_load_jpeg(path, out_img))
+      return false;
 
    return true;
 }
