@@ -279,7 +279,7 @@ static INLINE void disp_set_label(file_list_t* list,
                type - MENU_SETTINGS_CORE_OPTION_START),
             type_str_size);
    else
-      setting_data_get_label(type_str,
+      setting_data_get_label(list, type_str,
             type_str_size, w, type, label, entry_label, i);
 
    strlcpy(path_buf, path, path_buf_size);
