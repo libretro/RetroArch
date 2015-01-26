@@ -268,13 +268,13 @@ static inline void copy_line_rgb(uint32_t *data,
    {
       uint32_t r, g, b;
 
-      r = *decoded;
+      r        = *decoded;
       decoded += bpp;
-      g = *decoded;
+      g        = *decoded;
       decoded += bpp;
-      b = *decoded;
+      b        = *decoded;
       decoded += bpp;
-      data[i] = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
+      data[i]  = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
    }
 }
 
@@ -288,15 +288,15 @@ static inline void copy_line_rgba(uint32_t *data,
    for (i = 0; i < width; i++)
    {
       uint32_t r, g, b, a;
-      r = *decoded;
+      r        = *decoded;
       decoded += bpp;
-      g = *decoded;
+      g        = *decoded;
       decoded += bpp;
-      b = *decoded;
+      b        = *decoded;
       decoded += bpp;
-      a = *decoded;
+      a        = *decoded;
       decoded += bpp;
-      data[i] = (a << 24) | (r << 16) | (g << 8) | (b << 0);
+      data[i]  = (a << 24) | (r << 16) | (g << 8) | (b << 0);
    }
 }
 
@@ -313,7 +313,7 @@ static inline void copy_line_bw(uint32_t *data,
       for (i = 0; i < width; i++)
       {
          uint32_t val = decoded[i << 1];
-         data[i] = (val * 0x010101) | (0xffu << 24);
+         data[i]      = (val * 0x010101) | (0xffu << 24);
       }
       return;
    }
@@ -323,9 +323,9 @@ static inline void copy_line_bw(uint32_t *data,
       unsigned byte = bit >> 3;
       unsigned val  = decoded[byte] >> (8 - depth - (bit & 7));
 
-      val &= mask;
-      val *= mul;
-      data[i] = (val * 0x010101) | (0xffu << 24);
+      val          &= mask;
+      val          *= mul;
+      data[i]       = (val * 0x010101) | (0xffu << 24);
    }
 }
 
@@ -362,10 +362,10 @@ static inline void copy_line_plt(uint32_t *data,
    for (i = 0; i < width; i++, bit += depth)
    {
       unsigned byte = bit >> 3;
-      unsigned val = decoded[byte] >> (8 - depth - (bit & 7));
+      unsigned val  = decoded[byte] >> (8 - depth - (bit & 7));
 
-      val &= mask;
-      data[i] = palette[val];
+      val          &= mask;
+      data[i]       = palette[val];
    }
 }
 
@@ -379,27 +379,27 @@ static void png_pass_geom(const struct png_ihdr *ihdr,
    switch (ihdr->color_type)
    {
       case 0:
-         bpp = (ihdr->depth + 7) / 8;
+         bpp   = (ihdr->depth + 7) / 8;
          pitch = (ihdr->width * ihdr->depth + 7) / 8;
          break;
 
       case 2:
-         bpp = (ihdr->depth * 3 + 7) / 8;
+         bpp   = (ihdr->depth * 3 + 7) / 8;
          pitch = (ihdr->width * ihdr->depth * 3 + 7) / 8;
          break;
 
       case 3:
-         bpp = (ihdr->depth + 7) / 8;
+         bpp   = (ihdr->depth + 7) / 8;
          pitch = (ihdr->width * ihdr->depth + 7) / 8;
          break;
 
       case 4:
-         bpp = (ihdr->depth * 2 + 7) / 8;
+         bpp   = (ihdr->depth * 2 + 7) / 8;
          pitch = (ihdr->width * ihdr->depth * 2 + 7) / 8;
          break;
 
       case 6:
-         bpp = (ihdr->depth * 4 + 7) / 8;
+         bpp   = (ihdr->depth * 4 + 7) / 8;
          pitch = (ihdr->width * ihdr->depth * 4 + 7) / 8;
          break;
 
