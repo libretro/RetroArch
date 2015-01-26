@@ -22,14 +22,7 @@
 
 int main(int argc, char *argv[])
 {
-   if (argc > 2)
-   {
-      fprintf(stderr, "Usage: %s <png file>\n", argv[0]);
-      return 1;
-   }
-
-   const char *in_path = argc == 2 ? argv[1] : "/tmp/test.png";
-
+   Imlib_Image img;
    const uint32_t test_data[] = {
       0xff000000 | 0x50, 0xff000000 | 0x80,
       0xff000000 | 0x40, 0xff000000 | 0x88,
@@ -40,13 +33,24 @@ int main(int argc, char *argv[])
       0xff000000 | 0xc3, 0xff000000 | 0xd3,
       0xff000000 | 0xc3, 0xff000000 | 0xd3,
    };
+   uint32_t *data = NULL;
+   unsigned width = 0;
+   unsigned height = 0;
+   const uint32_t *imlib_data = NULL;
+   const char *in_path = "/tmp/test.png";
+
+   if (argc > 2)
+   {
+      fprintf(stderr, "Usage: %s <png file>\n", argv[0]);
+      return 1;
+   }
+
+   if (argc == 2)
+      in_path = argv[1];
 
    if (!rpng_save_image_argb("/tmp/test.png", test_data, 4, 4, 16))
       return 1;
 
-   uint32_t *data = NULL;
-   unsigned width = 0;
-   unsigned height = 0;
 
    if (!rpng_load_image_argb(in_path, &data, &width, &height))
       return 2;
@@ -58,21 +62,23 @@ int main(int argc, char *argv[])
    fprintf(stderr, "\nRPNG:\n");
    for (unsigned h = 0; h < height; h++)
    {
-      for (unsigned w = 0; w < width; w++)
+      unsigned w;
+      for (w = 0; w < width; w++)
          fprintf(stderr, "[%08x] ", data[h * width + w]);
       fprintf(stderr, "\n");
    }
 #endif
 
-   // Validate with imlib2 as well.
-   Imlib_Image img = imlib_load_image(in_path);
+   /* Validate with imlib2 as well. */
+   img = imlib_load_image(in_path);
    if (!img)
       return 4;
 
    imlib_context_set_image(img);
-   width  = imlib_image_get_width();
-   height = imlib_image_get_width();
-   const uint32_t *imlib_data = imlib_image_get_data_for_reading_only();
+
+   width      = imlib_image_get_width();
+   height     = imlib_image_get_width();
+   imlib_data = imlib_image_get_data_for_reading_only();
 
 #if 0
    fprintf(stderr, "\nImlib:\n");
