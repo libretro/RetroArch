@@ -143,6 +143,7 @@ typedef struct
 
 typedef struct menu_file_list_cbs
 {
+   int (*action_iterate)(const char *label, unsigned action);
    int (*action_deferred_push)(void *data, void *userdata, const char
          *path, const char *label, unsigned type);
    int (*action_ok)(const char *path, const char *label, unsigned type,

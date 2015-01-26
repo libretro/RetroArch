@@ -1390,6 +1390,7 @@ rarch_setting_t setting_data_action_setting(const char* name,
    result.read_handler              = NULL;
    result.get_string_representation = NULL;
    result.action_start              = NULL;
+   result.action_iterate            = NULL;
    result.action_toggle             = NULL;
    result.action_ok                 = setting_data_action_action_ok;
    result.action_cancel             = NULL;
