@@ -21,22 +21,23 @@
 #include "menu_entries.h"
 #include <string.h>
 
-static void menu_entries_refresh(file_list_t *list)
+/**
+ * Before a refresh, we could have deleted a 
+ * file on disk, causing selection_ptr to 
+ * suddendly be out of range.
+ *
+ * Ensure it doesn't overflow.
+ **/
+static void menu_entries_refresh(menu_handle_t *menu, file_list_t *list)
 {
-   if (!list || !driver.menu)
+   if (!list)
       return;
 
-   (void)list;
-
-   /* Before a refresh, we could have deleted a file on disk, causing
-    * selection_ptr to suddendly be out of range.
-    * Ensure it doesn't overflow. */
-
-   if (driver.menu->selection_ptr >= menu_list_get_size(driver.menu->menu_list)
-         && menu_list_get_size(driver.menu->menu_list))
-      menu_navigation_set(driver.menu, menu_list_get_size(driver.menu->menu_list) - 1, true);
-   else if (!menu_list_get_size(driver.menu->menu_list))
-      menu_navigation_clear(driver.menu, true);
+   if (menu->selection_ptr >= menu_list_get_size(menu->menu_list)
+         && menu_list_get_size(menu->menu_list))
+      menu_navigation_set(menu, menu_list_get_size(menu->menu_list) - 1, true);
+   else if (!menu_list_get_size(menu->menu_list))
+      menu_navigation_clear(menu, true);
 }
 
 /**
@@ -421,7 +422,7 @@ int menu_list_populate_generic(void *data,
 
    driver.menu->scroll_indices_size = 0;
    menu_entries_build_scroll_indices(list);
-   menu_entries_refresh(list);
+   menu_entries_refresh(menu, list);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(menu, path, label, type);
