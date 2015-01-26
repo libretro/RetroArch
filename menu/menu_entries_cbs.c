@@ -2047,7 +2047,7 @@ static int deferred_push_settings(void *data, void *userdata,
 static int deferred_push_category(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_push_list(driver.menu, data,
+   return menu_entries_push_list(driver.menu, (file_list_t*)data,
          path, label, type, SL_FLAG_ALL_SETTINGS);
 }
 
@@ -2502,111 +2502,111 @@ static int deferred_push_content_actions(void *data, void *userdata,
 static int deferred_push_content_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_deferred_push(data, driver.menu->menu_list->selection_buf);
+   return menu_entries_deferred_push((file_list_t*)data, driver.menu->menu_list->selection_buf);
 }
 
 static int deferred_push_database_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, g_settings.content_database, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, g_settings.content_database, label, type,
          MENU_FILE_RDB, "rdb", NULL);
 }
 
 static int deferred_push_cursor_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, g_settings.cursor_directory, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, g_settings.cursor_directory, label, type,
          MENU_FILE_CURSOR, "dbc", NULL);
 }
 
 static int deferred_push_core_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, path, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
          MENU_FILE_PLAIN, EXT_EXECUTABLES, NULL);
 }
 
 static int deferred_push_configurations(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, path, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
          MENU_FILE_CONFIG, "cfg", NULL);
 }
 
 static int deferred_push_video_shader_preset(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, path, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
          MENU_FILE_SHADER_PRESET, "cgp|glslp", NULL);
 }
 
 static int deferred_push_video_shader_pass(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, path, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
          MENU_FILE_SHADER, "cg|glsl", NULL);
 }
 
 static int deferred_push_video_filter(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, path, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
          MENU_FILE_VIDEOFILTER, "filt", NULL);
 }
 
 static int deferred_push_images(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, path, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
          MENU_FILE_IMAGE, "png", NULL);
 }
 
 static int deferred_push_audio_dsp_plugin(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, path, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
          MENU_FILE_AUDIOFILTER, "dsp", NULL);
 }
 
 static int deferred_push_cheat_file_load(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, path, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
          MENU_FILE_CHEAT, "cht", NULL);
 }
 
 static int deferred_push_remap_file_load(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, path, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
          MENU_FILE_REMAP, "rmp", NULL);
 }
 
 static int deferred_push_input_overlay(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, path, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
          MENU_FILE_OVERLAY, "cfg", NULL);
 }
 
 static int deferred_push_video_font_path(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, path, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
          MENU_FILE_FONT, "ttf", NULL);
 }
 
 static int deferred_push_content_history_path(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, path, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
          MENU_FILE_PLAIN, "cfg", NULL);
 }
 
 static int deferred_push_detect_core_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list(data, userdata, path, label, type,
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
          MENU_FILE_PLAIN, 
          g_extern.core_info ? core_info_list_get_all_extensions(
          g_extern.core_info) : "", NULL);
