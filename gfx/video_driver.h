@@ -241,6 +241,10 @@ uintptr_t video_driver_get_current_framebuffer(void);
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym);
 
+void uninit_video_input(void);
+
+void init_video(void);
+
 #ifdef __cplusplus
 }
 #endif
