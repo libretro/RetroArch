@@ -149,6 +149,7 @@ static char *xmb_str_replace (const char *string,
 
    newstr = strdup (string);
    head = newstr;
+
    while ( (tok = strstr ( head, substr )))
    {
       oldstr = newstr;
@@ -172,6 +173,7 @@ static char *xmb_str_replace (const char *string,
       head = newstr + (tok - oldstr) + strlen( replacement );
       free (oldstr);
    }
+
    return newstr;
 }
 
@@ -180,6 +182,7 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
 {
    struct gl_coords coords;
    math_matrix_4x4 mymat, mrot, mscal;
+   gl_t *gl;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
@@ -191,7 +194,7 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
    if (alpha == 0)
       return;
 
-   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
+   gl = (gl_t*)video_driver_resolve(NULL);
 
    if (!gl)
       return;
@@ -278,6 +281,10 @@ static void xmb_draw_text(const char *str, float x,
 
 static void xmb_render_background(bool force_transparency)
 {
+   struct gl_coords coords;
+   float alpha              = 0.75f;
+   gl_t *gl                 = NULL;
+   xmb_handle_t *xmb        = NULL;
    static const GLfloat vertex[] = {
       0, 0,
       1, 0,
@@ -291,11 +298,6 @@ static void xmb_render_background(bool force_transparency)
       0, 0,
       1, 0,
    };
-
-   float alpha              = 0.75f;
-   gl_t *gl                 = NULL;
-   xmb_handle_t *xmb        = NULL;
-   struct gl_coords coords;
 
    if (!driver.menu)
       return;
@@ -434,7 +436,7 @@ static void xmb_selection_pointer_changed(void)
          else
             iy = xmb->vspacing * (i - (int)current + xmb->above_item_offset);
       else
-         iy = xmb->vspacing * (i - (int)current + xmb->under_item_offset);
+         iy    = xmb->vspacing * (i - (int)current + xmb->under_item_offset);
 
       if (i == current)
       {
@@ -527,7 +529,10 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
       if (!xmb)
           continue;
 
-      ia = (i == current) ? xmb->i_active_alpha : xmb->i_passive_alpha;
+      ia = xmb->i_passive_alpha;
+      if (i == current)
+         ia = xmb->i_active_alpha;
+
       add_tween(XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
       add_tween(XMB_DELAY, ia, &node->label_alpha,  &inOutQuad, NULL);
       add_tween(XMB_DELAY, 0, &node->x, &inOutQuad, NULL);
@@ -607,20 +612,29 @@ static xmb_node_t* xmb_node_for_core(int i)
 
    node = (xmb_node_t*)info->userdata;
 
-   if (!node)
+   if (node)
+      return node;
+
+   info->userdata = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
+
+   if (!info->userdata)
    {
-      info->userdata = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
+      RARCH_ERR("XMB node could not be allocated.\n");
+      return NULL;
+   }
 
-      if (!info->userdata)
-      {
-         RARCH_ERR("XMB node could not be allocated.\n");
-         return NULL;
-      }
+   node = (xmb_node_t*)info->userdata;
 
-      node = (xmb_node_t*)info->userdata;
+   if (!node)
+      return NULL;
 
-      node->alpha = ((i + 1) == xmb->active_category) ? xmb->c_active_alpha : xmb->c_passive_alpha;
-      node->zoom  = ((i + 1) == xmb->active_category) ? xmb->c_active_zoom : xmb->c_passive_zoom;
+   node->alpha = xmb->c_passive_alpha;
+   node->zoom  = xmb->c_passive_zoom;
+
+   if ((i + 1) == xmb->active_category)
+   {
+      node->alpha = xmb->c_active_alpha;
+      node->zoom  = xmb->c_active_zoom;
    }
 
    return node;
