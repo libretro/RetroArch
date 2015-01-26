@@ -21,6 +21,7 @@
 #include <limits.h>
 
 #include "../menu.h"
+#include "../menu_input.h"
 #include <file/file_path.h>
 #include "../../gfx/gl_common.h"
 #include "../../gfx/video_thread_wrapper.h"
@@ -136,6 +137,24 @@ static const GLfloat rmb_tex_coord[] = {
    0, 0,
    1, 0,
 };
+
+static int xmb_entry_iterate(unsigned action)
+{
+   const char *label = NULL;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
+            driver.menu->selection_ptr);
+
+   menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, NULL);
+
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
+      driver.menu_ctx->set_texture(driver.menu);
+
+   if (cbs && cbs->action_iterate)
+      return cbs->action_iterate(label, action);
+   
+   return -1;
+}
 
 static char *xmb_str_replace (const char *string,
       const char *substr, const char *replacement)
@@ -1545,6 +1564,6 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_set_selection,
    xmb_init_core_info,
    xmb_update_core_info,
-   &menu_ctx_backend_common,
+   xmb_entry_iterate,
    "xmb",
 };

@@ -288,27 +288,25 @@ ifeq ($(HAVE_NEON),1)
 endif
 
 ifeq ($(HAVE_RGUI), 1)
-   OBJ += menu/drivers_display/rgui.o
+   OBJ += menu/drivers/rgui.o
    DEFINES += -DHAVE_MENU -DHAVE_RGUI
    HAVE_MENU_COMMON = 1
 ifeq ($(HAVE_GLUI), 1)
-   OBJ += menu/drivers_display/glui.o
+   OBJ += menu/drivers/glui.o
    DEFINES += -DHAVE_GLUI
 endif
 ifeq ($(HAVE_XMB), 1)
-   OBJ += menu/drivers_display/xmb.o
+   OBJ += menu/drivers/xmb.o
    DEFINES += -DHAVE_XMB
 endif
 ifeq ($(HAVE_LAKKA), 1)
-   OBJ += menu/drivers_backend/menu_lakka_backend.o \
-          menu/drivers_display/lakka.o
+   OBJ += menu/drivers/lakka.o
    DEFINES += -DHAVE_LAKKA
 endif
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
-   OBJ += menu/drivers_backend/menu_common_backend.o \
-			 menu/menu_input.o \
+   OBJ += menu/menu_input.o \
 			 menu/menu.o \
 			 menu/menu_common_list.o \
 			 menu/menu_navigation.o  \

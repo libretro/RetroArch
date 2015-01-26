@@ -22,6 +22,7 @@
 #include <limits.h>
 
 #include "../menu.h"
+#include "../menu_input.h"
 #include "../../retroarch.h"
 #include <compat/posix_string.h>
 #include <file/file_path.h>
@@ -41,6 +42,24 @@ typedef struct rgui_handle
 #define RGUI_TERM_START_Y (driver.menu->height / 9)
 #define RGUI_TERM_WIDTH (((driver.menu->width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
 #define RGUI_TERM_HEIGHT (((driver.menu->height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
+
+static int rgui_entry_iterate(unsigned action)
+{
+   const char *label = NULL;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
+            driver.menu->selection_ptr);
+
+   menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, NULL);
+
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
+      driver.menu_ctx->set_texture(driver.menu);
+
+   if (cbs && cbs->action_iterate)
+      return cbs->action_iterate(label, action);
+   
+   return -1;
+}
 
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {
@@ -651,6 +670,6 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    rgui_update_core_info,
-   &menu_ctx_backend_common,
+   rgui_entry_iterate,
    "rgui",
 };

@@ -19,7 +19,7 @@
 #include "../../settings_data.h"
 #include <time.h>
 
-static void get_title(const char *label, const char *dir,
+static INLINE void get_title(const char *label, const char *dir,
       unsigned menu_type, char *title, size_t sizeof_title)
 {
    if (!strcmp(label, "core_list"))
@@ -169,7 +169,7 @@ static void get_title(const char *label, const char *dir,
    }
 }
 
-static void disp_timedate_set_label(char *label, size_t label_size,
+static INLINE void disp_timedate_set_label(char *label, size_t label_size,
       unsigned time_mode)
 {
    time_t time_;
@@ -192,7 +192,7 @@ static void disp_timedate_set_label(char *label, size_t label_size,
    }
 }
 
-static void disp_set_label(file_list_t* list,
+static INLINE void disp_set_label(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *type_str, size_t type_str_size,

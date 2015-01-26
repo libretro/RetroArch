@@ -159,15 +159,6 @@ typedef struct menu_file_list_cbs
    int (*action_up_or_down)(unsigned type, const char *label, unsigned action);
 } menu_file_list_cbs_t;
 
-typedef struct menu_ctx_driver_backend
-{
-   int      (*iterate)(unsigned);
-   const char *ident;
-} menu_ctx_driver_backend_t;
-
-extern menu_ctx_driver_backend_t menu_ctx_backend_common;
-extern menu_ctx_driver_backend_t menu_ctx_backend_lakka;
-
 typedef struct menu_ctx_driver
 {
    void  (*set_texture)(void*);
@@ -197,8 +188,7 @@ typedef struct menu_ctx_driver
    void  (*list_set_selection)(void *);
    void  (*init_core_info)(void *);
    void  (*update_core_info)(void *);
-
-   const menu_ctx_driver_backend_t *backend;
+   int   (*entry_iterate)(unsigned);
    const char *ident;
 } menu_ctx_driver_t;
 

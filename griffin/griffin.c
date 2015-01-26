@@ -694,41 +694,38 @@ MENU
 #include "../menu/menu_navigation.c"
 #include "../menu/menu_animation.c"
 #include "../menu/menu_database.c"
-
-#include "../menu/drivers_backend/menu_common_backend.c"
 #endif
 
 #ifdef HAVE_RMENU
-#include "../menu/drivers_display/rmenu.c"
+#include "../menu/drivers/rmenu.c"
 #endif
 
 #ifdef HAVE_RGUI
-#include "../menu/drivers_display/rgui.c"
+#include "../menu/drivers/rgui.c"
 #endif
 
 #ifdef HAVE_RMENU_XUI
-#include "../menu/drivers_display/rmenu_xui.cpp"
+#include "../menu/drivers/rmenu_xui.cpp"
 #endif
 
 #ifdef HAVE_OPENGL
 
 #ifdef HAVE_LAKKA
-#include "../menu/drivers_backend/menu_lakka_backend.c"
-#include "../menu/drivers_display/lakka.c"
+#include "../menu/drivers/lakka.c"
 #endif
 
 #ifdef HAVE_XMB
-#include "../menu/drivers_display/xmb.c"
+#include "../menu/drivers/xmb.c"
 #endif
 
 #ifdef HAVE_GLUI
-#include "../menu/drivers_display/glui.c"
+#include "../menu/drivers/glui.c"
 #endif
 
 #endif
 
 #ifdef IOS
-#include "../menu/drivers_display/ios.c"
+#include "../menu/drivers/ios.c"
 #endif
 
 #ifdef HAVE_COMMAND

@@ -13,12 +13,50 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "../menu_driver.h"
 #include "../menu.h"
 #include "../../general.h"
 #include "ios.h"
+#include "../menu_input.h"
+
+#ifdef 1
+static int ios_entry_iterate(unsigned action)
+{
+   ios_handle_t *ios = NULL;
+   if (!driver.menu)
+      return 0;
+
+   ios = (ios_handle_t*)driver.menu->userdata;
+   if (ios->switch_to_ios)
+      ios->switch_to_ios();
+
+   return 0;
+}
+#else
+static int ios_entry_iterate(unsigned action)
+{
+   const char *label = NULL;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
+            driver.menu->selection_ptr);
+
+   menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, NULL);
+
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
+      driver.menu_ctx->set_texture(driver.menu);
+
+   if (cbs && cbs->action_iterate)
+      return cbs->action_iterate(label, action);
+   
+   return -1;
+}
+#endif
 
 static void *ios_init(void)
 {
@@ -49,30 +87,12 @@ static void ios_free(void *data)
    return;
 }
 
-static int menu_ios_iterate(unsigned action)
-{
-   ios_handle_t *ios = NULL;
-   if (!driver.menu)
-      return 0;
-
-   ios = (ios_handle_t*)driver.menu->userdata;
-   if (ios->switch_to_ios)
-      ios->switch_to_ios();
-
-   return 0;
-}
 
 static void ios_update_core_info(void *data)
 {
    (void)data;
    menu_update_libretro_info(&g_extern.menu.info);
 }
-
-menu_ctx_driver_backend_t menu_ctx_backend_ios = {
-   menu_ios_iterate,
-
-   "menu_ios",
-};
 
 menu_ctx_driver_t menu_ctx_ios = {
   NULL, // set_texture
@@ -101,6 +121,6 @@ menu_ctx_driver_t menu_ctx_ios = {
   NULL, // list_set_selection
   NULL, // init_core_info
   ios_update_core_info,  // ios_update_core_info
-  &menu_ctx_backend_ios, // backend
+  ios_entry_iterate,
   "ios",
 };

@@ -16,6 +16,10 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include <xtl.h>
 #include <xui.h>
 #include <xuiapp.h>
@@ -23,6 +27,7 @@
 #include "../menu_driver.h"
 #include "../menu.h"
 #include "../menu_list.h"
+#include "../menu_input.h"
 
 #include "../../gfx/video_context_driver.h"
 
@@ -52,6 +57,24 @@ HXUIOBJ m_back;
 HXUIOBJ root_menu;
 HXUIOBJ current_menu;
 static msg_queue_t *xui_msg_queue;
+
+static int rmenu_xui_entry_iterate(unsigned action)
+{
+   const char *label = NULL;
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+      menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
+            driver.menu->selection_ptr);
+
+   menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, NULL);
+
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
+      driver.menu_ctx->set_texture(driver.menu);
+
+   if (cbs && cbs->action_iterate)
+      return cbs->action_iterate(label, action);
+   
+   return -1;
+}
 
 class CRetroArch : public CXuiModule
 {
@@ -683,6 +706,6 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_list_set_selection,
    NULL,
    rmenu_xui_update_core_info,
-   &menu_ctx_backend_common,
+   rmenu_xui_entry_iterate,
    "rmenu_xui",
 };

@@ -127,9 +127,8 @@ bool menu_load_content(void)
    if (driver.menu)
       driver.menu->msg_force = true;
 
-   if (driver.menu_ctx && driver.menu_ctx->backend &&
-         driver.menu_ctx->backend->iterate) 
-      driver.menu_ctx->backend->iterate(MENU_ACTION_NOOP);
+   if (driver.menu_ctx && driver.menu_ctx->entry_iterate) 
+      driver.menu_ctx->entry_iterate(MENU_ACTION_NOOP);
 
    draw_frame();
 
@@ -472,9 +471,8 @@ int menu_iterate(retro_input_t input,
     */
    action = menu_input_frame(trigger_input);
 
-   if (driver.menu_ctx && driver.menu_ctx->backend
-         && driver.menu_ctx->backend->iterate) 
-      ret = driver.menu_ctx->backend->iterate(action);
+   if (driver.menu_ctx && driver.menu_ctx->entry_iterate) 
+      ret = driver.menu_ctx->entry_iterate(action);
 
    if (g_extern.is_menu)
       draw_frame();
