@@ -25,7 +25,7 @@
 
 #include "../../menu/menu.h"
 #include "../../menu/menu_entries.h"
-#include "../../menu/drivers_display/shared.h"
+#include "../../menu/drivers/shared.h"
 
 /*********************************************/
 /* RunActionSheet                            */

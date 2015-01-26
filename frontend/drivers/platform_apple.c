@@ -20,7 +20,7 @@
 #include "../frontend.h"
 #include "../../runloop.h"
 #ifdef IOS
-#include "../../menu/drivers_display/ios.h"
+#include "../../menu/drivers/ios.h"
 #endif
 
 #include <stdint.h>

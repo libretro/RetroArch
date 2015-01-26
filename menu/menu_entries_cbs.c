@@ -2684,7 +2684,7 @@ static int action_bind_up_or_down_generic(unsigned type, const char *label,
    return 0;
 }
 
-int action_refresh_default(file_list_t *list, file_list_t *menu_list)
+static int action_refresh_default(file_list_t *list, file_list_t *menu_list)
 {
    int ret = menu_entries_deferred_push(list, menu_list);
    driver.menu->need_refresh = false;
@@ -2820,13 +2820,13 @@ static int action_iterate_info(const char *label, unsigned action)
    }
    else
    {
-      const char *label = NULL;
+      const char *lbl = NULL;
       menu_list_get_at_offset(driver.menu->menu_list->selection_buf,
-            driver.menu->selection_ptr, NULL, &label,
+            driver.menu->selection_ptr, NULL, &lbl,
             &info_type);
 
-      if (label)
-         strlcpy(needle, label, sizeof(needle));
+      if (lbl)
+         strlcpy(needle, lbl, sizeof(needle));
    }
 
    setting_data_get_description(needle, msg, sizeof(msg));

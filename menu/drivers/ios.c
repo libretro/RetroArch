@@ -25,7 +25,7 @@
 #include "ios.h"
 #include "../menu_input.h"
 
-#ifdef 1
+#if 1
 static int ios_entry_iterate(unsigned action)
 {
    ios_handle_t *ios = NULL;
