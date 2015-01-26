@@ -102,7 +102,8 @@ static void menu_entries_content_list_push(
    if (!info)
       return;
 
-   str_list = (struct string_list*)dir_list_new(path, info->supported_extensions, true);
+   str_list = (struct string_list*)dir_list_new(path,
+         info->supported_extensions, true);
 
    dir_list_sort(str_list, true);
 
@@ -112,7 +113,8 @@ static void menu_entries_content_list_push(
    for (j = 0; j < num_items; j++)
    {
       if (str_list->elems[j].attr.i == RARCH_DIRECTORY)
-         menu_entries_content_list_push(list, info, str_list->elems[j].data);
+         menu_entries_content_list_push(list, info,
+               str_list->elems[j].data);
       else
          menu_list_push(
                list,
@@ -146,7 +148,8 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
       return -1;
 
    if (!info->supports_no_game)
-      menu_entries_content_list_push(list, info, g_settings.content_directory);
+      menu_entries_content_list_push(list, info,
+            g_settings.content_directory);
    else
       menu_list_push(
             list,
@@ -164,7 +167,8 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
       {
          struct string_list *strlist = info->databases_list;
 
-         fill_pathname_join(db_path, g_settings.content_database, strlist->elems[i].data, sizeof(db_path));
+         fill_pathname_join(db_path, g_settings.content_database,
+               strlist->elems[i].data, sizeof(db_path));
          strlcat(db_path, ".rdb", sizeof(db_path));
 
          if (path_file_exists(db_path))

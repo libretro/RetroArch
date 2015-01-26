@@ -2399,20 +2399,7 @@ static int deferred_push_content_actions(void *data, void *userdata,
 static int deferred_push_content_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list = (file_list_t*)data;
-
-   (void)userdata;
-
-   if (!list || !driver.menu)
-      return -1;
-
-   menu_navigation_clear(driver.menu, true);
-   if (driver.menu->cat_selection_ptr == 0)
-      return menu_entries_push_list(driver.menu, driver.menu->menu_list->selection_buf,
-         "", "Main Menu", 0, SL_FLAG_MAIN_MENU);
-   else
-      return menu_entries_push_horizontal_menu_list(driver.menu, driver.menu->menu_list->selection_buf,
-         "", "Horizontal Menu", 0);
+   return menu_entries_deferred_push(data, driver.menu->menu_list->selection_buf);
 }
 
 static int deferred_push_database_manager_list(void *data, void *userdata,
