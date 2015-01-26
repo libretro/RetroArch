@@ -641,10 +641,10 @@ static void psp_free(void *data)
 static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
                                unsigned width, unsigned height, float alpha)
 {
+   psp1_video_t *psp = (psp1_video_t*)data;
+
    (void) rgb32;
    (void) alpha;
-
-   psp1_video_t *psp = (psp1_video_t*)data;
 
 #ifdef DEBUG
    /* psp->menu.frame buffer size is (480 * 272)*2 Bytes */
@@ -694,12 +694,11 @@ static void psp_set_texture_enable(void *data, bool state, bool full_screen)
 
 static void psp_update_viewport(psp1_video_t* psp)
 {
-   int x, y;
    float device_aspect = ((float)SCEGU_SCR_WIDTH) / SCEGU_SCR_HEIGHT;
    float width = SCEGU_SCR_WIDTH;
    float height = SCEGU_SCR_HEIGHT;
-   x = 0;
-   y = 0;
+   int x = 0;
+   int y = 0;
 
    if (g_settings.video.scale_integer)
    {
@@ -710,8 +709,8 @@ static void psp_update_viewport(psp1_video_t* psp)
    }
    else if (psp->keep_aspect)
    {
-      float desired_aspect = g_extern.system.aspect_ratio;
       float delta;
+      float desired_aspect = g_extern.system.aspect_ratio;
 
 #if defined(HAVE_MENU)
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
