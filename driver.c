@@ -17,8 +17,6 @@
 #include "driver.h"
 #include "general.h"
 #include "retroarch.h"
-#include <stdint.h>
-#include <string.h>
 #include "compat/posix_string.h"
 #include "gfx/video_monitor.h"
 #include "audio/audio_monitor.h"
