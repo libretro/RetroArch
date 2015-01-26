@@ -91,9 +91,9 @@ static void thread_loop(void *data)
 
    for (;;)
    {
+      enum thread_cmd send_cmd;
       bool ret = false;
       bool updated = false;
-      enum thread_cmd send_cmd;
 
       slock_lock(thr->lock);
       while (thr->send_cmd == CMD_NONE && !thr->frame.updated)
@@ -844,7 +844,9 @@ static struct video_shader *thread_get_current_shader(void *data)
    thread_video_t *thr = (thread_video_t*)data;
    if (!thr)
       return NULL;
-   return thr->poke ? thr->poke->get_current_shader(thr->driver_data) : NULL;
+   if (!thr->poke)
+      return NULL;
+   return thr->poke->get_current_shader(thr->driver_data);
 }
 
 static const video_poke_interface_t thread_poke = {
