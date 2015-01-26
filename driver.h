@@ -380,8 +380,6 @@ void driver_set_refresh_rate(float hz);
  **/
 bool driver_update_system_av_info(const struct retro_system_av_info *info);
 
-extern driver_t driver;
-
 /**
  * find_driver_index:
  * @label              : string of driver type to be found.
@@ -393,6 +391,8 @@ extern driver_t driver;
  * index number of the driver found in the array.
  **/
 int find_driver_index(const char * label, const char *drv);
+
+extern driver_t driver;
   
 #ifdef __cplusplus
 }
