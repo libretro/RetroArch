@@ -23,12 +23,12 @@
 
 enum
 {
-   p_header_top,
-   p_header,
-   p_body,
-   p_body_chunklen,
-   p_done,
-   p_error
+   P_HEADER_TOP = 0,
+   P_HEADER,
+   P_BODY,
+   P_BODY_CHUNKLEN,
+   P_DONE,
+   P_ERROR
 };
 
 enum
@@ -222,7 +222,7 @@ http_t *net_http_new(const char * url)
    state->fd      = fd;
    state->status  = -1;
    state->data    = NULL;
-   state->part    = p_header_top;
+   state->part    = P_HEADER_TOP;
    state->bodytype= T_FULL;
    state->error   = false;
    state->pos     = 0;
@@ -251,7 +251,7 @@ bool net_http_update(http_t *state, size_t* progress, size_t* total)
    if (state->error)
       goto fail;
 
-   if (state->part < p_body)
+   if (state->part < P_BODY)
    {
       newlen = net_http_recv(state->fd, &state->error,
             (uint8_t*)state->data + state->pos, state->buflen - state->pos);
@@ -266,7 +266,7 @@ bool net_http_update(http_t *state, size_t* progress, size_t* total)
       }
       state->pos += newlen;
 
-      while (state->part < p_body)
+      while (state->part < P_BODY)
       {
          char *dataend = state->data + state->pos;
          char *lineend = (char*)memchr(state->data, '\n', state->pos);
@@ -277,12 +277,12 @@ bool net_http_update(http_t *state, size_t* progress, size_t* total)
          if (lineend != state->data && lineend[-1]=='\r')
             lineend[-1]='\0';
 
-         if (state->part == p_header_top)
+         if (state->part == P_HEADER_TOP)
          {
             if (strncmp(state->data, "HTTP/1.", strlen("HTTP/1."))!=0)
                goto fail;
-            state->status=strtoul(state->data + strlen("HTTP/1.1 "), NULL, 10);
-            state->part = p_header;
+            state->status = strtoul(state->data + strlen("HTTP/1.1 "), NULL, 10);
+            state->part   = P_HEADER;
          }
          else
          {
@@ -299,23 +299,23 @@ bool net_http_update(http_t *state, size_t* progress, size_t* total)
             /* TODO: save headers somewhere */
             if (state->data[0]=='\0')
             {
-               state->part = p_body;
+               state->part = P_BODY;
                if (state->bodytype == T_CHUNK)
-                  state->part = p_body_chunklen;
+                  state->part = P_BODY_CHUNKLEN;
             }
          }
 
          memmove(state->data, lineend + 1, dataend-(lineend+1));
          state->pos = (dataend-(lineend + 1));
       }
-      if (state->part >= p_body)
+      if (state->part >= P_BODY)
       {
          newlen = state->pos;
          state->pos = 0;
       }
    }
 
-   if (state->part >= p_body && state->part < p_done)
+   if (state->part >= P_BODY && state->part < P_DONE)
    {
       if (!newlen)
       {
@@ -327,7 +327,7 @@ bool net_http_update(http_t *state, size_t* progress, size_t* total)
          {
             if (state->bodytype == T_FULL)
             {
-               state->part = p_done;
+               state->part = P_DONE;
                state->data = (char*)realloc(state->data, state->len);
             }
             else
@@ -345,7 +345,7 @@ bool net_http_update(http_t *state, size_t* progress, size_t* total)
 parse_again:
       if (state->bodytype == T_CHUNK)
       {
-         if (state->part == p_body_chunklen)
+         if (state->part == P_BODY_CHUNKLEN)
          {
             state->pos += newlen;
             if (state->pos - state->len >= 2)
@@ -376,25 +376,25 @@ parse_again:
                      pos=start of chunk including \r\n
                      */
 
-                  state->part = p_body;
+                  state->part = P_BODY;
                   if (state->len == 0)
                   {
-                     state->part = p_done;
-                     state->len = state->pos;
+                     state->part = P_DONE;
+                     state->len  = state->pos;
                      state->data = (char*)realloc(state->data, state->len);
                   }
                   goto parse_again;
                }
             }
          }
-         else if (state->part == p_body)
+         else if (state->part == P_BODY)
          {
             if ((size_t)newlen >= state->len)
             {
                state->pos += state->len;
                newlen     -= state->len;
                state->len  = state->pos;
-               state->part = p_body_chunklen;
+               state->part = P_BODY_CHUNKLEN;
                goto parse_again;
             }
             else
@@ -410,7 +410,7 @@ parse_again:
 
          if (state->pos == state->len)
          {
-            state->part=p_done;
+            state->part = P_DONE;
             state->data = (char*)realloc(state->data, state->len);
          }
          if (state->pos > state->len)
@@ -429,11 +429,11 @@ parse_again:
          *total=0;
    }
 
-   return (state->part==p_done);
+   return (state->part == P_DONE);
 
 fail:
-   state->error = true;
-   state->part = p_error;
+   state->error  = true;
+   state->part   = P_ERROR;
    state->status = -1;
 
    return true;
