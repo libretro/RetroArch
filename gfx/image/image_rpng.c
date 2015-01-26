@@ -116,8 +116,9 @@ static bool rpng_image_load_argb_shift(const char *path,
    if (strstr(path, ".tga"))
       return rpng_image_load_tga_shift(path, out_img,
             a_shift, r_shift, g_shift, b_shift);
+
 #ifdef HAVE_ZLIB
-   else if (strstr(path, ".png"))
+   if (strstr(path, ".png"))
    {
       bool ret = rpng_load_image_argb(path,
             &out_img->pixels, &out_img->width, &out_img->height);
@@ -125,7 +126,7 @@ static bool rpng_image_load_argb_shift(const char *path,
       if (!ret)
          return false;
 
-      // This is quite uncommon ...
+      /* This is quite uncommon. */
       if (a_shift != 24 || r_shift != 16 || g_shift != 8 || b_shift != 0)
       {
          uint32_t i;
@@ -224,13 +225,10 @@ void texture_image_free(struct texture_image *img)
 
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
-   bool ret;
-
    /* This interface "leak" is very ugly. FIXME: Fix this properly ... */
-   if (driver.gfx_use_rgba)
-      ret = rpng_image_load_argb_shift(path, out_img, 24, 0, 8, 16);
-   else
-      ret = rpng_image_load_argb_shift(path, out_img, 24, 16, 8, 0);
+   bool use_rgba = driver.gfx_use_rgba;
+   bool ret = rpng_image_load_argb_shift(path, out_img, 24,
+         use_rgba ? 0 : 16, 8, use_rgba ? 16 : 0);
 
 #ifdef GEKKO
    if (ret)
@@ -238,7 +236,7 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
       if (!rpng_gx_convert_texture32(out_img))
       {
          texture_image_free(out_img);
-         ret = false;
+         return false;
       }
    }
 #endif
