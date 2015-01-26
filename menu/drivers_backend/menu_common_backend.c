@@ -616,8 +616,8 @@ static int menu_common_iterate(unsigned action)
             ret = cbs->action_toggle(type_offset, label_offset, action);
          break;
       case MENU_ACTION_SELECT:
-         menu_list_push_stack(driver.menu->menu_list, "", "info_screen",
-               0, driver.menu->selection_ptr);
+         if (cbs && cbs->action_select)
+            ret = cbs->action_select(type_offset, label_offset, action);
          break;
 
       case MENU_ACTION_REFRESH:

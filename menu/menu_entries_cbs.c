@@ -2723,10 +2723,27 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
    return 0;
 }
 
+static int action_select_default(unsigned type, const char *label,
+      unsigned action)
+{
+   menu_list_push_stack(driver.menu->menu_list, "", "info_screen",
+         0, driver.menu->selection_ptr);
+   return 0;
+}
+
 static int action_start_lookup_setting(unsigned type, const char *label,
       unsigned action)
 {
    return menu_action_setting_set(type, label, MENU_ACTION_START);
+}
+
+static void menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx)
+{
+   if (!cbs)
+      return;
+
+   cbs->action_select = action_select_default;
 }
 
 static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
@@ -3067,6 +3084,7 @@ void menu_entries_cbs_init(void *data,
       menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_cancel(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_start(cbs, path, label, type, idx);
+      menu_entries_cbs_init_bind_select(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_up_or_down(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_toggle(cbs, path, label, type, idx);
