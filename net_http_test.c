@@ -9,11 +9,14 @@ int main(void)
 {
 #ifdef _WIN32
    WSADATA wsaData;
-   WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
    char   *data;
    http_t *http1, *http2, *http3;
    size_t len, pos = 0, tot = 0;
+
+#ifdef _WIN32
+   WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
 
    http1 = net_http_new("http://buildbot.libretro.com/nightly/win-x86/latest/mednafen_psx_libretro.dll.zip");
 
