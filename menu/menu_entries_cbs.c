@@ -3717,19 +3717,17 @@ void menu_entries_cbs_init(void *data,
    if (!list)
       return;
 
-   cbs = (menu_file_list_cbs_t*)list->list[idx].actiondata;
+   if (!(cbs = (menu_file_list_cbs_t*)list->list[idx].actiondata))
+      return;
 
-   if (cbs)
-   {
-      menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx);
-      menu_entries_cbs_init_bind_cancel(cbs, path, label, type, idx);
-      menu_entries_cbs_init_bind_start(cbs, path, label, type, idx);
-      menu_entries_cbs_init_bind_select(cbs, path, label, type, idx);
-      menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx);
-      menu_entries_cbs_init_bind_up_or_down(cbs, path, label, type, idx);
-      menu_entries_cbs_init_bind_toggle(cbs, path, label, type, idx);
-      menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx);
-      menu_entries_cbs_init_bind_refresh(cbs, path, label, type, idx);
-      menu_entries_cbs_init_bind_iterate(cbs, path, label, type, idx);
-   }
+   menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx);
+   menu_entries_cbs_init_bind_cancel(cbs, path, label, type, idx);
+   menu_entries_cbs_init_bind_start(cbs, path, label, type, idx);
+   menu_entries_cbs_init_bind_select(cbs, path, label, type, idx);
+   menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx);
+   menu_entries_cbs_init_bind_up_or_down(cbs, path, label, type, idx);
+   menu_entries_cbs_init_bind_toggle(cbs, path, label, type, idx);
+   menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx);
+   menu_entries_cbs_init_bind_refresh(cbs, path, label, type, idx);
+   menu_entries_cbs_init_bind_iterate(cbs, path, label, type, idx);
 }
