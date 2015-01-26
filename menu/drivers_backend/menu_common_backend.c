@@ -621,10 +621,9 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_REFRESH:
-         menu_entries_deferred_push(driver.menu->menu_list->selection_buf,
-               driver.menu->menu_list->menu_stack);
-
-         driver.menu->need_refresh = false;
+         if (cbs && cbs->action_refresh)
+            ret = cbs->action_refresh(driver.menu->menu_list->selection_buf,
+                  driver.menu->menu_list->menu_stack);
          break;
 
       case MENU_ACTION_MESSAGE:

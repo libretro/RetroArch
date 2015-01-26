@@ -2581,6 +2581,13 @@ static int action_bind_up_or_down_generic(unsigned type, const char *label,
    return 0;
 }
 
+int action_refresh_default(file_list_t *list, file_list_t *menu_list)
+{
+   int ret = menu_entries_deferred_push(list, menu_list);
+   driver.menu->need_refresh = false;
+   return ret;
+}
+
 /* Bind the OK callback function */
 
 static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
@@ -2952,6 +2959,15 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
    }
 }
 
+static void menu_entries_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx)
+{
+   if (!cbs || !driver.menu)
+      return;
+
+   cbs->action_refresh = action_refresh_default;
+}
+
 static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -3055,5 +3071,6 @@ void menu_entries_cbs_init(void *data,
       menu_entries_cbs_init_bind_up_or_down(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_toggle(cbs, path, label, type, idx);
       menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx);
+      menu_entries_cbs_init_bind_refresh(cbs, path, label, type, idx);
    }
 }
