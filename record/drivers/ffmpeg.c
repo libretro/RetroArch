@@ -188,6 +188,7 @@ static bool ffmpeg_codec_has_sample_format(enum AVSampleFormat fmt,
       const enum AVSampleFormat *fmts)
 {
    unsigned i;
+
    for (i = 0; fmts[i] != AV_SAMPLE_FMT_NONE; i++)
       if (fmt == fmts[i])
          return true;
@@ -248,13 +249,13 @@ static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
 
       for (i = 1; codec->supported_samplerates[i]; i++)
       {
+         bool better_rate;
          int diff = codec->supported_samplerates[i] - input_rate;
 
-         bool better_rate;
          if (best_diff < 0)
-            better_rate = diff > best_diff;
+            better_rate = (diff > best_diff);
          else
-            better_rate = diff >= 0 && diff < best_diff;
+            better_rate = ((diff >= 0) && (diff < best_diff));
 
          if (better_rate)
          {
@@ -274,8 +275,7 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
    struct ff_audio_info *audio    = &handle->audio;
    struct ff_video_info *video    = &handle->video;
    struct ffemu_params *param     = &handle->params;
-
-   AVCodec *codec = avcodec_find_encoder_by_name(
+   AVCodec *codec                 = avcodec_find_encoder_by_name(
          *params->acodec ? params->acodec : "flac");
    if (!codec)
    {
@@ -290,7 +290,7 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
 
    audio->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
    audio->codec->channels       = param->channels;
-   audio->codec->channel_layout = param->channels > 1
+   audio->codec->channel_layout = (param->channels > 1)
       ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
 
    ffmpeg_audio_resolve_format(audio, codec);
@@ -359,7 +359,6 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    struct ff_config_param *params = &handle->config;
    struct ff_video_info *video    = &handle->video;
    struct ffemu_params *param     = &handle->params;
-
    AVCodec *codec = NULL;
 
    if (*params->vcodec)
@@ -491,6 +490,8 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
 static bool ffmpeg_init_config(struct ff_config_param *params,
       const char *config)
 {
+   char pix_fmt[64] = {0};
+
    params->out_pix_fmt = PIX_FMT_NONE;
    params->scale_factor = 1;
    params->threads = 1;
@@ -532,7 +533,6 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
          &params->video_global_quality);
    config_get_int(params->conf, "video_bit_rate", &params->video_bit_rate);
 
-   char pix_fmt[64] = {0};
    if (config_get_array(params->conf, "pix_fmt", pix_fmt, sizeof(pix_fmt)))
    {
       params->out_pix_fmt = av_get_pix_fmt(pix_fmt);
@@ -567,6 +567,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
 static bool ffmpeg_init_muxer_pre(ffmpeg_t *handle)
 {
    AVFormatContext *ctx = avformat_alloc_context();
+
    av_strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
 
    if (*handle->config.format)
@@ -591,6 +592,7 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
 {
    AVStream *stream = avformat_new_stream(handle->muxer.ctx,
          handle->video.encoder);
+
    stream->codec = handle->video.codec;
    handle->muxer.vstream = stream;
    handle->muxer.vstream->sample_aspect_ratio = 
@@ -728,10 +730,12 @@ static void ffmpeg_free(void *data)
 
 static void *ffmpeg_new(const struct ffemu_params *params)
 {
+   ffmpeg_t *handle = NULL;
+
    av_register_all();
    avformat_network_init();
 
-   ffmpeg_t *handle = (ffmpeg_t*)calloc(1, sizeof(*handle));
+   handle = (ffmpeg_t*)calloc(1, sizeof(*handle));
    if (!handle)
       goto error;
 
@@ -767,6 +771,7 @@ static bool ffmpeg_push_video(void *data,
 {
    unsigned y;
    bool drop_frame;
+   struct ffemu_video_data attr_data;
    ffmpeg_t *handle = (ffmpeg_t*)data;
 
    if (!handle || !video_data)
@@ -782,8 +787,9 @@ static bool ffmpeg_push_video(void *data,
 
    for (;;)
    {
+      unsigned avail;
       slock_lock(handle->lock);
-      unsigned avail = fifo_write_avail(handle->attr_fifo);
+      avail = fifo_write_avail(handle->attr_fifo);
       slock_unlock(handle->lock);
 
       if (!handle->alive)
@@ -810,7 +816,7 @@ static bool ffmpeg_push_video(void *data,
    /* Tightly pack our frame to conserve memory.
     * libretro tends to use a very large pitch.
     */
-   struct ffemu_video_data attr_data = *video_data;
+   attr_data = *video_data;
 
    if (attr_data.is_dupe)
       attr_data.width = attr_data.height = attr_data.pitch = 0;
@@ -843,8 +849,9 @@ static bool ffmpeg_push_audio(void *data,
 
    for (;;)
    {
+      unsigned avail;
       slock_lock(handle->lock);
-      unsigned avail = fifo_write_avail(handle->audio_fifo);
+      avail = fifo_write_avail(handle->audio_fifo);
       slock_unlock(handle->lock);
 
       if (!handle->alive)
@@ -878,11 +885,12 @@ static bool ffmpeg_push_audio(void *data,
 
 static bool encode_video(ffmpeg_t *handle, AVPacket *pkt, AVFrame *frame)
 {
+   int got_packet = 0;
+
    av_init_packet(pkt);
    pkt->data = handle->video.outbuf;
    pkt->size = handle->video.outbuf_size;
 
-   int got_packet = 0;
    if (avcodec_encode_video2(handle->video.codec, pkt, frame, &got_packet) < 0)
       return false;
 
@@ -958,12 +966,13 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
 static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
       const struct ffemu_video_data *data)
 {
+   AVPacket pkt;
+
    if (!data->is_dupe)
       ffmpeg_scale_input(handle, data);
 
    handle->video.conv_frame->pts = handle->video.frame_cnt;
 
-   AVPacket pkt;
    if (!encode_video(handle, &pkt, handle->video.conv_frame))
       return false;
 
@@ -980,6 +989,7 @@ static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
 static void planarize_float(float *out, const float *in, size_t frames)
 {
    size_t i;
+
    for (i = 0; i < frames; i++)
    {
       out[i] = in[2 * i + 0];
@@ -990,6 +1000,7 @@ static void planarize_float(float *out, const float *in, size_t frames)
 static void planarize_s16(int16_t *out, const int16_t *in, size_t frames)
 {
    size_t i;
+
    for (i = 0; i < frames; i++)
    {
       out[i] = in[2 * i + 0];
@@ -1025,11 +1036,14 @@ static void planarize_audio(ffmpeg_t *handle)
 
 static bool encode_audio(ffmpeg_t *handle, AVPacket *pkt, bool dry)
 {
+   AVFrame *frame;
+   int samples_size;
+
    av_init_packet(pkt);
    pkt->data = handle->audio.outbuf;
    pkt->size = handle->audio.outbuf_size;
 
-   AVFrame *frame = av_frame_alloc();
+   frame = av_frame_alloc();
    if (!frame)
       return false;
 
@@ -1040,7 +1054,7 @@ static bool encode_audio(ffmpeg_t *handle, AVPacket *pkt, bool dry)
 
    planarize_audio(handle);
 
-   int samples_size = av_samples_get_buffer_size(NULL,
+   samples_size = av_samples_get_buffer_size(NULL,
          handle->audio.codec->channels,
          handle->audio.frames_in_buffer,
          handle->audio.codec->sample_fmt, 0);
@@ -1131,6 +1145,7 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
    {
       /* It's always two channels ... */
       struct resampler_data info = {0};
+
       info.data_in      = (const float*)data->data;
       info.data_out     = handle->audio.resample_out;
       info.input_frames = data->frames;
@@ -1154,11 +1169,13 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
 static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
       struct ffemu_audio_data *data, bool require_block)
 {
+   size_t written_frames = 0;
+
    ffmpeg_audio_resample(handle, data);
 
-   size_t written_frames = 0;
    while (written_frames < data->frames)
    {
+      AVPacket pkt;
       size_t can_write    = handle->audio.codec->frame_size - 
          handle->audio.frames_in_buffer;
       size_t write_left   = data->frames - written_frames;
@@ -1182,7 +1199,6 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
                < (size_t)handle->audio.codec->frame_size) && require_block)
          break;
 
-      AVPacket pkt;
       if (!encode_audio(handle, &pkt, false))
          return false;
 
@@ -1203,6 +1219,7 @@ static void ffmpeg_flush_audio(ffmpeg_t *handle, void *audio_buf,
       size_t audio_buf_size)
 {
    size_t avail = fifo_read_avail(handle->audio_fifo);
+
    if (avail)
    {
       fifo_read(handle->audio_fifo, audio_buf, avail);
@@ -1236,19 +1253,23 @@ static void ffmpeg_flush_video(ffmpeg_t *handle)
 
 static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 {
+   bool did_work;
    void *video_buf = av_malloc(2 * handle->params.fb_width * 
          handle->params.fb_height * handle->video.pix_size);
    size_t audio_buf_size = handle->config.audio_enable ? 
       (handle->audio.codec->frame_size * 
        handle->params.channels * sizeof(int16_t)) : 0;
-   void *audio_buf = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
+   void *audio_buf = NULL;
 
+   if (audio_buf_size)
+      audio_buf = av_malloc(audio_buf_size);
    /* Try pushing data in an interleaving pattern to 
     * ease the work of the muxer a bit. */
-   bool did_work;
 
    do
    {
+      struct ffemu_video_data attr_buf;
+
       did_work = false;
 
       if (handle->config.audio_enable)
@@ -1266,7 +1287,6 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
          }
       }
 
-      struct ffemu_video_data attr_buf;
       if (fifo_read_avail(handle->attr_fifo) >= sizeof(attr_buf))
       {
          fifo_read(handle->attr_fifo, &attr_buf, sizeof(attr_buf));
