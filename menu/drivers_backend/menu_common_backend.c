@@ -19,12 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <file/file_path.h>
-#include "../menu_entries.h"
 #include "../menu_input.h"
-
-#include "../../retroarch.h"
-#include "../../config.def.h"
 
 static int menu_common_iterate(unsigned action)
 {
