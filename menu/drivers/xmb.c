@@ -515,10 +515,13 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
        
       if (!xmb)
           continue;
-       
-      node->label_alpha = 0;
+
       if (dir == 1 || (dir == -1 && i != current))
          node->alpha = 0;
+
+      if (dir == 1 || dir == -1)
+         node->label_alpha = 0;
+
       //if (dir == 1 || (dir == -1 && i == current))
          node->x = xmb->icon_size*dir*2;
       //else
