@@ -754,17 +754,11 @@ static void lakka_context_destroy(void *data)
    }
 }
 
-static bool lakka_init_settings(menu_handle_t *menu)
+static bool lakka_init_settings(menu_handle_t *menu, lakka_handle_t *lakka)
 {
    int k, jj = 0, kk;
-   lakka_handle_t *lakka = NULL;
    menu_category_t *category = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t*)menu->list_settings;
-
-   lakka = (lakka_handle_t*)menu->userdata;
-
-   if (!lakka)
-      return false;
 
    category = (menu_category_t*)&lakka->categories[0];
 
@@ -779,8 +773,11 @@ static bool lakka_init_settings(menu_handle_t *menu)
    category->items       = (menu_item_t*)
       calloc(category->num_items, sizeof(menu_item_t));
 
-   rarch_setting_t *group = (rarch_setting_t*)setting_data_find_setting(driver.menu->list_settings,
-         "Driver Options");
+   rarch_setting_t *group = (rarch_setting_t*)setting_data_find_setting(menu->list_settings,
+         "Main Menu");
+
+   if (!group)
+      return false;
 
    for (; group->type != ST_NONE; group++)
    {
@@ -1299,7 +1296,7 @@ static bool lakka_init_lists(void *data)
    if (!lakka)
       return false;
 
-   if (!lakka_init_settings(menu))
+   if (!lakka_init_settings(menu, lakka))
       return false;
 
    for (i = 1; i < lakka->num_categories; i++)
