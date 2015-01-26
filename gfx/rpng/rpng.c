@@ -85,6 +85,7 @@ static uint32_t dword_be(const uint8_t *buf)
 static bool read_chunk_header(FILE *file, struct png_chunk *chunk)
 {
    uint8_t dword[4] = {0};
+
    if (fread(dword, 1, 4, file) != 4)
       return false;
 
@@ -116,6 +117,7 @@ struct idat_buffer
 static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 {
    unsigned i;
+
    for (i = 0; i < ARRAY_SIZE(chunk_map); i++)
    {
       if (memcmp(chunk->type, chunk_map[i].id, 4) == 0)
@@ -157,6 +159,7 @@ static bool png_parse_ihdr(FILE *file,
 {
    unsigned i;
    bool ret = true;
+
    if (!png_read_chunk(file, chunk))
       return false;
 
@@ -184,6 +187,7 @@ static bool png_parse_ihdr(FILE *file,
    {
       static const unsigned valid_bpp[] = { 1, 2, 4, 8, 16 };
       bool correct_bpp = false;
+
       for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
       {
          if (valid_bpp[i] == ihdr->depth)
@@ -200,6 +204,7 @@ static bool png_parse_ihdr(FILE *file,
    {
       static const unsigned valid_bpp[] = { 1, 2, 4, 8 };
       bool correct_bpp = false;
+
       for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
       {
          if (valid_bpp[i] == ihdr->depth)
@@ -227,8 +232,10 @@ static bool png_parse_ihdr(FILE *file,
    if (ihdr->compression != 0)
       GOTO_END_ERROR();
 
-   //if (ihdr->interlace != 0) // No Adam7 supported.
-   //   GOTO_END_ERROR();
+#if 0
+   if (ihdr->interlace != 0) /* No Adam7 supported. */
+      GOTO_END_ERROR();
+#endif
 
 end:
    png_free_chunk(chunk);
@@ -238,7 +245,7 @@ end:
 // Paeth prediction filter.
 static inline int paeth(int a, int b, int c)
 {
-   int p = a + b - c;
+   int p  = a + b - c;
    int pa = abs(p - a);
    int pb = abs(p - b);
    int pc = abs(p - c);
@@ -254,14 +261,18 @@ static inline void copy_line_rgb(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp)
 {
    unsigned i;
+
    bpp /= 8;
+
    for (i = 0; i < width; i++)
    {
-      uint32_t r = *decoded;
+      uint32_t r, g, b;
+
+      r = *decoded;
       decoded += bpp;
-      uint32_t g = *decoded;
+      g = *decoded;
       decoded += bpp;
-      uint32_t b = *decoded;
+      b = *decoded;
       decoded += bpp;
       data[i] = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
    }
@@ -271,16 +282,19 @@ static inline void copy_line_rgba(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp)
 {
    unsigned i;
+
    bpp /= 8;
+
    for (i = 0; i < width; i++)
    {
-      uint32_t r = *decoded;
+      uint32_t r, g, b, a;
+      r = *decoded;
       decoded += bpp;
-      uint32_t g = *decoded;
+      g = *decoded;
       decoded += bpp;
-      uint32_t b = *decoded;
+      b = *decoded;
       decoded += bpp;
-      uint32_t a = *decoded;
+      a = *decoded;
       decoded += bpp;
       data[i] = (a << 24) | (r << 16) | (g << 8) | (b << 0);
    }
@@ -289,7 +303,11 @@ static inline void copy_line_rgba(uint32_t *data,
 static inline void copy_line_bw(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned depth)
 {
-   unsigned i, bit;
+   unsigned i, bit = 0;
+   static const unsigned mul_table[] = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
+   unsigned mul  = mul_table[depth];
+   unsigned mask = (1 << depth) - 1;
+
    if (depth == 16)
    {
       for (i = 0; i < width; i++)
@@ -297,22 +315,17 @@ static inline void copy_line_bw(uint32_t *data,
          uint32_t val = decoded[i << 1];
          data[i] = (val * 0x010101) | (0xffu << 24);
       }
+      return;
    }
-   else
-   {
-      static const unsigned mul_table[] = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
-      unsigned mul = mul_table[depth];
-      unsigned mask = (1 << depth) - 1;
-      bit = 0;
-      for (i = 0; i < width; i++, bit += depth)
-      {
-         unsigned byte = bit >> 3;
-         unsigned val = decoded[byte] >> (8 - depth - (bit & 7));
 
-         val &= mask;
-         val *= mul;
-         data[i] = (val * 0x010101) | (0xffu << 24);
-      }
+   for (i = 0; i < width; i++, bit += depth)
+   {
+      unsigned byte = bit >> 3;
+      unsigned val  = decoded[byte] >> (8 - depth - (bit & 7));
+
+      val &= mask;
+      val *= mul;
+      data[i] = (val * 0x010101) | (0xffu << 24);
    }
 }
 
@@ -321,15 +334,19 @@ static inline void copy_line_gray_alpha(uint32_t *data,
       unsigned bpp)
 {
    unsigned i;
+
    bpp /= 8;
+
    for (i = 0; i < width; i++)
    {
-      uint32_t gray = *decoded;
+      uint32_t gray, alpha;
+
+      gray     = *decoded;
       decoded += bpp;
-      uint32_t alpha = *decoded;
+      alpha    = *decoded;
       decoded += bpp;
 
-      data[i] = (gray * 0x010101) | (alpha << 24);
+      data[i]  = (gray * 0x010101) | (alpha << 24);
    }
 }
 
@@ -339,11 +356,14 @@ static inline void copy_line_plt(uint32_t *data,
 {
    unsigned i, bit;
    unsigned mask = (1 << depth) - 1;
+
    bit = 0;
+
    for (i = 0; i < width; i++, bit += depth)
    {
       unsigned byte = bit >> 3;
       unsigned val = decoded[byte] >> (8 - depth - (bit & 7));
+
       val &= mask;
       data[i] = palette[val];
    }
@@ -355,6 +375,7 @@ static void png_pass_geom(const struct png_ihdr *ihdr,
 {
    unsigned bpp;
    unsigned pitch;
+
    switch (ihdr->color_type)
    {
       case 0:
@@ -402,18 +423,20 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       const uint32_t *palette)
 {
    unsigned i, h;
-   bool ret = true;
-
    unsigned bpp;
    unsigned pitch;
    size_t pass_size;
+   uint8_t *prev_scanline = NULL;
+   uint8_t *decoded_scanline = NULL;
+   bool ret = true;
+
    png_pass_geom(ihdr, ihdr->width, ihdr->height, &bpp, &pitch, &pass_size);
 
    if (inflate_buf_size < pass_size)
       return false;
 
-   uint8_t *prev_scanline    = (uint8_t*)calloc(1, pitch);
-   uint8_t *decoded_scanline = (uint8_t*)calloc(1, pitch);
+   prev_scanline    = (uint8_t*)calloc(1, pitch);
+   decoded_scanline = (uint8_t*)calloc(1, pitch);
 
    if (!prev_scanline || !decoded_scanline)
       GOTO_END_ERROR();
@@ -422,6 +445,7 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
          h++, inflate_buf += pitch, data += ihdr->width)
    {
       unsigned filter = *inflate_buf++;
+
       switch (filter)
       {
          case 0: /* None */
@@ -500,11 +524,14 @@ static void deinterlace_pass(uint32_t *data, const struct png_ihdr *ihdr,
       const struct adam7_pass *pass)
 {
    unsigned x, y;
+
    data += pass->y * ihdr->width + pass->x;
+
    for (y = 0; y < pass_height;
          y++, data += ihdr->width * pass->stride_y, input += pass_width)
    {
       uint32_t *out = data;
+     
       for (x = 0; x < pass_width; x++, out += pass->stride_x)
          *out = input[x];
    }
@@ -528,26 +555,30 @@ static bool png_reverse_filter_adam7(uint32_t *data,
 
    for (pass = 0; pass < ARRAY_SIZE(passes); pass++)
    {
+      unsigned pass_width, pass_height;
+      size_t pass_size;
+      struct png_ihdr tmp_ihdr;
+      uint32_t *tmp_data = NULL;
+
       if (ihdr->width <= passes[pass].x ||
             ihdr->height <= passes[pass].y) /* Empty pass */
          continue;
 
-      unsigned pass_width  = (ihdr->width - 
+      pass_width  = (ihdr->width - 
             passes[pass].x + passes[pass].stride_x - 1) / passes[pass].stride_x;
-      unsigned pass_height = (ihdr->height - passes[pass].y + 
+      pass_height = (ihdr->height - passes[pass].y + 
             passes[pass].stride_y - 1) / passes[pass].stride_y;
 
-      uint32_t *tmp_data = (uint32_t*)
-         malloc(pass_width * pass_height * sizeof(uint32_t));
+      tmp_data = (uint32_t*)malloc(
+            pass_width * pass_height * sizeof(uint32_t));
 
       if (!tmp_data)
          return false;
 
-      struct png_ihdr tmp_ihdr = *ihdr;
+      tmp_ihdr = *ihdr;
       tmp_ihdr.width = pass_width;
       tmp_ihdr.height = pass_height;
 
-      size_t pass_size;
       png_pass_geom(&tmp_ihdr, pass_width,
             pass_height, NULL, NULL, &pass_size);
 
@@ -579,6 +610,7 @@ static bool png_append_idat(FILE *file,
       const struct png_chunk *chunk, struct idat_buffer *buf)
 {
    uint8_t *new_buffer = (uint8_t*)realloc(buf->data, buf->size + chunk->size);
+
    if (!new_buffer)
       return false;
 
@@ -594,10 +626,11 @@ static bool png_append_idat(FILE *file,
 static bool png_read_plte(FILE *file, uint32_t *buffer, unsigned entries)
 {
    unsigned i;
+   uint8_t buf[256 * 3];
+
    if (entries > 256)
       return false;
 
-   uint8_t buf[256 * 3];
    if (fread(buf, 3, entries, file) != entries)
       return false;
 
@@ -618,33 +651,33 @@ static bool png_read_plte(FILE *file, uint32_t *buffer, unsigned entries)
 bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
-   long pos;
-   *data   = NULL;
-   *width  = 0;
-   *height = 0;
-
-   bool ret = true;
-   FILE *file = fopen(path, "rb");
-   if (!file)
-      return false;
-
-   fseek(file, 0, SEEK_END);
-   long file_len = ftell(file);
-   rewind(file);
-
+   long pos, file_len;
+   FILE *file;
+   char header[8];
+   uint8_t *inflate_buf = NULL;
+   size_t inflate_buf_size = 0;
+   z_stream stream = {0};
+   struct idat_buffer idat_buf = {0};
+   struct png_ihdr ihdr = {0};
+   uint32_t palette[256] = {0};
    bool has_ihdr = false;
    bool has_idat = false;
    bool has_iend = false;
    bool has_plte = false;
-   uint8_t *inflate_buf = NULL;
-   size_t inflate_buf_size = 0;
-   z_stream stream = {0};
+   bool ret      = true;
 
-   struct idat_buffer idat_buf = {0};
-   struct png_ihdr ihdr = {0};
-   uint32_t palette[256] = {0};
+   *data   = NULL;
+   *width  = 0;
+   *height = 0;
 
-   char header[8];
+   file = fopen(path, "rb");
+   if (!file)
+      return false;
+
+   fseek(file, 0, SEEK_END);
+   file_len = ftell(file);
+   rewind(file);
+
    if (fread(header, 1, sizeof(header), file) != sizeof(header))
       GOTO_END_ERROR();
 
@@ -656,6 +689,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
          pos < file_len && pos >= 0; pos = ftell(file))
    {
       struct png_chunk chunk = {0};
+
       if (!read_chunk_header(file, &chunk))
          GOTO_END_ERROR();
 
@@ -793,11 +827,11 @@ static bool png_write_crc(FILE *file, const uint8_t *data, size_t size)
 static bool png_write_ihdr(FILE *file, const struct png_ihdr *ihdr)
 {
    uint8_t ihdr_raw[] = {
-      '0', '0', '0', '0', // Size
+      '0', '0', '0', '0', /* Size */
       'I', 'H', 'D', 'R',
 
-      0, 0, 0, 0, // Width
-      0, 0, 0, 0, // Height
+      0, 0, 0, 0, /* Width */
+      0, 0, 0, 0, /* Height */
       ihdr->depth,
       ihdr->color_type,
       ihdr->compression,
