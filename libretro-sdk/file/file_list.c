@@ -84,6 +84,7 @@ void file_list_free(file_list_t *list)
    {
       free(list->list[i].path);
       free(list->list[i].label);
+      free(list->list[i].alt);
    }
    free(list->list);
    free(list);
