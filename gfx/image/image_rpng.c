@@ -32,7 +32,7 @@ static bool rpng_image_load_tga_shift(const char *path,
       unsigned a_shift, unsigned r_shift,
       unsigned g_shift, unsigned b_shift)
 {
-   unsigned i, bits, size;
+   unsigned i, bits, size, bits_mul;
    uint8_t info[6], *buf;
    unsigned width = 0;
    unsigned height = 0;
@@ -75,41 +75,33 @@ static bool rpng_image_load_tga_shift(const char *path,
       return false;
    }
 
-   tmp = buf + 18;
+   tmp      = buf + 18;
+   bits_mul = 3;
 
-   if (bits == 32)
-   {
-      for (i = 0; i < width * height; i++)
-      {
-         uint32_t b = tmp[i * 4 + 0];
-         uint32_t g = tmp[i * 4 + 1];
-         uint32_t r = tmp[i * 4 + 2];
-         uint32_t a = tmp[i * 4 + 3];
-
-         out_img->pixels[i] = (a << a_shift) |
-            (r << r_shift) | (g << g_shift) | (b << b_shift);
-      }
-   }
-   else if (bits == 24)
-   {
-      for (i = 0; i < width * height; i++)
-      {
-         uint32_t b = tmp[i * 3 + 0];
-         uint32_t g = tmp[i * 3 + 1];
-         uint32_t r = tmp[i * 3 + 2];
-         uint32_t a = 0xff;
-
-         out_img->pixels[i] = (a << a_shift) |
-            (r << r_shift) | (g << g_shift) | (b << b_shift);
-      }
-   }
-   else
+   if (bits != 32 || bits != 24)
    {
       RARCH_ERR("Bit depth of TGA image is wrong. Only 32-bit and 24-bit supported.\n");
       free(buf);
       free(out_img->pixels);
       out_img->pixels = NULL;
       return false;
+   }
+
+   if (bits == 32)
+      bits_mul = 4;
+
+   for (i = 0; i < width * height; i++)
+   {
+      uint32_t b = tmp[i * bits_mul + 0];
+      uint32_t g = tmp[i * bits_mul + 1];
+      uint32_t r = tmp[i * bits_mul + 2];
+      uint32_t a = tmp[i * bits_mul + 3];
+
+      if (bits == 24)
+         a = 0xff;
+
+      out_img->pixels[i] = (a << a_shift) |
+         (r << r_shift) | (g << g_shift) | (b << b_shift);
    }
 
    free(buf);
