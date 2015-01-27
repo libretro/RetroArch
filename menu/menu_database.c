@@ -16,6 +16,7 @@
 #include "menu.h"
 #include "menu_database.h"
 #include "menu_list.h"
+#include "menu_entries.h"
 #include <string.h>
 
 #ifdef HAVE_LIBRETRODB
@@ -37,33 +38,6 @@ static int menu_database_open_cursor(libretrodb_t *db,
    return 0;
 }
 
-static int menu_database_fetch_from_query(libretrodb_t *db,
-   libretrodb_cursor_t *cur, file_list_t *list)
-{
-   unsigned i;
-   struct rmsgpack_dom_value item;
-    
-   while (libretrodb_cursor_read_item(cur, &item) == 0)
-   {
-      if (item.type != RDT_MAP)
-         continue;
-        
-      for (i = 0; i < item.map.len; i++)
-      {
-         struct rmsgpack_dom_value *key = &item.map.items[i].key;
-         struct rmsgpack_dom_value *val = &item.map.items[i].value;
-            
-         if (!strcmp(key->string.buff, "description"))
-         {
-            menu_list_push(list, val->string.buff, db->path,
-            MENU_FILE_RDB_ENTRY, 0);
-            break;
-         }
-      }
-   }
-    
-   return 0;
-}
 #endif
 
 int menu_database_populate_query(file_list_t *list, const char *path,
@@ -77,7 +51,7 @@ int menu_database_populate_query(file_list_t *list, const char *path,
       return -1;
    if ((menu_database_open_cursor(&db, &cur, query) != 0))
       return -1;
-   if ((menu_database_fetch_from_query(&db, &cur, list)) != 0)
+   if ((menu_entries_push_query(&db, &cur, list)) != 0)
       return -1;
     
    libretrodb_cursor_close(&cur);
