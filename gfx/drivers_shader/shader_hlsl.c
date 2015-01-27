@@ -314,7 +314,10 @@ static bool load_preset(hlsl_shader_data_t *hlsl, void *data, const char *path)
    if (!hlsl->cg_shader)
       hlsl->cg_shader = (struct video_shader*)calloc(1, sizeof(*hlsl->cg_shader));
    if (!hlsl->cg_shader)
+   {
+      config_file_free(conf);
       return false;
+   }
 
    if (!video_shader_read_conf_cgp(conf, hlsl->cg_shader))
    {

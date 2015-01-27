@@ -73,7 +73,10 @@ bool cheat_manager_save(cheat_manager_t *handle, const char *path)
       return false;
 
    if (!handle)
+   {
+      config_file_free(conf);
       return false;
+   }
 
    config_set_int(conf, "cheats", handle->size);
 
