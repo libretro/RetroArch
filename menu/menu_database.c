@@ -78,3 +78,24 @@ int menu_database_get_cursor(const char *path,
    return -1;
 #endif
 }
+
+int menu_database_init(void)
+{
+#ifdef HAVE_LIBRETRODB
+   driver.menu->cursor = calloc(1, sizeof(libretrodb_cursor_t));
+
+   if (!driver.menu->cursor)
+      return -1;
+#endif
+   return 0;
+}
+
+int menu_database_free(void)
+{
+#ifdef HAVE_LIBRETRODB
+   if (driver.menu->cursor)
+      libretrodb_cursor_close(driver.menu->cursor);
+   driver.menu->cursor = NULL;
+#endif
+   return 0;
+}

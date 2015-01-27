@@ -589,6 +589,11 @@ static int action_ok_rdb_entry(const char *path,
 #if 0
    RARCH_LOG("path is: %s\n, label is: %s\n", path, label);
 #endif
+#ifdef HAVE_LIBRETRODB
+   menu_database_free();
+   menu_database_init();
+   menu_database_get_cursor(path, "", driver.menu->cursor);
+#endif
    menu_list_pop_stack(driver.menu->menu_list);
 
    menu_list_push_stack(driver.menu->menu_list, "",

@@ -32,6 +32,10 @@ int menu_database_populate_query(file_list_t *list, const char *path,
 #ifdef HAVE_LIBRETRODB
 int menu_database_get_cursor(const char *path,
     const char *query, libretrodb_cursor_t *cur);
+
+int menu_database_init(void);
+
+int menu_database_free(void);
 #endif
 
 #ifdef __cplusplus
