@@ -23,6 +23,7 @@ typedef struct libretrodb
 	uint64_t root;
 	uint64_t count;
 	uint64_t first_index_offset;
+   char path[1024];
 } libretrodb_t;
 
 typedef struct libretrodb_index

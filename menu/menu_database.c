@@ -55,7 +55,7 @@ static int menu_database_fetch_from_query(libretrodb_t *db,
             
          if (!strcmp(key->string.buff, "description"))
          {
-            menu_list_push(list, val->string.buff, "",
+            menu_list_push(list, val->string.buff, db->path,
             MENU_FILE_RDB_ENTRY, 0);
             break;
          }

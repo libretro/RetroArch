@@ -139,13 +139,13 @@ static void libretrodb_write_index_header(int fd, libretrodb_index_t * idx)
 	rmsgpack_write_uint(fd, idx->next);
 }
 
-void libretrodb_close(libretrodb_t * db)
+void libretrodb_close(libretrodb_t *db)
 {
 	close(db->fd);
 	db->fd = -1;
 }
 
-int libretrodb_open(const char * path, libretrodb_t * db)
+int libretrodb_open(const char *path, libretrodb_t *db)
 {
    libretrodb_header_t header;
    libretrodb_metadata_t md;
@@ -155,6 +155,7 @@ int libretrodb_open(const char * path, libretrodb_t * db)
    if (fd == -1)
       return -errno;
 
+   strcpy(db->path, path);
    db->root = lseek(fd, 0, SEEK_CUR);
 
    if ((rv = read(fd, &header, sizeof(header))) == -1)
