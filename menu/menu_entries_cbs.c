@@ -32,6 +32,10 @@
 #include "../net_http.h"
 #endif
 
+#ifdef HAVE_LIBRETRODB
+#include "../database_info.h"
+#endif
+
 #include "menu_database.h"
 
 #include "../input/input_autodetect.h"
@@ -583,16 +587,324 @@ static int action_ok_database_manager_list_deferred(const char *path,
    return 0;
 }
 
+static int deferred_push_core_information(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   unsigned i;
+   core_info_t *info      = NULL;
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   info = (core_info_t*)g_extern.core_info_current;
+   menu_list_clear(list);
+
+   if (info->data)
+   {
+      char tmp[PATH_MAX_LENGTH];
+
+      snprintf(tmp, sizeof(tmp), "Core name: %s",
+            info->core_name ? info->core_name : "");
+      menu_list_push(list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      snprintf(tmp, sizeof(tmp), "Core label: %s",
+            info->display_name ? info->display_name : "");
+      menu_list_push(list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+      if (info->systemname)
+      {
+         snprintf(tmp, sizeof(tmp), "System name: %s",
+               info->systemname);
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (info->system_manufacturer)
+      {
+         snprintf(tmp, sizeof(tmp), "System manufacturer: %s",
+               info->system_manufacturer);
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (info->categories_list)
+      {
+         strlcpy(tmp, "Categories: ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               info->categories_list, ", ");
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (info->authors_list)
+      {
+         strlcpy(tmp, "Authors: ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               info->authors_list, ", ");
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (info->permissions_list)
+      {
+         strlcpy(tmp, "Permissions: ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               info->permissions_list, ", ");
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (info->licenses_list)
+      {
+         strlcpy(tmp, "License(s): ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               info->licenses_list, ", ");
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (info->supported_extensions_list)
+      {
+         strlcpy(tmp, "Supported extensions: ", sizeof(tmp));
+         string_list_join_concat(tmp, sizeof(tmp),
+               info->supported_extensions_list, ", ");
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+      }
+
+      if (info->firmware_count > 0)
+      {
+         core_info_list_update_missing_firmware(
+               g_extern.core_info, info->path,
+               g_settings.system_directory);
+
+         menu_list_push(list, "Firmware: ", "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+         for (i = 0; i < info->firmware_count; i++)
+         {
+            if (info->firmware[i].desc)
+            {
+               snprintf(tmp, sizeof(tmp), "	name: %s",
+                     info->firmware[i].desc ? info->firmware[i].desc : "");
+               menu_list_push(list, tmp, "",
+                     MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+               snprintf(tmp, sizeof(tmp), "	status: %s, %s",
+                     info->firmware[i].missing ?
+                     "missing" : "present",
+                     info->firmware[i].optional ?
+                     "optional" : "required");
+               menu_list_push(list, tmp, "",
+                     MENU_SETTINGS_CORE_INFO_NONE, 0);
+            }
+         }
+      }
+
+      if (info->notes)
+      {
+         snprintf(tmp, sizeof(tmp), "Core notes: ");
+         menu_list_push(list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0);
+
+         for (i = 0; i < info->note_list->size; i++)
+         {
+            snprintf(tmp, sizeof(tmp), " %s",
+                  info->note_list->elems[i].data);
+            menu_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
+      }
+   }
+   else
+      menu_list_push(list,
+            "No information available.", "",
+            MENU_SETTINGS_CORE_OPTION_NONE, 0);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
+}
+
+
+static int deferred_push_rdb_entry_detail(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+#ifdef HAVE_LIBRETRODB
+   char query[PATH_MAX_LENGTH];
+   unsigned i;
+   database_info_list_t *db_info = NULL;
+   file_list_t *list             = (file_list_t*)data;
+   file_list_t *menu_list        = (file_list_t*)userdata;
+   struct string_list *str_list  = string_split(label, "|"); 
+
+   if (!str_list)
+      return -1;
+   if (!list || !menu_list)
+   {
+      string_list_free(str_list);
+      return -1;
+   }
+
+   strlcpy(query, "{'description':'", sizeof(query));
+   strlcat(query, str_list->elems[1].data, sizeof(query));
+   strlcat(query, "'}", sizeof(query));
+
+   menu_list_clear(list);
+
+   if (!(db_info = database_info_list_new(path, query)))
+      return -1;
+
+   for (i = 0; i < db_info->count; i++)
+   {
+      char tmp[PATH_MAX_LENGTH];
+      database_info_t *db_info_entry = (database_info_t*)&db_info->list[i];
+
+      if (!db_info_entry)
+         continue;
+
+      if (db_info_entry->description)
+      {
+         snprintf(tmp, sizeof(tmp), "Description: %s", db_info_entry->description);
+         menu_list_push(list, tmp, "rdb_entry_description",
+               0, 0);
+      }
+      if (db_info_entry->publisher)
+      {
+         snprintf(tmp, sizeof(tmp), "Publisher: %s", db_info_entry->publisher);
+         menu_list_push(list, tmp, "rdb_entry_publisher",
+               0, 0);
+      }
+      if (db_info_entry->developer)
+      {
+         snprintf(tmp, sizeof(tmp), "Developer: %s", db_info_entry->developer);
+         menu_list_push(list, tmp, "rdb_entry_developer",
+               0, 0);
+      }
+      if (db_info_entry->origin)
+      {
+         snprintf(tmp, sizeof(tmp), "Origin: %s", db_info_entry->origin);
+         menu_list_push(list, tmp, "rdb_entry_origin",
+               0, 0);
+      }
+      if (db_info_entry->franchise)
+      {
+         snprintf(tmp, sizeof(tmp), "Franchise: %s", db_info_entry->franchise);
+         menu_list_push(list, tmp, "rdb_entry_franchise",
+               0, 0);
+      }
+      if (db_info_entry->max_users)
+      {
+         snprintf(tmp, sizeof(tmp), "Max Users: %d", db_info_entry->max_users);
+         menu_list_push(list, tmp, "rdb_entry_max_users",
+               0, 0);
+      }
+      if (db_info_entry->edge_magazine_rating)
+      {
+         snprintf(tmp, sizeof(tmp), "Edge Magazine Rating: %d/10",
+               db_info_entry->edge_magazine_rating);
+         menu_list_push(list, tmp, "rdb_entry_edge_magazine_rating",
+               0, 0);
+      }
+      if (db_info_entry->edge_magazine_issue)
+      {
+         snprintf(tmp, sizeof(tmp),
+               "Edge Magazine Issue: %d", db_info_entry->edge_magazine_issue);
+         menu_list_push(list, tmp, "rdb_entry_edge_magazine_issue",
+               0, 0);
+      }
+      if (db_info_entry->releasemonth)
+      {
+         snprintf(tmp, sizeof(tmp),
+               "Releasedate Month: %d", db_info_entry->releasemonth);
+         menu_list_push(list, tmp, "rdb_entry_releasemonth",
+               0, 0);
+      }
+      if (db_info_entry->releaseyear)
+      {
+         snprintf(tmp, sizeof(tmp),
+               "Releasedate Year: %d", db_info_entry->releaseyear);
+         menu_list_push(list, tmp, "rdb_entry_releaseyear",
+               0, 0);
+      }
+      if (db_info_entry->bbfc_rating)
+      {
+         snprintf(tmp, sizeof(tmp),
+               "BBFC Rating: %s", db_info_entry->bbfc_rating);
+         menu_list_push(list, tmp, "rdb_entry_bbfc_rating",
+               0, 0);
+      }
+      if (db_info_entry->esrb_rating)
+      {
+         snprintf(tmp, sizeof(tmp),
+               "ESRB Rating: %s", db_info_entry->esrb_rating);
+         menu_list_push(list, tmp, "rdb_entry_esrb_rating",
+               0, 0);
+      }
+      if (db_info_entry->elspa_rating)
+      {
+         snprintf(tmp, sizeof(tmp),
+               "ELSPA Rating: %s", db_info_entry->elspa_rating);
+         menu_list_push(list, tmp, "rdb_entry_elspa_rating",
+               0, 0);
+      }
+      if (db_info_entry->pegi_rating)
+      {
+         snprintf(tmp, sizeof(tmp), "PEGI Rating: %s",
+               db_info_entry->pegi_rating);
+         menu_list_push(list, tmp, "rdb_entry_pegi_rating",
+               0, 0);
+      }
+      if (db_info_entry->cero_rating)
+      {
+         snprintf(tmp, sizeof(tmp), "CERO Rating: %s",
+               db_info_entry->cero_rating);
+         menu_list_push(list, tmp, "rdb_entry_cero_rating",
+               0, 0);
+      }
+      snprintf(tmp, sizeof(tmp),
+            "Analog supported: %s",
+            db_info_entry->analog_supported ? "true" : "false");
+      menu_list_push(list, tmp, "rdb_entry_analog",
+            0, 0);
+      snprintf(tmp, sizeof(tmp),
+            "Rumble supported: %s",
+            db_info_entry->rumble_supported ? "true" : "false");
+      menu_list_push(list, tmp, "rdb_entry_rumble",
+            0, 0);
+   }
+
+   if (db_info->count < 1)
+      menu_list_push(list,
+            "No information available.", "",
+            0, 0);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path,
+            str_list->elems[0].data, type);
+
+   string_list_free(str_list);
+#endif
+
+   return 0;
+}
+
 static int action_ok_rdb_entry(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-#if 0
-   RARCH_LOG("path is: %s\n, label is: %s\n", path, label);
-#endif
-   menu_list_pop_stack(driver.menu->menu_list);
+   char tmp[PATH_MAX_LENGTH];
+   strlcpy(tmp, "deferred_rdb_entry_detail|", sizeof(tmp));
+   strlcat(tmp, path, sizeof(tmp));
 
-   menu_list_push_stack(driver.menu->menu_list, "",
-         "rdb_entry_detail", 0, driver.menu->selection_ptr);
+   return menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         label,
+         tmp,
+         0, idx);
 
    return 0;
 }
@@ -1801,6 +2113,7 @@ static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata
    return 0;
 }
 
+#if 0
 static int deferred_push_core_information(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -1943,6 +2256,7 @@ static int deferred_push_core_information(void *data, void *userdata,
 
    return 0;
 }
+#endif
 
 static int deferred_push_performance_counters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
@@ -2810,76 +3124,6 @@ static int action_iterate_help(const char *label, unsigned action)
    return 0;
 }
 
-static int action_iterate_rdb_entry_detail(const char *label, const char *path_offset,
-      const char *label_offset, unsigned action)
-{
-#if 0
-   RARCH_LOG("label is: %s,\n", label);
-   RARCH_LOG("path offset is: %s,\n", path_offset);
-   RARCH_LOG("label offset is: %s,\n", label_offset);
-#endif
-   unsigned i;
-   static const unsigned binds[] = {
-      RETRO_DEVICE_ID_JOYPAD_UP,
-      RETRO_DEVICE_ID_JOYPAD_DOWN,
-      RETRO_DEVICE_ID_JOYPAD_A,
-      RETRO_DEVICE_ID_JOYPAD_B,
-      RETRO_DEVICE_ID_JOYPAD_SELECT,
-      RARCH_MENU_TOGGLE,
-      RARCH_QUIT_KEY,
-   };
-   char desc[ARRAY_SIZE(binds)][64];
-   char msg[PATH_MAX_LENGTH];
-
-   if (!driver.menu)
-      return 0;
-
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render();
-
-   for (i = 0; i < ARRAY_SIZE(binds); i++)
-   {
-      const struct retro_keybind *keybind = (const struct retro_keybind*)
-         &g_settings.input.binds[0][binds[i]];
-      const struct retro_keybind *auto_bind = (const struct retro_keybind*)
-         input_get_auto_bind(0, binds[i]);
-
-      input_get_bind_string(desc[i], keybind, auto_bind, sizeof(desc[i]));
-   }
-
-   snprintf(msg, sizeof(msg),
-         "-- Welcome to RetroArch --\n"
-         " \n" // strtok_r doesn't split empty strings.
-
-         "Basic Menu controls:\n"
-         "    Scroll (Up): %-20s\n"
-         "  Scroll (Down): %-20s\n"
-         "      Accept/OK: %-20s\n"
-         "           Back: %-20s\n"
-         "           Info: %-20s\n"
-         "Enter/Exit Menu: %-20s\n"
-         " Exit RetroArch: %-20s\n"
-         " \n"
-
-         "To run content:\n"
-         "Load a libretro core (Core).\n"
-         "Load a content file (Load Content).     \n"
-         " \n"
-         "See Path Options to set directories for faster access to files.\n"
-         " \n"
-
-         "Press Accept/OK to continue.",
-      desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6]);
-
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(msg);
-
-   if (action == MENU_ACTION_OK)
-      menu_list_pop_stack(driver.menu->menu_list);
-
-   return 0;
-}
-
 static int action_iterate_info(const char *label, unsigned action)
 {
    char msg[PATH_MAX_LENGTH];
@@ -3223,10 +3467,6 @@ static int action_iterate_main(const char *label, unsigned action)
          !strcmp(label, "custom_viewport_2")
          )
       return action_iterate_menu_viewport(label, action);
-   else if (
-         !strcmp(label, "rdb_entry_detail")
-         )
-      return action_iterate_rdb_entry_detail(label, path_offset, label_offset, action);
    else if (
          !strcmp(label, "custom_bind") ||
          !strcmp(label, "custom_bind_all") ||
@@ -3744,6 +3984,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    cbs->action_deferred_push = deferred_push_default;
 
+   if (strstr(label, "deferred_rdb_entry_detail"))
+      cbs->action_deferred_push = deferred_push_rdb_entry_detail;
    if (!strcmp(label, "core_manager_list"))
       cbs->action_deferred_push = deferred_push_core_manager_list;
    else if (!strcmp(label, "history_list"))
