@@ -423,31 +423,77 @@ int menu_input_bind_iterate_keyboard(void *data)
    return 0;
 }
 
-unsigned menu_input_frame(retro_input_t trigger_state)
+unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 {
-   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
+   static bool initial_held = true;
+   static bool first_held = false;
+   static const retro_input_t input_repeat =
+      (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)
+      | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)
+      | (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)
+      | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
+      | (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
+      | (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
+
+   driver.retro_ctx.poll_cb();
+
+   /* don't run anything first frame, only capture held inputs
+    * for old_input_state. */
+
+   if (input & input_repeat)
+   {
+      if (!first_held)
+      {
+         first_held = true;
+         driver.menu->delay_timer = initial_held ? 12 : 6;
+         driver.menu->delay_count = 0;
+      }
+
+      if (driver.menu->delay_count >= driver.menu->delay_timer)
+      {
+         first_held = false;
+         trigger_input |= input & input_repeat;
+         driver.menu->scroll_accel = min(driver.menu->scroll_accel + 1, 64);
+      }
+
+      initial_held = false;
+   }
+   else
+   {
+      first_held = false;
+      initial_held = true;
+      driver.menu->scroll_accel = 0;
+   }
+
+   driver.menu->mouse.enable = g_settings.menu.mouse_enable;
+
+   driver.menu->delay_count++;
+
+   if (driver.block_input)
+      trigger_input = 0;
+   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
       return MENU_ACTION_UP;
-   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
+   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
       return MENU_ACTION_DOWN;
-   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT))
+   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT))
       return MENU_ACTION_LEFT;
-   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT))
       return MENU_ACTION_RIGHT;
-   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
+   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
       return MENU_ACTION_SCROLL_UP;
-   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
+   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
       return MENU_ACTION_SCROLL_DOWN;
-   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_B))
+   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_B))
       return MENU_ACTION_CANCEL;
-   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
+   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
       return MENU_ACTION_OK;
-   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_Y))
+   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_Y))
       return MENU_ACTION_Y;
-   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
+   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
       return MENU_ACTION_START;
-   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
+   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
       return MENU_ACTION_SELECT;
-   if (trigger_state & (1ULL << RARCH_MENU_TOGGLE))
+   if (trigger_input & (1ULL << RARCH_MENU_TOGGLE))
       return MENU_ACTION_TOGGLE;
    return MENU_ACTION_NOOP;
 }

@@ -417,59 +417,8 @@ void menu_apply_deferred_settings(void)
 int menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input)
 {
-   unsigned action = MENU_ACTION_NOOP;
-   static bool initial_held = true;
-   static bool first_held = false;
-   int32_t ret = 0;
-   static const retro_input_t input_repeat =
-      (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)
-      | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)
-      | (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)
-      | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
-      | (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
-      | (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
-
-   if (!driver.menu)
-      return -1;
-
-   driver.retro_ctx.poll_cb();
-
-   if (input & input_repeat)
-   {
-      if (!first_held)
-      {
-         first_held = true;
-         driver.menu->delay_timer = initial_held ? 12 : 6;
-         driver.menu->delay_count = 0;
-      }
-
-      if (driver.menu->delay_count >= driver.menu->delay_timer)
-      {
-         first_held = false;
-         trigger_input |= input & input_repeat;
-         driver.menu->scroll_accel = min(driver.menu->scroll_accel + 1, 64);
-      }
-
-      initial_held = false;
-   }
-   else
-   {
-      first_held = false;
-      initial_held = true;
-      driver.menu->scroll_accel = 0;
-   }
-
-   driver.menu->mouse.enable = g_settings.menu.mouse_enable;
-
-   driver.menu->delay_count++;
-
-   if (driver.block_input)
-      trigger_input = 0;
-
-   /* don't run anything first frame, only capture held inputs
-    * for old_input_state.
-    */
-   action = menu_input_frame(trigger_input);
+   int32_t ret     = 0;
+   unsigned action = menu_input_frame(input, trigger_input);
 
    if (driver.menu_ctx && driver.menu_ctx->entry_iterate) 
       ret = driver.menu_ctx->entry_iterate(action);
