@@ -260,6 +260,8 @@ void menu_free(void *data)
    menu->shader = NULL;
 #endif
 
+   menu_database_free();
+
    if (driver.menu_ctx && driver.menu_ctx->free)
       driver.menu_ctx->free(menu);
 
