@@ -750,9 +750,9 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       return -1;
    }
 
-   strlcpy(query, "{'description':'", sizeof(query));
+   strlcpy(query, "{'description':\"", sizeof(query));
    strlcat(query, str_list->elems[1].data, sizeof(query));
-   strlcat(query, "'}", sizeof(query));
+   strlcat(query, "\"}", sizeof(query));
 
    menu_list_clear(list);
 
