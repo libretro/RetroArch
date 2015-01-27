@@ -449,13 +449,15 @@ static void xmb_selection_pointer_changed(void)
       if (!node)
          continue;
 
+      iy = xmb->vspacing;
+
       if (i < current)
          if (xmb->depth > 1)
-            iy = xmb->vspacing * (i - (int)current + xmb->above_subitem_offset);
+            iy *= (i - (int)current + xmb->above_subitem_offset);
          else
-            iy = xmb->vspacing * (i - (int)current + xmb->above_item_offset);
+            iy *= (i - (int)current + xmb->above_item_offset);
       else
-         iy    = xmb->vspacing * (i - (int)current + xmb->under_item_offset);
+         iy *= (i - (int)current + xmb->under_item_offset);
 
       if (i == current)
       {
@@ -527,13 +529,14 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
       //else
       //   node->x = xmb->icon_size*dir;
 
+         iy = xmb->vspacing;
       if (i < current)
          if (xmb->depth > 1)
-            iy = xmb->vspacing * (i - (int)current + xmb->above_subitem_offset);
+            iy *= (i - (int)current + xmb->above_subitem_offset);
          else
-            iy = xmb->vspacing * (i - (int)current + xmb->above_item_offset);
+            iy *= (i - (int)current + xmb->above_item_offset);
       else
-         iy = xmb->vspacing * (i - (int)current + xmb->under_item_offset);
+         iy *= (i - (int)current + xmb->under_item_offset);
 
       if (i == current)
          iy = xmb->vspacing * xmb->active_item_factor;
