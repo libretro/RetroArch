@@ -43,6 +43,8 @@ typedef struct
    unsigned max_users;
    unsigned releasemonth;
    unsigned releaseyear;
+   unsigned analog_supported;
+   unsigned rumble_supported;
    void *userdata;
 } database_info_t;
 

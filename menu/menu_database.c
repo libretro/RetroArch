@@ -90,6 +90,8 @@ int menu_database_print_info(const char *path,
          RARCH_LOG("PEGI Rating: %s\n", db_info_entry->pegi_rating);
       if (db_info_entry->cero_rating)
          RARCH_LOG("CERO Rating: %s\n", db_info_entry->cero_rating);
+      RARCH_LOG("Analog supported: %s\n", db_info_entry->analog_supported ? "true" : "false");
+      RARCH_LOG("Rumble supported: %s\n", db_info_entry->rumble_supported ? "true" : "false");
       RARCH_LOG("\n\n");
    }
 
