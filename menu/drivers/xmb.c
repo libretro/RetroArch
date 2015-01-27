@@ -829,8 +829,6 @@ static void xmb_list_switch()
 static void xmb_populate_entries(void *data, const char *path,
       const char *label, unsigned k)
 {
-   int dir;
-   unsigned j;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)

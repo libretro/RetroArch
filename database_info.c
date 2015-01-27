@@ -169,7 +169,7 @@ error:
 
 void database_info_list_free(database_info_list_t *database_info_list)
 {
-   size_t i, j;
+   size_t i;
 
    if (!database_info_list)
       return;
