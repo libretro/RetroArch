@@ -384,10 +384,11 @@ static void xui_render_message(const char *msg)
 
    struct string_list *list = string_split(msg, "\n");
    d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
-   if (!list || !d3d)
+
+   if (!list)
       return;
 
-   if (list->elems == 0)
+   if (!d3d || list->elems == 0)
    {
       string_list_free(list);
       return;

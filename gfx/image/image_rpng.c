@@ -78,7 +78,7 @@ static bool rpng_image_load_tga_shift(const char *path,
    tmp      = buf + 18;
    bits_mul = 3;
 
-   if (bits != 32 || bits != 24)
+   if (bits != 32 && bits != 24)
    {
       RARCH_ERR("Bit depth of TGA image is wrong. Only 32-bit and 24-bit supported.\n");
       free(buf);

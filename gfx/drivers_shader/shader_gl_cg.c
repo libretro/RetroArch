@@ -674,7 +674,10 @@ static bool load_preset(cg_shader_data_t *cg, const char *path)
 
    cg->cg_shader = (struct video_shader*)calloc(1, sizeof(*cg->cg_shader));
    if (!cg->cg_shader)
+   {
+      config_file_free(conf);
       return false;
+   }
 
    if (!video_shader_read_conf_cgp(conf, cg->cg_shader))
    {
