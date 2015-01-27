@@ -80,7 +80,7 @@ int menu_action_setting_handler(rarch_setting_t *setting, unsigned action)
    return menu_action_generic_setting(setting);
 }
 
-int menu_action_handle_setting(rarch_setting_t *setting,
+static int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action)
 {
    if (!setting)

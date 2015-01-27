@@ -36,9 +36,6 @@ int menu_action_setting_set(unsigned type, const char *label,
 
 rarch_setting_t *menu_action_find_setting(const char *label);
 
-int menu_action_handle_setting(rarch_setting_t *setting,
-      unsigned type, unsigned action);
-
 #ifdef __cplusplus
 }
 #endif
