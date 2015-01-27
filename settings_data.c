@@ -2817,10 +2817,11 @@ static void get_string_representation_savestate(void * data, char *type_str,
  *
  * Get associated label of a setting.
  **/
-void setting_data_get_label(file_list_t* list, char *type_str,
+void setting_data_get_label(void *data, char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx)
 {
+    file_list_t     *list         = (file_list_t*)data;
    rarch_setting_t *setting_data = NULL;
    rarch_setting_t *setting      = NULL;
 
