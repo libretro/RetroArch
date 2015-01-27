@@ -35,7 +35,7 @@
 #include <string.h>
 
 #ifndef GEKKO
-#include "../../netplay_compat.h"
+#include "../../net_compat.h"
 #endif
 
 #include "logger.h"

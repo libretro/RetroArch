@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "netplay_compat.h"
+#include "net_compat.h"
 #include <compat/strl.h>
 
 enum

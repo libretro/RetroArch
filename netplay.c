@@ -18,7 +18,7 @@
 #pragma comment(lib, "ws2_32")
 #endif
 
-#include "netplay_compat.h"
+#include "net_compat.h"
 #include "netplay.h"
 #include "general.h"
 #include "autosave.h"
