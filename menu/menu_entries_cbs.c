@@ -873,7 +873,7 @@ static int action_ok_custom_viewport(const char *path,
    menu_list_push_stack(
          driver.menu->menu_list,
          "",
-         "",
+         "custom_viewport_1",
          MENU_SETTINGS_CUSTOM_VIEWPORT,
          idx);
 
@@ -3197,7 +3197,6 @@ static int mouse_iterate(unsigned action)
 static int action_iterate_main(const char *label, unsigned action)
 {
    int ret = 0;
-   unsigned type = 0;
    unsigned type_offset = 0;
    const char *label_offset = NULL;
    const char *path_offset = NULL;
@@ -3220,7 +3219,7 @@ static int action_iterate_main(const char *label, unsigned action)
    else if (!strcmp(label, "message"))
       return action_iterate_message(label, action);
    else if (
-         type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
+         !strcmp(label, "custom_viewport_1") ||
          !strcmp(label, "custom_viewport_2")
          )
       return action_iterate_menu_viewport(label, action);
@@ -3228,10 +3227,14 @@ static int action_iterate_main(const char *label, unsigned action)
          !strcmp(label, "rdb_entry_detail")
          )
       return action_iterate_rdb_entry_detail(label, path_offset, label_offset, action);
-   else if (type == MENU_SETTINGS_CUSTOM_BIND)
-      return action_iterate_custom_bind(label, action);
-   else if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
-      return action_iterate_custom_bind_keyboard(label, action);
+   else if (!strcmp(label, "custom_bind_all") ||
+         !strcmp(label, "custom_bind_defaults"))
+   {
+      if (g_extern.menu.bind_mode_keyboard)
+         return action_iterate_custom_bind_keyboard(label, action);
+      else
+         return action_iterate_custom_bind(label, action);
+   }
 
    if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_REFRESH;
@@ -3324,7 +3327,12 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
    menu_list_get_last_stack(driver.menu->menu_list,
          NULL, &menu_label, NULL);
 
-   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+   if (!strcmp(label, "custom_bind_all"))
+      cbs->action_ok = action_ok_lookup_setting;
+   else if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
+         type == MENU_SETTINGS_CUSTOM_BIND)
+      cbs->action_ok = action_ok_lookup_setting;
+   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_ok = NULL;
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
