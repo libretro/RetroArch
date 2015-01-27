@@ -3916,7 +3916,9 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
          break;
    }
 
-   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+   if (strstr(label, "rdb_entry"))
+      cbs->action_toggle = action_toggle_scroll;
+   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_toggle = shader_action_parameter_toggle;
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
