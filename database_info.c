@@ -90,8 +90,8 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
       db_info->max_users              = 0;
       db_info->releasemonth           = 0;
       db_info->releaseyear            = 0;
-      db_info->analog_supported       = 0;
-      db_info->rumble_supported       = 0;
+      db_info->analog_supported       = -1;
+      db_info->rumble_supported       = -1;
 
       for (j = 0; j < item.map.len; j++)
       {
@@ -152,7 +152,7 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
          if (!strcmp(key->string.buff, "analog"))
             db_info->analog_supported = val->uint_;
       }
-i++;
+      i++;
    }
 
    database_info_list->list  = database_info;

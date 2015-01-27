@@ -868,12 +868,14 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       }
       snprintf(tmp, sizeof(tmp),
             "Analog supported: %s",
-            db_info_entry->analog_supported ? "true" : "false");
+            (db_info_entry->analog_supported == 1)  ? "true" : 
+            (db_info_entry->analog_supported == -1) ? "N/A"  : "false");
       menu_list_push(list, tmp, "rdb_entry_analog",
             0, 0);
       snprintf(tmp, sizeof(tmp),
             "Rumble supported: %s",
-            db_info_entry->rumble_supported ? "true" : "false");
+            (db_info_entry->rumble_supported == 1)  ? "true" : 
+            (db_info_entry->rumble_supported == -1) ? "N/A"  :  "false");
       menu_list_push(list, tmp, "rdb_entry_rumble",
             0, 0);
    }
