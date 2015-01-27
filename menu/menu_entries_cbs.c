@@ -583,6 +583,20 @@ static int action_ok_database_manager_list_deferred(const char *path,
    return 0;
 }
 
+static int action_ok_rdb_entry(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+#if 0
+   RARCH_LOG("path is: %s\n, label is: %s\n", path, label);
+#endif
+   menu_list_pop_stack(driver.menu->menu_list);
+
+   menu_list_push_stack(driver.menu->menu_list, "",
+         "rdb_entry_detail", 0, driver.menu->selection_ptr);
+
+   return 0;
+}
+
 static int action_ok_cursor_manager_list_deferred(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -2796,6 +2810,76 @@ static int action_iterate_help(const char *label, unsigned action)
    return 0;
 }
 
+static int action_iterate_rdb_entry_detail(const char *label, const char *path_offset,
+      const char *label_offset, unsigned action)
+{
+#if 0
+   RARCH_LOG("label is: %s,\n", label);
+   RARCH_LOG("path offset is: %s,\n", path_offset);
+   RARCH_LOG("label offset is: %s,\n", label_offset);
+#endif
+   unsigned i;
+   static const unsigned binds[] = {
+      RETRO_DEVICE_ID_JOYPAD_UP,
+      RETRO_DEVICE_ID_JOYPAD_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_A,
+      RETRO_DEVICE_ID_JOYPAD_B,
+      RETRO_DEVICE_ID_JOYPAD_SELECT,
+      RARCH_MENU_TOGGLE,
+      RARCH_QUIT_KEY,
+   };
+   char desc[ARRAY_SIZE(binds)][64];
+   char msg[PATH_MAX_LENGTH];
+
+   if (!driver.menu)
+      return 0;
+
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
+      driver.menu_ctx->render();
+
+   for (i = 0; i < ARRAY_SIZE(binds); i++)
+   {
+      const struct retro_keybind *keybind = (const struct retro_keybind*)
+         &g_settings.input.binds[0][binds[i]];
+      const struct retro_keybind *auto_bind = (const struct retro_keybind*)
+         input_get_auto_bind(0, binds[i]);
+
+      input_get_bind_string(desc[i], keybind, auto_bind, sizeof(desc[i]));
+   }
+
+   snprintf(msg, sizeof(msg),
+         "-- Welcome to RetroArch --\n"
+         " \n" // strtok_r doesn't split empty strings.
+
+         "Basic Menu controls:\n"
+         "    Scroll (Up): %-20s\n"
+         "  Scroll (Down): %-20s\n"
+         "      Accept/OK: %-20s\n"
+         "           Back: %-20s\n"
+         "           Info: %-20s\n"
+         "Enter/Exit Menu: %-20s\n"
+         " Exit RetroArch: %-20s\n"
+         " \n"
+
+         "To run content:\n"
+         "Load a libretro core (Core).\n"
+         "Load a content file (Load Content).     \n"
+         " \n"
+         "See Path Options to set directories for faster access to files.\n"
+         " \n"
+
+         "Press Accept/OK to continue.",
+      desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6]);
+
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
+      driver.menu_ctx->render_messagebox(msg);
+
+   if (action == MENU_ACTION_OK)
+      menu_list_pop_stack(driver.menu->menu_list);
+
+   return 0;
+}
+
 static int action_iterate_info(const char *label, unsigned action)
 {
    char msg[PATH_MAX_LENGTH];
@@ -3140,6 +3224,10 @@ static int action_iterate_main(const char *label, unsigned action)
          !strcmp(label, "custom_viewport_2")
          )
       return action_iterate_menu_viewport(label, action);
+   else if (
+         !strcmp(label, "rdb_entry_detail")
+         )
+      return action_iterate_rdb_entry_detail(label, path_offset, label_offset, action);
    else if (type == MENU_SETTINGS_CUSTOM_BIND)
       return action_iterate_custom_bind(label, action);
    else if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
@@ -3317,6 +3405,9 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
             cbs->action_ok = action_ok_database_manager_list;
          else
             return -1;
+         break;
+      case MENU_FILE_RDB_ENTRY:
+         cbs->action_ok = action_ok_rdb_entry;
          break;
       case MENU_FILE_CURSOR:
          if (!strcmp(menu_label, "deferred_database_manager_list"))
