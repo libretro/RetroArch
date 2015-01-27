@@ -620,8 +620,8 @@ endif
 
 # Netplay
 
-ifeq ($(HAVE_NETWORK), 1)
-   DEFINES += -DHAVE_NETWORK
+ifeq ($(HAVE_NETWORKING), 1)
+   DEFINES += -DHAVE_NETWORKING
    OBJ += net_compat.o
 
    ifneq ($(findstring Win32,$(OS)),)
