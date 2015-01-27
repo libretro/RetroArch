@@ -68,6 +68,28 @@ int menu_database_print_info(const char *path,
          RARCH_LOG("Origin: %s\n", db_info_entry->origin);
       if (db_info_entry->franchise)
          RARCH_LOG("Franchise: %s\n", db_info_entry->franchise);
+      if (db_info_entry->max_users)
+         RARCH_LOG("Max Users: %d\n", db_info_entry->max_users);
+      if (db_info_entry->edge_magazine_rating)
+         RARCH_LOG("Edge Magazine Rating: %d/10\n", db_info_entry->edge_magazine_rating);
+      if (db_info_entry->edge_magazine_issue)
+         RARCH_LOG("Edge Magazine Issue: %d\n", db_info_entry->edge_magazine_issue);
+      if (db_info_entry->edge_magazine_review)
+         RARCH_LOG("Edge Magazine Review: %s\n", db_info_entry->edge_magazine_review);
+      if (db_info_entry->releasemonth)
+         RARCH_LOG("Releasedate Month: %d\n", db_info_entry->releasemonth);
+      if (db_info_entry->releaseyear)
+         RARCH_LOG("Releasedate Year: %d\n", db_info_entry->releaseyear);
+      if (db_info_entry->bbfc_rating)
+         RARCH_LOG("BBFC Rating: %s\n", db_info_entry->bbfc_rating);
+      if (db_info_entry->esrb_rating)
+         RARCH_LOG("ESRB Rating: %s\n", db_info_entry->esrb_rating);
+      if (db_info_entry->elspa_rating)
+         RARCH_LOG("ELSPA Rating: %s\n", db_info_entry->elspa_rating);
+      if (db_info_entry->pegi_rating)
+         RARCH_LOG("PEGI Rating: %s\n", db_info_entry->pegi_rating);
+      if (db_info_entry->cero_rating)
+         RARCH_LOG("CERO Rating: %s\n", db_info_entry->cero_rating);
       RARCH_LOG("\n\n");
    }
 

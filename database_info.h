@@ -32,6 +32,17 @@ typedef struct
    char *developer;
    char *origin;
    char *franchise;
+   char *edge_magazine_review;
+   char *bbfc_rating;
+   char *elspa_rating;
+   char *esrb_rating;
+   char *pegi_rating;
+   char *cero_rating;
+   unsigned edge_magazine_rating;
+   unsigned edge_magazine_issue;
+   unsigned max_users;
+   unsigned releasemonth;
+   unsigned releaseyear;
    void *userdata;
 } database_info_t;
 

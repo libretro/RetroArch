@@ -74,11 +74,22 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
 
       db_info = (database_info_t*)&database_info[i];
 
-      db_info->description = NULL;
-      db_info->publisher   = NULL;
-      db_info->developer   = NULL;
-      db_info->origin      = NULL;
-      db_info->franchise   = NULL;
+      db_info->description            = NULL;
+      db_info->publisher              = NULL;
+      db_info->developer              = NULL;
+      db_info->origin                 = NULL;
+      db_info->franchise              = NULL;
+      db_info->bbfc_rating            = NULL;
+      db_info->elspa_rating           = NULL;
+      db_info->esrb_rating            = NULL;
+      db_info->pegi_rating            = NULL;
+      db_info->cero_rating            = NULL;
+      db_info->edge_magazine_review   = NULL;
+      db_info->edge_magazine_rating   = 0;
+      db_info->edge_magazine_issue    = 0;
+      db_info->max_users              = 0;
+      db_info->releasemonth           = 0;
+      db_info->releaseyear            = 0;
 
       for (j = 0; j < item.map.len; j++)
       {
@@ -99,6 +110,39 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
 
          if (!strcmp(key->string.buff, "franchise"))
             db_info->franchise = strdup(val->string.buff);
+
+         if (!strcmp(key->string.buff, "bbfc_rating"))
+            db_info->bbfc_rating = strdup(val->string.buff);
+
+         if (!strcmp(key->string.buff, "esrb_rating"))
+            db_info->esrb_rating = strdup(val->string.buff);
+
+         if (!strcmp(key->string.buff, "elspa_rating"))
+            db_info->elspa_rating = strdup(val->string.buff);
+
+         if (!strcmp(key->string.buff, "cero_rating"))
+            db_info->cero_rating = strdup(val->string.buff);
+
+         if (!strcmp(key->string.buff, "pegi_rating"))
+            db_info->pegi_rating = strdup(val->string.buff);
+
+         if (!strcmp(key->string.buff, "edge_review"))
+            db_info->edge_magazine_review = strdup(val->string.buff);
+
+         if (!strcmp(key->string.buff, "edge_rating"))
+            db_info->edge_magazine_rating = val->uint_;
+
+         if (!strcmp(key->string.buff, "edge_issue"))
+            db_info->edge_magazine_issue = val->uint_;
+
+         if (!strcmp(key->string.buff, "users"))
+            db_info->max_users = val->uint_;
+
+         if (!strcmp(key->string.buff, "releasemonth"))
+            db_info->releasemonth = val->uint_;
+
+         if (!strcmp(key->string.buff, "releaseyear"))
+            db_info->releaseyear = val->uint_;
       }
 i++;
    }
@@ -139,6 +183,19 @@ void database_info_list_free(database_info_list_t *database_info_list)
          free(info->origin);
       if (info->franchise)
          free(info->franchise);
+      if (info->edge_magazine_review)
+         free(info->edge_magazine_review);
+
+      if (info->cero_rating)
+         free(info->cero_rating);
+      if (info->pegi_rating)
+         free(info->pegi_rating);
+      if (info->elspa_rating)
+         free(info->elspa_rating);
+      if (info->esrb_rating)
+         free(info->esrb_rating);
+      if (info->bbfc_rating)
+         free(info->bbfc_rating);
    }
 
    free(database_info_list->list);
