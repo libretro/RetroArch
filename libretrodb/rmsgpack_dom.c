@@ -9,130 +9,120 @@
 
 #include "rmsgpack.h"
 
-
 #define MAX_DEPTH 128
-struct dom_reader_state {
+
+struct dom_reader_state
+{
 	int i;
 	struct rmsgpack_dom_value * stack[MAX_DEPTH];
 };
 
 
-static struct rmsgpack_dom_value * dom_reader_state_pop(struct dom_reader_state * s){
+static struct rmsgpack_dom_value * dom_reader_state_pop(
+      struct dom_reader_state * s)
+{
 	struct rmsgpack_dom_value * v = s->stack[s->i];
 	s->i--;
 	return v;
 }
 
-static int dom_reader_state_push(
-        struct dom_reader_state * s,
-        struct rmsgpack_dom_value * v
-){
-	if ((s->i + 1) == MAX_DEPTH) {
+static int dom_reader_state_push(struct dom_reader_state * s,
+      struct rmsgpack_dom_value * v)
+{
+	if ((s->i + 1) == MAX_DEPTH)
 		return -ENOMEM;
-	}
 	s->i++;
 	s->stack[s->i] = v;
 	return 0;
 }
 
-static int dom_read_nil(void * data){
-	struct dom_reader_state * dom_state = (struct dom_reader_state *)data;
-	struct rmsgpack_dom_value * v =
-	        (struct rmsgpack_dom_value *)dom_reader_state_pop(dom_state);
-	v->type = RDT_NULL;
-	return 0;
+static int dom_read_nil(void * data)
+{
+   struct dom_reader_state * dom_state = (struct dom_reader_state *)data;
+   struct rmsgpack_dom_value * v =
+      (struct rmsgpack_dom_value *)dom_reader_state_pop(dom_state);
+   v->type = RDT_NULL;
+   return 0;
 }
 
-static int dom_read_bool(
-        int value,
-        void * data
-){
-	struct dom_reader_state * dom_state = (struct dom_reader_state *)data;
-	struct rmsgpack_dom_value * v =
-	        (struct rmsgpack_dom_value *)dom_reader_state_pop(dom_state);
-	v->type = RDT_BOOL;
-	v->bool_ = value;
-	return 0;
+static int dom_read_bool(int value, void * data)
+{
+   struct dom_reader_state * dom_state = (struct dom_reader_state *)data;
+   struct rmsgpack_dom_value * v =
+      (struct rmsgpack_dom_value *)dom_reader_state_pop(dom_state);
+   v->type = RDT_BOOL;
+   v->bool_ = value;
+   return 0;
 }
 
-static int dom_read_int(
-        int64_t value,
-        void * data
-){
-	struct dom_reader_state * dom_state = (struct dom_reader_state *)data;
-	struct rmsgpack_dom_value * v =
-	        (struct rmsgpack_dom_value *)dom_reader_state_pop(dom_state);
-	v->type = RDT_INT;
-	v->int_ = value;
-	return 0;
+static int dom_read_int(int64_t value, void *data)
+{
+   struct dom_reader_state * dom_state = (struct dom_reader_state *)data;
+   struct rmsgpack_dom_value * v =
+      (struct rmsgpack_dom_value *)dom_reader_state_pop(dom_state);
+   v->type = RDT_INT;
+   v->int_ = value;
+   return 0;
 }
 
-static int dom_read_uint(
-        uint64_t value,
-        void * data
-){
-	struct dom_reader_state * dom_state = (struct dom_reader_state *)data;
-	struct rmsgpack_dom_value * v =
-	        (struct rmsgpack_dom_value *)dom_reader_state_pop(dom_state);
-	v->type = RDT_UINT;
-	v->uint_ = value;
-	return 0;
+static int dom_read_uint(uint64_t value, void * data)
+{
+   struct dom_reader_state * dom_state = (struct dom_reader_state *)data;
+   struct rmsgpack_dom_value * v =
+      (struct rmsgpack_dom_value *)dom_reader_state_pop(dom_state);
+   v->type = RDT_UINT;
+   v->uint_ = value;
+   return 0;
 }
 
-static int dom_read_string(
-        char * value,
-        uint32_t len,
-        void * data
-){
-	struct dom_reader_state * dom_state = (struct dom_reader_state *)data;
-	struct rmsgpack_dom_value * v =
-	        (struct rmsgpack_dom_value *)dom_reader_state_pop(dom_state);
-	v->type = RDT_STRING;
-	v->string.len = len;
-	v->string.buff = value;
-	return 0;
+static int dom_read_string(char *value, uint32_t len, void *data)
+{
+   struct dom_reader_state * dom_state = (struct dom_reader_state *)data;
+   struct rmsgpack_dom_value * v =
+      (struct rmsgpack_dom_value *)dom_reader_state_pop(dom_state);
+   v->type = RDT_STRING;
+   v->string.len = len;
+   v->string.buff = value;
+   return 0;
 }
 
-static int dom_read_bin(
-        void * value,
-        uint32_t len,
-        void * data
-){
-	struct dom_reader_state * dom_state = (struct dom_reader_state *)data;
-	struct rmsgpack_dom_value * v =
-	        (struct rmsgpack_dom_value *)dom_reader_state_pop(dom_state);
-	v->type = RDT_BINARY;
-	v->binary.len = len;
-	v->binary.buff = (char *)value;
-	return 0;
+static int dom_read_bin(void *value, uint32_t len, void *data)
+{
+   struct dom_reader_state *dom_state = (struct dom_reader_state *)data;
+   struct rmsgpack_dom_value *v =
+      (struct rmsgpack_dom_value *)dom_reader_state_pop(dom_state);
+   v->type = RDT_BINARY;
+   v->binary.len = len;
+   v->binary.buff = (char *)value;
+   return 0;
 }
 
-static int dom_read_map_start(
-        uint32_t len,
-        void * data
-){
-	unsigned i;
-	struct rmsgpack_dom_pair * items = NULL;
-	struct dom_reader_state * dom_state = (struct dom_reader_state *)data;
-	struct rmsgpack_dom_value * v = dom_reader_state_pop(dom_state);
+static int dom_read_map_start(uint32_t len, void *data)
+{
+   unsigned i;
+   struct rmsgpack_dom_pair * items = NULL;
+   struct dom_reader_state * dom_state = (struct dom_reader_state *)data;
+   struct rmsgpack_dom_value * v = dom_reader_state_pop(dom_state);
 
-	v->type = RDT_MAP;
-	v->map.len = len;
-	v->map.items = NULL;
+   v->type = RDT_MAP;
+   v->map.len = len;
+   v->map.items = NULL;
 
-	items = (struct rmsgpack_dom_pair *)calloc(len, sizeof(struct rmsgpack_dom_pair));
+   items = (struct rmsgpack_dom_pair *)calloc(len,
+         sizeof(struct rmsgpack_dom_pair));
 
-	if (!items)
-		return -ENOMEM;
+   if (!items)
+      return -ENOMEM;
 
-	v->map.items = items;
-	for (i = 0; i < len; i++) {
-		if (dom_reader_state_push(dom_state, &items[i].value) < 0)
-			return -ENOMEM;
-		if (dom_reader_state_push(dom_state, &items[i].key) < 0)
-			return -ENOMEM;
-	}
-	return 0;
+   v->map.items = items;
+   for (i = 0; i < len; i++)
+   {
+      if (dom_reader_state_push(dom_state, &items[i].value) < 0)
+         return -ENOMEM;
+      if (dom_reader_state_push(dom_state, &items[i].key) < 0)
+         return -ENOMEM;
+   }
+   return 0;
 }
 
 static int dom_read_array_start(
@@ -392,94 +382,96 @@ int rmsgpack_dom_read(
 	return rv;
 }
 
-int rmsgpack_dom_read_into(
-        int fd,
-        ...
-){
-	va_list ap;
-	struct rmsgpack_dom_value map;
-	int rv;
-	const char * key_name;
-	struct rmsgpack_dom_value key;
-	struct rmsgpack_dom_value * value;
-	int64_t * int_value;
-	uint64_t * uint_value;
-	int * bool_value;
-	char * buff_value;
-	uint64_t min_len;
+int rmsgpack_dom_read_into(int fd, ...)
+{
+   va_list ap;
+   struct rmsgpack_dom_value map;
+   int rv;
+   const char * key_name;
+   struct rmsgpack_dom_value key;
+   struct rmsgpack_dom_value * value;
+   int64_t * int_value;
+   uint64_t * uint_value;
+   int * bool_value;
+   char * buff_value;
+   uint64_t min_len;
 
-	int value_type = 0;
+   int value_type = 0;
 
-	va_start(ap, fd);
-	rv = rmsgpack_dom_read(fd, &map);
+   va_start(ap, fd);
+   rv = rmsgpack_dom_read(fd, &map);
 
-	(void)value_type;
+   (void)value_type;
 
-	if (rv < 0)
-		return rv;
+   if (rv < 0)
+      return rv;
 
-	if (map.type != RDT_MAP) {
-		rv = -EINVAL;
-		goto clean;
-	}
+   if (map.type != RDT_MAP)
+   {
+      rv = -EINVAL;
+      goto clean;
+   }
 
-	while (1) {
-		key_name = va_arg(ap, const char *);
-		if (key_name == NULL) {
-			rv = 0;
-			goto clean;
-		}
+   while (1)
+   {
+      key_name = va_arg(ap, const char *);
+      if (key_name == NULL)
+      {
+         rv = 0;
+         goto clean;
+      }
 
-		key.type = RDT_STRING;
-		key.string.len = strlen(key_name);
-		key.string.buff = (char *) key_name;
+      key.type = RDT_STRING;
+      key.string.len = strlen(key_name);
+      key.string.buff = (char *) key_name;
 
-		value = rmsgpack_dom_value_map_value(&map, &key);
+      value = rmsgpack_dom_value_map_value(&map, &key);
 
-		switch (value->type) {
-		case RDT_INT:
-			int_value = va_arg(ap, int64_t *);
-			*int_value = value->int_;
-			break;
-		case RDT_BOOL:
-			bool_value = va_arg(ap, int *);
-			*bool_value = value->bool_;
-			break;
-		case RDT_UINT:
-			uint_value = va_arg(ap, uint64_t *);
-			*uint_value = value->uint_;
-			break;
-		case RDT_BINARY:
-			buff_value = va_arg(ap, char *);
-			uint_value = va_arg(ap, uint64_t *);
-			*uint_value = value->binary.len;
-			min_len = value->binary.len > *uint_value ? *uint_value : value->binary.len;
-			memcpy(
-			        buff_value,
-			        value->binary.buff,
-			        min_len
-			);
+      switch (value->type)
+      {
+         case RDT_INT:
+            int_value = va_arg(ap, int64_t *);
+            *int_value = value->int_;
+            break;
+         case RDT_BOOL:
+            bool_value = va_arg(ap, int *);
+            *bool_value = value->bool_;
+            break;
+         case RDT_UINT:
+            uint_value = va_arg(ap, uint64_t *);
+            *uint_value = value->uint_;
+            break;
+         case RDT_BINARY:
+            buff_value = va_arg(ap, char *);
+            uint_value = va_arg(ap, uint64_t *);
+            *uint_value = value->binary.len;
+            min_len = value->binary.len > *uint_value ? *uint_value : value->binary.len;
+            memcpy(
+                  buff_value,
+                  value->binary.buff,
+                  min_len
+                  );
 
-			break;
-		case RDT_STRING:
-			buff_value = va_arg(ap, char *);
-			uint_value = va_arg(ap, uint64_t *);
-			min_len = value->string.len + 1 > *uint_value ? *uint_value : value->string.len + 1;
-			*uint_value = min_len;
-			memcpy(
-			        buff_value,
-			        value->string.buff,
-			        min_len
-			);
-			break;
-		default:
-			rv = -1;
-			goto clean;
-		}
-	}
+            break;
+         case RDT_STRING:
+            buff_value = va_arg(ap, char *);
+            uint_value = va_arg(ap, uint64_t *);
+            min_len = value->string.len + 1 > *uint_value ? *uint_value : value->string.len + 1;
+            *uint_value = min_len;
+            memcpy(
+                  buff_value,
+                  value->string.buff,
+                  min_len
+                  );
+            break;
+         default:
+            rv = -1;
+            goto clean;
+      }
+   }
 
 clean:
-	va_end(ap);
-	rmsgpack_dom_value_free(&map);
-	return 0;
+   va_end(ap);
+   rmsgpack_dom_value_free(&map);
+   return 0;
 }
