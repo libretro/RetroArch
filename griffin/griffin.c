@@ -807,6 +807,7 @@ XML
 #include "../libretrodb/rmsgpack.c"
 #include "../libretrodb/rmsgpack_dom.c"
 #include "../libretrodb/query.c"
+#include "../database_info.c"
 #endif
 
 #ifdef __cplusplus

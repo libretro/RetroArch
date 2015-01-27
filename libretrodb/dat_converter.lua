@@ -198,6 +198,7 @@ function get_value()
             elspa_rating = t.elspa_rating,
             pegi_rating = t.pegi_rating,
             cero_rating = t.cero_rating,
+            franchise   = t.franchise,
 
             developer = t.developer,
             publisher = t.publisher,

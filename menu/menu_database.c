@@ -17,28 +17,8 @@
 #include "menu_database.h"
 #include "menu_list.h"
 #include "menu_entries.h"
+#include "../database_info.h"
 #include <string.h>
-
-#ifdef HAVE_LIBRETRODB
-static int menu_database_open_cursor(libretrodb_t *db,
-   libretrodb_cursor_t *cur, const char *query)
-{
-   const char *error     = NULL;
-   libretrodb_query_t *q = NULL;
-
-   if (query) 
-      q = (libretrodb_query_t*)libretrodb_query_compile(db, query,
-      strlen(query), &error);
-    
-   if (error)
-      return -1;
-   if ((libretrodb_cursor_open(db, cur, q)) != 0)
-      return -1;
-
-   return 0;
-}
-
-#endif
 
 int menu_database_populate_query(file_list_t *list, const char *path,
     const char *query)
@@ -49,14 +29,51 @@ int menu_database_populate_query(file_list_t *list, const char *path,
     
    if ((libretrodb_open(path, &db)) != 0)
       return -1;
-   if ((menu_database_open_cursor(&db, &cur, query) != 0))
+   if ((database_open_cursor(&db, &cur, query) != 0))
       return -1;
    if ((menu_entries_push_query(&db, &cur, list)) != 0)
       return -1;
-    
+
    libretrodb_cursor_close(&cur);
    libretrodb_close(&db);
 #endif
 
+   return 0;
+}
+
+int menu_database_print_info(const char *path,
+    const char *query)
+{
+#ifdef HAVE_LIBRETRODB
+   size_t i;
+   database_info_list_t *db_info = NULL;
+
+   if (!(db_info = database_info_list_new(path, query)))
+      return -1;
+
+   for (i = 0; i < db_info->count; i++)
+   {
+      database_info_t *db_info_entry = (database_info_t*)&db_info->list[i];
+
+      if (!db_info_entry)
+         continue;
+
+      if (db_info_entry->description)
+         RARCH_LOG("Description: %s\n", db_info_entry->description);
+      if (db_info_entry->publisher)
+         RARCH_LOG("Publisher: %s\n", db_info_entry->publisher);
+      if (db_info_entry->developer)
+         RARCH_LOG("Developer: %s\n", db_info_entry->developer);
+      if (db_info_entry->origin)
+         RARCH_LOG("Origin: %s\n", db_info_entry->origin);
+      if (db_info_entry->franchise)
+         RARCH_LOG("Franchise: %s\n", db_info_entry->franchise);
+      RARCH_LOG("\n\n");
+   }
+
+   if (db_info)
+      database_info_list_free(db_info);
+   db_info = NULL;
+#endif
    return 0;
 }

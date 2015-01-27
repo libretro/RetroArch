@@ -1,6 +1,8 @@
 /*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- *
+ *  Copyright (C) 2013-2015 - Jason Fetters
+ * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -13,27 +15,41 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _MENU_DATABASE_H
-#define _MENU_DATABASE_H
+#ifndef DATABASE_INFO_H_
+#define DATABASE_INFO_H_
 
 #include <stddef.h>
-#include <file/file_list.h>
-#ifdef HAVE_LIBRETRODB
-#include "../libretrodb/libretrodb.h"
-#endif
+#include "libretrodb/libretrodb.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
-int menu_database_populate_query(file_list_t *list, const char *path,
-                                     const char *query);
 
-int menu_database_print_info(const char *path,
-    const char *query);
+typedef struct
+{
+   char *description;
+   char *publisher;
+   char *developer;
+   char *origin;
+   char *franchise;
+   void *userdata;
+} database_info_t;
+
+typedef struct
+{
+   database_info_t *list;
+   size_t count;
+} database_info_list_t;
+
+database_info_list_t *database_info_list_new(const char *rdb_path, const char *query);
+
+void database_info_list_free(database_info_list_t *list);
+
+int database_open_cursor(libretrodb_t *db,
+      libretrodb_cursor_t *cur, const char *query);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /* CORE_INFO_H_ */

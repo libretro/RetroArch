@@ -175,7 +175,8 @@ OBJ += libretrodb/bintree.o \
 		 libretrodb/libretrodb.o \
 		 libretrodb/query.o \
 		 libretrodb/rmsgpack.o \
-		 libretrodb/rmsgpack_dom.o
+		 libretrodb/rmsgpack_dom.o \
+		 database_info.o
 endif
 
 # Miscellaneous
