@@ -3227,8 +3227,11 @@ static int action_iterate_main(const char *label, unsigned action)
          !strcmp(label, "rdb_entry_detail")
          )
       return action_iterate_rdb_entry_detail(label, path_offset, label_offset, action);
-   else if (!strcmp(label, "custom_bind_all") ||
-         !strcmp(label, "custom_bind_defaults"))
+   else if (
+         !strcmp(label, "custom_bind") ||
+         !strcmp(label, "custom_bind_all") ||
+         !strcmp(label, "custom_bind_defaults")
+         )
    {
       if (g_extern.menu.bind_mode_keyboard)
          return action_iterate_custom_bind_keyboard(label, action);

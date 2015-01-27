@@ -1090,7 +1090,7 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
    menu_list_push_stack(
          driver.menu->menu_list,
          "",
-         "",
+         "custom_bind",
          g_extern.menu.bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
          driver.menu->selection_ptr);
