@@ -710,10 +710,6 @@ MENU
 
 #ifdef HAVE_OPENGL
 
-#ifdef HAVE_LAKKA
-#include "../menu/drivers/lakka.c"
-#endif
-
 #ifdef HAVE_XMB
 #include "../menu/drivers/xmb.c"
 #endif

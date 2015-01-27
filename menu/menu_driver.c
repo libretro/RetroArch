@@ -31,9 +31,6 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_RMENU_XUI)
    &menu_ctx_rmenu_xui,
 #endif
-#if defined(HAVE_LAKKA)
-   &menu_ctx_lakka,
-#endif
 #if defined(HAVE_GLUI)
    &menu_ctx_glui,
 #endif

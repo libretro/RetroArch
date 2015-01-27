@@ -48,7 +48,6 @@ ifeq ($(HAVE_OPENGL), 1)
 ifeq ($(HAVE_RGUI), 1)
 HAVE_GLUI = 1
 HAVE_XMB = 1
-HAVE_LAKKA = 1
 endif
 endif
 
@@ -298,10 +297,6 @@ endif
 ifeq ($(HAVE_XMB), 1)
    OBJ += menu/drivers/xmb.o
    DEFINES += -DHAVE_XMB
-endif
-ifeq ($(HAVE_LAKKA), 1)
-   OBJ += menu/drivers/lakka.o
-   DEFINES += -DHAVE_LAKKA
 endif
 endif
 

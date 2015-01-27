@@ -276,8 +276,6 @@ const char *config_get_default_menu(void)
          return "rmenu";
       case MENU_RMENU_XUI:
          return "rmenu_xui";
-      case MENU_LAKKA:
-         return "lakka";
       case MENU_GLUI:
          return "glui";
       case MENU_IOS:

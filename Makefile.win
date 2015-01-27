@@ -21,8 +21,6 @@ DYNAMIC = 1
 
 HAVE_WINXINPUT = 1
 
-HAVE_LAKKA = 1
-
 HAVE_SDL      := 0
 HAVE_SDL2     := 0
 HAVE_RSOUND   := 0
