@@ -60,3 +60,21 @@ int menu_database_populate_query(file_list_t *list, const char *path,
 
    return 0;
 }
+
+int menu_database_get_cursor(const char *path,
+    const char *query, libretrodb_cursor_t *cur)
+{
+#ifdef HAVE_LIBRETRODB
+   libretrodb_t db;
+   if ((libretrodb_open(path, &db)) != 0)
+      return -1;
+   if ((menu_database_open_cursor(&db, cur, query) != 0))
+      return -1;
+
+   libretrodb_close(&db);
+
+   return 0;
+#else
+   return -1;
+#endif
+}

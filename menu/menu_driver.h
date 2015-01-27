@@ -22,6 +22,9 @@
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 #include "menu_list.h"
+#ifdef HAVE_LIBRETRODB
+#include "menu_database.h"
+#endif
 #include "../settings_list.h"
 
 #ifdef __cplusplus
@@ -111,6 +114,10 @@ typedef struct
    struct video_shader *shader;
 
    struct menu_bind_state binds;
+
+#ifdef HAVE_LIBRETRODB
+   libretrodb_cursor_t *cursor;
+#endif
 
    struct
    {

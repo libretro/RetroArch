@@ -29,6 +29,11 @@ extern "C" {
 int menu_database_populate_query(file_list_t *list, const char *path,
                                      const char *query);
 
+#ifdef HAVE_LIBRETRODB
+int menu_database_get_cursor(const char *path,
+    const char *query, libretrodb_cursor_t *cur);
+#endif
+
 #ifdef __cplusplus
 }
 #endif
