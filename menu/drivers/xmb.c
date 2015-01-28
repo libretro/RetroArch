@@ -122,6 +122,7 @@ typedef struct xmb_handle
    void *font;
    int font_size;
    xmb_node_t settings_node;
+   bool prevent_populate;
 } xmb_handle_t;
 
 static const GLfloat rmb_vertex[] = {
@@ -834,6 +835,12 @@ static void xmb_populate_entries(void *data, const char *path,
    if (!xmb)
       return;
 
+   if (xmb->prevent_populate)
+   {
+      xmb->prevent_populate = false;
+      return;
+   }
+
    xmb_set_title();
 
    // horizontal list switching
@@ -1167,6 +1174,7 @@ static void *xmb_init(void)
    xmb->depth           = 1;
    xmb->old_depth       = 1;
    xmb->alpha           = 0;
+   xmb->prevent_populate = false;
 
    xmb->c_active_zoom   = 1.0;
    xmb->c_passive_zoom  = 0.5;
@@ -1581,7 +1589,10 @@ static void xmb_toggle(bool menu_on)
       return;
 
    if (menu_on)
+   {
+      xmb->prevent_populate = true;
       add_tween(XMB_DELAY, 1.0f, &xmb->alpha, &inOutQuad, NULL);
+   }
    else
       xmb->alpha = 0;
 }
