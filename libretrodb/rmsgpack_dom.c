@@ -404,7 +404,10 @@ int rmsgpack_dom_read_into(int fd, ...)
    (void)value_type;
 
    if (rv < 0)
+   {
+      va_end(ap);
       return rv;
+   }
 
    if (map.type != RDT_MAP)
    {
