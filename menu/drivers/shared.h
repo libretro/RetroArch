@@ -17,17 +17,74 @@
 #define _DISP_SHARED_H
 
 #include "../../settings_data.h"
+#include <string/string_list.h>
 #include <time.h>
 
 static INLINE void get_title(const char *label, const char *dir,
       unsigned menu_type, char *title, size_t sizeof_title)
 {
+   char elem0_label[PATH_MAX_LENGTH], elem1_label[PATH_MAX_LENGTH];
+   char elem0_path[PATH_MAX_LENGTH], elem1_path[PATH_MAX_LENGTH];
+   struct string_list *list_label = string_split(label, "|");
+   struct string_list *list_path  = string_split(dir, "|");
+
+   if (list_label)
+   {
+      strlcpy(elem0_label, list_label->elems[0].data, sizeof(elem0_label));
+      if (list_label->size > 1)
+         strlcpy(elem1_label, list_label->elems[1].data, sizeof(elem1_label));
+      string_list_free(list_label);
+   }
+
+   if (list_path)
+   {
+      strlcpy(elem0_path, list_path->elems[0].data, sizeof(elem0_path));
+      if (list_path->size > 1)
+         strlcpy(elem1_path, list_path->elems[1].data, sizeof(elem1_path));
+      string_list_free(list_path);
+   }
+
+#if 0
+   RARCH_LOG("label %s\n", label);
+#endif
    if (!strcmp(label, "core_list"))
       snprintf(title, sizeof_title, "CORE SELECTION %s", dir);
    else if (!strcmp(label, "core_manager_list"))
       snprintf(title, sizeof_title, "CORE MANAGER %s", dir);
    else if (!strcmp(label, "database_manager_list"))
       snprintf(title, sizeof_title, "DATABASE SELECTION %s", dir);
+   else if (!strcmp(label, "cursor_manager_list"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR SELECTION %s", dir);
+   else if (!strcmp(label, "deferred_cursor_manager_list"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST %s", dir);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: DEVELOPER - %s)", elem0_path);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: PUBLISHER - %s)", elem0_path);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_origin"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: ORIGIN - %s)", elem0_path);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_franchise"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: FRANCHISE - %s)", elem0_path);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: EDGE MAGAZINE RATING - %s)", elem0_path);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: EDGE MAGAZINE ISSUE - %s)", elem0_path);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releasemonth"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: RELEASEDATE BY MONTH - %s)", elem0_path);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releaseyear"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: RELEASEDATE BY YEAR - %s)", elem0_path);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_esrb_rating"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: ESRB RATING - %s)", elem0_path);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_elspa_rating"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: ELSPA RATING - %s)", elem0_path);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_pegi_rating"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: PEGI RATING - %s)", elem0_path);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: CERO RATING - %s)", elem0_path);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_bbfc_rating"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: BBFC RATING - %s)", elem0_path);
+   else if (!strcmp(elem0_label, "deferred_rdb_entry_detail"))
+      snprintf(title, sizeof_title, "DATABASE INFO: %s", elem1_label);
    else if (!strcmp(label, "deferred_core_list"))
       snprintf(title, sizeof_title, "DETECTED CORES %s", dir);
    else if (!strcmp(label, "configurations"))
