@@ -886,7 +886,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             entry_label, path,
             path_buf, sizeof(path_buf));
 
-      if (xmb->active_category)
+      if (xmb->active_category && xmb->depth == 1)
          strlcpy(path_buf, path_basename(path_buf), sizeof(path_buf));
 
       GLuint icon = 0;
@@ -1591,18 +1591,20 @@ static void xmb_toggle(bool menu_on)
 
    if (menu_on)
    {
-      xmb->prevent_populate = true;
       add_tween(XMB_DELAY, 1.0f, &xmb->alpha, &inOutQuad, NULL);
 
-      for (i = 0; i < xmb->num_categories; i++)
-      {
-         xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
+      if (xmb->active_category) {
+         xmb->prevent_populate = true;
+         for (i = 0; i < xmb->num_categories; i++)
+         {
+            xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
 
-         if (!node)
-            continue;
+            if (!node)
+               continue;
 
-         node->alpha = (i == xmb->active_category) ? xmb->c_active_alpha
-               : (xmb->depth <= 1) ? xmb->c_passive_alpha : 0;
+            node->alpha = (i == xmb->active_category) ? xmb->c_active_alpha
+                  : (xmb->depth <= 1) ? xmb->c_passive_alpha : 0;
+         }
       }
    }
    else
