@@ -16,7 +16,7 @@
 
 #include "net_compat.h"
 #include "netplay.h"
-#include "retroarch_logger.h"
+#include "general.h"
 #include <stdlib.h>
 #include <string.h>
 
