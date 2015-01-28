@@ -891,10 +891,10 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       }
       if (db_info_entry->max_users)
       {
-
-         snprintf(tmp, sizeof(tmp), "Max Users: %d", db_info_entry->max_users);
-         menu_list_push(list, tmp, "rdb_entry_max_users",
-               0, 0);
+         if (create_string_list_rdb_entry_int("Max Users",
+               "rdb_entry_max_users", db_info_entry->max_users,
+               path, list) == -1)
+            return -1;
       }
       if (db_info_entry->edge_magazine_rating)
       {
@@ -2320,6 +2320,11 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
    else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releaseyear"))
    {
       strlcat(query, "releaseyear", sizeof(query));
+      add_quotes = false;
+   }
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_max_users"))
+   {
+      strlcat(query, "users", sizeof(query));
       add_quotes = false;
    }
 
@@ -3835,7 +3840,8 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
           !(strcmp(elem0, "rdb_entry_edge_magazine_rating")) ||
           !(strcmp(elem0, "rdb_entry_edge_magazine_issue")) ||
           !(strcmp(elem0, "rdb_entry_releasemonth")) ||
-          !(strcmp(elem0, "rdb_entry_releaseyear"))
+          !(strcmp(elem0, "rdb_entry_releaseyear")) ||
+          !(strcmp(elem0, "rdb_entry_max_users"))
           )
       )
       cbs->action_ok = action_ok_rdb_entry_submenu;
@@ -4294,6 +4300,7 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue") ||
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_max_users") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_releasemonth") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_releaseyear")
          )

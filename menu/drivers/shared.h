@@ -83,6 +83,8 @@ static INLINE void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: CERO RATING - %s)", elem0_path);
    else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_bbfc_rating"))
       snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: BBFC RATING - %s)", elem0_path);
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_max_users"))
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: MAX USERS - %s)", elem0_path);
    else if (!strcmp(elem0_label, "deferred_rdb_entry_detail"))
       snprintf(title, sizeof_title, "DATABASE INFO: %s", elem1_label);
    else if (!strcmp(label, "deferred_core_list"))
