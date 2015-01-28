@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "netplay_compat.h"
+#include "net_compat.h"
 #include "netplay.h"
 #include <stdlib.h>
 #include <string.h>

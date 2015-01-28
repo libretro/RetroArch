@@ -55,7 +55,7 @@ if [ "$HAVE_7ZIP" = "yes" ]; then
 fi
 
 if [ "$HAVE_PRESERVE_DYLIB" = "yes" ]; then
-   echo "Disabling dlclose() of shared objects for Valgrind support."
+   echo "Notice: Disabling dlclose() of shared objects for Valgrind support."
    add_define_make HAVE_PRESERVE_DYLIB "1"
 fi
 
@@ -111,7 +111,7 @@ if [ "$HAVE_EXYNOS" != "no" ]; then
 fi
 
 if [ "$LIBRETRO" ]; then
-   echo "Explicit libretro used, disabling dynamic libretro loading ..."
+   echo "Notice: Explicit libretro used, disabling dynamic libretro loading ..."
    HAVE_DYNAMIC='no'
 else LIBRETRO="-lretro"
 fi
@@ -135,9 +135,9 @@ else
    check_lib DYLIB "$DYLIB" dlopen
 fi
 
-check_lib NETPLAY "$SOCKETLIB" socket "" "$SOCKETHEADER"
+check_lib NETWORKING "$SOCKETLIB" socket "" "$SOCKETHEADER"
 
-if [ "$HAVE_NETPLAY" = 'yes' ]; then
+if [ "$HAVE_NETWORKING" = 'yes' ]; then
    HAVE_GETADDRINFO=auto
    check_lib GETADDRINFO "$SOCKETLIB" getaddrinfo
    if [ "$HAVE_GETADDRINFO" = 'yes' ]; then
@@ -147,7 +147,9 @@ if [ "$HAVE_NETPLAY" = 'yes' ]; then
    fi
    HAVE_NETWORK_CMD='yes'
 else
+   echo "Warning: All networking features have been disabled."
    HAVE_NETWORK_CMD='no'
+   HAVE_NETPLAY='no'
 fi
 
 check_lib STDIN_CMD "$CLIB" fcntl
@@ -161,7 +163,7 @@ fi
 check_lib GETOPT_LONG "$CLIB" getopt_long
 
 if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
-   echo "Dynamic loading of libretro is enabled, but your platform does not appear to have dlopen(), use --disable-dynamic or --with-libretro=\"-lretro\"".
+   echo "Error: Dynamic loading of libretro is enabled, but your platform does not appear to have dlopen(), use --disable-dynamic or --with-libretro=\"-lretro\"".
    exit 1
 fi
 
@@ -189,10 +191,10 @@ check_pkgconf SDL2 sdl2 2.0.0
 
 if [ "$HAVE_SDL2" = 'yes' ]; then
    if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
-      echo "SDL drivers will be replaced by SDL2 ones."
+      echo "Notice: SDL drivers will be replaced by SDL2 ones."
       HAVE_SDL=no
    elif [ "$HAVE_SDL2" = 'no' ]; then
-      echo "SDL2 not found, skipping."
+      echo "Warning: SDL2 not found, skipping."
       HAVE_SDL2=no
    fi
 fi
@@ -227,7 +229,7 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_GLES" != 'yes' ]; then
    # fix undefined variables
    PKG_CONF_USED="$PKG_CONF_USED CG"
 else
-   echo "Ignoring Cg. Desktop OpenGL is not enabled."
+   echo "Notice: Ignoring Cg. Desktop OpenGL is not enabled."
    HAVE_CG='no'
 fi
 
@@ -243,7 +245,7 @@ if [ "$HAVE_THREADS" != 'no' ]; then
       ( [ "$HAVE_FFMPEG" = 'auto' ] && ( [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ] ) && HAVE_FFMPEG='no' ) || HAVE_FFMPEG='yes'
    fi
 else
-   echo "Not building with threading support. Will skip FFmpeg."
+   echo "Notice: Not building with threading support. Will skip FFmpeg."
    HAVE_FFMPEG='no'
 fi
 
@@ -257,7 +259,7 @@ if [ "$HAVE_KMS" != "no" ]; then
    if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
       HAVE_KMS=yes
    elif [ "$HAVE_KMS" = "yes" ]; then
-      echo "Cannot find libgbm, libdrm and EGL libraries required for KMS. Compile without --enable-kms."
+      echo "Error: Cannot find libgbm, libdrm and EGL libraries required for KMS. Compile without --enable-kms."
       exit 1
    else
       HAVE_KMS=no
@@ -269,7 +271,7 @@ check_pkgconf LIBXML2 libxml-2.0
 if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_GLES" != "no" ]; then
       if [ "$GLES_LIBS" ] || [ "$GLES_CFLAGS" ]; then
-         echo "Using custom OpenGLES CFLAGS ($GLES_CFLAGS) and LDFLAGS ($GLES_LIBS)."
+         echo "Notice: Using custom OpenGLES CFLAGS ($GLES_CFLAGS) and LDFLAGS ($GLES_LIBS)."
          add_define_make GLES_LIBS "$GLES_LIBS"
          add_define_make GLES_CFLAGS "$GLES_CFLAGS"
       else
@@ -316,7 +318,7 @@ check_pkgconf XINERAMA xinerama
 if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ] && [ "$HAVE_XF86VM" = 'yes' ]; then
    check_pkgconf XVIDEO xv
 else
-   echo "X11, Xext or xf86vm not present. Skipping X11 code paths."
+   echo "Notice: X11, Xext or xf86vm not present. Skipping X11 code paths."
    HAVE_X11='no'
    HAVE_XVIDEO='no'
 fi
@@ -344,6 +346,6 @@ add_define_make OS "$OS"
 
 # Creates config.mk and config.h.
 add_define_make GLOBAL_CONFIG_DIR "$GLOBAL_CONFIG_DIR"
-VARS="RGUI LAKKA GLUI XMB ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK COREAUDIO PULSE SDL SDL2 D3D9 DINPUT WINXINPUT DSOUND XAUDIO OPENGL EXYNOS OMAP GLES GLES3 VG EGL KMS GBM DRM DYLIB GETOPT_LONG THREADS CG LIBXML2 ZLIB DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE FREETYPE XKBCOMMON XVIDEO X11 XEXT XF86VM XINERAMA WAYLAND MALI_FBDEV VIVANTE_FBDEV NETPLAY NETWORK_CMD STDIN_CMD COMMAND SOCKET_LEGACY FBO STRL STRCASESTR MMAP PYTHON FFMPEG_ALLOC_CONTEXT3 FFMPEG_AVCODEC_OPEN2 FFMPEG_AVIO_OPEN FFMPEG_AVFORMAT_WRITE_HEADER FFMPEG_AVFORMAT_NEW_STREAM FFMPEG_AVCODEC_ENCODE_AUDIO2 FFMPEG_AVCODEC_ENCODE_VIDEO2 BSV_MOVIE VIDEOCORE NEON FLOATHARD FLOATSOFTFP UDEV V4L2 AV_CHANNEL_LAYOUT 7ZIP PARPORT"
+VARS="RGUI LAKKA GLUI XMB ALSA OSS OSS_BSD OSS_LIB AL RSOUND ROAR JACK COREAUDIO PULSE SDL SDL2 D3D9 DINPUT WINXINPUT DSOUND XAUDIO OPENGL EXYNOS OMAP GLES GLES3 VG EGL KMS GBM DRM DYLIB GETOPT_LONG THREADS CG LIBXML2 ZLIB DYNAMIC FFMPEG AVCODEC AVFORMAT AVUTIL SWSCALE FREETYPE XKBCOMMON XVIDEO X11 XEXT XF86VM XINERAMA WAYLAND MALI_FBDEV VIVANTE_FBDEV NETWORKING NETPLAY NETWORK_CMD STDIN_CMD COMMAND SOCKET_LEGACY FBO STRL STRCASESTR MMAP PYTHON FFMPEG_ALLOC_CONTEXT3 FFMPEG_AVCODEC_OPEN2 FFMPEG_AVIO_OPEN FFMPEG_AVFORMAT_WRITE_HEADER FFMPEG_AVFORMAT_NEW_STREAM FFMPEG_AVCODEC_ENCODE_AUDIO2 FFMPEG_AVCODEC_ENCODE_VIDEO2 BSV_MOVIE VIDEOCORE NEON FLOATHARD FLOATSOFTFP UDEV V4L2 AV_CHANNEL_LAYOUT 7ZIP PARPORT"
 create_config_make config.mk $VARS
 create_config_header config.h $VARS

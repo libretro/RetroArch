@@ -620,13 +620,18 @@ endif
 
 # Netplay
 
-ifeq ($(HAVE_NETPLAY), 1)
-   DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD
-   OBJ += netplay.o \
-			netplay_compat.o \
-			net_http.o
+ifeq ($(HAVE_NETWORKING), 1)
+   DEFINES += -DHAVE_NETWORKING
+   OBJ += net_compat.o
+
    ifneq ($(findstring Win32,$(OS)),)
       LIBS += -lws2_32
+   endif
+
+   ifeq ($(HAVE_NETPLAY), 1)
+      DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD
+      OBJ += netplay.o \
+             net_http.o
    endif
 endif
 

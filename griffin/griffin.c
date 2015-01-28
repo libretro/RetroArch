@@ -661,7 +661,7 @@ NETPLAY
 ============================================================ */
 #ifdef HAVE_NETPLAY
 #include "../netplay.c"
-#include "../netplay_compat.c"
+#include "../net_compat.c"
 #include "../net_http.c"
 #endif
 
