@@ -358,6 +358,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
                "-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
@@ -412,6 +413,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
                "-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
@@ -470,6 +472,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
                "-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
@@ -532,6 +535,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
                "-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
@@ -565,6 +569,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
                "-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
