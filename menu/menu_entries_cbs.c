@@ -28,7 +28,7 @@
 #include "../retroarch.h"
 #include "../performance.h"
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 #include "../net_http.h"
 #endif
 
@@ -1325,7 +1325,7 @@ static int action_ok_save_state(const char *path,
    return generic_action_ok_command(RARCH_CMD_RESUME);
 }
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
@@ -1364,7 +1364,7 @@ static int cb_core_manager_download(void *data_, size_t len)
 static int action_ok_core_manager_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    char core_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
    fill_pathname_join(core_path, g_settings.network.buildbot_url,
          path, sizeof(core_path));
@@ -2876,7 +2876,7 @@ static int deferred_push_disk_options(void *data, void *userdata,
    return 0;
 }
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
       unsigned type)
 {
@@ -2955,7 +2955,7 @@ static int cb_core_manager_list(void *data_, size_t len)
 static int deferred_push_core_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    char url_path[PATH_MAX_LENGTH];
 
    strlcpy(core_manager_list_path, path,
@@ -2970,7 +2970,7 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
       file_list_t *list      = (file_list_t*)data;
 
       menu_list_clear(list);
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
       menu_list_push(list,
             "Buildbot URL not configured.", "",
             0, 0);
@@ -2985,7 +2985,7 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
       return 0;
    }
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    rarch_main_command(RARCH_CMD_NETWORK_INIT);
 
    fill_pathname_join(url_path, g_settings.network.buildbot_url,

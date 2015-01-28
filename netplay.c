@@ -780,55 +780,6 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
    return true;
 }
 
-/**
- * network_init:
- *
- * Platform specific socket library initialization.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool network_init(void)
-{
-#ifdef _WIN32
-   WSADATA wsaData;
-#endif
-   static bool inited = false;
-   if (inited)
-      return true;
-
-#if defined(_WIN32)
-   if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-   {
-      network_deinit();
-      return false;
-   }
-   RARCH_LOG("WSA Initialized.\n");
-#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
-   sys_net_initialize_network();
-#else
-   signal(SIGPIPE, SIG_IGN); /* Do not like SIGPIPE killing our app. */
-#endif
-
-   inited = true;
-   return true;
-}
-
-/**
- * network_deinit:
- *
- * Deinitialize platform specific socket libraries.
- **/
-void network_deinit(void)
-{
-#if defined(_WIN32)
-   WSACleanup();
-#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   sys_net_finalize_network();
-   cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
-#endif
-}
-
 static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
 {
    if (!network_init())

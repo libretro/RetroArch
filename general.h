@@ -59,7 +59,7 @@
 #include "command.h"
 #endif
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 #include "net_http.h"
 #endif
 
@@ -391,7 +391,7 @@ typedef struct rarch_resolution
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 typedef int (*http_cb_t               )(void *data, size_t len);
 #endif
 
@@ -579,7 +579,7 @@ struct global
 #endif
 
    msg_queue_t *msg_queue;
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    msg_queue_t *http_msg_queue;
    http_t      *http_handle;
    http_cb_t    http_cb;
@@ -784,7 +784,7 @@ static inline void rarch_fail(int error_code, const char *error)
    longjmp(g_extern.error_sjlj_context, error_code);
 }
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 void net_http_set_pending_cb(http_cb_t cb);
 #endif
 

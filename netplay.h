@@ -45,22 +45,6 @@ int16_t input_state_spectate_client(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
 /**
- * network_init:
- *
- * Platform specific socket library initialization.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool network_init(void);
-
-/**
- * network_deinit:
- *
- * Deinitialize platform specific socket libraries.
- **/
-void network_deinit(void);
-
-/**
  * netplay_new:
  * @server               : IP address of server.
  * @port                 : Port of server.

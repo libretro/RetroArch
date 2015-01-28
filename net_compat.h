@@ -155,5 +155,21 @@ int socket_send_all_blocking(int fd, const void *data_, size_t size);
 
 int socket_receive_all_blocking(int fd, void *data_, size_t size);
 
+/**
+ * network_init:
+ *
+ * Platform specific socket library initialization.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool network_init(void);
+
+/**
+ * network_deinit:
+ *
+ * Deinitialize platform specific socket libraries.
+ **/
+void network_deinit(void);
+
 #endif
 

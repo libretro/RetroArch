@@ -32,6 +32,10 @@
 #include "netplay.h"
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "net_http.h"
+#endif
+
 /* Convenience macros. */
 #define check_oneshot_func(trigger_input) (check_is_oneshot(BIT64_GET(trigger_input, RARCH_FRAMEADVANCE), BIT64_GET(trigger_input, RARCH_REWIND)))
 #define check_slowmotion_func(input)      (check_slowmotion(BIT64_GET(input, RARCH_SLOWMOTION)))
@@ -866,7 +870,7 @@ static int rarch_main_iterate_quit(void)
    return -1;
 }
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 
 static http_cb_t pending_cb;
 
@@ -996,7 +1000,7 @@ int rarch_main_iterate(void)
 
    do_pre_state_checks(input, old_input, trigger_input);
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    if (g_extern.http_handle)
    {
       if (!rarch_main_iterate_http_transfer())

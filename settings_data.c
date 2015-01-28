@@ -3351,7 +3351,7 @@ static bool setting_data_append_list_main_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 #endif
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    CONFIG_ACTION(
          "core_manager_list",
          "Core Update Manager",
@@ -5457,7 +5457,7 @@ static bool setting_data_append_list_core_manager_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
