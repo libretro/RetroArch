@@ -176,8 +176,13 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
 #elif defined(OSX)
     CFSearchPathForDirectoriesInDomains(CFApplicationSupportDirectory, CFUserDomainMask, 1, support_path_buf, sizeof(support_path_buf));
     
-    fill_pathname_join(g_defaults.core_dir, bundle_path_buf, "Contents/Resources/modules", sizeof(g_defaults.core_dir));
-    fill_pathname_join(g_defaults.core_info_dir, bundle_path_buf, "Contents/Resources/info", sizeof(g_defaults.core_info_dir));
+    fill_pathname_join(g_defaults.core_dir, "~/Library/Application Support/RetroArch", "cores", sizeof(g_defaults.core_dir));
+    fill_pathname_join(g_defaults.core_info_dir, "~/Library/Application Support/RetroArch", "info", sizeof(g_defaults.core_info_dir));
+    /* TODO/FIXME - we might need to update all these paths too and put them all in ~/Library/Application Support, but that would
+     * require copying all the resource files that are bundled in the app bundle over first to this new directory.
+     *
+     * Ideas: There's some overlap here with how the Android APK has to extract all its resource files over to the actual sandboxed
+     * app dir, maybe try to create something standardized for both platforms (OSX/Android) */
     fill_pathname_join(g_defaults.overlay_dir, bundle_path_buf, "Contents/Resources/modules/overlays", sizeof(g_defaults.overlay_dir));
     fill_pathname_join(g_defaults.autoconfig_dir, bundle_path_buf, "Contents/Resources/modules/autoconfig/apple", sizeof(g_defaults.autoconfig_dir));
     fill_pathname_join(g_defaults.assets_dir, bundle_path_buf, "Contents/Resources/modules/assets", sizeof(g_defaults.assets_dir));
