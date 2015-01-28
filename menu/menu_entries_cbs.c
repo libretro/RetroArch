@@ -2222,7 +2222,12 @@ static int deferred_push_cursor_manager_list_deferred_query_publisher(
       return -1;
    }
 
-   strlcpy(query, "{'publisher':\"", sizeof(query));
+   strlcpy(query, "{'", sizeof(query));
+
+   if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher"))
+      strlcat(query, "publisher", sizeof(query));
+
+   strlcat(query, "':\"", sizeof(query));
    strlcat(query, str_list->elems[0].data, sizeof(query));
    strlcat(query, "\"}", sizeof(query));
 
@@ -3694,6 +3699,7 @@ static int action_iterate_main(const char *label, unsigned action)
 static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
+   char elem0[PATH_MAX_LENGTH];
    const char *menu_label = NULL;
    struct string_list *str_list = string_split(label, "|");
 
@@ -3703,7 +3709,15 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
    menu_list_get_last_stack(driver.menu->menu_list,
          NULL, &menu_label, NULL);
 
-   if (str_list && !strcmp((str_list->elems[0].data), "rdb_entry_publisher"))
+   if (str_list)
+   {
+      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+
+      string_list_free(str_list);
+      str_list = NULL;
+   }
+
+   if (elem0[0] != '\0' && !(strcmp(elem0, "rdb_entry_publisher")))
       cbs->action_ok = action_ok_rdb_entry_submenu;
    else if (!strcmp(label, "custom_bind_all"))
       cbs->action_ok = action_ok_lookup_setting;
