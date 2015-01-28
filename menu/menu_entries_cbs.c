@@ -809,24 +809,61 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       }
       if (db_info_entry->developer)
       {
+         str_len += strlen("rdb_entry_developer") + 1;
+         string_list_append(str_list2, "rdb_entry_developer", attr);
+
+         str_len += strlen(db_info_entry->developer) + 1;
+         string_list_append(str_list2, db_info_entry->developer, attr);
+
+         str_len += strlen(path) + 1;
+         string_list_append(str_list2, path, attr);
+
+         output_label = (char*)calloc(str_len, sizeof(char));
+         string_list_join_concat(output_label, str_len, str_list2, "|");
+
          snprintf(tmp, sizeof(tmp), "Developer: %s", db_info_entry->developer);
-         menu_list_push(list, tmp, "rdb_entry_developer",
+         menu_list_push(list, tmp, output_label,
                0, 0);
       }
       if (db_info_entry->origin)
       {
+         str_len += strlen("rdb_entry_origin") + 1;
+         string_list_append(str_list2, "rdb_entry_origin", attr);
+
+         str_len += strlen(db_info_entry->origin) + 1;
+         string_list_append(str_list2, db_info_entry->origin, attr);
+
+         str_len += strlen(path) + 1;
+         string_list_append(str_list2, path, attr);
+
+         output_label = (char*)calloc(str_len, sizeof(char));
+         string_list_join_concat(output_label, str_len, str_list2, "|");
+
          snprintf(tmp, sizeof(tmp), "Origin: %s", db_info_entry->origin);
-         menu_list_push(list, tmp, "rdb_entry_origin",
+         menu_list_push(list, tmp, output_label,
                0, 0);
       }
       if (db_info_entry->franchise)
       {
+         str_len += strlen("rdb_entry_franchise") + 1;
+         string_list_append(str_list2, "rdb_entry_franchise", attr);
+
+         str_len += strlen(db_info_entry->franchise) + 1;
+         string_list_append(str_list2, db_info_entry->franchise, attr);
+
+         str_len += strlen(path) + 1;
+         string_list_append(str_list2, path, attr);
+
+         output_label = (char*)calloc(str_len, sizeof(char));
+         string_list_join_concat(output_label, str_len, str_list2, "|");
+
          snprintf(tmp, sizeof(tmp), "Franchise: %s", db_info_entry->franchise);
-         menu_list_push(list, tmp, "rdb_entry_franchise",
+         menu_list_push(list, tmp, output_label,
                0, 0);
       }
       if (db_info_entry->max_users)
       {
+
          snprintf(tmp, sizeof(tmp), "Max Users: %d", db_info_entry->max_users);
          menu_list_push(list, tmp, "rdb_entry_max_users",
                0, 0);
@@ -861,37 +898,97 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       }
       if (db_info_entry->bbfc_rating)
       {
+         str_len += strlen("rdb_entry_bbfc_rating") + 1;
+         string_list_append(str_list2, "rdb_entry_bbfc_rating", attr);
+
+         str_len += strlen(db_info_entry->bbfc_rating) + 1;
+         string_list_append(str_list2, db_info_entry->bbfc_rating, attr);
+
+         str_len += strlen(path) + 1;
+         string_list_append(str_list2, path, attr);
+
+         output_label = (char*)calloc(str_len, sizeof(char));
+         string_list_join_concat(output_label, str_len, str_list2, "|");
+
          snprintf(tmp, sizeof(tmp),
                "BBFC Rating: %s", db_info_entry->bbfc_rating);
-         menu_list_push(list, tmp, "rdb_entry_bbfc_rating",
+         menu_list_push(list, tmp, output_label,
                0, 0);
       }
       if (db_info_entry->esrb_rating)
       {
+         str_len += strlen("rdb_entry_esrb_rating") + 1;
+         string_list_append(str_list2, "rdb_entry_esrb_rating", attr);
+
+         str_len += strlen(db_info_entry->esrb_rating) + 1;
+         string_list_append(str_list2, db_info_entry->esrb_rating, attr);
+
+         str_len += strlen(path) + 1;
+         string_list_append(str_list2, path, attr);
+
+         output_label = (char*)calloc(str_len, sizeof(char));
+         string_list_join_concat(output_label, str_len, str_list2, "|");
+
          snprintf(tmp, sizeof(tmp),
                "ESRB Rating: %s", db_info_entry->esrb_rating);
-         menu_list_push(list, tmp, "rdb_entry_esrb_rating",
+         menu_list_push(list, tmp, output_label,
                0, 0);
       }
       if (db_info_entry->elspa_rating)
       {
+         str_len += strlen("rdb_entry_elspa_rating") + 1;
+         string_list_append(str_list2, "rdb_entry_elspa_rating", attr);
+
+         str_len += strlen(db_info_entry->elspa_rating) + 1;
+         string_list_append(str_list2, db_info_entry->elspa_rating, attr);
+
+         str_len += strlen(path) + 1;
+         string_list_append(str_list2, path, attr);
+
+         output_label = (char*)calloc(str_len, sizeof(char));
+         string_list_join_concat(output_label, str_len, str_list2, "|");
+
          snprintf(tmp, sizeof(tmp),
                "ELSPA Rating: %s", db_info_entry->elspa_rating);
-         menu_list_push(list, tmp, "rdb_entry_elspa_rating",
+         menu_list_push(list, tmp, output_label,
                0, 0);
       }
       if (db_info_entry->pegi_rating)
       {
+         str_len += strlen("rdb_entry_pegi_rating") + 1;
+         string_list_append(str_list2, "rdb_entry_pegi_rating", attr);
+
+         str_len += strlen(db_info_entry->pegi_rating) + 1;
+         string_list_append(str_list2, db_info_entry->pegi_rating, attr);
+
+         str_len += strlen(path) + 1;
+         string_list_append(str_list2, path, attr);
+
+         output_label = (char*)calloc(str_len, sizeof(char));
+         string_list_join_concat(output_label, str_len, str_list2, "|");
+
          snprintf(tmp, sizeof(tmp), "PEGI Rating: %s",
                db_info_entry->pegi_rating);
-         menu_list_push(list, tmp, "rdb_entry_pegi_rating",
+         menu_list_push(list, tmp, output_label,
                0, 0);
       }
       if (db_info_entry->cero_rating)
       {
+         str_len += strlen("rdb_entry_cero_rating") + 1;
+         string_list_append(str_list2, "rdb_entry_cero_rating", attr);
+
+         str_len += strlen(db_info_entry->cero_rating) + 1;
+         string_list_append(str_list2, db_info_entry->cero_rating, attr);
+
+         str_len += strlen(path) + 1;
+         string_list_append(str_list2, path, attr);
+
+         output_label = (char*)calloc(str_len, sizeof(char));
+         string_list_join_concat(output_label, str_len, str_list2, "|");
+
          snprintf(tmp, sizeof(tmp), "CERO Rating: %s",
                db_info_entry->cero_rating);
-         menu_list_push(list, tmp, "rdb_entry_cero_rating",
+         menu_list_push(list, tmp, output_label,
                0, 0);
       }
       snprintf(tmp, sizeof(tmp),
@@ -2207,7 +2304,7 @@ static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata
    return 0;
 }
 
-static int deferred_push_cursor_manager_list_deferred_query_publisher(
+static int deferred_push_cursor_manager_list_deferred_query_subsearch(
       void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -2226,6 +2323,22 @@ static int deferred_push_cursor_manager_list_deferred_query_publisher(
 
    if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher"))
       strlcat(query, "publisher", sizeof(query));
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer"))
+      strlcat(query, "developer", sizeof(query));
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_origin"))
+      strlcat(query, "origin", sizeof(query));
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_franchise"))
+      strlcat(query, "franchise", sizeof(query));
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_esrb_rating"))
+      strlcat(query, "esrb_rating", sizeof(query));
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_bbfc_rating"))
+      strlcat(query, "bbfc_rating", sizeof(query));
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_elspa_rating"))
+      strlcat(query, "elspa_rating", sizeof(query));
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_pegi_rating"))
+      strlcat(query, "pegi_rating", sizeof(query));
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating"))
+      strlcat(query, "cero_rating", sizeof(query));
 
    strlcat(query, "':\"", sizeof(query));
    strlcat(query, str_list->elems[0].data, sizeof(query));
@@ -3717,7 +3830,19 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
       str_list = NULL;
    }
 
-   if (elem0[0] != '\0' && !(strcmp(elem0, "rdb_entry_publisher")))
+   if (elem0[0] != '\0' && 
+         (
+          !(strcmp(elem0, "rdb_entry_publisher")) ||
+          !(strcmp(elem0, "rdb_entry_developer")) ||
+          !(strcmp(elem0, "rdb_entry_origin")) ||
+          !(strcmp(elem0, "rdb_entry_franchise")) ||
+          !(strcmp(elem0, "rdb_entry_esrb_rating")) ||
+          !(strcmp(elem0, "rdb_entry_bbfc_rating")) ||
+          !(strcmp(elem0, "rdb_entry_elspa_rating")) ||
+          !(strcmp(elem0, "rdb_entry_pegi_rating")) ||
+          !(strcmp(elem0, "rdb_entry_cero_rating"))
+          )
+      )
       cbs->action_ok = action_ok_rdb_entry_submenu;
    else if (!strcmp(label, "custom_bind_all"))
       cbs->action_ok = action_ok_lookup_setting;
@@ -4162,8 +4287,12 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_database_manager_list_deferred;
    else if (!strcmp(label, "deferred_cursor_manager_list"))
       cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred;
-   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher"))
-      cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred_query_publisher;
+   else if (
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher") ||
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer") ||
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_query")
+         )
+      cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred_query_subsearch;
    else if (!strcmp(label, "core_information"))
       cbs->action_deferred_push = deferred_push_core_information;
    else if (!strcmp(label, "performance_counters"))
