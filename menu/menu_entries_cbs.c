@@ -741,16 +741,10 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
    database_info_list_t *db_info = NULL;
    file_list_t *list             = (file_list_t*)data;
    file_list_t *menu_list        = (file_list_t*)userdata;
-   struct string_list *str_list2 = string_list_new();
    struct string_list *str_list  = string_split(label, "|"); 
 
-   if (!str_list2)
-      return -1;
    if (!str_list)
-   {
-      string_list_free(str_list2);
       return -1;
-   }
 
    if (!list || !menu_list)
    {
@@ -789,6 +783,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
          union string_list_elem_attr attr;
          char *output_label = NULL;
          int str_len = 0;
+         struct string_list *str_list2 = string_list_new();
 
          str_len += strlen("rdb_entry_publisher") + 1;
          string_list_append(str_list2, "rdb_entry_publisher", attr);
@@ -807,12 +802,15 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
          if (output_label)
             free(output_label);
+         string_list_free(str_list2);
+         str_list2 = NULL;
       }
       if (db_info_entry->developer)
       {
          union string_list_elem_attr attr;
          char *output_label = NULL;
          int str_len = 0;
+         struct string_list *str_list2 = string_list_new();
 
          str_len += strlen("rdb_entry_developer") + 1;
          string_list_append(str_list2, "rdb_entry_developer", attr);
@@ -832,12 +830,15 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
          if (output_label)
             free(output_label);
+         string_list_free(str_list2);
+         str_list2 = NULL;
       }
       if (db_info_entry->origin)
       {
          union string_list_elem_attr attr;
          char *output_label = NULL;
          int str_len = 0;
+         struct string_list *str_list2 = string_list_new();
 
          str_len += strlen("rdb_entry_origin") + 1;
          string_list_append(str_list2, "rdb_entry_origin", attr);
@@ -857,12 +858,15 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
          if (output_label)
             free(output_label);
+         string_list_free(str_list2);
+         str_list2 = NULL;
       }
       if (db_info_entry->franchise)
       {
          union string_list_elem_attr attr;
          char *output_label = NULL;
          int str_len = 0;
+         struct string_list *str_list2 = string_list_new();
 
          str_len += strlen("rdb_entry_franchise") + 1;
          string_list_append(str_list2, "rdb_entry_franchise", attr);
@@ -882,6 +886,8 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
          if (output_label)
             free(output_label);
+         string_list_free(str_list2);
+         str_list2 = NULL;
       }
       if (db_info_entry->max_users)
       {
@@ -923,6 +929,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
          union string_list_elem_attr attr;
          char *output_label = NULL;
          int str_len = 0;
+         struct string_list *str_list2 = string_list_new();
 
          str_len += strlen("rdb_entry_bbfc_rating") + 1;
          string_list_append(str_list2, "rdb_entry_bbfc_rating", attr);
@@ -943,12 +950,15 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
          if (output_label)
             free(output_label);
+         string_list_free(str_list2);
+         str_list2 = NULL;
       }
       if (db_info_entry->esrb_rating)
       {
          union string_list_elem_attr attr;
          char *output_label = NULL;
          int str_len = 0;
+         struct string_list *str_list2 = string_list_new();
 
          str_len += strlen("rdb_entry_esrb_rating") + 1;
          string_list_append(str_list2, "rdb_entry_esrb_rating", attr);
@@ -969,12 +979,15 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
          if (output_label)
             free(output_label);
+         string_list_free(str_list2);
+         str_list2 = NULL;
       }
       if (db_info_entry->elspa_rating)
       {
          union string_list_elem_attr attr;
          char *output_label = NULL;
          int str_len = 0;
+         struct string_list *str_list2 = string_list_new();
 
          str_len += strlen("rdb_entry_elspa_rating") + 1;
          string_list_append(str_list2, "rdb_entry_elspa_rating", attr);
@@ -995,12 +1008,15 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
          if (output_label)
             free(output_label);
+         string_list_free(str_list2);
+         str_list2 = NULL;
       }
       if (db_info_entry->pegi_rating)
       {
          union string_list_elem_attr attr;
          char *output_label = NULL;
          int str_len = 0;
+         struct string_list *str_list2 = string_list_new();
 
          str_len += strlen("rdb_entry_pegi_rating") + 1;
          string_list_append(str_list2, "rdb_entry_pegi_rating", attr);
@@ -1021,12 +1037,15 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
          if (output_label)
             free(output_label);
+         string_list_free(str_list2);
+         str_list2 = NULL;
       }
       if (db_info_entry->cero_rating)
       {
          union string_list_elem_attr attr;
          char *output_label = NULL;
          int str_len = 0;
+         struct string_list *str_list2 = string_list_new();
 
          str_len += strlen("rdb_entry_cero_rating") + 1;
          string_list_append(str_list2, "rdb_entry_cero_rating", attr);
@@ -1047,6 +1066,8 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
          if (output_label)
             free(output_label);
+         string_list_free(str_list2);
+         str_list2 = NULL;
       }
       snprintf(tmp, sizeof(tmp),
             "Analog supported: %s",
@@ -1077,7 +1098,6 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
 done:
 #ifdef HAVE_LIBRETRODB
-   string_list_free(str_list2);
    string_list_free(str_list);
 #endif
    return ret;
@@ -2406,9 +2426,6 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
       string_list_free(str_list);
       return -1;
    }
-
-   RARCH_LOG("label is: %s\n", label);
-   RARCH_LOG("query is: %s\n", query);
 
    menu_list_clear(list);
 
