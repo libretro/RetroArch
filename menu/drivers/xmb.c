@@ -1577,6 +1577,7 @@ static void xmb_context_destroy(void *data)
 
 static void xmb_toggle(bool menu_on)
 {
+   int i;
    xmb_handle_t *xmb = NULL;
    menu_handle_t *menu = (menu_handle_t*)driver.menu;
 
@@ -1592,6 +1593,17 @@ static void xmb_toggle(bool menu_on)
    {
       xmb->prevent_populate = true;
       add_tween(XMB_DELAY, 1.0f, &xmb->alpha, &inOutQuad, NULL);
+
+      for (i = 0; i < xmb->num_categories; i++)
+      {
+         xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
+
+         if (!node)
+            continue;
+
+         node->alpha = (i == xmb->active_category) ? xmb->c_active_alpha
+               : (xmb->depth <= 1) ? xmb->c_passive_alpha : 0;
+      }
    }
    else
       xmb->alpha = 0;
