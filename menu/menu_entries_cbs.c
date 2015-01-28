@@ -329,6 +329,8 @@ static int action_ok_shader_parameters(const char *path,
 static int action_ok_push_generic_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   strlcpy(driver.menu->deferred_path, path,
+         sizeof(driver.menu->deferred_path));
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
          "", label, type, idx);
@@ -1423,6 +1425,21 @@ static int action_ok_screenshot(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    return generic_action_ok_command(RARCH_CMD_TAKE_SCREENSHOT);
+}
+
+static int action_ok_file_load_or_resume(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   if (!strcmp(driver.menu->deferred_path, g_extern.fullpath))
+      return generic_action_ok_command(RARCH_CMD_RESUME);
+   else
+   {
+      strlcpy(g_extern.fullpath,
+            driver.menu->deferred_path, sizeof(g_extern.fullpath));
+      rarch_main_command(RARCH_CMD_LOAD_CORE);
+      rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+      return -1;
+   }
 }
 
 static int action_ok_shader_apply_changes(const char *path,
@@ -3067,10 +3084,11 @@ static int deferred_push_content_actions(void *data, void *userdata,
 
    menu_list_clear(list);
 
-   menu_list_push(list, "Run", "", MENU_SETTING_ACTION_RUN, 0);
 
-   if (g_extern.main_is_init && !g_extern.libretro_dummy)
+   if (g_extern.main_is_init && !g_extern.libretro_dummy &&
+         !strcmp(driver.menu->deferred_path, g_extern.fullpath))
    {
+      menu_list_push(list, "Resume", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0);
       menu_list_push(list, "Core Informations", "core_information", MENU_SETTING_ACTION_CORE_INFORMATION, 0);
       menu_list_push(list, "Core Options", "core_options", MENU_SETTING_ACTION_CORE_OPTIONS, 0);
       menu_list_push(list, "Core Cheat Options", "core_cheat_options", MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS, 0);
@@ -3081,6 +3099,8 @@ static int deferred_push_content_actions(void *data, void *userdata,
       menu_list_push(list, "Take Screenshot", "take_screenshot", MENU_SETTING_ACTION_SCREENSHOT, 0);
       menu_list_push(list, "Reset", "restart_content", MENU_SETTING_ACTION_RESET, 0);
    }
+   else
+      menu_list_push(list, "Run", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0);
 
    menu_list_populate_generic(driver.menu, list, path, label, type);
 
@@ -3881,6 +3901,8 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_restart_content;
    else if (!strcmp(label, "take_screenshot"))
       cbs->action_ok = action_ok_screenshot;
+   else if (!strcmp(label, "file_load_or_resume"))
+      cbs->action_ok = action_ok_file_load_or_resume;
    else
    switch (type)
    {

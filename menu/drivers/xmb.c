@@ -879,6 +879,8 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             entry_label, path,
             path_buf, sizeof(path_buf));
 
+      if (xmb->active_category)
+         strlcpy(path_buf, path_basename(path_buf), sizeof(path_buf));
 
       GLuint icon = 0;
       switch(type)

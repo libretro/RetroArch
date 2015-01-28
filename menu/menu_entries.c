@@ -148,7 +148,7 @@ static void menu_entries_content_list_push(
       else
          menu_list_push(
                list,
-               path_basename(str_list->elems[j].data),
+               str_list->elems[j].data,
                "content_actions",
                MENU_FILE_CONTENTLIST_ENTRY,
                0);
@@ -176,6 +176,9 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
 
    if (!info)
       return -1;
+
+   strlcpy(g_settings.libretro,
+         info->path, sizeof(g_settings.libretro));
 
    if (!info->supports_no_game)
       menu_entries_content_list_push(list, info,
