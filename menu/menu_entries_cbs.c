@@ -1446,11 +1446,12 @@ static int action_ok_rdb_entry_submenu(const char *path,
    char *rdb = NULL;
    int len = 0;
    struct string_list *str_list  = string_split(label, "|"); 
-   struct string_list *str_list2 = string_list_new();
+   struct string_list *str_list2 = NULL;
 
    if (!str_list)
       return -1;
 
+   str_list2 = string_list_new();
    if (!str_list2)
    {
       string_list_free(str_list);
@@ -3818,7 +3819,7 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
 {
    char elem0[PATH_MAX_LENGTH];
    const char *menu_label = NULL;
-   struct string_list *str_list = string_split(label, "|");
+   struct string_list *str_list = NULL;
 
    if (!driver.menu)
       return -1;
@@ -3826,10 +3827,12 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
    menu_list_get_last_stack(driver.menu->menu_list,
          NULL, &menu_label, NULL);
 
+   str_list = string_split(label, "|");
    if (str_list && str_list->size > 0)
-   {
       strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
 
+   if (str_list)
+   {
       string_list_free(str_list);
       str_list = NULL;
    }
