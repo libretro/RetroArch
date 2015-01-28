@@ -898,10 +898,34 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       }
       if (db_info_entry->edge_magazine_rating)
       {
+         union string_list_elem_attr attr;
+         char str[PATH_MAX_LENGTH];
+         char *output_label = NULL;
+         int str_len = 0;
+         struct string_list *str_list2 = string_list_new();
+
+         str_len += strlen("rdb_entry_edge_magazine_rating") + 1;
+         string_list_append(str_list2, "rdb_entry_edge_magazine_rating", attr);
+
+         str_len += sizeof(db_info_entry->edge_magazine_rating);
+         snprintf(str, sizeof(str), "%d", db_info_entry->edge_magazine_rating);
+         string_list_append(str_list2, str, attr);
+
+         str_len += strlen(path) + 1;
+         string_list_append(str_list2, path, attr);
+
+         output_label = (char*)calloc(str_len, sizeof(char));
+         string_list_join_concat(output_label, str_len, str_list2, "|");
+
          snprintf(tmp, sizeof(tmp), "Edge Magazine Rating: %d/10",
                db_info_entry->edge_magazine_rating);
-         menu_list_push(list, tmp, "rdb_entry_edge_magazine_rating",
+         menu_list_push(list, tmp, output_label,
                0, 0);
+
+         if (output_label)
+            free(output_label);
+         string_list_free(str_list2);
+         str_list2 = NULL;
       }
       if (db_info_entry->edge_magazine_issue)
       {
@@ -2389,6 +2413,7 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
    struct string_list *str_list  = string_split(path, "|"); 
+   bool add_quotes = true;
 
    if (!list || !menu_list)
    {
@@ -2416,10 +2441,23 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
       strlcat(query, "pegi_rating", sizeof(query));
    else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating"))
       strlcat(query, "cero_rating", sizeof(query));
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating"))
+   {
+      strlcat(query, "edge_rating", sizeof(query));
+      add_quotes = false;
+   }
 
-   strlcat(query, "':\"", sizeof(query));
+   strlcat(query, "':", sizeof(query));
+   if (add_quotes)
+      strlcat(query, "\"", sizeof(query));
    strlcat(query, str_list->elems[0].data, sizeof(query));
-   strlcat(query, "\"}", sizeof(query));
+   if (add_quotes)
+      strlcat(query, "\"", sizeof(query));
+   strlcat(query, "}", sizeof(query));
+
+#if 0
+   RARCH_LOG("query: %s\n", query);
+#endif
 
    if (query[0] == '\0')
    {
@@ -3917,7 +3955,8 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
           !(strcmp(elem0, "rdb_entry_bbfc_rating")) ||
           !(strcmp(elem0, "rdb_entry_elspa_rating")) ||
           !(strcmp(elem0, "rdb_entry_pegi_rating")) ||
-          !(strcmp(elem0, "rdb_entry_cero_rating"))
+          !(strcmp(elem0, "rdb_entry_cero_rating")) ||
+          !(strcmp(elem0, "rdb_entry_edge_magazine_rating"))
           )
       )
       cbs->action_ok = action_ok_rdb_entry_submenu;
@@ -4373,7 +4412,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_bbfc_rating") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_elspa_rating") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_pegi_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating")
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating") ||
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating")
          )
       cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred_query_subsearch;
    else if (!strcmp(label, "core_information"))
