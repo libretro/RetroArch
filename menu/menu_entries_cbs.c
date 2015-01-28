@@ -737,17 +737,27 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 #ifdef HAVE_LIBRETRODB
    char query[PATH_MAX_LENGTH];
    unsigned i;
+   union string_list_elem_attr attr;
+   int str_len = 0;
+   int ret = 0;
    database_info_list_t *db_info = NULL;
    file_list_t *list             = (file_list_t*)data;
    file_list_t *menu_list        = (file_list_t*)userdata;
+   struct string_list *str_list2 = string_list_new();
    struct string_list *str_list  = string_split(label, "|"); 
 
-   if (!str_list)
+   if (!str_list2)
       return -1;
+   if (!str_list)
+   {
+      string_list_free(str_list2);
+      return -1;
+   }
+
    if (!list || !menu_list)
    {
-      string_list_free(str_list);
-      return -1;
+      ret = -1;
+      goto done;
    }
 
    strlcpy(query, "{'description':\"", sizeof(query));
@@ -757,11 +767,15 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
    menu_list_clear(list);
 
    if (!(db_info = database_info_list_new(path, query)))
-      return -1;
+   {
+      ret = -1;
+      goto done;
+   }
 
    for (i = 0; i < db_info->count; i++)
    {
-      char tmp[PATH_MAX_LENGTH];
+      char tmp[PATH_MAX_LENGTH], tmp2[PATH_MAX_LENGTH];
+      char *output_label = NULL;
       database_info_t *db_info_entry = (database_info_t*)&db_info->list[i];
 
       if (!db_info_entry)
@@ -775,9 +789,23 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       }
       if (db_info_entry->publisher)
       {
+         str_len += strlen("rdb_entry_publisher") + 1;
+         string_list_append(str_list2, "rdb_entry_publisher", attr);
+
+         str_len += strlen(db_info_entry->publisher) + 1;
+         string_list_append(str_list2, db_info_entry->publisher, attr);
+
+         str_len += strlen(path) + 1;
+         string_list_append(str_list2, path, attr);
+
+         output_label = (char*)calloc(str_len, sizeof(char));
+         string_list_join_concat(output_label, str_len, str_list2, "|");
+
          snprintf(tmp, sizeof(tmp), "Publisher: %s", db_info_entry->publisher);
-         menu_list_push(list, tmp, "rdb_entry_publisher",
-               0, 0);
+         menu_list_push(list, tmp, output_label, 0, 0);
+
+         if (output_label)
+            free(output_label);
       }
       if (db_info_entry->developer)
       {
@@ -889,10 +917,16 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       driver.menu_ctx->populate_entries(driver.menu, path,
             str_list->elems[0].data, type);
 
-   string_list_free(str_list);
+   ret = 0;
+
 #endif
 
-   return 0;
+done:
+#ifdef HAVE_LIBRETRODB
+   string_list_free(str_list2);
+   string_list_free(str_list);
+#endif
+   return ret;
 }
 
 static int action_ok_rdb_entry(const char *path,
@@ -1337,6 +1371,64 @@ static int action_ok_lookup_setting(const char *path,
 {
    return menu_action_setting_set(type, label, MENU_ACTION_OK);
 }
+
+static int action_ok_rdb_entry_submenu(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   int ret;
+   union string_list_elem_attr attr;
+   char new_label[PATH_MAX_LENGTH];
+   char *rdb = NULL;
+   int len = 0;
+   struct string_list *str_list  = string_split(label, "|"); 
+   struct string_list *str_list2 = string_list_new();
+
+   if (!str_list)
+      return -1;
+
+   if (!str_list2)
+   {
+      string_list_free(str_list);
+      return -1;
+   }
+
+   /* element 0 : label
+    * element 1 : value
+    * element 2 : database path
+    */
+
+   len += strlen(str_list->elems[1].data) + 1;
+   string_list_append(str_list2, str_list->elems[1].data, attr);
+
+   len += strlen(str_list->elems[2].data) + 1;
+   string_list_append(str_list2, str_list->elems[2].data, attr);
+
+   rdb = (char*)calloc(len, sizeof(char));
+
+   if (!rdb)
+   {
+      string_list_free(str_list);
+      string_list_free(str_list2);
+      return -1;
+   }
+
+   string_list_join_concat(rdb, len, str_list2, "|");
+
+   strlcpy(new_label, "deferred_cursor_manager_list_", sizeof(new_label));
+   strlcat(new_label, str_list->elems[0].data, sizeof(new_label));
+
+   ret = menu_list_push_stack_refresh(
+         driver.menu->menu_list,
+         rdb,
+         new_label,
+         0, idx);
+
+   string_list_free(str_list);
+   string_list_free(str_list2);
+
+   return ret;
+}
+
 
 static int action_cancel_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -2111,6 +2203,45 @@ static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata
    menu_list_sort_on_alt(list);
 
    menu_list_populate_generic(driver.menu, list, path, label, type);
+
+   return 0;
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_publisher(
+      void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   char query[PATH_MAX_LENGTH];
+   config_file_t *conf    = NULL;
+   file_list_t *list      = (file_list_t*)data;
+   file_list_t *menu_list = (file_list_t*)userdata;
+   struct string_list *str_list  = string_split(path, "|"); 
+
+   if (!list || !menu_list)
+   {
+      string_list_free(str_list);
+      return -1;
+   }
+
+   strlcpy(query, "{'publisher':\"", sizeof(query));
+   strlcat(query, str_list->elems[0].data, sizeof(query));
+   strlcat(query, "\"}", sizeof(query));
+
+   if (query[0] == '\0')
+   {
+      string_list_free(str_list);
+      return -1;
+   }
+
+   menu_list_clear(list);
+
+   menu_database_populate_query(list, str_list->elems[1].data, query);
+
+   menu_list_sort_on_alt(list);
+
+   menu_list_populate_generic(driver.menu, list, str_list->elems[0].data, label, type);
+
+   string_list_free(str_list);
 
    return 0;
 }
@@ -3565,6 +3696,7 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
    const char *menu_label = NULL;
+   struct string_list *str_list = string_split(label, "|");
 
    if (!driver.menu)
       return -1;
@@ -3572,7 +3704,9 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
    menu_list_get_last_stack(driver.menu->menu_list,
          NULL, &menu_label, NULL);
 
-   if (!strcmp(label, "custom_bind_all"))
+   if (str_list && !strcmp((str_list->elems[0].data), "rdb_entry_publisher"))
+      cbs->action_ok = action_ok_rdb_entry_submenu;
+   else if (!strcmp(label, "custom_bind_all"))
       cbs->action_ok = action_ok_lookup_setting;
    else if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
          type == MENU_SETTINGS_CUSTOM_BIND)
@@ -3918,6 +4052,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
 
    if (strstr(label, "rdb_entry"))
       cbs->action_toggle = action_toggle_scroll;
+
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       cbs->action_toggle = shader_action_parameter_toggle;
@@ -4014,6 +4149,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_database_manager_list_deferred;
    else if (!strcmp(label, "deferred_cursor_manager_list"))
       cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred;
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher"))
+      cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred_query_publisher;
    else if (!strcmp(label, "core_information"))
       cbs->action_deferred_push = deferred_push_core_information;
    else if (!strcmp(label, "performance_counters"))
