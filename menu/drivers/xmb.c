@@ -122,6 +122,7 @@ typedef struct xmb_handle
    void *font;
    int font_size;
    xmb_node_t settings_node;
+   bool prevent_populate;
 } xmb_handle_t;
 
 static const GLfloat rmb_vertex[] = {
@@ -834,6 +835,12 @@ static void xmb_populate_entries(void *data, const char *path,
    if (!xmb)
       return;
 
+   if (xmb->prevent_populate)
+   {
+      xmb->prevent_populate = false;
+      return;
+   }
+
    xmb_set_title();
 
    // horizontal list switching
@@ -879,6 +886,8 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             entry_label, path,
             path_buf, sizeof(path_buf));
 
+      if (xmb->active_category && xmb->depth == 1)
+         strlcpy(path_buf, path_basename(path_buf), sizeof(path_buf));
 
       GLuint icon = 0;
       switch(type)
@@ -1165,6 +1174,7 @@ static void *xmb_init(void)
    xmb->depth           = 1;
    xmb->old_depth       = 1;
    xmb->alpha           = 0;
+   xmb->prevent_populate = false;
 
    xmb->c_active_zoom   = 1.0;
    xmb->c_passive_zoom  = 0.5;
@@ -1567,6 +1577,7 @@ static void xmb_context_destroy(void *data)
 
 static void xmb_toggle(bool menu_on)
 {
+   int i;
    xmb_handle_t *xmb = NULL;
    menu_handle_t *menu = (menu_handle_t*)driver.menu;
 
@@ -1579,7 +1590,23 @@ static void xmb_toggle(bool menu_on)
       return;
 
    if (menu_on)
+   {
       add_tween(XMB_DELAY, 1.0f, &xmb->alpha, &inOutQuad, NULL);
+
+      if (xmb->active_category) {
+         xmb->prevent_populate = true;
+         for (i = 0; i < xmb->num_categories; i++)
+         {
+            xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
+
+            if (!node)
+               continue;
+
+            node->alpha = (i == xmb->active_category) ? xmb->c_active_alpha
+                  : (xmb->depth <= 1) ? xmb->c_passive_alpha : 0;
+         }
+      }
+   }
    else
       xmb->alpha = 0;
 }
