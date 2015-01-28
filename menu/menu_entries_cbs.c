@@ -948,6 +948,12 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
                db_info_entry->pegi_rating, path, list) == -1)
             return -1;
       }
+      if (db_info_entry->enhancement_hw)
+      {
+         if (create_string_list_rdb_entry_string("Enhancement Hardware", "rdb_entry_enhancement_hw",
+               db_info_entry->enhancement_hw, path, list) == -1)
+            return -1;
+      }
       if (db_info_entry->cero_rating)
       {
          if (create_string_list_rdb_entry_string("CERO Rating", "rdb_entry_cero_rating",
@@ -2300,6 +2306,8 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
       strlcat(query, "elspa_rating", sizeof(query));
    else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_pegi_rating"))
       strlcat(query, "pegi_rating", sizeof(query));
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_enhancement_hw"))
+      strlcat(query, "enhancement_hw", sizeof(query));
    else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating"))
       strlcat(query, "cero_rating", sizeof(query));
    else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating"))
@@ -3832,6 +3840,7 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
           !(strcmp(elem0, "rdb_entry_developer")) ||
           !(strcmp(elem0, "rdb_entry_origin")) ||
           !(strcmp(elem0, "rdb_entry_franchise")) ||
+          !(strcmp(elem0, "rdb_entry_enhancement_hw")) ||
           !(strcmp(elem0, "rdb_entry_esrb_rating")) ||
           !(strcmp(elem0, "rdb_entry_bbfc_rating")) ||
           !(strcmp(elem0, "rdb_entry_elspa_rating")) ||
@@ -4293,6 +4302,7 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_origin") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_franchise") ||
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_enhancement_hw") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_esrb_rating") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_bbfc_rating") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_elspa_rating") ||

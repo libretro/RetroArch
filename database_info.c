@@ -85,6 +85,7 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
       db_info->pegi_rating            = NULL;
       db_info->cero_rating            = NULL;
       db_info->edge_magazine_review   = NULL;
+      db_info->enhancement_hw         = NULL;
       db_info->edge_magazine_rating   = 0;
       db_info->edge_magazine_issue    = 0;
       db_info->max_users              = 0;
@@ -127,6 +128,9 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
 
          if (!strcmp(key->string.buff, "pegi_rating"))
             db_info->pegi_rating = strdup(val->string.buff);
+
+         if (!strcmp(key->string.buff, "enhancement_hw"))
+            db_info->enhancement_hw = strdup(val->string.buff);
 
          if (!strcmp(key->string.buff, "edge_review"))
             db_info->edge_magazine_review = strdup(val->string.buff);
@@ -198,6 +202,8 @@ void database_info_list_free(database_info_list_t *database_info_list)
          free(info->cero_rating);
       if (info->pegi_rating)
          free(info->pegi_rating);
+      if (info->enhancement_hw)
+         free(info->enhancement_hw);
       if (info->elspa_rating)
          free(info->elspa_rating);
       if (info->esrb_rating)

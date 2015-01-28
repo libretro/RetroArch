@@ -38,6 +38,7 @@ typedef struct
    char *esrb_rating;
    char *pegi_rating;
    char *cero_rating;
+   char *enhancement_hw;
    unsigned edge_magazine_rating;
    unsigned edge_magazine_issue;
    unsigned max_users;

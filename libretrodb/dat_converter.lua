@@ -194,6 +194,7 @@ function get_value()
             edge_issue = uint(tonumber(t.edge_issue)),
             edge_review = t.edge_review,
 
+            enhancement_hw = t.enhancement_hw,
             barcode = t.barcode,
             esrb_rating = t.esrb_rating,
             elspa_rating = t.elspa_rating,
