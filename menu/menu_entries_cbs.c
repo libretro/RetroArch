@@ -774,7 +774,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
    for (i = 0; i < db_info->count; i++)
    {
-      char tmp[PATH_MAX_LENGTH], tmp2[PATH_MAX_LENGTH];
+      char tmp[PATH_MAX_LENGTH];
       char *output_label = NULL;
       database_info_t *db_info_entry = (database_info_t*)&db_info->list[i];
 
@@ -2212,7 +2212,6 @@ static int deferred_push_cursor_manager_list_deferred_query_publisher(
       const char *path, const char *label, unsigned type)
 {
    char query[PATH_MAX_LENGTH];
-   config_file_t *conf    = NULL;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
    struct string_list *str_list  = string_split(path, "|"); 
