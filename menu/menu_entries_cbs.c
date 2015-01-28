@@ -4290,7 +4290,13 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
    else if (
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_query")
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_origin") ||
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_franchise") ||
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_esrb_rating") ||
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_bbfc_rating") ||
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_elspa_rating") ||
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_pegi_rating") ||
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating")
          )
       cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred_query_subsearch;
    else if (!strcmp(label, "core_information"))
