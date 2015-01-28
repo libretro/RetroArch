@@ -737,30 +737,82 @@ static int create_string_list_rdb_entry_string(const char *desc, const char *lab
    union string_list_elem_attr attr;
    char *output_label = NULL;
    int str_len = 0;
-   struct string_list *str_list2 = string_list_new();
+   struct string_list *str_list = string_list_new();
 
-   if (!str_list2)
+   if (!str_list)
       return -1;
 
    str_len += strlen(label) + 1;
-   string_list_append(str_list2, label, attr);
+   string_list_append(str_list, label, attr);
 
    str_len += strlen(actual_string) + 1;
-   string_list_append(str_list2, actual_string, attr);
+   string_list_append(str_list, actual_string, attr);
 
    str_len += strlen(path) + 1;
-   string_list_append(str_list2, path, attr);
+   string_list_append(str_list, path, attr);
 
    output_label = (char*)calloc(str_len, sizeof(char));
-   string_list_join_concat(output_label, str_len, str_list2, "|");
+
+   if (!output_label)
+   {
+      string_list_free(str_list);
+      return -1;
+   }
+
+   string_list_join_concat(output_label, str_len, str_list, "|");
 
    snprintf(tmp, sizeof(tmp), "%s: %s", desc, actual_string);
    menu_list_push(list, tmp, output_label, 0, 0);
 
    if (output_label)
       free(output_label);
-   string_list_free(str_list2);
-   str_list2 = NULL;
+   string_list_free(str_list);
+   str_list = NULL;
+
+   return 0;
+}
+
+static int create_string_list_rdb_entry_int(const char *desc, const char *label,
+      int actual_int, const char *path, file_list_t *list)
+{
+   char tmp[PATH_MAX_LENGTH];
+   union string_list_elem_attr attr;
+   char str[PATH_MAX_LENGTH];
+   char *output_label = NULL;
+   int str_len = 0;
+   struct string_list *str_list = string_list_new();
+
+   if (!str_list)
+      return -1;
+
+   str_len += strlen(label) + 1;
+   string_list_append(str_list, label, attr);
+
+   str_len += sizeof(actual_int);
+   snprintf(str, sizeof(str), "%d", actual_int);
+   string_list_append(str_list, str, attr);
+
+   str_len += strlen(path) + 1;
+   string_list_append(str_list, path, attr);
+
+   output_label = (char*)calloc(str_len, sizeof(char));
+
+   if (!output_label)
+   {
+      string_list_free(str_list);
+      return -1;
+   }
+
+   string_list_join_concat(output_label, str_len, str_list, "|");
+
+   snprintf(tmp, sizeof(tmp), "%s: %d", desc, actual_int);
+   menu_list_push(list, tmp, output_label,
+         0, 0);
+
+   if (output_label)
+      free(output_label);
+   string_list_free(str_list);
+   str_list = NULL;
 
    return 0;
 }
@@ -846,79 +898,31 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       }
       if (db_info_entry->edge_magazine_rating)
       {
-         union string_list_elem_attr attr;
-         char str[PATH_MAX_LENGTH];
-         char *output_label = NULL;
-         int str_len = 0;
-         struct string_list *str_list2 = string_list_new();
-
-         str_len += strlen("rdb_entry_edge_magazine_rating") + 1;
-         string_list_append(str_list2, "rdb_entry_edge_magazine_rating", attr);
-
-         str_len += sizeof(db_info_entry->edge_magazine_rating);
-         snprintf(str, sizeof(str), "%d", db_info_entry->edge_magazine_rating);
-         string_list_append(str_list2, str, attr);
-
-         str_len += strlen(path) + 1;
-         string_list_append(str_list2, path, attr);
-
-         output_label = (char*)calloc(str_len, sizeof(char));
-         string_list_join_concat(output_label, str_len, str_list2, "|");
-
-         snprintf(tmp, sizeof(tmp), "Edge Magazine Rating: %d/10",
-               db_info_entry->edge_magazine_rating);
-         menu_list_push(list, tmp, output_label,
-               0, 0);
-
-         if (output_label)
-            free(output_label);
-         string_list_free(str_list2);
-         str_list2 = NULL;
+         if (create_string_list_rdb_entry_int("Edge Magazine Rating",
+               "rdb_entry_edge_magazine_rating", db_info_entry->edge_magazine_rating,
+               path, list) == -1)
+            return -1;
       }
       if (db_info_entry->edge_magazine_issue)
       {
-         union string_list_elem_attr attr;
-         char str[PATH_MAX_LENGTH];
-         char *output_label = NULL;
-         int str_len = 0;
-         struct string_list *str_list2 = string_list_new();
-
-         str_len += strlen("rdb_entry_edge_magazine_issue") + 1;
-         string_list_append(str_list2, "rdb_entry_edge_magazine_issue", attr);
-
-         str_len += sizeof(db_info_entry->edge_magazine_issue);
-         snprintf(str, sizeof(str), "%d", db_info_entry->edge_magazine_issue);
-         string_list_append(str_list2, str, attr);
-
-         str_len += strlen(path) + 1;
-         string_list_append(str_list2, path, attr);
-
-         output_label = (char*)calloc(str_len, sizeof(char));
-         string_list_join_concat(output_label, str_len, str_list2, "|");
-
-         snprintf(tmp, sizeof(tmp),
-               "Edge Magazine Issue: %d", db_info_entry->edge_magazine_issue);
-         menu_list_push(list, tmp, output_label,
-               0, 0);
-
-         if (output_label)
-            free(output_label);
-         string_list_free(str_list2);
-         str_list2 = NULL;
+         if (create_string_list_rdb_entry_int("Edge Magazine Issue",
+               "rdb_entry_edge_magazine_issue", db_info_entry->edge_magazine_issue,
+               path, list) == -1)
+            return -1;
       }
       if (db_info_entry->releasemonth)
       {
-         snprintf(tmp, sizeof(tmp),
-               "Releasedate Month: %d", db_info_entry->releasemonth);
-         menu_list_push(list, tmp, "rdb_entry_releasemonth",
-               0, 0);
+         if (create_string_list_rdb_entry_int("Releasedate Month",
+               "rdb_entry_releasemonth", db_info_entry->releasemonth,
+               path, list) == -1)
+            return -1;
       }
       if (db_info_entry->releaseyear)
       {
-         snprintf(tmp, sizeof(tmp),
-               "Releasedate Year: %d", db_info_entry->releaseyear);
-         menu_list_push(list, tmp, "rdb_entry_releaseyear",
-               0, 0);
+         if (create_string_list_rdb_entry_int("Releasedate Year",
+               "rdb_entry_releaseyear", db_info_entry->releaseyear,
+               path, list) == -1)
+            return -1;
       }
       if (db_info_entry->bbfc_rating)
       {
@@ -2306,6 +2310,16 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
    else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue"))
    {
       strlcat(query, "edge_issue", sizeof(query));
+      add_quotes = false;
+   }
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releasemonth"))
+   {
+      strlcat(query, "releasemonth", sizeof(query));
+      add_quotes = false;
+   }
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releaseyear"))
+   {
+      strlcat(query, "releaseyear", sizeof(query));
       add_quotes = false;
    }
 
@@ -3819,7 +3833,9 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
           !(strcmp(elem0, "rdb_entry_pegi_rating")) ||
           !(strcmp(elem0, "rdb_entry_cero_rating")) ||
           !(strcmp(elem0, "rdb_entry_edge_magazine_rating")) ||
-          !(strcmp(elem0, "rdb_entry_edge_magazine_issue"))
+          !(strcmp(elem0, "rdb_entry_edge_magazine_issue")) ||
+          !(strcmp(elem0, "rdb_entry_releasemonth")) ||
+          !(strcmp(elem0, "rdb_entry_releaseyear"))
           )
       )
       cbs->action_ok = action_ok_rdb_entry_submenu;
@@ -4277,7 +4293,9 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_pegi_rating") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating") ||
-         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue")
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue") ||
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_releasemonth") ||
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_releaseyear")
          )
       cbs->action_deferred_push = deferred_push_cursor_manager_list_deferred_query_subsearch;
    else if (!strcmp(label, "core_information"))
