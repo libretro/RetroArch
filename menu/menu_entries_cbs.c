@@ -3813,7 +3813,7 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
    menu_list_get_last_stack(driver.menu->menu_list,
          NULL, &menu_label, NULL);
 
-   if (str_list)
+   if (str_list && str_list->size > 0)
    {
       strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
 
