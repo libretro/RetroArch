@@ -730,6 +730,41 @@ static int deferred_push_core_information(void *data, void *userdata,
    return 0;
 }
 
+static int create_string_list_rdb_entry_string(const char *desc, const char *label,
+      const char *actual_string, const char *path, file_list_t *list)
+{
+   char tmp[PATH_MAX_LENGTH];
+   union string_list_elem_attr attr;
+   char *output_label = NULL;
+   int str_len = 0;
+   struct string_list *str_list2 = string_list_new();
+
+   if (!str_list2)
+      return -1;
+
+   str_len += strlen(label) + 1;
+   string_list_append(str_list2, label, attr);
+
+   str_len += strlen(actual_string) + 1;
+   string_list_append(str_list2, actual_string, attr);
+
+   str_len += strlen(path) + 1;
+   string_list_append(str_list2, path, attr);
+
+   output_label = (char*)calloc(str_len, sizeof(char));
+   string_list_join_concat(output_label, str_len, str_list2, "|");
+
+   snprintf(tmp, sizeof(tmp), "%s: %s", desc, actual_string);
+   menu_list_push(list, tmp, output_label, 0, 0);
+
+   if (output_label)
+      free(output_label);
+   string_list_free(str_list2);
+   str_list2 = NULL;
+
+   return 0;
+}
+
 
 static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
@@ -780,114 +815,27 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       }
       if (db_info_entry->publisher)
       {
-         union string_list_elem_attr attr;
-         char *output_label = NULL;
-         int str_len = 0;
-         struct string_list *str_list2 = string_list_new();
-
-         str_len += strlen("rdb_entry_publisher") + 1;
-         string_list_append(str_list2, "rdb_entry_publisher", attr);
-
-         str_len += strlen(db_info_entry->publisher) + 1;
-         string_list_append(str_list2, db_info_entry->publisher, attr);
-
-         str_len += strlen(path) + 1;
-         string_list_append(str_list2, path, attr);
-
-         output_label = (char*)calloc(str_len, sizeof(char));
-         string_list_join_concat(output_label, str_len, str_list2, "|");
-
-         snprintf(tmp, sizeof(tmp), "Publisher: %s", db_info_entry->publisher);
-         menu_list_push(list, tmp, output_label, 0, 0);
-
-         if (output_label)
-            free(output_label);
-         string_list_free(str_list2);
-         str_list2 = NULL;
+         if (create_string_list_rdb_entry_string("Publisher", "rdb_entry_publisher",
+               db_info_entry->publisher, path, list) == -1)
+            return -1;
       }
       if (db_info_entry->developer)
       {
-         union string_list_elem_attr attr;
-         char *output_label = NULL;
-         int str_len = 0;
-         struct string_list *str_list2 = string_list_new();
-
-         str_len += strlen("rdb_entry_developer") + 1;
-         string_list_append(str_list2, "rdb_entry_developer", attr);
-
-         str_len += strlen(db_info_entry->developer) + 1;
-         string_list_append(str_list2, db_info_entry->developer, attr);
-
-         str_len += strlen(path) + 1;
-         string_list_append(str_list2, path, attr);
-
-         output_label = (char*)calloc(str_len, sizeof(char));
-         string_list_join_concat(output_label, str_len, str_list2, "|");
-
-         snprintf(tmp, sizeof(tmp), "Developer: %s", db_info_entry->developer);
-         menu_list_push(list, tmp, output_label,
-               0, 0);
-
-         if (output_label)
-            free(output_label);
-         string_list_free(str_list2);
-         str_list2 = NULL;
+         if (create_string_list_rdb_entry_string("Developer", "rdb_entry_developer",
+               db_info_entry->developer, path, list) == -1)
+            return -1;
       }
       if (db_info_entry->origin)
       {
-         union string_list_elem_attr attr;
-         char *output_label = NULL;
-         int str_len = 0;
-         struct string_list *str_list2 = string_list_new();
-
-         str_len += strlen("rdb_entry_origin") + 1;
-         string_list_append(str_list2, "rdb_entry_origin", attr);
-
-         str_len += strlen(db_info_entry->origin) + 1;
-         string_list_append(str_list2, db_info_entry->origin, attr);
-
-         str_len += strlen(path) + 1;
-         string_list_append(str_list2, path, attr);
-
-         output_label = (char*)calloc(str_len, sizeof(char));
-         string_list_join_concat(output_label, str_len, str_list2, "|");
-
-         snprintf(tmp, sizeof(tmp), "Origin: %s", db_info_entry->origin);
-         menu_list_push(list, tmp, output_label,
-               0, 0);
-
-         if (output_label)
-            free(output_label);
-         string_list_free(str_list2);
-         str_list2 = NULL;
+         if (create_string_list_rdb_entry_string("Origin", "rdb_entry_origin",
+               db_info_entry->origin, path, list) == -1)
+            return -1;
       }
       if (db_info_entry->franchise)
       {
-         union string_list_elem_attr attr;
-         char *output_label = NULL;
-         int str_len = 0;
-         struct string_list *str_list2 = string_list_new();
-
-         str_len += strlen("rdb_entry_franchise") + 1;
-         string_list_append(str_list2, "rdb_entry_franchise", attr);
-
-         str_len += strlen(db_info_entry->franchise) + 1;
-         string_list_append(str_list2, db_info_entry->franchise, attr);
-
-         str_len += strlen(path) + 1;
-         string_list_append(str_list2, path, attr);
-
-         output_label = (char*)calloc(str_len, sizeof(char));
-         string_list_join_concat(output_label, str_len, str_list2, "|");
-
-         snprintf(tmp, sizeof(tmp), "Franchise: %s", db_info_entry->franchise);
-         menu_list_push(list, tmp, output_label,
-               0, 0);
-
-         if (output_label)
-            free(output_label);
-         string_list_free(str_list2);
-         str_list2 = NULL;
+         if (create_string_list_rdb_entry_string("Franchise", "rdb_entry_franchise",
+               db_info_entry->franchise, path, list) == -1)
+            return -1;
       }
       if (db_info_entry->max_users)
       {
@@ -974,148 +922,33 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       }
       if (db_info_entry->bbfc_rating)
       {
-         union string_list_elem_attr attr;
-         char *output_label = NULL;
-         int str_len = 0;
-         struct string_list *str_list2 = string_list_new();
-
-         str_len += strlen("rdb_entry_bbfc_rating") + 1;
-         string_list_append(str_list2, "rdb_entry_bbfc_rating", attr);
-
-         str_len += strlen(db_info_entry->bbfc_rating) + 1;
-         string_list_append(str_list2, db_info_entry->bbfc_rating, attr);
-
-         str_len += strlen(path) + 1;
-         string_list_append(str_list2, path, attr);
-
-         output_label = (char*)calloc(str_len, sizeof(char));
-         string_list_join_concat(output_label, str_len, str_list2, "|");
-
-         snprintf(tmp, sizeof(tmp),
-               "BBFC Rating: %s", db_info_entry->bbfc_rating);
-         menu_list_push(list, tmp, output_label,
-               0, 0);
-
-         if (output_label)
-            free(output_label);
-         string_list_free(str_list2);
-         str_list2 = NULL;
+         if (create_string_list_rdb_entry_string("BBFC Rating", "rdb_entry_bbfc_rating",
+               db_info_entry->bbfc_rating, path, list) == -1)
+            return -1;
       }
       if (db_info_entry->esrb_rating)
       {
-         union string_list_elem_attr attr;
-         char *output_label = NULL;
-         int str_len = 0;
-         struct string_list *str_list2 = string_list_new();
-
-         str_len += strlen("rdb_entry_esrb_rating") + 1;
-         string_list_append(str_list2, "rdb_entry_esrb_rating", attr);
-
-         str_len += strlen(db_info_entry->esrb_rating) + 1;
-         string_list_append(str_list2, db_info_entry->esrb_rating, attr);
-
-         str_len += strlen(path) + 1;
-         string_list_append(str_list2, path, attr);
-
-         output_label = (char*)calloc(str_len, sizeof(char));
-         string_list_join_concat(output_label, str_len, str_list2, "|");
-
-         snprintf(tmp, sizeof(tmp),
-               "ESRB Rating: %s", db_info_entry->esrb_rating);
-         menu_list_push(list, tmp, output_label,
-               0, 0);
-
-         if (output_label)
-            free(output_label);
-         string_list_free(str_list2);
-         str_list2 = NULL;
+         if (create_string_list_rdb_entry_string("ESRB Rating", "rdb_entry_esrb_rating",
+               db_info_entry->esrb_rating, path, list) == -1)
+            return -1;
       }
       if (db_info_entry->elspa_rating)
       {
-         union string_list_elem_attr attr;
-         char *output_label = NULL;
-         int str_len = 0;
-         struct string_list *str_list2 = string_list_new();
-
-         str_len += strlen("rdb_entry_elspa_rating") + 1;
-         string_list_append(str_list2, "rdb_entry_elspa_rating", attr);
-
-         str_len += strlen(db_info_entry->elspa_rating) + 1;
-         string_list_append(str_list2, db_info_entry->elspa_rating, attr);
-
-         str_len += strlen(path) + 1;
-         string_list_append(str_list2, path, attr);
-
-         output_label = (char*)calloc(str_len, sizeof(char));
-         string_list_join_concat(output_label, str_len, str_list2, "|");
-
-         snprintf(tmp, sizeof(tmp),
-               "ELSPA Rating: %s", db_info_entry->elspa_rating);
-         menu_list_push(list, tmp, output_label,
-               0, 0);
-
-         if (output_label)
-            free(output_label);
-         string_list_free(str_list2);
-         str_list2 = NULL;
+         if (create_string_list_rdb_entry_string("ELSPA Rating", "rdb_entry_elspa_rating",
+               db_info_entry->elspa_rating, path, list) == -1)
+            return -1;
       }
       if (db_info_entry->pegi_rating)
       {
-         union string_list_elem_attr attr;
-         char *output_label = NULL;
-         int str_len = 0;
-         struct string_list *str_list2 = string_list_new();
-
-         str_len += strlen("rdb_entry_pegi_rating") + 1;
-         string_list_append(str_list2, "rdb_entry_pegi_rating", attr);
-
-         str_len += strlen(db_info_entry->pegi_rating) + 1;
-         string_list_append(str_list2, db_info_entry->pegi_rating, attr);
-
-         str_len += strlen(path) + 1;
-         string_list_append(str_list2, path, attr);
-
-         output_label = (char*)calloc(str_len, sizeof(char));
-         string_list_join_concat(output_label, str_len, str_list2, "|");
-
-         snprintf(tmp, sizeof(tmp), "PEGI Rating: %s",
-               db_info_entry->pegi_rating);
-         menu_list_push(list, tmp, output_label,
-               0, 0);
-
-         if (output_label)
-            free(output_label);
-         string_list_free(str_list2);
-         str_list2 = NULL;
+         if (create_string_list_rdb_entry_string("PEGI Rating", "rdb_entry_pegi_rating",
+               db_info_entry->pegi_rating, path, list) == -1)
+            return -1;
       }
       if (db_info_entry->cero_rating)
       {
-         union string_list_elem_attr attr;
-         char *output_label = NULL;
-         int str_len = 0;
-         struct string_list *str_list2 = string_list_new();
-
-         str_len += strlen("rdb_entry_cero_rating") + 1;
-         string_list_append(str_list2, "rdb_entry_cero_rating", attr);
-
-         str_len += strlen(db_info_entry->cero_rating) + 1;
-         string_list_append(str_list2, db_info_entry->cero_rating, attr);
-
-         str_len += strlen(path) + 1;
-         string_list_append(str_list2, path, attr);
-
-         output_label = (char*)calloc(str_len, sizeof(char));
-         string_list_join_concat(output_label, str_len, str_list2, "|");
-
-         snprintf(tmp, sizeof(tmp), "CERO Rating: %s",
-               db_info_entry->cero_rating);
-         menu_list_push(list, tmp, output_label,
-               0, 0);
-
-         if (output_label)
-            free(output_label);
-         string_list_free(str_list2);
-         str_list2 = NULL;
+         if (create_string_list_rdb_entry_string("CERO Rating", "rdb_entry_cero_rating",
+               db_info_entry->cero_rating, path, list) == -1)
+            return -1;
       }
       snprintf(tmp, sizeof(tmp),
             "Analog supported: %s",
