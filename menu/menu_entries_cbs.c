@@ -3501,7 +3501,7 @@ static int action_iterate_help(const char *label, unsigned action)
       driver.menu_ctx->render_messagebox(msg);
 
    if (action == MENU_ACTION_OK)
-      menu_list_pop_stack(driver.menu->menu_list);
+      menu_list_pop(driver.menu->menu_list->menu_stack, &driver.menu->selection_ptr);
 
    return 0;
 }
@@ -3554,7 +3554,7 @@ static int action_iterate_info(const char *label, unsigned action)
    }
 
    if (action == MENU_ACTION_OK)
-      menu_list_pop_stack(driver.menu->menu_list);
+      menu_list_pop(driver.menu->menu_list->menu_stack, &driver.menu->selection_ptr);
 
    return 0;
 }
