@@ -29,9 +29,6 @@ extern "C" {
 int menu_database_populate_query(file_list_t *list, const char *path,
                                      const char *query);
 
-int menu_database_print_info(const char *path,
-    const char *query);
-
 #ifdef __cplusplus
 }
 #endif

@@ -27,6 +27,7 @@ extern "C" {
 
 typedef struct
 {
+   char *name;
    char *description;
    char *publisher;
    char *developer;

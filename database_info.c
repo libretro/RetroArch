@@ -74,6 +74,7 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
 
       db_info = (database_info_t*)&database_info[i];
 
+      db_info->name                   = NULL;
       db_info->description            = NULL;
       db_info->publisher              = NULL;
       db_info->developer              = NULL;
@@ -98,6 +99,9 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
       {
          struct rmsgpack_dom_value *key = &item.map.items[j].key;
          struct rmsgpack_dom_value *val = &item.map.items[j].value;
+
+         if (!strcmp(key->string.buff, "name"))
+            db_info->name = strdup(val->string.buff);
 
          if (!strcmp(key->string.buff, "description"))
             db_info->description = strdup(val->string.buff);
@@ -185,6 +189,8 @@ void database_info_list_free(database_info_list_t *database_info_list)
       if (!info)
          continue;
 
+      if (info->name)
+         free(info->name);
       if (info->description)
          free(info->description);
       if (info->publisher)

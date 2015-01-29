@@ -64,7 +64,7 @@ int menu_entries_push_query(libretrodb_t *db,
          struct rmsgpack_dom_value *key = &item.map.items[i].key;
          struct rmsgpack_dom_value *val = &item.map.items[i].value;
             
-         if (!strcmp(key->string.buff, "description"))
+         if (!strcmp(key->string.buff, "name"))
          {
             menu_list_push(list, val->string.buff, db->path,
             MENU_FILE_RDB_ENTRY, 0);

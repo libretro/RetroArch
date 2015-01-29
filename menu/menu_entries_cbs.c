@@ -841,7 +841,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       goto done;
    }
 
-   strlcpy(query, "{'description':\"", sizeof(query));
+   strlcpy(query, "{'name':\"", sizeof(query));
    strlcat(query, str_list->elems[1].data, sizeof(query));
    strlcat(query, "\"}", sizeof(query));
 
@@ -861,6 +861,12 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       if (!db_info_entry)
          continue;
 
+      if (db_info_entry->name)
+      {
+         snprintf(tmp, sizeof(tmp), "Description: %s", db_info_entry->name);
+         menu_list_push(list, tmp, "rdb_entry_name",
+               0, 0);
+      }
       if (db_info_entry->description)
       {
          snprintf(tmp, sizeof(tmp), "Description: %s", db_info_entry->description);
