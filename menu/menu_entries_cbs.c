@@ -1014,8 +1014,6 @@ static int action_ok_rdb_entry(const char *path,
          label,
          tmp,
          0, idx);
-
-   return 0;
 }
 
 static int action_ok_cursor_manager_list_deferred(const char *path,
