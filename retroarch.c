@@ -2687,10 +2687,14 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_OSK_OVERLAY_STOP:
 #ifdef HAVE_OVERLAY
+
          driver.osk_active = false;
-         g_settings.osk.opacity = 0;
-         input_overlay_set_alpha_mod(driver.osk_overlay,
-               g_settings.osk.opacity);
+
+         rarch_main_command(RARCH_CMD_OSK_OVERLAY_DEINIT);
+
+         if (g_settings.input.overlay_enable)
+            rarch_main_command(RARCH_CMD_OSK_OVERLAY_INIT);
+
 #endif
          break;
       case RARCH_CMD_OSK_OVERLAY_START:
@@ -2698,18 +2702,14 @@ bool rarch_main_command(unsigned cmd)
          if (!g_settings.osk.enable)
             return false;
 
+         rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
+         rarch_main_command(RARCH_CMD_OSK_OVERLAY_INIT);
+
          driver.osk_active = true;
-         g_settings.osk.opacity = 100;
-         input_overlay_set_alpha_mod(driver.osk_overlay,
-               g_settings.osk.opacity);
-         input_overlay_enable(driver.osk_overlay,
-               true);
 #endif
          break;
       case RARCH_CMD_OSK_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
-         if (driver.osk_active)
-            return false;
          if (driver.osk_overlay)
             input_overlay_free(driver.osk_overlay);
          driver.osk_overlay = NULL;
@@ -2720,7 +2720,7 @@ bool rarch_main_command(unsigned cmd)
          rarch_main_command(RARCH_CMD_OSK_OVERLAY_DEINIT);
 
          driver.osk_overlay = input_overlay_new(g_settings.osk.overlay, g_settings.osk.enable,
-               g_settings.osk.opacity, g_settings.osk.scale);
+               100, g_settings.osk.scale);
          if (!driver.osk_overlay)
             RARCH_ERR("Failed to load OSK overlay.\n");
 #endif

@@ -317,7 +317,6 @@ static void init_video_input(const input_driver_t *tmp)
 void uninit_video_input(void)
 {
    rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
-   rarch_main_command(RARCH_CMD_OSK_OVERLAY_DEINIT);
 
    if (
          !driver.input_data_own &&
@@ -485,9 +484,7 @@ void init_video(void)
       init_video_input(tmp);
 
    rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
-   rarch_main_command(RARCH_CMD_OSK_OVERLAY_DEINIT);
    rarch_main_command(RARCH_CMD_OVERLAY_INIT);
-   rarch_main_command(RARCH_CMD_OSK_OVERLAY_INIT);
 
    g_extern.measure_data.frame_time_samples_count = 0;
 
