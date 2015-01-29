@@ -177,15 +177,15 @@ enum
       {
          character = [ch characterAtIndex:0];
          apple_input_keyboard_event(event._isKeyDown,
-               (uint32_t)event._keyCode, 0, mod, false);
+               (uint32_t)event._keyCode, 0, mod);
          
          for (i = 1; i < ch.length; i++)
             apple_input_keyboard_event(event._isKeyDown,
-                  0, [ch characterAtIndex:i], mod, false);
+                  0, [ch characterAtIndex:i], mod);
       }
       
       apple_input_keyboard_event(event._isKeyDown,
-            (uint32_t)event._keyCode, character, mod, false);
+            (uint32_t)event._keyCode, character, mod);
    }
 
    return [super _keyCommandForEvent:event];
@@ -209,7 +209,7 @@ enum
       
       if (eventType == GSEVENT_TYPE_KEYDOWN || eventType == GSEVENT_TYPE_KEYUP)
          apple_input_keyboard_event(eventType == GSEVENT_TYPE_KEYDOWN,
-               *(uint16_t*)&eventMem[0x3C], 0, 0, false);
+               *(uint16_t*)&eventMem[0x3C], 0, 0);
    }
 }
 
