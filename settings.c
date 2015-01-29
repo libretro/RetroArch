@@ -1358,8 +1358,6 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_PATH(osk.overlay, "input_osk_overlay");
    CONFIG_GET_BOOL(osk.enable, "input_osk_overlay_enable");
-   CONFIG_GET_FLOAT(osk.opacity, "input_osk_overlay_opacity");
-   CONFIG_GET_FLOAT(osk.scale, "input_osk_overlay_scale");
 #endif
 
    CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
@@ -1988,10 +1986,6 @@ bool config_save_file(const char *path)
          *g_extern.osk_overlay_dir ? g_extern.osk_overlay_dir : "default");
    config_set_path(conf, "input_osk_overlay", g_settings.input.overlay);
    config_set_bool(conf, "input_osk_overlay_enable", g_settings.osk.enable);
-   config_set_float(conf, "input_osk_overlay_opacity",
-         g_settings.osk.opacity);
-   config_set_float(conf, "input_osk_overlay_scale",
-         g_settings.osk.scale);
 #endif
 
    config_set_path(conf, "video_font_path", g_settings.video.font_path);

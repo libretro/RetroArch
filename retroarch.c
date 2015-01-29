@@ -2695,10 +2695,15 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_OSK_OVERLAY_START:
 #ifdef HAVE_OVERLAY
+         if (!g_settings.osk.enable)
+            return false;
+
          driver.osk_active = true;
          g_settings.osk.opacity = 100;
          input_overlay_set_alpha_mod(driver.osk_overlay,
                g_settings.osk.opacity);
+         input_overlay_enable(driver.osk_overlay,
+               true);
 #endif
          break;
       case RARCH_CMD_OSK_OVERLAY_DEINIT:
@@ -2712,8 +2717,6 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_OSK_OVERLAY_INIT:
 #ifdef HAVE_OVERLAY
-         if (driver.osk_active)
-            return false;
          rarch_main_command(RARCH_CMD_OSK_OVERLAY_DEINIT);
 
          driver.osk_overlay = input_overlay_new(g_settings.osk.overlay, g_settings.osk.enable,

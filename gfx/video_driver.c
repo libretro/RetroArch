@@ -317,6 +317,7 @@ static void init_video_input(const input_driver_t *tmp)
 void uninit_video_input(void)
 {
    rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
+   rarch_main_command(RARCH_CMD_OSK_OVERLAY_DEINIT);
 
    if (
          !driver.input_data_own &&

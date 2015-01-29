@@ -595,8 +595,6 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
 {
    input_overlay_t *ol = (input_overlay_t*)calloc(1, sizeof(*ol));
 
-   RARCH_LOG("path is: %s\n", path);
-
    if (!ol)
       goto error;
 
