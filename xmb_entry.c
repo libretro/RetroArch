@@ -29,6 +29,7 @@ xmb_entry_list_t *xmb_entry_list_new(const char *xmb_entry_path)
    size_t i;
    xmb_entry_t *entry = NULL;
    xmb_entry_list_t *entry_list = NULL;
+   core_info_list_t *info_list = NULL;
    struct string_list *contents = (struct string_list*)
       dir_list_new(xmb_entry_path, "xe", false);
 
@@ -44,17 +45,26 @@ xmb_entry_list_t *xmb_entry_list_new(const char *xmb_entry_path)
       goto error;
 
    entry_list->list = entry;
-   entry_list->count = contents->size;
+   entry_list->count = 0;
+   size_t num_files = contents->size-1;
+   size_t j = 0;
 
-   for (i = 0; i < contents->size; i++)
+   info_list = core_info_list_new(g_settings.libretro_directory);
+
+   for (i = 0; i < num_files; i++)
    {
-      char xe_path_base[PATH_MAX_LENGTH], xe_path[PATH_MAX_LENGTH];
-      entry[i].path = strdup(contents->elems[i].data);
+      char xe_path_base[PATH_MAX_LENGTH], xe_path[PATH_MAX_LENGTH],
+            core_path[PATH_MAX_LENGTH];
+      core_info_t *info = NULL;
+
+      j++;
+
+      entry[i].path = strdup(contents->elems[j].data);
 
       if (!entry[i].path)
          break;
 
-      fill_pathname_base(xe_path_base, contents->elems[i].data,
+      fill_pathname_base(xe_path_base, contents->elems[j].data,
             sizeof(xe_path_base));
       path_remove_extension(xe_path_base);
 
@@ -89,7 +99,23 @@ xmb_entry_list_t *xmb_entry_list_new(const char *xmb_entry_path)
 
       if (!entry[i].display_name)
          entry[i].display_name = strdup(path_basename(entry[i].path));
+
+      fill_pathname_join(core_path, g_settings.libretro_directory,
+            entry[i].core_name, sizeof(core_path));
+
+      info = find_core_info(info_list, core_path);
+
+      // don't add the entry to the list if no corresponding core is found
+      if (!info)
+      {
+         i--;
+         num_files--;
+      }
+      else
+         entry_list->count++;
    }
+
+   core_info_list_free(info_list);
 
    dir_list_free(contents);
    return entry_list;
