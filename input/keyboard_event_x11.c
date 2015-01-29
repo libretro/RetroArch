@@ -122,8 +122,9 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
    if (state & Mod4Mask)
       mod |= RETROKMOD_META;
 
-   input_keyboard_event(down, key, chars[0], mod);
+   input_keyboard_event(down, key, chars[0], mod, false);
 
    for (i = 1; i < num; i++)
-      input_keyboard_event(down, RETROK_UNKNOWN, chars[i], mod);
+      input_keyboard_event(down, RETROK_UNKNOWN,
+            chars[i], mod, false);
 }

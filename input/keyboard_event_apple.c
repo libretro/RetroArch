@@ -158,5 +158,6 @@ void apple_input_keyboard_event(bool down,
    apple->key_state[code] = down;
     
    input_keyboard_event(down,
-         input_keymaps_translate_keysym_to_rk(code), character, (enum retro_mod)mod);
+         input_keymaps_translate_keysym_to_rk(code),
+         character, (enum retro_mod)mod, false);
 }

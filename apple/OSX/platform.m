@@ -77,10 +77,12 @@ void apple_rarch_exited(void)
                mod |=  RETROKMOD_NUMLOCK;
             
             for (i = 1; i < ch.length; i ++)
-               apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:i], mod);
+               apple_input_keyboard_event(event_type == NSKeyDown,
+                     0, [ch characterAtIndex:i], mod, false);
          }
          
-         apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, character, mod);
+         apple_input_keyboard_event(event_type == NSKeyDown,
+               event.keyCode, character, mod, false);
       }
          break;
       case NSFlagsChanged:
@@ -90,7 +92,8 @@ void apple_rarch_exited(void)
          bool down = (new_flags & old_flags) == old_flags;
          old_flags = new_flags;
 
-         apple_input_keyboard_event(down, event.keyCode, 0, event.modifierFlags);
+         apple_input_keyboard_event(down, event.keyCode,
+               0, event.modifierFlags, false);
       }
          break;
       case NSMouseMoved:

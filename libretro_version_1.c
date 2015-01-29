@@ -535,7 +535,8 @@ static inline void input_poll_overlay(void)
 
          for (j = 0; j < 32; j++)
             if ((orig_bits & (1 << j)) != (new_bits & (1 << j)))
-               input_keyboard_event(new_bits & (1 << j), i * 32 + j, 0, key_mod);
+               input_keyboard_event(new_bits & (1 << j),
+                     i * 32 + j, 0, key_mod, true);
       }
    }
 

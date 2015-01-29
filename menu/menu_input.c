@@ -152,6 +152,16 @@ void menu_input_key_event(bool down, unsigned keycode,
    }
 }
 
+void menu_input_osk_key_event(bool down, unsigned keycode,
+      uint32_t character, uint16_t mod)
+{
+   if (!driver.menu)
+      return;
+   
+   RARCH_LOG("down: %d, keycode: %d, character: %d, mod: %d.\n", 
+         down, keycode, character, mod);
+}
+
 void menu_input_poll_bind_state(struct menu_bind_state *state)
 {
    unsigned i, b, a, h;
