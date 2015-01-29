@@ -78,11 +78,11 @@ void apple_rarch_exited(void)
             
             for (i = 1; i < ch.length; i ++)
                apple_input_keyboard_event(event_type == NSKeyDown,
-                     0, [ch characterAtIndex:i], mod, false);
+                     0, [ch characterAtIndex:i], mod);
          }
          
          apple_input_keyboard_event(event_type == NSKeyDown,
-               event.keyCode, character, mod, false);
+               event.keyCode, character, mod);
       }
          break;
       case NSFlagsChanged:
@@ -93,7 +93,7 @@ void apple_rarch_exited(void)
          old_flags = new_flags;
 
          apple_input_keyboard_event(down, event.keyCode,
-               0, event.modifierFlags, false);
+               0, event.modifierFlags);
       }
          break;
       case NSMouseMoved:
