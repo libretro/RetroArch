@@ -1842,6 +1842,7 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
    {
       if (!strcmp(driver.menu_ctx->ident, "xmb"))
       {
+         driver.menu->selection_ptr = 0;
          switch (action)
          {
             case MENU_ACTION_LEFT:
@@ -4322,7 +4323,9 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       case MENU_FILE_USE_DIRECTORY:
       case MENU_FILE_PLAYLIST_ENTRY:
       case MENU_FILE_DOWNLOAD_CORE:
-         if (!strcmp(menu_label, "Horizontal Menu"))
+      case MENU_SETTING_GROUP:
+         if (!strcmp(menu_label, "Horizontal Menu")
+               || !strcmp(menu_label, "Main Menu"))
             cbs->action_toggle = action_toggle_mainmenu;
          else
             cbs->action_toggle = action_toggle_scroll;
