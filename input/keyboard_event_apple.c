@@ -133,7 +133,7 @@ static void handle_icade_event(unsigned keycode)
 }
 
 void apple_input_keyboard_event(bool down,
-      unsigned code, uint32_t character, uint32_t mod)
+      unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
 

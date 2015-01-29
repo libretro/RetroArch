@@ -97,7 +97,7 @@ void input_keyboard_line_free(input_keyboard_line_t *state);
  * This interfaces with the global driver struct and libretro callbacks.
  **/
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
-      uint16_t mod);
+      uint16_t mod, unsigned device);
 
 /**
  * input_keyboard_start_line:
