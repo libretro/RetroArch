@@ -2772,6 +2772,19 @@ bool rarch_main_command(unsigned cmd)
 #endif
          }
          break;
+      case RARCH_CMD_XMB_ENTRY_DEINIT:
+         if (g_extern.xmb_entry)
+            xmb_entry_list_free(g_extern.xmb_entry);
+         g_extern.xmb_entry = NULL;
+         break;
+      case RARCH_CMD_XMB_ENTRY_INIT:
+         rarch_main_command(RARCH_CMD_XMB_ENTRY_DEINIT);
+
+         if (*g_settings.xmb_entry_path && !g_extern.xmb_entry)
+         {
+            g_extern.xmb_entry = xmb_entry_list_new(g_settings.xmb_entry_path);
+         }
+         break;
       case RARCH_CMD_CORE_DEINIT:
          deinit_core();
          break;

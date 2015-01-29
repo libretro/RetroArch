@@ -88,6 +88,10 @@ enum basic_event
    RARCH_CMD_CORE_INFO_DEINIT,
    /* Initializes core information. */
    RARCH_CMD_CORE_INFO_INIT,
+   /* Deinitializes xmb entries. */
+   RARCH_CMD_XMB_ENTRY_DEINIT,
+   /* Initializes xmb entries. */
+   RARCH_CMD_XMB_ENTRY_INIT,
    /* Deinitializes core. */
    RARCH_CMD_CORE_DEINIT,
    /* Initializes core. */

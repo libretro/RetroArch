@@ -123,17 +123,13 @@ int menu_entries_push_list(menu_handle_t *menu,
    return 0;
 }
 
-static void menu_entries_content_list_push(
-      file_list_t *list, core_info_t *info, const char* path)
+static void menu_entries_content_list_push(file_list_t *list,
+      const char* exts, const char* path)
 {
    int num_items = 0, j;
    struct string_list *str_list = NULL;
 
-   if (!info)
-      return;
-
-   str_list = (struct string_list*)dir_list_new(path,
-         info->supported_extensions, true);
+   str_list = (struct string_list*)dir_list_new(path, exts, true);
 
    dir_list_sort(str_list, true);
 
@@ -143,8 +139,7 @@ static void menu_entries_content_list_push(
    for (j = 0; j < num_items; j++)
    {
       if (str_list->elems[j].attr.i == RARCH_DIRECTORY)
-         menu_entries_content_list_push(list, info,
-               str_list->elems[j].data);
+         menu_entries_content_list_push(list, exts, str_list->elems[j].data);
       else
          menu_list_push(
                list,
@@ -162,53 +157,45 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
       const char *path, const char *label,
       unsigned menu_type)
 {
-   core_info_t *info = NULL;
-   core_info_list_t *info_list = NULL;
+   xmb_entry_t *entry = NULL;
+   xmb_entry_list_t *entry_list = NULL;
+   char content_dir[PATH_MAX_LENGTH];
+   char core_path[PATH_MAX_LENGTH];
 
    menu_list_clear(list);
 
-   info_list = (core_info_list_t*)g_extern.core_info;
+   entry_list = (xmb_entry_list_t*)g_extern.xmb_entry;
 
-   if (!info_list)
+   if (!entry_list)
       return -1;
 
-   info = (core_info_t*)&info_list->list[driver.menu->cat_selection_ptr - 1];
+   entry = (xmb_entry_t*)&entry_list->list[driver.menu->cat_selection_ptr - 1];
 
-   if (!info)
+   if (!entry)
       return -1;
+
+   if (entry->content_subdirectory)
+      fill_pathname_join(content_dir, g_settings.content_directory,
+            entry->content_subdirectory, sizeof(content_dir));
+
+   fill_pathname_join(core_path,
+         g_settings.libretro_directory, entry->core_name, sizeof(core_path));
 
    strlcpy(g_settings.libretro,
-         info->path, sizeof(g_settings.libretro));
+         core_path, sizeof(g_settings.libretro));
+
+   core_info_t *info = find_core_info(g_extern.core_info, core_path);
 
    if (!info->supports_no_game)
-      menu_entries_content_list_push(list, info,
-            g_settings.content_directory);
+      menu_entries_content_list_push(list, info->supported_extensions,
+            content_dir);
    else
       menu_list_push(
             list,
-            info->display_name,
+            entry->display_name,
             "content_actions",
             MENU_FILE_CONTENTLIST_ENTRY,
             0);
-
-   if (info->databases_list)
-   {
-      size_t i;
-      char db_path[PATH_MAX_LENGTH];
-
-      for (i = 0; i < info->databases_list->size; i++)
-      {
-         struct string_list *strlist = info->databases_list;
-
-         fill_pathname_join(db_path, g_settings.content_database,
-               strlist->elems[i].data, sizeof(db_path));
-         strlcat(db_path, ".rdb", sizeof(db_path));
-
-         if (path_file_exists(db_path))
-            menu_list_push(list, path_basename(db_path), "core_database",
-                  MENU_FILE_RDB, 0);
-      }
-   }
 
    menu_list_populate_generic(menu, list, path, label, menu_type);
 

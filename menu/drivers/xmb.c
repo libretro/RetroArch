@@ -21,6 +21,7 @@
 #include <limits.h>
 
 #include "../menu.h"
+#include "../../xmb_entry.h"
 #include "../menu_input.h"
 #include <file/file_path.h>
 #include "../../gfx/gl_common.h"
@@ -155,46 +156,6 @@ static int xmb_entry_iterate(unsigned action)
       return cbs->action_iterate(label, action);
    
    return -1;
-}
-
-static char *xmb_str_replace (const char *string,
-      const char *substr, const char *replacement)
-{
-   char *tok, *newstr, *oldstr, *head;
-
-   /* if either substr or replacement is NULL, 
-    * duplicate string a let caller handle it. */
-   if (!substr || !replacement)
-      return strdup (string);
-
-   newstr = strdup (string);
-   head = newstr;
-
-   while ( (tok = strstr ( head, substr )))
-   {
-      oldstr = newstr;
-      newstr = (char*)malloc(
-            strlen(oldstr) - strlen(substr) + strlen(replacement) + 1);
-
-      if (!newstr)
-      {
-         /*failed to alloc mem, free old string and return NULL */
-         free (oldstr);
-         return NULL;
-      }
-      memcpy(newstr, oldstr, tok - oldstr );
-      memcpy(newstr + (tok - oldstr), replacement, strlen ( replacement ) );
-      memcpy(newstr + (tok - oldstr) + strlen( replacement ), tok +
-            strlen ( substr ), strlen ( oldstr ) -
-            strlen ( substr ) - ( tok - oldstr ) );
-      memset(newstr + strlen ( oldstr ) - strlen ( substr ) +
-            strlen ( replacement ) , 0, 1 );
-      /* move back head right after the last replacement */
-      head = newstr + (tok - oldstr) + strlen( replacement );
-      free (oldstr);
-   }
-
-   return newstr;
 }
 
 static void xmb_draw_icon(GLuint texture, float x, float y,
@@ -614,10 +575,10 @@ static GLuint xmb_png_texture_load(const char* file_name)
    return xmb_png_texture_load_(file_name);
 }
 
-static xmb_node_t* xmb_node_for_core(int i)
+static xmb_node_t* xmb_node_for_entry(int i)
 {
-   core_info_t *info = NULL;
-   core_info_list_t *info_list = NULL;
+   xmb_entry_t *entry = NULL;
+   xmb_entry_list_t *entry_list = NULL;
    xmb_node_t *node = NULL;
 
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
@@ -625,31 +586,31 @@ static xmb_node_t* xmb_node_for_core(int i)
    if (!xmb)
       return NULL;
 
-   info_list = (core_info_list_t*)g_extern.core_info;
-   info = NULL;
+   entry_list = (xmb_entry_list_t*)g_extern.xmb_entry;
+   entry = NULL;
 
-   if (!info_list)
+   if (!entry_list)
       return NULL;
 
-   info = (core_info_t*)&info_list->list[i];
+   entry = (xmb_entry_t*)&entry_list->list[i];
 
-   if (!info)
+   if (!entry)
       return NULL;
 
-   node = (xmb_node_t*)info->userdata;
+   node = (xmb_node_t*)entry->userdata;
 
    if (node)
       return node;
 
-   info->userdata = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
+   entry->userdata = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
 
-   if (!info->userdata)
+   if (!entry->userdata)
    {
       RARCH_ERR("XMB node could not be allocated.\n");
       return NULL;
    }
 
-   node = (xmb_node_t*)info->userdata;
+   node = (xmb_node_t*)entry->userdata;
 
    if (!node)
       return NULL;
@@ -733,18 +694,18 @@ static void xmb_set_title(void)
    }
    else
    {
-      core_info_t *info = NULL;
-      core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
+      xmb_entry_t *entry = NULL;
+      xmb_entry_list_t *entry_list = (xmb_entry_list_t*)g_extern.xmb_entry;
 
-      if (!info_list)
+      if (!entry_list)
          return;
 
-      info = (core_info_t*)&info_list->list[driver.menu->cat_selection_ptr - 1];
+      entry = (xmb_entry_t*)&entry_list->list[driver.menu->cat_selection_ptr - 1];
 
-      if (!info)
+      if (!entry)
          return;
 
-      strlcpy(xmb->title, info->display_name, sizeof(xmb->title));
+      strlcpy(xmb->title, entry->display_name, sizeof(xmb->title));
    }
 }
 
@@ -764,7 +725,7 @@ static void xmb_list_open()
    for (j = 0; j < xmb->num_categories; j++)
    {
       float ia, iz;
-      xmb_node_t *node = j ? xmb_node_for_core(j-1) : &xmb->settings_node;
+      xmb_node_t *node = j ? xmb_node_for_entry(j-1) : &xmb->settings_node;
 
       if (!node)
          continue;
@@ -802,7 +763,7 @@ static void xmb_list_switch()
    for (j = 0; j < xmb->num_categories; j++)
    {
       float ia;
-      xmb_node_t *node = j ? xmb_node_for_core(j-1) : &xmb->settings_node;
+      xmb_node_t *node = j ? xmb_node_for_entry(j-1) : &xmb->settings_node;
 
       if (!node)
          continue;
@@ -868,7 +829,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
    file_list_get_last(stack, &dir, &label, &menu_type);
 
    if (xmb->active_category)
-      core_node = xmb_node_for_core(cat_selection_ptr - 1);
+      core_node = xmb_node_for_entry(cat_selection_ptr - 1);
 
    for (i = 0; i < end; i++)
    {
@@ -1069,7 +1030,7 @@ static void xmb_frame(void)
 
    for (i = 0; i < xmb->num_categories; i++)
    {
-      xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
+      xmb_node_t *node = i ? xmb_node_for_entry(i-1) : &xmb->settings_node;
 
       if (!node)
          continue;
@@ -1116,21 +1077,6 @@ static void xmb_frame(void)
    }
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
-}
-
-static void xmb_init_core_info(void *data)
-{
-   (void)data;
-
-   core_info_list_free(g_extern.core_info);
-   g_extern.core_info = NULL;
-   if (*g_settings.libretro_directory)
-      g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
-}
-
-static void xmb_update_core_info(void *data)
-{
-   (void)data;
 }
 
 static void *xmb_init(void)
@@ -1219,9 +1165,9 @@ static void *xmb_init(void)
    xmb->label_margin_top = xmb->font_size/3.0;
    xmb->setting_margin_left = 600.0 * scale_factor;
 
-   xmb_init_core_info(menu);
+   g_extern.xmb_entry = xmb_entry_list_new(g_settings.xmb_entry_path);
 
-   xmb->num_categories = g_extern.core_info ? (g_extern.core_info->count + 1) : 1;
+   xmb->num_categories = g_extern.xmb_entry ? (g_extern.xmb_entry->count + 1) : 1;
 
    return menu;
 }
@@ -1230,13 +1176,8 @@ static void xmb_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
 
-   if (g_extern.core_info)
-      core_info_list_free(g_extern.core_info);
-
    if (menu->userdata)
       free(menu->userdata);
-
-   g_extern.core_info = NULL;
 }
 
 static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
@@ -1267,12 +1208,13 @@ static void xmb_context_reset(void *data)
 {
    int i, k;
    char bgpath[PATH_MAX_LENGTH];
-   char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH], iconpath[PATH_MAX_LENGTH],
-         fontpath[PATH_MAX_LENGTH], core_id[PATH_MAX_LENGTH], texturepath[PATH_MAX_LENGTH],
-         content_texturepath[PATH_MAX_LENGTH];
+   char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH],
+         iconpath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH],
+         icon_name[PATH_MAX_LENGTH], content_icon_name[PATH_MAX_LENGTH],
+         texturepath[PATH_MAX_LENGTH], content_texturepath[PATH_MAX_LENGTH];
 
-   core_info_t* info = NULL;
-   core_info_list_t* info_list = NULL;
+   xmb_entry_t* entry = NULL;
+   xmb_entry_list_t* entry_list = NULL;
    gl_t *gl = NULL;
    xmb_handle_t *xmb = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
@@ -1297,7 +1239,7 @@ static void xmb_context_reset(void *data)
    fill_pathname_join(bgpath, bgpath, "bg.png", sizeof(bgpath));
 
    fill_pathname_join(mediapath, g_settings.assets_directory,
-         "lakka", sizeof(mediapath));
+         "xmb", sizeof(mediapath));
    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
    fill_pathname_join(iconpath, themepath, xmb->icon_dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
@@ -1352,42 +1294,31 @@ static void xmb_context_reset(void *data)
    xmb->settings_node.alpha = xmb->c_active_alpha;
    xmb->settings_node.zoom = xmb->c_active_zoom;
 
-   info_list = (core_info_list_t*)g_extern.core_info;
+   entry_list = (xmb_entry_list_t*)g_extern.xmb_entry;
 
-   if (!info_list)
+   if (!entry_list)
       return;
 
    for (i = 1; i < xmb->num_categories; i++)
    {
-      node = xmb_node_for_core(i-1);
+      node = xmb_node_for_entry(i-1);
 
       fill_pathname_join(mediapath, g_settings.assets_directory,
-            "lakka", sizeof(mediapath));
+            "xmb", sizeof(mediapath));
       fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
       fill_pathname_join(iconpath, themepath, xmb->icon_dir, sizeof(iconpath));
       fill_pathname_slash(iconpath, sizeof(iconpath));
 
-      info = (core_info_t*)&info_list->list[i-1];
+      entry = (xmb_entry_t*)&entry_list->list[i-1];
 
-      if (!info)
+      if (!entry)
          continue;
 
-      if (info->systemname)
-      {
-         char *tmp = xmb_str_replace(info->systemname, "/", " ");
-         strlcpy(core_id, tmp, sizeof(core_id));
-         free(tmp);
-      }
-      else
-         strlcpy(core_id, "default", sizeof(core_id));
-
       strlcpy(texturepath, iconpath, sizeof(texturepath));
-      strlcat(texturepath, core_id, sizeof(texturepath));
-      strlcat(texturepath, ".png", sizeof(texturepath));
+      strlcat(texturepath, entry->icon_name, sizeof(texturepath));
 
       strlcpy(content_texturepath, iconpath, sizeof(content_texturepath));
-      strlcat(content_texturepath, core_id, sizeof(content_texturepath));
-      strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
+      strlcat(content_texturepath, entry->content_icon_name, sizeof(content_texturepath));
 
       node->alpha = (i == xmb->active_category) ? xmb->c_active_alpha : xmb->c_passive_alpha;
       node->zoom  = (i == xmb->active_category) ? xmb->c_active_zoom : xmb->c_passive_zoom;
@@ -1565,7 +1496,7 @@ static void xmb_context_destroy(void *data)
 
    for (i = 1; i < xmb->num_categories; i++)
    {
-      xmb_node_t *node = xmb_node_for_core(i-1);
+      xmb_node_t *node = xmb_node_for_entry(i-1);
 
       if (!node)
          continue;
@@ -1597,7 +1528,7 @@ static void xmb_toggle(bool menu_on)
          xmb->prevent_populate = true;
          for (i = 0; i < xmb->num_categories; i++)
          {
-            xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
+            xmb_node_t *node = i ? xmb_node_for_entry(i-1) : &xmb->settings_node;
 
             if (!node)
                continue;
@@ -1637,8 +1568,8 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_clear,
    xmb_list_cache,
    xmb_list_set_selection,
-   xmb_init_core_info,
-   xmb_update_core_info,
+   NULL,
+   NULL,
    xmb_entry_iterate,
    "xmb",
 };

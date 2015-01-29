@@ -61,7 +61,6 @@ typedef struct
    core_info_firmware_t *firmware;
    size_t firmware_count;
    bool supports_no_game;
-   void *userdata;
 } core_info_t;
 
 typedef struct
@@ -103,6 +102,8 @@ const char *core_info_list_get_all_extensions(core_info_list_t *list);
 
 bool core_info_list_get_display_name(core_info_list_t *list,
       const char *path, char *buf, size_t size);
+
+core_info_t *find_core_info(core_info_list_t *list, const char *core);
 
 #ifdef __cplusplus
 }

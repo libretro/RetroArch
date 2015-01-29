@@ -294,7 +294,8 @@ ifeq ($(HAVE_GLUI), 1)
    DEFINES += -DHAVE_GLUI
 endif
 ifeq ($(HAVE_XMB), 1)
-   OBJ += menu/drivers/xmb.o
+   OBJ += xmb_entry.o \
+          menu/drivers/xmb.o
    DEFINES += -DHAVE_XMB
 endif
 endif

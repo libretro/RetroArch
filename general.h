@@ -30,6 +30,7 @@
 #include <compat/strl.h>
 #include "core_options.h"
 #include "core_info.h"
+#include "xmb_entry.h"
 #include <retro_miscellaneous.h>
 
 #include "playlist.h"
@@ -104,6 +105,7 @@ struct defaults
    char assets_dir[PATH_MAX_LENGTH];
    char core_dir[PATH_MAX_LENGTH];
    char core_info_dir[PATH_MAX_LENGTH];
+   char xmb_entry_dir[PATH_MAX_LENGTH];
    char overlay_dir[PATH_MAX_LENGTH];
    char osk_overlay_dir[PATH_MAX_LENGTH];
    char port_dir[PATH_MAX_LENGTH];
@@ -334,6 +336,7 @@ struct settings
    char libretro_directory[PATH_MAX_LENGTH];
    unsigned libretro_log_level;
    char libretro_info_path[PATH_MAX_LENGTH];
+   char xmb_entry_path[PATH_MAX_LENGTH];
    char content_database[PATH_MAX_LENGTH];
    char cheat_database[PATH_MAX_LENGTH];
    char cursor_directory[PATH_MAX_LENGTH];
@@ -413,6 +416,8 @@ struct global
 
    core_info_list_t *core_info;
    core_info_t *core_info_current;
+
+   xmb_entry_list_t *xmb_entry;
 
    uint32_t content_crc;
 

@@ -426,7 +426,7 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    *num_infos = supported;
 }
 
-static core_info_t *find_core_info(core_info_list_t *list,
+core_info_t *find_core_info(core_info_list_t *list,
       const char *core)
 {
    size_t i;

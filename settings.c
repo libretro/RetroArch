@@ -570,6 +570,7 @@ static void config_set_defaults(void)
       *g_extern.savestate_dir = '\0';
 
    *g_settings.libretro_info_path = '\0';
+   *g_settings.xmb_entry_path = '\0';
    if (!g_extern.has_set_libretro_directory)
       *g_settings.libretro_directory = '\0';
 
@@ -643,6 +644,9 @@ static void config_set_defaults(void)
    if (*g_defaults.core_info_dir)
       fill_pathname_expand_special(g_settings.libretro_info_path,
             g_defaults.core_info_dir, sizeof(g_settings.libretro_info_path));
+   if (*g_defaults.xmb_entry_dir)
+      fill_pathname_expand_special(g_settings.xmb_entry_path,
+            g_defaults.xmb_entry_dir, sizeof(g_settings.xmb_entry_path));
 #ifdef HAVE_OVERLAY
    if (*g_defaults.overlay_dir)
    {
@@ -1296,6 +1300,8 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_PATH(libretro_info_path, "libretro_info_path");
 
+   CONFIG_GET_PATH(xmb_entry_path, "xmb_entry_path");
+
    CONFIG_GET_PATH(core_options_path, "core_options_path");
    CONFIG_GET_PATH(screenshot_directory, "screenshot_directory");
    if (*g_settings.screenshot_directory)
@@ -1821,6 +1827,7 @@ bool config_save_file(const char *path)
    config_set_path(conf,  "libretro_path", g_settings.libretro);
    config_set_path(conf,  "libretro_directory", g_settings.libretro_directory);
    config_set_path(conf,  "libretro_info_path", g_settings.libretro_info_path);
+   config_set_path(conf,  "xmb_entry_path", g_settings.xmb_entry_path);
    config_set_path(conf,  "content_database_path", g_settings.content_database);
    config_set_path(conf,  "cheat_database_path", g_settings.cheat_database);
    config_set_path(conf,  "cursor_directory", g_settings.cursor_directory);
