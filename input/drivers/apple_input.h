@@ -65,7 +65,7 @@ void apple_input_enable_small_keyboard(bool on);
 void apple_input_reset_icade_buttons(void);
 
 void apple_input_keyboard_event(bool down, unsigned code,
-      uint32_t character, uint32_t mod);
+      uint32_t character, uint32_t mod, unsigned device);
 
 extern int32_t apple_input_find_any_key(void);
 
