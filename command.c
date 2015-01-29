@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -109,8 +109,10 @@ error:
 static bool cmd_init_stdin(rarch_cmd_t *handle)
 {
 #ifndef _WIN32
+#ifdef HAVE_NETPLAY
    if (!socket_nonblock(STDIN_FILENO))
       return false;
+#endif
 #endif
 
    handle->stdin_enable = true;
@@ -200,7 +202,7 @@ static const struct cmd_map map[] = {
    { "OVERLAY_NEXT",           RARCH_OVERLAY_NEXT },
    { "DISK_EJECT_TOGGLE",      RARCH_DISK_EJECT_TOGGLE },
    { "DISK_NEXT",              RARCH_DISK_NEXT },
-   { "DISK_PREV",              RARCH_DISK_PREV },   
+   { "DISK_PREV",              RARCH_DISK_PREV },
    { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
    { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
@@ -484,7 +486,7 @@ static void stdin_cmd_poll(rarch_cmd_t *handle)
 
    if (!last_newline)
    {
-      /* We're receiving bogus data in pipe 
+      /* We're receiving bogus data in pipe
        * (no terminating newline), flush out the buffer. */
       if (handle->stdin_buf_ptr + 1 >= STDIN_BUF_SIZE)
       {
@@ -528,7 +530,7 @@ static bool send_udp_packet(const char *host,
    const struct addrinfo *tmp  = NULL;
    int fd = -1;
    bool ret = true;
-  
+
    memset(&hints, 0, sizeof(hints));
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    hints.ai_family   = AF_INET;
@@ -640,5 +642,3 @@ bool network_cmd_send(const char *cmd_)
    return ret;
 }
 #endif
-
-
