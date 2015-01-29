@@ -603,7 +603,6 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
    ol->overlay_path = strdup(path);
    if (!ol->overlay_path)
    {
-      RARCH_LOG("exits here, path is: %s.\n", path);
       free(ol);
       return NULL;
    }
