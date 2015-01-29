@@ -2689,8 +2689,7 @@ bool rarch_main_command(unsigned cmd)
 
          driver.overlay = input_overlay_new(driver.osk_active ? g_settings.osk.overlay : g_settings.input.overlay,
                driver.osk_active ? g_settings.osk.enable   : g_settings.input.overlay_enable,
-               driver.osk_active ? g_settings.osk.opacity  : g_settings.input.overlay_opacity,
-               driver.osk_active ? g_settings.osk.scale    : g_settings.input.overlay_scale);
+               g_settings.input.overlay_opacity, g_settings.input.overlay_scale);
          if (!driver.overlay)
             RARCH_ERR("Failed to load overlay.\n");
 #endif

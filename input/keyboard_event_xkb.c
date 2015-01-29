@@ -61,9 +61,9 @@ void handle_xkb(
    }
 
    input_keyboard_event(value, input_keymaps_translate_keysym_to_rk(code),
-         num_syms ? xkb_keysym_to_utf32(syms[0]) : 0, mod, false);
+         num_syms ? xkb_keysym_to_utf32(syms[0]) : 0, mod);
 
    for (i = 1; i < num_syms; i++)
       input_keyboard_event(value, RETROK_UNKNOWN,
-            xkb_keysym_to_utf32(syms[i]), mod, false);
+            xkb_keysym_to_utf32(syms[i]), mod);
 }

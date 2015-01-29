@@ -345,7 +345,7 @@ static void sdl_input_poll(void *data)
          if (event.key.keysym.mod & KMOD_CAPS)
             mod |= RETROKMOD_CAPSLOCK;
 
-         input_keyboard_event(event.type == SDL_KEYDOWN, code, code, mod, false);
+         input_keyboard_event(event.type == SDL_KEYDOWN, code, code, mod);
       }
 #ifdef HAVE_SDL2
       else if (event.type == SDL_MOUSEWHEEL)

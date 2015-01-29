@@ -37,6 +37,13 @@ struct input_keyboard_line
    void *userdata;
 };
 
+static void input_keyboard_line_toggle_osk(bool enable)
+{
+   rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
+   driver.osk_active = enable;
+   rarch_main_command(RARCH_CMD_OVERLAY_INIT);
+}
+
 /**
  * input_keyboard_line_free:
  * @state                    : Input keyboard line handle.
@@ -51,8 +58,7 @@ void input_keyboard_line_free(input_keyboard_line_t *state)
    free(state->buffer);
    free(state);
 
-   rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
-   driver.osk_active = false;
+   input_keyboard_line_toggle_osk(false);
 }
 
 /**
@@ -77,8 +83,7 @@ input_keyboard_line_t *input_keyboard_line_new(void *userdata,
    state->cb = cb;
    state->userdata = userdata;
 
-   driver.osk_active = true;
-   rarch_main_command(RARCH_CMD_OVERLAY_INIT);
+   input_keyboard_line_toggle_osk(true);
 
    return state;
 }
@@ -224,7 +229,7 @@ void input_keyboard_wait_keys_cancel(void)
  * This interfaces with the global driver struct and libretro callbacks.
  **/
 void input_keyboard_event(bool down, unsigned code,
-      uint32_t character, uint16_t mod, bool enable_osk)
+      uint32_t character, uint16_t mod)
 {
    static bool deferred_wait_keys;
 

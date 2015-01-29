@@ -92,13 +92,12 @@ void input_keyboard_line_free(input_keyboard_line_t *state);
  * @code                     : Keycode.
  * @character                : Character inputted.
  * @mod                      : TODO/FIXME: ???
- * @enable_osk               : Fire off keyboard event from OSK
  *
  * Keyboard event utils. Called by drivers when keyboard events are fired.
  * This interfaces with the global driver struct and libretro callbacks.
  **/
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
-      uint16_t mod, bool enable_osk);
+      uint16_t mod);
 
 /**
  * input_keyboard_start_line:

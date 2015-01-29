@@ -46,9 +46,6 @@ typedef enum
 void menu_input_key_event(bool down, unsigned keycode, uint32_t character,
       uint16_t key_modifiers);
 
-void menu_input_osk_key_event(bool down, unsigned keycode,
-      uint32_t character, uint16_t mod);
-
 void menu_input_key_start_line(void *data, const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb);

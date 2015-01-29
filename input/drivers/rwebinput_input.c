@@ -173,8 +173,7 @@ static void rwebinput_input_poll(void *data)
       {
          if (diff & 1)
             input_keyboard_event((state->keys[i] & (1 << k)) != 0,
-                  input_keymaps_translate_keysym_to_rk(i * 8 + k), 0, 0,
-                  false);
+                  input_keymaps_translate_keysym_to_rk(i * 8 + k), 0, 0);
       }
    }
 
