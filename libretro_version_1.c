@@ -465,10 +465,11 @@ static int16_t input_state(unsigned port, unsigned device,
 #ifdef HAVE_OVERLAY
 /*
  * input_poll_overlay:
+ * @overlay_device : pointer to overlay 
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/
-static inline void input_poll_overlay(void)
+static inline void input_poll_overlay(input_overlay_t *overlay_device, float opacity)
 {
    input_overlay_state_t old_key_state;
    unsigned i, j, device;
@@ -479,7 +480,7 @@ static inline void input_poll_overlay(void)
          sizeof(driver.overlay_state.keys));
    memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
 
-   device = input_overlay_full_screen(driver.overlay) ?
+   device = input_overlay_full_screen(overlay_device) ?
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
@@ -493,7 +494,7 @@ static inline void input_poll_overlay(void)
       int16_t y = driver.input->input_state(driver.input_data, NULL, 0,
             device, i, RETRO_DEVICE_ID_POINTER_Y);
 
-      input_overlay_poll(driver.overlay, &polled_data, x, y);
+      input_overlay_poll(overlay_device, &polled_data, x, y);
 
       driver.overlay_state.buttons |= polled_data.buttons;
 
@@ -587,9 +588,9 @@ static inline void input_poll_overlay(void)
    }
 
    if (polled)
-      input_overlay_post_poll(driver.overlay);
+      input_overlay_post_poll(overlay_device, opacity);
    else
-      input_overlay_poll_clear(driver.overlay);
+      input_overlay_poll_clear(overlay_device, opacity);
 }
 #endif
 
@@ -600,11 +601,20 @@ static inline void input_poll_overlay(void)
  **/
 static void input_poll(void)
 {
+#ifdef HAVE_OVERLAY
+   input_overlay_t *overlay_device = driver.overlay;
+   float opacity = g_settings.input.overlay_opacity;
+   if (driver.osk_active)
+   {
+      overlay_device = driver.osk_overlay;
+      opacity = g_settings.osk.opacity;
+   }
+#endif
    driver.input->poll(driver.input_data);
 
 #ifdef HAVE_OVERLAY
-   if (driver.overlay)
-      input_poll_overlay();
+   if (overlay_device)
+      input_poll_overlay(overlay_device, opacity);
 #endif
 
 #ifdef HAVE_COMMAND

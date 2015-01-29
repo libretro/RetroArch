@@ -3205,6 +3205,13 @@ static int deferred_push_input_overlay(void *data, void *userdata,
          MENU_FILE_OVERLAY, "cfg", NULL);
 }
 
+static int deferred_push_input_osk_overlay(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
+         MENU_FILE_OVERLAY, "cfg", NULL);
+}
+
 static int deferred_push_video_font_path(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -4386,6 +4393,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_audio_dsp_plugin;
    else if (!strcmp(label, "input_overlay"))
       cbs->action_deferred_push = deferred_push_input_overlay;
+   else if (!strcmp(label, "input_osk_overlay"))
+      cbs->action_deferred_push = deferred_push_input_osk_overlay;
    else if (!strcmp(label, "video_font_path"))
       cbs->action_deferred_push = deferred_push_video_font_path;
    else if (!strcmp(label, "game_history_path"))

@@ -61,12 +61,6 @@ static const void *find_driver_nonempty(const char *label, int i,
       if (drv)
          strlcpy(str, location_driver_find_ident(i), sizeof_str);
    }
-   else if (!strcmp(label, "osk_driver"))
-   {
-      drv = osk_driver_find_handle(i);
-      if (drv)
-         strlcpy(str, osk_driver_find_ident(i), sizeof_str);
-   }
 #ifdef HAVE_MENU
    else if (!strcmp(label, "menu_driver"))
    {
@@ -190,7 +184,6 @@ void init_drivers_pre(void)
    find_input_driver();
    find_camera_driver();
    find_location_driver();
-   find_osk_driver();
 #ifdef HAVE_MENU
    find_menu_driver();
 #endif
@@ -303,8 +296,6 @@ void init_drivers(int flags)
       driver.camera_data_own = false;
    if (flags & DRIVER_LOCATION)
       driver.location_data_own = false;
-   if (flags & DRIVER_OSK)
-      driver.osk_data_own = false;
 
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
@@ -338,9 +329,6 @@ void init_drivers(int flags)
    /* Only initialize location driver if we're ever going to use it. */
    if ((flags & DRIVER_LOCATION) && driver.location_active)
       init_location();
-
-   if (flags & DRIVER_OSK)
-      init_osk();
 
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU)
@@ -413,12 +401,6 @@ void uninit_drivers(int flags)
       driver.location_data = NULL;
    }
    
-   if ((flags & DRIVER_OSK) && !driver.osk_data_own)
-   {
-      uninit_osk();
-      driver.osk_data = NULL;
-   }
-
    if ((flags & DRIVER_INPUT) && !driver.input_data_own)
       driver.input_data = NULL;
 

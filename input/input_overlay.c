@@ -14,9 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+#include <string.h>
 #include "input_overlay.h"
-#include "../general.h"
 #include "../driver.h"
+#include "../general.h"
 #include <file/config_file.h>
 #include <compat/posix_string.h>
 #include "input_common.h"
@@ -565,7 +567,8 @@ end:
    return ret;
 }
 
-static void input_overlay_load_active(input_overlay_t *ol)
+static void input_overlay_load_active(input_overlay_t *ol,
+      float opacity)
 {
    if (!ol)
       return;
@@ -573,7 +576,7 @@ static void input_overlay_load_active(input_overlay_t *ol)
    ol->iface->load(ol->iface_data, ol->active->load_images,
          ol->active->load_images_size);
 
-   input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
+   input_overlay_set_alpha_mod(ol, opacity);
    input_overlay_set_vertex_geom(ol);
    ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
 }
@@ -587,9 +590,12 @@ static void input_overlay_load_active(input_overlay_t *ol)
  *
  * Returns: Overlay handle on success, otherwise NULL.
  **/
-input_overlay_t *input_overlay_new(const char *path, bool enable)
+input_overlay_t *input_overlay_new(const char *path, bool enable,
+      float opacity, float scale_factor)
 {
    input_overlay_t *ol = (input_overlay_t*)calloc(1, sizeof(*ol));
+
+   RARCH_LOG("path is: %s\n", path);
 
    if (!ol)
       goto error;
@@ -597,6 +603,7 @@ input_overlay_t *input_overlay_new(const char *path, bool enable)
    ol->overlay_path = strdup(path);
    if (!ol->overlay_path)
    {
+      RARCH_LOG("exits here, path is: %s.\n", path);
       free(ol);
       return NULL;
    }
@@ -619,11 +626,11 @@ input_overlay_t *input_overlay_new(const char *path, bool enable)
 
    ol->active = &ol->overlays[0];
 
-   input_overlay_load_active(ol);
+   input_overlay_load_active(ol, opacity);
    input_overlay_enable(ol, enable);
 
-   input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
-   input_overlay_set_scale_factor(ol, g_settings.input.overlay_scale);
+   input_overlay_set_alpha_mod(ol, opacity);
+   input_overlay_set_scale_factor(ol, scale_factor);
    ol->next_index = (ol->index + 1) % ol->size;
 
    return ol;
@@ -802,11 +809,11 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
  * update the range modifiers for pressed/unpressed regions
  * and alpha mods.
  **/
-void input_overlay_post_poll(input_overlay_t *ol)
+void input_overlay_post_poll(input_overlay_t *ol, float opacity)
 {
    size_t i;
 
-   input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
+   input_overlay_set_alpha_mod(ol, opacity);
 
    for (i = 0; i < ol->active->size; i++)
    {
@@ -826,7 +833,7 @@ void input_overlay_post_poll(input_overlay_t *ol)
 
          if (desc->image.pixels)
             ol->iface->set_alpha(ol->iface_data, desc->image_index,
-                  desc->alpha_mod * g_settings.input.overlay_opacity);
+                  desc->alpha_mod * opacity);
       }
 
       input_overlay_update_desc_geom(ol, desc);
@@ -841,12 +848,12 @@ void input_overlay_post_poll(input_overlay_t *ol)
  * Call when there is nothing to poll. Allows overlay to
  * clear certain state.
  **/
-void input_overlay_poll_clear(input_overlay_t *ol)
+void input_overlay_poll_clear(input_overlay_t *ol, float opacity)
 {
    size_t i;
 
    ol->blocked = false;
-   input_overlay_set_alpha_mod(ol, g_settings.input.overlay_opacity);
+   input_overlay_set_alpha_mod(ol, opacity);
 
    for (i = 0; i < ol->active->size; i++)
    {
@@ -872,7 +879,7 @@ void input_overlay_poll_clear(input_overlay_t *ol)
  * Switch to the next available overlay
  * screen.
  **/
-void input_overlay_next(input_overlay_t *ol)
+void input_overlay_next(input_overlay_t *ol, float opacity)
 {
    if (!ol)
       return;
@@ -880,7 +887,7 @@ void input_overlay_next(input_overlay_t *ol)
    ol->index = ol->next_index;
    ol->active = &ol->overlays[ol->index];
 
-   input_overlay_load_active(ol);
+   input_overlay_load_active(ol, opacity);
 
    ol->blocked = true;
    ol->next_index = (ol->index + 1) % ol->size;
@@ -937,6 +944,5 @@ void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
       return;
 
    for (i = 0; i < ol->active->load_images_size; i++)
-      ol->iface->set_alpha(ol->iface_data, i,
-            g_settings.input.overlay_opacity);
+      ol->iface->set_alpha(ol->iface_data, i, mod);
 }

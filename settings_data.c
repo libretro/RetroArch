@@ -3311,6 +3311,19 @@ static void load_content_change_handler(void *data)
    rarch_main_command(RARCH_CMD_LOAD_CONTENT);
 }
 
+static void osk_overlay_enable_toggle_change_handler(void *data)
+{
+   rarch_setting_t *setting = (rarch_setting_t *)data;
+
+   if (!setting)
+      return;
+
+   if (setting->value.boolean)
+      rarch_main_command(RARCH_CMD_OSK_OVERLAY_INIT);
+   else
+      rarch_main_command(RARCH_CMD_OSK_OVERLAY_DEINIT);
+}
+
 static void overlay_enable_toggle_change_handler(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
@@ -5117,26 +5130,6 @@ static bool setting_data_append_list_input_options(
       }
       END_SUB_GROUP(list, list_info);
    }
-   START_SUB_GROUP(
-         list,
-         list_info,
-         "Onscreen Keyboard",
-         group_info.name,
-         subgroup_info);
-
-   CONFIG_BOOL(
-         g_settings.osk.enable,
-         "osk_enable",
-         "Onscreen Keyboard Enable",
-         false,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-
-   END_SUB_GROUP(list, list_info);
 
    START_SUB_GROUP(
          list,
@@ -5226,6 +5219,50 @@ static bool setting_data_append_list_overlay_options(
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_OVERLAY_SET_SCALE_FACTOR);
    settings_list_current_add_range(list, list_info, 0, 2, 0.01, true, true);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+   END_SUB_GROUP(list, list_info);
+   END_GROUP(list, list_info);
+#endif
+
+   return true;
+}
+
+static bool setting_data_append_list_osk_overlay_options(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info)
+{
+#ifdef HAVE_OVERLAY
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+
+   START_GROUP(group_info, "Onscreen Keyboard Overlay Options");
+   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(
+         g_settings.osk.enable,
+         "input_osk_overlay_enable",
+         "OSK Overlay Enable",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   (*list)[list_info->index - 1].change_handler = osk_overlay_enable_toggle_change_handler;
+
+   CONFIG_PATH(
+         g_settings.osk.overlay,
+         "input_osk_overlay",
+         "OSK Overlay Preset",
+         g_extern.osk_overlay_dir,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_list_current_add_values(list, list_info, "cfg");
+   settings_list_current_add_cmd(list, list_info, RARCH_CMD_OSK_OVERLAY_INIT);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -5981,6 +6018,21 @@ static bool setting_data_append_list_path_options(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
+
+   CONFIG_DIR(
+         g_extern.osk_overlay_dir,
+         "osk_overlay_directory",
+         "OSK Overlay Directory",
+         g_defaults.osk_overlay_dir,
+         "<default>",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(
+         list,
+         list_info,
+         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 #endif
 
    CONFIG_DIR(
@@ -6237,6 +6289,12 @@ rarch_setting_t *setting_data_new(unsigned mask)
    if (mask & SL_FLAG_OVERLAY_OPTIONS)
    {
       if (!setting_data_append_list_overlay_options(&list, list_info))
+         goto error;
+   }
+   
+   if (mask & SL_FLAG_OSK_OVERLAY_OPTIONS)
+   {
+      if (!setting_data_append_list_osk_overlay_options(&list, list_info))
          goto error;
    }
 

@@ -17,6 +17,7 @@
 #include "keyboard_line.h"
 #include "../general.h"
 #include "../driver.h"
+#include "../retroarch.h"
 #include <stddef.h>
 #include <string.h>
 #include <stddef.h>
@@ -49,6 +50,8 @@ void input_keyboard_line_free(input_keyboard_line_t *state)
 
    free(state->buffer);
    free(state);
+
+   rarch_main_command(RARCH_CMD_OSK_OVERLAY_STOP);
 }
 
 /**
@@ -72,6 +75,9 @@ input_keyboard_line_t *input_keyboard_line_new(void *userdata,
 
    state->cb = cb;
    state->userdata = userdata;
+
+   rarch_main_command(RARCH_CMD_OSK_OVERLAY_START);
+
    return state;
 }
 
@@ -243,7 +249,7 @@ void input_keyboard_event(bool down, unsigned code,
       if (!down)
          return;
 
-      if (enable_osk && code != 0x12d)
+      if (driver.osk_active && code != 0x12d)
       {
          if (!input_keyboard_line_event(g_keyboard_line, (char)code))
             return;

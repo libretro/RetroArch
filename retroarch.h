@@ -70,7 +70,15 @@ enum basic_event
    RARCH_CMD_OVERLAY_SET_ALPHA_MOD,
    /* Cycle to next overlay. */
    RARCH_CMD_OVERLAY_NEXT,
+   /* Start OSK overlay. */
+   RARCH_CMD_OSK_OVERLAY_START,
+   /* Stops OSK overlay. */
+   RARCH_CMD_OSK_OVERLAY_STOP,
    /* Initializes graphics filter. */
+   RARCH_CMD_OSK_OVERLAY_INIT,
+   /* Initializes overlay. */
+   RARCH_CMD_OSK_OVERLAY_DEINIT,
+   /* Deinitializes overlay. */
    RARCH_CMD_DSP_FILTER_INIT,
    /* Deinitializes graphics filter. */
    RARCH_CMD_DSP_FILTER_DEINIT,

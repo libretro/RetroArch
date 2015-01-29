@@ -31,7 +31,6 @@
 #include "audio/audio_driver.h"
 
 #include "menu/menu_driver.h"
-#include "osk/osk_driver.h"
 #include "camera/camera_driver.h"
 #include "location/location_driver.h"
 #include "audio/audio_resampler_driver.h"
@@ -169,11 +168,10 @@ enum
    DRIVER_AUDIO        = 1 << 0,
    DRIVER_VIDEO        = 1 << 1,
    DRIVER_INPUT        = 1 << 2,
-   DRIVER_OSK          = 1 << 3,
-   DRIVER_CAMERA       = 1 << 4,
-   DRIVER_LOCATION     = 1 << 5,
-   DRIVER_MENU         = 1 << 6,
-   DRIVERS_VIDEO_INPUT = 1 << 7
+   DRIVER_CAMERA       = 1 << 3,
+   DRIVER_LOCATION     = 1 << 4,
+   DRIVER_MENU         = 1 << 5,
+   DRIVERS_VIDEO_INPUT = 1 << 6
 };
 
 /* Drivers for RARCH_CMD_DRIVERS_DEINIT and RARCH_CMD_DRIVERS_INIT */
@@ -181,7 +179,6 @@ enum
       ( DRIVER_AUDIO \
       | DRIVER_VIDEO \
       | DRIVER_INPUT \
-      | DRIVER_OSK \
       | DRIVER_CAMERA \
       | DRIVER_LOCATION \
       | DRIVER_MENU \
@@ -193,7 +190,6 @@ typedef struct driver
    const audio_driver_t *audio;
    const video_driver_t *video;
    const input_driver_t *input;
-   const input_osk_driver_t *osk;
    const camera_driver_t *camera;
    const location_driver_t *location;
    const rarch_resampler_t *resampler;
@@ -205,7 +201,6 @@ typedef struct driver
    void *video_context_data;
    void *video_shader_data;
    void *input_data;
-   void *osk_data;
    void *camera_data;
    void *location_data;
    void *resampler_data;
@@ -251,7 +246,6 @@ typedef struct driver
    bool input_data_own;
    bool camera_data_own;
    bool location_data_own;
-   bool osk_data_own;
 #ifdef HAVE_MENU
    bool menu_data_own;
 #endif
@@ -289,6 +283,7 @@ typedef struct driver
 
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay;
+   input_overlay_t *osk_overlay;
    input_overlay_state_t overlay_state;
 #endif
 

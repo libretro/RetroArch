@@ -2669,6 +2669,7 @@ bool rarch_main_command(unsigned cmd)
          if (driver.overlay)
             input_overlay_free(driver.overlay);
          driver.overlay = NULL;
+
          memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
 #endif
          break;
@@ -2678,14 +2679,52 @@ bool rarch_main_command(unsigned cmd)
          if (!*g_settings.input.overlay)
             break;
 
-         driver.overlay = input_overlay_new(g_settings.input.overlay, g_settings.input.overlay_enable);
+         driver.overlay = input_overlay_new(g_settings.input.overlay, g_settings.input.overlay_enable,
+               g_settings.input.overlay_opacity, g_settings.input.overlay_scale);
          if (!driver.overlay)
             RARCH_ERR("Failed to load overlay.\n");
 #endif
          break;
+      case RARCH_CMD_OSK_OVERLAY_STOP:
+#ifdef HAVE_OVERLAY
+         driver.osk_active = false;
+         g_settings.osk.opacity = 0;
+         input_overlay_set_alpha_mod(driver.osk_overlay,
+               g_settings.osk.opacity);
+#endif
+         break;
+      case RARCH_CMD_OSK_OVERLAY_START:
+#ifdef HAVE_OVERLAY
+         driver.osk_active = true;
+         g_settings.osk.opacity = 100;
+         input_overlay_set_alpha_mod(driver.osk_overlay,
+               g_settings.osk.opacity);
+#endif
+         break;
+      case RARCH_CMD_OSK_OVERLAY_DEINIT:
+#ifdef HAVE_OVERLAY
+         if (driver.osk_active)
+            return false;
+         if (driver.osk_overlay)
+            input_overlay_free(driver.osk_overlay);
+         driver.osk_overlay = NULL;
+#endif
+         break;
+      case RARCH_CMD_OSK_OVERLAY_INIT:
+#ifdef HAVE_OVERLAY
+         if (driver.osk_active)
+            return false;
+         rarch_main_command(RARCH_CMD_OSK_OVERLAY_DEINIT);
+
+         driver.osk_overlay = input_overlay_new(g_settings.osk.overlay, g_settings.osk.enable,
+               g_settings.osk.opacity, g_settings.osk.scale);
+         if (!driver.osk_overlay)
+            RARCH_ERR("Failed to load OSK overlay.\n");
+#endif
+         break;
       case RARCH_CMD_OVERLAY_NEXT:
 #ifdef HAVE_OVERLAY
-         input_overlay_next(driver.overlay);
+         input_overlay_next(driver.overlay, g_settings.input.overlay_opacity);
 #endif
          break;
       case RARCH_CMD_DSP_FILTER_DEINIT:

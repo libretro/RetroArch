@@ -189,6 +189,12 @@ const char* config_get_audio_driver_options(void)
 
    options = (char*)calloc(options_len, sizeof(char));
 
+   if (!options)
+   {
+      string_list_free(options_l);
+      return NULL;
+   }
+
    string_list_join_concat(options, options_len, options_l, "|");
 
    string_list_free(options_l);

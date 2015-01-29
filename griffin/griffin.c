@@ -361,12 +361,6 @@ INPUT
 #include "../input/drivers_joypad/winxinput_joypad.c"
 #endif
 
-#if defined(__CELLOS_LV2__)
-#include "../osk/drivers/ps3_osk.c"
-#endif
-
-#include "../osk/drivers/nullosk.c"
-
 #if defined(__linux__) && !defined(ANDROID) 
 #include "../input/drivers/linuxraw_input.c"
 #include "../input/drivers_joypad/linuxraw_joypad.c"
@@ -515,7 +509,6 @@ DRIVERS
 #include "../input/input_driver.c"
 #include "../audio/audio_driver.c"
 #include "../audio/audio_monitor.c"
-#include "../osk/osk_driver.c"
 #include "../camera/camera_driver.c"
 #include "../location/location_driver.c"
 #include "../menu/menu_driver.c"

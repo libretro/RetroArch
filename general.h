@@ -105,6 +105,7 @@ struct defaults
    char core_dir[PATH_MAX_LENGTH];
    char core_info_dir[PATH_MAX_LENGTH];
    char overlay_dir[PATH_MAX_LENGTH];
+   char osk_overlay_dir[PATH_MAX_LENGTH];
    char port_dir[PATH_MAX_LENGTH];
    char shader_dir[PATH_MAX_LENGTH];
    char savestate_dir[PATH_MAX_LENGTH];
@@ -243,12 +244,6 @@ struct settings
    {
       char driver[32];
       bool enable;
-   } osk;
-
-   struct
-   {
-      char driver[32];
-      bool enable;
       bool mute_enable;
       unsigned out_rate;
       unsigned block_frames;
@@ -308,6 +303,14 @@ struct settings
 
       char remapping_path[PATH_MAX_LENGTH];
    } input;
+
+   struct
+   {
+      bool enable;
+      char overlay[PATH_MAX_LENGTH];
+      float opacity;
+      float scale;
+   } osk;
 
    struct
    {
@@ -462,6 +465,7 @@ struct global
 
 #ifdef HAVE_OVERLAY
    char overlay_dir[PATH_MAX_LENGTH];
+   char osk_overlay_dir[PATH_MAX_LENGTH];
 #endif
 
    bool block_patch;
@@ -607,12 +611,6 @@ struct global
       bool movie_start_playback;
       bool movie_end;
    } bsv;
-
-   struct
-   {
-      bool (*cb_init)(void *data);
-      bool (*cb_callback)(void *data);
-   } osk;
 
    bool sram_load_disable;
    bool sram_save_disable;

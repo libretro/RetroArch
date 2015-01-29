@@ -109,7 +109,6 @@ OBJ += frontend/frontend.o \
 		gfx/video_monitor.o \
 		gfx/video_pixel_converter.o \
 		gfx/video_viewport.o \
-		osk/osk_driver.o \
 		camera/camera_driver.o \
 		menu/menu_driver.o \
 		location/location_driver.o \
@@ -162,7 +161,6 @@ OBJ += frontend/frontend.o \
 		audio/drivers/nullaudio.o \
 		input/drivers/nullinput.o \
 		input/drivers_joypad/nullinput_joypad.o \
-		osk/drivers/nullosk.o \
 		playlist.o \
 		movie.o \
 		record/record_driver.o \

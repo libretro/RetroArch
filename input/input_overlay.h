@@ -154,7 +154,8 @@ typedef struct input_overlay_state
  *
  * Returns: Overlay handle on success, otherwise NULL.
  **/
-input_overlay_t *input_overlay_new(const char *overlay, bool enable);
+input_overlay_t *input_overlay_new(const char *path, bool enable,
+      float alpha_mod, float scale_factor);
 
 /**
  * input_overlay_free:
@@ -201,21 +202,23 @@ void input_overlay_poll(input_overlay_t *ol,
 /**
  * input_overlay_post_poll:
  * @ol                    : overlay handle
+ * 
  *
  * Called after all the input_overlay_poll() calls to
  * update the range modifiers for pressed/unpressed regions
  * and alpha mods.
  **/
-void input_overlay_post_poll(input_overlay_t *ol);
+void input_overlay_post_poll(input_overlay_t *ol, float opacity);
 
 /**
  * input_overlay_poll_clear:
  * @ol                    : overlay handle
+ * @opacity               : Opacity of overlay.
  *
  * Call when there is nothing to poll. Allows overlay to
  * clear certain state.
  **/
-void input_overlay_poll_clear(input_overlay_t *ol);
+void input_overlay_poll_clear(input_overlay_t *ol, float opacity);
 
 /**
  * input_overlay_set_alpha_mod:
@@ -243,7 +246,7 @@ void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
  * Switch to the next available overlay
  * screen.
  **/
-void input_overlay_next(input_overlay_t *ol);
+void input_overlay_next(input_overlay_t *ol, float opacity);
 
 #ifdef __cplusplus
 }

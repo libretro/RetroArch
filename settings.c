@@ -291,26 +291,6 @@ const char *config_get_default_menu(void)
 #endif
 
 /**
- * config_get_default_osk:
- *
- * Gets default OSK driver.
- *
- * Returns: Default OSK driver.
- **/
-const char *config_get_default_osk(void)
-{
-   switch (OSK_DEFAULT_DRIVER)
-   {
-      case OSK_PS3:
-         return "ps3";
-      default:
-         break;
-   }
-
-   return "null";
-}
-
-/**
  * config_get_default_camera:
  *
  * Gets default camera driver.
@@ -376,7 +356,6 @@ static void config_set_defaults(void)
 #endif
    const char *def_camera = config_get_default_camera();
    const char *def_location = config_get_default_location();
-   const char *def_osk = config_get_default_osk();
 
    if (def_camera)
       strlcpy(g_settings.camera.driver,
@@ -384,9 +363,6 @@ static void config_set_defaults(void)
    if (def_location)
       strlcpy(g_settings.location.driver,
             def_location, sizeof(g_settings.location.driver));
-   if (def_osk)
-      strlcpy(g_settings.osk.driver,
-            def_osk, sizeof(g_settings.osk.driver));
    if (def_video)
       strlcpy(g_settings.video.driver,
             def_video, sizeof(g_settings.video.driver));
@@ -677,6 +653,19 @@ static void config_set_defaults(void)
                   g_extern.overlay_dir,
                   "gamepads/retropad/retropad.cfg",
                   sizeof(g_settings.input.overlay));
+#endif
+   }
+
+   if (*g_defaults.osk_overlay_dir)
+   {
+      fill_pathname_expand_special(g_extern.osk_overlay_dir,
+            g_defaults.osk_overlay_dir, sizeof(g_extern.osk_overlay_dir));
+#ifdef RARCH_MOBILE
+      if (!*g_settings.input.overlay)
+            fill_pathname_join(g_settings.osk.overlay,
+                  g_extern.osk_overlay_dir,
+                  "overlays/keyboards/US-101/US-101.cfg",
+                  sizeof(g_settings.osk.overlay));
 #endif
    }
 #endif
@@ -1362,6 +1351,15 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(input.overlay_enable, "input_overlay_enable");
    CONFIG_GET_FLOAT(input.overlay_opacity, "input_overlay_opacity");
    CONFIG_GET_FLOAT(input.overlay_scale, "input_overlay_scale");
+
+   CONFIG_GET_PATH_EXTERN(osk_overlay_dir, "osk_overlay_directory");
+   if (!strcmp(g_extern.osk_overlay_dir, "default"))
+      *g_extern.osk_overlay_dir = '\0';
+
+   CONFIG_GET_PATH(osk.overlay, "input_osk_overlay");
+   CONFIG_GET_BOOL(osk.enable, "input_osk_overlay_enable");
+   CONFIG_GET_FLOAT(osk.opacity, "input_osk_overlay_opacity");
+   CONFIG_GET_FLOAT(osk.scale, "input_osk_overlay_scale");
 #endif
 
    CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
@@ -1985,6 +1983,15 @@ bool config_save_file(const char *path)
          g_settings.input.overlay_opacity);
    config_set_float(conf, "input_overlay_scale",
          g_settings.input.overlay_scale);
+
+   config_set_path(conf, "osk_overlay_directory",
+         *g_extern.osk_overlay_dir ? g_extern.osk_overlay_dir : "default");
+   config_set_path(conf, "input_osk_overlay", g_settings.input.overlay);
+   config_set_bool(conf, "input_osk_overlay_enable", g_settings.osk.enable);
+   config_set_float(conf, "input_osk_overlay_opacity",
+         g_settings.osk.opacity);
+   config_set_float(conf, "input_osk_overlay_scale",
+         g_settings.osk.scale);
 #endif
 
    config_set_path(conf, "video_font_path", g_settings.video.font_path);
