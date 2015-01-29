@@ -601,16 +601,11 @@ static inline void input_poll_overlay(input_overlay_t *overlay_device, float opa
  **/
 static void input_poll(void)
 {
-#ifdef HAVE_OVERLAY
-   float opacity = g_settings.input.overlay_opacity;
-   if (driver.osk_active)
-      opacity = g_settings.osk.opacity;
-#endif
    driver.input->poll(driver.input_data);
 
 #ifdef HAVE_OVERLAY
    if (driver.overlay)
-      input_poll_overlay(driver.overlay, opacity);
+      input_poll_overlay(driver.overlay, g_settings.input.overlay_opacity);
 #endif
 
 #ifdef HAVE_COMMAND
