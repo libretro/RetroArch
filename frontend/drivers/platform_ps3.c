@@ -64,13 +64,6 @@ static void callback_sysutil_exit(uint64_t status,
       case CELL_SYSUTIL_REQUEST_EXITGAME:
          g_extern.system.shutdown = true;
          break;
-      case CELL_SYSUTIL_OSKDIALOG_LOADED:
-      case CELL_SYSUTIL_OSKDIALOG_INPUT_CANCELED:
-      case CELL_SYSUTIL_OSKDIALOG_FINISHED:
-      case CELL_SYSUTIL_OSKDIALOG_UNLOADED:
-         if (driver.osk && driver.osk_data)
-            driver.osk->lifecycle(driver.osk_data, status);
-         break;
    }
 #endif
 }
