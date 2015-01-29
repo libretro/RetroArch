@@ -283,7 +283,6 @@ typedef struct driver
 
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay;
-   input_overlay_t *osk_overlay;
    input_overlay_state_t overlay_state;
 #endif
 

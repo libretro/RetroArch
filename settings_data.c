@@ -3311,19 +3311,6 @@ static void load_content_change_handler(void *data)
    rarch_main_command(RARCH_CMD_LOAD_CONTENT);
 }
 
-static void osk_overlay_enable_toggle_change_handler(void *data)
-{
-   rarch_setting_t *setting = (rarch_setting_t *)data;
-
-   if (!setting)
-      return;
-
-   if (setting->value.boolean)
-      rarch_main_command(RARCH_CMD_OSK_OVERLAY_INIT);
-   else
-      rarch_main_command(RARCH_CMD_OSK_OVERLAY_DEINIT);
-}
-
 static void overlay_enable_toggle_change_handler(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
@@ -5249,7 +5236,6 @@ static bool setting_data_append_list_osk_overlay_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   (*list)[list_info->index - 1].change_handler = osk_overlay_enable_toggle_change_handler;
 
    CONFIG_PATH(
          g_settings.osk.overlay,
@@ -5261,7 +5247,6 @@ static bool setting_data_append_list_osk_overlay_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_values(list, list_info, "cfg");
-   settings_list_current_add_cmd(list, list_info, RARCH_CMD_OSK_OVERLAY_INIT);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    END_SUB_GROUP(list, list_info);

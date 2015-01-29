@@ -51,7 +51,8 @@ void input_keyboard_line_free(input_keyboard_line_t *state)
    free(state->buffer);
    free(state);
 
-   rarch_main_command(RARCH_CMD_OSK_OVERLAY_STOP);
+   rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
+   driver.osk_active = false;
 }
 
 /**
@@ -76,7 +77,8 @@ input_keyboard_line_t *input_keyboard_line_new(void *userdata,
    state->cb = cb;
    state->userdata = userdata;
 
-   rarch_main_command(RARCH_CMD_OSK_OVERLAY_START);
+   driver.osk_active = true;
+   rarch_main_command(RARCH_CMD_OVERLAY_INIT);
 
    return state;
 }

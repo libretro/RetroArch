@@ -1984,7 +1984,7 @@ bool config_save_file(const char *path)
 
    config_set_path(conf, "osk_overlay_directory",
          *g_extern.osk_overlay_dir ? g_extern.osk_overlay_dir : "default");
-   config_set_path(conf, "input_osk_overlay", g_settings.input.overlay);
+   config_set_path(conf, "input_osk_overlay", g_settings.osk.overlay);
    config_set_bool(conf, "input_osk_overlay_enable", g_settings.osk.enable);
 #endif
 

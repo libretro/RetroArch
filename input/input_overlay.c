@@ -850,6 +850,7 @@ void input_overlay_poll_clear(input_overlay_t *ol, float opacity)
    size_t i;
 
    ol->blocked = false;
+
    input_overlay_set_alpha_mod(ol, opacity);
 
    for (i = 0; i < ol->active->size; i++)
