@@ -1215,6 +1215,124 @@ static void setting_data_get_string_representation_int(void *data,
       snprintf(type_str, type_str_size, "%d", *setting->value.integer);
 }
 
+static void setting_data_get_string_representation_uint_video_monitor_index(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   if (*setting->value.unsigned_integer)
+      snprintf(type_str, type_str_size, "%u",
+            *setting->value.unsigned_integer);
+   else
+      strlcpy(type_str, "0 (Auto)", type_str_size);
+}
+
+static void setting_data_get_string_representation_uint_video_rotation(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (setting)
+      strlcpy(type_str, rotation_lut[*setting->value.unsigned_integer],
+            type_str_size);
+}
+
+static void setting_data_get_string_representation_uint_aspect_ratio_index(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (setting)
+      strlcpy(type_str,
+            aspectratio_lut[*setting->value.unsigned_integer].name,
+            type_str_size);
+}
+
+static void setting_data_get_string_representation_uint_libretro_device(void *data,
+      char *type_str, size_t type_str_size)
+{
+   const struct retro_controller_description *desc = NULL;
+   const char *name = NULL;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   if (setting->index_offset < g_extern.system.num_ports)
+      desc = libretro_find_controller_description(
+            &g_extern.system.ports[setting->index_offset],
+            g_settings.input.libretro_device
+            [setting->index_offset]);
+
+   if (desc)
+      name = desc->desc;
+
+   if (!name)
+   {
+      /* Find generic name. */
+
+      switch (g_settings.input.libretro_device
+            [setting->index_offset])
+      {
+         case RETRO_DEVICE_NONE:
+            name = "None";
+            break;
+         case RETRO_DEVICE_JOYPAD:
+            name = "RetroPad";
+            break;
+         case RETRO_DEVICE_ANALOG:
+            name = "RetroPad w/ Analog";
+            break;
+         default:
+            name = "Unknown";
+            break;
+      }
+   }
+
+   strlcpy(type_str, name, type_str_size);
+}
+
+static void setting_data_get_string_representation_uint_archive_mode(void *data,
+      char *type_str, size_t type_str_size)
+{
+   const char *name = "Unknown";
+
+   (void)data;
+
+   switch (g_settings.archive.mode)
+   {
+      case 0:
+         name = "Ask";
+         break;
+      case 1:
+         name = "Load Archive";
+         break;
+      case 2:
+         name = "Open Archive";
+         break;
+   }
+
+   strlcpy(type_str, name, type_str_size);
+}
+
+static void setting_data_get_string_representation_uint_analog_dpad_mode(void *data,
+      char *type_str, size_t type_str_size)
+{
+   static const char *modes[] = {
+      "None",
+      "Left Analog",
+      "Right Analog",
+   };
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   (void)data;
+
+   strlcpy(type_str, modes[g_settings.input.analog_dpad_mode
+         [setting->index_offset] % ANALOG_DPAD_LAST],
+         type_str_size);
+}
+
 static void setting_data_get_string_representation_uint(void *data,
       char *type_str, size_t type_str_size)
 {
@@ -1222,94 +1340,7 @@ static void setting_data_get_string_representation_uint(void *data,
    if (!setting)
       return;
 
-   if (!strcmp(setting->name, "video_monitor_index"))
-   {
-      if (*setting->value.unsigned_integer)
-         snprintf(type_str, type_str_size, "%u",
-               *setting->value.unsigned_integer);
-      else
-         strlcpy(type_str, "0 (Auto)", type_str_size);
-   }
-   else if (!strcmp(setting->name, "video_rotation"))
-   {
-      strlcpy(type_str, rotation_lut[*setting->value.unsigned_integer],
-            type_str_size);
-   }
-   else if (!strcmp(setting->name, "aspect_ratio_index"))
-   {
-      strlcpy(type_str,
-            aspectratio_lut[*setting->value.unsigned_integer].name,
-            type_str_size);
-   }
-   else if (!strncmp(setting->name, "input_libretro_device_p", 23))
-   {
-      const struct retro_controller_description *desc = NULL;
-      if (setting->index_offset < g_extern.system.num_ports)
-         desc = libretro_find_controller_description(
-               &g_extern.system.ports[setting->index_offset],
-               g_settings.input.libretro_device
-               [setting->index_offset]);
-
-      const char *name = desc ? desc->desc : NULL;
-      if (!name)
-      {
-         /* Find generic name. */
-
-         switch (g_settings.input.libretro_device
-               [setting->index_offset])
-         {
-            case RETRO_DEVICE_NONE:
-               name = "None";
-               break;
-            case RETRO_DEVICE_JOYPAD:
-               name = "RetroPad";
-               break;
-            case RETRO_DEVICE_ANALOG:
-               name = "RetroPad w/ Analog";
-               break;
-            default:
-               name = "Unknown";
-               break;
-         }
-      }
-
-      strlcpy(type_str, name, type_str_size);
-   }
-   else if (strstr(setting->name, "archive_mode"))
-   {
-      const char *name = NULL;
-
-      switch (g_settings.archive.mode)
-      {
-         case 0:
-            name = "Ask";
-            break;
-         case 1:
-            name = "Load Archive";
-            break;
-         case 2:
-            name = "Open Archive";
-            break;
-         default:
-            name = "Unknown";
-            break;
-      }
-
-      strlcpy(type_str, name, type_str_size);
-   }
-   else if (strstr(setting->name, "analog_dpad_mode"))
-   {
-      static const char *modes[] = {
-         "None",
-         "Left Analog",
-         "Right Analog",
-      };
-
-      strlcpy(type_str, modes[g_settings.input.analog_dpad_mode
-            [setting->index_offset] % ANALOG_DPAD_LAST],
-            type_str_size);
-   }
-   else if (!strcmp(setting->name, "autosave_interval"))
+   if (!strcmp(setting->name, "autosave_interval"))
    {
       if (*setting->value.unsigned_integer)
          snprintf(type_str, type_str_size, "%u seconds",
@@ -3978,6 +4009,8 @@ static bool setting_data_append_list_video_options(
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
    settings_list_current_add_range(list, list_info, 0, 1, 1, true, false);
+   (*list)[list_info->index - 1].get_string_representation = 
+      &setting_data_get_string_representation_uint_video_monitor_index;
 
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
    CONFIG_BOOL(
@@ -4140,6 +4173,8 @@ static bool setting_data_append_list_video_options(
          true,
          true);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   (*list)[list_info->index - 1].get_string_representation = 
+      &setting_data_get_string_representation_uint_aspect_ratio_index;
 
    END_SUB_GROUP(list, list_info);
 
@@ -4272,6 +4307,8 @@ static bool setting_data_append_list_video_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+   (*list)[list_info->index - 1].get_string_representation = 
+      &setting_data_get_string_representation_uint_video_rotation;
 
 #if defined(HW_RVL) || defined(_XBOX360)
    CONFIG_UINT(
@@ -4975,6 +5012,8 @@ static bool setting_data_append_list_input_options(
       (*list)[list_info->index - 1].index_offset = user;
       (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_libretro_device_type;
       (*list)[list_info->index - 1].action_start = &setting_data_action_start_libretro_device_type;
+      (*list)[list_info->index - 1].get_string_representation = 
+         &setting_data_get_string_representation_uint_libretro_device;
 
       CONFIG_UINT(
             g_settings.input.analog_dpad_mode[user],
@@ -4989,6 +5028,8 @@ static bool setting_data_append_list_input_options(
       (*list)[list_info->index - 1].index_offset = user;
       (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_analog_dpad_mode;
       (*list)[list_info->index - 1].action_start = &setting_data_action_start_analog_dpad_mode;
+      (*list)[list_info->index - 1].get_string_representation = 
+         &setting_data_get_string_representation_uint_analog_dpad_mode;
 
       CONFIG_ACTION(
             key[user],
@@ -5525,6 +5566,8 @@ static bool setting_data_append_list_archive_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+   (*list)[list_info->index - 1].get_string_representation = 
+      &setting_data_get_string_representation_uint_archive_mode;
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
