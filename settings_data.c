@@ -1137,26 +1137,27 @@ static void setting_data_get_string_representation_st_float(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (setting)
+      snprintf(type_str, type_str_size, setting->rounding_fraction,
+            *setting->value.fraction);
+}
+
+static void setting_data_get_string_representation_st_float_video_refresh_rate_auto(void *data,
+      char *type_str, size_t type_str_size)
+{
+   double video_refresh_rate = 0.0;
+   double deviation = 0.0;
+   unsigned sample_points = 0;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
-   if (!strcmp(setting->name, "video_refresh_rate_auto"))
-   {
-      double video_refresh_rate = 0.0;
-      double deviation = 0.0;
-      unsigned sample_points = 0;
-
-      if (video_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
-         snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
-               video_refresh_rate, 100.0 * deviation, sample_points);
-      else
-         strlcpy(type_str, "N/A", type_str_size);
-
-      return;
-   }
-
-   snprintf(type_str, type_str_size, setting->rounding_fraction,
-         *setting->value.fraction);
+   if (video_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
+      snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
+            video_refresh_rate, 100.0 * deviation, sample_points);
+   else
+      strlcpy(type_str, "N/A", type_str_size);
 }
 
 static void setting_data_get_string_representation_st_dir(void *data,
@@ -4062,6 +4063,8 @@ static bool setting_data_append_list_video_options(
       &setting_data_action_start_video_refresh_rate_auto;
    (*list)[list_info->index - 1].action_ok = 
       &setting_data_action_ok_video_refresh_rate_auto;
+   (*list)[list_info->index - 1].get_string_representation = 
+      &setting_data_get_string_representation_st_float_video_refresh_rate_auto;
 
    CONFIG_BOOL(
          g_settings.video.force_srgb_disable,
