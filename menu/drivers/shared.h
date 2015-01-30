@@ -23,16 +23,16 @@
 static INLINE void get_title(const char *label, const char *dir,
       unsigned menu_type, char *title, size_t sizeof_title)
 {
-   char elem0_label[PATH_MAX_LENGTH], elem1_label[PATH_MAX_LENGTH];
+   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
    char elem0_path[PATH_MAX_LENGTH], elem1_path[PATH_MAX_LENGTH];
    struct string_list *list_label = string_split(label, "|");
    struct string_list *list_path  = string_split(dir, "|");
 
    if (list_label && list_label->size > 0)
    {
-      strlcpy(elem0_label, list_label->elems[0].data, sizeof(elem0_label));
+      strlcpy(elem0, list_label->elems[0].data, sizeof(elem0));
       if (list_label->size > 1)
-         strlcpy(elem1_label, list_label->elems[1].data, sizeof(elem1_label));
+         strlcpy(elem1, list_label->elems[1].data, sizeof(elem1));
       string_list_free(list_label);
    }
 
@@ -45,7 +45,7 @@ static INLINE void get_title(const char *label, const char *dir,
    }
 
 #if 0
-   RARCH_LOG("label %s\n", label);
+   RARCH_LOG("label %s, elem0 %s, elem1 %s\n", label, elem0, elem1);
 #endif
    if (!strcmp(label, "core_list"))
       snprintf(title, sizeof_title, "CORE SELECTION %s", dir);
@@ -85,62 +85,174 @@ static INLINE void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: BBFC RATING - %s)", elem0_path);
    else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_max_users"))
       snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: MAX USERS - %s)", elem0_path);
-   else if (!strcmp(elem0_label, "deferred_rdb_entry_detail"))
-      snprintf(title, sizeof_title, "DATABASE INFO: %s", elem1_label);
+   else if (!strcmp(elem0, "deferred_rdb_entry_detail"))
+      snprintf(title, sizeof_title, "DATABASE INFO: %s", elem1);
    else if (!strcmp(label, "deferred_core_list"))
       snprintf(title, sizeof_title, "DETECTED CORES %s", dir);
    else if (!strcmp(label, "configurations"))
       snprintf(title, sizeof_title, "CONFIG %s", dir);
    else if (!strcmp(label, "disk_image_append"))
       snprintf(title, sizeof_title, "DISK APPEND %s", dir);
-   else if (!strcmp(label, "Video Options"))
+   else if (!strcmp(elem0, "Video Options"))
+   {
       strlcpy(title, "VIDEO OPTIONS", sizeof_title);
-   else if (!strcmp(label, "Input Options") ||
+      if (!strcmp(elem1, "Monitor"))
+         strlcat(title, " - MONITOR", sizeof_title);
+      else if (!strcmp(elem1, "Aspect"))
+         strlcat(title, " - ASPECT", sizeof_title);
+      else if (!strcmp(elem1, "Scaling"))
+         strlcat(title, " - SCALING", sizeof_title);
+      else if (!strcmp(elem1, "Synchronization"))
+         strlcat(title, " - SYNCHRONIZATION", sizeof_title);
+      else if (!strcmp(elem1, "Miscellaneous"))
+         strlcat(title, " - MISCELLANEOUS", sizeof_title);
+      else if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+   }
+   else if (!strcmp(elem0, "Input Options") ||
          menu_type == MENU_SETTINGS_CUSTOM_BIND ||
          menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
+   {
       strlcpy(title, "INPUT OPTIONS", sizeof_title);
-   else if (!strcmp(label, "Overlay Options"))
+      if (strstr(elem1, "User"))
+         strlcat(title, " - USER", sizeof_title);
+      else if (!strcmp(elem1, "Meta Keys"))
+         strlcat(title, " - META KEYS", sizeof_title);
+      else if (!strcmp(elem1, "Turbo/Deadzone"))
+         strlcat(title, " - TURBO / DEADZONE", sizeof_title);
+      else if (!strcmp(elem1, "Joypad Mapping"))
+         strlcat(title, " - JOYPAD MAPPING", sizeof_title);
+      else if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+      else if (!strcmp(elem1, "Miscellaneous"))
+         strlcat(title, " - MISCELLANEOUS", sizeof_title);
+   }
+   else if (!strcmp(elem0, "Overlay Options"))
+   {
       strlcpy(title, "OVERLAY OPTIONS", sizeof_title);
-   else if (!strcmp(label, "Menu Options"))
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+   }
+   else if (!strcmp(elem0, "Menu Options"))
+   {
       strlcpy(title, "MENU OPTIONS", sizeof_title);
-   else if (!strcmp(label, "Patch Options"))
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+      else if (!strcmp(elem1, "Navigation"))
+         strlcat(title, " - NAVIGATION", sizeof_title);
+      else if (!strcmp(elem1, "Settings View"))
+         strlcat(title, " - SETTINGS VIEW", sizeof_title);
+      else if (!strcmp(elem1, "Browser"))
+         strlcat(title, " - BROWSER", sizeof_title);
+   }
+   else if (!strcmp(elem0, "Onscreen Keyboard Overlay Options"))
+   {
+      strlcpy(title, "ONSCREEN KEYBOARD OVERLAY OPTIONS", sizeof_title);
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+   }
+   else if (!strcmp(elem0, "Patch Options"))
+   {
       strlcpy(title, "PATCH OPTIONS", sizeof_title);
-   else if (!strcmp(label, "UI Options"))
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+   }
+   else if (!strcmp(elem0, "UI Options"))
+   {
       strlcpy(title, "UI OPTIONS", sizeof_title);
-   else if (!strcmp(label, "Playlist Options"))
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+   }
+   else if (!strcmp(elem0, "Playlist Options"))
+   {
       strlcpy(title, "PLAYLIST OPTIONS", sizeof_title);
-   else if (!strcmp(label, "Network Options"))
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+      if (!strcmp(elem1, "History"))
+         strlcat(title, " - HISTORY", sizeof_title);
+   }
+   else if (!strcmp(elem0, "Network Options"))
+   {
       strlcpy(title, "NETWORK OPTIONS", sizeof_title);
-   else if (!strcmp(label, "Core Manager Options"))
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+      if (!strcmp(elem1, "Netplay"))
+         strlcat(title, " - NETPLAY", sizeof_title);
+      if (!strcmp(elem1, "Miscellaneous"))
+         strlcat(title, " - MISCELLANEOUS", sizeof_title);
+   }
+   else if (!strcmp(elem0, "Core Manager Options"))
+   {
       strlcpy(title, "CORE MANAGER OPTIONS", sizeof_title);
-   else if (!strcmp(label, "User Options"))
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+   }
+   else if (!strcmp(elem0, "User Options"))
+   {
       strlcpy(title, "USER OPTIONS", sizeof_title);
-   else if (!strcmp(label, "Path Options"))
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+   }
+   else if (!strcmp(elem0, "Path Options"))
+   {
       strlcpy(title, "PATH OPTIONS", sizeof_title);
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+      if (!strcmp(elem1, "Paths"))
+         strlcat(title, " - PATHS", sizeof_title);
+   }
    else if (!strcmp(label, "settings"))
       strlcpy(title, "SETTINGS", sizeof_title);
-   else if (!strcmp(label, "Driver Options"))
+   else if (!strcmp(elem0, "Driver Options"))
+   {
       strlcpy(title, "DRIVER OPTIONS", sizeof_title);
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+   }
    else if (!strcmp(label, "performance_counters"))
       strlcpy(title, "PERFORMANCE COUNTERS", sizeof_title);
    else if (!strcmp(label, "frontend_counters"))
       strlcpy(title, "FRONTEND PERFORMANCE COUNTERS", sizeof_title);
    else if (!strcmp(label, "core_counters"))
       strlcpy(title, "CORE PERFORMANCE COUNTERS", sizeof_title);
-   else if (!strcmp(label, "Shader Options"))
+   else if (!strcmp(elem0, "Shader Options"))
+   {
       strlcpy(title, "SHADER OPTIONS", sizeof_title);
-   else if (!strcmp(label, "Archive Options"))
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+   }
+   else if (!strcmp(elem0, "Archive Options"))
+   {
       strlcpy(title, "ARCHIVE OPTIONS", sizeof_title);
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+   }
    else if (!strcmp(label, "video_shader_parameters"))
       strlcpy(title, "SHADER PARAMETERS (CURRENT)", sizeof_title);
    else if (!strcmp(label, "video_shader_preset_parameters"))
       strlcpy(title, "SHADER PARAMETERS (MENU PRESET)", sizeof_title);
-   else if (!strcmp(label, "Font Options"))
+   else if (!strcmp(elem0, "Font Options"))
+   {
       strlcpy(title, "FONT OPTIONS", sizeof_title);
-   else if (!strcmp(label, "General Options"))
+      if (!strcmp(elem1, "Messages"))
+         strlcat(title, " - MESSAGES", sizeof_title);
+   }
+   else if (!strcmp(elem0, "General Options"))
+   {
       strlcpy(title, "GENERAL OPTIONS", sizeof_title);
-   else if (!strcmp(label, "Audio Options"))
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+   }
+   else if (!strcmp(elem0, "Audio Options"))
+   {
       strlcpy(title, "AUDIO OPTIONS", sizeof_title);
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+      else if (!strcmp(elem1, "Synchronization"))
+         strlcat(title, " - SYNCHRONIZATION", sizeof_title);
+      else if (!strcmp(elem1, "Miscellaneous"))
+         strlcat(title, " - MISCELLANEOUS", sizeof_title);
+   }
    else if (!strcmp(label, "disk_options"))
       strlcpy(title, "DISK OPTIONS", sizeof_title);
    else if (!strcmp(label, "core_options"))
@@ -151,8 +263,12 @@ static INLINE void get_title(const char *label, const char *dir,
       strlcpy(title, "CORE INPUT REMAPPING OPTIONS", sizeof_title);
    else if (!strcmp(label, "core_information"))
       strlcpy(title, "CORE INFO", sizeof_title);
-   else if (!strcmp(label, "Privacy Options"))
+   else if (!strcmp(elem0, "Privacy Options"))
+   {
       strlcpy(title, "PRIVACY OPTIONS", sizeof_title);
+      if (!strcmp(elem1, "State"))
+         strlcat(title, " - STATE", sizeof_title);
+   }
    else if (!strcmp(label, "video_shader_pass"))
       snprintf(title, sizeof_title, "SHADER %s", dir);
    else if (!strcmp(label, "video_shader_preset"))
