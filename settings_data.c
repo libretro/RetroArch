@@ -2902,7 +2902,7 @@ void setting_data_get_label(void *data, char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx)
 {
-    file_list_t     *list         = (file_list_t*)data;
+   file_list_t     *list         = (file_list_t*)data;
    rarch_setting_t *setting_data = NULL;
    rarch_setting_t *setting      = NULL;
 
@@ -2915,6 +2915,9 @@ void setting_data_get_label(void *data, char *type_str,
 
    if ((get_fallback_label(type_str, type_str_size, w, type, menu_label,
          label, idx)) == 0)
+      return;
+
+   if (!label)
       return;
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
