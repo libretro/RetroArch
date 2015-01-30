@@ -46,7 +46,7 @@ xmb_entry_list_t *xmb_entry_list_new(const char *xmb_entry_path)
 
    entry_list->list = entry;
    entry_list->count = 0;
-   size_t num_files = contents->size-1;
+   size_t num_files = contents->size;
    size_t j = 0;
 
    info_list = core_info_list_new(g_settings.libretro_directory);
@@ -56,8 +56,6 @@ xmb_entry_list_t *xmb_entry_list_new(const char *xmb_entry_path)
       char xe_path_base[PATH_MAX_LENGTH], xe_path[PATH_MAX_LENGTH],
             core_path[PATH_MAX_LENGTH];
       core_info_t *info = NULL;
-
-      j++;
 
       entry[i].path = strdup(contents->elems[j].data);
 
@@ -113,6 +111,8 @@ xmb_entry_list_t *xmb_entry_list_new(const char *xmb_entry_path)
       }
       else
          entry_list->count++;
+
+      j++;
    }
 
    core_info_list_free(info_list);
