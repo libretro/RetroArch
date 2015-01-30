@@ -329,8 +329,9 @@ static int action_ok_shader_parameters(const char *path,
 static int action_ok_push_generic_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   strlcpy(driver.menu->deferred_path, path,
-         sizeof(driver.menu->deferred_path));
+   if (path)
+      strlcpy(driver.menu->deferred_path, path,
+            sizeof(driver.menu->deferred_path));
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
          "", label, type, idx);
