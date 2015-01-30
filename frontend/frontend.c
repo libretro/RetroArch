@@ -211,6 +211,9 @@ bool main_load_content(int argc, char **argv, args_type() args,
    (void)rarch_argv_ptr;
    (void)ret;
 
+   if (!wrap_args)
+      return false;
+
    rarch_assert(wrap_args);
 
    if (environ_get)
