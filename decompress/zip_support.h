@@ -24,9 +24,6 @@ extern "C" {
 int read_zip_file(const char * archive_path,
       const char *relative_path, void **buf, const char* optional_outfile);
 
-struct string_list *compressed_zip_file_list_new(const char *path,
-      const char* ext);
-
 #ifdef __cplusplus
 }
 #endif

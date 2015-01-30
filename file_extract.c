@@ -19,6 +19,7 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
+#include "general.h"
 #include "retroarch_logger.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -213,6 +214,8 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
 /**
  * zlib_inflate_data_to_file:
  * @path                        : filename path of archive.
+ * @valid_exts                  : Valid extensions of archive to be parsed. 
+ *                                If NULL, allow all.
  * @cdata                       : input data.
  * @csize                       : size of input data.
  * @size                        : output file size
@@ -222,8 +225,8 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-bool zlib_inflate_data_to_file(const char *path, const uint8_t *cdata,
-      uint32_t csize, uint32_t size, uint32_t checksum)
+bool zlib_inflate_data_to_file(const char *path, const char *valid_exts,
+      const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t checksum)
 {
    bool ret = true;
    uint32_t real_checksum = 0;
@@ -264,6 +267,8 @@ end:
 /**
  * zlib_parse_file:
  * @file                        : filename path of archive
+ * @valid_exts                  : Valid extensions of archive to be parsed. 
+ *                                If NULL, allow all.
  * @file_cb                     : file_cb function pointer
  * @userdata                    : userdata to pass to file_cb function pointer.
  *
@@ -272,7 +277,8 @@ end:
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
+bool zlib_parse_file(const char *file, const char *valid_exts,
+      zlib_file_cb file_cb, void *userdata)
 {
    void *handle;
    const uint8_t *footer    = NULL;
@@ -284,6 +290,8 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
 
    if (!backend)
       return false;
+
+   (void)valid_exts;
 
    handle = backend->open(file);
    if (!handle)
@@ -347,7 +355,8 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
       offsetNL + offsetEL, csize, size);
 #endif
 
-      if (!file_cb(filename, cdata, cmode, csize, size, checksum, userdata))
+      if (!file_cb(filename, valid_exts, cdata, cmode,
+               csize, size, checksum, userdata))
          break;
 
       directory += 46 + namelength + extralength + commentlength;
@@ -368,7 +377,8 @@ struct zip_extract_userdata
    bool found_content;
 };
 
-static bool zip_extract_cb(const char *name, const uint8_t *cdata,
+static bool zip_extract_cb(const char *name, const char *valid_exts,
+      const uint8_t *cdata,
       unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t checksum, void *userdata)
 {
@@ -396,7 +406,8 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata,
             return false;
          /* Deflate. */
          case 8:
-            if (zlib_inflate_data_to_file(new_path, cdata, csize, size, checksum))
+            if (zlib_inflate_data_to_file(new_path, valid_exts,
+                     cdata, csize, size, checksum))
             {
                strlcpy(data->zip_path, new_path, data->zip_path_size);
                data->found_content = true;
@@ -446,7 +457,7 @@ bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
    userdata.extraction_directory = extraction_directory;
    userdata.ext                  = list;
 
-   if (!zlib_parse_file(zip_path, zip_extract_cb, &userdata))
+   if (!zlib_parse_file(zip_path, valid_exts, zip_extract_cb, &userdata))
    {
       RARCH_ERR("Parsing ZIP failed.\n");
       GOTO_END_ERROR();
@@ -464,11 +475,14 @@ end:
    return ret;
 }
 
-static bool zlib_get_file_list_cb(const char *path, const uint8_t *cdata,
+static bool zlib_get_file_list_cb(const char *path, const char *valid_exts,
+      const uint8_t *cdata,
       unsigned cmode, uint32_t csize, uint32_t size, uint32_t checksum,
       void *userdata)
 {
    union string_list_elem_attr attr;
+   struct string_list *ext_list = NULL;
+   const char *file_ext = NULL;
    struct string_list *list = (struct string_list*)userdata;
 
    (void)cdata;
@@ -476,10 +490,39 @@ static bool zlib_get_file_list_cb(const char *path, const uint8_t *cdata,
    (void)csize;
    (void)size;
    (void)checksum;
+   (void)valid_exts;
+   (void)file_ext;
+   (void)ext_list;
 
    memset(&attr, 0, sizeof(attr));
 
+   if (valid_exts)
+      ext_list = string_split(valid_exts, "|");
+
+   if (ext_list)
+   {
+      char last_char = ' ';
+
+      /* Checks if this entry is a directory or a file. */
+      last_char = path[strlen(path)-1];
+
+      if (last_char == '/' || last_char == '\\' ) /* Skip if directory. */
+         goto error;
+
+      file_ext = path_get_extension(path);
+
+      if (!file_ext || 
+            !string_list_find_elem_prefix(ext_list, ".", file_ext))
+         goto error;
+
+      attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
+      string_list_free(ext_list);
+   }
+
    return string_list_append(list, path, attr);
+error:
+   string_list_free(ext_list);
+   return false;
 }
 
 /**
@@ -488,14 +531,15 @@ static bool zlib_get_file_list_cb(const char *path, const uint8_t *cdata,
  *
  * Returns: string listing of files from archive on success, otherwise NULL.
  **/
-struct string_list *zlib_get_file_list(const char *path)
+struct string_list *zlib_get_file_list(const char *path, const char *valid_exts)
 {
    struct string_list *list = string_list_new();
 
    if (!list)
       return NULL;
 
-   if (!zlib_parse_file(path, zlib_get_file_list_cb, list))
+   if (!zlib_parse_file(path, valid_exts,
+            zlib_get_file_list_cb, list))
    {
       RARCH_ERR("Parsing ZIP failed.\n");
       string_list_free(list);
@@ -516,7 +560,7 @@ struct string_list *compressed_file_list_new(const char *path,
 #endif
 #ifdef HAVE_ZLIB
    if (strcasecmp(file_ext,"zip") == 0)
-      return compressed_zip_file_list_new(path,ext);
+      return zlib_get_file_list(path, ext);
 #endif
 
 #endif

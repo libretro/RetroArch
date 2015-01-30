@@ -30,13 +30,15 @@
 #endif
 
 /* Returns true when parsing should continue. False to stop. */
-typedef bool (*zlib_file_cb)(const char *name,
+typedef bool (*zlib_file_cb)(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata);
 
 /**
  * zlib_parse_file:
  * @file                        : filename path of archive
+ * @valid_exts                  : Valid extensions of archive to be parsed. 
+ *                                If NULL, allow all.
  * @file_cb                     : file_cb function pointer
  * @userdata                    : userdata to pass to file_cb function pointer.
  *
@@ -45,7 +47,8 @@ typedef bool (*zlib_file_cb)(const char *name,
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata);
+bool zlib_parse_file(const char *file, const char *valid_exts,
+      zlib_file_cb file_cb, void *userdata);
 
 /**
  * zlib_extract_first_content_file:
@@ -65,10 +68,12 @@ bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
 /**
  * zlib_get_file_list:
  * @path                        : filename path of archive
+ * @valid_exts                  : Valid extensions of archive to be parsed. 
+ *                                If NULL, allow all.
  *
  * Returns: string listing of files from archive on success, otherwise NULL.
  **/
-struct string_list *zlib_get_file_list(const char *path);
+struct string_list *zlib_get_file_list(const char *path, const char *valid_exts);
 
 /**
  * zlib_inflate_data_to_file:
@@ -82,8 +87,8 @@ struct string_list *zlib_get_file_list(const char *path);
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-bool zlib_inflate_data_to_file(const char *path, const uint8_t *data,
-      uint32_t csize, uint32_t size, uint32_t crc32);
+bool zlib_inflate_data_to_file(const char *path, const char *valid_exts,
+      const uint8_t *data, uint32_t csize, uint32_t size, uint32_t crc32);
 
 struct string_list *compressed_file_list_new(const char *filename,
       const char* ext);

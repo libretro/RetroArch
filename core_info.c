@@ -390,7 +390,7 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
 
 #ifdef HAVE_ZLIB
    if (!strcasecmp(path_get_extension(path), "zip"))
-      list = zlib_get_file_list(path);
+      list = zlib_get_file_list(path, NULL);
    core_info_tmp_list = list;
 #endif
 

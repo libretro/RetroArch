@@ -20,7 +20,8 @@ struct userdata
    const char *dest;
 };
 
-static bool zlib_cb(const char *name, const uint8_t *cdata,
+static bool zlib_cb(const char *name, const char *valid_exts,
+      const uint8_t *cdata,
       unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
 {
@@ -57,7 +58,8 @@ static bool zlib_cb(const char *name, const uint8_t *cdata,
          break;
 
       case 8: /* Deflate */
-         if (!zlib_inflate_data_to_file(path, cdata, csize, size, crc32))
+         if (!zlib_inflate_data_to_file(path, valid_exts, cdata,
+                  csize, size, crc32))
          {
             RARCH_ERR("Failed to deflate to: %s.\n", path);
             return false;
@@ -85,7 +87,7 @@ JNIEXPORT jboolean JNICALL Java_com_retroarch_browser_NativeInterface_extractArc
       .dest = dest_c,
    };
 
-   if (!zlib_parse_file(archive_c, zlib_cb, &data))
+   if (!zlib_parse_file(archive_c, NULL, zlib_cb, &data))
    {
       RARCH_ERR("Failed to parse APK: %s.\n", archive_c);
       ret = JNI_FALSE;

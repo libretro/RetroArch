@@ -71,7 +71,7 @@ static void unzip_file(const char* path, const char* output_directory)
       apple_display_alert("Output directory for zip must not already exist.", "Action Failed");
    else if (!path_mkdir(output_directory))
       apple_display_alert("Could not create output directory to extract zip.", "Action Failed");
-   else if (!zlib_parse_file(path, zlib_extract_callback, (void*)output_directory))
+   else if (!zlib_parse_file(path, NULL, zlib_extract_callback, (void*)output_directory))
       apple_display_alert("Could not process zip file.", "Action Failed");
 }
 
