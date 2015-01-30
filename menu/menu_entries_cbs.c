@@ -3502,7 +3502,7 @@ static int action_iterate_help(const char *label, unsigned action)
       driver.menu_ctx->render_messagebox(msg);
 
    if (action == MENU_ACTION_OK)
-      menu_list_pop(driver.menu->menu_list->menu_stack, &driver.menu->selection_ptr);
+      menu_list_pop(driver.menu->menu_list->menu_stack, NULL);
 
    return 0;
 }
