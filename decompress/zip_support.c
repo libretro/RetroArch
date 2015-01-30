@@ -214,9 +214,7 @@ struct string_list *compressed_zip_file_list_new(const char *path,
    if (!zipfile)
    {
       RARCH_ERR("Could not open ZIP file %s.\n",path);
-      string_list_free(list);
-      string_list_free(ext_list);
-      return NULL;
+      goto error;
    }
 
    /* Get info about the zip file */
@@ -226,9 +224,7 @@ struct string_list *compressed_zip_file_list_new(const char *path,
                 "Could be only a GZIP file without the ZIP part.\n",
                 path);
       unzClose(zipfile);
-      string_list_free(list);
-      string_list_free(ext_list);
-      return NULL;
+      goto error;
    }
 
    for ( i = 0; i < global_info.number_entry; ++i )
@@ -247,9 +243,7 @@ struct string_list *compressed_zip_file_list_new(const char *path,
       {
          RARCH_ERR("Could not read file info in ZIP %s.\n", path);
          unzClose(zipfile);
-         string_list_free(list);
-         string_list_free(ext_list);
-         return NULL;
+         goto error;
       }
 
       /* Check if this entry is a directory or file. */
@@ -289,9 +283,7 @@ struct string_list *compressed_zip_file_list_new(const char *path,
          {
             RARCH_ERR( "Could not iterate to next file in %s. ZIP file might be corrupt.\n",path );
             unzClose(zipfile);
-            string_list_free(list);
-            string_list_free(ext_list);
-            return NULL;
+            goto error;
          }
       }
    }
@@ -299,6 +291,10 @@ struct string_list *compressed_zip_file_list_new(const char *path,
    unzClose(zipfile);
 
    return list;
+error:
+   string_list_free(list);
+   string_list_free(ext_list);
+   return NULL;
 }
 
 #undef RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX
