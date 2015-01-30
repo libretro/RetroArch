@@ -4439,6 +4439,7 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
                !strcmp(elem0, "UI Options") ||
                !strcmp(elem0, "Patch Options") ||
                !strcmp(elem0, "Playlist Options") ||
+               !strcmp(elem0, "Onscreen Keyboard Overlay Options") ||
                !strcmp(elem0, "Core Manager Options") ||
                !strcmp(elem0, "Network Options") ||
                !strcmp(elem0, "Archive Options") ||
