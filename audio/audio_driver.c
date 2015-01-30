@@ -180,6 +180,9 @@ const char* config_get_audio_driver_options(void)
 
    attr.i = 0;
 
+   if (!options_l)
+      return NULL;
+
    for (i = 0; audio_driver_find_handle(i); i++)
    {
       const char *opt = audio_driver_find_ident(i);
@@ -192,6 +195,7 @@ const char* config_get_audio_driver_options(void)
    if (!options)
    {
       string_list_free(options_l);
+      options_l = NULL;
       return NULL;
    }
 
