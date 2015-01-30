@@ -107,6 +107,9 @@ const char* config_get_audio_resampler_driver_options(void)
 
    attr.i = 0;
 
+   if (!options_l)
+      return NULL;
+
    for (i = 0; resampler_drivers[i]; i++)
    {
       const char *opt = resampler_drivers[i]->ident;
@@ -115,6 +118,13 @@ const char* config_get_audio_resampler_driver_options(void)
    }
 
    options = (char*)calloc(options_len, sizeof(char));
+
+   if (!options)
+   {
+      string_list_free(options_l);
+      options_l = NULL;
+      return NULL;
+   }
 
    string_list_join_concat(options, options_len, options_l, "|");
 
