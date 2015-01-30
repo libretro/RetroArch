@@ -236,13 +236,10 @@ void setting_data_set_with_string_representation(rarch_setting_t* setting,
 /*
  * Forward declarations for set_label callback functions. 
  */
-static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
+static void setting_data_get_string_representation_st_bool(void *data,
       char *type_str, size_t type_str_size);
 
-static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
-      char *type_str, size_t type_str_size);
-
-static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
+static void setting_data_get_string_representation_st_float(void *data,
       char *type_str, size_t type_str_size);
 
 /**
@@ -262,57 +259,15 @@ void setting_data_get_string_representation(void *data,
 
    switch (setting->type)
    {
-      case ST_BOOL:
-         menu_common_setting_set_label_st_bool(setting, buf, sizeof_buf);
-         break;
-      case ST_INT:
-         snprintf(buf, sizeof_buf, "%d", *setting->value.integer);
-         break;
-      case ST_FLOAT:
-         menu_common_setting_set_label_st_float(setting, buf, sizeof_buf);
-         break;
-      case ST_DIR:
-         strlcpy(buf,
-               *setting->value.string ?
-               setting->value.string : setting->dir.empty_path,
-               sizeof_buf);
-         break;
-      case ST_PATH:
-         strlcpy(buf, path_basename(setting->value.string), sizeof_buf);
-         break;
-      case ST_STRING:
-         strlcpy(buf, setting->value.string, sizeof_buf);
-         break;
-      case ST_BIND:
-         {
-            const struct retro_keybind* keybind = (const struct retro_keybind*)
-               setting->value.keybind;
-            const struct retro_keybind* auto_bind = 
-               (const struct retro_keybind*)
-               input_get_auto_bind(setting->index_offset, keybind->id);
-
-            input_get_bind_string(buf, keybind, auto_bind, sizeof_buf);
-         }
-         break;
-      case ST_UINT:
-      case ST_ACTION:
-         if (setting->get_string_representation)
-            setting->get_string_representation(setting, buf, sizeof_buf);
-         break;
          /* TODO */
       case ST_HEX:
-         break;
-      case ST_GROUP:
-         strlcpy(buf, "...", sizeof_buf);
-         break;
-      case ST_SUB_GROUP:
-         strlcpy(buf, "...", sizeof_buf);
-         break;
       case ST_END_GROUP:
-         break;
       case ST_END_SUB_GROUP:
-         break;
       case ST_NONE:
+         break;
+      default:
+         if (setting->get_string_representation)
+            setting->get_string_representation(setting, buf, sizeof_buf);
          break;
    }
 }
@@ -1133,7 +1088,7 @@ static int setting_data_string_action_ok_allow_input(void *data,
 **/
 
 /**
- * menu_common_setting_set_label_st_bool:
+ * setting_data_get_string_representation_st_bool:
  * @setting            : pointer to setting
  * @type_str           : string for the type to be represented on-screen as
  *                       a label.
@@ -1141,33 +1096,128 @@ static int setting_data_string_action_ok_allow_input(void *data,
  *
  * Set a settings' label value. The setting is of type ST_BOOL.
  **/
-static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
+static void setting_data_get_string_representation_st_bool(void *data,
       char *type_str, size_t type_str_size)
 {
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
    if (setting)
       strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label :
             setting->boolean.off_label, type_str_size);
+}
+
+static void setting_data_get_string_representation_st_group(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (setting)
+      strlcpy(type_str, "...", type_str_size);
+}
+
+static void setting_data_get_string_representation_st_sub_group(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (setting)
+      strlcpy(type_str, "...", type_str_size);
+}
+
+/**
+ * setting_data_get_string_representation_st_float:
+ * @setting            : pointer to setting
+ * @type_str           : string for the type to be represented on-screen as
+ *                       a label.
+ * @type_str_size      : size of @type_str
+ *
+ * Set a settings' label value. The setting is of type ST_FLOAT.
+ **/
+static void setting_data_get_string_representation_st_float(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   if (!strcmp(setting->name, "video_refresh_rate_auto"))
+   {
+      double video_refresh_rate = 0.0;
+      double deviation = 0.0;
+      unsigned sample_points = 0;
+
+      if (video_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
+         snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
+               video_refresh_rate, 100.0 * deviation, sample_points);
+      else
+         strlcpy(type_str, "N/A", type_str_size);
+
+      return;
+   }
+
+   snprintf(type_str, type_str_size, setting->rounding_fraction,
+         *setting->value.fraction);
+}
+
+static void setting_data_get_string_representation_st_dir(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (setting)
+      strlcpy(type_str,
+            *setting->value.string ?
+            setting->value.string : setting->dir.empty_path,
+            type_str_size);
+}
+
+static void setting_data_get_string_representation_st_path(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (setting)
+      strlcpy(type_str, path_basename(setting->value.string), type_str_size);
+}
+
+static void setting_data_get_string_representation_st_string(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (setting)
+      strlcpy(type_str, setting->value.string, type_str_size);
+}
+
+static void setting_data_get_string_representation_st_bind(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   const struct retro_keybind* keybind = NULL;
+   const struct retro_keybind* auto_bind =  NULL;
+
+   if (!setting)
+      return;
+   
+   keybind   = (const struct retro_keybind*)setting->value.keybind;
+   auto_bind = (const struct retro_keybind*)input_get_auto_bind(setting->index_offset, keybind->id);
+
+   input_get_bind_string(type_str, keybind, auto_bind, type_str_size);
+}
+
+static void setting_data_get_string_representation_int(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (setting)
+      snprintf(type_str, type_str_size, "%d", *setting->value.integer);
 }
 
 static void setting_data_get_string_representation_uint(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
-   menu_common_setting_set_label_st_uint(setting, type_str, type_str_size);
-}
-
-/**
- * menu_common_setting_set_label_st_uint:
- * @setting            : pointer to setting
- * @type_str           : string for the type to be represented on-screen as
- *                       a label.
- * @type_str_size      : size of @type_str
- *
- * Set a settings' label value. The setting is of type ST_UINT.
- **/
-static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
-      char *type_str, size_t type_str_size)
-{
    if (!setting)
       return;
 
@@ -1304,40 +1354,6 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
    }
 }
 
-/**
- * menu_common_setting_set_label_st_float:
- * @setting            : pointer to setting
- * @type_str           : string for the type to be represented on-screen as
- *                       a label.
- * @type_str_size      : size of @type_str
- *
- * Set a settings' label value. The setting is of type ST_FLOAT.
- **/
-static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
-      char *type_str, size_t type_str_size)
-{
-   if (!setting)
-      return;
-
-   if (!strcmp(setting->name, "video_refresh_rate_auto"))
-   {
-      double video_refresh_rate = 0.0;
-      double deviation = 0.0;
-      unsigned sample_points = 0;
-
-      if (video_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
-         snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
-               video_refresh_rate, 100.0 * deviation, sample_points);
-      else
-         strlcpy(type_str, "N/A", type_str_size);
-
-      return;
-   }
-
-   snprintf(type_str, type_str_size, setting->rounding_fraction,
-         *setting->value.fraction);
-}
-
 #ifdef HAVE_MENU
 static void menu_common_setting_set_label_perf(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type,
@@ -1423,6 +1439,8 @@ rarch_setting_t setting_data_group_setting(enum setting_type type, const char* n
    result.name              = name;
    result.short_description = name;
 
+   result.get_string_representation       = &setting_data_get_string_representation_st_group;
+
    return result;
 }
 
@@ -1448,6 +1466,8 @@ rarch_setting_t setting_data_subgroup_setting(enum setting_type type,
 
    result.short_description = name;
    result.group             = parent_name;
+
+   result.get_string_representation       = &setting_data_get_string_representation_st_sub_group;
 
    return result;
 }
@@ -1494,6 +1514,8 @@ rarch_setting_t setting_data_float_setting(const char* name,
    result.action_toggle           = setting_data_fraction_action_toggle_default;
    result.action_ok               = setting_data_fraction_action_ok_default;
    result.action_cancel           = NULL;
+
+   result.get_string_representation       = &setting_data_get_string_representation_st_float;
 
    return result;
 }
@@ -1544,6 +1566,8 @@ rarch_setting_t setting_data_bool_setting(const char* name,
    result.action_toggle          = setting_data_bool_action_toggle_default;
    result.action_ok              = setting_data_bool_action_ok_default;
    result.action_cancel          = NULL;
+
+   result.get_string_representation       = &setting_data_get_string_representation_st_bool;
    return result;
 }
 
@@ -1583,6 +1607,8 @@ rarch_setting_t setting_data_int_setting(const char* name,
    result.value.integer          = target;
    result.original_value.integer = *target;
    result.default_value.integer  = default_value;
+
+   result.get_string_representation       = &setting_data_get_string_representation_int;
 
    return result;
 }
@@ -1671,6 +1697,7 @@ rarch_setting_t setting_data_bind_setting(const char* name,
    result.action_start          = setting_data_bind_action_start;
    result.action_ok             = setting_data_bind_action_ok;
    result.action_cancel         = NULL;
+   result.get_string_representation       = &setting_data_get_string_representation_st_bind;
 
    return result;
 }
@@ -1716,16 +1743,19 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
    result.value.string         = target;
    result.default_value.string = default_value;
    result.action_start         = NULL;
+   result.get_string_representation       = &setting_data_get_string_representation_st_string;
 
    switch (type)
    {
       case ST_DIR:
          result.action_start           = setting_data_string_dir_action_start_default;
          result.browser_selection_type = ST_DIR;
+         result.get_string_representation = &setting_data_get_string_representation_st_dir;
          break;
       case ST_PATH:
          result.action_start           = setting_data_string_dir_action_start_default;
          result.browser_selection_type = ST_PATH;
+         result.get_string_representation = &setting_data_get_string_representation_st_path;
          break;
       default:
          break;
