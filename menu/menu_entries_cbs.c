@@ -4394,6 +4394,15 @@ static void menu_entries_cbs_init_bind_iterate(menu_file_list_cbs_t *cbs,
    cbs->action_iterate = action_iterate_main;
 }
 
+static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx)
+{
+   if (!cbs || !driver.menu)
+      return;
+
+   cbs->action_get_representation = menu_action_setting_get_representation;
+}
+
 static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -4568,4 +4577,5 @@ void menu_entries_cbs_init(void *data,
    menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx);
    menu_entries_cbs_init_bind_refresh(cbs, path, label, type, idx);
    menu_entries_cbs_init_bind_iterate(cbs, path, label, type, idx);
+   menu_entries_cbs_init_bind_get_string_representation(cbs, path, label, type, idx);
 }

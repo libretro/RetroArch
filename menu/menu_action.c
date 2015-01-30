@@ -120,6 +120,14 @@ rarch_setting_t *menu_action_find_setting(const char *label)
          driver.menu->list_settings, label);
 }
 
+void menu_action_setting_get_representation(rarch_setting_t *setting, char *type_str, size_t type_str_size)
+{
+   if (!setting)
+      return;
+
+   setting_data_get_string_representation(setting, type_str, type_str_size);
+}
+
 int menu_action_setting_set(unsigned type, const char *label, unsigned action)
 {
    rarch_setting_t *setting = menu_action_find_setting(
