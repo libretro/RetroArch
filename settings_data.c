@@ -1333,57 +1333,68 @@ static void setting_data_get_string_representation_uint_analog_dpad_mode(void *d
          type_str_size);
 }
 
-static void setting_data_get_string_representation_uint(void *data,
+static void setting_data_get_string_representation_uint_autosave_interval(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (!setting)
       return;
 
-   if (!strcmp(setting->name, "autosave_interval"))
-   {
-      if (*setting->value.unsigned_integer)
-         snprintf(type_str, type_str_size, "%u seconds",
-               *setting->value.unsigned_integer);
-      else
-         strlcpy(type_str, "OFF", type_str_size);
-   }
-   else if (!strcmp(setting->name, "user_language"))
-   {
-      static const char *modes[] = {
-         "English",
-         "Japanese",
-         "French",
-         "Spanish",
-         "German",
-         "Italian",
-         "Dutch",
-         "Portuguese",
-         "Russian",
-         "Korean",
-         "Chinese (Traditional)",
-         "Chinese (Simplified)"
-      };
-
-      strlcpy(type_str, modes[g_settings.user_language], type_str_size);
-   }
-   else if (!strcmp(setting->name, "libretro_log_level"))
-   {
-      static const char *modes[] = {
-         "0 (Debug)",
-         "1 (Info)",
-         "2 (Warning)",
-         "3 (Error)"
-      };
-
-      strlcpy(type_str, modes[*setting->value.unsigned_integer],
-            type_str_size);
-   }
+   if (*setting->value.unsigned_integer)
+      snprintf(type_str, type_str_size, "%u seconds",
+            *setting->value.unsigned_integer);
    else
-   {
+      strlcpy(type_str, "OFF", type_str_size);
+}
+
+static void setting_data_get_string_representation_uint_user_language(void *data,
+      char *type_str, size_t type_str_size)
+{
+   static const char *modes[] = {
+      "English",
+      "Japanese",
+      "French",
+      "Spanish",
+      "German",
+      "Italian",
+      "Dutch",
+      "Portuguese",
+      "Russian",
+      "Korean",
+      "Chinese (Traditional)",
+      "Chinese (Simplified)"
+   };
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   strlcpy(type_str, modes[g_settings.user_language], type_str_size);
+}
+
+static void setting_data_get_string_representation_uint_libretro_log_level(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+   static const char *modes[] = {
+      "0 (Debug)",
+      "1 (Info)",
+      "2 (Warning)",
+      "3 (Error)"
+   };
+
+   strlcpy(type_str, modes[*setting->value.unsigned_integer],
+         type_str_size);
+}
+
+static void setting_data_get_string_representation_uint(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (setting)
       snprintf(type_str, type_str_size, "%u",
             *setting->value.unsigned_integer);
-   }
 }
 
 #ifdef HAVE_MENU
@@ -3765,6 +3776,8 @@ static bool setting_data_append_list_general_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_range(list, list_info, 0, 3, 1.0, true, true);
+   (*list)[list_info->index - 1].get_string_representation = 
+      &setting_data_get_string_representation_uint_libretro_log_level;
 
    CONFIG_BOOL(g_extern.perfcnt_enable,
          "perfcnt_enable",
@@ -3883,6 +3896,8 @@ static bool setting_data_append_list_general_options(
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_AUTOSAVE_INIT);
    settings_list_current_add_range(list, list_info, 0, 0, 10, true, false);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   (*list)[list_info->index - 1].get_string_representation = 
+      &setting_data_get_string_representation_uint_autosave_interval;
 #endif
 
    CONFIG_BOOL(
@@ -5868,6 +5883,8 @@ static bool setting_data_append_list_user_options(
          true,
          true);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   (*list)[list_info->index - 1].get_string_representation = 
+      &setting_data_get_string_representation_uint_user_language;
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
