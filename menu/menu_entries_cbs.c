@@ -2639,14 +2639,9 @@ static int deferred_push_settings(void *data, void *userdata,
    {
       for (; setting->type != ST_NONE; setting++)
       {
-         char group_label[PATH_MAX_LENGTH];
-         char subgroup_label[PATH_MAX_LENGTH];
-
          if (setting->type == ST_GROUP)
-         {
             menu_list_push(list, setting->short_description,
                   setting->name, menu_entries_setting_set_flags(setting), 0);
-         }
       }
    }
    else
@@ -2733,7 +2728,6 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
    for (; setting->type != ST_END_SUB_GROUP; setting++)
    {
       char group_label[PATH_MAX_LENGTH];
-      char subgroup_label[PATH_MAX_LENGTH];
 
       strlcpy(group_label, setting->name, sizeof(group_label));
       menu_list_push(list, setting->short_description,
