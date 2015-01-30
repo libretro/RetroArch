@@ -1320,7 +1320,8 @@ static void xmb_context_reset(void *data)
       strlcpy(content_texturepath, iconpath, sizeof(content_texturepath));
       strlcat(content_texturepath, entry->content_icon_name, sizeof(content_texturepath));
 
-      node->alpha = (i == xmb->active_category) ? xmb->c_active_alpha : xmb->c_passive_alpha;
+      node->alpha = (i == xmb->active_category) ? xmb->c_active_alpha
+            : (xmb->depth <= 1) ? xmb->c_passive_alpha : 0;
       node->zoom  = (i == xmb->active_category) ? xmb->c_active_zoom : xmb->c_passive_zoom;
       node->icon  = xmb_png_texture_load(texturepath);
       node->content_icon = xmb_png_texture_load(content_texturepath);
@@ -1520,6 +1521,8 @@ static void xmb_toggle(bool menu_on)
    if (!xmb)
       return;
 
+   xmb->depth = file_list_get_size(driver.menu->menu_list->menu_stack);
+
    if (menu_on)
    {
       add_tween(XMB_DELAY, 1.0f, &xmb->alpha, &inOutQuad, NULL);
@@ -1535,6 +1538,8 @@ static void xmb_toggle(bool menu_on)
 
             node->alpha = (i == xmb->active_category) ? xmb->c_active_alpha
                   : (xmb->depth <= 1) ? xmb->c_passive_alpha : 0;
+            node->zoom  = (i == xmb->active_category) ? xmb->c_active_zoom
+                  : xmb->c_passive_zoom;
          }
       }
    }
