@@ -2637,9 +2637,27 @@ static int deferred_push_settings(void *data, void *userdata,
 
    for (; setting->type != ST_NONE; setting++)
    {
+      char group_label[PATH_MAX_LENGTH];
+      char subgroup_label[PATH_MAX_LENGTH];
       if (setting->type == ST_GROUP)
+      {
+         strlcpy(group_label, setting->name, sizeof(group_label));
+         menu_list_push(list, setting->short_description,
+               group_label, menu_entries_setting_set_flags(setting), 0);
+      }
+#if 0
+      else if (setting->type == ST_SUB_GROUP)
+      {
+         char new_label[PATH_MAX_LENGTH];
+         strlcpy(subgroup_label, setting->name, sizeof(group_label));
+         strlcpy(new_label, group_label,sizeof(new_label));
+         strlcat(new_label, "|", sizeof(new_label));
+         strlcat(new_label, subgroup_label, sizeof(new_label));
+         RARCH_LOG("new label: %s\n", new_label);
          menu_list_push(list, setting->short_description,
                setting->name, menu_entries_setting_set_flags(setting), 0);
+      }
+#endif
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
