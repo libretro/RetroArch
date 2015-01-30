@@ -253,9 +253,10 @@ static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
  *
  * Get a setting value's string representation.
  **/
-void setting_data_get_string_representation(rarch_setting_t* setting,
+void setting_data_get_string_representation(void *data,
       char* buf, size_t sizeof_buf)
 {
+   rarch_setting_t* setting = (rarch_setting_t*)data;
    if (!setting || !buf || !sizeof_buf)
       return;
 
@@ -266,9 +267,6 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
          break;
       case ST_INT:
          snprintf(buf, sizeof_buf, "%d", *setting->value.integer);
-         break;
-      case ST_UINT:
-         menu_common_setting_set_label_st_uint(setting, buf, sizeof_buf);
          break;
       case ST_FLOAT:
          menu_common_setting_set_label_st_float(setting, buf, sizeof_buf);
@@ -296,6 +294,7 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
             input_get_bind_string(buf, keybind, auto_bind, sizeof_buf);
          }
          break;
+      case ST_UINT:
       case ST_ACTION:
          if (setting->get_string_representation)
             setting->get_string_representation(setting, buf, sizeof_buf);
@@ -1150,6 +1149,13 @@ static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
             setting->boolean.off_label, type_str_size);
 }
 
+static void setting_data_get_string_representation_uint(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   menu_common_setting_set_label_st_uint(setting, type_str, type_str_size);
+}
+
 /**
  * menu_common_setting_set_label_st_uint:
  * @setting            : pointer to setting
@@ -1621,6 +1627,7 @@ rarch_setting_t setting_data_uint_setting(const char* name,
    result.action_toggle                   = setting_data_uint_action_toggle_default;
    result.action_ok                       = setting_data_uint_action_ok_default;
    result.action_cancel                   = NULL;
+   result.get_string_representation       = &setting_data_get_string_representation_uint;
 
    return result;
 }
@@ -2788,6 +2795,7 @@ static void get_string_representation_bind_device(void * data, char *type_str,
    else
       strlcpy(type_str, "Disabled", type_str_size);
 }
+
 
 static void get_string_representation_savestate(void * data, char *type_str,
       size_t type_str_size)

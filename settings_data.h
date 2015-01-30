@@ -75,7 +75,7 @@ void setting_data_set_with_string_representation(
  *
  * Get a setting value's string representation.
  **/
-void setting_data_get_string_representation(rarch_setting_t* setting,
+void setting_data_get_string_representation(void *data,
       char* buf, size_t sizeof_buf);
 
 /**
