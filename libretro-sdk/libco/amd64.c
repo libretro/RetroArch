@@ -169,28 +169,33 @@ void co_switch(cothread_t handle)
   co_swap(co_active_handle = handle, co_previous_handle);
 }
 #else
+#ifdef __APPLE__
+#define ASM_PREFIX "_"
+#else
+#define ASM_PREFIX ""
+#endif
 __asm__(
-".intel_syntax noprefix        \n"
-".globl co_switch              \n"
-"co_switch:                    \n"
-"mov rsi, co_active_handle[rip]\n"
-"mov [rsi],rsp                 \n"
-"mov [rsi+0x08],rbp            \n"
-"mov [rsi+0x10],rbx            \n"
-"mov [rsi+0x18],r12            \n"
-"mov [rsi+0x20],r13            \n"
-"mov [rsi+0x28],r14            \n"
-"mov [rsi+0x30],r15            \n"
-"mov co_active_handle[rip], rdi\n"
-"mov rsp,[rdi]                 \n"
-"mov rbp,[rdi+0x08]            \n"
-"mov rbx,[rdi+0x10]            \n"
-"mov r12,[rdi+0x18]            \n"
-"mov r13,[rdi+0x20]            \n"
-"mov r14,[rdi+0x28]            \n"
-"mov r15,[rdi+0x30]            \n"
-"ret                           \n"
-".att_syntax                   \n"
+".intel_syntax noprefix         \n"
+".globl " ASM_PREFIX "co_switch              \n"
+ASM_PREFIX "co_switch:                     \n"
+"mov rsi, [rip+" ASM_PREFIX "co_active_handle]\n"
+"mov [rsi],rsp                  \n"
+"mov [rsi+0x08],rbp             \n"
+"mov [rsi+0x10],rbx             \n"
+"mov [rsi+0x18],r12             \n"
+"mov [rsi+0x20],r13             \n"
+"mov [rsi+0x28],r14             \n"
+"mov [rsi+0x30],r15             \n"
+"mov [rip+" ASM_PREFIX "co_active_handle], rdi\n"
+"mov rsp,[rdi]                  \n"
+"mov rbp,[rdi+0x08]             \n"
+"mov rbx,[rdi+0x10]             \n"
+"mov r12,[rdi+0x18]             \n"
+"mov r13,[rdi+0x20]             \n"
+"mov r14,[rdi+0x28]             \n"
+"mov r15,[rdi+0x30]             \n"
+"ret                            \n"
+".att_syntax                    \n"
 );
 #endif
 
