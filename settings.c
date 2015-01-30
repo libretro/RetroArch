@@ -489,6 +489,7 @@ static void config_set_defaults(void)
    g_settings.menu.navigation.wraparound.horizontal_enable = true;
    g_settings.menu.navigation.wraparound.vertical_enable = true;
    g_settings.menu.navigation.browser.filter.supported_extensions_enable = true;
+   g_settings.menu.collapse_subgroups_enable = false;
 #endif
 
    g_settings.ui.menubar_enable = true;
@@ -1096,6 +1097,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(menu.navigation.wraparound.horizontal_enable, "menu_navigation_wraparound_horizontal_enable");
    CONFIG_GET_BOOL(menu.navigation.wraparound.vertical_enable,   "menu_navigation_wraparound_vertical_enable");
    CONFIG_GET_BOOL(menu.navigation.browser.filter.supported_extensions_enable,   "menu_navigation_browser_filter_supported_extensions_enable");
+   CONFIG_GET_BOOL(menu.collapse_subgroups_enable,   "menu_collapse_subgroups_enable");
    CONFIG_GET_PATH(menu.wallpaper, "menu_wallpaper");
    if (!strcmp(g_settings.menu.wallpaper, "default"))
       *g_settings.menu.wallpaper = '\0';
@@ -1960,6 +1962,8 @@ bool config_save_file(const char *path)
          g_settings.menu.navigation.wraparound.vertical_enable);
    config_set_bool(conf, "menu_navigation_browser_filter_supported_extensions_enable",
          g_settings.menu.navigation.browser.filter.supported_extensions_enable);
+   config_set_bool(conf, "menu_collapse_subgroups_enable",
+         g_settings.menu.collapse_subgroups_enable);
 #endif
 
    config_set_path(conf, "game_history_path", g_settings.content_history_path);

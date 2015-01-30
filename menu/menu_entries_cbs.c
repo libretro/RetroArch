@@ -2635,29 +2635,109 @@ static int deferred_push_settings(void *data, void *userdata,
 
    menu_list_clear(list);
 
-   for (; setting->type != ST_NONE; setting++)
+   if (g_settings.menu.collapse_subgroups_enable)
+   {
+      for (; setting->type != ST_NONE; setting++)
+      {
+         char group_label[PATH_MAX_LENGTH];
+         char subgroup_label[PATH_MAX_LENGTH];
+
+         if (setting->type == ST_GROUP)
+         {
+            menu_list_push(list, setting->short_description,
+                  setting->name, menu_entries_setting_set_flags(setting), 0);
+         }
+      }
+   }
+   else
+   {
+      for (; setting->type != ST_NONE; setting++)
+      {
+         char group_label[PATH_MAX_LENGTH];
+         char subgroup_label[PATH_MAX_LENGTH];
+
+         if (setting->type == ST_GROUP)
+            strlcpy(group_label, setting->name, sizeof(group_label));
+         else if (setting->type == ST_SUB_GROUP)
+         {
+            char new_label[PATH_MAX_LENGTH], new_path[PATH_MAX_LENGTH];
+            strlcpy(subgroup_label, setting->name, sizeof(group_label));
+            strlcpy(new_label, group_label, sizeof(new_label));
+            strlcat(new_label, "|", sizeof(new_label));
+            strlcat(new_label, subgroup_label, sizeof(new_label));
+
+            strlcpy(new_path, group_label, sizeof(new_path));
+            strlcat(new_path, " - ", sizeof(new_path));
+            strlcat(new_path, setting->short_description, sizeof(new_path));
+
+            menu_list_push(list, new_path,
+                  new_label, MENU_SETTING_SUBGROUP, 0);
+         }
+      }
+   }
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
+}
+
+static int deferred_push_settings_subgroup(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+   rarch_setting_t *setting = NULL;
+   struct string_list *str_list = NULL;
+   file_list_t *list        = (file_list_t*)data;
+   file_list_t *menu_list   = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   str_list = string_split(label, "|");
+   if (str_list && str_list->size > 0)
+      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   if (str_list && str_list->size > 1)
+      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+
+   if (str_list)
+   {
+      string_list_free(str_list);
+      str_list = NULL;
+   }
+
+   settings_list_free(driver.menu->list_settings);
+   driver.menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
+
+   setting = menu_action_find_setting(elem0);
+
+   menu_list_clear(list);
+
+   if (!setting)
+      return -1;
+
+   while (1)
+   {
+      if (!setting)
+         return -1;
+      if (setting->type == ST_SUB_GROUP)
+      {
+         if ((strlen(setting->name) != 0) && !strcmp(setting->name, elem1))
+            break;
+      }
+      setting++;
+   }
+
+   setting++;
+
+   for (; setting->type != ST_END_SUB_GROUP; setting++)
    {
       char group_label[PATH_MAX_LENGTH];
       char subgroup_label[PATH_MAX_LENGTH];
-      if (setting->type == ST_GROUP)
-      {
-         strlcpy(group_label, setting->name, sizeof(group_label));
-         menu_list_push(list, setting->short_description,
-               group_label, menu_entries_setting_set_flags(setting), 0);
-      }
-#if 0
-      else if (setting->type == ST_SUB_GROUP)
-      {
-         char new_label[PATH_MAX_LENGTH];
-         strlcpy(subgroup_label, setting->name, sizeof(group_label));
-         strlcpy(new_label, group_label,sizeof(new_label));
-         strlcat(new_label, "|", sizeof(new_label));
-         strlcat(new_label, subgroup_label, sizeof(new_label));
-         RARCH_LOG("new label: %s\n", new_label);
-         menu_list_push(list, setting->short_description,
-               setting->name, menu_entries_setting_set_flags(setting), 0);
-      }
-#endif
+
+      strlcpy(group_label, setting->name, sizeof(group_label));
+      menu_list_push(list, setting->short_description,
+            group_label, menu_entries_setting_set_flags(setting), 0);
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
@@ -3868,7 +3948,7 @@ static int action_iterate_main(const char *label, unsigned action)
 static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
-   char elem0[PATH_MAX_LENGTH];
+   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
    const char *menu_label = NULL;
    struct string_list *str_list = NULL;
 
@@ -3881,6 +3961,8 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
    str_list = string_split(label, "|");
    if (str_list && str_list->size > 0)
       strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   if (str_list && str_list->size > 1)
+      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
 
    if (str_list)
    {
@@ -4028,6 +4110,7 @@ static int menu_entries_cbs_init_bind_ok_first(menu_file_list_cbs_t *cbs,
          break;
       case MENU_SETTINGS:
       case MENU_SETTING_GROUP:
+      case MENU_SETTING_SUBGROUP:
          cbs->action_ok = action_ok_push_default;
          break;
       case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS:
@@ -4318,18 +4401,63 @@ static void menu_entries_cbs_init_bind_iterate(menu_file_list_cbs_t *cbs,
 static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
+   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
    const char *menu_label = NULL;
+   struct string_list *str_list = NULL;
    if (!cbs || !driver.menu)
       return;
 
    menu_list_get_last_stack(driver.menu->menu_list,
          NULL, &menu_label, NULL);
 
+   str_list = string_split(label, "|");
+   if (str_list && str_list->size > 0)
+      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   if (str_list && str_list->size > 1)
+      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+
+   if (str_list)
+   {
+      string_list_free(str_list);
+      str_list = NULL;
+   }
+
    cbs->action_deferred_push = deferred_push_default;
+
+   if ((strlen(elem1) != 0) && !!strcmp(elem0, elem1))
+   {
+      if ((
+               !strcmp(elem0, "Driver Options") ||
+               !strcmp(elem0, "General Options") ||
+               !strcmp(elem0, "Video Options") ||
+               !strcmp(elem0, "Shader Options") ||
+               !strcmp(elem0, "Font Options") ||
+               !strcmp(elem0, "Audio Options") ||
+               !strcmp(elem0, "Input Options") ||
+               !strcmp(elem0, "Overlay Options") ||
+               !strcmp(elem0, "Menu Options") ||
+               !strcmp(elem0, "UI Options") ||
+               !strcmp(elem0, "Patch Options") ||
+               !strcmp(elem0, "Playlist Options") ||
+               !strcmp(elem0, "Core Manager Options") ||
+               !strcmp(elem0, "Network Options") ||
+               !strcmp(elem0, "Archive Options") ||
+               !strcmp(elem0, "User Options") ||
+               !strcmp(elem0, "Path Options") ||
+               !strcmp(elem0, "Privacy Options"))
+         )
+      {
+         if (!g_settings.menu.collapse_subgroups_enable)
+         {
+            cbs->action_deferred_push = deferred_push_settings_subgroup;
+            return;
+         }
+      }
+   }
 
    if (strstr(label, "deferred_rdb_entry_detail"))
       cbs->action_deferred_push = deferred_push_rdb_entry_detail;
-   if (!strcmp(label, "core_manager_list"))
+   else if (!strcmp(label, "core_manager_list"))
       cbs->action_deferred_push = deferred_push_core_manager_list;
    else if (!strcmp(label, "history_list"))
       cbs->action_deferred_push = deferred_push_history_list;
@@ -4431,6 +4559,7 @@ void menu_entries_cbs_init(void *data,
 
    if (!(cbs = (menu_file_list_cbs_t*)list->list[idx].actiondata))
       return;
+
 
    menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx);
    menu_entries_cbs_init_bind_cancel(cbs, path, label, type, idx);

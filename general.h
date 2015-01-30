@@ -220,6 +220,7 @@ struct settings
             } filter;
          } browser;
       } navigation;
+      bool collapse_subgroups_enable;
    } menu;
 #endif
 

@@ -5347,6 +5347,22 @@ static bool setting_data_append_list_menu_options(
 
    END_SUB_GROUP(list, list_info);
 
+   START_SUB_GROUP(list, list_info, "Settings View", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(
+         g_settings.menu.collapse_subgroups_enable,
+         "menu_collapse_subgroups_enable",
+         "Collapse SubGroups",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   END_SUB_GROUP(list, list_info);
+
    START_SUB_GROUP(list, list_info, "Browser", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -5783,10 +5799,7 @@ static bool setting_data_append_list_path_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "Path Options");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
-
-   END_SUB_GROUP(list, list_info);
    START_SUB_GROUP(list, list_info, "Paths", group_info.name, subgroup_info);
 #ifdef HAVE_MENU
    CONFIG_DIR(
