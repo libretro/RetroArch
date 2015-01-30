@@ -440,6 +440,7 @@
 					"-DHAVE_GLUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+					"-DHAVE_LIBRETRODB",
 				);
 				PRODUCT_NAME = "RetroArch 10.6";
 				SDKROOT = macosx;
@@ -511,6 +512,7 @@
 					"-DHAVE_GLUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+					"-DHAVE_LIBRETRODB",
 				);
 				PRODUCT_NAME = "RetroArch 10.6";
 				SDKROOT = macosx;
@@ -625,6 +627,7 @@
 					"-DHAVE_GLUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+					"-DHAVE_LIBRETRODB",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -696,6 +699,7 @@
 					"-DHAVE_GLUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+					"-DHAVE_LIBRETRODB",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;

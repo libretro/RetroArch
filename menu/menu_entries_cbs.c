@@ -575,7 +575,8 @@ static int action_ok_core_load_deferred(const char *path,
    if (!driver.menu)
       return -1;
 
-   strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
+   if (path)
+      strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
    strlcpy(g_extern.fullpath, driver.menu->deferred_path,
          sizeof(g_extern.fullpath));
 
