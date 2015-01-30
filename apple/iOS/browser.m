@@ -28,7 +28,7 @@
 
 static const void* const associated_module_key = &associated_module_key;
 
-static bool zlib_extract_callback(const char *name,
+static bool zlib_extract_callback(const char *name, const char *valid_exts,
                                 const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
                                 uint32_t crc32, void *userdata)
 {
@@ -56,7 +56,7 @@ static bool zlib_extract_callback(const char *name,
          write_file(path, cdata, size);
          break;
       case 8: // Deflate
-         zlib_inflate_data_to_file(path, cdata, csize, size, crc32);
+         zlib_inflate_data_to_file(path, valid_exts, cdata, csize, size, crc32);
          break;
    }
 
