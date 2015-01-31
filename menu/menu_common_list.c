@@ -20,6 +20,10 @@
 
 void menu_common_list_clear(void *data)
 {
+   file_list_t *list = (file_list_t*)data;
+
+   if (list)
+      file_list_clear(list);
 }
 
 void menu_common_list_set_selection(void *data)

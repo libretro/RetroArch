@@ -331,11 +331,8 @@ void menu_list_clear(file_list_t *list)
    if (driver.menu_ctx->list_clear)
       driver.menu_ctx->list_clear(list);
 
-   menu_common_list_clear(list);
-
 end:
-
-   file_list_clear(list);
+   menu_common_list_clear(list);
 }
 
 
