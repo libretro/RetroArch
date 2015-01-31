@@ -385,12 +385,14 @@ static void glui_frame(void)
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
       bool selected = false;
+      rarch_setting_t *setting = NULL;
 
       menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
             &entry_label, &type);
-      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
+      setting = (rarch_setting_t*)setting_data_find_setting(
             driver.menu->list_settings,
             driver.menu->menu_list->selection_buf->list[i].label);
+
       (void)setting;
 
       disp_set_label(driver.menu->menu_list->selection_buf, &w, type, i, label,

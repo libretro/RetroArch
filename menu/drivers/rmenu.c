@@ -230,15 +230,21 @@ static void rmenu_render(void)
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
       bool selected = false;
+      rarch_setting_t *setting = NULL;
 
       menu_list_get_at_offset(menu->menu_list->selection_buf, i,
             &path, &entry_label, &type);
+
+      setting = (rarch_setting_t*)setting_data_find_setting(
+            driver.menu->list_settings,
+            driver.menu->menu_list->selection_buf->list[i].label);
+      (void)setting;
 
       disp_set_label(menu->menu_list->selection_buf, &w, type, i, label,
             type_str, sizeof(type_str), 
             entry_label, path,
             path_buf, sizeof(path_buf));
-      
+
       selected = (i == driver.menu->selection_ptr);
 
       menu_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2),

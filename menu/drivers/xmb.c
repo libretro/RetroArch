@@ -877,9 +877,15 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
       xmb_node_t *node = NULL;
+      rarch_setting_t *setting = NULL;
 
       menu_list_get_at_offset(list, i, &path, &entry_label, &type);
       node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+
+      setting = (rarch_setting_t*)setting_data_find_setting(
+            driver.menu->list_settings,
+            driver.menu->menu_list->selection_buf->list[i].label);
+      (void)setting;
 
       disp_set_label(list, &w, type, i, label,
             val_buf, sizeof(val_buf),
