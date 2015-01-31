@@ -379,21 +379,21 @@ static INLINE void disp_set_label(file_list_t* list,
    *w = 19;
 
    if (!strcmp(label, "performance_counters"))
-      *w = 28;
+      *w = strlen(label);
 
    if (!strcmp(label, "history_list"))
-      *w = 6;
+      *w = strlen(label);
 
    if (type == MENU_FILE_CORE)
    {
       strlcpy(type_str, "(CORE)", type_str_size);
       menu_list_get_alt_at_offset(list, i, &path);
-      *w = 6;
+      *w = strlen(type_str);
    }
    else if (type == MENU_FILE_PLAIN)
    {
       strlcpy(type_str, "(FILE)", type_str_size);
-      *w = 6;
+      *w = strlen(type_str);
    }
    else if (type == MENU_FILE_USE_DIRECTORY)
    {
@@ -403,49 +403,49 @@ static INLINE void disp_set_label(file_list_t* list,
    else if (type == MENU_FILE_DIRECTORY)
    {
       strlcpy(type_str, "(DIR)", type_str_size);
-      *w = 5;
+      *w = strlen(type_str);
    }
    else if (type == MENU_FILE_CARCHIVE)
    {
       strlcpy(type_str, "(COMP)", type_str_size);
-      *w = 6;
+      *w = strlen(type_str);
    }
    else if (type == MENU_FILE_IN_CARCHIVE)
    {
       strlcpy(type_str, "(CFILE)", type_str_size);
-      *w = 7;
+      *w = strlen(type_str);
    }
    else if (type == MENU_FILE_FONT)
    {
       strlcpy(type_str, "(FONT)", type_str_size);
-      *w = 7;
+      *w = strlen(type_str);
    }
    else if (type == MENU_FILE_SHADER_PRESET)
    {
       strlcpy(type_str, "(PRESET)", type_str_size);
-      *w = 8;
+      *w = strlen(type_str);
    }
    else if (type == MENU_FILE_SHADER)
    {
       strlcpy(type_str, "(SHADER)", type_str_size);
-      *w = 8;
+      *w = strlen(type_str);
    }
    else if (
          type == MENU_FILE_VIDEOFILTER ||
          type == MENU_FILE_AUDIOFILTER)
    {
       strlcpy(type_str, "(FILTER)", type_str_size);
-      *w = 8;
+      *w = strlen(type_str);
    }
    else if (type == MENU_FILE_CONFIG)
    {
       strlcpy(type_str, "(CONFIG)", type_str_size);
-      *w = 8;
+      *w = strlen(type_str);
    }
    else if (type == MENU_FILE_OVERLAY)
    {
       strlcpy(type_str, "(OVERLAY)", type_str_size);
-      *w = 9;
+      *w = strlen(type_str);
    }
    else if (type >= MENU_SETTINGS_CORE_OPTION_START)
       strlcpy(
