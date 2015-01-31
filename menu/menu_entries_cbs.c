@@ -23,6 +23,7 @@
 
 #include "../file_ext.h"
 #include "../file_extract.h"
+#include "../file_ops.h"
 #include "../config.def.h"
 #include "../cheats.h"
 #include "../retroarch.h"
@@ -1351,9 +1352,47 @@ static int action_ok_save_state(const char *path,
  * call each other. */
 static char core_manager_path[PATH_MAX_LENGTH];
 
+static bool zlib_extract_core_callback(const char *name, const char *valid_exts,
+      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      uint32_t crc32, void *userdata)
+{
+   char path[PATH_MAX_LENGTH];
+
+   /* Make directory */
+   fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
+   path_basedir(path);
+
+   if (!path_mkdir(path))
+   {
+      RARCH_ERR("Failed to create directory: %s.\n", path);
+      return false;
+   }
+
+   /* Ignore directories. */
+   if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
+      return true;
+
+   fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
+
+   RARCH_LOG("path is: %s, CRC32: 0x%x\n", path, crc32);
+
+   switch (cmode)
+   {
+      case 0: /* Uncompressed */
+         write_file(path, cdata, size);
+         break;
+      case 8: /* Deflate */
+         zlib_inflate_data_to_file(path, valid_exts, cdata, csize, size, crc32);
+         break;
+   }
+
+   return true;
+}
+
 static int cb_core_manager_download(void *data_, size_t len)
 {
    FILE *f;
+   const char* file_ext = NULL;
    char output_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
    char *data = (char*)data_;
 
@@ -1376,6 +1415,17 @@ static int cb_core_manager_download(void *data_, size_t len)
 
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, msg, 1, 90);
+
+#ifdef HAVE_ZLIB
+   file_ext = path_get_extension(output_path);
+   if (!strcasecmp(file_ext,"zip"))
+   {
+      if (!zlib_parse_file(output_path, NULL, zlib_extract_core_callback,
+
+               (void*)g_settings.libretro_directory))
+         RARCH_LOG("Could not process ZIP file.\n");
+   }
+#endif
 
    return 0;
 }
@@ -4075,7 +4125,7 @@ static int is_settings_entry(const char *label)
     !strcmp(label, "Patch Options") ||
     !strcmp(label, "Playlist Options") ||
     !strcmp(label, "Onscreen Keyboard Overlay Options") ||
-    !strcmp(label, "Core Manager Options") ||
+    !strcmp(label, "Core Updater Options") ||
     !strcmp(label, "Network Options") ||
     !strcmp(label, "Archive Options") ||
     !strcmp(label, "User Options") ||
