@@ -5605,7 +5605,7 @@ static bool setting_data_append_list_core_manager_options(
 
    CONFIG_STRING(
          g_settings.network.buildbot_url,
-         "core_management_buildbot_url",
+         "core_updater_buildbot_url",
          "Buildbot URL",
          buildbot_server_url, 
          group_info.name,
@@ -5613,6 +5613,18 @@ static bool setting_data_append_list_core_manager_options(
          general_write_handler,
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+   CONFIG_BOOL(
+         g_settings.network.buildbot_auto_extract_archive,
+         "core_updater_auto_extract_archive",
+         "Automatically extract downloaded archive",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);

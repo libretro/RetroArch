@@ -321,6 +321,7 @@ struct settings
    struct
    {
       char buildbot_url[PATH_MAX_LENGTH];
+      bool buildbot_auto_extract_archive;
    } network;
 
    int state_slot;

@@ -541,6 +541,7 @@ static void config_set_defaults(void)
 
    strlcpy(g_settings.network.buildbot_url, buildbot_server_url,
          sizeof(g_settings.network.buildbot_url));
+   g_settings.network.buildbot_auto_extract_archive = true;
 
    g_settings.input.overlay_enable = true;
    g_settings.input.overlay_opacity = 0.7f;
@@ -1212,7 +1213,9 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(input.autoconfig_descriptor_label_show,
          "autoconfig_descriptor_label_show");
 
-   CONFIG_GET_PATH(network.buildbot_url, "core_management_buildbot_url");
+   CONFIG_GET_PATH(network.buildbot_url, "core_updater_buildbot_url");
+   CONFIG_GET_BOOL(network.buildbot_auto_extract_archive,
+         "core_updater_auto_extract_archive");
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -1885,7 +1888,8 @@ bool config_save_file(const char *path)
    config_set_string(conf, "audio_device", g_settings.audio.device);
    config_set_string(conf, "video_filter", g_settings.video.softfilter_plugin);
    config_set_string(conf, "audio_dsp_plugin", g_settings.audio.dsp_plugin);
-   config_set_string(conf, "core_management_buildbot_url", g_settings.network.buildbot_url);
+   config_set_string(conf, "core_updater_buildbot_url", g_settings.network.buildbot_url);
+   config_set_bool(conf, "core_updater_auto_extract_archive", g_settings.network.buildbot_auto_extract_archive);
    config_set_string(conf, "camera_device", g_settings.camera.device);
    config_set_bool(conf, "camera_allow", g_settings.camera.allow);
    config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);

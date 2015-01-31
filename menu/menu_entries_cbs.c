@@ -1418,6 +1418,10 @@ static int cb_core_manager_download(void *data_, size_t len)
 
 #ifdef HAVE_ZLIB
    file_ext = path_get_extension(output_path);
+
+   if (!g_settings.network.buildbot_auto_extract_archive)
+      return 0;
+
    if (!strcasecmp(file_ext,"zip"))
    {
       if (!zlib_parse_file(output_path, NULL, zlib_extract_core_callback,
