@@ -51,18 +51,6 @@ long read_compressed_file(const char * path, void **buf,
 long read_file(const char *path, void **buf);
 
 /**
- * read_file_string:
- * @path             : path to file to be read from.
- * @buf              : buffer to allocate and read the contents of the
- *                     file into. Needs to be freed manually.
- *
- * Reads file content as one string.
- *
- * Returns: true (1) on success, false (0) otherwise.
- */
-bool read_file_string(const char *path, char **buf);
-
-/**
  * write_file:
  * @path             : path to file.
  * @data             : contents to write to the file.
