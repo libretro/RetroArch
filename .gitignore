@@ -75,7 +75,8 @@ apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
 /media/assets/
 /media/autoconfig/
 /media/overlays/
-/media/shaders/
+/media/shaders_cg/
+/media/libretrodb/
 
 apple/iOS/build/
 apple/iOS/modules/

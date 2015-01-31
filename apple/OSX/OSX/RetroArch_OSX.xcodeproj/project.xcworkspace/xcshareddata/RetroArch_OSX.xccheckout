@@ -18,6 +18,8 @@
 		<string>https://github.com/libretro/libretro-super.git</string>
 		<key>A267D9543F572B4C32EC6E1B876E3B9BFE4DE8F6</key>
 		<string>https://github.com/libretro/retroarch-assets.git</string>
+		<key>C3AEE01BDA902108663DB5DB9CD7916436919463</key>
+		<string>https://github.com/libretro/libretro-database.git</string>
 		<key>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</key>
 		<string>https://github.com/libretro/RetroArch.git</string>
 		<key>EF363D58F01B3FB341FA6C851870E60E4F080E97</key>
@@ -28,17 +30,19 @@
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>66A80EF91DB414BA5E941825F216CCE8F40CCCF2</key>
-		<string>../../../../../apple/OSX/OSX/modules/shaders/shaders_cg</string>
+		<string>../../../../../media/shaders_cg</string>
 		<key>6B9F0B13E5864452B91F13C09B7ED9EB989E82AD</key>
-		<string>../../../../../apple/OSX/OSX/modules/autoconfig</string>
+		<string>../../../../../media/autoconfig</string>
 		<key>76200F0D6584D865E96F58DE862E738E88B23A3C</key>
 		<string>../../../../../..</string>
 		<key>A267D9543F572B4C32EC6E1B876E3B9BFE4DE8F6</key>
-		<string>../../../../../apple/OSX/OSX/modules/assets</string>
+		<string>../../../../../media/assets</string>
+		<key>C3AEE01BDA902108663DB5DB9CD7916436919463</key>
+		<string>../../../../../media/libretrodb/</string>
 		<key>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</key>
 		<string>../../../../..</string>
 		<key>EF363D58F01B3FB341FA6C851870E60E4F080E97</key>
-		<string>../../../../../apple/OSX/OSX/modules/overlays</string>
+		<string>../../../../../media/overlays</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
 	<string>https://github.com/libretro/RetroArch.git</string>
@@ -68,9 +72,25 @@
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>
 			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>A267D9543F572B4C32EC6E1B876E3B9BFE4DE8F6</string>
+			<key>IDESourceControlWCCName</key>
+			<string>assets</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
 			<string>6B9F0B13E5864452B91F13C09B7ED9EB989E82AD</string>
 			<key>IDESourceControlWCCName</key>
 			<string>autoconfig</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>C3AEE01BDA902108663DB5DB9CD7916436919463</string>
+			<key>IDESourceControlWCCName</key>
+			<string>libretrodb</string>
 		</dict>
 		<dict>
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
@@ -87,6 +107,14 @@
 			<string>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</string>
 			<key>IDESourceControlWCCName</key>
 			<string>retroarch</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>66A80EF91DB414BA5E941825F216CCE8F40CCCF2</string>
+			<key>IDESourceControlWCCName</key>
+			<string>shaders_cg</string>
 		</dict>
 		<dict>
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
