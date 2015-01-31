@@ -43,6 +43,8 @@
 		840A4D1C1A7CF3E80015C9CD /* autoconfig in CopyFiles */ = {isa = PBXBuildFile; fileRef = 840A4D141A7CEA850015C9CD /* autoconfig */; };
 		840A4D1D1A7CF3F00015C9CD /* overlays in CopyFiles */ = {isa = PBXBuildFile; fileRef = 840A4D161A7CEAF80015C9CD /* overlays */; };
 		840A4D1F1A7CF4040015C9CD /* shaders_cg in CopyFiles */ = {isa = PBXBuildFile; fileRef = 840A4D181A7CF31A0015C9CD /* shaders_cg */; };
+		840A4D211A7CF9B40015C9CD /* libretrodb in CopyFiles */ = {isa = PBXBuildFile; fileRef = 840A4D201A7CF9720015C9CD /* libretrodb */; };
+		840A4D221A7CF9C30015C9CD /* libretrodb in CopyFiles */ = {isa = PBXBuildFile; fileRef = 840A4D201A7CF9720015C9CD /* libretrodb */; };
 		962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 962EE0E1178B3DF6004224FF /* IOKit.framework */; };
 		96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96355CE21788E72A0010DBFA /* Cocoa.framework */; };
 		964DE7C417D84B57001CBB6C /* Settings.xib in Resources */ = {isa = PBXBuildFile; fileRef = 964DE7C617D84B57001CBB6C /* Settings.xib */; };
@@ -66,6 +68,7 @@
 			dstPath = modules;
 			dstSubfolderSpec = 7;
 			files = (
+				840A4D221A7CF9C30015C9CD /* libretrodb in CopyFiles */,
 				840A4D171A7CEAF80015C9CD /* overlays in CopyFiles */,
 				840A4D151A7CEA850015C9CD /* autoconfig in CopyFiles */,
 				840A4D101A7CE7990015C9CD /* assets in CopyFiles */,
@@ -78,6 +81,7 @@
 			dstPath = modules;
 			dstSubfolderSpec = 7;
 			files = (
+				840A4D211A7CF9B40015C9CD /* libretrodb in CopyFiles */,
 				840A4D1D1A7CF3F00015C9CD /* overlays in CopyFiles */,
 				840A4D1C1A7CF3E80015C9CD /* autoconfig in CopyFiles */,
 				840A4D131A7CEA100015C9CD /* assets in CopyFiles */,
@@ -122,6 +126,7 @@
 		840A4D141A7CEA850015C9CD /* autoconfig */ = {isa = PBXFileReference; lastKnownFileType = folder; name = autoconfig; path = ../../../media/autoconfig; sourceTree = "<group>"; };
 		840A4D161A7CEAF80015C9CD /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../../media/overlays; sourceTree = "<group>"; };
 		840A4D181A7CF31A0015C9CD /* shaders_cg */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shaders_cg; path = ../../../media/shaders_cg; sourceTree = "<group>"; };
+		840A4D201A7CF9720015C9CD /* libretrodb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = libretrodb; path = ../../../media/libretrodb; sourceTree = "<group>"; };
 		962EE0E1178B3DF6004224FF /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
 		96355CDF1788E72A0010DBFA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96355CE21788E72A0010DBFA /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -136,7 +141,6 @@
 		967894A31788F0C200D6CA69 /* CoreAudioKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudioKit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/CoreAudioKit.framework; sourceTree = DEVELOPER_DIR; };
 		967894A61788F0D900D6CA69 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework; sourceTree = DEVELOPER_DIR; };
 		967894A81788F0E500D6CA69 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/AudioUnit.framework; sourceTree = DEVELOPER_DIR; };
-		967894E8178A2EB400D6CA69 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = "<group>"; };
 		98AF929D192ED5C4009A8479 /* utility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = utility.m; path = ../../common/utility.m; sourceTree = SOURCE_ROOT; };
 		98AF92A3192ED60E009A8479 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RAGameView.m; path = ../../common/RAGameView.m; sourceTree = SOURCE_ROOT; };
 		98AF92B0192ED685009A8479 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
@@ -196,6 +200,7 @@
 		96355CD41788E6E00010DBFA = {
 			isa = PBXGroup;
 			children = (
+				840A4D201A7CF9720015C9CD /* libretrodb */,
 				840A4D181A7CF31A0015C9CD /* shaders_cg */,
 				840A4D161A7CEAF80015C9CD /* overlays */,
 				840A4D141A7CEA850015C9CD /* autoconfig */,
@@ -268,7 +273,6 @@
 		967894E7178A2E9B00D6CA69 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
-				967894E8178A2EB400D6CA69 /* modules */,
 				967894911788ECDB00D6CA69 /* MainMenu.xib */,
 				C15874EE178F2094001171D4 /* RetroArch.icns */,
 				964DE7C617D84B57001CBB6C /* Settings.xib */,
