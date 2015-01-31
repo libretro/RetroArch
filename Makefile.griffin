@@ -121,8 +121,6 @@ HAVE_7ZIP                  := 1
   HAVE_RPNG                := 1
   HAVE_OVERLAY             := 1
   HAVE_LIBSICKSAXIS			:= 0
-  HAVE_NETWORKING          := 1
-  HAVE_NETPLAY             := 1
   HAVE_BUILTIN_AUTOCONFIG  := 1
 else ifeq ($(platform), psp1)
   CC = psp-gcc$(EXE_EXT)
