@@ -440,18 +440,21 @@ static void rgui_render(void)
       unsigned type = 0, w = 0;
       bool selected = false;
       rarch_setting_t *setting = NULL;
+      menu_file_list_cbs_t *cbs = NULL;
 
       menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
             &entry_label, &type);
-      setting = (rarch_setting_t*)setting_data_find_setting(
-            driver.menu->list_settings,
-            driver.menu->menu_list->selection_buf->list[i].label);
-      (void)setting;
 
-      disp_set_label(driver.menu->menu_list->selection_buf, &w, type, i, label,
-            type_str, sizeof(type_str), 
-            entry_label, path,
-            path_buf, sizeof(path_buf));
+      cbs = (menu_file_list_cbs_t*)
+         menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
+               i);
+
+      if (cbs && cbs->action_get_representation)
+         cbs->action_get_representation(driver.menu->menu_list->selection_buf,
+               &w, type, i, label,
+               type_str, sizeof(type_str), 
+               entry_label, path,
+               path_buf, sizeof(path_buf));
 
       selected = (i == driver.menu->selection_ptr);
 

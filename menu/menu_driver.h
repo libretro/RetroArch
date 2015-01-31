@@ -157,7 +157,13 @@ typedef struct menu_file_list_cbs
    int (*action_toggle)(unsigned type, const char *label, unsigned action);
    int (*action_refresh)(file_list_t *list, file_list_t *menu_list);
    int (*action_up_or_down)(unsigned type, const char *label, unsigned action);
-   void (*action_get_representation)(rarch_setting_t *setting, char *type_str, size_t type_str_size);
+   void (*action_get_representation)(file_list_t* list,
+         unsigned *w, unsigned type, unsigned i,
+         const char *label,
+         char *type_str, size_t type_str_size,
+         const char *entry_label,
+         const char *path,
+         char *path_buf, size_t path_buf_size);
 } menu_file_list_cbs_t;
 
 typedef struct menu_ctx_driver

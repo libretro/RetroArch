@@ -872,25 +872,26 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
 
    for (i = 0; i < end; i++)
    {
-      char val_buf[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
+      char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
       char name[256], value[256];
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
       xmb_node_t *node = NULL;
-      rarch_setting_t *setting = NULL;
+      menu_file_list_cbs_t *cbs = NULL;
 
       menu_list_get_at_offset(list, i, &path, &entry_label, &type);
       node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
 
-      setting = (rarch_setting_t*)setting_data_find_setting(
-            driver.menu->list_settings,
-            driver.menu->menu_list->selection_buf->list[i].label);
-      (void)setting;
+      cbs = (menu_file_list_cbs_t*)
+         menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
+               i);
 
-      disp_set_label(list, &w, type, i, label,
-            val_buf, sizeof(val_buf),
-            entry_label, path,
-            path_buf, sizeof(path_buf));
+      if (cbs && cbs->action_get_representation)
+         cbs->action_get_representation(driver.menu->menu_list->selection_buf,
+               &w, type, i, label,
+               type_str, sizeof(type_str), 
+               entry_label, path,
+               path_buf, sizeof(path_buf));
 
       if (type == MENU_FILE_CONTENTLIST_ENTRY)
          strlcpy(path_buf, path_basename(path_buf), sizeof(path_buf));
@@ -961,19 +962,19 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             node->label_alpha,
             0);
 
-      menu_ticker_line(value, 35, g_extern.frame_count / 20, val_buf,
+      menu_ticker_line(value, 35, g_extern.frame_count / 20, type_str,
             (i == current));
 
-      if((     strcmp(val_buf, "...")
-            && strcmp(val_buf, "(CORE)")
-            && strcmp(val_buf, "(FILE)")
-            && strcmp(val_buf, "(DIR)")
-            && strcmp(val_buf, "(COMP)")
-            && strcmp(val_buf, "ON")
-            && strcmp(val_buf, "OFF"))
-            || ((!strcmp(val_buf, "ON")
+      if((     strcmp(type_str, "...")
+            && strcmp(type_str, "(CORE)")
+            && strcmp(type_str, "(FILE)")
+            && strcmp(type_str, "(DIR)")
+            && strcmp(type_str, "(COMP)")
+            && strcmp(type_str, "ON")
+            && strcmp(type_str, "OFF"))
+            || ((!strcmp(type_str, "ON")
             && !xmb->textures[XMB_TEXTURE_SWITCH_ON].id)
-            || (!strcmp(val_buf, "OFF")
+            || (!strcmp(type_str, "OFF")
             && !xmb->textures[XMB_TEXTURE_SWITCH_OFF].id)))
          xmb_draw_text(value,
                node->x + xmb->margin_left + xmb->hspacing + 
@@ -983,7 +984,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
                node->label_alpha,
                0);
 
-      if (!strcmp(val_buf, "ON") && xmb->textures[XMB_TEXTURE_SWITCH_ON].id)
+      if (!strcmp(type_str, "ON") && xmb->textures[XMB_TEXTURE_SWITCH_ON].id)
          xmb_draw_icon(xmb->textures[XMB_TEXTURE_SWITCH_ON].id,
                node->x + xmb->margin_left + xmb->hspacing
                + xmb->icon_size/2.0 + xmb->setting_margin_left,
@@ -992,7 +993,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
                0,
                1);
 
-      if (!strcmp(val_buf, "OFF") && xmb->textures[XMB_TEXTURE_SWITCH_OFF].id)
+      if (!strcmp(type_str, "OFF") && xmb->textures[XMB_TEXTURE_SWITCH_OFF].id)
          xmb_draw_icon(xmb->textures[XMB_TEXTURE_SWITCH_OFF].id,
                node->x + xmb->margin_left + xmb->hspacing
                + xmb->icon_size/2.0 + xmb->setting_margin_left,

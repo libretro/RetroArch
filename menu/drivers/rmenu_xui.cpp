@@ -582,21 +582,21 @@ static void rmenu_xui_render(void)
       char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
-      rarch_setting_t *setting = NULL;
+      menu_file_list_cbs_t *cbs = NULL;
 
       menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
             &entry_label, &type);
 
-      setting = (rarch_setting_t*)setting_data_find_setting(
-            driver.menu->list_settings,
-            driver.menu->menu_list->selection_buf->list[i].label);
-      (void)setting;
+      cbs = (menu_file_list_cbs_t*)
+         menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
+               i);
 
-      disp_set_label(driver.menu->menu_list->selection_buf,
-            &w, type, i, label,
-            type_str, sizeof(type_str), 
-            entry_label, path,
-            path_buf, sizeof(path_buf));
+      if (cbs && cbs->action_get_representation)
+         cbs->action_get_representation(driver.menu->menu_list->selection_buf,
+               &w, type, i, label,
+               type_str, sizeof(type_str), 
+               entry_label, path,
+               path_buf, sizeof(path_buf));
 
       mbstowcs(msg_left, path_buf, sizeof(msg_left) / sizeof(wchar_t));
       mbstowcs(msg_right, type_str, sizeof(msg_right) / sizeof(wchar_t));
