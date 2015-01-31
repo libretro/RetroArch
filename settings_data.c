@@ -3027,8 +3027,6 @@ void setting_data_get_label(void *data, char *type_str,
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
             perf_counters_libretro,
             type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
-   else if (setting)
-      setting_data_get_string_representation(setting, type_str, type_str_size);
    else
    {
       if (!driver.menu || !driver.menu->menu_list)
@@ -3039,19 +3037,19 @@ void setting_data_get_label(void *data, char *type_str,
       setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
             driver.menu->menu_list->selection_buf->list[idx].label);
 
-      if (setting)
+      if (!setting)
+         return;
+
+      if (!strcmp(setting->name, "configurations"))
       {
-         if (!strcmp(setting->name, "configurations"))
-         {
-            if (*g_extern.config_path)
-               fill_pathname_base(type_str, g_extern.config_path,
-                     type_str_size);
-            else
-               strlcpy(type_str, "<default>", type_str_size);
-         }
+         if (*g_extern.config_path)
+            fill_pathname_base(type_str, g_extern.config_path,
+                  type_str_size);
          else
-            setting_data_get_string_representation(setting, type_str, type_str_size);
+            strlcpy(type_str, "<default>", type_str_size);
       }
+      else
+         setting_data_get_string_representation(setting, type_str, type_str_size);
    }
 }
 #endif

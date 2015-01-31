@@ -45,10 +45,10 @@ int database_open_cursor(libretrodb_t *db,
 
 database_info_list_t *database_info_list_new(const char *rdb_path, const char *query)
 {
-   size_t i = 0, j;
    libretrodb_t db;
    libretrodb_cursor_t cur;
    struct rmsgpack_dom_value item;
+   size_t i = 0, j;
    database_info_t *database_info = NULL;
    database_info_list_t *database_info_list = NULL;
 
