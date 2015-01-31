@@ -4023,6 +4023,77 @@ static int action_start_lookup_setting(unsigned type, const char *label,
    return menu_action_setting_set(type, label, MENU_ACTION_START);
 }
 
+static void menu_action_setting_disp_set_label_menu_file_core(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   strlcpy(type_str, "(CORE)", type_str_size);
+   menu_list_get_alt_at_offset(list, i, &path);
+   *w = strlen(type_str);
+   strlcpy(path_buf, path, path_buf_size);
+}
+
+static void menu_action_setting_disp_set_label_menu_file_plain(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   strlcpy(type_str, "(FILE)", type_str_size);
+   *w = strlen(type_str);
+   strlcpy(path_buf, path, path_buf_size);
+}
+
+static void menu_action_setting_disp_set_label_menu_file_use_directory(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   *type_str = '\0';
+   *w = 0;
+   strlcpy(path_buf, path, path_buf_size);
+}
+
+static void menu_action_setting_disp_set_label_menu_file_directory(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   strlcpy(type_str, "(DIR)", type_str_size);
+   *w = strlen(type_str);
+   strlcpy(path_buf, path, path_buf_size);
+}
+
+static void menu_action_setting_disp_set_label_menu_file_carchive(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   strlcpy(type_str, "(COMP)", type_str_size);
+   *w = strlen(type_str);
+   strlcpy(path_buf, path, path_buf_size);
+}
+
 static void menu_action_setting_disp_set_label(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -4040,33 +4111,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
    if (!strcmp(label, "history_list"))
       *w = strlen(label);
 
-   if (type == MENU_FILE_CORE)
-   {
-      strlcpy(type_str, "(CORE)", type_str_size);
-      menu_list_get_alt_at_offset(list, i, &path);
-      *w = strlen(type_str);
-   }
-   else if (type == MENU_FILE_PLAIN)
-   {
-      strlcpy(type_str, "(FILE)", type_str_size);
-      *w = strlen(type_str);
-   }
-   else if (type == MENU_FILE_USE_DIRECTORY)
-   {
-      *type_str = '\0';
-      *w = 0;
-   }
-   else if (type == MENU_FILE_DIRECTORY)
-   {
-      strlcpy(type_str, "(DIR)", type_str_size);
-      *w = strlen(type_str);
-   }
-   else if (type == MENU_FILE_CARCHIVE)
-   {
-      strlcpy(type_str, "(COMP)", type_str_size);
-      *w = strlen(type_str);
-   }
-   else if (type == MENU_FILE_IN_CARCHIVE)
+   if (type == MENU_FILE_IN_CARCHIVE)
    {
       strlcpy(type_str, "(CFILE)", type_str_size);
       *w = strlen(type_str);
@@ -4609,7 +4654,32 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
    if (!cbs || !driver.menu)
       return;
 
-   cbs->action_get_representation = menu_action_setting_disp_set_label;
+   switch (type)
+   {
+      case MENU_FILE_CORE:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_file_core;
+         break;
+      case MENU_FILE_PLAIN:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_file_plain;
+         break;
+      case MENU_FILE_USE_DIRECTORY:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_file_use_directory;
+         break;
+      case MENU_FILE_DIRECTORY:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_file_directory;
+         break;
+      case MENU_FILE_CARCHIVE:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_file_carchive;
+         break;
+      default:
+         cbs->action_get_representation = menu_action_setting_disp_set_label;
+         break;
+   }
 }
 
 static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
