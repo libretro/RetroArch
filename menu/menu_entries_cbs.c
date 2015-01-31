@@ -832,7 +832,9 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
    database_info_list_t *db_info = NULL;
    file_list_t *list             = (file_list_t*)data;
    file_list_t *menu_list        = (file_list_t*)userdata;
-   struct string_list *str_list  = string_split(label, "|"); 
+   struct string_list *str_list  = NULL;
+   
+   str_list = string_split(label, "|"); 
 
    if (!str_list)
       return -1;
@@ -1472,8 +1474,13 @@ static int action_ok_rdb_entry_submenu(const char *path,
    char new_label[PATH_MAX_LENGTH];
    char *rdb = NULL;
    int len = 0;
-   struct string_list *str_list  = string_split(label, "|"); 
+   struct string_list *str_list  = NULL;
    struct string_list *str_list2 = NULL;
+
+   if (!label)
+      return -1;
+
+   str_list = string_split(label, "|"); 
 
    if (!str_list)
       return -1;
@@ -2696,16 +2703,20 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
    if (!list || !menu_list)
       return -1;
 
-   str_list = string_split(label, "|");
-   if (str_list && str_list->size > 0)
-      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-   if (str_list && str_list->size > 1)
-      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
-
-   if (str_list)
+   if (label)
    {
-      string_list_free(str_list);
-      str_list = NULL;
+      str_list = string_split(label, "|");
+
+      if (str_list && str_list->size > 0)
+         strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+      if (str_list && str_list->size > 1)
+         strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+
+      if (str_list)
+      {
+         string_list_free(str_list);
+         str_list = NULL;
+      }
    }
 
    settings_list_free(driver.menu->list_settings);
@@ -4090,21 +4101,28 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 
    cbs->action_ok = action_ok_lookup_setting;
 
-   str_list = string_split(label, "|");
-   if (str_list && str_list->size > 0)
-      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-   if (str_list && str_list->size > 1)
-      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+   if (label)
+   {
+      str_list = string_split(label, "|");
+      if (str_list && str_list->size > 0)
+         strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+      if (str_list && str_list->size > 1)
+         strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+   }
 
    if (str_list)
    {
       string_list_free(str_list);
       str_list = NULL;
+
+      if (elem0[0] != '\0' && is_rdb_entry(elem0))
+      {
+         cbs->action_ok = action_ok_rdb_entry_submenu;
+         return;
+      }
    }
 
-   if (elem0[0] != '\0' && is_rdb_entry(elem0))
-      cbs->action_ok = action_ok_rdb_entry_submenu;
-   else if (!strcmp(label, "custom_bind_all"))
+   if (!strcmp(label, "custom_bind_all"))
       cbs->action_ok = action_ok_lookup_setting;
    else if (type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD ||
          type == MENU_SETTINGS_CUSTOM_BIND)
@@ -4310,6 +4328,8 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
    int i;
+   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+   struct string_list *str_list = NULL;
    const char *menu_label = NULL;
 
    if (!cbs)
@@ -4317,6 +4337,27 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
 
    menu_list_get_last_stack(driver.menu->menu_list,
          NULL, &menu_label, NULL);
+
+   if (label)
+   {
+      str_list = string_split(label, "|");
+      if (str_list && str_list->size > 0)
+         strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+      if (str_list && str_list->size > 1)
+         strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+
+      if (str_list)
+      {
+         string_list_free(str_list);
+         str_list = NULL;
+      }
+
+      if (is_settings_entry(elem0))
+      {
+         cbs->action_toggle = action_toggle_scroll;
+         return;
+      }
+   }
 
    cbs->action_toggle = menu_action_setting_set;
 
@@ -4436,16 +4477,19 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
    menu_list_get_last_stack(driver.menu->menu_list,
          NULL, &menu_label, NULL);
 
-   str_list = string_split(label, "|");
-   if (str_list && str_list->size > 0)
-      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-   if (str_list && str_list->size > 1)
-      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
-
-   if (str_list)
+   if (label)
    {
-      string_list_free(str_list);
-      str_list = NULL;
+      str_list = string_split(label, "|");
+      if (str_list && str_list->size > 0)
+         strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+      if (str_list && str_list->size > 1)
+         strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+
+      if (str_list)
+      {
+         string_list_free(str_list);
+         str_list = NULL;
+      }
    }
 
    cbs->action_deferred_push = deferred_push_default;
