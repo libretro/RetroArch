@@ -342,6 +342,8 @@ void menu_list_push(file_list_t *list,
 {
    if (!list)
       return;
+   if (!label)
+      return;
 
    file_list_push(list, path, label, type, directory_ptr);
 
