@@ -162,8 +162,10 @@ static const gfx_ctx_driver_t *gfx_ctx_init(void *data,
       return ctx;
    }
 
+#ifndef _WIN32
    RARCH_WARN("Failed to bind API (#%u, version %u.%u) on context driver \"%s\".\n",
          (unsigned)api, major, minor, ctx->ident);
+#endif
 
    return NULL;
 }
