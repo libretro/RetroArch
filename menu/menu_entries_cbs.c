@@ -1111,6 +1111,10 @@ static int action_ok_database_manager_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    char rdb_path[PATH_MAX_LENGTH];
+   if (!path)
+      return -1;
+   if (!label)
+      return -1;
 
    fill_pathname_join(rdb_path, g_settings.content_database,
          path, sizeof(rdb_path));
