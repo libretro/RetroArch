@@ -4027,6 +4027,51 @@ static void menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
    cbs->action_cancel = action_cancel_pop_default;
 }
 
+static int is_rdb_entry(const char *label)
+{
+   return (
+         !(strcmp(label, "rdb_entry_publisher")) ||
+         !(strcmp(label, "rdb_entry_developer")) ||
+         !(strcmp(label, "rdb_entry_origin")) ||
+         !(strcmp(label, "rdb_entry_franchise")) ||
+         !(strcmp(label, "rdb_entry_enhancement_hw")) ||
+         !(strcmp(label, "rdb_entry_esrb_rating")) ||
+         !(strcmp(label, "rdb_entry_bbfc_rating")) ||
+         !(strcmp(label, "rdb_entry_elspa_rating")) ||
+         !(strcmp(label, "rdb_entry_pegi_rating")) ||
+         !(strcmp(label, "rdb_entry_cero_rating")) ||
+         !(strcmp(label, "rdb_entry_edge_magazine_rating")) ||
+         !(strcmp(label, "rdb_entry_edge_magazine_issue")) ||
+         !(strcmp(label, "rdb_entry_releasemonth")) ||
+         !(strcmp(label, "rdb_entry_releaseyear")) ||
+         !(strcmp(label, "rdb_entry_max_users"))
+         );
+}
+
+static int is_settings_entry(const char *label)
+{
+   return (
+    !strcmp(label, "Driver Options") ||
+    !strcmp(label, "General Options") ||
+    !strcmp(label, "Video Options") ||
+    !strcmp(label, "Shader Options") ||
+    !strcmp(label, "Font Options") ||
+    !strcmp(label, "Audio Options") ||
+    !strcmp(label, "Input Options") ||
+    !strcmp(label, "Overlay Options") ||
+    !strcmp(label, "Menu Options") ||
+    !strcmp(label, "UI Options") ||
+    !strcmp(label, "Patch Options") ||
+    !strcmp(label, "Playlist Options") ||
+    !strcmp(label, "Onscreen Keyboard Overlay Options") ||
+    !strcmp(label, "Core Manager Options") ||
+    !strcmp(label, "Network Options") ||
+    !strcmp(label, "Archive Options") ||
+    !strcmp(label, "User Options") ||
+    !strcmp(label, "Path Options") ||
+    !strcmp(label, "Privacy Options"));
+}
+
 static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -4057,25 +4102,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       str_list = NULL;
    }
 
-   if (elem0[0] != '\0' && 
-         (
-          !(strcmp(elem0, "rdb_entry_publisher")) ||
-          !(strcmp(elem0, "rdb_entry_developer")) ||
-          !(strcmp(elem0, "rdb_entry_origin")) ||
-          !(strcmp(elem0, "rdb_entry_franchise")) ||
-          !(strcmp(elem0, "rdb_entry_enhancement_hw")) ||
-          !(strcmp(elem0, "rdb_entry_esrb_rating")) ||
-          !(strcmp(elem0, "rdb_entry_bbfc_rating")) ||
-          !(strcmp(elem0, "rdb_entry_elspa_rating")) ||
-          !(strcmp(elem0, "rdb_entry_pegi_rating")) ||
-          !(strcmp(elem0, "rdb_entry_cero_rating")) ||
-          !(strcmp(elem0, "rdb_entry_edge_magazine_rating")) ||
-          !(strcmp(elem0, "rdb_entry_edge_magazine_issue")) ||
-          !(strcmp(elem0, "rdb_entry_releasemonth")) ||
-          !(strcmp(elem0, "rdb_entry_releaseyear")) ||
-          !(strcmp(elem0, "rdb_entry_max_users"))
-          )
-      )
+   if (elem0[0] != '\0' && is_rdb_entry(elem0))
       cbs->action_ok = action_ok_rdb_entry_submenu;
    else if (!strcmp(label, "custom_bind_all"))
       cbs->action_ok = action_ok_lookup_setting;
@@ -4425,27 +4452,7 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    if ((strlen(elem1) != 0) && !!strcmp(elem0, elem1))
    {
-      if ((
-               !strcmp(elem0, "Driver Options") ||
-               !strcmp(elem0, "General Options") ||
-               !strcmp(elem0, "Video Options") ||
-               !strcmp(elem0, "Shader Options") ||
-               !strcmp(elem0, "Font Options") ||
-               !strcmp(elem0, "Audio Options") ||
-               !strcmp(elem0, "Input Options") ||
-               !strcmp(elem0, "Overlay Options") ||
-               !strcmp(elem0, "Menu Options") ||
-               !strcmp(elem0, "UI Options") ||
-               !strcmp(elem0, "Patch Options") ||
-               !strcmp(elem0, "Playlist Options") ||
-               !strcmp(elem0, "Onscreen Keyboard Overlay Options") ||
-               !strcmp(elem0, "Core Manager Options") ||
-               !strcmp(elem0, "Network Options") ||
-               !strcmp(elem0, "Archive Options") ||
-               !strcmp(elem0, "User Options") ||
-               !strcmp(elem0, "Path Options") ||
-               !strcmp(elem0, "Privacy Options"))
-         )
+      if (is_settings_entry(elem0))
       {
          if (!g_settings.menu.collapse_subgroups_enable)
          {
