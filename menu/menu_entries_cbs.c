@@ -3366,6 +3366,9 @@ static int action_bind_up_or_down_generic(unsigned type, const char *label,
 {
    unsigned scroll_speed = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
 
+   if (menu_list_get_size(driver.menu->menu_list) <= 0)
+      return 0;
+
    switch (action)
    {
       case MENU_ACTION_UP:
