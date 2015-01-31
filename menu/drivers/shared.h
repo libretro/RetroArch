@@ -50,7 +50,7 @@ static INLINE void get_title(const char *label, const char *dir,
    if (!strcmp(label, "core_list"))
       snprintf(title, sizeof_title, "CORE SELECTION %s", dir);
    else if (!strcmp(label, "core_manager_list"))
-      snprintf(title, sizeof_title, "CORE MANAGER %s", dir);
+      snprintf(title, sizeof_title, "CORE UPDATER %s", dir);
    else if (!strcmp(label, "database_manager_list"))
       snprintf(title, sizeof_title, "DATABASE SELECTION %s", dir);
    else if (!strcmp(label, "cursor_manager_list"))
@@ -183,7 +183,7 @@ static INLINE void get_title(const char *label, const char *dir,
    }
    else if (!strcmp(elem0, "Core Manager Options"))
    {
-      strlcpy(title, "CORE MANAGER OPTIONS", sizeof_title);
+      strlcpy(title, "CORE UPDATER OPTIONS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
    }
