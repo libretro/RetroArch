@@ -3438,7 +3438,7 @@ static bool setting_data_append_list_main_menu_options(
 #ifdef HAVE_NETWORKING
    CONFIG_ACTION(
          "core_manager_list",
-         "Core Update Manager",
+         "Core Updater",
          group_info.name,
          subgroup_info.name);
 #endif
@@ -5601,7 +5601,7 @@ static bool setting_data_append_list_core_manager_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Core Manager Options");
+   START_GROUP(group_info, "Core Updater Options");
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
