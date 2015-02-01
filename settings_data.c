@@ -21,9 +21,7 @@
 #include "dynamic.h"
 #include <file/file_path.h>
 #include "input/input_autodetect.h"
-#include "input/input_common.h"
 #include "config.def.h"
-#include "retroarch_logger.h"
 #include "file_ext.h"
 #include "settings.h"
 #include "retroarch.h"
@@ -39,10 +37,7 @@
 #endif
 
 #ifdef HAVE_MENU
-#include "menu/menu_list.h"
 #include "menu/menu_entries.h"
-#include "menu/menu_input.h"
-#include "menu/menu_shader.h"
 #endif
 
 /**
