@@ -71,6 +71,8 @@ int menu_input_bind_iterate_keyboard(void *data);
 
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_state);
 
+void menu_input_search_start(void);
+
 #ifdef __cplusplus
 }
 #endif

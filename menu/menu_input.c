@@ -133,6 +133,17 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
    menu_input_key_end_line(menu);
 }
 
+void menu_input_search_start(void)
+{
+   if (!driver.menu)
+      return;
+
+   driver.menu->keyboard.display = true;
+   driver.menu->keyboard.label = "Search: ";
+   driver.menu->keyboard.buffer = 
+      input_keyboard_start_line(driver.menu, menu_input_search_callback);
+}
+
 void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
@@ -144,12 +155,7 @@ void menu_input_key_event(bool down, unsigned keycode,
    (void)mod;
 
    if (character == '/')
-   {
-      driver.menu->keyboard.display = true;
-      driver.menu->keyboard.label = "Search: ";
-      driver.menu->keyboard.buffer = 
-         input_keyboard_start_line(driver.menu, menu_input_search_callback);
-   }
+      menu_input_search_start();
 }
 
 void menu_input_poll_bind_state(struct menu_bind_state *state)
