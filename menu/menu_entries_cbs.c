@@ -4110,6 +4110,20 @@ static void menu_action_setting_disp_set_label_menu_file_shader(
    strlcpy(path_buf, path, path_buf_size);
 }
 
+static void menu_action_setting_disp_set_label_menu_file_subgroup(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   strlcpy(type_str, "(SUBGROUP)", type_str_size);
+   *w = strlen(type_str);
+   strlcpy(path_buf, path, path_buf_size);
+}
+
 static void menu_action_setting_disp_set_label_menu_file_shader_preset(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -4840,6 +4854,10 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
       case MENU_FILE_CHEAT:
          cbs->action_get_representation = 
             menu_action_setting_disp_set_label_menu_file_cheat;
+         break;
+      case MENU_SETTING_SUBGROUP:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_file_subgroup;
          break;
       default:
          cbs->action_get_representation = menu_action_setting_disp_set_label;
