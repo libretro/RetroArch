@@ -4719,7 +4719,8 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
 }
 
 static void menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1)
 {
    if (!cbs)
       return;
@@ -4728,7 +4729,8 @@ static void menu_entries_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
 }
 
 static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1)
 {
    if (!cbs)
       return;
@@ -4767,7 +4769,8 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
 }
 
 static void menu_entries_cbs_init_bind_content_list_switch(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1)
 {
    if (!cbs)
       return;
@@ -4776,7 +4779,8 @@ static void menu_entries_cbs_init_bind_content_list_switch(menu_file_list_cbs_t 
 }
 
 static void menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1)
 {
    if (!cbs)
       return;
@@ -4833,11 +4837,9 @@ static int is_settings_entry(const char *label)
 }
 
 static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1, const char *menu_label)
 {
-   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
-   const char *menu_label = NULL;
-   struct string_list *str_list = NULL;
    rarch_setting_t *setting = menu_action_find_setting(label);
 
    if (!cbs)
@@ -4845,30 +4847,12 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    if (!driver.menu)
       return;
 
-   menu_list_get_last_stack(driver.menu->menu_list,
-         NULL, &menu_label, NULL);
-
    cbs->action_ok = action_ok_lookup_setting;
 
-   if (label)
+   if (elem0[0] != '\0' && is_rdb_entry(elem0))
    {
-      str_list = string_split(label, "|");
-      if (str_list && str_list->size > 0)
-         strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-      if (str_list && str_list->size > 1)
-         strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
-   }
-
-   if (str_list)
-   {
-      string_list_free(str_list);
-      str_list = NULL;
-
-      if (elem0[0] != '\0' && is_rdb_entry(elem0))
-      {
-         cbs->action_ok = action_ok_rdb_entry_submenu;
-         return;
-      }
+      cbs->action_ok = action_ok_rdb_entry_submenu;
+      return;
    }
 
    if (!strcmp(label, "custom_bind_all"))
@@ -5064,7 +5048,8 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 
 
 static void menu_entries_cbs_init_bind_up_or_down(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1)
 {
    if (!cbs)
       return;
@@ -5074,33 +5059,16 @@ static void menu_entries_cbs_init_bind_up_or_down(menu_file_list_cbs_t *cbs,
 
 
 static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1, const char *menu_label)
 {
    int i;
-   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
-   struct string_list *str_list = NULL;
-   const char *menu_label = NULL;
 
    if (!cbs)
       return;
 
-   menu_list_get_last_stack(driver.menu->menu_list,
-         NULL, &menu_label, NULL);
-
    if (label)
    {
-      str_list = string_split(label, "|");
-      if (str_list && str_list->size > 0)
-         strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-      if (str_list && str_list->size > 1)
-         strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
-
-      if (str_list)
-      {
-         string_list_free(str_list);
-         str_list = NULL;
-      }
-
       if (is_settings_entry(elem0))
       {
          cbs->action_toggle = action_toggle_scroll;
@@ -5190,7 +5158,8 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
 }
 
 static void menu_entries_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1)
 {
    if (!cbs || !driver.menu)
       return;
@@ -5199,7 +5168,8 @@ static void menu_entries_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
 }
 
 static void menu_entries_cbs_init_bind_iterate(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1)
 {
    if (!cbs || !driver.menu)
       return;
@@ -5208,7 +5178,8 @@ static void menu_entries_cbs_init_bind_iterate(menu_file_list_cbs_t *cbs,
 }
 
 static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1)
 {
    if (!cbs || !driver.menu)
       return;
@@ -5356,31 +5327,11 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
 }
 
 static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1)
 {
-   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
-   const char *menu_label = NULL;
-   struct string_list *str_list = NULL;
    if (!cbs || !driver.menu)
       return;
-
-   menu_list_get_last_stack(driver.menu->menu_list,
-         NULL, &menu_label, NULL);
-
-   if (label)
-   {
-      str_list = string_split(label, "|");
-      if (str_list && str_list->size > 0)
-         strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-      if (str_list && str_list->size > 1)
-         strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
-
-      if (str_list)
-      {
-         string_list_free(str_list);
-         str_list = NULL;
-      }
-   }
 
    cbs->action_deferred_push = deferred_push_default;
 
@@ -5492,6 +5443,9 @@ void menu_entries_cbs_init(void *data,
       const char *path, const char *label,
       unsigned type, size_t idx)
 {
+   struct string_list *str_list = NULL;
+   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+   const char *menu_label = NULL;
    menu_file_list_cbs_t *cbs = NULL;
    file_list_t *list = (file_list_t*)data;
 
@@ -5501,16 +5455,32 @@ void menu_entries_cbs_init(void *data,
    if (!(cbs = (menu_file_list_cbs_t*)list->list[idx].actiondata))
       return;
 
+   menu_list_get_last_stack(driver.menu->menu_list,
+         NULL, &menu_label, NULL);
 
-   menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx);
-   menu_entries_cbs_init_bind_cancel(cbs, path, label, type, idx);
-   menu_entries_cbs_init_bind_start(cbs, path, label, type, idx);
-   menu_entries_cbs_init_bind_select(cbs, path, label, type, idx);
-   menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx);
-   menu_entries_cbs_init_bind_up_or_down(cbs, path, label, type, idx);
-   menu_entries_cbs_init_bind_toggle(cbs, path, label, type, idx);
-   menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx);
-   menu_entries_cbs_init_bind_refresh(cbs, path, label, type, idx);
-   menu_entries_cbs_init_bind_iterate(cbs, path, label, type, idx);
-   menu_entries_cbs_init_bind_get_string_representation(cbs, path, label, type, idx);
+   if (label)
+      str_list = string_split(label, "|");
+
+   if (str_list && str_list->size > 0)
+      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   if (str_list && str_list->size > 1)
+      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+
+   if (str_list)
+   {
+      string_list_free(str_list);
+      str_list = NULL;
+   }
+
+   menu_entries_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, elem1, menu_label);
+   menu_entries_cbs_init_bind_cancel(cbs, path, label, type, idx, elem0, elem1);
+   menu_entries_cbs_init_bind_start(cbs, path, label, type, idx, elem0, elem1);
+   menu_entries_cbs_init_bind_select(cbs, path, label, type, idx, elem0, elem1);
+   menu_entries_cbs_init_bind_content_list_switch(cbs, path, label, type, idx, elem0, elem1);
+   menu_entries_cbs_init_bind_up_or_down(cbs, path, label, type, idx, elem0, elem1);
+   menu_entries_cbs_init_bind_toggle(cbs, path, label, type, idx, elem0, elem1, menu_label);
+   menu_entries_cbs_init_bind_deferred_push(cbs, path, label, type, idx, elem0, elem1);
+   menu_entries_cbs_init_bind_refresh(cbs, path, label, type, idx, elem0, elem1);
+   menu_entries_cbs_init_bind_iterate(cbs, path, label, type, idx, elem0, elem1);
+   menu_entries_cbs_init_bind_get_string_representation(cbs, path, label, type, idx, elem0, elem1);
 }
