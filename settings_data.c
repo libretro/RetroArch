@@ -2789,42 +2789,6 @@ extern unsigned menu_gx_resolutions[][2];
 extern unsigned menu_current_gx_resolution;
 #endif
 
-static int get_fallback_label(char *type_str,
-      size_t type_str_size, unsigned *w, unsigned type, 
-      const char *menu_label, const char *label, unsigned idx)
-{
-   int ret = 0;
-
-   switch (type)
-   {
-#if defined(GEKKO)
-      case MENU_SETTINGS_VIDEO_RESOLUTION:
-         snprintf(type_str, type_str_size, "%.3ux%.3u%c",
-               menu_gx_resolutions[menu_current_gx_resolution][0],
-               menu_gx_resolutions[menu_current_gx_resolution][1],
-               menu_gx_resolutions[menu_current_gx_resolution][1] > 300 ? 'i' : 'p');
-         break;
-#elif defined(__CELLOS_LV2__)
-      case MENU_SETTINGS_VIDEO_RESOLUTION:
-         {
-            unsigned width = gfx_ctx_get_resolution_width(
-                  g_extern.console.screen.resolutions.list
-                  [g_extern.console.screen.resolutions.current.idx]);
-            unsigned height = gfx_ctx_get_resolution_height(
-                  g_extern.console.screen.resolutions.list
-                  [g_extern.console.screen.resolutions.current.idx]);
-            snprintf(type_str, type_str_size, "%ux%u", width, height);
-         }
-         break;
-#endif
-      default:
-         ret = -1;
-         break;
-   }
-
-   return ret;
-}
-
 static void get_string_representation_bind_device(void * data, char *type_str,
       size_t type_str_size)
 {
@@ -2888,19 +2852,12 @@ void setting_data_get_label(void *data, char *type_str,
    rarch_setting_t *setting_data = NULL;
    rarch_setting_t *setting      = NULL;
 
-   if (!driver.menu || !driver.menu->menu_list)
+   if (!driver.menu || !driver.menu->menu_list || !label)
       return;
 
    setting_data = (rarch_setting_t*)driver.menu->list_settings;
    setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
          list->list[idx].label);
-
-   if ((get_fallback_label(type_str, type_str_size, w, type, menu_label,
-         label, idx)) == 0)
-      return;
-
-   if (!label)
-      return;
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    if ((!strcmp(menu_label, "Shader Options") ||

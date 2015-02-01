@@ -4097,6 +4097,38 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
       snprintf(type_str, type_str_size, "%u", current + 1);
 }
 
+static void menu_action_setting_disp_set_label_menu_video_resolution(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   unsigned width = 0, height = 0;
+   *w = 19;
+   *type_str = '\0';
+
+   (void)width;
+   (void)height;
+
+#if defined(GEKKO)
+   snprintf(type_str, type_str_size, "%.3ux%.3u%c",
+         menu_gx_resolutions[menu_current_gx_resolution][0],
+         menu_gx_resolutions[menu_current_gx_resolution][1],
+         menu_gx_resolutions[menu_current_gx_resolution][1] > 300 ? 'i' : 'p');
+#elif defined(__CELLOS_LV2__)
+   width = gfx_ctx_get_resolution_width(
+         g_extern.console.screen.resolutions.list
+         [g_extern.console.screen.resolutions.current.idx]);
+   height = gfx_ctx_get_resolution_height(
+         g_extern.console.screen.resolutions.list
+         [g_extern.console.screen.resolutions.current.idx]);
+   snprintf(type_str, type_str_size, "%ux%u", width, height);
+#endif
+}
+
 static void menu_action_setting_disp_set_label_menu_file_use_directory(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -4911,6 +4943,10 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
       case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
          cbs->action_get_representation = 
             menu_action_setting_disp_set_label_menu_disk_index;
+         break;
+      case MENU_SETTINGS_VIDEO_RESOLUTION:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_video_resolution;
          break;
       default:
          cbs->action_get_representation = menu_action_setting_disp_set_label;
