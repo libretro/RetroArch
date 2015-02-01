@@ -191,14 +191,16 @@ error:
 static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
       libretrodb_index_t *idx)
 {
-   off_t eof = lseek(db->fd, 0, SEEK_END);
+   off_t eof    = lseek(db->fd, 0, SEEK_END);
    off_t offset = lseek(db->fd, db->first_index_offset, SEEK_SET);
 
    while (offset < eof)
    {
       libretrodb_read_index_header(db->fd, idx);
+
       if (strncmp(index_name, idx->name, strlen(idx->name)) == 0)
          return 0;
+
       offset = lseek(db->fd, idx->next, SEEK_CUR);
    }
 
@@ -223,9 +225,11 @@ static int binsearch(const void * buff, const void * item,
       *offset = *(uint64_t *)(current + field_size);
       return 0;
    }
-   else if (count == 0)
+
+   if (count == 0)
       return -1;
-   else if (rv > 0)
+
+   if (rv > 0)
       return binsearch(buff, item, mid, field_size, offset);
 
    return binsearch(current + item_size, item,
@@ -270,9 +274,9 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
       lseek(db->fd, offset, SEEK_SET);
 
    rv = rmsgpack_dom_read(db->fd, out);
+
    if (rv < 0)
       return rv;
-
 
    return rv;
 }
@@ -375,9 +379,10 @@ int libretrodb_cursor_open(libretrodb_t *db, libretrodb_cursor_t *cursor,
 
 static int node_iter(void * value, void * ctx)
 {
-	struct node_iter_ctx * nictx = (struct node_iter_ctx *)ctx;
+	struct node_iter_ctx *nictx = (struct node_iter_ctx*)ctx;
 
-	if (write(nictx->db->fd, value, nictx->idx->key_size + sizeof(uint64_t)) > 0)
+	if (write(nictx->db->fd, value,
+            nictx->idx->key_size + sizeof(uint64_t)) > 0)
 		return 0;
 
 	return -1;
@@ -415,8 +420,10 @@ int libretrodb_create_index(libretrodb_t *db,
 
 	key.type = RDT_STRING;
 	key.string.len = strlen(field_name);
+
 	/* We know we aren't going to change it */
 	key.string.buff = (char *) field_name;
+
 	while (libretrodb_cursor_read_item(&cur, &item) == 0)
    {
 		if (item.type != RDT_MAP)
@@ -466,7 +473,9 @@ int libretrodb_create_index(libretrodb_t *db,
 		}
 
 		memcpy(buff, field->binary.buff, field_size);
+
 		buff_u64 = (uint64_t *)buff + field_size;
+
 		memcpy(buff_u64, &item_loc, sizeof(uint64_t));
 
 		if (bintree_insert(&tree, buff) != 0)

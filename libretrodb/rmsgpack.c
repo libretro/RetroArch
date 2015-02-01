@@ -128,7 +128,7 @@ int rmsgpack_write_string(int fd, const char *s, uint32_t len)
       if (write(fd, &fixlen, sizeof(int8_t)) == -1)
          return -errno;
    }
-   else if (len < 1<<8)
+   else if (len < (1 << 8))
    {
       if (write(fd, &MPF_STR8, sizeof(MPF_STR8)) == -1)
          return -errno;
@@ -136,7 +136,7 @@ int rmsgpack_write_string(int fd, const char *s, uint32_t len)
          return -errno;
       written += sizeof(uint8_t);
    }
-   else if (len < 1<<16)
+   else if (len < (1 << 16))
    {
       if (write(fd, &MPF_STR16, sizeof(MPF_STR16)) == -1)
          return -errno;
@@ -166,6 +166,7 @@ int rmsgpack_write_bin(int fd, const void *s, uint32_t len)
    uint16_t tmp_i16;
    uint32_t tmp_i32;
    int written = sizeof(int8_t);
+
    if (len == (uint8_t)len)
    {
       if (write(fd, &MPF_BIN8, sizeof(MPF_BIN8)) == -1)
@@ -212,11 +213,10 @@ int rmsgpack_write_bool(int fd, int value)
       if (write(fd, &MPF_TRUE, sizeof(MPF_TRUE)) == -1)
          return -errno;
    }
-   else
-   {
-      if (write(fd, &MPF_FALSE, sizeof(MPF_FALSE)) == -1)
-         return -errno;
-   }
+
+   if (write(fd, &MPF_FALSE, sizeof(MPF_FALSE)) == -1)
+      return -errno;
+
    return sizeof(uint8_t);
 }
 
@@ -359,6 +359,7 @@ static int read_int(int fd, int64_t *out, size_t size)
    uint16_t tmp16;
    uint32_t tmp32;
    uint64_t tmp64;
+
    if (read(fd, &tmp64, size) == -1)
       return -errno;
 
@@ -385,56 +386,48 @@ static int read_int(int fd, int64_t *out, size_t size)
    return 0;
 }
 
-static int read_buff(
-        int fd,
-        size_t size,
-        char ** pbuff,
-        uint64_t * len
-){
-	uint64_t tmp_len = 0;
-	if (read_uint(fd, &tmp_len, size) == -1)
-		return -errno;
+static int read_buff(int fd, size_t size, char **pbuff, uint64_t *len)
+{
+   uint64_t tmp_len = 0;
 
-	*pbuff = (char *)calloc(tmp_len + 1, sizeof(char));
-	if (read(fd, *pbuff, tmp_len) == -1)
+   if (read_uint(fd, &tmp_len, size) == -1)
+      return -errno;
+
+   *pbuff = (char *)calloc(tmp_len + 1, sizeof(char));
+
+   if (read(fd, *pbuff, tmp_len) == -1)
    {
-		free(*pbuff);
-		return -errno;
-	}
-	*len = tmp_len;
-	return 0;
+      free(*pbuff);
+      return -errno;
+   }
+
+   *len = tmp_len;
+   return 0;
 }
 
-static int read_map(
-        int fd,
-        uint32_t len,
-        struct rmsgpack_read_callbacks * callbacks,
-        void * data
-){
-	int rv;
-	unsigned i;
+static int read_map(int fd, uint32_t len,
+        struct rmsgpack_read_callbacks *callbacks, void *data)
+{
+   int rv;
+   unsigned i;
 
-	if (callbacks->read_map_start &&
-	        (rv = callbacks->read_map_start(len, data)) < 0)
-		return rv;
+   if (callbacks->read_map_start &&
+         (rv = callbacks->read_map_start(len, data)) < 0)
+      return rv;
 
-	for (i = 0; i < len; i++)
+   for (i = 0; i < len; i++)
    {
-		if ((rv = rmsgpack_read(fd, callbacks, data)) < 0)
-			return rv;
-		if ((rv = rmsgpack_read(fd, callbacks, data)) < 0)
-			return rv;
-	}
+      if ((rv = rmsgpack_read(fd, callbacks, data)) < 0)
+         return rv;
+      if ((rv = rmsgpack_read(fd, callbacks, data)) < 0)
+         return rv;
+   }
 
-	return 0;
+   return 0;
 }
 
-static int read_array(
-        int fd,
-        uint32_t len,
-        struct rmsgpack_read_callbacks * callbacks,
-        void * data
-)
+static int read_array(int fd, uint32_t len,
+      struct rmsgpack_read_callbacks *callbacks, void *data)
 {
    int rv;
    unsigned i;
@@ -452,15 +445,16 @@ static int read_array(
    return 0;
 }
 
-int rmsgpack_read(int fd, struct rmsgpack_read_callbacks * callbacks,
-      void * data)
+int rmsgpack_read(int fd,
+      struct rmsgpack_read_callbacks *callbacks, void *data)
 {
    int rv;
-   uint64_t tmp_len = 0;
+   uint64_t tmp_len  = 0;
    uint64_t tmp_uint = 0;
-   int64_t tmp_int = 0;
-   uint8_t type = 0;
-   char * buff = NULL;
+   int64_t tmp_int   = 0;
+   uint8_t type      = 0;
+   char *buff        = NULL;
+
    if (read(fd, &type, sizeof(uint8_t)) == -1)
       return -errno;
 
@@ -523,7 +517,8 @@ int rmsgpack_read(int fd, struct rmsgpack_read_callbacks * callbacks,
       case 0xc4:
       case 0xc5:
       case 0xc6:
-         if ((rv = read_buff(fd, 1<<(type - 0xc4), &buff, &tmp_len)) < 0)
+         if ((rv = read_buff(fd, 1<<(type - 0xc4),
+                     &buff, &tmp_len)) < 0)
             return rv;
 
          if (callbacks->read_bin)
