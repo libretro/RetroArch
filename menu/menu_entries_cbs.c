@@ -4142,6 +4142,79 @@ static void menu_action_setting_disp_set_label_shader_default_filter(
          g_settings.video.smooth ? "Linear" : "Nearest");
 }
 
+static void menu_action_setting_disp_set_label_shader_parameter(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   const struct video_shader_parameter *param = NULL;
+   struct video_shader *shader = NULL;
+#endif
+
+   if (!driver.video_poke)
+      return;
+   if (!driver.video_data)
+      return;
+
+   *type_str = '\0';
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   if (!driver.video_poke->get_current_shader)
+      return;
+
+   shader = driver.video_poke->get_current_shader(driver.video_data);
+
+   if (!shader)
+      return;
+
+   param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
+
+   if (!param)
+      return;
+
+   snprintf(type_str, type_str_size, "%.2f [%.2f %.2f]",
+         param->current, param->minimum, param->maximum);
+#endif
+}
+
+static void menu_action_setting_disp_set_label_shader_preset_parameter(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   const struct video_shader_parameter *param = NULL;
+#endif
+
+   *type_str = '\0';
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   if (!driver.menu->shader)
+      return;
+
+   param = &driver.menu->shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
+
+   if (!param)
+      return;
+
+   snprintf(type_str, type_str_size, "%.2f [%.2f %.2f]",
+         param->current, param->minimum, param->maximum);
+#endif
+}
+
 static void menu_action_setting_disp_set_label_shader_scale_pass(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -5138,6 +5211,14 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
          && type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
       cbs->action_get_representation = 
          menu_action_setting_disp_set_label_libretro_perf_counters;
+   else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
+      cbs->action_get_representation = 
+         menu_action_setting_disp_set_label_shader_preset_parameter;
+   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+      cbs->action_get_representation = 
+         menu_action_setting_disp_set_label_shader_parameter;
    else if (!strcmp(label, "cheat_num_passes"))
       cbs->action_get_representation = 
          menu_action_setting_disp_set_label_cheat_num_passes;

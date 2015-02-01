@@ -2818,69 +2818,29 @@ void setting_data_get_label(void *data, char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx)
 {
+   rarch_setting_t *setting_data = NULL;
+   rarch_setting_t *setting      = NULL;
+
    if (!driver.menu || !driver.menu->menu_list || !label)
       return;
 
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-   if ((!strcmp(menu_label, "Shader Options") ||
-            !strcmp(menu_label, "video_shader_parameters") ||
-            !strcmp(menu_label, "video_shader_preset_parameters"))
-      )
+   setting_data = (rarch_setting_t*)driver.menu->list_settings;
+   setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
+         driver.menu->menu_list->selection_buf->list[idx].label);
+
+   if (!setting)
+      return;
+
+   if (!strcmp(setting->name, "configurations"))
    {
-      if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
-            && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-      {
-         struct video_shader *shader = NULL;
-         if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
-            shader = driver.video_poke->get_current_shader(driver.video_data);
-
-         if (shader)
-         {
-            const struct video_shader_parameter *param =
-               &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-            snprintf(type_str, type_str_size, "%.2f [%.2f %.2f]",
-                  param->current, param->minimum, param->maximum);
-         }
-      }
-      else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
-            && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
-      {
-         if (driver.menu->shader)
-         {
-            const struct video_shader_parameter *param =
-               &driver.menu->shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
-            snprintf(type_str, type_str_size, "%.2f [%.2f %.2f]",
-                  param->current, param->minimum, param->maximum);
-         }
-      }
-   }
-#endif
-   else
-   {
-      rarch_setting_t *setting_data = NULL;
-      rarch_setting_t *setting      = NULL;
-
-      if (!driver.menu || !driver.menu->menu_list)
-         return;
-
-      setting_data = (rarch_setting_t*)driver.menu->list_settings;
-      setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
-            driver.menu->menu_list->selection_buf->list[idx].label);
-
-      if (!setting)
-         return;
-
-      if (!strcmp(setting->name, "configurations"))
-      {
-         if (*g_extern.config_path)
-            fill_pathname_base(type_str, g_extern.config_path,
-                  type_str_size);
-         else
-            strlcpy(type_str, "<default>", type_str_size);
-      }
+      if (*g_extern.config_path)
+         fill_pathname_base(type_str, g_extern.config_path,
+               type_str_size);
       else
-         setting_data_get_string_representation(setting, type_str, type_str_size);
+         strlcpy(type_str, "<default>", type_str_size);
    }
+   else
+      setting_data_get_string_representation(setting, type_str, type_str_size);
 }
 #endif
 
