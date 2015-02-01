@@ -3985,6 +3985,10 @@ static int action_iterate_main(const char *label, unsigned action)
          driver.menu->msg_force = true;
          break;
 
+      case MENU_ACTION_SEARCH:
+         menu_input_search_start();
+         break;
+
       default:
          break;
    }
