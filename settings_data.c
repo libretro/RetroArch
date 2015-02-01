@@ -2765,7 +2765,7 @@ static void get_string_representation_bind_device(void * data, char *type_str,
    unsigned map = 0;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
-   if (!setting || !type_str || !type_str_size)
+   if (!setting)
       return;
 
    map = g_settings.input.joypad_map[setting->index_offset];
