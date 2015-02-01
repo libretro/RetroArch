@@ -4040,6 +4040,29 @@ static void menu_action_setting_disp_set_label_menu_file_core(
       strlcpy(path_buf, alt, path_buf_size);
 }
 
+static void menu_action_setting_disp_set_label_input_desc(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
+   unsigned inp_desc_user         = inp_desc_index_offset / 
+      RARCH_FIRST_CUSTOM_BIND;
+   unsigned inp_desc_button_index_offset = inp_desc_index_offset - 
+      (inp_desc_user * RARCH_FIRST_CUSTOM_BIND);
+   unsigned remap_id = g_settings.input.remap_ids
+      [inp_desc_user][inp_desc_button_index_offset];
+
+   snprintf(type_str, type_str_size, "%s",
+         g_settings.input.binds[inp_desc_user][remap_id].desc);
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+}
+
 static void menu_action_setting_disp_set_label_menu_more(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -4863,94 +4886,103 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
    if (!cbs || !driver.menu)
       return;
 
-   switch (type)
+   if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+         && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
-      case MENU_FILE_CORE:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_core;
-         break;
-      case MENU_FILE_PLAIN:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_plain;
-         break;
-      case MENU_FILE_USE_DIRECTORY:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_use_directory;
-         break;
-      case MENU_FILE_DIRECTORY:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_directory;
-         break;
-      case MENU_FILE_CARCHIVE:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_carchive;
-         break;
-      case MENU_FILE_OVERLAY:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_overlay;
-         break;
-      case MENU_FILE_FONT:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_font;
-         break;
-      case MENU_FILE_SHADER:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_shader;
-         break;
-      case MENU_FILE_SHADER_PRESET:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_shader_preset;
-         break;
-      case MENU_FILE_CONFIG:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_config;
-         break;
-      case MENU_FILE_IN_CARCHIVE:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_in_carchive;
-         break;
-      case MENU_FILE_VIDEOFILTER:
-      case MENU_FILE_AUDIOFILTER:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_filter;
-         break;
-      case MENU_FILE_DOWNLOAD_CORE:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_url;
-         break;
-      case MENU_FILE_RDB:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_rdb;
-         break;
-      case MENU_FILE_CURSOR:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_cursor;
-         break;
-      case MENU_FILE_CHEAT:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_cheat;
-         break;
-      case MENU_SETTING_SUBGROUP:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_file_subgroup;
-         break;
-      case MENU_SETTINGS_CUSTOM_VIEWPORT:
-      case MENU_SETTINGS_CUSTOM_BIND_ALL:
-      case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_more;
-         break;
-      case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_disk_index;
-         break;
-      case MENU_SETTINGS_VIDEO_RESOLUTION:
-         cbs->action_get_representation = 
-            menu_action_setting_disp_set_label_menu_video_resolution;
-         break;
-      default:
-         cbs->action_get_representation = menu_action_setting_disp_set_label;
-         break;
+      cbs->action_get_representation = 
+         menu_action_setting_disp_set_label_input_desc;
+   }
+   else
+   {
+      switch (type)
+      {
+         case MENU_FILE_CORE:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_core;
+            break;
+         case MENU_FILE_PLAIN:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_plain;
+            break;
+         case MENU_FILE_USE_DIRECTORY:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_use_directory;
+            break;
+         case MENU_FILE_DIRECTORY:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_directory;
+            break;
+         case MENU_FILE_CARCHIVE:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_carchive;
+            break;
+         case MENU_FILE_OVERLAY:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_overlay;
+            break;
+         case MENU_FILE_FONT:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_font;
+            break;
+         case MENU_FILE_SHADER:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_shader;
+            break;
+         case MENU_FILE_SHADER_PRESET:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_shader_preset;
+            break;
+         case MENU_FILE_CONFIG:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_config;
+            break;
+         case MENU_FILE_IN_CARCHIVE:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_in_carchive;
+            break;
+         case MENU_FILE_VIDEOFILTER:
+         case MENU_FILE_AUDIOFILTER:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_filter;
+            break;
+         case MENU_FILE_DOWNLOAD_CORE:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_url;
+            break;
+         case MENU_FILE_RDB:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_rdb;
+            break;
+         case MENU_FILE_CURSOR:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_cursor;
+            break;
+         case MENU_FILE_CHEAT:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_cheat;
+            break;
+         case MENU_SETTING_SUBGROUP:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_file_subgroup;
+            break;
+         case MENU_SETTINGS_CUSTOM_VIEWPORT:
+         case MENU_SETTINGS_CUSTOM_BIND_ALL:
+         case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_more;
+            break;
+         case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_disk_index;
+            break;
+         case MENU_SETTINGS_VIDEO_RESOLUTION:
+            cbs->action_get_representation = 
+               menu_action_setting_disp_set_label_menu_video_resolution;
+            break;
+         default:
+            cbs->action_get_representation = menu_action_setting_disp_set_label;
+            break;
+      }
    }
 }
 

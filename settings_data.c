@@ -2938,16 +2938,6 @@ void setting_data_get_label(void *data, char *type_str,
                g_extern.cheat->cheats[cheat_index].state ? "ON" : "OFF"
                );
    }
-   else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
-         && type <= MENU_SETTINGS_INPUT_DESC_END)
-   {
-      unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-      unsigned inp_desc_user         = inp_desc_index_offset / RARCH_FIRST_CUSTOM_BIND;
-      unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * RARCH_FIRST_CUSTOM_BIND);
-
-      unsigned remap_id = g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset];
-      snprintf(type_str, type_str_size, "%s", g_settings.input.binds[inp_desc_user][remap_id].desc);
-   }
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
