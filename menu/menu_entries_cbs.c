@@ -4543,6 +4543,7 @@ static void menu_action_setting_disp_set_label_menu_file_subgroup(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   *type_str = '\0';
    *w = strlen(type_str);
    strlcpy(path_buf, path, path_buf_size);
 }
