@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <retro_miscellaneous.h>
+#include "menu_animation.h"
 #include "menu_list.h"
 #include "../settings_list.h"
 
@@ -139,6 +140,8 @@ typedef struct
    } keyboard;
 
    rarch_setting_t *list_settings;
+   tween_t* tweens;
+   int numtweens;
 } menu_handle_t;
 
 typedef struct menu_file_list_cbs

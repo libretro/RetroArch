@@ -15,10 +15,8 @@
  */
 
 #include "menu_animation.h"
+#include "../driver.h"
 #include <math.h>
-
-static tween_t* tweens = NULL;
-static int numtweens = 0;
 
 static void tween_free(tween_t *tw)
 {
@@ -32,16 +30,17 @@ void add_tween(float duration, float target_value, float* subject,
 {
    tween_t *tween       = NULL;
    tween_t *temp_tweens = (tween_t*)
-      realloc(tweens, (numtweens + 1) * sizeof(tween_t));
+      realloc(driver.menu->tweens,
+            (driver.menu->numtweens + 1) * sizeof(tween_t));
 
    if (!temp_tweens)
    {
-      tween_free(tweens);
+      tween_free(driver.menu->tweens);
       return;
    }
 
-   tweens               = temp_tweens;
-   tween                = (tween_t*)&tweens[numtweens];
+   driver.menu->tweens  = temp_tweens;
+   tween                = (tween_t*)&driver.menu->tweens[driver.menu->numtweens];
 
    if (!tween)
       return;
@@ -55,7 +54,7 @@ void add_tween(float duration, float target_value, float* subject,
    tween->easing        = easing;
    tween->callback      = callback;
 
-   numtweens++;
+   driver.menu->numtweens++;
 }
 
 void update_tweens(float dt)
@@ -63,9 +62,9 @@ void update_tweens(float dt)
    unsigned i;
    unsigned active_tweens = 0;
 
-   for(i = 0; i < numtweens; i++)
+   for(i = 0; i < driver.menu->numtweens; i++)
    {
-      tween_t *tween = &tweens[i];
+      tween_t *tween = &driver.menu->tweens[i];
       if (!tween)
          continue;
       if (tween->running_since >= tween->duration)
@@ -93,7 +92,7 @@ void update_tweens(float dt)
    }
 
    if (!active_tweens)
-      numtweens = 0;
+      driver.menu->numtweens = 0;
 }
 
 // linear
