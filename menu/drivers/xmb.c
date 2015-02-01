@@ -959,6 +959,9 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             break;
       }
 
+      if (i > (current + 100))
+         continue;
+
       xmb_draw_icon(icon,
             node->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0, 
             xmb->margin_top + node->y + xmb->icon_size/2.0, 
