@@ -180,123 +180,116 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    return 0;
 }
 
-HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName, XUIImageInfo *pImageInfo, IDirect3DTexture9 **ppTex)
+HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
+      XUIImageInfo *pImageInfo, IDirect3DTexture9 **ppTex)
 {
-	CONST BYTE  *pbTextureData = 0;
-    UINT         cbTextureData = 0;
-    HXUIRESOURCE hResource = 0;
-    BOOL         bIsMemoryResource = FALSE;
-    HRESULT      hr;
-    
+   D3DXIMAGE_INFO pSrc;
+   CONST BYTE  *pbTextureData = 0;
+   UINT         cbTextureData = 0;
+   HXUIRESOURCE hResource = 0;
+   BOOL         bIsMemoryResource = FALSE;
+   IDirect3DDevice9 * d3dDevice = NULL;
+   HRESULT      hr = XuiResourceOpenNoLoc(szFileName, &hResource,
+         &bIsMemoryResource);
 
-    hr = XuiResourceOpenNoLoc(szFileName, &hResource, &bIsMemoryResource);
-    if (FAILED(hr))
-        return hr; 
-	 
-    if (bIsMemoryResource)
-    {
-        hr = XuiResourceGetBuffer(hResource, &pbTextureData);
-        if (FAILED(hr))
-            goto cleanup;
-        cbTextureData = XuiResourceGetTotalSize(hResource);
-    }
-    else 
-    {
-        hr = XuiResourceRead(hResource, NULL, 0, &cbTextureData);
-        if (FAILED(hr))
-            goto cleanup;
+   if (FAILED(hr))
+      return hr; 
 
-        pbTextureData = (BYTE *)XuiAlloc(cbTextureData);
-        if (pbTextureData == 0)
-        {
-            hr = E_OUTOFMEMORY;
-            goto cleanup;
-        }
+   if (bIsMemoryResource)
+   {
+      hr = XuiResourceGetBuffer(hResource, &pbTextureData);
+      if (FAILED(hr))
+         goto cleanup;
+      cbTextureData = XuiResourceGetTotalSize(hResource);
+   }
+   else 
+   {
+      hr = XuiResourceRead(hResource, NULL, 0, &cbTextureData);
+      if (FAILED(hr))
+         goto cleanup;
 
-        hr = XuiResourceRead(hResource, (BYTE*)pbTextureData, cbTextureData, &cbTextureData);
-        if (FAILED(hr))
-            goto cleanup;
-        
-        XuiResourceClose(hResource);
-        hResource = 0;
+      pbTextureData = (BYTE *)XuiAlloc(cbTextureData);
+      if (pbTextureData == 0)
+      {
+         hr = E_OUTOFMEMORY;
+         goto cleanup;
+      }
 
-    }
+      hr = XuiResourceRead(hResource, (BYTE*)pbTextureData, cbTextureData, &cbTextureData);
+      if (FAILED(hr))
+         goto cleanup;
 
-    //Format specific code to initialize pImageInfo and create our texture
-	D3DXIMAGE_INFO pSrc;
+      XuiResourceClose(hResource);
+      hResource = 0;
 
-	// Cast our d3d device into our IDirect3DDevice9* interface
-	IDirect3DDevice9 * d3dDevice = (IDirect3DDevice9*)pDevice->GetD3DDevice();
-	if( d3dDevice == NULL )
-		goto cleanup;
+   }
 
-	// Create our texture based on our conditions
-	hr = D3DXCreateTextureFromFileInMemoryEx(
-		d3dDevice,
-		pbTextureData,  
-		cbTextureData,
-		D3DX_DEFAULT_NONPOW2, 
-		D3DX_DEFAULT_NONPOW2,
-		1,
-		D3DUSAGE_CPU_CACHED_MEMORY,
-		D3DFMT_LIN_A8R8G8B8,
-		D3DPOOL_DEFAULT,
-		D3DX_FILTER_NONE,
-		D3DX_FILTER_NONE,
-		0,
-		&pSrc,
-		NULL,
-		ppTex
-	);
+   /* Cast our d3d device into our IDirect3DDevice9* interface */
+   d3dDevice = (IDirect3DDevice9*)pDevice->GetD3DDevice();
+   if(!d3dDevice)
+      goto cleanup;
 
-	if(hr != D3DXERR_INVALIDDATA )
-	{
-		pImageInfo->Depth = pSrc.Depth;
-		pImageInfo->Format = pSrc.Format;
-		pImageInfo->Height = pSrc.Height;
-		pImageInfo->ImageFileFormat = pSrc.ImageFileFormat;
-		pImageInfo->MipLevels = pSrc.MipLevels;
-		pImageInfo->ResourceType = pSrc.ResourceType;
-		pImageInfo->Width = pSrc.Width;
-	}
-	else
-		RARCH_ERR("D3DXERR_INVALIDDATA Encountered\n");
+   /* Create our texture based on our conditions */
+   hr = D3DXCreateTextureFromFileInMemoryEx(
+         d3dDevice,
+         pbTextureData,  
+         cbTextureData,
+         D3DX_DEFAULT_NONPOW2, 
+         D3DX_DEFAULT_NONPOW2,
+         1,
+         D3DUSAGE_CPU_CACHED_MEMORY,
+         D3DFMT_LIN_A8R8G8B8,
+         D3DPOOL_DEFAULT,
+         D3DX_FILTER_NONE,
+         D3DX_FILTER_NONE,
+         0,
+         &pSrc,
+         NULL,
+         ppTex
+         );
+
+   if(hr != D3DXERR_INVALIDDATA )
+   {
+      pImageInfo->Depth = pSrc.Depth;
+      pImageInfo->Format = pSrc.Format;
+      pImageInfo->Height = pSrc.Height;
+      pImageInfo->ImageFileFormat = pSrc.ImageFileFormat;
+      pImageInfo->MipLevels = pSrc.MipLevels;
+      pImageInfo->ResourceType = pSrc.ResourceType;
+      pImageInfo->Width = pSrc.Width;
+   }
+   else
+      RARCH_ERR("D3DXERR_INVALIDDATA Encountered\n");
 
 cleanup:
 
-    if (bIsMemoryResource && hResource != 0)
-    {
-        XuiResourceReleaseBuffer(hResource, pbTextureData);
-    }
-    else
-    {
-        XuiFree((LPVOID)pbTextureData);
-    }
+   if (bIsMemoryResource && hResource != 0)
+      XuiResourceReleaseBuffer(hResource, pbTextureData);
+   else
+      XuiFree((LPVOID)pbTextureData);
 
-    if (hResource != 0)
-    {
-        XuiResourceClose(hResource);
-    }
-    return hr;
+   if (hResource != 0)
+      XuiResourceClose(hResource);
+   return hr;
 }
 
 static void* rmenu_xui_init(void)
 {
    HRESULT hr;
+   D3DPRESENT_PARAMETERS d3dpp;
+   d3d_video_t *d3d;
+   video_info_t video_info = {0};
    TypefaceDescriptor typeface = {0};
-
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
       return NULL;
 
-   d3d_video_t *d3d= (d3d_video_t*)driver.video_data;
+   d3d= (d3d_video_t*)driver.video_data;
 
    if (d3d->resolution_hd_enable)
       RARCH_LOG("HD menus enabled.\n");
 
-   D3DPRESENT_PARAMETERS d3dpp;
-   video_info_t video_info = {0};
 
    video_info.vsync = g_settings.video.vsync;
    video_info.force_aspect = false;
@@ -424,10 +417,13 @@ static void xui_render_message(const char *msg)
 
 static void rmenu_xui_frame(void)
 {
+   XUIMessage msg;
+   XUIMessageRender msgRender;
+   D3DXMATRIX matOrigView;
+   D3DVIEWPORT vp_full;
    d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
-   D3DVIEWPORT vp_full;
    vp_full.X = 0;
    vp_full.Y = 0;
    vp_full.Width = d3d->screen_width;
@@ -440,11 +436,8 @@ static void rmenu_xui_frame(void)
    XuiTimersRun();
    XuiRenderBegin( app.GetDC(), D3DCOLOR_ARGB( 255, 0, 0, 0 ) );
 
-   D3DXMATRIX matOrigView;
    XuiRenderGetViewTransform( app.GetDC(), &matOrigView );
 
-   XUIMessage msg;
-   XUIMessageRender msgRender;
    XuiMessageRender( &msg, &msgRender, app.GetDC(), 0xffffffff, XUI_BLEND_NORMAL );
    XuiSendMessage( app.GetRootObj(), &msg );
 
@@ -484,51 +477,61 @@ static void rmenu_xui_render_messagebox(const char *message)
    msg_queue_push(xui_msg_queue, message, 2, 1);
 }
 
-static void rmenu_xui_set_list_text(int index, const wchar_t* leftText, const wchar_t* rightText)
+static void rmenu_xui_set_list_text(int index, const wchar_t* leftText,
+      const wchar_t* rightText)
 {
-	HXUIOBJ hVisual = NULL, hControl = NULL, hTextLeft = NULL, hTextRight = NULL, hRightEdge = NULL;
-	LPCWSTR currText;
-	float width, height;
-	XUIRect pRect;
-	D3DXVECTOR3 textPos, rightEdgePos;
+   LPCWSTR currText;
+   float width, height;
+   XUIRect pRect;
+   D3DXVECTOR3 textPos, rightEdgePos;
+   HXUIOBJ hVisual = NULL, hControl = NULL, hTextLeft = NULL,
+           hTextRight = NULL, hRightEdge = NULL;
 
-	hControl = XuiListGetItemControl(m_menulist, index);
-	if (XuiHandleIsValid(hControl))
-		XuiControlGetVisual(hControl, &hVisual);
-	if(XuiHandleIsValid(hVisual))
-	{		
-		XuiElementGetChildById(hVisual, L"LeftText", &hTextLeft);
-		if(XuiHandleIsValid(hTextLeft))
-		{
-			currText = XuiTextElementGetText(hTextLeft);
-			XuiElementGetBounds(hTextLeft, &width, &height);
-			if (!currText || wcscmp(currText, leftText) || width <= 5)
-			{
-				XuiTextElementMeasureText(hTextLeft, leftText, &pRect);
-				XuiElementSetBounds(hTextLeft, pRect.GetWidth(), height);
-			}
-			XuiTextElementSetText(hTextLeft, leftText);
-			XuiElementGetChildById(hVisual, L"RightText", &hTextRight);
-			if(XuiHandleIsValid(hTextRight)) 
-			{
-				currText = XuiTextElementGetText(hTextRight);
-				XuiElementGetBounds(hTextRight, &width, &height);
-				if (!currText || wcscmp(currText, rightText) || width <= 5)
-				{
-					XuiTextElementMeasureText(hTextRight, rightText, &pRect);
-					XuiElementSetBounds(hTextRight, pRect.GetWidth(), height);
-					XuiElementGetPosition(hTextLeft, &textPos);
+   hControl = XuiListGetItemControl(m_menulist, index);
 
-					XuiElementGetChildById(hVisual, L"graphic_CapRight", &hRightEdge);
-					XuiElementGetPosition(hRightEdge, &rightEdgePos);
+   if (XuiHandleIsValid(hControl))
+      XuiControlGetVisual(hControl, &hVisual);
 
-					textPos.x = rightEdgePos.x - (pRect.GetWidth() + textPos.x);
-					XuiElementSetPosition(hTextRight, &textPos);
-				}
-				XuiTextElementSetText(hTextRight, rightText);
-			}
-		}
-	}
+   if(!XuiHandleIsValid(hVisual))
+      return;
+
+   XuiElementGetChildById(hVisual, L"LeftText", &hTextLeft);
+
+   if (!XuiHandleIsValid(hTextLeft))
+      return;
+
+   currText = XuiTextElementGetText(hTextLeft);
+   XuiElementGetBounds(hTextLeft, &width, &height);
+
+   if (!currText || wcscmp(currText, leftText) || width <= 5)
+   {
+      XuiTextElementMeasureText(hTextLeft, leftText, &pRect);
+      XuiElementSetBounds(hTextLeft, pRect.GetWidth(), height);
+   }
+
+   XuiTextElementSetText(hTextLeft, leftText);
+   XuiElementGetChildById(hVisual, L"RightText", &hTextRight);
+
+   if(XuiHandleIsValid(hTextRight)) 
+   {
+      currText = XuiTextElementGetText(hTextRight);
+      XuiElementGetBounds(hTextRight, &width, &height);
+
+      if (!currText || wcscmp(currText, rightText) || width <= 5)
+      {
+         XuiTextElementMeasureText(hTextRight, rightText, &pRect);
+         XuiElementSetBounds(hTextRight, pRect.GetWidth(), height);
+         XuiElementGetPosition(hTextLeft, &textPos);
+
+         XuiElementGetChildById(hVisual, L"graphic_CapRight", &hRightEdge);
+         XuiElementGetPosition(hRightEdge, &rightEdgePos);
+
+         textPos.x = rightEdgePos.x - (pRect.GetWidth() + textPos.x);
+         XuiElementSetPosition(hTextRight, &textPos);
+      }
+
+      XuiTextElementSetText(hTextRight, rightText);
+   }
 }
 
 static void rmenu_xui_render(void)
@@ -556,13 +559,14 @@ static void rmenu_xui_render(void)
 
 	if (XuiHandleIsValid(m_menutitle))
 	{
-		const char *core_name = g_extern.menu.info.library_name;
+      const char *core_version = NULL;
+		const char *core_name    = g_extern.menu.info.library_name;
 		if (!core_name)
 			core_name = g_extern.system.info.library_name;
 		if (!core_name)
 			core_name = "No Core";
 
-		const char *core_version = g_extern.menu.info.library_version;
+		core_version = g_extern.menu.info.library_version;
 		if (!core_version)
 			core_version = g_extern.system.info.library_version;
 		if (!core_version)
@@ -660,11 +664,15 @@ static void rmenu_xui_list_insert(void *data,
 static void rmenu_xui_list_delete(void *data, size_t idx,
       size_t list_size)
 {
+   int x = XuiListGetItemCount( m_menulist );
+
    (void)data;
    (void)idx;
-   int x = XuiListGetItemCount( m_menulist );
-   if( list_size > x ) list_size = x;
-   if( list_size > 0 )  XuiListDeleteItems(m_menulist, 0, list_size);
+
+   if( list_size > x )
+      list_size = x;
+   if( list_size > 0 )
+      XuiListDeleteItems(m_menulist, 0, list_size);
 }
 
 static void rmenu_xui_list_clear(void *data)
