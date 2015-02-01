@@ -116,6 +116,8 @@ struct defaults
    char playlist_dir[PATH_MAX_LENGTH];
    char content_history_dir[PATH_MAX_LENGTH];
    char extraction_dir[PATH_MAX_LENGTH];
+   char database_dir[PATH_MAX_LENGTH];
+   char cursor_dir[PATH_MAX_LENGTH];
 
    struct
    {

@@ -641,6 +641,12 @@ static void config_set_defaults(void)
    if (*g_defaults.core_path)
       strlcpy(g_settings.libretro, g_defaults.core_path,
             sizeof(g_settings.libretro));
+   if (*g_defaults.database_dir)
+      strlcpy(g_settings.content_database, g_defaults.database_dir,
+            sizeof(g_settings.content_database));
+   if (*g_defaults.cursor_dir)
+      strlcpy(g_settings.cursor_directory, g_defaults.cursor_dir,
+            sizeof(g_settings.cursor_directory));
    if (*g_defaults.core_info_dir)
       fill_pathname_expand_special(g_settings.libretro_info_path,
             g_defaults.core_info_dir, sizeof(g_settings.libretro_info_path));
