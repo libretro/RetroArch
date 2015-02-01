@@ -26,9 +26,9 @@ static void tween_free(tween_t *tween)
 }
 
 bool add_tween(float duration, float target_value, float* subject,
-      easingFunc easing, tweenCallback callback)
+      easingFunc easing, tween_cb cb)
 {
-   tween_t *tween       = NULL, *temp_tweens = NULL;
+   tween_t *tween = NULL, *temp_tweens = NULL;
 
    if (!driver.menu)
       return false;
@@ -55,7 +55,7 @@ bool add_tween(float duration, float target_value, float* subject,
    tween->target_value  = target_value;
    tween->subject       = subject;
    tween->easing        = easing;
-   tween->callback      = callback;
+   tween->cb            = cb;
 
    driver.menu->numtweens++;
 
@@ -88,8 +88,8 @@ void update_tweens(float dt)
       {
          *tween->subject = tween->target_value;
 
-         if (tween->callback)
-            tween->callback();
+         if (tween->cb)
+            tween->cb();
       }
 
       if (tween->running_since < tween->duration)
@@ -100,14 +100,14 @@ void update_tweens(float dt)
       driver.menu->numtweens = 0;
 }
 
-// linear
+/* Linear */
 
 float linear(float t, float b, float c, float d)
 {
    return c * t / d + b;
 }
 
-// quad
+/* Quad */
 
 float inQuad(float t, float b, float c, float d)
 {
@@ -135,7 +135,7 @@ float outInQuad(float t, float b, float c, float d)
    return inQuad((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-// cubic
+/* Cubic */
 
 float inCubic(float t, float b, float c, float d)
 {
@@ -163,7 +163,7 @@ float outInCubic(float t, float b, float c, float d)
    return inCubic((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-// quart
+/* Quart */
 
 float inQuart(float t, float b, float c, float d)
 {
@@ -190,7 +190,7 @@ float outInQuart(float t, float b, float c, float d)
    return inQuart((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-// quint
+/* Quint */
 
 float inQuint(float t, float b, float c, float d)
 {
@@ -217,7 +217,7 @@ float outInQuint(float t, float b, float c, float d)
    return inQuint((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-// sine
+/* Sine */
 
 float inSine(float t, float b, float c, float d)
 {
@@ -241,7 +241,7 @@ float outInSine(float t, float b, float c, float d)
    return inSine((t * 2) -d, b + c / 2, c / 2, d);
 }
 
-// expo
+/* Expo */
 
 float inExpo(float t, float b, float c, float d)
 {
@@ -276,7 +276,7 @@ float outInExpo(float t, float b, float c, float d)
    return inExpo((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-// circ
+/* Circ */
 
 float inCirc(float t, float b, float c, float d)
 {
@@ -304,7 +304,7 @@ float outInCirc(float t, float b, float c, float d)
    return inCirc((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-// bounce
+/* Bounce */
 
 float outBounce(float t, float b, float c, float d)
 {

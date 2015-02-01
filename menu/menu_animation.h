@@ -26,7 +26,7 @@ extern "C" {
 #endif
 
 typedef float (*easingFunc)(float, float, float, float);
-typedef void  (*tweenCallback) (void);
+typedef void  (*tween_cb) (void);
 
 typedef struct
 {
@@ -37,11 +37,11 @@ typedef struct
    float  target_value;
    float* subject;
    easingFunc easing;
-   tweenCallback callback;
+   tween_cb cb;
 } tween_t;
 
 bool add_tween(float duration, float target_value, float* subject,
-      easingFunc easing, tweenCallback callback);
+      easingFunc easing, tween_cb cb);
 
 void update_tweens(float dt);
 
