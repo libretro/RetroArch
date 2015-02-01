@@ -4055,6 +4055,66 @@ static void menu_action_setting_disp_set_label_remap_file_load(
          type_str_size);
 }
 
+static void menu_action_setting_disp_set_label_shader_filter_pass(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   unsigned pass;
+   static const char *modes[] = {
+      "Don't care",
+      "Linear",
+      "Nearest"
+   };
+
+   *type_str = '\0';
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   if (!driver.menu->shader)
+      return;
+
+  pass = (type - MENU_SETTINGS_SHADER_PASS_FILTER_0);
+
+  strlcpy(type_str, modes[driver.menu->shader->pass[pass].filter],
+        type_str_size);
+#endif
+}
+
+static void menu_action_setting_disp_set_label_shader_scale_pass(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   unsigned pass, scale_value;
+
+   *type_str = '\0';
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   if (!driver.menu->shader)
+      return;
+
+   pass        = (type - MENU_SETTINGS_SHADER_PASS_SCALE_0);
+   scale_value = driver.menu->shader->pass[pass].fbo.scale_x;
+
+   if (!scale_value)
+      strlcpy(type_str, "Don't care", type_str_size);
+   else
+      snprintf(type_str, type_str_size, "%ux", scale_value);
+#endif
+}
+
 static void menu_action_setting_disp_set_label_menu_file_core(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -5028,6 +5088,12 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
    else if (!strcmp(label, "remap_file_load"))
       cbs->action_get_representation = 
          menu_action_setting_disp_set_label_remap_file_load;
+   else if (!strcmp(label, "video_shader_filter_pass"))
+      cbs->action_get_representation =
+         menu_action_setting_disp_set_label_shader_filter_pass;
+   else if (!strcmp(label, "video_shader_scale_pass"))
+      cbs->action_get_representation =
+         menu_action_setting_disp_set_label_shader_scale_pass;
    else
    {
       switch (type)

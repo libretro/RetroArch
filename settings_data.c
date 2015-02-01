@@ -2759,12 +2759,6 @@ int setting_data_get_description(const char *label, char *msg,
 }
 
 #ifdef HAVE_MENU
-
-#if defined(GEKKO)
-extern unsigned menu_gx_resolutions[][2];
-extern unsigned menu_current_gx_resolution;
-#endif
-
 static void get_string_representation_bind_device(void * data, char *type_str,
       size_t type_str_size)
 {
@@ -2872,27 +2866,6 @@ void setting_data_get_label(void *data, char *type_str,
                   driver.menu->shader->pass[pass].source.path, type_str_size);
          else
             strlcpy(type_str, "N/A", type_str_size);
-      }
-      else if (!strcmp(label, "video_shader_filter_pass"))
-      {
-         unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_FILTER_0);
-         static const char *modes[] = {
-            "Don't care",
-            "Linear",
-            "Nearest"
-         };
-
-         strlcpy(type_str, modes[driver.menu->shader->pass[pass].filter],
-               type_str_size);
-      }
-      else if (!strcmp(label, "video_shader_scale_pass"))
-      {
-         unsigned pass        = (type - MENU_SETTINGS_SHADER_PASS_SCALE_0);
-         unsigned scale_value = driver.menu->shader->pass[pass].fbo.scale_x;
-         if (!scale_value)
-            strlcpy(type_str, "Don't care", type_str_size);
-         else
-            snprintf(type_str, type_str_size, "%ux", scale_value);
       }
    }
 #endif
