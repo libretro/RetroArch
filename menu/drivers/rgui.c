@@ -446,7 +446,6 @@ static void rgui_render(void)
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
       bool selected = false;
-      rarch_setting_t *setting = NULL;
       menu_file_list_cbs_t *cbs = NULL;
 
       menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
