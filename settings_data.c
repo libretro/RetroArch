@@ -233,43 +233,23 @@ void setting_data_set_with_string_representation(rarch_setting_t* setting,
       setting->change_handler(setting);
 }
 
-/*
- * Forward declarations for set_label callback functions. 
- */
-static void setting_data_get_string_representation_st_bool(void *data,
-      char *type_str, size_t type_str_size);
-
-static void setting_data_get_string_representation_st_float(void *data,
-      char *type_str, size_t type_str_size);
-
 /**
  * setting_data_get_string_representation:
  * @setting            : pointer to setting
- * @buf                : buffer to write contents of string representation to.
- * @sizeof_buf         : size of the buffer (@buf)
+ * @type_str           : buffer to write contents of string representation to.
+ * @sizeof_type_str    : size of the buffer (@type_str)
  *
  * Get a setting value's string representation.
  **/
 void setting_data_get_string_representation(void *data,
-      char* buf, size_t sizeof_buf)
+      char *type_str, size_t sizeof_type_str)
 {
    rarch_setting_t* setting = (rarch_setting_t*)data;
-   if (!setting || !buf || !sizeof_buf)
+   if (!setting || !type_str || !sizeof_type_str)
       return;
 
-   switch (setting->type)
-   {
-         /* TODO */
-      case ST_HEX:
-      case ST_END_GROUP:
-      case ST_END_SUB_GROUP:
-      case ST_NONE:
-         break;
-      default:
-         if (setting->get_string_representation)
-            setting->get_string_representation(setting, buf, sizeof_buf);
-         break;
-   }
+   if (setting->get_string_representation)
+      setting->get_string_representation(setting, type_str, sizeof_type_str);
 }
 
 /**
