@@ -43,8 +43,16 @@
 		840A4D1C1A7CF3E80015C9CD /* autoconfig in CopyFiles */ = {isa = PBXBuildFile; fileRef = 840A4D141A7CEA850015C9CD /* autoconfig */; };
 		840A4D1D1A7CF3F00015C9CD /* overlays in CopyFiles */ = {isa = PBXBuildFile; fileRef = 840A4D161A7CEAF80015C9CD /* overlays */; };
 		840A4D1F1A7CF4040015C9CD /* shaders_cg in CopyFiles */ = {isa = PBXBuildFile; fileRef = 840A4D181A7CF31A0015C9CD /* shaders_cg */; };
-		840A4D211A7CF9B40015C9CD /* libretrodb in CopyFiles */ = {isa = PBXBuildFile; fileRef = 840A4D201A7CF9720015C9CD /* libretrodb */; };
-		840A4D221A7CF9C30015C9CD /* libretrodb in CopyFiles */ = {isa = PBXBuildFile; fileRef = 840A4D201A7CF9720015C9CD /* libretrodb */; };
+		84F9A97E1A7E3B87003AF12F /* cht in CopyFiles */ = {isa = PBXBuildFile; fileRef = 84F9A97D1A7E3B87003AF12F /* cht */; };
+		84F9A9801A7E3B9F003AF12F /* cursors in CopyFiles */ = {isa = PBXBuildFile; fileRef = 84F9A97F1A7E3B9F003AF12F /* cursors */; };
+		84F9A9821A7E3BB2003AF12F /* dat in CopyFiles */ = {isa = PBXBuildFile; fileRef = 84F9A9811A7E3BB2003AF12F /* dat */; };
+		84F9A9841A7E3C42003AF12F /* metadat in CopyFiles */ = {isa = PBXBuildFile; fileRef = 84F9A9831A7E3C42003AF12F /* metadat */; };
+		84F9A9861A7E3C5E003AF12F /* rdb in CopyFiles */ = {isa = PBXBuildFile; fileRef = 84F9A9851A7E3C5E003AF12F /* rdb */; };
+		84F9A9891A7E3E14003AF12F /* cht in CopyFiles */ = {isa = PBXBuildFile; fileRef = 84F9A97D1A7E3B87003AF12F /* cht */; };
+		84F9A98A1A7E3E1E003AF12F /* cursors in CopyFiles */ = {isa = PBXBuildFile; fileRef = 84F9A97F1A7E3B9F003AF12F /* cursors */; };
+		84F9A98B1A7E3E25003AF12F /* dat in CopyFiles */ = {isa = PBXBuildFile; fileRef = 84F9A9811A7E3BB2003AF12F /* dat */; };
+		84F9A98C1A7E3E2B003AF12F /* metadat in CopyFiles */ = {isa = PBXBuildFile; fileRef = 84F9A9831A7E3C42003AF12F /* metadat */; };
+		84F9A98D1A7E3E33003AF12F /* rdb in CopyFiles */ = {isa = PBXBuildFile; fileRef = 84F9A9851A7E3C5E003AF12F /* rdb */; };
 		962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 962EE0E1178B3DF6004224FF /* IOKit.framework */; };
 		96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96355CE21788E72A0010DBFA /* Cocoa.framework */; };
 		964DE7C417D84B57001CBB6C /* Settings.xib in Resources */ = {isa = PBXBuildFile; fileRef = 964DE7C617D84B57001CBB6C /* Settings.xib */; };
@@ -68,7 +76,6 @@
 			dstPath = modules;
 			dstSubfolderSpec = 7;
 			files = (
-				840A4D221A7CF9C30015C9CD /* libretrodb in CopyFiles */,
 				840A4D171A7CEAF80015C9CD /* overlays in CopyFiles */,
 				840A4D151A7CEA850015C9CD /* autoconfig in CopyFiles */,
 				840A4D101A7CE7990015C9CD /* assets in CopyFiles */,
@@ -81,7 +88,6 @@
 			dstPath = modules;
 			dstSubfolderSpec = 7;
 			files = (
-				840A4D211A7CF9B40015C9CD /* libretrodb in CopyFiles */,
 				840A4D1D1A7CF3F00015C9CD /* overlays in CopyFiles */,
 				840A4D1C1A7CF3E80015C9CD /* autoconfig in CopyFiles */,
 				840A4D131A7CEA100015C9CD /* assets in CopyFiles */,
@@ -108,6 +114,34 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		84F9A97C1A7E3B6B003AF12F /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = modules;
+			dstSubfolderSpec = 7;
+			files = (
+				84F9A9861A7E3C5E003AF12F /* rdb in CopyFiles */,
+				84F9A9841A7E3C42003AF12F /* metadat in CopyFiles */,
+				84F9A9821A7E3BB2003AF12F /* dat in CopyFiles */,
+				84F9A9801A7E3B9F003AF12F /* cursors in CopyFiles */,
+				84F9A97E1A7E3B87003AF12F /* cht in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		84F9A9881A7E3E02003AF12F /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = modules;
+			dstSubfolderSpec = 7;
+			files = (
+				84F9A98D1A7E3E33003AF12F /* rdb in CopyFiles */,
+				84F9A98C1A7E3E2B003AF12F /* metadat in CopyFiles */,
+				84F9A98B1A7E3E25003AF12F /* dat in CopyFiles */,
+				84F9A98A1A7E3E1E003AF12F /* cursors in CopyFiles */,
+				84F9A9891A7E3E14003AF12F /* cht in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -126,7 +160,11 @@
 		840A4D141A7CEA850015C9CD /* autoconfig */ = {isa = PBXFileReference; lastKnownFileType = folder; name = autoconfig; path = ../../../media/autoconfig; sourceTree = "<group>"; };
 		840A4D161A7CEAF80015C9CD /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../../media/overlays; sourceTree = "<group>"; };
 		840A4D181A7CF31A0015C9CD /* shaders_cg */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shaders_cg; path = ../../../media/shaders_cg; sourceTree = "<group>"; };
-		840A4D201A7CF9720015C9CD /* libretrodb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = libretrodb; path = ../../../media/libretrodb; sourceTree = "<group>"; };
+		84F9A97D1A7E3B87003AF12F /* cht */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cht; path = ../../../media/libretrodb/cht; sourceTree = "<group>"; };
+		84F9A97F1A7E3B9F003AF12F /* cursors */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cursors; path = ../../../media/libretrodb/cursors; sourceTree = "<group>"; };
+		84F9A9811A7E3BB2003AF12F /* dat */ = {isa = PBXFileReference; lastKnownFileType = folder; name = dat; path = ../../../media/libretrodb/dat; sourceTree = "<group>"; };
+		84F9A9831A7E3C42003AF12F /* metadat */ = {isa = PBXFileReference; lastKnownFileType = folder; name = metadat; path = ../../../media/libretrodb/metadat; sourceTree = "<group>"; };
+		84F9A9851A7E3C5E003AF12F /* rdb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = rdb; path = ../../../media/libretrodb/rdb; sourceTree = "<group>"; };
 		962EE0E1178B3DF6004224FF /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
 		96355CDF1788E72A0010DBFA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96355CE21788E72A0010DBFA /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -200,7 +238,11 @@
 		96355CD41788E6E00010DBFA = {
 			isa = PBXGroup;
 			children = (
-				840A4D201A7CF9720015C9CD /* libretrodb */,
+				84F9A9851A7E3C5E003AF12F /* rdb */,
+				84F9A9831A7E3C42003AF12F /* metadat */,
+				84F9A9811A7E3BB2003AF12F /* dat */,
+				84F9A97F1A7E3B9F003AF12F /* cursors */,
+				84F9A97D1A7E3B87003AF12F /* cht */,
 				840A4D181A7CF31A0015C9CD /* shaders_cg */,
 				840A4D161A7CEAF80015C9CD /* overlays */,
 				840A4D141A7CEA850015C9CD /* autoconfig */,
@@ -300,6 +342,7 @@
 				50BD3F061A1BBA6100F2BD1B /* Resources */,
 				840A4D121A7CE9F90015C9CD /* CopyFiles */,
 				840A4D1E1A7CF3F50015C9CD /* CopyFiles */,
+				84F9A9881A7E3E02003AF12F /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -319,6 +362,7 @@
 				96355CDD1788E72A0010DBFA /* Resources */,
 				840A4D0F1A7CE77B0015C9CD /* CopyFiles */,
 				840A4D1A1A7CF3290015C9CD /* CopyFiles */,
+				84F9A97C1A7E3B6B003AF12F /* CopyFiles */,
 			);
 			buildRules = (
 			);
