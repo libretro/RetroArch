@@ -2895,13 +2895,7 @@ void setting_data_get_label(void *data, char *type_str,
             snprintf(type_str, type_str_size, "%ux", scale_value);
       }
    }
-   else
 #endif
-   if (!strcmp(label, "cheat_num_passes"))
-      snprintf(type_str, type_str_size, "%u", g_extern.cheat->buf_size);
-   else if (!strcmp(label, "remap_file_load"))
-      fill_pathname_base(type_str, g_settings.input.remapping_path,
-            type_str_size);
    else
    {
       rarch_setting_t *setting_data = NULL;

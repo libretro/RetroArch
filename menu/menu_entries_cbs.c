@@ -4026,6 +4026,35 @@ static int action_start_lookup_setting(unsigned type, const char *label,
    return menu_action_setting_set(type, label, MENU_ACTION_START);
 }
 
+static void menu_action_setting_disp_set_label_cheat_num_passes(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+   snprintf(type_str, type_str_size, "%u", g_extern.cheat->buf_size);
+}
+
+static void menu_action_setting_disp_set_label_remap_file_load(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+   fill_pathname_base(type_str, g_settings.input.remapping_path,
+         type_str_size);
+}
+
 static void menu_action_setting_disp_set_label_menu_file_core(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -4896,6 +4925,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       case MENU_FILE_PLAYLIST_ENTRY:
       case MENU_FILE_DOWNLOAD_CORE:
       case MENU_FILE_CHEAT:
+      case MENU_FILE_REMAP:
       case MENU_SETTING_GROUP:
          if (!strcmp(menu_label, "Horizontal Menu")
                || !strcmp(menu_label, "Main Menu"))
@@ -4992,6 +5022,12 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
          && type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
       cbs->action_get_representation = 
          menu_action_setting_disp_set_label_libretro_perf_counters;
+   else if (!strcmp(label, "cheat_num_passes"))
+      cbs->action_get_representation = 
+         menu_action_setting_disp_set_label_cheat_num_passes;
+   else if (!strcmp(label, "remap_file_load"))
+      cbs->action_get_representation = 
+         menu_action_setting_disp_set_label_remap_file_load;
    else
    {
       switch (type)
