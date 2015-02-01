@@ -34,9 +34,6 @@ int menu_action_setting_set_current_string(
 int menu_action_setting_set(unsigned type, const char *label,
       unsigned action);
 
-void menu_action_setting_get_representation(rarch_setting_t *setting,
-      char *type_str, size_t type_str_size);
-
 rarch_setting_t *menu_action_find_setting(const char *label);
 
 #ifdef __cplusplus
