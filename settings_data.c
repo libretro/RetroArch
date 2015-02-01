@@ -2848,8 +2848,6 @@ void setting_data_get_label(void *data, char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx)
 {
-   file_list_t     *list         = (file_list_t*)data;
-
    if (!driver.menu || !driver.menu->menu_list || !label)
       return;
 
