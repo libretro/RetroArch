@@ -2817,11 +2817,6 @@ static int get_fallback_label(char *type_str,
          }
          break;
 #endif
-      case MENU_SETTINGS_CUSTOM_VIEWPORT:
-      case MENU_SETTINGS_CUSTOM_BIND_ALL:
-      case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
-         strlcpy(type_str, "...", type_str_size);
-         break;
       case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
          {
             const struct retro_disk_control_callback *control =

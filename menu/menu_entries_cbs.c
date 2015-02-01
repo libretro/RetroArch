@@ -4040,6 +4040,20 @@ static void menu_action_setting_disp_set_label_menu_file_core(
       strlcpy(path_buf, alt, path_buf_size);
 }
 
+static void menu_action_setting_disp_set_label_menu_more(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   strlcpy(type_str, "...", type_str_size);
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+}
+
 static void menu_action_setting_disp_set_label_menu_file_plain(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -4858,6 +4872,12 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
       case MENU_SETTING_SUBGROUP:
          cbs->action_get_representation = 
             menu_action_setting_disp_set_label_menu_file_subgroup;
+         break;
+      case MENU_SETTINGS_CUSTOM_VIEWPORT:
+      case MENU_SETTINGS_CUSTOM_BIND_ALL:
+      case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_more;
          break;
       default:
          cbs->action_get_representation = menu_action_setting_disp_set_label;
