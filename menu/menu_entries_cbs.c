@@ -4084,6 +4084,72 @@ static void menu_action_setting_disp_set_label_cheat(
    strlcpy(path_buf, path, path_buf_size);
 }
 
+static void menu_action_setting_disp_set_label_perf_counters(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   const struct retro_perf_counter **counters = 
+      (const struct retro_perf_counter **)perf_counters_rarch;
+   unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
+
+   *type_str = '\0';
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+
+   if (!counters[offset])
+      return;
+   if (!counters[offset]->call_cnt)
+      return;
+
+   snprintf(type_str, type_str_size,
+#ifdef _WIN32
+         "%I64u ticks, %I64u runs.",
+#else
+         "%llu ticks, %llu runs.",
+#endif
+         ((unsigned long long)counters[offset]->total /
+          (unsigned long long)counters[offset]->call_cnt),
+         (unsigned long long)counters[offset]->call_cnt);
+}
+
+static void menu_action_setting_disp_set_label_libretro_perf_counters(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   const struct retro_perf_counter **counters = 
+      (const struct retro_perf_counter **)perf_counters_libretro;
+   unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
+
+   *type_str = '\0';
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+
+   if (!counters[offset])
+      return;
+   if (!counters[offset]->call_cnt)
+      return;
+
+   snprintf(type_str, type_str_size,
+#ifdef _WIN32
+         "%I64u ticks, %I64u runs.",
+#else
+         "%llu ticks, %llu runs.",
+#endif
+         ((unsigned long long)counters[offset]->total /
+          (unsigned long long)counters[offset]->call_cnt),
+         (unsigned long long)counters[offset]->call_cnt);
+}
+
 static void menu_action_setting_disp_set_label_menu_more(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -4915,6 +4981,14 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
          && type <= MENU_SETTINGS_CHEAT_END)
       cbs->action_get_representation = 
          menu_action_setting_disp_set_label_cheat;
+   else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
+         && type <= MENU_SETTINGS_PERF_COUNTERS_END)
+      cbs->action_get_representation = 
+         menu_action_setting_disp_set_label_perf_counters;
+   else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN
+         && type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
+      cbs->action_get_representation = 
+         menu_action_setting_disp_set_label_libretro_perf_counters;
    else
    {
       switch (type)

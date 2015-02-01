@@ -1397,30 +1397,6 @@ static void setting_data_get_string_representation_uint(void *data,
             *setting->value.unsigned_integer);
 }
 
-#ifdef HAVE_MENU
-static void menu_common_setting_set_label_perf(char *type_str,
-      size_t type_str_size, unsigned *w, unsigned type,
-      const struct retro_perf_counter **counters, unsigned offset)
-{
-   if (counters[offset] && counters[offset]->call_cnt)
-   {
-      snprintf(type_str, type_str_size,
-#ifdef _WIN32
-            "%I64u ticks, %I64u runs.",
-#else
-            "%llu ticks, %llu runs.",
-#endif
-            ((unsigned long long)counters[offset]->total /
-             (unsigned long long)counters[offset]->call_cnt),
-            (unsigned long long)counters[offset]->call_cnt);
-      return;
-   }
-
-   *type_str = '\0';
-   *w = 0;
-}
-#endif
-
 /**
  ******* LIST BUILDING HELPER FUNCTIONS *******
 **/
@@ -2926,16 +2902,6 @@ void setting_data_get_label(void *data, char *type_str,
    else if (!strcmp(label, "remap_file_load"))
       fill_pathname_base(type_str, g_settings.input.remapping_path,
             type_str_size);
-   else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
-         && type <= MENU_SETTINGS_PERF_COUNTERS_END)
-      menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
-            perf_counters_rarch,
-            type - MENU_SETTINGS_PERF_COUNTERS_BEGIN);
-   else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN
-         && type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
-      menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
-            perf_counters_libretro,
-            type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
    else
    {
       rarch_setting_t *setting_data = NULL;
