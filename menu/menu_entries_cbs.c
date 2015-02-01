@@ -4055,6 +4055,24 @@ static void menu_action_setting_disp_set_label_remap_file_load(
          type_str_size);
 }
 
+static void menu_action_setting_disp_set_label_configurations(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+   if (*g_extern.config_path)
+      fill_pathname_base(type_str, g_extern.config_path,
+            type_str_size);
+   else
+      strlcpy(type_str, "<default>", type_str_size);
+}
+
 static void menu_action_setting_disp_set_label_shader_filter_pass(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -5240,6 +5258,9 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
    else if (!strcmp(label, "video_shader_default_filter"))
       cbs->action_get_representation =
          menu_action_setting_disp_set_label_shader_default_filter;
+   else if (!strcmp(label, "configurations"))
+      cbs->action_get_representation =
+         menu_action_setting_disp_set_label_configurations;
    else
    {
       switch (type)

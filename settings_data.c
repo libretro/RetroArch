@@ -2825,22 +2825,17 @@ void setting_data_get_label(void *data, char *type_str,
       return;
 
    setting_data = (rarch_setting_t*)driver.menu->list_settings;
+
+   if (!setting_data)
+      return;
+
    setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
          driver.menu->menu_list->selection_buf->list[idx].label);
 
    if (!setting)
       return;
 
-   if (!strcmp(setting->name, "configurations"))
-   {
-      if (*g_extern.config_path)
-         fill_pathname_base(type_str, g_extern.config_path,
-               type_str_size);
-      else
-         strlcpy(type_str, "<default>", type_str_size);
-   }
-   else
-      setting_data_get_string_representation(setting, type_str, type_str_size);
+   setting_data_get_string_representation(setting, type_str, type_str_size);
 }
 #endif
 
