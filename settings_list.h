@@ -73,7 +73,7 @@ enum setting_list_flags
    SL_FLAG_OSK_OVERLAY_OPTIONS   =  (1 << 9),
    SL_FLAG_MENU_OPTIONS          =  (1 << 10),
    SL_FLAG_UI_OPTIONS            =  (1 << 11),
-   SL_FLAG_CORE_MANAGER_OPTIONS  =  (1 << 12),
+   SL_FLAG_CORE_UPDATER_OPTIONS  =  (1 << 12),
    SL_FLAG_NETPLAY_OPTIONS       =  (1 << 13),
    SL_FLAG_USER_OPTIONS          =  (1 << 14),
    SL_FLAG_PATH_OPTIONS          =  (1 << 15),

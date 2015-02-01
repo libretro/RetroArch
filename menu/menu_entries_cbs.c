@@ -1350,7 +1350,7 @@ static int action_ok_save_state(const char *path,
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
-static char core_manager_path[PATH_MAX_LENGTH];
+static char core_updater_path[PATH_MAX_LENGTH];
 
 static bool zlib_extract_core_callback(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
@@ -1389,7 +1389,7 @@ static bool zlib_extract_core_callback(const char *name, const char *valid_exts,
    return true;
 }
 
-static int cb_core_manager_download(void *data_, size_t len)
+static int cb_core_updater_download(void *data_, size_t len)
 {
    FILE *f;
    const char* file_ext = NULL;
@@ -1400,7 +1400,7 @@ static int cb_core_manager_download(void *data_, size_t len)
       return -1;
 
    fill_pathname_join(output_path, g_settings.libretro_directory,
-         core_manager_path, sizeof(output_path));
+         core_updater_path, sizeof(output_path));
    
    f = fopen(output_path, "wb");
 
@@ -1411,7 +1411,7 @@ static int cb_core_manager_download(void *data_, size_t len)
    fclose(f);
 
    snprintf(msg, sizeof(msg), "Download complete: %s.",
-         core_manager_path);
+         core_updater_path);
 
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, msg, 1, 90);
@@ -1435,7 +1435,7 @@ static int cb_core_manager_download(void *data_, size_t len)
 }
 #endif
 
-static int action_ok_core_manager_list(const char *path,
+static int action_ok_core_updater_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
 #ifdef HAVE_NETWORKING
@@ -1443,7 +1443,7 @@ static int action_ok_core_manager_list(const char *path,
    fill_pathname_join(core_path, g_settings.network.buildbot_url,
          path, sizeof(core_path));
 
-   strlcpy(core_manager_path, path, sizeof(core_manager_path));
+   strlcpy(core_updater_path, path, sizeof(core_updater_path));
    snprintf(msg, sizeof(msg), "Starting download: %s.", path);
 
    msg_queue_clear(g_extern.msg_queue);
@@ -1452,7 +1452,7 @@ static int action_ok_core_manager_list(const char *path,
    msg_queue_clear(g_extern.http_msg_queue);
    msg_queue_push(g_extern.http_msg_queue, core_path, 0, 1);
 
-   net_http_set_pending_cb(cb_core_manager_download);
+   net_http_set_pending_cb(cb_core_updater_download);
 #endif
    return 0;
 }
@@ -3123,11 +3123,11 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
-static char core_manager_list_path[PATH_MAX_LENGTH];
-static char core_manager_list_label[PATH_MAX_LENGTH];
-static unsigned core_manager_list_type;
+static char core_updater_list_path[PATH_MAX_LENGTH];
+static char core_updater_list_label[PATH_MAX_LENGTH];
+static unsigned core_updater_list_type;
 
-static int cb_core_manager_list(void *data_, size_t len)
+static int cb_core_updater_list(void *data_, size_t len)
 {
    char *data = (char*)data_;
    file_list_t *list = NULL;
@@ -3146,25 +3146,23 @@ static int cb_core_manager_list(void *data_, size_t len)
    print_buf_lines(list, data, len, MENU_FILE_DOWNLOAD_CORE);
 
    menu_list_populate_generic(driver.menu,
-         list, core_manager_list_path,
-         core_manager_list_label, core_manager_list_type);
+         list, core_updater_list_path,
+         core_updater_list_label, core_updater_list_type);
 
    return 0;
 }
 #endif
 
 
-static int deferred_push_core_manager_list(void *data, void *userdata,
+static int deferred_push_core_updater_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
 #ifdef HAVE_NETWORKING
    char url_path[PATH_MAX_LENGTH];
 
-   strlcpy(core_manager_list_path, path,
-         sizeof(core_manager_list_path));
-   strlcpy(core_manager_list_label, label,
-         sizeof(core_manager_list_label));
-   core_manager_list_type = type;
+   strlcpy(core_updater_list_path, path, sizeof(core_updater_list_path));
+   strlcpy(core_updater_list_label, label, sizeof(core_updater_list_label));
+   core_updater_list_type = type;
 #endif
 
    if (g_settings.network.buildbot_url[0] == '\0')
@@ -3196,7 +3194,7 @@ static int deferred_push_core_manager_list(void *data, void *userdata,
    msg_queue_clear(g_extern.http_msg_queue);
    msg_queue_push(g_extern.http_msg_queue, url_path, 0, 1);
 
-   net_http_set_pending_cb(cb_core_manager_list);
+   net_http_set_pending_cb(cb_core_updater_list);
 #endif
 
    return 0;
@@ -4919,7 +4917,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          )
       cbs->action_ok = action_ok_push_content_list;
    else if (!strcmp(label, "history_list") ||
-         !strcmp(label, "core_manager_list") ||
+         !strcmp(label, "core_updater_list") ||
          !strcmp(label, "cursor_manager_list") ||
          !strcmp(label, "database_manager_list") ||
          (setting && setting->browser_selection_type == ST_DIR)
@@ -4985,13 +4983,13 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
             cbs->action_ok = action_ok_core_load_deferred;
          else if (!strcmp(menu_label, "core_list"))
             cbs->action_ok = action_ok_core_load;
-         else if (!strcmp(menu_label, "core_manager_list"))
+         else if (!strcmp(menu_label, "core_updater_list"))
             cbs->action_ok = action_ok_core_download;
          else
             return;
          break;
       case MENU_FILE_DOWNLOAD_CORE:
-         cbs->action_ok = action_ok_core_manager_list;
+         cbs->action_ok = action_ok_core_updater_list;
          break;
       case MENU_FILE_DOWNLOAD_CORE_INFO:
          break;
@@ -5349,8 +5347,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    if (strstr(label, "deferred_rdb_entry_detail"))
       cbs->action_deferred_push = deferred_push_rdb_entry_detail;
-   else if (!strcmp(label, "core_manager_list"))
-      cbs->action_deferred_push = deferred_push_core_manager_list;
+   else if (!strcmp(label, "core_updater_list"))
+      cbs->action_deferred_push = deferred_push_core_updater_list;
    else if (!strcmp(label, "history_list"))
       cbs->action_deferred_push = deferred_push_history_list;
    else if (!strcmp(label, "database_manager_list"))

@@ -3188,7 +3188,7 @@ static bool setting_data_append_list_main_menu_options(
 
 #ifdef HAVE_NETWORKING
    CONFIG_ACTION(
-         "core_manager_list",
+         "core_updater_list",
          "Core Updater",
          group_info.name,
          subgroup_info.name);
@@ -5344,7 +5344,7 @@ static bool setting_data_append_list_archive_options(
    return true;
 }
 
-static bool setting_data_append_list_core_manager_options(
+static bool setting_data_append_list_core_updater_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -6187,9 +6187,9 @@ rarch_setting_t *setting_data_new(unsigned mask)
          goto error;
    }
 
-   if (mask & SL_FLAG_CORE_MANAGER_OPTIONS)
+   if (mask & SL_FLAG_CORE_UPDATER_OPTIONS)
    {
-      if (!setting_data_append_list_core_manager_options(&list, list_info))
+      if (!setting_data_append_list_core_updater_options(&list, list_info))
          goto error;
    }
 
