@@ -2789,11 +2789,6 @@ static void get_string_representation_bind_device(void * data, char *type_str,
 static void get_string_representation_savestate(void * data, char *type_str,
       size_t type_str_size)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   if (!setting || !type_str || !type_str_size)
-      return;
-
    snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
    if (g_settings.state_slot == -1)
       strlcat(type_str, " (Auto)", type_str_size);
