@@ -4068,6 +4068,35 @@ static void menu_action_setting_disp_set_label_menu_file_plain(
    strlcpy(path_buf, path, path_buf_size);
 }
 
+static void menu_action_setting_disp_set_label_menu_disk_index(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   const struct retro_disk_control_callback *control =
+      (const struct retro_disk_control_callback*)
+      &g_extern.system.disk_control;
+   unsigned images = 0, current = 0;
+
+   *w = 19;
+   *type_str = '\0';
+   strlcpy(path_buf, path, path_buf_size);
+   if (!control)
+      return;
+
+   images = control->get_num_images();
+   current = control->get_image_index();
+
+   if (current >= images)
+      strlcpy(type_str, "No Disk", type_str_size);
+   else
+      snprintf(type_str, type_str_size, "%u", current + 1);
+}
+
 static void menu_action_setting_disp_set_label_menu_file_use_directory(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -4878,6 +4907,10 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
       case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
          cbs->action_get_representation = 
             menu_action_setting_disp_set_label_menu_more;
+         break;
+      case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_disk_index;
          break;
       default:
          cbs->action_get_representation = menu_action_setting_disp_set_label;

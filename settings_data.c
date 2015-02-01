@@ -2817,19 +2817,6 @@ static int get_fallback_label(char *type_str,
          }
          break;
 #endif
-      case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
-         {
-            const struct retro_disk_control_callback *control =
-               (const struct retro_disk_control_callback*)
-               &g_extern.system.disk_control;
-            unsigned images = control->get_num_images();
-            unsigned current = control->get_image_index();
-            if (current >= images)
-               strlcpy(type_str, "No Disk", type_str_size);
-            else
-               snprintf(type_str, type_str_size, "%u", current + 1);
-         }
-         break;
       default:
          ret = -1;
          break;
