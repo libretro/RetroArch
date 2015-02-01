@@ -4543,7 +4543,6 @@ static void menu_action_setting_disp_set_label_menu_file_subgroup(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   strlcpy(type_str, "(SUBGROUP)", type_str_size);
    *w = strlen(type_str);
    strlcpy(path_buf, path, path_buf_size);
 }
