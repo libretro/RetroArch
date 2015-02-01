@@ -181,7 +181,7 @@ static INLINE void get_title(const char *label, const char *dir,
       if (!strcmp(elem1, "Miscellaneous"))
          strlcat(title, " - MISCELLANEOUS", sizeof_title);
    }
-   else if (!strcmp(elem0, "Core Manager Options"))
+   else if (!strcmp(elem0, "Core Updater Options"))
    {
       strlcpy(title, "CORE UPDATER OPTIONS", sizeof_title);
       if (!strcmp(elem1, "State"))
