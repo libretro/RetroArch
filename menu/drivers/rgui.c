@@ -464,6 +464,9 @@ static void rgui_render(void)
 
       selected = (i == driver.menu->selection_ptr);
 
+      if (i > (driver.menu->selection_ptr + 100))
+         continue;
+
       menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2),
             g_extern.frame_count / RGUI_TERM_START_X, path_buf, selected);
       menu_ticker_line(type_str_buf, w, g_extern.frame_count / RGUI_TERM_START_X,
