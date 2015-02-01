@@ -46,6 +46,10 @@ typedef struct rgui_handle
 static int rgui_entry_iterate(unsigned action)
 {
    const char *label = NULL;
+
+   if (!driver.menu || !driver.menu->menu_list)
+      return -1;
+
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
       menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
             driver.menu->selection_ptr);
@@ -55,10 +59,12 @@ static int rgui_entry_iterate(unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
 
-   if (cbs && cbs->action_iterate)
-      return cbs->action_iterate(label, action);
-   
-   return -1;
+   if (!cbs)
+      return -1;
+   if (!cbs->action_iterate)
+      return -1;
+
+   return cbs->action_iterate(label, action);
 }
 
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
