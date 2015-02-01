@@ -135,7 +135,15 @@ static void rmenu_render_messagebox(const char *message)
 static void rmenu_render(void)
 {
    size_t begin, end;
+   size_t i, j;
    struct font_params font_parms;
+   char title[256];
+   char title_buf[256], title_msg[64];
+   const char *dir = NULL;
+   const char *label = NULL;
+   const char *core_name = NULL;
+   const char *core_version = NULL;
+   unsigned menu_type = 0;
    menu_handle_t *menu = (menu_handle_t*)driver.menu;
 
    if (!menu)
@@ -169,15 +177,10 @@ static void rmenu_render(void)
    
    rmenu_render_background();
 
-   char title[256];
-   const char *dir = NULL;
-   const char *label = NULL;
-   unsigned menu_type = 0;
    menu_list_get_last_stack(driver.menu->menu_list, &dir, &label, &menu_type);
 
    get_title(label, dir, menu_type, title, sizeof(title));
 
-   char title_buf[256];
    menu_ticker_line(title_buf, RMENU_TERM_WIDTH,
          g_extern.frame_count / 15, title, true);
 
@@ -192,14 +195,13 @@ static void rmenu_render(void)
       driver.video_poke->set_osd_msg(driver.video_data,
             title_buf, &font_parms, NULL);
 
-   char title_msg[64];
-   const char *core_name = g_extern.menu.info.library_name;
+   core_name = g_extern.menu.info.library_name;
    if (!core_name)
       core_name = g_extern.system.info.library_name;
    if (!core_name)
       core_name = "No Core";
 
-   const char *core_version = g_extern.menu.info.library_version;
+   core_version = g_extern.menu.info.library_version;
    if (!core_version)
       core_version = g_extern.system.info.library_version;
    if (!core_version)
@@ -217,8 +219,6 @@ static void rmenu_render(void)
          && driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data,
             title_msg, &font_parms, NULL);
-
-   size_t i, j;
 
    j = 0;
 
@@ -256,7 +256,9 @@ static void rmenu_render(void)
       snprintf(message, sizeof(message), "%c %s",
             selected ? '>' : ' ', entry_title_buf);
 
-      //blit_line(menu, x, y, message, selected);
+#if 0
+      blit_line(menu, x, y, message, selected);
+#endif
       font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
       font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET
          + (POSITION_OFFSET * j);
@@ -284,15 +286,21 @@ void rmenu_set_texture(void *data)
    if (menu_texture_inited)
       return;
 
-   if (driver.video_data && driver.video_poke
-         && driver.video_poke->set_texture_enable
-         && menu_texture && menu_texture->pixels)
-   {
-      driver.video_poke->set_texture_frame(driver.video_data,
-            menu_texture->pixels,
-            true, menu->width, menu->height, 1.0f);
-      menu_texture_inited = true;
-   }
+   if (!driver.video_data)
+      return;
+   if (!driver.video_poke)
+      return;
+   if (!driver.video_poke->set_texture_enable)
+      return;
+   if (!menu_texture)
+      return;
+   if (!menu_texture->pixels)
+      return;
+
+   driver.video_poke->set_texture_frame(driver.video_data,
+         menu_texture->pixels,
+         true, menu->width, menu->height, 1.0f);
+   menu_texture_inited = true;
 }
 
 static void rmenu_wallpaper_set_defaults(char *menu_bg, size_t sizeof_menu_bg)
