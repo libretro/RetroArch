@@ -38,7 +38,7 @@
 		<key>A267D9543F572B4C32EC6E1B876E3B9BFE4DE8F6</key>
 		<string>../../../../../media/assets</string>
 		<key>C3AEE01BDA902108663DB5DB9CD7916436919463</key>
-		<string>../../../../../media/libretrodb/</string>
+		<string>../../../../../media/libretrodb</string>
 		<key>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</key>
 		<string>../../../../..</string>
 		<key>EF363D58F01B3FB341FA6C851870E60E4F080E97</key>
@@ -107,14 +107,6 @@
 			<string>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</string>
 			<key>IDESourceControlWCCName</key>
 			<string>retroarch</string>
-		</dict>
-		<dict>
-			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
-			<string>public.vcs.git</string>
-			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>66A80EF91DB414BA5E941825F216CCE8F40CCCF2</string>
-			<key>IDESourceControlWCCName</key>
-			<string>shaders_cg</string>
 		</dict>
 		<dict>
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
