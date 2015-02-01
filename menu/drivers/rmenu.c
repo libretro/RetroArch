@@ -89,15 +89,17 @@ static void rmenu_render_background(void)
 static void rmenu_render_messagebox(const char *message)
 {
    struct font_params font_parms;
-
    size_t i, j;
+   struct string_list *list = NULL;
 
    if (!message || !*message)
       return;
 
-   struct string_list *list = string_split(message, "\n");
+   list = string_split(message, "\n");
+
    if (!list)
       return;
+
    if (list->elems == 0)
    {
       string_list_free(list);
@@ -105,10 +107,12 @@ static void rmenu_render_messagebox(const char *message)
    }
 
    j = 0;
+
    for (i = 0; i < list->size; i++, j++)
    {
-      char *msg = list->elems[i].data;
+      char *msg       = list->elems[i].data;
       unsigned msglen = strlen(msg);
+
       if (msglen > RMENU_TERM_WIDTH)
       {
          msg[RMENU_TERM_WIDTH - 2] = '.';
@@ -164,7 +168,7 @@ static void rmenu_render(void)
 
    begin = (menu->selection_ptr >= (ENTRIES_HEIGHT / 2)) ? 
       (menu->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
-   end = ((menu->selection_ptr + ENTRIES_HEIGHT) <= 
+   end   = ((menu->selection_ptr + ENTRIES_HEIGHT) <= 
          menu_list_get_size(driver.menu->menu_list)) ?
       menu->selection_ptr + ENTRIES_HEIGHT :
       menu_list_get_size(driver.menu->menu_list);

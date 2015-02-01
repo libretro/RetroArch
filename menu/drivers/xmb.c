@@ -165,10 +165,10 @@ static char *xmb_str_replace (const char *string,
    /* if either substr or replacement is NULL, 
     * duplicate string a let caller handle it. */
    if (!substr || !replacement)
-      return strdup (string);
+      return strdup(string);
 
-   newstr = strdup (string);
-   head = newstr;
+   newstr = strdup(string);
+   head   = newstr;
 
    while ( (tok = strstr ( head, substr )))
    {
@@ -178,10 +178,12 @@ static char *xmb_str_replace (const char *string,
 
       if (!newstr)
       {
-         /*failed to alloc mem, free old string and return NULL */
+         /* Failed to allocate memory,
+          * free old string and return NULL. */
          free (oldstr);
          return NULL;
       }
+
       memcpy(newstr, oldstr, tok - oldstr );
       memcpy(newstr + (tok - oldstr), replacement, strlen ( replacement ) );
       memcpy(newstr + (tok - oldstr) + strlen( replacement ), tok +
@@ -189,7 +191,8 @@ static char *xmb_str_replace (const char *string,
             strlen ( substr ) - ( tok - oldstr ) );
       memset(newstr + strlen ( oldstr ) - strlen ( substr ) +
             strlen ( replacement ) , 0, 1 );
-      /* move back head right after the last replacement */
+
+      /* Move back head right after the last replacement. */
       head = newstr + (tok - oldstr) + strlen( replacement );
       free (oldstr);
    }
@@ -219,8 +222,11 @@ static void xmb_draw_icon(GLuint texture, float x, float y,
    if (!gl)
       return;
 
-   if (x < -xmb->icon_size/2 || x > gl->win_width
-         || y < xmb->icon_size/2 || y > gl->win_height + xmb->icon_size)
+   if (
+         x < -xmb->icon_size/2 || 
+         x > gl->win_width ||
+         y < xmb->icon_size/2 ||
+         y > gl->win_height + xmb->icon_size)
       return;
 
    GLfloat color[] = {
@@ -270,7 +276,9 @@ static void xmb_draw_text(const char *str, float x,
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
+
    a8 = 255 * alpha;
+
    if (a8 == 0)
       return;
 
@@ -616,9 +624,9 @@ static GLuint xmb_png_texture_load(const char* file_name)
 
 static xmb_node_t* xmb_node_for_core(int i)
 {
-   core_info_t *info = NULL;
+   core_info_t *info           = NULL;
    core_info_list_t *info_list = NULL;
-   xmb_node_t *node = NULL;
+   xmb_node_t *node            = NULL;
 
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
@@ -676,7 +684,8 @@ static void xmb_list_switch_old(file_list_t *list, int dir, size_t current)
 
    for (i = 0; i < file_list_get_size(list); i++)
    {
-      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+      xmb_node_t *node = (xmb_node_t*)
+         file_list_get_userdata_at_offset(list, i);
 
       if (!xmb)
           continue;
@@ -698,7 +707,8 @@ static void xmb_list_switch_new(file_list_t *list, int dir, size_t current)
    for (i = 0; i < file_list_get_size(list); i++)
    {
       float ia = 0.5;
-      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+      xmb_node_t *node = (xmb_node_t*)
+         file_list_get_userdata_at_offset(list, i);
 
       if (!xmb)
           continue;
@@ -709,6 +719,7 @@ static void xmb_list_switch_new(file_list_t *list, int dir, size_t current)
 
       if (i == current)
          ia = 1.0;
+      
       add_tween(XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
       add_tween(XMB_DELAY, ia, &node->label_alpha,  &inOutQuad, NULL);
       add_tween(XMB_DELAY, 0,  &node->x, &inOutQuad, NULL);
@@ -741,10 +752,8 @@ static void xmb_set_title(void)
 
       info = (core_info_t*)&info_list->list[driver.menu->cat_selection_ptr - 1];
 
-      if (!info)
-         return;
-
-      strlcpy(xmb->title, info->display_name, sizeof(xmb->title));
+      if (info)
+         strlcpy(xmb->title, info->display_name, sizeof(xmb->title));
    }
 }
 
@@ -815,14 +824,17 @@ static void xmb_list_switch()
    xmb_list_open_old(xmb->selection_buf_old, dir, xmb->selection_ptr_old);
    xmb_list_open_new(driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
 
-   if (xmb->depth == 1 || xmb->depth == 2)
-      add_tween(XMB_DELAY, xmb->icon_size*-(xmb->depth*2-2), &xmb->x, &inOutQuad, NULL);
-
-   if (xmb->depth == 1)
-      add_tween(XMB_DELAY, 0, &xmb->arrow_alpha, &inOutQuad, NULL);
-
-   if (xmb->depth == 2)
-      add_tween(XMB_DELAY, 1, &xmb->arrow_alpha, &inOutQuad, NULL);
+   switch (xmb->depth)
+   {
+      case 1:
+         add_tween(XMB_DELAY, xmb->icon_size*-(xmb->depth*2-2), &xmb->x, &inOutQuad, NULL);
+         add_tween(XMB_DELAY, 0, &xmb->arrow_alpha, &inOutQuad, NULL);
+         break;
+      case 2:
+         add_tween(XMB_DELAY, xmb->icon_size*-(xmb->depth*2-2), &xmb->x, &inOutQuad, NULL);
+         add_tween(XMB_DELAY, 1, &xmb->arrow_alpha, &inOutQuad, NULL);
+         break;
+   }
 
    xmb->old_depth = xmb->depth;
 }
@@ -878,6 +890,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
       unsigned type = 0, w = 0;
       xmb_node_t *node = NULL;
       menu_file_list_cbs_t *cbs = NULL;
+      GLuint icon = 0;
 
       menu_list_get_at_offset(list, i, &path, &entry_label, &type);
       node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
@@ -896,7 +909,6 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
       if (type == MENU_FILE_CONTENTLIST_ENTRY)
          strlcpy(path_buf, path_basename(path_buf), sizeof(path_buf));
 
-      GLuint icon = 0;
       switch(type)
       {
          case MENU_FILE_DIRECTORY:
@@ -909,7 +921,9 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             icon = xmb->textures[XMB_TEXTURE_FILE].id;
             break;
          case MENU_FILE_CONTENTLIST_ENTRY:
-            icon = core_node ? core_node->content_icon : xmb->textures[XMB_TEXTURE_FILE].id;
+            icon = xmb->textures[XMB_TEXTURE_FILE].id;
+            if (core_node)
+               icon = core_node->content_icon;
             break;
          case MENU_FILE_CARCHIVE:
             icon = xmb->textures[XMB_TEXTURE_ZIP].id;
@@ -1172,26 +1186,26 @@ static void *xmb_init(void)
    xmb->menu_stack_old = (file_list_t*)calloc(1, sizeof(file_list_t));
    xmb->selection_buf_old = (file_list_t*)calloc(1, sizeof(file_list_t));
 
-   xmb->active_category = 0;
-   xmb->active_category_old = 0;
-   xmb->x               = 0;
-   xmb->categories_x    = 0;
-   xmb->alpha           = 1.0f;
-   xmb->arrow_alpha     = 0;
-   xmb->depth           = 1;
-   xmb->old_depth       = 1;
-   xmb->alpha           = 0;
-   xmb->prevent_populate = false;
+   xmb->active_category      = 0;
+   xmb->active_category_old  = 0;
+   xmb->x                    = 0;
+   xmb->categories_x         = 0;
+   xmb->alpha                = 1.0f;
+   xmb->arrow_alpha          = 0;
+   xmb->depth                = 1;
+   xmb->old_depth            = 1;
+   xmb->alpha                = 0;
+   xmb->prevent_populate     = false;
 
-   xmb->c_active_zoom   = 1.0;
-   xmb->c_passive_zoom  = 0.5;
-   xmb->i_active_zoom   = 1.0;
-   xmb->i_passive_zoom  = 0.5;
+   xmb->c_active_zoom        = 1.0;
+   xmb->c_passive_zoom       = 0.5;
+   xmb->i_active_zoom        = 1.0;
+   xmb->i_passive_zoom       = 0.5;
 
-   xmb->c_active_alpha  = 1.0;
-   xmb->c_passive_alpha = 0.5;
-   xmb->i_active_alpha  = 1.0;
-   xmb->i_passive_alpha = 0.5;
+   xmb->c_active_alpha       = 1.0;
+   xmb->c_passive_alpha      = 0.5;
+   xmb->i_active_alpha       = 1.0;
+   xmb->i_passive_alpha      = 0.5;
 
    xmb->above_subitem_offset = 1.5;
    xmb->above_item_offset    = -1.0;
@@ -1213,18 +1227,18 @@ static void *xmb_init(void)
 
    strlcpy(xmb->icon_dir, "256", sizeof(xmb->icon_dir));
 
-   xmb->icon_size = 128.0 * scale_factor;
-   xmb->font_size = 32.0 * scale_factor;
-   xmb->hspacing = 200.0 * scale_factor;
-   xmb->vspacing = 64.0 * scale_factor;
-   xmb->margin_left = 336.0 * scale_factor;
-   xmb->margin_top = (256+32) * scale_factor;
-   xmb->title_margin_left = 60 * scale_factor;
-   xmb->title_margin_top = 60 * scale_factor + xmb->font_size/3;
-   xmb->title_margin_bottom = 60 * scale_factor - xmb->font_size/3;
-   xmb->label_margin_left = 85.0 * scale_factor;
-   xmb->label_margin_top = xmb->font_size/3.0;
-   xmb->setting_margin_left = 600.0 * scale_factor;
+   xmb->icon_size            = 128.0 * scale_factor;
+   xmb->font_size            = 32.0 * scale_factor;
+   xmb->hspacing             = 200.0 * scale_factor;
+   xmb->vspacing             = 64.0 * scale_factor;
+   xmb->margin_left          = 336.0 * scale_factor;
+   xmb->margin_top           = (256+32) * scale_factor;
+   xmb->title_margin_left    = 60 * scale_factor;
+   xmb->title_margin_top     = 60 * scale_factor + xmb->font_size/3;
+   xmb->title_margin_bottom  = 60 * scale_factor - xmb->font_size/3;
+   xmb->label_margin_left    = 85.0 * scale_factor;
+   xmb->label_margin_top     = xmb->font_size/3.0;
+   xmb->setting_margin_left  = 600.0 * scale_factor;
 
    xmb_init_core_info(menu);
 
