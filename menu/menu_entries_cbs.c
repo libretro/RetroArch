@@ -4693,6 +4693,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       case MENU_FILE_USE_DIRECTORY:
       case MENU_FILE_PLAYLIST_ENTRY:
       case MENU_FILE_DOWNLOAD_CORE:
+      case MENU_FILE_CHEAT:
       case MENU_SETTING_GROUP:
          if (!strcmp(menu_label, "Horizontal Menu")
                || !strcmp(menu_label, "Main Menu"))
