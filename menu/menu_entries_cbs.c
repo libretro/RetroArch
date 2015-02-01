@@ -1888,7 +1888,10 @@ static int action_toggle_scroll(unsigned type, const char *label,
             menu_navigation_set(driver.menu,
                   driver.menu->selection_ptr + fast_scroll_speed, true);
          else
-            menu_navigation_set_last(driver.menu);
+         {
+            if ((menu_list_get_size(driver.menu->menu_list) > 0))
+                  menu_navigation_set_last(driver.menu);
+         }
          break;
    }
 
