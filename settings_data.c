@@ -2849,15 +2849,9 @@ void setting_data_get_label(void *data, char *type_str,
       const char *menu_label, const char *label, unsigned idx)
 {
    file_list_t     *list         = (file_list_t*)data;
-   rarch_setting_t *setting_data = NULL;
-   rarch_setting_t *setting      = NULL;
 
    if (!driver.menu || !driver.menu->menu_list || !label)
       return;
-
-   setting_data = (rarch_setting_t*)driver.menu->list_settings;
-   setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
-         list->list[idx].label);
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
    if ((!strcmp(menu_label, "Shader Options") ||
@@ -2968,11 +2962,13 @@ void setting_data_get_label(void *data, char *type_str,
             type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
    else
    {
+      rarch_setting_t *setting_data = NULL;
+      rarch_setting_t *setting      = NULL;
+
       if (!driver.menu || !driver.menu->menu_list)
          return;
 
       setting_data = (rarch_setting_t*)driver.menu->list_settings;
-
       setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
             driver.menu->menu_list->selection_buf->list[idx].label);
 
