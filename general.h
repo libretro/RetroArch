@@ -323,6 +323,7 @@ struct settings
    struct
    {
       char buildbot_url[PATH_MAX_LENGTH];
+      char buildbot_assets_url[PATH_MAX_LENGTH];
       bool buildbot_auto_extract_archive;
    } network;
 

@@ -661,6 +661,8 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/win-x8
 static char buildbot_server_url[] = "";
 #endif
 
+static char buildbot_assets_server_url[] = "http://buildbot.libretro.com/assets/";
+
 #ifndef IS_SALAMANDER
 #include "intl/intl.h"
 

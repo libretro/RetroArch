@@ -5359,8 +5359,19 @@ static bool setting_data_append_list_core_updater_options(
    CONFIG_STRING(
          g_settings.network.buildbot_url,
          "core_updater_buildbot_url",
-         "Buildbot URL",
+         "Buildbot Core URL",
          buildbot_server_url, 
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+   CONFIG_STRING(
+         g_settings.network.buildbot_assets_url,
+         "core_updater_buildbot_assets_url",
+         "Buildbot Assets URL",
+         buildbot_assets_server_url, 
          group_info.name,
          subgroup_info.name,
          general_write_handler,
