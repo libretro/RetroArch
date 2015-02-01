@@ -873,8 +873,10 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
    xmb_node_t *core_node = NULL;
    size_t end = file_list_get_size(list);
 
+   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
+
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
-   if (!xmb || !list->size)
+   if (!xmb || !list->size || !gl)
       return;
 
    file_list_get_last(stack, &dir, &label, &menu_type);
@@ -891,9 +893,20 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
       xmb_node_t *node = NULL;
       menu_file_list_cbs_t *cbs = NULL;
       GLuint icon = 0;
+      float icon_x, icon_y;
 
       menu_list_get_at_offset(list, i, &path, &entry_label, &type);
       node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+
+      icon_x = node->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0;
+      icon_y = xmb->margin_top + node->y + xmb->icon_size/2.0;
+
+      if (
+            icon_x < -xmb->icon_size/2 || 
+            icon_x > gl->win_width ||
+            icon_y < xmb->icon_size/2 ||
+            icon_y > gl->win_height + xmb->icon_size)
+         continue;
 
       cbs = (menu_file_list_cbs_t*)
          menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
@@ -959,12 +972,9 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             break;
       }
 
-      if (i > (current + 100))
-         continue;
-
       xmb_draw_icon(icon,
-            node->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0, 
-            xmb->margin_top + node->y + xmb->icon_size/2.0, 
+            icon_x, 
+            icon_y, 
             node->alpha, 
             0, 
             node->zoom);
