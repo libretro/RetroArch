@@ -4032,10 +4032,12 @@ static void menu_action_setting_disp_set_label_menu_file_core(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   const char *alt = NULL;
    strlcpy(type_str, "(CORE)", type_str_size);
-   menu_list_get_alt_at_offset(list, i, &path);
+   menu_list_get_alt_at_offset(list, i, &alt);
    *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   if (alt)
+      strlcpy(path_buf, alt, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_plain(
