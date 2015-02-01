@@ -30,72 +30,67 @@ static void tween_free(tween_t *tw)
 void add_tween(float duration, float target_value, float* subject,
       easingFunc easing, tweenCallback callback)
 {
-   tween_t *tween = NULL;
+   tween_t *tween       = NULL;
    tween_t *temp_tweens = (tween_t*)
       realloc(tweens, (numtweens + 1) * sizeof(tween_t));
 
-   if (temp_tweens)
-   {
-      tweens = temp_tweens;
-   }
-   else /* Realloc failed. */
+   if (!temp_tweens)
    {
       tween_free(tweens);
       return;
    }
 
-   numtweens++;
-   tween = (tween_t*)&tweens[numtweens-1];
+   tweens               = temp_tweens;
+   tween                = (tween_t*)&tweens[numtweens];
 
    if (!tween)
       return;
 
-   tween->alive = 1;
-   tween->duration = duration;
+   tween->alive         = 1;
+   tween->duration      = duration;
    tween->running_since = 0;
    tween->initial_value = *subject;
-   tween->target_value = target_value;
-   tween->subject = subject;
-   tween->easing = easing;
-   tween->callback = callback;
-}
+   tween->target_value  = target_value;
+   tween->subject       = subject;
+   tween->easing        = easing;
+   tween->callback      = callback;
 
-static void update_tween(tween_t *tween, float dt, int *active_tweens)
-{
-   if (!tween)
-      return;
-
-   if (tween->running_since >= tween->duration)
-      return;
-
-   tween->running_since += dt;
-
-   if (tween->easing)
-      *tween->subject = tween->easing(
-            tween->running_since,
-            tween->initial_value,
-            tween->target_value - tween->initial_value,
-            tween->duration);
-
-   if (tween->running_since >= tween->duration)
-   {
-      *tween->subject = tween->target_value;
-
-      if (tween->callback)
-         tween->callback();
-   }
-
-   if (tween->running_since < tween->duration)
-      *active_tweens += 1;
+   numtweens++;
 }
 
 void update_tweens(float dt)
 {
-   int i;
-   int active_tweens = 0;
+   unsigned i;
+   unsigned active_tweens = 0;
 
    for(i = 0; i < numtweens; i++)
-      update_tween(&tweens[i], dt, &active_tweens);
+   {
+      tween_t *tween = &tweens[i];
+      if (!tween)
+         continue;
+      if (tween->running_since >= tween->duration)
+         continue;
+
+      tween->running_since += dt;
+
+      if (tween->easing)
+         *tween->subject = tween->easing(
+               tween->running_since,
+               tween->initial_value,
+               tween->target_value - tween->initial_value,
+               tween->duration);
+
+      if (tween->running_since >= tween->duration)
+      {
+         *tween->subject = tween->target_value;
+
+         if (tween->callback)
+            tween->callback();
+      }
+
+      if (tween->running_since < tween->duration)
+         active_tweens += 1;
+   }
 
    if (!active_tweens)
       numtweens = 0;
