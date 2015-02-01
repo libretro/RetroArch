@@ -220,10 +220,11 @@ static bool rguidisp_init_font(void *data)
 
    if (font_bmp_buf)
       return init_font(menu, font_bmp_buf);
-   else if (font_bin_buf)
-      menu->font = font_bin_buf;
-   else
+
+   if (!font_bin_buf)
       return false;
+
+   menu->font = font_bin_buf;
 
    return true;
 }
@@ -580,10 +581,17 @@ static void rgui_set_texture(void *data)
    menu_handle_t *menu = (menu_handle_t*)data;
    rgui_handle_t *rgui = (rgui_handle_t*)menu->userdata;
 
-   if (driver.video_data && driver.video_poke &&
-         driver.video_poke->set_texture_frame)
-      driver.video_poke->set_texture_frame(driver.video_data,
-            rgui->frame_buf, false, menu->width, menu->height, 1.0f);
+   if (!menu || !rgui)
+      return;
+   if (!driver.video_data)
+      return;
+   if (!driver.video_poke)
+      return;
+   if (!driver.video_poke->set_texture_frame)
+      return;
+
+   driver.video_poke->set_texture_frame(driver.video_data,
+         rgui->frame_buf, false, menu->width, menu->height, 1.0f);
 }
 
 static void rgui_navigation_clear(void *data, bool pending_push)
