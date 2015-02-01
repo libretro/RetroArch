@@ -4094,6 +4094,104 @@ static void menu_action_setting_disp_set_label_menu_file_carchive(
    strlcpy(path_buf, path, path_buf_size);
 }
 
+static void menu_action_setting_disp_set_label_menu_file_shader(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   strlcpy(type_str, "(SHADER)", type_str_size);
+   *w = strlen(type_str);
+   strlcpy(path_buf, path, path_buf_size);
+}
+
+static void menu_action_setting_disp_set_label_menu_file_shader_preset(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   strlcpy(type_str, "(PRESET)", type_str_size);
+   *w = strlen(type_str);
+   strlcpy(path_buf, path, path_buf_size);
+}
+
+static void menu_action_setting_disp_set_label_menu_file_in_carchive(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   strlcpy(type_str, "(CFILE)", type_str_size);
+   *w = strlen(type_str);
+   strlcpy(path_buf, path, path_buf_size);
+}
+
+static void menu_action_setting_disp_set_label_menu_file_overlay(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   strlcpy(type_str, "(OVERLAY)", type_str_size);
+   *w = strlen(type_str);
+   strlcpy(path_buf, path, path_buf_size);
+}
+
+static void menu_action_setting_disp_set_label_menu_file_config(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   strlcpy(type_str, "(CONFIG)", type_str_size);
+   *w = strlen(type_str);
+   strlcpy(path_buf, path, path_buf_size);
+}
+
+static void menu_action_setting_disp_set_label_menu_file_font(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   strlcpy(type_str, "(FONT)", type_str_size);
+   *w = strlen(type_str);
+   strlcpy(path_buf, path, path_buf_size);
+}
+
+static void menu_action_setting_disp_set_label_menu_file_filter(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   strlcpy(type_str, "(FILTER)", type_str_size);
+   *w = strlen(type_str);
+   strlcpy(path_buf, path, path_buf_size);
+}
+
 static void menu_action_setting_disp_set_label(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -4111,44 +4209,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
    if (!strcmp(label, "history_list"))
       *w = strlen(label);
 
-   if (type == MENU_FILE_IN_CARCHIVE)
-   {
-      strlcpy(type_str, "(CFILE)", type_str_size);
-      *w = strlen(type_str);
-   }
-   else if (type == MENU_FILE_FONT)
-   {
-      strlcpy(type_str, "(FONT)", type_str_size);
-      *w = strlen(type_str);
-   }
-   else if (type == MENU_FILE_SHADER_PRESET)
-   {
-      strlcpy(type_str, "(PRESET)", type_str_size);
-      *w = strlen(type_str);
-   }
-   else if (type == MENU_FILE_SHADER)
-   {
-      strlcpy(type_str, "(SHADER)", type_str_size);
-      *w = strlen(type_str);
-   }
-   else if (
-         type == MENU_FILE_VIDEOFILTER ||
-         type == MENU_FILE_AUDIOFILTER)
-   {
-      strlcpy(type_str, "(FILTER)", type_str_size);
-      *w = strlen(type_str);
-   }
-   else if (type == MENU_FILE_CONFIG)
-   {
-      strlcpy(type_str, "(CONFIG)", type_str_size);
-      *w = strlen(type_str);
-   }
-   else if (type == MENU_FILE_OVERLAY)
-   {
-      strlcpy(type_str, "(OVERLAY)", type_str_size);
-      *w = strlen(type_str);
-   }
-   else if (type >= MENU_SETTINGS_CORE_OPTION_START)
+   if (type >= MENU_SETTINGS_CORE_OPTION_START)
       strlcpy(
             type_str,
             core_option_get_val(g_extern.system.core_options,
@@ -4675,6 +4736,35 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
       case MENU_FILE_CARCHIVE:
          cbs->action_get_representation = 
             menu_action_setting_disp_set_label_menu_file_carchive;
+         break;
+      case MENU_FILE_OVERLAY:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_file_overlay;
+         break;
+      case MENU_FILE_FONT:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_file_font;
+         break;
+      case MENU_FILE_SHADER:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_file_shader;
+         break;
+      case MENU_FILE_SHADER_PRESET:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_file_shader_preset;
+         break;
+      case MENU_FILE_CONFIG:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_file_config;
+         break;
+      case MENU_FILE_IN_CARCHIVE:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_file_in_carchive;
+         break;
+      case MENU_FILE_VIDEOFILTER:
+      case MENU_FILE_AUDIOFILTER:
+         cbs->action_get_representation = 
+            menu_action_setting_disp_set_label_menu_file_filter;
          break;
       default:
          cbs->action_get_representation = menu_action_setting_disp_set_label;
