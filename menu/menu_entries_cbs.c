@@ -4063,6 +4063,27 @@ static void menu_action_setting_disp_set_label_input_desc(
    strlcpy(path_buf, path, path_buf_size);
 }
 
+static void menu_action_setting_disp_set_label_cheat(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   unsigned cheat_index = type - MENU_SETTINGS_CHEAT_BEGIN;
+
+   if (cheat_index < g_extern.cheat->buf_size)
+      snprintf(type_str, type_str_size, "%s : (%s)",
+            (g_extern.cheat->cheats[cheat_index].code != NULL)
+            ? g_extern.cheat->cheats[cheat_index].code : "N/A",
+            g_extern.cheat->cheats[cheat_index].state ? "ON" : "OFF"
+            );
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+}
+
 static void menu_action_setting_disp_set_label_menu_more(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -4888,10 +4909,12 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
 
    if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
-   {
       cbs->action_get_representation = 
          menu_action_setting_disp_set_label_input_desc;
-   }
+   else if (type >= MENU_SETTINGS_CHEAT_BEGIN
+         && type <= MENU_SETTINGS_CHEAT_END)
+      cbs->action_get_representation = 
+         menu_action_setting_disp_set_label_cheat;
    else
    {
       switch (type)

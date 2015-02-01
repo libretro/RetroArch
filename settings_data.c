@@ -2926,18 +2926,6 @@ void setting_data_get_label(void *data, char *type_str,
    else if (!strcmp(label, "remap_file_load"))
       fill_pathname_base(type_str, g_settings.input.remapping_path,
             type_str_size);
-   else if (type >= MENU_SETTINGS_CHEAT_BEGIN
-         && type <= MENU_SETTINGS_CHEAT_END)
-   {
-      unsigned cheat_index = type - MENU_SETTINGS_CHEAT_BEGIN;
-
-      if (cheat_index < g_extern.cheat->buf_size)
-         snprintf(type_str, type_str_size, "%s : (%s)",
-                (g_extern.cheat->cheats[cheat_index].code != NULL)
-               ? g_extern.cheat->cheats[cheat_index].code : "N/A",
-               g_extern.cheat->cheats[cheat_index].state ? "ON" : "OFF"
-               );
-   }
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
