@@ -141,7 +141,7 @@ typedef struct
 
    rarch_setting_t *list_settings;
    tween_t* tweens;
-   int numtweens;
+   unsigned numtweens;
 } menu_handle_t;
 
 typedef struct menu_file_list_cbs

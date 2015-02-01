@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <boolean.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,7 +40,7 @@ typedef struct
    tweenCallback callback;
 } tween_t;
 
-void add_tween(float duration, float target_value, float* subject,
+bool add_tween(float duration, float target_value, float* subject,
       easingFunc easing, tweenCallback callback);
 
 void update_tweens(float dt);

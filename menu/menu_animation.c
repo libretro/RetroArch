@@ -18,32 +18,35 @@
 #include "../driver.h"
 #include <math.h>
 
-static void tween_free(tween_t *tw)
+static void tween_free(tween_t *tween)
 {
-   if (tw)
-      free(tw);
-   tw = NULL;
+   if (tween)
+      free(tween);
+   tween = NULL;
 }
 
-void add_tween(float duration, float target_value, float* subject,
+bool add_tween(float duration, float target_value, float* subject,
       easingFunc easing, tweenCallback callback)
 {
-   tween_t *tween       = NULL;
-   tween_t *temp_tweens = (tween_t*)
-      realloc(driver.menu->tweens,
-            (driver.menu->numtweens + 1) * sizeof(tween_t));
+   tween_t *tween       = NULL, *temp_tweens = NULL;
+
+   if (!driver.menu)
+      return false;
+   
+   temp_tweens = (tween_t*)realloc(driver.menu->tweens,
+         (driver.menu->numtweens + 1) * sizeof(tween_t));
 
    if (!temp_tweens)
    {
       tween_free(driver.menu->tweens);
-      return;
+      return false;
    }
 
    driver.menu->tweens  = temp_tweens;
    tween                = (tween_t*)&driver.menu->tweens[driver.menu->numtweens];
 
    if (!tween)
-      return;
+      return false;
 
    tween->alive         = 1;
    tween->duration      = duration;
@@ -55,6 +58,8 @@ void add_tween(float duration, float target_value, float* subject,
    tween->callback      = callback;
 
    driver.menu->numtweens++;
+
+   return true;
 }
 
 void update_tweens(float dt)
