@@ -4086,6 +4086,62 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
 #endif
 }
 
+static void menu_action_setting_disp_set_label_shader_num_passes(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   *type_str = '\0';
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   snprintf(type_str, type_str_size, "%u", driver.menu->shader->passes);
+#endif
+}
+
+static void menu_action_setting_disp_set_label_shader_pass(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_0);
+
+   *type_str = '\0';
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(type_str, "N/A", type_str_size);
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   if (*driver.menu->shader->pass[pass].source.path)
+      fill_pathname_base(type_str,
+            driver.menu->shader->pass[pass].source.path, type_str_size);
+#endif
+}
+
+static void menu_action_setting_disp_set_label_shader_default_filter(
+
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   *type_str = '\0';
+   *w = 19;
+   snprintf(type_str, type_str_size, "%s",
+         g_settings.video.smooth ? "Linear" : "Nearest");
+}
+
 static void menu_action_setting_disp_set_label_shader_scale_pass(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -5094,6 +5150,15 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
    else if (!strcmp(label, "video_shader_scale_pass"))
       cbs->action_get_representation =
          menu_action_setting_disp_set_label_shader_scale_pass;
+   else if (!strcmp(label, "video_shader_num_passes"))
+      cbs->action_get_representation =
+         menu_action_setting_disp_set_label_shader_num_passes;
+   else if (!strcmp(label, "video_shader_pass"))
+      cbs->action_get_representation =
+         menu_action_setting_disp_set_label_shader_pass;
+   else if (!strcmp(label, "video_shader_default_filter"))
+      cbs->action_get_representation =
+         menu_action_setting_disp_set_label_shader_default_filter;
    else
    {
       switch (type)

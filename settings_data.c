@@ -2827,9 +2827,7 @@ void setting_data_get_label(void *data, char *type_str,
             !strcmp(menu_label, "video_shader_preset_parameters"))
       )
    {
-      if (!strcmp(label, "video_shader_num_passes"))
-         snprintf(type_str, type_str_size, "%u", driver.menu->shader->passes);
-      else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+      if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
             && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
       {
          struct video_shader *shader = NULL;
@@ -2854,18 +2852,6 @@ void setting_data_get_label(void *data, char *type_str,
             snprintf(type_str, type_str_size, "%.2f [%.2f %.2f]",
                   param->current, param->minimum, param->maximum);
          }
-      }
-      else if (!strcmp(label, "video_shader_default_filter"))
-         snprintf(type_str, type_str_size, "%s",
-               g_settings.video.smooth ? "Linear" : "Nearest");
-      else if (!strcmp(label, "video_shader_pass"))
-      {
-         unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_0);
-         if (*driver.menu->shader->pass[pass].source.path)
-            fill_pathname_base(type_str,
-                  driver.menu->shader->pass[pass].source.path, type_str_size);
-         else
-            strlcpy(type_str, "N/A", type_str_size);
       }
    }
 #endif
