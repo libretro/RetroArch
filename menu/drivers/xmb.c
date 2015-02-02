@@ -756,44 +756,55 @@ static void xmb_set_title(void)
    }
 }
 
-static void xmb_list_open()
+static void xmb_list_open(void)
 {
-   int dir;
    unsigned j;
+   int dir = -1;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
       return;
 
-   dir = driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old ? 1 : -1;
+   if (driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old)
+      dir = 1;
 
    xmb->active_category += dir;
 
    for (j = 0; j < xmb->num_categories; j++)
    {
-      float ia, iz;
+      float ia = xmb->c_passive_alpha;
+      float iz = xmb->c_passive_zoom;
       xmb_node_t *node = j ? xmb_node_for_core(j-1) : &xmb->settings_node;
 
       if (!node)
          continue;
+      
+      if (j == xmb->active_category)
+      {
+         ia = xmb->c_active_alpha;
+         iz = xmb->c_active_zoom;
+      }
 
-      ia = (j == xmb->active_category) ? xmb->c_active_alpha : xmb->c_passive_alpha;
-      iz = (j == xmb->active_category) ? xmb->c_active_zoom : xmb->c_passive_zoom;
       add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
       add_tween(XMB_DELAY, iz, &node->zoom, &inOutQuad, NULL);
    }
 
-   add_tween(XMB_DELAY, xmb->hspacing*-(float)driver.menu->cat_selection_ptr, &xmb->categories_x, &inOutQuad, NULL);
-   dir = driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old ? 1 : -1;
+   add_tween(XMB_DELAY, xmb->hspacing * -(float)driver.menu->cat_selection_ptr,
+         &xmb->categories_x, &inOutQuad, NULL);
+
+   dir = -1;
+   if (driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old)
+      dir = 1;
+
    xmb_list_switch_old(xmb->selection_buf_old, dir, xmb->selection_ptr_old);
    xmb_list_switch_new(driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
    xmb->active_category_old = driver.menu->cat_selection_ptr;
 }
 
-static void xmb_list_switch()
+static void xmb_list_switch(void)
 {
-   int dir;
    unsigned j;
+   int dir = 0;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
 
    if (!xmb)
@@ -801,7 +812,6 @@ static void xmb_list_switch()
 
    xmb->depth = file_list_get_size(driver.menu->menu_list->menu_stack);
 
-   dir = 0;
    if (xmb->depth > xmb->old_depth)
       dir = 1;
    else if (xmb->depth < xmb->old_depth)
@@ -809,14 +819,17 @@ static void xmb_list_switch()
 
    for (j = 0; j < xmb->num_categories; j++)
    {
-      float ia;
+      float ia = 0;
       xmb_node_t *node = j ? xmb_node_for_core(j-1) : &xmb->settings_node;
 
       if (!node)
          continue;
 
-      ia = (j == xmb->active_category) ? xmb->c_active_alpha
-            : (xmb->depth <= 1) ? xmb->c_passive_alpha : 0;
+      if (j == xmb->active_category)
+         ia = xmb->c_active_alpha;
+      else if (xmb->depth <= 1)
+         ia = xmb->c_passive_alpha;
+
       add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
    }
 
@@ -885,6 +898,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
 
    for (i = 0; i < end; i++)
    {
+      float icon_x, icon_y;
       char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
       char name[256], value[256];
       const char *path = NULL, *entry_label = NULL;
@@ -892,7 +906,6 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
       xmb_node_t *node = NULL;
       menu_file_list_cbs_t *cbs = NULL;
       GLuint icon = 0;
-      float icon_x, icon_y;
 
       menu_list_get_at_offset(list, i, &path, &entry_label, &type);
       node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
@@ -959,9 +972,9 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             icon = xmb->textures[XMB_TEXTURE_RELOAD].id;
             break;
          case MENU_SETTING_ACTION:
-            icon = (xmb->depth == 3) ?
-                  xmb->textures[XMB_TEXTURE_SUBSETTING].id :
-                  xmb->textures[XMB_TEXTURE_SETTING].id;
+            icon = xmb->textures[XMB_TEXTURE_SETTING].id;
+            if (xmb->depth == 3)
+               icon = xmb->textures[XMB_TEXTURE_SUBSETTING].id;
             break;
          case MENU_SETTING_GROUP:
             icon = xmb->textures[XMB_TEXTURE_SETTING].id;
@@ -1396,11 +1409,11 @@ static void xmb_context_reset(void *data)
          "off.png", sizeof(xmb->textures[XMB_TEXTURE_SWITCH_OFF].path));
 
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
-      xmb->textures[k].id = xmb_png_texture_load(xmb->textures[k].path);
+      xmb->textures[k].id   = xmb_png_texture_load(xmb->textures[k].path);
 
-   xmb->settings_node.icon = xmb->textures[XMB_TEXTURE_SETTINGS].id;
+   xmb->settings_node.icon  = xmb->textures[XMB_TEXTURE_SETTINGS].id;
    xmb->settings_node.alpha = xmb->c_active_alpha;
-   xmb->settings_node.zoom = xmb->c_active_zoom;
+   xmb->settings_node.zoom  = xmb->c_active_zoom;
 
    info_list = (core_info_list_t*)g_extern.core_info;
 
@@ -1447,7 +1460,7 @@ static void xmb_context_reset(void *data)
       if (i == xmb->active_category)
       {
          node->alpha = xmb->c_active_alpha;
-         node->zoom = xmb->c_active_zoom;
+         node->zoom  = xmb->c_active_zoom;
       }
       else if (xmb->depth <= 1)
          node->alpha = xmb->c_passive_alpha;
@@ -1588,7 +1601,16 @@ static void xmb_list_cache(bool horizontal, unsigned action)
       return;
 
    xmb->cat_selection_ptr_old = driver.menu->cat_selection_ptr;
-   driver.menu->cat_selection_ptr += action == MENU_ACTION_LEFT ? -1 : 1;
+
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         driver.menu->cat_selection_ptr--;
+         break;
+      default:
+         driver.menu->cat_selection_ptr++;
+         break;
+   }
 
    stack_size = driver.menu->menu_list->menu_stack->size;
 
@@ -1597,13 +1619,13 @@ static void xmb_list_cache(bool horizontal, unsigned action)
    driver.menu->menu_list->menu_stack->list[stack_size-1].type = 
       MENU_SETTINGS;
 
-   if (driver.menu->cat_selection_ptr != 0)
-   {
-      strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label,
-            "Horizontal Menu", PATH_MAX_LENGTH);
-      driver.menu->menu_list->menu_stack->list[stack_size-1].type = 
-         MENU_SETTING_HORIZONTAL_MENU;
-   }
+   if (driver.menu->cat_selection_ptr == 0)
+      return;
+
+   strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label,
+         "Horizontal Menu", PATH_MAX_LENGTH);
+   driver.menu->menu_list->menu_stack->list[stack_size-1].type = 
+      MENU_SETTING_HORIZONTAL_MENU;
 }
 
 static void xmb_list_set_selection(void *data)
@@ -1676,10 +1698,16 @@ static void xmb_toggle(bool menu_on)
       if (!node)
          continue;
 
-      node->alpha = (i == xmb->active_category) ? xmb->c_active_alpha
-         : (xmb->depth <= 1) ? xmb->c_passive_alpha : 0;
-      node->zoom  = (i == xmb->active_category) ? xmb->c_active_zoom
-         : xmb->c_passive_zoom;
+      node->alpha = 0;
+      node->zoom  = xmb->c_passive_zoom;
+      
+      if (i == xmb->active_category)
+      {
+         node->alpha = xmb->c_active_alpha;
+         node->zoom  = xmb->c_active_zoom;
+      }
+      else if (xmb->depth <= 1)
+         node->alpha = xmb->c_passive_alpha;
    }
 }
 
