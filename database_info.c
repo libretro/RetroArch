@@ -159,6 +159,25 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
 
          if (!strcmp(key->string.buff, "analog"))
             db_info->analog_supported = val->uint_;
+
+         if (!strcmp(key->string.buff, "crc"))
+         {
+            unsigned i;
+            db_info->crc32 = (char*)calloc(val->binary.len, sizeof(unsigned char));
+
+            if (db_info->crc32)
+            {
+               char crc32[PATH_MAX_LENGTH];
+
+               for (i = 0; i < val->binary.len; i++)
+               {
+                  char crc32_cat[PATH_MAX_LENGTH];
+                  snprintf(crc32_cat, sizeof(crc32_cat), "%02X", (unsigned char)val->binary.buff[i]);
+                  strlcat(crc32, crc32_cat, sizeof(crc32));
+               }
+               strlcpy(db_info->crc32, crc32, sizeof(db_info->crc32));
+            }
+         }
       }
       i++;
    }
@@ -216,6 +235,8 @@ void database_info_list_free(database_info_list_t *database_info_list)
          free(info->esrb_rating);
       if (info->bbfc_rating)
          free(info->bbfc_rating);
+      if (info->crc32)
+         free(info->crc32);
    }
 
    free(database_info_list->list);

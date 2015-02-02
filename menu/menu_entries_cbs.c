@@ -777,7 +777,7 @@ static int create_string_list_rdb_entry_string(const char *desc, const char *lab
    return 0;
 }
 
-static int create_string_list_rdb_entry_int(const char *desc, const char *label,
+static uint32_t create_string_list_rdb_entry_int(const char *desc, const char *label,
       int actual_int, const char *path, file_list_t *list)
 {
    char tmp[PATH_MAX_LENGTH];
@@ -985,6 +985,13 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
             (db_info_entry->rumble_supported == -1) ? "N/A"  :  "false");
       menu_list_push(list, tmp, "rdb_entry_rumble",
             0, 0);
+      if (db_info_entry->crc32)
+      {
+         if (create_string_list_rdb_entry_string("CRC32 Checksum",
+               "rdb_entry_crc32", db_info_entry->crc32,
+               path, list) == -1)
+            return -1;
+      }
    }
 
    if (db_info->count < 1)
