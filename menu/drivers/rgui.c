@@ -523,25 +523,18 @@ static void *rgui_init(void)
    menu->userdata = (rgui_handle_t*)calloc(1, sizeof(rgui_handle_t));
    
    if (!menu->userdata)
-   {
-      free(menu);
-      return NULL;
-   }
+      goto error;
 
    rgui = (rgui_handle_t*)menu->userdata;
 
    rgui->frame_buf = (uint16_t*)malloc(400 * 240 * sizeof(uint16_t)); 
 
    if (!rgui->frame_buf)
-   {
-      free(menu->userdata);
-      free(menu);
-      return NULL;
-   }
+      goto error;
 
-   menu->width = 320;
-   menu->height = 240;
-   menu->begin = 0;
+   menu->width           = 320;
+   menu->height          = 240;
+   menu->begin           = 0;
    rgui->frame_buf_pitch = menu->width * sizeof(uint16_t);
 
    ret = rguidisp_init_font(menu);
@@ -551,13 +544,19 @@ static void *rgui_init(void)
       RARCH_ERR("No font bitmap or binary, abort");
 
       rarch_main_command(RARCH_CMD_QUIT_RETROARCH);
-
-      free(menu->userdata);
-      free(menu);
-      return NULL;
+      goto error;
    }
 
    return menu;
+
+error:
+   if (rgui && rgui->frame_buf)
+      free(rgui->frame_buf);
+   if (menu && menu->userdata)
+      free(menu->userdata);
+   if (menu)
+      free(menu);
+   return NULL;
 }
 
 static void rgui_free(void *data)
