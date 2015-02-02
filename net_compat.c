@@ -25,10 +25,10 @@ int getaddrinfo_rarch(const char *node, const char *service,
       struct addrinfo **res)
 {
 #ifdef HAVE_SOCKET_LEGACY
-   struct sockaddr_in *in_addr;
+   struct sockaddr_in *in_addr = NULL;
    struct addrinfo *info = (struct addrinfo*)calloc(1, sizeof(*info));
    if (!info)
-      return -1;
+      goto error;
 
    info->ai_family = AF_INET;
    info->ai_socktype = hints->ai_socktype;
@@ -36,15 +36,11 @@ int getaddrinfo_rarch(const char *node, const char *service,
    in_addr = (struct sockaddr_in*)calloc(1, sizeof(*in_addr));
 
    if (!in_addr)
-   {
-      free(info);
-      return -1;
-   }
+      goto error;
 
-   info->ai_addrlen = sizeof(*in_addr);
-
+   info->ai_addrlen    = sizeof(*in_addr);
    in_addr->sin_family = AF_INET;
-   in_addr->sin_port = htons(strtoul(service, NULL, 0));
+   in_addr->sin_port   = htons(strtoul(service, NULL, 0));
 
    if (!node && (hints->ai_flags & AI_PASSIVE))
       in_addr->sin_addr.s_addr = INADDR_ANY;
@@ -52,7 +48,8 @@ int getaddrinfo_rarch(const char *node, const char *service,
       in_addr->sin_addr.s_addr = inet_addr(node);
    else if (node && !isdigit(*node))
    {
-      struct hostent *host = gethostbyname(node);
+      struct hostent *host = (struct hostent*)gethostbyname(node);
+
       if (!host || !host->h_addr_list[0])
          goto error;
 
@@ -67,8 +64,10 @@ int getaddrinfo_rarch(const char *node, const char *service,
    return 0;
 
 error:
-   free(in_addr);
-   free(info);
+   if (in_addr)
+      free(in_addr);
+   if (info)
+      free(info);
    return -1;
 #else
    return getaddrinfo(node, service, hints, res);
