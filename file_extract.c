@@ -59,6 +59,10 @@ typedef struct
 static void zlib_file_free(void *handle)
 {
    zlib_file_data_t *data = (zlib_file_data_t*)handle;
+
+   if (!data)
+      return;
+
    if (data->data)
       munmap(data->data, data->size);
    if (data->fd >= 0)
@@ -156,6 +160,7 @@ static void *zlib_file_open(const char *path)
 {
    ssize_t ret;
    zlib_file_data_t *data = (zlib_file_data_t*)calloc(1, sizeof(*data));
+
    if (!data)
       return NULL;
 
