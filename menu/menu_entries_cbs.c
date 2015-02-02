@@ -868,7 +868,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
       if (db_info_entry->name)
       {
-         snprintf(tmp, sizeof(tmp), "Description: %s", db_info_entry->name);
+         snprintf(tmp, sizeof(tmp), "Name: %s", db_info_entry->name);
          menu_list_push(list, tmp, "rdb_entry_name",
                0, 0);
       }
