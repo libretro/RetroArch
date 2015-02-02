@@ -24,6 +24,7 @@
 #include "menu_animation.h"
 #include "menu_list.h"
 #include "../settings_list.h"
+#include "../playlist.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -142,6 +143,8 @@ typedef struct
    rarch_setting_t *list_settings;
    tween_t* tweens;
    unsigned numtweens;
+
+   content_playlist_t *db_playlist;
 } menu_handle_t;
 
 typedef struct menu_file_list_cbs

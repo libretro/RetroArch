@@ -24,7 +24,21 @@
 extern "C" {
 #endif
 
-typedef struct content_playlist content_playlist_t;
+typedef struct content_playlist_entry
+{
+   char *path;
+   char *core_path;
+   char *core_name;
+} content_playlist_entry_t;
+
+typedef struct content_playlist
+{
+   struct content_playlist_entry *entries;
+   size_t size;
+   size_t cap;
+
+   char *conf_path;
+} content_playlist_t;
 
 /**
  * content_playlist_init:

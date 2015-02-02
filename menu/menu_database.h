@@ -17,6 +17,7 @@
 #define _MENU_DATABASE_H
 
 #include <stddef.h>
+#include <boolean.h>
 #include <file/file_list.h>
 #ifdef HAVE_LIBRETRODB
 #include "../libretrodb/libretrodb.h"
@@ -28,6 +29,10 @@ extern "C" {
     
 int menu_database_populate_query(file_list_t *list, const char *path,
                                      const char *query);
+
+void menu_database_free(menu_handle_t *menu);
+
+bool menu_database_realloc(menu_handle_t *menu, const char *path);
 
 #ifdef __cplusplus
 }

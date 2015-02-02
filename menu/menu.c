@@ -263,6 +263,10 @@ void menu_free(void *data)
    if (driver.menu_ctx && driver.menu_ctx->free)
       driver.menu_ctx->free(menu);
 
+#ifdef HAVE_LIBRETRODB
+   menu_database_free(menu);
+#endif
+
 #ifdef HAVE_DYNAMIC
    libretro_free_system_info(&g_extern.menu.info);
 #endif

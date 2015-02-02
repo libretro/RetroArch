@@ -130,6 +130,8 @@ unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
+static unsigned rdb_entry_start_game_selection_ptr;
+
 static int archive_open(void)
 {
    char cat_path[PATH_MAX_LENGTH];
@@ -245,6 +247,16 @@ int menu_action_setting_set_current_string(
    return menu_action_generic_setting(setting);
 }
 
+static int action_ok_rdb_playlist_entry(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   if (!driver.menu)
+      return -1;
+
+   rarch_playlist_load_content(driver.menu->db_playlist,
+         rdb_entry_start_game_selection_ptr);
+   return -1;
+}
 
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx)
@@ -827,8 +839,10 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
 #ifdef HAVE_LIBRETRODB
+   content_playlist_t *playlist;
    char query[PATH_MAX_LENGTH];
-   unsigned i;
+   char path_rdl[PATH_MAX_LENGTH], path_base[PATH_MAX_LENGTH];
+   unsigned i, j;
    int ret = 0;
    database_info_list_t *db_info = NULL;
    file_list_t *list             = (file_list_t*)data;
@@ -858,6 +872,17 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       goto done;
    }
 
+   strlcpy(path_base, path_basename(path), sizeof(path_base));
+   path_remove_extension(path_base);
+   strlcat(path_base, ".rdl", sizeof(path_base));
+
+   fill_pathname_join(path_rdl, g_settings.content_database, path_base,
+         sizeof(path_rdl));
+
+   menu_database_realloc(driver.menu, path_rdl);
+
+   playlist = driver.menu->db_playlist;
+
    for (i = 0; i < db_info->count; i++)
    {
       char tmp[PATH_MAX_LENGTH];
@@ -865,6 +890,50 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
       if (!db_info_entry)
          continue;
+
+      if (playlist)
+      {
+         for (j = 0; j < playlist->size; j++)
+         {
+            char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+            bool match_found = false;
+            struct string_list *str_list = string_split(
+                  playlist->entries[j].core_name, "|"); 
+
+            if (!str_list)
+               continue;;
+
+            if (str_list && str_list->size > 0)
+               strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+            if (str_list && str_list->size > 1)
+               strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+
+            if (!strcmp(elem1, "crc"))
+            {
+               if (!strcmp(db_info_entry->crc32, elem0))
+                  match_found = true;
+            }
+            else if (!strcmp(elem1, "sha1"))
+            {
+               if (!strcmp(db_info_entry->sha1, elem0))
+                  match_found = true;
+            }
+            else if (!strcmp(elem1, "md5"))
+            {
+               if (!strcmp(db_info_entry->md5, elem0))
+                  match_found = true;
+            }
+
+            string_list_free(str_list);
+
+            if (!match_found)
+               continue;
+
+            rdb_entry_start_game_selection_ptr = j;
+            menu_list_push(list, "Start game", "rdb_entry_start_game",
+                  MENU_FILE_PLAYLIST_ENTRY, j);
+         }
+      }
 
       if (db_info_entry->name)
       {
@@ -1014,6 +1083,8 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
             return -1;
       }
    }
+   
+
 
    if (db_info->count < 1)
       menu_list_push(list,
@@ -4978,7 +5049,10 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          cbs->action_ok = action_ok_video_resolution;
          break;
       case MENU_FILE_PLAYLIST_ENTRY:
-         cbs->action_ok = action_ok_playlist_entry;
+         if (!strcmp(label, "rdb_entry_start_game"))
+            cbs->action_ok = action_ok_rdb_playlist_entry;
+         else
+            cbs->action_ok = action_ok_playlist_entry;
          break;
       case MENU_FILE_CONTENTLIST_ENTRY:
          cbs->action_ok = action_ok_push_generic_list;

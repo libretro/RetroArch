@@ -18,6 +18,7 @@
 #include "menu_list.h"
 #include "menu_entries.h"
 #include "../database_info.h"
+#include "../playlist.h"
 #include <string.h>
 
 int menu_database_populate_query(file_list_t *list, const char *path,
@@ -39,4 +40,28 @@ int menu_database_populate_query(file_list_t *list, const char *path,
 #endif
 
    return 0;
+}
+
+static void menu_database_playlist_free(menu_handle_t *menu)
+{
+   if (menu->db_playlist)
+      content_playlist_free(menu->db_playlist);
+   menu->db_playlist = NULL;
+}
+
+void menu_database_free(menu_handle_t *menu)
+{
+   menu_database_playlist_free(menu);
+}
+
+bool menu_database_realloc(menu_handle_t *menu, const char *path)
+{
+   menu_database_playlist_free(menu);
+   menu->db_playlist = content_playlist_init(path,
+         1000);
+
+   if (!menu->db_playlist)
+      return false;
+
+   return true;
 }

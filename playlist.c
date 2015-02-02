@@ -23,22 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct content_playlist_entry
-{
-   char *path;
-   char *core_path;
-   char *core_name;
-};
-
-struct content_playlist
-{
-   struct content_playlist_entry *entries;
-   size_t size;
-   size_t cap;
-
-   char *conf_path;
-};
-
 /**
  * content_playlist_get_index:
  * @playlist        	   : Playlist handle.
@@ -71,8 +55,7 @@ void content_playlist_get_index(content_playlist_t *playlist,
  *
  * Frees playlist entry.
  **/
-static void content_playlist_free_entry(
-      struct content_playlist_entry *entry)
+static void content_playlist_free_entry(content_playlist_entry_t *entry)
 {
    if (!entry)
       return;
@@ -110,7 +93,7 @@ void content_playlist_push(content_playlist_t *playlist,
 
    for (i = 0; i < playlist->size; i++)
    {
-      struct content_playlist_entry tmp;
+      content_playlist_entry_t tmp;
       bool equal_path = (!path && !playlist->entries[i].path) ||
          (path && playlist->entries[i].path &&
           !strcmp(path,playlist->entries[i].path));
@@ -131,7 +114,7 @@ void content_playlist_push(content_playlist_t *playlist,
       /* Seen it before, bump to top. */
       tmp = playlist->entries[i];
       memmove(playlist->entries + 1, playlist->entries,
-		      i * sizeof(struct content_playlist_entry));
+		      i * sizeof(content_playlist_entry_t));
       playlist->entries[0] = tmp;
 
       return;
@@ -144,7 +127,7 @@ void content_playlist_push(content_playlist_t *playlist,
    }
 
    memmove(playlist->entries + 1, playlist->entries,
-         (playlist->cap - 1) * sizeof(struct content_playlist_entry));
+         (playlist->cap - 1) * sizeof(content_playlist_entry_t));
 
    playlist->entries[0].path      = path ? strdup(path) : NULL;
    playlist->entries[0].core_path = strdup(core_path);
@@ -234,7 +217,7 @@ static bool content_playlist_read_file(
 {
    char buf[3][1024];
    unsigned i;
-   struct content_playlist_entry *entry = NULL;
+   content_playlist_entry_t *entry = NULL;
    char *last = NULL;
    FILE *file = fopen(path, "r");
 
@@ -291,7 +274,7 @@ content_playlist_t *content_playlist_init(const char *path, size_t size)
    if (!playlist)
       return NULL;
 
-   playlist->entries = (struct content_playlist_entry*)calloc(size,
+   playlist->entries = (content_playlist_entry_t*)calloc(size,
          sizeof(*playlist->entries));
    if (!playlist->entries)
       goto error;
