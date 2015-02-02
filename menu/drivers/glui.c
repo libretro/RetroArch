@@ -78,10 +78,15 @@ static void glui_blit_line(float x, float y, const char *message, bool green)
    if (green)
       params.color = FONT_COLOR_RGBA(100, 255, 100, 255);
     
-   if (driver.video_data && driver.video_poke
-       && driver.video_poke->set_osd_msg)
-       driver.video_poke->set_osd_msg(driver.video_data,
-                                      message, &params, NULL);
+   if (!driver.video_data)
+      return;
+   if (!driver.video_poke)
+      return;
+   if (!driver.video_poke->set_osd_msg)
+      return;
+
+   driver.video_poke->set_osd_msg(driver.video_data,
+         message, &params, NULL);
 }
 
 static void glui_render_background(bool force_transparency)
@@ -103,15 +108,6 @@ static void glui_render_background(bool force_transparency)
    float alpha = 0.75f;
    gl_t *gl = NULL;
    glui_handle_t *glui = NULL;
-
-   if (!driver.menu)
-      return;
-
-   glui = (glui_handle_t*)driver.menu->userdata;
-
-   if (!glui)
-      return;
-
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
@@ -125,6 +121,14 @@ static void glui_render_background(bool force_transparency)
       0.0f, 0.0f, 0.0f, alpha,
       0.0f, 0.0f, 0.0f, alpha,
    };
+
+   if (!driver.menu)
+      return;
+
+   glui = (glui_handle_t*)driver.menu->userdata;
+
+   if (!glui)
+      return;
 
    gl = (gl_t*)video_driver_resolve(NULL);
 
@@ -224,19 +228,15 @@ static void glui_draw_cursor(float x, float y)
 
 static void glui_get_message(const char *message)
 {
-   size_t i;
    glui_handle_t *glui = NULL;
-   (void)i;
 
    if (!driver.menu || !message || !*message)
       return;
 
    glui = (glui_handle_t*)driver.menu->userdata;
 
-   if (!glui)
-      return;
-
-   strlcpy(glui->box_message, message, sizeof(glui->box_message));
+   if (glui)
+      strlcpy(glui->box_message, message, sizeof(glui->box_message));
 }
 
 static void glui_render_messagebox(const char *message)
@@ -261,10 +261,7 @@ static void glui_render_messagebox(const char *message)
       return;
 
    if (list->elems == 0)
-   {
-      string_list_free(list);
-      return;
-   }
+      goto end;
 
    x = gl->win_width  / 2 - strlen(list->elems[0].data) * glui->glyph_width / 2;
    y = gl->win_height / 2 - list->size * glui->line_height / 2;
@@ -272,9 +269,11 @@ static void glui_render_messagebox(const char *message)
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
-      glui_blit_line(x, y + i * glui->line_height, msg, false);
+      if (msg)
+         glui_blit_line(x, y + i * glui->line_height, msg, false);
    }
 
+end:
    string_list_free(list);
 }
 
@@ -487,22 +486,23 @@ static void *glui_init(void)
    menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
-      return NULL;
+      goto error;
 
    menu->userdata = (glui_handle_t*)calloc(1, sizeof(glui_handle_t));
 
    if (!menu->userdata)
-   {
-      free(menu);
-      return NULL;
-   }
+      goto error;
 
-   glui = (glui_handle_t*)menu->userdata;
+   glui     = (glui_handle_t*)menu->userdata;
    glui->bg = 0;
 
    glui_init_core_info(menu);
 
    return menu;
+error:
+   if (menu)
+      free(menu);
+   return NULL;
 }
 
 static void glui_free(void *data)
@@ -596,8 +596,6 @@ static void glui_context_reset(void *data)
 
    if (path_file_exists(bgpath))
       glui->bg = glui_png_texture_load(bgpath);
-
-   printf("%d\n", glui->bg);
 }
 
 static void glui_navigation_clear(void *data, bool pending_push)
