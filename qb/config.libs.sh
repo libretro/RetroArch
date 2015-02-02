@@ -146,7 +146,8 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
       HAVE_SOCKET_LEGACY='yes'
    fi
    HAVE_NETWORK_CMD='yes'
-   HAVE_NETPLAY='yes'
+
+   [ "$HAVE_NETPLAY" != 'no' ] && HAVE_NETPLAY='yes'
 else
    echo "Warning: All networking features have been disabled."
    HAVE_NETWORK_CMD='no'
