@@ -69,7 +69,7 @@ static int rgui_entry_iterate(unsigned action)
 
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {
-   int y, x;
+   int x, y;
 
    if (!glyph)
       return;
@@ -126,7 +126,7 @@ static void fill_rect(uint16_t *buf, unsigned pitch,
       unsigned width, unsigned height,
       uint16_t (*col)(unsigned x, unsigned y))
 {
-   unsigned j, i;
+   unsigned i, j;
     
    if (!buf || !col)
       return;
@@ -140,7 +140,7 @@ static void color_rect(uint16_t *buf, unsigned pitch,
       unsigned width, unsigned height,
       uint16_t color)
 {
-   unsigned j, i;
+   unsigned i, j;
 
    if (!buf)
       return;
@@ -153,7 +153,7 @@ static void color_rect(uint16_t *buf, unsigned pitch,
 
 static void blit_line(int x, int y, const char *message, bool green)
 {
-   int j, i;
+   unsigned i, j;
    rgui_handle_t *rgui = NULL;
 
    if (!driver.menu)
@@ -280,10 +280,7 @@ static void rgui_render_messagebox(const char *message)
    if (!list)
       return;
    if (list->elems == 0)
-   {
-      string_list_free(list);
-      return;
-   }
+      goto end;
 
    width = 0;
    glyphs_width = 0;
@@ -334,6 +331,7 @@ static void rgui_render_messagebox(const char *message)
       blit_line(x + 8 + offset_x, y + 8 + offset_y, msg, false);
    }
 
+end:
    string_list_free(list);
 }
 
