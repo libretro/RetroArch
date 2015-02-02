@@ -43,6 +43,7 @@ typedef struct
    char *crc32;
    char *sha1;
    char *md5;
+   unsigned famitsu_magazine_rating;
    unsigned edge_magazine_rating;
    unsigned edge_magazine_issue;
    unsigned max_users;

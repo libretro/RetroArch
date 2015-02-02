@@ -909,6 +909,13 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
                path, list) == -1)
             return -1;
       }
+      if (db_info_entry->famitsu_magazine_rating)
+      {
+         if (create_string_list_rdb_entry_int("Famitsu Magazine Rating",
+               "rdb_entry_famitsu_magazine_rating", db_info_entry->famitsu_magazine_rating,
+               path, list) == -1)
+            return -1;
+      }
       if (db_info_entry->edge_magazine_rating)
       {
          if (create_string_list_rdb_entry_int("Edge Magazine Rating",

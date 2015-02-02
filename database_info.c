@@ -90,6 +90,7 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
       db_info->crc32                  = NULL;
       db_info->sha1                   = NULL;
       db_info->md5                    = NULL;
+      db_info->famitsu_magazine_rating= 0;
       db_info->edge_magazine_rating   = 0;
       db_info->edge_magazine_issue    = 0;
       db_info->max_users              = 0;
@@ -147,6 +148,9 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
 
          if (!strcmp(key->string.buff, "edge_issue"))
             db_info->edge_magazine_issue = val->uint_;
+
+         if (!strcmp(key->string.buff, "famitsu_rating"))
+            db_info->famitsu_magazine_rating = val->uint_;
 
          if (!strcmp(key->string.buff, "users"))
             db_info->max_users = val->uint_;
