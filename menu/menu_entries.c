@@ -198,15 +198,20 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
 
       for (i = 0; i < info->databases_list->size; i++)
       {
-         struct string_list *strlist = info->databases_list;
+         struct string_list *str_list = (struct string_list*)info->databases_list;
+
+         if (!str_list)
+            continue;
 
          fill_pathname_join(db_path, g_settings.content_database,
-               strlist->elems[i].data, sizeof(db_path));
+               str_list->elems[i].data, sizeof(db_path));
          strlcat(db_path, ".rdb", sizeof(db_path));
 
-         if (path_file_exists(db_path))
-            menu_list_push(list, path_basename(db_path), "core_database",
-                  MENU_FILE_RDB, 0);
+         if (!path_file_exists(db_path))
+            continue;
+
+         menu_list_push(list, path_basename(db_path), "core_database",
+               MENU_FILE_RDB, 0);
       }
    }
 
