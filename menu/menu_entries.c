@@ -160,7 +160,6 @@ int menu_entries_push_cores_list(file_list_t *list, core_info_t *info,
       const char *path, bool push_databases_enable)
 {
    size_t i;
-   char db_path[PATH_MAX_LENGTH];
 
    if (!info->supports_no_game)
       menu_entries_content_list_push(list, info, path);
@@ -170,12 +169,12 @@ int menu_entries_push_cores_list(file_list_t *list, core_info_t *info,
 
    if (!push_databases_enable)
       return 0;
-
    if (!info->databases_list)
       return 0;
 
    for (i = 0; i < info->databases_list->size; i++)
    {
+      char db_path[PATH_MAX_LENGTH];
       struct string_list *str_list = (struct string_list*)info->databases_list;
 
       if (!str_list)
@@ -201,11 +200,7 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
       unsigned menu_type)
 {
    core_info_t *info = NULL;
-   core_info_list_t *info_list = NULL;
-
-   menu_list_clear(list);
-
-   info_list = (core_info_list_t*)g_extern.core_info;
+   core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
 
    if (!info_list)
       return -1;
@@ -215,8 +210,9 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
    if (!info)
       return -1;
 
-   strlcpy(g_settings.libretro,
-         info->path, sizeof(g_settings.libretro));
+   strlcpy(g_settings.libretro, info->path, sizeof(g_settings.libretro));
+
+   menu_list_clear(list);
 
    menu_entries_push_cores_list(list, info, g_settings.content_directory, true);
 
