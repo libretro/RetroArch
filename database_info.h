@@ -41,6 +41,8 @@ typedef struct
    char *cero_rating;
    char *enhancement_hw;
    char *crc32;
+   char *sha1;
+   char *md5;
    unsigned edge_magazine_rating;
    unsigned edge_magazine_issue;
    unsigned max_users;

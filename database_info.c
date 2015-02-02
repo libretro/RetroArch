@@ -178,6 +178,44 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
                strlcpy(db_info->crc32, crc32, sizeof(db_info->crc32));
             }
          }
+
+         if (!strcmp(key->string.buff, "sha1"))
+         {
+            unsigned i;
+            db_info->sha1 = (char*)calloc(val->binary.len, sizeof(unsigned char));
+
+            if (db_info->sha1)
+            {
+               char sha1[PATH_MAX_LENGTH];
+
+               for (i = 0; i < val->binary.len; i++)
+               {
+                  char sha1_cat[PATH_MAX_LENGTH];
+                  snprintf(sha1_cat, sizeof(sha1_cat), "%02X", (unsigned char)val->binary.buff[i]);
+                  strlcat(sha1, sha1_cat, sizeof(sha1));
+               }
+               strlcpy(db_info->sha1, sha1, sizeof(db_info->sha1));
+            }
+         }
+
+         if (!strcmp(key->string.buff, "md5"))
+         {
+            unsigned i;
+            db_info->md5 = (char*)calloc(val->binary.len, sizeof(unsigned char));
+
+            if (db_info->md5)
+            {
+               char md5[PATH_MAX_LENGTH];
+
+               for (i = 0; i < val->binary.len; i++)
+               {
+                  char md5_cat[PATH_MAX_LENGTH];
+                  snprintf(md5_cat, sizeof(md5_cat), "%02X", (unsigned char)val->binary.buff[i]);
+                  strlcat(md5, md5_cat, sizeof(md5));
+               }
+               strlcpy(db_info->md5, md5, sizeof(db_info->md5));
+            }
+         }
       }
       i++;
    }
@@ -237,6 +275,10 @@ void database_info_list_free(database_info_list_t *database_info_list)
          free(info->bbfc_rating);
       if (info->crc32)
          free(info->crc32);
+      if (info->sha1)
+         free(info->sha1);
+      if (info->md5)
+         free(info->md5);
    }
 
    free(database_info_list->list);

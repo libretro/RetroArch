@@ -992,6 +992,20 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
                path, list) == -1)
             return -1;
       }
+      if (db_info_entry->sha1)
+      {
+         if (create_string_list_rdb_entry_string("SHA1 Checksum",
+               "rdb_entry_sha1", db_info_entry->sha1,
+               path, list) == -1)
+            return -1;
+      }
+      if (db_info_entry->md5)
+      {
+         if (create_string_list_rdb_entry_string("MD5 Checksum",
+               "rdb_entry_md5", db_info_entry->md5,
+               path, list) == -1)
+            return -1;
+      }
    }
 
    if (db_info->count < 1)
