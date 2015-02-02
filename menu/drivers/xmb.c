@@ -1134,6 +1134,7 @@ static void xmb_frame(void)
    {
       char msg[PATH_MAX_LENGTH];
       const char *str = *driver.menu->keyboard.buffer;
+
       if (!str)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s",
@@ -1177,27 +1178,31 @@ static void *xmb_init(void)
 
    if (video_driver != &video_gl || !gl)
    {
-      RARCH_ERR("Cannot initialize GLUI menu driver: gl video driver is not active.\n");
+      RARCH_ERR("Cannot initialize XMB menu driver: GL video driver is not active.\n");
       return NULL;
    }
 
    menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
-      return NULL;
+      goto error;
 
    menu->userdata = (xmb_handle_t*)calloc(1, sizeof(xmb_handle_t));
 
    if (!menu->userdata)
-   {
-      free(menu);
-      return NULL;
-   }
+      goto error;
 
    xmb = (xmb_handle_t*)menu->userdata;
 
    xmb->menu_stack_old = (file_list_t*)calloc(1, sizeof(file_list_t));
+
+   if (!xmb->menu_stack_old)
+      goto error;
+
    xmb->selection_buf_old = (file_list_t*)calloc(1, sizeof(file_list_t));
+
+   if (!xmb->selection_buf_old)
+      goto error;
 
    xmb->active_category      = 0;
    xmb->active_category_old  = 0;
@@ -1255,9 +1260,21 @@ static void *xmb_init(void)
 
    xmb_init_core_info(menu);
 
-   xmb->num_categories = g_extern.core_info ? (g_extern.core_info->count + 1) : 1;
+   xmb->num_categories       = 1;
+   
+   if (g_extern.core_info)
+      xmb->num_categories    = g_extern.core_info->count + 1;
 
    return menu;
+
+error:
+   if (menu)
+      free(menu);
+   if (xmb && xmb->menu_stack_old)
+      free(xmb->menu_stack_old);
+   if (xmb && xmb->selection_buf_old)
+      free(xmb->selection_buf_old);
+   return NULL;
 }
 
 static void xmb_free(void *data)
@@ -1435,9 +1452,8 @@ static void xmb_navigation_clear(void *data, bool pending_push)
 {
    (void)data;
 
-   if (pending_push)
-      return;
-   xmb_selection_pointer_changed();
+   if (!pending_push)
+      xmb_selection_pointer_changed();
 }
 
 static void xmb_navigation_decrement(void *data)
@@ -1519,11 +1535,17 @@ static void xmb_list_insert(void *data,
    if (i == current)
       iy = xmb->vspacing * xmb->active_item_factor;
 
-   node->alpha = (i == current) ? xmb->i_active_alpha : xmb->i_passive_alpha;
+   node->alpha       = xmb->i_passive_alpha;
+   node->zoom        = xmb->i_passive_zoom;
    node->label_alpha = node->alpha;
-   node->zoom  = (i == current) ? xmb->i_active_zoom : xmb->i_passive_zoom;
-   node->y = iy;
-   node->x = 0;
+   node->y           = iy;
+   node->x           = 0;
+
+   if (i == current)
+   {
+      node->alpha    = xmb->i_active_alpha;
+      node->zoom     = xmb->i_active_zoom;
+   }
 }
 
 static void xmb_list_delete(void *data, size_t idx,
@@ -1564,15 +1586,17 @@ static void xmb_list_cache(bool horizontal, unsigned action)
 
    stack_size = driver.menu->menu_list->menu_stack->size;
 
-   if (driver.menu->cat_selection_ptr == 0)
+   strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label,
+         "Main Menu", PATH_MAX_LENGTH);
+   driver.menu->menu_list->menu_stack->list[stack_size-1].type = 
+      MENU_SETTINGS;
+
+   if (driver.menu->cat_selection_ptr != 0)
    {
-      strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Main Menu", PATH_MAX_LENGTH);
-      driver.menu->menu_list->menu_stack->list[stack_size-1].type = MENU_SETTINGS;
-   }
-   else
-   {
-      strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label, "Horizontal Menu", PATH_MAX_LENGTH);
-      driver.menu->menu_list->menu_stack->list[stack_size-1].type = MENU_SETTING_HORIZONTAL_MENU;
+      strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label,
+            "Horizontal Menu", PATH_MAX_LENGTH);
+      driver.menu->menu_list->menu_stack->list[stack_size-1].type = 
+         MENU_SETTING_HORIZONTAL_MENU;
    }
 }
 
@@ -1626,28 +1650,31 @@ static void xmb_toggle(bool menu_on)
 
    xmb->depth = file_list_get_size(driver.menu->menu_list->menu_stack);
 
-   if (menu_on)
+   if (!menu_on)
    {
-      add_tween(XMB_DELAY, 1.0f, &xmb->alpha, &inOutQuad, NULL);
-
-      if (xmb->active_category) {
-         xmb->prevent_populate = true;
-         for (i = 0; i < xmb->num_categories; i++)
-         {
-            xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
-
-            if (!node)
-               continue;
-
-            node->alpha = (i == xmb->active_category) ? xmb->c_active_alpha
-                  : (xmb->depth <= 1) ? xmb->c_passive_alpha : 0;
-            node->zoom  = (i == xmb->active_category) ? xmb->c_active_zoom
-                  : xmb->c_passive_zoom;
-         }
-      }
-   }
-   else
       xmb->alpha = 0;
+      return;
+   }
+
+   add_tween(XMB_DELAY, 1.0f, &xmb->alpha, &inOutQuad, NULL);
+
+   if (!xmb->active_category)
+      return;
+
+   xmb->prevent_populate = true;
+
+   for (i = 0; i < xmb->num_categories; i++)
+   {
+      xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
+
+      if (!node)
+         continue;
+
+      node->alpha = (i == xmb->active_category) ? xmb->c_active_alpha
+         : (xmb->depth <= 1) ? xmb->c_passive_alpha : 0;
+      node->zoom  = (i == xmb->active_category) ? xmb->c_active_zoom
+         : xmb->c_passive_zoom;
+   }
 }
 
 menu_ctx_driver_t menu_ctx_xmb = {
