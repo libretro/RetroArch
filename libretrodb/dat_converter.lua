@@ -190,6 +190,7 @@ function get_value()
             rumble = uint(tonumber(t.rumble)),
             analog = uint(tonumber(t.analog)),
 
+            famitsu_rating = uint(tonumber(t.famitsu_rating)),
             edge_rating = uint(tonumber(t.edge_rating)),
             edge_issue = uint(tonumber(t.edge_issue)),
             edge_review = t.edge_review,
