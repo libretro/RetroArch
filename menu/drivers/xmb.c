@@ -634,7 +634,6 @@ static xmb_node_t* xmb_node_for_core(int i)
       return NULL;
 
    info_list = (core_info_list_t*)g_extern.core_info;
-   info = NULL;
 
    if (!info_list)
       return NULL;
@@ -1440,11 +1439,18 @@ static void xmb_context_reset(void *data)
       strlcat(content_texturepath, core_id, sizeof(content_texturepath));
       strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
 
-      node->alpha = (i == xmb->active_category) ? xmb->c_active_alpha
-            : (xmb->depth <= 1) ? xmb->c_passive_alpha : 0;
-      node->zoom  = (i == xmb->active_category) ? xmb->c_active_zoom : xmb->c_passive_zoom;
-      node->icon  = xmb_png_texture_load(texturepath);
+      node->alpha        = 0;
+      node->zoom         = xmb->c_passive_zoom;
+      node->icon         = xmb_png_texture_load(texturepath);
       node->content_icon = xmb_png_texture_load(content_texturepath);
+
+      if (i == xmb->active_category)
+      {
+         node->alpha = xmb->c_active_alpha;
+         node->zoom = xmb->c_active_zoom;
+      }
+      else if (xmb->depth <= 1)
+         node->alpha = xmb->c_passive_alpha;
    }
 }
 
