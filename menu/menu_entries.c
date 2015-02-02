@@ -126,7 +126,7 @@ int menu_entries_push_list(menu_handle_t *menu,
 static void menu_entries_content_list_push(
       file_list_t *list, core_info_t *info, const char* path)
 {
-   int num_items = 0, j;
+   unsigned j;
    struct string_list *str_list = NULL;
 
    if (!info)
@@ -135,12 +135,12 @@ static void menu_entries_content_list_push(
    str_list = (struct string_list*)dir_list_new(path,
          info->supported_extensions, true);
 
+   if (!str_list)
+      return;
+
    dir_list_sort(str_list, true);
 
-   if (str_list)
-      num_items = str_list->size;
-
-   for (j = 0; j < num_items; j++)
+   for (j = 0; j < str_list->size; j++)
    {
       if (str_list->elems[j].attr.i == RARCH_DIRECTORY)
          menu_entries_content_list_push(list, info,
