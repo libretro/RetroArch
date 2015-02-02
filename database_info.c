@@ -87,6 +87,9 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
       db_info->cero_rating            = NULL;
       db_info->edge_magazine_review   = NULL;
       db_info->enhancement_hw         = NULL;
+      db_info->crc32                  = NULL;
+      db_info->sha1                   = NULL;
+      db_info->md5                    = NULL;
       db_info->edge_magazine_rating   = 0;
       db_info->edge_magazine_issue    = 0;
       db_info->max_users              = 0;
@@ -163,58 +166,43 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
          if (!strcmp(key->string.buff, "crc"))
          {
             unsigned i;
-            db_info->crc32 = (char*)calloc(val->binary.len, sizeof(unsigned char));
+            char crc32[PATH_MAX_LENGTH];
 
-            if (db_info->crc32)
+            for (i = 0; i < val->binary.len; i++)
             {
-               char crc32[PATH_MAX_LENGTH];
-
-               for (i = 0; i < val->binary.len; i++)
-               {
-                  char crc32_cat[PATH_MAX_LENGTH];
-                  snprintf(crc32_cat, sizeof(crc32_cat), "%02X", (unsigned char)val->binary.buff[i]);
-                  strlcat(crc32, crc32_cat, sizeof(crc32));
-               }
-               strlcpy(db_info->crc32, crc32, sizeof(db_info->crc32));
+               char crc32_cat[PATH_MAX_LENGTH];
+               snprintf(crc32_cat, sizeof(crc32_cat), "%02X", (unsigned char)val->binary.buff[i]);
+               strlcat(crc32, crc32_cat, sizeof(crc32));
             }
+            db_info->crc32 = strdup(crc32);
          }
 
          if (!strcmp(key->string.buff, "sha1"))
          {
             unsigned i;
-            db_info->sha1 = (char*)calloc(val->binary.len, sizeof(unsigned char));
+            char sha1[PATH_MAX_LENGTH];
 
-            if (db_info->sha1)
+            for (i = 0; i < val->binary.len; i++)
             {
-               char sha1[PATH_MAX_LENGTH];
-
-               for (i = 0; i < val->binary.len; i++)
-               {
-                  char sha1_cat[PATH_MAX_LENGTH];
-                  snprintf(sha1_cat, sizeof(sha1_cat), "%02X", (unsigned char)val->binary.buff[i]);
-                  strlcat(sha1, sha1_cat, sizeof(sha1));
-               }
-               strlcpy(db_info->sha1, sha1, sizeof(db_info->sha1));
+               char sha1_cat[PATH_MAX_LENGTH];
+               snprintf(sha1_cat, sizeof(sha1_cat), "%02X", (unsigned char)val->binary.buff[i]);
+               strlcat(sha1, sha1_cat, sizeof(sha1));
             }
+            db_info->sha1 = strdup(sha1);
          }
 
          if (!strcmp(key->string.buff, "md5"))
          {
             unsigned i;
-            db_info->md5 = (char*)calloc(val->binary.len, sizeof(unsigned char));
+            char md5[PATH_MAX_LENGTH];
 
-            if (db_info->md5)
+            for (i = 0; i < val->binary.len; i++)
             {
-               char md5[PATH_MAX_LENGTH];
-
-               for (i = 0; i < val->binary.len; i++)
-               {
-                  char md5_cat[PATH_MAX_LENGTH];
-                  snprintf(md5_cat, sizeof(md5_cat), "%02X", (unsigned char)val->binary.buff[i]);
-                  strlcat(md5, md5_cat, sizeof(md5));
-               }
-               strlcpy(db_info->md5, md5, sizeof(db_info->md5));
+               char md5_cat[PATH_MAX_LENGTH];
+               snprintf(md5_cat, sizeof(md5_cat), "%02X", (unsigned char)val->binary.buff[i]);
+               strlcat(md5, md5_cat, sizeof(md5));
             }
+            db_info->md5 = strdup(md5);
          }
       }
       i++;
