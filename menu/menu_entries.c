@@ -142,19 +142,57 @@ static void menu_entries_content_list_push(
 
    for (j = 0; j < str_list->size; j++)
    {
+      const char *name = str_list->elems[j].data;
+
       if (str_list->elems[j].attr.i == RARCH_DIRECTORY)
-         menu_entries_content_list_push(list, info,
-               str_list->elems[j].data);
+         menu_entries_content_list_push(list, info, name);
       else
          menu_list_push(
-               list,
-               str_list->elems[j].data,
+               list, name,
                "content_actions",
-               MENU_FILE_CONTENTLIST_ENTRY,
-               0);
+               MENU_FILE_CONTENTLIST_ENTRY, 0);
    }
 
    string_list_free(str_list);
+}
+
+int menu_entries_push_cores_list(file_list_t *list, core_info_t *info,
+      const char *path, bool push_databases_enable)
+{
+   size_t i;
+   char db_path[PATH_MAX_LENGTH];
+
+   if (!info->supports_no_game)
+      menu_entries_content_list_push(list, info, path);
+   else
+      menu_list_push(list, info->display_name, "content_actions",
+            MENU_FILE_CONTENTLIST_ENTRY, 0);
+
+   if (!push_databases_enable)
+      return 0;
+
+   if (!info->databases_list)
+      return 0;
+
+   for (i = 0; i < info->databases_list->size; i++)
+   {
+      struct string_list *str_list = (struct string_list*)info->databases_list;
+
+      if (!str_list)
+         continue;
+
+      fill_pathname_join(db_path, g_settings.content_database,
+            str_list->elems[i].data, sizeof(db_path));
+      strlcat(db_path, ".rdb", sizeof(db_path));
+
+      if (!path_file_exists(db_path))
+         continue;
+
+      menu_list_push(list, path_basename(db_path), "core_database",
+            MENU_FILE_RDB, 0);
+   }
+
+   return 0;
 }
 
 int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
@@ -180,40 +218,7 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
    strlcpy(g_settings.libretro,
          info->path, sizeof(g_settings.libretro));
 
-   if (!info->supports_no_game)
-      menu_entries_content_list_push(list, info,
-            g_settings.content_directory);
-   else
-      menu_list_push(
-            list,
-            info->display_name,
-            "content_actions",
-            MENU_FILE_CONTENTLIST_ENTRY,
-            0);
-
-   if (info->databases_list)
-   {
-      size_t i;
-      char db_path[PATH_MAX_LENGTH];
-
-      for (i = 0; i < info->databases_list->size; i++)
-      {
-         struct string_list *str_list = (struct string_list*)info->databases_list;
-
-         if (!str_list)
-            continue;
-
-         fill_pathname_join(db_path, g_settings.content_database,
-               str_list->elems[i].data, sizeof(db_path));
-         strlcat(db_path, ".rdb", sizeof(db_path));
-
-         if (!path_file_exists(db_path))
-            continue;
-
-         menu_list_push(list, path_basename(db_path), "core_database",
-               MENU_FILE_RDB, 0);
-      }
-   }
+   menu_entries_push_cores_list(list, info, g_settings.content_directory, true);
 
    menu_list_populate_generic(menu, list, path, label, menu_type);
 
