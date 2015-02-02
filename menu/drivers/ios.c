@@ -62,16 +62,19 @@ static void *ios_init(void)
 {
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
    if (!menu)
-      return NULL;
+      goto error;
 
    menu->userdata = (ios_handle_t*)calloc(1, sizeof(ios_handle_t));
    if (!menu->userdata)
-   {
-      free(menu);
-      return NULL;
-   }
+      goto error;
 
    return menu;
+error:
+   if (menu->userdata)
+      free(menu->userdata);
+   if (menu)
+      free(menu);
+   return NULL;
 }
 
 static void ios_free(void *data)
@@ -84,7 +87,6 @@ static void ios_free(void *data)
       free(menu->userdata);
 
    free(menu);
-   return;
 }
 
 
