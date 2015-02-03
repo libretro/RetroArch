@@ -56,12 +56,19 @@ void menu_database_free(menu_handle_t *menu)
 
 bool menu_database_realloc(menu_handle_t *menu, const char *path)
 {
+   if (!strcmp(menu->db_playlist_file, path))
+      return true;
+
    menu_database_playlist_free(menu);
+
    menu->db_playlist = content_playlist_init(path,
          1000);
 
    if (!menu->db_playlist)
       return false;
+
+   strlcpy(menu->db_playlist_file, path,
+         sizeof(menu->db_playlist_file));
 
    return true;
 }

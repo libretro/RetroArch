@@ -145,6 +145,7 @@ typedef struct
    unsigned numtweens;
 
    content_playlist_t *db_playlist;
+   char db_playlist_file[PATH_MAX_LENGTH];
 } menu_handle_t;
 
 typedef struct menu_file_list_cbs
