@@ -305,7 +305,7 @@ int setting_data_get_description(const char *label, char *msg,
  *
  * Get associated label of a setting.
  **/
-void setting_data_get_label(void *data, char *type_str,
+void setting_data_get_label(file_list_t *list, char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx);
 #endif
