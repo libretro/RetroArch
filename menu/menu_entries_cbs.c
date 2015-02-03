@@ -891,49 +891,6 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       if (!db_info_entry)
          continue;
 
-      if (playlist)
-      {
-         for (j = 0; j < playlist->size; j++)
-         {
-            char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
-            bool match_found = false;
-            struct string_list *str_list = string_split(
-                  playlist->entries[j].core_name, "|"); 
-
-            if (!str_list)
-               continue;;
-
-            if (str_list && str_list->size > 0)
-               strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-            if (str_list && str_list->size > 1)
-               strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
-
-            if (!strcmp(elem1, "crc"))
-            {
-               if (!strcmp(db_info_entry->crc32, elem0))
-                  match_found = true;
-            }
-            else if (!strcmp(elem1, "sha1"))
-            {
-               if (!strcmp(db_info_entry->sha1, elem0))
-                  match_found = true;
-            }
-            else if (!strcmp(elem1, "md5"))
-            {
-               if (!strcmp(db_info_entry->md5, elem0))
-                  match_found = true;
-            }
-
-            string_list_free(str_list);
-
-            if (!match_found)
-               continue;
-
-            rdb_entry_start_game_selection_ptr = j;
-            menu_list_push(list, "Start game", "rdb_entry_start_game",
-                  MENU_FILE_PLAYLIST_ENTRY, j);
-         }
-      }
 
       if (db_info_entry->name)
       {
@@ -1006,6 +963,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
                path, list) == -1)
             return -1;
       }
+
       if (db_info_entry->releaseyear)
       {
          if (create_string_list_rdb_entry_int("Releasedate Year",
@@ -1061,6 +1019,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
             (db_info_entry->rumble_supported == -1) ? "N/A"  :  "false");
       menu_list_push(list, tmp, "rdb_entry_rumble",
             0, 0);
+
       if (db_info_entry->crc32)
       {
          if (create_string_list_rdb_entry_string("CRC32 Checksum",
@@ -1081,6 +1040,50 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
                "rdb_entry_md5", db_info_entry->md5,
                path, list) == -1)
             return -1;
+      }
+
+      if (playlist)
+      {
+         for (j = 0; j < playlist->size; j++)
+         {
+            char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+            bool match_found = false;
+            struct string_list *str_list = string_split(
+                  playlist->entries[j].core_name, "|"); 
+
+            if (!str_list)
+               continue;;
+
+            if (str_list && str_list->size > 0)
+               strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+            if (str_list && str_list->size > 1)
+               strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+
+            if (!strcmp(elem1, "crc"))
+            {
+               if (!strcmp(db_info_entry->crc32, elem0))
+                  match_found = true;
+            }
+            else if (!strcmp(elem1, "sha1"))
+            {
+               if (!strcmp(db_info_entry->sha1, elem0))
+                  match_found = true;
+            }
+            else if (!strcmp(elem1, "md5"))
+            {
+               if (!strcmp(db_info_entry->md5, elem0))
+                  match_found = true;
+            }
+
+            string_list_free(str_list);
+
+            if (!match_found)
+               continue;
+
+            rdb_entry_start_game_selection_ptr = j;
+            menu_list_push(list, "Start Content", "rdb_entry_start_game",
+                  MENU_FILE_PLAYLIST_ENTRY, 0);
+         }
       }
    }
    
