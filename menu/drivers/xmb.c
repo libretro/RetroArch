@@ -1559,8 +1559,9 @@ static void xmb_list_insert(void *data,
 
    if (i == current)
    {
-      node->alpha    = xmb->i_active_alpha;
-      node->zoom     = xmb->i_active_zoom;
+      node->alpha       = xmb->i_active_alpha;
+      node->label_alpha = xmb->i_active_alpha;
+      node->zoom        = xmb->i_active_zoom;
    }
 }
 
