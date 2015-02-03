@@ -49,6 +49,31 @@ void content_playlist_get_index(content_playlist_t *playlist,
       *core_name = playlist->entries[idx].core_name;
 }
 
+void content_playlist_get_index_by_path(content_playlist_t *playlist,
+      const char *search_path,
+      char **path, char **core_path,
+      char **core_name)
+{
+   size_t i;
+   if (!playlist)
+      return;
+
+   for (i = 0; i < playlist->size; i++)
+   {
+      if (strcmp(playlist->entries[i].path, search_path) != 0)
+         continue;
+
+      if (path)
+         *path      = playlist->entries[i].path;
+      if (core_path)
+         *core_path = playlist->entries[i].core_path;
+      if (core_name)
+         *core_name = playlist->entries[i].core_name;
+      break;
+   }
+
+}
+
 /**
  * content_playlist_free_entry:
  * @entry           	   : Playlist entry handle.

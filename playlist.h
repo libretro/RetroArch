@@ -104,6 +104,11 @@ void content_playlist_push(content_playlist_t *playlist,
       const char *path, const char *core_path,
       const char *core_name);
 
+void content_playlist_get_index_by_path(content_playlist_t *playlist,
+      const char *search_path,
+      char **path, char **core_path,
+      char **core_name);
+
 #ifdef __cplusplus
 }
 #endif
