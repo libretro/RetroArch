@@ -4091,6 +4091,9 @@ static int action_iterate_main(const char *label, unsigned action)
          menu_input_search_start();
          break;
 
+      case MENU_ACTION_TEST:
+         break;
+
       default:
          break;
    }
