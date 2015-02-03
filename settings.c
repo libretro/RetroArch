@@ -485,6 +485,7 @@ static void config_set_defaults(void)
    g_settings.menu.pause_libretro = true;
    g_settings.menu.mouse_enable = false;
    g_settings.menu.timedate_enable = true;
+   g_settings.menu.throttle = false;
    *g_settings.menu.wallpaper = '\0';
    g_settings.menu.navigation.wraparound.horizontal_enable = true;
    g_settings.menu.navigation.wraparound.vertical_enable = true;
@@ -1875,6 +1876,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf,"menu_pause_libretro", g_settings.menu.pause_libretro);
    config_set_bool(conf,"menu_mouse_enable", g_settings.menu.mouse_enable);
    config_set_bool(conf,"menu_timedate_enable", g_settings.menu.timedate_enable);
+   config_set_bool(conf,"menu_throttle", g_settings.menu.throttle);
    config_set_path(conf, "menu_wallpaper", g_settings.menu.wallpaper);
 #endif
    config_set_bool(conf,  "video_vsync", g_settings.video.vsync);
