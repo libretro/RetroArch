@@ -54,9 +54,10 @@ void menu_database_free(menu_handle_t *menu)
    menu_database_playlist_free(menu);
 }
 
-bool menu_database_realloc(menu_handle_t *menu, const char *path)
+bool menu_database_realloc(menu_handle_t *menu, const char *path,
+      bool force)
 {
-   if (!strcmp(menu->db_playlist_file, path))
+   if (!strcmp(menu->db_playlist_file, path) && !force)
       return true;
 
    menu_database_playlist_free(menu);
