@@ -1109,6 +1109,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(menu.navigation.browser.filter.supported_extensions_enable,   "menu_navigation_browser_filter_supported_extensions_enable");
    CONFIG_GET_BOOL(menu.collapse_subgroups_enable,   "menu_collapse_subgroups_enable");
    CONFIG_GET_PATH(menu.wallpaper, "menu_wallpaper");
+   CONFIG_GET_BOOL(menu.throttle,   "menu_throttle");
    if (!strcmp(g_settings.menu.wallpaper, "default"))
       *g_settings.menu.wallpaper = '\0';
 #endif
