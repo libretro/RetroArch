@@ -1816,6 +1816,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "input_max_users", g_settings.input.max_users);
    config_set_float(conf, "input_axis_threshold",
          g_settings.input.axis_threshold);
+   config_set_bool(conf, "video_gpu_record", g_settings.video.gpu_record);
    config_set_bool(conf, "input_remap_binds_enable",
          g_settings.input.remap_binds_enable);
    config_set_bool(conf, "netplay_client_swap_input",
