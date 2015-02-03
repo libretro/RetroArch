@@ -914,12 +914,10 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             icon_y > gl->win_height + xmb->icon_size)
          continue;
 
-      cbs = (menu_file_list_cbs_t*)
-         menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
-               i);
+      cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(list, i);
 
       if (cbs && cbs->action_get_representation)
-         cbs->action_get_representation(driver.menu->menu_list->selection_buf,
+         cbs->action_get_representation(list,
                &w, type, i, label,
                type_str, sizeof(type_str), 
                entry_label, path,

@@ -2784,7 +2784,7 @@ static void get_string_representation_savestate(void * data, char *type_str,
  *
  * Get associated label of a setting.
  **/
-void setting_data_get_label(void *data, char *type_str,
+void setting_data_get_label(file_list_t *list, char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx)
 {
@@ -2800,7 +2800,7 @@ void setting_data_get_label(void *data, char *type_str,
       return;
 
    setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
-         driver.menu->menu_list->selection_buf->list[idx].label);
+         list->list[idx].label);
 
    if (setting)
       setting_data_get_string_representation(setting, type_str, type_str_size);
