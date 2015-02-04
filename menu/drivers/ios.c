@@ -89,13 +89,6 @@ static void ios_free(void *data)
    free(menu);
 }
 
-
-static void ios_update_core_info(void *data)
-{
-   (void)data;
-   menu_update_libretro_info(&g_extern.menu.info);
-}
-
 menu_ctx_driver_t menu_ctx_ios = {
   NULL, // set_texture
   NULL, // render_messagebox
@@ -122,8 +115,6 @@ menu_ctx_driver_t menu_ctx_ios = {
   NULL, // list_clear
   NULL, // list_cache
   NULL, // list_set_selection
-  NULL, // init_core_info
-  ios_update_core_info,  // ios_update_core_info
   ios_entry_iterate,
   "ios",
 };

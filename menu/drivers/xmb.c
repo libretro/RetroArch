@@ -1039,7 +1039,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
 
 static void xmb_frame(void)
 {
-   int i, depth;
+   int i;
    char title_msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
    const char *core_name = NULL;
    const char *core_version = NULL;
@@ -1093,18 +1093,13 @@ static void xmb_frame(void)
    xmb_draw_icon(xmb->textures[XMB_TEXTURE_ARROW].id,
          xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0 + xmb->icon_size,
          xmb->margin_top + xmb->icon_size/2.0 + xmb->vspacing * xmb->active_item_factor,
-         xmb->arrow_alpha,
-         0,
-         1);
-
-   depth = file_list_get_size(driver.menu->menu_list->menu_stack);
+         xmb->arrow_alpha, 0, 1);
 
    xmb_draw_items(
          xmb->selection_buf_old,
          xmb->menu_stack_old,
          xmb->selection_ptr_old,
-         depth > 1 ? driver.menu->cat_selection_ptr :
-                     xmb->cat_selection_ptr_old);
+         xmb->cat_selection_ptr_old);
    xmb_draw_items(
          driver.menu->menu_list->selection_buf,
          driver.menu->menu_list->menu_stack,
@@ -1161,21 +1156,6 @@ static void xmb_frame(void)
    }
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
-}
-
-static void xmb_init_core_info(void *data)
-{
-   (void)data;
-
-   core_info_list_free(g_extern.core_info);
-   g_extern.core_info = NULL;
-   if (*g_settings.libretro_directory)
-      g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
-}
-
-static void xmb_update_core_info(void *data)
-{
-   (void)data;
 }
 
 static void *xmb_init(void)
@@ -1268,12 +1248,15 @@ static void *xmb_init(void)
    xmb->label_margin_top     = xmb->font_size/3.0;
    xmb->setting_margin_left  = 600.0 * scale_factor;
 
-   xmb_init_core_info(menu);
-
    xmb->num_categories       = 1;
    
-   if (g_extern.core_info)
-      xmb->num_categories    = g_extern.core_info->count + 1;
+   if (!g_extern.core_info)
+   {
+      RARCH_ERR("Global core informations not initialized.\n");
+      goto error;
+   }
+
+   xmb->num_categories    = g_extern.core_info->count + 1;
 
    return menu;
 
@@ -1291,13 +1274,8 @@ static void xmb_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
 
-   if (g_extern.core_info)
-      core_info_list_free(g_extern.core_info);
-
    if (menu->userdata)
       free(menu->userdata);
-
-   g_extern.core_info = NULL;
 }
 
 static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
@@ -1742,8 +1720,6 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_clear,
    xmb_list_cache,
    xmb_list_set_selection,
-   xmb_init_core_info,
-   xmb_update_core_info,
    xmb_entry_iterate,
    "xmb",
 };

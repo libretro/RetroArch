@@ -453,23 +453,6 @@ static void glui_frame(void)
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 }
 
-static void glui_init_core_info(void *data)
-{
-   (void)data;
-
-   core_info_list_free(g_extern.core_info);
-   g_extern.core_info = NULL;
-
-   if (*g_settings.libretro_directory)
-      g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
-}
-
-static void glui_update_core_info(void *data)
-{
-   (void)data;
-   menu_update_libretro_info(&g_extern.menu.info);
-}
-
 static void *glui_init(void)
 {
    menu_handle_t *menu;
@@ -496,8 +479,6 @@ static void *glui_init(void)
    glui     = (glui_handle_t*)menu->userdata;
    glui->bg = 0;
 
-   glui_init_core_info(menu);
-
    return menu;
 error:
    if (menu)
@@ -514,10 +495,6 @@ static void glui_free(void *data)
 
    if (menu->userdata)
       free(menu->userdata);
-
-   if (g_extern.core_info)
-      core_info_list_free(g_extern.core_info);
-   g_extern.core_info = NULL;
 }
 
 static GLuint glui_png_texture_load_(const char * file_name)
@@ -673,8 +650,6 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    NULL,
    NULL,
-   glui_init_core_info,
-   glui_update_core_info,
    glui_entry_iterate,
    "glui",
 };

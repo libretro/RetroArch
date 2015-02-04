@@ -2762,15 +2762,8 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_CORE_INFO_INIT:
          rarch_main_command(RARCH_CMD_CORE_INFO_DEINIT);
 
-         if (*g_settings.libretro_directory &&
-               !g_extern.core_info)
-         {
+         if (*g_settings.libretro_directory && !g_extern.core_info)
             g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
-#ifdef HAVE_MENU
-            if (driver.menu_ctx && driver.menu_ctx->init_core_info)
-               driver.menu_ctx->init_core_info(driver.menu);
-#endif
-         }
          break;
       case RARCH_CMD_CORE_DEINIT:
          deinit_core();
