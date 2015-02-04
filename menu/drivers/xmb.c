@@ -1039,7 +1039,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
 
 static void xmb_frame(void)
 {
-   int i;
+   int i, depth;
    char title_msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
    const char *core_name = NULL;
    const char *core_version = NULL;
@@ -1095,11 +1095,14 @@ static void xmb_frame(void)
          xmb->margin_top + xmb->icon_size/2.0 + xmb->vspacing * xmb->active_item_factor,
          xmb->arrow_alpha, 0, 1);
 
+   depth = file_list_get_size(driver.menu->menu_list->menu_stack);
+
    xmb_draw_items(
          xmb->selection_buf_old,
          xmb->menu_stack_old,
          xmb->selection_ptr_old,
-         xmb->cat_selection_ptr_old);
+         depth > 1 ? driver.menu->cat_selection_ptr :
+                     xmb->cat_selection_ptr_old);
    xmb_draw_items(
          driver.menu->menu_list->selection_buf,
          driver.menu->menu_list->menu_stack,
