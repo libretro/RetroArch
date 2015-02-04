@@ -70,6 +70,7 @@ enum
    XMB_TEXTURE_CURSOR,
    XMB_TEXTURE_SWITCH_ON,
    XMB_TEXTURE_SWITCH_OFF,
+   XMB_TEXTURE_CLOCK,
    XMB_TEXTURE_LAST
 };
 
@@ -1068,9 +1069,14 @@ static void xmb_frame(void)
    disp_timedate_set_label(timedate, sizeof(timedate), 0);
 
    if (g_settings.menu.timedate_enable)
+   {
       xmb_draw_text(
-            timedate, gl->win_width - xmb->title_margin_left, 
+            timedate, gl->win_width - xmb->title_margin_left - xmb->icon_size/4, 
             xmb->title_margin_top, 1, 1, 1);
+
+      xmb_draw_icon(xmb->textures[XMB_TEXTURE_CLOCK].id,
+            gl->win_width - xmb->icon_size, xmb->icon_size, 1, 0, 1);
+   }
 
    core_version = g_extern.menu.info.library_version;
 
@@ -1083,7 +1089,6 @@ static void xmb_frame(void)
          core_name, core_version);
    xmb_draw_text(title_msg, xmb->title_margin_left, 
          gl->win_height - xmb->title_margin_bottom, 1, 1, 0);
-
 
    xmb_draw_icon(xmb->textures[XMB_TEXTURE_ARROW].id,
          xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0 + xmb->icon_size,
@@ -1404,6 +1409,8 @@ static void xmb_context_reset(void *data)
          "on.png", sizeof(xmb->textures[XMB_TEXTURE_SWITCH_ON].path));
    fill_pathname_join(xmb->textures[XMB_TEXTURE_SWITCH_OFF].path, iconpath,
          "off.png", sizeof(xmb->textures[XMB_TEXTURE_SWITCH_OFF].path));
+   fill_pathname_join(xmb->textures[XMB_TEXTURE_CLOCK].path, iconpath,
+         "clock.png", sizeof(xmb->textures[XMB_TEXTURE_CLOCK].path));
 
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
       xmb->textures[k].id   = xmb_png_texture_load(xmb->textures[k].path);
