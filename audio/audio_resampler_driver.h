@@ -202,6 +202,7 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
 } while(0)
 
 #ifndef RARCH_INTERNAL
+#include "libretro.h"
 extern retro_get_cpu_features_t perf_get_cpu_features_cb;
 #endif
 
