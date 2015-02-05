@@ -16,6 +16,9 @@
  */
 
 #include "database_info.h"
+#include "hash.h"
+#include "file_ops.h"
+#include "file_extract.h"
 #include "general.h"
 #include <file/file_path.h>
 #include "file_ext.h"
@@ -39,6 +42,76 @@ int database_open_cursor(libretrodb_t *db,
       return -1;
    if ((libretrodb_cursor_open(db, cur, q)) != 0)
       return -1;
+
+   return 0;
+}
+
+#ifdef HAVE_ZLIB
+static bool zlib_compare_crc32(const char *name, const char *valid_exts,
+      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      uint32_t crc32, void *userdata)
+{
+   RARCH_LOG("CRC32: 0x%x\n", crc32);
+
+   return true;
+}
+#endif
+
+int database_info_write_rdl(const char *dir)
+{
+   size_t i;
+   const char *exts = "";
+   struct string_list *str_list = NULL;
+
+   if (g_extern.core_info)
+      exts = core_info_list_get_all_extensions(g_extern.core_info);
+   
+   str_list = (struct string_list*)dir_list_new(dir, exts, false);
+
+   if (!str_list)
+      return -1;
+
+   for (i = 0; i < str_list->size; i++)
+   {
+      char parent_dir[PATH_MAX_LENGTH];
+      const char *name = str_list->elems[i].data;
+      if (!name)
+         continue;
+
+      path_parent_dir(parent_dir);
+
+#ifdef HAVE_ZLIB
+      if (!strcmp(path_get_extension(name), "zip"))
+      {
+         RARCH_LOG("[ZIP]: name: %s\n", name);
+
+         if (!zlib_parse_file(name, NULL, zlib_compare_crc32,
+                  (void*)parent_dir))
+            RARCH_LOG("Could not process ZIP file.\n");
+      }
+      else
+#endif
+      {
+         ssize_t ret;
+         uint32_t crc, target_crc;
+         uint8_t *ret_buf = NULL;
+
+         RARCH_LOG("name: %s\n", name);
+         ret = read_file(name, (void**)&ret_buf);
+
+         if (ret <= 0)
+            continue;
+
+         crc = crc32_calculate(ret_buf, ret);
+
+         RARCH_LOG("CRC32: 0x%x .\n", (unsigned)crc);
+
+         if (ret_buf)
+            free(ret_buf);
+      }
+   }
+
+   string_list_free(str_list);
 
    return 0;
 }

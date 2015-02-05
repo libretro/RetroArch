@@ -67,6 +67,8 @@ void database_info_list_free(database_info_list_t *list);
 int database_open_cursor(libretrodb_t *db,
       libretrodb_cursor_t *cur, const char *query);
 
+int database_info_write_rdl(const char *dir);
+
 #ifdef __cplusplus
 }
 #endif
