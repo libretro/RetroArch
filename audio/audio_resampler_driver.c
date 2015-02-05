@@ -121,13 +121,13 @@ const char* config_get_audio_resampler_driver_options(void)
 
    if (!options)
    {
-      string_list_free(options_l);
-      options_l = NULL;
-      return NULL;
+      options = NULL;
+      goto done;
    }
 
    string_list_join_concat(options, options_len, options_l, "|");
 
+done:
    string_list_free(options_l);
    options_l = NULL;
 
@@ -164,6 +164,15 @@ static const rarch_resampler_t *find_resampler_driver(const char *ident)
    return resampler_drivers[0];
 }
 
+resampler_simd_mask_t resampler_get_cpu_features(void)
+{
+#ifdef RARCH_INTERNAL
+   return rarch_get_cpu_features();
+#else
+   return perf_get_cpu_features();
+#endif
+}
+
 /**
  * resampler_append_plugs:
  * @re                         : Resampler handle
@@ -178,7 +187,7 @@ static bool resampler_append_plugs(void **re,
       const rarch_resampler_t **backend,
       double bw_ratio)
 {
-   resampler_simd_mask_t mask = rarch_get_cpu_features();
+   resampler_simd_mask_t mask = resampler_get_cpu_features();
 
    *re = (*backend)->init(&resampler_config, bw_ratio, mask);
 

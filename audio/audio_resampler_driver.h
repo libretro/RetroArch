@@ -201,6 +201,10 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
    (backend)->process(handle, data); \
 } while(0)
 
+#ifndef RARCH_INTERNAL
+extern retro_get_cpu_features_t perf_get_cpu_features_cb;
+#endif
+
 #ifdef __cplusplus
 }
 #endif
