@@ -93,8 +93,10 @@ int database_info_write_rdl(const char *dir)
 #endif
       {
          ssize_t ret;
-         uint32_t crc, target_crc;
+         uint32_t crc, target_crc = 0;
          uint8_t *ret_buf = NULL;
+
+         (void)target_crc;
 
          RARCH_LOG("name: %s\n", name);
          ret = read_file(name, (void**)&ret_buf);
