@@ -20,7 +20,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <compat/posix_string.h>
 
 #ifdef __SSE__
 #include <xmmintrin.h>
