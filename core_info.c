@@ -45,17 +45,17 @@ static void core_info_list_resolve_all_extensions(
    if (all_ext_len)
       core_info_list->all_ext = (char*)calloc(1, all_ext_len);
 
-   if (core_info_list->all_ext)
-   {
-      for (i = 0; i < core_info_list->count; i++)
-      {
-         if (!core_info_list->list[i].supported_extensions)
-            continue;
+   if (!core_info_list->all_ext)
+      return;
 
-         strlcat(core_info_list->all_ext,
-               core_info_list->list[i].supported_extensions, all_ext_len);
-         strlcat(core_info_list->all_ext, "|", all_ext_len);
-      }
+   for (i = 0; i < core_info_list->count; i++)
+   {
+      if (!core_info_list->list[i].supported_extensions)
+         continue;
+
+      strlcat(core_info_list->all_ext,
+            core_info_list->list[i].supported_extensions, all_ext_len);
+      strlcat(core_info_list->all_ext, "|", all_ext_len);
    }
 }
 
