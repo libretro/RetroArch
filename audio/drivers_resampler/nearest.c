@@ -19,13 +19,6 @@
 #include <stdlib.h>
 #include <stdint.h>
  
-#if !defined(RESAMPLER_TEST) && defined(RARCH_INTERNAL)
-#include "../../general.h"
-#else
-/* FIXME - variadic macros not supported for MSVC 2003 */
-#define RARCH_LOG(...) fprintf(stderr, __VA_ARGS__)
-#endif
- 
 typedef struct rarch_nearest_resampler
 {
    float fraction;
@@ -75,8 +68,6 @@ static void *resampler_nearest_init(const struct resampler_config *config,
    
    re->fraction = 0;
    
-   RARCH_LOG("\nNearest resampler : \n");
- 
    return re;
 }
  

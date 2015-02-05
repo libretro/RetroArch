@@ -23,14 +23,6 @@
 #include <xmmintrin.h>
 #endif
 
-#if !defined(RESAMPLER_TEST) && defined(RARCH_INTERNAL)
-#include "../../general.h"
-#else
-/* FIXME - variadic macros not supported for MSVC 2003 */
-#define RARCH_LOG(...) fprintf(stderr, __VA_ARGS__)
-#endif
-
-
 /* Since SSE and NEON don't provide support for trigonometric functions
  * we approximate those with polynoms
  *
@@ -208,7 +200,6 @@ static void *resampler_CC_init(const struct resampler_config *config,
 
          ".set      pop\n");
 
-   RARCH_LOG("\nConvoluted Cosine resampler (VFPU): \n");
    return (void*)-1;
 }
 #else
@@ -572,19 +563,15 @@ static void *resampler_CC_init(const struct resampler_config *config,
       re->buffer[i].r = 0.0;
    }
 
-   RARCH_LOG("Convoluted Cosine resampler (" CC_RESAMPLER_IDENT ") - precision = %i : ", CC_RESAMPLER_PRECISION);
-
    /* Variations of data->ratio around 0.75 are safer
     * than around 1.0 for both up/downsampler. */
    if (bandwidth_mod < 0.75)
    {
-      RARCH_LOG("CC_downsample @%f \n", bandwidth_mod);
       re->process = resampler_CC_downsample;
       re->distance = 0.0;
    }
    else
    {
-      RARCH_LOG("CC_upsample @%f \n", bandwidth_mod);
       re->process = resampler_CC_upsample;
       re->distance = 2.0;
    }

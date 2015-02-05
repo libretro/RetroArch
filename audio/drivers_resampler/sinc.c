@@ -22,12 +22,6 @@
 #include <string.h>
 #include <compat/posix_string.h>
 
-#if !defined(RESAMPLER_TEST) && defined(RARCH_INTERNAL)
-#include "../../general.h"
-#else
-#define RARCH_LOG(...) fprintf(stderr, __VA_ARGS__)
-#endif
-
 #ifdef __SSE__
 #include <xmmintrin.h>
 #endif
@@ -528,21 +522,11 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    init_sinc_table(re, cutoff, re->phase_table,
          1 << PHASE_BITS, re->taps, SINC_COEFF_LERP);
 
-#if defined(__AVX__) && ENABLE_AVX
-   RARCH_LOG("Sinc resampler [AVX]\n");
-#elif defined(__SSE__)
-   RARCH_LOG("Sinc resampler [SSE]\n");
-#elif defined(__ARM_NEON__)
+#if defined(__ARM_NEON__)
    process_sinc_func = mask & RESAMPLER_SIMD_NEON 
       ? process_sinc_neon : process_sinc_C;
-   RARCH_LOG("Sinc resampler [%s]\n",
-         mask & RESAMPLER_SIMD_NEON ? "NEON" : "C");
-#else
-   RARCH_LOG("Sinc resampler [C]\n");
 #endif
 
-   RARCH_LOG("SINC params (%u phase bits, %u taps).\n",
-         PHASE_BITS, re->taps);
    return re;
 
 error:
