@@ -65,6 +65,8 @@ void menu_update_libretro_info(struct retro_system_info *info)
    g_extern.core_info = NULL;
    if (*g_settings.libretro_directory)
       g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
+   if (driver.menu_ctx && driver.menu_ctx->context_reset)
+      driver.menu_ctx->context_reset(driver.menu);
 
    rarch_update_system_info(info, NULL);
 }
@@ -147,9 +149,7 @@ bool menu_load_content(void)
       return false;
    }
 
-   if (driver.menu && driver.menu_ctx
-         && driver.menu_ctx->update_core_info)
-      driver.menu_ctx->update_core_info(driver.menu);
+   menu_update_libretro_info(&g_extern.menu.info);
 
    menu_shader_manager_init(driver.menu);
 
@@ -176,6 +176,8 @@ void *menu_init(const void *data)
    if (!menu_ctx)
       return NULL;
 
+   menu_update_libretro_info(&g_extern.menu.info);
+
    if (!(menu = (menu_handle_t*)menu_ctx->init()))
       return NULL;
 
@@ -191,8 +193,6 @@ void *menu_init(const void *data)
 #endif
    menu->push_start_screen = g_settings.menu_show_start_screen;
    g_settings.menu_show_start_screen = false;
-
-   menu_update_libretro_info(&g_extern.menu.info);
 
    menu_shader_manager_init(menu);
 

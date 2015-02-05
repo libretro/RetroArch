@@ -648,12 +648,6 @@ static void rgui_navigation_ascend_alphabet(void *data, size_t *unused)
    rgui_navigation_set(data, true);
 }
 
-static void rgui_update_core_info(void *data)
-{
-   (void)data;
-   menu_update_libretro_info(&g_extern.menu.info);
-}
-
 static void rgui_populate_entries(void *data, const char *path,
       const char *label, unsigned k)
 {
@@ -686,8 +680,6 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    NULL,
-   NULL,
-   rgui_update_core_info,
    rgui_entry_iterate,
    "rgui",
 };

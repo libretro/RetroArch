@@ -367,12 +367,6 @@ static void rmenu_free(void *data)
 {
 }
 
-static void rmenu_update_core_info(void *data)
-{
-   (void)data;
-   menu_update_libretro_info(&g_extern.menu.info);
-}
-
 menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_set_texture,
    rmenu_render_messagebox,
@@ -399,8 +393,6 @@ menu_ctx_driver_t menu_ctx_rmenu = {
    NULL,
    NULL,
    NULL,
-   NULL,
-   rmenu_update_core_info,
    rmenu_entry_iterate,
    "rmenu",
 };
