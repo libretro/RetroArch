@@ -688,12 +688,6 @@ static void rmenu_xui_list_set_selection(void *data)
       XuiListSetCurSel(m_menulist, file_list_get_directory_ptr(list));
 }
 
-static void rmenu_xui_update_core_info(void *data)
-{
-   (void)data;
-   menu_update_libretro_info(&g_extern.menu.info);
-}
-
 menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    rmenu_xui_render_messagebox,
@@ -719,8 +713,6 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_list_clear,
    NULL,
    rmenu_xui_list_set_selection,
-   NULL,
-   rmenu_xui_update_core_info,
    rmenu_xui_entry_iterate,
    "rmenu_xui",
 };
