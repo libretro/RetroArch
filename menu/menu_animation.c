@@ -62,39 +62,45 @@ bool add_tween(float duration, float target_value, float* subject,
    return true;
 }
 
+static int iterate_tween(tween_t *tween, float dt,
+      unsigned *active_tweens)
+{
+   if (!tween)
+      return -1;
+   if (tween->running_since >= tween->duration)
+      return -1;
+
+   tween->running_since += dt;
+
+   if (tween->easing)
+      *tween->subject = tween->easing(
+            tween->running_since,
+            tween->initial_value,
+            tween->target_value - tween->initial_value,
+            tween->duration);
+
+   if (tween->running_since >= tween->duration)
+   {
+      *tween->subject = tween->target_value;
+
+      if (tween->cb)
+         tween->cb();
+   }
+
+   if (tween->running_since < tween->duration)
+      *active_tweens += 1;
+
+   return 0;
+}
+
 void update_tweens(float dt)
 {
    unsigned i;
    unsigned active_tweens = 0;
+   tween_t *tween = &driver.menu->tweens[0];
 
    for(i = 0; i < driver.menu->numtweens; i++)
-   {
-      tween_t *tween = &driver.menu->tweens[i];
-      if (!tween)
-         continue;
-      if (tween->running_since >= tween->duration)
-         continue;
-
-      tween->running_since += dt;
-
-      if (tween->easing)
-         *tween->subject = tween->easing(
-               tween->running_since,
-               tween->initial_value,
-               tween->target_value - tween->initial_value,
-               tween->duration);
-
-      if (tween->running_since >= tween->duration)
-      {
-         *tween->subject = tween->target_value;
-
-         if (tween->cb)
-            tween->cb();
-      }
-
-      if (tween->running_since < tween->duration)
-         active_tweens += 1;
-   }
+      iterate_tween(tween++, dt, &active_tweens);
 
    if (!active_tweens)
       driver.menu->numtweens = 0;
