@@ -18,6 +18,7 @@
 #define __RARCH_SETTINGS_DATA_H__
 
 #include <stdint.h>
+#include <file/file_list.h>
 #include <file/config_file.h>
 #include <retro_miscellaneous.h>
 #include "settings_list.h"
