@@ -31,6 +31,7 @@
 #include <compat/msvc.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+#include <string/string_list.h>
 
 #if !defined(_WIN32) && !defined(__CELLOS_LV2__) && !defined(_XBOX)
 #include <sys/param.h> /* PATH_MAX */
