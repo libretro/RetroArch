@@ -17,8 +17,6 @@
 #include <boolean.h>
 #include "audio_utils.h"
 
-#include "../performance.h"
-
 #if defined(__SSE2__)
 #include <emmintrin.h>
 #elif defined(__ALTIVEC__)
@@ -410,4 +408,3 @@ void audio_convert_init_simd(void)
       audio_convert_float_to_s16_neon : audio_convert_float_to_s16_C;
 #endif
 }
-
