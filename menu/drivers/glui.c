@@ -509,8 +509,11 @@ static GLuint glui_png_texture_load_(const char * file_name)
    /* Generate the OpenGL texture object */
    glGenTextures(1, &texture);
    glBindTexture(GL_TEXTURE_2D, texture);
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ti.width, ti.height, 0,
-         GL_RGBA, GL_UNSIGNED_BYTE, ti.pixels);
+   glTexImage2D(GL_TEXTURE_2D, 0, driver.gfx_use_rgba ?
+            GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
+            ti.width, ti.height, 0,
+            driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
+            RARCH_GL_FORMAT32, ti.pixels);
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -552,8 +555,6 @@ static void glui_context_reset(void *data)
    gl_t *gl = (gl_t*)video_driver_resolve(NULL);
     
    (void)gl;
-
-   driver.gfx_use_rgba = true;
 
    if (!menu)
       return;
