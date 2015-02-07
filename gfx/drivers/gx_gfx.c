@@ -717,7 +717,7 @@ static void gx_resize(void *data)
 #endif
    GX_SetDispCopyGamma(g_extern.console.screen.gamma_correction);
 
-   if (gx->keep_aspect && gx_mode.efbHeight >= 480) /* ignore this for custom resolutions */
+   if (gx->keep_aspect && gx_mode.efbHeight >= 240) /* ignore this for custom resolutions */
    {
       float desired_aspect = g_extern.system.aspect_ratio;
       if (desired_aspect == 0.0)
