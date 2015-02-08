@@ -149,7 +149,7 @@
 		50351E7E192E5EC100668AB1 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = ../platform.m; sourceTree = "<group>"; };
 		5053552F185E0F4000926C26 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		50BD3F0F1A1BBA6100F2BD1B /* RetroArch 10.6.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArch 10.6.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		50BD3F101A1BBA6100F2BD1B /* RetroArch 10.6-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "RetroArch 10.6-Info.plist"; sourceTree = "<absolute>"; };
+		50BD3F101A1BBA6100F2BD1B /* RetroArch 10.6-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; name = "RetroArch 10.6-Info.plist"; path = "../Resources/RetroArch 10.6-Info.plist"; sourceTree = "<group>"; };
 		50C374A819F04F7A00984F8D /* CFExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CFExtensions.m; path = ../../common/CFExtensions.m; sourceTree = SOURCE_ROOT; };
 		50C61C241A1BB10300A48DD3 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		50C61C261A1BB11D00A48DD3 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
@@ -171,10 +171,10 @@
 		96355CE51788E72A0010DBFA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		96355CE61788E72A0010DBFA /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		96355CE71788E72A0010DBFA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		964DE7C517D84B57001CBB6C /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/Settings.xib; sourceTree = "<group>"; };
-		9678948D1788ECCA00D6CA69 /* RetroArch-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "RetroArch-Info.plist"; path = "OSX/RetroArch-Info.plist"; sourceTree = SOURCE_ROOT; };
-		967894901788ECDB00D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = OSX/en.lproj/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
-		967894921788ECDB00D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = OSX/en.lproj/MainMenu.xib; sourceTree = SOURCE_ROOT; };
+		964DE7C517D84B57001CBB6C /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = ../Resources/en.lproj/Settings.xib; sourceTree = "<group>"; };
+		9678948D1788ECCA00D6CA69 /* RetroArch-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist; name = "RetroArch-Info.plist"; path = "../Resources/RetroArch-Info.plist"; sourceTree = "<group>"; };
+		967894901788ECDB00D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = ../Resources/en.lproj/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
+		967894921788ECDB00D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = ../Resources/en.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		967894A21788F0C200D6CA69 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/CoreAudio.framework; sourceTree = DEVELOPER_DIR; };
 		967894A31788F0C200D6CA69 /* CoreAudioKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudioKit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/CoreAudioKit.framework; sourceTree = DEVELOPER_DIR; };
 		967894A61788F0D900D6CA69 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework; sourceTree = DEVELOPER_DIR; };
@@ -183,7 +183,7 @@
 		98AF92A3192ED60E009A8479 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RAGameView.m; path = ../../common/RAGameView.m; sourceTree = SOURCE_ROOT; };
 		98AF92B0192ED685009A8479 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		98BC877D19F83C45004FE2CB /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = System/Library/Frameworks/ApplicationServices.framework; sourceTree = SDKROOT; };
-		C15874EE178F2094001171D4 /* RetroArch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = RetroArch.icns; path = OSX/RetroArch.icns; sourceTree = "<group>"; };
+		C15874EE178F2094001171D4 /* RetroArch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = RetroArch.icns; path = ../Resources/RetroArch.icns; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -251,12 +251,10 @@
 				50638D6D192E636400A8EB4D /* osx */,
 				962EE0E1178B3DF6004224FF /* IOKit.framework */,
 				96355CE81788E72A0010DBFA /* common */,
-				967894E7178A2E9B00D6CA69 /* Assets */,
 				96355CE11788E72A0010DBFA /* Frameworks */,
 				96355CE01788E72A0010DBFA /* Products */,
-				96355CE91788E72A0010DBFA /* Supporting Files */,
+				96355CE91788E72A0010DBFA /* Resources */,
 				98BC877D19F83C45004FE2CB /* ApplicationServices.framework */,
-				50BD3F101A1BBA6100F2BD1B /* RetroArch 10.6-Info.plist */,
 			);
 			indentWidth = 3;
 			sourceTree = "<group>";
@@ -302,24 +300,18 @@
 			path = common;
 			sourceTree = "<group>";
 		};
-		96355CE91788E72A0010DBFA /* Supporting Files */ = {
+		96355CE91788E72A0010DBFA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				964DE7C617D84B57001CBB6C /* Settings.xib */,
+				C15874EE178F2094001171D4 /* RetroArch.icns */,
+				967894911788ECDB00D6CA69 /* MainMenu.xib */,
+				50BD3F101A1BBA6100F2BD1B /* RetroArch 10.6-Info.plist */,
 				9678948F1788ECDB00D6CA69 /* InfoPlist.strings */,
 				9678948D1788ECCA00D6CA69 /* RetroArch-Info.plist */,
 			);
-			name = "Supporting Files";
+			name = Resources;
 			path = RetroArch;
-			sourceTree = "<group>";
-		};
-		967894E7178A2E9B00D6CA69 /* Assets */ = {
-			isa = PBXGroup;
-			children = (
-				967894911788ECDB00D6CA69 /* MainMenu.xib */,
-				C15874EE178F2094001171D4 /* RetroArch.icns */,
-				964DE7C617D84B57001CBB6C /* Settings.xib */,
-			);
-			name = Assets;
 			sourceTree = "<group>";
 		};
 		98AF92AF192ED659009A8479 /* core */ = {
@@ -460,7 +452,7 @@
 				964DE7C517D84B57001CBB6C /* en */,
 			);
 			name = Settings.xib;
-			path = OSX;
+			path = ../../Resources;
 			sourceTree = "<group>";
 		};
 		9678948F1788ECDB00D6CA69 /* InfoPlist.strings */ = {
@@ -469,6 +461,7 @@
 				967894901788ECDB00D6CA69 /* en */,
 			);
 			name = InfoPlist.strings;
+			path = ../Resources;
 			sourceTree = "<group>";
 		};
 		967894911788ECDB00D6CA69 /* MainMenu.xib */ = {
@@ -477,7 +470,7 @@
 				967894921788ECDB00D6CA69 /* en */,
 			);
 			name = MainMenu.xib;
-			path = RetroArch;
+			path = ../../Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
@@ -707,7 +700,7 @@
 					"$(SRCROOT)/../../../gfx/inc",
 					"$(SRCROOT)/../../../libretro-sdk/include",
 				);
-				INFOPLIST_FILE = "$(SRCROOT)/OSX/RetroArch-Info.plist";
+				INFOPLIST_FILE = "$(SRCROOT)/RetroArch-Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
@@ -777,7 +770,7 @@
 					"$(SRCROOT)/../../../gfx/inc",
 					"$(SRCROOT)/../../../libretro-sdk/include",
 				);
-				INFOPLIST_FILE = "$(SRCROOT)/OSX/RetroArch-Info.plist";
+				INFOPLIST_FILE = "$(SRCROOT)/RetroArch-Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
