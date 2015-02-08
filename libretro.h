@@ -852,7 +852,7 @@ enum retro_mod
                                             * It can be used by the core for localization purposes.
                                             */
 
-#define RETRO_ENVIRONMENT_MAKE_CURRENT_CONTEXT 40
+#define RETRO_ENVIRONMENT_MAKE_CURRENT_CONTEXT (40 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_hw_make_current_context_callback *
                                             */
 
