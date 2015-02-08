@@ -27,6 +27,12 @@
 		83D632E219ECFCC4009E3161 /* ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DB19ECFCC4009E3161 /* ic_pause.png */; };
 		83D632E519ECFCC4009E3161 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */; };
 		83EB676019EEAF050096F441 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* modules */; };
+		84F9A9BC1A87E068003AF12F /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BB1A87E068003AF12F /* assets */; };
+		84F9A9BE1A87E0A2003AF12F /* autoconfig in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BD1A87E0A2003AF12F /* autoconfig */; };
+		84F9A9C01A87E0C6003AF12F /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BF1A87E0C6003AF12F /* overlays */; };
+		84F9A9C51A87E1D0003AF12F /* cursors in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C41A87E1D0003AF12F /* cursors */; };
+		84F9A9C71A87E1E8003AF12F /* rdb in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C61A87E1E8003AF12F /* rdb */; };
+		84F9A9C81A87E250003AF12F /* cht in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C11A87E180003AF12F /* cht */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
 		963C3C34186E3DED00A6EB1E /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 963C3C33186E3DED00A6EB1E /* GameController.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
@@ -59,6 +65,12 @@
 		83D632DB19ECFCC4009E3161 /* ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ic_pause.png; sourceTree = "<group>"; };
 		83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseIndicatorView.xib; sourceTree = "<group>"; };
 		83EB675F19EEAF050096F441 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = SOURCE_ROOT; };
+		84F9A9BB1A87E068003AF12F /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../../../media/assets; sourceTree = "<group>"; };
+		84F9A9BD1A87E0A2003AF12F /* autoconfig */ = {isa = PBXFileReference; lastKnownFileType = folder; name = autoconfig; path = ../../../media/autoconfig; sourceTree = "<group>"; };
+		84F9A9BF1A87E0C6003AF12F /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../../media/overlays; sourceTree = "<group>"; };
+		84F9A9C11A87E180003AF12F /* cht */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cht; path = ../../../media/libretrodb/cht; sourceTree = "<group>"; };
+		84F9A9C41A87E1D0003AF12F /* cursors */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cursors; path = ../../../media/libretrodb/cursors; sourceTree = "<group>"; };
+		84F9A9C61A87E1E8003AF12F /* rdb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = rdb; path = ../../../media/libretrodb/rdb; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		963C3C33186E3DED00A6EB1E /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
@@ -112,13 +124,27 @@
 		83D632D719ECFCC4009E3161 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
+				84F9A9C31A87E1AA003AF12F /* Database */,
 				83EB675F19EEAF050096F441 /* modules */,
+				84F9A9BB1A87E068003AF12F /* assets */,
+				84F9A9BD1A87E0A2003AF12F /* autoconfig */,
+				84F9A9BF1A87E0C6003AF12F /* overlays */,
 				83D632DB19ECFCC4009E3161 /* ic_pause.png */,
 				83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */,
 				69D31DE31A547EC800EF4C92 /* Media.xcassets */,
 			);
 			name = Assets;
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		84F9A9C31A87E1AA003AF12F /* Database */ = {
+			isa = PBXGroup;
+			children = (
+				84F9A9C11A87E180003AF12F /* cht */,
+				84F9A9C41A87E1D0003AF12F /* cursors */,
+				84F9A9C61A87E1E8003AF12F /* rdb */,
+			);
+			name = Database;
 			sourceTree = "<group>";
 		};
 		96AFAE1A16C1D4EA009DE44C = {
@@ -261,7 +287,7 @@
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
 					96AFAE2416C1D4EA009DE44C = {
-						DevelopmentTeam = HFC52R7GR3;
+						DevelopmentTeam = 778HQV8ZV4;
 					};
 				};
 			};
@@ -289,9 +315,15 @@
 			files = (
 				83D632E219ECFCC4009E3161 /* ic_pause.png in Resources */,
 				967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */,
-				83EB676019EEAF050096F441 /* modules in Resources */,
 				69D31DE41A547EC800EF4C92 /* Media.xcassets in Resources */,
 				83D632E519ECFCC4009E3161 /* PauseIndicatorView.xib in Resources */,
+				83EB676019EEAF050096F441 /* modules in Resources */,
+				84F9A9BC1A87E068003AF12F /* assets in Resources */,
+				84F9A9BE1A87E0A2003AF12F /* autoconfig in Resources */,
+				84F9A9C01A87E0C6003AF12F /* overlays in Resources */,
+				84F9A9C81A87E250003AF12F /* cht in Resources */,
+				84F9A9C51A87E1D0003AF12F /* cursors in Resources */,
+				84F9A9C71A87E1E8003AF12F /* rdb in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -357,8 +389,8 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
-               "-DHAVE_NETPLAY",
-               "-DHAVE_NETWORKING",
+					"-DHAVE_NETPLAY",
+					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
@@ -412,8 +444,8 @@
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-               "-DHAVE_NETPLAY",
-               "-DHAVE_NETWORKING",
+					"-DHAVE_NETPLAY",
+					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
@@ -471,8 +503,8 @@
 				LIBRARY_SEARCH_PATHS = "";
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
-               "-DHAVE_NETPLAY",
-               "-DHAVE_NETWORKING",
+					"-DHAVE_NETPLAY",
+					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
@@ -534,8 +566,8 @@
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-               "-DHAVE_NETPLAY",
-               "-DHAVE_NETWORKING",
+					"-DHAVE_NETPLAY",
+					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
@@ -568,8 +600,8 @@
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-               "-DHAVE_NETPLAY",
-               "-DHAVE_NETWORKING",
+					"-DHAVE_NETPLAY",
+					"-DHAVE_NETWORKING",
 					"-DHAVE_CAMERA",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
