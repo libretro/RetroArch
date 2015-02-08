@@ -26,6 +26,7 @@
 		69D31DE41A547EC800EF4C92 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* Media.xcassets */; };
 		83D632E219ECFCC4009E3161 /* ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DB19ECFCC4009E3161 /* ic_pause.png */; };
 		83D632E519ECFCC4009E3161 /* PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */; };
+		83EB676019EEAF050096F441 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* modules */; };
 		84F9A9BC1A87E068003AF12F /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BB1A87E068003AF12F /* assets */; };
 		84F9A9BE1A87E0A2003AF12F /* autoconfig in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BD1A87E0A2003AF12F /* autoconfig */; };
 		84F9A9C01A87E0C6003AF12F /* overlays in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BF1A87E0C6003AF12F /* overlays */; };
@@ -63,6 +64,7 @@
 		69D31DE31A547EC800EF4C92 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Media.xcassets; sourceTree = "<group>"; };
 		83D632DB19ECFCC4009E3161 /* ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ic_pause.png; sourceTree = "<group>"; };
 		83D632DE19ECFCC4009E3161 /* PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PauseIndicatorView.xib; sourceTree = "<group>"; };
+		83EB675F19EEAF050096F441 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = SOURCE_ROOT; };
 		84F9A9BB1A87E068003AF12F /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../../../media/assets; sourceTree = "<group>"; };
 		84F9A9BD1A87E0A2003AF12F /* autoconfig */ = {isa = PBXFileReference; lastKnownFileType = folder; name = autoconfig; path = ../../../media/autoconfig; sourceTree = "<group>"; };
 		84F9A9BF1A87E0C6003AF12F /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../../../media/overlays; sourceTree = "<group>"; };
@@ -123,6 +125,7 @@
 			isa = PBXGroup;
 			children = (
 				84F9A9C31A87E1AA003AF12F /* Database */,
+				83EB675F19EEAF050096F441 /* modules */,
 				84F9A9BB1A87E068003AF12F /* assets */,
 				84F9A9BD1A87E0A2003AF12F /* autoconfig */,
 				84F9A9BF1A87E0C6003AF12F /* overlays */,
@@ -284,7 +287,7 @@
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
 					96AFAE2416C1D4EA009DE44C = {
-						DevelopmentTeam = HFC52R7GR3;
+						DevelopmentTeam = 778HQV8ZV4;
 					};
 				};
 			};
@@ -310,15 +313,16 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				84F9A9C81A87E250003AF12F /* cht in Resources */,
 				83D632E219ECFCC4009E3161 /* ic_pause.png in Resources */,
 				967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */,
-				84F9A9BE1A87E0A2003AF12F /* autoconfig in Resources */,
-				84F9A9C51A87E1D0003AF12F /* cursors in Resources */,
-				84F9A9BC1A87E068003AF12F /* assets in Resources */,
-				84F9A9C01A87E0C6003AF12F /* overlays in Resources */,
 				69D31DE41A547EC800EF4C92 /* Media.xcassets in Resources */,
 				83D632E519ECFCC4009E3161 /* PauseIndicatorView.xib in Resources */,
+				83EB676019EEAF050096F441 /* modules in Resources */,
+				84F9A9BC1A87E068003AF12F /* assets in Resources */,
+				84F9A9BE1A87E0A2003AF12F /* autoconfig in Resources */,
+				84F9A9C01A87E0C6003AF12F /* overlays in Resources */,
+				84F9A9C81A87E250003AF12F /* cht in Resources */,
+				84F9A9C51A87E1D0003AF12F /* cursors in Resources */,
 				84F9A9C71A87E1E8003AF12F /* rdb in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
