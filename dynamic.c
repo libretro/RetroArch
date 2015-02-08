@@ -1238,7 +1238,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_MAKE_CURRENT_CONTEXT:
-      case RETRO_ENVIRONMENT_MAKE_CURRENT_CONTEXT | RETRO_ENVIRONMENT_EXPERIMENTAL:
          {
             struct retro_hw_make_current_context_callback *cb = 
                (struct retro_hw_make_current_context_callback*)data;
