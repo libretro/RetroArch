@@ -89,8 +89,9 @@ typedef struct video_poke_interface
    void (*set_filtering)(void *data, unsigned index, bool smooth);
 #ifdef HAVE_FBO
    uintptr_t (*get_current_framebuffer)(void *data);
-   retro_proc_address_t (*get_proc_address)(void *data, const char *sym);
 #endif
+   retro_proc_address_t (*get_proc_address)(void *data, const char *sym);
+   void (*make_current_context)(void *data);
    void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
    void (*apply_state_changes)(void *data);
 
@@ -240,6 +241,8 @@ void *video_driver_resolve(const video_driver_t **drv);
 uintptr_t video_driver_get_current_framebuffer(void);
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym);
+
+void video_driver_make_current_context(void);
 
 void uninit_video_input(void);
 

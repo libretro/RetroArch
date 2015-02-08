@@ -442,6 +442,13 @@ static gfx_ctx_proc_t gfx_ctx_vc_get_proc_address(const char *symbol)
    return eglGetProcAddress(symbol);
 }
 
+static gfx_ctx_proc_t gfx_ctx_vc_make_current_context(void *data)
+{
+   (void)data;
+
+   eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_hw_ctx);
+}
+
 static float gfx_ctx_vc_translate_aspect(void *data,
       unsigned width, unsigned height)
 {
@@ -606,6 +613,7 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_swap_buffers,
    gfx_ctx_vc_input_driver,
    gfx_ctx_vc_get_proc_address,
+   gfx_ctx_vc_make_current_context,
    gfx_ctx_vc_init_egl_image_buffer,
    gfx_ctx_vc_write_egl_image,
    NULL,
