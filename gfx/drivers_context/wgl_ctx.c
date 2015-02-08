@@ -54,6 +54,8 @@ static unsigned g_pos_x = CW_USEDEFAULT;
 static unsigned g_pos_y = CW_USEDEFAULT;
 static bool g_resized;
 
+static HINSTANCE dll_handle = NULL; /* Handle to OpenGL32.dll */
+
 static bool g_restore_desktop;
 
 static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use);
@@ -103,6 +105,10 @@ static void create_gl_context(HWND hwnd)
 {
    bool core_context;
    bool debug = g_extern.system.hw_render_callback.debug_context;
+
+#ifdef _WIN32
+   dll_handle = LoadLibrary("OpenGL32.dll");
+#endif
 
    g_hdc = GetDC(hwnd);
    setup_pixel_format(g_hdc);
@@ -640,7 +646,10 @@ static bool gfx_ctx_wgl_has_windowed(void *data)
 
 static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 {
-   return (gfx_ctx_proc_t)wglGetProcAddress(symbol);
+   void *func = (void *)wglGetProcAddress(symbol);
+   if (func)
+      return (gfx_ctx_proc_t)wglGetProcAddress(symbol);
+   return (gfx_ctx_proc_t)GetProcAddress(dll_handle, symbol);
 }
 
 static bool gfx_ctx_wgl_bind_api(void *data,
