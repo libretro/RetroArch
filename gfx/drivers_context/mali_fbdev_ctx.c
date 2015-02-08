@@ -285,6 +285,12 @@ static gfx_ctx_proc_t gfx_ctx_mali_fbdev_get_proc_address(const char *symbol)
    return ret;
 }
 
+static void gfx_ctx_mali_fbdev_make_current_context(void *data)
+{
+   /* FIXME : Hookup bind_hw_render */
+   eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
+}
+
 static bool gfx_ctx_mali_fbdev_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -328,6 +334,7 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_swap_buffers,
    gfx_ctx_mali_fbdev_input_driver,
    gfx_ctx_mali_fbdev_get_proc_address,
+   gfx_ctx_mali_fbdev_make_current_context,
 #ifdef HAVE_EGL
    NULL,
    NULL,

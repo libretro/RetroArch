@@ -1607,8 +1607,9 @@ static const video_poke_interface_t exynos_poke_interface = {
   NULL, /* set_filtering */
 #ifdef HAVE_FBO
   NULL, /* get_current_framebuffer */
-  NULL, /* get_proc_address */
 #endif
+  NULL, /* get_proc_address */
+  NULL, /* make_current_context */
   exynos_set_aspect_ratio,
   exynos_apply_state_changes,
 #ifdef HAVE_MENU

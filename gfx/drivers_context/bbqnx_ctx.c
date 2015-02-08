@@ -398,6 +398,14 @@ static gfx_ctx_proc_t gfx_ctx_qnx_get_proc_address(const char *symbol)
    return ret;
 }
 
+static void gfx_ctx_qnx_make_current_context(void *data)
+{
+   (void)data;
+
+   eglMakeCurrent(g_egl_dpy, g_egl_surf,
+         g_egl_surf, g_egl_hw_ctx);
+}
+
 static bool gfx_ctx_qnx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -461,6 +469,7 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    gfx_ctx_qnx_swap_buffers,
    gfx_ctx_qnx_input_driver,
    gfx_ctx_qnx_get_proc_address,
+   gfx_ctx_qnx_make_current_context,
 #ifdef HAVE_EGL
    NULL,
    NULL,

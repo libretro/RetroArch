@@ -270,6 +270,13 @@ static gfx_ctx_proc_t gfx_ctx_vivante_get_proc_address(const char *symbol)
    return ret;
 }
 
+static void gfx_ctx_vivante_make_current_context(void *data)
+{
+   /* TODO/FIXME: Implement bind_hw_render */
+   (void)data;
+   eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx);
+}
+
 static bool gfx_ctx_vivante_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -313,6 +320,7 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    gfx_ctx_vivante_swap_buffers,
    gfx_ctx_vivante_input_driver,
    gfx_ctx_vivante_get_proc_address,
+   gfx_ctx_vivante_make_current_context,
 #ifdef HAVE_EGL
    NULL,
    NULL,

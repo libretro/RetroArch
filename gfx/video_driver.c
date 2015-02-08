@@ -222,11 +222,15 @@ uintptr_t video_driver_get_current_framebuffer(void)
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym)
 {
-#ifdef HAVE_FBO
    if (driver.video_poke && driver.video_poke->get_proc_address)
       return driver.video_poke->get_proc_address(driver.video_data, sym);
-#endif
    return NULL;
+}
+
+void video_driver_make_current_context(void)
+{
+   if (driver.video_poke && driver.video_poke->make_current_context)
+      driver.video_poke->make_current_context(driver.video_data);
 }
 
 static void deinit_video_filter(void)

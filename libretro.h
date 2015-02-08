@@ -852,6 +852,10 @@ enum retro_mod
                                             * It can be used by the core for localization purposes.
                                             */
 
+#define RETRO_ENVIRONMENT_MAKE_CURRENT_CONTEXT (40 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* struct retro_hw_make_current_context_callback *
+                                            */
+
 #define RETRO_MEMDESC_CONST     (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
 #define RETRO_MEMDESC_BIGENDIAN (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
 #define RETRO_MEMDESC_ALIGN_2   (1 << 16)  /* All memory access in this area is aligned to their own size, or 2, whichever is smaller. */
@@ -1465,6 +1469,15 @@ enum retro_hw_context_type
    RETRO_HW_CONTEXT_OPENGLES_VERSION = 5,
 
    RETRO_HW_CONTEXT_DUMMY = INT_MAX
+};
+
+/* Call video context driver's 'make current context' function */
+typedef void (*retro_hw_make_current_context)(void);
+
+struct retro_hw_make_current_context_callback
+{
+   /* Set by frontend. */
+   retro_hw_make_current_context make_current_context;
 };
 
 struct retro_hw_render_callback
