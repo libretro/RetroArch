@@ -656,12 +656,15 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
      cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
             driver.menu->menu_list->selection_buf, i);
 
-     disp_set_label
-       (driver.menu->menu_list->selection_buf, &w, type, i, label,
-        type_str, sizeof(type_str), 
-        entry_label, path,
-        path_buf, sizeof(path_buf));
-
+     if (cbs && cbs->action_get_representation) {
+       cbs->action_get_representation
+         (driver.menu->menu_list->selection_buf,
+          &w, type, i, label,
+          type_str, sizeof(type_str), 
+          entry_label, path,
+          path_buf, sizeof(path_buf));
+     }
+      
      if (setting && setting->type == ST_ACTION &&
          setting->flags & SD_FLAG_BROWSER_ACTION &&
          setting->action_toggle &&
