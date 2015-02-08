@@ -1918,8 +1918,9 @@ static const video_poke_interface_t d3d_poke_interface = {
    NULL,
 #ifdef HAVE_FBO
    NULL,
-   NULL,
 #endif
+   NULL,
+   NULL,
    d3d_set_aspect_ratio,
    d3d_apply_state_changes,
 #ifdef HAVE_MENU
