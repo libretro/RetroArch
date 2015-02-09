@@ -189,7 +189,7 @@ slock_t *slock_new(void)
       return NULL;
 
 #ifdef _WIN32
-   lock->lock = CreateMutex(NULL, FALSE, "RetroArchMutex");
+   lock->lock = CreateMutex(NULL, FALSE, NULL);
    if (!lock->lock)
 #else
    if (pthread_mutex_init(&lock->lock, NULL) < 0)
