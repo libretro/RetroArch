@@ -430,11 +430,12 @@ static int setting_data_bind_action_start(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
-   struct retro_keybind *keybind = (struct retro_keybind*)setting->value.keybind;
+   struct retro_keybind *keybind = NULL;
 
    if (!setting || !driver.menu)
       return -1;
 
+   keybind = (struct retro_keybind*)setting->value.keybind;
    if (!keybind)
       return -1;
 
