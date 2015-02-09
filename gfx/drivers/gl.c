@@ -260,12 +260,14 @@ static bool gl_shader_init(gl_t *gl)
    }
 
 #ifdef HAVE_GLSL
-   if (gl->core_context && RARCH_SHADER_CG)
+#ifdef HAVE_CG
+   if (gl->core_context && backend == &gl_cg_backend)
    {
       RARCH_ERR("[GL]: Cg cannot be used with core GL context. Falling back to GLSL.\n");
       backend = &gl_glsl_backend;
       shader_path = NULL;
    }
+#endif
 #endif
 
    gl->shader = backend;

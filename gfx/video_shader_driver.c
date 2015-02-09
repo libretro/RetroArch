@@ -18,11 +18,11 @@
 #include <string.h>
 
 static const shader_backend_t *shader_ctx_drivers[] = {
-#ifdef HAVE_CG
-   &gl_cg_backend,
-#endif
 #ifdef HAVE_GLSL
    &gl_glsl_backend,
+#endif
+#ifdef HAVE_CG
+   &gl_cg_backend,
 #endif
 #ifdef HAVE_HLSL
    &hlsl_backend,
