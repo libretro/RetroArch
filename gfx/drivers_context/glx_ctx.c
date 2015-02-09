@@ -692,7 +692,7 @@ static void gfx_ctx_glx_make_current_context(void *data)
 
    if (glx)
       glXMakeContextCurrent(glx->g_dpy, glx->g_glx_win,
-            glx->g_glx_win, glx->g_use_hw_ctx ? glx->g_hw_ctx : glx_g_ctx);
+            glx->g_glx_win, glx->g_use_hw_ctx ? glx->g_hw_ctx : glx->g_ctx);
 }
 
 static bool gfx_ctx_glx_bind_api(void *data, enum gfx_ctx_api api,
