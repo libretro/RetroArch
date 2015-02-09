@@ -4392,6 +4392,7 @@ static bool setting_data_append_list_font_options(
          general_read_handler);
    settings_list_current_add_range(list, list_info, 1.00, 100.00, 1.0, true, true);
 
+#ifndef RARCH_CONSOLE
    CONFIG_BOOL(
          g_settings.video.font_enable,
          "video_font_enable",
@@ -4403,6 +4404,7 @@ static bool setting_data_append_list_font_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+#endif
 
    CONFIG_FLOAT(
          g_settings.video.msg_pos_x,

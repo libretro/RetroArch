@@ -2403,9 +2403,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (input && input_data)
       gl->ctx_driver->input_driver(gl, input, input_data);
    
-#ifndef RARCH_CONSOLE
    if (g_settings.video.font_enable)
-#endif
    {
       if (!gl_font_init_first(&gl->font_driver, &gl->font_handle,
             gl, *g_settings.video.font_path 
