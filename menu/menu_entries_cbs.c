@@ -1050,7 +1050,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
          {
             char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
             bool match_found = false;
-            struct string_list *str_list = string_split(
+            str_list = string_split(
                   playlist->entries[j].core_name, "|"); 
 
             if (!str_list)

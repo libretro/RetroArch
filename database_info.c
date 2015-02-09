@@ -244,7 +244,6 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
 
          if (!strcmp(key->string.buff, "crc"))
          {
-            unsigned i;
             char crc32[PATH_MAX_LENGTH];
 
             for (i = 0; i < val->binary.len; i++)
@@ -258,7 +257,6 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
 
          if (!strcmp(key->string.buff, "sha1"))
          {
-            unsigned i;
             char sha1[PATH_MAX_LENGTH];
 
             for (i = 0; i < val->binary.len; i++)
@@ -272,7 +270,6 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
 
          if (!strcmp(key->string.buff, "md5"))
          {
-            unsigned i;
             char md5[PATH_MAX_LENGTH];
 
             for (i = 0; i < val->binary.len; i++)
