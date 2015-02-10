@@ -260,12 +260,14 @@ static bool gl_shader_init(gl_t *gl)
    }
 
 #ifdef HAVE_GLSL
-   if (gl->core_context && RARCH_SHADER_CG)
+#ifdef HAVE_CG
+   if (gl->core_context && backend == &gl_cg_backend)
    {
       RARCH_ERR("[GL]: Cg cannot be used with core GL context. Falling back to GLSL.\n");
       backend = &gl_glsl_backend;
       shader_path = NULL;
    }
+#endif
 #endif
 
    gl->shader = backend;
@@ -2403,9 +2405,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (input && input_data)
       gl->ctx_driver->input_driver(gl, input, input_data);
    
-#ifndef RARCH_CONSOLE
    if (g_settings.video.font_enable)
-#endif
    {
       if (!gl_font_init_first(&gl->font_driver, &gl->font_handle,
             gl, *g_settings.video.font_path 

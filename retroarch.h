@@ -347,7 +347,7 @@ int rarch_defer_core(core_info_list_t *data,
       const char *dir, const char *path, const char *menu_label,
       char *deferred_path, size_t sizeof_deferred_path);
 
-void rarch_update_system_info(struct retro_system_info *info,
+bool rarch_update_system_info(struct retro_system_info *info,
       bool *load_no_content);
 
 #ifdef __cplusplus

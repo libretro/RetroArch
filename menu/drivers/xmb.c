@@ -142,6 +142,31 @@ static const GLfloat rmb_tex_coord[] = {
    1, 0,
 };
 
+static float xmb_item_y(int i, size_t current)
+{
+   float iy;
+   xmb_handle_t *xmb;
+
+   xmb = (xmb_handle_t*)driver.menu->userdata;
+   if (!xmb)
+      return 0;
+
+   iy = xmb->vspacing;
+
+   if (i < current)
+      if (xmb->depth > 1)
+         iy *= (i - (int)current + xmb->above_subitem_offset);
+      else
+         iy *= (i - (int)current + xmb->above_item_offset);
+   else
+      iy *= (i - (int)current + xmb->under_item_offset);
+
+   if (i == current)
+      iy = xmb->vspacing * xmb->active_item_factor;
+
+   return iy;
+}
+
 static int xmb_entry_iterate(unsigned action)
 {
    const char *label = NULL;
@@ -461,21 +486,12 @@ static void xmb_selection_pointer_changed(void)
       if (!node)
          continue;
 
-      iy = xmb->vspacing;
-
-      if (i < current)
-         if (xmb->depth > 1)
-            iy *= (i - (int)current + xmb->above_subitem_offset);
-         else
-            iy *= (i - (int)current + xmb->above_item_offset);
-      else
-         iy *= (i - (int)current + xmb->under_item_offset);
+      iy = xmb_item_y(i, current);
 
       if (i == current)
       {
          ia = xmb->i_active_alpha;
          iz = xmb->i_active_zoom;
-         iy = xmb->vspacing * xmb->active_item_factor;
       }
 
       add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
@@ -536,19 +552,7 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
 
       node->x = xmb->icon_size*dir*2;
 
-      iy = xmb->vspacing;
-      if (i < current)
-         if (xmb->depth > 1)
-            iy *= (i - (int)current + xmb->above_subitem_offset);
-         else
-            iy *= (i - (int)current + xmb->above_item_offset);
-      else
-         iy *= (i - (int)current + xmb->under_item_offset);
-
-      if (i == current)
-         iy = xmb->vspacing * xmb->active_item_factor;
-
-      node->y = iy;
+      node->y = xmb_item_y(i, current);
 
       if (i == current)
          node->zoom = 1;
@@ -1533,17 +1537,10 @@ static void xmb_list_insert(void *data,
 
    current = driver.menu->selection_ptr;
 
-   iy = (i < current) ? xmb->vspacing *
-      (i - current + xmb->above_item_offset) :
-      xmb->vspacing * (i - current + xmb->under_item_offset);
-
-   if (i == current)
-      iy = xmb->vspacing * xmb->active_item_factor;
-
    node->alpha       = xmb->i_passive_alpha;
    node->zoom        = xmb->i_passive_zoom;
    node->label_alpha = node->alpha;
-   node->y           = iy;
+   node->y           = xmb_item_y(i, current);
    node->x           = 0;
 
    if (i == current)
@@ -1673,10 +1670,7 @@ static void xmb_toggle(bool menu_on)
 
    add_tween(XMB_DELAY, 1.0f, &xmb->alpha, &inOutQuad, NULL);
 
-   if (!xmb->active_category)
-      return;
-
-   xmb->prevent_populate = true;
+   xmb->prevent_populate = !menu->need_refresh;
 
    for (i = 0; i < xmb->num_categories; i++)
    {
