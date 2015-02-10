@@ -13,6 +13,13 @@
 		840222F91A889E0C009AB261 /* utility.m in Sources */ = {isa = PBXBuildFile; fileRef = 840222F81A889E0C009AB261 /* utility.m */; };
 		840222FC1A889EE2009AB261 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; };
 		840365B51A88960400C51FB4 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 840365B41A88960400C51FB4 /* settings.m */; };
+		841CBB881A8A343E0066E9F1 /* rdb in CopyFiles */ = {isa = PBXBuildFile; fileRef = 841CBB7F1A8A31650066E9F1 /* rdb */; };
+		841CBB891A8A34420066E9F1 /* cursors in CopyFiles */ = {isa = PBXBuildFile; fileRef = 841CBB7D1A8A314F0066E9F1 /* cursors */; };
+		841CBB8A1A8A34470066E9F1 /* cht in CopyFiles */ = {isa = PBXBuildFile; fileRef = 841CBB7B1A8A31370066E9F1 /* cht */; };
+		841CBB8B1A8A347C0066E9F1 /* shaders_cg in CopyFiles */ = {isa = PBXBuildFile; fileRef = 841CBB791A8A311C0066E9F1 /* shaders_cg */; };
+		841CBB8C1A8A34810066E9F1 /* overlays in CopyFiles */ = {isa = PBXBuildFile; fileRef = 841CBB771A8A30F00066E9F1 /* overlays */; };
+		841CBB8D1A8A348B0066E9F1 /* autoconfig in CopyFiles */ = {isa = PBXBuildFile; fileRef = 841CBB751A8A30CC0066E9F1 /* autoconfig */; };
+		841CBB8E1A8A34920066E9F1 /* assets in CopyFiles */ = {isa = PBXBuildFile; fileRef = 841CBB731A8A308C0066E9F1 /* assets */; };
 		84DD5E9F1A88E45B007336C1 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */; };
 		84DD5EA31A89E2AA007336C1 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
 		84DD5EA51A89E2F6007336C1 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EA41A89E2F6007336C1 /* AVFoundation.framework */; };
@@ -28,6 +35,34 @@
 		8D11072D0486CEB800E47090 /* platform.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* platform.m */; settings = {ATTRIBUTES = (); }; };
 /* End PBXBuildFile section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		841CBB831A8A33B60066E9F1 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 7;
+			files = (
+				841CBB8E1A8A34920066E9F1 /* assets in CopyFiles */,
+				841CBB8D1A8A348B0066E9F1 /* autoconfig in CopyFiles */,
+				841CBB8C1A8A34810066E9F1 /* overlays in CopyFiles */,
+				841CBB8B1A8A347C0066E9F1 /* shaders_cg in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		841CBB871A8A34330066E9F1 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 7;
+			files = (
+				841CBB8A1A8A34470066E9F1 /* cht in CopyFiles */,
+				841CBB891A8A34420066E9F1 /* cursors in CopyFiles */,
+				841CBB881A8A343E0066E9F1 /* rdb in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		089C165DFE840E0CC02AAC07 /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1DDD58150DA1D0A300B32029 /* MainMenu.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = MainMenu.xib; path = OSX/en.lproj/MainMenu.xib; sourceTree = "<group>"; };
@@ -38,6 +73,13 @@
 		840222F81A889E0C009AB261 /* utility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = utility.m; path = common/utility.m; sourceTree = "<group>"; };
 		840222FB1A889EE2009AB261 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		840365B41A88960400C51FB4 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = OSX/settings.m; sourceTree = "<group>"; };
+		841CBB731A8A308C0066E9F1 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../media/assets; sourceTree = "<group>"; };
+		841CBB751A8A30CC0066E9F1 /* autoconfig */ = {isa = PBXFileReference; lastKnownFileType = folder; name = autoconfig; path = ../media/autoconfig; sourceTree = "<group>"; };
+		841CBB771A8A30F00066E9F1 /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../media/overlays; sourceTree = "<group>"; };
+		841CBB791A8A311C0066E9F1 /* shaders_cg */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shaders_cg; path = ../media/shaders_cg; sourceTree = "<group>"; };
+		841CBB7B1A8A31370066E9F1 /* cht */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cht; path = ../media/libretrodb/cht; sourceTree = "<group>"; };
+		841CBB7D1A8A314F0066E9F1 /* cursors */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cursors; path = ../media/libretrodb/cursors; sourceTree = "<group>"; };
+		841CBB7F1A8A31650066E9F1 /* rdb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = rdb; path = ../media/libretrodb/rdb; sourceTree = "<group>"; };
 		84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
 		84DD5EA11A89658D007336C1 /* RetroArch_Apple.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RetroArch_Apple.h; path = common/RetroArch_Apple.h; sourceTree = "<group>"; };
 		84DD5EA21A896816007336C1 /* platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = platform.h; path = OSX/platform.h; sourceTree = "<group>"; };
@@ -122,6 +164,7 @@
 				84F678D51A889446000C8F9C /* OSX */,
 				080E96DDFE201D6D7F000001 /* Classes */,
 				29B97315FDCFA39411CA2CEA /* Other Sources */,
+				841CBB821A8A33810066E9F1 /* Assets */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
@@ -178,6 +221,28 @@
 			name = Core;
 			sourceTree = "<group>";
 		};
+		841CBB811A8A33640066E9F1 /* libretrodb */ = {
+			isa = PBXGroup;
+			children = (
+				841CBB7B1A8A31370066E9F1 /* cht */,
+				841CBB7D1A8A314F0066E9F1 /* cursors */,
+				841CBB7F1A8A31650066E9F1 /* rdb */,
+			);
+			name = libretrodb;
+			sourceTree = "<group>";
+		};
+		841CBB821A8A33810066E9F1 /* Assets */ = {
+			isa = PBXGroup;
+			children = (
+				841CBB731A8A308C0066E9F1 /* assets */,
+				841CBB751A8A30CC0066E9F1 /* autoconfig */,
+				841CBB771A8A30F00066E9F1 /* overlays */,
+				841CBB791A8A311C0066E9F1 /* shaders_cg */,
+				841CBB811A8A33640066E9F1 /* libretrodb */,
+			);
+			name = Assets;
+			sourceTree = "<group>";
+		};
 		84F678D51A889446000C8F9C /* OSX */ = {
 			isa = PBXGroup;
 			children = (
@@ -198,6 +263,8 @@
 				8D1107290486CEB800E47090 /* Resources */,
 				8D11072C0486CEB800E47090 /* Sources */,
 				8D11072E0486CEB800E47090 /* Frameworks */,
+				841CBB831A8A33B60066E9F1 /* CopyFiles */,
+				841CBB871A8A34330066E9F1 /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -214,8 +281,11 @@
 /* Begin PBXProject section */
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+			};
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "RetroArch_OSX" */;
 			compatibilityVersion = "Xcode 3.1";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
 			knownRegions = (
 				en,
@@ -396,9 +466,10 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				ONLY_ACTIVE_ARCH = NO;
 				PREBINDING = NO;
-				SDKROOT = "";
+				SDKROOT = macosx;
 			};
 			name = Debug;
 		};
@@ -409,8 +480,9 @@
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PREBINDING = NO;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
+				SDKROOT = macosx;
 			};
 			name = Release;
 		};
@@ -424,7 +496,7 @@
 				C01FCF4C08A954540054247B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "RetroArch_OSX" */ = {
 			isa = XCConfigurationList;
@@ -433,7 +505,7 @@
 				C01FCF5008A954540054247B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};
