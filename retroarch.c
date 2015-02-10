@@ -3224,8 +3224,13 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
 
    if (!strcmp(menu_label, "load_content"))
    {
-      strlcpy(new_core_path, g_extern.core_info_current->path, sizeof(new_core_path));
-      supported = 1;
+      info = (const core_info_t*)&g_extern.core_info_current;
+
+      if (info)
+      {
+         strlcpy(new_core_path, info->path, sizeof(new_core_path));
+         supported = 1;
+      }
    }
    else
       strlcpy(new_core_path, info->path, sizeof(new_core_path));
