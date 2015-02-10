@@ -392,7 +392,6 @@ menu_ctx_driver_t menu_ctx_rmenu = {
    NULL,
    NULL,
    NULL,
-   NULL,
    rmenu_entry_iterate,
    "rmenu",
 };

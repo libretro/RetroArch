@@ -700,7 +700,6 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    rmenu_xui_populate_entries,
    NULL,
-   NULL,
    rmenu_xui_navigation_clear,
    rmenu_xui_navigation_set_visible,
    rmenu_xui_navigation_set_visible,

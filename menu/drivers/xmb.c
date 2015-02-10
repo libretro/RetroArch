@@ -1704,7 +1704,6 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_context_destroy,
    xmb_populate_entries,
    NULL,
-   NULL,
    xmb_toggle,
    xmb_navigation_clear,
    xmb_navigation_decrement,

@@ -432,9 +432,6 @@ int menu_iterate(retro_input_t input,
    if (g_settings.menu.throttle && (g_settings.menu.pause_libretro || !g_extern.content_is_init))
       draw_frame();
 
-   if (driver.menu_ctx && driver.menu_ctx->input_postprocess)
-      driver.menu_ctx->input_postprocess(input, old_input);
-
    if (ret)
       return -1;
 
