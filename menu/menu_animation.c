@@ -25,7 +25,7 @@ void tweens_free(tween_t *tween)
 }
 
 bool tweens_push(float duration, float target_value, float* subject,
-      easingFunc easing, tween_cb cb)
+      easingFunc easing, tween_cb cb, unsigned *numtweens)
 {
    tween_t *tween = NULL, *temp_tweens = NULL;
 
@@ -33,13 +33,13 @@ bool tweens_push(float duration, float target_value, float* subject,
       return false;
    
    temp_tweens = (tween_t*)realloc(driver.menu->tweens,
-         (driver.menu->numtweens + 1) * sizeof(tween_t));
+         (*numtweens + 1) * sizeof(tween_t));
 
    if (!temp_tweens)
       return false;
 
    driver.menu->tweens  = temp_tweens;
-   tween                = (tween_t*)&driver.menu->tweens[driver.menu->numtweens];
+   tween                = (tween_t*)&driver.menu->tweens[*numtweens];
 
    if (!tween)
       return false;
@@ -53,7 +53,7 @@ bool tweens_push(float duration, float target_value, float* subject,
    tween->easing        = easing;
    tween->cb            = cb;
 
-   driver.menu->numtweens++;
+   *numtweens = *numtweens + 1;
 
    return true;
 }
@@ -89,16 +89,17 @@ static int tweens_iterate(tween_t *tween, float dt,
    return 0;
 }
 
-void tweens_update(tween_t *tweens, float dt)
+void tweens_update(tween_t *tweens, float dt,
+      unsigned *numtweens)
 {
    unsigned i;
    unsigned active_tweens = 0;
 
-   for(i = 0; i < driver.menu->numtweens; i++)
+   for(i = 0; i < *numtweens; i++)
       tweens_iterate(&tweens[i], dt, &active_tweens);
 
    if (!active_tweens)
-      driver.menu->numtweens = 0;
+      *numtweens = 0;
 }
 
 /* Linear */

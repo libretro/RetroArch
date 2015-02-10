@@ -41,9 +41,9 @@ typedef struct
 } tween_t;
 
 bool tweens_push(float duration, float target_value, float* subject,
-      easingFunc easing, tween_cb cb);
+      easingFunc easing, tween_cb cb, unsigned *numtweens);
 
-void tweens_update(tween_t *tweens, float dt);
+void tweens_update(tween_t *tweens, float dt, unsigned *numtweens);
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
