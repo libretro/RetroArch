@@ -40,6 +40,8 @@
 #include "input/keyboard_line.h"
 #include "input/input_remapping.h"
 
+#include "record/record_driver.h"
+
 #include "git_version.h"
 #include "intl/intl.h"
 
@@ -66,203 +68,6 @@
 #include <windows.h>
 #endif
 #endif
-
-void rarch_recording_dump_frame(const void *data, unsigned width,
-      unsigned height, size_t pitch)
-{
-   struct ffemu_video_data ffemu_data = {0};
-
-   ffemu_data.pitch   = pitch;
-   ffemu_data.width   = width;
-   ffemu_data.height  = height;
-   ffemu_data.data    = data;
-
-   if (g_extern.record_gpu_buffer)
-   {
-      struct rarch_viewport vp = {0};
-
-      if (driver.video && driver.video->viewport_info)
-         driver.video->viewport_info(driver.video_data, &vp);
-
-      if (!vp.width || !vp.height)
-      {
-         RARCH_WARN("Viewport size calculation failed! Will continue using raw data. This will probably not work right ...\n");
-         rarch_main_command(RARCH_CMD_GPU_RECORD_DEINIT);
-
-         rarch_recording_dump_frame(data, width, height, pitch);
-         return;
-      }
-
-      /* User has resized. We kinda have a problem now. */
-      if (vp.width != g_extern.record_gpu_width ||
-            vp.height != g_extern.record_gpu_height)
-      {
-         static const char msg[] = "Recording terminated due to resize.";
-         RARCH_WARN("%s\n", msg);
-         msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-
-         rarch_main_command(RARCH_CMD_RECORD_DEINIT);
-         return;
-      }
-
-      /* Big bottleneck.
-       * Since we might need to do read-backs asynchronously,
-       * it might take 3-4 times before this returns true. */
-      if (driver.video && driver.video->read_viewport)
-         if (!driver.video->read_viewport(driver.video_data,
-                  g_extern.record_gpu_buffer))
-            return;
-
-      ffemu_data.pitch  = g_extern.record_gpu_width * 3;
-      ffemu_data.width  = g_extern.record_gpu_width;
-      ffemu_data.height = g_extern.record_gpu_height;
-      ffemu_data.data   = g_extern.record_gpu_buffer +
-         (ffemu_data.height - 1) * ffemu_data.pitch;
-
-      ffemu_data.pitch  = -ffemu_data.pitch;
-   }
-
-   if (!g_extern.record_gpu_buffer)
-      ffemu_data.is_dupe = !data;
-
-   if (driver.recording && driver.recording->push_video)
-      driver.recording->push_video(driver.recording_data, &ffemu_data);
-}
-
-/**
- * init_recording:
- *
- * Initializes recording.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-static bool init_recording(void)
-{
-   struct ffemu_params params = {0};
-   const struct retro_system_av_info *info = &g_extern.system.av_info;
-
-   if (!g_extern.recording_enable)
-      return false;
-
-   if (g_extern.libretro_dummy)
-   {
-      RARCH_WARN(RETRO_LOG_INIT_RECORDING_SKIPPED);
-      return false;
-   }
-
-   if (!g_settings.video.gpu_record
-         && g_extern.system.hw_render_callback.context_type)
-   {
-      RARCH_WARN("Libretro core is hardware rendered. Must use post-shaded recording as well.\n");
-      return false;
-   }
-
-   RARCH_LOG("Custom timing given: FPS: %.4f, Sample rate: %.4f\n",
-         (float)g_extern.system.av_info.timing.fps,
-         (float)g_extern.system.av_info.timing.sample_rate);
-
-   params.out_width  = info->geometry.base_width;
-   params.out_height = info->geometry.base_height;
-   params.fb_width   = info->geometry.max_width;
-   params.fb_height  = info->geometry.max_height;
-   params.channels   = 2;
-   params.filename   = g_extern.record_path;
-   params.fps        = g_extern.system.av_info.timing.fps;
-   params.samplerate = g_extern.system.av_info.timing.sample_rate;
-   params.pix_fmt    = (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888) ?
-      FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
-   params.config     = NULL;
-   
-   if (*g_extern.record_config)
-      params.config = g_extern.record_config;
-
-   if (g_settings.video.gpu_record && driver.video->read_viewport)
-   {
-      struct rarch_viewport vp = {0};
-
-      if (driver.video && driver.video->viewport_info)
-         driver.video->viewport_info(driver.video_data, &vp);
-
-      if (!vp.width || !vp.height)
-      {
-         RARCH_ERR("Failed to get viewport information from video driver. "
-               "Cannot start recording ...\n");
-         return false;
-      }
-
-      params.out_width  = vp.width;
-      params.out_height = vp.height;
-      params.fb_width   = next_pow2(vp.width);
-      params.fb_height  = next_pow2(vp.height);
-
-      if (g_settings.video.force_aspect &&
-            (g_extern.system.aspect_ratio > 0.0f))
-         params.aspect_ratio  = g_extern.system.aspect_ratio;
-      else
-         params.aspect_ratio  = (float)vp.width / vp.height;
-
-      params.pix_fmt             = FFEMU_PIX_BGR24;
-      g_extern.record_gpu_width  = vp.width;
-      g_extern.record_gpu_height = vp.height;
-
-      RARCH_LOG("Detected viewport of %u x %u\n",
-            vp.width, vp.height);
-
-      g_extern.record_gpu_buffer = (uint8_t*)malloc(vp.width * vp.height * 3);
-      if (!g_extern.record_gpu_buffer)
-      {
-         RARCH_ERR("Failed to allocate GPU record buffer.\n");
-         return false;
-      }
-   }
-   else
-   {
-      if (g_extern.record_width || g_extern.record_height)
-      {
-         params.out_width = g_extern.record_width;
-         params.out_height = g_extern.record_height;
-      }
-
-      if (g_settings.video.force_aspect &&
-            (g_extern.system.aspect_ratio > 0.0f))
-         params.aspect_ratio = g_extern.system.aspect_ratio;
-      else
-         params.aspect_ratio = (float)params.out_width / params.out_height;
-
-      if (g_settings.video.post_filter_record && g_extern.filter.filter)
-      {
-         unsigned max_width  = 0;
-         unsigned max_height = 0;
-
-         if (g_extern.filter.out_rgb32)
-            params.pix_fmt = FFEMU_PIX_ARGB8888;
-         else
-            params.pix_fmt =  FFEMU_PIX_RGB565;
-
-         rarch_softfilter_get_max_output_size(g_extern.filter.filter,
-               &max_width, &max_height);
-         params.fb_width  = next_pow2(max_width);
-         params.fb_height = next_pow2(max_height);
-      }
-   }
-
-   RARCH_LOG("Recording to %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
-         g_extern.record_path,
-         params.out_width, params.out_height,
-         params.fb_width, params.fb_height,
-         (unsigned)params.pix_fmt);
-
-   if (!ffemu_init_first(&driver.recording, &driver.recording_data, &params))
-   {
-      RARCH_ERR(RETRO_LOG_INIT_RECORDING_FAILED);
-      rarch_main_command(RARCH_CMD_GPU_RECORD_DEINIT);
-
-      return false;
-   }
-
-   return true;
-}
 
 /**
  * rarch_render_cached_frame:
@@ -2591,23 +2396,12 @@ bool rarch_main_command(unsigned cmd)
          g_extern.record_gpu_buffer = NULL;
          break;
       case RARCH_CMD_RECORD_DEINIT:
-         if (!driver.recording_data || !driver.recording)
+         if (!recording_deinit())
             return false;
-
-         if (driver.recording->finalize)
-            driver.recording->finalize(driver.recording_data);
-
-         if (driver.recording->free)
-            driver.recording->free(driver.recording_data);
-
-         driver.recording_data = NULL;
-         driver.recording = NULL;
-
-         rarch_main_command(RARCH_CMD_GPU_RECORD_DEINIT);
          break;
       case RARCH_CMD_RECORD_INIT:
          rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
-         if (!init_recording())
+         if (!recording_init())
             return false;
          break;
       case RARCH_CMD_HISTORY_DEINIT:

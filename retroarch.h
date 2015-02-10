@@ -293,9 +293,6 @@ void rarch_disk_control_set_index(unsigned index);
  **/
 void rarch_disk_control_append_image(const char *path);
 
-void rarch_recording_dump_frame(const void *data, unsigned width,
-      unsigned height, size_t pitch);
-
 /**
  * rarch_replace_config:
  * @path                 : Path to config file to replace
