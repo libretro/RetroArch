@@ -537,7 +537,6 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
 
    for (i = 0; i < file_list_get_size(list); i++)
    {
-      float iy = 0;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
 
       if (!xmb)
@@ -1506,7 +1505,6 @@ static void xmb_navigation_ascend_alphabet(void *data, size_t *unused)
 static void xmb_list_insert(void *data,
       const char *path, const char *unused, size_t list_size)
 {
-   float iy;
    int current = 0, i = list_size;
    xmb_node_t *node = NULL;
    xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
