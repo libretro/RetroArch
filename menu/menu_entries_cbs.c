@@ -1054,13 +1054,10 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
             if (!tmp_str_list)
                continue;
 
-            if (tmp_str_list)
-            {
-               if (tmp_str_list->size > 0)
-                  strlcpy(elem0, tmp_str_list->elems[0].data, sizeof(elem0));
-               if (tmp_str_list->size > 1)
-                  strlcpy(elem1, tmp_str_list->elems[1].data, sizeof(elem1));
-            }
+            if (tmp_str_list->size > 0)
+               strlcpy(elem0, tmp_str_list->elems[0].data, sizeof(elem0));
+            if (tmp_str_list->size > 1)
+               strlcpy(elem1, tmp_str_list->elems[1].data, sizeof(elem1));
 
             if (!strcmp(elem1, "crc"))
             {
