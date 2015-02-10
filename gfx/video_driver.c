@@ -243,6 +243,15 @@ bool video_driver_is_alive(void)
    return true;
 }
 
+bool video_driver_has_focus(void)
+{
+   if (!driver.video || !driver.video_data)
+      return false;
+   if (!driver.video->focus(driver.video_data))
+      return false;
+   return true;
+}
+
 static void deinit_video_filter(void)
 {
    rarch_softfilter_free(g_extern.filter.filter);
