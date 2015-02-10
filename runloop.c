@@ -612,15 +612,6 @@ static int do_state_checks(
    return 0;
 }
 
-static inline bool check_video_alive(void)
-{
-   if (!driver.video || !driver.video_data)
-      return false;
-   if (!driver.video->alive(driver.video_data))
-      return false;
-   return true;
-}
-
 /**
  * time_to_exit:
  * @input                : input sample for this frame
@@ -639,13 +630,15 @@ static inline bool check_video_alive(void)
  **/
 static inline int time_to_exit(retro_input_t input)
 {
+   if (!driver.video || !driver.video_data)
+      return 0;
    if (
          g_extern.system.shutdown
          || check_quit_key_func(input)
          || (g_extern.max_frames && g_extern.frame_count >= 
             g_extern.max_frames)
          || (g_extern.bsv.movie_end && g_extern.bsv.eof_exit)
-         || check_video_alive()
+         || !driver.video->alive(driver.video_data)
       )
       return 1;
    return 0;
