@@ -27,6 +27,7 @@
 void matrix_4x4_identity(math_matrix_4x4 *mat)
 {
    unsigned i;
+
    memset(mat, 0, sizeof(*mat));
    for (i = 0; i < 4; i++)
       MAT_ELEM_4X4(*mat, i, i) = 1.0f;
@@ -88,11 +89,13 @@ void matrix_4x4_ortho(math_matrix_4x4 *mat,
       float bottom, float top,
       float znear, float zfar)
 {
+   float tx, ty, tz;
+
    matrix_4x4_identity(mat);
 
-   float tx = -(right + left) / (right - left);
-   float ty = -(top + bottom) / (top - bottom);
-   float tz = -(zfar + znear) / (zfar - znear);
+   tx = -(right + left) / (right - left);
+   ty = -(top + bottom) / (top - bottom);
+   tz = -(zfar + znear) / (zfar - znear);
 
    MAT_ELEM_4X4(*mat, 0, 0) =  2.0f / (right - left);
    MAT_ELEM_4X4(*mat, 1, 1) =  2.0f / (top - bottom);
