@@ -35,7 +35,7 @@ int database_open_cursor(libretrodb_t *db,
    libretrodb_query_t *q = NULL;
 
    if (query) 
-      q = (libretrodb_query_t*)libretrodb_query_compile(db, query,
+      q = libretrodb_query_compile(db, query,
       strlen(query), &error);
     
    if (error)
@@ -66,7 +66,7 @@ int database_info_write_rdl(const char *dir)
    if (g_extern.core_info)
       exts = core_info_list_get_all_extensions(g_extern.core_info);
    
-   str_list = (struct string_list*)dir_list_new(dir, exts, false);
+   str_list = dir_list_new(dir, exts, false);
 
    if (!str_list)
       return -1;
@@ -147,7 +147,7 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
       if (!database_info)
          goto error;
 
-      db_info = (database_info_t*)&database_info[i];
+      db_info = &database_info[i];
 
       db_info->name                   = NULL;
       db_info->description            = NULL;
@@ -305,7 +305,7 @@ void database_info_list_free(database_info_list_t *database_info_list)
 
    for (i = 0; i < database_info_list->count; i++)
    {
-      database_info_t *info = (database_info_t*)&database_info_list->list[i];
+      database_info_t *info = &database_info_list->list[i];
 
       if (!info)
          continue;
