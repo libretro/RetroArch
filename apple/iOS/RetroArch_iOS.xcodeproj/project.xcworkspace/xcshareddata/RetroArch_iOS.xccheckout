@@ -60,14 +60,6 @@
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>
 			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>76200F0D6584D865E96F58DE862E738E88B23A3C</string>
-			<key>IDESourceControlWCCName</key>
-			<string></string>
-		</dict>
-		<dict>
-			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
-			<string>public.vcs.git</string>
-			<key>IDESourceControlWCCIdentifierKey</key>
 			<string>A267D9543F572B4C32EC6E1B876E3B9BFE4DE8F6</string>
 			<key>IDESourceControlWCCName</key>
 			<string>assets</string>
