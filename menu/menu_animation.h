@@ -43,7 +43,7 @@ typedef struct
 bool add_tween(float duration, float target_value, float* subject,
       easingFunc easing, tween_cb cb);
 
-void update_tweens(float dt);
+void update_tweens(tween_t *tweens, float dt);
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 

@@ -1062,7 +1062,7 @@ static void xmb_frame(void)
    if (!xmb || !gl)
       return;
 
-   update_tweens(0.002);
+   update_tweens(driver.menu->tweens, 0.002);
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
