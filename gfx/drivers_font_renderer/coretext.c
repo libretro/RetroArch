@@ -114,7 +114,7 @@ static bool font_renderer_create_atlas(CTFontRef face, font_renderer_t *handle)
       origin_y = ceil(bounds[i].origin.y);
 
       glyph->draw_offset_x = 0;
-      glyph->draw_offset_y = -1 * (ascent - descent);
+      glyph->draw_offset_y = -ascent;
       glyph->width = ceil(bounds[i].size.width);
       glyph->height = ceil(bounds[i].size.height);
       glyph->advance_x = ceil(advances[i].width);

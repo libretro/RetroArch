@@ -248,6 +248,9 @@ bool video_driver_is_alive(void);
 
 bool video_driver_has_focus(void);
 
+bool video_driver_set_shader(enum rarch_shader_type type,
+      const char *shader);
+
 void uninit_video_input(void);
 
 void init_video(void);

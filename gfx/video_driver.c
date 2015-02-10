@@ -252,6 +252,16 @@ bool video_driver_has_focus(void)
    return true;
 }
 
+bool video_driver_set_shader(enum rarch_shader_type type,
+      const char *shader)
+{
+   if (!driver.video || !driver.video_data)
+      return false;
+   if (!driver.video->set_shader(driver.video_data, type, shader))
+      return false;
+   return true;
+}
+
 static void deinit_video_filter(void)
 {
    rarch_softfilter_free(g_extern.filter.filter);
