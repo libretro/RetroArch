@@ -183,12 +183,12 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
      *
      * Ideas: There's some overlap here with how the Android APK has to extract all its resource files over to the actual sandboxed
      * app dir, maybe try to create something standardized for both platforms (OSX/Android) */
-    fill_pathname_join(g_defaults.overlay_dir, bundle_path_buf, "Contents/Resources/modules/overlays", sizeof(g_defaults.overlay_dir));
-    fill_pathname_join(g_defaults.autoconfig_dir, bundle_path_buf, "Contents/Resources/modules/autoconfig/apple", sizeof(g_defaults.autoconfig_dir));
-    fill_pathname_join(g_defaults.assets_dir, bundle_path_buf, "Contents/Resources/modules/assets", sizeof(g_defaults.assets_dir));
-    fill_pathname_join(g_defaults.shader_dir, bundle_path_buf, "Contents/Resources/modules/shaders", sizeof(g_defaults.shader_dir));
-    fill_pathname_join(g_defaults.audio_filter_dir, bundle_path_buf, "Contents/Resources/modules/audio_filters", sizeof(g_defaults.audio_filter_dir));
-    fill_pathname_join(g_defaults.video_filter_dir, bundle_path_buf, "Contents/Resources/modules/video_filters", sizeof(g_defaults.video_filter_dir));
+    fill_pathname_join(g_defaults.overlay_dir, bundle_path_buf, "Contents/Resources/overlays", sizeof(g_defaults.overlay_dir));
+    fill_pathname_join(g_defaults.autoconfig_dir, bundle_path_buf, "Contents/Resources/autoconfig/apple", sizeof(g_defaults.autoconfig_dir));
+    fill_pathname_join(g_defaults.assets_dir, bundle_path_buf, "Contents/Resources/assets", sizeof(g_defaults.assets_dir));
+    fill_pathname_join(g_defaults.shader_dir, bundle_path_buf, "Contents/Resources/shaders", sizeof(g_defaults.shader_dir));
+    fill_pathname_join(g_defaults.audio_filter_dir, bundle_path_buf, "Contents/Resources/audio_filters", sizeof(g_defaults.audio_filter_dir));
+    fill_pathname_join(g_defaults.video_filter_dir, bundle_path_buf, "Contents/Resources/video_filters", sizeof(g_defaults.video_filter_dir));
     fill_pathname_join(g_defaults.menu_config_dir, support_path_buf, "RetroArch", sizeof(g_defaults.menu_config_dir));
     fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
 #endif

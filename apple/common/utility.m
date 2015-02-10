@@ -18,6 +18,8 @@
 #include "RetroArch_Apple.h"
 #include "../../settings_data.h"
 
+#import <AppKit/AppKit.h>
+
 void apple_display_alert(const char *message, const char *title)
 {
 #ifdef IOS

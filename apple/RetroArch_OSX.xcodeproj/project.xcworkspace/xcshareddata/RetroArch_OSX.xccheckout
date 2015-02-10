@@ -5,7 +5,7 @@
 	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
 	<false/>
 	<key>IDESourceControlProjectIdentifier</key>
-	<string>68627F4F-2F04-453A-B5AC-5C4A2718C870</string>
+	<string>6707FA08-D738-4E96-838A-767375E3B767</string>
 	<key>IDESourceControlProjectName</key>
 	<string>RetroArch_OSX</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
@@ -26,23 +26,23 @@
 		<string>https://github.com/libretro/common-overlays.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>apple/OSX/OSX/RetroArch_OSX.xcodeproj</string>
+	<string>apple/RetroArch_OSX.xcodeproj</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>66A80EF91DB414BA5E941825F216CCE8F40CCCF2</key>
-		<string>../../../../../media/shaders_cg</string>
+		<string>../../../media/shaders_cg</string>
 		<key>6B9F0B13E5864452B91F13C09B7ED9EB989E82AD</key>
-		<string>../../../../../media/autoconfig</string>
+		<string>../../../media/autoconfig</string>
 		<key>76200F0D6584D865E96F58DE862E738E88B23A3C</key>
-		<string>../../../../../..</string>
+		<string>../../../..</string>
 		<key>A267D9543F572B4C32EC6E1B876E3B9BFE4DE8F6</key>
-		<string>../../../../../media/assets</string>
+		<string>../../../media/assets</string>
 		<key>C3AEE01BDA902108663DB5DB9CD7916436919463</key>
-		<string>../../../../../media/libretrodb</string>
+		<string>../../../media/libretrodb</string>
 		<key>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</key>
-		<string>../../../../..</string>
+		<string>../../..</string>
 		<key>EF363D58F01B3FB341FA6C851870E60E4F080E97</key>
-		<string>../../../../../media/overlays</string>
+		<string>../../../media/overlays</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
 	<string>https://github.com/libretro/RetroArch.git</string>
@@ -59,14 +59,6 @@
 			<string>76200F0D6584D865E96F58DE862E738E88B23A3C</string>
 			<key>IDESourceControlWCCName</key>
 			<string></string>
-		</dict>
-		<dict>
-			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
-			<string>public.vcs.git</string>
-			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>A267D9543F572B4C32EC6E1B876E3B9BFE4DE8F6</string>
-			<key>IDESourceControlWCCName</key>
-			<string>assets</string>
 		</dict>
 		<dict>
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
