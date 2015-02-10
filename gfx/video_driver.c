@@ -233,6 +233,16 @@ void video_driver_make_current_context(void)
       driver.video_poke->make_current_context(driver.video_data);
 }
 
+bool video_driver_is_alive(void)
+{
+   /* Possible race issue, return true */
+   if (!driver.video || !driver.video_data)
+      return true;
+   if (!driver.video->alive(driver.video_data))
+      return false;
+   return true;
+}
+
 static void deinit_video_filter(void)
 {
    rarch_softfilter_free(g_extern.filter.filter);
