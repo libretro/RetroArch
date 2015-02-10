@@ -85,14 +85,16 @@ static bool input_joypad_is_pressed(
       const struct retro_keybind *binds,
       unsigned key)
 {
-   const struct retro_keybind *auto_binds;
    float scaled_axis;
    int16_t  axis;
    uint32_t joyaxis;
    uint64_t joykey;
+   const struct retro_keybind *auto_binds = NULL;
    unsigned joy_idx = g_settings.input.joypad_map[port];
 
    if (joy_idx >= MAX_USERS)
+      return false;
+   if (!drv || !binds[key].valid)
       return false;
 
    /* Auto-binds are per joypad, not per user. */
@@ -130,8 +132,7 @@ static bool input_joypad_is_pressed(
 bool input_joypad_pressed(const rarch_joypad_driver_t *drv,
       unsigned port, const struct retro_keybind *binds, unsigned key)
 {
-   if (!drv || !binds[key].valid || 
-         !input_joypad_is_pressed(drv, port, binds, key))
+   if (!input_joypad_is_pressed(drv, port, binds, key))
       return false;
    return true;
 }
