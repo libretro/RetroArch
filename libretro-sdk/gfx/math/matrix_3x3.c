@@ -24,12 +24,13 @@
 #include <math.h>
 #include <string.h>
 
-#define floatsEqual(x, y) (fabs(x - y) <= 0.00001f * ((x) > (y) ? (y) : (x)))
-#define floatIsZero(x) (floatsEqual((x) + 1, 1))
+#define floats_are_equal(x, y) (fabs(x - y) <= 0.00001f * ((x) > (y) ? (y) : (x)))
+#define float_is_zero(x) (floats_are_equal((x) + 1, 1))
 
 void matrix_3x3_identity(math_matrix_3x3 *mat)
 {
    unsigned i;
+
    memset(mat, 0, sizeof(*mat));
    for (i = 0; i < 3; i++)
       MAT_ELEM_3X3(*mat, i, i) = 1.0f;
@@ -55,6 +56,7 @@ void matrix_3x3_transpose(math_matrix_3x3 *out, const math_matrix_3x3 *in)
 {
    unsigned i, j;
    math_matrix_3x3 mat;
+
    for (i = 0; i < 3; i++)
       for (j = 0; j < 3; j++)
          MAT_ELEM_3X3(mat, j, i) = MAT_ELEM_3X3(*in, i, j);
@@ -67,6 +69,7 @@ void matrix_3x3_multiply(math_matrix_3x3 *out,
 {
    unsigned r, c, k;
    math_matrix_3x3 mat;
+
    for (r = 0; r < 3; r++)
    {
       for (c = 0; c < 3; c++)
@@ -119,11 +122,12 @@ bool matrix_3x3_invert(math_matrix_3x3 *mat)
 {
    float det = matrix_3x3_determinant(mat);
 
-   if (floatIsZero(det))
+   if (float_is_zero(det))
       return false;
 
    matrix_3x3_adjoint(mat);
    matrix_3x3_divide_scalar(mat, det);
+
    return true;
 }
 
@@ -162,13 +166,16 @@ bool matrix_3x3_square_to_quad(const float dx0, const float dy0,
    float ax  = dx0 - dx1 + dx2 - dx3;
    float ay  = dy0 - dy1 + dy2 - dy3;
 
-   if (floatIsZero(ax) && floatIsZero(ay)) {
+   if (float_is_zero(ax) && float_is_zero(ay))
+   {
       /* affine case */
       matrix_3x3_inits(mat,
-                       dx1 - dx0, dy1 - dy0,  0,
-                       dx2 - dx1, dy2 - dy1,  0,
-                       dx0,       dy0,        1);
-   } else {
+            dx1 - dx0, dy1 - dy0,  0,
+            dx2 - dx1, dy2 - dy1,  0,
+            dx0,       dy0,        1);
+   }
+   else
+   {
       float a, b, c, d, e, f, g, h;
       float ax1 = dx1 - dx2;
       float ax2 = dx3 - dx2;
@@ -194,9 +201,9 @@ bool matrix_3x3_square_to_quad(const float dx0, const float dy0,
       f = dy0;
 
       matrix_3x3_inits(mat,
-                       a, d, g,
-                       b, e, h,
-                       c, f, 1.f);
+            a, d, g,
+            b, e, h,
+            c, f, 1.f);
    }
 
    return true;
