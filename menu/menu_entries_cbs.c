@@ -849,9 +849,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
    database_info_list_t *db_info = NULL;
    file_list_t *list             = (file_list_t*)data;
    file_list_t *menu_list        = (file_list_t*)userdata;
-   struct string_list *str_list  = NULL;
-   
-   str_list = string_split(label, "|"); 
+   struct string_list *str_list = string_split(label, "|"); 
 
    if (!str_list)
       return -1;
@@ -1050,16 +1048,16 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
          {
             char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
             bool match_found = false;
-            str_list = string_split(
+            struct string_list *tmp_str_list = string_split(
                   playlist->entries[j].core_name, "|"); 
 
-            if (!str_list)
+            if (!tmp_str_list)
                continue;
 
-            if (str_list && str_list->size > 0)
-               strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-            if (str_list && str_list->size > 1)
-               strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+            if (tmp_str_list && tmp_str_list->size > 0)
+               strlcpy(elem0, tmp_str_list->elems[0].data, sizeof(elem0));
+            if (tmp_str_list && tmp_str_list->size > 1)
+               strlcpy(elem1, tmp_str_list->elems[1].data, sizeof(elem1));
 
             if (!strcmp(elem1, "crc"))
             {
@@ -1077,7 +1075,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
                   match_found = true;
             }
 
-            string_list_free(str_list);
+            string_list_free(tmp_str_list);
 
             if (!match_found)
                continue;
