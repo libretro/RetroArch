@@ -18,7 +18,7 @@
 #include "../driver.h"
 #include <math.h>
 
-static void tween_free(tween_t *tween)
+void tweens_free(tween_t *tween)
 {
    if (tween)
       free(tween);
@@ -37,10 +37,7 @@ bool add_tween(float duration, float target_value, float* subject,
          (driver.menu->numtweens + 1) * sizeof(tween_t));
 
    if (!temp_tweens)
-   {
-      tween_free(driver.menu->tweens);
       return false;
-   }
 
    driver.menu->tweens  = temp_tweens;
    tween                = (tween_t*)&driver.menu->tweens[driver.menu->numtweens];
