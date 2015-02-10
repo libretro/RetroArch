@@ -95,13 +95,10 @@ menu_ctx_driver_t menu_ctx_ios = {
   NULL, // render
   NULL, // frame
   ios_init, // init
-  NULL, // init_lists
   ios_free, // free
   NULL, // context_reset
   NULL, // context_destroy
   NULL, // populate_entries
-  NULL, // iterate
-  NULL, // input_postprocess
   NULL, // toggle
   NULL, // navigation_clear
   NULL, // navigation_decrement

@@ -4105,9 +4105,6 @@ static int action_iterate_main(const char *label, unsigned action)
 
    ret = mouse_post_iterate(cbs, path_offset, label_offset, type_offset, action);
 
-   if (driver.menu_ctx && driver.menu_ctx->iterate)
-      driver.menu_ctx->iterate(driver.menu, action);
-
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
 
