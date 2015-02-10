@@ -541,6 +541,27 @@ static int do_netplay_state_checks(
 }
 #endif
 
+static int do_pause_state_checks(
+      retro_input_t input, retro_input_t old_input,
+      retro_input_t trigger_input)
+{
+   check_pause_func(trigger_input);
+
+   if (!g_extern.is_paused)
+      return 0;
+
+   if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+   {
+      rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
+      rarch_render_cached_frame();
+   }
+
+   if (!check_oneshot_func(trigger_input))
+      return 1;
+
+   return 0;
+}
+
 /**
  * do_state_checks:
  * @input                : input sample for this frame
@@ -572,19 +593,10 @@ static int do_state_checks(
       return do_netplay_state_checks(input,
             old_input, trigger_input);
 #endif
-   check_pause_func(trigger_input);
 
-   if (g_extern.is_paused)
-   {
-      if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
-      {
-         rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
-         rarch_render_cached_frame();
-      }
-
-      if (!check_oneshot_func(trigger_input))
-         return 1;
-   }
+   if (do_pause_state_checks(input, old_input,
+            trigger_input))
+      return 1;
 
    check_fast_forward_button_func(input, old_input, trigger_input);
 
