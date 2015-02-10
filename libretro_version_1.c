@@ -36,6 +36,65 @@
 #include "netplay.h"
 #endif
 
+static void video_frame_scale(const void *data,
+      unsigned width, unsigned height,
+      size_t pitch)
+{
+   RARCH_PERFORMANCE_INIT(video_frame_conv);
+
+   if (!data)
+      return;
+   if (data == RETRO_HW_FRAME_BUFFER_VALID)
+      return;
+
+   RARCH_PERFORMANCE_START(video_frame_conv);
+
+   driver.scaler.in_width      = width;
+   driver.scaler.in_height     = height;
+   driver.scaler.out_width     = width;
+   driver.scaler.out_height    = height;
+   driver.scaler.in_stride     = pitch;
+   driver.scaler.out_stride    = width * sizeof(uint16_t);
+
+   scaler_ctx_scale(&driver.scaler, driver.scaler_out, data);
+
+   data                        = driver.scaler_out;
+   pitch                       = driver.scaler.out_stride;
+
+   RARCH_PERFORMANCE_STOP(video_frame_conv);
+}
+
+static void video_frame_filter(const void *data,
+      unsigned width, unsigned height,
+      size_t pitch)
+{
+   RARCH_PERFORMANCE_INIT(softfilter_process);
+   unsigned owidth  = 0, oheight = 0, opitch = 0;
+
+   if (!data)
+      return;
+
+   rarch_softfilter_get_output_size(g_extern.filter.filter,
+         &owidth, &oheight, width, height);
+
+   opitch = owidth * g_extern.filter.out_bpp;
+
+   RARCH_PERFORMANCE_START(softfilter_process);
+   rarch_softfilter_process(g_extern.filter.filter,
+         g_extern.filter.buffer, opitch,
+         data, width, height, pitch);
+   RARCH_PERFORMANCE_STOP(softfilter_process);
+
+   if (driver.recording_data && g_settings.video.post_filter_record)
+      rarch_recording_dump_frame(g_extern.filter.buffer,
+            owidth, oheight, opitch);
+
+   data   = g_extern.filter.buffer;
+   width  = owidth;
+   height = oheight;
+   pitch  = opitch;
+}
+
 /**
  * video_frame:
  * @data                 : pointer to data of the video frame.
@@ -58,23 +117,8 @@ static void video_frame(const void *data, unsigned width,
    g_extern.frame_cache.height = height;
    g_extern.frame_cache.pitch  = pitch;
 
-   if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555 &&
-         data && data != RETRO_HW_FRAME_BUFFER_VALID)
-   {
-      RARCH_PERFORMANCE_INIT(video_frame_conv);
-      RARCH_PERFORMANCE_START(video_frame_conv);
-      driver.scaler.in_width = width;
-      driver.scaler.in_height = height;
-      driver.scaler.out_width = width;
-      driver.scaler.out_height = height;
-      driver.scaler.in_stride = pitch;
-      driver.scaler.out_stride = width * sizeof(uint16_t);
-
-      scaler_ctx_scale(&driver.scaler, driver.scaler_out, data);
-      data = driver.scaler_out;
-      pitch = driver.scaler.out_stride;
-      RARCH_PERFORMANCE_STOP(video_frame_conv);
-   }
+   if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
+      video_frame_scale(data, width, height, pitch);
 
    /* Slightly messy code,
     * but we really need to do processing before blocking on VSync
@@ -86,34 +130,11 @@ static void video_frame(const void *data, unsigned width,
       )
       rarch_recording_dump_frame(data, width, height, pitch);
 
-   msg = msg_queue_pull(g_extern.msg_queue);
+   msg                = msg_queue_pull(g_extern.msg_queue);
    driver.current_msg = msg;
 
-   if (g_extern.filter.filter && data)
-   {
-      unsigned owidth  = 0, oheight = 0, opitch = 0;
-
-      rarch_softfilter_get_output_size(g_extern.filter.filter,
-            &owidth, &oheight, width, height);
-
-      opitch = owidth * g_extern.filter.out_bpp;
-
-      RARCH_PERFORMANCE_INIT(softfilter_process);
-      RARCH_PERFORMANCE_START(softfilter_process);
-      rarch_softfilter_process(g_extern.filter.filter,
-            g_extern.filter.buffer, opitch,
-            data, width, height, pitch);
-      RARCH_PERFORMANCE_STOP(softfilter_process);
-
-      if (driver.recording_data && g_settings.video.post_filter_record)
-         rarch_recording_dump_frame(g_extern.filter.buffer,
-               owidth, oheight, opitch);
-
-      data = g_extern.filter.buffer;
-      width = owidth;
-      height = oheight;
-      pitch = opitch;
-   }
+   if (g_extern.filter.filter)
+      video_frame_filter(data, width, height, pitch);
 
    if (!driver.video->frame(driver.video_data, data, width, height, pitch, msg))
       driver.video_active = false;

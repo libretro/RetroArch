@@ -315,8 +315,10 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
    else
    {
       /* Take generic filter path. */
-      ctx->scaler_horiz(ctx, input_frame, input_stride);
-      ctx->scaler_vert (ctx, output, output_stride);
+      if (ctx->scaler_horiz)
+         ctx->scaler_horiz(ctx, input_frame, input_stride);
+      if (ctx->scaler_vert)
+         ctx->scaler_vert (ctx, output, output_stride);
    }
 
    if (ctx->out_fmt != SCALER_FMT_ARGB8888)
@@ -324,4 +326,3 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
             ctx->out_width, ctx->out_height,
             ctx->out_stride, ctx->output.stride);
 }
-
