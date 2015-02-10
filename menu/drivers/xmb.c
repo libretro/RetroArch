@@ -88,7 +88,6 @@ typedef struct xmb_handle
    size_t selection_ptr_old;
    int active_category;
    int active_category_old;
-   int num_categories;
    int depth;
    int old_depth;
    char icon_dir[4];
@@ -775,7 +774,7 @@ static void xmb_list_open(void)
 
    xmb->active_category += dir;
 
-   for (j = 0; j < xmb->num_categories; j++)
+   for (j = 0; j < driver.menu->num_categories; j++)
    {
       float ia = xmb->c_passive_alpha;
       float iz = xmb->c_passive_zoom;
@@ -822,7 +821,7 @@ static void xmb_list_switch(void)
    else if (xmb->depth < xmb->old_depth)
       dir = -1;
 
-   for (j = 0; j < xmb->num_categories; j++)
+   for (j = 0; j < driver.menu->num_categories; j++)
    {
       float ia = 0;
       xmb_node_t *node = j ? xmb_node_for_core(j-1) : &xmb->settings_node;
@@ -1116,7 +1115,7 @@ static void xmb_frame(void)
          driver.menu->selection_ptr,
          driver.menu->cat_selection_ptr);
 
-   for (i = 0; i < xmb->num_categories; i++)
+   for (i = 0; i < driver.menu->num_categories; i++)
    {
       xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
 
@@ -1258,15 +1257,9 @@ static void *xmb_init(void)
    xmb->label_margin_top     = xmb->font_size/3.0;
    xmb->setting_margin_left  = 600.0 * scale_factor;
 
-   xmb->num_categories       = 1;
-   
-   if (!g_extern.core_info)
-   {
-      RARCH_ERR("Global core informations not initialized.\n");
-      goto error;
-   }
-
-   xmb->num_categories    = g_extern.core_info->count + 1;
+   menu->num_categories = 1;
+   if (g_extern.core_info)
+      menu->num_categories = g_extern.core_info->count + 1;
 
    return menu;
 
@@ -1410,7 +1403,7 @@ static void xmb_context_reset(void *data)
    if (!info_list)
       return;
 
-   for (i = 1; i < xmb->num_categories; i++)
+   for (i = 1; i < driver.menu->num_categories; i++)
    {
       node = xmb_node_for_core(i-1);
 
@@ -1634,7 +1627,7 @@ static void xmb_context_destroy(void *data)
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
       glDeleteTextures(1, &xmb->textures[i].id);
 
-   for (i = 1; i < xmb->num_categories; i++)
+   for (i = 1; i < driver.menu->num_categories; i++)
    {
       xmb_node_t *node = xmb_node_for_core(i-1);
 
@@ -1672,7 +1665,7 @@ static void xmb_toggle(bool menu_on)
 
    xmb->prevent_populate = !menu->need_refresh;
 
-   for (i = 0; i < xmb->num_categories; i++)
+   for (i = 0; i < driver.menu->num_categories; i++)
    {
       xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
 
