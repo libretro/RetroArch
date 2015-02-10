@@ -348,11 +348,11 @@ static void *v4l_init(const char *device, uint64_t caps,
       goto error;
    }
 
-   v4l->scaler.in_width = v4l->scaler.out_width = v4l->width;
-   v4l->scaler.in_height = v4l->scaler.out_height = v4l->height;
-   v4l->scaler.in_fmt = SCALER_FMT_YUYV;
-   v4l->scaler.out_fmt = SCALER_FMT_ARGB8888;
-   v4l->scaler.in_stride = v4l->pitch;
+   v4l->scaler.in_width   = v4l->scaler.out_width = v4l->width;
+   v4l->scaler.in_height  = v4l->scaler.out_height = v4l->height;
+   v4l->scaler.in_fmt     = SCALER_FMT_YUYV;
+   v4l->scaler.out_fmt    = SCALER_FMT_ARGB8888;
+   v4l->scaler.in_stride  = v4l->pitch;
    v4l->scaler.out_stride = v4l->width * 4;
 
    if (!scaler_ctx_gen_filter(&v4l->scaler))
