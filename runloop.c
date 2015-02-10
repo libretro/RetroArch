@@ -417,7 +417,7 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
    const char *shader = NULL, *ext = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
 
-   if (!g_extern.shader_dir.list || !driver.video->set_shader)
+   if (!g_extern.shader_dir.list)
       return;
 
    if (pressed_next)
@@ -452,7 +452,7 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
    msg_queue_push(g_extern.msg_queue, msg, 1, 120);
    RARCH_LOG("Applying shader \"%s\".\n", shader);
 
-   if (!driver.video->set_shader(driver.video_data, type, shader))
+   if (!video_driver_set_shader(type, shader))
       RARCH_WARN("Failed to apply shader.\n");
 }
 
