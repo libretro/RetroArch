@@ -82,6 +82,7 @@ typedef struct
 
    menu_list_t *menu_list;
    size_t cat_selection_ptr;
+   size_t num_categories;
    size_t selection_ptr;
    bool need_refresh;
    bool msg_force;
