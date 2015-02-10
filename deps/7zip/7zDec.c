@@ -58,7 +58,7 @@ static uint8_t Readuint8_t(void *pp)
     p->cur = p->begin;
     p->end = p->begin + size;
     if (size != 0)
-      return *p->cur++;;
+      return *p->cur++;
   }
   p->extra = True;
   return 0;

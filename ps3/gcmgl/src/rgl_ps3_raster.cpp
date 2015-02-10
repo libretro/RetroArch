@@ -1259,7 +1259,7 @@ static void update_state_validation(void)
             gcm_emit_at(gcm_context->current, 7, (((platformTexture->gcmTexture.height) | ((platformTexture->gcmTexture.width) << 16))));
             gcm_emit_at(gcm_context->current, 8, ((platformTexture->gcmMethods.borderColor)));
             gcm_emit_at(gcm_context->current, 9, ((((1) << (18)) | ((CELL_GCM_NV4097_SET_TEXTURE_CONTROL3) + (unit) * 0x04))));
-            gcm_emit_at(gcm_context->current, 10, (((platformTexture->gcmTexture.pitch) | ((platformTexture->gcmTexture.depth) << 20))));;
+            gcm_emit_at(gcm_context->current, 10, (((platformTexture->gcmTexture.pitch) | ((platformTexture->gcmTexture.depth) << 20))));
             gcm_finish_n_commands(gcm_context->current, 11);
          }
          else

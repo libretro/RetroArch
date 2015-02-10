@@ -1054,7 +1054,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
                   playlist->entries[j].core_name, "|"); 
 
             if (!str_list)
-               continue;;
+               continue;
 
             if (str_list && str_list->size > 0)
                strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));

@@ -3636,7 +3636,7 @@ static bool setting_data_append_list_general_options(
          group_info.name,
          subgroup_info.name,
          general_write_handler,
-         general_read_handler);;
+         general_read_handler);
 
 #ifdef HAVE_THREADS
    CONFIG_UINT(
