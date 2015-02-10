@@ -123,7 +123,8 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
    libretrodb_t db;
    libretrodb_cursor_t cur;
    struct rmsgpack_dom_value item;
-   size_t i = 0, j;
+   size_t j;
+   unsigned k = 0;
    database_info_t *database_info = NULL;
    database_info_list_t *database_info_list = NULL;
 
@@ -142,12 +143,15 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
       if (item.type != RDT_MAP)
          continue;
 
-      database_info = (database_info_t*)realloc(database_info, (i+1) * sizeof(database_info_t));
+      database_info = (database_info_t*)realloc(database_info, (k+1) * sizeof(database_info_t));
 
       if (!database_info)
          goto error;
 
-      db_info = &database_info[i];
+      db_info = &database_info[k];
+
+      if (!db_info)
+         continue;
 
       db_info->name                   = NULL;
       db_info->description            = NULL;
@@ -284,11 +288,11 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
             db_info->md5 = strdup(md5);
          }
       }
-      i++;
+      k++;
    }
 
    database_info_list->list  = database_info;
-   database_info_list->count = i;
+   database_info_list->count = k;
 
    return database_info_list;
 
