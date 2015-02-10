@@ -1288,6 +1288,10 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
          && !g_extern.system.hw_render_callback.context_type)
    {
       thread_video_t *thr = (thread_video_t*)driver.video_data;
+
+      if (!thr)
+         return false;
+
       thr->cmd_data.font_init.method = gl_font_init_first;
       thr->cmd_data.font_init.font_driver = font_driver;
       thr->cmd_data.font_init.font_handle = font_handle;
