@@ -38,11 +38,17 @@ void file_list_push(file_list_t *list,
             list->capacity * sizeof(struct item_file));
    }
 
-   list->list[list->size].label = strdup(label);
-   list->list[list->size].path = strdup(path);
-   list->list[list->size].alt = NULL;
-   list->list[list->size].type = type;
+   list->list[list->size].label         = NULL;
+   list->list[list->size].path          = NULL;
+   list->list[list->size].alt           = NULL;
+   list->list[list->size].type          = type;
    list->list[list->size].directory_ptr = directory_ptr;
+
+   if (label)
+      list->list[list->size].label      = strdup(label);
+   if (path)
+      list->list[list->size].path       = strdup(path);
+
    list->size++;
 }
 
