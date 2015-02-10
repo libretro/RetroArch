@@ -26,4 +26,6 @@ bool screenshot_dump(const char *folder, const void *frame,
 
 void screenshot_generate_filename(char *filename, size_t size);
 
+bool take_screenshot(void);
+
 #endif

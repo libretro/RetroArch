@@ -22,8 +22,12 @@
 #include <stdint.h>
 #include <string.h>
 #include "general.h"
+#include "intl/intl.h"
 #include <file/file_path.h>
 #include "gfx/scaler/scaler.h"
+#include "retroarch.h"
+#include "retroarch_logger.h"
+#include "screenshot.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -164,6 +168,136 @@ end:
    free(lines);
 }
 #endif
+
+static bool take_screenshot_viewport(void)
+{
+   char screenshot_path[PATH_MAX_LENGTH];
+   const char *screenshot_dir = NULL;
+   uint8_t *buffer = NULL;
+   bool retval = false;
+   struct rarch_viewport vp = {0};
+
+   if (driver.video && driver.video->viewport_info)
+      driver.video->viewport_info(driver.video_data, &vp);
+
+   if (!vp.width || !vp.height)
+      return false;
+
+   if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
+      return false;
+
+   if (driver.video && driver.video->read_viewport)
+      if (!driver.video->read_viewport(driver.video_data, buffer))
+         goto done;
+
+   screenshot_dir = g_settings.screenshot_directory;
+
+   if (!*g_settings.screenshot_directory)
+   {
+      fill_pathname_basedir(screenshot_path, g_extern.basename,
+            sizeof(screenshot_path));
+      screenshot_dir = screenshot_path;
+   }
+
+   /* Data read from viewport is in bottom-up order, suitable for BMP. */
+   if (!screenshot_dump(screenshot_dir, buffer, vp.width, vp.height,
+            vp.width * 3, true))
+      goto done;
+
+   retval = true;
+
+done:
+   if (buffer)
+      free(buffer);
+   return retval;
+}
+
+static bool take_screenshot_raw(void)
+{
+   char screenshot_path[PATH_MAX_LENGTH];
+   const void *data           = g_extern.frame_cache.data;
+   unsigned width             = g_extern.frame_cache.width;
+   unsigned height            = g_extern.frame_cache.height;
+   int pitch                  = g_extern.frame_cache.pitch;
+   const char *screenshot_dir = g_settings.screenshot_directory;
+
+   if (!*g_settings.screenshot_directory)
+   {
+      fill_pathname_basedir(screenshot_path, g_extern.basename,
+            sizeof(screenshot_path));
+      screenshot_dir = screenshot_path;
+   }
+
+   /* Negative pitch is needed as screenshot takes bottom-up,
+    * but we use top-down.
+    */
+   return screenshot_dump(screenshot_dir,
+         (const uint8_t*)data + (height - 1) * pitch,
+         width, height, -pitch, false);
+}
+
+/**
+ * take_screenshot:
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool take_screenshot(void)
+{
+   bool viewport_read = false;
+   bool ret = true;
+   const char *msg = NULL;
+
+   /* No way to infer screenshot directory. */
+   if ((!*g_settings.screenshot_directory) && (!*g_extern.basename))
+      return false;
+
+   viewport_read = (g_settings.video.gpu_screenshot ||
+         g_extern.system.hw_render_callback.context_type
+         != RETRO_HW_CONTEXT_NONE) && driver.video->read_viewport &&
+      driver.video->viewport_info;
+
+   /* Clear out message queue to avoid OSD fonts to appear on screenshot. */
+   msg_queue_clear(g_extern.msg_queue);
+
+   if (viewport_read)
+   {
+#ifdef HAVE_MENU
+      /* Avoid taking screenshot of GUI overlays. */
+      if (driver.video_poke && driver.video_poke->set_texture_enable)
+         driver.video_poke->set_texture_enable(driver.video_data,
+               false, false);
+#endif
+
+      if (driver.video)
+         rarch_render_cached_frame();
+   }
+
+   if (viewport_read)
+      ret = take_screenshot_viewport();
+   else if (g_extern.frame_cache.data &&
+         (g_extern.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
+      ret = take_screenshot_raw();
+   else
+      RARCH_ERR(RETRO_LOG_TAKE_SCREENSHOT_ERROR);
+
+   if (ret)
+   {
+      RARCH_LOG(RETRO_LOG_TAKE_SCREENSHOT);
+      msg = RETRO_MSG_TAKE_SCREENSHOT;
+   }
+   else
+   {
+      RARCH_WARN(RETRO_LOG_TAKE_SCREENSHOT_FAILED);
+      msg = RETRO_MSG_TAKE_SCREENSHOT_FAILED;
+   }
+
+   msg_queue_push(g_extern.msg_queue, msg, 1, g_extern.is_paused ? 1 : 180);
+
+   if (g_extern.is_paused)
+      rarch_render_cached_frame();
+
+   return ret;
+}
 
 
 /* Take frame bottom-up. */
