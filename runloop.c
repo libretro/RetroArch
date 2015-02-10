@@ -91,7 +91,7 @@ static bool check_pause(bool pressed, bool frameadvance_pressed)
    pressed |= !g_extern.is_paused && frameadvance_pressed;
 
    if (g_settings.pause_nonactive)
-      focus = driver.video->focus(driver.video_data);
+      focus = video_driver_has_focus();
 
    if (focus && pressed)
       cmd = RARCH_CMD_PAUSE_TOGGLE;

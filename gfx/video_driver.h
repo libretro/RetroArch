@@ -246,6 +246,8 @@ void video_driver_make_current_context(void);
 
 bool video_driver_is_alive(void);
 
+bool video_driver_has_focus(void);
+
 void uninit_video_input(void);
 
 void init_video(void);
