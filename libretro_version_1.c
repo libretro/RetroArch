@@ -80,10 +80,10 @@ static void video_frame_filter(const void *data,
       rarch_recording_dump_frame(g_extern.filter.buffer,
             owidth, oheight, opitch);
 
-   data = g_extern.filter.buffer;
-   width = owidth;
+   data   = g_extern.filter.buffer;
+   width  = owidth;
    height = oheight;
-   pitch = opitch;
+   pitch  = opitch;
 }
 
 /**
