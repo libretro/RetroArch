@@ -216,32 +216,6 @@ void menu_free_list(void *data)
 }
 
 /**
- * menu_init_list:
- * @data                     : Menu handle.
- *
- * Initialize menu lists.
- * Will be performed after menu_init().
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool menu_init_list(void *data)
-{
-   menu_handle_t *menu = (menu_handle_t*)data;
-
-   if (!menu)
-      return false;
-
-   if (!menu_entries_init(menu))
-      return false;
-
-   if (driver.menu_ctx && driver.menu_ctx->init_lists)
-      if (!(driver.menu_ctx->init_lists(menu)))
-            return false;
-
-   return true;
-}
-
-/**
  * menu_free:
  * @info                     : Menu handle.
  *

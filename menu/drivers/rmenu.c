@@ -373,7 +373,6 @@ menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_render,
    NULL,
    rmenu_init,
-   NULL,
    rmenu_free,
    rmenu_context_reset,
    rmenu_context_destroy,

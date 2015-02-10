@@ -1698,7 +1698,6 @@ menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_frame,
    xmb_init,
-   NULL,
    xmb_free,
    xmb_context_reset,
    xmb_context_destroy,

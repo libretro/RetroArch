@@ -156,17 +156,6 @@ void *menu_init(const void *data);
 void menu_free_list(void *data);
 
 /**
- * menu_init_list:
- * @data                     : Menu handle.
- *
- * Initialize menu lists.
- * Will be performed after menu_init().
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool menu_init_list(void *data);
-
-/**
  * menu_iterate:
  * @input                    : input sample for this frame
  * @old_input                : input sample of the previous frame

@@ -694,7 +694,6 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_render,
    rmenu_xui_frame,
    rmenu_xui_init,
-   NULL,
    rmenu_xui_free,
    NULL,
    NULL,

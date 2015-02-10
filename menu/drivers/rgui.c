@@ -660,7 +660,6 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_render,
    NULL,
    rgui_init,
-   NULL,
    rgui_free,
    NULL,
    NULL,
