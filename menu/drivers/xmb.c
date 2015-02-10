@@ -605,6 +605,9 @@ static GLuint xmb_png_texture_load_(const char * file_name)
 static int xmb_png_texture_load_wrap(void *data)
 {
    const char *filename = (const char*)data;
+
+   if (!filename)
+      return 0;
    return xmb_png_texture_load_(filename);
 }
 
@@ -614,6 +617,10 @@ static GLuint xmb_png_texture_load(const char* file_name)
          && !g_extern.system.hw_render_callback.context_type)
    {
       thread_video_t *thr = (thread_video_t*)driver.video_data;
+
+      if (!thr)
+         return 0;
+
       thr->cmd_data.custom_command.method = xmb_png_texture_load_wrap;
       thr->cmd_data.custom_command.data   = (void*)file_name;
       thr->send_cmd_func(thr, CMD_CUSTOM_COMMAND);
@@ -1276,7 +1283,7 @@ static void xmb_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
 
-   if (menu->userdata)
+   if (menu && menu->userdata)
       free(menu->userdata);
 }
 
