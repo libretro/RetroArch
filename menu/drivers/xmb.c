@@ -1670,10 +1670,7 @@ static void xmb_toggle(bool menu_on)
 
    add_tween(XMB_DELAY, 1.0f, &xmb->alpha, &inOutQuad, NULL);
 
-   if (!xmb->active_category)
-      return;
-
-   xmb->prevent_populate = true;
+   xmb->prevent_populate = !menu->need_refresh;
 
    for (i = 0; i < xmb->num_categories; i++)
    {
