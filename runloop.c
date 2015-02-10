@@ -772,6 +772,9 @@ static inline retro_input_t input_keys_pressed(void)
    };
    retro_input_t ret = 0;
 
+   if (!driver.input || !driver.input_data)
+      return 0;
+
    g_extern.turbo_count++;
 
    check_block_hotkey(driver.input->key_pressed(driver.input_data,
