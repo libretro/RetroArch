@@ -99,7 +99,6 @@ menu_ctx_driver_t menu_ctx_ios = {
   NULL, // context_reset
   NULL, // context_destroy
   NULL, // populate_entries
-  NULL, // iterate
   NULL, // toggle
   NULL, // navigation_clear
   NULL, // navigation_decrement
