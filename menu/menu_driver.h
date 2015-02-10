@@ -180,14 +180,11 @@ typedef struct menu_ctx_driver
    void  (*render)(void);
    void  (*frame)(void);
    void* (*init)(void);
-   bool  (*init_lists)(void*);
    void  (*free)(void*);
    void  (*context_reset)(void*);
    void  (*context_destroy)(void*);
    void  (*populate_entries)(void*, const char *, const char *,
          unsigned);
-   void  (*iterate)(void*, unsigned);
-   int   (*input_postprocess)(uint64_t, uint64_t);
    void  (*toggle)(bool);
    void  (*navigation_clear)(void *, bool);
    void  (*navigation_decrement)(void *);
