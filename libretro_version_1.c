@@ -41,6 +41,12 @@ static void video_frame_scale(const void *data,
       size_t pitch)
 {
    RARCH_PERFORMANCE_INIT(video_frame_conv);
+
+   if (!data)
+      return;
+   if (data == RETRO_HW_FRAME_BUFFER_VALID)
+      return;
+
    RARCH_PERFORMANCE_START(video_frame_conv);
 
    driver.scaler.in_width      = width;
@@ -62,14 +68,17 @@ static void video_frame_filter(const void *data,
       unsigned width, unsigned height,
       size_t pitch)
 {
+   RARCH_PERFORMANCE_INIT(softfilter_process);
    unsigned owidth  = 0, oheight = 0, opitch = 0;
+
+   if (!data)
+      return;
 
    rarch_softfilter_get_output_size(g_extern.filter.filter,
          &owidth, &oheight, width, height);
 
    opitch = owidth * g_extern.filter.out_bpp;
 
-   RARCH_PERFORMANCE_INIT(softfilter_process);
    RARCH_PERFORMANCE_START(softfilter_process);
    rarch_softfilter_process(g_extern.filter.filter,
          g_extern.filter.buffer, opitch,
@@ -108,8 +117,7 @@ static void video_frame(const void *data, unsigned width,
    g_extern.frame_cache.height = height;
    g_extern.frame_cache.pitch  = pitch;
 
-   if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555 &&
-         data && data != RETRO_HW_FRAME_BUFFER_VALID)
+   if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
       video_frame_scale(data, width, height, pitch);
 
    /* Slightly messy code,
@@ -125,7 +133,7 @@ static void video_frame(const void *data, unsigned width,
    msg                = msg_queue_pull(g_extern.msg_queue);
    driver.current_msg = msg;
 
-   if (g_extern.filter.filter && data)
+   if (g_extern.filter.filter)
       video_frame_filter(data, width, height, pitch);
 
    if (!driver.video->frame(driver.video_data, data, width, height, pitch, msg))
