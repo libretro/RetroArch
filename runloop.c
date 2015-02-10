@@ -1093,7 +1093,8 @@ int rarch_main_iterate(void)
 
 
    /* Run libretro for one frame. */
-   pretro_run();
+   if (pretro_run)
+      pretro_run();
 
    for (i = 0; i < g_settings.input.max_users; i++)
    {
