@@ -63,6 +63,9 @@ int menu_entries_push_query(libretrodb_t *db,
       {
          struct rmsgpack_dom_value *key = &item.map.items[i].key;
          struct rmsgpack_dom_value *val = &item.map.items[i].value;
+
+         if (!key || !val)
+            continue;
             
          if (!strcmp(key->string.buff, "name"))
          {
@@ -143,6 +146,9 @@ static void menu_entries_content_list_push(
    for (j = 0; j < str_list->size; j++)
    {
       const char *name = str_list->elems[j].data;
+      
+      if (!name)
+         continue;
 
       if (str_list->elems[j].attr.i == RARCH_DIRECTORY)
          menu_entries_content_list_push(list, info, name);

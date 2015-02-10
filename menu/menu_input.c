@@ -69,6 +69,9 @@ static void menu_input_search_callback(void *userdata, const char *str)
    size_t idx;
    menu_handle_t *menu = (menu_handle_t*)userdata;
 
+   if (!menu)
+      return;
+
    if (str && *str && file_list_search(menu->menu_list->selection_buf, str, &idx))
          menu_navigation_set(menu, idx, true);
 
@@ -78,15 +81,19 @@ static void menu_input_search_callback(void *userdata, const char *str)
 void menu_input_st_uint_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
-   rarch_setting_t *current_setting = NULL;
+
+   if (!menu)
+      return;
 
    if (str && *str)
    {
+      rarch_setting_t *current_setting = NULL;
       if ((current_setting = (rarch_setting_t*)
                setting_data_find_setting(
                   menu->list_settings, menu->keyboard.label_setting)))
          *current_setting->value.unsigned_integer = strtoul(str, NULL, 0);
    }
+
    menu_input_key_end_line(menu);
 }
 
@@ -94,10 +101,14 @@ void menu_input_st_uint_callback(void *userdata, const char *str)
 void menu_input_st_string_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
-   rarch_setting_t *current_setting = NULL;
+
+   if (!menu)
+      return;
  
    if (str && *str)
    {
+      rarch_setting_t *current_setting = NULL;
+
       if ((current_setting = (rarch_setting_t*)
                setting_data_find_setting(
                   menu->list_settings, menu->keyboard.label_setting)))
@@ -118,8 +129,11 @@ void menu_input_st_string_callback(void *userdata, const char *str)
 
 void menu_input_st_cheat_callback(void *userdata, const char *str)
 {
-   menu_handle_t *menu = (menu_handle_t*)userdata;
    cheat_manager_t *cheat = g_extern.cheat;
+   menu_handle_t *menu = (menu_handle_t*)userdata;
+
+   if (!menu)
+      return;
  
    if (cheat && str && *str)
    {
@@ -333,14 +347,19 @@ bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code)
    menu->binds.timeout_end = rarch_get_time_usec() +
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
 
-   return menu->binds.begin <= menu->binds.last;
+   return (menu->binds.begin <= menu->binds.last);
 }
 
 int menu_input_bind_iterate(void *data)
 {
    char msg[PATH_MAX_LENGTH];
+   struct menu_bind_state binds;
    menu_handle_t *menu = (menu_handle_t*)data;
-   struct menu_bind_state binds = menu->binds;
+
+   if (!menu)
+      return 1;
+   
+   binds = menu->binds;
     
    if (driver.video_data && driver.menu_ctx &&
          driver.menu_ctx->render)

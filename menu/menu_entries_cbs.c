@@ -294,8 +294,10 @@ static int action_ok_shader_pass_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *menu_path = NULL;
+
    if (!driver.menu)
       return -1;
+
    (void)menu_path;
 
 #ifdef HAVE_SHADER_MANAGER
