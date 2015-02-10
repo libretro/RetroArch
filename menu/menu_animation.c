@@ -22,10 +22,9 @@ void tweens_free(tween_t *tween)
 {
    if (tween)
       free(tween);
-   tween = NULL;
 }
 
-bool add_tween(float duration, float target_value, float* subject,
+bool tweens_push(float duration, float target_value, float* subject,
       easingFunc easing, tween_cb cb)
 {
    tween_t *tween = NULL, *temp_tweens = NULL;
@@ -59,7 +58,7 @@ bool add_tween(float duration, float target_value, float* subject,
    return true;
 }
 
-static int iterate_tween(tween_t *tween, float dt,
+static int tweens_iterate(tween_t *tween, float dt,
       unsigned *active_tweens)
 {
    if (!tween)
@@ -90,13 +89,13 @@ static int iterate_tween(tween_t *tween, float dt,
    return 0;
 }
 
-void update_tweens(tween_t *tweens, float dt)
+void tweens_update(tween_t *tweens, float dt)
 {
    unsigned i;
    unsigned active_tweens = 0;
 
    for(i = 0; i < driver.menu->numtweens; i++)
-      iterate_tween(&tweens[i], dt, &active_tweens);
+      tweens_iterate(&tweens[i], dt, &active_tweens);
 
    if (!active_tweens)
       driver.menu->numtweens = 0;

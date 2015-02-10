@@ -493,10 +493,10 @@ static void xmb_selection_pointer_changed(void)
          iz = xmb->i_active_zoom;
       }
 
-      add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
-      add_tween(XMB_DELAY, ia, &node->label_alpha, &inOutQuad, NULL);
-      add_tween(XMB_DELAY, iz, &node->zoom,  &inOutQuad, NULL);
-      add_tween(XMB_DELAY, iy, &node->y,     &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, ia, &node->label_alpha, &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, iz, &node->zoom,  &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, iy, &node->y,     &inOutQuad, NULL);
    }
 }
 
@@ -521,9 +521,9 @@ static void xmb_list_open_old(file_list_t *list, int dir, size_t current)
       if (dir == -1)
          ia = 0;
 
-      add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
-      add_tween(XMB_DELAY, 0, &node->label_alpha, &inOutQuad, NULL);
-      add_tween(XMB_DELAY, xmb->icon_size*dir*-2, &node->x, &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, 0, &node->label_alpha, &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, xmb->icon_size*dir*-2, &node->x, &inOutQuad, NULL);
    }
 }
 
@@ -567,9 +567,9 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
       if (i == current)
          ia = xmb->i_active_alpha;
 
-      add_tween(XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
-      add_tween(XMB_DELAY, ia, &node->label_alpha,  &inOutQuad, NULL);
-      add_tween(XMB_DELAY, 0, &node->x, &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, ia, &node->label_alpha,  &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, 0, &node->x, &inOutQuad, NULL);
    }
 
    xmb->old_depth = xmb->depth;
@@ -699,9 +699,9 @@ static void xmb_list_switch_old(file_list_t *list, int dir, size_t current)
       if (!xmb)
           continue;
 
-      add_tween(XMB_DELAY, 0, &node->alpha,  &inOutQuad, NULL);
-      add_tween(XMB_DELAY, 0, &node->label_alpha,  &inOutQuad, NULL);
-      add_tween(XMB_DELAY, -xmb->hspacing*dir,  &node->x, &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, 0, &node->alpha,  &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, 0, &node->label_alpha,  &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, -xmb->hspacing*dir,  &node->x, &inOutQuad, NULL);
    }
 }
 
@@ -729,9 +729,9 @@ static void xmb_list_switch_new(file_list_t *list, int dir, size_t current)
       if (i == current)
          ia = 1.0;
       
-      add_tween(XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
-      add_tween(XMB_DELAY, ia, &node->label_alpha,  &inOutQuad, NULL);
-      add_tween(XMB_DELAY, 0,  &node->x, &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, ia, &node->label_alpha,  &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, 0,  &node->x, &inOutQuad, NULL);
    }
 }
 
@@ -795,11 +795,11 @@ static void xmb_list_open(void)
          iz = xmb->c_active_zoom;
       }
 
-      add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
-      add_tween(XMB_DELAY, iz, &node->zoom, &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, iz, &node->zoom, &inOutQuad, NULL);
    }
 
-   add_tween(XMB_DELAY, xmb->hspacing * -(float)driver.menu->cat_selection_ptr,
+   tweens_push(XMB_DELAY, xmb->hspacing * -(float)driver.menu->cat_selection_ptr,
          &xmb->categories_x, &inOutQuad, NULL);
 
    dir = -1;
@@ -840,7 +840,7 @@ static void xmb_list_switch(void)
       else if (xmb->depth <= 1)
          ia = xmb->c_passive_alpha;
 
-      add_tween(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
+      tweens_push(XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
    }
 
    xmb_list_open_old(xmb->selection_buf_old, dir, xmb->selection_ptr_old);
@@ -849,12 +849,12 @@ static void xmb_list_switch(void)
    switch (xmb->depth)
    {
       case 1:
-         add_tween(XMB_DELAY, xmb->icon_size*-(xmb->depth*2-2), &xmb->x, &inOutQuad, NULL);
-         add_tween(XMB_DELAY, 0, &xmb->arrow_alpha, &inOutQuad, NULL);
+         tweens_push(XMB_DELAY, xmb->icon_size*-(xmb->depth*2-2), &xmb->x, &inOutQuad, NULL);
+         tweens_push(XMB_DELAY, 0, &xmb->arrow_alpha, &inOutQuad, NULL);
          break;
       case 2:
-         add_tween(XMB_DELAY, xmb->icon_size*-(xmb->depth*2-2), &xmb->x, &inOutQuad, NULL);
-         add_tween(XMB_DELAY, 1, &xmb->arrow_alpha, &inOutQuad, NULL);
+         tweens_push(XMB_DELAY, xmb->icon_size*-(xmb->depth*2-2), &xmb->x, &inOutQuad, NULL);
+         tweens_push(XMB_DELAY, 1, &xmb->arrow_alpha, &inOutQuad, NULL);
          break;
    }
 
@@ -1062,7 +1062,7 @@ static void xmb_frame(void)
    if (!xmb || !gl)
       return;
 
-   update_tweens(driver.menu->tweens, 0.002);
+   tweens_update(driver.menu->tweens, 0.002);
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
@@ -1670,7 +1670,7 @@ static void xmb_toggle(bool menu_on)
       return;
    }
 
-   add_tween(XMB_DELAY, 1.0f, &xmb->alpha, &inOutQuad, NULL);
+   tweens_push(XMB_DELAY, 1.0f, &xmb->alpha, &inOutQuad, NULL);
 
    xmb->prevent_populate = !menu->need_refresh;
 

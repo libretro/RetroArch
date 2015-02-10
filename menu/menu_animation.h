@@ -40,10 +40,10 @@ typedef struct
    tween_cb cb;
 } tween_t;
 
-bool add_tween(float duration, float target_value, float* subject,
+bool tweens_push(float duration, float target_value, float* subject,
       easingFunc easing, tween_cb cb);
 
-void update_tweens(tween_t *tweens, float dt);
+void tweens_update(tween_t *tweens, float dt);
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
