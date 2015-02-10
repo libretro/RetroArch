@@ -244,6 +244,8 @@ retro_proc_address_t video_driver_get_proc_address(const char *sym);
 
 void video_driver_make_current_context(void);
 
+bool video_driver_is_alive(void);
+
 void uninit_video_input(void);
 
 void init_video(void);

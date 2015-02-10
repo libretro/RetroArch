@@ -636,7 +636,7 @@ static inline int time_to_exit(retro_input_t input)
          || (g_extern.max_frames && g_extern.frame_count >= 
             g_extern.max_frames)
          || (g_extern.bsv.movie_end && g_extern.bsv.eof_exit)
-         || !driver.video->alive(driver.video_data)
+         || !video_driver_is_alive()
       )
       return 1;
    return 0;
