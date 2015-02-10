@@ -527,6 +527,20 @@ static int do_pre_state_checks(
    return 0;
 }
 
+#ifdef HAVE_NETPLAY
+static int do_netplay_state_checks(
+      retro_input_t input, retro_input_t old_input,
+      retro_input_t trigger_input)
+{
+   if (BIT64_GET(trigger_input, RARCH_NETPLAY_FLIP))
+      rarch_main_command(RARCH_CMD_NETPLAY_FLIP_PLAYERS);
+
+   if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+      rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
+   return 0;
+}
+#endif
+
 /**
  * do_state_checks:
  * @input                : input sample for this frame
@@ -555,14 +569,8 @@ static int do_state_checks(
 
 #ifdef HAVE_NETPLAY
    if (driver.netplay_data)
-   {
-      if (BIT64_GET(trigger_input, RARCH_NETPLAY_FLIP))
-         rarch_main_command(RARCH_CMD_NETPLAY_FLIP_PLAYERS);
-
-      if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
-         rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
-      return 0;
-   }
+      return do_netplay_state_checks(input,
+            old_input, trigger_input);
 #endif
    check_pause_func(trigger_input);
 
