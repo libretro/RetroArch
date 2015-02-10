@@ -335,18 +335,10 @@ end:
    menu_common_list_clear(list);
 }
 
-
-void menu_list_push(file_list_t *list,
+static void menu_list_insert(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr)
 {
-   if (!list)
-      return;
-   if (!label)
-      return;
-
-   file_list_push(list, path, label, type, directory_ptr);
-
    if (!driver.menu_ctx)
       return;
 
@@ -354,6 +346,17 @@ void menu_list_push(file_list_t *list,
       driver.menu_ctx->list_insert(list, path, label, list->size - 1);
 
    menu_common_list_insert(list, path, label, type, list->size - 1);
+}
+
+void menu_list_push(file_list_t *list,
+      const char *path, const char *label,
+      unsigned type, size_t directory_ptr)
+{
+   if (!list || !label)
+      return;
+
+   file_list_push(list, path, label, type, directory_ptr);
+   menu_list_insert(list, path, label, type, directory_ptr);
 }
 
 void menu_list_push_refresh(file_list_t *list,

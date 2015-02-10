@@ -391,3 +391,21 @@ void init_audio(void)
       driver.audio->start(driver.audio_data);
    }
 }
+
+bool audio_driver_mute_toggle(void)
+{
+   if (!driver.audio_data || !driver.audio_active)
+      return false;
+
+   g_settings.audio.mute_enable = !g_settings.audio.mute_enable;
+
+   if (g_settings.audio.mute_enable)
+      rarch_main_command(RARCH_CMD_AUDIO_STOP);
+   else if (!rarch_main_command(RARCH_CMD_AUDIO_START))
+   {
+      driver.audio_active = false;
+      return false;
+   }
+
+   return true;
+}

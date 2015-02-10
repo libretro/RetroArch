@@ -110,6 +110,8 @@ const void *audio_driver_find_handle(int index);
  **/
 const char *audio_driver_find_ident(int index);
 
+bool audio_driver_mute_toggle(void);
+
 /**
  * config_get_audio_driver_options:
  *

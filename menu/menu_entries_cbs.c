@@ -888,7 +888,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
    for (i = 0; i < db_info->count; i++)
    {
       char tmp[PATH_MAX_LENGTH];
-      database_info_t *db_info_entry = (database_info_t*)&db_info->list[i];
+      database_info_t *db_info_entry = &db_info->list[i];
 
       if (!db_info_entry)
          continue;

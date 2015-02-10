@@ -30,6 +30,7 @@
 #include "input/keyboard_line.h"
 #include "audio/audio_utils.h"
 #include "retroarch_logger.h"
+#include "record/record_driver.h"
 #include "intl/intl.h"
 
 #ifdef HAVE_NETPLAY
@@ -85,8 +86,8 @@ static void video_frame_filter(const void *data,
          data, width, height, pitch);
    RARCH_PERFORMANCE_STOP(softfilter_process);
 
-   if (driver.recording_data && g_settings.video.post_filter_record)
-      rarch_recording_dump_frame(g_extern.filter.buffer,
+   if (g_settings.video.post_filter_record)
+      recording_dump_frame(g_extern.filter.buffer,
             owidth, oheight, opitch);
 
    data   = g_extern.filter.buffer;
@@ -124,11 +125,11 @@ static void video_frame(const void *data, unsigned width,
     * but we really need to do processing before blocking on VSync
     * for best possible scheduling.
     */
-   if (driver.recording_data && (!g_extern.filter.filter
+   if ((!g_extern.filter.filter
             || !g_settings.video.post_filter_record || !data
             || g_extern.record_gpu_buffer)
       )
-      rarch_recording_dump_frame(data, width, height, pitch);
+      recording_dump_frame(data, width, height, pitch);
 
    msg                = msg_queue_pull(g_extern.msg_queue);
    driver.current_msg = msg;

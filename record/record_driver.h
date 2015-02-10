@@ -117,6 +117,20 @@ const ffemu_backend_t *ffemu_find_backend(const char *ident);
 bool ffemu_init_first(const ffemu_backend_t **backend, void **data,
       const struct ffemu_params *params);
 
+void recording_dump_frame(const void *data, unsigned width,
+      unsigned height, size_t pitch);
+
+bool recording_deinit(void);
+
+/**
+ * recording_init:
+ *
+ * Initializes recording.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool recording_init(void);
+
 #ifdef __cplusplus
 }
 #endif
