@@ -747,7 +747,7 @@ static void check_block_hotkey(bool enable_hotkey)
       bind->joyaxis != AXIS_NONE ||
       autoconf_bind->key != RETROK_UNKNOWN ||
       autoconf_bind->joykey != NO_BTN ||
-      autoconf_bind->joyaxis != AXIS_NONE;;
+      autoconf_bind->joyaxis != AXIS_NONE;
 
    driver.block_hotkey = driver.block_input ||
       (use_hotkey_enable && !enable_hotkey);

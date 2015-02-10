@@ -258,7 +258,7 @@ static void *coreaudio_init(const char *device,
       goto error;
    
    /* Check returned audio format. */
-   i_size = sizeof(real_desc);;
+   i_size = sizeof(real_desc);
    if (AudioUnitGetProperty(dev->dev, kAudioUnitProperty_StreamFormat, 
             kAudioUnitScope_Input, 0, &real_desc, &i_size) != noErr)
       goto error;
