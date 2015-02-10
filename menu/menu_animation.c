@@ -18,52 +18,48 @@
 #include "../driver.h"
 #include <math.h>
 
-void tweens_free(tween_t *tween)
+void menu_animation_free(animation_t *animation)
 {
-   if (tween)
-      free(tween);
-}
+   size_t i;
 
-bool tweens_push(float duration, float target_value, float* subject,
-      easingFunc easing, tween_cb cb, unsigned *numtweens)
-{
-   size_t cap;
-   tween_t *temp_tweens = NULL;
+   if (!animation)
+      return;
 
-   if (!driver.menu)
-      return false;
-
-   cap = *numtweens;
-   
-   temp_tweens = (tween_t*)realloc(driver.menu->tweens,
-         (cap + 1) * sizeof(tween_t));
-
-   if (!temp_tweens)
+   for (i = 0; i < animation->size; i++)
    {
-      tweens_free(driver.menu->tweens);
-      return false;
+      free(animation->list[i].subject);
    }
 
-   driver.menu->tweens  = temp_tweens;
+   free(animation->list);
+   free(animation);
+}
 
-   if (!driver.menu->tweens)
-      return false;
+bool menu_animation_push(animation_t *animation,
+      float duration, float target_value, float* subject,
+      easingFunc easing, tween_cb cb)
+{
+   if (animation->size >= animation->capacity)
+   {
+      animation->capacity++;
+      animation->list = (struct tween*)realloc(animation->list,
+            animation->capacity * sizeof(struct tween));
+   }
 
-   driver.menu->tweens[cap].alive         = 1;
-   driver.menu->tweens[cap].duration      = duration;
-   driver.menu->tweens[cap].running_since = 0;
-   driver.menu->tweens[cap].initial_value = *subject;
-   driver.menu->tweens[cap].target_value  = target_value;
-   driver.menu->tweens[cap].subject       = subject;
-   driver.menu->tweens[cap].easing        = easing;
-   driver.menu->tweens[cap].cb            = cb;
+   animation->list[animation->size].alive         = 1;
+   animation->list[animation->size].duration      = duration;
+   animation->list[animation->size].running_since = 0;
+   animation->list[animation->size].initial_value = *subject;
+   animation->list[animation->size].target_value  = target_value;
+   animation->list[animation->size].subject       = subject;
+   animation->list[animation->size].easing        = easing;
+   animation->list[animation->size].cb            = cb;
 
-   *numtweens = cap + 1;
+   animation->size++;
 
    return true;
 }
 
-static int tweens_iterate(tween_t *tween, float dt,
+static int menu_animation_iterate(struct tween *tween, float dt,
       unsigned *active_tweens)
 {
    if (!tween)
@@ -94,17 +90,16 @@ static int tweens_iterate(tween_t *tween, float dt,
    return 0;
 }
 
-void tweens_update(tween_t *tweens, float dt,
-      unsigned *numtweens)
+void menu_animation_update(animation_t *animation, float dt)
 {
    unsigned i;
    unsigned active_tweens = 0;
 
-   for(i = 0; i < *numtweens; i++)
-      tweens_iterate(&tweens[i], dt, &active_tweens);
+   for(i = 0; i < animation->size; i++)
+      menu_animation_iterate(&animation->list[i], dt, &active_tweens);
 
    if (!active_tweens)
-      *numtweens = 0;
+      animation->size = 0;
 }
 
 /* Linear */

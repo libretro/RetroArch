@@ -142,8 +142,7 @@ typedef struct
    } keyboard;
 
    rarch_setting_t *list_settings;
-   tween_t* tweens;
-   unsigned numtweens;
+   animation_t *animation;
 
    content_playlist_t *db_playlist;
    char db_playlist_file[PATH_MAX_LENGTH];

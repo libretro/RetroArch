@@ -28,7 +28,7 @@ extern "C" {
 typedef float (*easingFunc)(float, float, float, float);
 typedef void  (*tween_cb) (void);
 
-typedef struct
+struct tween
 {
    int    alive;
    float  duration;
@@ -38,12 +38,22 @@ typedef struct
    float* subject;
    easingFunc easing;
    tween_cb cb;
-} tween_t;
+};
 
-bool tweens_push(float duration, float target_value, float* subject,
-      easingFunc easing, tween_cb cb, unsigned *numtweens);
+typedef struct animation
+{
+   struct tween *list;
 
-void tweens_update(tween_t *tweens, float dt, unsigned *numtweens);
+   size_t capacity;
+   size_t size;
+} animation_t;
+
+void menu_animation_free(animation_t *animation);
+
+bool menu_animation_push(animation_t *animation, float duration, float target_value, float* subject,
+      easingFunc easing, tween_cb cb);
+
+void menu_animation_update(animation_t *animation, float dt);
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 

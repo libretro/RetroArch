@@ -15,6 +15,7 @@
  */
 
 #include "menu.h"
+#include "menu_animation.h"
 #include "menu_entries.h"
 #include "menu_shader.h"
 #include "../dynamic.h"
@@ -196,6 +197,14 @@ void *menu_init(const void *data)
 
    menu_shader_manager_init(menu);
 
+   menu->animation = (animation_t*)calloc(1, sizeof(animation_t));
+
+   if (!menu->animation)
+   {
+      free(menu);
+      return NULL;
+   }
+
    return menu;
 }
 
@@ -244,6 +253,9 @@ void menu_free(void *data)
 #ifdef HAVE_DYNAMIC
    libretro_free_system_info(&g_extern.menu.info);
 #endif
+
+   menu_animation_free(menu->animation);
+   menu->animation = NULL;
 
    menu_list_free(menu->menu_list);
    menu->menu_list = NULL;
