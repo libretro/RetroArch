@@ -27,33 +27,38 @@ void tweens_free(tween_t *tween)
 bool tweens_push(float duration, float target_value, float* subject,
       easingFunc easing, tween_cb cb, unsigned *numtweens)
 {
-   tween_t *tween = NULL, *temp_tweens = NULL;
+   size_t cap;
+   tween_t *temp_tweens = NULL;
 
    if (!driver.menu)
       return false;
+
+   cap = *numtweens;
    
    temp_tweens = (tween_t*)realloc(driver.menu->tweens,
-         (*numtweens + 1) * sizeof(tween_t));
+         (cap + 1) * sizeof(tween_t));
 
    if (!temp_tweens)
+   {
+      tweens_free(driver.menu->tweens);
       return false;
+   }
 
    driver.menu->tweens  = temp_tweens;
-   tween                = (tween_t*)&driver.menu->tweens[*numtweens];
 
-   if (!tween)
+   if (!driver.menu->tweens)
       return false;
 
-   tween->alive         = 1;
-   tween->duration      = duration;
-   tween->running_since = 0;
-   tween->initial_value = *subject;
-   tween->target_value  = target_value;
-   tween->subject       = subject;
-   tween->easing        = easing;
-   tween->cb            = cb;
+   driver.menu->tweens[cap].alive         = 1;
+   driver.menu->tweens[cap].duration      = duration;
+   driver.menu->tweens[cap].running_since = 0;
+   driver.menu->tweens[cap].initial_value = *subject;
+   driver.menu->tweens[cap].target_value  = target_value;
+   driver.menu->tweens[cap].subject       = subject;
+   driver.menu->tweens[cap].easing        = easing;
+   driver.menu->tweens[cap].cb            = cb;
 
-   *numtweens = *numtweens + 1;
+   *numtweens = cap + 1;
 
    return true;
 }
