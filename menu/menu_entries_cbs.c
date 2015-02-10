@@ -1167,13 +1167,6 @@ static int action_ok_core_load(const char *path,
 static int action_ok_core_download(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   const char *menu_path    = NULL;
-   if (!driver.menu)
-      return -1;
-
-   menu_list_get_last_stack(driver.menu->menu_list,
-         &menu_path, NULL, NULL);
-
    return 0;
 }
 
