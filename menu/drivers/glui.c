@@ -498,7 +498,8 @@ static void glui_context_reset(void *data)
 
 static void glui_navigation_clear(void *data, bool pending_push)
 {
-   driver.menu->begin = 0;
+   if (driver.menu)
+      driver.menu->begin = 0;
 }
 
 static void glui_navigation_set(void *data, bool scroll)
@@ -518,15 +519,15 @@ static void glui_navigation_set(void *data, bool scroll)
    if (!scroll)
       return;
 
-   if (driver.menu->selection_ptr < glui->term_height/2)
-      driver.menu->begin = 0;
-   else if (driver.menu->selection_ptr >= glui->term_height/2
-         && driver.menu->selection_ptr <
-         menu_list_get_size(driver.menu->menu_list) - glui->term_height/2)
-      driver.menu->begin = driver.menu->selection_ptr - glui->term_height/2;
-   else if (driver.menu->selection_ptr >=
-         menu_list_get_size(driver.menu->menu_list) - glui->term_height/2)
-      driver.menu->begin = menu_list_get_size(driver.menu->menu_list)
+   if (menu->selection_ptr < glui->term_height/2)
+      menu->begin = 0;
+   else if (menu->selection_ptr >= glui->term_height/2
+         && menu->selection_ptr <
+         menu_list_get_size(menu->menu_list) - glui->term_height/2)
+      menu->begin = menu->selection_ptr - glui->term_height/2;
+   else if (menu->selection_ptr >=
+         menu_list_get_size(menu->menu_list) - glui->term_height/2)
+      menu->begin = menu_list_get_size(menu->menu_list)
             - glui->term_height;
 }
 

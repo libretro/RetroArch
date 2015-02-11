@@ -421,17 +421,17 @@ end:
    string_list_free(list);
 }
 
-static void xmb_selection_pointer_changed(void)
+static void xmb_selection_pointer_changed(menu_handle_t *menu)
 {
    int i;
    unsigned current, end;
-   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+   xmb_handle_t *xmb = (xmb_handle_t*)menu->userdata;
 
    if (!xmb)
       return;
 
-   current = driver.menu->selection_ptr;
-   end = menu_list_get_size(driver.menu->menu_list);
+   current = menu->selection_ptr;
+   end     = menu_list_get_size(menu->menu_list);
 
    for (i = 0; i < end; i++)
    {
@@ -439,7 +439,7 @@ static void xmb_selection_pointer_changed(void)
       float ia = xmb->i_passive_alpha;
       float iz = xmb->i_passive_zoom;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(
-            driver.menu->menu_list->selection_buf, i);
+            menu->menu_list->selection_buf, i);
 
       if (!node)
          continue;
@@ -452,10 +452,10 @@ static void xmb_selection_pointer_changed(void)
          iz = xmb->i_active_zoom;
       }
 
-      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->label_alpha, EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, iz, &node->zoom,  EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, iy, &node->y,     EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(menu->animation, XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(menu->animation, XMB_DELAY, ia, &node->label_alpha, EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(menu->animation, XMB_DELAY, iz, &node->zoom,  EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(menu->animation, XMB_DELAY, iy, &node->y,     EASING_IN_OUT_QUAD, NULL);
    }
 }
 
@@ -1335,55 +1335,42 @@ static void xmb_context_reset(void *data)
 
 static void xmb_navigation_clear(void *data, bool pending_push)
 {
-   (void)data;
-
    if (!pending_push)
-      xmb_selection_pointer_changed();
+      xmb_selection_pointer_changed(data);
 }
 
 static void xmb_navigation_decrement(void *data)
 {
-   (void)data;
-
-   xmb_selection_pointer_changed();
+   xmb_selection_pointer_changed(data);
 }
 
 static void xmb_navigation_increment(void *data)
 {
-   (void)data;
-
-   xmb_selection_pointer_changed();
+   xmb_selection_pointer_changed(data);
 }
 
 static void xmb_navigation_set(void *data, bool scroll)
 {
-   (void)data;
    (void)scroll;
 
-   xmb_selection_pointer_changed();
+   xmb_selection_pointer_changed(data);
 }
 
 static void xmb_navigation_set_last(void *data)
 {
-   (void)data;
-
-   xmb_selection_pointer_changed();
+   xmb_selection_pointer_changed(data);
 }
 
 static void xmb_navigation_descend_alphabet(void *data, size_t *unused)
 {
-   (void)data;
    (void)unused;
-
-   xmb_selection_pointer_changed();
+   xmb_selection_pointer_changed(data);
 }
 
 static void xmb_navigation_ascend_alphabet(void *data, size_t *unused)
 {
-   (void)data;
    (void)unused;
-
-   xmb_selection_pointer_changed();
+   xmb_selection_pointer_changed(data);
 }
 
 static void xmb_list_insert(void *data,
