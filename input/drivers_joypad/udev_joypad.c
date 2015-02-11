@@ -85,11 +85,10 @@ static inline int16_t compute_axis(const struct input_absinfo *info, int value)
    return axis;
 }
 
-static void udev_poll_pad(unsigned p)
+static void udev_poll_pad(struct udev_joypad *pad, unsigned p)
 {
    int i, len;
    struct input_event events[32];
-   struct udev_joypad *pad = (struct udev_joypad*)&udev_pads[p];
 
    if (pad->fd < 0)
       return;
@@ -268,7 +267,7 @@ static void udev_joypad_poll(void)
       handle_hotplug();
 
    for (i = 0; i < MAX_USERS; i++)
-      udev_poll_pad(i);
+      udev_poll_pad(&udev_pads[i], i);
 }
 
 #define test_bit(nr, addr) \
