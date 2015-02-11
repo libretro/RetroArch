@@ -2122,23 +2122,29 @@ static int action_toggle_shader_scale_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
-   struct video_shader *shader = driver.menu->shader;
-   struct video_shader_pass *shader_pass = &shader->pass[pass];
+   struct video_shader *shader = NULL;
+   struct video_shader_pass *shader_pass = NULL;
+   
+   if (!driver.menu)
+      return -1;
+   shader = driver.menu->shader;
+   if (!shader)
+      return -1;
+   shader_pass = &shader->pass[pass];
+   if (!shader_pass)
+      return -1;
 
    switch (action)
    {
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
          {
-            unsigned current_scale = shader_pass->fbo.scale_x;
-            unsigned delta = action == MENU_ACTION_LEFT ? 5 : 1;
-            current_scale = (current_scale + delta) % 6;
+            unsigned current_scale   = shader_pass->fbo.scale_x;
+            unsigned delta           = (action == MENU_ACTION_LEFT) ? 5 : 1;
+            current_scale            = (current_scale + delta) % 6;
 
-            if (shader_pass)
-            {
-               shader_pass->fbo.valid = current_scale;
-               shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
-            }
+            shader_pass->fbo.valid   = current_scale;
+            shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
          }
          break;
    }
@@ -2151,11 +2157,19 @@ static int action_start_shader_filter_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
-   struct video_shader *shader = driver.menu->shader;
-   struct video_shader_pass *shader_pass = &shader->pass[pass];
+   struct video_shader *shader = NULL;
+   struct video_shader_pass *shader_pass = NULL;
+   
+   if (!driver.menu)
+      return -1;
+   shader = driver.menu->shader;
+   if (!shader)
+      return -1;
+   shader_pass = &shader->pass[pass];
+   if (!shader_pass)
+      return -1;
 
-   if (shader && shader_pass)
-      shader_pass->filter = RARCH_FILTER_UNSPEC;
+   shader_pass->filter = RARCH_FILTER_UNSPEC;
 #endif
 
    return 0;
@@ -2166,8 +2180,17 @@ static int action_toggle_shader_filter_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
-   struct video_shader *shader = driver.menu->shader;
-   struct video_shader_pass *shader_pass = &shader->pass[pass];
+   struct video_shader *shader = NULL;
+   struct video_shader_pass *shader_pass = NULL;
+   
+   if (!driver.menu)
+      return -1;
+   shader = driver.menu->shader;
+   if (!shader)
+      return -1;
+   shader_pass = &shader->pass[pass];
+   if (!shader_pass)
+      return -1;
 
    switch (action)
    {
@@ -2175,8 +2198,7 @@ static int action_toggle_shader_filter_pass(unsigned type, const char *label,
       case MENU_ACTION_RIGHT:
          {
             unsigned delta = (action == MENU_ACTION_LEFT) ? 2 : 1;
-            if (shader_pass)
-               shader_pass->filter = ((shader_pass->filter + delta) % 3);
+            shader_pass->filter = ((shader_pass->filter + delta) % 3);
          }
          break;
    }
@@ -2199,11 +2221,13 @@ static int action_start_shader_num_passes(unsigned type, const char *label,
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader = driver.menu->shader;
-
+   struct video_shader *shader = NULL;
+   
+   if (!driver.menu)
+      return -1;
+   shader = driver.menu->shader;
    if (!shader)
       return -1;
-
    if (shader->passes)
       shader->passes = 0;
    driver.menu->need_refresh = true;
@@ -2263,8 +2287,11 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader = driver.menu->shader;
-
+   struct video_shader *shader = NULL;
+   
+   if (!driver.menu)
+      return -1;
+   shader = driver.menu->shader;
    if (!shader)
       return -1;
 
