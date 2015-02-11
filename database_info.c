@@ -35,7 +35,7 @@ int database_open_cursor(libretrodb_t *db,
    libretrodb_query_t *q = NULL;
 
    if (query) 
-      q = libretrodb_query_compile(db, query,
+      q = (libretrodb_query_t*)libretrodb_query_compile(db, query,
       strlen(query), &error);
     
    if (error)
