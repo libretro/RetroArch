@@ -492,7 +492,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb, file_list_t *list, int dir, siz
    {
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
 
-      if (!xmb)
+      if (!node)
          continue;
 
       if (dir == 1 || (dir == -1 && i != current))
