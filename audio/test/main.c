@@ -16,7 +16,7 @@
 // Resampler that reads raw S16NE/stereo from stdin and outputs to stdout in S16NE/stereo.
 // Used for testing and performance benchmarking.
 
-#include "../resamplers/resampler.h"
+#include "../audio_resampler_driver.h"
 #include "../audio_utils.h"
 #include <stdio.h>
 #include <stdlib.h>
