@@ -24,7 +24,7 @@
  *
  * Initializes shader manager.
  **/
-void menu_shader_manager_init(void *data)
+void menu_shader_manager_init(menu_handle_t *menu)
 {
 #ifdef HAVE_SHADER_MANAGER
    char preset_path[PATH_MAX_LENGTH];
@@ -32,7 +32,6 @@ void menu_shader_manager_init(void *data)
    struct video_shader *shader = NULL;
    config_file_t *conf = NULL;
    const char *config_path = NULL;
-   menu_handle_t *menu = (menu_handle_t*)data;
 
    if (!menu)
       return;

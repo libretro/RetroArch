@@ -5355,27 +5355,23 @@ static void menu_entries_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1)
 {
-   if (!cbs || !driver.menu)
-      return;
-
-   cbs->action_refresh = action_refresh_default;
+   if (cbs)
+      cbs->action_refresh = action_refresh_default;
 }
 
 static void menu_entries_cbs_init_bind_iterate(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1)
 {
-   if (!cbs || !driver.menu)
-      return;
-
-   cbs->action_iterate = action_iterate_main;
+   if (cbs)
+      cbs->action_iterate = action_iterate_main;
 }
 
 static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1)
 {
-   if (!cbs || !driver.menu)
+   if (!cbs)
       return;
 
    if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
@@ -5524,7 +5520,7 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1)
 {
-   if (!cbs || !driver.menu)
+   if (!cbs)
       return;
 
    cbs->action_deferred_push = deferred_push_default;
