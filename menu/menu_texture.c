@@ -30,7 +30,8 @@ static void menu_texture_png_load_gl(struct texture_image *ti,
    /* Generate the OpenGL texture object */
    glGenTextures(1, id);
    gl_load_texture_data((GLuint)*id, 
-         ti, RARCH_WRAP_EDGE, filter_type, 4 /* TODO/FIXME - dehardcode */);
+         RARCH_WRAP_EDGE, filter_type, 4 /* TODO/FIXME - dehardcode */,
+         ti->width, ti->height, ti->pixels);
 }
 #endif
 

@@ -404,10 +404,11 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height,
       bool force_full, bool allow_rotate);
 
 void gl_load_texture_data(GLuint id,
-      const struct texture_image *img,
       enum gfx_wrap_type wrap_type,
       enum texture_filter_type filter_type,
-      unsigned alignment);
+      unsigned alignment,
+      unsigned width, unsigned height,
+      const void *frame);
 
 bool gl_load_luts(const struct video_shader *generic_shader,
       GLuint *lut_textures);

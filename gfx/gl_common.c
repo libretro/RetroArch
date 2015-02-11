@@ -17,10 +17,11 @@
 #include "gl_common.h"
 
 void gl_load_texture_data(GLuint id,
-      const struct texture_image *img,
       enum gfx_wrap_type wrap_type,
       enum texture_filter_type filter_type,
-      unsigned alignment)
+      unsigned alignment,
+      unsigned width, unsigned height,
+      const void *frame)
 {
    GLint mag_filter, min_filter;
    GLenum wrap;
@@ -69,9 +70,9 @@ void gl_load_texture_data(GLuint id,
    glTexImage2D(GL_TEXTURE_2D,
          0,
          driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
-         img->width, img->height, 0,
+         width, height, 0,
          driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-         RARCH_GL_FORMAT32, img->pixels);
+         RARCH_GL_FORMAT32, frame);
 
    if (want_mipmap)
       glGenerateMipmap(GL_TEXTURE_2D);
@@ -117,9 +118,11 @@ bool gl_load_luts(const struct video_shader *generic_shader,
             filter_type = TEXTURE_FILTER_MIPMAP_LINEAR;
       }
 
-      gl_load_texture_data(textures_lut[i], &img,
+      gl_load_texture_data(textures_lut[i],
             generic_shader->lut[i].wrap,
-            filter_type, 4);
+            filter_type, 4,
+            img.width, img.height,
+            img.pixels);
       texture_image_free(&img);
    }
 

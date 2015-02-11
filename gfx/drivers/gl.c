@@ -2783,9 +2783,9 @@ static bool gl_overlay_load(void *data,
             * sizeof(uint32_t));
 
       gl_load_texture_data(gl->overlay_tex[i],
-            &images[i],
             RARCH_WRAP_EDGE, TEXTURE_FILTER_LINEAR,
-            alignment);
+            alignment,
+            images[i].width, images[i].height, images[i].pixels);
 
       /* Default. Stretch to whole screen. */
       gl_overlay_tex_geom(gl, i, 0, 0, 1, 1);
