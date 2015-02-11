@@ -1237,6 +1237,14 @@ static int action_ok_database_manager_list(const char *path,
    fill_pathname_join(rdb_path, g_settings.content_database,
          path, sizeof(rdb_path));
 
+   if (!path_file_exists(rdb_path))
+   {
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue,
+            "Database Directory doesn't exist or cannot be accessed.\n",
+            1, 180);
+      return -1;
+   }
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
          rdb_path,
@@ -1252,6 +1260,14 @@ static int action_ok_cursor_manager_list(const char *path,
    fill_pathname_join(cursor_path, g_settings.cursor_directory,
          path, sizeof(cursor_path));
 
+   if (!path_file_exists(cursor_path))
+   {
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue,
+            "Cursor Directory doesn't exist or cannot be accessed.\n",
+            1, 180);
+      return -1;
+   }
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
          cursor_path,
