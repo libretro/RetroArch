@@ -152,14 +152,8 @@ static void color_rect(uint16_t *buf, unsigned pitch,
 static void blit_line(int x, int y, const char *message, bool green)
 {
    unsigned i, j;
-   rgui_handle_t *rgui = NULL;
 
    if (!driver.menu)
-      return;
-
-   rgui = (rgui_handle_t*)driver.menu->userdata;
-
-   if (!rgui)
       return;
 
    while (*message)
