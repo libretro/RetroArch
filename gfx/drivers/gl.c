@@ -1925,19 +1925,26 @@ static bool resolve_extensions(gl_t *gl)
 
 static inline void gl_set_texture_fmts(gl_t *gl, bool rgb32)
 {
-   gl->internal_fmt = rgb32 ? RARCH_GL_INTERNAL_FORMAT32 : RARCH_GL_INTERNAL_FORMAT16;
-   gl->texture_type = rgb32 ? RARCH_GL_TEXTURE_TYPE32 : RARCH_GL_TEXTURE_TYPE16;
-   gl->texture_fmt  = rgb32 ? RARCH_GL_FORMAT32 : RARCH_GL_FORMAT16;
-   gl->base_size    = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   gl->internal_fmt = RARCH_GL_INTERNAL_FORMAT16;
+   gl->texture_type = RARCH_GL_TEXTURE_TYPE16;
+   gl->texture_fmt  = RARCH_GL_FORMAT16;
+   gl->base_size    = sizeof(uint16_t);
 
-   if (driver.gfx_use_rgba && rgb32)
+   if (rgb32)
    {
-      gl->internal_fmt = GL_RGBA;
-      gl->texture_type = GL_RGBA;
-   }
+      gl->internal_fmt = RARCH_GL_INTERNAL_FORMAT32;
+      gl->texture_type = RARCH_GL_TEXTURE_TYPE32;
+      gl->texture_fmt  = RARCH_GL_FORMAT32;
+      gl->base_size    = sizeof(uint32_t);
 
+      if (driver.gfx_use_rgba)
+      {
+         gl->internal_fmt = GL_RGBA;
+         gl->texture_type = GL_RGBA;
+      }
+   }
 #ifndef HAVE_OPENGLES
-   if (!rgb32 && gl->have_es2_compat)
+   else if (gl->have_es2_compat)
    {
       RARCH_LOG("[GL]: Using GL_RGB565 for texture uploads.\n");
       gl->internal_fmt = RARCH_GL_INTERNAL_FORMAT16_565;
