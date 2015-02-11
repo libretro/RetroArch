@@ -187,23 +187,23 @@ typedef struct menu_ctx_driver
    void  (*frame)(menu_handle_t *menu);
    void* (*init)(void);
    void  (*free)(void*);
-   void  (*context_reset)(void*);
-   void  (*context_destroy)(void*);
-   void  (*populate_entries)(void*, const char *, const char *,
-         unsigned);
+   void  (*context_reset)(menu_handle_t *menu);
+   void  (*context_destroy)(menu_handle_t *menu);
+   void  (*populate_entries)(menu_handle_t *menu, const char *path, const char *label,
+         unsigned k);
    void  (*toggle)(bool);
-   void  (*navigation_clear)(void *, bool);
-   void  (*navigation_decrement)(void *);
-   void  (*navigation_increment)(void *);
-   void  (*navigation_set)(void *, bool);
-   void  (*navigation_set_last)(void *);
-   void  (*navigation_descend_alphabet)(void *, size_t *);
-   void  (*navigation_ascend_alphabet)(void *, size_t *);
+   void  (*navigation_clear)(menu_handle_t *menu, bool);
+   void  (*navigation_decrement)(menu_handle_t *menu);
+   void  (*navigation_increment)(menu_handle_t *menu);
+   void  (*navigation_set)(menu_handle_t *menu, bool);
+   void  (*navigation_set_last)(menu_handle_t *menu);
+   void  (*navigation_descend_alphabet)(menu_handle_t *menu, size_t *);
+   void  (*navigation_ascend_alphabet)(menu_handle_t *menu, size_t *);
    void  (*list_insert)(void *, const char *, const char *, size_t);
    void  (*list_delete)(void *, size_t, size_t);
    void  (*list_clear)(void *);
    void  (*list_cache)(bool, unsigned);
-   void  (*list_set_selection)(void *);
+   void  (*list_set_selection)(file_list_t *list);
    int   (*entry_iterate)(menu_handle_t *menu, unsigned);
    const char *ident;
 } menu_ctx_driver_t;

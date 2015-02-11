@@ -463,15 +463,11 @@ static void glui_free(void *data)
 }
 
 
-static void glui_context_reset(void *data)
+static void glui_context_reset(menu_handle_t *menu)
 {
    char bgpath[PATH_MAX_LENGTH];
    glui_handle_t *glui = NULL;
-   menu_handle_t *menu = (menu_handle_t*)data;
-   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
     
-   (void)gl;
-
    if (!menu)
       return;
 
@@ -494,17 +490,15 @@ static void glui_context_reset(void *data)
             TEXTURE_FILTER_LINEAR);
 }
 
-static void glui_navigation_clear(void *data, bool pending_push)
+static void glui_navigation_clear(menu_handle_t *menu, bool pending_push)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
    if (menu)
       menu->begin = 0;
 }
 
-static void glui_navigation_set(void *data, bool scroll)
+static void glui_navigation_set(menu_handle_t *menu, bool scroll)
 {
    glui_handle_t *glui = NULL;
-   menu_handle_t *menu = (menu_handle_t*)data;
 
    if (!menu)
       return;
@@ -528,19 +522,19 @@ static void glui_navigation_set(void *data, bool scroll)
             - glui->term_height;
 }
 
-static void glui_navigation_set_last(void *data)
+static void glui_navigation_set_last(menu_handle_t *menu)
 {
-   glui_navigation_set(data, true);
+   glui_navigation_set(menu, true);
 }
 
-static void glui_navigation_descend_alphabet(void *data, size_t *unused)
+static void glui_navigation_descend_alphabet(menu_handle_t *menu, size_t *unused)
 {
-   glui_navigation_set(data, true);
+   glui_navigation_set(menu, true);
 }
 
-static void glui_navigation_ascend_alphabet(void *data, size_t *unused)
+static void glui_navigation_ascend_alphabet(menu_handle_t *menu, size_t *unused)
 {
-   glui_navigation_set(data, true);
+   glui_navigation_set(menu, true);
 }
 
 menu_ctx_driver_t menu_ctx_glui = {

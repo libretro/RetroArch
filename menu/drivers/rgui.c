@@ -525,15 +525,14 @@ static void rgui_set_texture(menu_handle_t *menu)
          menu->frame_buf.data, false, menu->width, menu->height, 1.0f);
 }
 
-static void rgui_navigation_clear(void *data, bool pending_push)
+static void rgui_navigation_clear(menu_handle_t *menu, bool pending_push)
 {
-   driver.menu->begin = 0;
+   if (menu)
+      menu->begin = 0;
 }
 
-static void rgui_navigation_set(void *data, bool scroll)
+static void rgui_navigation_set(menu_handle_t *menu, bool scroll)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
    if (!menu)
       return;
    if (!scroll)
@@ -551,25 +550,25 @@ static void rgui_navigation_set(void *data, bool scroll)
             - RGUI_TERM_HEIGHT;
 }
 
-static void rgui_navigation_set_last(void *data)
+static void rgui_navigation_set_last(menu_handle_t *menu)
 {
-   rgui_navigation_set(data, true);
+   rgui_navigation_set(menu, true);
 }
 
-static void rgui_navigation_descend_alphabet(void *data, size_t *unused)
+static void rgui_navigation_descend_alphabet(menu_handle_t *menu, size_t *unused)
 {
-   rgui_navigation_set(data, true);
+   rgui_navigation_set(menu, true);
 }
 
-static void rgui_navigation_ascend_alphabet(void *data, size_t *unused)
+static void rgui_navigation_ascend_alphabet(menu_handle_t *menu, size_t *unused)
 {
-   rgui_navigation_set(data, true);
+   rgui_navigation_set(menu, true);
 }
 
-static void rgui_populate_entries(void *data, const char *path,
+static void rgui_populate_entries(menu_handle_t *menu, const char *path,
       const char *label, unsigned k)
 {
-   rgui_navigation_set(data, true);
+   rgui_navigation_set(menu, true);
 }
 
 menu_ctx_driver_t menu_ctx_rgui = {

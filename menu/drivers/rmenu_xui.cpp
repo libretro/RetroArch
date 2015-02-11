@@ -612,33 +612,30 @@ static void rmenu_xui_render(menu_handle_t *menu)
 	}
 }
 
-static void rmenu_xui_populate_entries(void *data, const char *path,
+static void rmenu_xui_populate_entries(menu_handle_t *menu, const char *path,
       const char *label, unsigned i)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
+   (void)menu;
    (void)label;
    (void)path;
 
    XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
 }
 
-static void rmenu_xui_navigation_clear(void *data, bool pending_push)
+static void rmenu_xui_navigation_clear(menu_handle_t *menu, bool pending_push)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
    (void)pending_push;
 
    if (menu)
       XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
 }
 
-static void rmenu_xui_navigation_set_visible(void *data)
+static void rmenu_xui_navigation_set_visible(menu_handle_t *menu)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
    XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
 }
 
-static void rmenu_xui_navigation_alphabet(void *data, size_t *ptr_out)
+static void rmenu_xui_navigation_alphabet(menu_handle_t *menu, size_t *ptr_out)
 {
    XuiListSetCurSelVisible(m_menulist, *ptr_out);
 }
@@ -674,9 +671,8 @@ static void rmenu_xui_list_clear(void *data)
    XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
 }
 
-static void rmenu_xui_list_set_selection(void *data)
+static void rmenu_xui_list_set_selection(file_list_t *list)
 {
-   file_list_t *list = (file_list_t*)data;
    if (list)
       XuiListSetCurSel(m_menulist, file_list_get_directory_ptr(list));
 }
