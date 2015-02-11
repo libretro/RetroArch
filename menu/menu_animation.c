@@ -15,7 +15,6 @@
  */
 
 #include "menu_animation.h"
-#include "../driver.h"
 #include <math.h>
 #include <string.h>
 #include <compat/strl.h>

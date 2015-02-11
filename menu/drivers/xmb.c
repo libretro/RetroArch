@@ -21,7 +21,6 @@
 #include <limits.h>
 
 #include "../menu.h"
-#include "../menu_input.h"
 #include "../menu_animation.h"
 #include "../menu_texture.h"
 

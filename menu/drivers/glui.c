@@ -23,7 +23,6 @@
 
 #include "../menu.h"
 #include "../menu_texture.h"
-#include "../menu_input.h"
 
 #include <file/file_path.h>
 #include "../../gfx/gl_common.h"
