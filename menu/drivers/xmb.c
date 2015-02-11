@@ -461,13 +461,9 @@ static void xmb_selection_pointer_changed(void)
    }
 }
 
-static void xmb_list_open_old(file_list_t *list, int dir, size_t current)
+static void xmb_list_open_old(xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
    int i;
-   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
-
-   if (!xmb)
-      return;
 
    for (i = 0; i < file_list_get_size(list); i++)
    {
@@ -488,13 +484,9 @@ static void xmb_list_open_old(file_list_t *list, int dir, size_t current)
    }
 }
 
-static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
+static void xmb_list_open_new(xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
    int i;
-   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
-
-   if (!xmb)
-      return;
 
    for (i = 0; i < file_list_get_size(list); i++)
    {
@@ -586,20 +578,16 @@ static xmb_node_t* xmb_node_for_core(int i)
    return node;
 }
 
-static void xmb_list_switch_old(file_list_t *list, int dir, size_t current)
+static void xmb_list_switch_old(xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
    int i;
-   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
-
-   if (!xmb)
-      return;
 
    for (i = 0; i < file_list_get_size(list); i++)
    {
       xmb_node_t *node = (xmb_node_t*)
          file_list_get_userdata_at_offset(list, i);
 
-      if (!xmb)
+      if (!node)
           continue;
 
       menu_animation_push(driver.menu->animation, XMB_DELAY, 0, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
@@ -608,13 +596,9 @@ static void xmb_list_switch_old(file_list_t *list, int dir, size_t current)
    }
 }
 
-static void xmb_list_switch_new(file_list_t *list, int dir, size_t current)
+static void xmb_list_switch_new(xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
    int i;
-   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
-
-   if (!xmb)
-      return;
 
    for (i = 0; i < file_list_get_size(list); i++)
    {
@@ -669,14 +653,10 @@ static void xmb_set_title(void)
    }
 }
 
-static void xmb_list_open(void)
+static void xmb_list_open(xmb_handle_t *xmb)
 {
    unsigned j;
    int dir = -1;
-   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
-
-   if (!xmb)
-      return;
 
    if (driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old)
       dir = 1;
@@ -710,19 +690,15 @@ static void xmb_list_open(void)
    if (driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old)
       dir = 1;
 
-   xmb_list_switch_old(xmb->selection_buf_old, dir, xmb->selection_ptr_old);
-   xmb_list_switch_new(driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
+   xmb_list_switch_old(xmb, xmb->selection_buf_old, dir, xmb->selection_ptr_old);
+   xmb_list_switch_new(xmb, driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
    xmb->active_category_old = driver.menu->cat_selection_ptr;
 }
 
-static void xmb_list_switch(void)
+static void xmb_list_switch(xmb_handle_t *xmb)
 {
    unsigned j;
    int dir = 0;
-   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
-
-   if (!xmb)
-      return;
 
    xmb->depth = file_list_get_size(driver.menu->menu_list->menu_stack);
 
@@ -748,8 +724,8 @@ static void xmb_list_switch(void)
             &node->alpha, EASING_IN_OUT_QUAD, NULL);
    }
 
-   xmb_list_open_old(xmb->selection_buf_old, dir, xmb->selection_ptr_old);
-   xmb_list_open_new(driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
+   xmb_list_open_old(xmb, xmb->selection_buf_old, dir, xmb->selection_ptr_old);
+   xmb_list_open_new(xmb, driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
 
    switch (xmb->depth)
    {
@@ -787,9 +763,9 @@ static void xmb_populate_entries(void *data, const char *path,
    xmb_set_title();
 
    if (driver.menu->cat_selection_ptr != xmb->active_category_old)
-      xmb_list_open();
+      xmb_list_open(xmb);
    else
-      xmb_list_switch();
+      xmb_list_switch(xmb);
 }
 
 static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
