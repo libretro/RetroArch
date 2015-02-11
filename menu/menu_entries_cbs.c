@@ -402,6 +402,12 @@ static int action_ok_configurations_list(const char *path,
 static int action_ok_cheat_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   if (!path_file_exists(g_settings.cheat_database))
+   {
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, "Cheat Directory doesn't exist or cannot be accessed.\n", 1, 180);
+      return -1;
+   }
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
          g_settings.cheat_database,
@@ -411,6 +417,12 @@ static int action_ok_cheat_file(const char *path,
 static int action_ok_remap_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   if (!path_file_exists(g_settings.input_remapping_directory))
+   {
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, "Remapping Directory doesn't exist or cannot be accessed.\n", 1, 180);
+      return -1;
+   }
    return menu_list_push_stack_refresh(
          driver.menu->menu_list,
          g_settings.input_remapping_directory,
