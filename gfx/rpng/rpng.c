@@ -303,11 +303,10 @@ static inline void copy_line_rgba(uint32_t *data,
 static inline void copy_line_bw(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned depth)
 {
-   unsigned i, bit = 0;
+   unsigned i, bit;
    static const unsigned mul_table[] = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
-   unsigned mul  = mul_table[depth];
-   unsigned mask = (1 << depth) - 1;
-
+   unsigned mul, mask;
+   
    if (depth == 16)
    {
       for (i = 0; i < width; i++)
@@ -317,6 +316,10 @@ static inline void copy_line_bw(uint32_t *data,
       }
       return;
    }
+
+   mul  = mul_table[depth];
+   mask = (1 << depth) - 1;
+   bit  = 0;
 
    for (i = 0; i < width; i++, bit += depth)
    {
