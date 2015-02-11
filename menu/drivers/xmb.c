@@ -527,18 +527,11 @@ static void xmb_list_open_new(xmb_handle_t *xmb, file_list_t *list, int dir, siz
    xmb->old_depth = xmb->depth;
 }
 
-static xmb_node_t* xmb_node_for_core(int i)
+static xmb_node_t* xmb_node_for_core(xmb_handle_t *xmb, int i)
 {
    core_info_t *info           = NULL;
-   core_info_list_t *info_list = NULL;
    xmb_node_t *node            = NULL;
-
-   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
-
-   if (!xmb)
-      return NULL;
-
-   info_list = (core_info_list_t*)g_extern.core_info;
+   core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
 
    if (!info_list)
       return NULL;
@@ -622,13 +615,8 @@ static void xmb_list_switch_new(xmb_handle_t *xmb, file_list_t *list, int dir, s
    }
 }
 
-static void xmb_set_title(void)
+static void xmb_set_title(xmb_handle_t *xmb)
 {
-   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
-
-   if (!xmb)
-      return;
-
    if (driver.menu->cat_selection_ptr == 0)
    {
       const char *dir   = NULL;
@@ -667,7 +655,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
    {
       float ia = xmb->c_passive_alpha;
       float iz = xmb->c_passive_zoom;
-      xmb_node_t *node = j ? xmb_node_for_core(j-1) : &xmb->settings_node;
+      xmb_node_t *node = j ? xmb_node_for_core(xmb, j - 1) : &xmb->settings_node;
 
       if (!node)
          continue;
@@ -710,7 +698,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    for (j = 0; j < driver.menu->num_categories; j++)
    {
       float ia = 0;
-      xmb_node_t *node = j ? xmb_node_for_core(j-1) : &xmb->settings_node;
+      xmb_node_t *node = j ? xmb_node_for_core(xmb, j - 1) : &xmb->settings_node;
 
       if (!node)
          continue;
@@ -760,7 +748,7 @@ static void xmb_populate_entries(void *data, const char *path,
       return;
    }
 
-   xmb_set_title();
+   xmb_set_title(xmb);
 
    if (driver.menu->cat_selection_ptr != xmb->active_category_old)
       xmb_list_open(xmb);
@@ -785,7 +773,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    file_list_get_last(stack, &dir, &label, &menu_type);
 
    if (xmb->active_category)
-      core_node = xmb_node_for_core(cat_selection_ptr - 1);
+      core_node = xmb_node_for_core(xmb, cat_selection_ptr - 1);
 
    for (i = 0; i < end; i++)
    {
@@ -1008,7 +996,7 @@ static void xmb_frame(void)
 
    for (i = 0; i < driver.menu->num_categories; i++)
    {
-      xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
+      xmb_node_t *node = i ? xmb_node_for_core(xmb, i - 1) : &xmb->settings_node;
 
       if (node)
          xmb_draw_icon(gl, xmb, node->icon, 
@@ -1299,7 +1287,7 @@ static void xmb_context_reset(void *data)
 
    for (i = 1; i < driver.menu->num_categories; i++)
    {
-      node = xmb_node_for_core(i-1);
+      node = xmb_node_for_core(xmb, i - 1);
 
       fill_pathname_join(mediapath, g_settings.assets_directory,
             "lakka", sizeof(mediapath));
@@ -1525,7 +1513,7 @@ static void xmb_context_destroy(void *data)
 
    for (i = 1; i < driver.menu->num_categories; i++)
    {
-      xmb_node_t *node = xmb_node_for_core(i-1);
+      xmb_node_t *node = xmb_node_for_core(xmb, i - 1);
 
       if (!node)
          continue;
@@ -1564,7 +1552,7 @@ static void xmb_toggle(bool menu_on)
 
    for (i = 0; i < driver.menu->num_categories; i++)
    {
-      xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
+      xmb_node_t *node = i ? xmb_node_for_core(xmb, i - 1) : &xmb->settings_node;
 
       if (!node)
          continue;
