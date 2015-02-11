@@ -778,7 +778,7 @@ XML
 #if 0
 #ifndef HAVE_LIBXML2
 #define RXML_LIBXML2_COMPAT
-#include "../compat/rxml/rxml.c"
+#include "../libretro-sdk/formats/xml/rxml.c"
 #endif
 #endif
 
