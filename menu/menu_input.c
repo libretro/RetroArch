@@ -32,12 +32,10 @@
 #include "../input/input_joypad.h"
 #include "../input/input_remapping.h"
 
-void menu_input_key_start_line(void *data, const char *label,
+void menu_input_key_start_line(menu_handle_t *menu, const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
    if (!menu)
       return;
 
@@ -49,10 +47,8 @@ void menu_input_key_start_line(void *data, const char *label,
    menu->keyboard.buffer        = input_keyboard_start_line(menu, cb);
 }
 
-static void menu_input_key_end_line(void *data)
+static void menu_input_key_end_line(menu_handle_t *menu)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
    if (!menu)
       return;
 
@@ -350,11 +346,10 @@ bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code)
    return (menu->binds.begin <= menu->binds.last);
 }
 
-int menu_input_bind_iterate(void *data)
+int menu_input_bind_iterate(menu_handle_t *menu)
 {
    char msg[PATH_MAX_LENGTH];
    struct menu_bind_state binds;
-   menu_handle_t *menu = (menu_handle_t*)data;
 
    if (!menu)
       return 1;
@@ -367,7 +362,7 @@ int menu_input_bind_iterate(void *data)
 
    snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)",
          input_config_bind_map[
-         driver.menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
+         menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
 
    if (driver.video_data && driver.menu_ctx 
          && driver.menu_ctx->render_messagebox)
@@ -396,13 +391,12 @@ int menu_input_bind_iterate(void *data)
    return 0;
 }
 
-int menu_input_bind_iterate_keyboard(void *data)
+int menu_input_bind_iterate_keyboard(menu_handle_t *menu)
 {
    char msg[PATH_MAX_LENGTH];
    int64_t current;
    int timeout = 0;
    bool timed_out = false;
-   menu_handle_t *menu = (menu_handle_t*)data;
 
    if (driver.video_data && driver.menu_ctx &&
          driver.menu_ctx->render)
