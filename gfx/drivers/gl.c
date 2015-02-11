@@ -1586,7 +1586,7 @@ static bool gl_frame(void *data, const void *frame,
 #if defined(HAVE_MENU)
    if (g_extern.is_menu
          && driver.menu_ctx && driver.menu_ctx->frame)
-      driver.menu_ctx->frame();
+      driver.menu_ctx->frame(driver.menu);
 
    if (gl->menu_texture_enable)
       gl_draw_texture(gl);

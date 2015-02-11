@@ -1668,7 +1668,7 @@ static bool d3d_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (g_extern.is_menu 
          && driver.menu_ctx && driver.menu_ctx->frame)
-      driver.menu_ctx->frame();
+      driver.menu_ctx->frame(driver.menu);
 
 #ifdef _XBOX
    /* TODO - should be refactored. */

@@ -230,13 +230,12 @@ static void rgui_render_background(menu_handle_t *menu)
          green_filler);
 }
 
-static void rgui_render_messagebox(const char *message)
+static void rgui_render_messagebox(menu_handle_t *menu, const char *message)
 {
    size_t i;
    int x, y;
    unsigned width, glyphs_width, height;
    struct string_list *list = NULL;
-   menu_handle_t *menu = driver.menu;
 
    if (!menu || !message || !*message)
       return;
@@ -301,7 +300,7 @@ static void rgui_blit_cursor(menu_handle_t *menu)
    color_rect(driver.menu, x - 5, y, 11, 1, 0xFFFF);
 }
 
-static void rgui_render(void)
+static void rgui_render(menu_handle_t *menu)
 {
    size_t i, end;
    char title[256], title_buf[256], title_msg[64];
@@ -311,7 +310,6 @@ static void rgui_render(void)
    const char *label   = NULL;
    const char *core_name = NULL;
    const char *core_version = NULL;
-   menu_handle_t *menu = driver.menu;
 
    if (!menu || (menu->need_refresh 
          && g_extern.is_menu
@@ -438,7 +436,7 @@ static void rgui_render(void)
    else
       message_queue = driver.current_msg;
 
-   rgui_render_messagebox(message_queue);
+   rgui_render_messagebox(menu, message_queue);
 #endif
 
    if (menu->keyboard.display)
@@ -448,7 +446,7 @@ static void rgui_render(void)
       if (!str)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
-      rgui_render_messagebox(msg);
+      rgui_render_messagebox(menu, msg);
    }
 
    if (menu->mouse.enable)
@@ -512,10 +510,8 @@ static void rgui_free(void *data)
       free((uint8_t*)menu->font);
 }
 
-static void rgui_set_texture(void *data)
+static void rgui_set_texture(menu_handle_t *menu)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
    if (!menu)
       return;
    if (!driver.video_data)

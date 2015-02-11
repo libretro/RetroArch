@@ -181,10 +181,10 @@ typedef struct menu_file_list_cbs
 
 typedef struct menu_ctx_driver
 {
-   void  (*set_texture)(void*);
-   void  (*render_messagebox)(const char*);
-   void  (*render)(void);
-   void  (*frame)(void);
+   void  (*set_texture)(menu_handle_t *menu);
+   void  (*render_messagebox)(menu_handle_t *menu, const char *msg);
+   void  (*render)(menu_handle_t *menu);
+   void  (*frame)(menu_handle_t *menu);
    void* (*init)(void);
    void  (*free)(void*);
    void  (*context_reset)(void*);

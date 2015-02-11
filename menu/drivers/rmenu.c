@@ -83,7 +83,7 @@ static void rmenu_render_background(void)
 {
 }
 
-static void rmenu_render_messagebox(const char *message)
+static void rmenu_render_messagebox(menu_handle_t *menu, const char *message)
 {
    struct font_params font_parms;
    size_t i, j;
@@ -132,7 +132,7 @@ end:
    string_list_free(list);
 }
 
-static void rmenu_render(void)
+static void rmenu_render(menu_handle_t *menu)
 {
    size_t begin, end;
    size_t i, j;
@@ -144,7 +144,6 @@ static void rmenu_render(void)
    const char *core_name = NULL;
    const char *core_version = NULL;
    unsigned menu_type = 0;
-   menu_handle_t *menu = (menu_handle_t*)driver.menu;
 
    if (!menu)
       return;
@@ -279,13 +278,12 @@ static void rmenu_render(void)
    }
 }
 
-static void rmenu_set_texture(void *data)
+static void rmenu_set_texture(menu_handle_t *menu)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
+   if (!menu)
+      return;
    if (menu_texture_inited)
       return;
-
    if (!driver.video_data)
       return;
    if (!driver.video_poke)

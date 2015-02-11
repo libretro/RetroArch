@@ -46,8 +46,8 @@
 #define FONT_HEIGHT_STRIDE (FONT_HEIGHT + 1)
 #define RXUI_TERM_START_X 15
 #define RXUI_TERM_START_Y 27
-#define RXUI_TERM_WIDTH (((driver.menu->width - RXUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
-#define RXUI_TERM_HEIGHT (((driver.menu->height - RXUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RXUI_TERM_WIDTH (((menu->width - RXUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
+#define RXUI_TERM_HEIGHT (((menu->height - RXUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
 HXUIOBJ m_menulist;
 HXUIOBJ m_menutitle;
@@ -406,7 +406,7 @@ end:
    string_list_free(list);
 }
 
-static void rmenu_xui_frame(void)
+static void rmenu_xui_frame(menu_handle_t *menu)
 {
    XUIMessage msg;
    XUIMessageRender msgRender;
@@ -414,6 +414,8 @@ static void rmenu_xui_frame(void)
    D3DVIEWPORT vp_full;
    d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+
+   (void)menu;
 
    vp_full.X = 0;
    vp_full.Y = 0;
@@ -462,7 +464,7 @@ static void rmenu_xui_render_background(void)
 		XuiElementSetShow(m_background, TRUE);
 }
 
-static void rmenu_xui_render_messagebox(const char *message)
+static void rmenu_xui_render_messagebox(menu_handle_t *menu, const char *message)
 {
    msg_queue_clear(xui_msg_queue);
    msg_queue_push(xui_msg_queue, message, 2, 1);
@@ -525,20 +527,20 @@ static void rmenu_xui_set_list_text(int index, const wchar_t* leftText,
    }
 }
 
-static void rmenu_xui_render(void)
+static void rmenu_xui_render(menu_handle_t *menu)
 {
 	size_t end, i;
 	char title[PATH_MAX_LENGTH];
 	const char *dir = NULL, *label = NULL;
 	unsigned menu_type = 0;
 
-	if (!driver.menu || driver.menu->need_refresh && 
-		g_extern.is_menu && !driver.menu->msg_force)
+	if (!menu || menu->need_refresh && 
+		g_extern.is_menu && !menu->msg_force)
 		return;
 
 	rmenu_xui_render_background();
 
-	menu_list_get_last_stack(driver.menu->menu_list, &dir, &label, &menu_type);
+	menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
 
 	if (XuiHandleIsValid(m_menutitle))
 	{
@@ -570,7 +572,7 @@ static void rmenu_xui_render(void)
 		XuiTextElementSetText(m_menutitlebottom, strw_buffer);
 	}
 
-	end = menu_list_get_size(driver.menu->menu_list);
+	end = menu_list_get_size(menu->menu_list);
 	for (i = 0; i < end; i++)
    {
       wchar_t msg_left[PATH_MAX_LENGTH], msg_right[PATH_MAX_LENGTH];
@@ -579,15 +581,15 @@ static void rmenu_xui_render(void)
       unsigned type = 0, w = 0;
       menu_file_list_cbs_t *cbs = NULL;
 
-      menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
+      menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
             &entry_label, &type);
 
       cbs = (menu_file_list_cbs_t*)
-         menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
+         menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
                i);
 
       if (cbs && cbs->action_get_representation)
-         cbs->action_get_representation(driver.menu->menu_list->selection_buf,
+         cbs->action_get_representation(menu->menu_list->selection_buf,
                &w, type, i, label,
                type_str, sizeof(type_str), 
                entry_label, path,
@@ -597,16 +599,16 @@ static void rmenu_xui_render(void)
       mbstowcs(msg_right, type_str, sizeof(msg_right) / sizeof(wchar_t));
       rmenu_xui_set_list_text(i, msg_left, msg_right);
    }
-	XuiListSetCurSelVisible(m_menulist, driver.menu->selection_ptr);
+	XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
 
-	if (driver.menu->keyboard.display)
+	if (menu->keyboard.display)
 	{
 		char msg[1024];
-		const char *str = *driver.menu->keyboard.buffer;
+		const char *str = *menu->keyboard.buffer;
 		if (!str)
 			str = "";
-		snprintf(msg, sizeof(msg), "%s\n%s", driver.menu->keyboard.label, str);
-		rmenu_xui_render_messagebox(msg);			
+		snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
+		rmenu_xui_render_messagebox(menu, msg);			
 	}
 }
 

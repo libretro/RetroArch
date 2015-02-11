@@ -215,6 +215,10 @@ static int archive_load(void)
 static int load_or_open_zip_iterate(unsigned action)
 {
    char msg[PATH_MAX_LENGTH];
+   menu_handle_t *menu = driver.menu;
+
+   if (!menu)
+      return -1;
 
    snprintf(msg, sizeof(msg), "Opening compressed file\n"
          " \n"
@@ -226,7 +230,7 @@ static int load_or_open_zip_iterate(unsigned action)
          && driver.menu_ctx->render_messagebox)
    {
       if (*msg && msg[0] != '\0')
-         driver.menu_ctx->render_messagebox(msg);
+         driver.menu_ctx->render_messagebox(menu, msg);
    }
 
    switch (action)
@@ -3685,12 +3689,13 @@ static int action_iterate_help(const char *label, unsigned action)
    };
    char desc[ARRAY_SIZE(binds)][64];
    char msg[PATH_MAX_LENGTH];
+   menu_handle_t *menu = driver.menu;
 
-   if (!driver.menu)
+   if (!menu)
       return 0;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render();
+      driver.menu_ctx->render(menu);
 
    for (i = 0; i < ARRAY_SIZE(binds); i++)
    {
@@ -3727,10 +3732,10 @@ static int action_iterate_help(const char *label, unsigned action)
       desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6]);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(msg);
+      driver.menu_ctx->render_messagebox(menu, msg);
 
    if (action == MENU_ACTION_OK)
-      menu_list_pop(driver.menu->menu_list->menu_stack, NULL);
+      menu_list_pop(menu->menu_list->menu_stack, NULL);
 
    return 0;
 }
@@ -3741,23 +3746,26 @@ static int action_iterate_info(const char *label, unsigned action)
    char needle[PATH_MAX_LENGTH];
    unsigned info_type = 0;
    rarch_setting_t *current_setting = NULL;
-   file_list_t *list = (file_list_t*)driver.menu->menu_list->selection_buf;
+   file_list_t *list = NULL;
+   menu_handle_t *menu = driver.menu;
 
-   if (!driver.menu)
+   if (!menu)
       return 0;
+   
+   list = (file_list_t*)menu->menu_list->selection_buf;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render();
+      driver.menu_ctx->render(menu);
 
    current_setting = (rarch_setting_t*)setting_data_find_setting(
-         driver.menu->list_settings,
-         list->list[driver.menu->selection_ptr].label);
+         menu->list_settings,
+         list->list[menu->selection_ptr].label);
 
    if (current_setting)
       strlcpy(needle, current_setting->name, sizeof(needle));
    else if ((current_setting = (rarch_setting_t*)setting_data_find_setting(
-               driver.menu->list_settings,
-               list->list[driver.menu->selection_ptr].label)))
+               menu->list_settings,
+               list->list[menu->selection_ptr].label)))
    {
       if (current_setting)
          strlcpy(needle, current_setting->name, sizeof(needle));
@@ -3765,8 +3773,8 @@ static int action_iterate_info(const char *label, unsigned action)
    else
    {
       const char *lbl = NULL;
-      menu_list_get_at_offset(driver.menu->menu_list->selection_buf,
-            driver.menu->selection_ptr, NULL, &lbl,
+      menu_list_get_at_offset(list,
+            menu->selection_ptr, NULL, &lbl,
             &info_type);
 
       if (lbl)
@@ -3779,11 +3787,11 @@ static int action_iterate_info(const char *label, unsigned action)
          driver.menu_ctx->render_messagebox)
    {
       if (*msg && msg[0] != '\0')
-         driver.menu_ctx->render_messagebox(msg);
+         driver.menu_ctx->render_messagebox(menu, msg);
    }
 
    if (action == MENU_ACTION_OK)
-      menu_list_pop(driver.menu->menu_list->menu_stack, &driver.menu->selection_ptr);
+      menu_list_pop(menu->menu_list->menu_stack, &menu->selection_ptr);
 
    return 0;
 }
@@ -3814,8 +3822,12 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
    unsigned type = 0;
    rarch_viewport_t *custom = (rarch_viewport_t*)
       &g_extern.console.screen.viewports.custom_vp;
+   menu_handle_t *menu = driver.menu;
 
-   menu_list_get_last_stack(driver.menu->menu_list, NULL, NULL, &type);
+   if (!menu)
+      return -1;
+
+   menu_list_get_last_stack(menu->menu_list, NULL, NULL, &type);
 
    geom = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
 
@@ -3878,24 +3890,24 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
          break;
 
       case MENU_ACTION_CANCEL:
-         menu_list_pop_stack(driver.menu->menu_list);
+         menu_list_pop_stack(menu->menu_list);
 
          if (!strcmp(label, "custom_viewport_2"))
          {
-            menu_list_push_stack(driver.menu->menu_list, "", "",
+            menu_list_push_stack(menu->menu_list, "", "",
                   MENU_SETTINGS_CUSTOM_VIEWPORT,
-                  driver.menu->selection_ptr);
+                  menu->selection_ptr);
          }
          break;
 
       case MENU_ACTION_OK:
-         menu_list_pop_stack(driver.menu->menu_list);
+         menu_list_pop_stack(menu->menu_list);
 
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT
                && !g_settings.video.scale_integer)
          {
-            menu_list_push_stack(driver.menu->menu_list, "",
-                  "custom_viewport_2", 0, driver.menu->selection_ptr);
+            menu_list_push_stack(menu->menu_list, "",
+                  "custom_viewport_2", 0, menu->selection_ptr);
          }
          break;
 
@@ -3926,17 +3938,17 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
          break;
 
       case MENU_ACTION_MESSAGE:
-         driver.menu->msg_force = true;
+         menu->msg_force = true;
          break;
 
       default:
          break;
    }
 
-   menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, &type);
+   menu_list_get_last_stack(menu->menu_list, NULL, &label, &type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render();
+      driver.menu_ctx->render(menu);
 
    if (g_settings.video.scale_integer)
    {
@@ -3967,7 +3979,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 
    if (driver.video_data && driver.menu_ctx &&
          driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(msg);
+      driver.menu_ctx->render_messagebox(menu, msg);
 
    if (!custom->width)
       custom->width = stride_x;
@@ -3998,12 +4010,17 @@ static int action_iterate_custom_bind_keyboard(const char *label, unsigned actio
 
 static int action_iterate_message(const char *label, unsigned action)
 {
+   menu_handle_t *menu = driver.menu;
+
+   if (!menu)
+      return -1;
+
    if (driver.video_data && driver.menu_ctx
          && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(driver.menu->message_contents);
+      driver.menu_ctx->render_messagebox(menu, menu->message_contents);
 
    if (action == MENU_ACTION_OK)
-      menu_list_pop_stack(driver.menu->menu_list);
+      menu_list_pop_stack(menu->menu_list);
 
    return 0;
 }
@@ -4055,13 +4072,18 @@ static int action_iterate_main(const char *label, unsigned action)
    unsigned type_offset = 0;
    const char *label_offset = NULL;
    const char *path_offset = NULL;
+   menu_file_list_cbs_t *cbs = NULL;
+   menu_handle_t *menu = driver.menu;
 
-   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
-            driver.menu->selection_ptr);
+   if (!menu)
+      return 0;
+   
+   cbs = (menu_file_list_cbs_t*)
+      menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
+            menu->selection_ptr);
 
-   menu_list_get_at_offset(driver.menu->menu_list->selection_buf,
-         driver.menu->selection_ptr, &path_offset, &label_offset, &type_offset);
+   menu_list_get_at_offset(menu->menu_list->selection_buf,
+         menu->selection_ptr, &path_offset, &label_offset, &type_offset);
 
    mouse_iterate(action);
 
@@ -4090,7 +4112,7 @@ static int action_iterate_main(const char *label, unsigned action)
          return action_iterate_custom_bind(label, action);
    }
 
-   if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
+   if (menu->need_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_REFRESH;
 
    switch (action)
@@ -4101,20 +4123,20 @@ static int action_iterate_main(const char *label, unsigned action)
             ret = cbs->action_up_or_down(type_offset, label_offset, action);
          break;
       case MENU_ACTION_SCROLL_UP:
-         menu_navigation_descend_alphabet(driver.menu, &driver.menu->selection_ptr);
+         menu_navigation_descend_alphabet(menu, &menu->selection_ptr);
          break;
       case MENU_ACTION_SCROLL_DOWN:
-         menu_navigation_ascend_alphabet(driver.menu, &driver.menu->selection_ptr);
+         menu_navigation_ascend_alphabet(menu, &menu->selection_ptr);
          break;
 
       case MENU_ACTION_CANCEL:
          if (cbs && cbs->action_cancel)
-            return cbs->action_cancel(path_offset, label_offset, type_offset, driver.menu->selection_ptr);
+            return cbs->action_cancel(path_offset, label_offset, type_offset, menu->selection_ptr);
          break;
 
       case MENU_ACTION_OK:
          if (cbs && cbs->action_ok)
-            return cbs->action_ok(path_offset, label_offset, type_offset, driver.menu->selection_ptr);
+            return cbs->action_ok(path_offset, label_offset, type_offset, menu->selection_ptr);
          break;
       case MENU_ACTION_START:
          if (cbs && cbs->action_start)
@@ -4132,12 +4154,12 @@ static int action_iterate_main(const char *label, unsigned action)
 
       case MENU_ACTION_REFRESH:
          if (cbs && cbs->action_refresh)
-            ret = cbs->action_refresh(driver.menu->menu_list->selection_buf,
-                  driver.menu->menu_list->menu_stack);
+            ret = cbs->action_refresh(menu->menu_list->selection_buf,
+                  menu->menu_list->menu_stack);
          break;
 
       case MENU_ACTION_MESSAGE:
-         driver.menu->msg_force = true;
+         menu->msg_force = true;
          break;
 
       case MENU_ACTION_SEARCH:
@@ -4157,13 +4179,13 @@ static int action_iterate_main(const char *label, unsigned action)
    ret = mouse_post_iterate(cbs, path_offset, label_offset, type_offset, action);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render();
+      driver.menu_ctx->render(menu);
 
    /* Have to defer it so we let settings refresh. */
-   if (driver.menu->push_start_screen)
+   if (menu->push_start_screen)
    {
-      menu_list_push_stack(driver.menu->menu_list, "", "help", 0, 0);
-      driver.menu->push_start_screen = false;
+      menu_list_push_stack(menu->menu_list, "", "help", 0, 0);
+      menu->push_start_screen = false;
    }
 
    return ret;

@@ -191,20 +191,20 @@ static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui, float x, float y)
    gl->coords.color = gl->white_color_ptr;
 }
 
-static void glui_get_message(const char *message)
+static void glui_get_message(menu_handle_t *menu, const char *message)
 {
    glui_handle_t *glui = NULL;
 
-   if (!driver.menu || !message || !*message)
+   if (!menu || !message || !*message)
       return;
 
-   glui = (glui_handle_t*)driver.menu->userdata;
+   glui = (glui_handle_t*)menu->userdata;
 
    if (glui)
       strlcpy(glui->box_message, message, sizeof(glui->box_message));
 }
 
-static void glui_render_messagebox(const char *message)
+static void glui_render_messagebox(menu_handle_t *menu, const char *message)
 {
    unsigned i;
    int x, y;
@@ -212,10 +212,10 @@ static void glui_render_messagebox(const char *message)
    glui_handle_t *glui = NULL;
    gl_t *gl = (gl_t*)video_driver_resolve(NULL);
 
-   if (!driver.menu || !gl)
+   if (!menu || !gl)
       return;
 
-   glui = (glui_handle_t*)driver.menu->userdata;
+   glui = (glui_handle_t*)menu->userdata;
 
    if (!glui)
       return;
@@ -242,7 +242,7 @@ end:
    string_list_free(list);
 }
 
-static void glui_frame(void)
+static void glui_frame(menu_handle_t *menu)
 {
    unsigned x, y;
    size_t i;
@@ -258,17 +258,17 @@ static void glui_frame(void)
    const char *core_name = NULL;
    const char *core_version = NULL;
 
-   if (!driver.menu || !gl)
+   if (!menu || !gl)
       return;
 
-   glui = (glui_handle_t*)driver.menu->userdata;
+   glui = (glui_handle_t*)menu->userdata;
 
    if (!glui)
       return;
 
-   if (driver.menu->need_refresh
+   if (menu->need_refresh
          && g_extern.is_menu
-         && !driver.menu->msg_force)
+         && !menu->msg_force)
       return;
 
    glui->line_height = g_settings.video.font_size * 4 / 3;
@@ -277,30 +277,30 @@ static void glui_frame(void)
    glui->term_width  = (gl->win_width - glui->margin * 2) / glui->glyph_width;
    glui->term_height = (gl->win_height - glui->margin * 2) / glui->line_height - 2;
 
-   driver.menu->mouse.ptr = (driver.menu->mouse.y - glui->margin) /
-         glui->line_height - 2 + driver.menu->begin;
+   menu->mouse.ptr = (menu->mouse.y - glui->margin) /
+         glui->line_height - 2 + menu->begin;
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
-   if (driver.menu->mouse.wheeldown && driver.menu->begin
-         < menu_list_get_size(driver.menu->menu_list) - glui->term_height)
-      driver.menu->begin++;
+   if (menu->mouse.wheeldown && menu->begin
+         < menu_list_get_size(menu->menu_list) - glui->term_height)
+      menu->begin++;
 
-   if (driver.menu->mouse.wheelup && driver.menu->begin > 0)
-      driver.menu->begin--;
+   if (menu->mouse.wheelup && menu->begin > 0)
+      menu->begin--;
 
    /* Do not scroll if all items are visible. */
-   if (menu_list_get_size(driver.menu->menu_list) <= glui->term_height)
-      driver.menu->begin = 0;
+   if (menu_list_get_size(menu->menu_list) <= glui->term_height)
+      menu->begin = 0;
 
-   end = (driver.menu->begin + glui->term_height <=
-         menu_list_get_size(driver.menu->menu_list)) ?
-      driver.menu->begin + glui->term_height :
-      menu_list_get_size(driver.menu->menu_list);
+   end = (menu->begin + glui->term_height <=
+         menu_list_get_size(menu->menu_list)) ?
+      menu->begin + glui->term_height :
+      menu_list_get_size(menu->menu_list);
 
    glui_render_background(gl, glui, false);
 
-   menu_list_get_last_stack(driver.menu->menu_list, &dir, &label, &menu_type);
+   menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
 
    get_title(label, dir, menu_type, title, sizeof(title));
 
@@ -341,7 +341,7 @@ static void glui_frame(void)
    x = glui->margin;
    y = glui->margin + glui->line_height * 2;
 
-   for (i = driver.menu->begin; i < end; i++, y += glui->line_height)
+   for (i = menu->begin; i < end; i++, y += glui->line_height)
    {
       char message[PATH_MAX_LENGTH], type_str[PATH_MAX_LENGTH],
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH],
@@ -351,21 +351,21 @@ static void glui_frame(void)
       bool selected = false;
       menu_file_list_cbs_t *cbs = NULL;
 
-      menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
+      menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
             &entry_label, &type);
 
       cbs = (menu_file_list_cbs_t*)
-         menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
+         menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
                i);
 
       if (cbs && cbs->action_get_representation)
-         cbs->action_get_representation(driver.menu->menu_list->selection_buf,
+         cbs->action_get_representation(menu->menu_list->selection_buf,
                &w, type, i, label,
                type_str, sizeof(type_str), 
                entry_label, path,
                path_buf, sizeof(path_buf));
 
-      selected = (i == driver.menu->selection_ptr);
+      selected = (i == menu->selection_ptr);
 
       menu_animation_ticker_line(entry_title_buf, glui->term_width - (w + 1 + 2),
             g_extern.frame_count / glui->margin, path_buf, selected);
@@ -383,37 +383,37 @@ static void glui_frame(void)
 #ifdef GEKKO
    const char *message_queue;
 
-   if (driver.menu->msg_force)
+   if (menu->msg_force)
    {
       message_queue = msg_queue_pull(g_extern.msg_queue);
-      driver.menu->msg_force = false;
+      menu->msg_force = false;
    }
    else
       message_queue = driver.current_msg;
 
-   glui_render_messagebox(message_queue);
+   glui_render_messagebox(menu, message_queue);
 #endif
 
-   if (driver.menu->keyboard.display)
+   if (menu->keyboard.display)
    {
       char msg[PATH_MAX_LENGTH];
-      const char *str = *driver.menu->keyboard.buffer;
+      const char *str = *menu->keyboard.buffer;
       if (!str)
          str = "";
       glui_render_background(gl, glui, true);
-      snprintf(msg, sizeof(msg), "%s\n%s", driver.menu->keyboard.label, str);
-      glui_render_messagebox(msg);
+      snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
+      glui_render_messagebox(menu, msg);
    }
 
    if (glui->box_message[0] != '\0')
    {
       glui_render_background(gl, glui, true);
-      glui_render_messagebox(glui->box_message);
+      glui_render_messagebox(menu, glui->box_message);
       glui->box_message[0] = '\0';
    }
 
-   if (driver.menu->mouse.enable)
-      glui_draw_cursor(gl, glui, driver.menu->mouse.x, driver.menu->mouse.y);
+   if (menu->mouse.enable)
+      glui_draw_cursor(gl, glui, menu->mouse.x, menu->mouse.y);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 }
