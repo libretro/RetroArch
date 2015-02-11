@@ -26,7 +26,6 @@
 #ifdef RARCH_INTERNAL
 #include "../performance.h"
 #endif
-#include "libretro.h"
 
 /**
  * audio_convert_s16_to_float_C:
