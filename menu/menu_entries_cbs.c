@@ -4268,6 +4268,9 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
       "Nearest"
    };
 
+   (void)pass;
+   (void)modes;
+
    *type_str = '\0';
    *w = 19;
    strlcpy(path_buf, path, path_buf_size);
@@ -4310,6 +4313,8 @@ static void menu_action_setting_disp_set_label_shader_pass(
       char *path_buf, size_t path_buf_size)
 {
    unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_0);
+
+   (void)pass;
 
    *type_str = '\0';
    *w = 19;
@@ -4421,11 +4426,15 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   unsigned pass, scale_value;
+   unsigned pass = 0;
+   unsigned scale_value = 0;
 
    *type_str = '\0';
    *w = 19;
    strlcpy(path_buf, path, path_buf_size);
+
+   (void)pass;
+   (void)scale_value;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    if (!driver.menu->shader)
