@@ -106,6 +106,9 @@ typedef struct
    char default_glslp[PATH_MAX_LENGTH];
    char default_cgp[PATH_MAX_LENGTH];
 
+   uint16_t *frame_buf;
+   size_t frame_buf_pitch;
+
    const uint8_t *font;
    bool alloc_font;
 

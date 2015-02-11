@@ -34,8 +34,6 @@
 typedef struct rgui_handle
 {
    unsigned term_height;
-   uint16_t *frame_buf;
-   size_t frame_buf_pitch;
 } rgui_handle_t;
 
 #define RGUI_TERM_START_X (driver.menu->width / 21)
@@ -178,8 +176,8 @@ static void blit_line(int x, int y, const char *message, bool green)
             if (!col)
                continue;
 
-            rgui->frame_buf[(y + j) *
-               (rgui->frame_buf_pitch >> 1) + (x + i)] = green ?
+            driver.menu->frame_buf[(y + j) *
+               (driver.menu->frame_buf_pitch >> 1) + (x + i)] = green ?
 #if defined(GEKKO)|| defined(PSP)
                (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
 #else
@@ -235,28 +233,26 @@ static bool rguidisp_init_font(void *data)
    return true;
 }
 
-static void rgui_render_background(void *data)
+static void rgui_render_background(menu_handle_t *menu)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-
-   if (!rgui)
+   if (!menu)
       return;
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         0, 0, driver.menu->width, driver.menu->height, gray_filler);
+   fill_rect(menu->frame_buf, menu->frame_buf_pitch,
+         0, 0, menu->width, menu->height, gray_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         5, 5, driver.menu->width - 10, 5, green_filler);
+   fill_rect(menu->frame_buf, menu->frame_buf_pitch,
+         5, 5, menu->width - 10, 5, green_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         5, driver.menu->height - 10, driver.menu->width - 10, 5,
+   fill_rect(menu->frame_buf, menu->frame_buf_pitch,
+         5, menu->height - 10, menu->width - 10, 5,
          green_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         5, 5, 5, driver.menu->height - 10, green_filler);
+   fill_rect(menu->frame_buf, menu->frame_buf_pitch,
+         5, 5, 5, menu->height - 10, green_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         driver.menu->width - 10, 5, 5, driver.menu->height - 10,
+   fill_rect(menu->frame_buf, menu->frame_buf_pitch,
+         menu->width - 10, 5, 5, menu->height - 10,
          green_filler);
 }
 
@@ -308,19 +304,19 @@ static void rgui_render_messagebox(const char *message)
    x = (driver.menu->width - width) / 2;
    y = (driver.menu->height - height) / 2;
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
          x + 5, y + 5, width - 10, height - 10, gray_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
          x, y, width - 5, 5, green_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
          x + width - 5, y, 5, height - 5, green_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
          x + 5, y + height - 5, width - 5, 5, green_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
          x, y + 5, 5, height - 5, green_filler);
 
    for (i = 0; i < list->size; i++)
@@ -335,18 +331,19 @@ end:
    string_list_free(list);
 }
 
-static void rgui_blit_cursor(void* data)
+static void rgui_blit_cursor(menu_handle_t *menu)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   int16_t x = driver.menu->mouse.x;
-   int16_t y = driver.menu->mouse.y;
+   int16_t x, y;
 
-   if (!rgui)
+   if (!menu)
       return;
+   
+   x = menu->mouse.x;
+   y = menu->mouse.y;
 
-   color_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+   color_rect(menu->frame_buf, menu->frame_buf_pitch,
          x, y-5, 1, 11, 0xFFFF);
-   color_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+   color_rect(menu->frame_buf, menu->frame_buf_pitch,
          x-5, y, 11, 1, 0xFFFF);
 }
 
@@ -390,7 +387,7 @@ static void rgui_render(void)
       driver.menu->begin + RGUI_TERM_HEIGHT :
       menu_list_get_size(driver.menu->menu_list);
 
-   rgui_render_background(rgui);
+   rgui_render_background(driver.menu);
 
    menu_list_get_last_stack(driver.menu->menu_list,
          &dir, &label, &menu_type);
@@ -506,13 +503,12 @@ static void rgui_render(void)
    }
 
    if (driver.menu->mouse.enable)
-      rgui_blit_cursor(rgui);
+      rgui_blit_cursor(driver.menu);
 }
 
 static void *rgui_init(void)
 {
    bool ret = false;
-   rgui_handle_t *rgui = NULL;
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
@@ -523,17 +519,15 @@ static void *rgui_init(void)
    if (!menu->userdata)
       goto error;
 
-   rgui = (rgui_handle_t*)menu->userdata;
+   menu->frame_buf = (uint16_t*)malloc(400 * 240 * sizeof(uint16_t)); 
 
-   rgui->frame_buf = (uint16_t*)malloc(400 * 240 * sizeof(uint16_t)); 
-
-   if (!rgui->frame_buf)
+   if (!menu->frame_buf)
       goto error;
 
    menu->width           = 320;
    menu->height          = 240;
    menu->begin           = 0;
-   rgui->frame_buf_pitch = menu->width * sizeof(uint16_t);
+   menu->frame_buf_pitch = menu->width * sizeof(uint16_t);
 
    ret = rguidisp_init_font(menu);
 
@@ -548,12 +542,14 @@ static void *rgui_init(void)
    return menu;
 
 error:
-   if (rgui && rgui->frame_buf)
-      free(rgui->frame_buf);
-   if (menu && menu->userdata)
-      free(menu->userdata);
    if (menu)
+   {
+      if (menu->frame_buf)
+         free(menu->frame_buf);
+      if (menu->userdata)
+         free(menu->userdata);
       free(menu);
+   }
    return NULL;
 }
 
@@ -570,8 +566,8 @@ static void rgui_free(void *data)
    if (!rgui)
       return;
 
-   if (rgui->frame_buf)
-      free(rgui->frame_buf);
+   if (menu->frame_buf)
+      free(menu->frame_buf);
 
    if (menu->userdata)
       free(menu->userdata);
@@ -596,7 +592,7 @@ static void rgui_set_texture(void *data)
       return;
 
    driver.video_poke->set_texture_frame(driver.video_data,
-         rgui->frame_buf, false, menu->width, menu->height, 1.0f);
+         menu->frame_buf, false, menu->width, menu->height, 1.0f);
 }
 
 static void rgui_navigation_clear(void *data, bool pending_push)
