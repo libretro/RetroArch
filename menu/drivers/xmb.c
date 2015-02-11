@@ -1336,41 +1336,41 @@ static void xmb_context_reset(void *data)
 static void xmb_navigation_clear(void *data, bool pending_push)
 {
    if (!pending_push)
-      xmb_selection_pointer_changed(data);
+      xmb_selection_pointer_changed((menu_handle_t*)data);
 }
 
 static void xmb_navigation_decrement(void *data)
 {
-   xmb_selection_pointer_changed(data);
+   xmb_selection_pointer_changed((menu_handle_t*)data);
 }
 
 static void xmb_navigation_increment(void *data)
 {
-   xmb_selection_pointer_changed(data);
+   xmb_selection_pointer_changed((menu_handle_t*)data);
 }
 
 static void xmb_navigation_set(void *data, bool scroll)
 {
    (void)scroll;
 
-   xmb_selection_pointer_changed(data);
+   xmb_selection_pointer_changed((menu_handle_t*)data);
 }
 
 static void xmb_navigation_set_last(void *data)
 {
-   xmb_selection_pointer_changed(data);
+   xmb_selection_pointer_changed((menu_handle_t*)data);
 }
 
 static void xmb_navigation_descend_alphabet(void *data, size_t *unused)
 {
    (void)unused;
-   xmb_selection_pointer_changed(data);
+   xmb_selection_pointer_changed((menu_handle_t*)data);
 }
 
 static void xmb_navigation_ascend_alphabet(void *data, size_t *unused)
 {
    (void)unused;
-   xmb_selection_pointer_changed(data);
+   xmb_selection_pointer_changed((menu_handle_t*)data);
 }
 
 static void xmb_list_insert(void *data,
