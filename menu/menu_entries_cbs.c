@@ -20,6 +20,7 @@
 #include "menu_input.h"
 #include "menu_entries.h"
 #include "menu_shader.h"
+#include "menu_navigation.h"
 
 #include "../file_ext.h"
 #include "../file_extract.h"

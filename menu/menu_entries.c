@@ -16,6 +16,7 @@
 
 #include "menu_entries.h"
 #include "menu_action.h"
+#include "menu_navigation.h"
 #include <file/file_list.h>
 #include <file/file_path.h>
 #include "../file_extract.h"

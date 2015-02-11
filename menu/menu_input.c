@@ -26,6 +26,7 @@
 #include "menu.h"
 #include "menu_action.h"
 #include "menu_shader.h"
+#include "menu_navigation.h"
 #include "../cheats.h"
 #include "../performance.h"
 #include "../settings_data.h"

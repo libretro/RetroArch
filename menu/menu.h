@@ -24,7 +24,6 @@
 #include <ctype.h>
 #include <boolean.h>
 #include "../../general.h"
-#include "menu_navigation.h"
 #include "menu_input.h"
 
 #ifndef GFX_MAX_SHADERS
