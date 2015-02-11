@@ -414,6 +414,30 @@ static int action_ok_cheat_file(const char *path,
          label, type, idx);
 }
 
+static int action_ok_audio_dsp_plugin(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   if (!path_file_exists(path))
+   {
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, "Audio Filter Directory doesn't exist or cannot be accessed.\n", 1, 180);
+      return -1;
+   }
+   return 0;
+}
+
+static int action_ok_video_filter(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   if (!path_file_exists(path))
+   {
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, "Video Filter Directory doesn't exist or cannot be accessed.\n", 1, 180);
+      return -1;
+   }
+   return 0;
+}
+
 static int action_ok_remap_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -5026,6 +5050,10 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_shader_preset;
    else if (!strcmp(label, "cheat_file_load"))
       cbs->action_ok = action_ok_cheat_file;
+   else if (!strcmp(label, "audio_dsp_plugin"))
+      cbs->action_ok = action_ok_audio_dsp_plugin;
+   else if (!strcmp(label, "video_filter"))
+      cbs->action_ok = action_ok_video_filter;
    else if (!strcmp(label, "remap_file_load"))
       cbs->action_ok = action_ok_remap_file;
    else if (!strcmp(label, "video_shader_parameters") ||
