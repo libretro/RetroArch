@@ -143,16 +143,9 @@ static const GLfloat rmb_tex_coord[] = {
    1, 0,
 };
 
-static float xmb_item_y(int i, size_t current)
+static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
 {
-   float iy;
-   xmb_handle_t *xmb;
-
-   xmb = (xmb_handle_t*)driver.menu->userdata;
-   if (!xmb)
-      return 0;
-
-   iy = xmb->vspacing;
+   float iy = xmb->vspacing;
 
    if (i < current)
       if (xmb->depth > 1)
@@ -229,16 +222,13 @@ static char *xmb_str_replace (const char *string,
    return newstr;
 }
 
-static void xmb_draw_icon(GLuint texture, float x, float y,
+static void xmb_draw_icon(xmb_handle_t *xmb,
+      GLuint texture, float x, float y,
       float alpha, float rotation, float scale_factor)
 {
    struct gl_coords coords;
    math_matrix_4x4 mymat, mrot, mscal;
    gl_t *gl;
-   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
-
-   if (!xmb)
-      return;
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -487,7 +477,7 @@ static void xmb_selection_pointer_changed(void)
       if (!node)
          continue;
 
-      iy = xmb_item_y(i, current);
+      iy = xmb_item_y(xmb, i, current);
 
       if (i == current)
       {
@@ -550,9 +540,8 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
       if (dir == 1 || dir == -1)
          node->label_alpha = 0;
 
-      node->x = xmb->icon_size*dir*2;
-
-      node->y = xmb_item_y(i, current);
+      node->x = xmb->icon_size * dir * 2;
+      node->y = xmb_item_y(xmb, i, current);
 
       if (i == current)
          node->zoom = 1;
@@ -834,7 +823,8 @@ static void xmb_populate_entries(void *data, const char *path,
       xmb_list_switch();
 }
 
-static void xmb_draw_items(file_list_t *list, file_list_t *stack,
+static void xmb_draw_items(xmb_handle_t *xmb,
+      file_list_t *list, file_list_t *stack,
       size_t current, size_t cat_selection_ptr)
 {
    unsigned i;
@@ -844,9 +834,8 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
    xmb_node_t *core_node = NULL;
    size_t end            = file_list_get_size(list);
    gl_t *gl              = (gl_t*)video_driver_resolve(NULL);
-   xmb_handle_t *xmb     = (xmb_handle_t*)driver.menu->userdata;
 
-   if (!xmb || !list->size || !gl)
+   if (!list->size || !gl)
       return;
 
    file_list_get_last(stack, &dir, &label, &menu_type);
@@ -946,7 +935,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
             break;
       }
 
-      xmb_draw_icon(icon, icon_x, icon_y, node->alpha, 0, node->zoom);
+      xmb_draw_icon(xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
 
       menu_ticker_line(name, 35, g_extern.frame_count / 20, path_buf,
          (i == current));
@@ -981,7 +970,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
                0);
 
       if (!strcmp(type_str, "ON") && xmb->textures[XMB_TEXTURE_SWITCH_ON].id)
-         xmb_draw_icon(xmb->textures[XMB_TEXTURE_SWITCH_ON].id,
+         xmb_draw_icon(xmb, xmb->textures[XMB_TEXTURE_SWITCH_ON].id,
                node->x + xmb->margin_left + xmb->hspacing
                + xmb->icon_size/2.0 + xmb->setting_margin_left,
                xmb->margin_top + node->y + xmb->icon_size/2.0,
@@ -990,7 +979,7 @@ static void xmb_draw_items(file_list_t *list, file_list_t *stack,
                1);
 
       if (!strcmp(type_str, "OFF") && xmb->textures[XMB_TEXTURE_SWITCH_OFF].id)
-         xmb_draw_icon(xmb->textures[XMB_TEXTURE_SWITCH_OFF].id,
+         xmb_draw_icon(xmb, xmb->textures[XMB_TEXTURE_SWITCH_OFF].id,
                node->x + xmb->margin_left + xmb->hspacing
                + xmb->icon_size/2.0 + xmb->setting_margin_left,
                xmb->margin_top + node->y + xmb->icon_size/2.0,
@@ -1037,7 +1026,7 @@ static void xmb_frame(void)
             timedate, gl->win_width - xmb->title_margin_left - xmb->icon_size/4, 
             xmb->title_margin_top, 1, 1, 1);
 
-      xmb_draw_icon(xmb->textures[XMB_TEXTURE_CLOCK].id,
+      xmb_draw_icon(xmb, xmb->textures[XMB_TEXTURE_CLOCK].id,
             gl->win_width - xmb->icon_size, xmb->icon_size, 1, 0, 1);
    }
 
@@ -1053,20 +1042,21 @@ static void xmb_frame(void)
    xmb_draw_text(title_msg, xmb->title_margin_left, 
          gl->win_height - xmb->title_margin_bottom, 1, 1, 0);
 
-   xmb_draw_icon(xmb->textures[XMB_TEXTURE_ARROW].id,
+   xmb_draw_icon(xmb, xmb->textures[XMB_TEXTURE_ARROW].id,
          xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0 + xmb->icon_size,
          xmb->margin_top + xmb->icon_size/2.0 + xmb->vspacing * xmb->active_item_factor,
          xmb->arrow_alpha, 0, 1);
 
    depth = file_list_get_size(driver.menu->menu_list->menu_stack);
 
-   xmb_draw_items(
+   xmb_draw_items(xmb,
          xmb->selection_buf_old,
          xmb->menu_stack_old,
          xmb->selection_ptr_old,
          depth > 1 ? driver.menu->cat_selection_ptr :
                      xmb->cat_selection_ptr_old);
-   xmb_draw_items(
+
+   xmb_draw_items(xmb,
          driver.menu->menu_list->selection_buf,
          driver.menu->menu_list->menu_stack,
          driver.menu->selection_ptr,
@@ -1076,15 +1066,13 @@ static void xmb_frame(void)
    {
       xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
 
-      if (!node)
-         continue;
-
-      xmb_draw_icon(node->icon, 
-            xmb->x + xmb->categories_x + xmb->margin_left + xmb->hspacing*(i+1) - xmb->icon_size / 2.0,
-            xmb->margin_top + xmb->icon_size / 2.0, 
-            node->alpha, 
-            0, 
-            node->zoom);
+      if (node)
+         xmb_draw_icon(xmb, node->icon, 
+               xmb->x + xmb->categories_x + xmb->margin_left + xmb->hspacing * (i + 1) - xmb->icon_size / 2.0,
+               xmb->margin_top + xmb->icon_size / 2.0, 
+               node->alpha, 
+               0, 
+               node->zoom);
    }
 
 #ifdef GEKKO
@@ -1497,7 +1485,7 @@ static void xmb_list_insert(void *data,
    node->alpha       = xmb->i_passive_alpha;
    node->zoom        = xmb->i_passive_zoom;
    node->label_alpha = node->alpha;
-   node->y           = xmb_item_y(i, current);
+   node->y           = xmb_item_y(xmb, i, current);
    node->x           = 0;
 
    if (i == current)
