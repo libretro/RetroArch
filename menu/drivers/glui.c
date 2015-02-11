@@ -60,13 +60,9 @@ static int glui_entry_iterate(unsigned action)
    return -1;
 }
 
-static void glui_blit_line(float x, float y, const char *message, bool green)
+static void glui_blit_line(gl_t *gl, float x, float y, const char *message, bool green)
 {
    struct font_params params = {0};
-   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
-
-   if (!driver.menu || !gl)
-      return;
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 
@@ -90,7 +86,8 @@ static void glui_blit_line(float x, float y, const char *message, bool green)
          message, &params, NULL);
 }
 
-static void glui_render_background(bool force_transparency)
+static void glui_render_background(gl_t *gl, glui_handle_t *glui,
+      bool force_transparency)
 {
    static const GLfloat vertex[] = {
       0, 0,
@@ -107,8 +104,6 @@ static void glui_render_background(bool force_transparency)
    };
    struct gl_coords coords;
    float alpha = 0.75f;
-   gl_t *gl = NULL;
-   glui_handle_t *glui = NULL;
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
@@ -122,19 +117,6 @@ static void glui_render_background(bool force_transparency)
       0.0f, 0.0f, 0.0f, alpha,
       0.0f, 0.0f, 0.0f, alpha,
    };
-
-   if (!driver.menu)
-      return;
-
-   glui = (glui_handle_t*)driver.menu->userdata;
-
-   if (!glui)
-      return;
-
-   gl = (gl_t*)video_driver_resolve(NULL);
-
-   if (!gl)
-      return;
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
@@ -168,7 +150,7 @@ static void glui_render_background(bool force_transparency)
    gl->coords.color = gl->white_color_ptr;
 }
 
-static void glui_draw_cursor(float x, float y)
+static void glui_draw_cursor(gl_t *gl, float x, float y)
 {
    static const GLfloat vertex[] = {
       0, 0,
@@ -190,7 +172,6 @@ static void glui_draw_cursor(float x, float y)
       1.0f, 1.0f, 1.0f, 1.0f,
    };
    struct gl_coords coords;
-   gl_t *gl = NULL;
    glui_handle_t *glui = NULL;
 
    if (!driver.menu)
@@ -199,11 +180,6 @@ static void glui_draw_cursor(float x, float y)
    glui = (glui_handle_t*)driver.menu->userdata;
 
    if (!glui)
-      return;
-
-   gl = (gl_t*)video_driver_resolve(NULL);
-
-   if (!gl)
       return;
 
    glViewport(x - 5, gl->win_height - y, 11, 11);
@@ -271,7 +247,7 @@ static void glui_render_messagebox(const char *message)
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         glui_blit_line(x, y + i * glui->line_height, msg, false);
+         glui_blit_line(gl, x, y + i * glui->line_height, msg, false);
    }
 
 end:
@@ -334,7 +310,7 @@ static void glui_frame(void)
       driver.menu->begin + glui->term_height :
       menu_list_get_size(driver.menu->menu_list);
 
-   glui_render_background(false);
+   glui_render_background(gl, glui, false);
 
    menu_list_get_last_stack(driver.menu->menu_list, &dir, &label, &menu_type);
 
@@ -342,7 +318,7 @@ static void glui_frame(void)
 
    menu_ticker_line(title_buf, glui->term_width - 3,
          g_extern.frame_count / glui->margin, title, true);
-   glui_blit_line(glui->margin * 2, glui->margin + glui->line_height,
+   glui_blit_line(gl, glui->margin * 2, glui->margin + glui->line_height,
          title_buf, true);
 
    core_name = g_extern.menu.info.library_name;
@@ -362,13 +338,13 @@ static void glui_frame(void)
 
    disp_timedate_set_label(timedate, sizeof(timedate), 0);
 
-   glui_blit_line(
+   glui_blit_line(gl,
          glui->margin * 2,
          glui->margin + glui->term_height * glui->line_height 
          + glui->line_height * 2, title_msg, true);
 
    if (g_settings.menu.timedate_enable)
-      glui_blit_line(
+      glui_blit_line(gl,
             glui->margin * 14,
             glui->margin + glui->term_height * glui->line_height 
             + glui->line_height * 2, timedate, true);
@@ -410,9 +386,9 @@ static void glui_frame(void)
 
       strlcpy(message, entry_title_buf, sizeof(message));
 
-      glui_blit_line(x, y, message, selected);
+      glui_blit_line(gl, x, y, message, selected);
 
-      glui_blit_line(gl->win_width - glui->glyph_width * w - glui->margin , 
+      glui_blit_line(gl, gl->win_width - glui->glyph_width * w - glui->margin , 
          y, type_str_buf, selected);
    }
 
@@ -436,20 +412,20 @@ static void glui_frame(void)
       const char *str = *driver.menu->keyboard.buffer;
       if (!str)
          str = "";
-      glui_render_background(true);
+      glui_render_background(gl, glui, true);
       snprintf(msg, sizeof(msg), "%s\n%s", driver.menu->keyboard.label, str);
       glui_render_messagebox(msg);
    }
 
    if (glui->box_message[0] != '\0')
    {
-      glui_render_background(true);
+      glui_render_background(gl, glui, true);
       glui_render_messagebox(glui->box_message);
       glui->box_message[0] = '\0';
    }
 
    if (driver.menu->mouse.enable)
-      glui_draw_cursor(driver.menu->mouse.x, driver.menu->mouse.y);
+      glui_draw_cursor(gl, driver.menu->mouse.x, driver.menu->mouse.y);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 }
