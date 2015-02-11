@@ -257,9 +257,9 @@ void menu_free(void *data)
    menu_animation_free(menu->animation);
    menu->animation = NULL;
 
-   if (menu->frame_buf)
-      free(menu->frame_buf);
-   menu->frame_buf = NULL;
+   if (menu->frame_buf.data)
+      free(menu->frame_buf.data);
+   menu->frame_buf.data = NULL;
 
    menu_list_free(menu->menu_list);
    menu->menu_list = NULL;

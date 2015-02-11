@@ -121,12 +121,12 @@ static void fill_rect(menu_handle_t *menu,
 {
    unsigned i, j;
     
-   if (!menu->frame_buf || !col)
+   if (!menu->frame_buf.data || !col)
       return;
     
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
-         menu->frame_buf[j * (menu->frame_buf_pitch >> 1) + i] = col(i, j);
+         menu->frame_buf.data[j * (menu->frame_buf.pitch >> 1) + i] = col(i, j);
 }
 
 static void color_rect(menu_handle_t *menu,
@@ -136,13 +136,13 @@ static void color_rect(menu_handle_t *menu,
 {
    unsigned i, j;
 
-   if (!menu->frame_buf)
+   if (!menu->frame_buf.data)
       return;
 
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
          if (i < driver.menu->width && j < driver.menu->height)
-            menu->frame_buf[j * (menu->frame_buf_pitch >> 1) + i] = color;
+            menu->frame_buf.data[j * (menu->frame_buf.pitch >> 1) + i] = color;
 }
 
 static void blit_line(int x, int y, const char *message, bool green)
@@ -167,8 +167,8 @@ static void blit_line(int x, int y, const char *message, bool green)
             if (!col)
                continue;
 
-            menu->frame_buf[(y + j) *
-               (menu->frame_buf_pitch >> 1) + (x + i)] = green ?
+            menu->frame_buf.data[(y + j) *
+               (menu->frame_buf.pitch >> 1) + (x + i)] = green ?
 #if defined(GEKKO)|| defined(PSP)
                (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
 #else
@@ -470,15 +470,15 @@ static void *rgui_init(void)
    if (!menu)
       return NULL;
 
-   menu->frame_buf = (uint16_t*)malloc(400 * 240 * sizeof(uint16_t)); 
+   menu->frame_buf.data = (uint16_t*)malloc(400 * 240 * sizeof(uint16_t)); 
 
-   if (!menu->frame_buf)
+   if (!menu->frame_buf.data)
       goto error;
 
    menu->width           = 320;
    menu->height          = 240;
    menu->begin           = 0;
-   menu->frame_buf_pitch = menu->width * sizeof(uint16_t);
+   menu->frame_buf.pitch = menu->width * sizeof(uint16_t);
 
    ret = rguidisp_init_font(menu);
 
@@ -495,8 +495,8 @@ static void *rgui_init(void)
 error:
    if (menu)
    {
-      if (menu->frame_buf)
-         free(menu->frame_buf);
+      if (menu->frame_buf.data)
+         free(menu->frame_buf.data);
       if (menu->userdata)
          free(menu->userdata);
       free(menu);
@@ -533,7 +533,7 @@ static void rgui_set_texture(void *data)
       return;
 
    driver.video_poke->set_texture_frame(driver.video_data,
-         menu->frame_buf, false, menu->width, menu->height, 1.0f);
+         menu->frame_buf.data, false, menu->width, menu->height, 1.0f);
 }
 
 static void rgui_navigation_clear(void *data, bool pending_push)
