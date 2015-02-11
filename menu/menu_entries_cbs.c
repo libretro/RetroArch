@@ -4635,6 +4635,20 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
 #endif
 }
 
+static void menu_action_setting_generic_disp_set_label(
+      unsigned *w, char *type_str, size_t type_str_size,
+      const char *path, const char *label,
+      char *path_buf, size_t path_buf_size)
+{
+   *type_str = '\0';
+
+   if (label)
+      strlcpy(type_str, label, type_str_size);
+   *w = strlen(type_str);
+
+   strlcpy(path_buf, path, path_buf_size);
+}
+
 static void menu_action_setting_disp_set_label_menu_file_use_directory(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -4644,9 +4658,8 @@ static void menu_action_setting_disp_set_label_menu_file_use_directory(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   *type_str = '\0';
-   *w = 0;
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, NULL, path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_directory(
@@ -4658,9 +4671,8 @@ static void menu_action_setting_disp_set_label_menu_file_directory(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   strlcpy(type_str, "(DIR)", type_str_size);
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(DIR)", path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_carchive(
@@ -4672,9 +4684,8 @@ static void menu_action_setting_disp_set_label_menu_file_carchive(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   strlcpy(type_str, "(COMP)", type_str_size);
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(COMP)", path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_shader(
@@ -4686,9 +4697,8 @@ static void menu_action_setting_disp_set_label_menu_file_shader(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   strlcpy(type_str, "(SHADER)", type_str_size);
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(SHADER)", path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_subgroup(
@@ -4700,9 +4710,8 @@ static void menu_action_setting_disp_set_label_menu_file_subgroup(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   *type_str = '\0';
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, NULL, path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_shader_preset(
@@ -4714,9 +4723,8 @@ static void menu_action_setting_disp_set_label_menu_file_shader_preset(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   strlcpy(type_str, "(PRESET)", type_str_size);
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(PRESET)", path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_in_carchive(
@@ -4728,9 +4736,8 @@ static void menu_action_setting_disp_set_label_menu_file_in_carchive(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   strlcpy(type_str, "(CFILE)", type_str_size);
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(CFILE)", path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_overlay(
@@ -4742,9 +4749,8 @@ static void menu_action_setting_disp_set_label_menu_file_overlay(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   strlcpy(type_str, "(OVERLAY)", type_str_size);
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(OVERLAY)", path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_config(
@@ -4756,9 +4762,8 @@ static void menu_action_setting_disp_set_label_menu_file_config(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   strlcpy(type_str, "(CONFIG)", type_str_size);
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(CONFIG)", path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_font(
@@ -4770,9 +4775,8 @@ static void menu_action_setting_disp_set_label_menu_file_font(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   strlcpy(type_str, "(FONT)", type_str_size);
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(FONT)", path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_filter(
@@ -4784,9 +4788,8 @@ static void menu_action_setting_disp_set_label_menu_file_filter(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   strlcpy(type_str, "(FILTER)", type_str_size);
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(FILTER)", path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_url(
@@ -4798,9 +4801,8 @@ static void menu_action_setting_disp_set_label_menu_file_url(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   strlcpy(type_str, "(URL)", type_str_size);
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(URL)", path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_rdb(
@@ -4812,9 +4814,8 @@ static void menu_action_setting_disp_set_label_menu_file_rdb(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   strlcpy(type_str, "(RDB)", type_str_size);
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(RDB)", path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_cursor(
@@ -4826,9 +4827,8 @@ static void menu_action_setting_disp_set_label_menu_file_cursor(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   strlcpy(type_str, "(CURSOR)", type_str_size);
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(CURSOR)", path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_cheat(
@@ -4840,9 +4840,8 @@ static void menu_action_setting_disp_set_label_menu_file_cheat(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   strlcpy(type_str, "(CHEAT)", type_str_size);
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(CHEAT)", path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label(file_list_t* list,
