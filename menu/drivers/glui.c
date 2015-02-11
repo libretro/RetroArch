@@ -498,24 +498,23 @@ static void glui_context_reset(void *data)
 
 static void glui_navigation_clear(void *data, bool pending_push)
 {
-   if (driver.menu)
-      driver.menu->begin = 0;
+   menu_handle_t *menu = (menu_handle_t*)data;
+   if (menu)
+      menu->begin = 0;
 }
 
 static void glui_navigation_set(void *data, bool scroll)
 {
    glui_handle_t *glui = NULL;
-
    menu_handle_t *menu = (menu_handle_t*)data;
 
    if (!menu)
       return;
-
+   
    glui = (glui_handle_t*)menu->userdata;
 
    if (!glui)
       return;
-
    if (!scroll)
       return;
 
