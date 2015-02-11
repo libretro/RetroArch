@@ -222,23 +222,18 @@ static char *xmb_str_replace (const char *string,
    return newstr;
 }
 
-static void xmb_draw_icon(xmb_handle_t *xmb,
+static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
       GLuint texture, float x, float y,
       float alpha, float rotation, float scale_factor)
 {
    struct gl_coords coords;
    math_matrix_4x4 mymat, mrot, mscal;
-   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
-
-   if (!gl)
-      return;
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
 
    if (alpha == 0)
       return;
-
 
    if (
          x < -xmb->icon_size/2 || 
@@ -281,15 +276,11 @@ static void xmb_draw_icon(xmb_handle_t *xmb,
    glDisable(GL_BLEND);
 }
 
-static void xmb_draw_text(xmb_handle_t *xmb, const char *str, float x,
+static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
       float y, float scale_factor, float alpha, bool align_right)
 {
    uint8_t a8 = 0;
    struct font_params params = {0};
-   gl_t *gl = (gl_t*)video_driver_resolve(NULL);
-
-   if (!gl)
-      return;
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -319,12 +310,11 @@ static void xmb_draw_text(xmb_handle_t *xmb, const char *str, float x,
                                       str, &params, xmb->font);
 }
 
-static void xmb_render_background(bool force_transparency)
+static void xmb_render_background(gl_t *gl, xmb_handle_t *xmb,
+      bool force_transparency)
 {
    struct gl_coords coords;
    float alpha              = 0.75f;
-   gl_t *gl                 = NULL;
-   xmb_handle_t *xmb        = NULL;
    static const GLfloat vertex[] = {
       0, 0,
       1, 0,
@@ -338,14 +328,6 @@ static void xmb_render_background(bool force_transparency)
       0, 0,
       1, 0,
    };
-
-   if (!driver.menu)
-      return;
-
-   xmb = (xmb_handle_t*)driver.menu->userdata;
-
-   if (!xmb)
-      return;
 
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, xmb->alpha,
@@ -364,13 +346,7 @@ static void xmb_render_background(bool force_transparency)
       0.0f, 0.0f, 0.0f, alpha,
    };
 
-   gl = (gl_t*)video_driver_resolve(NULL);
-
-   if (!gl)
-      return;
-
    glViewport(0, 0, gl->win_width, gl->win_height);
-
 
    coords.vertices      = 4;
    coords.vertex        = vertex;
@@ -441,7 +417,7 @@ static void xmb_render_messagebox(const char *message)
       const char *msg = list->elems[i].data;
 
       if (msg)
-         xmb_draw_text(xmb, msg, x, y + i * xmb->font_size, 1, 1, 0);
+         xmb_draw_text(gl, xmb, msg, x, y + i * xmb->font_size, 1, 1, 0);
    }
 
    string_list_free(list);
@@ -928,12 +904,12 @@ static void xmb_draw_items(xmb_handle_t *xmb,
             break;
       }
 
-      xmb_draw_icon(xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
+      xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
 
       menu_ticker_line(name, 35, g_extern.frame_count / 20, path_buf,
          (i == current));
 
-      xmb_draw_text(xmb, name,
+      xmb_draw_text(gl, xmb, name,
             node->x + xmb->margin_left + xmb->hspacing + xmb->label_margin_left, 
             xmb->margin_top + node->y + xmb->label_margin_top, 
             1, node->label_alpha, 0);
@@ -954,7 +930,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
             && !xmb->textures[XMB_TEXTURE_SWITCH_ON].id)
             || (!strcmp(type_str, "OFF")
             && !xmb->textures[XMB_TEXTURE_SWITCH_OFF].id)))
-         xmb_draw_text(xmb, value,
+         xmb_draw_text(gl, xmb, value,
                node->x + xmb->margin_left + xmb->hspacing + 
                xmb->label_margin_left + xmb->setting_margin_left, 
                xmb->margin_top + node->y + xmb->label_margin_top, 
@@ -963,7 +939,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                0);
 
       if (!strcmp(type_str, "ON") && xmb->textures[XMB_TEXTURE_SWITCH_ON].id)
-         xmb_draw_icon(xmb, xmb->textures[XMB_TEXTURE_SWITCH_ON].id,
+         xmb_draw_icon(gl, xmb, xmb->textures[XMB_TEXTURE_SWITCH_ON].id,
                node->x + xmb->margin_left + xmb->hspacing
                + xmb->icon_size/2.0 + xmb->setting_margin_left,
                xmb->margin_top + node->y + xmb->icon_size/2.0,
@@ -972,7 +948,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                1);
 
       if (!strcmp(type_str, "OFF") && xmb->textures[XMB_TEXTURE_SWITCH_OFF].id)
-         xmb_draw_icon(xmb, xmb->textures[XMB_TEXTURE_SWITCH_OFF].id,
+         xmb_draw_icon(gl, xmb, xmb->textures[XMB_TEXTURE_SWITCH_OFF].id,
                node->x + xmb->margin_left + xmb->hspacing
                + xmb->icon_size/2.0 + xmb->setting_margin_left,
                xmb->margin_top + node->y + xmb->icon_size/2.0,
@@ -999,7 +975,7 @@ static void xmb_frame(void)
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
-   xmb_render_background(false);
+   xmb_render_background(gl, xmb, false);
 
    core_name = g_extern.menu.info.library_name;
 
@@ -1008,18 +984,18 @@ static void xmb_frame(void)
    if (!core_name)
       core_name = "No Core";
 
-   xmb_draw_text(xmb,
+   xmb_draw_text(gl, xmb,
          xmb->title, xmb->title_margin_left, xmb->title_margin_top, 1, 1, 0);
 
    disp_timedate_set_label(timedate, sizeof(timedate), 0);
 
    if (g_settings.menu.timedate_enable)
    {
-      xmb_draw_text(xmb,
+      xmb_draw_text(gl, xmb,
             timedate, gl->win_width - xmb->title_margin_left - xmb->icon_size/4, 
             xmb->title_margin_top, 1, 1, 1);
 
-      xmb_draw_icon(xmb, xmb->textures[XMB_TEXTURE_CLOCK].id,
+      xmb_draw_icon(gl, xmb, xmb->textures[XMB_TEXTURE_CLOCK].id,
             gl->win_width - xmb->icon_size, xmb->icon_size, 1, 0, 1);
    }
 
@@ -1032,10 +1008,10 @@ static void xmb_frame(void)
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
-   xmb_draw_text(xmb, title_msg, xmb->title_margin_left, 
+   xmb_draw_text(gl, xmb, title_msg, xmb->title_margin_left, 
          gl->win_height - xmb->title_margin_bottom, 1, 1, 0);
 
-   xmb_draw_icon(xmb, xmb->textures[XMB_TEXTURE_ARROW].id,
+   xmb_draw_icon(gl, xmb, xmb->textures[XMB_TEXTURE_ARROW].id,
          xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0 + xmb->icon_size,
          xmb->margin_top + xmb->icon_size/2.0 + xmb->vspacing * xmb->active_item_factor,
          xmb->arrow_alpha, 0, 1);
@@ -1060,7 +1036,7 @@ static void xmb_frame(void)
       xmb_node_t *node = i ? xmb_node_for_core(i-1) : &xmb->settings_node;
 
       if (node)
-         xmb_draw_icon(xmb, node->icon, 
+         xmb_draw_icon(gl, xmb, node->icon, 
                xmb->x + xmb->categories_x + xmb->margin_left + xmb->hspacing * (i + 1) - xmb->icon_size / 2.0,
                xmb->margin_top + xmb->icon_size / 2.0, 
                node->alpha, 
@@ -1091,13 +1067,13 @@ static void xmb_frame(void)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s",
             driver.menu->keyboard.label, str);
-      xmb_render_background(true);
+      xmb_render_background(gl, xmb, true);
       xmb_render_messagebox(msg);
    }
 
    if (xmb->box_message[0] != '\0')
    {
-      xmb_render_background(true);
+      xmb_render_background(gl, xmb, true);
       xmb_render_messagebox(xmb->box_message);
       xmb->box_message[0] = '\0';
    }
