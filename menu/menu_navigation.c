@@ -111,17 +111,17 @@ void menu_navigation_descend_alphabet(menu_handle_t *menu, size_t *ptr_out)
    size_t i   = 0;
    size_t ptr = *ptr_out;
 
-   if (!menu->scroll_indices_size)
+   if (!menu->scroll.indices.size)
       return;
 
    if (ptr == 0)
       return;
 
-   i = menu->scroll_indices_size - 1;
+   i = menu->scroll.indices.size - 1;
 
-   while (i && menu->scroll_indices[i - 1] >= ptr)
+   while (i && menu->scroll.indices.list[i - 1] >= ptr)
       i--;
-   *ptr_out = menu->scroll_indices[i - 1];
+   *ptr_out = menu->scroll.indices.list[i - 1];
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_descend_alphabet)
       driver.menu_ctx->navigation_descend_alphabet(menu, ptr_out);
@@ -143,16 +143,16 @@ void menu_navigation_ascend_alphabet(menu_handle_t *menu, size_t *ptr_out)
    size_t i   = 0;
    size_t ptr = *ptr_out;
 
-   if (!menu->scroll_indices_size)
+   if (!menu->scroll.indices.size)
       return;
 
-   if (ptr == menu->scroll_indices[menu->scroll_indices_size - 1])
+   if (ptr == menu->scroll.indices.list[menu->scroll.indices.size - 1])
       return;
 
-   while (i < menu->scroll_indices_size - 1
-         && menu->scroll_indices[i + 1] <= ptr)
+   while (i < menu->scroll.indices.size - 1
+         && menu->scroll.indices.list[i + 1] <= ptr)
       i++;
-   *ptr_out = menu->scroll_indices[i + 1];
+   *ptr_out = menu->scroll.indices.list[i + 1];
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_descend_alphabet)
       driver.menu_ctx->navigation_descend_alphabet(menu, ptr_out);

@@ -99,9 +99,15 @@ typedef struct
 
    /* Quick jumping indices with L/R.
     * Rebuilt when parsing directory. */
-   size_t scroll_indices[2 * (26 + 2) + 1];
-   unsigned scroll_indices_size;
-   unsigned scroll_accel;
+   struct
+   {
+      struct
+      {
+         size_t list[2 * (26 + 2) + 1];
+         unsigned size;
+      } indices;
+      unsigned acceleration;
+   } scroll;
 
    char default_glslp[PATH_MAX_LENGTH];
    char default_cgp[PATH_MAX_LENGTH];

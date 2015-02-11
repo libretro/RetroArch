@@ -2030,7 +2030,7 @@ static int action_toggle_scroll(unsigned type, const char *label,
    if (!driver.menu)
       return -1;
 
-   scroll_speed      = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
+   scroll_speed      = (max(driver.menu->scroll.acceleration, 2) - 2) / 4 + 1;
    fast_scroll_speed = 4 + 4 * scroll_speed;
 
    switch (action)
@@ -3593,7 +3593,7 @@ static int deferred_push_default(void *data, void *userdata,
 static int action_bind_up_or_down_generic(unsigned type, const char *label,
       unsigned action)
 {
-   unsigned scroll_speed = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
+   unsigned scroll_speed = (max(driver.menu->scroll.acceleration, 2) - 2) / 4 + 1;
 
    if (menu_list_get_size(driver.menu->menu_list) <= 0)
       return 0;

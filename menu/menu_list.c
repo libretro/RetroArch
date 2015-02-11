@@ -98,11 +98,11 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
    if (!driver.menu || !list)
       return;
 
-   driver.menu->scroll_indices_size = 0;
+   driver.menu->scroll.indices.size = 0;
    if (!list->size)
       return;
 
-   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 0;
+   driver.menu->scroll.indices.list[driver.menu->scroll.indices.size++] = 0;
 
    current        = menu_entries_list_get_first_char(list, 0);
    current_is_dir = menu_entries_list_elem_is_dir(list, 0);
@@ -113,13 +113,13 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
       bool is_dir = menu_entries_list_elem_is_dir(list, i);
 
       if ((current_is_dir && !is_dir) || (first > current))
-         driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = i;
+         driver.menu->scroll.indices.list[driver.menu->scroll.indices.size++] = i;
 
       current = first;
       current_is_dir = is_dir;
    }
 
-   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 
+   driver.menu->scroll.indices.list[driver.menu->scroll.indices.size++] = 
       list->size - 1;
 }
 
@@ -422,7 +422,7 @@ int menu_list_populate_generic(void *data,
    if (!menu)
       return -1;
 
-   driver.menu->scroll_indices_size = 0;
+   driver.menu->scroll.indices.size = 0;
    menu_entries_build_scroll_indices(list);
    menu_entries_refresh(menu, list);
 

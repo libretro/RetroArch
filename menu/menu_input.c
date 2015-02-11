@@ -478,7 +478,8 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       {
          first_held = false;
          trigger_input |= input & input_repeat;
-         driver.menu->scroll_accel = min(driver.menu->scroll_accel + 1, 64);
+         driver.menu->scroll.acceleration = 
+            min(driver.menu->scroll.acceleration + 1, 64);
       }
 
       initial_held = false;
@@ -487,7 +488,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
    {
       first_held = false;
       initial_held = true;
-      driver.menu->scroll_accel = 0;
+      driver.menu->scroll.acceleration = 0;
    }
 
    driver.menu->mouse.enable = g_settings.menu.mouse_enable;
