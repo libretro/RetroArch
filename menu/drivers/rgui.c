@@ -31,10 +31,10 @@
 
 #include "shared.h"
 
-#define RGUI_TERM_START_X (driver.menu->width / 21)
-#define RGUI_TERM_START_Y (driver.menu->height / 9)
-#define RGUI_TERM_WIDTH (((driver.menu->width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
-#define RGUI_TERM_HEIGHT (((driver.menu->height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RGUI_TERM_START_X (menu->width / 21)
+#define RGUI_TERM_START_Y (menu->height / 9)
+#define RGUI_TERM_WIDTH (((menu->width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
+#define RGUI_TERM_HEIGHT (((menu->height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
 
 static int rgui_entry_iterate(menu_handle_t *menu, unsigned action)
 {
@@ -296,8 +296,8 @@ static void rgui_blit_cursor(menu_handle_t *menu)
    int16_t x = menu->mouse.x;
    int16_t y = menu->mouse.y;
 
-   color_rect(driver.menu, x, y - 5, 1, 11, 0xFFFF);
-   color_rect(driver.menu, x - 5, y, 11, 1, 0xFFFF);
+   color_rect(menu, x, y - 5, 1, 11, 0xFFFF);
+   color_rect(menu, x - 5, y, 11, 1, 0xFFFF);
 }
 
 static void rgui_render(menu_handle_t *menu)
@@ -504,7 +504,7 @@ static void rgui_free(void *data)
 
    if (menu->userdata)
       free(menu->userdata);
-   driver.menu->userdata = NULL;
+   menu->userdata = NULL;
 
    if (menu->alloc_font)
       free((uint8_t*)menu->font);

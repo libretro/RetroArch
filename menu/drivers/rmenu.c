@@ -158,17 +158,17 @@ static void rmenu_render(menu_handle_t *menu)
          && !menu->msg_force)
       return;
 
-   if (!driver.menu->menu_list->selection_buf)
+   if (!menu->menu_list->selection_buf)
       return;
 
    begin = (menu->selection_ptr >= (ENTRIES_HEIGHT / 2)) ? 
       (menu->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
    end   = ((menu->selection_ptr + ENTRIES_HEIGHT) <= 
-         menu_list_get_size(driver.menu->menu_list)) ?
+         menu_list_get_size(menu->menu_list)) ?
       menu->selection_ptr + ENTRIES_HEIGHT :
-      menu_list_get_size(driver.menu->menu_list);
+      menu_list_get_size(menu->menu_list);
 
-   if (menu_list_get_size(driver.menu->menu_list) <= ENTRIES_HEIGHT)
+   if (menu_list_get_size(menu->menu_list) <= ENTRIES_HEIGHT)
       begin = 0;
 
    if (end - begin > ENTRIES_HEIGHT)
@@ -176,7 +176,7 @@ static void rmenu_render(menu_handle_t *menu)
    
    rmenu_render_background();
 
-   menu_list_get_last_stack(driver.menu->menu_list, &dir, &label, &menu_type);
+   menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
 
    get_title(label, dir, menu_type, title, sizeof(title));
 
@@ -235,17 +235,17 @@ static void rmenu_render(menu_handle_t *menu)
             &path, &entry_label, &type);
 
       cbs = (menu_file_list_cbs_t*)
-         menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
+         menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
                i);
 
       if (cbs && cbs->action_get_representation)
-         cbs->action_get_representation(driver.menu->menu_list->selection_buf,
+         cbs->action_get_representation(menu->menu_list->selection_buf,
                &w, type, i, label,
                type_str, sizeof(type_str), 
                entry_label, path,
                path_buf, sizeof(path_buf));
 
-      selected = (i == driver.menu->selection_ptr);
+      selected = (i == menu->selection_ptr);
 
       menu_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2),
             g_extern.frame_count / 15, path, selected);

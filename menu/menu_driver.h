@@ -191,7 +191,7 @@ typedef struct menu_ctx_driver
    void  (*context_destroy)(menu_handle_t *menu);
    void  (*populate_entries)(menu_handle_t *menu, const char *path, const char *label,
          unsigned k);
-   void  (*toggle)(bool);
+   void  (*toggle)(menu_handle_t *menu, bool);
    void  (*navigation_clear)(menu_handle_t *menu, bool);
    void  (*navigation_decrement)(menu_handle_t *menu);
    void  (*navigation_increment)(menu_handle_t *menu);

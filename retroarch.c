@@ -1959,7 +1959,7 @@ void rarch_main_set_state(unsigned cmd)
             return;
 
          if (driver.menu && driver.menu_ctx && driver.menu_ctx->toggle)
-            driver.menu_ctx->toggle(true);
+            driver.menu_ctx->toggle(driver.menu, true);
 
          /* Menu should always run with vsync on. */
          rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
@@ -1994,7 +1994,7 @@ void rarch_main_set_state(unsigned cmd)
          menu_apply_deferred_settings();
 
          if (driver.menu && driver.menu_ctx && driver.menu_ctx->toggle)
-            driver.menu_ctx->toggle(false);
+            driver.menu_ctx->toggle(driver.menu, false);
 
          g_extern.is_menu = false;
 

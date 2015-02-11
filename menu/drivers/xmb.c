@@ -577,7 +577,7 @@ static xmb_node_t* xmb_node_for_core(xmb_handle_t *xmb, int i)
    return node;
 }
 
-static void xmb_list_switch_old(xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
+static void xmb_list_switch_old(menu_handle_t *menu, xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
    int i;
 
@@ -589,13 +589,13 @@ static void xmb_list_switch_old(xmb_handle_t *xmb, file_list_t *list, int dir, s
       if (!node)
           continue;
 
-      menu_animation_push(driver.menu->animation, XMB_DELAY, 0, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, 0, &node->label_alpha,  EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, -xmb->hspacing*dir,  &node->x, EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(menu->animation, XMB_DELAY, 0, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(menu->animation, XMB_DELAY, 0, &node->label_alpha,  EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(menu->animation, XMB_DELAY, -xmb->hspacing*dir,  &node->x, EASING_IN_OUT_QUAD, NULL);
    }
 }
 
-static void xmb_list_switch_new(xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
+static void xmb_list_switch_new(menu_handle_t *menu, xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
    int i;
 
@@ -615,21 +615,21 @@ static void xmb_list_switch_new(xmb_handle_t *xmb, file_list_t *list, int dir, s
       if (i == current)
          ia = 1.0;
       
-      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, 0,  &node->x, EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(menu->animation, XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(menu->animation, XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(menu->animation, XMB_DELAY, 0,  &node->x, EASING_IN_OUT_QUAD, NULL);
    }
 }
 
-static void xmb_set_title(xmb_handle_t *xmb)
+static void xmb_set_title(menu_handle_t *menu, xmb_handle_t *xmb)
 {
-   if (driver.menu->cat_selection_ptr == 0)
+   if (menu->cat_selection_ptr == 0)
    {
       const char *dir   = NULL;
       const char *label = NULL;
       unsigned menu_type = 0;
 
-      menu_list_get_last_stack(driver.menu->menu_list, &dir, &label, &menu_type);
+      menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
       get_title(label, dir, menu_type, xmb->title, sizeof(xmb->title));
    }
    else
@@ -640,24 +640,24 @@ static void xmb_set_title(xmb_handle_t *xmb)
       if (!info_list)
          return;
 
-      info = (core_info_t*)&info_list->list[driver.menu->cat_selection_ptr - 1];
+      info = (core_info_t*)&info_list->list[menu->cat_selection_ptr - 1];
 
       if (info)
          strlcpy(xmb->title, info->display_name, sizeof(xmb->title));
    }
 }
 
-static void xmb_list_open(xmb_handle_t *xmb)
+static void xmb_list_open(menu_handle_t *menu, xmb_handle_t *xmb)
 {
    unsigned j;
    int dir = -1;
 
-   if (driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old)
+   if (menu->cat_selection_ptr > xmb->cat_selection_ptr_old)
       dir = 1;
 
    xmb->active_category += dir;
 
-   for (j = 0; j < driver.menu->num_categories; j++)
+   for (j = 0; j < menu->num_categories; j++)
    {
       float ia = xmb->c_passive_alpha;
       float iz = xmb->c_passive_zoom;
@@ -672,21 +672,21 @@ static void xmb_list_open(xmb_handle_t *xmb)
          iz = xmb->c_active_zoom;
       }
 
-      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, iz, &node->zoom, EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(menu->animation, XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(menu->animation, XMB_DELAY, iz, &node->zoom, EASING_IN_OUT_QUAD, NULL);
    }
 
-   menu_animation_push(driver.menu->animation, XMB_DELAY,
-         xmb->hspacing * -(float)driver.menu->cat_selection_ptr,
+   menu_animation_push(menu->animation, XMB_DELAY,
+         xmb->hspacing * -(float)menu->cat_selection_ptr,
          &xmb->categories_x, EASING_IN_OUT_QUAD, NULL);
 
    dir = -1;
-   if (driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old)
+   if (menu->cat_selection_ptr > xmb->cat_selection_ptr_old)
       dir = 1;
 
-   xmb_list_switch_old(xmb, xmb->selection_buf_old, dir, xmb->selection_ptr_old);
-   xmb_list_switch_new(xmb, driver.menu->menu_list->selection_buf, dir, driver.menu->selection_ptr);
-   xmb->active_category_old = driver.menu->cat_selection_ptr;
+   xmb_list_switch_old(menu, xmb, xmb->selection_buf_old, dir, xmb->selection_ptr_old);
+   xmb_list_switch_new(menu, xmb, menu->menu_list->selection_buf, dir, menu->selection_ptr);
+   xmb->active_category_old = menu->cat_selection_ptr;
 }
 
 static void xmb_list_switch(menu_handle_t *menu, xmb_handle_t *xmb)
@@ -759,10 +759,10 @@ static void xmb_populate_entries(menu_handle_t *menu, const char *path,
       return;
    }
 
-   xmb_set_title(xmb);
+   xmb_set_title(menu, xmb);
 
    if (menu->cat_selection_ptr != xmb->active_category_old)
-      xmb_list_open(xmb);
+      xmb_list_open(menu, xmb);
    else
       xmb_list_switch(menu, xmb);
 }
@@ -1513,21 +1513,15 @@ static void xmb_context_destroy(menu_handle_t *menu)
    }
 }
 
-static void xmb_toggle(bool menu_on)
+static void xmb_toggle(menu_handle_t *menu, bool menu_on)
 {
    int i;
-   xmb_handle_t *xmb = NULL;
-   menu_handle_t *menu = (menu_handle_t*)driver.menu;
-
-   if (!menu)
-      return;
-
-   xmb = (xmb_handle_t*)menu->userdata;
+   xmb_handle_t *xmb = (xmb_handle_t*)menu->userdata;
 
    if (!xmb)
       return;
 
-   xmb->depth = file_list_get_size(driver.menu->menu_list->menu_stack);
+   xmb->depth = file_list_get_size(menu->menu_list->menu_stack);
 
    if (!menu_on)
    {
@@ -1535,12 +1529,12 @@ static void xmb_toggle(bool menu_on)
       return;
    }
 
-   menu_animation_push(driver.menu->animation, XMB_DELAY, 1.0f,
+   menu_animation_push(menu->animation, XMB_DELAY, 1.0f,
          &xmb->alpha, EASING_IN_OUT_QUAD, NULL);
 
    xmb->prevent_populate = !menu->need_refresh;
 
-   for (i = 0; i < driver.menu->num_categories; i++)
+   for (i = 0; i < menu->num_categories; i++)
    {
       xmb_node_t *node = i ? xmb_node_for_core(xmb, i - 1) : &xmb->settings_node;
 
