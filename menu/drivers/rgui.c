@@ -22,7 +22,6 @@
 #include <limits.h>
 
 #include "../menu.h"
-#include "../../retroarch.h"
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 
@@ -475,8 +474,6 @@ static void *rgui_init(void)
    if (!ret)
    {
       RARCH_ERR("No font bitmap or binary, abort");
-
-      rarch_main_command(RARCH_CMD_QUIT_RETROARCH);
       goto error;
    }
 
