@@ -36,18 +36,18 @@
 #define RGUI_TERM_WIDTH (((driver.menu->width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
 #define RGUI_TERM_HEIGHT (((driver.menu->height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
 
-static int rgui_entry_iterate(unsigned action)
+static int rgui_entry_iterate(menu_handle_t *menu, unsigned action)
 {
    const char *label = NULL;
 
-   if (!driver.menu || !driver.menu->menu_list)
+   if (!menu || !menu->menu_list)
       return -1;
 
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
-            driver.menu->selection_ptr);
+      menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
+            menu->selection_ptr);
 
-   menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, NULL);
+   menu_list_get_last_stack(menu->menu_list, NULL, &label, NULL);
 
    if (cbs && cbs->action_iterate)
       return cbs->action_iterate(label, action);
@@ -136,17 +136,13 @@ static void color_rect(menu_handle_t *menu,
 
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
-         if (i < driver.menu->width && j < driver.menu->height)
+         if (i < menu->width && j < menu->height)
             menu->frame_buf.data[j * (menu->frame_buf.pitch >> 1) + i] = color;
 }
 
-static void blit_line(int x, int y, const char *message, bool green)
+static void blit_line(menu_handle_t *menu, int x, int y, const char *message, bool green)
 {
    unsigned i, j;
-   menu_handle_t *menu = driver.menu;
-
-   if (!menu)
-      return;
 
    while (*message)
    {
@@ -240,8 +236,9 @@ static void rgui_render_messagebox(const char *message)
    int x, y;
    unsigned width, glyphs_width, height;
    struct string_list *list = NULL;
+   menu_handle_t *menu = driver.menu;
 
-   if (!driver.menu || !message || !*message)
+   if (!menu || !message || !*message)
       return;
 
    list = string_split(message, "\n");
@@ -274,21 +271,21 @@ static void rgui_render_messagebox(const char *message)
    }
 
    height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;
-   x      = (driver.menu->width - width) / 2;
-   y      = (driver.menu->height - height) / 2;
+   x      = (menu->width - width) / 2;
+   y      = (menu->height - height) / 2;
 
-   fill_rect(driver.menu, x + 5, y + 5, width - 10, height - 10, gray_filler);
-   fill_rect(driver.menu, x, y, width - 5, 5, green_filler);
-   fill_rect(driver.menu, x + width - 5, y, 5, height - 5, green_filler);
-   fill_rect(driver.menu, x + 5, y + height - 5, width - 5, 5, green_filler);
-   fill_rect(driver.menu, x, y + 5, 5, height - 5, green_filler);
+   fill_rect(menu, x + 5, y + 5, width - 10, height - 10, gray_filler);
+   fill_rect(menu, x, y, width - 5, 5, green_filler);
+   fill_rect(menu, x + width - 5, y, 5, height - 5, green_filler);
+   fill_rect(menu, x + 5, y + height - 5, width - 5, 5, green_filler);
+   fill_rect(menu, x, y + 5, 5, height - 5, green_filler);
 
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
       int offset_x = FONT_WIDTH_STRIDE * (glyphs_width - strlen(msg)) / 2;
       int offset_y = FONT_HEIGHT_STRIDE * i;
-      blit_line(x + 8 + offset_x, y + 8 + offset_y, msg, false);
+      blit_line(menu, x + 8 + offset_x, y + 8 + offset_y, msg, false);
    }
 
 end:
@@ -314,33 +311,34 @@ static void rgui_render(void)
    const char *label   = NULL;
    const char *core_name = NULL;
    const char *core_version = NULL;
+   menu_handle_t *menu = driver.menu;
 
-   if (driver.menu->need_refresh 
+   if (!menu || (menu->need_refresh 
          && g_extern.is_menu
-         && !driver.menu->msg_force)
+         && !menu->msg_force))
       return;
 
-   driver.menu->mouse.ptr = driver.menu->mouse.y / 11 - 2 + driver.menu->begin;
+   menu->mouse.ptr = menu->mouse.y / 11 - 2 + menu->begin;
 
-   if (driver.menu->mouse.wheeldown && driver.menu->begin
-         < menu_list_get_size(driver.menu->menu_list) - RGUI_TERM_HEIGHT)
-      driver.menu->begin++;
+   if (menu->mouse.wheeldown && menu->begin
+         < menu_list_get_size(menu->menu_list) - RGUI_TERM_HEIGHT)
+      menu->begin++;
 
-   if (driver.menu->mouse.wheelup && driver.menu->begin > 0)
-      driver.menu->begin--;
+   if (menu->mouse.wheelup && menu->begin > 0)
+      menu->begin--;
 
    /* Do not scroll if all items are visible. */
-   if (menu_list_get_size(driver.menu->menu_list) <= RGUI_TERM_HEIGHT)
-      driver.menu->begin = 0;
+   if (menu_list_get_size(menu->menu_list) <= RGUI_TERM_HEIGHT)
+      menu->begin = 0;
 
-   end = (driver.menu->begin + RGUI_TERM_HEIGHT <=
-         menu_list_get_size(driver.menu->menu_list)) ?
-      driver.menu->begin + RGUI_TERM_HEIGHT :
-      menu_list_get_size(driver.menu->menu_list);
+   end = (menu->begin + RGUI_TERM_HEIGHT <=
+         menu_list_get_size(menu->menu_list)) ?
+      menu->begin + RGUI_TERM_HEIGHT :
+      menu_list_get_size(menu->menu_list);
 
-   rgui_render_background(driver.menu);
+   rgui_render_background(menu);
 
-   menu_list_get_last_stack(driver.menu->menu_list,
+   menu_list_get_last_stack(menu->menu_list,
          &dir, &label, &menu_type);
 
 #if 0
@@ -351,7 +349,7 @@ static void rgui_render(void)
 
    menu_animation_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
          g_extern.frame_count / RGUI_TERM_START_X, title, true);
-   blit_line(RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, true);
+   blit_line(menu, RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, true);
 
    core_name = g_extern.menu.info.library_name;
    if (!core_name)
@@ -369,13 +367,13 @@ static void rgui_render(void)
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
-   blit_line(
+   blit_line(menu,
          RGUI_TERM_START_X + RGUI_TERM_START_X,
          (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
          RGUI_TERM_START_Y + 2, title_msg, true);
 
    if (g_settings.menu.timedate_enable)
-      blit_line(
+      blit_line(menu,
             (RGUI_TERM_WIDTH * FONT_HEIGHT_STRIDE) + (60),
             (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
             RGUI_TERM_START_Y + 2, timedate, true);
@@ -384,7 +382,7 @@ static void rgui_render(void)
    x = RGUI_TERM_START_X;
    y = RGUI_TERM_START_Y;
 
-   for (i = driver.menu->begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
+   for (i = menu->begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
       char message[PATH_MAX_LENGTH], type_str[PATH_MAX_LENGTH],
            entry_title_buf[PATH_MAX_LENGTH], type_str_buf[PATH_MAX_LENGTH],
@@ -394,23 +392,23 @@ static void rgui_render(void)
       bool selected = false;
       menu_file_list_cbs_t *cbs = NULL;
 
-      menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
+      menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
             &entry_label, &type);
 
       cbs = (menu_file_list_cbs_t*)
-         menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
+         menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
                i);
 
       if (cbs && cbs->action_get_representation)
-         cbs->action_get_representation(driver.menu->menu_list->selection_buf,
+         cbs->action_get_representation(menu->menu_list->selection_buf,
                &w, type, i, label,
                type_str, sizeof(type_str), 
                entry_label, path,
                path_buf, sizeof(path_buf));
 
-      selected = (i == driver.menu->selection_ptr);
+      selected = (i == menu->selection_ptr);
 
-      if (i > (driver.menu->selection_ptr + 100))
+      if (i > (menu->selection_ptr + 100))
          continue;
 
       menu_animation_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2),
@@ -426,16 +424,16 @@ static void rgui_render(void)
             w,
             type_str_buf);
 
-      blit_line(x, y, message, selected);
+      blit_line(menu, x, y, message, selected);
    }
 
 #ifdef GEKKO
    const char *message_queue;
 
-   if (driver.menu->msg_force)
+   if (menu->msg_force)
    {
       message_queue = msg_queue_pull(g_extern.msg_queue);
-      driver.menu->msg_force = false;
+      menu->msg_force = false;
    }
    else
       message_queue = driver.current_msg;
@@ -443,18 +441,18 @@ static void rgui_render(void)
    rgui_render_messagebox(message_queue);
 #endif
 
-   if (driver.menu->keyboard.display)
+   if (menu->keyboard.display)
    {
       char msg[PATH_MAX_LENGTH];
-      const char *str = *driver.menu->keyboard.buffer;
+      const char *str = *menu->keyboard.buffer;
       if (!str)
          str = "";
-      snprintf(msg, sizeof(msg), "%s\n%s", driver.menu->keyboard.label, str);
+      snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
       rgui_render_messagebox(msg);
    }
 
-   if (driver.menu->mouse.enable)
-      rgui_blit_cursor(driver.menu);
+   if (menu->mouse.enable)
+      rgui_blit_cursor(menu);
 }
 
 static void *rgui_init(void)

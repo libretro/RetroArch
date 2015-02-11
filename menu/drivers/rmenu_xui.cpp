@@ -58,14 +58,14 @@ HXUIOBJ root_menu;
 HXUIOBJ current_menu;
 static msg_queue_t *xui_msg_queue;
 
-static int rmenu_xui_entry_iterate(unsigned action)
+static int rmenu_xui_entry_iterate(menu_handle_t *menu, unsigned action)
 {
    const char *label = NULL;
    menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
-            driver.menu->selection_ptr);
+      menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
+            menu->selection_ptr);
 
-   menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, NULL);
+   menu_list_get_last_stack(menu->menu_list, NULL, &label, NULL);
 
    if (cbs && cbs->action_iterate)
       return cbs->action_iterate(label, action);

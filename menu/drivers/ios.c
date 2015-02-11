@@ -25,35 +25,15 @@
 #include "ios.h"
 #include "../menu_input.h"
 
-#if 1
-static int ios_entry_iterate(unsigned action)
+static int ios_entry_iterate(menu_handle_t *menu, unsigned action)
 {
-   ios_handle_t *ios = NULL;
-   if (!driver.menu)
-      return 0;
+   ios_handle_t *ios = (ios_handle_t*)menu->userdata;
 
-   ios = (ios_handle_t*)driver.menu->userdata;
    if (ios->switch_to_ios)
       ios->switch_to_ios();
 
    return 0;
 }
-#else
-static int ios_entry_iterate(unsigned action)
-{
-   const char *label = NULL;
-   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
-            driver.menu->selection_ptr);
-
-   menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, NULL);
-
-   if (cbs && cbs->action_iterate)
-      return cbs->action_iterate(label, action);
-   
-   return -1;
-}
-#endif
 
 static void *ios_init(void)
 {

@@ -204,7 +204,7 @@ typedef struct menu_ctx_driver
    void  (*list_clear)(void *);
    void  (*list_cache)(bool, unsigned);
    void  (*list_set_selection)(void *);
-   int   (*entry_iterate)(unsigned);
+   int   (*entry_iterate)(menu_handle_t *menu, unsigned);
    const char *ident;
 } menu_ctx_driver_t;
 
