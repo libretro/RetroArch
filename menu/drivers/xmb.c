@@ -1272,7 +1272,7 @@ static void xmb_context_reset(void *data)
 
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
       xmb->textures[k].id   = menu_texture_load(xmb->textures[k].path,
-            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP);
+            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
    xmb->settings_node.icon  = xmb->textures[XMB_TEXTURE_SETTINGS].id;
    xmb->settings_node.alpha = xmb->c_active_alpha;
@@ -1318,9 +1318,9 @@ static void xmb_context_reset(void *data)
       node->alpha        = 0;
       node->zoom         = xmb->c_passive_zoom;
       node->icon         = menu_texture_load(texturepath,
-            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP);
+            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
       node->content_icon = menu_texture_load(content_texturepath,
-            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP);
+            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
 
       if (i == xmb->active_category)

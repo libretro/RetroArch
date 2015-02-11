@@ -16,20 +16,49 @@
 
 #include "gl_common.h"
 
-void gl_load_texture_data(GLuint obj, const struct texture_image *img,
-      GLenum wrap, bool linear, bool mipmap)
+void gl_load_texture_data(GLuint id,
+      const struct texture_image *img,
+      enum gfx_wrap_type wrap_type,
+      enum texture_filter_type filter_type)
 {
-   glBindTexture(GL_TEXTURE_2D, obj);
+   GLint mag_filter, min_filter;
+   GLenum wrap;
+   bool want_mipmap = false;
 
-#ifdef HAVE_PSGL
-   mipmap = false;
-#endif
+   glBindTexture(GL_TEXTURE_2D, id);
+   
+   wrap = driver.video->wrap_type_to_enum(wrap_type);
+
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
 
-   GLint mag_filter = linear ? GL_LINEAR : GL_NEAREST;
-   GLint min_filter = linear ? (mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR) :
-                               (mipmap ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST);
+   switch (filter_type)
+   {
+      case TEXTURE_FILTER_MIPMAP_LINEAR:
+         min_filter = GL_LINEAR_MIPMAP_LINEAR;
+         mag_filter = GL_LINEAR;
+#ifndef HAVE_PSGL
+         want_mipmap = true;
+#endif
+         break;
+      case TEXTURE_FILTER_MIPMAP_NEAREST:
+         min_filter = GL_NEAREST_MIPMAP_NEAREST;
+         mag_filter = GL_NEAREST;
+#ifndef HAVE_PSGL
+         want_mipmap = true;
+#endif
+         break;
+      case TEXTURE_FILTER_NEAREST:
+         min_filter = GL_NEAREST;
+         mag_filter = GL_NEAREST;
+         break;
+      case TEXTURE_FILTER_LINEAR:
+      default:
+         min_filter = GL_LINEAR;
+         mag_filter = GL_LINEAR;
+         break;
+   }
+
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 
@@ -37,14 +66,14 @@ void gl_load_texture_data(GLuint obj, const struct texture_image *img,
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 #endif
    glTexImage2D(GL_TEXTURE_2D,
-         0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
-         img->width, img->height,
-         0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
+         0,
+         driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
+         img->width, img->height, 0,
+         driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
          RARCH_GL_FORMAT32, img->pixels);
-#ifndef HAVE_PSGL
-   if (mipmap)
+
+   if (want_mipmap)
       glGenerateMipmap(GL_TEXTURE_2D);
-#endif
 }
 
 bool gl_load_luts(const struct video_shader *generic_shader,
@@ -60,9 +89,12 @@ bool gl_load_luts(const struct video_shader *generic_shader,
     *  texture handle.  I assume it was a bug, but if not, 
     *  replace num_luts with 1 when GLSL is used. */
    glGenTextures(num_luts, textures_lut);
+
    for (i = 0; i < num_luts; i++)
    {
       struct texture_image img = {0};
+      enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
+
       RARCH_LOG("Loading texture image from: \"%s\" ...\n",
             generic_shader->lut[i].path);
 
@@ -73,10 +105,20 @@ bool gl_load_luts(const struct video_shader *generic_shader,
          return false;
       }
 
+      if (generic_shader->lut[i].filter == RARCH_FILTER_NEAREST)
+         filter_type = TEXTURE_FILTER_NEAREST;
+
+      if (generic_shader->lut[i].mipmap)
+      {
+         if (filter_type == TEXTURE_FILTER_NEAREST)
+            filter_type = TEXTURE_FILTER_MIPMAP_NEAREST;
+         else
+            filter_type = TEXTURE_FILTER_MIPMAP_LINEAR;
+      }
+
       gl_load_texture_data(textures_lut[i], &img,
-            driver.video->wrap_type_to_enum(generic_shader->lut[i].wrap),
-            generic_shader->lut[i].filter != RARCH_FILTER_NEAREST,
-            generic_shader->lut[i].mipmap);
+            generic_shader->lut[i].wrap,
+            filter_type);
       texture_image_free(&img);
    }
 

@@ -28,30 +28,8 @@ static void menu_texture_png_load_gl(struct texture_image *ti,
 {
    /* Generate the OpenGL texture object */
    glGenTextures(1, id);
-   glBindTexture(GL_TEXTURE_2D, (GLuint)*id);
-   glTexImage2D(GL_TEXTURE_2D, 0, driver.gfx_use_rgba ?
-         GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
-         ti->width, ti->height, 0,
-         driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-         RARCH_GL_FORMAT32, ti->pixels);
-
-   switch (filter_type)
-   {
-      case TEXTURE_FILTER_MIPMAP:
-         glTexParameterf(GL_TEXTURE_2D,
-               GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-         glTexParameterf(GL_TEXTURE_2D,
-               GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-         glGenerateMipmap(GL_TEXTURE_2D);
-         break;
-      case TEXTURE_FILTER_DEFAULT:
-      default:
-         glTexParameterf(GL_TEXTURE_2D,
-               GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-         glTexParameterf(GL_TEXTURE_2D,
-               GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-         break;
-   }
+   gl_load_texture_data((GLuint)*id, 
+         ti, RARCH_WRAP_EDGE, filter_type);
 }
 #endif
 
@@ -89,7 +67,7 @@ static int menu_texture_png_load_wrap(void *data)
    if (!filename)
       return 0;
    return menu_texture_png_load(filename, TEXTURE_BACKEND_DEFAULT,
-         TEXTURE_FILTER_DEFAULT);
+         TEXTURE_FILTER_LINEAR);
 }
 
 static int menu_texture_png_load_wrap_gl_mipmap(void *data)
@@ -98,7 +76,7 @@ static int menu_texture_png_load_wrap_gl_mipmap(void *data)
    if (!filename)
       return 0;
    return menu_texture_png_load(filename, TEXTURE_BACKEND_OPENGL,
-         TEXTURE_FILTER_MIPMAP);
+         TEXTURE_FILTER_MIPMAP_LINEAR);
 }
 
 static int menu_texture_png_load_wrap_gl(void *data)
@@ -107,7 +85,7 @@ static int menu_texture_png_load_wrap_gl(void *data)
    if (!filename)
       return 0;
    return menu_texture_png_load(filename, TEXTURE_BACKEND_OPENGL,
-         TEXTURE_FILTER_DEFAULT);
+         TEXTURE_FILTER_LINEAR);
 }
 
 unsigned menu_texture_load(const char *path,
@@ -125,7 +103,8 @@ unsigned menu_texture_load(const char *path,
       switch (type)
       {
          case TEXTURE_BACKEND_OPENGL:
-            if (filter_type == TEXTURE_FILTER_MIPMAP)
+            if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR ||
+                  filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
                thr->cmd_data.custom_command.method = menu_texture_png_load_wrap_gl_mipmap;
             else
                thr->cmd_data.custom_command.method = menu_texture_png_load_wrap_gl;

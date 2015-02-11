@@ -17,16 +17,12 @@
 #ifndef _MENU_TEXTURE_MANAGER_H
 #define _MENU_TEXTURE_MANAGER_H
 
+#include "../gfx/video_driver.h"
+
 enum texture_backend_type
 {
    TEXTURE_BACKEND_DEFAULT = 0,
    TEXTURE_BACKEND_OPENGL,
-};
-
-enum texture_filter_type
-{
-   TEXTURE_FILTER_DEFAULT = 0,
-   TEXTURE_FILTER_MIPMAP,
 };
 
 #ifdef __cplusplus
