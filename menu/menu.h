@@ -178,20 +178,6 @@ int menu_iterate(retro_input_t input,
 void menu_free(void *data);
 
 /**
- * menu_ticker_line:
- * @buf                      : buffer to write new message line to.
- * @len                      : length of buffer @input.
- * @idx                      : Index. Will be used for ticker logic.
- * @str                      : Input string.
- * @selected                 : Is the item currently selected in the menu?
- *
- * Take the contents of @str and apply a ticker effect to it,
- * and write the results in @buf.
- **/
-void menu_ticker_line(char *buf, size_t len, unsigned tick,
-      const char *str, bool selected);
-
-/**
  * menu_load_content:
  *
  * Loads content into currently selected core.

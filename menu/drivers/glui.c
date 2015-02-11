@@ -307,7 +307,7 @@ static void glui_frame(void)
 
    get_title(label, dir, menu_type, title, sizeof(title));
 
-   menu_ticker_line(title_buf, glui->term_width - 3,
+   menu_animation_ticker_line(title_buf, glui->term_width - 3,
          g_extern.frame_count / glui->margin, title, true);
    glui_blit_line(gl, glui->margin * 2, glui->margin + glui->line_height,
          title_buf, true);
@@ -370,9 +370,9 @@ static void glui_frame(void)
 
       selected = (i == driver.menu->selection_ptr);
 
-      menu_ticker_line(entry_title_buf, glui->term_width - (w + 1 + 2),
+      menu_animation_ticker_line(entry_title_buf, glui->term_width - (w + 1 + 2),
             g_extern.frame_count / glui->margin, path_buf, selected);
-      menu_ticker_line(type_str_buf, w, 
+      menu_animation_ticker_line(type_str_buf, w, 
             g_extern.frame_count / glui->margin, type_str, selected);
 
       strlcpy(message, entry_title_buf, sizeof(message));

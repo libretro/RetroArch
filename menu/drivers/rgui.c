@@ -354,7 +354,7 @@ static void rgui_render(void)
 
    get_title(label, dir, menu_type, title, sizeof(title));
 
-   menu_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
+   menu_animation_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
          g_extern.frame_count / RGUI_TERM_START_X, title, true);
    blit_line(RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, true);
 
@@ -418,9 +418,9 @@ static void rgui_render(void)
       if (i > (driver.menu->selection_ptr + 100))
          continue;
 
-      menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2),
+      menu_animation_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2),
             g_extern.frame_count / RGUI_TERM_START_X, path_buf, selected);
-      menu_ticker_line(type_str_buf, w, g_extern.frame_count / RGUI_TERM_START_X,
+      menu_animation_ticker_line(type_str_buf, w, g_extern.frame_count / RGUI_TERM_START_X,
             type_str, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
