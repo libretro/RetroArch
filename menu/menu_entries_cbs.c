@@ -165,11 +165,12 @@ static int archive_open(menu_handle_t *menu)
    return 0;
 }
 
-static void common_load_content(bool persist)
+static void common_load_content(menu_handle_t *menu, bool persist)
 {
    rarch_main_command(persist ? RARCH_CMD_LOAD_CONTENT_PERSIST : RARCH_CMD_LOAD_CONTENT);
-   menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
-   driver.menu->msg_force = true;
+
+   menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
+   menu->msg_force = true;
 }
 
 static int archive_load(menu_handle_t *menu)
@@ -198,7 +199,7 @@ static int archive_load(menu_handle_t *menu)
    {
       case -1:
          rarch_main_command(RARCH_CMD_LOAD_CORE);
-         common_load_content(false);
+         common_load_content(menu, false);
          break;
       case 0:
          menu_list_push_stack_refresh(
@@ -640,7 +641,7 @@ static int action_ok_core_load_deferred(const char *path,
    strlcpy(g_extern.fullpath, driver.menu->deferred_path,
          sizeof(g_extern.fullpath));
 
-   common_load_content(false);
+   common_load_content(driver.menu, false);
 
    return -1;
 }
@@ -1193,7 +1194,7 @@ static int action_ok_core_load(const char *path,
    if (driver.menu->load_no_content)
    {
       *g_extern.fullpath = '\0';
-      common_load_content(false);
+      common_load_content(driver.menu, false);
       return -1;
    }
 
@@ -1364,7 +1365,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
    if (ret == -1)
    {
       rarch_main_command(RARCH_CMD_LOAD_CORE);
-      common_load_content(false);
+      common_load_content(driver.menu, false);
       return -1;
    }
 
@@ -1415,7 +1416,7 @@ static int action_ok_file_load(const char *path,
          fill_pathname_join(g_extern.fullpath, menu_path, path,
                sizeof(g_extern.fullpath));
 
-      common_load_content(true);
+      common_load_content(driver.menu, true);
 
       return -1;
    }
@@ -2024,29 +2025,30 @@ static int action_toggle_scroll(unsigned type, const char *label,
       unsigned action)
 {
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
-   if (!driver.menu)
+   menu_handle_t *menu = driver.menu;
+   if (!menu)
       return -1;
 
-   scroll_speed      = (max(driver.menu->scroll.acceleration, 2) - 2) / 4 + 1;
+   scroll_speed      = (max(menu->scroll.acceleration, 2) - 2) / 4 + 1;
    fast_scroll_speed = 4 + 4 * scroll_speed;
 
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         if (driver.menu->selection_ptr > fast_scroll_speed)
-            menu_navigation_set(driver.menu,
-                  driver.menu->selection_ptr - fast_scroll_speed, true);
+         if (menu->selection_ptr > fast_scroll_speed)
+            menu_navigation_set(menu,
+                  menu->selection_ptr - fast_scroll_speed, true);
          else
-            menu_navigation_clear(driver.menu, false);
+            menu_navigation_clear(menu, false);
          break;
       case MENU_ACTION_RIGHT:
-         if (driver.menu->selection_ptr + fast_scroll_speed < (menu_list_get_size(driver.menu->menu_list)))
-            menu_navigation_set(driver.menu,
-                  driver.menu->selection_ptr + fast_scroll_speed, true);
+         if (menu->selection_ptr + fast_scroll_speed < (menu_list_get_size(menu->menu_list)))
+            menu_navigation_set(menu,
+                  menu->selection_ptr + fast_scroll_speed, true);
          else
          {
-            if ((menu_list_get_size(driver.menu->menu_list) > 0))
-                  menu_navigation_set_last(driver.menu);
+            if ((menu_list_get_size(menu->menu_list) > 0))
+                  menu_navigation_set_last(menu);
          }
          break;
    }
@@ -2059,23 +2061,24 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
 {
    menu_file_list_cbs_t *cbs = NULL;
    unsigned push_list = 0;
-   if (!driver.menu)
+   menu_handle_t *menu = driver.menu;
+   if (!menu)
       return -1;
 
-   if (file_list_get_size(driver.menu->menu_list->menu_stack) == 1)
+   if (file_list_get_size(menu->menu_list->menu_stack) == 1)
    {
       if (!strcmp(driver.menu_ctx->ident, "xmb"))
       {
-         driver.menu->selection_ptr = 0;
+         menu->selection_ptr = 0;
          switch (action)
          {
             case MENU_ACTION_LEFT:
-               if (driver.menu->categories.selection_ptr == 0)
+               if (menu->categories.selection_ptr == 0)
                   break;
                push_list = 1;
                break;
             case MENU_ACTION_RIGHT:
-               if (driver.menu->categories.selection_ptr == (driver.menu->categories.size - 1))
+               if (menu->categories.selection_ptr == (menu->categories.size - 1))
                   break;
                push_list = 1;
                break;
@@ -2086,19 +2089,19 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
       push_list = 2;
 
    cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
-            driver.menu->selection_ptr);
+      menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
+            menu->selection_ptr);
 
    switch (push_list)
    {
       case 1:
          if (driver.menu_ctx->list_cache)
-            driver.menu_ctx->list_cache(driver.menu, true, action);
+            driver.menu_ctx->list_cache(menu, true, action);
 
          if (cbs && cbs->action_content_list_switch)
             return cbs->action_content_list_switch(
-                  driver.menu->menu_list->selection_buf,
-                  driver.menu->menu_list->menu_stack,
+                  menu->menu_list->selection_buf,
+                  menu->menu_list->menu_stack,
                   "",
                   "",
                   0);
