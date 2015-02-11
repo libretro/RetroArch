@@ -792,7 +792,7 @@ static void xmb_populate_entries(void *data, const char *path,
       xmb_list_switch();
 }
 
-static void xmb_draw_items(xmb_handle_t *xmb,
+static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       file_list_t *list, file_list_t *stack,
       size_t current, size_t cat_selection_ptr)
 {
@@ -802,9 +802,8 @@ static void xmb_draw_items(xmb_handle_t *xmb,
    unsigned menu_type    = 0;
    xmb_node_t *core_node = NULL;
    size_t end            = file_list_get_size(list);
-   gl_t *gl              = (gl_t*)video_driver_resolve(NULL);
 
-   if (!list->size || !gl)
+   if (!list->size)
       return;
 
    file_list_get_last(stack, &dir, &label, &menu_type);
@@ -1018,14 +1017,14 @@ static void xmb_frame(void)
 
    depth = file_list_get_size(driver.menu->menu_list->menu_stack);
 
-   xmb_draw_items(xmb,
+   xmb_draw_items(xmb, gl,
          xmb->selection_buf_old,
          xmb->menu_stack_old,
          xmb->selection_ptr_old,
          depth > 1 ? driver.menu->cat_selection_ptr :
                      xmb->cat_selection_ptr_old);
 
-   xmb_draw_items(xmb,
+   xmb_draw_items(xmb, gl,
          driver.menu->menu_list->selection_buf,
          driver.menu->menu_list->menu_stack,
          driver.menu->selection_ptr,
