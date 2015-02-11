@@ -547,7 +547,7 @@ static void rmenu_xui_render(menu_handle_t *menu)
 		get_title(label, dir, menu_type, title, sizeof(title));
 		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
 		XuiTextElementSetText(m_menutitle, strw_buffer);
-		menu_ticker_line(title, RXUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
+		menu_animation_ticker_line(title, RXUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
 	}
 
 	if (XuiHandleIsValid(m_menutitle))
@@ -686,6 +686,7 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    NULL,
    rmenu_xui_populate_entries,
+   NULL,
    rmenu_xui_navigation_clear,
    rmenu_xui_navigation_set_visible,
    rmenu_xui_navigation_set_visible,
