@@ -29,10 +29,10 @@
 
 #include "shared.h"
 
-#define RGUI_TERM_START_X (menu->width / 21)
-#define RGUI_TERM_START_Y (menu->height / 9)
-#define RGUI_TERM_WIDTH (((menu->width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
-#define RGUI_TERM_HEIGHT (((menu->height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RGUI_TERM_START_X (menu->frame_buf.width / 21)
+#define RGUI_TERM_START_Y (menu->frame_buf.height / 9)
+#define RGUI_TERM_WIDTH (((menu->frame_buf.width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
+#define RGUI_TERM_HEIGHT (((menu->frame_buf.height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
 
 static int rgui_entry_iterate(menu_handle_t *menu, unsigned action)
 {
@@ -134,7 +134,7 @@ static void color_rect(menu_handle_t *menu,
 
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
-         if (i < menu->width && j < menu->height)
+         if (i < menu->frame_buf.width && j < menu->frame_buf.height)
             menu->frame_buf.data[j * (menu->frame_buf.pitch >> 1) + i] = color;
 }
 
@@ -218,13 +218,13 @@ static void rgui_render_background(menu_handle_t *menu)
    if (!menu)
       return;
 
-   fill_rect(menu, 0, 0, menu->width, menu->height, gray_filler);
-   fill_rect(menu, 5, 5, menu->width - 10, 5, green_filler);
-   fill_rect(menu, 5, menu->height - 10, menu->width - 10, 5,
+   fill_rect(menu, 0, 0, menu->frame_buf.width, menu->frame_buf.height, gray_filler);
+   fill_rect(menu, 5, 5, menu->frame_buf.width - 10, 5, green_filler);
+   fill_rect(menu, 5, menu->frame_buf.height - 10, menu->frame_buf.width - 10, 5,
          green_filler);
 
-   fill_rect(menu, 5, 5, 5, menu->height - 10, green_filler);
-   fill_rect(menu, menu->width - 10, 5, 5, menu->height - 10,
+   fill_rect(menu, 5, 5, 5, menu->frame_buf.height - 10, green_filler);
+   fill_rect(menu, menu->frame_buf.width - 10, 5, 5, menu->frame_buf.height - 10,
          green_filler);
 }
 
@@ -268,8 +268,8 @@ static void rgui_render_messagebox(menu_handle_t *menu, const char *message)
    }
 
    height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;
-   x      = (menu->width - width) / 2;
-   y      = (menu->height - height) / 2;
+   x      = (menu->frame_buf.width - width) / 2;
+   y      = (menu->frame_buf.height - height) / 2;
 
    fill_rect(menu, x + 5, y + 5, width - 10, height - 10, gray_filler);
    fill_rect(menu, x, y, width - 5, 5, green_filler);
@@ -464,10 +464,10 @@ static void *rgui_init(void)
    if (!menu->frame_buf.data)
       goto error;
 
-   menu->width           = 320;
-   menu->height          = 240;
-   menu->begin           = 0;
-   menu->frame_buf.pitch = menu->width * sizeof(uint16_t);
+   menu->frame_buf.width           = 320;
+   menu->frame_buf.height          = 240;
+   menu->begin                     = 0;
+   menu->frame_buf.pitch           = menu->frame_buf.width * sizeof(uint16_t);
 
    ret = rguidisp_init_font(menu);
 
@@ -518,7 +518,7 @@ static void rgui_set_texture(menu_handle_t *menu)
       return;
 
    driver.video_poke->set_texture_frame(driver.video_data,
-         menu->frame_buf.data, false, menu->width, menu->height, 1.0f);
+         menu->frame_buf.data, false, menu->frame_buf.width, menu->frame_buf.height, 1.0f);
 }
 
 static void rgui_navigation_clear(menu_handle_t *menu, bool pending_push)

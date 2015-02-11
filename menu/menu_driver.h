@@ -79,8 +79,6 @@ typedef struct
       unsigned count;
    } delay;
 
-   unsigned width;
-   unsigned height;
    size_t begin;
 
    menu_list_t *menu_list;
@@ -123,6 +121,8 @@ typedef struct
    struct
    {
       uint16_t *data;
+      unsigned width;
+      unsigned height;
       size_t pitch;
    } frame_buf;
 
