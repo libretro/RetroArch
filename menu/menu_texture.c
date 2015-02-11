@@ -23,6 +23,7 @@
 #include "../gfx/gl_common.h"
 
 static void menu_texture_png_load_gl(struct texture_image *ti,
+      enum texture_filter_type filter_type,
       unsigned *id)
 {
    /* Generate the OpenGL texture object */
@@ -34,13 +35,29 @@ static void menu_texture_png_load_gl(struct texture_image *ti,
          driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
          RARCH_GL_FORMAT32, ti->pixels);
 
-   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   switch (filter_type)
+   {
+      case TEXTURE_FILTER_MIPMAP:
+         glTexParameterf(GL_TEXTURE_2D,
+               GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+         glTexParameterf(GL_TEXTURE_2D,
+               GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         glGenerateMipmap(GL_TEXTURE_2D);
+         break;
+      case TEXTURE_FILTER_DEFAULT:
+      default:
+         glTexParameterf(GL_TEXTURE_2D,
+               GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+         glTexParameterf(GL_TEXTURE_2D,
+               GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         break;
+   }
 }
 #endif
 
 static unsigned menu_texture_png_load(const char *path,
-      enum texture_backend_type type)
+      enum texture_backend_type type,
+      enum texture_filter_type  filter_type)
 {
    unsigned id = 0;
    struct texture_image ti = {0};
@@ -53,7 +70,7 @@ static unsigned menu_texture_png_load(const char *path,
    {
       case TEXTURE_BACKEND_OPENGL:
 #ifdef HAVE_OPENGL
-         menu_texture_png_load_gl(&ti, &id);
+         menu_texture_png_load_gl(&ti, filter_type, &id);
 #endif
          break;
       case TEXTURE_BACKEND_DEFAULT:
@@ -71,7 +88,17 @@ static int menu_texture_png_load_wrap(void *data)
    const char *filename = (const char*)data;
    if (!filename)
       return 0;
-   return menu_texture_png_load(filename, TEXTURE_BACKEND_DEFAULT);
+   return menu_texture_png_load(filename, TEXTURE_BACKEND_DEFAULT,
+         TEXTURE_FILTER_DEFAULT);
+}
+
+static int menu_texture_png_load_wrap_gl_mipmap(void *data)
+{
+   const char *filename = (const char*)data;
+   if (!filename)
+      return 0;
+   return menu_texture_png_load(filename, TEXTURE_BACKEND_OPENGL,
+         TEXTURE_FILTER_MIPMAP);
 }
 
 static int menu_texture_png_load_wrap_gl(void *data)
@@ -79,11 +106,13 @@ static int menu_texture_png_load_wrap_gl(void *data)
    const char *filename = (const char*)data;
    if (!filename)
       return 0;
-   return menu_texture_png_load(filename, TEXTURE_BACKEND_OPENGL);
+   return menu_texture_png_load(filename, TEXTURE_BACKEND_OPENGL,
+         TEXTURE_FILTER_DEFAULT);
 }
 
 unsigned menu_texture_load(const char *path,
-      enum texture_backend_type type)
+      enum texture_backend_type type,
+      enum texture_filter_type  filter_type)
 {
    if (g_settings.video.threaded
          && !g_extern.system.hw_render_callback.context_type)
@@ -96,7 +125,10 @@ unsigned menu_texture_load(const char *path,
       switch (type)
       {
          case TEXTURE_BACKEND_OPENGL:
-            thr->cmd_data.custom_command.method = menu_texture_png_load_wrap_gl;
+            if (filter_type == TEXTURE_FILTER_MIPMAP)
+               thr->cmd_data.custom_command.method = menu_texture_png_load_wrap_gl_mipmap;
+            else
+               thr->cmd_data.custom_command.method = menu_texture_png_load_wrap_gl;
             break;
          case TEXTURE_BACKEND_DEFAULT:
          default:
@@ -112,5 +144,5 @@ unsigned menu_texture_load(const char *path,
       return thr->cmd_data.custom_command.return_value;
    }
 
-   return menu_texture_png_load(path, type);
+   return menu_texture_png_load(path, type, filter_type);
 }

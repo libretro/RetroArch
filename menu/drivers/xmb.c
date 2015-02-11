@@ -22,13 +22,15 @@
 
 #include "../menu.h"
 #include "../menu_input.h"
+#include "../menu_animation.h"
+#include "../menu_texture.h"
+
 #include <file/file_path.h>
 #include "../../gfx/gl_common.h"
 #include "../../gfx/video_thread_wrapper.h"
 #include <compat/posix_string.h>
 
 #include "shared.h"
-#include "../menu_animation.h"
 
 #ifndef XMB_THEME
 #define XMB_THEME "monochrome"
@@ -573,63 +575,6 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
    }
 
    xmb->old_depth = xmb->depth;
-}
-
-static GLuint xmb_png_texture_load_(const char * file_name)
-{
-   struct texture_image ti = {0};
-   GLuint texture = 0;
-
-   if (! path_file_exists(file_name))
-      return 0;
-
-   texture_image_load(&ti, file_name);
-
-   /* Generate the OpenGL texture object */
-   glGenTextures(1, &texture);
-   glBindTexture(GL_TEXTURE_2D, texture);
-   glTexImage2D(GL_TEXTURE_2D, 0, driver.gfx_use_rgba ?
-            GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
-            ti.width, ti.height, 0,
-            driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-            RARCH_GL_FORMAT32, ti.pixels);
-   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glGenerateMipmap(GL_TEXTURE_2D);
-
-   free(ti.pixels);
-
-   return texture;
-}
-
-static int xmb_png_texture_load_wrap(void *data)
-{
-   const char *filename = (const char*)data;
-
-   if (!filename)
-      return 0;
-   return xmb_png_texture_load_(filename);
-}
-
-static GLuint xmb_png_texture_load(const char* file_name)
-{
-   if (g_settings.video.threaded
-         && !g_extern.system.hw_render_callback.context_type)
-   {
-      thread_video_t *thr = (thread_video_t*)driver.video_data;
-
-      if (!thr)
-         return 0;
-
-      thr->cmd_data.custom_command.method = xmb_png_texture_load_wrap;
-      thr->cmd_data.custom_command.data   = (void*)file_name;
-      thr->send_cmd_func(thr, CMD_CUSTOM_COMMAND);
-      thr->wait_reply_func(thr, CMD_CUSTOM_COMMAND);
-
-      return thr->cmd_data.custom_command.return_value;
-   }
-
-   return xmb_png_texture_load_(file_name);
 }
 
 static xmb_node_t* xmb_node_for_core(int i)
@@ -1408,7 +1353,8 @@ static void xmb_context_reset(void *data)
          "clock.png", sizeof(xmb->textures[XMB_TEXTURE_CLOCK].path));
 
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
-      xmb->textures[k].id   = xmb_png_texture_load(xmb->textures[k].path);
+      xmb->textures[k].id   = menu_texture_load(xmb->textures[k].path,
+            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP);
 
    xmb->settings_node.icon  = xmb->textures[XMB_TEXTURE_SETTINGS].id;
    xmb->settings_node.alpha = xmb->c_active_alpha;
@@ -1453,8 +1399,11 @@ static void xmb_context_reset(void *data)
 
       node->alpha        = 0;
       node->zoom         = xmb->c_passive_zoom;
-      node->icon         = xmb_png_texture_load(texturepath);
-      node->content_icon = xmb_png_texture_load(content_texturepath);
+      node->icon         = menu_texture_load(texturepath,
+            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP);
+      node->content_icon = menu_texture_load(content_texturepath,
+            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP);
+
 
       if (i == xmb->active_category)
       {

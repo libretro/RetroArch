@@ -525,7 +525,8 @@ static void glui_context_reset(void *data)
       fill_pathname_join(bgpath, bgpath, "bg.png", sizeof(bgpath));
 
    if (path_file_exists(bgpath))
-      glui->bg = (GLuint)menu_texture_load(bgpath, TEXTURE_BACKEND_OPENGL);
+      glui->bg = (GLuint)menu_texture_load(bgpath, TEXTURE_BACKEND_OPENGL,
+            TEXTURE_FILTER_DEFAULT);
 }
 
 static void glui_navigation_clear(void *data, bool pending_push)

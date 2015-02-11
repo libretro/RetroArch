@@ -23,12 +23,19 @@ enum texture_backend_type
    TEXTURE_BACKEND_OPENGL,
 };
 
+enum texture_filter_type
+{
+   TEXTURE_FILTER_DEFAULT = 0,
+   TEXTURE_FILTER_MIPMAP,
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 unsigned menu_texture_load(const char *path,
-      enum texture_backend_type type);
+      enum texture_backend_type type,
+      enum texture_filter_type  filter_type);
 
 #ifdef __cplusplus
 }
