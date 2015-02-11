@@ -406,7 +406,8 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height,
 void gl_load_texture_data(GLuint id,
       const struct texture_image *img,
       enum gfx_wrap_type wrap_type,
-      enum texture_filter_type filter_type);
+      enum texture_filter_type filter_type,
+      unsigned alignment);
 
 bool gl_load_luts(const struct video_shader *generic_shader,
       GLuint *lut_textures);

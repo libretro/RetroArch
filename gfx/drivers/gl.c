@@ -38,6 +38,7 @@
 
 #include "../gl_common.h"
 #include "../video_viewport.h"
+#include "../video_pixel_converter.h"
 #include "../video_context_driver.h"
 #include <compat/strl.h>
 
@@ -86,17 +87,6 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
    1, 1, 1, 1,
 };
-
-static inline unsigned get_alignment(unsigned pitch)
-{
-   if (pitch & 1)
-      return 1;
-   if (pitch & 2)
-      return 2;
-   if (pitch & 4)
-      return 4;
-   return 8;
-}
 
 static inline bool gl_query_extension(gl_t *gl, const char *ext)
 {
@@ -1084,7 +1074,7 @@ static void gl_update_input_size(gl_t *gl, unsigned width,
       if (clear)
       {
          glPixelStorei(GL_UNPACK_ALIGNMENT,
-               get_alignment(width * sizeof(uint32_t)));
+               video_pixel_get_alignment(width * sizeof(uint32_t)));
 #if defined(HAVE_PSGL)
          glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
                gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
@@ -1292,7 +1282,7 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame,
    else
 #endif
    {
-      glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * gl->base_size));
+      glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(width * gl->base_size));
 
       /* Fallback for GLES devices without GL_BGRA_EXT. */
       if (gl->base_size == 4 && driver.gfx_use_rgba)
@@ -1355,7 +1345,7 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame,
    glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
 #else
    const GLvoid *data_buf = frame;
-   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
+   glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(pitch));
 
    if (gl->base_size == 2 && !gl->have_es2_compat)
    {
@@ -1403,7 +1393,7 @@ static void gl_pbo_async_readback(gl_t *gl)
 
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
    glPixelStorei(GL_PACK_ALIGNMENT,
-         get_alignment(gl->vp.width * sizeof(uint32_t)));
+         video_pixel_get_alignment(gl->vp.width * sizeof(uint32_t)));
 
    /* Read asynchronously into PBO buffer. */
    RARCH_PERFORMANCE_INIT(async_readback);
@@ -2789,20 +2779,13 @@ static bool gl_overlay_load(void *data,
 
    for (i = 0; i < num_images; i++)
    {
-      glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      unsigned alignment = video_pixel_get_alignment(images[i].width 
+            * sizeof(uint32_t));
 
-      glPixelStorei(GL_UNPACK_ALIGNMENT,
-            get_alignment(images[i].width * sizeof(uint32_t)));
-
-      glTexImage2D(GL_TEXTURE_2D, 0, driver.gfx_use_rgba ? 
-            GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
-            images[i].width, images[i].height, 0,
-            driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-            RARCH_GL_FORMAT32, images[i].pixels);
+      gl_load_texture_data(gl->overlay_tex[i],
+            &images[i],
+            RARCH_WRAP_EDGE, TEXTURE_FILTER_LINEAR,
+            alignment);
 
       /* Default. Stretch to whole screen. */
       gl_overlay_tex_geom(gl, i, 0, 0, 1, 1);
@@ -3030,7 +3013,7 @@ static void gl_set_texture_frame(void *data,
    gl->menu_texture_alpha = alpha;
 
    base_size = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * base_size));
+   glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(width * base_size));
 
    if (rgb32)
    {

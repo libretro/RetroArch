@@ -19,7 +19,8 @@
 void gl_load_texture_data(GLuint id,
       const struct texture_image *img,
       enum gfx_wrap_type wrap_type,
-      enum texture_filter_type filter_type)
+      enum texture_filter_type filter_type,
+      unsigned alignment)
 {
    GLint mag_filter, min_filter;
    GLenum wrap;
@@ -63,7 +64,7 @@ void gl_load_texture_data(GLuint id,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 
 #ifndef HAVE_PSGL
-   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
 #endif
    glTexImage2D(GL_TEXTURE_2D,
          0,
@@ -118,7 +119,7 @@ bool gl_load_luts(const struct video_shader *generic_shader,
 
       gl_load_texture_data(textures_lut[i], &img,
             generic_shader->lut[i].wrap,
-            filter_type);
+            filter_type, 4);
       texture_image_free(&img);
    }
 

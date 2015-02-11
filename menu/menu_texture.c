@@ -17,6 +17,7 @@
 #include "menu_texture.h"
 #include <file/file_path.h>
 #include "../general.h"
+#include "../gfx/video_pixel_converter.h"
 #include "../gfx/video_thread_wrapper.h"
 
 #ifdef HAVE_OPENGL
@@ -29,7 +30,7 @@ static void menu_texture_png_load_gl(struct texture_image *ti,
    /* Generate the OpenGL texture object */
    glGenTextures(1, id);
    gl_load_texture_data((GLuint)*id, 
-         ti, RARCH_WRAP_EDGE, filter_type);
+         ti, RARCH_WRAP_EDGE, filter_type, 4 /* TODO/FIXME - dehardcode */);
 }
 #endif
 

@@ -52,3 +52,14 @@ bool init_video_pixel_converter(unsigned size)
 
    return true;
 }
+
+unsigned video_pixel_get_alignment(unsigned pitch)
+{
+   if (pitch & 1)
+      return 1;
+   if (pitch & 2)
+      return 2;
+   if (pitch & 4)
+      return 4;
+   return 8;
+}

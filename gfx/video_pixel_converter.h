@@ -27,6 +27,8 @@ void deinit_pixel_converter(void);
 
 bool init_video_pixel_converter(unsigned size);
 
+unsigned video_pixel_get_alignment(unsigned pitch);
+
 #ifdef __cplusplus
 }
 #endif
