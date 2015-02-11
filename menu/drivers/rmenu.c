@@ -283,7 +283,7 @@ static void rmenu_render(void)
    }
 }
 
-void rmenu_set_texture(void *data)
+static void rmenu_set_texture(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
 
