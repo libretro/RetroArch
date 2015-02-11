@@ -31,11 +31,6 @@
 
 #include "shared.h"
 
-typedef struct rgui_handle
-{
-   unsigned term_height;
-} rgui_handle_t;
-
 #define RGUI_TERM_START_X (driver.menu->width / 21)
 #define RGUI_TERM_START_Y (driver.menu->height / 9)
 #define RGUI_TERM_WIDTH (((driver.menu->width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
@@ -81,7 +76,7 @@ static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
             ((uint32_t)buf[3 * (-y * 256 + x) + 1] << 8) |
             ((uint32_t)buf[3 * (-y * 256 + x) + 2] << 16);
 
-         uint8_t rem = 1 << ((x + y * FONT_WIDTH) & 7);
+         uint8_t rem     = 1 << ((x + y * FONT_WIDTH) & 7);
          unsigned offset = (x + y * FONT_WIDTH) >> 3;
 
          if (col != 0xff)
@@ -255,15 +250,9 @@ static void rgui_render_messagebox(const char *message)
    size_t i;
    int x, y;
    unsigned width, glyphs_width, height;
-   rgui_handle_t *rgui = NULL;
    struct string_list *list = NULL;
 
    if (!driver.menu || !message || !*message)
-      return;
-
-   rgui = (rgui_handle_t*)driver.menu->userdata;
-
-   if (!rgui)
       return;
 
    list = string_split(message, "\n");
@@ -272,8 +261,9 @@ static void rgui_render_messagebox(const char *message)
    if (list->elems == 0)
       goto end;
 
-   width = 0;
+   width        = 0;
    glyphs_width = 0;
+
    for (i = 0; i < list->size; i++)
    {
       unsigned line_width;
@@ -295,8 +285,8 @@ static void rgui_render_messagebox(const char *message)
    }
 
    height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;
-   x = (driver.menu->width - width) / 2;
-   y = (driver.menu->height - height) / 2;
+   x      = (driver.menu->width - width) / 2;
+   y      = (driver.menu->height - height) / 2;
 
    fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
          x + 5, y + 5, width - 10, height - 10, gray_filler);
@@ -327,13 +317,8 @@ end:
 
 static void rgui_blit_cursor(menu_handle_t *menu)
 {
-   int16_t x, y;
-
-   if (!menu)
-      return;
-   
-   x = menu->mouse.x;
-   y = menu->mouse.y;
+   int16_t x = menu->mouse.x;
+   int16_t y = menu->mouse.y;
 
    color_rect(menu->frame_buf, menu->frame_buf_pitch,
          x, y-5, 1, 11, 0xFFFF);
@@ -349,18 +334,12 @@ static void rgui_render(void)
    unsigned x, y, menu_type  = 0;
    const char *dir     = NULL;
    const char *label   = NULL;
-   rgui_handle_t *rgui = NULL;
    const char *core_name = NULL;
    const char *core_version = NULL;
 
    if (driver.menu->need_refresh 
          && g_extern.is_menu
          && !driver.menu->msg_force)
-      return;
-
-   rgui = (rgui_handle_t*)driver.menu->userdata;
-
-   if (!rgui)
       return;
 
    driver.menu->mouse.ptr = driver.menu->mouse.y / 11 - 2 + driver.menu->begin;
@@ -508,11 +487,6 @@ static void *rgui_init(void)
    if (!menu)
       return NULL;
 
-   menu->userdata = (rgui_handle_t*)calloc(1, sizeof(rgui_handle_t));
-   
-   if (!menu->userdata)
-      goto error;
-
    menu->frame_buf = (uint16_t*)malloc(400 * 240 * sizeof(uint16_t)); 
 
    if (!menu->frame_buf)
@@ -549,15 +523,9 @@ error:
 
 static void rgui_free(void *data)
 {
-   rgui_handle_t *rgui = NULL;
    menu_handle_t *menu = (menu_handle_t*)data;
 
    if (!menu)
-      return;
-
-   rgui = (rgui_handle_t*)menu->userdata;
-
-   if (!rgui)
       return;
 
    if (menu->frame_buf)
@@ -574,9 +542,8 @@ static void rgui_free(void *data)
 static void rgui_set_texture(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
-   rgui_handle_t *rgui = (rgui_handle_t*)menu->userdata;
 
-   if (!menu || !rgui)
+   if (!menu)
       return;
    if (!driver.video_data)
       return;
@@ -596,30 +563,22 @@ static void rgui_navigation_clear(void *data, bool pending_push)
 
 static void rgui_navigation_set(void *data, bool scroll)
 {
-   rgui_handle_t *rgui = NULL;
-
    menu_handle_t *menu = (menu_handle_t*)data;
 
    if (!menu)
       return;
-
-   rgui = (rgui_handle_t*)menu->userdata;
-
-   if (!rgui)
-      return;
-
    if (!scroll)
       return;
 
-   if (driver.menu->selection_ptr < RGUI_TERM_HEIGHT/2)
-      driver.menu->begin = 0;
-   else if (driver.menu->selection_ptr >= RGUI_TERM_HEIGHT/2
-         && driver.menu->selection_ptr <
-         menu_list_get_size(driver.menu->menu_list) - RGUI_TERM_HEIGHT/2)
-      driver.menu->begin = driver.menu->selection_ptr - RGUI_TERM_HEIGHT/2;
-   else if (driver.menu->selection_ptr >=
-         menu_list_get_size(driver.menu->menu_list) - RGUI_TERM_HEIGHT/2)
-      driver.menu->begin = menu_list_get_size(driver.menu->menu_list)
+   if (menu->selection_ptr < RGUI_TERM_HEIGHT/2)
+      menu->begin = 0;
+   else if (menu->selection_ptr >= RGUI_TERM_HEIGHT/2
+         && menu->selection_ptr <
+         menu_list_get_size(menu->menu_list) - RGUI_TERM_HEIGHT/2)
+      menu->begin = menu->selection_ptr - RGUI_TERM_HEIGHT/2;
+   else if (menu->selection_ptr >=
+         menu_list_get_size(menu->menu_list) - RGUI_TERM_HEIGHT/2)
+      menu->begin = menu_list_get_size(menu->menu_list)
             - RGUI_TERM_HEIGHT;
 }
 
