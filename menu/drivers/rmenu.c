@@ -180,7 +180,7 @@ static void rmenu_render(menu_handle_t *menu)
 
    get_title(label, dir, menu_type, title, sizeof(title));
 
-   menu_ticker_line(title_buf, RMENU_TERM_WIDTH,
+   menu_animation_ticker_line(title_buf, RMENU_TERM_WIDTH,
          g_extern.frame_count / 15, title, true);
 
    font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
@@ -247,9 +247,9 @@ static void rmenu_render(menu_handle_t *menu)
 
       selected = (i == menu->selection_ptr);
 
-      menu_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2),
+      menu_animation_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2),
             g_extern.frame_count / 15, path, selected);
-      menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15,
+      menu_animation_ticker_line(type_str_buf, w, g_extern.frame_count / 15,
             type_str, selected);
 
       snprintf(message, sizeof(message), "%c %s",
@@ -297,7 +297,7 @@ static void rmenu_set_texture(menu_handle_t *menu)
 
    driver.video_poke->set_texture_frame(driver.video_data,
          menu_texture->pixels,
-         true, menu->width, menu->height, 1.0f);
+         true, menu->frame_buf.width, menu->frame_buf.height, 1.0f);
    menu_texture_inited = true;
 }
 
@@ -328,8 +328,8 @@ static void rmenu_context_reset(void *data)
 
    if (path_file_exists(menu_bg))
       texture_image_load(menu_texture, menu_bg);
-   menu->width = menu_texture->width;
-   menu->height = menu_texture->height;
+   menu->frame_buf.width = menu_texture->width;
+   menu->frame_buf.height = menu_texture->height;
 
    menu_texture_inited = false;
 }

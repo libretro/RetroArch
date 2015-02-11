@@ -4258,7 +4258,7 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   unsigned pass;
+   unsigned pass = 0;
    static const char *modes[] = {
       "Don't care",
       "Linear",
