@@ -493,10 +493,10 @@ static void xmb_selection_pointer_changed(void)
          iz = xmb->i_active_zoom;
       }
 
-      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->label_alpha, &inOutQuad, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, iz, &node->zoom,  &inOutQuad, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, iy, &node->y,     &inOutQuad, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->label_alpha, EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, iz, &node->zoom,  EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, iy, &node->y,     EASING_IN_OUT_QUAD, NULL);
    }
 }
 
@@ -521,9 +521,9 @@ static void xmb_list_open_old(file_list_t *list, int dir, size_t current)
       if (dir == -1)
          ia = 0;
 
-      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, 0, &node->label_alpha, &inOutQuad, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, xmb->icon_size*dir*-2, &node->x, &inOutQuad, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, 0, &node->label_alpha, EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, xmb->icon_size*dir*-2, &node->x, EASING_IN_OUT_QUAD, NULL);
    }
 }
 
@@ -567,9 +567,9 @@ static void xmb_list_open_new(file_list_t *list, int dir, size_t current)
       if (i == current)
          ia = xmb->i_active_alpha;
 
-      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->label_alpha,  &inOutQuad, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, 0, &node->x, &inOutQuad, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, 0, &node->x, EASING_IN_OUT_QUAD, NULL);
    }
 
    xmb->old_depth = xmb->depth;
@@ -699,9 +699,9 @@ static void xmb_list_switch_old(file_list_t *list, int dir, size_t current)
       if (!xmb)
           continue;
 
-      menu_animation_push(driver.menu->animation, XMB_DELAY, 0, &node->alpha,  &inOutQuad, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, 0, &node->label_alpha,  &inOutQuad, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, -xmb->hspacing*dir,  &node->x, &inOutQuad, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, 0, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, 0, &node->label_alpha,  EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, -xmb->hspacing*dir,  &node->x, EASING_IN_OUT_QUAD, NULL);
    }
 }
 
@@ -729,9 +729,9 @@ static void xmb_list_switch_new(file_list_t *list, int dir, size_t current)
       if (i == current)
          ia = 1.0;
       
-      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->alpha,  &inOutQuad, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->label_alpha,  &inOutQuad, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, 0,  &node->x, &inOutQuad, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, 0,  &node->x, EASING_IN_OUT_QUAD, NULL);
    }
 }
 
@@ -795,13 +795,13 @@ static void xmb_list_open(void)
          iz = xmb->c_active_zoom;
       }
 
-      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->alpha, &inOutQuad, NULL);
-      menu_animation_push(driver.menu->animation, XMB_DELAY, iz, &node->zoom, &inOutQuad, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(driver.menu->animation, XMB_DELAY, iz, &node->zoom, EASING_IN_OUT_QUAD, NULL);
    }
 
    menu_animation_push(driver.menu->animation, XMB_DELAY,
          xmb->hspacing * -(float)driver.menu->cat_selection_ptr,
-         &xmb->categories_x, &inOutQuad, NULL);
+         &xmb->categories_x, EASING_IN_OUT_QUAD, NULL);
 
    dir = -1;
    if (driver.menu->cat_selection_ptr > xmb->cat_selection_ptr_old)
@@ -842,7 +842,7 @@ static void xmb_list_switch(void)
          ia = xmb->c_passive_alpha;
 
       menu_animation_push(driver.menu->animation, XMB_DELAY, ia,
-            &node->alpha, &inOutQuad, NULL);
+            &node->alpha, EASING_IN_OUT_QUAD, NULL);
    }
 
    xmb_list_open_old(xmb->selection_buf_old, dir, xmb->selection_ptr_old);
@@ -852,15 +852,15 @@ static void xmb_list_switch(void)
    {
       case 1:
          menu_animation_push(driver.menu->animation, XMB_DELAY, xmb->icon_size*-(xmb->depth*2-2),
-               &xmb->x, &inOutQuad, NULL);
+               &xmb->x, EASING_IN_OUT_QUAD, NULL);
          menu_animation_push(driver.menu->animation, XMB_DELAY, 0, &xmb->arrow_alpha,
-               &inOutQuad, NULL);
+               EASING_IN_OUT_QUAD, NULL);
          break;
       case 2:
          menu_animation_push(driver.menu->animation, XMB_DELAY,
-               xmb->icon_size*-(xmb->depth*2-2), &xmb->x, &inOutQuad, NULL);
+               xmb->icon_size*-(xmb->depth*2-2), &xmb->x, EASING_IN_OUT_QUAD, NULL);
          menu_animation_push(driver.menu->animation, XMB_DELAY, 1, &xmb->arrow_alpha,
-               &inOutQuad, NULL);
+               EASING_IN_OUT_QUAD, NULL);
          break;
    }
 
@@ -1677,7 +1677,7 @@ static void xmb_toggle(bool menu_on)
    }
 
    menu_animation_push(driver.menu->animation, XMB_DELAY, 1.0f,
-         &xmb->alpha, &inOutQuad, NULL);
+         &xmb->alpha, EASING_IN_OUT_QUAD, NULL);
 
    xmb->prevent_populate = !menu->need_refresh;
 
