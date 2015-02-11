@@ -180,7 +180,7 @@ VIDEO IMAGE
 #include "../gfx/image/image_rpng.c"
 #endif
 
-#include "../gfx/rpng/rpng.c"
+#include "../libretro-sdk/formats/png/rpng.c"
 
 /*============================================================
 VIDEO DRIVER

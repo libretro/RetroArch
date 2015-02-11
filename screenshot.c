@@ -35,7 +35,7 @@
 
 #ifdef HAVE_ZLIB_DEFLATE
 
-#include "gfx/rpng/rpng.h"
+#include <formats/rpng.h>
 #define IMG_EXT "png"
 
 #else

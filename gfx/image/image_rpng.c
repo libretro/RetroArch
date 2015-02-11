@@ -25,7 +25,7 @@
 #include <string.h>
 #include <stddef.h>
 #include "../../general.h"
-#include "../rpng/rpng.h"
+#include <formats/rpng.h>
 
 static bool rpng_image_load_tga_shift(const char *path,
       struct texture_image *out_img,
