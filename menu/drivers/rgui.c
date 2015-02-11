@@ -511,9 +511,6 @@ static void rgui_free(void *data)
    if (!menu)
       return;
 
-   if (menu->frame_buf)
-      free(menu->frame_buf);
-
    if (menu->userdata)
       free(menu->userdata);
    driver.menu->userdata = NULL;
