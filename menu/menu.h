@@ -25,10 +25,7 @@
 #include <boolean.h>
 #include "../../general.h"
 #include "menu_navigation.h"
-#include "../../core_info.h"
-#include "../../playlist.h"
 #include "menu_input.h"
-#include "../gfx/video_shader_driver.h"
 
 #ifndef GFX_MAX_SHADERS
 #define GFX_MAX_SHADERS 16
