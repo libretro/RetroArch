@@ -81,8 +81,13 @@ typedef struct
    size_t begin;
 
    menu_list_t *menu_list;
-   size_t cat_selection_ptr;
-   size_t num_categories;
+
+   struct
+   {
+      size_t selection_ptr;
+      size_t size;
+   } categories;
+
    size_t selection_ptr;
    bool need_refresh;
    bool msg_force;

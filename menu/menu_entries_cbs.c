@@ -2073,12 +2073,12 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
          switch (action)
          {
             case MENU_ACTION_LEFT:
-               if (driver.menu->cat_selection_ptr == 0)
+               if (driver.menu->categories.selection_ptr == 0)
                   break;
                push_list = 1;
                break;
             case MENU_ACTION_RIGHT:
-               if (driver.menu->cat_selection_ptr == driver.menu->num_categories-1)
+               if (driver.menu->categories.selection_ptr == (driver.menu->categories.size - 1))
                   break;
                push_list = 1;
                break;

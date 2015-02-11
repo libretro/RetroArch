@@ -622,7 +622,7 @@ static void xmb_list_switch_new(menu_handle_t *menu, xmb_handle_t *xmb, file_lis
 
 static void xmb_set_title(menu_handle_t *menu, xmb_handle_t *xmb)
 {
-   if (menu->cat_selection_ptr == 0)
+   if (menu->categories.selection_ptr == 0)
    {
       const char *dir   = NULL;
       const char *label = NULL;
@@ -639,7 +639,7 @@ static void xmb_set_title(menu_handle_t *menu, xmb_handle_t *xmb)
       if (!info_list)
          return;
 
-      info = (core_info_t*)&info_list->list[menu->cat_selection_ptr - 1];
+      info = (core_info_t*)&info_list->list[menu->categories.selection_ptr - 1];
 
       if (info)
          strlcpy(xmb->title, info->display_name, sizeof(xmb->title));
@@ -651,12 +651,12 @@ static void xmb_list_open(menu_handle_t *menu, xmb_handle_t *xmb)
    unsigned j;
    int dir = -1;
 
-   if (menu->cat_selection_ptr > xmb->cat_selection_ptr_old)
+   if (menu->categories.selection_ptr > xmb->cat_selection_ptr_old)
       dir = 1;
 
    xmb->active_category += dir;
 
-   for (j = 0; j < menu->num_categories; j++)
+   for (j = 0; j < menu->categories.size; j++)
    {
       float ia = xmb->c_passive_alpha;
       float iz = xmb->c_passive_zoom;
@@ -676,16 +676,16 @@ static void xmb_list_open(menu_handle_t *menu, xmb_handle_t *xmb)
    }
 
    menu_animation_push(menu->animation, XMB_DELAY,
-         xmb->hspacing * -(float)menu->cat_selection_ptr,
+         xmb->hspacing * -(float)menu->categories.selection_ptr,
          &xmb->categories_x, EASING_IN_OUT_QUAD, NULL);
 
    dir = -1;
-   if (menu->cat_selection_ptr > xmb->cat_selection_ptr_old)
+   if (menu->categories.selection_ptr > xmb->cat_selection_ptr_old)
       dir = 1;
 
    xmb_list_switch_old(menu, xmb, xmb->selection_buf_old, dir, xmb->selection_ptr_old);
    xmb_list_switch_new(menu, xmb, menu->menu_list->selection_buf, dir, menu->selection_ptr);
-   xmb->active_category_old = menu->cat_selection_ptr;
+   xmb->active_category_old = menu->categories.selection_ptr;
 }
 
 static void xmb_list_switch(menu_handle_t *menu, xmb_handle_t *xmb)
@@ -700,7 +700,7 @@ static void xmb_list_switch(menu_handle_t *menu, xmb_handle_t *xmb)
    else if (xmb->depth < xmb->old_depth)
       dir = -1;
 
-   for (j = 0; j < menu->num_categories; j++)
+   for (j = 0; j < menu->categories.size; j++)
    {
       float ia = 0;
       xmb_node_t *node = j ? xmb_node_for_core(xmb, j - 1) : &xmb->settings_node;
@@ -760,7 +760,7 @@ static void xmb_populate_entries(menu_handle_t *menu, const char *path,
 
    xmb_set_title(menu, xmb);
 
-   if (menu->cat_selection_ptr != xmb->active_category_old)
+   if (menu->categories.selection_ptr != xmb->active_category_old)
       xmb_list_open(menu, xmb);
    else
       xmb_list_switch(menu, xmb);
@@ -995,16 +995,16 @@ static void xmb_frame(menu_handle_t *menu)
          xmb->selection_buf_old,
          xmb->menu_stack_old,
          xmb->selection_ptr_old,
-         depth > 1 ? menu->cat_selection_ptr :
+         depth > 1 ? menu->categories.selection_ptr :
                      xmb->cat_selection_ptr_old);
 
    xmb_draw_items(xmb, gl,
          menu->menu_list->selection_buf,
          menu->menu_list->menu_stack,
          menu->selection_ptr,
-         menu->cat_selection_ptr);
+         menu->categories.selection_ptr);
 
-   for (i = 0; i < menu->num_categories; i++)
+   for (i = 0; i < menu->categories.size; i++)
    {
       xmb_node_t *node = i ? xmb_node_for_core(xmb, i - 1) : &xmb->settings_node;
 
@@ -1144,9 +1144,9 @@ static void *xmb_init(void)
    xmb->label_margin_top     = xmb->font_size/3.0;
    xmb->setting_margin_left  = 600.0 * scale_factor;
 
-   menu->num_categories = 1;
+   menu->categories.size = 1;
    if (g_extern.core_info)
-      menu->num_categories = g_extern.core_info->count + 1;
+      menu->categories.size = g_extern.core_info->count + 1;
 
    return menu;
 
@@ -1294,7 +1294,7 @@ static void xmb_context_reset(menu_handle_t *menu)
    if (!info_list)
       return;
 
-   for (i = 1; i < menu->num_categories; i++)
+   for (i = 1; i < menu->categories.size; i++)
    {
       node = xmb_node_for_core(xmb, i - 1);
 
@@ -1456,15 +1456,15 @@ static void xmb_list_cache(menu_handle_t *menu,
    if(!horizontal)
       return;
 
-   xmb->cat_selection_ptr_old = menu->cat_selection_ptr;
+   xmb->cat_selection_ptr_old = menu->categories.selection_ptr;
 
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         menu->cat_selection_ptr--;
+         menu->categories.selection_ptr--;
          break;
       default:
-         menu->cat_selection_ptr++;
+         menu->categories.selection_ptr++;
          break;
    }
 
@@ -1475,7 +1475,7 @@ static void xmb_list_cache(menu_handle_t *menu,
    menu->menu_list->menu_stack->list[stack_size-1].type = 
       MENU_SETTINGS;
 
-   if (menu->cat_selection_ptr == 0)
+   if (menu->categories.selection_ptr == 0)
       return;
 
    strlcpy(menu->menu_list->menu_stack->list[stack_size-1].label,
@@ -1500,7 +1500,7 @@ static void xmb_context_destroy(menu_handle_t *menu)
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
       glDeleteTextures(1, &xmb->textures[i].id);
 
-   for (i = 1; i < menu->num_categories; i++)
+   for (i = 1; i < menu->categories.size; i++)
    {
       xmb_node_t *node = xmb_node_for_core(xmb, i - 1);
 
@@ -1533,7 +1533,7 @@ static void xmb_toggle(menu_handle_t *menu, bool menu_on)
 
    xmb->prevent_populate = !menu->need_refresh;
 
-   for (i = 0; i < menu->num_categories; i++)
+   for (i = 0; i < menu->categories.size; i++)
    {
       xmb_node_t *node = i ? xmb_node_for_core(xmb, i - 1) : &xmb->settings_node;
 

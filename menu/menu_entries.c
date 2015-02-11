@@ -211,7 +211,7 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
    if (!info_list)
       return -1;
 
-   info = (core_info_t*)&info_list->list[driver.menu->cat_selection_ptr - 1];
+   info = (core_info_t*)&info_list->list[driver.menu->categories.selection_ptr - 1];
 
    if (!info)
       return -1;
