@@ -404,10 +404,7 @@ static void xmb_render_messagebox(const char *message)
       return;
 
    if (list->elems == 0)
-   {
-      string_list_free(list);
-      return;
-   }
+      goto end;
 
    x = gl->win_width / 2 - strlen(list->elems[0].data) * xmb->font_size / 4;
    y = gl->win_height / 2 - list->size * xmb->font_size / 2;
@@ -420,6 +417,7 @@ static void xmb_render_messagebox(const char *message)
          xmb_draw_text(gl, xmb, msg, x, y + i * xmb->font_size, 1, 1, 0);
    }
 
+end:
    string_list_free(list);
 }
 
