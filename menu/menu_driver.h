@@ -73,8 +73,11 @@ typedef struct
    void *userdata;
 
    /* Used for key repeat */
-   unsigned delay_timer;
-   unsigned delay_count;
+   struct
+   {
+      unsigned timer;
+      unsigned count;
+   } delay;
 
    unsigned width;
    unsigned height;

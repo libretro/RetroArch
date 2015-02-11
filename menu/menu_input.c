@@ -470,11 +470,11 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       if (!first_held)
       {
          first_held = true;
-         driver.menu->delay_timer = initial_held ? 12 : 6;
-         driver.menu->delay_count = 0;
+         driver.menu->delay.timer = initial_held ? 12 : 6;
+         driver.menu->delay.count = 0;
       }
 
-      if (driver.menu->delay_count >= driver.menu->delay_timer)
+      if (driver.menu->delay.count >= driver.menu->delay.timer)
       {
          first_held = false;
          trigger_input |= input & input_repeat;
@@ -493,7 +493,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 
    driver.menu->mouse.enable = g_settings.menu.mouse_enable;
 
-   driver.menu->delay_count++;
+   driver.menu->delay.count++;
 
    if (driver.block_input)
       trigger_input = 0;
