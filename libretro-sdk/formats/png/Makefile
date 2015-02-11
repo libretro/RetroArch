@@ -3,7 +3,7 @@ TARGET := rpng
 SOURCES := $(wildcard *.c)
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -DHAVE_ZLIB -DHAVE_ZLIB_DEFLATE -DRPNG_TEST -I../../libretro-sdk/include
+CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -DHAVE_ZLIB -DHAVE_ZLIB_DEFLATE -DRPNG_TEST -I../../include
 
 all: $(TARGET)
 
