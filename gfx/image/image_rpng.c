@@ -27,31 +27,20 @@
 #include "../../general.h"
 #include <formats/rpng.h>
 
-static bool rpng_image_load_tga_shift(const char *path,
+static bool rtga_image_load_shift(uint8_t *buf,
       struct texture_image *out_img,
       unsigned a_shift, unsigned r_shift,
       unsigned g_shift, unsigned b_shift)
 {
    unsigned i, bits, size, bits_mul;
-   uint8_t info[6], *buf;
+   uint8_t info[6];
    unsigned width = 0;
    unsigned height = 0;
    const uint8_t *tmp = NULL;
-   void *raw_buf = NULL;
-   ssize_t len = read_file(path, &raw_buf);
-
-   if (len < 0)
-   {
-      RARCH_ERR("Failed to read image: %s.\n", path);
-      return false;
-   }
-
-   buf = (uint8_t*)raw_buf;
 
    if (buf[2] != 2)
    {
       RARCH_ERR("TGA image is not uncompressed RGB.\n");
-      free(buf);
       return false;
    }
 
@@ -71,7 +60,6 @@ static bool rpng_image_load_tga_shift(const char *path,
    if (!out_img->pixels)
    {
       RARCH_ERR("Failed to allocate TGA pixels.\n");
-      free(buf);
       return false;
    }
 
@@ -81,7 +69,6 @@ static bool rpng_image_load_tga_shift(const char *path,
    if (bits != 32 && bits != 24)
    {
       RARCH_ERR("Bit depth of TGA image is wrong. Only 32-bit and 24-bit supported.\n");
-      free(buf);
       free(out_img->pixels);
       out_img->pixels = NULL;
       return false;
@@ -104,7 +91,6 @@ static bool rpng_image_load_tga_shift(const char *path,
          (r << r_shift) | (g << g_shift) | (b << b_shift);
    }
 
-   free(buf);
    return true;
 }
 
@@ -225,12 +211,31 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
    unsigned b_shift = use_rgba ? 16 : 0;
 
    if (strstr(path, ".tga"))
-      ret = rpng_image_load_tga_shift(path, out_img,
+   {
+      void *raw_buf = NULL;
+      uint8_t *buf = NULL;
+      ssize_t len = read_file(path, &raw_buf);
+
+      if (len < 0)
+      {
+         RARCH_ERR("Failed to read image: %s.\n", path);
+         return false;
+      }
+
+      buf = (uint8_t*)raw_buf;
+
+      ret = rtga_image_load_shift(buf, out_img,
             a_shift, r_shift, g_shift, b_shift);
+
+      if (buf)
+         free(buf);
+   }
 #ifdef HAVE_ZLIB
    else if (strstr(path, ".png"))
+   {
       ret = rpng_image_load_argb_shift(path, out_img,
             a_shift, r_shift, g_shift, b_shift);
+   }
 #endif
 
 #ifdef GEKKO
