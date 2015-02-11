@@ -28,6 +28,9 @@ void gl_load_texture_data(GLuint id,
    bool want_mipmap = false;
    bool rgb32 = (base_size == (sizeof(uint32_t)));
 
+   if (!driver.video)
+      return;
+
    glBindTexture(GL_TEXTURE_2D, id);
    
    wrap = driver.video->wrap_type_to_enum(wrap_type);
