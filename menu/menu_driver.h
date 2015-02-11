@@ -199,10 +199,10 @@ typedef struct menu_ctx_driver
    void  (*navigation_set_last)(menu_handle_t *menu);
    void  (*navigation_descend_alphabet)(menu_handle_t *menu, size_t *);
    void  (*navigation_ascend_alphabet)(menu_handle_t *menu, size_t *);
-   void  (*list_insert)(void *, const char *, const char *, size_t);
-   void  (*list_delete)(void *, size_t, size_t);
-   void  (*list_clear)(void *);
-   void  (*list_cache)(bool, unsigned);
+   void  (*list_insert)(menu_handle_t *menu, file_list_t *list, const char *, const char *, size_t);
+   void  (*list_delete)(menu_handle_t *menu, file_list_t *list, size_t, size_t);
+   void  (*list_clear)(menu_handle_t *menu, file_list_t *list);
+   void  (*list_cache)(menu_handle_t *menu, bool, unsigned);
    void  (*list_set_selection)(file_list_t *list);
    int   (*entry_iterate)(menu_handle_t *menu, unsigned);
    const char *ident;

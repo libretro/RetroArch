@@ -1385,13 +1385,17 @@ static void xmb_navigation_ascend_alphabet(menu_handle_t *menu, size_t *unused)
    xmb_selection_pointer_changed(menu);
 }
 
-static void xmb_list_insert(void *data,
+static void xmb_list_insert(menu_handle_t *menu, file_list_t *list,
       const char *path, const char *unused, size_t list_size)
 {
    int current = 0, i = list_size;
    xmb_node_t *node = NULL;
-   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
-   file_list_t *list = (file_list_t*)data;
+   xmb_handle_t *xmb = NULL;
+
+   if (!menu)
+      return;
+   
+   xmb = (xmb_handle_t*)menu->userdata;
 
    if (!list || !xmb)
       return;
@@ -1409,7 +1413,7 @@ static void xmb_list_insert(void *data,
    if (!node)
       return;
 
-   current = driver.menu->selection_ptr;
+   current           = menu->selection_ptr;
 
    node->alpha       = xmb->i_passive_alpha;
    node->zoom        = xmb->i_passive_zoom;
@@ -1425,11 +1429,10 @@ static void xmb_list_insert(void *data,
    }
 }
 
-static void xmb_list_delete(void *data, size_t idx,
+static void xmb_list_delete(menu_handle_t *menu,
+      file_list_t *list, size_t idx,
       size_t list_size)
 {
-   file_list_t *list = (file_list_t*)data;
-
    if (!list)
       return;
 
@@ -1438,57 +1441,48 @@ static void xmb_list_delete(void *data, size_t idx,
    list->list[idx].userdata = NULL;
 }
 
-static void xmb_list_clear(void *data)
-{
-   (void)data;
-}
-
-static void xmb_list_cache(bool horizontal, unsigned action)
+static void xmb_list_cache(menu_handle_t *menu, 
+      bool horizontal, unsigned action)
 {
    size_t stack_size;
-   xmb_handle_t *xmb = (xmb_handle_t*)driver.menu->userdata;
+   xmb_handle_t *xmb = (xmb_handle_t*)menu->userdata;
 
    if (!xmb)
       return;
 
-   file_list_copy(driver.menu->menu_list->selection_buf, xmb->selection_buf_old);
-   file_list_copy(driver.menu->menu_list->menu_stack, xmb->menu_stack_old);
-   xmb->selection_ptr_old = driver.menu->selection_ptr;
+   file_list_copy(menu->menu_list->selection_buf, xmb->selection_buf_old);
+   file_list_copy(menu->menu_list->menu_stack, xmb->menu_stack_old);
+   xmb->selection_ptr_old = menu->selection_ptr;
 
    if(!horizontal)
       return;
 
-   xmb->cat_selection_ptr_old = driver.menu->cat_selection_ptr;
+   xmb->cat_selection_ptr_old = menu->cat_selection_ptr;
 
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         driver.menu->cat_selection_ptr--;
+         menu->cat_selection_ptr--;
          break;
       default:
-         driver.menu->cat_selection_ptr++;
+         menu->cat_selection_ptr++;
          break;
    }
 
-   stack_size = driver.menu->menu_list->menu_stack->size;
+   stack_size = menu->menu_list->menu_stack->size;
 
-   strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label,
+   strlcpy(menu->menu_list->menu_stack->list[stack_size-1].label,
          "Main Menu", PATH_MAX_LENGTH);
-   driver.menu->menu_list->menu_stack->list[stack_size-1].type = 
+   menu->menu_list->menu_stack->list[stack_size-1].type = 
       MENU_SETTINGS;
 
-   if (driver.menu->cat_selection_ptr == 0)
+   if (menu->cat_selection_ptr == 0)
       return;
 
-   strlcpy(driver.menu->menu_list->menu_stack->list[stack_size-1].label,
+   strlcpy(menu->menu_list->menu_stack->list[stack_size-1].label,
          "Horizontal Menu", PATH_MAX_LENGTH);
-   driver.menu->menu_list->menu_stack->list[stack_size-1].type = 
+   menu->menu_list->menu_stack->list[stack_size-1].type = 
       MENU_SETTING_HORIZONTAL_MENU;
-}
-
-static void xmb_list_set_selection(file_list_t *list)
-{
-   (void)list;
 }
 
 static void xmb_context_destroy(menu_handle_t *menu)
@@ -1586,9 +1580,9 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_navigation_ascend_alphabet,
    xmb_list_insert,
    xmb_list_delete,
-   xmb_list_clear,
+   NULL,
    xmb_list_cache,
-   xmb_list_set_selection,
+   NULL,
    xmb_entry_iterate,
    "xmb",
 };

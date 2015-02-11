@@ -2096,7 +2096,7 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
    {
       case 1:
          if (driver.menu_ctx->list_cache)
-            driver.menu_ctx->list_cache(true, action);
+            driver.menu_ctx->list_cache(driver.menu, true, action);
 
          if (cbs && cbs->action_content_list_switch)
             return cbs->action_content_list_switch(
