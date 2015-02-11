@@ -374,33 +374,24 @@ static void xui_render_message(const char *msg)
    struct font_params font_parms;
    size_t i = 0;
    size_t j = 0;
-
-   struct string_list *list = string_split(msg, "\n");
+   struct string_list *list = NULL;
    d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+
+   if (!d3d)
+      return;
+   
+   list = string_split(msg, "\n");
 
    if (!list)
       return;
 
-   if (!d3d || list->elems == 0)
-   {
-      string_list_free(list);
-      return;
-   }
+   if (list->elems == 0)
+      goto end;
 
    for (i = 0; i < list->size; i++, j++)
    {
       char *msg = (char*)list->elems[i].data;
       unsigned msglen = strlen(msg);
-   #if 0
-      if (msglen > RMENU_TERM_WIDTH)
-      {
-         msg[RMENU_TERM_WIDTH - 2] = '.';
-         msg[RMENU_TERM_WIDTH - 1] = '.';
-         msg[RMENU_TERM_WIDTH - 0] = '.';
-         msg[RMENU_TERM_WIDTH + 1] = '\0';
-         msglen = RMENU_TERM_WIDTH;
-      }
-   #endif
       float msg_width = d3d->resolution_hd_enable ? 160 : 100;
       float msg_height = 120;
       float msg_offset = 32;
@@ -413,6 +404,9 @@ static void xui_render_message(const char *msg)
          driver.video_poke->set_osd_msg(driver.video_data,
                msg, &font_parms, NULL);
    }
+
+end:
+   string_list_free(list);
 }
 
 static void rmenu_xui_frame(void)

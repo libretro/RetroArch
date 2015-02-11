@@ -101,10 +101,7 @@ static void rmenu_render_messagebox(const char *message)
       return;
 
    if (list->elems == 0)
-   {
-      string_list_free(list);
-      return;
-   }
+      goto end;
 
    j = 0;
 
@@ -134,6 +131,8 @@ static void rmenu_render_messagebox(const char *message)
    }
 
    render_normal = false;
+end:
+   string_list_free(list);
 }
 
 static void rmenu_render(void)
