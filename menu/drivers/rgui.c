@@ -49,15 +49,10 @@ static int rgui_entry_iterate(unsigned action)
 
    menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, NULL);
 
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
-      driver.menu_ctx->set_texture(driver.menu);
+   if (cbs && cbs->action_iterate)
+      return cbs->action_iterate(label, action);
 
-   if (!cbs)
-      return -1;
-   if (!cbs->action_iterate)
-      return -1;
-
-   return cbs->action_iterate(label, action);
+   return -1;
 }
 
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)

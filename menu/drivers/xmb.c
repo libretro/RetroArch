@@ -170,9 +170,6 @@ static int xmb_entry_iterate(unsigned action)
 
    menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, NULL);
 
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
-      driver.menu_ctx->set_texture(driver.menu);
-
    if (cbs && cbs->action_iterate)
       return cbs->action_iterate(label, action);
    

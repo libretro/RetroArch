@@ -355,6 +355,9 @@ int menu_iterate(retro_input_t input,
    int32_t ret     = 0;
    unsigned action = menu_input_frame(input, trigger_input);
 
+   if (driver.menu_ctx && driver.menu_ctx->set_texture)
+      driver.menu_ctx->set_texture(driver.menu);
+
    if (driver.menu_ctx && driver.menu_ctx->entry_iterate) 
       ret = driver.menu_ctx->entry_iterate(action);
 
