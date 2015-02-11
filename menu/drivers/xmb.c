@@ -512,7 +512,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb, file_list_t *list, int dir, siz
       float ia;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
        
-      if (!xmb)
+      if (!node)
           continue;
 
       ia = xmb->i_passive_alpha;
@@ -606,7 +606,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb, file_list_t *list, int dir, s
       xmb_node_t *node = (xmb_node_t*)
          file_list_get_userdata_at_offset(list, i);
 
-      if (!xmb)
+      if (!node)
           continue;
 
       node->x           = xmb->hspacing * dir;
