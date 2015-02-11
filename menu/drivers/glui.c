@@ -22,11 +22,12 @@
 #include <limits.h>
 
 #include "../menu.h"
+#include "../menu_texture.h"
+#include "../menu_input.h"
+
 #include <file/file_path.h>
 #include "../../gfx/gl_common.h"
-#include "../../gfx/video_thread_wrapper.h"
 #include <compat/posix_string.h>
-#include "../menu_input.h"
 
 #include "shared.h"
 
@@ -497,55 +498,6 @@ static void glui_free(void *data)
       free(menu->userdata);
 }
 
-static GLuint glui_png_texture_load_(const char * file_name)
-{
-   GLuint texture = 0;
-   struct texture_image ti = {0};
-   if (! path_file_exists(file_name))
-      return 0;
-
-   texture_image_load(&ti, file_name);
-
-   /* Generate the OpenGL texture object */
-   glGenTextures(1, &texture);
-   glBindTexture(GL_TEXTURE_2D, texture);
-   glTexImage2D(GL_TEXTURE_2D, 0, driver.gfx_use_rgba ?
-            GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
-            ti.width, ti.height, 0,
-            driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-            RARCH_GL_FORMAT32, ti.pixels);
-   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-   free(ti.pixels);
-
-   return texture;
-}
-static int glui_png_texture_load_wrap(void *data)
-{
-   const char *filename = (const char*)data;
-   return glui_png_texture_load_(filename);
-}
-
-
-static GLuint glui_png_texture_load(const char* file_name)
-{
-   if (g_settings.video.threaded
-         && !g_extern.system.hw_render_callback.context_type)
-   {
-      thread_video_t *thr = (thread_video_t*)driver.video_data;
-      thr->cmd_data.custom_command.method = glui_png_texture_load_wrap;
-      thr->cmd_data.custom_command.data   = (void*)file_name;
-      thr->send_cmd_func(thr, CMD_CUSTOM_COMMAND);
-      thr->wait_reply_func(thr, CMD_CUSTOM_COMMAND);
-
-      return thr->cmd_data.custom_command.return_value;
-
-   }
-
-   return glui_png_texture_load_(file_name);
-}
-
 
 static void glui_context_reset(void *data)
 {
@@ -573,7 +525,7 @@ static void glui_context_reset(void *data)
       fill_pathname_join(bgpath, bgpath, "bg.png", sizeof(bgpath));
 
    if (path_file_exists(bgpath))
-      glui->bg = glui_png_texture_load(bgpath);
+      glui->bg = (GLuint)menu_texture_load(bgpath, TEXTURE_BACKEND_OPENGL);
 }
 
 static void glui_navigation_clear(void *data, bool pending_push)
