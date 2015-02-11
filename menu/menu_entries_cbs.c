@@ -4560,19 +4560,6 @@ static void menu_action_setting_disp_set_label_menu_more(
    strlcpy(path_buf, path, path_buf_size);
 }
 
-static void menu_action_setting_disp_set_label_menu_file_plain(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *type_str, size_t type_str_size,
-      const char *entry_label,
-      const char *path,
-      char *path_buf, size_t path_buf_size)
-{
-   strlcpy(type_str, "(FILE)", type_str_size);
-   *w = strlen(type_str);
-   strlcpy(path_buf, path, path_buf_size);
-}
 
 static void menu_action_setting_disp_set_label_menu_disk_index(
       file_list_t* list,
@@ -4647,6 +4634,19 @@ static void menu_action_setting_generic_disp_set_label(
    *w = strlen(type_str);
 
    strlcpy(path_buf, path, path_buf_size);
+}
+
+static void menu_action_setting_disp_set_label_menu_file_plain(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
+         path, "(FILE)", path_buf, path_buf_size);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_use_directory(
