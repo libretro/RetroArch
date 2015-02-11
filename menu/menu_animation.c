@@ -255,7 +255,8 @@ void menu_animation_free(animation_t *animation)
 
    for (i = 0; i < animation->size; i++)
    {
-      free(animation->list[i].subject);
+      if (animation->list[i].subject)
+         free(animation->list[i].subject);
    }
 
    free(animation->list);
