@@ -679,6 +679,9 @@ static void config_set_defaults(void)
                   sizeof(g_settings.osk.overlay));
 #endif
    }
+   else
+      strlcpy(g_extern.osk_overlay_dir,
+            g_extern.overlay_dir, sizeof(g_extern.osk_overlay_dir));
 #endif
 #ifdef HAVE_MENU
    if (*g_defaults.menu_config_dir)
