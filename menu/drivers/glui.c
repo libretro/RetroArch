@@ -150,8 +150,9 @@ static void glui_render_background(gl_t *gl, glui_handle_t *glui,
    gl->coords.color = gl->white_color_ptr;
 }
 
-static void glui_draw_cursor(gl_t *gl, float x, float y)
+static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui, float x, float y)
 {
+   struct gl_coords coords;
    static const GLfloat vertex[] = {
       0, 0,
       1, 0,
@@ -171,16 +172,6 @@ static void glui_draw_cursor(gl_t *gl, float x, float y)
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f,
    };
-   struct gl_coords coords;
-   glui_handle_t *glui = NULL;
-
-   if (!driver.menu)
-      return;
-
-   glui = (glui_handle_t*)driver.menu->userdata;
-
-   if (!glui)
-      return;
 
    glViewport(x - 5, gl->win_height - y, 11, 11);
 
@@ -425,7 +416,7 @@ static void glui_frame(void)
    }
 
    if (driver.menu->mouse.enable)
-      glui_draw_cursor(gl, driver.menu->mouse.x, driver.menu->mouse.y);
+      glui_draw_cursor(gl, glui, driver.menu->mouse.x, driver.menu->mouse.y);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 }
