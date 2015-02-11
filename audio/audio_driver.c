@@ -409,3 +409,37 @@ bool audio_driver_mute_toggle(void)
 
    return true;
 }
+
+/*
+ * audio_driver_readjust_input_rate:
+ *
+ * Readjust the audio input rate.
+ */
+void audio_driver_readjust_input_rate(void)
+{
+   double direction, adjust;
+   int half_size, delta_mid, avail;
+   unsigned write_idx;
+
+   avail = driver.audio->write_avail(driver.audio_data);
+
+#if 0
+   RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
+         (unsigned)(100 - (avail * 100) / g_extern.audio_data.driver_buffer_size));
+#endif
+
+   write_idx   = g_extern.measure_data.buffer_free_samples_count++ &
+      (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
+   half_size   = g_extern.audio_data.driver_buffer_size / 2;
+   delta_mid   = avail - half_size;
+   direction   = (double)delta_mid / half_size;
+   adjust      = 1.0 + g_settings.audio.rate_control_delta * direction;
+
+   g_extern.measure_data.buffer_free_samples[write_idx] = avail;
+   g_extern.audio_data.src_ratio = g_extern.audio_data.orig_src_ratio * adjust;
+
+#if 0
+   RARCH_LOG_OUTPUT("New rate: %lf, Orig rate: %lf\n",
+         g_extern.audio_data.src_ratio, g_extern.audio_data.orig_src_ratio);
+#endif
+}

@@ -112,6 +112,13 @@ const char *audio_driver_find_ident(int index);
 
 bool audio_driver_mute_toggle(void);
 
+/*
+ * audio_driver_readjust_input_rate:
+ *
+ * Readjust the audio input rate.
+ */
+void audio_driver_readjust_input_rate(void);
+
 /**
  * config_get_audio_driver_options:
  *
