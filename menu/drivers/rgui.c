@@ -114,41 +114,43 @@ static uint16_t green_filler(unsigned x, unsigned y)
 #endif
 }
 
-static void fill_rect(uint16_t *buf, unsigned pitch,
+static void fill_rect(menu_handle_t *menu,
       unsigned x, unsigned y,
       unsigned width, unsigned height,
       uint16_t (*col)(unsigned x, unsigned y))
 {
    unsigned i, j;
     
-   if (!buf || !col)
+   if (!menu->frame_buf || !col)
       return;
     
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
-         buf[j * (pitch >> 1) + i] = col(i, j);
+         menu->frame_buf[j * (menu->frame_buf_pitch >> 1) + i] = col(i, j);
 }
-static void color_rect(uint16_t *buf, unsigned pitch,
+
+static void color_rect(menu_handle_t *menu,
       unsigned x, unsigned y,
       unsigned width, unsigned height,
       uint16_t color)
 {
    unsigned i, j;
 
-   if (!buf)
+   if (!menu->frame_buf)
       return;
 
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
          if (i < driver.menu->width && j < driver.menu->height)
-            buf[j * (pitch >> 1) + i] = color;
+            menu->frame_buf[j * (menu->frame_buf_pitch >> 1) + i] = color;
 }
 
 static void blit_line(int x, int y, const char *message, bool green)
 {
    unsigned i, j;
+   menu_handle_t *menu = driver.menu;
 
-   if (!driver.menu)
+   if (!menu)
       return;
 
    while (*message)
@@ -159,14 +161,14 @@ static void blit_line(int x, int y, const char *message, bool green)
          {
             uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
             int offset  = (i + j * FONT_WIDTH) >> 3;
-            bool col    = (driver.menu->font[FONT_OFFSET
+            bool col    = (menu->font[FONT_OFFSET
                   ((unsigned char)*message) + offset] & rem);
 
             if (!col)
                continue;
 
-            driver.menu->frame_buf[(y + j) *
-               (driver.menu->frame_buf_pitch >> 1) + (x + i)] = green ?
+            menu->frame_buf[(y + j) *
+               (menu->frame_buf_pitch >> 1) + (x + i)] = green ?
 #if defined(GEKKO)|| defined(PSP)
                (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
 #else
@@ -227,21 +229,13 @@ static void rgui_render_background(menu_handle_t *menu)
    if (!menu)
       return;
 
-   fill_rect(menu->frame_buf, menu->frame_buf_pitch,
-         0, 0, menu->width, menu->height, gray_filler);
-
-   fill_rect(menu->frame_buf, menu->frame_buf_pitch,
-         5, 5, menu->width - 10, 5, green_filler);
-
-   fill_rect(menu->frame_buf, menu->frame_buf_pitch,
-         5, menu->height - 10, menu->width - 10, 5,
+   fill_rect(menu, 0, 0, menu->width, menu->height, gray_filler);
+   fill_rect(menu, 5, 5, menu->width - 10, 5, green_filler);
+   fill_rect(menu, 5, menu->height - 10, menu->width - 10, 5,
          green_filler);
 
-   fill_rect(menu->frame_buf, menu->frame_buf_pitch,
-         5, 5, 5, menu->height - 10, green_filler);
-
-   fill_rect(menu->frame_buf, menu->frame_buf_pitch,
-         menu->width - 10, 5, 5, menu->height - 10,
+   fill_rect(menu, 5, 5, 5, menu->height - 10, green_filler);
+   fill_rect(menu, menu->width - 10, 5, 5, menu->height - 10,
          green_filler);
 }
 
@@ -288,20 +282,11 @@ static void rgui_render_messagebox(const char *message)
    x      = (driver.menu->width - width) / 2;
    y      = (driver.menu->height - height) / 2;
 
-   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
-         x + 5, y + 5, width - 10, height - 10, gray_filler);
-
-   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
-         x, y, width - 5, 5, green_filler);
-
-   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
-         x + width - 5, y, 5, height - 5, green_filler);
-
-   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
-         x + 5, y + height - 5, width - 5, 5, green_filler);
-
-   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
-         x, y + 5, 5, height - 5, green_filler);
+   fill_rect(driver.menu, x + 5, y + 5, width - 10, height - 10, gray_filler);
+   fill_rect(driver.menu, x, y, width - 5, 5, green_filler);
+   fill_rect(driver.menu, x + width - 5, y, 5, height - 5, green_filler);
+   fill_rect(driver.menu, x + 5, y + height - 5, width - 5, 5, green_filler);
+   fill_rect(driver.menu, x, y + 5, 5, height - 5, green_filler);
 
    for (i = 0; i < list->size; i++)
    {
@@ -320,10 +305,8 @@ static void rgui_blit_cursor(menu_handle_t *menu)
    int16_t x = menu->mouse.x;
    int16_t y = menu->mouse.y;
 
-   color_rect(menu->frame_buf, menu->frame_buf_pitch,
-         x, y-5, 1, 11, 0xFFFF);
-   color_rect(menu->frame_buf, menu->frame_buf_pitch,
-         x-5, y, 11, 1, 0xFFFF);
+   color_rect(driver.menu, x, y - 5, 1, 11, 0xFFFF);
+   color_rect(driver.menu, x - 5, y, 11, 1, 0xFFFF);
 }
 
 static void rgui_render(void)
