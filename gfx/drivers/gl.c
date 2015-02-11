@@ -2785,7 +2785,8 @@ static bool gl_overlay_load(void *data,
       gl_load_texture_data(gl->overlay_tex[i],
             RARCH_WRAP_EDGE, TEXTURE_FILTER_LINEAR,
             alignment,
-            images[i].width, images[i].height, images[i].pixels);
+            images[i].width, images[i].height, images[i].pixels,
+            sizeof(uint32_t));
 
       /* Default. Stretch to whole screen. */
       gl_overlay_tex_geom(gl, i, 0, 0, 1, 1);
@@ -2991,7 +2992,7 @@ static void gl_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   unsigned base_size;
+   unsigned base_size = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
@@ -2999,38 +3000,18 @@ static void gl_set_texture_frame(void *data,
    context_bind_hw_render(gl, false);
 
    if (!gl->menu_texture)
-   {
       glGenTextures(1, &gl->menu_texture);
-      glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-   }
-   else
-      glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
+
+
+   gl_load_texture_data(gl->menu_texture,
+         RARCH_WRAP_EDGE, TEXTURE_FILTER_LINEAR,
+         video_pixel_get_alignment(width * base_size),
+         width, height, frame,
+         base_size);
 
    gl->menu_texture_alpha = alpha;
-
-   base_size = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(width * base_size));
-
-   if (rgb32)
-   {
-      glTexImage2D(GL_TEXTURE_2D,
-            0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
-            width, height,
-            0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-            RARCH_GL_FORMAT32, frame);
-   }
-   else
-   {
-      glTexImage2D(GL_TEXTURE_2D,
-            0, GL_RGBA, width, height, 0, GL_RGBA,
-            GL_UNSIGNED_SHORT_4_4_4_4, frame);
-   }
-
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+
    context_bind_hw_render(gl, true);
 }
 

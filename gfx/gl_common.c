@@ -21,11 +21,12 @@ void gl_load_texture_data(GLuint id,
       enum texture_filter_type filter_type,
       unsigned alignment,
       unsigned width, unsigned height,
-      const void *frame)
+      const void *frame, unsigned base_size)
 {
    GLint mag_filter, min_filter;
    GLenum wrap;
    bool want_mipmap = false;
+   bool rgb32 = (base_size == (sizeof(uint32_t)));
 
    glBindTexture(GL_TEXTURE_2D, id);
    
@@ -69,10 +70,10 @@ void gl_load_texture_data(GLuint id,
 #endif
    glTexImage2D(GL_TEXTURE_2D,
          0,
-         driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
+         (driver.gfx_use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
          width, height, 0,
-         driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-         RARCH_GL_FORMAT32, frame);
+         (driver.gfx_use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
+         (rgb32) ? RARCH_GL_FORMAT32 : GL_UNSIGNED_SHORT_4_4_4_4, frame);
 
    if (want_mipmap)
       glGenerateMipmap(GL_TEXTURE_2D);
@@ -122,7 +123,7 @@ bool gl_load_luts(const struct video_shader *generic_shader,
             generic_shader->lut[i].wrap,
             filter_type, 4,
             img.width, img.height,
-            img.pixels);
+            img.pixels, sizeof(uint32_t));
       texture_image_free(&img);
    }
 
