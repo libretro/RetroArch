@@ -157,8 +157,12 @@ typedef struct xmb_handle
       } passive;
    } item;
 
-   void *font;
-   int font_size;
+   struct
+   {
+      void *buf;
+      int size;
+   } font;
+
    xmb_node_t settings_node;
    bool prevent_populate;
 } xmb_handle_t;
@@ -338,7 +342,7 @@ static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
    if (driver.video_data && driver.video_poke
        && driver.video_poke->set_osd_msg)
        driver.video_poke->set_osd_msg(driver.video_data,
-                                      str, &params, xmb->font);
+                                      str, &params, xmb->font.buf);
 }
 
 static void xmb_render_background(gl_t *gl, xmb_handle_t *xmb,
@@ -447,15 +451,15 @@ static void xmb_render_messagebox(menu_handle_t *menu, const char *message)
    if (list->elems == 0)
       goto end;
 
-   x = gl->win_width / 2 - strlen(list->elems[0].data) * xmb->font_size / 4;
-   y = gl->win_height / 2 - list->size * xmb->font_size / 2;
+   x = gl->win_width / 2 - strlen(list->elems[0].data) * xmb->font.size / 4;
+   y = gl->win_height / 2 - list->size * xmb->font.size / 2;
 
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
 
       if (msg)
-         xmb_draw_text(gl, xmb, msg, x, y + i * xmb->font_size, 1, 1, 0);
+         xmb_draw_text(gl, xmb, msg, x, y + i * xmb->font.size, 1, 1, 0);
    }
 
 end:
@@ -1175,16 +1179,16 @@ static void *xmb_init(void)
    strlcpy(xmb->icon_dir, "256", sizeof(xmb->icon_dir));
 
    xmb->icon_size             = 128.0 * scale_factor;
-   xmb->font_size             = 32.0 * scale_factor;
+   xmb->font.size             = 32.0 * scale_factor;
    xmb->hspacing              = 200.0 * scale_factor;
    xmb->vspacing              = 64.0 * scale_factor;
    xmb->margin_left           = 336.0 * scale_factor;
    xmb->margin_top            = (256+32) * scale_factor;
    xmb->title.margin.left     = 60 * scale_factor;
-   xmb->title.margin.top      = 60 * scale_factor + xmb->font_size/3;
-   xmb->title.margin.bottom   = 60 * scale_factor - xmb->font_size/3;
+   xmb->title.margin.top      = 60 * scale_factor + xmb->font.size/3;
+   xmb->title.margin.bottom   = 60 * scale_factor - xmb->font.size/3;
    xmb->label.margin.left     = 85.0 * scale_factor;
-   xmb->label.margin.top      = xmb->font_size/3.0;
+   xmb->label.margin.top      = xmb->font.size/3.0;
    xmb->setting_margin_left   = 600.0 * scale_factor;
 
    menu->categories.size      = 1;
@@ -1278,7 +1282,7 @@ static void xmb_context_reset(menu_handle_t *menu)
 
    fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
 
-   xmb_font_init_first(&gl->font_driver, &xmb->font, gl, fontpath, xmb->font_size);
+   xmb_font_init_first(&gl->font_driver, &xmb->font.buf, gl, fontpath, xmb->font.size);
 
    if (*g_settings.menu.wallpaper)
       strlcpy(xmb->textures[XMB_TEXTURE_BG].path, g_settings.menu.wallpaper,
