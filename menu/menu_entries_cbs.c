@@ -5312,6 +5312,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       case MENU_FILE_RDB_ENTRY:
       case MENU_FILE_CURSOR:
       case MENU_FILE_SHADER:
+      case MENU_FILE_SHADER_PRESET:
       case MENU_FILE_IMAGE:
       case MENU_FILE_OVERLAY:
       case MENU_FILE_VIDEOFILTER:
