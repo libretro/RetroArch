@@ -771,19 +771,19 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       size_t current, size_t cat_selection_ptr)
 {
    unsigned i;
-   const char *dir       = NULL;
    const char *label     = NULL;
-   unsigned menu_type    = 0;
    xmb_node_t *core_node = NULL;
-   size_t end            = file_list_get_size(list);
+   size_t end            = 0;
 
-   if (!list->size)
+   if (!list || !list->size)
       return;
 
-   file_list_get_last(stack, &dir, &label, &menu_type);
+   file_list_get_last(stack, NULL, &label, NULL);
 
    if (xmb->active_category)
       core_node = xmb_get_userdata_from_core(xmb, cat_selection_ptr - 1);
+
+   end = file_list_get_size(list);
 
    for (i = 0; i < end; i++)
    {
