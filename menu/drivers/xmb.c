@@ -1045,17 +1045,20 @@ static void xmb_frame(menu_handle_t *menu)
             gl->win_width - xmb->icon.size, xmb->icon.size, 1, 0, 1);
    }
 
-   core_version = g_extern.menu.info.library_version;
+   if (g_settings.menu.core_enable)
+   {
+      core_version = g_extern.menu.info.library_version;
 
-   if (!core_version)
-      core_version = g_extern.system.info.library_version;
-   if (!core_version)
-      core_version = "";
+      if (!core_version)
+         core_version = g_extern.system.info.library_version;
+      if (!core_version)
+         core_version = "";
 
-   snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
-         core_name, core_version);
-   xmb_draw_text(gl, xmb, title_msg, xmb->title.margin.left, 
-         gl->win_height - xmb->title.margin.bottom, 1, 1, 0);
+      snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
+            core_name, core_version);
+      xmb_draw_text(gl, xmb, title_msg, xmb->title.margin.left, 
+            gl->win_height - xmb->title.margin.bottom, 1, 1, 0);
+   }
 
    xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_ARROW].id,
          xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon.size / 2.0 + xmb->icon.size,
