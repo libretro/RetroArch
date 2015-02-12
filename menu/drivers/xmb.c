@@ -532,7 +532,7 @@ static void xmb_list_open_new(menu_handle_t *menu,
    xmb->old_depth = xmb->depth;
 }
 
-static xmb_node_t* xmb_node_for_core(xmb_handle_t *xmb, int i)
+static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, int i)
 {
    core_info_t *info           = NULL;
    xmb_node_t *node            = NULL;
@@ -660,7 +660,7 @@ static void xmb_list_open(menu_handle_t *menu, xmb_handle_t *xmb)
    {
       float ia = xmb->c_passive_alpha;
       float iz = xmb->c_passive_zoom;
-      xmb_node_t *node = j ? xmb_node_for_core(xmb, j - 1) : &xmb->settings_node;
+      xmb_node_t *node = j ? xmb_get_userdata_from_core(xmb, j - 1) : &xmb->settings_node;
 
       if (!node)
          continue;
@@ -703,7 +703,7 @@ static void xmb_list_switch(menu_handle_t *menu, xmb_handle_t *xmb)
    for (j = 0; j < menu->categories.size; j++)
    {
       float ia = 0;
-      xmb_node_t *node = j ? xmb_node_for_core(xmb, j - 1) : &xmb->settings_node;
+      xmb_node_t *node = j ? xmb_get_userdata_from_core(xmb, j - 1) : &xmb->settings_node;
 
       if (!node)
          continue;
@@ -783,7 +783,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    file_list_get_last(stack, &dir, &label, &menu_type);
 
    if (xmb->active_category)
-      core_node = xmb_node_for_core(xmb, cat_selection_ptr - 1);
+      core_node = xmb_get_userdata_from_core(xmb, cat_selection_ptr - 1);
 
    for (i = 0; i < end; i++)
    {
@@ -1006,7 +1006,7 @@ static void xmb_frame(menu_handle_t *menu)
 
    for (i = 0; i < menu->categories.size; i++)
    {
-      xmb_node_t *node = i ? xmb_node_for_core(xmb, i - 1) : &xmb->settings_node;
+      xmb_node_t *node = i ? xmb_get_userdata_from_core(xmb, i - 1) : &xmb->settings_node;
 
       if (node)
          xmb_draw_icon(gl, xmb, node->icon, 
@@ -1296,7 +1296,7 @@ static void xmb_context_reset(menu_handle_t *menu)
 
    for (i = 1; i < menu->categories.size; i++)
    {
-      node = xmb_node_for_core(xmb, i - 1);
+      node = xmb_get_userdata_from_core(xmb, i - 1);
 
       fill_pathname_join(mediapath, g_settings.assets_directory,
             "lakka", sizeof(mediapath));
@@ -1502,7 +1502,7 @@ static void xmb_context_destroy(menu_handle_t *menu)
 
    for (i = 1; i < menu->categories.size; i++)
    {
-      xmb_node_t *node = xmb_node_for_core(xmb, i - 1);
+      xmb_node_t *node = xmb_get_userdata_from_core(xmb, i - 1);
 
       if (!node)
          continue;
@@ -1535,7 +1535,7 @@ static void xmb_toggle(menu_handle_t *menu, bool menu_on)
 
    for (i = 0; i < menu->categories.size; i++)
    {
-      xmb_node_t *node = i ? xmb_node_for_core(xmb, i - 1) : &xmb->settings_node;
+      xmb_node_t *node = i ? xmb_get_userdata_from_core(xmb, i - 1) : &xmb->settings_node;
 
       if (!node)
          continue;
