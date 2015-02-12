@@ -485,6 +485,7 @@ static void config_set_defaults(void)
    g_settings.menu.pause_libretro = true;
    g_settings.menu.mouse_enable = false;
    g_settings.menu.timedate_enable = true;
+   g_settings.menu.core_enable = true;
    g_settings.menu.throttle = false;
    *g_settings.menu.wallpaper = '\0';
    g_settings.menu.navigation.wraparound.horizontal_enable = true;
@@ -1107,6 +1108,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(menu.pause_libretro, "menu_pause_libretro");
    CONFIG_GET_BOOL(menu.mouse_enable,   "menu_mouse_enable");
    CONFIG_GET_BOOL(menu.timedate_enable,   "menu_timedate_enable");
+   CONFIG_GET_BOOL(menu.core_enable,   "menu_core_enable");
    CONFIG_GET_BOOL(menu.navigation.wraparound.horizontal_enable, "menu_navigation_wraparound_horizontal_enable");
    CONFIG_GET_BOOL(menu.navigation.wraparound.vertical_enable,   "menu_navigation_wraparound_vertical_enable");
    CONFIG_GET_BOOL(menu.navigation.browser.filter.supported_extensions_enable,   "menu_navigation_browser_filter_supported_extensions_enable");
@@ -1881,6 +1883,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf,"menu_pause_libretro", g_settings.menu.pause_libretro);
    config_set_bool(conf,"menu_mouse_enable", g_settings.menu.mouse_enable);
    config_set_bool(conf,"menu_timedate_enable", g_settings.menu.timedate_enable);
+   config_set_bool(conf,"menu_core_enable", g_settings.menu.core_enable);
    config_set_bool(conf,"menu_throttle", g_settings.menu.throttle);
    config_set_path(conf, "menu_wallpaper", g_settings.menu.wallpaper);
 #endif
