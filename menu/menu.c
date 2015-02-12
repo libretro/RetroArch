@@ -186,11 +186,16 @@ void *menu_init(const void *data)
          sizeof(g_settings.menu.driver));
 
    if (!(menu->menu_list = (menu_list_t*)menu_list_new()))
-      return NULL;
+      goto error;
 
    g_extern.core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
+   if (!g_extern.core_info_current)
+      goto error;
+
 #ifdef HAVE_SHADER_MANAGER
    menu->shader = (struct video_shader*)calloc(1, sizeof(struct video_shader));
+   if (!menu->shader)
+      goto error;
 #endif
    menu->push_start_screen = g_settings.menu_show_start_screen;
    g_settings.menu_show_start_screen = false;
@@ -200,12 +205,22 @@ void *menu_init(const void *data)
    menu->animation = (animation_t*)calloc(1, sizeof(animation_t));
 
    if (!menu->animation)
-   {
-      free(menu);
-      return NULL;
-   }
+      goto error;
 
    return menu;
+error:
+   if (menu->menu_list)
+      menu_list_free(menu->menu_list);
+   menu->menu_list = NULL;
+   if (g_extern.core_info_current)
+      free(g_extern.core_info_current);
+   g_extern.core_info_current = NULL;
+   if (menu->shader)
+      free(menu->shader);
+   menu->shader = NULL;
+   if (menu)
+      free(menu);
+   return NULL;
 }
 
 /**
