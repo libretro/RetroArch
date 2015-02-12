@@ -85,14 +85,12 @@ typedef struct xmb_handle
 {
    file_list_t *menu_stack_old;
    file_list_t *selection_buf_old;
-   size_t cat_selection_ptr_old;
    size_t selection_ptr_old;
    int depth;
    int old_depth;
    char box_message[PATH_MAX_LENGTH];
    struct xmb_texture_item textures[XMB_TEXTURE_LAST];
    float x;
-   float categories_x;
    float alpha;
    float arrow_alpha;
    float hspacing;
@@ -147,12 +145,16 @@ typedef struct xmb_handle
          int idx;
          int idx_old;
       } active;
+
       struct
       {
          float zoom;
          float alpha;
       } passive;
-   } category;
+
+      float x_pos;
+      size_t selection_ptr_old;
+   } categories;
 
    struct
    {
@@ -618,13 +620,13 @@ static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, int i)
    if (!node)
       return NULL;
 
-   node->alpha = xmb->category.passive.alpha;
-   node->zoom  = xmb->category.passive.zoom;
+   node->alpha = xmb->categories.passive.alpha;
+   node->zoom  = xmb->categories.passive.zoom;
 
-   if ((i + 1) == xmb->category.active.idx)
+   if ((i + 1) == xmb->categories.active.idx)
    {
-      node->alpha = xmb->category.active.alpha;
-      node->zoom  = xmb->category.active.zoom;
+      node->alpha = xmb->categories.active.alpha;
+      node->zoom  = xmb->categories.active.zoom;
    }
 
    return node;
@@ -711,24 +713,24 @@ static void xmb_list_open(menu_handle_t *menu, xmb_handle_t *xmb)
    unsigned j;
    int dir = -1;
 
-   if (menu->categories.selection_ptr > xmb->cat_selection_ptr_old)
+   if (menu->categories.selection_ptr > xmb->categories.selection_ptr_old)
       dir = 1;
 
-   xmb->category.active.idx += dir;
+   xmb->categories.active.idx += dir;
 
    for (j = 0; j < menu->categories.size; j++)
    {
-      float ia         = xmb->category.passive.alpha;
-      float iz         = xmb->category.passive.zoom;
+      float ia         = xmb->categories.passive.alpha;
+      float iz         = xmb->categories.passive.zoom;
       xmb_node_t *node = j ? xmb_get_userdata_from_core(xmb, j - 1) : &xmb->settings_node;
 
       if (!node)
          continue;
       
-      if (j == xmb->category.active.idx)
+      if (j == xmb->categories.active.idx)
       {
-         ia = xmb->category.active.alpha;
-         iz = xmb->category.active.zoom;
+         ia = xmb->categories.active.alpha;
+         iz = xmb->categories.active.zoom;
       }
 
       menu_animation_push(menu->animation, XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
@@ -737,15 +739,15 @@ static void xmb_list_open(menu_handle_t *menu, xmb_handle_t *xmb)
 
    menu_animation_push(menu->animation, XMB_DELAY,
          xmb->hspacing * -(float)menu->categories.selection_ptr,
-         &xmb->categories_x, EASING_IN_OUT_QUAD, NULL);
+         &xmb->categories.x_pos, EASING_IN_OUT_QUAD, NULL);
 
    dir = -1;
-   if (menu->categories.selection_ptr > xmb->cat_selection_ptr_old)
+   if (menu->categories.selection_ptr > xmb->categories.selection_ptr_old)
       dir = 1;
 
    xmb_list_switch_old(menu, xmb, xmb->selection_buf_old, dir, xmb->selection_ptr_old);
    xmb_list_switch_new(menu, xmb, menu->menu_list->selection_buf, dir, menu->selection_ptr);
-   xmb->category.active.idx_old = menu->categories.selection_ptr;
+   xmb->categories.active.idx_old = menu->categories.selection_ptr;
 }
 
 static void xmb_list_switch(menu_handle_t *menu, xmb_handle_t *xmb)
@@ -768,10 +770,10 @@ static void xmb_list_switch(menu_handle_t *menu, xmb_handle_t *xmb)
       if (!node)
          continue;
 
-      if (j == xmb->category.active.idx)
-         ia = xmb->category.active.alpha;
+      if (j == xmb->categories.active.idx)
+         ia = xmb->categories.active.alpha;
       else if (xmb->depth <= 1)
-         ia = xmb->category.passive.alpha;
+         ia = xmb->categories.passive.alpha;
 
       menu_animation_push(menu->animation, XMB_DELAY, ia,
             &node->alpha, EASING_IN_OUT_QUAD, NULL);
@@ -820,7 +822,7 @@ static void xmb_populate_entries(menu_handle_t *menu, const char *path,
 
    xmb_set_title(menu, xmb);
 
-   if (menu->categories.selection_ptr != xmb->category.active.idx_old)
+   if (menu->categories.selection_ptr != xmb->categories.active.idx_old)
       xmb_list_open(menu, xmb);
    else
       xmb_list_switch(menu, xmb);
@@ -840,7 +842,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
    file_list_get_last(stack, NULL, &label, NULL);
 
-   if (xmb->category.active.idx)
+   if (xmb->categories.active.idx)
       core_node = xmb_get_userdata_from_core(xmb, cat_selection_ptr - 1);
 
    end = file_list_get_size(list);
@@ -1058,7 +1060,7 @@ static void xmb_frame(menu_handle_t *menu)
          xmb->menu_stack_old,
          xmb->selection_ptr_old,
          depth > 1 ? menu->categories.selection_ptr :
-                     xmb->cat_selection_ptr_old);
+                     xmb->categories.selection_ptr_old);
 
    xmb_draw_items(xmb, gl,
          menu->menu_list->selection_buf,
@@ -1072,7 +1074,7 @@ static void xmb_frame(menu_handle_t *menu)
 
       if (node)
          xmb_draw_icon(gl, xmb, node->icon, 
-               xmb->x + xmb->categories_x + xmb->margin_left + xmb->hspacing * (i + 1) - xmb->icon.size / 2.0,
+               xmb->x + xmb->categories.x_pos + xmb->margin_left + xmb->hspacing * (i + 1) - xmb->icon.size / 2.0,
                xmb->margin_top + xmb->icon.size / 2.0, 
                node->alpha, 
                0, 
@@ -1152,10 +1154,10 @@ static void *xmb_init(void)
    if (!xmb->selection_buf_old)
       goto error;
 
-   xmb->category.active.idx       = 0;
-   xmb->category.active.idx_old   = 0;
+   xmb->categories.active.idx       = 0;
+   xmb->categories.active.idx_old   = 0;
    xmb->x                     = 0;
-   xmb->categories_x          = 0;
+   xmb->categories.x_pos      = 0;
    xmb->alpha                 = 1.0f;
    xmb->arrow_alpha           = 0;
    xmb->depth                 = 1;
@@ -1163,13 +1165,13 @@ static void *xmb_init(void)
    xmb->alpha                 = 0;
    xmb->prevent_populate      = false;
 
-   xmb->category.active.zoom  = 1.0;
-   xmb->category.passive.zoom = 0.5;
+   xmb->categories.active.zoom  = 1.0;
+   xmb->categories.passive.zoom = 0.5;
    xmb->item.active.zoom      = 1.0;
    xmb->item.passive.zoom     = 0.5;
 
-   xmb->category.active.alpha = 1.0;
-   xmb->category.passive.alpha= 0.5;
+   xmb->categories.active.alpha = 1.0;
+   xmb->categories.passive.alpha= 0.5;
    xmb->item.active.alpha     = 1.0;
    xmb->item.passive.alpha    = 0.5;
 
@@ -1349,8 +1351,8 @@ static void xmb_context_reset(menu_handle_t *menu)
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
    xmb->settings_node.icon  = xmb->textures[XMB_TEXTURE_SETTINGS].id;
-   xmb->settings_node.alpha = xmb->category.active.alpha;
-   xmb->settings_node.zoom  = xmb->category.active.zoom;
+   xmb->settings_node.alpha = xmb->categories.active.alpha;
+   xmb->settings_node.zoom  = xmb->categories.active.zoom;
 
    info_list = (core_info_list_t*)g_extern.core_info;
 
@@ -1390,20 +1392,20 @@ static void xmb_context_reset(menu_handle_t *menu)
       strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
 
       node->alpha        = 0;
-      node->zoom         = xmb->category.passive.zoom;
+      node->zoom         = xmb->categories.passive.zoom;
       node->icon         = menu_texture_load(texturepath,
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
       node->content_icon = menu_texture_load(content_texturepath,
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
 
-      if (i == xmb->category.active.idx)
+      if (i == xmb->categories.active.idx)
       {
-         node->alpha = xmb->category.active.alpha;
-         node->zoom  = xmb->category.active.zoom;
+         node->alpha = xmb->categories.active.alpha;
+         node->zoom  = xmb->categories.active.zoom;
       }
       else if (xmb->depth <= 1)
-         node->alpha = xmb->category.passive.alpha;
+         node->alpha = xmb->categories.passive.alpha;
    }
 }
 
@@ -1519,7 +1521,7 @@ static void xmb_list_cache(menu_handle_t *menu,
    if(!horizontal)
       return;
 
-   xmb->cat_selection_ptr_old = menu->categories.selection_ptr;
+   xmb->categories.selection_ptr_old = menu->categories.selection_ptr;
 
    switch (action)
    {
@@ -1604,15 +1606,15 @@ static void xmb_toggle(menu_handle_t *menu, bool menu_on)
          continue;
 
       node->alpha = 0;
-      node->zoom  = xmb->category.passive.zoom;
+      node->zoom  = xmb->categories.passive.zoom;
       
-      if (i == xmb->category.active.idx)
+      if (i == xmb->categories.active.idx)
       {
-         node->alpha = xmb->category.active.alpha;
-         node->zoom  = xmb->category.active.zoom;
+         node->alpha = xmb->categories.active.alpha;
+         node->zoom  = xmb->categories.active.zoom;
       }
       else if (xmb->depth <= 1)
-         node->alpha = xmb->category.passive.alpha;
+         node->alpha = xmb->categories.passive.alpha;
    }
 }
 
