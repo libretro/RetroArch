@@ -5680,8 +5680,10 @@ void menu_entries_cbs_init(void *data,
 
    if (str_list && str_list->size > 0)
       strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   else elem0[0]='\0';
    if (str_list && str_list->size > 1)
       strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+   else elem1[0]='\0';
 
    if (str_list)
    {
