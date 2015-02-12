@@ -253,9 +253,7 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
 
             for (i = 0; i < val->binary.len; i++)
             {
-               char crc32_cat[PATH_MAX_LENGTH];
-               snprintf(crc32_cat, sizeof(crc32_cat), "%02X", (unsigned char)val->binary.buff[i]);
-               strlcat(crc32, crc32_cat, sizeof(crc32));
+               snprintf(crc32+i*2, sizeof(crc32)-i*2, "%02X", (unsigned char)val->binary.buff[i]);
             }
             db_info->crc32 = strdup(crc32);
          }
@@ -267,9 +265,7 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
 
             for (i = 0; i < val->binary.len; i++)
             {
-               char sha1_cat[PATH_MAX_LENGTH];
-               snprintf(sha1_cat, sizeof(sha1_cat), "%02X", (unsigned char)val->binary.buff[i]);
-               strlcat(sha1, sha1_cat, sizeof(sha1));
+               snprintf(sha1+i*2, sizeof(sha1)-i*2, "%02X", (unsigned char)val->binary.buff[i]);
             }
             db_info->sha1 = strdup(sha1);
          }
@@ -281,9 +277,7 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
 
             for (i = 0; i < val->binary.len; i++)
             {
-               char md5_cat[PATH_MAX_LENGTH];
-               snprintf(md5_cat, sizeof(md5_cat), "%02X", (unsigned char)val->binary.buff[i]);
-               strlcat(md5, md5_cat, sizeof(md5));
+               snprintf(md5+i*2, sizeof(md5)-i*2, "%02X", (unsigned char)val->binary.buff[i]);
             }
             db_info->md5 = strdup(md5);
          }
