@@ -91,8 +91,6 @@ typedef struct xmb_handle
    char box_message[PATH_MAX_LENGTH];
    float x;
    float alpha;
-   float hspacing;
-   float vspacing;
 
    struct
    {
@@ -100,6 +98,12 @@ typedef struct xmb_handle
       {
          float left;
          float top;
+
+         struct
+         {
+            float horizontal;
+            float vertical;
+         } spacing;
       } screen;
 
       struct
@@ -213,7 +217,7 @@ static const GLfloat rmb_tex_coord[] = {
 
 static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
 {
-   float iy = xmb->vspacing;
+   float iy = xmb->margins.screen.spacing.vertical;
 
    if (i < current)
       if (xmb->depth > 1)
@@ -224,7 +228,7 @@ static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
       iy    *= (i - (int)current + xmb->under_offset.item);
 
    if (i == current)
-      iy = xmb->vspacing * xmb->item.active.factor;
+      iy = xmb->margins.screen.spacing.vertical * xmb->item.active.factor;
 
    return iy;
 }
@@ -669,7 +673,7 @@ static void xmb_list_switch_old(menu_handle_t *menu, xmb_handle_t *xmb, file_lis
       if (!node)
           continue;
 
-      xmb_push_animations(menu, node, ia, -xmb->hspacing * dir);
+      xmb_push_animations(menu, node, ia, -xmb->margins.screen.spacing.horizontal * dir);
    }
 }
 
@@ -687,7 +691,7 @@ static void xmb_list_switch_new(menu_handle_t *menu, xmb_handle_t *xmb, file_lis
       if (!node)
           continue;
 
-      node->x           = xmb->hspacing * dir;
+      node->x           = xmb->margins.screen.spacing.horizontal * dir;
       node->alpha       = 0;
       node->label_alpha = 0;
 
@@ -754,7 +758,7 @@ static void xmb_list_open(menu_handle_t *menu, xmb_handle_t *xmb)
    }
 
    menu_animation_push(menu->animation, XMB_DELAY,
-         xmb->hspacing * -(float)menu->categories.selection_ptr,
+         xmb->margins.screen.spacing.horizontal * -(float)menu->categories.selection_ptr,
          &xmb->categories.x_pos, EASING_IN_OUT_QUAD, NULL);
 
    dir = -1;
@@ -877,7 +881,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       if (!node)
          continue;
       
-      icon_x = node->x + xmb->margins.screen.left + xmb->hspacing - xmb->icon.size / 2.0;
+      icon_x = node->x + xmb->margins.screen.left + xmb->margins.screen.spacing.horizontal - xmb->icon.size / 2.0;
       icon_y = xmb->margins.screen.top + node->y + xmb->icon.size / 2.0;
 
       if (
@@ -963,7 +967,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
          (i == current));
 
       xmb_draw_text(gl, xmb, name,
-            node->x + xmb->margins.screen.left + xmb->hspacing + xmb->margins.label.left, 
+            node->x + xmb->margins.screen.left + xmb->margins.screen.spacing.horizontal + xmb->margins.label.left, 
             xmb->margins.screen.top + node->y + xmb->margins.label.top, 
             1, node->label_alpha, 0);
 
@@ -984,7 +988,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             || (!strcmp(type_str, "OFF")
             && !xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)))
          xmb_draw_text(gl, xmb, value,
-               node->x + xmb->margins.screen.left + xmb->hspacing + 
+               node->x + xmb->margins.screen.left + xmb->margins.screen.spacing.horizontal + 
                xmb->margins.label.left + xmb->margins.setting.left, 
                xmb->margins.screen.top + node->y + xmb->margins.label.top, 
                1, 
@@ -993,7 +997,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       if (!strcmp(type_str, "ON") && xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
          xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id,
-               node->x + xmb->margins.screen.left + xmb->hspacing
+               node->x + xmb->margins.screen.left + xmb->margins.screen.spacing.horizontal
                + xmb->icon.size / 2.0 + xmb->margins.setting.left,
                xmb->margins.screen.top + node->y + xmb->icon.size / 2.0,
                node->alpha,
@@ -1002,7 +1006,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       if (!strcmp(type_str, "OFF") && xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
          xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id,
-               node->x + xmb->margins.screen.left + xmb->hspacing
+               node->x + xmb->margins.screen.left + xmb->margins.screen.spacing.horizontal
                + xmb->icon.size / 2.0 + xmb->margins.setting.left,
                xmb->margins.screen.top + node->y + xmb->icon.size / 2.0,
                node->alpha,
@@ -1068,8 +1072,8 @@ static void xmb_frame(menu_handle_t *menu)
    }
 
    xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_ARROW].id,
-         xmb->x + xmb->margins.screen.left + xmb->hspacing - xmb->icon.size / 2.0 + xmb->icon.size,
-         xmb->margins.screen.top + xmb->icon.size / 2.0 + xmb->vspacing * xmb->item.active.factor,
+         xmb->x + xmb->margins.screen.left + xmb->margins.screen.spacing.horizontal - xmb->icon.size / 2.0 + xmb->icon.size,
+         xmb->margins.screen.top + xmb->icon.size / 2.0 + xmb->margins.screen.spacing.vertical * xmb->item.active.factor,
          xmb->textures.arrow.alpha, 0, 1);
 
    depth = file_list_get_size(menu->menu_list->menu_stack);
@@ -1093,7 +1097,7 @@ static void xmb_frame(menu_handle_t *menu)
 
       if (node)
          xmb_draw_icon(gl, xmb, node->icon, 
-               xmb->x + xmb->categories.x_pos + xmb->margins.screen.left + xmb->hspacing * (i + 1) - xmb->icon.size / 2.0,
+               xmb->x + xmb->categories.x_pos + xmb->margins.screen.left + xmb->margins.screen.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
                xmb->margins.screen.top + xmb->icon.size / 2.0, 
                node->alpha, 
                0, 
@@ -1215,8 +1219,8 @@ static void *xmb_init(void)
 
    xmb->icon.size             = 128.0 * scale_factor;
    xmb->font.size             = 32.0 * scale_factor;
-   xmb->hspacing              = 200.0 * scale_factor;
-   xmb->vspacing              = 64.0 * scale_factor;
+   xmb->margins.screen.spacing.horizontal              = 200.0 * scale_factor;
+   xmb->margins.screen.spacing.vertical              = 64.0 * scale_factor;
    xmb->margins.screen.left   = 336.0 * scale_factor;
    xmb->margins.screen.top    = (256+32) * scale_factor;
    xmb->margins.title.left    = 60 * scale_factor;
