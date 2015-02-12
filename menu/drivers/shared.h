@@ -93,9 +93,9 @@ static INLINE void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "CONFIG %s", dir);
    else if (!strcmp(label, "disk_image_append"))
       snprintf(title, sizeof_title, "DISK APPEND %s", dir);
-   else if (!strcmp(elem0, "Video Options"))
+   else if (!strcmp(elem0, "Video Settings"))
    {
-      strlcpy(title, "VIDEO OPTIONS", sizeof_title);
+      strlcpy(title, "VIDEO SETTINGS", sizeof_title);
       if (!strcmp(elem1, "Monitor"))
          strlcat(title, " - MONITOR", sizeof_title);
       else if (!strcmp(elem1, "Aspect"))
@@ -109,11 +109,11 @@ static INLINE void get_title(const char *label, const char *dir,
       else if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
    }
-   else if (!strcmp(elem0, "Input Options") ||
+   else if (!strcmp(elem0, "Input Settings") ||
          menu_type == MENU_SETTINGS_CUSTOM_BIND ||
          menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
    {
-      strlcpy(title, "INPUT OPTIONS", sizeof_title);
+      strlcpy(title, "INPUT SETTINGS", sizeof_title);
       if (strstr(elem1, "User"))
          strlcat(title, " - USER", sizeof_title);
       else if (!strcmp(elem1, "Meta Keys"))
@@ -127,15 +127,15 @@ static INLINE void get_title(const char *label, const char *dir,
       else if (!strcmp(elem1, "Miscellaneous"))
          strlcat(title, " - MISCELLANEOUS", sizeof_title);
    }
-   else if (!strcmp(elem0, "Overlay Options"))
+   else if (!strcmp(elem0, "Overlay Settings"))
    {
-      strlcpy(title, "OVERLAY OPTIONS", sizeof_title);
+      strlcpy(title, "OVERLAY SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
    }
-   else if (!strcmp(elem0, "Menu Options"))
+   else if (!strcmp(elem0, "Menu Settings"))
    {
-      strlcpy(title, "MENU OPTIONS", sizeof_title);
+      strlcpy(title, "MENU SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
       else if (!strcmp(elem1, "Navigation"))
@@ -145,35 +145,35 @@ static INLINE void get_title(const char *label, const char *dir,
       else if (!strcmp(elem1, "Browser"))
          strlcat(title, " - BROWSER", sizeof_title);
    }
-   else if (!strcmp(elem0, "Onscreen Keyboard Overlay Options"))
+   else if (!strcmp(elem0, "Onscreen Keyboard Overlay Settings"))
    {
-      strlcpy(title, "ONSCREEN KEYBOARD OVERLAY OPTIONS", sizeof_title);
+      strlcpy(title, "ONSCREEN KEYBOARD OVERLAY SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
    }
-   else if (!strcmp(elem0, "Patch Options"))
+   else if (!strcmp(elem0, "Patch Settings"))
    {
-      strlcpy(title, "PATCH OPTIONS", sizeof_title);
+      strlcpy(title, "PATCH SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
    }
-   else if (!strcmp(elem0, "UI Options"))
+   else if (!strcmp(elem0, "UI Settings"))
    {
-      strlcpy(title, "UI OPTIONS", sizeof_title);
+      strlcpy(title, "UI SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
    }
-   else if (!strcmp(elem0, "Playlist Options"))
+   else if (!strcmp(elem0, "Playlist Settings"))
    {
-      strlcpy(title, "PLAYLIST OPTIONS", sizeof_title);
+      strlcpy(title, "PLAYLIST SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
       if (!strcmp(elem1, "History"))
          strlcat(title, " - HISTORY", sizeof_title);
    }
-   else if (!strcmp(elem0, "Network Options"))
+   else if (!strcmp(elem0, "Network Settings"))
    {
-      strlcpy(title, "NETWORK OPTIONS", sizeof_title);
+      strlcpy(title, "NETWORK SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
       if (!strcmp(elem1, "Netplay"))
@@ -181,21 +181,21 @@ static INLINE void get_title(const char *label, const char *dir,
       if (!strcmp(elem1, "Miscellaneous"))
          strlcat(title, " - MISCELLANEOUS", sizeof_title);
    }
-   else if (!strcmp(elem0, "Core Updater Options"))
+   else if (!strcmp(elem0, "Core Updater Settings"))
    {
-      strlcpy(title, "CORE UPDATER OPTIONS", sizeof_title);
+      strlcpy(title, "CORE UPDATER SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
    }
-   else if (!strcmp(elem0, "User Options"))
+   else if (!strcmp(elem0, "User Settings"))
    {
-      strlcpy(title, "USER OPTIONS", sizeof_title);
+      strlcpy(title, "USER SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
    }
-   else if (!strcmp(elem0, "Path Options"))
+   else if (!strcmp(elem0, "Path Settings"))
    {
-      strlcpy(title, "PATH OPTIONS", sizeof_title);
+      strlcpy(title, "PATH SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
       if (!strcmp(elem1, "Paths"))
@@ -203,9 +203,9 @@ static INLINE void get_title(const char *label, const char *dir,
    }
    else if (!strcmp(label, "settings"))
       strlcpy(title, "SETTINGS", sizeof_title);
-   else if (!strcmp(elem0, "Driver Options"))
+   else if (!strcmp(elem0, "Driver Settings"))
    {
-      strlcpy(title, "DRIVER OPTIONS", sizeof_title);
+      strlcpy(title, "DRIVER SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
    }
@@ -215,15 +215,15 @@ static INLINE void get_title(const char *label, const char *dir,
       strlcpy(title, "FRONTEND PERFORMANCE COUNTERS", sizeof_title);
    else if (!strcmp(label, "core_counters"))
       strlcpy(title, "CORE PERFORMANCE COUNTERS", sizeof_title);
-   else if (!strcmp(elem0, "Shader Options"))
+   else if (!strcmp(elem0, "Shader Settings"))
    {
-      strlcpy(title, "SHADER OPTIONS", sizeof_title);
+      strlcpy(title, "SHADER SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
    }
-   else if (!strcmp(elem0, "Archive Options"))
+   else if (!strcmp(elem0, "Archive Settings"))
    {
-      strlcpy(title, "ARCHIVE OPTIONS", sizeof_title);
+      strlcpy(title, "ARCHIVE SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
    }
@@ -231,21 +231,21 @@ static INLINE void get_title(const char *label, const char *dir,
       strlcpy(title, "SHADER PARAMETERS (CURRENT)", sizeof_title);
    else if (!strcmp(label, "video_shader_preset_parameters"))
       strlcpy(title, "SHADER PARAMETERS (MENU PRESET)", sizeof_title);
-   else if (!strcmp(elem0, "Font Options"))
+   else if (!strcmp(elem0, "Font Settings"))
    {
-      strlcpy(title, "FONT OPTIONS", sizeof_title);
+      strlcpy(title, "FONT SETTINGS", sizeof_title);
       if (!strcmp(elem1, "Messages"))
          strlcat(title, " - MESSAGES", sizeof_title);
    }
-   else if (!strcmp(elem0, "General Options"))
+   else if (!strcmp(elem0, "General Settings"))
    {
-      strlcpy(title, "GENERAL OPTIONS", sizeof_title);
+      strlcpy(title, "GENERAL SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
    }
-   else if (!strcmp(elem0, "Audio Options"))
+   else if (!strcmp(elem0, "Audio Settings"))
    {
-      strlcpy(title, "AUDIO OPTIONS", sizeof_title);
+      strlcpy(title, "AUDIO SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
       else if (!strcmp(elem1, "Synchronization"))
@@ -257,15 +257,17 @@ static INLINE void get_title(const char *label, const char *dir,
       strlcpy(title, "DISK OPTIONS", sizeof_title);
    else if (!strcmp(label, "core_options"))
       strlcpy(title, "CORE OPTIONS", sizeof_title);
+   else if (!strcmp(label, "shader_options"))
+      strlcpy(title, "SHADER OPTIONS", sizeof_title);
    else if (!strcmp(label, "core_cheat_options"))
       strlcpy(title, "CORE CHEAT OPTIONS", sizeof_title);
    else if (!strcmp(label, "core_input_remapping_options"))
       strlcpy(title, "CORE INPUT REMAPPING OPTIONS", sizeof_title);
    else if (!strcmp(label, "core_information"))
       strlcpy(title, "CORE INFO", sizeof_title);
-   else if (!strcmp(elem0, "Privacy Options"))
+   else if (!strcmp(elem0, "Privacy Settings"))
    {
-      strlcpy(title, "PRIVACY OPTIONS", sizeof_title);
+      strlcpy(title, "PRIVACY SETTINGS", sizeof_title);
       if (!strcmp(elem1, "State"))
          strlcat(title, " - STATE", sizeof_title);
    }

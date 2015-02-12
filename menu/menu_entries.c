@@ -98,7 +98,7 @@ int menu_entries_push_list(menu_handle_t *menu,
 
    /* Hack - should come up with something cleaner
     * here. */
-   if (!strcmp(label, "Video Options"))
+   if (!strcmp(label, "Video Settings"))
    {
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
       menu_list_push(list, "Screen Resolution", "",

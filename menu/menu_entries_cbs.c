@@ -312,7 +312,7 @@ static int action_ok_shader_pass_load(const char *path,
 
    /* This will reset any changed parameters. */
    video_shader_resolve_parameters(NULL, driver.menu->shader);
-   menu_list_flush_stack_by_needle(driver.menu->menu_list, "Shader Options");
+   menu_list_flush_stack_by_needle(driver.menu->menu_list, "shader_options");
    return 0;
 #else
    return -1;
@@ -564,7 +564,7 @@ static int action_ok_shader_preset_load(const char *path,
    menu_shader_manager_set_preset(driver.menu->shader,
          video_shader_parse_type(shader_path, RARCH_SHADER_NONE),
          shader_path);
-   menu_list_flush_stack_by_needle(driver.menu->menu_list, "Shader Options");
+   menu_list_flush_stack_by_needle(driver.menu->menu_list, "shader_options");
    return 0;
 #else
    return -1;
@@ -2888,7 +2888,7 @@ static int deferred_push_settings(void *data, void *userdata,
    settings_list_free(driver.menu->list_settings);
    driver.menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
 
-   setting = menu_action_find_setting("Driver Options");
+   setting = menu_action_find_setting("Driver Settings");
 
    menu_list_clear(list);
 
@@ -3752,7 +3752,7 @@ static int action_iterate_help(const char *label, unsigned action)
          "Load a libretro core (Core).\n"
          "Load a content file (Load Content).     \n"
          " \n"
-         "See Path Options to set directories for faster access to files.\n"
+         "See Path Settings to set directories for faster access to files.\n"
          " \n"
 
          "Press Accept/OK to continue.",
@@ -5029,25 +5029,25 @@ static int is_rdb_entry(const char *label)
 static int is_settings_entry(const char *label)
 {
    return (
-    !strcmp(label, "Driver Options") ||
-    !strcmp(label, "General Options") ||
-    !strcmp(label, "Video Options") ||
-    !strcmp(label, "Shader Options") ||
-    !strcmp(label, "Font Options") ||
-    !strcmp(label, "Audio Options") ||
-    !strcmp(label, "Input Options") ||
-    !strcmp(label, "Overlay Options") ||
-    !strcmp(label, "Menu Options") ||
-    !strcmp(label, "UI Options") ||
-    !strcmp(label, "Patch Options") ||
-    !strcmp(label, "Playlist Options") ||
-    !strcmp(label, "Onscreen Keyboard Overlay Options") ||
-    !strcmp(label, "Core Updater Options") ||
-    !strcmp(label, "Network Options") ||
-    !strcmp(label, "Archive Options") ||
-    !strcmp(label, "User Options") ||
-    !strcmp(label, "Path Options") ||
-    !strcmp(label, "Privacy Options"));
+    !strcmp(label, "Driver Settings") ||
+    !strcmp(label, "General Settings") ||
+    !strcmp(label, "Video Settings") ||
+    !strcmp(label, "Shader Settings") ||
+    !strcmp(label, "Font Settings") ||
+    !strcmp(label, "Audio Settings") ||
+    !strcmp(label, "Input Settings") ||
+    !strcmp(label, "Overlay Settings") ||
+    !strcmp(label, "Menu Settings") ||
+    !strcmp(label, "UI Settings") ||
+    !strcmp(label, "Patch Settings") ||
+    !strcmp(label, "Playlist Settings") ||
+    !strcmp(label, "Onscreen Keyboard Overlay Settings") ||
+    !strcmp(label, "Core Updater Settings") ||
+    !strcmp(label, "Network Settings") ||
+    !strcmp(label, "Archive Settings") ||
+    !strcmp(label, "User Settings") ||
+    !strcmp(label, "Path Settings") ||
+    !strcmp(label, "Privacy Settings"));
 }
 
 static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
@@ -5118,8 +5118,8 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          )
       cbs->action_ok = action_ok_shader_parameters;
    else if (
-         !strcmp(label, "Shader Options") ||
-         !strcmp(label, "Input Options") ||
+         !strcmp(label, "shader_options") ||
+         !strcmp(label, "Input Settings") ||
          !strcmp(label, "core_options") ||
          !strcmp(label, "core_cheat_options") ||
          !strcmp(label, "core_input_remapping_options") ||
@@ -5581,7 +5581,7 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_remap_file_load;
    else if (!strcmp(label, "content_actions"))
       cbs->action_deferred_push = deferred_push_content_actions;
-   else if (!strcmp(label, "Shader Options"))
+   else if (!strcmp(label, "shader_options"))
       cbs->action_deferred_push = deferred_push_shader_options;
    else if (type == MENU_SETTING_GROUP)
       cbs->action_deferred_push = deferred_push_category;

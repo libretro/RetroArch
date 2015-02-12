@@ -3280,6 +3280,12 @@ static bool setting_data_append_list_main_menu_options(
    }
 
    CONFIG_ACTION(
+         "shader_options",
+         "Shader Options",
+         group_info.name,
+         subgroup_info.name);
+
+   CONFIG_ACTION(
          "settings",
          "Settings",
          group_info.name,
@@ -3391,7 +3397,7 @@ static bool setting_data_append_list_driver_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    
-   START_GROUP(group_info, "Driver Options");
+   START_GROUP(group_info, "Driver Settings");
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
    
@@ -3506,7 +3512,7 @@ static bool setting_data_append_list_general_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "General Options");
+   START_GROUP(group_info, "General Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -3750,7 +3756,7 @@ static bool setting_data_append_list_video_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Video Options");
+   START_GROUP(group_info, "Video Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -4327,7 +4333,7 @@ static bool setting_data_append_list_shader_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Shader Options");
+   START_GROUP(group_info, "Shader Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -4366,7 +4372,7 @@ static bool setting_data_append_list_font_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Font Options");
+   START_GROUP(group_info, "Font Settings");
    START_SUB_GROUP(list, list_info, "Messages", group_info.name, subgroup_info);
 
    CONFIG_PATH(
@@ -4443,7 +4449,7 @@ static bool setting_data_append_list_audio_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Audio Options");
+   START_GROUP(group_info, "Audio Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -4635,7 +4641,7 @@ static bool setting_data_append_list_input_options(
    rarch_setting_group_info_t subgroup_info;
    unsigned i, user;
 
-   START_GROUP(group_info, "Input Options");
+   START_GROUP(group_info, "Input Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_UINT(
@@ -5004,7 +5010,7 @@ static bool setting_data_append_list_overlay_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Overlay Options");
+   START_GROUP(group_info, "Overlay Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -5076,7 +5082,7 @@ static bool setting_data_append_list_osk_overlay_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Onscreen Keyboard Overlay Options");
+   START_GROUP(group_info, "Onscreen Keyboard Overlay Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -5118,7 +5124,7 @@ static bool setting_data_append_list_menu_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Menu Options");
+   START_GROUP(group_info, "Menu Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_PATH(
@@ -5283,7 +5289,7 @@ static bool setting_data_append_list_ui_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "UI Options");
+   START_GROUP(group_info, "UI Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -5350,7 +5356,7 @@ static bool setting_data_append_list_archive_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Archive Options");
+   START_GROUP(group_info, "Archive Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_UINT(
@@ -5380,7 +5386,7 @@ static bool setting_data_append_list_core_updater_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Core Updater Options");
+   START_GROUP(group_info, "Core Updater Settings");
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
@@ -5433,7 +5439,7 @@ static bool setting_data_append_list_netplay_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Network Options");
+   START_GROUP(group_info, "Network Settings");
 
    START_SUB_GROUP(list, list_info, "Netplay", group_info.name, subgroup_info);
 
@@ -5565,7 +5571,7 @@ static bool setting_data_append_list_patch_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Patch Options");
+   START_GROUP(group_info, "Patch Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -5617,7 +5623,7 @@ static bool setting_data_append_list_playlist_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Playlist Options");
+   START_GROUP(group_info, "Playlist Settings");
    START_SUB_GROUP(list, list_info, "History", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -5656,7 +5662,7 @@ static bool setting_data_append_list_user_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "User Options");
+   START_GROUP(group_info, "User Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_STRING(
@@ -5704,7 +5710,7 @@ static bool setting_data_append_list_path_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Path Options");
+   START_GROUP(group_info, "Path Settings");
 
    START_SUB_GROUP(list, list_info, "Paths", group_info.name, subgroup_info);
 #ifdef HAVE_MENU
@@ -6086,7 +6092,7 @@ static bool setting_data_append_list_privacy_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Privacy Options");
+   START_GROUP(group_info, "Privacy Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
