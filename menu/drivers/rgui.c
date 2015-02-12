@@ -353,26 +353,32 @@ static void rgui_render(menu_handle_t *menu)
    if (!core_name)
       core_name = "No Core";
 
-   core_version = g_extern.menu.info.library_version;
-   if (!core_version)
-      core_version = g_extern.system.info.library_version;
-   if (!core_version)
-      core_version = "";
+   if (g_settings.menu.core_enable)
+   {
+      core_version = g_extern.menu.info.library_version;
+      if (!core_version)
+         core_version = g_extern.system.info.library_version;
+      if (!core_version)
+         core_version = "";
 
-   disp_timedate_set_label(timedate, sizeof(timedate), 3);
 
-   snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
-         core_name, core_version);
-   blit_line(menu,
-         RGUI_TERM_START_X + RGUI_TERM_START_X,
-         (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
-         RGUI_TERM_START_Y + 2, title_msg, true);
+      snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
+            core_name, core_version);
+      blit_line(menu,
+            RGUI_TERM_START_X + RGUI_TERM_START_X,
+            (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
+            RGUI_TERM_START_Y + 2, title_msg, true);
+   }
 
    if (g_settings.menu.timedate_enable)
+   {
+      disp_timedate_set_label(timedate, sizeof(timedate), 3);
+
       blit_line(menu,
             (RGUI_TERM_WIDTH * FONT_HEIGHT_STRIDE) + (60),
             (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
             RGUI_TERM_START_Y + 2, timedate, true);
+   }
 
 
    x = RGUI_TERM_START_X;

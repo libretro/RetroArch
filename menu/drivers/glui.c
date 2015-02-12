@@ -314,28 +314,32 @@ static void glui_frame(menu_handle_t *menu)
    if (!core_name)
       core_name = "No Core";
 
-   core_version = g_extern.menu.info.library_version;
-   if (!core_version)
-      core_version = g_extern.system.info.library_version;
-   if (!core_version)
-      core_version = "";
+   if (g_settings.menu.core_enable)
+   {
+      core_version = g_extern.menu.info.library_version;
+      if (!core_version)
+         core_version = g_extern.system.info.library_version;
+      if (!core_version)
+         core_version = "";
 
-   snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
-         core_name, core_version);
+      snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
+            core_name, core_version);
 
-   disp_timedate_set_label(timedate, sizeof(timedate), 0);
+      glui_blit_line(gl,
+            glui->margin * 2,
+            glui->margin + glui->term_height * glui->line_height 
+            + glui->line_height * 2, title_msg, true);
+   }
 
-   glui_blit_line(gl,
-         glui->margin * 2,
-         glui->margin + glui->term_height * glui->line_height 
-         + glui->line_height * 2, title_msg, true);
 
    if (g_settings.menu.timedate_enable)
+   {
+      disp_timedate_set_label(timedate, sizeof(timedate), 0);
       glui_blit_line(gl,
             glui->margin * 14,
             glui->margin + glui->term_height * glui->line_height 
             + glui->line_height * 2, timedate, true);
-
+   }
 
    x = glui->margin;
    y = glui->margin + glui->line_height * 2;

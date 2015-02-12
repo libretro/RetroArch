@@ -1023,20 +1023,13 @@ static void xmb_frame(menu_handle_t *menu)
 
    xmb_render_background(gl, xmb, false);
 
-   core_name = g_extern.menu.info.library_name;
-
-   if (!core_name)
-      core_name = g_extern.system.info.library_name;
-   if (!core_name)
-      core_name = "No Core";
-
    xmb_draw_text(gl, xmb,
          xmb->title.name, xmb->title.margin.left, xmb->title.margin.top, 1, 1, 0);
 
-   disp_timedate_set_label(timedate, sizeof(timedate), 0);
-
    if (g_settings.menu.timedate_enable)
    {
+      disp_timedate_set_label(timedate, sizeof(timedate), 0);
+
       xmb_draw_text(gl, xmb,
             timedate, gl->win_width - xmb->title.margin.left - xmb->icon.size / 4, 
             xmb->title.margin.top, 1, 1, 1);
@@ -1047,6 +1040,13 @@ static void xmb_frame(menu_handle_t *menu)
 
    if (g_settings.menu.core_enable)
    {
+      core_name = g_extern.menu.info.library_name;
+
+      if (!core_name)
+         core_name = g_extern.system.info.library_name;
+      if (!core_name)
+         core_name = "No Core";
+
       core_version = g_extern.menu.info.library_version;
 
       if (!core_version)
