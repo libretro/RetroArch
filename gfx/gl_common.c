@@ -33,7 +33,7 @@ void gl_load_texture_data(GLuint id,
 
    glBindTexture(GL_TEXTURE_2D, id);
    
-   wrap = driver.video->wrap_type_to_enum(wrap_type);
+   wrap = gl_wrap_type_to_enum(wrap_type);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);

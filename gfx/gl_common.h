@@ -414,4 +414,25 @@ void gl_load_texture_data(GLuint id,
 bool gl_load_luts(const struct video_shader *generic_shader,
       GLuint *lut_textures);
 
+static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
+{
+   switch (type)
+   {
+#ifndef HAVE_OPENGLES
+      case RARCH_WRAP_BORDER:
+         return GL_CLAMP_TO_BORDER;
+#else
+      case RARCH_WRAP_BORDER:
+#endif
+      case RARCH_WRAP_EDGE:
+         return GL_CLAMP_TO_EDGE;
+      case RARCH_WRAP_REPEAT:
+         return GL_REPEAT;
+      case RARCH_WRAP_MIRRORED_REPEAT:
+         return GL_MIRRORED_REPEAT;
+   }
+
+   return 0;
+}
+
 #endif

@@ -319,27 +319,6 @@ static inline GLenum min_filter_to_mag(GLenum type)
    }
 }
 
-static unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
-{
-   switch (type)
-   {
-#ifndef HAVE_OPENGLES
-      case RARCH_WRAP_BORDER:
-         return GL_CLAMP_TO_BORDER;
-#else
-      case RARCH_WRAP_BORDER:
-#endif
-      case RARCH_WRAP_EDGE:
-         return GL_CLAMP_TO_EDGE;
-      case RARCH_WRAP_REPEAT:
-         return GL_REPEAT;
-      case RARCH_WRAP_MIRRORED_REPEAT:
-         return GL_MIRRORED_REPEAT;
-   }
-
-   return 0;
-}
-
 #ifdef HAVE_FBO
 static void gl_shader_scale(gl_t *gl, unsigned idx,
       struct gfx_fbo_scale *scale)
