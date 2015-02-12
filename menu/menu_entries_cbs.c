@@ -853,8 +853,8 @@ static uint32_t create_string_list_rdb_entry_int(const char *desc, const char *l
    str_len += strlen(label) + 1;
    string_list_append(str_list, label, attr);
 
-   str_len += sizeof(actual_int);
    snprintf(str, sizeof(str), "%d", actual_int);
+   str_len += strlen(str) + 1;
    string_list_append(str_list, str, attr);
 
    str_len += strlen(path) + 1;

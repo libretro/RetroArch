@@ -27,7 +27,7 @@ int menu_database_populate_query(file_list_t *list, const char *path,
 #ifdef HAVE_LIBRETRODB
    libretrodb_t db;
    libretrodb_cursor_t cur;
-    
+
    if ((libretrodb_open(path, &db)) != 0)
       return -1;
    if ((database_open_cursor(&db, &cur, query) != 0))
