@@ -459,7 +459,7 @@ static void *rgui_init(void)
    if (!menu)
       return NULL;
 
-   menu->frame_buf.data = (uint16_t*)malloc(400 * 240 * sizeof(uint16_t)); 
+   menu->frame_buf.data = (uint16_t*)calloc(400 * 240, sizeof(uint16_t)); 
 
    if (!menu->frame_buf.data)
       goto error;
