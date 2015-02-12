@@ -91,10 +91,8 @@ typedef struct xmb_handle
    int active_category_old;
    int depth;
    int old_depth;
-   char icon_dir[4];
    char box_message[PATH_MAX_LENGTH];
    struct xmb_texture_item textures[XMB_TEXTURE_LAST];
-   int icon_size;
    float x;
    float categories_x;
    float alpha;
@@ -107,6 +105,12 @@ typedef struct xmb_handle
    float above_item_offset;
    float under_item_offset;
    float above_subitem_offset;
+
+   struct
+   {
+      char dir[4];
+      int size;
+   } icon;
 
    struct
    {
@@ -271,10 +275,10 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
       return;
 
    if (
-         x < -xmb->icon_size/2 || 
+         x < -xmb->icon.size/2 || 
          x > gl->win_width ||
-         y < xmb->icon_size/2 ||
-         y > gl->win_height + xmb->icon_size)
+         y < xmb->icon.size/2 ||
+         y > gl->win_height + xmb->icon.size)
       return;
 
    GLfloat color[] = {
@@ -287,7 +291,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   glViewport(x, gl->win_height - y, xmb->icon_size, xmb->icon_size);
+   glViewport(x, gl->win_height - y, xmb->icon.size, xmb->icon.size);
 
    coords.vertices      = 4;
    coords.vertex        = rmb_vertex;
@@ -325,8 +329,8 @@ static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
    if (a8 == 0)
       return;
 
-   if (x < -xmb->icon_size || x > gl->win_width + xmb->icon_size
-         || y < -xmb->icon_size || y > gl->win_height + xmb->icon_size)
+   if (x < -xmb->icon.size || x > gl->win_width + xmb->icon.size
+         || y < -xmb->icon.size || y > gl->win_height + xmb->icon.size)
       return;
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
@@ -523,7 +527,7 @@ static void xmb_list_open_old(menu_handle_t *menu, xmb_handle_t *xmb, file_list_
 
       menu_animation_push(menu->animation, XMB_DELAY, ia, &node->alpha, EASING_IN_OUT_QUAD, NULL);
       menu_animation_push(menu->animation, XMB_DELAY, 0, &node->label_alpha, EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(menu->animation, XMB_DELAY, xmb->icon_size*dir*-2, &node->x, EASING_IN_OUT_QUAD, NULL);
+      menu_animation_push(menu->animation, XMB_DELAY, xmb->icon.size * dir * -2, &node->x, EASING_IN_OUT_QUAD, NULL);
    }
 }
 
@@ -545,7 +549,7 @@ static void xmb_list_open_new(menu_handle_t *menu,
       if (dir == 1 || dir == -1)
          node->label_alpha = 0;
 
-      node->x = xmb->icon_size * dir * 2;
+      node->x = xmb->icon.size * dir * 2;
       node->y = xmb_item_y(xmb, i, current);
 
       if (i == current)
@@ -768,14 +772,14 @@ static void xmb_list_switch(menu_handle_t *menu, xmb_handle_t *xmb)
    switch (xmb->depth)
    {
       case 1:
-         menu_animation_push(menu->animation, XMB_DELAY, xmb->icon_size*-(xmb->depth*2-2),
+         menu_animation_push(menu->animation, XMB_DELAY, xmb->icon.size * -(xmb->depth*2-2),
                &xmb->x, EASING_IN_OUT_QUAD, NULL);
          menu_animation_push(menu->animation, XMB_DELAY, 0, &xmb->arrow_alpha,
                EASING_IN_OUT_QUAD, NULL);
          break;
       case 2:
          menu_animation_push(menu->animation, XMB_DELAY,
-               xmb->icon_size*-(xmb->depth*2-2), &xmb->x, EASING_IN_OUT_QUAD, NULL);
+               xmb->icon.size * -(xmb->depth*2-2), &xmb->x, EASING_IN_OUT_QUAD, NULL);
          menu_animation_push(menu->animation, XMB_DELAY, 1, &xmb->arrow_alpha,
                EASING_IN_OUT_QUAD, NULL);
          break;
@@ -844,14 +848,14 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       if (!node)
          continue;
       
-      icon_x = node->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0;
-      icon_y = xmb->margin_top + node->y + xmb->icon_size/2.0;
+      icon_x = node->x + xmb->margin_left + xmb->hspacing - xmb->icon.size / 2.0;
+      icon_y = xmb->margin_top + node->y + xmb->icon.size / 2.0;
 
       if (
-            icon_x < -xmb->icon_size/2 || 
+            icon_x < -xmb->icon.size / 2 || 
             icon_x > gl->win_width ||
-            icon_y < xmb->icon_size/2 ||
-            icon_y > gl->win_height + xmb->icon_size)
+            icon_y < xmb->icon.size / 2 ||
+            icon_y > gl->win_height + xmb->icon.size)
          continue;
 
       menu_list_get_at_offset(list, i, &path, &entry_label, &type);
@@ -961,8 +965,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       if (!strcmp(type_str, "ON") && xmb->textures[XMB_TEXTURE_SWITCH_ON].id)
          xmb_draw_icon(gl, xmb, xmb->textures[XMB_TEXTURE_SWITCH_ON].id,
                node->x + xmb->margin_left + xmb->hspacing
-               + xmb->icon_size/2.0 + xmb->setting_margin_left,
-               xmb->margin_top + node->y + xmb->icon_size/2.0,
+               + xmb->icon.size / 2.0 + xmb->setting_margin_left,
+               xmb->margin_top + node->y + xmb->icon.size / 2.0,
                node->alpha,
                0,
                1);
@@ -970,8 +974,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       if (!strcmp(type_str, "OFF") && xmb->textures[XMB_TEXTURE_SWITCH_OFF].id)
          xmb_draw_icon(gl, xmb, xmb->textures[XMB_TEXTURE_SWITCH_OFF].id,
                node->x + xmb->margin_left + xmb->hspacing
-               + xmb->icon_size/2.0 + xmb->setting_margin_left,
-               xmb->margin_top + node->y + xmb->icon_size/2.0,
+               + xmb->icon.size / 2.0 + xmb->setting_margin_left,
+               xmb->margin_top + node->y + xmb->icon.size / 2.0,
                node->alpha,
                0,
                1);
@@ -1012,11 +1016,11 @@ static void xmb_frame(menu_handle_t *menu)
    if (g_settings.menu.timedate_enable)
    {
       xmb_draw_text(gl, xmb,
-            timedate, gl->win_width - xmb->title.margin.left - xmb->icon_size/4, 
+            timedate, gl->win_width - xmb->title.margin.left - xmb->icon.size / 4, 
             xmb->title.margin.top, 1, 1, 1);
 
       xmb_draw_icon(gl, xmb, xmb->textures[XMB_TEXTURE_CLOCK].id,
-            gl->win_width - xmb->icon_size, xmb->icon_size, 1, 0, 1);
+            gl->win_width - xmb->icon.size, xmb->icon.size, 1, 0, 1);
    }
 
    core_version = g_extern.menu.info.library_version;
@@ -1032,8 +1036,8 @@ static void xmb_frame(menu_handle_t *menu)
          gl->win_height - xmb->title.margin.bottom, 1, 1, 0);
 
    xmb_draw_icon(gl, xmb, xmb->textures[XMB_TEXTURE_ARROW].id,
-         xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0 + xmb->icon_size,
-         xmb->margin_top + xmb->icon_size/2.0 + xmb->vspacing * xmb->item.active.factor,
+         xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon.size / 2.0 + xmb->icon.size,
+         xmb->margin_top + xmb->icon.size / 2.0 + xmb->vspacing * xmb->item.active.factor,
          xmb->arrow_alpha, 0, 1);
 
    depth = file_list_get_size(menu->menu_list->menu_stack);
@@ -1057,8 +1061,8 @@ static void xmb_frame(menu_handle_t *menu)
 
       if (node)
          xmb_draw_icon(gl, xmb, node->icon, 
-               xmb->x + xmb->categories_x + xmb->margin_left + xmb->hspacing * (i + 1) - xmb->icon_size / 2.0,
-               xmb->margin_top + xmb->icon_size / 2.0, 
+               xmb->x + xmb->categories_x + xmb->margin_left + xmb->hspacing * (i + 1) - xmb->icon.size / 2.0,
+               xmb->margin_top + xmb->icon.size / 2.0, 
                node->alpha, 
                0, 
                node->zoom);
@@ -1176,9 +1180,9 @@ static void *xmb_init(void)
    else if (gl->win_width >=  320)
       scale_factor            = 0.25;
 
-   strlcpy(xmb->icon_dir, "256", sizeof(xmb->icon_dir));
+   strlcpy(xmb->icon.dir, "256", sizeof(xmb->icon.dir));
 
-   xmb->icon_size             = 128.0 * scale_factor;
+   xmb->icon.size             = 128.0 * scale_factor;
    xmb->font.size             = 32.0 * scale_factor;
    xmb->hspacing              = 200.0 * scale_factor;
    xmb->vspacing              = 64.0 * scale_factor;
@@ -1277,7 +1281,7 @@ static void xmb_context_reset(menu_handle_t *menu)
    fill_pathname_join(mediapath, g_settings.assets_directory,
          "lakka", sizeof(mediapath));
    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
-   fill_pathname_join(iconpath, themepath, xmb->icon_dir, sizeof(iconpath));
+   fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
    fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
@@ -1349,7 +1353,7 @@ static void xmb_context_reset(menu_handle_t *menu)
       fill_pathname_join(mediapath, g_settings.assets_directory,
             "lakka", sizeof(mediapath));
       fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
-      fill_pathname_join(iconpath, themepath, xmb->icon_dir, sizeof(iconpath));
+      fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
       fill_pathname_slash(iconpath, sizeof(iconpath));
 
       info = (core_info_t*)&info_list->list[i-1];
