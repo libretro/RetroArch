@@ -246,10 +246,10 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
          if (!strcmp(key->string.buff, "analog"))
             db_info->analog_supported = val->uint_;
 
-         if (!strcmp(key->string.buff, "crc"))
+         if (!strcmp(key->string.buff, "crc") && val->binary.len==4)
          {
             size_t i;
-            char crc32[PATH_MAX_LENGTH];
+            char crc32[9];
 
             for (i = 0; i < val->binary.len; i++)
             {
@@ -258,10 +258,10 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
             db_info->crc32 = strdup(crc32);
          }
 
-         if (!strcmp(key->string.buff, "sha1"))
+         if (!strcmp(key->string.buff, "sha1") && val->binary.len==20)
          {
             size_t i;
-            char sha1[PATH_MAX_LENGTH];
+            char sha1[41];
 
             for (i = 0; i < val->binary.len; i++)
             {
@@ -270,10 +270,10 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
             db_info->sha1 = strdup(sha1);
          }
 
-         if (!strcmp(key->string.buff, "md5"))
+         if (!strcmp(key->string.buff, "md5") && val->binary.len==16)
          {
             size_t i;
-            char md5[PATH_MAX_LENGTH];
+            char md5[33];
 
             for (i = 0; i < val->binary.len; i++)
             {
