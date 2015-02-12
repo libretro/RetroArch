@@ -118,16 +118,16 @@ int database_info_write_rdl(const char *dir)
    return 0;
 }
 
-static char* bin_to_hex_alloc(const uint8_t* data, size_t len)
+static char *bin_to_hex_alloc(const uint8_t *data, size_t len)
 {
-	size_t i;
-	char* ret=malloc(len*2+1);
-	
-	for (i = 0; i < len; i++)
-	{
-		snprintf(ret+i*2, 3, "%02X", data[i]);
-	}
-	return ret;
+   size_t i;
+   char *ret=malloc(len*2+1);
+   
+   for (i = 0; i < len; i++)
+   {
+      snprintf(ret+i*2, 3, "%02X", data[i]);
+   }
+   return ret;
 }
 
 database_info_list_t *database_info_list_new(const char *rdb_path, const char *query)
