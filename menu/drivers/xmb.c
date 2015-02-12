@@ -1284,7 +1284,7 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
          font_path, xmb_font_size);
 }
 
-static bool xmb_load_background(menu_handle_t *menu, const char *path)
+static bool xmb_load_wallpaper(menu_handle_t *menu, const char *path)
 {
    xmb_handle_t *xmb = NULL;
 
@@ -1398,7 +1398,7 @@ static void xmb_context_reset(menu_handle_t *menu)
       xmb->textures.list[k].id   = menu_texture_load(xmb->textures.list[k].path,
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
-   xmb_load_background(driver.menu, xmb->textures.bg.path);
+   xmb_load_wallpaper(driver.menu, xmb->textures.bg.path);
 
    xmb->settings_node.icon  = xmb->textures.list[XMB_TEXTURE_SETTINGS].id;
    xmb->settings_node.alpha = xmb->categories.active.alpha;
@@ -1692,6 +1692,6 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_cache,
    NULL,
    xmb_entry_iterate,
-   xmb_load_background,
+   xmb_load_wallpaper,
    "xmb",
 };
