@@ -93,7 +93,6 @@ typedef struct xmb_handle
    int old_depth;
    char icon_dir[4];
    char box_message[PATH_MAX_LENGTH];
-   char title[PATH_MAX_LENGTH];
    struct xmb_texture_item textures[XMB_TEXTURE_LAST];
    int icon_size;
    float x;
@@ -104,15 +103,31 @@ typedef struct xmb_handle
    float vspacing;
    float margin_left;
    float margin_top;
-   float title_margin_left;
-   float title_margin_top;
-   float title_margin_bottom;
-   float label_margin_left;
-   float label_margin_top;
    float setting_margin_left;
    float above_item_offset;
    float under_item_offset;
    float above_subitem_offset;
+
+   struct
+   {
+      char name[PATH_MAX_LENGTH];
+      struct
+      {
+         float left;
+         float top;
+         float bottom;
+      } margin;
+   } title;
+
+   struct
+   {
+      struct
+      {
+         float left;
+         float top;
+      } margin;
+   } label;
+
    struct
    {
       struct
@@ -655,7 +670,7 @@ static void xmb_set_title(menu_handle_t *menu, xmb_handle_t *xmb)
       unsigned menu_type = 0;
 
       menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
-      get_title(label, dir, menu_type, xmb->title, sizeof(xmb->title));
+      get_title(label, dir, menu_type, xmb->title.name, sizeof(xmb->title));
    }
    else
    {
@@ -668,7 +683,7 @@ static void xmb_set_title(menu_handle_t *menu, xmb_handle_t *xmb)
       info = (core_info_t*)&info_list->list[menu->categories.selection_ptr - 1];
 
       if (info)
-         strlcpy(xmb->title, info->display_name, sizeof(xmb->title));
+         strlcpy(xmb->title.name, info->display_name, sizeof(xmb->title));
    }
 }
 
@@ -911,8 +926,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
          (i == current));
 
       xmb_draw_text(gl, xmb, name,
-            node->x + xmb->margin_left + xmb->hspacing + xmb->label_margin_left, 
-            xmb->margin_top + node->y + xmb->label_margin_top, 
+            node->x + xmb->margin_left + xmb->hspacing + xmb->label.margin.left, 
+            xmb->margin_top + node->y + xmb->label.margin.top, 
             1, node->label_alpha, 0);
 
       menu_animation_ticker_line(value, 35, g_extern.frame_count / 20, type_str,
@@ -933,8 +948,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             && !xmb->textures[XMB_TEXTURE_SWITCH_OFF].id)))
          xmb_draw_text(gl, xmb, value,
                node->x + xmb->margin_left + xmb->hspacing + 
-               xmb->label_margin_left + xmb->setting_margin_left, 
-               xmb->margin_top + node->y + xmb->label_margin_top, 
+               xmb->label.margin.left + xmb->setting_margin_left, 
+               xmb->margin_top + node->y + xmb->label.margin.top, 
                1, 
                node->label_alpha,
                0);
@@ -986,15 +1001,15 @@ static void xmb_frame(menu_handle_t *menu)
       core_name = "No Core";
 
    xmb_draw_text(gl, xmb,
-         xmb->title, xmb->title_margin_left, xmb->title_margin_top, 1, 1, 0);
+         xmb->title.name, xmb->title.margin.left, xmb->title.margin.top, 1, 1, 0);
 
    disp_timedate_set_label(timedate, sizeof(timedate), 0);
 
    if (g_settings.menu.timedate_enable)
    {
       xmb_draw_text(gl, xmb,
-            timedate, gl->win_width - xmb->title_margin_left - xmb->icon_size/4, 
-            xmb->title_margin_top, 1, 1, 1);
+            timedate, gl->win_width - xmb->title.margin.left - xmb->icon_size/4, 
+            xmb->title.margin.top, 1, 1, 1);
 
       xmb_draw_icon(gl, xmb, xmb->textures[XMB_TEXTURE_CLOCK].id,
             gl->win_width - xmb->icon_size, xmb->icon_size, 1, 0, 1);
@@ -1009,8 +1024,8 @@ static void xmb_frame(menu_handle_t *menu)
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
-   xmb_draw_text(gl, xmb, title_msg, xmb->title_margin_left, 
-         gl->win_height - xmb->title_margin_bottom, 1, 1, 0);
+   xmb_draw_text(gl, xmb, title_msg, xmb->title.margin.left, 
+         gl->win_height - xmb->title.margin.bottom, 1, 1, 0);
 
    xmb_draw_icon(gl, xmb, xmb->textures[XMB_TEXTURE_ARROW].id,
          xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0 + xmb->icon_size,
@@ -1165,11 +1180,11 @@ static void *xmb_init(void)
    xmb->vspacing              = 64.0 * scale_factor;
    xmb->margin_left           = 336.0 * scale_factor;
    xmb->margin_top            = (256+32) * scale_factor;
-   xmb->title_margin_left     = 60 * scale_factor;
-   xmb->title_margin_top      = 60 * scale_factor + xmb->font_size/3;
-   xmb->title_margin_bottom   = 60 * scale_factor - xmb->font_size/3;
-   xmb->label_margin_left     = 85.0 * scale_factor;
-   xmb->label_margin_top      = xmb->font_size/3.0;
+   xmb->title.margin.left     = 60 * scale_factor;
+   xmb->title.margin.top      = 60 * scale_factor + xmb->font_size/3;
+   xmb->title.margin.bottom   = 60 * scale_factor - xmb->font_size/3;
+   xmb->label.margin.left     = 85.0 * scale_factor;
+   xmb->label.margin.top      = xmb->font_size/3.0;
    xmb->setting_margin_left   = 600.0 * scale_factor;
 
    menu->categories.size      = 1;
