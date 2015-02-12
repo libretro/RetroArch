@@ -597,5 +597,6 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    rgui_entry_iterate,
+   NULL,
    "rgui",
 };

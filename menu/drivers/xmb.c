@@ -52,8 +52,7 @@ typedef struct
 
 enum
 {
-   XMB_TEXTURE_BG = 0,
-   XMB_TEXTURE_SETTINGS,
+   XMB_TEXTURE_SETTINGS = 0,
    XMB_TEXTURE_SETTING,
    XMB_TEXTURE_SUBSETTING,
    XMB_TEXTURE_ARROW,
@@ -129,6 +128,7 @@ typedef struct xmb_handle
          float alpha;
       } arrow;
 
+      struct xmb_texture_item bg;
       struct xmb_texture_item list[XMB_TEXTURE_LAST];
    } textures;
 
@@ -426,10 +426,10 @@ static void xmb_render_background(gl_t *gl, xmb_handle_t *xmb,
    if ((g_settings.menu.pause_libretro
       || !g_extern.main_is_init || g_extern.libretro_dummy)
       && !force_transparency
-      && xmb->textures.list[XMB_TEXTURE_BG].id)
+      && xmb->textures.bg.id)
    {
       coords.color = color;
-      glBindTexture(GL_TEXTURE_2D, xmb->textures.list[XMB_TEXTURE_BG].id);
+      glBindTexture(GL_TEXTURE_2D, xmb->textures.bg.id);
    }
    else
    {
@@ -1284,6 +1284,31 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
          font_path, xmb_font_size);
 }
 
+static bool xmb_load_background(menu_handle_t *menu, const char *path)
+{
+   xmb_handle_t *xmb = NULL;
+
+   if (!menu)
+      return false;
+   
+   xmb = (xmb_handle_t*)menu->userdata;
+
+   if (!xmb)
+      return false;
+   if (!path)
+      return false;
+
+   if (xmb->textures.bg.id)
+      glDeleteTextures(1, &xmb->textures.bg.id);
+
+   strlcpy(xmb->textures.bg.path, path, sizeof(xmb->textures.bg.path));
+
+   xmb->textures.bg.id   = menu_texture_load(xmb->textures.bg.path,
+         TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+
+   return true;
+}
+
 static void xmb_context_reset(menu_handle_t *menu)
 {
    int i, k;
@@ -1325,11 +1350,11 @@ static void xmb_context_reset(menu_handle_t *menu)
    xmb_font_init_first(&gl->font_driver, &xmb->font.buf, gl, fontpath, xmb->font.size);
 
    if (*g_settings.menu.wallpaper)
-      strlcpy(xmb->textures.list[XMB_TEXTURE_BG].path, g_settings.menu.wallpaper,
-            sizeof(xmb->textures.list[XMB_TEXTURE_BG].path));
+      strlcpy(xmb->textures.bg.path, g_settings.menu.wallpaper,
+            sizeof(xmb->textures.bg.path));
    else
-      fill_pathname_join(xmb->textures.list[XMB_TEXTURE_BG].path, iconpath,
-            "bg.png", sizeof(xmb->textures.list[XMB_TEXTURE_BG].path));
+      fill_pathname_join(xmb->textures.bg.path, iconpath,
+            "bg.png", sizeof(xmb->textures.bg.path));
    fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SETTINGS].path, iconpath,
          "settings.png", sizeof(xmb->textures.list[XMB_TEXTURE_SETTINGS].path));
    fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SETTING].path, iconpath,
@@ -1372,6 +1397,8 @@ static void xmb_context_reset(menu_handle_t *menu)
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
       xmb->textures.list[k].id   = menu_texture_load(xmb->textures.list[k].path,
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+
+   xmb_load_background(driver.menu, xmb->textures.bg.path);
 
    xmb->settings_node.icon  = xmb->textures.list[XMB_TEXTURE_SETTINGS].id;
    xmb->settings_node.alpha = xmb->categories.active.alpha;
@@ -1665,5 +1692,6 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_list_cache,
    NULL,
    xmb_entry_iterate,
+   xmb_load_background,
    "xmb",
 };

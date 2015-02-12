@@ -540,7 +540,15 @@ static int action_ok_menu_wallpaper_load(const char *path,
 
    fill_pathname_join(wallpaper_path, menu_path, path, sizeof(wallpaper_path));
 
+   if (!path_file_exists(wallpaper_path))
+      goto end;
+
    strlcpy(g_settings.menu.wallpaper, wallpaper_path, sizeof(g_settings.menu.wallpaper));
+
+   if (driver.menu_ctx && driver.menu_ctx->load_background)
+      driver.menu_ctx->load_background(driver.menu, wallpaper_path);
+
+end:
    menu_list_pop_stack_by_needle(driver.menu->menu_list, setting->name);
 
    return 0;

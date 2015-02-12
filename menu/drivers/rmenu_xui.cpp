@@ -700,5 +700,6 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    rmenu_xui_list_set_selection,
    rmenu_xui_entry_iterate,
+   NULL,
    "rmenu_xui",
 };

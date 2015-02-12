@@ -219,6 +219,7 @@ typedef struct menu_ctx_driver
    void  (*list_cache)(menu_handle_t *menu, bool, unsigned);
    void  (*list_set_selection)(file_list_t *list);
    int   (*entry_iterate)(menu_handle_t *menu, unsigned);
+   bool  (*load_background)(menu_handle_t *menu, const char * path);
    const char *ident;
 } menu_ctx_driver_t;
 

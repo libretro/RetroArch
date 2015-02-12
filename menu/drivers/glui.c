@@ -564,5 +564,6 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    NULL,
    glui_entry_iterate,
+   NULL,
    "glui",
 };

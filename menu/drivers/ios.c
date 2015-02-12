@@ -90,5 +90,6 @@ menu_ctx_driver_t menu_ctx_ios = {
   NULL, // list_cache
   NULL, // list_set_selection
   ios_entry_iterate,
+  NULL,
   "ios",
 };
