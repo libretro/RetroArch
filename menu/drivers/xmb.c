@@ -89,15 +89,23 @@ typedef struct xmb_handle
    int depth;
    int old_depth;
    char box_message[PATH_MAX_LENGTH];
-   struct xmb_texture_item textures[XMB_TEXTURE_LAST];
    float x;
    float alpha;
-   float arrow_alpha;
    float hspacing;
    float vspacing;
    float margin_left;
    float margin_top;
    float setting_margin_left;
+
+   struct 
+   {
+      struct
+      {
+         float alpha;
+      } arrow;
+
+      struct xmb_texture_item list[XMB_TEXTURE_LAST];
+   } textures;
 
    struct
    {
@@ -164,6 +172,7 @@ typedef struct xmb_handle
          float alpha;
          float factor;
       } active;
+
       struct
       {
          float zoom;
@@ -405,10 +414,10 @@ static void xmb_render_background(gl_t *gl, xmb_handle_t *xmb,
    if ((g_settings.menu.pause_libretro
       || !g_extern.main_is_init || g_extern.libretro_dummy)
       && !force_transparency
-      && xmb->textures[XMB_TEXTURE_BG].id)
+      && xmb->textures.list[XMB_TEXTURE_BG].id)
    {
       coords.color = color;
-      glBindTexture(GL_TEXTURE_2D, xmb->textures[XMB_TEXTURE_BG].id);
+      glBindTexture(GL_TEXTURE_2D, xmb->textures.list[XMB_TEXTURE_BG].id);
    }
    else
    {
@@ -787,13 +796,13 @@ static void xmb_list_switch(menu_handle_t *menu, xmb_handle_t *xmb)
       case 1:
          menu_animation_push(menu->animation, XMB_DELAY, xmb->icon.size * -(xmb->depth*2-2),
                &xmb->x, EASING_IN_OUT_QUAD, NULL);
-         menu_animation_push(menu->animation, XMB_DELAY, 0, &xmb->arrow_alpha,
+         menu_animation_push(menu->animation, XMB_DELAY, 0, &xmb->textures.arrow.alpha,
                EASING_IN_OUT_QUAD, NULL);
          break;
       case 2:
          menu_animation_push(menu->animation, XMB_DELAY,
                xmb->icon.size * -(xmb->depth*2-2), &xmb->x, EASING_IN_OUT_QUAD, NULL);
-         menu_animation_push(menu->animation, XMB_DELAY, 1, &xmb->arrow_alpha,
+         menu_animation_push(menu->animation, XMB_DELAY, 1, &xmb->textures.arrow.alpha,
                EASING_IN_OUT_QUAD, NULL);
          break;
    }
@@ -888,56 +897,56 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       switch(type)
       {
          case MENU_FILE_DIRECTORY:
-            icon = xmb->textures[XMB_TEXTURE_FOLDER].id;
+            icon = xmb->textures.list[XMB_TEXTURE_FOLDER].id;
             break;
          case MENU_FILE_PLAIN:
-            icon = xmb->textures[XMB_TEXTURE_FILE].id;
+            icon = xmb->textures.list[XMB_TEXTURE_FILE].id;
             break;
          case MENU_FILE_PLAYLIST_ENTRY:
-            icon = xmb->textures[XMB_TEXTURE_FILE].id;
+            icon = xmb->textures.list[XMB_TEXTURE_FILE].id;
             break;
          case MENU_FILE_CONTENTLIST_ENTRY:
-            icon = xmb->textures[XMB_TEXTURE_FILE].id;
+            icon = xmb->textures.list[XMB_TEXTURE_FILE].id;
             if (core_node)
                icon = core_node->content_icon;
             break;
          case MENU_FILE_CARCHIVE:
-            icon = xmb->textures[XMB_TEXTURE_ZIP].id;
+            icon = xmb->textures.list[XMB_TEXTURE_ZIP].id;
             break;
          case MENU_FILE_CORE:
-            icon = xmb->textures[XMB_TEXTURE_CORE].id;
+            icon = xmb->textures.list[XMB_TEXTURE_CORE].id;
             break;
          case MENU_FILE_RDB:
-            icon = xmb->textures[XMB_TEXTURE_RDB].id;
+            icon = xmb->textures.list[XMB_TEXTURE_RDB].id;
             break;
          case MENU_FILE_CURSOR:
-            icon = xmb->textures[XMB_TEXTURE_CURSOR].id;
+            icon = xmb->textures.list[XMB_TEXTURE_CURSOR].id;
             break;
          case MENU_SETTING_ACTION_RUN:
-            icon = xmb->textures[XMB_TEXTURE_RUN].id;
+            icon = xmb->textures.list[XMB_TEXTURE_RUN].id;
             break;
          case MENU_SETTING_ACTION_SAVESTATE:
-            icon = xmb->textures[XMB_TEXTURE_SAVESTATE].id;
+            icon = xmb->textures.list[XMB_TEXTURE_SAVESTATE].id;
             break;
          case MENU_SETTING_ACTION_LOADSTATE:
-            icon = xmb->textures[XMB_TEXTURE_LOADSTATE].id;
+            icon = xmb->textures.list[XMB_TEXTURE_LOADSTATE].id;
             break;
          case MENU_SETTING_ACTION_SCREENSHOT:
-            icon = xmb->textures[XMB_TEXTURE_SCREENSHOT].id;
+            icon = xmb->textures.list[XMB_TEXTURE_SCREENSHOT].id;
             break;
          case MENU_SETTING_ACTION_RESET:
-            icon = xmb->textures[XMB_TEXTURE_RELOAD].id;
+            icon = xmb->textures.list[XMB_TEXTURE_RELOAD].id;
             break;
          case MENU_SETTING_ACTION:
-            icon = xmb->textures[XMB_TEXTURE_SETTING].id;
+            icon = xmb->textures.list[XMB_TEXTURE_SETTING].id;
             if (xmb->depth == 3)
-               icon = xmb->textures[XMB_TEXTURE_SUBSETTING].id;
+               icon = xmb->textures.list[XMB_TEXTURE_SUBSETTING].id;
             break;
          case MENU_SETTING_GROUP:
-            icon = xmb->textures[XMB_TEXTURE_SETTING].id;
+            icon = xmb->textures.list[XMB_TEXTURE_SETTING].id;
             break;
          default:
-            icon = xmb->textures[XMB_TEXTURE_SUBSETTING].id;
+            icon = xmb->textures.list[XMB_TEXTURE_SUBSETTING].id;
             break;
       }
 
@@ -964,9 +973,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             && strcmp(type_str, "ON")
             && strcmp(type_str, "OFF"))
             || ((!strcmp(type_str, "ON")
-            && !xmb->textures[XMB_TEXTURE_SWITCH_ON].id)
+            && !xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
             || (!strcmp(type_str, "OFF")
-            && !xmb->textures[XMB_TEXTURE_SWITCH_OFF].id)))
+            && !xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)))
          xmb_draw_text(gl, xmb, value,
                node->x + xmb->margin_left + xmb->hspacing + 
                xmb->label.margin.left + xmb->setting_margin_left, 
@@ -975,8 +984,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                node->label_alpha,
                0);
 
-      if (!strcmp(type_str, "ON") && xmb->textures[XMB_TEXTURE_SWITCH_ON].id)
-         xmb_draw_icon(gl, xmb, xmb->textures[XMB_TEXTURE_SWITCH_ON].id,
+      if (!strcmp(type_str, "ON") && xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
+         xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id,
                node->x + xmb->margin_left + xmb->hspacing
                + xmb->icon.size / 2.0 + xmb->setting_margin_left,
                xmb->margin_top + node->y + xmb->icon.size / 2.0,
@@ -984,8 +993,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                0,
                1);
 
-      if (!strcmp(type_str, "OFF") && xmb->textures[XMB_TEXTURE_SWITCH_OFF].id)
-         xmb_draw_icon(gl, xmb, xmb->textures[XMB_TEXTURE_SWITCH_OFF].id,
+      if (!strcmp(type_str, "OFF") && xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
+         xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id,
                node->x + xmb->margin_left + xmb->hspacing
                + xmb->icon.size / 2.0 + xmb->setting_margin_left,
                xmb->margin_top + node->y + xmb->icon.size / 2.0,
@@ -1032,7 +1041,7 @@ static void xmb_frame(menu_handle_t *menu)
             timedate, gl->win_width - xmb->title.margin.left - xmb->icon.size / 4, 
             xmb->title.margin.top, 1, 1, 1);
 
-      xmb_draw_icon(gl, xmb, xmb->textures[XMB_TEXTURE_CLOCK].id,
+      xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
             gl->win_width - xmb->icon.size, xmb->icon.size, 1, 0, 1);
    }
 
@@ -1048,10 +1057,10 @@ static void xmb_frame(menu_handle_t *menu)
    xmb_draw_text(gl, xmb, title_msg, xmb->title.margin.left, 
          gl->win_height - xmb->title.margin.bottom, 1, 1, 0);
 
-   xmb_draw_icon(gl, xmb, xmb->textures[XMB_TEXTURE_ARROW].id,
+   xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_ARROW].id,
          xmb->x + xmb->margin_left + xmb->hspacing - xmb->icon.size / 2.0 + xmb->icon.size,
          xmb->margin_top + xmb->icon.size / 2.0 + xmb->vspacing * xmb->item.active.factor,
-         xmb->arrow_alpha, 0, 1);
+         xmb->textures.arrow.alpha, 0, 1);
 
    depth = file_list_get_size(menu->menu_list->menu_stack);
 
@@ -1158,8 +1167,7 @@ static void *xmb_init(void)
    xmb->categories.active.idx_old   = 0;
    xmb->x                     = 0;
    xmb->categories.x_pos      = 0;
-   xmb->alpha                 = 1.0f;
-   xmb->arrow_alpha           = 0;
+   xmb->textures.arrow.alpha  = 0;
    xmb->depth                 = 1;
    xmb->old_depth             = 1;
    xmb->alpha                 = 0;
@@ -1302,55 +1310,55 @@ static void xmb_context_reset(menu_handle_t *menu)
    xmb_font_init_first(&gl->font_driver, &xmb->font.buf, gl, fontpath, xmb->font.size);
 
    if (*g_settings.menu.wallpaper)
-      strlcpy(xmb->textures[XMB_TEXTURE_BG].path, g_settings.menu.wallpaper,
-            sizeof(xmb->textures[XMB_TEXTURE_BG].path));
+      strlcpy(xmb->textures.list[XMB_TEXTURE_BG].path, g_settings.menu.wallpaper,
+            sizeof(xmb->textures.list[XMB_TEXTURE_BG].path));
    else
-      fill_pathname_join(xmb->textures[XMB_TEXTURE_BG].path, iconpath,
-            "bg.png", sizeof(xmb->textures[XMB_TEXTURE_BG].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_SETTINGS].path, iconpath,
-         "settings.png", sizeof(xmb->textures[XMB_TEXTURE_SETTINGS].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_SETTING].path, iconpath,
-         "setting.png", sizeof(xmb->textures[XMB_TEXTURE_SETTING].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_SUBSETTING].path, iconpath,
-         "subsetting.png", sizeof(xmb->textures[XMB_TEXTURE_SUBSETTING].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_ARROW].path, iconpath,
-         "arrow.png", sizeof(xmb->textures[XMB_TEXTURE_ARROW].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_RUN].path, iconpath,
-         "run.png", sizeof(xmb->textures[XMB_TEXTURE_RUN].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_RESUME].path, iconpath,
-         "resume.png", sizeof(xmb->textures[XMB_TEXTURE_RESUME].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_SAVESTATE].path, iconpath,
-         "savestate.png", sizeof(xmb->textures[XMB_TEXTURE_SAVESTATE].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_LOADSTATE].path, iconpath,
-         "loadstate.png", sizeof(xmb->textures[XMB_TEXTURE_LOADSTATE].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_SCREENSHOT].path, iconpath,
-         "screenshot.png", sizeof(xmb->textures[XMB_TEXTURE_SCREENSHOT].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_RELOAD].path, iconpath,
-         "reload.png", sizeof(xmb->textures[XMB_TEXTURE_RELOAD].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_FILE].path, iconpath,
-         "file.png", sizeof(xmb->textures[XMB_TEXTURE_FILE].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_FOLDER].path, iconpath,
-         "folder.png", sizeof(xmb->textures[XMB_TEXTURE_FOLDER].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_ZIP].path, iconpath,
-         "zip.png", sizeof(xmb->textures[XMB_TEXTURE_ZIP].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_CORE].path, iconpath,
-         "core.png", sizeof(xmb->textures[XMB_TEXTURE_CORE].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_RDB].path, iconpath,
-         "database.png", sizeof(xmb->textures[XMB_TEXTURE_RDB].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_CURSOR].path, iconpath,
-         "cursor.png", sizeof(xmb->textures[XMB_TEXTURE_CURSOR].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_SWITCH_ON].path, iconpath,
-         "on.png", sizeof(xmb->textures[XMB_TEXTURE_SWITCH_ON].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_SWITCH_OFF].path, iconpath,
-         "off.png", sizeof(xmb->textures[XMB_TEXTURE_SWITCH_OFF].path));
-   fill_pathname_join(xmb->textures[XMB_TEXTURE_CLOCK].path, iconpath,
-         "clock.png", sizeof(xmb->textures[XMB_TEXTURE_CLOCK].path));
+      fill_pathname_join(xmb->textures.list[XMB_TEXTURE_BG].path, iconpath,
+            "bg.png", sizeof(xmb->textures.list[XMB_TEXTURE_BG].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SETTINGS].path, iconpath,
+         "settings.png", sizeof(xmb->textures.list[XMB_TEXTURE_SETTINGS].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SETTING].path, iconpath,
+         "setting.png", sizeof(xmb->textures.list[XMB_TEXTURE_SETTING].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SUBSETTING].path, iconpath,
+         "subsetting.png", sizeof(xmb->textures.list[XMB_TEXTURE_SUBSETTING].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_ARROW].path, iconpath,
+         "arrow.png", sizeof(xmb->textures.list[XMB_TEXTURE_ARROW].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_RUN].path, iconpath,
+         "run.png", sizeof(xmb->textures.list[XMB_TEXTURE_RUN].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_RESUME].path, iconpath,
+         "resume.png", sizeof(xmb->textures.list[XMB_TEXTURE_RESUME].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SAVESTATE].path, iconpath,
+         "savestate.png", sizeof(xmb->textures.list[XMB_TEXTURE_SAVESTATE].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_LOADSTATE].path, iconpath,
+         "loadstate.png", sizeof(xmb->textures.list[XMB_TEXTURE_LOADSTATE].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SCREENSHOT].path, iconpath,
+         "screenshot.png", sizeof(xmb->textures.list[XMB_TEXTURE_SCREENSHOT].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_RELOAD].path, iconpath,
+         "reload.png", sizeof(xmb->textures.list[XMB_TEXTURE_RELOAD].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_FILE].path, iconpath,
+         "file.png", sizeof(xmb->textures.list[XMB_TEXTURE_FILE].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_FOLDER].path, iconpath,
+         "folder.png", sizeof(xmb->textures.list[XMB_TEXTURE_FOLDER].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_ZIP].path, iconpath,
+         "zip.png", sizeof(xmb->textures.list[XMB_TEXTURE_ZIP].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_CORE].path, iconpath,
+         "core.png", sizeof(xmb->textures.list[XMB_TEXTURE_CORE].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_RDB].path, iconpath,
+         "database.png", sizeof(xmb->textures.list[XMB_TEXTURE_RDB].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_CURSOR].path, iconpath,
+         "cursor.png", sizeof(xmb->textures.list[XMB_TEXTURE_CURSOR].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SWITCH_ON].path, iconpath,
+         "on.png", sizeof(xmb->textures.list[XMB_TEXTURE_SWITCH_ON].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].path, iconpath,
+         "off.png", sizeof(xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_CLOCK].path, iconpath,
+         "clock.png", sizeof(xmb->textures.list[XMB_TEXTURE_CLOCK].path));
 
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
-      xmb->textures[k].id   = menu_texture_load(xmb->textures[k].path,
+      xmb->textures.list[k].id   = menu_texture_load(xmb->textures.list[k].path,
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
-   xmb->settings_node.icon  = xmb->textures[XMB_TEXTURE_SETTINGS].id;
+   xmb->settings_node.icon  = xmb->textures.list[XMB_TEXTURE_SETTINGS].id;
    xmb->settings_node.alpha = xmb->categories.active.alpha;
    xmb->settings_node.zoom  = xmb->categories.active.zoom;
 
@@ -1563,7 +1571,7 @@ static void xmb_context_destroy(menu_handle_t *menu)
       return;
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
-      glDeleteTextures(1, &xmb->textures[i].id);
+      glDeleteTextures(1, &xmb->textures.list[i].id);
 
    for (i = 1; i < menu->categories.size; i++)
    {
