@@ -576,33 +576,41 @@ static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, int i)
    return node;
 }
 
+static void xmb_push_animations(menu_handle_t *menu, xmb_node_t *node, float ia, float ix)
+{
+   menu_animation_push(menu->animation, XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
+   menu_animation_push(menu->animation, XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, NULL);
+   menu_animation_push(menu->animation, XMB_DELAY, ix, &node->x, EASING_IN_OUT_QUAD, NULL);
+}
+
 static void xmb_list_switch_old(menu_handle_t *menu, xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
    int i;
+   size_t end = file_list_get_size(list);
 
-   for (i = 0; i < file_list_get_size(list); i++)
+   for (i = 0; i < end; i++)
    {
       xmb_node_t *node = (xmb_node_t*)
          file_list_get_userdata_at_offset(list, i);
+      float ia         = 0;
 
       if (!node)
           continue;
 
-      menu_animation_push(menu->animation, XMB_DELAY, 0, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(menu->animation, XMB_DELAY, 0, &node->label_alpha,  EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(menu->animation, XMB_DELAY, -xmb->hspacing*dir,  &node->x, EASING_IN_OUT_QUAD, NULL);
+      xmb_push_animations(menu, node, ia, -xmb->hspacing * dir);
    }
 }
 
 static void xmb_list_switch_new(menu_handle_t *menu, xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
    int i;
+   size_t end = file_list_get_size(list);
 
-   for (i = 0; i < file_list_get_size(list); i++)
+   for (i = 0; i < end; i++)
    {
-      float ia         = 0.5;
       xmb_node_t *node = (xmb_node_t*)
          file_list_get_userdata_at_offset(list, i);
+      float ia         = 0.5;
 
       if (!node)
           continue;
@@ -614,9 +622,7 @@ static void xmb_list_switch_new(menu_handle_t *menu, xmb_handle_t *xmb, file_lis
       if (i == current)
          ia = 1.0;
       
-      menu_animation_push(menu->animation, XMB_DELAY, ia, &node->alpha,  EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(menu->animation, XMB_DELAY, ia, &node->label_alpha,  EASING_IN_OUT_QUAD, NULL);
-      menu_animation_push(menu->animation, XMB_DELAY, 0,  &node->x, EASING_IN_OUT_QUAD, NULL);
+      xmb_push_animations(menu, node, ia, 0);
    }
 }
 
