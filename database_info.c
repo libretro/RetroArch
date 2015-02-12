@@ -118,6 +118,18 @@ int database_info_write_rdl(const char *dir)
    return 0;
 }
 
+static char* bin_to_hex_alloc(const uint8_t* data, size_t len)
+{
+	size_t i;
+	char* ret=malloc(len*2+1);
+	
+	for (i = 0; i < len; i++)
+	{
+		snprintf(ret+i*2, 3, "%02X", data[i]);
+	}
+	return ret;
+}
+
 database_info_list_t *database_info_list_new(const char *rdb_path, const char *query)
 {
    libretrodb_t db;
@@ -246,41 +258,12 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
          if (!strcmp(key->string.buff, "analog"))
             db_info->analog_supported = val->uint_;
 
-         if (!strcmp(key->string.buff, "crc") && val->binary.len==4)
-         {
-            size_t i;
-            char crc32[9];
-
-            for (i = 0; i < val->binary.len; i++)
-            {
-               snprintf(crc32+i*2, sizeof(crc32)-i*2, "%02X", (unsigned char)val->binary.buff[i]);
-            }
-            db_info->crc32 = strdup(crc32);
-         }
-
-         if (!strcmp(key->string.buff, "sha1") && val->binary.len==20)
-         {
-            size_t i;
-            char sha1[41];
-
-            for (i = 0; i < val->binary.len; i++)
-            {
-               snprintf(sha1+i*2, sizeof(sha1)-i*2, "%02X", (unsigned char)val->binary.buff[i]);
-            }
-            db_info->sha1 = strdup(sha1);
-         }
-
-         if (!strcmp(key->string.buff, "md5") && val->binary.len==16)
-         {
-            size_t i;
-            char md5[33];
-
-            for (i = 0; i < val->binary.len; i++)
-            {
-               snprintf(md5+i*2, sizeof(md5)-i*2, "%02X", (unsigned char)val->binary.buff[i]);
-            }
-            db_info->md5 = strdup(md5);
-         }
+         if (!strcmp(key->string.buff, "crc"))
+            db_info->crc32 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+         if (!strcmp(key->string.buff, "sha1"))
+            db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
+         if (!strcmp(key->string.buff, "md5"))
+            db_info->md5 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
       }
       k++;
    }
