@@ -789,16 +789,16 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    {
       float icon_x, icon_y;
       char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
-      char name[256], value[256];
+      char name[PATH_MAX_LENGTH], value[PATH_MAX_LENGTH];
       const char *path = NULL, *entry_label = NULL;
       unsigned type = 0, w = 0;
-      xmb_node_t *node = NULL;
       menu_file_list_cbs_t *cbs = NULL;
       GLuint icon = 0;
+      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
 
-      menu_list_get_at_offset(list, i, &path, &entry_label, &type);
-      node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
-
+      if (!node)
+         continue;
+      
       icon_x = node->x + xmb->margin_left + xmb->hspacing - xmb->icon_size/2.0;
       icon_y = xmb->margin_top + node->y + xmb->icon_size/2.0;
 
@@ -808,6 +808,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             icon_y < xmb->icon_size/2 ||
             icon_y > gl->win_height + xmb->icon_size)
          continue;
+
+      menu_list_get_at_offset(list, i, &path, &entry_label, &type);
 
       cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(list, i);
 
