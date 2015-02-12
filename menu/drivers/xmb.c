@@ -102,9 +102,17 @@ typedef struct xmb_handle
    float margin_left;
    float margin_top;
    float setting_margin_left;
-   float above_item_offset;
-   float under_item_offset;
-   float above_subitem_offset;
+
+   struct
+   {
+      float item;
+      float subitem;
+   } above_offset;
+
+   struct
+   {
+      float item;
+   } under_offset;
 
    struct
    {
@@ -191,11 +199,11 @@ static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
 
    if (i < current)
       if (xmb->depth > 1)
-         iy *= (i - (int)current + xmb->above_subitem_offset);
+         iy *= (i - (int)current + xmb->above_offset.subitem);
       else
-         iy *= (i - (int)current + xmb->above_item_offset);
+         iy *= (i - (int)current + xmb->above_offset.item);
    else
-      iy *= (i - (int)current + xmb->under_item_offset);
+      iy    *= (i - (int)current + xmb->under_offset.item);
 
    if (i == current)
       iy = xmb->vspacing * xmb->item.active.factor;
@@ -1162,10 +1170,10 @@ static void *xmb_init(void)
    xmb->item.active.alpha     = 1.0;
    xmb->item.passive.alpha    = 0.5;
 
-   xmb->above_subitem_offset  = 1.5;
-   xmb->above_item_offset     = -1.0;
+   xmb->above_offset.subitem  = 1.5;
+   xmb->above_offset.item     = -1.0;
    xmb->item.active.factor    = 3.0;
-   xmb->under_item_offset     = 5.0;
+   xmb->under_offset.item     = 5.0;
 
    if (gl->win_width >= 3840)
       scale_factor            = 2.0;
