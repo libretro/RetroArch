@@ -79,18 +79,15 @@ void gl_load_texture_data(GLuint id,
       glGenerateMipmap(GL_TEXTURE_2D);
 }
 
-bool gl_load_luts(const struct video_shader *generic_shader,
+bool gl_load_luts(const struct video_shader *shader,
       GLuint *textures_lut)
 {
    unsigned i;
-   unsigned num_luts = min(generic_shader->luts, GFX_MAX_TEXTURES);
+   unsigned num_luts = min(shader->luts, GFX_MAX_TEXTURES);
 
-   if (!generic_shader->luts)
+   if (!shader->luts)
       return true;
 
-   /*  Original shader_glsl.c code only generated one 
-    *  texture handle.  I assume it was a bug, but if not, 
-    *  replace num_luts with 1 when GLSL is used. */
    glGenTextures(num_luts, textures_lut);
 
    for (i = 0; i < num_luts; i++)
@@ -99,19 +96,19 @@ bool gl_load_luts(const struct video_shader *generic_shader,
       enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
 
       RARCH_LOG("Loading texture image from: \"%s\" ...\n",
-            generic_shader->lut[i].path);
+            shader->lut[i].path);
 
-      if (!texture_image_load(&img, generic_shader->lut[i].path))
+      if (!texture_image_load(&img, shader->lut[i].path))
       {
          RARCH_ERR("Failed to load texture image from: \"%s\"\n",
-               generic_shader->lut[i].path);
+               shader->lut[i].path);
          return false;
       }
 
-      if (generic_shader->lut[i].filter == RARCH_FILTER_NEAREST)
+      if (shader->lut[i].filter == RARCH_FILTER_NEAREST)
          filter_type = TEXTURE_FILTER_NEAREST;
 
-      if (generic_shader->lut[i].mipmap)
+      if (shader->lut[i].mipmap)
       {
          if (filter_type == TEXTURE_FILTER_NEAREST)
             filter_type = TEXTURE_FILTER_MIPMAP_NEAREST;
@@ -120,7 +117,7 @@ bool gl_load_luts(const struct video_shader *generic_shader,
       }
 
       gl_load_texture_data(textures_lut[i],
-            generic_shader->lut[i].wrap,
+            shader->lut[i].wrap,
             filter_type, 4,
             img.width, img.height,
             img.pixels, sizeof(uint32_t));
