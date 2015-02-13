@@ -3240,12 +3240,6 @@ static bool setting_data_append_list_main_menu_options(
    (*list)[list_info->index - 1].change_handler = load_content_change_handler;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 
-   CONFIG_ACTION(
-         "core_options",
-         "Core Options",
-         group_info.name,
-         subgroup_info.name);
-
 
    CONFIG_ACTION(
          "core_information",
@@ -3253,35 +3247,9 @@ static bool setting_data_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
 
-   if (g_extern.main_is_init)
-   {
-      if (g_extern.has_set_input_descriptors)
-         CONFIG_ACTION(
-               "core_input_remapping_options",
-               "Core Input Remapping Options",
-               group_info.name,
-               subgroup_info.name);
-
-      CONFIG_ACTION(
-            "core_cheat_options",
-            "Core Cheat Options",
-            group_info.name,
-            subgroup_info.name);
-
-      if ( !g_extern.libretro_dummy
-            && g_extern.system.disk_control.get_num_images)
-      {
-         CONFIG_ACTION(
-               "disk_options",
-               "Core Disk Options",
-               group_info.name,
-               subgroup_info.name);
-      }
-   }
-
    CONFIG_ACTION(
-         "shader_options",
-         "Shader Options",
+         "options",
+         "Options",
          group_info.name,
          subgroup_info.name);
 

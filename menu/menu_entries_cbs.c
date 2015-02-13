@@ -3071,6 +3071,39 @@ static int deferred_push_shader_options(void *data, void *userdata,
    return 0;
 }
 
+static int deferred_push_options(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   unsigned i;
+   file_list_t *list           = (file_list_t*)data;
+   file_list_t *menu_list      = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_list_clear(list);
+   menu_list_push(list, "Core Options", "core_options",
+         MENU_SETTING_ACTION, 0);
+   if (g_extern.main_is_init)
+   {
+      if (g_extern.has_set_input_descriptors)
+         menu_list_push(list, "Core Input Remapping Options", "core_input_remapping_options",
+               MENU_SETTING_ACTION, 0);
+      menu_list_push(list, "Core Cheat Options", "core_cheat_options",
+            MENU_SETTING_ACTION, 0);
+      if (!g_extern.libretro_dummy && g_extern.system.disk_control.get_num_images)
+         menu_list_push(list, "Core Disk Options", "core_disk_options",
+               MENU_SETTING_ACTION, 0);
+   }
+   menu_list_push(list, "Shader Options", "shader_options",
+         MENU_SETTING_ACTION, 0);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
+}
+
 
 static void push_perfcounter(menu_handle_t *menu,
       file_list_t *list,
@@ -5136,7 +5169,8 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          !strcmp(label, "settings") ||
          !strcmp(label, "performance_counters") ||
          !strcmp(label, "frontend_counters") ||
-         !strcmp(label, "core_counters")
+         !strcmp(label, "core_counters") ||
+         !strcmp(label, "options")
          )
       cbs->action_ok = action_ok_push_default;
    else if (
@@ -5591,6 +5625,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_content_actions;
    else if (!strcmp(label, "shader_options"))
       cbs->action_deferred_push = deferred_push_shader_options;
+   else if (!strcmp(label, "options"))
+      cbs->action_deferred_push = deferred_push_options;
    else if (type == MENU_SETTING_GROUP)
       cbs->action_deferred_push = deferred_push_category;
    else if (!strcmp(label, "deferred_core_list"))
