@@ -24,13 +24,16 @@
 
 /**
  * menu_navigation_clear:
- * @menu                  : menu handle
  * @pending_push          : pending push ?
  *
  * Clears the navigation pointer.
  **/
-void menu_navigation_clear(menu_handle_t *menu, bool pending_push)
+void menu_navigation_clear(bool pending_push)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return;
+
    menu->selection_ptr = 0;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_clear)
@@ -39,12 +42,15 @@ void menu_navigation_clear(menu_handle_t *menu, bool pending_push)
 
 /**
  * menu_navigation_decrement:
- * @menu                  : menu handle
  *
  * Decrement the navigation pointer.
  **/
-void menu_navigation_decrement(menu_handle_t *menu)
+void menu_navigation_decrement(void)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return;
+
    menu->selection_ptr--;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_decrement)
@@ -53,12 +59,15 @@ void menu_navigation_decrement(menu_handle_t *menu)
 
 /**
  * menu_navigation_increment:
- * @menu                  : menu handle
  *
  * Increment the navigation pointer.
  **/
-void menu_navigation_increment(menu_handle_t *menu)
+void menu_navigation_increment(void)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return;
+
    menu->selection_ptr++;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_increment)
@@ -67,14 +76,17 @@ void menu_navigation_increment(menu_handle_t *menu)
 
 /**
  * menu_navigation_set:      
- * @menu                  : menu handle
  * @idx                   : index to set navigation pointer to.
  * @scroll                : should we scroll when needed?
  *
  * Sets navigation pointer to index @idx.
  **/
-void menu_navigation_set(menu_handle_t *menu, size_t idx, bool scroll)
+void menu_navigation_set(size_t idx, bool scroll)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return;
+
    menu->selection_ptr = idx; 
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_set)
@@ -83,12 +95,15 @@ void menu_navigation_set(menu_handle_t *menu, size_t idx, bool scroll)
 
 /**
  * menu_navigation_set_last:
- * @menu                  : menu handle
  *
  * Sets navigation pointer to last index.
  **/
-void menu_navigation_set_last(menu_handle_t *menu)
+void menu_navigation_set_last(void)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return;
+
    menu->selection_ptr = menu_list_get_size(driver.menu->menu_list) - 1;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_set_last)
@@ -97,7 +112,6 @@ void menu_navigation_set_last(menu_handle_t *menu)
 
 /**
  * menu_navigation_descend_alphabet:
- * @menu                  : menu handle
  * @ptr_out               : Amount of indices to 'scroll' to get
  *                          to the next entry.
  *
@@ -106,10 +120,13 @@ void menu_navigation_set_last(menu_handle_t *menu)
  * If navigation points to an entry called 'Beta',
  * navigation pointer will be set to an entry called 'Alpha'.
  **/
-void menu_navigation_descend_alphabet(menu_handle_t *menu, size_t *ptr_out)
+void menu_navigation_descend_alphabet(size_t *ptr_out)
 {
    size_t i   = 0;
    size_t ptr = *ptr_out;
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return;
 
    if (!menu->scroll.indices.size)
       return;
@@ -129,7 +146,6 @@ void menu_navigation_descend_alphabet(menu_handle_t *menu, size_t *ptr_out)
 
 /**
  * menu_navigation_ascends_alphabet:
- * @menu                  : menu handle
  * @ptr_out               : Amount of indices to 'scroll' to get
  *                          to the next entry.
  *
@@ -138,10 +154,13 @@ void menu_navigation_descend_alphabet(menu_handle_t *menu, size_t *ptr_out)
  * If navigation points to an entry called 'Alpha',
  * navigation pointer will be set to an entry called 'Beta'.
  **/
-void menu_navigation_ascend_alphabet(menu_handle_t *menu, size_t *ptr_out)
+void menu_navigation_ascend_alphabet(size_t *ptr_out)
 {
    size_t i   = 0;
    size_t ptr = *ptr_out;
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return;
 
    if (!menu->scroll.indices.size)
       return;

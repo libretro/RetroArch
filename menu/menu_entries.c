@@ -212,7 +212,7 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
    if (!info_list)
       return -1;
 
-   info = (core_info_t*)&info_list->list[driver.menu->categories.selection_ptr - 1];
+   info = (core_info_t*)&info_list->list[menu->categories.selection_ptr - 1];
 
    if (!info)
       return -1;
@@ -223,7 +223,7 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
 
    menu_entries_push_cores_list(list, info, g_settings.content_directory, true);
 
-   menu_list_populate_generic(menu, list, path, label, menu_type);
+   menu_list_populate_generic(list, path, label, menu_type);
 
    return 0;
 }
@@ -476,7 +476,7 @@ int menu_entries_parse_list(
       menu_list_sort_on_alt(list);
    }
 
-   menu_list_populate_generic(driver.menu, list, dir, label, type);
+   menu_list_populate_generic(list, dir, label, type);
 
    return 0;
 }
@@ -521,7 +521,7 @@ bool menu_entries_init(menu_handle_t *menu)
    menu->list_settings = setting_data_new(SL_FLAG_ALL);
 
    menu_list_push_stack(menu->menu_list, "", "Main Menu", MENU_SETTINGS, 0);
-   menu_navigation_clear(menu, true);
+   menu_navigation_clear(true);
    menu_entries_push_list(menu, menu->menu_list->selection_buf,
          "", "Main Menu", 0, SL_FLAG_MAIN_MENU);
 

@@ -1422,7 +1422,7 @@ static int action_ok_config_load(const char *path,
    menu->msg_force = true;
    if (rarch_replace_config(config))
    {
-      menu_navigation_clear(menu, false);
+      menu_navigation_clear(false);
       return -1;
    }
 
@@ -2183,19 +2183,17 @@ static int action_toggle_scroll(unsigned type, const char *label,
    {
       case MENU_ACTION_LEFT:
          if (menu->selection_ptr > fast_scroll_speed)
-            menu_navigation_set(menu,
-                  menu->selection_ptr - fast_scroll_speed, true);
+            menu_navigation_set(menu->selection_ptr - fast_scroll_speed, true);
          else
-            menu_navigation_clear(menu, false);
+            menu_navigation_clear(false);
          break;
       case MENU_ACTION_RIGHT:
          if (menu->selection_ptr + fast_scroll_speed < (menu_list_get_size(menu->menu_list)))
-            menu_navigation_set(menu,
-                  menu->selection_ptr + fast_scroll_speed, true);
+            menu_navigation_set(menu->selection_ptr + fast_scroll_speed, true);
          else
          {
             if ((menu_list_get_size(menu->menu_list) > 0))
-                  menu_navigation_set_last(menu);
+                  menu_navigation_set_last();
          }
          break;
    }
@@ -2653,7 +2651,7 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
 
    menu_list_sort_on_alt(list);
 
-   menu_list_populate_generic(menu, list, path, label, type);
+   menu_list_populate_generic(list, path, label, type);
 
    return 0;
 }
@@ -2679,7 +2677,7 @@ static int deferred_push_database_manager_list_deferred(void *data, void *userda
 
    menu_list_sort_on_alt(list);
 
-   menu_list_populate_generic(menu, list, path, label, type);
+   menu_list_populate_generic(list, path, label, type);
 
    return 0;
 }
@@ -2722,7 +2720,7 @@ static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata
 
    menu_list_sort_on_alt(list);
 
-   menu_list_populate_generic(menu, list, path, label, type);
+   menu_list_populate_generic(list, path, label, type);
 
    return 0;
 }
@@ -2823,7 +2821,7 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
 
    menu_list_sort_on_alt(list);
 
-   menu_list_populate_generic(menu, list, str_list->elems[0].data, label, type);
+   menu_list_populate_generic(list, str_list->elems[0].data, label, type);
 
    string_list_free(str_list);
 
@@ -3612,8 +3610,7 @@ static int cb_core_updater_list(void *data_, size_t len)
 
    print_buf_lines(list, data, len, MENU_FILE_DOWNLOAD_CORE);
 
-   menu_list_populate_generic(menu,
-         list, core_updater_list_path,
+   menu_list_populate_generic(list, core_updater_list_path,
          core_updater_list_label, core_updater_list_type);
 
    return 0;
@@ -3624,10 +3621,6 @@ static int cb_core_updater_list(void *data_, size_t len)
 static int deferred_push_core_updater_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   menu_handle_t *menu    = menu_driver_resolve();
-   if (!menu)
-      return -1;
-
 #ifdef HAVE_NETWORKING
    char url_path[PATH_MAX_LENGTH];
 
@@ -3651,7 +3644,7 @@ static int deferred_push_core_updater_list(void *data, void *userdata,
             0, 0);
 #endif
 
-      menu_list_populate_generic(menu, list, path, label, type);
+      menu_list_populate_generic(list, path, label, type);
 
       return 0;
    }
@@ -3677,14 +3670,11 @@ static int deferred_push_history_list(void *data, void *userdata,
    unsigned i;
    size_t list_size = 0;
    file_list_t *list      = (file_list_t*)data;
-   menu_handle_t *menu    = menu_driver_resolve();
-   if (!menu)
+
+   if (!list)
       return -1;
 
    (void)userdata;
-
-   if (!list || !menu)
-      return -1;
 
    menu_list_clear(list);
    list_size = content_playlist_size(g_defaults.history);
@@ -3710,7 +3700,7 @@ static int deferred_push_history_list(void *data, void *userdata,
             MENU_FILE_PLAYLIST_ENTRY, 0);
    }
 
-   menu_list_populate_generic(menu, list, path, label, type);
+   menu_list_populate_generic(list, path, label, type);
 
    return 0;
 }
@@ -3725,7 +3715,7 @@ static int deferred_push_content_actions(void *data, void *userdata,
 
    (void)userdata;
 
-   if (!list || !menu)
+   if (!list)
       return -1;
 
    menu_list_clear(list);
@@ -3750,7 +3740,7 @@ static int deferred_push_content_actions(void *data, void *userdata,
    else
       menu_list_push(list, "Run", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0);
 
-   menu_list_populate_generic(menu, list, path, label, type);
+   menu_list_populate_generic(list, path, label, type);
 
    return 0;
 }
@@ -3928,29 +3918,24 @@ static int action_bind_up_or_down_generic(unsigned type, const char *label,
    {
       case MENU_ACTION_UP:
          if (menu->selection_ptr >= scroll_speed)
-               menu_navigation_set(menu,
-                     menu->selection_ptr - scroll_speed, true);
+               menu_navigation_set(menu->selection_ptr - scroll_speed, true);
          else
          {
             if (g_settings.menu.navigation.wraparound.vertical_enable)
-               menu_navigation_set(menu,
-                     menu_list_get_size(menu->menu_list) - 1, true);
+               menu_navigation_set(menu_list_get_size(menu->menu_list) - 1, true);
             else
-               menu_navigation_set(menu,
-                     0, true);
+               menu_navigation_set(0, true);
          }
          break;
       case MENU_ACTION_DOWN:
          if (menu->selection_ptr + scroll_speed < (menu_list_get_size(menu->menu_list)))
-            menu_navigation_set(menu,
-                  menu->selection_ptr + scroll_speed, true);
+            menu_navigation_set(menu->selection_ptr + scroll_speed, true);
          else
          {
             if (g_settings.menu.navigation.wraparound.vertical_enable)
-               menu_navigation_clear(menu, false);
+               menu_navigation_clear(false);
             else
-               menu_navigation_set(menu,
-                     menu_list_get_size(menu->menu_list) - 1, true);
+               menu_navigation_set(menu_list_get_size(menu->menu_list) - 1, true);
          }
          break;
    }
@@ -3983,7 +3968,7 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
       return 0;
 
    if (menu->mouse.ptr <= menu_list_get_size(menu->menu_list)-1)
-      menu_navigation_set(menu, menu->mouse.ptr, false);
+      menu_navigation_set(menu->mouse.ptr, false);
 
    if (menu->mouse.left)
    {
@@ -4466,10 +4451,10 @@ static int action_iterate_main(const char *label, unsigned action)
             ret = cbs->action_up_or_down(type_offset, label_offset, action);
          break;
       case MENU_ACTION_SCROLL_UP:
-         menu_navigation_descend_alphabet(menu, &menu->selection_ptr);
+         menu_navigation_descend_alphabet(&menu->selection_ptr);
          break;
       case MENU_ACTION_SCROLL_DOWN:
-         menu_navigation_ascend_alphabet(menu, &menu->selection_ptr);
+         menu_navigation_ascend_alphabet(&menu->selection_ptr);
          break;
 
       case MENU_ACTION_CANCEL:

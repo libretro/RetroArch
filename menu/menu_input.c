@@ -70,7 +70,7 @@ static void menu_input_search_callback(void *userdata, const char *str)
       return;
 
    if (str && *str && file_list_search(menu->menu_list->selection_buf, str, &idx))
-         menu_navigation_set(menu, idx, true);
+         menu_navigation_set(idx, true);
 
    menu_input_key_end_line(menu);
 }
