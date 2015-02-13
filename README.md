@@ -110,6 +110,17 @@ Users only need to configure a certain option if the desired value deviates from
 To configure joypads, use the built-in menu or the <tt>retroarch-joyconfig</tt> command-line tool.
 
 ## Compiling and installing
+<b>Linux</b><br/>
+- Prerequisites:
+```bash
+sudo apt-get install -y make git-core curl g++ pkg-config libglu1-mesa-dev freeglut3-dev mesa-common-dev libsdl1.2-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev
+```
+- ```bash
+./configure
+```
+- ```bash
+make
+```
 
 <b>Mac</b><br/>
 - Prerequisites: [XCode](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0CB4QFjAA&url=https%3A%2F%2Fitunes.apple.com%2Fus%2Fapp%2Fxcode%2Fid497799835%3Fmt%3D12&ei=ZmfeVNPtIILVoASBnoCYBw&usg=AFQjCNGrxKmVtXUdvUU3MhqZhP4MHT6Gtg&sig2=RIXKsWQ79YTQBt_lK5fdKA&bvm=bv.85970519,d.cGU), [Cg](https://developer.nvidia.com/cg-toolkit-download).
