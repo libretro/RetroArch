@@ -71,7 +71,7 @@ static int rmenu_entry_iterate(unsigned action)
    menu_handle_t *menu = menu_driver_resolve();
 
    if (!menu)
-      return;
+      return -1;
    
    cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
          menu->menu_list->selection_buf, menu->selection_ptr);
@@ -325,7 +325,7 @@ static void rmenu_wallpaper_set_defaults(char *menu_bg, size_t sizeof_menu_bg)
    fill_pathname_join(menu_bg, menu_bg, "main_menu.png", sizeof_menu_bg);
 }
 
-static void rmenu_context_reset(void *data)
+static void rmenu_context_reset(void)
 {
    char menu_bg[PATH_MAX_LENGTH];
    menu_handle_t *menu = menu_driver_resolve();
@@ -364,7 +364,7 @@ static void *rmenu_init(void)
    return menu;
 }
 
-static void rmenu_context_destroy(void *data)
+static void rmenu_context_destroy(void)
 {
    texture_image_free(menu_texture);
 }
