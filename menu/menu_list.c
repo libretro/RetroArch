@@ -136,7 +136,7 @@ void menu_list_destroy(file_list_t *list)
    for (i = 0; i < list->size; i++)
    {
       if (driver.menu_ctx->list_delete)
-         driver.menu_ctx->list_delete(driver.menu, list, i, list->size);
+         driver.menu_ctx->list_delete(list, i, list->size);
       menu_common_list_delete(list, i, list->size);
    }
 
@@ -271,7 +271,7 @@ void menu_list_pop_stack(menu_list_t *list)
       return;
 
    if (driver.menu_ctx->list_cache)
-      driver.menu_ctx->list_cache(driver.menu, false, 0);
+      driver.menu_ctx->list_cache(false, 0);
 
    menu_list_pop(list->menu_stack, &driver.menu->selection_ptr);
    driver.menu->need_refresh = true;
@@ -307,7 +307,7 @@ void menu_list_pop(file_list_t *list, size_t *directory_ptr)
       size_t list_size = list->size - 1;
 
       if (driver.menu_ctx->list_delete)
-         driver.menu_ctx->list_delete(driver.menu, list, list_size, list_size);
+         driver.menu_ctx->list_delete(list, list_size, list_size);
       menu_common_list_delete(list, list_size, list_size);
    }
 
@@ -329,7 +329,7 @@ void menu_list_clear(file_list_t *list)
       goto end;
 
    if (driver.menu_ctx->list_clear)
-      driver.menu_ctx->list_clear(driver.menu, list);
+      driver.menu_ctx->list_clear(list);
 
 end:
    menu_common_list_clear(list);
@@ -343,7 +343,7 @@ static void menu_list_insert(file_list_t *list,
       return;
 
    if (driver.menu_ctx->list_insert)
-      driver.menu_ctx->list_insert(driver.menu, list, path, label, list->size - 1);
+      driver.menu_ctx->list_insert(list, path, label, list->size - 1);
 
    menu_common_list_insert(list, path, label, type, list->size - 1);
 }
@@ -387,7 +387,7 @@ int menu_list_push_stack_refresh(menu_list_t *list,
       return -1;
 
    if (driver.menu_ctx->list_cache)
-      driver.menu_ctx->list_cache(driver.menu, false, 0);
+      driver.menu_ctx->list_cache(false, 0);
 
    menu_list_push_stack(list, path, label, type, directory_ptr);
    menu_navigation_clear(driver.menu, true);
@@ -427,7 +427,7 @@ int menu_list_populate_generic(void *data,
    menu_entries_refresh(menu, list);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }

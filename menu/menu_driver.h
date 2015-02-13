@@ -68,6 +68,14 @@ struct menu_bind_state
    bool skip;
 };
 
+typedef struct menu_framebuf
+{
+   uint16_t *data;
+   unsigned width;
+   unsigned height;
+   size_t pitch;
+} menu_framebuf_t;
+
 typedef struct
 {
    void *userdata;
@@ -118,13 +126,7 @@ typedef struct
    char default_glslp[PATH_MAX_LENGTH];
    char default_cgp[PATH_MAX_LENGTH];
 
-   struct
-   {
-      uint16_t *data;
-      unsigned width;
-      unsigned height;
-      size_t pitch;
-   } frame_buf;
+   menu_framebuf_t frame_buf;
 
    const uint8_t *font;
    bool alloc_font;
@@ -195,31 +197,31 @@ typedef struct menu_file_list_cbs
 
 typedef struct menu_ctx_driver
 {
-   void  (*set_texture)(menu_handle_t *menu);
-   void  (*render_messagebox)(menu_handle_t *menu, const char *msg);
-   void  (*render)(menu_handle_t *menu);
-   void  (*frame)(menu_handle_t *menu);
+   void  (*set_texture)(void);
+   void  (*render_messagebox)(const char *msg);
+   void  (*render)(void);
+   void  (*frame)(void);
    void* (*init)(void);
    void  (*free)(void*);
-   void  (*context_reset)(menu_handle_t *menu);
-   void  (*context_destroy)(menu_handle_t *menu);
-   void  (*populate_entries)(menu_handle_t *menu, const char *path, const char *label,
+   void  (*context_reset)(void);
+   void  (*context_destroy)(void);
+   void  (*populate_entries)(const char *path, const char *label,
          unsigned k);
-   void  (*toggle)(menu_handle_t *menu, bool);
-   void  (*navigation_clear)(menu_handle_t *menu, bool);
-   void  (*navigation_decrement)(menu_handle_t *menu);
-   void  (*navigation_increment)(menu_handle_t *menu);
-   void  (*navigation_set)(menu_handle_t *menu, bool);
-   void  (*navigation_set_last)(menu_handle_t *menu);
-   void  (*navigation_descend_alphabet)(menu_handle_t *menu, size_t *);
-   void  (*navigation_ascend_alphabet)(menu_handle_t *menu, size_t *);
-   void  (*list_insert)(menu_handle_t *menu, file_list_t *list, const char *, const char *, size_t);
-   void  (*list_delete)(menu_handle_t *menu, file_list_t *list, size_t, size_t);
-   void  (*list_clear)(menu_handle_t *menu, file_list_t *list);
-   void  (*list_cache)(menu_handle_t *menu, bool, unsigned);
+   void  (*toggle)(bool);
+   void  (*navigation_clear)(bool);
+   void  (*navigation_decrement)(void);
+   void  (*navigation_increment)(void);
+   void  (*navigation_set)(bool);
+   void  (*navigation_set_last)(void);
+   void  (*navigation_descend_alphabet)(size_t *);
+   void  (*navigation_ascend_alphabet)(size_t *);
+   void  (*list_insert)(file_list_t *list, const char *, const char *, size_t);
+   void  (*list_delete)(file_list_t *list, size_t, size_t);
+   void  (*list_clear)(file_list_t *list);
+   void  (*list_cache)(bool, unsigned);
    void  (*list_set_selection)(file_list_t *list);
-   int   (*entry_iterate)(menu_handle_t *menu, unsigned);
-   bool  (*load_background)(menu_handle_t *menu, const char * path);
+   int   (*entry_iterate)(unsigned);
+   bool  (*load_background)(const char * path);
    const char *ident;
 } menu_ctx_driver_t;
 
@@ -262,6 +264,8 @@ const char* config_get_menu_driver_options(void);
 void find_menu_driver(void);
 
 void init_menu(void);
+
+menu_handle_t *menu_driver_resolve(void);
 
 #ifdef __cplusplus
 }

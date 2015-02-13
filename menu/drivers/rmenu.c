@@ -64,12 +64,17 @@ struct texture_image *menu_texture;
 static bool render_normal = true;
 static bool menu_texture_inited =false;
 
-static int rmenu_entry_iterate(menu_handle_t *menu, unsigned action)
+static int rmenu_entry_iterate(unsigned action)
 {
    const char *label = NULL;
-   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
-            menu->selection_ptr);
+   menu_file_list_cbs_t *cbs = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return;
+   
+   cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
+         menu->menu_list->selection_buf, menu->selection_ptr);
 
    menu_list_get_last_stack(menu->menu_list, NULL, &label, NULL);
 
@@ -83,11 +88,15 @@ static void rmenu_render_background(void)
 {
 }
 
-static void rmenu_render_messagebox(menu_handle_t *menu, const char *message)
+static void rmenu_render_messagebox(const char *message)
 {
    struct font_params font_parms;
    size_t i, j;
    struct string_list *list = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return;
 
    if (!message || !*message)
       return;
@@ -132,7 +141,7 @@ end:
    string_list_free(list);
 }
 
-static void rmenu_render(menu_handle_t *menu)
+static void rmenu_render(void)
 {
    size_t begin, end;
    size_t i, j;
@@ -144,6 +153,7 @@ static void rmenu_render(menu_handle_t *menu)
    const char *core_name = NULL;
    const char *core_version = NULL;
    unsigned menu_type = 0;
+   menu_handle_t *menu = menu_driver_resolve();
 
    if (!menu)
       return;
@@ -256,7 +266,7 @@ static void rmenu_render(menu_handle_t *menu)
             selected ? '>' : ' ', entry_title_buf);
 
 #if 0
-      blit_line(menu, x, y, message, selected);
+      blit_line(x, y, message, selected);
 #endif
       font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
       font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET
@@ -278,8 +288,10 @@ static void rmenu_render(menu_handle_t *menu)
    }
 }
 
-static void rmenu_set_texture(menu_handle_t *menu)
+static void rmenu_set_texture(void)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+
    if (!menu)
       return;
    if (menu_texture_inited)
@@ -316,7 +328,7 @@ static void rmenu_wallpaper_set_defaults(char *menu_bg, size_t sizeof_menu_bg)
 static void rmenu_context_reset(void *data)
 {
    char menu_bg[PATH_MAX_LENGTH];
-   menu_handle_t *menu = (menu_handle_t*)data;
+   menu_handle_t *menu = menu_driver_resolve();
 
    if (!menu)
       return;

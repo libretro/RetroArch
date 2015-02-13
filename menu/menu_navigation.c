@@ -34,7 +34,7 @@ void menu_navigation_clear(menu_handle_t *menu, bool pending_push)
    menu->selection_ptr = 0;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_clear)
-      driver.menu_ctx->navigation_clear(menu, pending_push);
+      driver.menu_ctx->navigation_clear(pending_push);
 }
 
 /**
@@ -48,7 +48,7 @@ void menu_navigation_decrement(menu_handle_t *menu)
    menu->selection_ptr--;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_decrement)
-      driver.menu_ctx->navigation_decrement(menu);
+      driver.menu_ctx->navigation_decrement();
 }
 
 /**
@@ -62,7 +62,7 @@ void menu_navigation_increment(menu_handle_t *menu)
    menu->selection_ptr++;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_increment)
-      driver.menu_ctx->navigation_increment(menu);
+      driver.menu_ctx->navigation_increment();
 }
 
 /**
@@ -78,7 +78,7 @@ void menu_navigation_set(menu_handle_t *menu, size_t idx, bool scroll)
    menu->selection_ptr = idx; 
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_set)
-      driver.menu_ctx->navigation_set(menu, scroll);
+      driver.menu_ctx->navigation_set(scroll);
 }
 
 /**
@@ -92,7 +92,7 @@ void menu_navigation_set_last(menu_handle_t *menu)
    menu->selection_ptr = menu_list_get_size(driver.menu->menu_list) - 1;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_set_last)
-      driver.menu_ctx->navigation_set_last(menu);
+      driver.menu_ctx->navigation_set_last();
 }
 
 /**
@@ -124,7 +124,7 @@ void menu_navigation_descend_alphabet(menu_handle_t *menu, size_t *ptr_out)
    *ptr_out = menu->scroll.indices.list[i - 1];
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_descend_alphabet)
-      driver.menu_ctx->navigation_descend_alphabet(menu, ptr_out);
+      driver.menu_ctx->navigation_descend_alphabet(ptr_out);
 }
 
 /**
@@ -155,5 +155,5 @@ void menu_navigation_ascend_alphabet(menu_handle_t *menu, size_t *ptr_out)
    *ptr_out = menu->scroll.indices.list[i + 1];
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_descend_alphabet)
-      driver.menu_ctx->navigation_descend_alphabet(menu, ptr_out);
+      driver.menu_ctx->navigation_descend_alphabet(ptr_out);
 }

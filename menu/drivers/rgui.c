@@ -34,16 +34,19 @@
 #define RGUI_TERM_WIDTH (((menu->frame_buf.width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
 #define RGUI_TERM_HEIGHT (((menu->frame_buf.height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
 
-static int rgui_entry_iterate(menu_handle_t *menu, unsigned action)
+static int rgui_entry_iterate(unsigned action)
 {
    const char *label = NULL;
+   menu_file_list_cbs_t *cbs = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (!menu || !menu->menu_list)
+   if (!menu)
+      return -1;
+   if (!menu->menu_list)
       return -1;
 
-   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
-            menu->selection_ptr);
+   cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
+         menu->menu_list->selection_buf, menu->selection_ptr);
 
    menu_list_get_last_stack(menu->menu_list, NULL, &label, NULL);
 
@@ -107,19 +110,19 @@ static uint16_t green_filler(unsigned x, unsigned y)
 #endif
 }
 
-static void fill_rect(menu_handle_t *menu,
+static void fill_rect(menu_framebuf_t *frame_buf,
       unsigned x, unsigned y,
       unsigned width, unsigned height,
       uint16_t (*col)(unsigned x, unsigned y))
 {
    unsigned i, j;
     
-   if (!menu->frame_buf.data || !col)
+   if (!frame_buf->data || !col)
       return;
     
    for (j = y; j < y + height; j++)
       for (i = x; i < x + width; i++)
-         menu->frame_buf.data[j * (menu->frame_buf.pitch >> 1) + i] = col(i, j);
+         frame_buf->data[j * (frame_buf->pitch >> 1) + i] = col(i, j);
 }
 
 static void color_rect(menu_handle_t *menu,
@@ -195,12 +198,13 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
    return true;
 }
 
-static bool rguidisp_init_font(void *data)
+static bool rguidisp_init_font(menu_handle_t *menu)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
    const uint8_t *font_bmp_buf = NULL;
    const uint8_t *font_bin_buf = bitmap_bin;
+
+   if (!menu)
+      return false;
 
    if (font_bmp_buf)
       return init_font(menu, font_bmp_buf);
@@ -213,29 +217,33 @@ static bool rguidisp_init_font(void *data)
    return true;
 }
 
-static void rgui_render_background(menu_handle_t *menu)
+static void rgui_render_background(void)
 {
+   menu_handle_t *menu = menu_driver_resolve();
    if (!menu)
       return;
 
-   fill_rect(menu, 0, 0, menu->frame_buf.width, menu->frame_buf.height, gray_filler);
-   fill_rect(menu, 5, 5, menu->frame_buf.width - 10, 5, green_filler);
-   fill_rect(menu, 5, menu->frame_buf.height - 10, menu->frame_buf.width - 10, 5,
+   fill_rect(&menu->frame_buf, 0, 0, menu->frame_buf.width, menu->frame_buf.height, gray_filler);
+   fill_rect(&menu->frame_buf, 5, 5, menu->frame_buf.width - 10, 5, green_filler);
+   fill_rect(&menu->frame_buf, 5, menu->frame_buf.height - 10, menu->frame_buf.width - 10, 5,
          green_filler);
 
-   fill_rect(menu, 5, 5, 5, menu->frame_buf.height - 10, green_filler);
-   fill_rect(menu, menu->frame_buf.width - 10, 5, 5, menu->frame_buf.height - 10,
+   fill_rect(&menu->frame_buf, 5, 5, 5, menu->frame_buf.height - 10, green_filler);
+   fill_rect(&menu->frame_buf, menu->frame_buf.width - 10, 5, 5, menu->frame_buf.height - 10,
          green_filler);
 }
 
-static void rgui_render_messagebox(menu_handle_t *menu, const char *message)
+static void rgui_render_messagebox(const char *message)
 {
    size_t i;
    int x, y;
    unsigned width, glyphs_width, height;
    struct string_list *list = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (!menu || !message || !*message)
+   if (!menu)
+      return;
+   if (!message || !*message)
       return;
 
    list = string_split(message, "\n");
@@ -271,11 +279,11 @@ static void rgui_render_messagebox(menu_handle_t *menu, const char *message)
    x      = (menu->frame_buf.width - width) / 2;
    y      = (menu->frame_buf.height - height) / 2;
 
-   fill_rect(menu, x + 5, y + 5, width - 10, height - 10, gray_filler);
-   fill_rect(menu, x, y, width - 5, 5, green_filler);
-   fill_rect(menu, x + width - 5, y, 5, height - 5, green_filler);
-   fill_rect(menu, x + 5, y + height - 5, width - 5, 5, green_filler);
-   fill_rect(menu, x, y + 5, 5, height - 5, green_filler);
+   fill_rect(&menu->frame_buf, x + 5, y + 5, width - 10, height - 10, gray_filler);
+   fill_rect(&menu->frame_buf, x, y, width - 5, 5, green_filler);
+   fill_rect(&menu->frame_buf, x + width - 5, y, 5, height - 5, green_filler);
+   fill_rect(&menu->frame_buf, x + 5, y + height - 5, width - 5, 5, green_filler);
+   fill_rect(&menu->frame_buf, x, y + 5, 5, height - 5, green_filler);
 
    for (i = 0; i < list->size; i++)
    {
@@ -298,7 +306,7 @@ static void rgui_blit_cursor(menu_handle_t *menu)
    color_rect(menu, x - 5, y, 11, 1, 0xFFFF);
 }
 
-static void rgui_render(menu_handle_t *menu)
+static void rgui_render(void)
 {
    size_t i, end;
    char title[256], title_buf[256], title_msg[64];
@@ -308,10 +316,12 @@ static void rgui_render(menu_handle_t *menu)
    const char *label   = NULL;
    const char *core_name = NULL;
    const char *core_version = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (!menu || (menu->need_refresh 
-         && g_extern.is_menu
-         && !menu->msg_force))
+   if (!menu)
+      return;
+   if (menu->need_refresh && g_extern.is_menu
+         && !menu->msg_force)
       return;
 
    menu->mouse.ptr = menu->mouse.y / 11 - 2 + menu->begin;
@@ -332,7 +342,7 @@ static void rgui_render(menu_handle_t *menu)
       menu->begin + RGUI_TERM_HEIGHT :
       menu_list_get_size(menu->menu_list);
 
-   rgui_render_background(menu);
+   rgui_render_background();
 
    menu_list_get_last_stack(menu->menu_list,
          &dir, &label, &menu_type);
@@ -440,7 +450,7 @@ static void rgui_render(menu_handle_t *menu)
    else
       message_queue = driver.current_msg;
 
-   rgui_render_messagebox(menu, message_queue);
+   rgui_render_messagebox( message_queue);
 #endif
 
    if (menu->keyboard.display)
@@ -450,7 +460,7 @@ static void rgui_render(menu_handle_t *menu)
       if (!str)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
-      rgui_render_messagebox(menu, msg);
+      rgui_render_messagebox(msg);
    }
 
    if (menu->mouse.enable)
@@ -512,10 +522,12 @@ static void rgui_free(void *data)
       free((uint8_t*)menu->font);
 }
 
-static void rgui_set_texture(menu_handle_t *menu)
+static void rgui_set_texture(void)
 {
+   menu_handle_t *menu = menu_driver_resolve();
    if (!menu)
       return;
+
    if (!driver.video_data)
       return;
    if (!driver.video_poke)
@@ -527,16 +539,19 @@ static void rgui_set_texture(menu_handle_t *menu)
          menu->frame_buf.data, false, menu->frame_buf.width, menu->frame_buf.height, 1.0f);
 }
 
-static void rgui_navigation_clear(menu_handle_t *menu, bool pending_push)
+static void rgui_navigation_clear(bool pending_push)
 {
+   menu_handle_t *menu = menu_driver_resolve();
    if (menu)
       menu->begin = 0;
 }
 
-static void rgui_navigation_set(menu_handle_t *menu, bool scroll)
+static void rgui_navigation_set(bool scroll)
 {
+   menu_handle_t *menu = menu_driver_resolve();
    if (!menu)
       return;
+
    if (!scroll)
       return;
 
@@ -552,25 +567,33 @@ static void rgui_navigation_set(menu_handle_t *menu, bool scroll)
             - RGUI_TERM_HEIGHT;
 }
 
-static void rgui_navigation_set_last(menu_handle_t *menu)
+static void rgui_navigation_set_last(void)
 {
-   rgui_navigation_set(menu, true);
+   menu_handle_t *menu = menu_driver_resolve();
+   if (menu)
+      rgui_navigation_set(true);
 }
 
-static void rgui_navigation_descend_alphabet(menu_handle_t *menu, size_t *unused)
+static void rgui_navigation_descend_alphabet(size_t *unused)
 {
-   rgui_navigation_set(menu, true);
+   menu_handle_t *menu = menu_driver_resolve();
+   if (menu)
+      rgui_navigation_set(true);
 }
 
-static void rgui_navigation_ascend_alphabet(menu_handle_t *menu, size_t *unused)
+static void rgui_navigation_ascend_alphabet(size_t *unused)
 {
-   rgui_navigation_set(menu, true);
+   menu_handle_t *menu = menu_driver_resolve();
+   if (menu)
+      rgui_navigation_set(true);
 }
 
-static void rgui_populate_entries(menu_handle_t *menu, const char *path,
+static void rgui_populate_entries(const char *path,
       const char *label, unsigned k)
 {
-   rgui_navigation_set(menu, true);
+   menu_handle_t *menu = menu_driver_resolve();
+   if (menu)
+      rgui_navigation_set(true);
 }
 
 menu_ctx_driver_t menu_ctx_rgui = {

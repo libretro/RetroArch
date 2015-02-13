@@ -359,7 +359,7 @@ int menu_input_bind_iterate(menu_handle_t *menu)
     
    if (driver.video_data && driver.menu_ctx &&
          driver.menu_ctx->render)
-      driver.menu_ctx->render(menu);
+      driver.menu_ctx->render();
 
    snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)",
          input_config_bind_map[
@@ -367,7 +367,7 @@ int menu_input_bind_iterate(menu_handle_t *menu)
 
    if (driver.video_data && driver.menu_ctx 
          && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(menu, msg);
+      driver.menu_ctx->render_messagebox( msg);
 
    driver.block_input = true;
    menu_input_poll_bind_state(&binds);
@@ -401,7 +401,7 @@ int menu_input_bind_iterate_keyboard(menu_handle_t *menu)
 
    if (driver.video_data && driver.menu_ctx &&
          driver.menu_ctx->render)
-      driver.menu_ctx->render(menu);
+      driver.menu_ctx->render();
 
    current = rarch_get_time_usec();
    timeout = (menu->binds.timeout_end - current) / 1000000;
@@ -412,7 +412,7 @@ int menu_input_bind_iterate_keyboard(menu_handle_t *menu)
 
    if (driver.video_data && driver.menu_ctx 
          && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(menu, msg);
+      driver.menu_ctx->render_messagebox(msg);
 
    if (timeout <= 0)
    {

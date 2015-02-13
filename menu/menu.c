@@ -67,7 +67,7 @@ void menu_update_libretro_info(struct retro_system_info *info)
    if (*g_settings.libretro_directory)
       g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
    if (driver.menu_ctx && driver.menu_ctx->context_reset)
-      driver.menu_ctx->context_reset(driver.menu);
+      driver.menu_ctx->context_reset();
 
    rarch_update_system_info(info, NULL);
 }
@@ -131,7 +131,7 @@ bool menu_load_content(void)
       driver.menu->msg_force = true;
 
    if (driver.menu_ctx && driver.menu_ctx->entry_iterate) 
-      driver.menu_ctx->entry_iterate(driver.menu, MENU_ACTION_NOOP);
+      driver.menu_ctx->entry_iterate(MENU_ACTION_NOOP);
 
    draw_frame();
 
@@ -370,12 +370,12 @@ int menu_iterate(retro_input_t input,
    int32_t ret     = 0;
    unsigned action = menu_input_frame(input, trigger_input);
 
-   if (driver.menu && driver.menu_ctx)
+   if (driver.menu_ctx)
    {
       if (driver.menu_ctx->set_texture)
-         driver.menu_ctx->set_texture(driver.menu);
+         driver.menu_ctx->set_texture();
       if (driver.menu_ctx->entry_iterate) 
-         ret = driver.menu_ctx->entry_iterate(driver.menu, action);
+         ret = driver.menu_ctx->entry_iterate(action);
    }
 
    if (g_extern.is_menu)

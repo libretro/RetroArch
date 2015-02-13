@@ -122,7 +122,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -345,7 +345,7 @@ int menu_entries_parse_list(
    {
       menu_entries_parse_drive_list(list);
       if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-         driver.menu_ctx->populate_entries(driver.menu, dir, label, type);
+         driver.menu_ctx->populate_entries(dir, label, type);
       return 0;
    }
 #if defined(GEKKO) && defined(HW_RVL)

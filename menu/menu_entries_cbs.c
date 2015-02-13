@@ -228,7 +228,7 @@ static int load_or_open_zip_iterate(menu_handle_t *menu, unsigned action)
          && driver.menu_ctx->render_messagebox)
    {
       if (*msg && msg[0] != '\0')
-         driver.menu_ctx->render_messagebox(menu, msg);
+         driver.menu_ctx->render_messagebox(msg);
    }
 
    switch (action)
@@ -546,7 +546,7 @@ static int action_ok_menu_wallpaper_load(const char *path,
    strlcpy(g_settings.menu.wallpaper, wallpaper_path, sizeof(g_settings.menu.wallpaper));
 
    if (driver.menu_ctx && driver.menu_ctx->load_background)
-      driver.menu_ctx->load_background(driver.menu, wallpaper_path);
+      driver.menu_ctx->load_background(wallpaper_path);
 
 end:
    menu_list_pop_stack_by_needle(driver.menu->menu_list, setting->name);
@@ -798,7 +798,7 @@ static int deferred_push_core_information(void *data, void *userdata,
             MENU_SETTINGS_CORE_OPTION_NONE, 0);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -1149,7 +1149,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
             0, 0);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path,
+      driver.menu_ctx->populate_entries(path,
             str_list->elems[0].data, type);
 
    ret = 0;
@@ -2104,7 +2104,7 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
    {
       case 1:
          if (driver.menu_ctx->list_cache)
-            driver.menu_ctx->list_cache(menu, true, action);
+            driver.menu_ctx->list_cache(true, action);
 
          if (cbs && cbs->action_content_list_switch)
             return cbs->action_content_list_switch(
@@ -2793,7 +2793,7 @@ static int deferred_push_core_information(void *data, void *userdata,
             MENU_SETTINGS_CORE_OPTION_NONE, 0);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -2815,7 +2815,7 @@ static int deferred_push_performance_counters(void *data, void *userdata,
          MENU_SETTING_ACTION, 0);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -2852,7 +2852,7 @@ static int deferred_push_video_shader_parameters_common(void *data, void *userda
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -2937,7 +2937,7 @@ static int deferred_push_settings(void *data, void *userdata,
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -3004,7 +3004,7 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -3066,7 +3066,7 @@ static int deferred_push_shader_options(void *data, void *userdata,
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -3098,7 +3098,7 @@ static int deferred_push_options(void *data, void *userdata,
          MENU_SETTING_ACTION, 0);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -3122,7 +3122,7 @@ static int deferred_push_management_options(void *data, void *userdata,
 #endif
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -3161,7 +3161,7 @@ static int push_perfcounter_generic(
    push_perfcounter(driver.menu, list, counters, num, ident);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -3224,7 +3224,7 @@ static int deferred_push_core_cheat_options(void *data, void *userdata,
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -3267,7 +3267,7 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -3299,7 +3299,7 @@ static int deferred_push_core_options(void *data, void *userdata,
                MENU_SETTINGS_CORE_OPTION_NONE, 0);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -3323,7 +3323,7 @@ static int deferred_push_disk_options(void *data, void *userdata,
          MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -3787,7 +3787,7 @@ static int action_iterate_help(const char *label, unsigned action)
       return 0;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render(menu);
+      driver.menu_ctx->render();
 
    for (i = 0; i < ARRAY_SIZE(binds); i++)
    {
@@ -3825,7 +3825,7 @@ static int action_iterate_help(const char *label, unsigned action)
       desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7]);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(menu, msg);
+      driver.menu_ctx->render_messagebox(msg);
 
    if (action == MENU_ACTION_OK)
       menu_list_pop(menu->menu_list->menu_stack, NULL);
@@ -3848,7 +3848,7 @@ static int action_iterate_info(const char *label, unsigned action)
    list = (file_list_t*)menu->menu_list->selection_buf;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render(menu);
+      driver.menu_ctx->render();
 
    current_setting = (rarch_setting_t*)setting_data_find_setting(
          menu->list_settings,
@@ -3880,7 +3880,7 @@ static int action_iterate_info(const char *label, unsigned action)
          driver.menu_ctx->render_messagebox)
    {
       if (*msg && msg[0] != '\0')
-         driver.menu_ctx->render_messagebox(menu, msg);
+         driver.menu_ctx->render_messagebox(msg);
    }
 
    if (action == MENU_ACTION_OK)
@@ -4041,7 +4041,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
    menu_list_get_last_stack(menu->menu_list, NULL, &label, &type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render(menu);
+      driver.menu_ctx->render();
 
    if (g_settings.video.scale_integer)
    {
@@ -4072,7 +4072,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 
    if (driver.video_data && driver.menu_ctx &&
          driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(menu, msg);
+      driver.menu_ctx->render_messagebox(msg);
 
    if (!custom->width)
       custom->width = stride_x;
@@ -4110,7 +4110,7 @@ static int action_iterate_message(const char *label, unsigned action)
 
    if (driver.video_data && driver.menu_ctx
          && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(menu, menu->message_contents);
+      driver.menu_ctx->render_messagebox(menu->message_contents);
 
    if (action == MENU_ACTION_OK)
       menu_list_pop_stack(menu->menu_list);
@@ -4272,7 +4272,7 @@ static int action_iterate_main(const char *label, unsigned action)
    ret = mouse_post_iterate(cbs, path_offset, label_offset, type_offset, action);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render(menu);
+      driver.menu_ctx->render();
 
    /* Have to defer it so we let settings refresh. */
    if (menu->push_start_screen)

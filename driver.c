@@ -335,8 +335,8 @@ void init_drivers(int flags)
    {
       init_menu();
 
-      if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_reset)
-         driver.menu_ctx->context_reset(driver.menu);
+      if (driver.menu_ctx && driver.menu_ctx->context_reset)
+         driver.menu_ctx->context_reset();
    }
 #endif
 
@@ -371,8 +371,8 @@ void uninit_drivers(int flags)
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU)
    {
-      if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_destroy)
-            driver.menu_ctx->context_destroy(driver.menu);
+      if (driver.menu_ctx && driver.menu_ctx->context_destroy)
+            driver.menu_ctx->context_destroy();
 
          if (!driver.menu_data_own)
          {

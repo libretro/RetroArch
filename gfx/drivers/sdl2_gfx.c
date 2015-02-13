@@ -500,7 +500,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 #ifdef HAVE_MENU
    if (g_extern.is_menu 
          && driver.menu_ctx && driver.menu_ctx->frame)
-      driver.menu_ctx->frame(driver.menu);
+      driver.menu_ctx->frame();
 #endif
 
    if (vid->menu.active)

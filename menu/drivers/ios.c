@@ -25,11 +25,17 @@
 #include "ios.h"
 #include "../menu_input.h"
 
-static int ios_entry_iterate(menu_handle_t *menu, unsigned action)
+static int ios_entry_iterate(unsigned action)
 {
-   ios_handle_t *ios = (ios_handle_t*)menu->userdata;
+   ios_handle_t *ios   = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (ios->switch_to_ios)
+   if (!menu)
+      return -1;
+
+   ios = (ios_handle_t*)menu->userdata;
+
+   if (ios && ios->switch_to_ios)
       ios->switch_to_ios();
 
    return 0;

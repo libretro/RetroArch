@@ -160,3 +160,10 @@ void init_menu(void)
       rarch_fail(1, "init_menu()");
    }
 }
+
+menu_handle_t *menu_driver_resolve(void)
+{
+   if (!driver.menu)
+      return NULL;
+   return driver.menu;
+}
