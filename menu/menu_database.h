@@ -32,7 +32,7 @@ int menu_database_populate_query(file_list_t *list, const char *path,
 
 void menu_database_free(menu_handle_t *menu);
 
-bool menu_database_realloc(menu_handle_t *menu, const char *path,
+bool menu_database_realloc(const char *path,
       bool force);
 
 #ifdef __cplusplus

@@ -1003,7 +1003,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
    fill_pathname_join(path_rdl, g_settings.content_database, path_base,
          sizeof(path_rdl));
 
-   menu_database_realloc(driver.menu, path_rdl, false);
+   menu_database_realloc(path_rdl, false);
 
    playlist = menu->db_playlist;
 
