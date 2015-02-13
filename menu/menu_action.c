@@ -95,7 +95,7 @@ static int menu_action_handle_setting(rarch_setting_t *setting,
                   setting->default_value.string,
                   setting->name,
                   type,
-                  driver.menu->selection_ptr);
+                  driver.menu->navigation.selection_ptr);
          /* fall-through. */
       case ST_BOOL:
       case ST_INT:
@@ -124,7 +124,7 @@ int menu_action_setting_set(unsigned type, const char *label, unsigned action)
 {
    rarch_setting_t *setting = menu_action_find_setting(
          driver.menu->menu_list->selection_buf->list
-         [driver.menu->selection_ptr].label);
+         [driver.menu->navigation.selection_ptr].label);
 
    if (!setting)
       return 0;

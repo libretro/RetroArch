@@ -831,7 +831,7 @@ static int setting_data_action_ok_bind_all(void *data, unsigned action)
          g_extern.menu.bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
          MENU_SETTINGS_CUSTOM_BIND,
-         menu->selection_ptr);
+         menu->navigation.selection_ptr);
 
    if (g_extern.menu.bind_mode_keyboard)
    {
@@ -1029,7 +1029,7 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
          "custom_bind",
          g_extern.menu.bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
-         menu->selection_ptr);
+         menu->navigation.selection_ptr);
 
    if (g_extern.menu.bind_mode_keyboard)
    {

@@ -29,21 +29,21 @@ extern "C" {
  *
  * Clears the navigation pointer.
  **/
-void menu_navigation_clear(bool pending_push);
+void menu_navigation_clear(menu_navigation_t *nav, bool pending_push);
 
 /**
  * menu_navigation_decrement:
  *
  * Decrement the navigation pointer.
  **/
-void menu_navigation_decrement(void);
+void menu_navigation_decrement(menu_navigation_t *nav);
 
 /**
  * menu_navigation_increment:
  *
  * Increment the navigation pointer.
  **/
-void menu_navigation_increment(void);
+void menu_navigation_increment(menu_navigation_t *nav);
 
 /**
  * menu_navigation_set:      
@@ -52,14 +52,14 @@ void menu_navigation_increment(void);
  *
  * Sets navigation pointer to index @idx.
  **/
-void menu_navigation_set(size_t i, bool scroll);
+void menu_navigation_set(menu_navigation_t *nav, size_t i, bool scroll);
 
 /**
  * menu_navigation_set_last:
  *
  * Sets navigation pointer to last index.
  **/
-void menu_navigation_set_last(void);
+void menu_navigation_set_last(menu_navigation_t *nav);
 
 /**
  * menu_navigation_descend_alphabet:
@@ -71,7 +71,7 @@ void menu_navigation_set_last(void);
  * If navigation points to an entry called 'Beta',
  * navigation pointer will be set to an entry called 'Alpha'.
  **/
-void menu_navigation_descend_alphabet(size_t *ptr_out);
+void menu_navigation_descend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
 
 /**
  * menu_navigation_ascends_alphabet:
@@ -83,7 +83,7 @@ void menu_navigation_descend_alphabet(size_t *ptr_out);
  * If navigation points to an entry called 'Alpha',
  * navigation pointer will be set to an entry called 'Beta'.
  **/
-void menu_navigation_ascend_alphabet(size_t *ptr_out);
+void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out);
 
 #ifdef __cplusplus
 }

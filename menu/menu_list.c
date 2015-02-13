@@ -36,11 +36,12 @@ static void menu_entries_refresh(file_list_t *list)
    if (!list)
       return;
 
-   if (menu->selection_ptr >= menu_list_get_size(menu->menu_list)
+   if (menu->navigation.selection_ptr >= menu_list_get_size(menu->menu_list)
          && menu_list_get_size(menu->menu_list))
-      menu_navigation_set(menu_list_get_size(menu->menu_list) - 1, true);
+      menu_navigation_set(&menu->navigation,
+            menu_list_get_size(menu->menu_list) - 1, true);
    else if (!menu_list_get_size(menu->menu_list))
-      menu_navigation_clear(true);
+      menu_navigation_clear(&menu->navigation, true);
 }
 
 /**
@@ -97,16 +98,23 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
    size_t i;
    int current;
    bool current_is_dir;
+   menu_navigation_t *nav = NULL;
    menu_handle_t *menu = menu_driver_resolve();
 
    if (!menu || !list)
       return;
 
-   menu->scroll.indices.size = 0;
+   nav = &menu->navigation;
+
+   if (!nav)
+      return;
+
+   nav->scroll.indices.size = 0;
+
    if (!list->size)
       return;
 
-   menu->scroll.indices.list[menu->scroll.indices.size++] = 0;
+   nav->scroll.indices.list[nav->scroll.indices.size++] = 0;
 
    current        = menu_entries_list_get_first_char(list, 0);
    current_is_dir = menu_entries_list_elem_is_dir(list, 0);
@@ -117,13 +125,13 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
       bool is_dir = menu_entries_list_elem_is_dir(list, i);
 
       if ((current_is_dir && !is_dir) || (first > current))
-         menu->scroll.indices.list[menu->scroll.indices.size++] = i;
+         nav->scroll.indices.list[nav->scroll.indices.size++] = i;
 
       current = first;
       current_is_dir = is_dir;
    }
 
-   menu->scroll.indices.list[menu->scroll.indices.size++] = 
+   nav->scroll.indices.list[nav->scroll.indices.size++] = 
       list->size - 1;
 }
 
@@ -241,7 +249,7 @@ void menu_list_flush_stack(menu_list_t *list,
 
    while (type != final_type)
    {
-      menu_list_pop(list->menu_stack, &menu->selection_ptr);
+      menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
       file_list_get_last(list->menu_stack, &path, &label, &type);
    }
 }
@@ -261,7 +269,7 @@ void menu_list_flush_stack_by_needle(menu_list_t *list,
 
    while (strcmp(needle, label) != 0)
    {
-      menu_list_pop(list->menu_stack, &menu->selection_ptr);
+      menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
       file_list_get_last(list->menu_stack, &path, &label, &type);
    }
 }
@@ -278,7 +286,7 @@ void menu_list_pop_stack(menu_list_t *list)
    if (driver.menu_ctx->list_cache)
       driver.menu_ctx->list_cache(false, 0);
 
-   menu_list_pop(list->menu_stack, &menu->selection_ptr);
+   menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
    menu->need_refresh = true;
 }
 
@@ -298,7 +306,7 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
 
    while (strcmp(needle, label) == 0)
    {
-      menu_list_pop(list->menu_stack, &menu->selection_ptr);
+      menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
       file_list_get_last(list->menu_stack, &path, &label, &type);
    }
 }
@@ -374,7 +382,7 @@ void menu_list_push_refresh(file_list_t *list,
       return;
 
    menu_list_push(list, path, label, type, directory_ptr);
-   menu_navigation_clear(true);
+   menu_navigation_clear(&menu->navigation, true);
    menu->need_refresh = true;
 }
 
@@ -398,7 +406,7 @@ int menu_list_push_stack_refresh(menu_list_t *list, const char *path, const char
       driver.menu_ctx->list_cache(false, 0);
 
    menu_list_push_stack(list, path, label, type, directory_ptr);
-   menu_navigation_clear(true);
+   menu_navigation_clear(&menu->navigation, true);
    menu->need_refresh = true;
 
    return 0;
@@ -429,7 +437,7 @@ int menu_list_populate_generic(file_list_t *list, const char *path,
    if (!menu)
       return -1;
 
-   menu->scroll.indices.size = 0;
+   menu->navigation.scroll.indices.size = 0;
 
    menu_entries_build_scroll_indices(list);
    menu_entries_refresh(list);

@@ -245,7 +245,7 @@ static int xmb_entry_iterate(unsigned action)
    
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
-            menu->selection_ptr);
+            menu->navigation.selection_ptr);
 
    menu_list_get_last_stack(menu->menu_list, NULL, &label, NULL);
 
@@ -529,7 +529,7 @@ static void xmb_selection_pointer_changed(void)
    if (!xmb)
       return;
 
-   current = menu->selection_ptr;
+   current = menu->navigation.selection_ptr;
    end     = menu_list_get_size(menu->menu_list);
 
    for (i = 0; i < end; i++)
@@ -818,7 +818,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
       dir = 1;
 
    xmb_list_switch_old(xmb, xmb->selection_buf_old, dir, xmb->selection_ptr_old);
-   xmb_list_switch_new(xmb, menu->menu_list->selection_buf, dir, menu->selection_ptr);
+   xmb_list_switch_new(xmb, menu->menu_list->selection_buf, dir, menu->navigation.selection_ptr);
    xmb->categories.active.idx_old = menu->categories.selection_ptr;
 }
 
@@ -856,7 +856,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    }
 
    xmb_list_open_old(xmb, xmb->selection_buf_old, dir, xmb->selection_ptr_old);
-   xmb_list_open_new(xmb, menu->menu_list->selection_buf, dir, menu->selection_ptr);
+   xmb_list_open_new(xmb, menu->menu_list->selection_buf, dir, menu->navigation.selection_ptr);
 
    switch (xmb->depth)
    {
@@ -1155,7 +1155,7 @@ static void xmb_frame(void)
    xmb_draw_items(xmb, gl,
          menu->menu_list->selection_buf,
          menu->menu_list->menu_stack,
-         menu->selection_ptr,
+         menu->navigation.selection_ptr,
          menu->categories.selection_ptr);
 
    for (i = 0; i < menu->categories.size; i++)
@@ -1591,7 +1591,7 @@ static void xmb_list_insert(file_list_t *list,
    if (!node)
       return;
 
-   current           = menu->selection_ptr;
+   current           = menu->navigation.selection_ptr;
 
    node->alpha       = xmb->item.passive.alpha;
    node->zoom        = xmb->item.passive.zoom;
@@ -1634,7 +1634,7 @@ static void xmb_list_cache(bool horizontal, unsigned action)
 
    file_list_copy(menu->menu_list->selection_buf, xmb->selection_buf_old);
    file_list_copy(menu->menu_list->menu_stack, xmb->menu_stack_old);
-   xmb->selection_ptr_old = menu->selection_ptr;
+   xmb->selection_ptr_old = menu->navigation.selection_ptr;
 
    if(!horizontal)
       return;

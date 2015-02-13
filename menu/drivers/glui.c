@@ -58,7 +58,7 @@ static int glui_entry_iterate(unsigned action)
       return -1;
 
    cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
-         menu->menu_list->selection_buf, menu->selection_ptr);
+         menu->menu_list->selection_buf, menu->navigation.selection_ptr);
 
    menu_list_get_last_stack(menu->menu_list, NULL, &label, NULL);
 
@@ -396,7 +396,7 @@ static void glui_frame(void)
                entry_label, path,
                path_buf, sizeof(path_buf));
 
-      selected = (i == menu->selection_ptr);
+      selected = (i == menu->navigation.selection_ptr);
 
       menu_animation_ticker_line(entry_title_buf, glui->term_width - (w + 1 + 2),
             g_extern.frame_count / glui->margin, path_buf, selected);
@@ -588,13 +588,13 @@ static void glui_navigation_set(bool scroll)
    if (!scroll)
       return;
 
-   if (menu->selection_ptr < glui->term_height/2)
+   if (menu->navigation.selection_ptr < glui->term_height/2)
       menu->begin = 0;
-   else if (menu->selection_ptr >= glui->term_height/2
-         && menu->selection_ptr <
+   else if (menu->navigation.selection_ptr >= glui->term_height/2
+         && menu->navigation.selection_ptr <
          menu_list_get_size(menu->menu_list) - glui->term_height/2)
-      menu->begin = menu->selection_ptr - glui->term_height/2;
-   else if (menu->selection_ptr >=
+      menu->begin = menu->navigation.selection_ptr - glui->term_height/2;
+   else if (menu->navigation.selection_ptr >=
          menu_list_get_size(menu->menu_list) - glui->term_height/2)
       menu->begin = menu_list_get_size(menu->menu_list)
             - glui->term_height;

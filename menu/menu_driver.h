@@ -76,6 +76,22 @@ typedef struct menu_framebuf
    size_t pitch;
 } menu_framebuf_t;
 
+typedef struct menu_navigation
+{
+   struct
+   {
+      /* Quick jumping indices with L/R.
+       * Rebuilt when parsing directory. */
+      struct
+      {
+         size_t list[2 * (26 + 2) + 1];
+         unsigned size;
+      } indices;
+      unsigned acceleration;
+   } scroll;
+   size_t selection_ptr;
+} menu_navigation_t;
+
 typedef struct
 {
    void *userdata;
@@ -90,6 +106,7 @@ typedef struct
    size_t begin;
 
    menu_list_t *menu_list;
+   menu_navigation_t navigation;
 
    struct
    {
@@ -97,7 +114,6 @@ typedef struct
       size_t size;
    } categories;
 
-   size_t selection_ptr;
    bool need_refresh;
    bool msg_force;
    bool push_start_screen;
@@ -111,17 +127,6 @@ typedef struct
     */
    char message_contents[PATH_MAX_LENGTH];
 
-   /* Quick jumping indices with L/R.
-    * Rebuilt when parsing directory. */
-   struct
-   {
-      struct
-      {
-         size_t list[2 * (26 + 2) + 1];
-         unsigned size;
-      } indices;
-      unsigned acceleration;
-   } scroll;
 
    char default_glslp[PATH_MAX_LENGTH];
    char default_cgp[PATH_MAX_LENGTH];

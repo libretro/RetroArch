@@ -156,7 +156,7 @@ static int archive_open(void)
       return 0;
 
    menu_list_get_at_offset(menu->menu_list->selection_buf,
-         menu->selection_ptr, &path, NULL, &type);
+         menu->navigation.selection_ptr, &path, NULL, &type);
 
    fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
    menu_list_push_stack_refresh(
@@ -164,7 +164,7 @@ static int archive_open(void)
          cat_path,
          menu_label,
          type,
-         menu->selection_ptr);
+         menu->navigation.selection_ptr);
 
    return 0;
 }
@@ -202,7 +202,7 @@ static int archive_load(void)
       return 0;
 
    menu_list_get_at_offset(menu->menu_list->selection_buf,
-         menu->selection_ptr, &path, NULL, &type);
+         menu->navigation.selection_ptr, &path, NULL, &type);
 
    ret = rarch_defer_core(g_extern.core_info, menu_path, path, menu_label,
          menu->deferred_path, sizeof(menu->deferred_path));
@@ -219,7 +219,7 @@ static int archive_load(void)
                g_settings.libretro_directory,
                "deferred_core_list",
                0,
-               menu->selection_ptr);
+               menu->navigation.selection_ptr);
          break;
    }
 
@@ -287,7 +287,7 @@ static int action_ok_playlist_entry(const char *path,
       return -1;
 
    rarch_playlist_load_content(g_defaults.history,
-         menu->selection_ptr);
+         menu->navigation.selection_ptr);
    menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
    return -1;
 }
@@ -1410,7 +1410,7 @@ static int action_ok_config_load(const char *path,
    menu->msg_force = true;
    if (rarch_replace_config(config))
    {
-      menu_navigation_clear(false);
+      menu_navigation_clear(&menu->navigation, false);
       return -1;
    }
 
@@ -2164,24 +2164,26 @@ static int action_toggle_scroll(unsigned type, const char *label,
    if (!menu)
       return -1;
 
-   scroll_speed      = (max(menu->scroll.acceleration, 2) - 2) / 4 + 1;
+   scroll_speed      = (max(menu->navigation.scroll.acceleration, 2) - 2) / 4 + 1;
    fast_scroll_speed = 4 + 4 * scroll_speed;
 
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         if (menu->selection_ptr > fast_scroll_speed)
-            menu_navigation_set(menu->selection_ptr - fast_scroll_speed, true);
+         if (menu->navigation.selection_ptr > fast_scroll_speed)
+            menu_navigation_set(&menu->navigation,
+                  menu->navigation.selection_ptr - fast_scroll_speed, true);
          else
-            menu_navigation_clear(false);
+            menu_navigation_clear(&menu->navigation, false);
          break;
       case MENU_ACTION_RIGHT:
-         if (menu->selection_ptr + fast_scroll_speed < (menu_list_get_size(menu->menu_list)))
-            menu_navigation_set(menu->selection_ptr + fast_scroll_speed, true);
+         if (menu->navigation.selection_ptr + fast_scroll_speed < (menu_list_get_size(menu->menu_list)))
+            menu_navigation_set(&menu->navigation,
+                  menu->navigation.selection_ptr + fast_scroll_speed, true);
          else
          {
             if ((menu_list_get_size(menu->menu_list) > 0))
-                  menu_navigation_set_last();
+                  menu_navigation_set_last(&menu->navigation);
          }
          break;
    }
@@ -2202,7 +2204,7 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
    {
       if (!strcmp(driver.menu_ctx->ident, "xmb"))
       {
-         menu->selection_ptr = 0;
+         menu->navigation.selection_ptr = 0;
          switch (action)
          {
             case MENU_ACTION_LEFT:
@@ -2223,7 +2225,7 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
 
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
-            menu->selection_ptr);
+            menu->navigation.selection_ptr);
 
    switch (push_list)
    {
@@ -3897,7 +3899,7 @@ static int action_bind_up_or_down_generic(unsigned type, const char *label,
    if (!menu)
       return -1;
 
-   scroll_speed = (max(menu->scroll.acceleration, 2) - 2) / 4 + 1;
+   scroll_speed = (max(menu->navigation.scroll.acceleration, 2) - 2) / 4 + 1;
 
    if (menu_list_get_size(menu->menu_list) <= 0)
       return 0;
@@ -3905,25 +3907,29 @@ static int action_bind_up_or_down_generic(unsigned type, const char *label,
    switch (action)
    {
       case MENU_ACTION_UP:
-         if (menu->selection_ptr >= scroll_speed)
-               menu_navigation_set(menu->selection_ptr - scroll_speed, true);
+         if (menu->navigation.selection_ptr >= scroll_speed)
+               menu_navigation_set(&menu->navigation,
+                     menu->navigation.selection_ptr - scroll_speed, true);
          else
          {
             if (g_settings.menu.navigation.wraparound.vertical_enable)
-               menu_navigation_set(menu_list_get_size(menu->menu_list) - 1, true);
+               menu_navigation_set(&menu->navigation, 
+                     menu_list_get_size(menu->menu_list) - 1, true);
             else
-               menu_navigation_set(0, true);
+               menu_navigation_set(&menu->navigation, 0, true);
          }
          break;
       case MENU_ACTION_DOWN:
-         if (menu->selection_ptr + scroll_speed < (menu_list_get_size(menu->menu_list)))
-            menu_navigation_set(menu->selection_ptr + scroll_speed, true);
+         if (menu->navigation.selection_ptr + scroll_speed < (menu_list_get_size(menu->menu_list)))
+            menu_navigation_set(&menu->navigation,
+                  menu->navigation.selection_ptr + scroll_speed, true);
          else
          {
             if (g_settings.menu.navigation.wraparound.vertical_enable)
-               menu_navigation_clear(false);
+               menu_navigation_clear(&menu->navigation, false);
             else
-               menu_navigation_set(menu_list_get_size(menu->menu_list) - 1, true);
+               menu_navigation_set(&menu->navigation,
+                     menu_list_get_size(menu->menu_list) - 1, true);
          }
          break;
    }
@@ -3956,7 +3962,7 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
       return 0;
 
    if (menu->mouse.ptr <= menu_list_get_size(menu->menu_list)-1)
-      menu_navigation_set(menu->mouse.ptr, false);
+      menu_navigation_set(&menu->navigation, menu->mouse.ptr, false);
 
    if (menu->mouse.left)
    {
@@ -3965,7 +3971,8 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
          menu->mouse.oldleft = true;
 
          if (cbs && cbs->action_ok)
-            return cbs->action_ok(path, label, type, menu->selection_ptr);
+            return cbs->action_ok(path, label, type,
+                  menu->navigation.selection_ptr);
       }
    }
    else
@@ -4069,13 +4076,13 @@ static int action_iterate_info(const char *label, unsigned action)
 
    current_setting = (rarch_setting_t*)setting_data_find_setting(
          menu->list_settings,
-         list->list[menu->selection_ptr].label);
+         list->list[menu->navigation.selection_ptr].label);
 
    if (current_setting)
       strlcpy(needle, current_setting->name, sizeof(needle));
    else if ((current_setting = (rarch_setting_t*)setting_data_find_setting(
                menu->list_settings,
-               list->list[menu->selection_ptr].label)))
+               list->list[menu->navigation.selection_ptr].label)))
    {
       if (current_setting)
          strlcpy(needle, current_setting->name, sizeof(needle));
@@ -4084,7 +4091,7 @@ static int action_iterate_info(const char *label, unsigned action)
    {
       const char *lbl = NULL;
       menu_list_get_at_offset(list,
-            menu->selection_ptr, NULL, &lbl,
+            menu->navigation.selection_ptr, NULL, &lbl,
             &info_type);
 
       if (lbl)
@@ -4101,7 +4108,7 @@ static int action_iterate_info(const char *label, unsigned action)
    }
 
    if (action == MENU_ACTION_OK)
-      menu_list_pop(menu->menu_list->menu_stack, &menu->selection_ptr);
+      menu_list_pop(menu->menu_list->menu_stack, &menu->navigation.selection_ptr);
 
    return 0;
 }
@@ -4205,7 +4212,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
          {
             menu_list_push_stack(menu->menu_list, "", "",
                   MENU_SETTINGS_CUSTOM_VIEWPORT,
-                  menu->selection_ptr);
+                  menu->navigation.selection_ptr);
          }
          break;
 
@@ -4216,7 +4223,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
                && !g_settings.video.scale_integer)
          {
             menu_list_push_stack(menu->menu_list, "",
-                  "custom_viewport_2", 0, menu->selection_ptr);
+                  "custom_viewport_2", 0, menu->navigation.selection_ptr);
          }
          break;
 
@@ -4396,10 +4403,10 @@ static int action_iterate_main(const char *label, unsigned action)
 
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
-            menu->selection_ptr);
+            menu->navigation.selection_ptr);
 
    menu_list_get_at_offset(menu->menu_list->selection_buf,
-         menu->selection_ptr, &path_offset, &label_offset, &type_offset);
+         menu->navigation.selection_ptr, &path_offset, &label_offset, &type_offset);
 
    mouse_iterate(action);
 
@@ -4439,20 +4446,20 @@ static int action_iterate_main(const char *label, unsigned action)
             ret = cbs->action_up_or_down(type_offset, label_offset, action);
          break;
       case MENU_ACTION_SCROLL_UP:
-         menu_navigation_descend_alphabet(&menu->selection_ptr);
+         menu_navigation_descend_alphabet(&menu->navigation, &menu->navigation.selection_ptr);
          break;
       case MENU_ACTION_SCROLL_DOWN:
-         menu_navigation_ascend_alphabet(&menu->selection_ptr);
+         menu_navigation_ascend_alphabet(&menu->navigation, &menu->navigation.selection_ptr);
          break;
 
       case MENU_ACTION_CANCEL:
          if (cbs && cbs->action_cancel)
-            return cbs->action_cancel(path_offset, label_offset, type_offset, menu->selection_ptr);
+            return cbs->action_cancel(path_offset, label_offset, type_offset, menu->navigation.selection_ptr);
          break;
 
       case MENU_ACTION_OK:
          if (cbs && cbs->action_ok)
-            return cbs->action_ok(path_offset, label_offset, type_offset, menu->selection_ptr);
+            return cbs->action_ok(path_offset, label_offset, type_offset, menu->navigation.selection_ptr);
          break;
       case MENU_ACTION_START:
          if (cbs && cbs->action_start)
@@ -4514,7 +4521,7 @@ static int action_select_default(unsigned type, const char *label,
    if (!menu)
       return 0;
    menu_list_push_stack(menu->menu_list, "", "info_screen",
-         0, menu->selection_ptr);
+         0, menu->navigation.selection_ptr);
    return 0;
 }
 

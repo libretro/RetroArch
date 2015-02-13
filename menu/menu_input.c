@@ -72,7 +72,7 @@ static void menu_input_search_callback(void *userdata, const char *str)
       return;
 
    if (str && *str && file_list_search(menu->menu_list->selection_buf, str, &idx))
-         menu_navigation_set(idx, true);
+         menu_navigation_set(&menu->navigation, idx, true);
 
    menu_input_key_end_line();
 }
@@ -482,8 +482,8 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       {
          first_held = false;
          trigger_input |= input & input_repeat;
-         menu->scroll.acceleration = 
-            min(menu->scroll.acceleration + 1, 64);
+         menu->navigation.scroll.acceleration = 
+            min(menu->navigation.scroll.acceleration + 1, 64);
       }
 
       initial_held = false;
@@ -492,7 +492,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
    {
       first_held = false;
       initial_held = true;
-      menu->scroll.acceleration = 0;
+      menu->navigation.scroll.acceleration = 0;
    }
 
    menu->mouse.enable = g_settings.menu.mouse_enable;

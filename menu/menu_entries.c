@@ -521,7 +521,7 @@ bool menu_entries_init(menu_handle_t *menu)
    menu->list_settings = setting_data_new(SL_FLAG_ALL);
 
    menu_list_push_stack(menu->menu_list, "", "Main Menu", MENU_SETTINGS, 0);
-   menu_navigation_clear(true);
+   menu_navigation_clear(&menu->navigation, true);
    menu_entries_push_list(menu, menu->menu_list->selection_buf,
          "", "Main Menu", 0, SL_FLAG_MAIN_MENU);
 
