@@ -908,7 +908,7 @@ static int create_string_list_rdb_entry_string(const char *desc, const char *lab
    return 0;
 }
 
-static uint32_t create_string_list_rdb_entry_int(const char *desc, const char *label,
+static int create_string_list_rdb_entry_int(const char *desc, const char *label,
       int actual_int, const char *path, file_list_t *list)
 {
    char tmp[PATH_MAX_LENGTH];
