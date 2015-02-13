@@ -891,39 +891,50 @@ static void gl_check_fbo_dimensions(gl_t *gl)
    /* Check if we have to recreate our FBO textures. */
    for (i = 0; i < gl->fbo_pass; i++)
    {
-      if (gl->fbo_rect[i].max_img_width > gl->fbo_rect[i].width ||
-            gl->fbo_rect[i].max_img_height > gl->fbo_rect[i].height)
-      {
-         /* Check proactively since we might suddently 
-          * get sizes of tex_w width or tex_h height. */
-         unsigned img_width = gl->fbo_rect[i].max_img_width;
-         unsigned img_height = gl->fbo_rect[i].max_img_height;
-         unsigned max = img_width > img_height ? img_width : img_height;
-         unsigned pow2_size = next_pow2(max);
+      GLenum status;
+      unsigned img_width, img_height, max, pow2_size;
+      bool check_dimensions = false;
+      struct gl_fbo_rect *fbo_rect = &gl->fbo_rect[i];
 
-         gl->fbo_rect[i].width = gl->fbo_rect[i].height = pow2_size;
+      if (!fbo_rect)
+         continue;
 
-         glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
-         glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
+      check_dimensions = 
+         (fbo_rect->max_img_width > fbo_rect->width) ||
+         (fbo_rect->max_img_height > fbo_rect->height);
 
-         glTexImage2D(GL_TEXTURE_2D,
-               0, RARCH_GL_INTERNAL_FORMAT32,
-               gl->fbo_rect[i].width,
-               gl->fbo_rect[i].height,
-               0, RARCH_GL_TEXTURE_TYPE32,
-               RARCH_GL_FORMAT32, NULL);
+      if (!check_dimensions)
+         continue;
 
-         glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
-               RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-               gl->fbo_texture[i], 0);
+      /* Check proactively since we might suddently 
+       * get sizes of tex_w width or tex_h height. */
+      img_width             = fbo_rect->max_img_width;
+      img_height            = fbo_rect->max_img_height;
+      max                   = img_width > img_height ? img_width : img_height;
+      pow2_size             = next_pow2(max);
 
-         GLenum status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
-         if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
-            RARCH_WARN("Failed to reinitialize FBO texture.\n");
+      fbo_rect->width = fbo_rect->height = pow2_size;
 
-         RARCH_LOG("[GL]: Recreating FBO texture #%d: %ux%u\n",
-               i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
-      }
+      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
+      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
+
+      glTexImage2D(GL_TEXTURE_2D,
+            0, RARCH_GL_INTERNAL_FORMAT32,
+            fbo_rect->width,
+            fbo_rect->height,
+            0, RARCH_GL_TEXTURE_TYPE32,
+            RARCH_GL_FORMAT32, NULL);
+
+      glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
+            RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+            gl->fbo_texture[i], 0);
+
+      status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
+      if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
+         RARCH_WARN("Failed to reinitialize FBO texture.\n");
+
+      RARCH_LOG("[GL]: Recreating FBO texture #%d: %ux%u\n",
+            i, fbo_rect->width, fbo_rect->height);
    }
 }
 
