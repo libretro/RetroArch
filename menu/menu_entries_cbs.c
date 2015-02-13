@@ -135,13 +135,17 @@ unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 
 static unsigned rdb_entry_start_game_selection_ptr;
 
-static int archive_open(menu_handle_t *menu)
+static int archive_open(void)
 {
    char cat_path[PATH_MAX_LENGTH];
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
    const char* path       = NULL;
    unsigned int type = 0;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
 
    menu_list_pop_stack(menu->menu_list);
 
@@ -177,13 +181,17 @@ static void common_load_content(bool persist)
    menu->msg_force = true;
 }
 
-static int archive_load(menu_handle_t *menu)
+static int archive_load(void)
 {
    int ret;
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
    const char* path       = NULL;
    unsigned int type = 0;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
 
    menu_list_pop_stack(menu->menu_list);
 
@@ -218,9 +226,13 @@ static int archive_load(menu_handle_t *menu)
    return 0;
 }
 
-static int load_or_open_zip_iterate(menu_handle_t *menu, unsigned action)
+static int load_or_open_zip_iterate(unsigned action)
 {
    char msg[PATH_MAX_LENGTH];
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
 
    snprintf(msg, sizeof(msg), "Opening compressed file\n"
          " \n"
@@ -238,10 +250,10 @@ static int load_or_open_zip_iterate(menu_handle_t *menu, unsigned action)
    switch (action)
    {
       case MENU_ACTION_OK:
-         archive_open(menu);
+         archive_open();
          break;
       case MENU_ACTION_CANCEL:
-         archive_load(menu);
+         archive_load();
          break;
    }
 
@@ -4123,18 +4135,14 @@ static int action_iterate_info(const char *label, unsigned action)
 
 static int action_iterate_load_open_zip(const char *label, unsigned action)
 {
-   menu_handle_t *menu    = menu_driver_resolve();
-   if (!menu)
-      return -1;
-
    switch (g_settings.archive.mode)
    {
       case 0:
-         return load_or_open_zip_iterate(menu, action);
+         return load_or_open_zip_iterate(action);
       case 1:
-         return archive_load(menu);
+         return archive_load();
       case 2:
-         return archive_open(menu);
+         return archive_open();
       default:
          break;
    }
