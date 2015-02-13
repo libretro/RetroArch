@@ -978,7 +978,7 @@ static int setting_data_uint_action_ok_linefeed(void *data, unsigned action)
    if (!setting)
       return -1;
 
-   menu_input_key_start_line(driver.menu, setting->short_description,
+   menu_input_key_start_line(setting->short_description,
          setting->name, 0, 0, menu_input_st_uint_callback);
 
    return 0;
@@ -1046,10 +1046,10 @@ static int setting_data_string_action_ok_allow_input(void *data,
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
-   if (!setting || !driver.menu)
+   if (!setting)
       return -1;
 
-   menu_input_key_start_line(driver.menu, setting->short_description,
+   menu_input_key_start_line(setting->short_description,
          setting->name, 0, 0, menu_input_st_string_callback);
 
    return 0;

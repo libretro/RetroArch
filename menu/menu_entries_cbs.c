@@ -644,10 +644,7 @@ static int action_ok_shader_preset_load(const char *path,
 static int action_ok_cheat(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_resolve();
-   if (!menu)
-      return -1;
-   menu_input_key_start_line(menu, "Input Cheat",
+   menu_input_key_start_line("Input Cheat",
          label, type, idx, menu_input_st_cheat_callback);
    return 0;
 }
@@ -655,10 +652,7 @@ static int action_ok_cheat(const char *path,
 static int action_ok_shader_preset_save_as(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_resolve();
-   if (!menu)
-      return -1;
-   menu_input_key_start_line(menu, "Preset Filename",
+   menu_input_key_start_line("Preset Filename",
          label, type, idx, menu_input_st_string_callback);
    return 0;
 }
@@ -666,10 +660,7 @@ static int action_ok_shader_preset_save_as(const char *path,
 static int action_ok_cheat_file_save_as(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_resolve();
-   if (!menu)
-      return -1;
-   menu_input_key_start_line(menu, "Cheat Filename",
+   menu_input_key_start_line("Cheat Filename",
          label, type, idx, menu_input_st_string_callback);
    return 0;
 }
@@ -677,10 +668,7 @@ static int action_ok_cheat_file_save_as(const char *path,
 static int action_ok_remap_file_save_as(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_resolve();
-   if (!menu)
-      return -1;
-   menu_input_key_start_line(menu, "Remapping Filename",
+   menu_input_key_start_line("Remapping Filename",
          label, type, idx, menu_input_st_string_callback);
    return 0;
 }
@@ -4320,7 +4308,7 @@ static int action_iterate_custom_bind(const char *label, unsigned action)
    menu_handle_t *menu    = menu_driver_resolve();
    if (!menu)
       return -1;
-   if (menu_input_bind_iterate(menu))
+   if (menu_input_bind_iterate())
       menu_list_pop_stack(menu->menu_list);
    return 0;
 }
@@ -4330,7 +4318,7 @@ static int action_iterate_custom_bind_keyboard(const char *label, unsigned actio
    menu_handle_t *menu    = menu_driver_resolve();
    if (!menu)
       return -1;
-   if (menu_input_bind_iterate_keyboard(menu))
+   if (menu_input_bind_iterate_keyboard())
       menu_list_pop_stack(menu->menu_list);
    return 0;
 }

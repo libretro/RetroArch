@@ -33,10 +33,11 @@
 #include "../input/input_joypad.h"
 #include "../input/input_remapping.h"
 
-void menu_input_key_start_line(menu_handle_t *menu, const char *label,
+void menu_input_key_start_line(const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb)
 {
+   menu_handle_t *menu = menu_driver_resolve();
    if (!menu)
       return;
 
@@ -48,8 +49,9 @@ void menu_input_key_start_line(menu_handle_t *menu, const char *label,
    menu->keyboard.buffer        = input_keyboard_start_line(menu, cb);
 }
 
-static void menu_input_key_end_line(menu_handle_t *menu)
+static void menu_input_key_end_line(void)
 {
+   menu_handle_t *menu = menu_driver_resolve();
    if (!menu)
       return;
 
@@ -64,7 +66,7 @@ static void menu_input_key_end_line(menu_handle_t *menu)
 static void menu_input_search_callback(void *userdata, const char *str)
 {
    size_t idx;
-   menu_handle_t *menu = (menu_handle_t*)userdata;
+   menu_handle_t *menu = menu_driver_resolve();
 
    if (!menu)
       return;
@@ -72,12 +74,12 @@ static void menu_input_search_callback(void *userdata, const char *str)
    if (str && *str && file_list_search(menu->menu_list->selection_buf, str, &idx))
          menu_navigation_set(idx, true);
 
-   menu_input_key_end_line(menu);
+   menu_input_key_end_line();
 }
 
 void menu_input_st_uint_callback(void *userdata, const char *str)
 {
-   menu_handle_t *menu = (menu_handle_t*)userdata;
+   menu_handle_t *menu = menu_driver_resolve();
 
    if (!menu)
       return;
@@ -91,13 +93,13 @@ void menu_input_st_uint_callback(void *userdata, const char *str)
          *current_setting->value.unsigned_integer = strtoul(str, NULL, 0);
    }
 
-   menu_input_key_end_line(menu);
+   menu_input_key_end_line();
 }
 
 
 void menu_input_st_string_callback(void *userdata, const char *str)
 {
-   menu_handle_t *menu = (menu_handle_t*)userdata;
+   menu_handle_t *menu = menu_driver_resolve();
 
    if (!menu)
       return;
@@ -121,7 +123,7 @@ void menu_input_st_string_callback(void *userdata, const char *str)
       }
    }
 
-   menu_input_key_end_line(menu);
+   menu_input_key_end_line();
 }
 
 void menu_input_st_cheat_callback(void *userdata, const char *str)
@@ -141,26 +143,24 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
       cheat->cheats[cheat_index].state = true;
    }
 
-   menu_input_key_end_line(menu);
+   menu_input_key_end_line();
 }
 
 void menu_input_search_start(void)
 {
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return;
 
-   driver.menu->keyboard.display = true;
-   driver.menu->keyboard.label = "Search: ";
-   driver.menu->keyboard.buffer = 
+   menu->keyboard.display = true;
+   menu->keyboard.label = "Search: ";
+   menu->keyboard.buffer = 
       input_keyboard_start_line(driver.menu, menu_input_search_callback);
 }
 
 void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
-   if (!driver.menu)
-      return;
-
    (void)down;
    (void)keycode;
    (void)mod;
@@ -347,10 +347,11 @@ bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code)
    return (menu->binds.begin <= menu->binds.last);
 }
 
-int menu_input_bind_iterate(menu_handle_t *menu)
+int menu_input_bind_iterate(void)
 {
    char msg[PATH_MAX_LENGTH];
    struct menu_bind_state binds;
+   menu_handle_t *menu = menu_driver_resolve();
 
    if (!menu)
       return 1;
@@ -392,12 +393,16 @@ int menu_input_bind_iterate(menu_handle_t *menu)
    return 0;
 }
 
-int menu_input_bind_iterate_keyboard(menu_handle_t *menu)
+int menu_input_bind_iterate_keyboard(void)
 {
    char msg[PATH_MAX_LENGTH];
    int64_t current;
    int timeout = 0;
    bool timed_out = false;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
 
    if (driver.video_data && driver.menu_ctx &&
          driver.menu_ctx->render)
@@ -454,6 +459,10 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return 0;
 
    driver.retro_ctx.poll_cb();
 
@@ -465,16 +474,16 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       if (!first_held)
       {
          first_held = true;
-         driver.menu->delay.timer = initial_held ? 12 : 6;
-         driver.menu->delay.count = 0;
+         menu->delay.timer = initial_held ? 12 : 6;
+         menu->delay.count = 0;
       }
 
-      if (driver.menu->delay.count >= driver.menu->delay.timer)
+      if (menu->delay.count >= menu->delay.timer)
       {
          first_held = false;
          trigger_input |= input & input_repeat;
-         driver.menu->scroll.acceleration = 
-            min(driver.menu->scroll.acceleration + 1, 64);
+         menu->scroll.acceleration = 
+            min(menu->scroll.acceleration + 1, 64);
       }
 
       initial_held = false;
@@ -483,12 +492,12 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
    {
       first_held = false;
       initial_held = true;
-      driver.menu->scroll.acceleration = 0;
+      menu->scroll.acceleration = 0;
    }
 
-   driver.menu->mouse.enable = g_settings.menu.mouse_enable;
+   menu->mouse.enable = g_settings.menu.mouse_enable;
 
-   driver.menu->delay.count++;
+   menu->delay.count++;
 
    if (driver.block_input)
       trigger_input = 0;

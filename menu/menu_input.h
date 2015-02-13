@@ -47,7 +47,7 @@ typedef enum
 void menu_input_key_event(bool down, unsigned keycode, uint32_t character,
       uint16_t key_modifiers);
 
-void menu_input_key_start_line(menu_handle_t *menu, const char *label,
+void menu_input_key_start_line(const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb);
 
@@ -66,9 +66,9 @@ bool menu_input_poll_find_trigger(struct menu_bind_state *state,
 
 bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code);
 
-int menu_input_bind_iterate(menu_handle_t *menu);
+int menu_input_bind_iterate(void);
 
-int menu_input_bind_iterate_keyboard(menu_handle_t *menu);
+int menu_input_bind_iterate_keyboard(void);
 
 unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_state);
 
