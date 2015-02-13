@@ -74,7 +74,7 @@ static int rmenu_entry_iterate(unsigned action)
       return -1;
    
    cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
-         menu->menu_list->selection_buf, menu->selection_ptr);
+         menu->menu_list->selection_buf, menu->navigation.selection_ptr);
 
    menu_list_get_last_stack(menu->menu_list, NULL, &label, NULL);
 
@@ -171,11 +171,11 @@ static void rmenu_render(void)
    if (!menu->menu_list->selection_buf)
       return;
 
-   begin = (menu->selection_ptr >= (ENTRIES_HEIGHT / 2)) ? 
-      (menu->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
-   end   = ((menu->selection_ptr + ENTRIES_HEIGHT) <= 
+   begin = (menu->navigation.selection_ptr >= (ENTRIES_HEIGHT / 2)) ? 
+      (menu->navigation.selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
+   end   = ((menu->navigation.selection_ptr + ENTRIES_HEIGHT) <= 
          menu_list_get_size(menu->menu_list)) ?
-      menu->selection_ptr + ENTRIES_HEIGHT :
+      menu->navigation.selection_ptr + ENTRIES_HEIGHT :
       menu_list_get_size(menu->menu_list);
 
    if (menu_list_get_size(menu->menu_list) <= ENTRIES_HEIGHT)
@@ -255,7 +255,7 @@ static void rmenu_render(void)
                entry_label, path,
                path_buf, sizeof(path_buf));
 
-      selected = (i == menu->selection_ptr);
+      selected = (i == menu->navigation.selection_ptr);
 
       menu_animation_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2),
             g_extern.frame_count / 15, path, selected);

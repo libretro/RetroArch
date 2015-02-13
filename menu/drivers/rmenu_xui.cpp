@@ -68,7 +68,7 @@ static int rmenu_xui_entry_iterate(unsigned action)
       return -1;
    
    cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
-         menu->menu_list->selection_buf, menu->selection_ptr);
+         menu->menu_list->selection_buf, menu->navigation.selection_ptr);
 
    menu_list_get_last_stack(menu->menu_list, NULL, &label, NULL);
 
@@ -621,7 +621,7 @@ static void rmenu_xui_render(void)
       mbstowcs(msg_right, type_str, sizeof(msg_right) / sizeof(wchar_t));
       rmenu_xui_set_list_text(i, msg_left, msg_right);
    }
-	XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
+	XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
 
 	if (menu->keyboard.display)
 	{
@@ -645,7 +645,7 @@ static void rmenu_xui_populate_entries(const char *path,
    (void)label;
    (void)path;
 
-   XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
+   XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
 }
 
 static void rmenu_xui_navigation_clear(bool pending_push)
@@ -653,7 +653,7 @@ static void rmenu_xui_navigation_clear(bool pending_push)
    menu_handle_t *menu = menu_driver_resolve();
 
    if (menu)
-      XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
+      XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
 }
 
 static void rmenu_xui_navigation_set_visible(void)
@@ -661,7 +661,7 @@ static void rmenu_xui_navigation_set_visible(void)
    menu_handle_t *menu = menu_driver_resolve();
 
    if (menu)
-      XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
+      XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
 }
 
 static void rmenu_xui_navigation_alphabet(size_t *ptr_out)
