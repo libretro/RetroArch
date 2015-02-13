@@ -3074,7 +3074,6 @@ static int deferred_push_shader_options(void *data, void *userdata,
 static int deferred_push_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   unsigned i;
    file_list_t *list           = (file_list_t*)data;
    file_list_t *menu_list      = (file_list_t*)userdata;
 
@@ -3107,7 +3106,6 @@ static int deferred_push_options(void *data, void *userdata,
 static int deferred_push_management_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   unsigned i;
    file_list_t *list           = (file_list_t*)data;
    file_list_t *menu_list      = (file_list_t*)userdata;
 
