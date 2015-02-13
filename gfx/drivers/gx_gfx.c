@@ -358,6 +358,7 @@ static void init_texture(void *data, unsigned width, unsigned height)
    gx_video_t *gx = (gx_video_t*)data;
    struct __gx_texobj *fb_ptr = (struct __gx_texobj*)&g_tex.obj;
    struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
+   menu_handle_t *menu = menu_driver_resolve();
 
    width &= ~3;
    height &= ~3;
@@ -365,10 +366,10 @@ static void init_texture(void *data, unsigned width, unsigned height)
    menu_w = 320;
    menu_h = 240;
 
-   if (driver.menu)
+   if (menu)
    {
-      menu_w = driver.menu->frame_buf.width;
-      menu_h = driver.menu->frame_buf.height;
+      menu_w = menu->frame_buf.width;
+      menu_h = menu->frame_buf.height;
    }
 
    __GX_InitTexObj(fb_ptr, g_tex.data, width, height,
@@ -961,13 +962,18 @@ static bool gx_frame(void *data, const void *frame,
 
    if (gx->menu_texture_enable && gx->menu_data)
    {
-      convert_texture16(gx->menu_data, menu_tex.data,
-            driver.menu->frame_buf.width,
-            driver.menu->frame_buf.height,
-            driver.menu->frame_buf.width * 2);
-      DCFlushRange(menu_tex.data,
-            driver.menu->frame_buf.width * 
-            driver.menu->frame_buf.height * 2);
+      menu_handle_t *menu = menu_driver_resolve();
+
+      if (menu)
+      {
+         convert_texture16(gx->menu_data, menu_tex.data,
+               menu->frame_buf.width,
+               menu->frame_buf.height,
+               menu->frame_buf.width * 2);
+         DCFlushRange(menu_tex.data,
+               menu->frame_buf.width * 
+               menu->frame_buf.height * 2);
+      }
    }
 
    __GX_InvalidateTexAll(__gx);

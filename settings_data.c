@@ -418,7 +418,7 @@ static int setting_data_string_action_start_allow_input(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
-   if (!setting || !driver.menu)
+   if (!setting)
       return -1;
 
    *setting->value.string = '\0';
@@ -432,7 +432,7 @@ static int setting_data_bind_action_start(void *data)
    struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
    struct retro_keybind *keybind = NULL;
 
-   if (!setting || !driver.menu)
+   if (!setting)
       return -1;
 
    keybind = (struct retro_keybind*)setting->value.keybind;
@@ -814,37 +814,39 @@ static int load_content_action_toggle(void *data, unsigned action)
 static int setting_data_action_ok_bind_all(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (!setting || !driver.menu)
+   if (!setting || !menu)
       return -1;
 
-   driver.menu->binds.target = &g_settings.input.binds
+   menu->binds.target = &g_settings.input.binds
       [setting->index_offset][0];
-   driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-   driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
+   menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+   menu->binds.last = MENU_SETTINGS_BIND_LAST;
 
    menu_list_push_stack(
-         driver.menu->menu_list,
+         menu->menu_list,
          "",
          "custom_bind_all",
          g_extern.menu.bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
          MENU_SETTINGS_CUSTOM_BIND,
-         driver.menu->selection_ptr);
+         menu->selection_ptr);
 
    if (g_extern.menu.bind_mode_keyboard)
    {
-      driver.menu->binds.timeout_end =
+      menu->binds.timeout_end =
          rarch_get_time_usec() + 
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-      input_keyboard_wait_keys(driver.menu,
+      input_keyboard_wait_keys(menu,
             menu_input_custom_bind_keyboard_cb);
    }
    else
    {
-      menu_input_poll_bind_get_rested_axes(&driver.menu->binds);
-      menu_input_poll_bind_state(&driver.menu->binds);
+      menu_input_poll_bind_get_rested_axes(&menu->binds);
+      menu_input_poll_bind_state(&menu->binds);
    }
+
    return 0;
 }
 
@@ -854,7 +856,10 @@ static int setting_data_action_ok_bind_defaults(void *data, unsigned action)
    struct retro_keybind *target = NULL;
    const struct retro_keybind *def_binds = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   menu_handle_t *menu = menu_driver_resolve();
 
+   if (!menu)
+      return -1;
    if (!setting)
       return -1;
 
@@ -863,11 +868,11 @@ static int setting_data_action_ok_bind_defaults(void *data, unsigned action)
    def_binds =  (setting->index_offset) ? 
       retro_keybinds_rest : retro_keybinds_1;
 
-   if (!driver.menu || !target)
+   if (!target)
       return -1;
 
-   driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-   driver.menu->binds.last  = MENU_SETTINGS_BIND_LAST;
+   menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+   menu->binds.last  = MENU_SETTINGS_BIND_LAST;
 
    for (i = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)
@@ -1001,11 +1006,12 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
 {
    struct retro_keybind *keybind = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   menu_handle_t *menu = menu_driver_resolve();
 
    if (!setting)
       return -1;
 
-   if (!driver.menu || !driver.menu->menu_list)
+   if (!menu || !menu->menu_list)
       return -1;
    
    keybind = (struct retro_keybind*)setting->value.keybind;
@@ -1013,29 +1019,29 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
    if (!keybind)
       return -1;
 
-   driver.menu->binds.begin  = setting->bind_type;
-   driver.menu->binds.last   = setting->bind_type;
-   driver.menu->binds.target = keybind;
-   driver.menu->binds.user = setting->index_offset;
+   menu->binds.begin  = setting->bind_type;
+   menu->binds.last   = setting->bind_type;
+   menu->binds.target = keybind;
+   menu->binds.user = setting->index_offset;
    menu_list_push_stack(
-         driver.menu->menu_list,
+         menu->menu_list,
          "",
          "custom_bind",
          g_extern.menu.bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
-         driver.menu->selection_ptr);
+         menu->selection_ptr);
 
    if (g_extern.menu.bind_mode_keyboard)
    {
-      driver.menu->binds.timeout_end = rarch_get_time_usec() +
+      menu->binds.timeout_end = rarch_get_time_usec() +
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-      input_keyboard_wait_keys(driver.menu,
+      input_keyboard_wait_keys(menu,
             menu_input_custom_bind_keyboard_cb);
    }
    else
    {
-      menu_input_poll_bind_get_rested_axes(&driver.menu->binds);
-      menu_input_poll_bind_state(&driver.menu->binds);
+      menu_input_poll_bind_get_rested_axes(&menu->binds);
+      menu_input_poll_bind_state(&menu->binds);
    }
 
    return 0;
@@ -2791,11 +2797,12 @@ void setting_data_get_label(file_list_t *list, char *type_str,
 {
    rarch_setting_t *setting_data = NULL;
    rarch_setting_t *setting      = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (!driver.menu || !driver.menu->menu_list || !label)
+   if (!menu || !menu->menu_list || !label)
       return;
 
-   setting_data = (rarch_setting_t*)driver.menu->list_settings;
+   setting_data = (rarch_setting_t*)menu->list_settings;
 
    if (!setting_data)
       return;
@@ -2867,14 +2874,16 @@ static void general_write_handler(void *data)
 
    if (!strcmp(setting->name, "help"))
    {
-      if (!driver.menu || !driver.menu->menu_list)
+      menu_handle_t *menu = menu_driver_resolve();
+
+      if (!menu || !menu->menu_list)
          return;
 
       if (*setting->value.boolean)
       {
 #ifdef HAVE_MENU
          menu_list_push_stack_refresh(
-               driver.menu->menu_list,
+               menu->menu_list,
                "",
                "help",
                0,
