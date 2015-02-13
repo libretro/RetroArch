@@ -610,8 +610,12 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
+   menu_handle_t *menu = menu_driver_resolve();
    
-   menu_list_get_last_stack(driver.menu->menu_list,
+   if (!menu)
+      return;
+   
+   menu_list_get_last_stack(menu->menu_list,
                             &dir, &label, &menu_type);
 
    get_title(label, dir, menu_type, title, sizeof(title));
@@ -636,9 +640,9 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    everything = [NSMutableArray array];
    [everything addObject:BOXSTRING(title)];
   
-   end = menu_list_get_size(driver.menu->menu_list);
+   end = menu_list_get_size(menu->menu_list);
    
-   for (i = driver.menu->begin; i < end; i++)
+   for (i = menu->begin; i < end; i++)
    {
      rarch_setting_t *setting;
      char type_str[PATH_MAX_LENGTH], path_buf[PATH_MAX_LENGTH];
@@ -646,19 +650,19 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
      const char *path = NULL, *entry_label = NULL;
      unsigned type = 0, w = 0;
      
-     menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
+     menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
                              &entry_label, &type);
      setting =
        (rarch_setting_t*)setting_data_find_setting
-       (driver.menu->list_settings,
-        driver.menu->menu_list->selection_buf->list[i].label);
+       (menu->list_settings,
+        menu->menu_list->selection_buf->list[i].label);
 
      cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
-            driver.menu->menu_list->selection_buf, i);
+            menu->menu_list->selection_buf, i);
 
      if (cbs && cbs->action_get_representation) {
        cbs->action_get_representation
-         (driver.menu->menu_list->selection_buf,
+         (menu->menu_list->selection_buf,
           &w, type, i, label,
           type_str, sizeof(type_str), 
           entry_label, path,
@@ -683,7 +687,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
            [RAMenuItemGeneralSetting
                        itemForSetting:setting
                                action:^{
-               driver.menu->selection_ptr = i;
+               menu->selection_ptr = i;
                if (cbs && cbs->action_ok)
                  cbs->action_ok(path, entry_label, type, i);
              }]];
@@ -695,7 +699,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
            [RAMenuItemBasic
                        itemWithDescription:BOXSTRING(path_buf)
                                     action:^{                       
-               driver.menu->selection_ptr = i;
+               menu->selection_ptr = i;
                if (cbs && cbs->action_ok)
                  cbs->action_ok(path, entry_label, type, i);
                else
@@ -704,7 +708,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                      cbs->action_start(type, entry_label, MENU_ACTION_START);
                    if (cbs && cbs->action_toggle)
                      cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT);
-                   menu_list_push_stack(driver.menu->menu_list, "",
+                   menu_list_push_stack(menu->menu_list, "",
                                         "info_screen", 0, i);
                  }
 
@@ -716,29 +720,36 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    
    [self.sections addObject:everything];
 
-   if (menu_list_get_stack_size(driver.menu->menu_list) > 1)
+   if (menu_list_get_stack_size(menu->menu_list) > 1)
      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Back") style:UIBarButtonItemStyleBordered target:weakSelf action:@selector(menuBack)];
    else
      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Resume") style:UIBarButtonItemStyleBordered target:[RetroArch_iOS get] action:@selector(showGameView)];
 
-   if ( driver.menu->message_contents[0] != '\0' )
-     apple_display_alert(driver.menu->message_contents, NULL);
+   if ( menu->message_contents[0] != '\0' )
+     apple_display_alert(menu->message_contents, NULL);
 }
 
 - (void)menuRefresh
 {
-  if (!driver.menu->need_refresh)
+  menu_handle_t *menu = menu_driver_resolve();
+  if (!menu)
+     return;
+  if (!menu->need_refresh)
      return;
    
-    menu_entries_deferred_push(driver.menu->menu_list->selection_buf,
-                               driver.menu->menu_list->menu_stack);
-    driver.menu->need_refresh = false;
+    menu_entries_deferred_push(menu->menu_list->selection_buf,
+                               menu->menu_list->menu_stack);
+    menu->need_refresh = false;
 }
 
 - (void)menuBack
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return;
+   
   menu_apply_deferred_settings();
-  menu_list_pop_stack(driver.menu->menu_list);
+  menu_list_pop_stack(menu->menu_list);
   [self menuRefresh];
   [self reloadData];
 }
