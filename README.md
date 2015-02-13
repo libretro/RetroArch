@@ -38,7 +38,7 @@ More developer-centric stuff is found [here](https://github.com/libretro/libretr
 ## Philosophy
 
 RetroArch attempts to be small and lean,
-while still having all the useful core features expected from an emulator. 
+while still having all the useful core features expected from an emulator.
 It is designed to be very portable and features a gamepad-centric UI.
 It also has a full-featured command-line interface.
 
@@ -102,7 +102,7 @@ anything other than what the respective SDKs provide.
 The default configuration is defined in config.def.h.
 It is not recommended to change this unless you know what you're doing.
 These can later be tweaked by using a config file.
-A sample configuration file is installed to /etc/retroarch.cfg. This is the system-wide config file. 
+A sample configuration file is installed to /etc/retroarch.cfg. This is the system-wide config file.
 
 RetroArch will on startup create a config file in $XDG\_CONFIG\_HOME/retroarch/retroarch.cfg if doesn't exist.
 Users only need to configure a certain option if the desired value deviates from the value defined in config.def.h.
@@ -110,6 +110,24 @@ Users only need to configure a certain option if the desired value deviates from
 To configure joypads, use the built-in menu or the <tt>retroarch-joyconfig</tt> command-line tool.
 
 ## Compiling and installing
+
+<b>Mac</b><br/>
+- Prerequisites: [XCode](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0CB4QFjAA&url=https%3A%2F%2Fitunes.apple.com%2Fus%2Fapp%2Fxcode%2Fid497799835%3Fmt%3D12&ei=ZmfeVNPtIILVoASBnoCYBw&usg=AFQjCNGrxKmVtXUdvUU3MhqZhP4MHT6Gtg&sig2=RIXKsWQ79YTQBt_lK5fdKA&bvm=bv.85970519,d.cGU), [Cg](https://developer.nvidia.com/cg-toolkit-download).
+- You can open the project (**apple/RetroArch_OSX.xcodeproj**) in the Xcode IDE and build (**&#8984;-B**) and run (**&#8984;-R**) it there. Or you can use the command line...
+- Debug:
+```bash
+# Build
+xcodebuild -target RetroArch_OSX -configuration Debug -project apple/RetroArch_OSX.xcodeproj
+# Run
+open ./apple/build/Debug/RetroArch_OSX.app/
+```
+- Release:
+```bash
+# Build
+xcodebuild -target RetroArch_OSX -configuration Release -project apple/RetroArch_OSX.xcodeproj
+# Run
+open ./apple/build/Release/RetroArch_OSX.app/
+```
 
 <b>PC</b><br/>
 Instructions for compiling on PC can be found in the [wiki](https://github.com/Themaister/RetroArch/wiki).
@@ -178,4 +196,3 @@ You will need to have the libogc libraries and a working Devkit PPC toolchain in
 <tt>make -f Makefile.wii</tt>
 
 NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch Wii. This file needs to be called <em><b>`libretro_wii.a`</b></em>.
-
