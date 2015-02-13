@@ -165,8 +165,12 @@ static int archive_open(menu_handle_t *menu)
    return 0;
 }
 
-static void common_load_content(menu_handle_t *menu, bool persist)
+static void common_load_content(bool persist)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return;
+
    rarch_main_command(persist ? RARCH_CMD_LOAD_CONTENT_PERSIST : RARCH_CMD_LOAD_CONTENT);
 
    menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
@@ -199,7 +203,7 @@ static int archive_load(menu_handle_t *menu)
    {
       case -1:
          rarch_main_command(RARCH_CMD_LOAD_CORE);
-         common_load_content(menu, false);
+         common_load_content(false);
          break;
       case 0:
          menu_list_push_stack_refresh(
@@ -254,10 +258,11 @@ int menu_action_setting_set_current_string(
 static int action_ok_rdb_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
 
-   rarch_playlist_load_content(driver.menu->db_playlist,
+   rarch_playlist_load_content(menu->db_playlist,
          rdb_entry_start_game_selection_ptr);
    return -1;
 }
@@ -265,12 +270,13 @@ static int action_ok_rdb_playlist_entry(const char *path,
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
 
    rarch_playlist_load_content(g_defaults.history,
-         driver.menu->selection_ptr);
-   menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
+         menu->selection_ptr);
+   menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
    return -1;
 }
 
@@ -296,23 +302,23 @@ static int action_ok_shader_pass_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *menu_path = NULL;
-
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
 
    (void)menu_path;
 
 #ifdef HAVE_SHADER_MANAGER
-   menu_list_get_last_stack(driver.menu->menu_list, &menu_path, NULL,
+   menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
          NULL);
 
-   fill_pathname_join(driver.menu->shader->pass[hack_shader_pass].source.path,
+   fill_pathname_join(menu->shader->pass[hack_shader_pass].source.path,
          menu_path, path,
-         sizeof(driver.menu->shader->pass[hack_shader_pass].source.path));
+         sizeof(menu->shader->pass[hack_shader_pass].source.path));
 
    /* This will reset any changed parameters. */
-   video_shader_resolve_parameters(NULL, driver.menu->shader);
-   menu_list_flush_stack_by_needle(driver.menu->menu_list, "shader_options");
+   video_shader_resolve_parameters(NULL, menu->shader);
+   menu_list_flush_stack_by_needle(menu->menu_list, "shader_options");
    return 0;
 #else
    return -1;
@@ -327,9 +333,12 @@ static int action_ok_shader_pass(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
 
    return menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          g_settings.video.shader_dir, 
          label,
          type,
@@ -339,8 +348,11 @@ static int action_ok_shader_pass(const char *path,
 static int action_ok_shader_parameters(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
    return menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          "", label, MENU_SETTING_ACTION,
          idx);
 }
@@ -348,27 +360,38 @@ static int action_ok_shader_parameters(const char *path,
 static int action_ok_push_generic_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
    if (path)
-      strlcpy(driver.menu->deferred_path, path,
-            sizeof(driver.menu->deferred_path));
+      strlcpy(menu->deferred_path, path,
+            sizeof(menu->deferred_path));
+
    return menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          "", label, type, idx);
 }
 
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
    return menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          label, label, type, idx);
 }
 
 static int action_ok_shader_preset(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
    return menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          g_settings.video.shader_dir, 
          label, type, idx);
 }
@@ -376,8 +399,11 @@ static int action_ok_shader_preset(const char *path,
 static int action_ok_push_content_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
    return menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          g_settings.menu_content_directory,
          label, MENU_FILE_DIRECTORY, idx);
 }
@@ -385,8 +411,11 @@ static int action_ok_push_content_list(const char *path,
 static int action_ok_disk_image_append_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
    return menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          g_settings.menu_content_directory, label, type,
          idx);
 }
@@ -395,8 +424,12 @@ static int action_ok_configurations_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *dir = g_settings.menu_config_directory;
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
    return menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          dir ? dir : label, label, type,
          idx);
 }
@@ -404,14 +437,19 @@ static int action_ok_configurations_list(const char *path,
 static int action_ok_cheat_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
    if (!path_file_exists(g_settings.cheat_database))
    {
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, "Cheat Directory doesn't exist or cannot be accessed.\n", 1, 180);
       return -1;
    }
+
    return menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          g_settings.cheat_database,
          label, type, idx);
 }
@@ -443,6 +481,10 @@ static int action_ok_video_filter(const char *path,
 static int action_ok_remap_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
    if (!path_file_exists(g_settings.input_remapping_directory))
    {
       msg_queue_clear(g_extern.msg_queue);
@@ -450,7 +492,7 @@ static int action_ok_remap_file(const char *path,
       return -1;
    }
    return menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          g_settings.input_remapping_directory,
          label, type, idx);
 }
@@ -458,6 +500,10 @@ static int action_ok_remap_file(const char *path,
 static int action_ok_core_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
    if (!path_file_exists(g_settings.libretro_directory))
    {
       msg_queue_clear(g_extern.msg_queue);
@@ -465,7 +511,7 @@ static int action_ok_core_list(const char *path,
       return -1;
    }
    return menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          g_settings.libretro_directory,
          label, type, idx);
 }
@@ -475,18 +521,20 @@ static int action_ok_remap_file_load(const char *path,
 {
    const char *menu_path = NULL;
    char remap_path[PATH_MAX_LENGTH];
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
 
    (void)remap_path;
    (void)menu_path;
-   menu_list_get_last_stack(driver.menu->menu_list, &menu_path, NULL,
+
+   menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
          NULL);
 
    fill_pathname_join(remap_path, menu_path, path, sizeof(remap_path));
    input_remapping_load_file(remap_path);
 
-   menu_list_flush_stack_by_needle(driver.menu->menu_list, "core_input_remapping_options");
+   menu_list_flush_stack_by_needle(menu->menu_list, "core_input_remapping_options");
 
    return 0;
 }
@@ -496,12 +544,13 @@ static int action_ok_cheat_file_load(const char *path,
 {
    const char *menu_path = NULL;
    char cheat_path[PATH_MAX_LENGTH];
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
 
    (void)cheat_path;
    (void)menu_path;
-   menu_list_get_last_stack(driver.menu->menu_list, &menu_path, NULL,
+   menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
          NULL);
 
    fill_pathname_join(cheat_path, menu_path, path, sizeof(cheat_path));
@@ -514,7 +563,7 @@ static int action_ok_cheat_file_load(const char *path,
    if (!g_extern.cheat)
       return -1;
 
-   menu_list_flush_stack_by_needle(driver.menu->menu_list, "core_cheat_options");
+   menu_list_flush_stack_by_needle(menu->menu_list, "core_cheat_options");
 
    return 0;
 }
@@ -526,11 +575,11 @@ static int action_ok_menu_wallpaper_load(const char *path,
    const char *menu_path = NULL;
    rarch_setting_t *setting = NULL;
    char wallpaper_path[PATH_MAX_LENGTH];
-
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list, &menu_path, &menu_label,
+   menu_list_get_last_stack(menu->menu_list, &menu_path, &menu_label,
          NULL);
 
    setting = menu_action_find_setting(menu_label);
@@ -549,7 +598,7 @@ static int action_ok_menu_wallpaper_load(const char *path,
       driver.menu_ctx->load_background(wallpaper_path);
 
 end:
-   menu_list_pop_stack_by_needle(driver.menu->menu_list, setting->name);
+   menu_list_pop_stack_by_needle(menu->menu_list, setting->name);
 
    return 0;
 }
@@ -559,20 +608,21 @@ static int action_ok_shader_preset_load(const char *path,
 {
    const char *menu_path = NULL;
    char shader_path[PATH_MAX_LENGTH];
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
 
    (void)shader_path;
    (void)menu_path;
 #ifdef HAVE_SHADER_MANAGER
-   menu_list_get_last_stack(driver.menu->menu_list, &menu_path, NULL,
+   menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
          NULL);
 
    fill_pathname_join(shader_path, menu_path, path, sizeof(shader_path));
-   menu_shader_manager_set_preset(driver.menu->shader,
+   menu_shader_manager_set_preset(menu->shader,
          video_shader_parse_type(shader_path, RARCH_SHADER_NONE),
          shader_path);
-   menu_list_flush_stack_by_needle(driver.menu->menu_list, "shader_options");
+   menu_list_flush_stack_by_needle(menu->menu_list, "shader_options");
    return 0;
 #else
    return -1;
@@ -582,7 +632,10 @@ static int action_ok_shader_preset_load(const char *path,
 static int action_ok_cheat(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_input_key_start_line(driver.menu, "Input Cheat",
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+   menu_input_key_start_line(menu, "Input Cheat",
          label, type, idx, menu_input_st_cheat_callback);
    return 0;
 }
@@ -590,7 +643,10 @@ static int action_ok_cheat(const char *path,
 static int action_ok_shader_preset_save_as(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_input_key_start_line(driver.menu, "Preset Filename",
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+   menu_input_key_start_line(menu, "Preset Filename",
          label, type, idx, menu_input_st_string_callback);
    return 0;
 }
@@ -598,7 +654,10 @@ static int action_ok_shader_preset_save_as(const char *path,
 static int action_ok_cheat_file_save_as(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_input_key_start_line(driver.menu, "Cheat Filename",
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+   menu_input_key_start_line(menu, "Cheat Filename",
          label, type, idx, menu_input_st_string_callback);
    return 0;
 }
@@ -606,7 +665,10 @@ static int action_ok_cheat_file_save_as(const char *path,
 static int action_ok_remap_file_save_as(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_input_key_start_line(driver.menu, "Remapping Filename",
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+   menu_input_key_start_line(menu, "Remapping Filename",
          label, type, idx, menu_input_st_string_callback);
    return 0;
 }
@@ -617,11 +679,11 @@ static int action_ok_path_use_directory(const char *path,
    const char *menu_label   = NULL;
    const char *menu_path    = NULL;
    rarch_setting_t *setting = NULL;
-
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list,
+   menu_list_get_last_stack(menu->menu_list,
          &menu_path, &menu_label, NULL);
 
    setting = menu_action_find_setting(menu_label);
@@ -633,7 +695,7 @@ static int action_ok_path_use_directory(const char *path,
       return -1;
 
    menu_action_setting_set_current_string(setting, menu_path);
-   menu_list_pop_stack_by_needle(driver.menu->menu_list, setting->name);
+   menu_list_pop_stack_by_needle(menu->menu_list, setting->name);
 
    return 0;
 }
@@ -641,15 +703,16 @@ static int action_ok_path_use_directory(const char *path,
 static int action_ok_core_load_deferred(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
 
    if (path)
       strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
-   strlcpy(g_extern.fullpath, driver.menu->deferred_path,
+   strlcpy(g_extern.fullpath, menu->deferred_path,
          sizeof(g_extern.fullpath));
 
-   common_load_content(driver.menu, false);
+   common_load_content(false);
 
    return -1;
 }
@@ -901,9 +964,16 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
    unsigned i, j;
    int ret = 0;
    database_info_list_t *db_info = NULL;
-   file_list_t *list             = (file_list_t*)data;
-   file_list_t *menu_list        = (file_list_t*)userdata;
-   struct string_list *str_list = string_split(label, "|"); 
+   file_list_t *list = NULL;
+   file_list_t *menu_list = NULL;
+   struct string_list *str_list = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
+   list             = (file_list_t*)data;
+   menu_list        = (file_list_t*)userdata;
+   str_list         = string_split(label, "|"); 
 
    if (!str_list)
       return -1;
@@ -935,7 +1005,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
    menu_database_realloc(driver.menu, path_rdl, false);
 
-   playlist = driver.menu->db_playlist;
+   playlist = menu->db_playlist;
 
    for (i = 0; i < db_info->count; i++)
    {
@@ -1167,11 +1237,15 @@ static int action_ok_rdb_entry(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    char tmp[PATH_MAX_LENGTH];
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
    strlcpy(tmp, "deferred_rdb_entry_detail|", sizeof(tmp));
    strlcat(tmp, path, sizeof(tmp));
 
    return menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          label,
          tmp,
          0, idx);
@@ -1187,22 +1261,23 @@ static int action_ok_core_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *menu_path    = NULL;
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list,
+   menu_list_get_last_stack(menu->menu_list,
          &menu_path, NULL, NULL);
 
    fill_pathname_join(g_settings.libretro, menu_path, path,
          sizeof(g_settings.libretro));
    rarch_main_command(RARCH_CMD_LOAD_CORE);
-   menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
+   menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
 #if defined(HAVE_DYNAMIC)
    /* No content needed for this core, load core immediately. */
-   if (driver.menu->load_no_content)
+   if (menu->load_no_content)
    {
       *g_extern.fullpath = '\0';
-      common_load_content(driver.menu, false);
+      common_load_content(false);
       return -1;
    }
 
@@ -1224,11 +1299,12 @@ static int action_ok_core_download(const char *path,
 static int action_ok_compressed_archive_push(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
 
    menu_list_push_stack(
-         driver.menu->menu_list,
+         menu->menu_list,
          path,
          "load_open_zip",
          0,
@@ -1243,19 +1319,19 @@ static int action_ok_directory_push(const char *path,
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
    char cat_path[PATH_MAX_LENGTH];
-
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
 
    if (!path)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list,
+   menu_list_get_last_stack(menu->menu_list,
          &menu_path, &menu_label, NULL);
 
    fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
 
-   return menu_list_push_stack_refresh(driver.menu->menu_list,
+   return menu_list_push_stack_refresh(menu->menu_list,
          cat_path, menu_label, type, idx);
 }
 
@@ -1263,6 +1339,9 @@ static int action_ok_database_manager_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    char rdb_path[PATH_MAX_LENGTH];
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
    if (!path)
       return -1;
    if (!label)
@@ -1280,7 +1359,7 @@ static int action_ok_database_manager_list(const char *path,
       return -1;
    }
    return menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          rdb_path,
          "deferred_database_manager_list",
          0, idx);
@@ -1290,6 +1369,10 @@ static int action_ok_cursor_manager_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    char cursor_path[PATH_MAX_LENGTH];
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
 
    fill_pathname_join(cursor_path, g_settings.cursor_directory,
          path, sizeof(cursor_path));
@@ -1303,7 +1386,7 @@ static int action_ok_cursor_manager_list(const char *path,
       return -1;
    }
    return menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          cursor_path,
          "deferred_cursor_manager_list",
          0, idx);
@@ -1314,19 +1397,20 @@ static int action_ok_config_load(const char *path,
 {
    const char *menu_path  = NULL;
    char config[PATH_MAX_LENGTH];
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (!driver.menu)
+   if (!menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list,
+   menu_list_get_last_stack(menu->menu_list,
          &menu_path, NULL, NULL);
 
    fill_pathname_join(config, menu_path, path, sizeof(config));
-   menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
-   driver.menu->msg_force = true;
+   menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
+   menu->msg_force = true;
    if (rarch_replace_config(config))
    {
-      menu_navigation_clear(driver.menu, false);
+      menu_navigation_clear(menu, false);
       return -1;
    }
 
@@ -1336,13 +1420,14 @@ static int action_ok_config_load(const char *path,
 static int action_ok_disk_image_append(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   const char *menu_path    = NULL;
    char image[PATH_MAX_LENGTH];
+   const char *menu_path    = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (!driver.menu)
+   if (!menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list,
+   menu_list_get_last_stack(menu->menu_list,
          &menu_path, NULL, NULL);
 
    fill_pathname_join(image, menu_path, path, sizeof(image));
@@ -1350,36 +1435,37 @@ static int action_ok_disk_image_append(const char *path,
 
    rarch_main_command(RARCH_CMD_RESUME);
 
-   menu_list_flush_stack(driver.menu->menu_list, MENU_SETTINGS);
+   menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
    return -1;
 }
 
 static int action_ok_file_load_with_detect_core(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   const char *menu_path    = NULL;
    int ret;
+   const char *menu_path    = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (!driver.menu)
+   if (!menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list,
+   menu_list_get_last_stack(menu->menu_list,
          &menu_path, NULL, NULL);
 
    ret = rarch_defer_core(g_extern.core_info,
-         menu_path, path, label, driver.menu->deferred_path,
-         sizeof(driver.menu->deferred_path));
+         menu_path, path, label, menu->deferred_path,
+         sizeof(menu->deferred_path));
 
    if (ret == -1)
    {
       rarch_main_command(RARCH_CMD_LOAD_CORE);
-      common_load_content(driver.menu, false);
+      common_load_content(false);
       return -1;
    }
 
    if (ret == 0)
       menu_list_push_stack_refresh(
-            driver.menu->menu_list,
+            menu->menu_list,
             g_settings.libretro_directory,
             "deferred_core_list",
             0, idx);
@@ -1401,11 +1487,12 @@ static int action_ok_file_load(const char *path,
    const char *menu_label   = NULL;
    const char *menu_path    = NULL;
    rarch_setting_t *setting = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (!driver.menu)
+   if (!menu)
       return -1;
 
-   menu_list_get_last(driver.menu->menu_list->menu_stack,
+   menu_list_get_last(menu->menu_list->menu_stack,
          &menu_path, &menu_label, NULL);
 
    setting = menu_action_find_setting(menu_label);
@@ -1413,7 +1500,7 @@ static int action_ok_file_load(const char *path,
    if (setting && setting->type == ST_PATH)
    {
       menu_action_setting_set_current_string_path(setting, menu_path, path);
-      menu_list_pop_stack_by_needle(driver.menu->menu_list, setting->name);
+      menu_list_pop_stack_by_needle(menu->menu_list, setting->name);
    }
    else
    {
@@ -1424,7 +1511,7 @@ static int action_ok_file_load(const char *path,
          fill_pathname_join(g_extern.fullpath, menu_path, path,
                sizeof(g_extern.fullpath));
 
-      common_load_content(driver.menu, true);
+      common_load_content(true);
 
       return -1;
    }
@@ -1438,11 +1525,12 @@ static int action_ok_set_path(const char *path,
    const char *menu_path    = NULL;
    const char *menu_label   = NULL;
    rarch_setting_t *setting = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (!driver.menu)
+   if (!menu)
       return -1;
 
-   menu_list_get_last_stack(driver.menu->menu_list,
+   menu_list_get_last_stack(menu->menu_list,
          &menu_path, &menu_label, NULL);
 
    setting = menu_action_find_setting(menu_label);
@@ -1451,7 +1539,7 @@ static int action_ok_set_path(const char *path,
       return -1;
 
    menu_action_setting_set_current_string_path(setting, menu_path, path);
-   menu_list_pop_stack_by_needle(driver.menu->menu_list, setting->name);
+   menu_list_pop_stack_by_needle(menu->menu_list, setting->name);
 
    return 0;
 }
@@ -1459,12 +1547,18 @@ static int action_ok_set_path(const char *path,
 static int action_ok_custom_viewport(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   rarch_viewport_t *custom = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
+
    /* Start with something sane. */
-   rarch_viewport_t *custom = (rarch_viewport_t*)
+   custom = (rarch_viewport_t*)
       &g_extern.console.screen.viewports.custom_vp;
 
    menu_list_push_stack(
-         driver.menu->menu_list,
+         menu->menu_list,
          "",
          "custom_viewport_1",
          MENU_SETTINGS_CUSTOM_VIEWPORT,
@@ -1486,8 +1580,6 @@ static int action_ok_custom_viewport(const char *path,
 
 static int generic_action_ok_command(unsigned cmd)
 {
-   if (!driver.menu)
-      return -1;
 
    if (!rarch_main_command(cmd))
       return -1;
@@ -1661,12 +1753,17 @@ static int action_ok_screenshot(const char *path,
 static int action_ok_file_load_or_resume(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   if (!strcmp(driver.menu->deferred_path, g_extern.fullpath))
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
+
+   if (!strcmp(menu->deferred_path, g_extern.fullpath))
       return generic_action_ok_command(RARCH_CMD_RESUME);
    else
    {
       strlcpy(g_extern.fullpath,
-            driver.menu->deferred_path, sizeof(g_extern.fullpath));
+            menu->deferred_path, sizeof(g_extern.fullpath));
       rarch_main_command(RARCH_CMD_LOAD_CORE);
       rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
       return -1;
@@ -1695,6 +1792,10 @@ static int action_ok_rdb_entry_submenu(const char *path,
    int len = 0;
    struct string_list *str_list  = NULL;
    struct string_list *str_list2 = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
 
    if (!label)
       return -1;
@@ -1737,7 +1838,7 @@ static int action_ok_rdb_entry_submenu(const char *path,
    strlcat(new_label, str_list->elems[0].data, sizeof(new_label));
 
    ret = menu_list_push_stack_refresh(
-         driver.menu->menu_list,
+         menu->menu_list,
          rdb,
          new_label,
          0, idx);
@@ -1758,8 +1859,12 @@ static int action_cancel_lookup_setting(const char *path,
 static int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
    menu_apply_deferred_settings();
-   menu_list_pop_stack(driver.menu->menu_list);
+   menu_list_pop_stack(menu->menu_list);
    return 0;
 }
 
@@ -1767,16 +1872,17 @@ static int action_cancel_pop_default(const char *path,
 static int action_ok_help(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
 
    menu_list_push_stack(
-         driver.menu->menu_list,
+         menu->menu_list,
          "",
          "help",
          0,
          0);
-   driver.menu->push_start_screen = false;
+   menu->push_start_screen = false;
 
    return 0;
 }
@@ -1851,8 +1957,11 @@ static int action_start_shader_action_preset_parameter(unsigned type, const char
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
    struct video_shader_parameter *param = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
 
-   if (!(shader = driver.menu->shader))
+   if (!(shader = menu->shader))
       return 0;
 
    param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
@@ -1904,8 +2013,11 @@ static int shader_action_parameter_preset_toggle(unsigned type, const char *labe
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
    struct video_shader_parameter *param = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
 
-   if (!(shader = driver.menu->shader))
+   if (!(shader = menu->shader))
       return 0;
 
    param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
@@ -1979,8 +2091,13 @@ static int action_start_shader_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
-   struct video_shader *shader = driver.menu->shader;
+   struct video_shader *shader = NULL;
    struct video_shader_pass *shader_pass = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
+   shader = menu->shader;
 
    if (shader)
       shader_pass = &shader->pass[hack_shader_pass];
@@ -1997,14 +2114,24 @@ static int action_start_shader_scale_pass(unsigned type, const char *label,
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
+   struct video_shader *shader = NULL;
+   struct video_shader_pass *shader_pass = NULL;
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
-   struct video_shader *shader = driver.menu->shader;
-   struct video_shader_pass *shader_pass = &shader->pass[pass];
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
+   shader      = menu->shader;
 
    if (shader)
    {
-      shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = 0;
-      shader_pass->fbo.valid = false;
+      shader_pass = &shader->pass[pass];
+
+      if (shader_pass)
+      {
+         shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = 0;
+         shader_pass->fbo.valid = false;
+      }
    }
 #endif
 
@@ -2033,7 +2160,7 @@ static int action_toggle_scroll(unsigned type, const char *label,
       unsigned action)
 {
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
-   menu_handle_t *menu = driver.menu;
+   menu_handle_t *menu = menu_driver_resolve();
    if (!menu)
       return -1;
 
@@ -2069,7 +2196,7 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
 {
    menu_file_list_cbs_t *cbs = NULL;
    unsigned push_list = 0;
-   menu_handle_t *menu = driver.menu;
+   menu_handle_t *menu = menu_driver_resolve();
    if (!menu)
       return -1;
 
@@ -2132,10 +2259,11 @@ static int action_toggle_shader_scale_pass(unsigned type, const char *label,
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
    struct video_shader *shader = NULL;
    struct video_shader_pass *shader_pass = NULL;
-   
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
-   shader = driver.menu->shader;
+   
+   shader = menu->shader;
    if (!shader)
       return -1;
    shader_pass = &shader->pass[pass];
@@ -2167,10 +2295,11 @@ static int action_start_shader_filter_pass(unsigned type, const char *label,
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
    struct video_shader *shader = NULL;
    struct video_shader_pass *shader_pass = NULL;
-   
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
-   shader = driver.menu->shader;
+   
+   shader = menu->shader;
    if (!shader)
       return -1;
    shader_pass = &shader->pass[pass];
@@ -2190,10 +2319,11 @@ static int action_toggle_shader_filter_pass(unsigned type, const char *label,
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
    struct video_shader *shader = NULL;
    struct video_shader_pass *shader_pass = NULL;
-   
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
-   shader = driver.menu->shader;
+   
+   shader = menu->shader;
    if (!shader)
       return -1;
    shader_pass = &shader->pass[pass];
@@ -2230,17 +2360,18 @@ static int action_start_shader_num_passes(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
-   
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
-   shader = driver.menu->shader;
+   
+   shader = menu->shader;
    if (!shader)
       return -1;
    if (shader->passes)
       shader->passes = 0;
-   driver.menu->need_refresh = true;
+   menu->need_refresh = true;
 
-   video_shader_resolve_parameters(NULL, driver.menu->shader);
+   video_shader_resolve_parameters(NULL, menu->shader);
 #endif
    return 0;
 }
@@ -2249,6 +2380,9 @@ static int action_start_cheat_num_passes(unsigned type, const char *label,
       unsigned action)
 {
    cheat_manager_t *cheat = g_extern.cheat;
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
 
    if (!cheat)
       return -1;
@@ -2256,7 +2390,7 @@ static int action_start_cheat_num_passes(unsigned type, const char *label,
    if (cheat->size)
    {
       cheat_manager_realloc(cheat, 0);
-      driver.menu->need_refresh = true;
+      menu->need_refresh = true;
    }
 
    return 0;
@@ -2267,6 +2401,9 @@ static int action_toggle_cheat_num_passes(unsigned type, const char *label,
 {
    unsigned new_size = 0;
    cheat_manager_t *cheat = g_extern.cheat;
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
 
    if (!cheat)
       return -1;
@@ -2276,16 +2413,16 @@ static int action_toggle_cheat_num_passes(unsigned type, const char *label,
       case MENU_ACTION_LEFT:
          if (cheat->size)
             new_size = cheat->size - 1;
-         driver.menu->need_refresh = true;
+         menu->need_refresh = true;
          break;
 
       case MENU_ACTION_RIGHT:
          new_size = cheat->size + 1;
-         driver.menu->need_refresh = true;
+         menu->need_refresh = true;
          break;
    }
 
-   if (driver.menu->need_refresh)
+   if (menu->need_refresh)
       cheat_manager_realloc(cheat, new_size);
 
    return 0;
@@ -2296,10 +2433,11 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
-   
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
-   shader = driver.menu->shader;
+   
+   shader = menu->shader;
    if (!shader)
       return -1;
 
@@ -2308,18 +2446,18 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
       case MENU_ACTION_LEFT:
          if (shader->passes)
             shader->passes--;
-         driver.menu->need_refresh = true;
+         menu->need_refresh = true;
          break;
 
       case MENU_ACTION_RIGHT:
          if ((shader->passes < GFX_MAX_SHADERS))
             shader->passes++;
-         driver.menu->need_refresh = true;
+         menu->need_refresh = true;
          break;
    }
 
-   if (driver.menu->need_refresh)
-      video_shader_resolve_parameters(NULL, driver.menu->shader);
+   if (menu->need_refresh)
+      video_shader_resolve_parameters(NULL, menu->shader);
 
 #endif
    return 0;
@@ -2477,15 +2615,21 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
    unsigned i;
    size_t list_size = 0;
    const core_info_t *info = NULL;
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
+   file_list_t *list      = NULL;
+   file_list_t *menu_list = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
+   list      = (file_list_t*)data;
+   menu_list = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
 
    menu_list_clear(list);
    core_info_list_get_supported_cores(g_extern.core_info,
-         driver.menu->deferred_path, &info, &list_size);
+         menu->deferred_path, &info, &list_size);
 
    for (i = 0; i < list_size; i++)
    {
@@ -2497,7 +2641,7 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
 
    menu_list_sort_on_alt(list);
 
-   menu_list_populate_generic(driver.menu, list, path, label, type);
+   menu_list_populate_generic(menu, list, path, label, type);
 
    return 0;
 }
@@ -2505,8 +2649,14 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
 static int deferred_push_database_manager_list_deferred(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
+   file_list_t *list      = NULL;
+   file_list_t *menu_list = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
+   list      = (file_list_t*)data;
+   menu_list = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
@@ -2517,7 +2667,7 @@ static int deferred_push_database_manager_list_deferred(void *data, void *userda
 
    menu_list_sort_on_alt(list);
 
-   menu_list_populate_generic(driver.menu, list, path, label, type);
+   menu_list_populate_generic(menu, list, path, label, type);
 
    return 0;
 }
@@ -2528,8 +2678,14 @@ static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata
    char *query = NULL, *rdb = NULL;
    char rdb_path[PATH_MAX_LENGTH];
    config_file_t *conf    = NULL;
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
+   file_list_t *list      = NULL;
+   file_list_t *menu_list = NULL;
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
+   list                   = (file_list_t*)data;
+   menu_list              = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
@@ -2554,7 +2710,7 @@ static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata
 
    menu_list_sort_on_alt(list);
 
-   menu_list_populate_generic(driver.menu, list, path, label, type);
+   menu_list_populate_generic(menu, list, path, label, type);
 
    return 0;
 }
@@ -2564,10 +2720,18 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
       const char *path, const char *label, unsigned type)
 {
    char query[PATH_MAX_LENGTH];
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
-   struct string_list *str_list  = string_split(path, "|"); 
+   struct string_list *str_list = NULL;
    bool add_quotes = true;
+   file_list_t *list = NULL;
+   file_list_t *menu_list = NULL;
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
+   str_list  = string_split(path, "|"); 
+
+   list                   = (file_list_t*)data;
+   menu_list              = (file_list_t*)userdata;
 
    if (!list || !menu_list)
    {
@@ -2647,7 +2811,7 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
 
    menu_list_sort_on_alt(list);
 
-   menu_list_populate_generic(driver.menu, list, str_list->elems[0].data, label, type);
+   menu_list_populate_generic(menu, list, str_list->elems[0].data, label, type);
 
    string_list_free(str_list);
 
@@ -2820,9 +2984,12 @@ static int deferred_push_performance_counters(void *data, void *userdata,
    return 0;
 }
 
-static inline struct video_shader *shader_manager_get_current_shader(
-      menu_handle_t *menu, const char *label, unsigned type)
+static inline struct video_shader *shader_manager_get_current_shader(const char *label, unsigned type)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return NULL;
+
    if (!strcmp(label, "video_shader_preset_parameters"))
       return menu->shader;
    else if (!strcmp(label, "video_shader_parameters") &&
@@ -2860,12 +3027,15 @@ static int deferred_push_video_shader_parameters_common(void *data, void *userda
 static int deferred_push_video_shader_preset_parameters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   if (!driver.menu->shader)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+   if (!menu->shader)
       return 0;
 
    return deferred_push_video_shader_parameters_common(data, userdata,
          path, label, type,
-         driver.menu->shader, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
+         menu->shader, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 }
 
 static int deferred_push_video_shader_parameters(void *data, void *userdata,
@@ -2887,14 +3057,21 @@ static int deferred_push_settings(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
    rarch_setting_t *setting = NULL;
-   file_list_t *list        = (file_list_t*)data;
-   file_list_t *menu_list   = (file_list_t*)userdata;
+   file_list_t *list = NULL;
+   file_list_t *menu_list = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
+
+   list        = (file_list_t*)data;
+   menu_list   = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
 
-   settings_list_free(driver.menu->list_settings);
-   driver.menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
+   settings_list_free(menu->list_settings);
+   menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
 
    setting = menu_action_find_setting("Driver Settings");
 
@@ -2948,8 +3125,15 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
    char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
    rarch_setting_t *setting = NULL;
    struct string_list *str_list = NULL;
-   file_list_t *list        = (file_list_t*)data;
-   file_list_t *menu_list   = (file_list_t*)userdata;
+   file_list_t *list      = NULL;
+   file_list_t *menu_list = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
+
+   list        = (file_list_t*)data;
+   menu_list   = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
@@ -2970,8 +3154,8 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
       }
    }
 
-   settings_list_free(driver.menu->list_settings);
-   driver.menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
+   settings_list_free(menu->list_settings);
+   menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
 
    setting = menu_action_find_setting(elem0);
 
@@ -3012,7 +3196,11 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
 static int deferred_push_category(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_push_list(driver.menu, (file_list_t*)data,
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
+   return menu_entries_push_list(menu, (file_list_t*)data,
          path, label, type, SL_FLAG_ALL_SETTINGS);
 }
 
@@ -3021,13 +3209,20 @@ static int deferred_push_shader_options(void *data, void *userdata,
 {
    unsigned i;
    struct video_shader *shader = NULL;
-   file_list_t *list           = (file_list_t*)data;
-   file_list_t *menu_list      = (file_list_t*)userdata;
+   file_list_t *list      = NULL;
+   file_list_t *menu_list = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
+
+   list           = (file_list_t*)data;
+   menu_list      = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
 
-   shader = driver.menu->shader;
+   shader = menu->shader;
 
    if (!shader)
       return -1;
@@ -3151,14 +3346,21 @@ static int push_perfcounter_generic(
       unsigned num, unsigned ident,
       unsigned type)
 {
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
+   file_list_t *list      = NULL;
+   file_list_t *menu_list = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
+
+   list      = (file_list_t*)data;
+   menu_list = (file_list_t*)userdata;
 
    if (!list || !menu_list)
       return -1;
 
    menu_list_clear(list);
-   push_perfcounter(driver.menu, list, counters, num, ident);
+   push_perfcounter(menu, list, counters, num, ident);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(path, label, type);
@@ -3381,11 +3583,14 @@ static int cb_core_updater_list(void *data_, size_t len)
 {
    char *data = (char*)data_;
    file_list_t *list = NULL;
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return -1;
 
    if (!data)
       return -1;
 
-   list      = (file_list_t*)driver.menu->menu_list->selection_buf;
+   list      = (file_list_t*)menu->menu_list->selection_buf;
 
    if (!list)
       return -1;
@@ -3395,7 +3600,7 @@ static int cb_core_updater_list(void *data_, size_t len)
 
    print_buf_lines(list, data, len, MENU_FILE_DOWNLOAD_CORE);
 
-   menu_list_populate_generic(driver.menu,
+   menu_list_populate_generic(menu,
          list, core_updater_list_path,
          core_updater_list_label, core_updater_list_type);
 
@@ -3407,6 +3612,10 @@ static int cb_core_updater_list(void *data_, size_t len)
 static int deferred_push_core_updater_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
 #ifdef HAVE_NETWORKING
    char url_path[PATH_MAX_LENGTH];
 
@@ -3430,7 +3639,7 @@ static int deferred_push_core_updater_list(void *data, void *userdata,
             0, 0);
 #endif
 
-      menu_list_populate_generic(driver.menu, list, path, label, type);
+      menu_list_populate_generic(menu, list, path, label, type);
 
       return 0;
    }
@@ -3456,10 +3665,13 @@ static int deferred_push_history_list(void *data, void *userdata,
    unsigned i;
    size_t list_size = 0;
    file_list_t *list      = (file_list_t*)data;
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return -1;
 
    (void)userdata;
 
-   if (!list || !driver.menu)
+   if (!list || !menu)
       return -1;
 
    menu_list_clear(list);
@@ -3486,7 +3698,7 @@ static int deferred_push_history_list(void *data, void *userdata,
             MENU_FILE_PLAYLIST_ENTRY, 0);
    }
 
-   menu_list_populate_generic(driver.menu, list, path, label, type);
+   menu_list_populate_generic(menu, list, path, label, type);
 
    return 0;
 }
@@ -3495,17 +3707,20 @@ static int deferred_push_content_actions(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
    file_list_t *list = (file_list_t*)data;
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return -1;
 
    (void)userdata;
 
-   if (!list || !driver.menu)
+   if (!list || !menu)
       return -1;
 
    menu_list_clear(list);
 
 
    if (g_extern.main_is_init && !g_extern.libretro_dummy &&
-         !strcmp(driver.menu->deferred_path, g_extern.fullpath))
+         !strcmp(menu->deferred_path, g_extern.fullpath))
    {
       menu_list_push(list, "Resume", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0);
       menu_list_push(list, "Save State", "savestate", MENU_SETTING_ACTION_SAVESTATE, 0);
@@ -3523,7 +3738,7 @@ static int deferred_push_content_actions(void *data, void *userdata,
    else
       menu_list_push(list, "Run", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0);
 
-   menu_list_populate_generic(driver.menu, list, path, label, type);
+   menu_list_populate_generic(menu, list, path, label, type);
 
    return 0;
 }
@@ -3531,7 +3746,10 @@ static int deferred_push_content_actions(void *data, void *userdata,
 static int deferred_push_content_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_deferred_push((file_list_t*)data, driver.menu->menu_list->selection_buf);
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return -1;
+   return menu_entries_deferred_push((file_list_t*)data, menu->menu_list->selection_buf);
 }
 
 static int deferred_push_database_manager_list(void *data, void *userdata,
@@ -3684,38 +3902,43 @@ static int deferred_push_default(void *data, void *userdata,
 static int action_bind_up_or_down_generic(unsigned type, const char *label,
       unsigned action)
 {
-   unsigned scroll_speed = (max(driver.menu->scroll.acceleration, 2) - 2) / 4 + 1;
+   unsigned scroll_speed  = 0;
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return -1;
 
-   if (menu_list_get_size(driver.menu->menu_list) <= 0)
+   scroll_speed = (max(menu->scroll.acceleration, 2) - 2) / 4 + 1;
+
+   if (menu_list_get_size(menu->menu_list) <= 0)
       return 0;
 
    switch (action)
    {
       case MENU_ACTION_UP:
-         if (driver.menu->selection_ptr >= scroll_speed)
-               menu_navigation_set(driver.menu,
-                     driver.menu->selection_ptr - scroll_speed, true);
+         if (menu->selection_ptr >= scroll_speed)
+               menu_navigation_set(menu,
+                     menu->selection_ptr - scroll_speed, true);
          else
          {
             if (g_settings.menu.navigation.wraparound.vertical_enable)
-               menu_navigation_set(driver.menu,
-                     menu_list_get_size(driver.menu->menu_list) - 1, true);
+               menu_navigation_set(menu,
+                     menu_list_get_size(menu->menu_list) - 1, true);
             else
-               menu_navigation_set(driver.menu,
+               menu_navigation_set(menu,
                      0, true);
          }
          break;
       case MENU_ACTION_DOWN:
-         if (driver.menu->selection_ptr + scroll_speed < (menu_list_get_size(driver.menu->menu_list)))
-            menu_navigation_set(driver.menu,
-                  driver.menu->selection_ptr + scroll_speed, true);
+         if (menu->selection_ptr + scroll_speed < (menu_list_get_size(menu->menu_list)))
+            menu_navigation_set(menu,
+                  menu->selection_ptr + scroll_speed, true);
          else
          {
             if (g_settings.menu.navigation.wraparound.vertical_enable)
-               menu_navigation_clear(driver.menu, false);
+               menu_navigation_clear(menu, false);
             else
-               menu_navigation_set(driver.menu,
-                     menu_list_get_size(driver.menu->menu_list) - 1, true);
+               menu_navigation_set(menu,
+                     menu_list_get_size(menu->menu_list) - 1, true);
          }
          break;
    }
@@ -3725,43 +3948,54 @@ static int action_bind_up_or_down_generic(unsigned type, const char *label,
 
 static int action_refresh_default(file_list_t *list, file_list_t *menu_list)
 {
-   int ret = menu_entries_deferred_push(list, menu_list);
-   driver.menu->need_refresh = false;
+   int ret = 0;
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
+   ret = menu_entries_deferred_push(list, menu_list);
+
+   menu->need_refresh = false;
+
    return ret;
 }
 
 static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
       const char *label, unsigned type, unsigned action)
 {
-   if (!driver.menu->mouse.enable)
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
+   if (!menu->mouse.enable)
       return 0;
 
-   if (driver.menu->mouse.ptr <= menu_list_get_size(driver.menu->menu_list)-1)
-      menu_navigation_set(driver.menu, driver.menu->mouse.ptr, false);
+   if (menu->mouse.ptr <= menu_list_get_size(menu->menu_list)-1)
+      menu_navigation_set(menu, menu->mouse.ptr, false);
 
-   if (driver.menu->mouse.left)
+   if (menu->mouse.left)
    {
-      if (!driver.menu->mouse.oldleft)
+      if (!menu->mouse.oldleft)
       {
-         driver.menu->mouse.oldleft = true;
+         menu->mouse.oldleft = true;
 
          if (cbs && cbs->action_ok)
-            return cbs->action_ok(path, label, type, driver.menu->selection_ptr);
+            return cbs->action_ok(path, label, type, menu->selection_ptr);
       }
    }
    else
-      driver.menu->mouse.oldleft = false;
+      menu->mouse.oldleft = false;
 
-   if (driver.menu->mouse.right)
+   if (menu->mouse.right)
    {
-      if (!driver.menu->mouse.oldright)
+      if (!menu->mouse.oldright)
       {
-         driver.menu->mouse.oldright = true;
-         menu_list_pop_stack(driver.menu->menu_list);
+         menu->mouse.oldright = true;
+         menu_list_pop_stack(menu->menu_list);
       }
    }
    else
-      driver.menu->mouse.oldright = false;
+      menu->mouse.oldright = false;
 
    return 0;
 }
@@ -3781,8 +4015,7 @@ static int action_iterate_help(const char *label, unsigned action)
    };
    char desc[ARRAY_SIZE(binds)][64];
    char msg[PATH_MAX_LENGTH];
-   menu_handle_t *menu = driver.menu;
-
+   menu_handle_t *menu    = menu_driver_resolve();
    if (!menu)
       return 0;
 
@@ -3840,11 +4073,10 @@ static int action_iterate_info(const char *label, unsigned action)
    unsigned info_type = 0;
    rarch_setting_t *current_setting = NULL;
    file_list_t *list = NULL;
-   menu_handle_t *menu = driver.menu;
-
+   menu_handle_t *menu    = menu_driver_resolve();
    if (!menu)
       return 0;
-   
+
    list = (file_list_t*)menu->menu_list->selection_buf;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
@@ -3891,14 +4123,18 @@ static int action_iterate_info(const char *label, unsigned action)
 
 static int action_iterate_load_open_zip(const char *label, unsigned action)
 {
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
    switch (g_settings.archive.mode)
    {
       case 0:
-         return load_or_open_zip_iterate(driver.menu, action);
+         return load_or_open_zip_iterate(menu, action);
       case 1:
-         return archive_load(driver.menu);
+         return archive_load(menu);
       case 2:
-         return archive_open(driver.menu);
+         return archive_open(menu);
       default:
          break;
    }
@@ -3915,8 +4151,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
    unsigned type = 0;
    rarch_viewport_t *custom = (rarch_viewport_t*)
       &g_extern.console.screen.viewports.custom_vp;
-   menu_handle_t *menu = driver.menu;
-
+   menu_handle_t *menu    = menu_driver_resolve();
    if (!menu)
       return -1;
 
@@ -4089,22 +4324,27 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 
 static int action_iterate_custom_bind(const char *label, unsigned action)
 {
-   if (menu_input_bind_iterate(driver.menu))
-      menu_list_pop_stack(driver.menu->menu_list);
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return -1;
+   if (menu_input_bind_iterate(menu))
+      menu_list_pop_stack(menu->menu_list);
    return 0;
 }
 
 static int action_iterate_custom_bind_keyboard(const char *label, unsigned action)
 {
-   if (menu_input_bind_iterate_keyboard(driver.menu))
-      menu_list_pop_stack(driver.menu->menu_list);
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return -1;
+   if (menu_input_bind_iterate_keyboard(menu))
+      menu_list_pop_stack(menu->menu_list);
    return 0;
 }
 
 static int action_iterate_message(const char *label, unsigned action)
 {
-   menu_handle_t *menu = driver.menu;
-
+   menu_handle_t *menu    = menu_driver_resolve();
    if (!menu)
       return -1;
 
@@ -4121,40 +4361,43 @@ static int action_iterate_message(const char *label, unsigned action)
 static int mouse_iterate(unsigned action)
 {
    const struct retro_keybind *binds[MAX_USERS];
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return -1;
 
-   if (!driver.menu->mouse.enable)
+   if (!menu->mouse.enable)
       return 0;
 
-   driver.menu->mouse.dx = driver.input->input_state(driver.input_data,
+   menu->mouse.dx = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
-   driver.menu->mouse.dy = driver.input->input_state(driver.input_data,
+   menu->mouse.dy = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
 
-   driver.menu->mouse.x += driver.menu->mouse.dx;
-   driver.menu->mouse.y += driver.menu->mouse.dy;
+   menu->mouse.x += menu->mouse.dx;
+   menu->mouse.y += menu->mouse.dy;
 
-   if (driver.menu->mouse.x < 5)
-      driver.menu->mouse.x = 5;
-   if (driver.menu->mouse.y < 5)
-      driver.menu->mouse.y = 5;
-   if (driver.menu->mouse.x > driver.menu->frame_buf.width - 5)
-      driver.menu->mouse.x = driver.menu->frame_buf.width - 5;
-   if (driver.menu->mouse.y > driver.menu->frame_buf.height - 5)
-      driver.menu->mouse.y = driver.menu->frame_buf.height - 5;
+   if (menu->mouse.x < 5)
+      menu->mouse.x = 5;
+   if (menu->mouse.y < 5)
+      menu->mouse.y = 5;
+   if (menu->mouse.x > menu->frame_buf.width - 5)
+      menu->mouse.x = menu->frame_buf.width - 5;
+   if (menu->mouse.y > menu->frame_buf.height - 5)
+      menu->mouse.y = menu->frame_buf.height - 5;
 
-   driver.menu->mouse.left = driver.input->input_state(driver.input_data,
+   menu->mouse.left = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
 
-   driver.menu->mouse.right = driver.input->input_state(driver.input_data,
+   menu->mouse.right = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
 
-   driver.menu->mouse.wheelup = driver.input->input_state(driver.input_data,
+   menu->mouse.wheelup = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP)
-         || driver.menu->mouse.y == 5;
+         || menu->mouse.y == 5;
 
-   driver.menu->mouse.wheeldown = driver.input->input_state(driver.input_data,
+   menu->mouse.wheeldown = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN)
-         || driver.menu->mouse.y == driver.menu->frame_buf.height - 5;
+         || menu->mouse.y == menu->frame_buf.height - 5;
 
    return 0;
 }
@@ -4166,11 +4409,10 @@ static int action_iterate_main(const char *label, unsigned action)
    const char *label_offset = NULL;
    const char *path_offset = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_handle_t *menu = driver.menu;
-
+   menu_handle_t *menu    = menu_driver_resolve();
    if (!menu)
       return 0;
-   
+
    cbs = (menu_file_list_cbs_t*)
       menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
             menu->selection_ptr);
@@ -4287,8 +4529,11 @@ static int action_iterate_main(const char *label, unsigned action)
 static int action_select_default(unsigned type, const char *label,
       unsigned action)
 {
-   menu_list_push_stack(driver.menu->menu_list, "", "info_screen",
-         0, driver.menu->selection_ptr);
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return 0;
+   menu_list_push_stack(menu->menu_list, "", "info_screen",
+         0, menu->selection_ptr);
    return 0;
 }
 
@@ -4360,21 +4605,25 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
       "Linear",
       "Nearest"
    };
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return;
 
    (void)pass;
    (void)modes;
+   (void)menu;
 
    *type_str = '\0';
    *w = 19;
    strlcpy(path_buf, path, path_buf_size);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   if (!driver.menu->shader)
+   if (!menu->shader)
       return;
 
   pass = (type - MENU_SETTINGS_SHADER_PASS_FILTER_0);
 
-  strlcpy(type_str, modes[driver.menu->shader->pass[pass].filter],
+  strlcpy(type_str, modes[menu->shader->pass[pass].filter],
         type_str_size);
 #endif
 }
@@ -4388,11 +4637,17 @@ static void menu_action_setting_disp_set_label_shader_num_passes(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return;
+
+   (void)menu;
+
    *type_str = '\0';
    *w = 19;
    strlcpy(path_buf, path, path_buf_size);
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   snprintf(type_str, type_str_size, "%u", driver.menu->shader->passes);
+   snprintf(type_str, type_str_size, "%u", menu->shader->passes);
 #endif
 }
 
@@ -4406,8 +4661,12 @@ static void menu_action_setting_disp_set_label_shader_pass(
       char *path_buf, size_t path_buf_size)
 {
    unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_0);
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return;
 
    (void)pass;
+   (void)menu;
 
    *type_str = '\0';
    *w = 19;
@@ -4415,9 +4674,9 @@ static void menu_action_setting_disp_set_label_shader_pass(
    strlcpy(type_str, "N/A", type_str_size);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   if (*driver.menu->shader->pass[pass].source.path)
+   if (*menu->shader->pass[pass].source.path)
       fill_pathname_base(type_str,
-            driver.menu->shader->pass[pass].source.path, type_str_size);
+            menu->shader->pass[pass].source.path, type_str_size);
 #endif
 }
 
@@ -4491,16 +4750,21 @@ static void menu_action_setting_disp_set_label_shader_preset_parameter(
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    const struct video_shader_parameter *param = NULL;
 #endif
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return;
+
+   (void)menu;
 
    *type_str = '\0';
    *w = 19;
    strlcpy(path_buf, path, path_buf_size);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   if (!driver.menu->shader)
+   if (!menu->shader)
       return;
 
-   param = &driver.menu->shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
+   param = &menu->shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
 
    if (!param)
       return;
@@ -4521,6 +4785,9 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
 {
    unsigned pass = 0;
    unsigned scale_value = 0;
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return;
 
    *type_str = '\0';
    *w = 19;
@@ -4528,13 +4795,14 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
 
    (void)pass;
    (void)scale_value;
+   (void)menu;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   if (!driver.menu->shader)
+   if (!menu->shader)
       return;
 
    pass        = (type - MENU_SETTINGS_SHADER_PASS_SCALE_0);
-   scale_value = driver.menu->shader->pass[pass].fbo.scale_x;
+   scale_value = menu->shader->pass[pass].fbo.scale_x;
 
    if (!scale_value)
       strlcpy(type_str, "Don't care", type_str_size);
@@ -5121,10 +5389,13 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *elem0, const char *elem1, const char *menu_label)
 {
    rarch_setting_t *setting = menu_action_find_setting(label);
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return;
 
    if (!cbs)
       return;
-   if (!driver.menu)
+   if (!menu)
       return;
 
    cbs->action_ok = action_ok_lookup_setting;
@@ -5738,6 +6009,9 @@ void menu_entries_cbs_init(void *data,
    const char *menu_label = NULL;
    menu_file_list_cbs_t *cbs = NULL;
    file_list_t *list = (file_list_t*)data;
+   menu_handle_t *menu    = menu_driver_resolve();
+   if (!menu)
+      return;
 
    if (!list)
       return;
@@ -5745,7 +6019,7 @@ void menu_entries_cbs_init(void *data,
    if (!(cbs = (menu_file_list_cbs_t*)list->list[idx].actiondata))
       return;
 
-   menu_list_get_last_stack(driver.menu->menu_list,
+   menu_list_get_last_stack(menu->menu_list,
          NULL, &menu_label, NULL);
 
    if (label)
