@@ -3195,20 +3195,6 @@ static bool setting_data_append_list_main_menu_options(
          subgroup_info.name);
 #endif
 
-#ifdef HAVE_LIBRETRODB
-   CONFIG_ACTION(
-         "database_manager_list",
-         "Database Manager",
-         group_info.name,
-         subgroup_info.name);
-
-   CONFIG_ACTION(
-         "cursor_manager_list",
-         "Cursor Manager",
-         group_info.name,
-         subgroup_info.name);
-#endif
-
    if (g_settings.history_list_enable)
    {
       CONFIG_ACTION(
@@ -3244,6 +3230,12 @@ static bool setting_data_append_list_main_menu_options(
    CONFIG_ACTION(
          "core_information",
          "Core Information",
+         group_info.name,
+         subgroup_info.name);
+
+   CONFIG_ACTION(
+         "management",
+         "Management",
          group_info.name,
          subgroup_info.name);
 

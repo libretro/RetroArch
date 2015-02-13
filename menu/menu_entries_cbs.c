@@ -3104,6 +3104,31 @@ static int deferred_push_options(void *data, void *userdata,
    return 0;
 }
 
+static int deferred_push_management_options(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   unsigned i;
+   file_list_t *list           = (file_list_t*)data;
+   file_list_t *menu_list      = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_list_clear(list);
+
+#ifdef HAVE_LIBRETRODB
+   menu_list_push(list, "Database Manager", "database_manager_list",
+         MENU_SETTING_ACTION, 0);
+   menu_list_push(list, "Cursor Manager", "cursor_manager_list",
+         MENU_SETTING_ACTION, 0);
+#endif
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(driver.menu, path, label, type);
+
+   return 0;
+}
+
 
 static void push_perfcounter(menu_handle_t *menu,
       file_list_t *list,
@@ -5170,6 +5195,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          !strcmp(label, "performance_counters") ||
          !strcmp(label, "frontend_counters") ||
          !strcmp(label, "core_counters") ||
+         !strcmp(label, "management") ||
          !strcmp(label, "options")
          )
       cbs->action_ok = action_ok_push_default;
@@ -5627,6 +5653,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_shader_options;
    else if (!strcmp(label, "options"))
       cbs->action_deferred_push = deferred_push_options;
+   else if (!strcmp(label, "management"))
+      cbs->action_deferred_push = deferred_push_management_options;
    else if (type == MENU_SETTING_GROUP)
       cbs->action_deferred_push = deferred_push_category;
    else if (!strcmp(label, "deferred_core_list"))
