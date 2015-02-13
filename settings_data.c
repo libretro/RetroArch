@@ -5111,17 +5111,6 @@ static bool setting_data_append_list_menu_options(
          general_write_handler,
          general_read_handler);
 
-   CONFIG_BOOL(
-         g_settings.menu_show_start_screen,
-         "rgui_show_start_screen",
-         "Show Start Screen",
-         menu_show_start_screen,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
 
    CONFIG_BOOL(
          g_settings.menu.pause_libretro,
@@ -5210,9 +5199,21 @@ static bool setting_data_append_list_menu_options(
          general_read_handler);
 
    CONFIG_BOOL(
+         g_settings.menu_show_start_screen,
+         "rgui_show_start_screen",
+         "Show Start Screen",
+         menu_show_start_screen,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
          g_settings.menu.timedate_enable,
          "menu_timedate_enable",
-         "Time / date enable",
+         "Show time / date",
          true,
          "OFF",
          "ON",
@@ -5224,7 +5225,7 @@ static bool setting_data_append_list_menu_options(
    CONFIG_BOOL(
          g_settings.menu.core_enable,
          "menu_core_enable",
-         "Core enable",
+         "Show core name",
          true,
          "OFF",
          "ON",
