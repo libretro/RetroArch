@@ -1955,29 +1955,32 @@ void rarch_main_set_state(unsigned cmd)
    {
       case RARCH_ACTION_STATE_MENU_RUNNING:
 #ifdef HAVE_MENU
-         if (!driver.menu)
-            return;
+         {
+            menu_handle_t *menu = menu_driver_resolve();
+            if (!menu)
+               return;
 
-         if (driver.menu_ctx && driver.menu_ctx->toggle)
-            driver.menu_ctx->toggle(true);
+            if (driver.menu_ctx && driver.menu_ctx->toggle)
+               driver.menu_ctx->toggle(true);
 
-         /* Menu should always run with vsync on. */
-         rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
-         /* Stop all rumbling before entering the menu. */
-         rarch_main_command(RARCH_CMD_RUMBLE_STOP);
+            /* Menu should always run with vsync on. */
+            rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
+            /* Stop all rumbling before entering the menu. */
+            rarch_main_command(RARCH_CMD_RUMBLE_STOP);
 
-         if (g_settings.menu.pause_libretro)
-            rarch_main_command(RARCH_CMD_AUDIO_STOP);
+            if (g_settings.menu.pause_libretro)
+               rarch_main_command(RARCH_CMD_AUDIO_STOP);
 
-         /* Override keyboard callback to redirect to menu instead.
-          * We'll use this later for something ...
-          * FIXME: This should probably be moved to menu_common somehow. */
-         g_extern.frontend_key_event = g_extern.system.key_event;
-         g_extern.system.key_event   = menu_input_key_event;
+            /* Override keyboard callback to redirect to menu instead.
+             * We'll use this later for something ...
+             * FIXME: This should probably be moved to menu_common somehow. */
+            g_extern.frontend_key_event = g_extern.system.key_event;
+            g_extern.system.key_event   = menu_input_key_event;
 
-         driver.menu->need_refresh = true;
-         g_extern.system.frame_time_last = 0;
-         g_extern.is_menu = true;
+            menu->need_refresh = true;
+            g_extern.system.frame_time_last = 0;
+            g_extern.is_menu = true;
+         }
 #endif
          break;
       case RARCH_ACTION_STATE_LOAD_CONTENT:
@@ -2158,14 +2161,17 @@ bool rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_LOAD_CORE:
+         {
 #ifdef HAVE_MENU
-         if (driver.menu)
-            rarch_update_system_info(&g_extern.menu.info,
-                  &driver.menu->load_no_content);
+            menu_handle_t *menu = menu_driver_resolve();
+            if (menu)
+               rarch_update_system_info(&g_extern.menu.info,
+                     &menu->load_no_content);
 #endif
 #ifndef HAVE_DYNAMIC
-         rarch_main_command(RARCH_CMD_QUIT);
+            rarch_main_command(RARCH_CMD_QUIT);
 #endif
+         }
          break;
       case RARCH_CMD_LOAD_STATE:
          /* Immutable - disallow savestate load when 
@@ -2220,15 +2226,20 @@ bool rarch_main_command(unsigned cmd)
             return false;
          break;
       case RARCH_CMD_PREPARE_DUMMY:
-         *g_extern.fullpath = '\0';
+         {
+            menu_handle_t *menu = menu_driver_resolve();
+            *g_extern.fullpath = '\0';
+
+            (void)menu;
 
 #ifdef HAVE_MENU
-         if (driver.menu)
-            driver.menu->load_no_content = false;
+            if (menu)
+               menu->load_no_content = false;
 #endif
 
-         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
-         g_extern.system.shutdown = false;
+            rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+            g_extern.system.shutdown = false;
+         }
          break;
       case RARCH_CMD_QUIT:
          rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
@@ -2825,13 +2836,15 @@ void rarch_playlist_load_content(content_playlist_t *playlist,
 {
    const char *path      = NULL;
    const char *core_path = NULL;
+   menu_handle_t *menu   = menu_driver_resolve();
 
    content_playlist_get_index(playlist,
          idx, &path, &core_path, NULL);
 
    strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
 
-   driver.menu->load_no_content = (path) ? false : true;
+   if (menu)
+      menu->load_no_content = (path) ? false : true;
 
    rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
 
