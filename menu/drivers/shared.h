@@ -49,14 +49,16 @@ static INLINE void get_title(const char *label, const char *dir,
 #endif
    if (!strcmp(label, "core_list"))
       snprintf(title, sizeof_title, "CORE SELECTION %s", dir);
-   else if (!strcmp(label, "core_manager_list"))
+   else if (!strcmp(label, "core_updater_list"))
       snprintf(title, sizeof_title, "CORE UPDATER %s", dir);
+   else if (!strcmp(label, "deferred_database_manager_list"))
+      snprintf(title, sizeof_title, "DATABASE SELECTION - %s", (elem0_path[0] != '\0') ? path_basename(elem0_path) : "");
    else if (!strcmp(label, "database_manager_list"))
-      snprintf(title, sizeof_title, "DATABASE SELECTION %s", dir);
+      snprintf(title, sizeof_title, "DATABASE SELECTION");
    else if (!strcmp(label, "cursor_manager_list"))
-      snprintf(title, sizeof_title, "DATABASE CURSOR SELECTION %s", dir);
+      snprintf(title, sizeof_title, "DATABASE CURSOR SELECTION");
    else if (!strcmp(label, "deferred_cursor_manager_list"))
-      snprintf(title, sizeof_title, "DATABASE CURSOR LIST %s", dir);
+      snprintf(title, sizeof_title, "DATABASE CURSOR LIST - %s", (elem0_path[0] != '\0') ? path_basename(elem0_path) : "");
    else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_developer"))
       snprintf(title, sizeof_title, "DATABASE CURSOR LIST (FILTER: DEVELOPER - %s)", elem0_path);
    else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_publisher"))
@@ -201,6 +203,10 @@ static INLINE void get_title(const char *label, const char *dir,
       if (!strcmp(elem1, "Paths"))
          strlcat(title, " - PATHS", sizeof_title);
    }
+   else if (!strcmp(label, "management"))
+      strlcpy(title, "MANAGEMENT", sizeof_title);
+   else if (!strcmp(label, "options"))
+      strlcpy(title, "OPTIONS", sizeof_title);
    else if (!strcmp(label, "settings"))
       strlcpy(title, "SETTINGS", sizeof_title);
    else if (!strcmp(elem0, "Driver Settings"))
