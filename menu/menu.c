@@ -293,11 +293,12 @@ void menu_free(void *data)
 void menu_apply_deferred_settings(void)
 {
    rarch_setting_t *setting = NULL;
+   menu_handle_t   *menu = menu_driver_resolve();
     
-   if (!driver.menu)
+   if (!menu)
       return;
     
-   setting = (rarch_setting_t*)driver.menu->list_settings;
+   setting = (rarch_setting_t*)menu->list_settings;
     
    if (!setting)
       return;
