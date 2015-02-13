@@ -3779,6 +3779,7 @@ static int action_iterate_help(const char *label, unsigned action)
       RETRO_DEVICE_ID_JOYPAD_SELECT,
       RARCH_MENU_TOGGLE,
       RARCH_QUIT_KEY,
+      RETRO_DEVICE_ID_JOYPAD_X,
    };
    char desc[ARRAY_SIZE(binds)][64];
    char msg[PATH_MAX_LENGTH];
@@ -3812,6 +3813,7 @@ static int action_iterate_help(const char *label, unsigned action)
          "           Info: %-20s\n"
          "Enter/Exit Menu: %-20s\n"
          " Exit RetroArch: %-20s\n"
+         "Toggle Keyboard: %-20s\n"
          " \n"
 
          "To run content:\n"
@@ -3822,7 +3824,7 @@ static int action_iterate_help(const char *label, unsigned action)
          " \n"
 
          "Press Accept/OK to continue.",
-      desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6]);
+      desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7]);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
       driver.menu_ctx->render_messagebox(menu, msg);
