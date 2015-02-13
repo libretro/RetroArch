@@ -62,7 +62,7 @@ static float easing_out_cubic(float t, float b, float c, float d)
    return c * (pow(t / d - 1, 3) + 1) + b;
 }
 
-float easing_in_out_cubic(float t, float b, float c, float d)
+static float easing_in_out_cubic(float t, float b, float c, float d)
 {
    t = t / d * 2;
    if (t < 1)
