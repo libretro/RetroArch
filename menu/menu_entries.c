@@ -163,7 +163,7 @@ static void menu_entries_content_list_push(
    string_list_free(str_list);
 }
 
-int menu_entries_push_cores_list(file_list_t *list, core_info_t *info,
+static int menu_entries_push_cores_list(file_list_t *list, core_info_t *info,
       const char *path, bool push_databases_enable)
 {
    size_t i;
