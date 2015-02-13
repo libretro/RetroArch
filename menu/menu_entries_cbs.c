@@ -3512,7 +3512,7 @@ static int deferred_push_content_actions(void *data, void *userdata,
       menu_list_push(list, "Resume", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0);
       menu_list_push(list, "Save State", "savestate", MENU_SETTING_ACTION_SAVESTATE, 0);
       menu_list_push(list, "Load State", "loadstate", MENU_SETTING_ACTION_LOADSTATE, 0);
-      menu_list_push(list, "Core Informations", "core_information", MENU_SETTING_ACTION_CORE_INFORMATION, 0);
+      menu_list_push(list, "Core Information", "core_information", MENU_SETTING_ACTION_CORE_INFORMATION, 0);
       menu_list_push(list, "Core Options", "core_options", MENU_SETTING_ACTION_CORE_OPTIONS, 0);
       if (g_extern.has_set_input_descriptors)
          menu_list_push(list, "Core Input Remapping Options", "core_input_remapping_options", MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS, 0);
