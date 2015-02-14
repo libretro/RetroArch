@@ -419,8 +419,8 @@ static void udev_input_poll(void *data)
       if (events[i].events & EPOLLIN)
       {
          int j, len;
-         struct input_device *device = (struct input_device*)events[i].data.ptr;
          struct input_event input_events[32];
+         struct input_device *device = (struct input_device*)events[i].data.ptr;
 
          while ((len = read(device->fd, input_events, sizeof(input_events))) > 0)
          {
