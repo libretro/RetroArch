@@ -133,7 +133,7 @@ void video_viewport_set_config(void);
  * Gets viewport scaling dimensions based on 
  * scaled integer aspect ratio.
  **/
-void video_viewport_get_scaled_integer(void *data,
+void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned width, unsigned height,
       float aspect_ratio, bool keep_aspect);
 
