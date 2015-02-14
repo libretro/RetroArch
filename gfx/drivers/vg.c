@@ -28,7 +28,7 @@
 #include "../../performance.h"
 #include "../font_renderer_driver.h"
 #include "../../content.h"
-#include "../gfx/video_viewport.h"
+#include "../video_viewport.h"
 
 typedef struct
 {
