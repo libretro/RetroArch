@@ -102,7 +102,7 @@ typedef struct psp1_video
 
    psp1_menu_frame_t menu;
 
-   rarch_viewport_t vp;
+   video_viewport_t vp;
 
    unsigned rotation;
    bool vblank_not_reached;
@@ -715,13 +715,16 @@ static void psp_update_viewport(psp1_video_t* psp)
 #if defined(HAVE_MENU)
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         const struct rarch_viewport *custom =
+         const struct video_viewport *custom = 
             &g_extern.console.screen.viewports.custom_vp;
 
-         x      = custom->x;
-         y      = custom->y;
-         width  = custom->width;
-         height = custom->height;
+         if (custom)
+         {
+            x      = custom->x;
+            y      = custom->y;
+            width  = custom->width;
+            height = custom->height;
+         }
       }
       else
 #endif
@@ -828,7 +831,7 @@ static void psp_apply_state_changes(void *data)
       psp->should_resize = true;
 }
 
-static void psp_viewport_info(void *data, struct rarch_viewport *vp)
+static void psp_viewport_info(void *data, struct video_viewport *vp)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
    

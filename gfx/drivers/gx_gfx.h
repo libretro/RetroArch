@@ -18,6 +18,8 @@
 #ifndef _GX_VIDEO_H__
 #define _GX_VIDEO_H__
 
+#include "../video_viewport.h"
+
 struct gx_overlay_data
 {
    GXTexObj tex;
@@ -34,7 +36,7 @@ typedef struct gx_video
    bool rgb32;
    uint32_t *menu_data; /* FIXME: Should be const uint16_t*. */
    bool menu_texture_enable;
-   rarch_viewport_t vp;
+   video_viewport_t vp;
    unsigned scale;
 #ifdef HAVE_OVERLAY
    struct gx_overlay_data *overlay;

@@ -24,6 +24,7 @@
 #include <gfx/scaler/scaler.h>
 #include "video_filter.h"
 #include "video_shader_parse.h"
+#include "video_viewport.h"
 
 #include "../libretro.h"
 #include "../input/input_driver.h"
@@ -32,8 +33,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct rarch_viewport;
 
 typedef struct video_info
 {
@@ -159,7 +158,7 @@ typedef struct video_driver
    const char *ident;
 
    void (*set_rotation)(void *data, unsigned rotation);
-   void (*viewport_info)(void *data, struct rarch_viewport *vp);
+   void (*viewport_info)(void *data, struct video_viewport *vp);
 
    /* Reads out in BGR byte order (24bpp). */
    bool (*read_viewport)(void *data, uint8_t *buffer);

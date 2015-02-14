@@ -28,6 +28,7 @@
 #include "retroarch.h"
 #include "retroarch_logger.h"
 #include "screenshot.h"
+#include "gfx/video_viewport.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -175,7 +176,7 @@ static bool take_screenshot_viewport(void)
    const char *screenshot_dir = NULL;
    uint8_t *buffer = NULL;
    bool retval = false;
-   struct rarch_viewport vp = {0};
+   struct video_viewport vp = {0};
 
    if (driver.video && driver.video->viewport_info)
       driver.video->viewport_info(driver.video_data, &vp);

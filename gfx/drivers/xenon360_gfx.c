@@ -25,6 +25,8 @@
 #include "../../driver.h"
 #include "../../general.h"
 
+#Include "../video_viewport.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -292,7 +294,7 @@ static void xenon360_gfx_set_rotation(void *data, unsigned rotation)
    (void)rotation;
 }
 
-static void xenon360_gfx_viewport_info(void *data, struct rarch_viewport *vp)
+static void xenon360_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
    (void)data;
    (void)vp;

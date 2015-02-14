@@ -153,18 +153,20 @@ void video_viewport_get_scaled_integer(void *data,
       float aspect_ratio, bool keep_aspect)
 {
    int padding_x = 0, padding_y = 0;
-   struct rarch_viewport *vp = (struct rarch_viewport*)data;
+   struct video_viewport *vp = (struct video_viewport*)data;
 
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      const struct rarch_viewport *custom =
-         (const struct rarch_viewport*)
+      const struct video_viewport *custom = 
          &g_extern.console.screen.viewports.custom_vp;
 
-      padding_x = width - custom->width;
-      padding_y = height - custom->height;
-      width = custom->width;
-      height = custom->height;
+      if (custom)
+      {
+         padding_x = width - custom->width;
+         padding_y = height - custom->height;
+         width = custom->width;
+         height = custom->height;
+      }
    }
    else
    {

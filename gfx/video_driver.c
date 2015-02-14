@@ -19,7 +19,6 @@
 #include "video_driver.h"
 #include "video_thread_wrapper.h"
 #include "video_pixel_converter.h"
-#include "video_viewport.h"
 #include "video_monitor.h"
 #include "../general.h"
 #include "../retroarch.h"
@@ -386,7 +385,7 @@ void uninit_video_input(void)
 void init_video(void)
 {
    unsigned max_dim, scale, width, height;
-   rarch_viewport_t *custom_vp;
+   video_viewport_t *custom_vp = NULL;
    const input_driver_t *tmp = NULL;
    const struct retro_game_geometry *geom = NULL;
    video_info_t video = {0};
@@ -409,7 +408,7 @@ void init_video(void)
    video_viewport_set_config();
 
    /* Update CUSTOM viewport. */
-   custom_vp = (rarch_viewport_t*)&g_extern.console.screen.viewports.custom_vp;
+   custom_vp = &g_extern.console.screen.viewports.custom_vp;
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;

@@ -305,7 +305,7 @@ typedef struct gl
 
    unsigned win_width;
    unsigned win_height;
-   struct rarch_viewport vp;
+   struct video_viewport vp;
    unsigned vp_out_width;
    unsigned vp_out_height;
    unsigned last_width[MAX_TEXTURES];

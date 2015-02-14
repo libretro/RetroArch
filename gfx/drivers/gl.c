@@ -784,9 +784,7 @@ void gl_set_viewport(gl_t *gl, unsigned width,
 #if defined(HAVE_MENU)
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         const struct rarch_viewport *custom =
-            (const struct rarch_viewport*)
-            &g_extern.console.screen.viewports.custom_vp;
+         const struct video_viewport *custom = &g_extern.console.screen.viewports.custom_vp;
 
          /* GL has bottom-left origin viewport. */
          x      = custom->x;
@@ -2624,10 +2622,11 @@ static bool gl_set_shader(void *data,
 #endif
 }
 
-static void gl_viewport_info(void *data, struct rarch_viewport *vp)
+static void gl_viewport_info(void *data, struct video_viewport *vp)
 {
    unsigned top_y, top_dist;
    gl_t *gl        = (gl_t*)data;
+
    *vp             = gl->vp;
    vp->full_width  = gl->win_width;
    vp->full_height = gl->win_height;

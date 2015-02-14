@@ -999,7 +999,7 @@ static bool omap_gfx_focus(void *data)
   return true; /* fb device always has focus */
 }
 
-static void omap_gfx_viewport_info(void *data, struct rarch_viewport *vp)
+static void omap_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
   omap_video_t *vid = (omap_video_t*)data;
   

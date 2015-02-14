@@ -22,6 +22,7 @@
 #include "../general.h"
 #include "../retroarch.h"
 #include "../intl/intl.h"
+#include "../gfx/video_viewport.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -101,7 +102,7 @@ void recording_dump_frame(const void *data, unsigned width,
 
    if (g_extern.record_gpu_buffer)
    {
-      struct rarch_viewport vp = {0};
+      struct video_viewport vp = {0};
 
       if (driver.video && driver.video->viewport_info)
          driver.video->viewport_info(driver.video_data, &vp);
@@ -220,7 +221,7 @@ bool recording_init(void)
 
    if (g_settings.video.gpu_record && driver.video->read_viewport)
    {
-      struct rarch_viewport vp = {0};
+      struct video_viewport vp = {0};
 
       if (driver.video && driver.video->viewport_info)
          driver.video->viewport_info(driver.video_data, &vp);

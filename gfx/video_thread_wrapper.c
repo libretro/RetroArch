@@ -15,6 +15,7 @@
  */
 
 #include "video_thread_wrapper.h"
+#include "video_viewport.h"
 #include "../performance.h"
 #include <file/dir_list.h>
 #include <stdlib.h>
@@ -135,7 +136,7 @@ static void thread_loop(void *data)
 
          case CMD_READ_VIEWPORT:
          {
-            struct rarch_viewport vp = {0};
+            struct video_viewport vp = {0};
 
             thr->driver->viewport_info(thr->driver_data, &vp);
 
@@ -306,7 +307,7 @@ static void thread_loop(void *data)
          bool alive = false;
          bool focus = false;
          bool has_windowed = true;
-         struct rarch_viewport vp = {0};
+         struct video_viewport vp = {0};
 
          slock_lock(thr->frame.lock);
 
@@ -591,7 +592,7 @@ static void thread_set_rotation(void *data, unsigned rotation)
  *
  * This means this value might not be correct, so viewport 
  * reads are not supported for now. */
-static void thread_viewport_info(void *data, struct rarch_viewport *vp)
+static void thread_viewport_info(void *data, struct video_viewport *vp)
 {
    thread_video_t *thr = (thread_video_t*)data;
 

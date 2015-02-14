@@ -16,6 +16,7 @@
 
 #include "../../general.h"
 #include "../../driver.h"
+#include "../video_viewport.h"
 
 static void *null_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
@@ -94,7 +95,7 @@ static void null_gfx_set_rotation(void *data,
 }
 
 static void null_gfx_viewport_info(void *data,
-      struct rarch_viewport *vp)
+      struct video_viewport *vp)
 {
    (void)data;
    (void)vp;

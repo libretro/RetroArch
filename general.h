@@ -31,6 +31,7 @@
 #include "core_options.h"
 #include "core_info.h"
 #include <retro_miscellaneous.h>
+#include "gfx/video_viewport.h"
 
 #include "playlist.h"
 
@@ -82,16 +83,6 @@ enum sound_mode_enums
 #endif
    SOUND_MODE_LAST
 };
-
-typedef struct rarch_viewport
-{
-   int x;
-   int y;
-   unsigned width;
-   unsigned height;
-   unsigned full_width;
-   unsigned full_height;
-} rarch_viewport_t;
 
 struct defaults
 {
@@ -705,7 +696,7 @@ struct global
 
          struct
          {
-            rarch_viewport_t custom_vp;
+            video_viewport_t custom_vp;
          } viewports;
 
          unsigned gamma_correction;

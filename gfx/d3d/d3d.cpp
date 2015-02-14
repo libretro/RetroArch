@@ -349,7 +349,7 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
 {
    if (g_settings.video.scale_integer)
    {
-      struct rarch_viewport vp = {0};
+      struct video_viewport vp = {0};
       video_viewport_get_scaled_integer(&vp, width, height, desired_aspect, keep);
       d3d_set_viewport(d3d, vp.x, vp.y, vp.width, vp.height);
    }
@@ -359,10 +359,12 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
    {
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         const rarch_viewport_t &custom = 
+         const video_viewport_t &custom = 
             g_extern.console.screen.viewports.custom_vp;
-         d3d_set_viewport(d3d, custom.x, custom.y, 
-               custom.width, custom.height);
+
+         if (custom)
+            d3d_set_viewport(d3d, custom.x, custom.y, 
+                  custom.width, custom.height);
       }
       else
       {
@@ -639,7 +641,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    return true;
 }
 
-static void d3d_viewport_info(void *data, struct rarch_viewport *vp)
+static void d3d_viewport_info(void *data, struct video_viewport *vp)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 

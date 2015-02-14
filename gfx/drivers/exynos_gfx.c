@@ -1505,7 +1505,7 @@ static void exynos_gfx_set_rotation(void *data, unsigned rotation)
       vid->menu_rotation = rotation;
 }
 
-static void exynos_gfx_viewport_info(void *data, struct rarch_viewport *vp)
+static void exynos_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
    struct exynos_video *vid = (struct exynos_video*)data;
 

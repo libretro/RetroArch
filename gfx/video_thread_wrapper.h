@@ -168,8 +168,8 @@ typedef struct thread_video
 
    } cmd_data;
 
-   struct rarch_viewport vp;
-   struct rarch_viewport read_vp; /* Last viewport reported to caller. */
+   struct video_viewport vp;
+   struct video_viewport read_vp; /* Last viewport reported to caller. */
 
    struct
    {

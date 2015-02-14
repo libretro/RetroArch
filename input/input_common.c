@@ -25,6 +25,8 @@
 #include "../config.h"
 #endif
 
+#include "../gfx/video_viewport.h"
+
 static const char *bind_user_prefix[MAX_USERS] = {
    "input_player1",
    "input_player2",
@@ -130,7 +132,7 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
       int16_t *res_screen_y)
 {
    int scaled_screen_x, scaled_screen_y, scaled_x, scaled_y;
-   struct rarch_viewport vp = {0};
+   struct video_viewport vp = {0};
    bool have_viewport_info = driver.video && driver.video->viewport_info;
 
    if (!have_viewport_info)

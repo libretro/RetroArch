@@ -1135,7 +1135,7 @@ static void gx_apply_state_changes(void *data)
       gx->should_resize = true;
 }
 
-static void gx_viewport_info(void *data, struct rarch_viewport *vp)
+static void gx_viewport_info(void *data, struct video_viewport *vp)
 {
    gx_video_t *gx = (gx_video_t*)data;
    *vp = gx->vp;

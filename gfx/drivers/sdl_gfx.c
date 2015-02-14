@@ -424,7 +424,7 @@ static bool sdl_gfx_has_windowed(void *data)
    return true;
 }
 
-static void sdl_gfx_viewport_info(void *data, struct rarch_viewport *vp)
+static void sdl_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
    sdl_video_t *vid = (sdl_video_t*)data;
    vp->x = vp->y = 0;

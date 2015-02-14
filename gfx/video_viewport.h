@@ -20,11 +20,20 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <boolean.h>
-#include "../general.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct video_viewport
+{
+   int x;
+   int y;
+   unsigned width;
+   unsigned height;
+   unsigned full_width;
+   unsigned full_height;
+} video_viewport_t;
 
 enum aspect_ratio
 {

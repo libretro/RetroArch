@@ -59,7 +59,7 @@ typedef struct xv
    unsigned width;
    unsigned height;
    bool keep_aspect;
-   struct rarch_viewport vp;
+   struct video_viewport vp;
 
    uint8_t *ytable;
    uint8_t *utable;
@@ -350,7 +350,7 @@ static bool adaptor_set_format(xv_t *xv, Display *dpy,
    return false;
 }
 
-static void calc_out_rect(bool keep_aspect, struct rarch_viewport *vp,
+static void calc_out_rect(bool keep_aspect, struct video_viewport *vp,
       unsigned vp_width, unsigned vp_height)
 {
    vp->full_width  = vp_width;
@@ -878,7 +878,7 @@ static void xv_free(void *data)
    free(xv);
 }
 
-static void xv_viewport_info(void *data, struct rarch_viewport *vp)
+static void xv_viewport_info(void *data, struct video_viewport *vp)
 {
    xv_t *xv = (xv_t*)data;
    *vp = xv->vp;

@@ -19,6 +19,8 @@
 
 #include "../../driver.h"
 
+#include "../../gfx/video_viewport.h"
+
 #include <boolean.h>
 #include "../../general.h"
 #include <stdint.h>
@@ -281,7 +283,7 @@ static void x_input_poll_mouse(x11_input_t *x11)
    /* Somewhat hacky, but seem to do the job. */
    if (x11->grab_mouse && driver.video->focus(driver.video_data))
    {
-      struct rarch_viewport vp = {0};
+      struct video_viewport vp = {0};
 
       if (driver.video && driver.video->viewport_info)
          driver.video->viewport_info(driver.video_data, &vp);

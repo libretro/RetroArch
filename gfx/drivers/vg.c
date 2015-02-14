@@ -28,6 +28,7 @@
 #include "../../performance.h"
 #include "../font_renderer_driver.h"
 #include "../../content.h"
+#include "../gfx/video_viewport.h"
 
 typedef struct
 {
@@ -453,7 +454,7 @@ static void vg_set_rotation(void *data, unsigned rotation)
 }
 
 static void vg_viewport_info(void *data,
-      struct rarch_viewport *vp)
+      struct video_viewport *vp)
 {
    (void)data;
    (void)vp;

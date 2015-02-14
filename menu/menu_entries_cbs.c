@@ -43,6 +43,8 @@
 #include "../input/input_autodetect.h"
 #include "../input/input_remapping.h"
 
+#include "../gfx/video_viewport.h"
+
 #ifdef GEKKO
 enum
 {
@@ -1547,15 +1549,13 @@ static int action_ok_set_path(const char *path,
 static int action_ok_custom_viewport(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   rarch_viewport_t *custom = NULL;
+   /* Start with something sane. */
+   video_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
    menu_handle_t *menu = menu_driver_resolve();
 
    if (!menu)
       return -1;
 
-   /* Start with something sane. */
-   custom = (rarch_viewport_t*)
-      &g_extern.console.screen.viewports.custom_vp;
 
    menu_list_push_stack(
          menu->menu_list,
@@ -4127,8 +4127,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
    struct retro_game_geometry *geom = NULL;
    const char *base_msg = NULL;
    unsigned type = 0;
-   rarch_viewport_t *custom = (rarch_viewport_t*)
-      &g_extern.console.screen.viewports.custom_vp;
+   video_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
    menu_handle_t *menu    = menu_driver_resolve();
    if (!menu)
       return -1;
@@ -4220,7 +4219,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
       case MENU_ACTION_START:
          if (!g_settings.video.scale_integer)
          {
-            rarch_viewport_t vp;
+            video_viewport_t vp;
 
             if (driver.video_data && driver.video &&
                   driver.video->viewport_info)

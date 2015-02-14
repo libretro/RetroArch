@@ -18,6 +18,7 @@
 #define __RETROARCH_H
 
 #include <boolean.h>
+#include "core_info.h"
 
 #ifdef __cplusplus
 extern "C" {

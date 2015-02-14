@@ -23,7 +23,9 @@
 #include "input/input_common.h"
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
+#include "gfx/video_viewport.h"
 #include "settings.h"
+#include "general.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

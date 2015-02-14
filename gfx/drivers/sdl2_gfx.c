@@ -69,7 +69,7 @@ typedef struct _sdl2_video
    uint8_t font_g;
    uint8_t font_b;
 
-   struct rarch_viewport vp;
+   struct video_viewport vp;
 
    video_info_t video;
 
@@ -274,12 +274,15 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
                         vid->video.force_aspect);
    else if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      const struct rarch_viewport *custom = &g_extern.console.screen.viewports.custom_vp;
+      const struct video_viewport *custom = &g_extern.console.screen.viewports.custom_vp;
 
-      vid->vp.x = custom->x;
-      vid->vp.y = custom->y;
-      vid->vp.width  = custom->width;
-      vid->vp.height = custom->height;
+      if (custom)
+      {
+         vid->vp.x = custom->x;
+         vid->vp.y = custom->y;
+         vid->vp.width  = custom->width;
+         vid->vp.height = custom->height;
+      }
    }
    else if (vid->video.force_aspect)
    {
@@ -592,7 +595,7 @@ static void sdl2_gfx_set_rotation(void *data, unsigned rotation)
    vid->rotation = 270 * rotation;
 }
 
-static void sdl2_gfx_viewport_info(void *data, struct rarch_viewport *vp)
+static void sdl2_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    *vp = vid->vp;
