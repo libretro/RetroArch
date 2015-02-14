@@ -121,12 +121,10 @@ int database_info_write_rdl(const char *dir)
 static char *bin_to_hex_alloc(const uint8_t *data, size_t len)
 {
    size_t i;
-   char *ret=malloc(len*2+1);
+   char *ret= (char*)malloc(len*2+1);
    
    for (i = 0; i < len; i++)
-   {
       snprintf(ret+i*2, 3, "%02X", data[i]);
-   }
    return ret;
 }
 

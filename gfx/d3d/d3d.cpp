@@ -359,12 +359,12 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
    {
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         const video_viewport_t &custom = 
-            g_extern.console.screen.viewports.custom_vp;
+         const video_viewport_t *custom = 
+            &g_extern.console.screen.viewports.custom_vp;
 
-         if (custom)
-            d3d_set_viewport(d3d, custom.x, custom.y, 
-                  custom.width, custom.height);
+		 if (custom)
+            d3d_set_viewport(d3d, custom->x, custom->y, 
+                  custom->width, custom->height);
       }
       else
       {
