@@ -808,11 +808,16 @@ static inline retro_input_t input_keys_pressed(void)
             g_settings.input.analog_dpad_mode[i]);
 
       g_extern.turbo_frame_enable[i] = 0;
+   }
 
-      if (!driver.block_libretro_input)
+   if (!driver.block_libretro_input)
+   {
+      for (i = 0; i < g_settings.input.max_users; i++)
+      {
          g_extern.turbo_frame_enable[i] = 
             driver.input->input_state(driver.input_data, binds, i,
                   RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+      }
    }
 
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
