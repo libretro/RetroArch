@@ -2765,6 +2765,11 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
       strlcat(query, "edge_issue", sizeof(query));
       add_quotes = false;
    }
+   else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_famitsu_magazine_rating"))
+   {
+      strlcat(query, "famitsu_rating", sizeof(query));
+      add_quotes = false;
+   }
    else if (!strcmp(label, "deferred_cursor_manager_list_rdb_entry_releasemonth"))
    {
       strlcat(query, "releasemonth", sizeof(query));
@@ -5328,6 +5333,7 @@ static int is_rdb_entry(const char *label)
          !(strcmp(label, "rdb_entry_cero_rating")) ||
          !(strcmp(label, "rdb_entry_edge_magazine_rating")) ||
          !(strcmp(label, "rdb_entry_edge_magazine_issue")) ||
+         !(strcmp(label, "rdb_entry_famitsu_magazine_rating")) ||
          !(strcmp(label, "rdb_entry_releasemonth")) ||
          !(strcmp(label, "rdb_entry_releaseyear")) ||
          !(strcmp(label, "rdb_entry_max_users"))
@@ -5921,6 +5927,7 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_cero_rating") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue") ||
+         !strcmp(label, "deferred_cursor_manager_list_rdb_entry_famitsu_magazine_rating") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_max_users") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_releasemonth") ||
          !strcmp(label, "deferred_cursor_manager_list_rdb_entry_releaseyear")
