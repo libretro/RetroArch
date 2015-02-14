@@ -64,8 +64,9 @@ void video_viewport_set_square_pixel(unsigned width, unsigned height)
    if (width == 0 || height == 0)
       return;
 
-   len = min(width, height);
-   highest = 1;
+   len      = min(width, height);
+   highest  = 1;
+
    for (i = 1; i < len; i++)
    {
       if ((width % i) == 0 && (height % i) == 0)
@@ -89,10 +90,9 @@ void video_viewport_set_square_pixel(unsigned width, unsigned height)
  **/
 void video_viewport_set_core(void)
 {
-   const struct retro_game_geometry *geom = 
-      (const struct retro_game_geometry*)&g_extern.system.av_info.geometry;
+   struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
 
-   if (geom->base_width <= 0.0f || geom->base_height <= 0.0f)
+   if (!geom || geom->base_width <= 0.0f || geom->base_height <= 0.0f)
       return;
 
    /* Fallback to 1:1 pixel ratio if none provided */
@@ -112,11 +112,9 @@ void video_viewport_set_config(void)
 {
    if (g_settings.video.aspect_ratio < 0.0f)
    {
-      const struct retro_game_geometry *geom = 
-         (const struct retro_game_geometry*)
-         &g_extern.system.av_info.geometry;
+      struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
 
-      if (geom->aspect_ratio > 0.0f && g_settings.video.aspect_ratio_auto)
+      if (geom && geom->aspect_ratio > 0.0f && g_settings.video.aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
       else
       {
