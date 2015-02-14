@@ -1068,6 +1068,12 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
                path, list) == -1)
             return -1;
       }
+      if (db_info_entry->edge_magazine_review)
+      {
+         if (create_string_list_rdb_entry_string("Edge Magazine Review", "rdb_entry_edge_magazine_review",
+               db_info_entry->edge_magazine_review, path, list) == -1)
+            return -1;
+      }
       if (db_info_entry->edge_magazine_rating)
       {
          if (create_string_list_rdb_entry_int("Edge Magazine Rating",
