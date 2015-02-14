@@ -681,7 +681,7 @@ MENU
 #include "../menu/menu_input.c"
 #include "../menu/menu.c"
 #include "../menu/menu_common_list.c"
-#include "../menu/menu_action.c"
+#include "../menu/menu_setting.c"
 #include "../menu/menu_list.c"
 #include "../menu/menu_entries.c"
 #include "../menu/menu_entries_cbs.c"

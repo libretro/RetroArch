@@ -16,7 +16,7 @@
 #include <file/file_path.h>
 #include "menu.h"
 #include "menu_entries_cbs.h"
-#include "menu_action.h"
+#include "menu_setting.h"
 #include "menu_input.h"
 #include "menu_entries.h"
 #include "menu_shader.h"
@@ -264,7 +264,7 @@ int menu_action_setting_set_current_string(
       rarch_setting_t *setting, const char *str)
 {
    strlcpy(setting->value.string, str, setting->size);
-   return menu_action_generic_setting(setting);
+   return menu_setting_generic(setting);
 }
 
 static int action_ok_rdb_playlist_entry(const char *path,
@@ -594,7 +594,7 @@ static int action_ok_menu_wallpaper_load(const char *path,
    menu_list_get_last_stack(menu->menu_list, &menu_path, &menu_label,
          NULL);
 
-   setting = menu_action_find_setting(menu_label);
+   setting = menu_setting_find(menu_label);
 
    if (!setting)
       return -1;
@@ -686,7 +686,7 @@ static int action_ok_path_use_directory(const char *path,
    menu_list_get_last_stack(menu->menu_list,
          &menu_path, &menu_label, NULL);
 
-   setting = menu_action_find_setting(menu_label);
+   setting = menu_setting_find(menu_label);
 
    if (!setting)
       return -1;
@@ -1478,7 +1478,7 @@ static int menu_action_setting_set_current_string_path(
       rarch_setting_t *setting, const char *dir, const char *path)
 {
    fill_pathname_join(setting->value.string, dir, path, setting->size);
-   return menu_action_generic_setting(setting);
+   return menu_setting_generic(setting);
 }
 
 static int action_ok_file_load(const char *path,
@@ -1495,7 +1495,7 @@ static int action_ok_file_load(const char *path,
    menu_list_get_last(menu->menu_list->menu_stack,
          &menu_path, &menu_label, NULL);
 
-   setting = menu_action_find_setting(menu_label);
+   setting = menu_setting_find(menu_label);
 
    if (setting && setting->type == ST_PATH)
    {
@@ -1533,7 +1533,7 @@ static int action_ok_set_path(const char *path,
    menu_list_get_last_stack(menu->menu_list,
          &menu_path, &menu_label, NULL);
 
-   setting = menu_action_find_setting(menu_label);
+   setting = menu_setting_find(menu_label);
 
    if (!setting)
       return -1;
@@ -1779,7 +1779,7 @@ static int action_ok_shader_apply_changes(const char *path,
 static int action_ok_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return menu_action_setting_set(type, label, MENU_ACTION_OK);
+   return menu_setting_set(type, label, MENU_ACTION_OK);
 }
 
 static int action_ok_rdb_entry_submenu(const char *path,
@@ -1853,7 +1853,7 @@ static int action_ok_rdb_entry_submenu(const char *path,
 static int action_cancel_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return menu_action_setting_set(type, label, MENU_ACTION_CANCEL);
+   return menu_setting_set(type, label, MENU_ACTION_CANCEL);
 }
 
 static int action_cancel_pop_default(const char *path,
@@ -2348,9 +2348,9 @@ static int action_toggle_shader_filter_default(unsigned type, const char *label,
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   rarch_setting_t *setting = menu_action_find_setting("video_smooth");
+   rarch_setting_t *setting = menu_setting_find("video_smooth");
    if (setting)
-      menu_action_setting_handler(setting, action);
+      menu_setting_handler(setting, action);
 #endif
    return 0;
 }
@@ -3073,7 +3073,7 @@ static int deferred_push_settings(void *data, void *userdata,
    settings_list_free(menu->list_settings);
    menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
 
-   setting = menu_action_find_setting("Driver Settings");
+   setting = menu_setting_find("Driver Settings");
 
    menu_list_clear(list);
 
@@ -3157,7 +3157,7 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
    settings_list_free(menu->list_settings);
    menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
 
-   setting = menu_action_find_setting(elem0);
+   setting = menu_setting_find(elem0);
 
    menu_list_clear(list);
 
@@ -3866,7 +3866,7 @@ static int deferred_push_default(void *data, void *userdata,
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
    rarch_setting_t *setting = (rarch_setting_t*)
-      menu_action_find_setting(label);
+      menu_setting_find(label);
 
    if (!list || !menu_list)
       return -1;
@@ -4528,7 +4528,7 @@ static int action_select_default(unsigned type, const char *label,
 static int action_start_lookup_setting(unsigned type, const char *label,
       unsigned action)
 {
-   return menu_action_setting_set(type, label, MENU_ACTION_START);
+   return menu_setting_set(type, label, MENU_ACTION_START);
 }
 
 static void menu_action_setting_disp_set_label_cheat_num_passes(
@@ -5376,7 +5376,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1, const char *menu_label)
 {
-   rarch_setting_t *setting = menu_action_find_setting(label);
+   rarch_setting_t *setting = menu_setting_find(label);
    menu_handle_t *menu    = menu_driver_resolve();
    if (!menu)
       return;
@@ -5624,7 +5624,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       }
    }
 
-   cbs->action_toggle = menu_action_setting_set;
+   cbs->action_toggle = menu_setting_set;
 
    switch (type)
    {
@@ -5702,7 +5702,7 @@ static void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
       snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
 
       if (!strcmp(label, label_setting))
-         cbs->action_toggle = menu_action_setting_set;
+         cbs->action_toggle = menu_setting_set;
    }
 }
 

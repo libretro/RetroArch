@@ -15,7 +15,7 @@
  */
 
 #include "menu_entries.h"
-#include "menu_action.h"
+#include "menu_setting.h"
 #include "menu_navigation.h"
 #include <file/file_list.h>
 #include <file/file_path.h>
@@ -91,7 +91,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    settings_list_free(menu->list_settings);
    menu->list_settings = (rarch_setting_t *)setting_data_new(setting_flags);
 
-   if (!(setting = (rarch_setting_t*)menu_action_find_setting(label)))
+   if (!(setting = (rarch_setting_t*)menu_setting_find(label)))
       return -1;
 
    menu_list_clear(list);

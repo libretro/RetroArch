@@ -304,7 +304,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/menu.o \
 			 menu/menu_common_list.o \
 			 menu/menu_navigation.o  \
-			 menu/menu_action.o \
+			 menu/menu_setting.o \
 			 menu/menu_database.o \
 			 menu/menu_shader.o \
 			 menu/menu_texture.o \
