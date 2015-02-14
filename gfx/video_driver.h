@@ -74,6 +74,13 @@ struct font_params
    bool align_right;
 };
 
+enum texture_filter_type
+{
+   TEXTURE_FILTER_LINEAR = 0,
+   TEXTURE_FILTER_NEAREST,
+   TEXTURE_FILTER_MIPMAP_LINEAR,
+   TEXTURE_FILTER_MIPMAP_NEAREST,
+};
 
 #define FONT_COLOR_RGBA(r, g, b, a) (((r) << 0) | ((g) << 8) | ((b) << 16) | ((a) << 24))
 #define FONT_COLOR_GET_RED(col)   (((col) >>  0) & 0xff)

@@ -247,14 +247,13 @@ static void apple_input_poll(void *data)
        return;
 
    for (i = 0; i < apple->touch_count; i++)
-   {
-      input_translate_coord_viewport(apple->touches[i].screen_x,
-                                     apple->touches[i].screen_y,
-                                     &apple->touches[i].fixed_x,
-                                     &apple->touches[i].fixed_y,
-                                     &apple->touches[i].full_x,
-                                     &apple->touches[i].full_y);
-   }
+      input_translate_coord_viewport(
+            apple->touches[i].screen_x,
+            apple->touches[i].screen_y,
+            &apple->touches[i].fixed_x,
+            &apple->touches[i].fixed_y,
+            &apple->touches[i].full_x,
+            &apple->touches[i].full_y);
 
    if (apple->joypad)
       apple->joypad->poll();
@@ -293,8 +292,14 @@ static int16_t apple_pointer_state(apple_input_data_t *apple,
    {
       const apple_touch_data_t *touch = (const apple_touch_data_t *)
          &apple->touches[idx];
-      int16_t x = want_full ? touch->full_x : touch->fixed_x;
-      int16_t y = want_full ? touch->full_y : touch->fixed_y;
+      int16_t x = touch->fixed_x;
+      int16_t y = touch->fixed_y;
+      
+      if (want_full)
+      {
+         x = touch->full_x;
+         y = touch->full_y;
+      }
 
       switch (id)
       {
@@ -308,6 +313,12 @@ static int16_t apple_pointer_state(apple_input_data_t *apple,
    }
 
    return 0;
+}
+
+static int16_t apple_keyboard_state(apple_input_data_t *apple, unsigned id)
+{
+   unsigned bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
+   return (id < RETROK_LAST) && apple->key_state[bit];
 }
 
 static int16_t apple_input_state(void *data,
@@ -328,10 +339,7 @@ static int16_t apple_input_state(void *data,
          return input_joypad_analog(apple->joypad, port,
                idx, id, binds[port]);
       case RETRO_DEVICE_KEYBOARD:
-       {
-           unsigned bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
-           return (id < RETROK_LAST) && apple->key_state[bit];
-       }
+         return apple_keyboard_state(apple, id);
       case RETRO_DEVICE_MOUSE:
          return apple_mouse_state(apple, id);
       case RETRO_DEVICE_POINTER:

@@ -1036,7 +1036,8 @@ int rarch_main_iterate(void)
 #ifdef HAVE_MENU
    if (g_extern.is_menu)
    {
-      if (driver.menu)
+      menu_handle_t *menu = menu_driver_resolve();
+      if (menu)
          if (menu_iterate(input, old_input, trigger_input) == -1)
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
 

@@ -418,7 +418,7 @@ static int setting_data_string_action_start_allow_input(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
-   if (!setting || !driver.menu)
+   if (!setting)
       return -1;
 
    *setting->value.string = '\0';
@@ -432,7 +432,7 @@ static int setting_data_bind_action_start(void *data)
    struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
    struct retro_keybind *keybind = NULL;
 
-   if (!setting || !driver.menu)
+   if (!setting)
       return -1;
 
    keybind = (struct retro_keybind*)setting->value.keybind;
@@ -814,37 +814,39 @@ static int load_content_action_toggle(void *data, unsigned action)
 static int setting_data_action_ok_bind_all(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (!setting || !driver.menu)
+   if (!setting || !menu)
       return -1;
 
-   driver.menu->binds.target = &g_settings.input.binds
+   menu->binds.target = &g_settings.input.binds
       [setting->index_offset][0];
-   driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-   driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
+   menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+   menu->binds.last = MENU_SETTINGS_BIND_LAST;
 
    menu_list_push_stack(
-         driver.menu->menu_list,
+         menu->menu_list,
          "",
          "custom_bind_all",
          g_extern.menu.bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
          MENU_SETTINGS_CUSTOM_BIND,
-         driver.menu->selection_ptr);
+         menu->navigation.selection_ptr);
 
    if (g_extern.menu.bind_mode_keyboard)
    {
-      driver.menu->binds.timeout_end =
+      menu->binds.timeout_end =
          rarch_get_time_usec() + 
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-      input_keyboard_wait_keys(driver.menu,
+      input_keyboard_wait_keys(menu,
             menu_input_custom_bind_keyboard_cb);
    }
    else
    {
-      menu_input_poll_bind_get_rested_axes(&driver.menu->binds);
-      menu_input_poll_bind_state(&driver.menu->binds);
+      menu_input_poll_bind_get_rested_axes(&menu->binds);
+      menu_input_poll_bind_state(&menu->binds);
    }
+
    return 0;
 }
 
@@ -854,7 +856,10 @@ static int setting_data_action_ok_bind_defaults(void *data, unsigned action)
    struct retro_keybind *target = NULL;
    const struct retro_keybind *def_binds = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   menu_handle_t *menu = menu_driver_resolve();
 
+   if (!menu)
+      return -1;
    if (!setting)
       return -1;
 
@@ -863,11 +868,11 @@ static int setting_data_action_ok_bind_defaults(void *data, unsigned action)
    def_binds =  (setting->index_offset) ? 
       retro_keybinds_rest : retro_keybinds_1;
 
-   if (!driver.menu || !target)
+   if (!target)
       return -1;
 
-   driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-   driver.menu->binds.last  = MENU_SETTINGS_BIND_LAST;
+   menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+   menu->binds.last  = MENU_SETTINGS_BIND_LAST;
 
    for (i = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)
@@ -978,7 +983,7 @@ static int setting_data_uint_action_ok_linefeed(void *data, unsigned action)
    if (!setting)
       return -1;
 
-   menu_input_key_start_line(driver.menu, setting->short_description,
+   menu_input_key_start_line(setting->short_description,
          setting->name, 0, 0, menu_input_st_uint_callback);
 
    return 0;
@@ -1001,11 +1006,12 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
 {
    struct retro_keybind *keybind = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   menu_handle_t *menu = menu_driver_resolve();
 
    if (!setting)
       return -1;
 
-   if (!driver.menu || !driver.menu->menu_list)
+   if (!menu || !menu->menu_list)
       return -1;
    
    keybind = (struct retro_keybind*)setting->value.keybind;
@@ -1013,29 +1019,29 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
    if (!keybind)
       return -1;
 
-   driver.menu->binds.begin  = setting->bind_type;
-   driver.menu->binds.last   = setting->bind_type;
-   driver.menu->binds.target = keybind;
-   driver.menu->binds.user = setting->index_offset;
+   menu->binds.begin  = setting->bind_type;
+   menu->binds.last   = setting->bind_type;
+   menu->binds.target = keybind;
+   menu->binds.user = setting->index_offset;
    menu_list_push_stack(
-         driver.menu->menu_list,
+         menu->menu_list,
          "",
          "custom_bind",
          g_extern.menu.bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
-         driver.menu->selection_ptr);
+         menu->navigation.selection_ptr);
 
    if (g_extern.menu.bind_mode_keyboard)
    {
-      driver.menu->binds.timeout_end = rarch_get_time_usec() +
+      menu->binds.timeout_end = rarch_get_time_usec() +
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-      input_keyboard_wait_keys(driver.menu,
+      input_keyboard_wait_keys(menu,
             menu_input_custom_bind_keyboard_cb);
    }
    else
    {
-      menu_input_poll_bind_get_rested_axes(&driver.menu->binds);
-      menu_input_poll_bind_state(&driver.menu->binds);
+      menu_input_poll_bind_get_rested_axes(&menu->binds);
+      menu_input_poll_bind_state(&menu->binds);
    }
 
    return 0;
@@ -1046,10 +1052,10 @@ static int setting_data_string_action_ok_allow_input(void *data,
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
-   if (!setting || !driver.menu)
+   if (!setting)
       return -1;
 
-   menu_input_key_start_line(driver.menu, setting->short_description,
+   menu_input_key_start_line(setting->short_description,
          setting->name, 0, 0, menu_input_st_string_callback);
 
    return 0;
@@ -2791,11 +2797,12 @@ void setting_data_get_label(file_list_t *list, char *type_str,
 {
    rarch_setting_t *setting_data = NULL;
    rarch_setting_t *setting      = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (!driver.menu || !driver.menu->menu_list || !label)
+   if (!menu || !menu->menu_list || !label)
       return;
 
-   setting_data = (rarch_setting_t*)driver.menu->list_settings;
+   setting_data = (rarch_setting_t*)menu->list_settings;
 
    if (!setting_data)
       return;
@@ -2867,14 +2874,16 @@ static void general_write_handler(void *data)
 
    if (!strcmp(setting->name, "help"))
    {
-      if (!driver.menu || !driver.menu->menu_list)
+      menu_handle_t *menu = menu_driver_resolve();
+
+      if (!menu || !menu->menu_list)
          return;
 
       if (*setting->value.boolean)
       {
 #ifdef HAVE_MENU
          menu_list_push_stack_refresh(
-               driver.menu->menu_list,
+               menu->menu_list,
                "",
                "help",
                0,
@@ -3195,20 +3204,6 @@ static bool setting_data_append_list_main_menu_options(
          subgroup_info.name);
 #endif
 
-#ifdef HAVE_LIBRETRODB
-   CONFIG_ACTION(
-         "database_manager_list",
-         "Database Manager",
-         group_info.name,
-         subgroup_info.name);
-
-   CONFIG_ACTION(
-         "cursor_manager_list",
-         "Cursor Manager",
-         group_info.name,
-         subgroup_info.name);
-#endif
-
    if (g_settings.history_list_enable)
    {
       CONFIG_ACTION(
@@ -3240,12 +3235,6 @@ static bool setting_data_append_list_main_menu_options(
    (*list)[list_info->index - 1].change_handler = load_content_change_handler;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
 
-   CONFIG_ACTION(
-         "core_options",
-         "Core Options",
-         group_info.name,
-         subgroup_info.name);
-
 
    CONFIG_ACTION(
          "core_information",
@@ -3253,31 +3242,17 @@ static bool setting_data_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
 
-   if (g_extern.main_is_init)
-   {
-      if (g_extern.has_set_input_descriptors)
-         CONFIG_ACTION(
-               "core_input_remapping_options",
-               "Core Input Remapping Options",
-               group_info.name,
-               subgroup_info.name);
+   CONFIG_ACTION(
+         "management",
+         "Management",
+         group_info.name,
+         subgroup_info.name);
 
-      CONFIG_ACTION(
-            "core_cheat_options",
-            "Core Cheat Options",
-            group_info.name,
-            subgroup_info.name);
-
-      if ( !g_extern.libretro_dummy
-            && g_extern.system.disk_control.get_num_images)
-      {
-         CONFIG_ACTION(
-               "disk_options",
-               "Core Disk Options",
-               group_info.name,
-               subgroup_info.name);
-      }
-   }
+   CONFIG_ACTION(
+         "options",
+         "Options",
+         group_info.name,
+         subgroup_info.name);
 
    CONFIG_ACTION(
          "settings",
@@ -3391,7 +3366,7 @@ static bool setting_data_append_list_driver_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    
-   START_GROUP(group_info, "Driver Options");
+   START_GROUP(group_info, "Driver Settings");
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
    
@@ -3506,7 +3481,7 @@ static bool setting_data_append_list_general_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "General Options");
+   START_GROUP(group_info, "General Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -3750,7 +3725,7 @@ static bool setting_data_append_list_video_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Video Options");
+   START_GROUP(group_info, "Video Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -4327,7 +4302,7 @@ static bool setting_data_append_list_shader_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Shader Options");
+   START_GROUP(group_info, "Shader Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -4366,7 +4341,7 @@ static bool setting_data_append_list_font_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Font Options");
+   START_GROUP(group_info, "Font Settings");
    START_SUB_GROUP(list, list_info, "Messages", group_info.name, subgroup_info);
 
    CONFIG_PATH(
@@ -4443,7 +4418,7 @@ static bool setting_data_append_list_audio_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Audio Options");
+   START_GROUP(group_info, "Audio Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -4635,7 +4610,7 @@ static bool setting_data_append_list_input_options(
    rarch_setting_group_info_t subgroup_info;
    unsigned i, user;
 
-   START_GROUP(group_info, "Input Options");
+   START_GROUP(group_info, "Input Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_UINT(
@@ -5004,7 +4979,7 @@ static bool setting_data_append_list_overlay_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Overlay Options");
+   START_GROUP(group_info, "Overlay Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -5076,7 +5051,7 @@ static bool setting_data_append_list_osk_overlay_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Onscreen Keyboard Overlay Options");
+   START_GROUP(group_info, "Onscreen Keyboard Overlay Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -5118,7 +5093,7 @@ static bool setting_data_append_list_menu_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Menu Options");
+   START_GROUP(group_info, "Menu Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_PATH(
@@ -5145,17 +5120,6 @@ static bool setting_data_append_list_menu_options(
          general_write_handler,
          general_read_handler);
 
-   CONFIG_BOOL(
-         g_settings.menu_show_start_screen,
-         "rgui_show_start_screen",
-         "Show Start Screen",
-         menu_show_start_screen,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
 
    CONFIG_BOOL(
          g_settings.menu.pause_libretro,
@@ -5244,9 +5208,33 @@ static bool setting_data_append_list_menu_options(
          general_read_handler);
 
    CONFIG_BOOL(
+         g_settings.menu_show_start_screen,
+         "rgui_show_start_screen",
+         "Show Start Screen",
+         menu_show_start_screen,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
          g_settings.menu.timedate_enable,
          "menu_timedate_enable",
-         "Time / date enable",
+         "Show time / date",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.menu.core_enable,
+         "menu_core_enable",
+         "Show core name",
          true,
          "OFF",
          "ON",
@@ -5271,7 +5259,7 @@ static bool setting_data_append_list_ui_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "UI Options");
+   START_GROUP(group_info, "UI Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -5338,7 +5326,7 @@ static bool setting_data_append_list_archive_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Archive Options");
+   START_GROUP(group_info, "Archive Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_UINT(
@@ -5368,7 +5356,7 @@ static bool setting_data_append_list_core_updater_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Core Updater Options");
+   START_GROUP(group_info, "Core Updater Settings");
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
@@ -5421,7 +5409,7 @@ static bool setting_data_append_list_netplay_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Network Options");
+   START_GROUP(group_info, "Network Settings");
 
    START_SUB_GROUP(list, list_info, "Netplay", group_info.name, subgroup_info);
 
@@ -5553,7 +5541,7 @@ static bool setting_data_append_list_patch_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Patch Options");
+   START_GROUP(group_info, "Patch Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -5605,7 +5593,7 @@ static bool setting_data_append_list_playlist_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Playlist Options");
+   START_GROUP(group_info, "Playlist Settings");
    START_SUB_GROUP(list, list_info, "History", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
@@ -5644,7 +5632,7 @@ static bool setting_data_append_list_user_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "User Options");
+   START_GROUP(group_info, "User Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_STRING(
@@ -5692,7 +5680,7 @@ static bool setting_data_append_list_path_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Path Options");
+   START_GROUP(group_info, "Path Settings");
 
    START_SUB_GROUP(list, list_info, "Paths", group_info.name, subgroup_info);
 #ifdef HAVE_MENU
@@ -6074,7 +6062,7 @@ static bool setting_data_append_list_privacy_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
 
-   START_GROUP(group_info, "Privacy Options");
+   START_GROUP(group_info, "Privacy Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(

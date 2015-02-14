@@ -46,8 +46,8 @@
 #define FONT_HEIGHT_STRIDE (FONT_HEIGHT + 1)
 #define RXUI_TERM_START_X 15
 #define RXUI_TERM_START_Y 27
-#define RXUI_TERM_WIDTH (((driver.menu->width - RXUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
-#define RXUI_TERM_HEIGHT (((driver.menu->height - RXUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RXUI_TERM_WIDTH (((menu->frame_buf.width - RXUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
+#define RXUI_TERM_HEIGHT (((menu->frame_buf.height - RXUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
 HXUIOBJ m_menulist;
 HXUIOBJ m_menutitle;
@@ -61,14 +61,16 @@ static msg_queue_t *xui_msg_queue;
 static int rmenu_xui_entry_iterate(unsigned action)
 {
    const char *label = NULL;
-   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
-            driver.menu->selection_ptr);
+   menu_file_list_cbs_t *cbs = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, NULL);
+   if (!menu)
+      return -1;
+   
+   cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
+         menu->menu_list->selection_buf, menu->navigation.selection_ptr);
 
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
-      driver.menu_ctx->set_texture(driver.menu);
+   menu_list_get_last_stack(menu->menu_list, NULL, &label, NULL);
 
    if (cbs && cbs->action_iterate)
       return cbs->action_iterate(label, action);
@@ -374,33 +376,24 @@ static void xui_render_message(const char *msg)
    struct font_params font_parms;
    size_t i = 0;
    size_t j = 0;
-
-   struct string_list *list = string_split(msg, "\n");
+   struct string_list *list = NULL;
    d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+
+   if (!d3d)
+      return;
+   
+   list = string_split(msg, "\n");
 
    if (!list)
       return;
 
-   if (!d3d || list->elems == 0)
-   {
-      string_list_free(list);
-      return;
-   }
+   if (list->elems == 0)
+      goto end;
 
    for (i = 0; i < list->size; i++, j++)
    {
       char *msg = (char*)list->elems[i].data;
       unsigned msglen = strlen(msg);
-   #if 0
-      if (msglen > RMENU_TERM_WIDTH)
-      {
-         msg[RMENU_TERM_WIDTH - 2] = '.';
-         msg[RMENU_TERM_WIDTH - 1] = '.';
-         msg[RMENU_TERM_WIDTH - 0] = '.';
-         msg[RMENU_TERM_WIDTH + 1] = '\0';
-         msglen = RMENU_TERM_WIDTH;
-      }
-   #endif
       float msg_width = d3d->resolution_hd_enable ? 160 : 100;
       float msg_height = 120;
       float msg_offset = 32;
@@ -413,6 +406,9 @@ static void xui_render_message(const char *msg)
          driver.video_poke->set_osd_msg(driver.video_data,
                msg, &font_parms, NULL);
    }
+
+end:
+   string_list_free(list);
 }
 
 static void rmenu_xui_frame(void)
@@ -421,8 +417,24 @@ static void rmenu_xui_frame(void)
    XUIMessageRender msgRender;
    D3DXMATRIX matOrigView;
    D3DVIEWPORT vp_full;
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+   LPDIRECT3DDEVICE d3dr;
+   d3d_video_t *d3d = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return;
+
+   d3d = (d3d_video_t*)driver.video_data;
+   
+   if (!d3d)
+      return;
+
+   d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+
+   if (!d3dr)
+      return;
+
+   (void)menu;
 
    vp_full.X = 0;
    vp_full.Y = 0;
@@ -540,21 +552,24 @@ static void rmenu_xui_render(void)
 	char title[PATH_MAX_LENGTH];
 	const char *dir = NULL, *label = NULL;
 	unsigned menu_type = 0;
+   menu_handle_t *menu = menu_driver_resolve();
 
-	if (!driver.menu || driver.menu->need_refresh && 
-		g_extern.is_menu && !driver.menu->msg_force)
+   if (!menu)
+      return;
+	if (menu->need_refresh && 
+		g_extern.is_menu && !menu->msg_force)
 		return;
 
 	rmenu_xui_render_background();
 
-	menu_list_get_last_stack(driver.menu->menu_list, &dir, &label, &menu_type);
+	menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
 
 	if (XuiHandleIsValid(m_menutitle))
 	{
 		get_title(label, dir, menu_type, title, sizeof(title));
 		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
 		XuiTextElementSetText(m_menutitle, strw_buffer);
-		menu_ticker_line(title, RXUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
+		menu_animation_ticker_line(title, RXUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
 	}
 
 	if (XuiHandleIsValid(m_menutitle))
@@ -579,7 +594,7 @@ static void rmenu_xui_render(void)
 		XuiTextElementSetText(m_menutitlebottom, strw_buffer);
 	}
 
-	end = menu_list_get_size(driver.menu->menu_list);
+	end = menu_list_get_size(menu->menu_list);
 	for (i = 0; i < end; i++)
    {
       wchar_t msg_left[PATH_MAX_LENGTH], msg_right[PATH_MAX_LENGTH];
@@ -588,15 +603,15 @@ static void rmenu_xui_render(void)
       unsigned type = 0, w = 0;
       menu_file_list_cbs_t *cbs = NULL;
 
-      menu_list_get_at_offset(driver.menu->menu_list->selection_buf, i, &path,
+      menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
             &entry_label, &type);
 
       cbs = (menu_file_list_cbs_t*)
-         menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
+         menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
                i);
 
       if (cbs && cbs->action_get_representation)
-         cbs->action_get_representation(driver.menu->menu_list->selection_buf,
+         cbs->action_get_representation(menu->menu_list->selection_buf,
                &w, type, i, label,
                type_str, sizeof(type_str), 
                entry_label, path,
@@ -606,54 +621,57 @@ static void rmenu_xui_render(void)
       mbstowcs(msg_right, type_str, sizeof(msg_right) / sizeof(wchar_t));
       rmenu_xui_set_list_text(i, msg_left, msg_right);
    }
-	XuiListSetCurSelVisible(m_menulist, driver.menu->selection_ptr);
+	XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
 
-	if (driver.menu->keyboard.display)
+	if (menu->keyboard.display)
 	{
 		char msg[1024];
-		const char *str = *driver.menu->keyboard.buffer;
+		const char *str = *menu->keyboard.buffer;
 		if (!str)
 			str = "";
-		snprintf(msg, sizeof(msg), "%s\n%s", driver.menu->keyboard.label, str);
+		snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
 		rmenu_xui_render_messagebox(msg);			
 	}
 }
 
-static void rmenu_xui_populate_entries(void *data, const char *path,
+static void rmenu_xui_populate_entries(const char *path,
       const char *label, unsigned i)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return;
+
    (void)label;
    (void)path;
 
-   XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
+   XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
 }
 
-static void rmenu_xui_navigation_clear(void *data, bool pending_push)
+static void rmenu_xui_navigation_clear(bool pending_push)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
-   (void)pending_push;
+   menu_handle_t *menu = menu_driver_resolve();
 
    if (menu)
-      XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
+      XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
 }
 
-static void rmenu_xui_navigation_set_visible(void *data)
+static void rmenu_xui_navigation_set_visible(void)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-   XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (menu)
+      XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
 }
 
-static void rmenu_xui_navigation_alphabet(void *data, size_t *ptr_out)
+static void rmenu_xui_navigation_alphabet(size_t *ptr_out)
 {
    XuiListSetCurSelVisible(m_menulist, *ptr_out);
 }
 
-static void rmenu_xui_list_insert(void *data,
+static void rmenu_xui_list_insert(file_list_t *list,
       const char *path, const char *, size_t list_size)
 {
-   (void)data;
    wchar_t buf[PATH_MAX_LENGTH];
 
    XuiListInsertItems(m_menulist, list_size, 1);
@@ -661,12 +679,11 @@ static void rmenu_xui_list_insert(void *data,
    XuiListSetText(m_menulist, list_size, buf);
 }
 
-static void rmenu_xui_list_delete(void *data, size_t idx,
+static void rmenu_xui_list_delete(file_list_t *list, size_t idx,
       size_t list_size)
 {
    int x = XuiListGetItemCount( m_menulist );
 
-   (void)data;
    (void)idx;
 
    if( list_size > x )
@@ -675,15 +692,13 @@ static void rmenu_xui_list_delete(void *data, size_t idx,
       XuiListDeleteItems(m_menulist, 0, list_size);
 }
 
-static void rmenu_xui_list_clear(void *data)
+static void rmenu_xui_list_clear(file_list_t *list)
 {
-   (void)data;
    XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
 }
 
-static void rmenu_xui_list_set_selection(void *data)
+static void rmenu_xui_list_set_selection(file_list_t *list)
 {
-   file_list_t *list = (file_list_t*)data;
    if (list)
       XuiListSetCurSel(m_menulist, file_list_get_directory_ptr(list));
 }
@@ -698,6 +713,7 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    NULL,
    rmenu_xui_populate_entries,
+   NULL,
    rmenu_xui_navigation_clear,
    rmenu_xui_navigation_set_visible,
    rmenu_xui_navigation_set_visible,
@@ -711,5 +727,6 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    rmenu_xui_list_set_selection,
    rmenu_xui_entry_iterate,
+   NULL,
    "rmenu_xui",
 };

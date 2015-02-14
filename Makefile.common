@@ -307,6 +307,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/menu_action.o \
 			 menu/menu_database.o \
 			 menu/menu_shader.o \
+			 menu/menu_texture.o \
 			 menu/menu_entries.o \
 			 menu/menu_entries_cbs.o \
 			 menu/menu_list.o \
@@ -534,7 +535,7 @@ endif
    #LIBS += $(LIBXML2_LIBS)
    #DEFINES += $(LIBXML2_CFLAGS)
 #else
-   #OBJ += compat/rxml/rxml.o
+   #OBJ += libretro-sdk/formats/xml/rxml.o
 #endif
 
 # Compression/Archive
@@ -564,7 +565,7 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
    ZLIB_OBJS =	decompress/zip_support.o 
-   OBJ += gfx/rpng/rpng.o file_extract.o
+   OBJ += libretro-sdk/formats/png/rpng.o file_extract.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1 

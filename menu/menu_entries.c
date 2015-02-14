@@ -16,6 +16,7 @@
 
 #include "menu_entries.h"
 #include "menu_action.h"
+#include "menu_navigation.h"
 #include <file/file_list.h>
 #include <file/file_path.h>
 #include "../file_extract.h"
@@ -63,6 +64,9 @@ int menu_entries_push_query(libretrodb_t *db,
       {
          struct rmsgpack_dom_value *key = &item.map.items[i].key;
          struct rmsgpack_dom_value *val = &item.map.items[i].value;
+
+         if (!key || !val)
+            continue;
             
          if (!strcmp(key->string.buff, "name"))
          {
@@ -94,7 +98,7 @@ int menu_entries_push_list(menu_handle_t *menu,
 
    /* Hack - should come up with something cleaner
     * here. */
-   if (!strcmp(label, "Video Options"))
+   if (!strcmp(label, "Video Settings"))
    {
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
       menu_list_push(list, "Screen Resolution", "",
@@ -118,7 +122,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -143,6 +147,9 @@ static void menu_entries_content_list_push(
    for (j = 0; j < str_list->size; j++)
    {
       const char *name = str_list->elems[j].data;
+      
+      if (!name)
+         continue;
 
       if (str_list->elems[j].attr.i == RARCH_DIRECTORY)
          menu_entries_content_list_push(list, info, name);
@@ -156,7 +163,7 @@ static void menu_entries_content_list_push(
    string_list_free(str_list);
 }
 
-int menu_entries_push_cores_list(file_list_t *list, core_info_t *info,
+static int menu_entries_push_cores_list(file_list_t *list, core_info_t *info,
       const char *path, bool push_databases_enable)
 {
    size_t i;
@@ -205,7 +212,7 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
    if (!info_list)
       return -1;
 
-   info = (core_info_t*)&info_list->list[driver.menu->cat_selection_ptr - 1];
+   info = (core_info_t*)&info_list->list[menu->categories.selection_ptr - 1];
 
    if (!info)
       return -1;
@@ -216,7 +223,7 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
 
    menu_entries_push_cores_list(list, info, g_settings.content_directory, true);
 
-   menu_list_populate_generic(menu, list, path, label, menu_type);
+   menu_list_populate_generic(list, path, label, menu_type);
 
    return 0;
 }
@@ -338,7 +345,7 @@ int menu_entries_parse_list(
    {
       menu_entries_parse_drive_list(list);
       if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-         driver.menu_ctx->populate_entries(driver.menu, dir, label, type);
+         driver.menu_ctx->populate_entries(dir, label, type);
       return 0;
    }
 #if defined(GEKKO) && defined(HW_RVL)
@@ -469,7 +476,7 @@ int menu_entries_parse_list(
       menu_list_sort_on_alt(list);
    }
 
-   menu_list_populate_generic(driver.menu, list, dir, label, type);
+   menu_list_populate_generic(list, dir, label, type);
 
    return 0;
 }
@@ -514,7 +521,7 @@ bool menu_entries_init(menu_handle_t *menu)
    menu->list_settings = setting_data_new(SL_FLAG_ALL);
 
    menu_list_push_stack(menu->menu_list, "", "Main Menu", MENU_SETTINGS, 0);
-   menu_navigation_clear(menu, true);
+   menu_navigation_clear(&menu->navigation, true);
    menu_entries_push_list(menu, menu->menu_list->selection_buf,
          "", "Main Menu", 0, SL_FLAG_MAIN_MENU);
 

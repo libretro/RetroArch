@@ -180,7 +180,7 @@ VIDEO IMAGE
 #include "../gfx/image/image_rpng.c"
 #endif
 
-#include "../gfx/rpng/rpng.c"
+#include "../libretro-sdk/formats/png/rpng.c"
 
 /*============================================================
 VIDEO DRIVER
@@ -686,6 +686,7 @@ MENU
 #include "../menu/menu_entries.c"
 #include "../menu/menu_entries_cbs.c"
 #include "../menu/menu_shader.c"
+#include "../menu/menu_texture.c"
 #include "../menu/menu_navigation.c"
 #include "../menu/menu_animation.c"
 #include "../menu/menu_database.c"
@@ -778,7 +779,7 @@ XML
 #if 0
 #ifndef HAVE_LIBXML2
 #define RXML_LIBXML2_COMPAT
-#include "../compat/rxml/rxml.c"
+#include "../libretro-sdk/formats/xml/rxml.c"
 #endif
 #endif
 

@@ -15,6 +15,7 @@
  */
 
 #include "menu.h"
+#include "menu_animation.h"
 #include "menu_entries.h"
 #include "menu_shader.h"
 #include "../dynamic.h"
@@ -66,7 +67,7 @@ void menu_update_libretro_info(struct retro_system_info *info)
    if (*g_settings.libretro_directory)
       g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
    if (driver.menu_ctx && driver.menu_ctx->context_reset)
-      driver.menu_ctx->context_reset(driver.menu);
+      driver.menu_ctx->context_reset();
 
    rarch_update_system_info(info, NULL);
 }
@@ -185,18 +186,41 @@ void *menu_init(const void *data)
          sizeof(g_settings.menu.driver));
 
    if (!(menu->menu_list = (menu_list_t*)menu_list_new()))
-      return NULL;
+      goto error;
 
    g_extern.core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
+   if (!g_extern.core_info_current)
+      goto error;
+
 #ifdef HAVE_SHADER_MANAGER
    menu->shader = (struct video_shader*)calloc(1, sizeof(struct video_shader));
+   if (!menu->shader)
+      goto error;
 #endif
    menu->push_start_screen = g_settings.menu_show_start_screen;
    g_settings.menu_show_start_screen = false;
 
    menu_shader_manager_init(menu);
 
+   menu->animation = (animation_t*)calloc(1, sizeof(animation_t));
+
+   if (!menu->animation)
+      goto error;
+
    return menu;
+error:
+   if (menu->menu_list)
+      menu_list_free(menu->menu_list);
+   menu->menu_list = NULL;
+   if (g_extern.core_info_current)
+      free(g_extern.core_info_current);
+   g_extern.core_info_current = NULL;
+   if (menu->shader)
+      free(menu->shader);
+   menu->shader = NULL;
+   if (menu)
+      free(menu);
+   return NULL;
 }
 
 /**
@@ -245,6 +269,13 @@ void menu_free(void *data)
    libretro_free_system_info(&g_extern.menu.info);
 #endif
 
+   menu_animation_free(menu->animation);
+   menu->animation = NULL;
+
+   if (menu->frame_buf.data)
+      free(menu->frame_buf.data);
+   menu->frame_buf.data = NULL;
+
    menu_list_free(menu->menu_list);
    menu->menu_list = NULL;
 
@@ -259,73 +290,15 @@ void menu_free(void *data)
    free(data);
 }
 
-/**
- * menu_ticker_line:
- * @buf                      : buffer to write new message line to.
- * @len                      : length of buffer @input.
- * @idx                      : Index. Will be used for ticker logic.
- * @str                      : Input string.
- * @selected                 : Is the item currently selected in the menu?
- *
- * Take the contents of @str and apply a ticker effect to it,
- * and write the results in @buf.
- **/
-void menu_ticker_line(char *buf, size_t len, unsigned idx,
-      const char *str, bool selected)
-{
-   unsigned ticker_period, phase, phase_left_stop;
-   unsigned phase_left_moving, phase_right_stop;
-   unsigned left_offset, right_offset;
-   size_t str_len = strlen(str);
-
-   if (str_len <= len)
-   {
-      strlcpy(buf, str, len + 1);
-      return;
-   }
-
-   if (!selected)
-   {
-      strlcpy(buf, str, len + 1 - 3);
-      strlcat(buf, "...", len + 1);
-      return;
-   }
-
-   /* Wrap long strings in options with some kind of ticker line. */
-   ticker_period = 2 * (str_len - len) + 4;
-   phase = idx % ticker_period;
-
-   phase_left_stop = 2;
-   phase_left_moving = phase_left_stop + (str_len - len);
-   phase_right_stop = phase_left_moving + 2;
-
-   left_offset = phase - phase_left_stop;
-   right_offset = (str_len - len) - (phase - phase_right_stop);
-
-   /* Ticker period:
-    * [Wait at left (2 ticks),
-    * Progress to right(type_len - w),
-    * Wait at right (2 ticks),
-    * Progress to left].
-    */
-   if (phase < phase_left_stop)
-      strlcpy(buf, str, len + 1);
-   else if (phase < phase_left_moving)
-      strlcpy(buf, str + left_offset, len + 1);
-   else if (phase < phase_right_stop)
-      strlcpy(buf, str + str_len - len, len + 1);
-   else
-      strlcpy(buf, str + right_offset, len + 1);
-}
-
 void menu_apply_deferred_settings(void)
 {
    rarch_setting_t *setting = NULL;
+   menu_handle_t   *menu = menu_driver_resolve();
     
-   if (!driver.menu)
+   if (!menu)
       return;
     
-   setting = (rarch_setting_t*)driver.menu->list_settings;
+   setting = (rarch_setting_t*)menu->list_settings;
     
    if (!setting)
       return;
@@ -398,8 +371,13 @@ int menu_iterate(retro_input_t input,
    int32_t ret     = 0;
    unsigned action = menu_input_frame(input, trigger_input);
 
-   if (driver.menu_ctx && driver.menu_ctx->entry_iterate) 
-      ret = driver.menu_ctx->entry_iterate(action);
+   if (driver.menu_ctx)
+   {
+      if (driver.menu_ctx->set_texture)
+         driver.menu_ctx->set_texture();
+      if (driver.menu_ctx->entry_iterate) 
+         ret = driver.menu_ctx->entry_iterate(action);
+   }
 
    if (g_extern.is_menu)
       draw_frame();

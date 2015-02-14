@@ -1,19 +1,26 @@
-/*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * 
- *  RetroArch is free software: you can redistribute it and/or modify it under the terms
- *  of the GNU General Public License as published by the Free Software Found-
- *  ation, either version 3 of the License, or (at your option) any later version.
+/* Copyright  (C) 2010-2015 The RetroArch team
  *
- *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- *  PURPOSE.  See the GNU General Public License for more details.
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (rpng.c).
+ * ---------------------------------------------------------------------------------------
  *
- *  You should have received a copy of the GNU General Public License along with RetroArch.
- *  If not, see <http://www.gnu.org/licenses/>.
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "rpng.h"
+#include <formats/rpng.h>
 
 #include <zlib.h>
 
@@ -26,8 +33,9 @@
 #endif
 
 #ifdef RARCH_INTERNAL
-#include "../../hash.h"
+#include "../../../hash.h"
 #else
+
 static inline uint32_t crc32_calculate(const uint8_t *data, size_t length)
 {
    return crc32(0, data, length);
@@ -303,11 +311,10 @@ static inline void copy_line_rgba(uint32_t *data,
 static inline void copy_line_bw(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned depth)
 {
-   unsigned i, bit = 0;
+   unsigned i, bit;
    static const unsigned mul_table[] = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
-   unsigned mul  = mul_table[depth];
-   unsigned mask = (1 << depth) - 1;
-
+   unsigned mul, mask;
+   
    if (depth == 16)
    {
       for (i = 0; i < width; i++)
@@ -317,6 +324,10 @@ static inline void copy_line_bw(uint32_t *data,
       }
       return;
    }
+
+   mul  = mul_table[depth];
+   mask = (1 << depth) - 1;
+   bit  = 0;
 
    for (i = 0; i < width; i++, bit += depth)
    {

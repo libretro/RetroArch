@@ -26,18 +26,18 @@
 #include "menu.h"
 #include "menu_action.h"
 #include "menu_shader.h"
+#include "menu_navigation.h"
 #include "../cheats.h"
 #include "../performance.h"
 #include "../settings_data.h"
 #include "../input/input_joypad.h"
 #include "../input/input_remapping.h"
 
-void menu_input_key_start_line(void *data, const char *label,
+void menu_input_key_start_line(const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
+   menu_handle_t *menu = menu_driver_resolve();
    if (!menu)
       return;
 
@@ -49,10 +49,9 @@ void menu_input_key_start_line(void *data, const char *label,
    menu->keyboard.buffer        = input_keyboard_start_line(menu, cb);
 }
 
-static void menu_input_key_end_line(void *data)
+static void menu_input_key_end_line(void)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
+   menu_handle_t *menu = menu_driver_resolve();
    if (!menu)
       return;
 
@@ -67,37 +66,48 @@ static void menu_input_key_end_line(void *data)
 static void menu_input_search_callback(void *userdata, const char *str)
 {
    size_t idx;
-   menu_handle_t *menu = (menu_handle_t*)userdata;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return;
 
    if (str && *str && file_list_search(menu->menu_list->selection_buf, str, &idx))
-         menu_navigation_set(menu, idx, true);
+         menu_navigation_set(&menu->navigation, idx, true);
 
-   menu_input_key_end_line(menu);
+   menu_input_key_end_line();
 }
 
 void menu_input_st_uint_callback(void *userdata, const char *str)
 {
-   menu_handle_t *menu = (menu_handle_t*)userdata;
-   rarch_setting_t *current_setting = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return;
 
    if (str && *str)
    {
+      rarch_setting_t *current_setting = NULL;
       if ((current_setting = (rarch_setting_t*)
                setting_data_find_setting(
                   menu->list_settings, menu->keyboard.label_setting)))
          *current_setting->value.unsigned_integer = strtoul(str, NULL, 0);
    }
-   menu_input_key_end_line(menu);
+
+   menu_input_key_end_line();
 }
 
 
 void menu_input_st_string_callback(void *userdata, const char *str)
 {
-   menu_handle_t *menu = (menu_handle_t*)userdata;
-   rarch_setting_t *current_setting = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return;
  
    if (str && *str)
    {
+      rarch_setting_t *current_setting = NULL;
+
       if ((current_setting = (rarch_setting_t*)
                setting_data_find_setting(
                   menu->list_settings, menu->keyboard.label_setting)))
@@ -113,13 +123,16 @@ void menu_input_st_string_callback(void *userdata, const char *str)
       }
    }
 
-   menu_input_key_end_line(menu);
+   menu_input_key_end_line();
 }
 
 void menu_input_st_cheat_callback(void *userdata, const char *str)
 {
-   menu_handle_t *menu = (menu_handle_t*)userdata;
    cheat_manager_t *cheat = g_extern.cheat;
+   menu_handle_t *menu = (menu_handle_t*)userdata;
+
+   if (!menu)
+      return;
  
    if (cheat && str && *str)
    {
@@ -130,26 +143,24 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
       cheat->cheats[cheat_index].state = true;
    }
 
-   menu_input_key_end_line(menu);
+   menu_input_key_end_line();
 }
 
 void menu_input_search_start(void)
 {
-   if (!driver.menu)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return;
 
-   driver.menu->keyboard.display = true;
-   driver.menu->keyboard.label = "Search: ";
-   driver.menu->keyboard.buffer = 
+   menu->keyboard.display = true;
+   menu->keyboard.label = "Search: ";
+   menu->keyboard.buffer = 
       input_keyboard_start_line(driver.menu, menu_input_search_callback);
 }
 
 void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
-   if (!driver.menu)
-      return;
-
    (void)down;
    (void)keycode;
    (void)mod;
@@ -333,14 +344,19 @@ bool menu_input_custom_bind_keyboard_cb(void *data, unsigned code)
    menu->binds.timeout_end = rarch_get_time_usec() +
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
 
-   return menu->binds.begin <= menu->binds.last;
+   return (menu->binds.begin <= menu->binds.last);
 }
 
-int menu_input_bind_iterate(void *data)
+int menu_input_bind_iterate(void)
 {
    char msg[PATH_MAX_LENGTH];
-   menu_handle_t *menu = (menu_handle_t*)data;
-   struct menu_bind_state binds = menu->binds;
+   struct menu_bind_state binds;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return 1;
+   
+   binds = menu->binds;
     
    if (driver.video_data && driver.menu_ctx &&
          driver.menu_ctx->render)
@@ -348,11 +364,11 @@ int menu_input_bind_iterate(void *data)
 
    snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)",
          input_config_bind_map[
-         driver.menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
+         menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
 
    if (driver.video_data && driver.menu_ctx 
          && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(msg);
+      driver.menu_ctx->render_messagebox( msg);
 
    driver.block_input = true;
    menu_input_poll_bind_state(&binds);
@@ -377,23 +393,26 @@ int menu_input_bind_iterate(void *data)
    return 0;
 }
 
-int menu_input_bind_iterate_keyboard(void *data)
+int menu_input_bind_iterate_keyboard(void)
 {
    char msg[PATH_MAX_LENGTH];
    int64_t current;
    int timeout = 0;
    bool timed_out = false;
-   menu_handle_t *menu = (menu_handle_t*)data;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
 
    if (driver.video_data && driver.menu_ctx &&
          driver.menu_ctx->render)
       driver.menu_ctx->render();
 
    current = rarch_get_time_usec();
-   timeout = (driver.menu->binds.timeout_end - current) / 1000000;
+   timeout = (menu->binds.timeout_end - current) / 1000000;
    snprintf(msg, sizeof(msg), "[%s]\npress keyboard\n(timeout %d seconds)",
          input_config_bind_map[
-         driver.menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
+         menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
          timeout);
 
    if (driver.video_data && driver.menu_ctx 
@@ -440,6 +459,10 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return 0;
 
    driver.retro_ctx.poll_cb();
 
@@ -451,15 +474,16 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       if (!first_held)
       {
          first_held = true;
-         driver.menu->delay_timer = initial_held ? 12 : 6;
-         driver.menu->delay_count = 0;
+         menu->delay.timer = initial_held ? 12 : 6;
+         menu->delay.count = 0;
       }
 
-      if (driver.menu->delay_count >= driver.menu->delay_timer)
+      if (menu->delay.count >= menu->delay.timer)
       {
          first_held = false;
          trigger_input |= input & input_repeat;
-         driver.menu->scroll_accel = min(driver.menu->scroll_accel + 1, 64);
+         menu->navigation.scroll.acceleration = 
+            min(menu->navigation.scroll.acceleration + 1, 64);
       }
 
       initial_held = false;
@@ -468,12 +492,12 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
    {
       first_held = false;
       initial_held = true;
-      driver.menu->scroll_accel = 0;
+      menu->navigation.scroll.acceleration = 0;
    }
 
-   driver.menu->mouse.enable = g_settings.menu.mouse_enable;
+   menu->mouse.enable = g_settings.menu.mouse_enable;
 
-   driver.menu->delay_count++;
+   menu->delay.count++;
 
    if (driver.block_input)
       trigger_input = 0;

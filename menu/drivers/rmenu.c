@@ -67,14 +67,16 @@ static bool menu_texture_inited =false;
 static int rmenu_entry_iterate(unsigned action)
 {
    const char *label = NULL;
-   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-      menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
-            driver.menu->selection_ptr);
+   menu_file_list_cbs_t *cbs = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   menu_list_get_last_stack(driver.menu->menu_list, NULL, &label, NULL);
+   if (!menu)
+      return -1;
+   
+   cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
+         menu->menu_list->selection_buf, menu->navigation.selection_ptr);
 
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
-      driver.menu_ctx->set_texture(driver.menu);
+   menu_list_get_last_stack(menu->menu_list, NULL, &label, NULL);
 
    if (cbs && cbs->action_iterate)
       return cbs->action_iterate(label, action);
@@ -91,6 +93,10 @@ static void rmenu_render_messagebox(const char *message)
    struct font_params font_parms;
    size_t i, j;
    struct string_list *list = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return;
 
    if (!message || !*message)
       return;
@@ -101,10 +107,7 @@ static void rmenu_render_messagebox(const char *message)
       return;
 
    if (list->elems == 0)
-   {
-      string_list_free(list);
-      return;
-   }
+      goto end;
 
    j = 0;
 
@@ -134,6 +137,8 @@ static void rmenu_render_messagebox(const char *message)
    }
 
    render_normal = false;
+end:
+   string_list_free(list);
 }
 
 static void rmenu_render(void)
@@ -148,7 +153,7 @@ static void rmenu_render(void)
    const char *core_name = NULL;
    const char *core_version = NULL;
    unsigned menu_type = 0;
-   menu_handle_t *menu = (menu_handle_t*)driver.menu;
+   menu_handle_t *menu = menu_driver_resolve();
 
    if (!menu)
       return;
@@ -163,17 +168,17 @@ static void rmenu_render(void)
          && !menu->msg_force)
       return;
 
-   if (!driver.menu->menu_list->selection_buf)
+   if (!menu->menu_list->selection_buf)
       return;
 
-   begin = (menu->selection_ptr >= (ENTRIES_HEIGHT / 2)) ? 
-      (menu->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
-   end   = ((menu->selection_ptr + ENTRIES_HEIGHT) <= 
-         menu_list_get_size(driver.menu->menu_list)) ?
-      menu->selection_ptr + ENTRIES_HEIGHT :
-      menu_list_get_size(driver.menu->menu_list);
+   begin = (menu->navigation.selection_ptr >= (ENTRIES_HEIGHT / 2)) ? 
+      (menu->navigation.selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
+   end   = ((menu->navigation.selection_ptr + ENTRIES_HEIGHT) <= 
+         menu_list_get_size(menu->menu_list)) ?
+      menu->navigation.selection_ptr + ENTRIES_HEIGHT :
+      menu_list_get_size(menu->menu_list);
 
-   if (menu_list_get_size(driver.menu->menu_list) <= ENTRIES_HEIGHT)
+   if (menu_list_get_size(menu->menu_list) <= ENTRIES_HEIGHT)
       begin = 0;
 
    if (end - begin > ENTRIES_HEIGHT)
@@ -181,11 +186,11 @@ static void rmenu_render(void)
    
    rmenu_render_background();
 
-   menu_list_get_last_stack(driver.menu->menu_list, &dir, &label, &menu_type);
+   menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
 
    get_title(label, dir, menu_type, title, sizeof(title));
 
-   menu_ticker_line(title_buf, RMENU_TERM_WIDTH,
+   menu_animation_ticker_line(title_buf, RMENU_TERM_WIDTH,
          g_extern.frame_count / 15, title, true);
 
    font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
@@ -240,28 +245,28 @@ static void rmenu_render(void)
             &path, &entry_label, &type);
 
       cbs = (menu_file_list_cbs_t*)
-         menu_list_get_actiondata_at_offset(driver.menu->menu_list->selection_buf,
+         menu_list_get_actiondata_at_offset(menu->menu_list->selection_buf,
                i);
 
       if (cbs && cbs->action_get_representation)
-         cbs->action_get_representation(driver.menu->menu_list->selection_buf,
+         cbs->action_get_representation(menu->menu_list->selection_buf,
                &w, type, i, label,
                type_str, sizeof(type_str), 
                entry_label, path,
                path_buf, sizeof(path_buf));
 
-      selected = (i == driver.menu->selection_ptr);
+      selected = (i == menu->navigation.selection_ptr);
 
-      menu_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2),
+      menu_animation_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2),
             g_extern.frame_count / 15, path, selected);
-      menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15,
+      menu_animation_ticker_line(type_str_buf, w, g_extern.frame_count / 15,
             type_str, selected);
 
       snprintf(message, sizeof(message), "%c %s",
             selected ? '>' : ' ', entry_title_buf);
 
 #if 0
-      blit_line(menu, x, y, message, selected);
+      blit_line(x, y, message, selected);
 #endif
       font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
       font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET
@@ -283,13 +288,14 @@ static void rmenu_render(void)
    }
 }
 
-void rmenu_set_texture(void *data)
+static void rmenu_set_texture(void)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
+   menu_handle_t *menu = menu_driver_resolve();
 
+   if (!menu)
+      return;
    if (menu_texture_inited)
       return;
-
    if (!driver.video_data)
       return;
    if (!driver.video_poke)
@@ -303,7 +309,7 @@ void rmenu_set_texture(void *data)
 
    driver.video_poke->set_texture_frame(driver.video_data,
          menu_texture->pixels,
-         true, menu->width, menu->height, 1.0f);
+         true, menu->frame_buf.width, menu->frame_buf.height, 1.0f);
    menu_texture_inited = true;
 }
 
@@ -319,10 +325,10 @@ static void rmenu_wallpaper_set_defaults(char *menu_bg, size_t sizeof_menu_bg)
    fill_pathname_join(menu_bg, menu_bg, "main_menu.png", sizeof_menu_bg);
 }
 
-static void rmenu_context_reset(void *data)
+static void rmenu_context_reset(void)
 {
    char menu_bg[PATH_MAX_LENGTH];
-   menu_handle_t *menu = (menu_handle_t*)data;
+   menu_handle_t *menu = menu_driver_resolve();
 
    if (!menu)
       return;
@@ -334,8 +340,8 @@ static void rmenu_context_reset(void *data)
 
    if (path_file_exists(menu_bg))
       texture_image_load(menu_texture, menu_bg);
-   menu->width = menu_texture->width;
-   menu->height = menu_texture->height;
+   menu->frame_buf.width = menu_texture->width;
+   menu->frame_buf.height = menu_texture->height;
 
    menu_texture_inited = false;
 }
@@ -358,7 +364,7 @@ static void *rmenu_init(void)
    return menu;
 }
 
-static void rmenu_context_destroy(void *data)
+static void rmenu_context_destroy(void)
 {
    texture_image_free(menu_texture);
 }
@@ -391,5 +397,6 @@ menu_ctx_driver_t menu_ctx_rmenu = {
    NULL,
    NULL,
    rmenu_entry_iterate,
+   NULL,
    "rmenu",
 };

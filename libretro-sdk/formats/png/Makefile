@@ -1,9 +1,9 @@
-TARGET := rxml
+TARGET := rpng
 
 SOURCES := $(wildcard *.c)
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -DRXML_TEST -Wall -pedantic -std=gnu99 -O0 -g
+CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -DHAVE_ZLIB -DHAVE_ZLIB_DEFLATE -DRPNG_TEST -I../../include
 
 all: $(TARGET)
 
@@ -11,7 +11,7 @@ all: $(TARGET)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) -o $@ $^ $(LDFLAGS) -lz -lImlib2
 
 clean:
 	rm -f $(TARGET) $(OBJS)

@@ -68,22 +68,52 @@ struct menu_bind_state
    bool skip;
 };
 
+typedef struct menu_framebuf
+{
+   uint16_t *data;
+   unsigned width;
+   unsigned height;
+   size_t pitch;
+} menu_framebuf_t;
+
+typedef struct menu_navigation
+{
+   struct
+   {
+      /* Quick jumping indices with L/R.
+       * Rebuilt when parsing directory. */
+      struct
+      {
+         size_t list[2 * (26 + 2) + 1];
+         unsigned size;
+      } indices;
+      unsigned acceleration;
+   } scroll;
+   size_t selection_ptr;
+} menu_navigation_t;
+
 typedef struct
 {
    void *userdata;
 
    /* Used for key repeat */
-   unsigned delay_timer;
-   unsigned delay_count;
+   struct
+   {
+      unsigned timer;
+      unsigned count;
+   } delay;
 
-   unsigned width;
-   unsigned height;
    size_t begin;
 
    menu_list_t *menu_list;
-   size_t cat_selection_ptr;
-   size_t num_categories;
-   size_t selection_ptr;
+   menu_navigation_t navigation;
+
+   struct
+   {
+      size_t selection_ptr;
+      size_t size;
+   } categories;
+
    bool need_refresh;
    bool msg_force;
    bool push_start_screen;
@@ -97,14 +127,11 @@ typedef struct
     */
    char message_contents[PATH_MAX_LENGTH];
 
-   /* Quick jumping indices with L/R.
-    * Rebuilt when parsing directory. */
-   size_t scroll_indices[2 * (26 + 2) + 1];
-   unsigned scroll_indices_size;
-   unsigned scroll_accel;
 
    char default_glslp[PATH_MAX_LENGTH];
    char default_cgp[PATH_MAX_LENGTH];
+
+   menu_framebuf_t frame_buf;
 
    const uint8_t *font;
    bool alloc_font;
@@ -142,8 +169,7 @@ typedef struct
    } keyboard;
 
    rarch_setting_t *list_settings;
-   tween_t* tweens;
-   unsigned numtweens;
+   animation_t *animation;
 
    content_playlist_t *db_playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
@@ -176,30 +202,31 @@ typedef struct menu_file_list_cbs
 
 typedef struct menu_ctx_driver
 {
-   void  (*set_texture)(void*);
-   void  (*render_messagebox)(const char*);
+   void  (*set_texture)(void);
+   void  (*render_messagebox)(const char *msg);
    void  (*render)(void);
    void  (*frame)(void);
    void* (*init)(void);
    void  (*free)(void*);
-   void  (*context_reset)(void*);
-   void  (*context_destroy)(void*);
-   void  (*populate_entries)(void*, const char *, const char *,
-         unsigned);
+   void  (*context_reset)(void);
+   void  (*context_destroy)(void);
+   void  (*populate_entries)(const char *path, const char *label,
+         unsigned k);
    void  (*toggle)(bool);
-   void  (*navigation_clear)(void *, bool);
-   void  (*navigation_decrement)(void *);
-   void  (*navigation_increment)(void *);
-   void  (*navigation_set)(void *, bool);
-   void  (*navigation_set_last)(void *);
-   void  (*navigation_descend_alphabet)(void *, size_t *);
-   void  (*navigation_ascend_alphabet)(void *, size_t *);
-   void  (*list_insert)(void *, const char *, const char *, size_t);
-   void  (*list_delete)(void *, size_t, size_t);
-   void  (*list_clear)(void *);
+   void  (*navigation_clear)(bool);
+   void  (*navigation_decrement)(void);
+   void  (*navigation_increment)(void);
+   void  (*navigation_set)(bool);
+   void  (*navigation_set_last)(void);
+   void  (*navigation_descend_alphabet)(size_t *);
+   void  (*navigation_ascend_alphabet)(size_t *);
+   void  (*list_insert)(file_list_t *list, const char *, const char *, size_t);
+   void  (*list_delete)(file_list_t *list, size_t, size_t);
+   void  (*list_clear)(file_list_t *list);
    void  (*list_cache)(bool, unsigned);
-   void  (*list_set_selection)(void *);
+   void  (*list_set_selection)(file_list_t *list);
    int   (*entry_iterate)(unsigned);
+   bool  (*load_background)(const char * path);
    const char *ident;
 } menu_ctx_driver_t;
 
@@ -242,6 +269,8 @@ const char* config_get_menu_driver_options(void);
 void find_menu_driver(void);
 
 void init_menu(void);
+
+menu_handle_t *menu_driver_resolve(void);
 
 #ifdef __cplusplus
 }

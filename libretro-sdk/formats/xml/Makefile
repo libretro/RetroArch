@@ -1,9 +1,9 @@
-TARGET := rpng
+TARGET := rxml
 
 SOURCES := $(wildcard *.c)
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -DHAVE_ZLIB -DHAVE_ZLIB_DEFLATE -DRPNG_TEST -I../../libretro-sdk/include
+CFLAGS += -DRXML_TEST -Wall -pedantic -std=gnu99 -O0 -g -I../../include
 
 all: $(TARGET)
 
@@ -11,7 +11,7 @@ all: $(TARGET)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS) -lz -lImlib2
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
 	rm -f $(TARGET) $(OBJS)

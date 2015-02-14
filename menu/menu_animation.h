@@ -28,7 +28,7 @@ extern "C" {
 typedef float (*easingFunc)(float, float, float, float);
 typedef void  (*tween_cb) (void);
 
-typedef struct
+struct tween
 {
    int    alive;
    float  duration;
@@ -38,80 +38,83 @@ typedef struct
    float* subject;
    easingFunc easing;
    tween_cb cb;
-} tween_t;
+};
 
-bool add_tween(float duration, float target_value, float* subject,
-      easingFunc easing, tween_cb cb);
+typedef struct animation
+{
+   struct tween *list;
 
-void update_tweens(float dt);
+   size_t capacity;
+   size_t size;
+} animation_t;
 
-/* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
+enum animation_easing_type
+{
+   /* Linear */
+   EASING_LINEAR    = 0,
+   /* Quad */
+   EASING_IN_QUAD,
+   EASING_OUT_QUAD,
+   EASING_IN_OUT_QUAD,
+   EASING_OUT_IN_QUAD,
+   /* Cubic */
+   EASING_IN_CUBIC,
+   EASING_OUT_CUBIC,
+   EASING_IN_OUT_CUBIC,
+   EASING_OUT_IN_CUBIC,
+   /* Quart */
+   EASING_IN_QUART,
+   EASING_OUT_QUART,
+   EASING_IN_OUT_QUART,
+   EASING_OUT_IN_QUART,
+   /* Quint */
+   EASING_IN_QUINT,
+   EASING_OUT_QUINT,
+   EASING_IN_OUT_QUINT,
+   EASING_OUT_IN_QUINT,
+   /* Sine */
+   EASING_IN_SINE,
+   EASING_OUT_SINE,
+   EASING_IN_OUT_SINE,
+   EASING_OUT_IN_SINE,
+   /* Expo */
+   EASING_IN_EXPO,
+   EASING_OUT_EXPO,
+   EASING_IN_OUT_EXPO,
+   EASING_OUT_IN_EXPO,
+   /* Circ */
+   EASING_IN_CIRC,
+   EASING_OUT_CIRC,
+   EASING_IN_OUT_CIRC,
+   EASING_OUT_IN_CIRC,
+   /* Bounce */
+   EASING_IN_BOUNCE,
+   EASING_OUT_BOUNCE,
+   EASING_IN_OUT_BOUNCE,
+   EASING_OUT_IN_BOUNCE,
+};
 
-float linear(float t, float b, float c, float d);
+void menu_animation_free(animation_t *animation);
 
-float inQuad(float t, float b, float c, float d);
+bool menu_animation_push(animation_t *animation, float duration,
+      float target_value, float* subject,
+      enum animation_easing_type easing_enum, tween_cb cb);
 
-float outQuad(float t, float b, float c, float d);
+void menu_animation_update(animation_t *animation, float dt);
 
-float inOutQuad(float t, float b, float c, float d);
-
-float outInQuad(float t, float b, float c, float d);
-
-float inCubic(float t, float b, float c, float d);
-
-float outCubic(float t, float b, float c, float d);
-
-float inOutCubic(float t, float b, float c, float d);
-
-float outInCubic(float t, float b, float c, float d);
-
-float inQuart(float t, float b, float c, float d);
-
-float outQuart(float t, float b, float c, float d);
-
-float inOutQuart(float t, float b, float c, float d);
-
-float outInQuart(float t, float b, float c, float d);
-
-float inQuint(float t, float b, float c, float d);
-
-float outQuint(float t, float b, float c, float d);
-
-float inOutQuint(float t, float b, float c, float d);
-
-float outInQuint(float t, float b, float c, float d);
-
-float inSine(float t, float b, float c, float d);
-
-float outSine(float t, float b, float c, float d);
-
-float inOutSine(float t, float b, float c, float d);
-
-float outInSine(float t, float b, float c, float d);
-
-float inExpo(float t, float b, float c, float d);
-
-float outExpo(float t, float b, float c, float d);
-
-float inOutExpo(float t, float b, float c, float d);
-
-float outInExpo(float t, float b, float c, float d);
-
-float inCirc(float t, float b, float c, float d);
-
-float outCirc(float t, float b, float c, float d);
-
-float inOutCirc(float t, float b, float c, float d);
-
-float outInCirc(float t, float b, float c, float d);
-
-float inBounce(float t, float b, float c, float d);
-
-float outBounce(float t, float b, float c, float d);
-
-float inOutBounce(float t, float b, float c, float d);
-
-float outInBounce(float t, float b, float c, float d);
+/**
+ * menu_animation_ticker_line:
+ * @buf                      : buffer to write new message line to.
+ * @len                      : length of buffer @input.
+ * @idx                      : Index. Will be used for ticker logic.
+ * @str                      : Input string.
+ * @selected                 : Is the item currently selected in the menu?
+ *
+ * Take the contents of @str and apply a ticker effect to it,
+ * and write the results in @buf.
+ **/
+void menu_animation_ticker_line(char *buf, size_t len, unsigned tick,
+      const char *str, bool selected);
 
 #ifdef __cplusplus
 }

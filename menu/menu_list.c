@@ -28,16 +28,20 @@
  *
  * Ensure it doesn't overflow.
  **/
-static void menu_entries_refresh(menu_handle_t *menu, file_list_t *list)
+static void menu_entries_refresh(file_list_t *list)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return;
    if (!list)
       return;
 
-   if (menu->selection_ptr >= menu_list_get_size(menu->menu_list)
+   if (menu->navigation.selection_ptr >= menu_list_get_size(menu->menu_list)
          && menu_list_get_size(menu->menu_list))
-      menu_navigation_set(menu, menu_list_get_size(menu->menu_list) - 1, true);
+      menu_navigation_set(&menu->navigation,
+            menu_list_get_size(menu->menu_list) - 1, true);
    else if (!menu_list_get_size(menu->menu_list))
-      menu_navigation_clear(menu, true);
+      menu_navigation_clear(&menu->navigation, true);
 }
 
 /**
@@ -94,15 +98,23 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
    size_t i;
    int current;
    bool current_is_dir;
+   menu_navigation_t *nav = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (!driver.menu || !list)
+   if (!menu || !list)
       return;
 
-   driver.menu->scroll_indices_size = 0;
+   nav = &menu->navigation;
+
+   if (!nav)
+      return;
+
+   nav->scroll.indices.size = 0;
+
    if (!list->size)
       return;
 
-   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 0;
+   nav->scroll.indices.list[nav->scroll.indices.size++] = 0;
 
    current        = menu_entries_list_get_first_char(list, 0);
    current_is_dir = menu_entries_list_elem_is_dir(list, 0);
@@ -113,13 +125,13 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
       bool is_dir = menu_entries_list_elem_is_dir(list, i);
 
       if ((current_is_dir && !is_dir) || (first > current))
-         driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = i;
+         nav->scroll.indices.list[nav->scroll.indices.size++] = i;
 
       current = first;
       current_is_dir = is_dir;
    }
 
-   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 
+   nav->scroll.indices.list[nav->scroll.indices.size++] = 
       list->size - 1;
 }
 
@@ -228,16 +240,16 @@ void menu_list_flush_stack(menu_list_t *list,
    const char *path = NULL;
    const char *label = NULL;
    unsigned type = 0;
-
-   if (!driver.menu || !list)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu || !list)
       return;
 
-   driver.menu->need_refresh = true;
+   menu->need_refresh = true;
    file_list_get_last(list->menu_stack, &path, &label, &type);
 
    while (type != final_type)
    {
-      menu_list_pop(list->menu_stack, &driver.menu->selection_ptr);
+      menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
       file_list_get_last(list->menu_stack, &path, &label, &type);
    }
 }
@@ -248,23 +260,24 @@ void menu_list_flush_stack_by_needle(menu_list_t *list,
    const char *path = NULL;
    const char *label = NULL;
    unsigned type = 0;
-
-   if (!driver.menu || !list)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu || !list)
       return;
 
-   driver.menu->need_refresh = true;
+   menu->need_refresh = true;
    file_list_get_last(list->menu_stack, &path, &label, &type);
 
    while (strcmp(needle, label) != 0)
    {
-      menu_list_pop(list->menu_stack, &driver.menu->selection_ptr);
+      menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
       file_list_get_last(list->menu_stack, &path, &label, &type);
    }
 }
 
 void menu_list_pop_stack(menu_list_t *list)
 {
-   if (!list)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu || !list)
       return;
 
    if (file_list_get_size(list->menu_stack) <= 1)
@@ -273,8 +286,8 @@ void menu_list_pop_stack(menu_list_t *list)
    if (driver.menu_ctx->list_cache)
       driver.menu_ctx->list_cache(false, 0);
 
-   menu_list_pop(list->menu_stack, &driver.menu->selection_ptr);
-   driver.menu->need_refresh = true;
+   menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
+   menu->need_refresh = true;
 }
 
 void menu_list_pop_stack_by_needle(menu_list_t *list,
@@ -283,16 +296,17 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
    const char *path = NULL;
    const char *label = NULL;
    unsigned type = 0;
+   menu_handle_t *menu = menu_driver_resolve();
 
-   if (!driver.menu || !list)
+   if (!menu || !list)
       return;
 
-   driver.menu->need_refresh = true;
+   menu->need_refresh = true;
    file_list_get_last(list->menu_stack, &path, &label, &type);
 
    while (strcmp(needle, label) == 0)
    {
-      menu_list_pop(list->menu_stack, &driver.menu->selection_ptr);
+      menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
       file_list_get_last(list->menu_stack, &path, &label, &type);
    }
 }
@@ -363,26 +377,28 @@ void menu_list_push_refresh(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr)
 {
-   if (!list)
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu || !list)
       return;
 
    menu_list_push(list, path, label, type, directory_ptr);
-   menu_navigation_clear(driver.menu, true);
-   driver.menu->need_refresh = true;
+   menu_navigation_clear(&menu->navigation, true);
+   menu->need_refresh = true;
 }
 
-void menu_list_push_stack(menu_list_t *list,
-      const char *path, const char *label,
+void menu_list_push_stack(menu_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr)
 {
    if (list)
       menu_list_push(list->menu_stack, path, label, type, directory_ptr);
 }
 
-int menu_list_push_stack_refresh(menu_list_t *list,
-      const char *path, const char *label,
+int menu_list_push_stack_refresh(menu_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr)
 {
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
    if (!list)
       return -1;
 
@@ -390,8 +406,8 @@ int menu_list_push_stack_refresh(menu_list_t *list,
       driver.menu_ctx->list_cache(false, 0);
 
    menu_list_push_stack(list, path, label, type, directory_ptr);
-   menu_navigation_clear(driver.menu, true);
-   driver.menu->need_refresh = true;
+   menu_navigation_clear(&menu->navigation, true);
+   menu->need_refresh = true;
 
    return 0;
 }
@@ -413,21 +429,21 @@ void menu_list_sort_on_alt(file_list_t *list)
    file_list_sort_on_alt(list);
 }
 
-int menu_list_populate_generic(void *data,
-      file_list_t *list, const char *path,
+int menu_list_populate_generic(file_list_t *list, const char *path,
       const char *label, unsigned type)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
+   menu_handle_t *menu = menu_driver_resolve();
 
    if (!menu)
       return -1;
 
-   driver.menu->scroll_indices_size = 0;
+   menu->navigation.scroll.indices.size = 0;
+
    menu_entries_build_scroll_indices(list);
-   menu_entries_refresh(menu, list);
+   menu_entries_refresh(list);
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(menu, path, label, type);
+      driver.menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }

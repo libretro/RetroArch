@@ -18,7 +18,7 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../drivers_font_renderer/bitmap.h"
-#include "../../menu/menu.h"
+#include "../../menu/menu_driver.h"
 #include "../video_viewport.h"
 #include "../video_monitor.h"
 
@@ -118,6 +118,7 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
             max_width, max_height, i;
    bool progressive;
    gx_video_t *gx = (gx_video_t*)data;
+   menu_handle_t *menu = menu_driver_resolve();
 
    (void)level;
 
@@ -277,17 +278,17 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
          gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE 
          ? "interlaced" : "progressive");
 
-   if (driver.menu)
+   if (menu)
    {
-      driver.menu->height = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
-      driver.menu->height &= ~3;
-      if (driver.menu->height > 240)
-         driver.menu->height = 240;
+      menu->frame_buf.height = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
+      menu->frame_buf.height &= ~3;
+      if (menu->frame_buf.height > 240)
+         menu->frame_buf.height = 240;
 
-      driver.menu->width = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
-      driver.menu->width &= ~3;
-      if (driver.menu->width > 400)
-         driver.menu->width = 400;
+      menu->frame_buf.width = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
+      menu->frame_buf.width &= ~3;
+      if (menu->frame_buf.width > 400)
+         menu->frame_buf.width = 400;
    }
 
    if (tvmode == VI_PAL)
@@ -357,6 +358,7 @@ static void init_texture(void *data, unsigned width, unsigned height)
    gx_video_t *gx = (gx_video_t*)data;
    struct __gx_texobj *fb_ptr = (struct __gx_texobj*)&g_tex.obj;
    struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
+   menu_handle_t *menu = menu_driver_resolve();
 
    width &= ~3;
    height &= ~3;
@@ -364,10 +366,10 @@ static void init_texture(void *data, unsigned width, unsigned height)
    menu_w = 320;
    menu_h = 240;
 
-   if (driver.menu)
+   if (menu)
    {
-      menu_w = driver.menu->width;
-      menu_h = driver.menu->height;
+      menu_w = menu->frame_buf.width;
+      menu_h = menu->frame_buf.height;
    }
 
    __GX_InitTexObj(fb_ptr, g_tex.data, width, height,
@@ -960,10 +962,18 @@ static bool gx_frame(void *data, const void *frame,
 
    if (gx->menu_texture_enable && gx->menu_data)
    {
-      convert_texture16(gx->menu_data, menu_tex.data,
-            driver.menu->width, driver.menu->height, driver.menu->width * 2);
-      DCFlushRange(menu_tex.data,
-            driver.menu->width * driver.menu->height * 2);
+      menu_handle_t *menu = menu_driver_resolve();
+
+      if (menu)
+      {
+         convert_texture16(gx->menu_data, menu_tex.data,
+               menu->frame_buf.width,
+               menu->frame_buf.height,
+               menu->frame_buf.width * 2);
+         DCFlushRange(menu_tex.data,
+               menu->frame_buf.width * 
+               menu->frame_buf.height * 2);
+      }
    }
 
    __GX_InvalidateTexAll(__gx);

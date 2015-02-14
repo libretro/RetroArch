@@ -28,7 +28,7 @@ extern "C" {
  *
  * Initializes shader manager.
  **/
-void menu_shader_manager_init(void *data);
+void menu_shader_manager_init(menu_handle_t *menu);
 
 /**
  * menu_shader_manager_set_preset:

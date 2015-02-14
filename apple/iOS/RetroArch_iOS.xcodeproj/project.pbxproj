@@ -496,6 +496,7 @@
 				HEADER_SEARCH_PATHS = (
 					../,
 					"../../libretro-sdk/include",
+					../../,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/RetroArch-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
@@ -558,6 +559,7 @@
 				HEADER_SEARCH_PATHS = (
 					../,
 					"../../libretro-sdk/include",
+					../../,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/RetroArch-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;

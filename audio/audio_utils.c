@@ -25,9 +25,6 @@
 
 #ifdef RARCH_INTERNAL
 #include "../performance.h"
-#include "../libretro.h"
-#else
-#include "../libretro/libretro.h"
 #endif
 
 /**

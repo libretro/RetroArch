@@ -35,7 +35,7 @@ int database_open_cursor(libretrodb_t *db,
    libretrodb_query_t *q = NULL;
 
    if (query) 
-      q = libretrodb_query_compile(db, query,
+      q = (libretrodb_query_t*)libretrodb_query_compile(db, query,
       strlen(query), &error);
     
    if (error)
@@ -118,12 +118,25 @@ int database_info_write_rdl(const char *dir)
    return 0;
 }
 
+static char *bin_to_hex_alloc(const uint8_t *data, size_t len)
+{
+   size_t i;
+   char *ret=malloc(len*2+1);
+   
+   for (i = 0; i < len; i++)
+   {
+      snprintf(ret+i*2, 3, "%02X", data[i]);
+   }
+   return ret;
+}
+
 database_info_list_t *database_info_list_new(const char *rdb_path, const char *query)
 {
    libretrodb_t db;
    libretrodb_cursor_t cur;
    struct rmsgpack_dom_value item;
-   size_t i = 0, j;
+   size_t j;
+   unsigned k = 0;
    database_info_t *database_info = NULL;
    database_info_list_t *database_info_list = NULL;
 
@@ -142,12 +155,15 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
       if (item.type != RDT_MAP)
          continue;
 
-      database_info = (database_info_t*)realloc(database_info, (i+1) * sizeof(database_info_t));
+      database_info = (database_info_t*)realloc(database_info, (k+1) * sizeof(database_info_t));
 
       if (!database_info)
          goto error;
 
-      db_info = &database_info[i];
+      db_info = &database_info[k];
+
+      if (!db_info)
+         continue;
 
       db_info->name                   = NULL;
       db_info->description            = NULL;
@@ -243,52 +259,17 @@ database_info_list_t *database_info_list_new(const char *rdb_path, const char *q
             db_info->analog_supported = val->uint_;
 
          if (!strcmp(key->string.buff, "crc"))
-         {
-            size_t i;
-            char crc32[PATH_MAX_LENGTH];
-
-            for (i = 0; i < val->binary.len; i++)
-            {
-               char crc32_cat[PATH_MAX_LENGTH];
-               snprintf(crc32_cat, sizeof(crc32_cat), "%02X", (unsigned char)val->binary.buff[i]);
-               strlcat(crc32, crc32_cat, sizeof(crc32));
-            }
-            db_info->crc32 = strdup(crc32);
-         }
-
+            db_info->crc32 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
          if (!strcmp(key->string.buff, "sha1"))
-         {
-            size_t i;
-            char sha1[PATH_MAX_LENGTH];
-
-            for (i = 0; i < val->binary.len; i++)
-            {
-               char sha1_cat[PATH_MAX_LENGTH];
-               snprintf(sha1_cat, sizeof(sha1_cat), "%02X", (unsigned char)val->binary.buff[i]);
-               strlcat(sha1, sha1_cat, sizeof(sha1));
-            }
-            db_info->sha1 = strdup(sha1);
-         }
-
+            db_info->sha1 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
          if (!strcmp(key->string.buff, "md5"))
-         {
-            size_t i;
-            char md5[PATH_MAX_LENGTH];
-
-            for (i = 0; i < val->binary.len; i++)
-            {
-               char md5_cat[PATH_MAX_LENGTH];
-               snprintf(md5_cat, sizeof(md5_cat), "%02X", (unsigned char)val->binary.buff[i]);
-               strlcat(md5, md5_cat, sizeof(md5));
-            }
-            db_info->md5 = strdup(md5);
-         }
+            db_info->md5 = bin_to_hex_alloc((uint8_t*)val->binary.buff, val->binary.len);
       }
-      i++;
+      k++;
    }
 
    database_info_list->list  = database_info;
-   database_info_list->count = i;
+   database_info_list->count = k;
 
    return database_info_list;
 

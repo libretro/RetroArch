@@ -24,11 +24,7 @@
 #include <ctype.h>
 #include <boolean.h>
 #include "../../general.h"
-#include "menu_navigation.h"
-#include "../../core_info.h"
-#include "../../playlist.h"
 #include "menu_input.h"
-#include "../gfx/video_shader_driver.h"
 
 #ifndef GFX_MAX_SHADERS
 #define GFX_MAX_SHADERS 16
@@ -176,20 +172,6 @@ int menu_iterate(retro_input_t input,
  * Frees a menu handle
  **/
 void menu_free(void *data);
-
-/**
- * menu_ticker_line:
- * @buf                      : buffer to write new message line to.
- * @len                      : length of buffer @input.
- * @idx                      : Index. Will be used for ticker logic.
- * @str                      : Input string.
- * @selected                 : Is the item currently selected in the menu?
- *
- * Take the contents of @str and apply a ticker effect to it,
- * and write the results in @buf.
- **/
-void menu_ticker_line(char *buf, size_t len, unsigned tick,
-      const char *str, bool selected);
 
 /**
  * menu_load_content:
