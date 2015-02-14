@@ -14,11 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "menu_action.h"
+#include "menu_setting.h"
 #include "menu_entries.h"
 #include "../retroarch.h"
 
-int menu_action_generic_setting(rarch_setting_t *setting)
+int menu_setting_generic(rarch_setting_t *setting)
 {
    if (!setting)
       return -1;
@@ -39,9 +39,7 @@ int menu_action_generic_setting(rarch_setting_t *setting)
    return 0;
 }
 
-static void process_setting_handler(
-      rarch_setting_t *setting,
-      unsigned action)
+static void setting_handler(rarch_setting_t *setting, unsigned action)
 {
    if (!setting)
       return;
@@ -73,11 +71,11 @@ static void process_setting_handler(
    }
 }
 
-int menu_action_setting_handler(rarch_setting_t *setting, unsigned action)
+int menu_setting_handler(rarch_setting_t *setting, unsigned action)
 {
-   process_setting_handler(setting, action);
+   setting_handler(setting, action);
 
-   return menu_action_generic_setting(setting);
+   return menu_setting_generic(setting);
 }
 
 static int menu_action_handle_setting(rarch_setting_t *setting,
@@ -105,24 +103,24 @@ static int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_DIR:
       case ST_BIND:
       case ST_ACTION:
-         process_setting_handler(setting, action);
+         setting_handler(setting, action);
          break;
       default:
          break;
    }
 
-   return menu_action_generic_setting(setting);
+   return menu_setting_generic(setting);
 }
 
-rarch_setting_t *menu_action_find_setting(const char *label)
+rarch_setting_t *menu_setting_find(const char *label)
 {
    return (rarch_setting_t*)setting_data_find_setting(
          driver.menu->list_settings, label);
 }
 
-int menu_action_setting_set(unsigned type, const char *label, unsigned action)
+int menu_setting_set(unsigned type, const char *label, unsigned action)
 {
-   rarch_setting_t *setting = menu_action_find_setting(
+   rarch_setting_t *setting = menu_setting_find(
          driver.menu->menu_list->selection_buf->list
          [driver.menu->navigation.selection_ptr].label);
 

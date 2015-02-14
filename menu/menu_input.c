@@ -24,7 +24,7 @@
 #include <string.h>
 #include "menu_input.h"
 #include "menu.h"
-#include "menu_action.h"
+#include "menu_setting.h"
 #include "menu_shader.h"
 #include "menu_navigation.h"
 #include "../cheats.h"
