@@ -103,4 +103,6 @@ const shader_backend_t *shader_ctx_find_driver(const char *ident);
  **/
 const shader_backend_t *shader_ctx_init_first(void);
 
+struct video_shader *video_shader_driver_get_current_shader(void);
+
 #endif

@@ -68,3 +68,14 @@ const shader_backend_t *shader_ctx_init_first(void)
 
    return NULL;
 }
+
+struct video_shader *video_shader_driver_get_current_shader(void)
+{
+   if (!driver.video_poke)
+      return NULL;
+   if (!driver.video_data)
+      return NULL;
+   if (!driver.video_poke->get_current_shader)
+      return NULL;
+   return driver.video_poke->get_current_shader(driver.video_data);
+}

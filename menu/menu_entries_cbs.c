@@ -1934,11 +1934,8 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader = NULL;
    struct video_shader_parameter *param = NULL;
-
-   if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
-      shader = driver.video_poke->get_current_shader(driver.video_data);
+   struct video_shader *shader = video_shader_driver_get_current_shader();
 
    if (!shader)
       return 0;
@@ -1976,11 +1973,8 @@ static int shader_action_parameter_toggle(unsigned type, const char *label,
       unsigned action)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader = NULL;
    struct video_shader_parameter *param = NULL;
-
-   if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
-      shader = driver.video_poke->get_current_shader(driver.video_data);
+   struct video_shader *shader = video_shader_driver_get_current_shader();
 
    if (!shader)
       return 0;
@@ -2992,9 +2986,8 @@ static inline struct video_shader *shader_manager_get_current_shader(const char 
 
    if (!strcmp(label, "video_shader_preset_parameters"))
       return menu->shader;
-   else if (!strcmp(label, "video_shader_parameters") &&
-         driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
-      return driver.video_poke->get_current_shader(driver.video_data);
+   else if (!strcmp(label, "video_shader_parameters"))
+      return video_shader_driver_get_current_shader();
    return NULL;
 }
 
@@ -3041,10 +3034,7 @@ static int deferred_push_video_shader_preset_parameters(void *data, void *userda
 static int deferred_push_video_shader_parameters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   struct video_shader *shader = NULL;
-   if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
-      shader = driver.video_poke->get_current_shader(driver.video_data);
-
+   struct video_shader *shader = video_shader_driver_get_current_shader();
    if (!shader)
       return 0;
 
@@ -4708,10 +4698,7 @@ static void menu_action_setting_disp_set_label_shader_parameter(
    strlcpy(path_buf, path, path_buf_size);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   if (!driver.video_poke->get_current_shader)
-      return;
-
-   shader = driver.video_poke->get_current_shader(driver.video_data);
+   shader = video_shader_driver_get_current_shader();
 
    if (!shader)
       return;
