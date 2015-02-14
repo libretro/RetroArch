@@ -78,3 +78,6 @@ apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
 
 apple/iOS/build/
 apple/iOS/modules/
+
+obj-unix/
+.vagrant/

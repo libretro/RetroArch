@@ -1,0 +1,4 @@
+test:
+  override:
+    - xcodebuild -target RetroArch_OSX -configuration Debug -project apple/RetroArch_OSX.xcodeproj
+    - xcodebuild -target RetroArch_OSX -configuration Release -project apple/RetroArch_OSX.xcodeproj
