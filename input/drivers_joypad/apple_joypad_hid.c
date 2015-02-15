@@ -225,31 +225,53 @@ static void append_matching_dictionary(CFMutableArrayRef array,
    CFRelease(matcher);
 }
 
+static bool apple_hid_init(void)
+{
+    CFMutableArrayRef matcher;
+    
+    if (!(g_hid_manager = IOHIDManagerCreate(
+        kCFAllocatorDefault, kIOHIDOptionsTypeNone)))
+        return false;
+    
+    matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0,
+                                   &kCFTypeArrayCallBacks);
+    
+    append_matching_dictionary(matcher, kHIDPage_GenericDesktop,
+                               kHIDUsage_GD_Joystick);
+    append_matching_dictionary(matcher, kHIDPage_GenericDesktop,
+                               kHIDUsage_GD_GamePad);
+    
+    IOHIDManagerSetDeviceMatchingMultiple(g_hid_manager, matcher);
+    CFRelease(matcher);
+    
+    IOHIDManagerRegisterDeviceMatchingCallback(g_hid_manager,
+                                               add_device, 0);
+    IOHIDManagerScheduleWithRunLoop(g_hid_manager, CFRunLoopGetMain(),
+                                    kCFRunLoopCommonModes);
+    
+    IOHIDManagerOpen(g_hid_manager, kIOHIDOptionsTypeNone);
+    
+    return true;
+}
+
+static void apple_hid_free(void)
+{
+    if (!g_hid_manager)
+        return;
+    
+    IOHIDManagerClose(g_hid_manager, kIOHIDOptionsTypeNone);
+    IOHIDManagerUnscheduleFromRunLoop(g_hid_manager,
+                                      CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
+    
+    CFRelease(g_hid_manager);
+    
+    g_hid_manager = NULL;
+}
+
 static bool apple_joypad_init(void)
 {
-   CFMutableArrayRef matcher;
-
-   if (!(g_hid_manager = IOHIDManagerCreate(
-         kCFAllocatorDefault, kIOHIDOptionsTypeNone)))
-      return false;
-
-   matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0,
-         &kCFTypeArrayCallBacks);
-
-   append_matching_dictionary(matcher, kHIDPage_GenericDesktop,
-         kHIDUsage_GD_Joystick);
-   append_matching_dictionary(matcher, kHIDPage_GenericDesktop,
-         kHIDUsage_GD_GamePad);
-
-   IOHIDManagerSetDeviceMatchingMultiple(g_hid_manager, matcher);
-   CFRelease(matcher);
-
-   IOHIDManagerRegisterDeviceMatchingCallback(g_hid_manager,
-         add_device, 0);
-   IOHIDManagerScheduleWithRunLoop(g_hid_manager, CFRunLoopGetMain(),
-         kCFRunLoopCommonModes);
-
-   IOHIDManagerOpen(g_hid_manager, kIOHIDOptionsTypeNone);
+   if (!apple_hid_init())
+       return false;
     
    slots = (joypad_connection_t*)pad_connection_init(MAX_USERS);
 
@@ -261,24 +283,10 @@ static bool apple_joypad_query_pad(unsigned pad)
    return pad < MAX_USERS;
 }
 
-static void apple_joypad_hid_destroy(void)
-{
-   if (!g_hid_manager)
-      return;
-
-   IOHIDManagerClose(g_hid_manager, kIOHIDOptionsTypeNone);
-   IOHIDManagerUnscheduleFromRunLoop(g_hid_manager,
-         CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
-
-   CFRelease(g_hid_manager);
-
-   g_hid_manager = NULL;
-}
-
 static void apple_joypad_destroy(void)
 {
    pad_connection_destroy(slots);
-   apple_joypad_hid_destroy();
+   apple_hid_free();
 }
 
 static bool apple_joypad_button(unsigned port, uint16_t joykey)
