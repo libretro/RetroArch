@@ -97,9 +97,9 @@ bool write_file(const char *path, const void *data, size_t size)
  *
  * Returns: number of items read, -1 on error.
  */
-static long read_generic_file(const char *path, void **buf)
+static bool read_generic_file(const char *path, void **buf, size_t *len)
 {
-   long rc = 0, len = 0;
+   long ret = 0, _len = 0;
    void *rom_buf = NULL;
 
    FILE *file = fopen(path, "rb");
@@ -108,25 +108,33 @@ static long read_generic_file(const char *path, void **buf)
       goto error;
 
    fseek(file, 0, SEEK_END);
-   len = ftell(file);
+
+   _len     = ftell(file);
+
    rewind(file);
-   rom_buf = malloc(len + 1);
+
+   rom_buf = malloc(_len + 1);
+
    if (!rom_buf)
    {
       RARCH_ERR("Couldn't allocate memory.\n");
       goto error;
    }
 
-   if ((rc = fread(rom_buf, 1, len, file)) < len)
+   if ((ret = fread(rom_buf, 1, _len, file)) < _len)
       RARCH_WARN("Didn't read whole file.\n");
 
-   *buf = rom_buf;
+   *buf    = rom_buf;
 
    /* Allow for easy reading of strings to be safe.
     * Will only work with sane character formatting (Unix). */
-   ((char*)rom_buf)[len] = '\0';
+   ((char*)rom_buf)[_len] = '\0';
    fclose(file);
-   return rc;
+
+   if (len)
+      *len = ret;
+
+   return true;
 
 error:
    if (file)
@@ -134,7 +142,7 @@ error:
    if (rom_buf)
       free(rom_buf);
    *buf = NULL;
-   return -1;
+   return false;
 }
 
 #ifdef HAVE_COMPRESSION
@@ -217,5 +225,8 @@ long read_file(const char *path, void **buf)
    if (path_contains_compressed_file(path))
       return read_compressed_file(path,buf,0);
 #endif
-   return read_generic_file(path,buf);
+   size_t length = 0;
+   if (!read_generic_file(path, buf, &length))
+      return 0;
+   return length;
 }
