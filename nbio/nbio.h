@@ -3,9 +3,9 @@
 
 enum nbio_mode_t {
 	/* The comments tell which mode in fopen() it corresponds to. */
-	nbio_read,   /* rb */
-	nbio_write,  /* wb */
-	nbio_update, /* r+b */
+	NBIO_READ = 0,/* rb */
+	NBIO_WRITE,   /* wb */
+	NBIO_UPDATE,  /* r+b */
 };
 struct nbio_t;
 
@@ -33,14 +33,14 @@ void nbio_begin_write(struct nbio_t* handle);
 bool nbio_iterate(struct nbio_t* handle, size_t* progress, size_t* len);
 
 /*
- * Resizes the file to the given size.
+ * Resizes the file up to the given size; cannot shrink.
  * Can not be done if the structure was created with nbio_read.
  */
 void nbio_resize(struct nbio_t* handle, size_t len);
 
 /*
  * Returns a pointer to the file data. Writable only if structure was not created with nbio_read.
- * Can not be done while any operation is in progress.
+ * If any operation is in progress, the pointer will be NULL, but len will still be correct.
  */
 void* nbio_get_ptr(struct nbio_t* handle, size_t* len);
 
