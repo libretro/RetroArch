@@ -138,6 +138,8 @@ void* nbio_get_ptr(struct nbio_t* handle, size_t* len)
 
 void nbio_free(struct nbio_t* handle)
 {
+   if (!handle)
+      return;
    fclose(handle->f);
    free(handle->data);
 }
