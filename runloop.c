@@ -729,7 +729,7 @@ static void limit_frame_time(void)
  *
  * Checks if 'hotkey enable' key is pressed.
  **/
-static void check_block_hotkey(bool enable_hotkey)
+static bool check_block_hotkey(bool enable_hotkey)
 {
    bool use_hotkey_enable;
    static const struct retro_keybind *bind = 
@@ -754,7 +754,7 @@ static void check_block_hotkey(bool enable_hotkey)
 
    /* If we hold ENABLE_HOTKEY button, block all libretro input to allow 
     * hotkeys to be bound to same keys as RetroPad. */
-   driver.block_libretro_input = use_hotkey_enable && enable_hotkey;
+   return (use_hotkey_enable && enable_hotkey);
 }
 
 /**
@@ -797,7 +797,8 @@ static inline retro_input_t input_keys_pressed(void)
 
    g_extern.turbo_count++;
 
-   check_block_hotkey(driver.input->key_pressed(driver.input_data,
+   driver.block_libretro_input = check_block_hotkey(
+         driver.input->key_pressed(driver.input_data,
             RARCH_ENABLE_HOTKEY));
 
    for (i = 0; i < g_settings.input.max_users; i++)
