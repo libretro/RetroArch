@@ -23,6 +23,7 @@ static int find_vacant_pad(joypad_connection_t *joyconn)
    for (i = 0; i < MAX_USERS; i++)
    {
       joypad_connection_t *conn = (joypad_connection_t*)&joyconn[i];
+
       if (conn && !conn->connected)
          return i;
    }
@@ -43,6 +44,9 @@ void *pad_connection_init(unsigned pads)
    {
       joypad_connection_t *conn = (joypad_connection_t*)&joyconn[i];
 
+      if (!conn)
+         continue;
+
       conn->connected = false;
       conn->iface     = NULL;
       conn->is_gcapi  = false;
@@ -61,9 +65,6 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    {
       unsigned i;
       joypad_connection_t* s = (joypad_connection_t*)&joyconn[pad];
-
-      s->connected  = true;
-
       static const struct
       {
          const char* name;
@@ -79,12 +80,18 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
          { 0, 0}
       };
 
-      for (i = 0; name && pad_map[i].name; i++)
-         if (strstr(name, pad_map[i].name))
+      if (s)
+      {
+         for (i = 0; name && pad_map[i].name; i++)
          {
-            s->iface = pad_map[i].iface;
-            s->data = s->iface->init(data, pad, ptr);
+            if (!strstr(name, pad_map[i].name))
+               continue;
+
+            s->iface      = pad_map[i].iface;
+            s->data       = s->iface->init(data, pad, ptr);
+            s->connected  = true;
          }
+      }
    }
 
    return pad;
@@ -117,6 +124,7 @@ void pad_connection_pad_deinit(joypad_connection_t *s, uint32_t pad)
    {
       s->iface->set_rumble(s->data, RETRO_RUMBLE_STRONG, 0);
       s->iface->set_rumble(s->data, RETRO_RUMBLE_WEAK, 0);
+
       if (s->iface->deinit)
          s->iface->deinit(s->data);
    }
@@ -131,7 +139,6 @@ void pad_connection_packet(joypad_connection_t *s, uint32_t pad,
 {
    if (!s->connected)
        return;
-    
    if (s->iface && s->data && s->iface->packet_handler)
       s->iface->packet_handler(s->data, data, length);
 }
