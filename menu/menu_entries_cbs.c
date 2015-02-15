@@ -5078,19 +5078,6 @@ static void menu_action_setting_disp_set_label_menu_file_shader(
          path, "(SHADER)", path_buf, path_buf_size);
 }
 
-static void menu_action_setting_disp_set_label_menu_file_subgroup(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *type_str, size_t type_str_size,
-      const char *entry_label,
-      const char *path,
-      char *path_buf, size_t path_buf_size)
-{
-   menu_action_setting_generic_disp_set_label(w, type_str, type_str_size,
-         path, NULL, path_buf, path_buf_size);
-}
-
 static void menu_action_setting_disp_set_label_menu_file_shader_preset(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -5845,12 +5832,10 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
                menu_action_setting_disp_set_label_menu_file_cheat;
             break;
          case MENU_SETTING_SUBGROUP:
-            cbs->action_get_representation = 
-               menu_action_setting_disp_set_label_menu_file_subgroup;
-            break;
          case MENU_SETTINGS_CUSTOM_VIEWPORT:
          case MENU_SETTINGS_CUSTOM_BIND_ALL:
          case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
+         case MENU_SETTING_ACTION:
             cbs->action_get_representation = 
                menu_action_setting_disp_set_label_menu_more;
             break;
