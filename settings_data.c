@@ -3488,7 +3488,37 @@ static bool setting_data_append_list_general_options(
    rarch_setting_group_info_t subgroup_info;
 
    START_GROUP(group_info, "General Settings");
+
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(
+         g_settings.load_dummy_on_core_shutdown,
+         "dummy_on_core_shutdown",
+         "Dummy On Core Shutdown",
+         load_dummy_on_core_shutdown,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+   CONFIG_BOOL(
+         g_settings.core_specific_config,
+         "core_specific_config",
+         "Configuration Per-Core",
+         default_core_specific_config,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
+
+   END_SUB_GROUP(list, list_info);
+
+   START_SUB_GROUP(list, list_info, "Logging", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
          g_extern.verbosity,
@@ -3515,6 +3545,10 @@ static bool setting_data_append_list_general_options(
    (*list)[list_info->index - 1].get_string_representation = 
       &setting_data_get_string_representation_uint_libretro_log_level;
 
+   END_SUB_GROUP(list, list_info);
+
+   START_SUB_GROUP(list, list_info, "Performance Counters", group_info.name, subgroup_info);
+
    CONFIG_BOOL(g_extern.perfcnt_enable,
          "perfcnt_enable",
          "Performance Counters",
@@ -3537,40 +3571,9 @@ static bool setting_data_append_list_general_options(
          general_write_handler,
          general_read_handler);
 
-   CONFIG_BOOL(
-         g_settings.core_specific_config,
-         "core_specific_config",
-         "Configuration Per-Core",
-         default_core_specific_config,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
+   END_SUB_GROUP(list, list_info);
 
-   CONFIG_BOOL(
-         g_settings.load_dummy_on_core_shutdown,
-         "dummy_on_core_shutdown",
-         "Dummy On Core Shutdown",
-         load_dummy_on_core_shutdown,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-
-   CONFIG_BOOL(g_settings.fps_show,
-         "fps_show",
-         "Show Framerate",
-         fps_show,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
+   START_SUB_GROUP(list, list_info, "Frame rewinding", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
          g_settings.rewind_enable,
@@ -3607,6 +3610,20 @@ static bool setting_data_append_list_general_options(
             general_read_handler);
    settings_list_current_add_range(list, list_info, 1, 32768, 1, true, false);
 
+   END_SUB_GROUP(list, list_info);
+
+   START_SUB_GROUP(list, list_info, "Saving", group_info.name, subgroup_info);
+
+   CONFIG_INT(
+         g_settings.state_slot,
+         "state_slot",
+         "State Slot",
+         0,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+
    CONFIG_BOOL(
          g_settings.block_sram_overwrite,
          "block_sram_overwrite",
@@ -3635,42 +3652,6 @@ static bool setting_data_append_list_general_options(
    (*list)[list_info->index - 1].get_string_representation = 
       &setting_data_get_string_representation_uint_autosave_interval;
 #endif
-
-   CONFIG_BOOL(
-         g_settings.fastforward_ratio_throttle_enable,
-         "fastforward_ratio_throttle_enable",
-         "Limit Maximum Run Speed",
-         fastforward_ratio_throttle_enable,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-
-   CONFIG_FLOAT(
-         g_settings.fastforward_ratio,
-         "fastforward_ratio",
-         "Maximum Run Speed",
-         fastforward_ratio,
-         "%.1fx",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-   settings_list_current_add_range(list, list_info, 1, 10, 0.1, true, true);
-
-   CONFIG_FLOAT(
-         g_settings.slowmotion_ratio,
-         "slowmotion_ratio",
-         "Slow-Motion Ratio",
-         slowmotion_ratio,
-         "%.1fx",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-   settings_list_current_add_range(list, list_info, 1, 10, 1.0, true, true);
 
    CONFIG_BOOL(
          g_settings.savestate_auto_index,
@@ -3708,17 +3689,49 @@ static bool setting_data_append_list_general_options(
          general_write_handler,
          general_read_handler);
 
-   CONFIG_INT(
-         g_settings.state_slot,
-         "state_slot",
-         "State Slot",
-         0,
+
+   END_SUB_GROUP(list, list_info);
+
+   START_SUB_GROUP(list, list_info, "Frame throttling", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(
+         g_settings.fastforward_ratio_throttle_enable,
+         "fastforward_ratio_throttle_enable",
+         "Limit Maximum Run Speed",
+         fastforward_ratio_throttle_enable,
+         "OFF",
+         "ON",
          group_info.name,
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
 
+   CONFIG_FLOAT(
+         g_settings.fastforward_ratio,
+         "fastforward_ratio",
+         "Maximum Run Speed",
+         fastforward_ratio,
+         "%.1fx",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_list_current_add_range(list, list_info, 1, 10, 0.1, true, true);
+
+   CONFIG_FLOAT(
+         g_settings.slowmotion_ratio,
+         "slowmotion_ratio",
+         "Slow-Motion Ratio",
+         slowmotion_ratio,
+         "%.1fx",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_list_current_add_range(list, list_info, 1, 10, 1.0, true, true);
+
    END_SUB_GROUP(list, list_info);
+
    END_GROUP(list, list_info);
 
    return true;
@@ -3733,6 +3746,17 @@ static bool setting_data_append_list_video_options(
 
    START_GROUP(group_info, "Video Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
+
+   CONFIG_BOOL(g_settings.fps_show,
+         "fps_show",
+         "Show Framerate",
+         fps_show,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 
    CONFIG_BOOL(
          g_settings.video.shared_context,
