@@ -65,35 +65,35 @@ static void video_frame_scale(const void *data,
    RARCH_PERFORMANCE_STOP(video_frame_conv);
 }
 
-static void video_frame_filter(const void *data,
+static bool video_frame_filter(const void *data,
       unsigned width, unsigned height,
-      size_t pitch)
+      size_t pitch,
+      unsigned *output_width, unsigned *output_height,
+      unsigned *output_pitch)
 {
    RARCH_PERFORMANCE_INIT(softfilter_process);
-   unsigned owidth  = 0, oheight = 0, opitch = 0;
 
+   if (!g_extern.filter.filter)
+      return false;
    if (!data)
-      return;
+      return false;
 
    rarch_softfilter_get_output_size(g_extern.filter.filter,
-         &owidth, &oheight, width, height);
+         output_width, output_height, width, height);
 
-   opitch = owidth * g_extern.filter.out_bpp;
+   *output_pitch = (*output_width) * g_extern.filter.out_bpp;
 
    RARCH_PERFORMANCE_START(softfilter_process);
    rarch_softfilter_process(g_extern.filter.filter,
-         g_extern.filter.buffer, opitch,
+         g_extern.filter.buffer, *output_pitch,
          data, width, height, pitch);
    RARCH_PERFORMANCE_STOP(softfilter_process);
 
    if (g_settings.video.post_filter_record)
       recording_dump_frame(g_extern.filter.buffer,
-            owidth, oheight, opitch);
+            *output_width, *output_height, *output_pitch);
 
-   data   = g_extern.filter.buffer;
-   width  = owidth;
-   height = oheight;
-   pitch  = opitch;
+   return true;
 }
 
 /**
@@ -108,6 +108,7 @@ static void video_frame_filter(const void *data,
 static void video_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
+   unsigned output_width  = 0, output_height = 0, output_pitch = 0;
    const char *msg = NULL;
 
    if (!driver.video_active)
@@ -134,8 +135,14 @@ static void video_frame(const void *data, unsigned width,
    msg                = msg_queue_pull(g_extern.msg_queue);
    driver.current_msg = msg;
 
-   if (g_extern.filter.filter)
-      video_frame_filter(data, width, height, pitch);
+   if (video_frame_filter(data, width, height, pitch,
+            &output_width, &output_height, &output_pitch))
+   {
+      data   = g_extern.filter.buffer;
+      width  = output_width;
+      height = output_height;
+      pitch  = output_pitch;
+   }
 
    if (!driver.video->frame(driver.video_data, data, width, height, pitch, msg))
       driver.video_active = false;
