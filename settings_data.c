@@ -5872,7 +5872,6 @@ static bool setting_data_append_list_path_options(
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
-#if defined(HAVE_DYLIB) && defined(HAVE_SHADER_MANAGER)
    CONFIG_DIR(
          g_settings.video.shader_dir,
          "video_shader_dir",
@@ -5887,7 +5886,6 @@ static bool setting_data_append_list_path_options(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
-#endif
 
 #ifdef HAVE_OVERLAY
    CONFIG_DIR(
@@ -5920,21 +5918,6 @@ static bool setting_data_append_list_path_options(
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 #endif
-
-   CONFIG_DIR(
-         g_settings.resampler_directory,
-         "resampler_directory",
-         "Resampler Directory",
-         "",
-         "<Content dir>",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(
-         list,
-         list_info,
-         SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
          g_settings.screenshot_directory,
