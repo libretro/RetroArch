@@ -4274,21 +4274,6 @@ static bool setting_data_append_list_video_options(
          general_write_handler,
          general_read_handler);
 
-#ifndef HAVE_FILTERS_BUILTIN
-   CONFIG_PATH(
-         g_settings.video.softfilter_plugin,
-         "video_filter",
-         "Software filter",
-         g_settings.video.filter_dir,
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-   settings_list_current_add_values(list, list_info, "filt");
-   settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
-#endif
-
 #if defined(_XBOX1) || defined(HW_RVL)
    CONFIG_BOOL(
          g_extern.console.softfilter_enable,

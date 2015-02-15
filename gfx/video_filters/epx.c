@@ -15,6 +15,7 @@
  */
 
 #include "softfilter.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 #ifdef RARCH_INTERNAL
@@ -75,7 +76,7 @@ static void *epx_generic_create(const struct softfilter_config *config,
       return NULL;
    filt->workers = (struct softfilter_thread_data*)
       calloc(threads, sizeof(struct softfilter_thread_data));
-   filt->threads = threads;
+   filt->threads = 1;
    filt->in_fmt  = in_fmt;
    if (!filt->workers)
    {
@@ -104,14 +105,18 @@ static void epx_generic_destroy(void *data)
    free(filt);
 }
 
-static void EPX_16 (int width, int height,
+static void EPX_16(int width, int height,
       int first, int last,
-      uint16_t *src, int src_stride, uint16_t *dst, int dst_stride)
+      uint16_t *src, unsigned src_stride, uint16_t *dst,
+      unsigned dst_stride)
 {
 	uint16_t	colorX, colorA, colorB, colorC, colorD;
-	uint16_t	*sP, *uP, *lP;
-	uint32_t	*dP1, *dP2;
+	uint16_t	*sP = NULL, *uP = NULL, *lP = NULL;
+	uint32_t	*dP1 = NULL, *dP2 = NULL;
 	int		w, prevline;
+
+   if (!src || !dst)
+      return;
 
    prevline = (first) ? 0 : src_stride;
 
@@ -125,9 +130,9 @@ static void EPX_16 (int width, int height,
 	/* top edge */
 
 	sP  = (uint16_t *)(src - prevline);
-	lP  = (uint16_t *) (src + src_stride);
-	dP1 = (uint32_t *) dst;
-	dP2 = (uint32_t *) (dst + dst_stride);
+	lP  = (uint16_t *)(src + src_stride);
+	dP1 = (uint32_t *)(dst);
+	dP2 = (uint32_t *)(dst + dst_stride);
 
 	// left edge
 

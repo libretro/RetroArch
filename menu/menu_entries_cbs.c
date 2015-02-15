@@ -455,13 +455,6 @@ static int action_ok_cheat_file(const char *path,
    if (!menu)
       return -1;
 
-   if (!path_file_exists(g_settings.cheat_database))
-   {
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, "Cheat Directory doesn't exist or cannot be accessed.\n", 1, 180);
-      return -1;
-   }
-
    return menu_list_push_stack_refresh(
          menu->menu_list,
          g_settings.cheat_database,
@@ -471,25 +464,21 @@ static int action_ok_cheat_file(const char *path,
 static int action_ok_audio_dsp_plugin(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   if (!path_file_exists(path))
-   {
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, "Audio Filter Directory doesn't exist or cannot be accessed.\n", 1, 180);
-      return -1;
-   }
    return 0;
 }
 
 static int action_ok_video_filter(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   if (!path_file_exists(path))
-   {
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, "Video Filter Directory doesn't exist or cannot be accessed.\n", 1, 180);
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
       return -1;
-   }
-   return 0;
+
+   return menu_list_push_stack_refresh(
+         menu->menu_list,
+         g_settings.video.filter_dir,
+         "deferred_video_filter",
+         0, idx);
 }
 
 static int action_ok_remap_file(const char *path,
@@ -499,12 +488,6 @@ static int action_ok_remap_file(const char *path,
    if (!menu)
       return -1;
 
-   if (!path_file_exists(g_settings.input_remapping_directory))
-   {
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, "Remapping Directory doesn't exist or cannot be accessed.\n", 1, 180);
-      return -1;
-   }
    return menu_list_push_stack_refresh(
          menu->menu_list,
          g_settings.input_remapping_directory,
@@ -518,12 +501,6 @@ static int action_ok_core_list(const char *path,
    if (!menu)
       return -1;
 
-   if (!path_file_exists(g_settings.libretro_directory))
-   {
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, "Core Directory doesn't exist or cannot be accessed.\n", 1, 180);
-      return -1;
-   }
    return menu_list_push_stack_refresh(
          menu->menu_list,
          g_settings.libretro_directory,
@@ -549,6 +526,33 @@ static int action_ok_remap_file_load(const char *path,
    input_remapping_load_file(remap_path);
 
    menu_list_flush_stack_by_needle(menu->menu_list, "core_input_remapping_options");
+
+   return 0;
+}
+
+static int action_ok_video_filter_file_load(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   const char *menu_path = NULL;
+   char filter_path[PATH_MAX_LENGTH];
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
+   (void)filter_path;
+   (void)menu_path;
+
+   menu_list_get_last_stack(menu->menu_list, &menu_path, NULL,
+         NULL);
+
+   fill_pathname_join(filter_path, menu_path, path, sizeof(filter_path));
+
+   strlcpy(g_settings.video.softfilter_plugin, filter_path,
+         sizeof(g_settings.video.softfilter_plugin));
+
+   rarch_main_command(RARCH_CMD_REINIT);
+
+   menu_list_flush_stack_by_needle(menu->menu_list, "video_options");
 
    return 0;
 }
@@ -1358,14 +1362,6 @@ static int action_ok_database_manager_list(const char *path,
    fill_pathname_join(rdb_path, g_settings.content_database,
          path, sizeof(rdb_path));
 
-   if (!path_file_exists(rdb_path))
-   {
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue,
-            "Database Directory doesn't exist or cannot be accessed.\n",
-            1, 180);
-      return -1;
-   }
    return menu_list_push_stack_refresh(
          menu->menu_list,
          rdb_path,
@@ -1385,14 +1381,6 @@ static int action_ok_cursor_manager_list(const char *path,
    fill_pathname_join(cursor_path, g_settings.cursor_directory,
          path, sizeof(cursor_path));
 
-   if (!path_file_exists(cursor_path))
-   {
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue,
-            "Cursor Directory doesn't exist or cannot be accessed.\n",
-            1, 180);
-      return -1;
-   }
    return menu_list_push_stack_refresh(
          menu->menu_list,
          cursor_path,
@@ -3228,6 +3216,10 @@ static int deferred_push_video_options(void *data, void *userdata,
 #endif
    menu_list_push(list, "Custom Ratio", "",
          MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
+#ifndef HAVE_FILTERS_BUILTIN
+   menu_list_push(list, "Video Filter", "video_filter",
+         0, 0);
+#endif
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(path, label, type);
@@ -5580,8 +5572,10 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       case MENU_FILE_FONT:
       case MENU_FILE_OVERLAY:
       case MENU_FILE_AUDIOFILTER:
-      case MENU_FILE_VIDEOFILTER:
          cbs->action_ok = action_ok_set_path;
+         break;
+      case MENU_FILE_VIDEOFILTER:
+         cbs->action_ok = action_ok_video_filter_file_load;
          break;
 #ifdef HAVE_COMPRESSION
       case MENU_FILE_IN_CARCHIVE:
@@ -5933,6 +5927,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_category;
    else if (!strcmp(label, "deferred_core_list"))
       cbs->action_deferred_push = deferred_push_core_list_deferred;
+   else if (!strcmp(label, "deferred_video_filter"))
+      cbs->action_deferred_push = deferred_push_video_filter;
    else if (!strcmp(label, "deferred_database_manager_list"))
       cbs->action_deferred_push = deferred_push_database_manager_list_deferred;
    else if (!strcmp(label, "deferred_cursor_manager_list"))
