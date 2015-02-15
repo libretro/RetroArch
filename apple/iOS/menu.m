@@ -687,7 +687,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
            [RAMenuItemGeneralSetting
                        itemForSetting:setting
                                action:^{
-               menu->selection_ptr = i;
+               menu->navigation.selection_ptr = i;
                if (cbs && cbs->action_ok)
                  cbs->action_ok(path, entry_label, type, i);
              }]];
@@ -699,7 +699,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
            [RAMenuItemBasic
                        itemWithDescription:BOXSTRING(path_buf)
                                     action:^{                       
-               menu->selection_ptr = i;
+               menu->navigation.selection_ptr = i;
                if (cbs && cbs->action_ok)
                  cbs->action_ok(path, entry_label, type, i);
                else
