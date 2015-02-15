@@ -45,7 +45,7 @@ struct nbio_t* nbio_open(const char * filename, enum nbio_mode_t mode)
 
 	handle->data = malloc(handle->len);
 
-   if (!handle->data)
+   if (handle->len && !handle->data)
    {
       free(handle);
       fclose(f);
