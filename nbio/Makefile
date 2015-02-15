@@ -3,7 +3,7 @@ TARGET := nbio_test
 SOURCES := $(wildcard *.c)
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -I../../include
+CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -I../libretro-sdk/include
 
 all: $(TARGET)
 

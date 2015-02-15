@@ -1,5 +1,5 @@
-#include <stddef.h> /* size_t */
-#include <stdbool.h> /* bool */
+#include <stddef.h>
+#include <boolean.h>
 
 enum nbio_mode_t {
 	/* The comments tell which mode in fopen() it corresponds to. */
