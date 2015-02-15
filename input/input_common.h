@@ -25,8 +25,6 @@ extern "C" {
 #include <stdint.h>
 #include "../driver.h"
 
-typedef uint64_t retro_input_t ;
-
 /* Input config. */
 struct input_bind_map
 {

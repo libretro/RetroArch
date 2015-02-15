@@ -33,6 +33,8 @@
 extern "C" {
 #endif
 
+typedef uint64_t retro_input_t ;
+
 struct retro_keybind
 {
    bool valid;
@@ -132,6 +134,8 @@ void find_input_driver(void);
  **/
 bool input_driver_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
+
+retro_input_t input_driver_keys_pressed(void);
 
 #ifdef __cplusplus
 }

@@ -770,7 +770,6 @@ static bool check_block_hotkey(bool enable_hotkey)
  */
 static inline retro_input_t input_keys_pressed(void)
 {
-   int key;
    unsigned i;
    static const struct retro_keybind *binds[MAX_USERS] = {
       g_settings.input.binds[0],
@@ -821,27 +820,7 @@ static inline retro_input_t input_keys_pressed(void)
       }
    }
 
-   for (key = 0; key < RARCH_BIND_LIST_END; key++)
-   {
-      bool state = false;
-
-      if (
-            (!driver.block_libretro_input && (key < RARCH_FIRST_META_KEY)) ||
-            !driver.block_hotkey)
-         state = driver.input->key_pressed(driver.input_data, key);
-
-#ifdef HAVE_OVERLAY
-      state = state || (driver.overlay_state.buttons & (1ULL << key));
-#endif
-
-#ifdef HAVE_COMMAND
-      if (driver.command)
-         state = state || rarch_cmd_get(driver.command, key);
-#endif
-
-      if (state)
-         ret |= (1ULL << key);
-   }
+   ret = input_driver_keys_pressed();
 
    for (i = 0; i < g_settings.input.max_users; i++)
    {

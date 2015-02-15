@@ -182,3 +182,30 @@ bool input_driver_set_rumble_state(unsigned port,
             port, effect, strength);
    return false;
 }
+
+retro_input_t input_driver_keys_pressed(void)
+{
+   int key;
+   retro_input_t ret = 0;
+
+   for (key = 0; key < RARCH_BIND_LIST_END; key++)
+   {
+      bool state = false;
+      if ((!driver.block_libretro_input && (key < RARCH_FIRST_META_KEY)) ||
+            !driver.block_hotkey)
+         state = driver.input->key_pressed(driver.input_data, key);
+
+#ifdef HAVE_OVERLAY
+      state = state || (driver.overlay_state.buttons & (1ULL << key));
+#endif
+
+#ifdef HAVE_COMMAND
+      if (driver.command)
+         state = state || rarch_cmd_get(driver.command, key);
+#endif
+
+      if (state)
+         ret |= (1ULL << key);
+   }
+   return ret;
+}
