@@ -3205,6 +3205,36 @@ static int deferred_push_category(void *data, void *userdata,
          path, label, type, SL_FLAG_ALL_SETTINGS);
 }
 
+static int deferred_push_video_options(void *data, void *userdata,
+      const char *path, const char *label, unsigned type)
+{
+   file_list_t *list      = NULL;
+   file_list_t *menu_list = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return -1;
+
+   list           = (file_list_t*)data;
+   menu_list      = (file_list_t*)userdata;
+
+   if (!list || !menu_list)
+      return -1;
+
+   menu_list_clear(list);
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
+   menu_list_push(list, "Screen Resolution", "",
+         MENU_SETTINGS_VIDEO_RESOLUTION, 0);
+#endif
+   menu_list_push(list, "Custom Ratio", "",
+         MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
+
+   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
+      driver.menu_ctx->populate_entries(path, label, type);
+
+   return 0;
+}
+
 static int deferred_push_shader_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
@@ -3288,6 +3318,8 @@ static int deferred_push_options(void *data, void *userdata,
          menu_list_push(list, "Core Disk Options", "core_disk_options",
                MENU_SETTING_ACTION, 0);
    }
+   menu_list_push(list, "Video Options", "video_options",
+         MENU_SETTING_ACTION, 0);
    menu_list_push(list, "Shader Options", "shader_options",
          MENU_SETTING_ACTION, 0);
 
@@ -5427,6 +5459,7 @@ static void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_shader_parameters;
    else if (
          !strcmp(label, "shader_options") ||
+         !strcmp(label, "video_options") ||
          !strcmp(label, "Input Settings") ||
          !strcmp(label, "core_options") ||
          !strcmp(label, "core_cheat_options") ||
@@ -5890,6 +5923,8 @@ static void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       cbs->action_deferred_push = deferred_push_content_actions;
    else if (!strcmp(label, "shader_options"))
       cbs->action_deferred_push = deferred_push_shader_options;
+   else if (!strcmp(label, "video_options"))
+      cbs->action_deferred_push = deferred_push_video_options;
    else if (!strcmp(label, "options"))
       cbs->action_deferred_push = deferred_push_options;
    else if (!strcmp(label, "management"))

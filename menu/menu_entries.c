@@ -96,18 +96,6 @@ int menu_entries_push_list(menu_handle_t *menu,
 
    menu_list_clear(list);
 
-   /* Hack - should come up with something cleaner
-    * here. */
-   if (!strcmp(label, "Video Settings"))
-   {
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
-      menu_list_push(list, "Screen Resolution", "",
-            MENU_SETTINGS_VIDEO_RESOLUTION, 0);
-#endif
-      menu_list_push(list, "Custom Ratio", "",
-            MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
-   }
-
    for (; setting->type != ST_END_GROUP; setting++)
    {
       if (
