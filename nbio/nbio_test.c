@@ -49,9 +49,12 @@ static void nbio_read_test(void)
       printf("%u/%u\n", (unsigned)prog, (unsigned)size);
       looped=true;
    }
-   if (!looped) puts("Read finished immediately?");
+
+   if (!looped)
+      puts("Read finished immediately?");
 
    ptr = nbio_get_ptr(read, &size);
+
    if (size != 1024*1024)
       puts("ERROR: wrong size (3)");
    if (*(char*)ptr != 0x42 || memcmp(ptr, (char*)ptr+1, 1024*1024-1))
