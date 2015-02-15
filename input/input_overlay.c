@@ -810,6 +810,9 @@ void input_overlay_post_poll(input_overlay_t *ol, float opacity)
 {
    size_t i;
 
+   if (!ol)
+      return;
+
    input_overlay_set_alpha_mod(ol, opacity);
 
    for (i = 0; i < ol->active->size; i++)

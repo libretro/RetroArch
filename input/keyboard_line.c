@@ -259,13 +259,17 @@ void input_keyboard_event(bool down, unsigned code,
       if (!down)
          return;
 
-      if (device == RETRO_DEVICE_POINTER && code != 0x12d)
+      switch (device)
       {
-         if (!input_keyboard_line_event(g_keyboard_line, (char)code))
-            return;
+         case RETRO_DEVICE_POINTER:
+            if (!input_keyboard_line_event(g_keyboard_line, (code != 0x12d) ? (char)code : character))
+               return;
+            break;
+         default:
+            if (!input_keyboard_line_event(g_keyboard_line, character))
+               return;
+            break;
       }
-      else if (!input_keyboard_line_event(g_keyboard_line, character))
-         return;
 
       /* Line is complete, can free it now. */
       input_keyboard_line_free(g_keyboard_line);
