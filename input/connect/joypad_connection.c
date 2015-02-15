@@ -23,7 +23,7 @@ static int find_vacant_pad(joypad_connection_t *joyconn)
    for (i = 0; i < MAX_USERS; i++)
    {
       joypad_connection_t *conn = (joypad_connection_t*)&joyconn[i];
-      if (conn && !conn->used)
+      if (conn && !conn->connected)
          return i;
    }
 
@@ -43,10 +43,10 @@ void *pad_connection_init(unsigned pads)
    {
       joypad_connection_t *conn = (joypad_connection_t*)&joyconn[i];
 
-      conn->used     = false;
-      conn->iface    = NULL;
-      conn->is_gcapi = false;
-      conn->data     = NULL;
+      conn->connected = false;
+      conn->iface     = NULL;
+      conn->is_gcapi  = false;
+      conn->data      = NULL;
    }
 
    return joyconn;
@@ -62,7 +62,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       unsigned i;
       joypad_connection_t* s = (joypad_connection_t*)&joyconn[pad];
 
-      s->used = true;
+      s->connected  = true;
 
       static const struct
       {
@@ -100,8 +100,8 @@ int32_t apple_joypad_connect_gcapi(joypad_connection_t *joyconn)
 
       if (s)
       {
-         s->used = true;
-         s->is_gcapi = true;
+         s->connected = true;
+         s->is_gcapi  = true;
       }
    }
 
@@ -110,7 +110,7 @@ int32_t apple_joypad_connect_gcapi(joypad_connection_t *joyconn)
 
 void pad_connection_pad_deinit(joypad_connection_t *s, uint32_t pad)
 {
-   if (!s || !s->used)
+   if (!s || !s->connected)
        return;
     
    if (s->iface)
@@ -121,15 +121,15 @@ void pad_connection_pad_deinit(joypad_connection_t *s, uint32_t pad)
          s->iface->deinit(s->data);
    }
 
-   s->iface    = NULL;
-   s->used     = false;
-   s->is_gcapi = false;
+   s->iface     = NULL;
+   s->connected = false;
+   s->is_gcapi  = false;
 }
 
 void pad_connection_packet(joypad_connection_t *s, uint32_t pad,
       uint8_t* data, uint32_t length)
 {
-   if (!s->used)
+   if (!s->connected)
        return;
     
    if (s->iface && s->data && s->iface->packet_handler)
@@ -153,7 +153,7 @@ int16_t pad_connection_get_axis(joypad_connection_t *s,
 
 bool pad_connection_has_interface(joypad_connection_t *s, unsigned pad)
 {
-   if (s->used && s->iface)
+   if (s->connected && s->iface)
       return true;
    return false;
 }
@@ -172,7 +172,7 @@ void pad_connection_destroy(joypad_connection_t *joyconn)
 bool pad_connection_rumble(joypad_connection_t *s,
    unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
 {
-   if (!s->used)
+   if (!s->connected)
       return false;
    if (!s->iface)
       return false;

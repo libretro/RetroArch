@@ -39,7 +39,7 @@ extern pad_connection_interface_t pad_connection_ps3;
 
 typedef struct
 {
-    bool used;
+    bool connected;
     struct pad_connection_interface *iface;
     void* data;
     
