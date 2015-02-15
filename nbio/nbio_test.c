@@ -35,7 +35,7 @@ static void nbio_read_test(void)
    size_t size, prog;
    bool looped = false;
    struct nbio_t* read = nbio_open("test.bin", NBIO_READ);
-   void *ptr           = nbio_get_ptr(read, &size);
+   void* ptr           = nbio_get_ptr(read, &size);
 
    if (size != 1024*1024)
       puts("ERROR: wrong size (2)");
