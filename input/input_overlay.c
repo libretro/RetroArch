@@ -39,6 +39,9 @@ static void input_overlay_scale(struct overlay *ol, float scale)
 {
    size_t i;
 
+   if (!ol)
+      return;
+
    if (ol->block_scale)
       scale = 1.0f;
 
@@ -75,6 +78,8 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
 {
    size_t i;
 
+   if (!ol)
+      return;
    if (ol->active->image.pixels)
       ol->iface->vertex_geom(ol->iface_data, 0,
             ol->active->mod_x, ol->active->mod_y,
@@ -468,6 +473,9 @@ static ssize_t input_overlay_find_index(const struct overlay *ol,
 {
    size_t i;
 
+   if (!ol)
+      return -1;
+
    for (i = 0; i < size; i++)
    {
       if (!strcmp(ol[i].name, name))
@@ -481,7 +489,12 @@ static bool input_overlay_resolve_targets(struct overlay *ol,
       size_t idx, size_t size)
 {
    size_t i;
-   struct overlay *current = (struct overlay*)&ol[idx];
+   struct overlay *current = NULL;
+
+   if (!ol)
+      return false;
+   
+   current = (struct overlay*)&ol[idx];
 
    for (i = 0; i < current->size; i++)
    {
@@ -665,6 +678,9 @@ void input_overlay_enable(input_overlay_t *ol, bool enable)
  **/
 static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
 {
+   if (!desc)
+      return false;
+
    switch (desc->hitbox)
    {
       case OVERLAY_HITBOX_RADIAL:
@@ -725,6 +741,8 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out,
       float x_dist, y_dist;
       struct overlay_desc *desc = &ol->active->descs[i];
 
+      if (!desc)
+         continue;
       if (!inside_hitbox(desc, x, y))
          continue;
 
@@ -785,7 +803,7 @@ void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out,
 static void input_overlay_update_desc_geom(input_overlay_t *ol,
       struct overlay_desc *desc)
 {
-   if (!desc->image.pixels)
+   if (!desc || !desc->image.pixels)
       return;
    if (!desc->movable)
       return;
@@ -851,6 +869,9 @@ void input_overlay_post_poll(input_overlay_t *ol, float opacity)
 void input_overlay_poll_clear(input_overlay_t *ol, float opacity)
 {
    size_t i;
+
+   if (!ol)
+      return;
 
    ol->blocked = false;
 
