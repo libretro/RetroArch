@@ -3231,8 +3231,6 @@ static int deferred_push_shader_options(void *data, void *userdata,
    menu_list_clear(list);
    menu_list_push(list, "Apply Shader Changes", "shader_apply_changes",
          MENU_SETTING_ACTION, 0);
-   menu_list_push(list, "Default Filter", "video_shader_default_filter",
-         0, 0);
    menu_list_push(list, "Load Shader Preset", "video_shader_preset",
          MENU_SETTING_ACTION, 0);
    menu_list_push(list, "Shader Preset Save As",
