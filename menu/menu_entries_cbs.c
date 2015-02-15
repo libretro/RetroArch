@@ -4646,6 +4646,25 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
 #endif
 }
 
+static void menu_action_setting_disp_set_label_filter(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   *type_str = '\0';
+   *w = 19;
+   strlcpy(path_buf, path, path_buf_size);
+   strlcpy(type_str, "N/A", type_str_size);
+
+   if (*g_settings.video.softfilter_plugin)
+   strlcpy(type_str, path_basename(g_settings.video.softfilter_plugin),
+         type_str_size);
+}
+
 static void menu_action_setting_disp_set_label_shader_num_passes(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -5794,6 +5813,9 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
    else if (!strcmp(label, "video_shader_default_filter"))
       cbs->action_get_representation =
          menu_action_setting_disp_set_label_shader_default_filter;
+   else if (!strcmp(label, "video_filter"))
+      cbs->action_get_representation =
+         menu_action_setting_disp_set_label_filter;
    else if (!strcmp(label, "configurations"))
       cbs->action_get_representation =
          menu_action_setting_disp_set_label_configurations;
