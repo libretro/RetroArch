@@ -1889,6 +1889,14 @@ static int action_start_remap_file_load(unsigned type, const char *label,
    return 0;
 }
 
+static int action_start_video_filter_file_load(unsigned type, const char *label,
+      unsigned action)
+{
+   g_settings.video.softfilter_plugin[0] = '\0';
+   rarch_main_command(RARCH_CMD_REINIT);
+   return 0;
+}
+
 static int action_start_performance_counters_core(unsigned type, const char *label,
       unsigned action)
 {
@@ -5281,6 +5289,8 @@ static void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
 
    if (!strcmp(label, "remap_file_load"))
       cbs->action_start = action_start_remap_file_load;
+   if (!strcmp(label, "video_filter"))
+      cbs->action_start = action_start_video_filter_file_load;
    else if (!strcmp(label, "video_shader_pass"))
       cbs->action_start = action_start_shader_pass;
    else if (!strcmp(label, "video_shader_scale_pass"))
