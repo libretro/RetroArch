@@ -48,7 +48,7 @@ struct udev_joypad
    dev_t device;
 
    /* Input state polled. */
-   uint32_t buttons;
+   uint64_t buttons;
    int16_t axes[NUM_AXES];
    int8_t hats[NUM_HATS][2];
 
@@ -105,9 +105,9 @@ static void udev_poll_pad(struct udev_joypad *pad, unsigned p)
                if (code >= BTN_MISC || (code >= KEY_UP && code <= KEY_DOWN))
                {
                   if (events[i].value)
-                     BIT32_SET(pad->buttons, pad->button_bind[code]);
+                     BIT64_SET(pad->buttons, pad->button_bind[code]);
                   else
-                     BIT32_CLEAR(pad->buttons, pad->button_bind[code]);
+                     BIT64_CLEAR(pad->buttons, pad->button_bind[code]);
                }
                break;
 
@@ -587,7 +587,15 @@ static bool udev_joypad_button(unsigned port, uint16_t joykey)
 
    if (GET_HAT_DIR(joykey))
       return udev_joypad_hat(pad, joykey);
-   return joykey < UDEV_NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
+   return joykey < UDEV_NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
+}
+
+static uint64_t udev_joypad_get_buttons(unsigned port)
+{
+   const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
+   if (!pad)
+      return 0;
+   return pad->buttons;
 }
 
 static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -633,6 +641,7 @@ rarch_joypad_driver_t udev_joypad = {
    udev_joypad_query_pad,
    udev_joypad_destroy,
    udev_joypad_button,
+   udev_joypad_get_buttons,
    udev_joypad_axis,
    udev_joypad_poll,
    udev_set_rumble,

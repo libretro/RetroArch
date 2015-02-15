@@ -299,10 +299,11 @@ static const uint16_t button_index_to_bitmap_code[] =  {
    XINPUT_GAMEPAD_GUIDE      
 };
 
-static bool winxinput_joypad_button (unsigned port_num, uint16_t joykey)
+static bool winxinput_joypad_button(unsigned port_num, uint16_t joykey)
 {
    uint16_t btn_word;
    int xuser;
+   unsigned num_buttons = 0;
 
    if (joykey == NO_BTN)
       return false;
@@ -331,14 +332,13 @@ static bool winxinput_joypad_button (unsigned port_num, uint16_t joykey)
       }
       return false; /* hat requested and no hat button down. */
    }
-   else
-   {
-      /* non-hat button. */
-      unsigned num_buttons = g_winxinput_guide_button_supported ? 11 : 10;
 
-      if (joykey < num_buttons)
-         return btn_word & button_index_to_bitmap_code[joykey];
-   }
+   /* non-hat button. */
+   num_buttons = g_winxinput_guide_button_supported ? 11 : 10;
+
+   if (joykey < num_buttons)
+      return btn_word & button_index_to_bitmap_code[joykey];
+
    return false;
 }
 
@@ -455,6 +455,7 @@ rarch_joypad_driver_t winxinput_joypad = {
    winxinput_joypad_query_pad,
    winxinput_joypad_destroy,
    winxinput_joypad_button,
+   NULL,
    winxinput_joypad_axis,
    winxinput_joypad_poll,
    winxinput_joypad_rumble,

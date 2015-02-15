@@ -34,7 +34,7 @@
 struct linuxraw_joypad
 {
    int fd;
-   uint32_t buttons;
+   uint64_t buttons;
    int16_t axes[NUM_AXES];
 
    char *ident;
@@ -59,9 +59,9 @@ static void poll_pad(struct linuxraw_joypad *pad)
             if (event.number < NUM_BUTTONS)
             {
                if (event.value)
-                  BIT32_SET(pad->buttons, event.number);
+                  BIT64_SET(pad->buttons, event.number);
                else
-                  BIT32_CLEAR(pad->buttons, event.number);
+                  BIT64_CLEAR(pad->buttons, event.number);
             }
             break;
 
@@ -291,7 +291,15 @@ static bool linuxraw_joypad_button(unsigned port, uint16_t joykey)
    const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
    if (!pad)
       return false;
-   return joykey < NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
+   return joykey < NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
+}
+
+static uint64_t linuxraw_joypad_get_buttons(unsigned port)
+{
+   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
+   if (!pad)
+      return 0;
+   return pad->buttons;
 }
 
 static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -339,6 +347,7 @@ rarch_joypad_driver_t linuxraw_joypad = {
    linuxraw_joypad_query_pad,
    linuxraw_joypad_destroy,
    linuxraw_joypad_button,
+   linuxraw_joypad_get_buttons,
    linuxraw_joypad_axis,
    linuxraw_joypad_poll,
    NULL,

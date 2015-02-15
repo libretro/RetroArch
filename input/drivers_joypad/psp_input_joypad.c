@@ -51,6 +51,11 @@ static bool psp_joypad_button(unsigned port_num, uint16_t joykey)
    return (pad_state & (1ULL << joykey));
 }
 
+static uint64_t psp_joypad_get_buttons(unsigned port_num)
+{
+   return pad_state;
+}
+
 static int16_t psp_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    int val = 0, axis = -1;
@@ -167,6 +172,7 @@ rarch_joypad_driver_t psp_joypad = {
    psp_joypad_query_pad,
    psp_joypad_destroy,
    psp_joypad_button,
+   psp_joypad_get_buttons,
    psp_joypad_axis,
    psp_joypad_poll,
    NULL,

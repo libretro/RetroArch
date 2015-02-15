@@ -64,6 +64,11 @@ static bool ps3_joypad_button(unsigned port_num, uint16_t joykey)
    return pad_state[port_num] & (1ULL << joykey);
 }
 
+static uint64_t ps3_joypad_get_buttons(unsigned port_num)
+{
+   return pad_state[port_num];
+}
+
 static int16_t ps3_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    int val = 0, axis = -1;
@@ -247,6 +252,7 @@ rarch_joypad_driver_t ps3_joypad = {
    ps3_joypad_query_pad,
    ps3_joypad_destroy,
    ps3_joypad_button,
+   ps3_joypad_get_buttons,
    ps3_joypad_axis,
    ps3_joypad_poll,
    ps3_joypad_rumble,

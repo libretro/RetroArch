@@ -246,6 +246,11 @@ static bool gx_joypad_button(unsigned port, uint16_t joykey)
    return pad_state[port] & (1ULL << joykey);
 }
 
+static uint64_t gx_joypad_get_buttons(unsigned port)
+{
+   return pad_state[port];
+}
+
 static int16_t gx_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    int val = 0, axis = -1;
@@ -621,6 +626,7 @@ rarch_joypad_driver_t gx_joypad = {
    gx_joypad_query_pad,
    gx_joypad_destroy,
    gx_joypad_button,
+   gx_joypad_get_buttons,
    gx_joypad_axis,
    gx_joypad_poll,
    NULL,

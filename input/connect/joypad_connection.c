@@ -136,7 +136,7 @@ void pad_connection_packet(joypad_connection_t *s, uint32_t pad,
       s->iface->packet_handler(s->data, data, length);
 }
 
-uint32_t pad_connection_get_buttons(joypad_connection_t *s, unsigned pad)
+uint64_t pad_connection_get_buttons(joypad_connection_t *s, unsigned pad)
 {
    if (!s->iface)
       return 0;

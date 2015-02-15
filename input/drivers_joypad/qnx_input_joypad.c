@@ -50,6 +50,15 @@ static bool qnx_joypad_button(unsigned port_num, uint16_t joykey)
    return qnx->pad_state[port_num] & (1ULL << joykey);
 }
 
+static uint64_t qnx_joypad_get_buttons(unsigned port_num)
+{
+   qnx_input_t *qnx = (qnx_input_t*)driver.input_data;
+
+   if (!qnx || port_num >= MAX_PADS)
+      return 0;
+   return qnx->pad_state[port_num];
+}
+
 static int16_t qnx_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    qnx_input_t *qnx = (qnx_input_t*)driver.input_data;
@@ -118,6 +127,7 @@ rarch_joypad_driver_t qnx_joypad = {
    qnx_joypad_query_pad,
    qnx_joypad_destroy,
    qnx_joypad_button,
+   qnx_joypad_get_buttons,
    qnx_joypad_axis,
    qnx_joypad_poll,
    NULL,

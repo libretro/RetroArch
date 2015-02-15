@@ -77,19 +77,24 @@ static bool xdk_joypad_init(void)
    return true;
 }
 
-static bool xdk_joypad_button(unsigned port, uint16_t joykey)
+static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   if (port >= MAX_PADS)
+   if (port_num >= MAX_PADS)
       return false;
 
-   return pad_state[port] & (1ULL << joykey);
+   return pad_state[port_num] & (1ULL << joykey);
 }
 
-static int16_t xdk_joypad_axis(unsigned port, uint32_t joyaxis)
+static uint64_t xdk_joypad_get_buttons(unsigned port_num)
+{
+   return pad_state[port_num];
+}
+
+static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    int val = 0, axis = -1;
    bool is_neg = false, is_pos = false;
-   if (joyaxis == AXIS_NONE || port >= MAX_PADS)
+   if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
       return 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
@@ -106,16 +111,16 @@ static int16_t xdk_joypad_axis(unsigned port, uint32_t joyaxis)
    switch (axis)
    {
       case 0:
-         val = analog_state[port][0][0];
+         val = analog_state[port_num][0][0];
          break;
       case 1:
-         val = analog_state[port][0][1];
+         val = analog_state[port_num][0][1];
          break;
       case 2:
-         val = analog_state[port][1][0];
+         val = analog_state[port_num][1][0];
          break;
       case 3:
-         val = analog_state[port][1][1];
+         val = analog_state[port_num][1][1];
          break;
    }
 
@@ -262,6 +267,7 @@ rarch_joypad_driver_t xdk_joypad = {
    xdk_joypad_query_pad,
    xdk_joypad_destroy,
    xdk_joypad_button,
+   xdk_joypad_get_buttons,
    xdk_joypad_axis,
    xdk_joypad_poll,
    NULL,

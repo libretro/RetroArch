@@ -139,6 +139,7 @@ rarch_joypad_driver_t android_joypad = {
    android_joypad_query_pad,
    android_joypad_destroy,
    android_joypad_button,
+   NULL,
    android_joypad_axis,
    android_joypad_poll,
    NULL,

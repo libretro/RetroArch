@@ -30,7 +30,7 @@ typedef struct pad_connection_interface
    void     (*packet_handler)(void* device, uint8_t *packet, uint16_t size);
    void     (*set_rumble)(void* device, enum retro_rumble_effect effect,
          uint16_t strength);
-   uint32_t (*get_buttons)(void *data);
+   uint64_t (*get_buttons)(void *data);
    int16_t  (*get_axis)(void *data, unsigned axis);
 } pad_connection_interface_t;
 
@@ -61,7 +61,7 @@ void pad_connection_pad_deinit(joypad_connection_t *joyconn,
 void pad_connection_packet(joypad_connection_t *joyconn,
    unsigned idx, uint8_t* data, uint32_t length);
 
-uint32_t pad_connection_get_buttons(joypad_connection_t *joyconn,
+uint64_t pad_connection_get_buttons(joypad_connection_t *joyconn,
    unsigned idx);
 
 int16_t pad_connection_get_axis(joypad_connection_t *joyconn,

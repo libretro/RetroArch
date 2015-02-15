@@ -106,9 +106,9 @@ static void hid_device_input_callback(void* context, IOReturn result,
                   unsigned id = use - 1;
 
                   if (state)
-                     BIT32_SET(apple->buttons[connection->slot], id);
+                     BIT64_SET(apple->buttons[connection->slot], id);
                   else
-                     BIT32_CLEAR(apple->buttons[connection->slot], id);
+                     BIT64_CLEAR(apple->buttons[connection->slot], id);
                }
                break;
          }
@@ -284,7 +284,7 @@ static void apple_joypad_destroy(void)
 static bool apple_joypad_button(unsigned port, uint16_t joykey)
 {
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-   uint32_t buttons          = pad_connection_get_buttons(&slots[port], port);
+   uint64_t buttons          = pad_connection_get_buttons(&slots[port], port);
 
    if (!apple || joykey == NO_BTN)
       return false;
@@ -298,6 +298,11 @@ static bool apple_joypad_button(unsigned port, uint16_t joykey)
        return ((apple->buttons[port] & (1 << joykey)) != 0) ||
               ((buttons & (1 << joykey)) != 0);
     return false;
+}
+
+static uint64_t apple_joypad_get_buttons(unsigned port)
+{
+   return pad_connection_get_buttons(&slots[port], port);
 }
 
 static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -352,6 +357,7 @@ rarch_joypad_driver_t apple_hid_joypad = {
    apple_joypad_query_pad,
    apple_joypad_destroy,
    apple_joypad_button,
+   apple_joypad_get_buttons,
    apple_joypad_axis,
    apple_joypad_poll,
    apple_joypad_rumble,

@@ -430,6 +430,7 @@ rarch_joypad_driver_t sdl_joypad = {
    sdl_joypad_query_pad,
    sdl_joypad_destroy,
    sdl_joypad_button,
+   NULL,
    sdl_joypad_axis,
    sdl_joypad_poll,
 #ifdef HAVE_SDL2

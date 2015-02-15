@@ -35,6 +35,11 @@ static bool null_joypad_button(unsigned port_num, uint16_t joykey)
    return false;
 }
 
+static uint64_t null_joypad_get_buttons(unsigned port_num)
+{
+   return 0;
+}
+
 static int16_t null_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    return 0;
@@ -59,6 +64,7 @@ rarch_joypad_driver_t null_joypad = {
    null_joypad_query_pad,
    null_joypad_destroy,
    null_joypad_button,
+   null_joypad_get_buttons,
    null_joypad_axis,
    null_joypad_poll,
    NULL,

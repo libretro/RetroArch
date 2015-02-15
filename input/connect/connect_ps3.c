@@ -27,7 +27,7 @@ struct hidpad_ps3_data
    send_control_t send_control;
    uint8_t data[512];
    uint32_t slot;
-   uint32_t buttons;
+   uint64_t buttons;
    bool have_led;
    uint16_t motors[2];
 };
@@ -96,7 +96,7 @@ static void hidpad_ps3_deinit(void *data)
       free(device);
 }
 
-static uint32_t hidpad_ps3_get_buttons(void *data)
+static uint64_t hidpad_ps3_get_buttons(void *data)
 {
    struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
    if (!device)
