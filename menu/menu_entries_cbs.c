@@ -5835,7 +5835,6 @@ static void menu_entries_cbs_init_bind_get_string_representation(menu_file_list_
          case MENU_SETTINGS_CUSTOM_VIEWPORT:
          case MENU_SETTINGS_CUSTOM_BIND_ALL:
          case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
-         case MENU_SETTING_ACTION:
             cbs->action_get_representation = 
                menu_action_setting_disp_set_label_menu_more;
             break;
