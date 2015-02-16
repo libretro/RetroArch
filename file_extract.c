@@ -158,15 +158,16 @@ static size_t zlib_file_size(void *handle)
 
 static void *zlib_file_open(const char *path)
 {
-   ssize_t ret;
+   size_t ret = -1;
+   bool read_from_file = false;
    zlib_file_data_t *data = (zlib_file_data_t*)calloc(1, sizeof(*data));
 
    if (!data)
       return NULL;
 
-   ret = read_file(path, &data->data);
+   read_from_file = read_file(path, &data->data, &ret);
 
-   if (ret < 0)
+   if (!read_from_file || ret < 0)
    {
       RARCH_ERR("Failed to open archive: %s.\n",
             path);

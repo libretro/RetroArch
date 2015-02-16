@@ -116,10 +116,7 @@ static bool read_generic_file(const char *path, void **buf, size_t *len)
    rom_buf = malloc(_len + 1);
 
    if (!rom_buf)
-   {
-      RARCH_ERR("Couldn't allocate memory.\n");
       goto error;
-   }
 
    if ((ret = fread(rom_buf, 1, _len, file)) < _len)
       RARCH_WARN("Didn't read whole file.\n");
