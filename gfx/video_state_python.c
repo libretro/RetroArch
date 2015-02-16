@@ -297,7 +297,7 @@ py_state_t *py_state_new(const char *script,
        * compiled with MSVC. */
 
       char *script_ = NULL;
-      size_t len;
+      ssize_t len;
       bool ret = read_file(script, (void**)&script_, &len);
       if (!ret || len < 0)
       {

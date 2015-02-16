@@ -75,7 +75,7 @@
  *
  * Returns: true (1) on success, false (0) otherwise.
  */
-bool write_file(const char *path, const void *data, size_t size)
+bool write_file(const char *path, const void *data, ssize_t size)
 {
    bool ret = false;
    FILE *file = fopen(path, "wb");
@@ -97,7 +97,7 @@ bool write_file(const char *path, const void *data, size_t size)
  *
  * Returns: number of items read, -1 on error.
  */
-static bool read_generic_file(const char *path, void **buf, size_t *len)
+static bool read_generic_file(const char *path, void **buf, ssize_t *len)
 {
    long ret = 0, _len = 0;
    void *rom_buf = NULL;
@@ -148,7 +148,7 @@ error:
  * Then extracts to optional_filename and leaves buf alone.
  */
 bool read_compressed_file(const char * path, void **buf,
-      const char* optional_filename, size_t *length)
+      const char* optional_filename, ssize_t *length)
 {
    const char* file_ext;
    char archive_path[PATH_MAX_LENGTH], *archive_found = NULL;
@@ -224,7 +224,7 @@ bool read_compressed_file(const char * path, void **buf,
  *
  * Returns: true if file read, false on error.
  */
-bool read_file(const char *path, void **buf, size_t *length)
+bool read_file(const char *path, void **buf, ssize_t *length)
 {
 #ifdef HAVE_COMPRESSION
    /* Here we check, whether the file, we are about to read is

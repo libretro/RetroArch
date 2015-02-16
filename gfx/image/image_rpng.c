@@ -214,7 +214,7 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
    {
       void *raw_buf = NULL;
       uint8_t *buf = NULL;
-      size_t len;
+      ssize_t len;
       bool ret = read_file(path, &raw_buf, &len);
 
       if (!ret || len < 0)

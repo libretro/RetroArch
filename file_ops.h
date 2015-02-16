@@ -34,7 +34,7 @@ extern "C" {
  * Then extracts to optional_filename and leaves buf alone.
  */
 bool read_compressed_file(const char * path, void **buf,
-      const char* optional_filename, size_t *length);
+      const char* optional_filename, ssize_t *length);
 #endif
 
 /**
@@ -49,7 +49,7 @@ bool read_compressed_file(const char * path, void **buf,
  *
  * Returns: true if file read, false on error.
  */
-bool read_file(const char *path, void **buf, size_t *length);
+bool read_file(const char *path, void **buf, ssize_t *length);
 
 /**
  * write_file:
@@ -61,7 +61,7 @@ bool read_file(const char *path, void **buf, size_t *length);
  *
  * Returns: true (1) on success, false (0) otherwise.
  */
-bool write_file(const char *path, const void *buf, size_t size);
+bool write_file(const char *path, const void *buf, ssize_t size);
 
 #ifdef __cplusplus
 }

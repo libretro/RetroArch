@@ -42,7 +42,7 @@
 #endif
 
 static bool apply_patch_content(uint8_t **buf,
-      size_t *size, const char *patch_desc, const char *patch_path,
+      ssize_t *size, const char *patch_desc, const char *patch_path,
       patch_func_t func)
 {
    void *patch_data = NULL;
@@ -52,7 +52,7 @@ static bool apply_patch_content(uint8_t **buf,
    uint8_t *patched_content = NULL;
    ssize_t ret_size = *size;
    uint8_t *ret_buf = *buf;
-   size_t patch_size;
+   ssize_t patch_size;
    
    if (!read_file(patch_desc, &patch_data, &patch_size))
       return false;
@@ -105,7 +105,7 @@ error:
    return false;
 }
 
-static bool try_bps_patch(uint8_t **buf, size_t *size)
+static bool try_bps_patch(uint8_t **buf, ssize_t *size)
 {
    bool allow_bps = !g_extern.ups_pref && !g_extern.ips_pref;
 
@@ -118,7 +118,7 @@ static bool try_bps_patch(uint8_t **buf, size_t *size)
          bps_apply_patch);
 }
 
-static bool try_ups_patch(uint8_t **buf, size_t *size)
+static bool try_ups_patch(uint8_t **buf, ssize_t *size)
 {
    bool allow_ups = !g_extern.bps_pref && !g_extern.ips_pref;
 
@@ -131,7 +131,7 @@ static bool try_ups_patch(uint8_t **buf, size_t *size)
          ups_apply_patch);
 }
 
-static bool try_ips_patch(uint8_t **buf, size_t *size)
+static bool try_ips_patch(uint8_t **buf, ssize_t *size)
 {
    bool allow_ips = !g_extern.ups_pref && !g_extern.bps_pref;
 
@@ -152,7 +152,7 @@ static bool try_ips_patch(uint8_t **buf, size_t *size)
  * Apply patch to the content file in-memory.
  *
  **/
-static void patch_content(uint8_t **buf, size_t *size)
+static void patch_content(uint8_t **buf, ssize_t *size)
 {
    if (g_extern.ups_pref + g_extern.bps_pref + g_extern.ips_pref > 1)
    {
@@ -179,7 +179,7 @@ static void patch_content(uint8_t **buf, size_t *size)
  * Returns: true if successful, false on error.
  **/
 static bool read_content_file(const char *path, void **buf,
-      size_t *length)
+      ssize_t *length)
 {
    uint8_t *ret_buf = NULL;
 
@@ -307,7 +307,7 @@ bool load_state(const char *path)
    bool ret = true;
    void *buf = NULL;
    struct sram_block *blocks = NULL;
-   size_t size;
+   ssize_t size;
 
    ret = read_file(path, &buf, &size);
 
@@ -383,7 +383,7 @@ bool load_state(const char *path)
  */
 void load_ram_file(const char *path, int type)
 {
-   size_t rc;
+   ssize_t rc;
    bool ret = false;
    void *buf   = NULL;
    size_t size = pretro_get_memory_size(type);
@@ -486,7 +486,7 @@ static bool load_content(const struct retro_subsystem_info *special,
 
       if (!need_fullpath && *path)
       {
-         size_t len;
+         ssize_t len;
          /* Load the content into memory. */
 
          /* First content file is significant, attempt to do patching,
@@ -518,7 +518,7 @@ static bool load_content(const struct retro_subsystem_info *special,
             if (need_fullpath && path_contains_compressed_file(path))
             {
                bool ret = false;
-               size_t len;
+               ssize_t len;
                char new_path[PATH_MAX_LENGTH], new_basedir[PATH_MAX_LENGTH];
                union string_list_elem_attr attributes;
 

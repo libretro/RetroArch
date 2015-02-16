@@ -433,7 +433,7 @@ static GLuint compile_program(glsl_shader_data_t *glsl,
 static bool load_source_path(struct video_shader_pass *pass,
       const char *path)
 {
-   size_t len;
+   ssize_t len;
    bool ret = read_file(path, (void**)&pass->source.string.vertex, &len);
    if (!ret || len <= 0)
       return false;

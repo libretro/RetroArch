@@ -92,7 +92,7 @@ int database_info_write_rdl(const char *dir)
       else
 #endif
       {
-         size_t ret;
+         ssize_t ret;
          uint32_t crc, target_crc = 0;
          uint8_t *ret_buf = NULL;
          bool read_from = false;

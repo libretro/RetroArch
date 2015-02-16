@@ -158,7 +158,7 @@ static size_t zlib_file_size(void *handle)
 
 static void *zlib_file_open(const char *path)
 {
-   size_t ret = -1;
+   ssize_t ret = -1;
    bool read_from_file = false;
    zlib_file_data_t *data = (zlib_file_data_t*)calloc(1, sizeof(*data));
 
