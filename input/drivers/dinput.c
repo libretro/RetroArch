@@ -1012,6 +1012,7 @@ rarch_joypad_driver_t dinput_joypad = {
    dinput_joypad_query_pad,
    dinput_joypad_destroy,
    dinput_joypad_button,
+   NULL,
    dinput_joypad_axis,
    dinput_joypad_poll,
    NULL,

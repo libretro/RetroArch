@@ -60,7 +60,7 @@ static bool zlib_compare_crc32(const char *name, const char *valid_exts,
 database_info_rdl_handle_t *database_info_write_rdl_init(const char *dir)
 {
    const char *exts = "";
-   database_info_rdl_handle_t *dbl = calloc(1, sizeof(*dbl));
+   database_info_rdl_handle_t *dbl = (database_info_rdl_handle_t*)calloc(1, sizeof(*dbl));
 
    if (!dbl)
       return NULL;
