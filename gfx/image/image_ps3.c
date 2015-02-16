@@ -148,6 +148,10 @@ static bool ps3_load_jpeg(const char *path, struct texture_image *out_img)
 
    img_size = outParam.output_width * outParam.output_height * sizeof(uint32_t);
    out_img->pixels = (uint32_t*)malloc(img_size);
+
+   if (!out_img->pixels)
+      goto error;
+
    memset(out_img->pixels, 0, img_size);
 
 #ifdef __PSL1GHT__
@@ -263,6 +267,10 @@ static bool ps3_load_png(const char *path, struct texture_image *out_img)
    img_size = outParam.output_width * 
       outParam.output_height * sizeof(uint32_t);
    out_img->pixels = (uint32_t*)malloc(img_size);
+
+   if (!out_img->pixels)
+      goto error;
+
    memset(out_img->pixels, 0, img_size);
 
 #ifdef __PSL1GHT__
