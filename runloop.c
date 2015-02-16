@@ -879,23 +879,8 @@ static int rarch_main_iterate_quit(void)
 }
 
 #ifdef HAVE_NETWORKING
-
-static http_cb_t pending_cb;
-
-void net_http_set_pending_cb(http_cb_t cb)
-{
-   pending_cb = cb;
-}
-
-static http_cb_t net_http_get_pending_cb(void)
-{
-   return pending_cb;
-}
-
-static void net_http_clear_pending_cb(void)
-{
-   pending_cb = NULL;
-}
+int cb_core_updater_download(void *data_, size_t len);
+int cb_core_updater_list(void *data_, size_t len);
 
 /**
  * rarch_main_iterate_http_transfer:
@@ -953,26 +938,48 @@ static int rarch_main_iterate_http_parse(void)
  **/
 static int rarch_main_iterate_http_poll(void)
 {
+   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+   struct string_list *str_list = NULL;
    const char *url = msg_queue_pull(g_extern.http_msg_queue);
 
    if (!url)
       return -1;
+
    /* Can only deal with one HTTP transfer at a time for now */
    if (g_extern.http_handle)
       return -1; 
 
-   g_extern.http_handle = net_http_new(url);
+   str_list         = string_split(url, "|"); 
+
+   if (!str_list)
+      return -1;
+
+   if (str_list->size > 0)
+      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   if (str_list->size > 1)
+      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+
+   g_extern.http_handle = net_http_new(elem0);
 
    if (!g_extern.http_handle)
    {
       RARCH_ERR("Could not create new HTTP session handle.\n");
+      string_list_free(str_list);
       return -1;
    }
 
-   g_extern.http_cb      = net_http_get_pending_cb();
-   
-   net_http_clear_pending_cb();
+   g_extern.http_cb     = NULL;
 
+   if (elem1[0] != '\0')
+   {
+      if (!strcmp(elem1, "cb_core_updater_download"))
+         g_extern.http_cb = &cb_core_updater_download;
+      if (!strcmp(elem1, "cb_core_updater_list"))
+         g_extern.http_cb = &cb_core_updater_list;
+   }
+
+   string_list_free(str_list);
+   
    return 0;
 }
 #endif

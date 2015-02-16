@@ -1640,7 +1640,7 @@ static bool zlib_extract_core_callback(const char *name, const char *valid_exts,
    return true;
 }
 
-static int cb_core_updater_download(void *data_, size_t len)
+int cb_core_updater_download(void *data_, size_t len)
 {
    FILE *f;
    const char* file_ext = NULL;
@@ -1700,10 +1700,10 @@ static int action_ok_core_updater_list(const char *path,
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, msg, 1, 90);
 
+   strlcat(core_path, "|cb_core_updater_download", sizeof(core_path));
+
    msg_queue_clear(g_extern.http_msg_queue);
    msg_queue_push(g_extern.http_msg_queue, core_path, 0, 1);
-
-   net_http_set_pending_cb(cb_core_updater_download);
 #endif
    return 0;
 }
@@ -3610,7 +3610,7 @@ static char core_updater_list_path[PATH_MAX_LENGTH];
 static char core_updater_list_label[PATH_MAX_LENGTH];
 static unsigned core_updater_list_type;
 
-static int cb_core_updater_list(void *data_, size_t len)
+int cb_core_updater_list(void *data_, size_t len)
 {
    char *data = (char*)data_;
    file_list_t *list = NULL;
@@ -3676,10 +3676,10 @@ static int deferred_push_core_updater_list(void *data, void *userdata,
    fill_pathname_join(url_path, g_settings.network.buildbot_url,
          ".index", sizeof(url_path));
 
+   strlcat(url_path, "|cb_core_updater_list", sizeof(url_path));
+
    msg_queue_clear(g_extern.http_msg_queue);
    msg_queue_push(g_extern.http_msg_queue, url_path, 0, 1);
-
-   net_http_set_pending_cb(cb_core_updater_list);
 #endif
 
    return 0;
