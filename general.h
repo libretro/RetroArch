@@ -596,14 +596,17 @@ struct global
 
    bool exec;
 
-   /* Rewind support. */
-   state_manager_t *state_manager;
-   size_t state_size;
-   bool frame_is_reverse;
-
-   /* Movie playback/recording support. */
    struct
    {
+      /* Rewind support. */
+      state_manager_t *state;
+      size_t size;
+      bool frame_is_reverse;
+   } rewind;
+
+   struct
+   {
+      /* Movie playback/recording support. */
       bsv_movie_t *movie;
       char movie_path[PATH_MAX_LENGTH];
       bool movie_playback;

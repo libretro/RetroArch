@@ -895,7 +895,7 @@ static void init_rewind(void)
       return;
 #endif
 
-   if (!g_settings.rewind_enable || g_extern.state_manager)
+   if (!g_settings.rewind_enable || g_extern.rewind.state)
       return;
 
    if (g_extern.system.audio_callback.callback)
@@ -904,9 +904,9 @@ static void init_rewind(void)
       return;
    }
 
-   g_extern.state_size = pretro_serialize_size();
+   g_extern.rewind.size = pretro_serialize_size();
 
-   if (!g_extern.state_size)
+   if (!g_extern.rewind.size)
    {
       RARCH_ERR(RETRO_LOG_REWIND_INIT_FAILED_NO_SAVESTATES);
       return;
@@ -915,15 +915,15 @@ static void init_rewind(void)
    RARCH_LOG(RETRO_MSG_REWIND_INIT "%u MB\n",
          (unsigned)(g_settings.rewind_buffer_size / 1000000));
 
-   g_extern.state_manager = state_manager_new(g_extern.state_size,
+   g_extern.rewind.state = state_manager_new(g_extern.rewind.size,
          g_settings.rewind_buffer_size);
 
-   if (!g_extern.state_manager)
+   if (!g_extern.rewind.state)
       RARCH_WARN(RETRO_LOG_REWIND_INIT_FAILED);
 
-   state_manager_push_where(g_extern.state_manager, &state);
-   pretro_serialize(state, g_extern.state_size);
-   state_manager_push_do(g_extern.state_manager);
+   state_manager_push_where(g_extern.rewind.state, &state);
+   pretro_serialize(state, g_extern.rewind.size);
+   state_manager_push_do(g_extern.rewind.state);
 }
 
 static void init_movie(void)
@@ -2279,9 +2279,9 @@ bool rarch_main_command(unsigned cmd)
          if (driver.netplay_data)
             return false;
 #endif
-         if (g_extern.state_manager)
-            state_manager_free(g_extern.state_manager);
-         g_extern.state_manager = NULL;
+         if (g_extern.rewind.state)
+            state_manager_free(g_extern.rewind.state);
+         g_extern.rewind.state = NULL;
          break;
       case RARCH_CMD_REWIND_INIT:
          init_rewind();

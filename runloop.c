@@ -220,14 +220,14 @@ static void check_rewind(bool pressed)
 {
    static bool first = true;
 
-   if (g_extern.frame_is_reverse)
+   if (g_extern.rewind.frame_is_reverse)
    {
       /* We just rewound. Flush rewind audio buffer. */
       retro_flush_audio(g_extern.audio_data.rewind_buf
             + g_extern.audio_data.rewind_ptr,
             g_extern.audio_data.rewind_size - g_extern.audio_data.rewind_ptr);
 
-      g_extern.frame_is_reverse = false;
+      g_extern.rewind.frame_is_reverse = false;
    }
 
    if (first)
@@ -236,7 +236,7 @@ static void check_rewind(bool pressed)
       return;
    }
 
-   if (!g_extern.state_manager)
+   if (!g_extern.rewind.state)
       return;
 
    if (pressed)
@@ -244,14 +244,14 @@ static void check_rewind(bool pressed)
       const void *buf = NULL;
 
       msg_queue_clear(g_extern.msg_queue);
-      if (state_manager_pop(g_extern.state_manager, &buf))
+      if (state_manager_pop(g_extern.rewind.state, &buf))
       {
-         g_extern.frame_is_reverse = true;
+         g_extern.rewind.frame_is_reverse = true;
          setup_rewind_audio();
 
          msg_queue_push(g_extern.msg_queue, RETRO_MSG_REWINDING, 0,
                g_extern.is_paused ? 1 : 30);
-         pretro_unserialize(buf, g_extern.state_size);
+         pretro_unserialize(buf, g_extern.rewind.size);
 
          if (g_extern.bsv.movie)
             bsv_movie_frame_rewind(g_extern.bsv.movie);
@@ -270,14 +270,14 @@ static void check_rewind(bool pressed)
       if ((cnt == 0) || g_extern.bsv.movie)
       {
          void *state = NULL;
-         state_manager_push_where(g_extern.state_manager, &state);
+         state_manager_push_where(g_extern.rewind.state, &state);
 
          RARCH_PERFORMANCE_INIT(rewind_serialize);
          RARCH_PERFORMANCE_START(rewind_serialize);
-         pretro_serialize(state, g_extern.state_size);
+         pretro_serialize(state, g_extern.rewind.size);
          RARCH_PERFORMANCE_STOP(rewind_serialize);
 
-         state_manager_push_do(g_extern.state_manager);
+         state_manager_push_do(g_extern.rewind.state);
       }
    }
 
@@ -301,7 +301,7 @@ static void check_slowmotion(bool pressed)
       rarch_render_cached_frame();
 
    msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, g_extern.frame_is_reverse ?
+   msg_queue_push(g_extern.msg_queue, g_extern.rewind.frame_is_reverse ?
          "Slow motion rewind." : "Slow motion.", 0, 30);
 }
 

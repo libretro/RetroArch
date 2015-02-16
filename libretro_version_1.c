@@ -687,7 +687,7 @@ void retro_init_libretro_cbs(void *data)
  **/
 void retro_set_rewind_callbacks(void)
 {
-   if (g_extern.frame_is_reverse)
+   if (g_extern.rewind.frame_is_reverse)
    {
       pretro_set_audio_sample(audio_sample_rewind);
       pretro_set_audio_sample_batch(audio_sample_batch_rewind);

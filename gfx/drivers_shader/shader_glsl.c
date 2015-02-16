@@ -982,7 +982,7 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    }
 
    if (uni->frame_direction >= 0)
-      glUniform1i(uni->frame_direction, g_extern.frame_is_reverse ? -1 : 1);
+      glUniform1i(uni->frame_direction, g_extern.rewind.frame_is_reverse ? -1 : 1);
 
 
    for (i = 0; i < glsl->glsl_shader->luts; i++)

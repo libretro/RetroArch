@@ -247,13 +247,13 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    set_param_2f(cg->prg[cg->active_idx].tex_size_f, tex_width, tex_height);
    set_param_2f(cg->prg[cg->active_idx].out_size_f, out_width, out_height);
    set_param_1f(cg->prg[cg->active_idx].frame_dir_f,
-         g_extern.frame_is_reverse ? -1.0 : 1.0);
+         g_extern.rewind.frame_is_reverse ? -1.0 : 1.0);
 
    set_param_2f(cg->prg[cg->active_idx].vid_size_v, width, height);
    set_param_2f(cg->prg[cg->active_idx].tex_size_v, tex_width, tex_height);
    set_param_2f(cg->prg[cg->active_idx].out_size_v, out_width, out_height);
    set_param_1f(cg->prg[cg->active_idx].frame_dir_v,
-         g_extern.frame_is_reverse ? -1.0 : 1.0);
+         g_extern.rewind.frame_is_reverse ? -1.0 : 1.0);
 
    if (cg->prg[cg->active_idx].frame_cnt_f || cg->prg[cg->active_idx].frame_cnt_v)
    {
