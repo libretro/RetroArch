@@ -151,8 +151,6 @@ static bool try_ips_patch(uint8_t **buf, ssize_t *size)
  **/
 static void patch_content(uint8_t **buf, ssize_t *size)
 {
-   bool allow_ips = !g_extern.ups_pref && !g_extern.bps_pref;
-
    if (g_extern.ups_pref + g_extern.bps_pref + g_extern.ips_pref > 1)
    {
       RARCH_WARN("Several patches are explicitly defined, ignoring all ...\n");
