@@ -18,11 +18,7 @@ static void nbio_write_test(void)
    memset(ptr, 0x42, 1024*1024);
    nbio_begin_write(write);
 
-   while (!nbio_iterate(write, &prog, &size))
-   {
-      printf("%u/%u\n", (unsigned)prog, (unsigned)size);
-      looped=true;
-   }
+   while (!nbio_iterate(write, &prog, &size)) looped=true;
 
    if (!looped)
       puts("Write finished immediately?");
@@ -44,11 +40,7 @@ static void nbio_read_test(void)
 
    nbio_begin_read(read);
 
-   while (!nbio_iterate(read, &prog, &size))
-   {
-      printf("%u/%u\n", (unsigned)prog, (unsigned)size);
-      looped=true;
-   }
+   while (!nbio_iterate(read)) looped=true;
 
    if (!looped)
       puts("Read finished immediately?");

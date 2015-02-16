@@ -85,7 +85,7 @@ void nbio_begin_write(struct nbio_t* handle)
    handle->progress = 0;
 }
 
-bool nbio_iterate(struct nbio_t* handle, size_t* progress, size_t* len)
+bool nbio_iterate(struct nbio_t* handle)
 {
    size_t amount = 65536;
 
@@ -98,11 +98,6 @@ bool nbio_iterate(struct nbio_t* handle, size_t* progress, size_t* len)
       fwrite((char*)handle->data + handle->progress, 1,amount, handle->f);
 
    handle->progress += amount;
-
-   if (progress)
-      *progress = handle->progress;
-   if (len)
-      *len = handle->len;
 
    if (handle->progress == handle->len)
       handle->op = -1;
@@ -125,6 +120,7 @@ void nbio_resize(struct nbio_t* handle, size_t len)
    handle->len  = len;
    handle->data = realloc(handle->data, handle->len);
    handle->op   = -1;
+   handle->progress = handle->len;
 }
 
 void* nbio_get_ptr(struct nbio_t* handle, size_t* len)
@@ -136,8 +132,19 @@ void* nbio_get_ptr(struct nbio_t* handle, size_t* len)
    return NULL;
 }
 
+void nbio_cancel(struct nbio_t* handle)
+{
+	handle->op = -1;
+	handle->progress = handle->len;
+}
+
 void nbio_free(struct nbio_t* handle)
 {
+   if (handle->op >= 0)
+   {
+      puts("ERROR - attempted free() while busy");
+      abort();
+   }
    if (!handle)
       return;
    fclose(handle->f);

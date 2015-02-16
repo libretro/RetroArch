@@ -32,7 +32,7 @@ void nbio_begin_write(struct nbio_t* handle);
  * Performs part of the requested operation, or checks how it's going.
  * When it returns true, it's done.
  */
-bool nbio_iterate(struct nbio_t* handle, size_t* progress, size_t* len);
+bool nbio_iterate(struct nbio_t* handle);
 
 /*
  * Resizes the file up to the given size; cannot shrink.
@@ -45,6 +45,11 @@ void nbio_resize(struct nbio_t* handle, size_t len);
  * If any operation is in progress, the pointer will be NULL, but len will still be correct.
  */
 void* nbio_get_ptr(struct nbio_t* handle, size_t* len);
+
+/*
+ * Stops any pending operation, allowing the object to be freed.
+ */
+void nbio_cancel(struct nbio_t* handle);
 
 /*
  * Deletes the nbio structure and its associated pointer.
