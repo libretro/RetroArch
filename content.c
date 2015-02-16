@@ -489,9 +489,6 @@ static bool load_content_need_fullpath(
    if (!path_contains_compressed_file(path))
       return true;
 
-   RARCH_LOG("Content loading skipped. Implementation will"
-         " load it on its own.\n");
-
    RARCH_LOG("Compressed file in case of need_fullpath."
          "Now extracting to temporary directory.\n");
 
@@ -534,8 +531,8 @@ static bool load_content_need_fullpath(
    string_list_append(g_extern.temporary_content,
          new_path, attributes);
 
-   return true;
 #endif
+   return true;
 }
 
 /**
@@ -589,6 +586,9 @@ static bool load_content(const struct retro_subsystem_info *special,
       }
       else
       {
+         RARCH_LOG("Content loading skipped. Implementation will"
+               " load it on its own.\n");
+
          if (!load_content_need_fullpath(&info[i], i,
                   additional_path_allocs, need_fullpath, path))
             goto end;
