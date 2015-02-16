@@ -407,12 +407,6 @@ static gfx_ctx_proc_t sdl_ctx_get_proc_address(const char *name)
    return (gfx_ctx_proc_t)SDL_GL_GetProcAddress(name);
 }
 
-static void sdl_ctx_make_current_context(void *data)
-{
-   /* TODO/FIXME: implement */
-   (void)data;
-}
-
 static void sdl_ctx_show_mouse(void *data, bool state)
 {
    (void)data;
@@ -437,7 +431,6 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl =
    sdl_ctx_swap_buffers,
    sdl_ctx_input_driver,
    sdl_ctx_get_proc_address,
-   sdl_ctx_make_current_context,
 #ifdef HAVE_EGL
    NULL,
    NULL,

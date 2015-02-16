@@ -110,8 +110,6 @@ typedef struct gfx_ctx_driver
     * Does not take opaque, to avoid lots of ugly wrapper code. */
    gfx_ctx_proc_t (*get_proc_address)(const char*);
 
-   void (*make_current_context)(void *data);
-
 #ifdef HAVE_EGL
    /* Returns true if this context supports EGLImage buffers for 
     * screen drawing and was initalized correctly. */

@@ -3088,21 +3088,12 @@ static struct video_shader *gl_get_current_shader(void *data)
    return (gl && gl->shader) ? gl->shader->get_current_shader() : NULL;
 }
 
-static void gl_make_current_context(void *data)
-{
-   gl_t *gl = (gl_t*)data;
-
-   if (gl && gl->ctx_driver->make_current_context)
-      gl->ctx_driver->make_current_context(gl);
-}
-
 static const video_poke_interface_t gl_poke_interface = {
    NULL,
 #ifdef HAVE_FBO
    gl_get_current_framebuffer,
 #endif
    gl_get_proc_address,
-   gl_make_current_context,
    gl_set_aspect_ratio,
    gl_apply_state_changes,
 #if defined(HAVE_MENU)

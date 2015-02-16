@@ -722,7 +722,6 @@ static video_poke_interface_t sdl2_video_poke_interface = {
    NULL,
 #endif
    NULL,
-   NULL,
    sdl2_poke_set_aspect_ratio,
    sdl2_poke_apply_state_changes,
 #ifdef HAVE_MENU

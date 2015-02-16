@@ -226,12 +226,6 @@ retro_proc_address_t video_driver_get_proc_address(const char *sym)
    return NULL;
 }
 
-void video_driver_make_current_context(void)
-{
-   if (driver.video_poke && driver.video_poke->make_current_context)
-      driver.video_poke->make_current_context(driver.video_data);
-}
-
 bool video_driver_is_alive(void)
 {
    /* Possible race issue, return true */

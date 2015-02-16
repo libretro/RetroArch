@@ -898,15 +898,6 @@ static gfx_ctx_proc_t gfx_ctx_drm_egl_get_proc_address(const char *symbol)
    return eglGetProcAddress(symbol);
 }
 
-static void gfx_ctx_drm_egl_make_current_context(void *data)
-{
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
-
-   if (drm)
-      eglMakeCurrent(drm->g_egl_dpy, drm->g_egl_surf,
-            drm->g_egl_surf, drm->g_egl_hw_ctx);
-}
-
 static bool gfx_ctx_drm_egl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -976,7 +967,6 @@ const gfx_ctx_driver_t gfx_ctx_drm_egl = {
    gfx_ctx_drm_egl_swap_buffers,
    gfx_ctx_drm_egl_input_driver,
    gfx_ctx_drm_egl_get_proc_address,
-   gfx_ctx_drm_egl_make_current_context,
    NULL,
    NULL,
    NULL,

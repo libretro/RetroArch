@@ -686,15 +686,6 @@ static gfx_ctx_proc_t gfx_ctx_glx_get_proc_address(const char *symbol)
    return glXGetProcAddress((const GLubyte*)symbol);
 }
 
-static void gfx_ctx_glx_make_current_context(void *data)
-{
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
-
-   if (glx)
-      glXMakeContextCurrent(glx->g_dpy, glx->g_glx_win,
-            glx->g_glx_win, glx->g_use_hw_ctx ? glx->g_hw_ctx : glx->g_ctx);
-}
-
 static bool gfx_ctx_glx_bind_api(void *data, enum gfx_ctx_api api,
       unsigned major, unsigned minor)
 {
@@ -752,7 +743,6 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_glx_swap_buffers,
    gfx_ctx_glx_input_driver,
    gfx_ctx_glx_get_proc_address,
-   gfx_ctx_glx_make_current_context,
 #ifdef HAVE_EGL
    NULL,
    NULL,

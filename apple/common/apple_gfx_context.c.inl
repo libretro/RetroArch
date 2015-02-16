@@ -324,12 +324,6 @@ CFStringRef)BOXSTRING(symbol_name)
          );
 }
 
-static void apple_gfx_ctx_make_current_context(void *data)
-{
-   (void)data;
-   [g_hw_ctx makeCurrentContext];
-}
-
 static void apple_gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
@@ -390,7 +384,6 @@ const gfx_ctx_driver_t gfx_ctx_apple = {
    apple_gfx_ctx_swap_buffers,
    apple_gfx_ctx_input_driver,
    apple_gfx_ctx_get_proc_address,
-   apple_gfx_ctx_make_current_context,
    NULL,
    "apple",
    apple_gfx_ctx_bind_hw_render,

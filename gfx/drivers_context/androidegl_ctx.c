@@ -316,16 +316,6 @@ static gfx_ctx_proc_t android_gfx_ctx_get_proc_address(
    return ret;
 }
 
-static void android_gfx_ctx_make_current_context(void *data)
-{
-   gfx_ctx_android_data_t *android = (gfx_ctx_android_data_t*)
-      driver.video_context_data;
-
-   if (android)
-      eglMakeCurrent(android->g_egl_dpy, android->g_egl_surf,
-            android->g_egl_surf, android->g_egl_hw_ctx);
-}
-
 static bool android_gfx_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -400,7 +390,6 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_swap_buffers,
    android_gfx_ctx_input_driver,
    android_gfx_ctx_get_proc_address,
-   android_gfx_ctx_make_current_context,
 #ifdef HAVE_EGL
    NULL,
    NULL,

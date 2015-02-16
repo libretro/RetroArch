@@ -1237,17 +1237,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          break;
 
-      case RETRO_ENVIRONMENT_MAKE_CURRENT_CONTEXT:
-         {
-            struct retro_hw_make_current_context_callback *cb = 
-               (struct retro_hw_make_current_context_callback*)data;
-
-            RARCH_LOG("Environ MAKE_CURRENT_CONTEXT.\n");
-
-            cb->make_current_context = video_driver_make_current_context;
-            break;
-         }
-
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

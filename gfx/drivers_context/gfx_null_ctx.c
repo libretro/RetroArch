@@ -150,7 +150,6 @@ const gfx_ctx_driver_t gfx_ctx_null = {
    gfx_ctx_null_swap_buffers,
    gfx_ctx_null_input_driver,
    NULL,
-   NULL,
 #ifdef HAVE_EGL
    NULL,
    NULL,

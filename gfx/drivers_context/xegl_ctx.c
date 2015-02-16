@@ -742,12 +742,6 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
    return eglGetProcAddress(symbol);
 }
 
-static void gfx_ctx_xegl_make_current_context(void *data)
-{
-   eglMakeCurrent(g_egl_dpy, g_egl_surf,
-         g_egl_surf, g_egl_hw_ctx);
-}
-
 static bool gfx_ctx_xegl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -815,7 +809,6 @@ const gfx_ctx_driver_t gfx_ctx_x_egl = {
    gfx_ctx_xegl_swap_buffers,
    gfx_ctx_xegl_input_driver,
    gfx_ctx_xegl_get_proc_address,
-   gfx_ctx_xegl_make_current_context,
    NULL,
    NULL,
    gfx_ctx_xegl_show_mouse,

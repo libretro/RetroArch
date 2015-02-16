@@ -652,12 +652,6 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
    return (gfx_ctx_proc_t)GetProcAddress(dll_handle, symbol);
 }
 
-static void gfx_ctx_wgl_make_current_context(void *data)
-{
-   (void)data;
-   wglMakeCurrent(g_hdc, g_hw_hrc);
-}
-
 static bool gfx_ctx_wgl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
@@ -700,7 +694,6 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_swap_buffers,
    gfx_ctx_wgl_input_driver,
    gfx_ctx_wgl_get_proc_address,
-   gfx_ctx_wgl_make_current_context,
    gfx_ctx_wgl_show_mouse,
    "wgl",
    gfx_ctx_wgl_bind_hw_render,
