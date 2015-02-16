@@ -57,24 +57,47 @@ static bool zlib_compare_crc32(const char *name, const char *valid_exts,
 }
 #endif
 
-int database_info_write_rdl(const char *dir)
+database_info_rdl_handle_t *database_info_write_rdl_init(const char *dir)
 {
-   size_t i;
    const char *exts = "";
-   struct string_list *str_list = NULL;
+   database_info_rdl_handle_t *dbl = calloc(1, sizeof(*dbl));
+
+   if (!dbl)
+      return NULL;
 
    if (g_extern.core_info)
       exts = core_info_list_get_all_extensions(g_extern.core_info);
    
-   str_list = dir_list_new(dir, exts, false);
+   dbl->list     = dir_list_new(dir, exts, false);
+   dbl->list_ptr = 0;
+   dbl->blocking = false;
 
-   if (!str_list)
+   return dbl;
+}
+
+void database_info_write_rdl_deinit(database_info_rdl_handle_t *dbl)
+{
+   if (!dbl)
+      return;
+   string_list_free(dbl->list);
+   free(dbl);
+}
+
+int database_info_write_rdl(const char *dir)
+{
+   database_info_rdl_handle_t *dbl = database_info_write_rdl_init(dir);
+
+   if (!dbl)
       return -1;
 
-   for (i = 0; i < str_list->size; i++)
+   if (dbl->blocking)
+      return 1;
+
+   for (; dbl->list_ptr < dbl->list->size; dbl->list_ptr++)
    {
       char parent_dir[PATH_MAX_LENGTH];
-      const char *name = str_list->elems[i].data;
+      const char *name = dbl->list->elems[dbl->list_ptr].data;
+
       if (!name)
          continue;
 
@@ -113,7 +136,8 @@ int database_info_write_rdl(const char *dir)
       }
    }
 
-   string_list_free(str_list);
+   database_info_write_rdl_deinit(dbl);
+   dbl = NULL;
 
    return 0;
 }

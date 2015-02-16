@@ -19,11 +19,19 @@
 #define DATABASE_INFO_H_
 
 #include <stddef.h>
+#include <boolean.h>
 #include "libretrodb/libretrodb.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct
+{
+   bool blocking;
+   size_t list_ptr;
+   struct string_list *list;
+} database_info_rdl_handle_t;
 
 typedef struct
 {
