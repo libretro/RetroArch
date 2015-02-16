@@ -443,6 +443,101 @@ void save_ram_file(const char *path, int type)
    RARCH_LOG("Saved successfully to \"%s\".\n", path);
 }
 
+static bool load_content_dont_need_fullpath(
+      struct retro_game_info *info, unsigned i, const char *path)
+{
+   ssize_t len;
+   /* Load the content into memory. */
+
+   /* First content file is significant, attempt to do patching,
+    * CRC checking, etc. */
+   bool ret = false;
+
+   if (i == 0)
+      ret = read_content_file(path, (void**)&info->data, &len);
+   else
+      ret = read_file(path, (void**)&info->data, &len);
+
+   if (!ret || len < 0)
+   {
+      RARCH_ERR("Could not read content file \"%s\".\n", path);
+      return false;
+   }
+
+   info->size = len;
+
+   return true;
+}
+
+static bool load_content_need_fullpath(
+      struct retro_game_info *info, unsigned i,
+      struct string_list* additional_path_allocs,
+      bool need_fullpath, const char *path)
+{
+#ifdef HAVE_COMPRESSION
+   char new_path[PATH_MAX_LENGTH], new_basedir[PATH_MAX_LENGTH];
+   ssize_t len;
+   union string_list_elem_attr attributes;
+   bool ret = false;
+
+   if (g_extern.system.info.block_extract)
+      return true;
+
+   if (!need_fullpath)
+      return true;
+
+   if (!path_contains_compressed_file(path))
+      return true;
+
+   RARCH_LOG("Content loading skipped. Implementation will"
+         " load it on its own.\n");
+
+   RARCH_LOG("Compressed file in case of need_fullpath."
+         "Now extracting to temporary directory.\n");
+
+   strlcpy(new_basedir, g_settings.extraction_directory,
+         sizeof(new_basedir));
+
+   if ((!strcmp(new_basedir, "")) ||
+         !path_is_directory(new_basedir))
+   {
+      RARCH_WARN("Tried extracting to extraction directory, but "
+            "extraction directory was not set or found. "
+            "Setting extraction directory to directory "
+            "derived by basename...\n");
+      fill_pathname_basedir(new_basedir, path,
+            sizeof(new_basedir));
+   }
+
+   attributes.i = 0;
+   fill_pathname_join(new_path, new_basedir,
+         path_basename(path), sizeof(new_path));
+
+   ret = read_compressed_file(path,NULL,new_path, &len);
+
+   if (!ret || len < 0)
+   {
+      RARCH_ERR("Could not read content file \"%s\".\n", path);
+      return false;
+   }
+
+   string_list_append(additional_path_allocs,new_path, attributes);
+   info[i].path =
+      additional_path_allocs->elems
+      [additional_path_allocs->size -1 ].data;
+
+   /* g_extern.temporary_content is initialized in init_content_file
+    * The following part takes care of cleanup of the unzipped files
+    * after exit.
+    */
+   rarch_assert(g_extern.temporary_content != NULL);
+   string_list_append(g_extern.temporary_content,
+         new_path, attributes);
+
+   return true;
+#endif
+}
+
 /**
  * load_content:
  * @special          : subsystem of content to be loaded. Can be NULL.
@@ -482,91 +577,21 @@ static bool load_content(const struct retro_subsystem_info *special,
          goto end;
       }
 
-      info[i].path = *path ? path : NULL;
+      info[i].path = NULL;
+      
+      if (*path)
+         info[i].path = path;
 
       if (!need_fullpath && *path)
       {
-         ssize_t len;
-         /* Load the content into memory. */
-
-         /* First content file is significant, attempt to do patching,
-          * CRC checking, etc. */
-         bool ret = false;
-         
-         if (i == 0)
-            ret = read_content_file(path, (void**)&info[i].data, &len);
-         else
-            ret = read_file(path, (void**)&info[i].data, &len);
-
-         if (!ret || len < 0)
-         {
-            RARCH_ERR("Could not read content file \"%s\".\n", path);
-            ret = false;
+         if (!load_content_dont_need_fullpath(&info[i], i, path))
             goto end;
-         }
-
-         info[i].size = len;
       }
       else
       {
-         RARCH_LOG("Content loading skipped. Implementation will"
-               " load it on its own.\n");
-
-#ifdef HAVE_COMPRESSION
-         if (!g_extern.system.info.block_extract)
-         {
-            if (need_fullpath && path_contains_compressed_file(path))
-            {
-               bool ret = false;
-               ssize_t len;
-               char new_path[PATH_MAX_LENGTH], new_basedir[PATH_MAX_LENGTH];
-               union string_list_elem_attr attributes;
-
-               RARCH_LOG("Compressed file in case of need_fullpath."
-                     "Now extracting to temporary directory.\n");
-
-               strlcpy(new_basedir, g_settings.extraction_directory,
-                     sizeof(new_basedir));
-
-               if ((!strcmp(new_basedir, "")) ||
-                     !path_is_directory(new_basedir))
-               {
-                  RARCH_WARN("Tried extracting to extraction directory, but "
-                        "extraction directory was not set or found. "
-                        "Setting extraction directory to directory "
-                        "derived by basename...\n");
-                  fill_pathname_basedir(new_basedir, path,
-                        sizeof(new_basedir));
-               }
-
-               attributes.i = 0;
-               fill_pathname_join(new_path, new_basedir,
-                     path_basename(path), sizeof(new_path));
-
-               ret = read_compressed_file(path,NULL,new_path, &len);
-
-               if (!ret || len < 0)
-               {
-                  RARCH_ERR("Could not read content file \"%s\".\n", path);
-                  ret = false;
-                  goto end;
-               }
-
-               string_list_append(additional_path_allocs,new_path, attributes);
-               info[i].path =
-                  additional_path_allocs->elems
-                  [additional_path_allocs->size -1 ].data;
-
-               /* g_extern.temporary_content is initialized in init_content_file
-                * The following part takes care of cleanup of the unzipped files
-                * after exit.
-                */
-               rarch_assert(g_extern.temporary_content != NULL);
-               string_list_append(g_extern.temporary_content,
-                     new_path, attributes);
-            }
-         }
-#endif
+         if (!load_content_need_fullpath(&info[i], i,
+                  additional_path_allocs, need_fullpath, path))
+            goto end;
       }
    }
 
