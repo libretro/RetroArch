@@ -2198,6 +2198,13 @@ int rarch_main_init(int argc, char *argv[])
    rarch_main_command(RARCH_CMD_REMAPPING_INIT);
 
    rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
+#if defined(GEKKO) && defined(HW_RVL)
+   rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
+     if (driver.video_data && driver.video_poke
+             && driver.video_poke->set_aspect_ratio)
+         driver.video_poke->set_aspect_ratio(driver.video_data,
+             g_settings.video.aspect_ratio_idx);
+#endif
 
    g_extern.error_in_init = false;
    g_extern.main_is_init  = true;
