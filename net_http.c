@@ -245,6 +245,9 @@ struct http_t *net_http_new(const char * url)
    state->buflen  = 512;
    state->data    = (char*)malloc(state->buflen);
 
+   if (!state->data)
+      goto fail;
+
    return state;
 
 fail:
