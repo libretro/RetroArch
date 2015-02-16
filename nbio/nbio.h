@@ -1,12 +1,14 @@
 #include <stddef.h>
 #include <boolean.h>
 
-enum nbio_mode_t {
-	/* The comments tell which mode in fopen() it corresponds to. */
-	NBIO_READ = 0,/* rb */
-	NBIO_WRITE,   /* wb */
-	NBIO_UPDATE,  /* r+b */
+enum nbio_mode_t
+{
+   /* The comments tell which mode in fopen() it corresponds to. */
+   NBIO_READ = 0,/* rb */
+   NBIO_WRITE,   /* wb */
+   NBIO_UPDATE,  /* r+b */
 };
+
 struct nbio_t;
 
 /*

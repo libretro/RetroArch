@@ -100,6 +100,7 @@ OBJ += frontend/frontend.o \
 		libretro-sdk/file/dir_list.o \
 		libretro-sdk/string/string_list.o \
 		file_ops.o \
+		nbio/nbio_stdio.o \
 		libretro-sdk/file/file_path.o \
 		hash.o \
 		audio/audio_driver.o \

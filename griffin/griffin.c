@@ -566,6 +566,7 @@ FILE
 #include "../libretro-sdk/file/dir_list.c"
 #include "../libretro-sdk/string/string_list.c"
 #include "../file_ops.c"
+#include "../nbio/nbio_stdio.c"
 #include "../libretro-sdk/file/file_list.c"
 
 /*============================================================
