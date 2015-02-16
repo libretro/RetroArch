@@ -41,15 +41,20 @@
 #endif
 #endif
 
-static bool apply_patch_content(uint8_t *ret_buf, uint8_t **buf,
+static bool apply_patch_content(uint8_t **buf,
       ssize_t *size, const char *patch_desc, const char *patch_path,
-      patch_func_t func, void *patch_data, ssize_t *patch_size)
+      patch_func_t func)
 {
+   void *patch_data = NULL;
    size_t target_size;
    patch_error_t err = PATCH_UNKNOWN;
    bool success = false;
    uint8_t *patched_content = NULL;
    ssize_t ret_size = *size;
+   uint8_t *ret_buf = *buf;
+   ssize_t patch_size = read_file(patch_desc, &patch_data);
+   if (patch_size < 0)
+      return false;
 
    if (!path_file_exists(patch_path))
       return false;
@@ -67,7 +72,7 @@ static bool apply_patch_content(uint8_t *ret_buf, uint8_t **buf,
       goto error;
    }
 
-   err = func((const uint8_t*)patch_data, *patch_size, ret_buf,
+   err = func((const uint8_t*)patch_data, patch_size, ret_buf,
          ret_size, patched_content, &target_size);
 
    if (err == PATCH_SUCCESS)
@@ -99,59 +104,41 @@ error:
 
 static bool try_bps_patch(uint8_t **buf, ssize_t *size)
 {
-   void *patch_data = NULL;
-   uint8_t *ret_buf = *buf;
-   ssize_t patch_size = 0;
    bool allow_bps = !g_extern.ups_pref && !g_extern.ips_pref;
 
    if (!allow_bps)
       return false;
    if (g_extern.bps_name[0] == '\0')
       return false;
-   patch_size = read_file(g_extern.bps_name, &patch_data);
-   if (patch_size < 0)
-      return false;
 
-   return apply_patch_content(ret_buf, buf, size, "BPS", g_extern.bps_name,
-         bps_apply_patch, patch_data, &patch_size);
+   return apply_patch_content(buf, size, "BPS", g_extern.bps_name,
+         bps_apply_patch);
 }
 
 static bool try_ups_patch(uint8_t **buf, ssize_t *size)
 {
-   void *patch_data = NULL;
-   uint8_t *ret_buf = *buf;
-   ssize_t patch_size = 0;
    bool allow_ups = !g_extern.bps_pref && !g_extern.ips_pref;
 
    if (!allow_ups)
       return false;
    if (g_extern.ups_name[0] == '\0')
       return false;
-   patch_size = read_file(g_extern.ups_name, &patch_data);
-   if (patch_size < 0)
-      return false;
 
-   return apply_patch_content(ret_buf, buf, size, "UPS", g_extern.ups_name,
-         ups_apply_patch, patch_data, &patch_size);
+   return apply_patch_content(buf, size, "UPS", g_extern.ups_name,
+         ups_apply_patch);
 }
 
 static bool try_ips_patch(uint8_t **buf, ssize_t *size)
 {
-   void *patch_data = NULL;
-   uint8_t *ret_buf = *buf;
-   ssize_t patch_size = 0;
    bool allow_ips = !g_extern.ups_pref && !g_extern.bps_pref;
 
    if (!allow_ips)
       return false;
    if (g_extern.ips_name[0] == '\0')
       return false;
-   patch_size = read_file(g_extern.ips_name, &patch_data);
-   if (patch_size < 0)
-      return false;
 
-   return apply_patch_content(ret_buf, buf, size, "IPS", g_extern.ips_name,
-         ips_apply_patch, patch_data, &patch_size);
+   return apply_patch_content(buf, size, "IPS", g_extern.ips_name,
+         ips_apply_patch);
 }
 
 /**
