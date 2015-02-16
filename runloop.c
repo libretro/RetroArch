@@ -894,7 +894,7 @@ static int rarch_main_iterate_http_transfer(void)
 {
    size_t pos = 0, tot = 0;
 
-   if (!net_http_update(g_extern.http_handle, &pos, &tot))
+   if (!net_http_update(g_extern.http.handle, &pos, &tot))
    {
 #ifdef _WIN32
 		RARCH_LOG("%.9I64u / %.9I64u       \r", (unsigned long long)pos, (unsigned long long)tot);
@@ -910,15 +910,17 @@ static int rarch_main_iterate_http_transfer(void)
 static int rarch_main_iterate_http_parse(void)
 {
    size_t len;
-   char *data = (char*)net_http_data(g_extern.http_handle, &len, false);
+   char *data = (char*)net_http_data(g_extern.http.handle, &len, false);
 
-   if (data && g_extern.http_cb)
-      g_extern.http_cb(data, len);
+   if (data && g_extern.http.cb)
+      g_extern.http.cb(data, len);
 
-   net_http_delete(g_extern.http_handle);
+   net_http_delete(g_extern.http.handle);
 
-   g_extern.http_handle = NULL;
-   msg_queue_clear(g_extern.http_msg_queue);
+   g_extern.http.handle = NULL;
+   msg_queue_clear(g_extern.http.msg_queue);
+
+   msg_queue_clear(g_extern.nbio.msg_queue);
 
    return 0;
 }
@@ -940,13 +942,13 @@ static int rarch_main_iterate_http_poll(void)
 {
    char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
    struct string_list *str_list = NULL;
-   const char *url = msg_queue_pull(g_extern.http_msg_queue);
+   const char *url = msg_queue_pull(g_extern.http.msg_queue);
 
    if (!url)
       return -1;
 
    /* Can only deal with one HTTP transfer at a time for now */
-   if (g_extern.http_handle)
+   if (g_extern.http.handle)
       return -1; 
 
    str_list         = string_split(url, "|"); 
@@ -959,23 +961,23 @@ static int rarch_main_iterate_http_poll(void)
    if (str_list->size > 1)
       strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
 
-   g_extern.http_handle = net_http_new(elem0);
+   g_extern.http.handle = net_http_new(elem0);
 
-   if (!g_extern.http_handle)
+   if (!g_extern.http.handle)
    {
       RARCH_ERR("Could not create new HTTP session handle.\n");
       string_list_free(str_list);
       return -1;
    }
 
-   g_extern.http_cb     = NULL;
+   g_extern.http.cb     = NULL;
 
    if (elem1[0] != '\0')
    {
       if (!strcmp(elem1, "cb_core_updater_download"))
-         g_extern.http_cb = &cb_core_updater_download;
+         g_extern.http.cb = &cb_core_updater_download;
       if (!strcmp(elem1, "cb_core_updater_list"))
-         g_extern.http_cb = &cb_core_updater_list;
+         g_extern.http.cb = &cb_core_updater_list;
    }
 
    string_list_free(str_list);
@@ -1043,7 +1045,7 @@ int rarch_main_iterate(void)
    do_pre_state_checks(input, old_input, trigger_input);
 
 #ifdef HAVE_NETWORKING
-   if (g_extern.http_handle)
+   if (g_extern.http.handle)
    {
       if (!rarch_main_iterate_http_transfer())
          rarch_main_iterate_http_parse();

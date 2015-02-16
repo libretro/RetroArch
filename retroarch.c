@@ -2610,9 +2610,11 @@ bool rarch_main_command(unsigned cmd)
          if (!g_extern.msg_queue)
             rarch_assert(g_extern.msg_queue = msg_queue_new(8));
 #ifdef HAVE_NETWORKING
-         if (!g_extern.http_msg_queue)
-            rarch_assert(g_extern.http_msg_queue = msg_queue_new(8));
+         if (!g_extern.http.msg_queue)
+            rarch_assert(g_extern.http.msg_queue = msg_queue_new(8));
 #endif
+         if (!g_extern.nbio.msg_queue)
+            rarch_assert(g_extern.nbio.msg_queue = msg_queue_new(8));
          break;
       case RARCH_CMD_BSV_MOVIE_DEINIT:
          if (g_extern.bsv.movie)

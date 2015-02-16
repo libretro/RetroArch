@@ -1702,8 +1702,8 @@ static int action_ok_core_updater_list(const char *path,
 
    strlcat(core_path, "|cb_core_updater_download", sizeof(core_path));
 
-   msg_queue_clear(g_extern.http_msg_queue);
-   msg_queue_push(g_extern.http_msg_queue, core_path, 0, 1);
+   msg_queue_clear(g_extern.http.msg_queue);
+   msg_queue_push(g_extern.http.msg_queue, core_path, 0, 1);
 #endif
    return 0;
 }
@@ -3678,8 +3678,8 @@ static int deferred_push_core_updater_list(void *data, void *userdata,
 
    strlcat(url_path, "|cb_core_updater_list", sizeof(url_path));
 
-   msg_queue_clear(g_extern.http_msg_queue);
-   msg_queue_push(g_extern.http_msg_queue, url_path, 0, 1);
+   msg_queue_clear(g_extern.http.msg_queue);
+   msg_queue_push(g_extern.http.msg_queue, url_path, 0, 1);
 #endif
 
    return 0;
