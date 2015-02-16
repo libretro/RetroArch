@@ -572,10 +572,8 @@ static bool path_mkdir_norecurse(const char *dir)
    /* Don't treat this as an error. */
    if (ret < 0 && errno == EEXIST && path_is_directory(dir))
       ret = 0;
-#if 0
    if (ret < 0)
-      RARCH_ERR("mkdir(%s) error: %s.\n", dir, strerror(errno));
-#endif
+      printf("mkdir(%s) error: %s.\n", dir, strerror(errno));
    return ret == 0;
 }
 
@@ -621,10 +619,8 @@ bool path_mkdir(const char *dir)
    }
 
 end:
-#if 0
    if (target && !ret)
-      RARCH_ERR("Failed to create directory: \"%s\".\n", target);
-#endif
+      printf("Failed to create directory: \"%s\".\n", target);
    free(basedir);
    return ret;
 }
