@@ -41,71 +41,18 @@
 #endif
 #endif
 
-/**
- * patch_content:
- * @buf          : buffer of the content file.
- * @size         : size   of the content file.
- *
- * Apply patch to the content file in-memory.
- *
- **/
-static void patch_content(uint8_t **buf, ssize_t *size)
+static bool apply_patch_content(uint8_t *ret_buf, uint8_t **buf,
+      ssize_t *size, const char *patch_desc, const char *patch_path,
+      patch_func_t func, void *patch_data, ssize_t *patch_size)
 {
    size_t target_size;
-
-   uint8_t *ret_buf = *buf;
+   patch_error_t err = PATCH_UNKNOWN;
+   bool success = false;
+   uint8_t *patched_content = NULL;
    ssize_t ret_size = *size;
 
-   uint8_t *patched_content = NULL;
-
-   const char *patch_desc = NULL;
-   const char *patch_path = NULL;
-   patch_error_t err = PATCH_UNKNOWN;
-   patch_func_t func = NULL;
-
-   ssize_t patch_size = 0;
-   void *patch_data = NULL;
-   bool success = false;
-
-   bool allow_bps = !g_extern.ups_pref && !g_extern.ips_pref;
-   bool allow_ups = !g_extern.bps_pref && !g_extern.ips_pref;
-   bool allow_ips = !g_extern.ups_pref && !g_extern.bps_pref;
-
-   if (g_extern.ups_pref + g_extern.bps_pref + g_extern.ips_pref > 1)
-   {
-      RARCH_WARN("Several patches are explicitly defined, ignoring all ...\n");
-      return;
-   }
-
-   if (allow_ups && *g_extern.ups_name
-         && (patch_size = read_file(g_extern.ups_name, &patch_data)) >= 0)
-   {
-      patch_desc = "UPS";
-      patch_path = g_extern.ups_name;
-      func = ups_apply_patch;
-   }
-   else if (allow_bps && *g_extern.bps_name
-         && (patch_size = read_file(g_extern.bps_name, &patch_data)) >= 0)
-   {
-      patch_desc = "BPS";
-      patch_path = g_extern.bps_name;
-      func = bps_apply_patch;
-   }
-   else if (allow_ips && *g_extern.ips_name
-         && (patch_size = read_file(g_extern.ips_name, &patch_data)) >= 0)
-   {
-      patch_desc = "IPS";
-      patch_path = g_extern.ips_name;
-      func = ips_apply_patch;
-   }
-   else
-   {
-      RARCH_LOG("Did not find a valid content patch.\n");
-      return;
-   }
-
    if (!path_file_exists(patch_path))
-      return;
+      return false;
 
    RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n",
          patch_desc, patch_path);
@@ -120,7 +67,7 @@ static void patch_content(uint8_t **buf, ssize_t *size)
       goto error;
    }
 
-   err = func((const uint8_t*)patch_data, patch_size, ret_buf,
+   err = func((const uint8_t*)patch_data, *patch_size, ret_buf,
          ret_size, patched_content, &target_size);
 
    if (err == PATCH_SUCCESS)
@@ -140,12 +87,95 @@ static void patch_content(uint8_t **buf, ssize_t *size)
    }
 
    free(patch_data);
-   return;
+   return true;
 
 error:
    *buf = ret_buf;
    *size = ret_size;
    free(patch_data);
+
+   return false;
+}
+
+static bool try_bps_patch(uint8_t **buf, ssize_t *size)
+{
+   void *patch_data = NULL;
+   uint8_t *ret_buf = *buf;
+   ssize_t patch_size = 0;
+   bool allow_bps = !g_extern.ups_pref && !g_extern.ips_pref;
+
+   if (!allow_bps)
+      return false;
+   if (g_extern.bps_name[0] == '\0')
+      return false;
+   patch_size = read_file(g_extern.bps_name, &patch_data);
+   if (patch_size < 0)
+      return false;
+
+   return apply_patch_content(ret_buf, buf, size, "BPS", g_extern.bps_name,
+         bps_apply_patch, patch_data, &patch_size);
+}
+
+static bool try_ups_patch(uint8_t **buf, ssize_t *size)
+{
+   void *patch_data = NULL;
+   uint8_t *ret_buf = *buf;
+   ssize_t patch_size = 0;
+   bool allow_ups = !g_extern.bps_pref && !g_extern.ips_pref;
+
+   if (!allow_ups)
+      return false;
+   if (g_extern.ups_name[0] == '\0')
+      return false;
+   patch_size = read_file(g_extern.ups_name, &patch_data);
+   if (patch_size < 0)
+      return false;
+
+   return apply_patch_content(ret_buf, buf, size, "UPS", g_extern.ups_name,
+         ups_apply_patch, patch_data, &patch_size);
+}
+
+static bool try_ips_patch(uint8_t **buf, ssize_t *size)
+{
+   void *patch_data = NULL;
+   uint8_t *ret_buf = *buf;
+   ssize_t patch_size = 0;
+   bool allow_ips = !g_extern.ups_pref && !g_extern.bps_pref;
+
+   if (!allow_ips)
+      return false;
+   if (g_extern.ips_name[0] == '\0')
+      return false;
+   patch_size = read_file(g_extern.ips_name, &patch_data);
+   if (patch_size < 0)
+      return false;
+
+   return apply_patch_content(ret_buf, buf, size, "IPS", g_extern.ips_name,
+         ips_apply_patch, patch_data, &patch_size);
+}
+
+/**
+ * patch_content:
+ * @buf          : buffer of the content file.
+ * @size         : size   of the content file.
+ *
+ * Apply patch to the content file in-memory.
+ *
+ **/
+static void patch_content(uint8_t **buf, ssize_t *size)
+{
+   bool allow_ips = !g_extern.ups_pref && !g_extern.bps_pref;
+
+   if (g_extern.ups_pref + g_extern.bps_pref + g_extern.ips_pref > 1)
+   {
+      RARCH_WARN("Several patches are explicitly defined, ignoring all ...\n");
+      return;
+   }
+
+   if (!try_ups_patch(buf, size) || !try_bps_patch(buf, size) || !try_ips_patch(buf, size))
+   {
+      RARCH_LOG("Did not find a valid content patch.\n");
+   }
 }
 
 /**
