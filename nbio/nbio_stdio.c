@@ -134,19 +134,19 @@ void* nbio_get_ptr(struct nbio_t* handle, size_t* len)
 
 void nbio_cancel(struct nbio_t* handle)
 {
-	handle->op = -1;
-	handle->progress = handle->len;
+   handle->op = -1;
+   handle->progress = handle->len;
 }
 
 void nbio_free(struct nbio_t* handle)
 {
+   if (!handle)
+      return;
    if (handle->op >= 0)
    {
       puts("ERROR - attempted free() while busy");
       abort();
    }
-   if (!handle)
-      return;
    fclose(handle->f);
    free(handle->data);
 }
