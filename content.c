@@ -104,6 +104,9 @@ static void patch_content(uint8_t **buf, ssize_t *size)
       return;
    }
 
+   if (!path_file_exists(patch_path))
+      return;
+
    RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n",
          patch_desc, patch_path);
 
