@@ -150,19 +150,26 @@ error:
  * Extracts to buf, unless optional_filename != 0
  * Then extracts to optional_filename and leaves buf alone.
  */
-long read_compressed_file(const char * path, void **buf,
-      const char* optional_filename)
+bool read_compressed_file(const char * path, void **buf,
+      const char* optional_filename, size_t *length)
 {
    const char* file_ext;
    char archive_path[PATH_MAX_LENGTH], *archive_found = NULL;
 
-   /* Safety check.
-    * If optional_filename and optional_filename exists, we simply return 0,
-    * hoping that optional_filename is the same as requested.
-   */
    if (optional_filename)
+   {
+      /* Safety check.
+       * If optional_filename and optional_filename 
+       * exists, we simply return 0,
+       * hoping that optional_filename is the 
+       * same as requested.
+       */
       if(path_file_exists(optional_filename))
-         return 0;
+      {
+         *length = 0;
+         return true;
+      }
+   }
 
    //We split carchive path and relative path:
    strlcpy(archive_path,path,sizeof(archive_path));
@@ -179,23 +186,32 @@ long read_compressed_file(const char * path, void **buf,
        */
       RARCH_ERR("Could not extract image path and carchive path from "
             "path: %s.\n", path);
-      return -1;
+      *length = 0;
+      return false;
    }
 
    /* We split the string in two, by putting a \0, where the hash was: */
-   *archive_found = '\0';
-   archive_found+=1;
+   *archive_found  = '\0';
+   archive_found  += 1;
+   file_ext        = path_get_extension(archive_path);
 
-   file_ext = path_get_extension(archive_path);
 #ifdef HAVE_7ZIP
    if (strcasecmp(file_ext,"7z") == 0)
-      return read_7zip_file(archive_path,archive_found,buf,optional_filename);
+   {
+      *length = read_7zip_file(archive_path,archive_found,buf,optional_filename);
+      if (*length != -1)
+         return true;
+   }
 #endif
 #ifdef HAVE_ZLIB
    if (strcasecmp(file_ext,"zip") == 0)
-      return read_zip_file(archive_path,archive_found,buf,optional_filename);
+   {
+      *length = read_zip_file(archive_path,archive_found,buf,optional_filename);
+      if (*length != -1)
+         return true;
+   }
 #endif
-   return -1;
+   return false;
 }
 #endif
 
@@ -204,13 +220,14 @@ long read_compressed_file(const char * path, void **buf,
  * @path             : path to file.
  * @buf              : buffer to allocate and read the contents of the
  *                     file into. Needs to be freed manually.
+ * @length           : Number of items read, -1 on error.
  *
  * Read the contents of a file into @buf. Will call read_compressed_file
  * if path contains a compressed file, otherwise will call read_generic_file.
  *
- * Returns: number of items read, -1 on error.
+ * Returns: true if file read, false on error.
  */
-long read_file(const char *path, void **buf)
+bool read_file(const char *path, void **buf, size_t *length)
 {
 #ifdef HAVE_COMPRESSION
    /* Here we check, whether the file, we are about to read is
@@ -223,10 +240,11 @@ long read_file(const char *path, void **buf)
     * carchive_path: /home/user/game.7z
     * */
    if (path_contains_compressed_file(path))
-      return read_compressed_file(path,buf,0);
+      if (read_compressed_file(path, buf, NULL, length))
+         return true;
 #endif
-   size_t length = 0;
-   if (!read_generic_file(path, buf, &length))
-      return 0;
-   return length;
+   if (read_generic_file(path, buf, length))
+      return true;
+   *length = -1;
+   return false;
 }

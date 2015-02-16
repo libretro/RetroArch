@@ -92,16 +92,16 @@ int database_info_write_rdl(const char *dir)
       else
 #endif
       {
-         ssize_t ret;
+         size_t ret;
          uint32_t crc, target_crc = 0;
          uint8_t *ret_buf = NULL;
+         bool read_from = false;
 
          (void)target_crc;
 
-         RARCH_LOG("name: %s\n", name);
-         ret = read_file(name, (void**)&ret_buf);
+         read_from = read_file(name, (void**)&ret_buf, &ret);
 
-         if (ret <= 0)
+         if (!read_from || ret <= 0)
             continue;
 
          crc = crc32_calculate(ret_buf, ret);

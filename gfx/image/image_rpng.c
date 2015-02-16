@@ -214,9 +214,10 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
    {
       void *raw_buf = NULL;
       uint8_t *buf = NULL;
-      ssize_t len = read_file(path, &raw_buf);
+      size_t len;
+      bool ret = read_file(path, &raw_buf, &len);
 
-      if (len < 0)
+      if (!ret || len < 0)
       {
          RARCH_ERR("Failed to read image: %s.\n", path);
          return false;

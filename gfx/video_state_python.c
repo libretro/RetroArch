@@ -297,7 +297,9 @@ py_state_t *py_state_new(const char *script,
        * compiled with MSVC. */
 
       char *script_ = NULL;
-      if (read_file(script, (void**)&script_) < 0)
+      size_t len;
+      bool ret = read_file(script, (void**)&script_, &len);
+      if (!ret || len < 0)
       {
          RARCH_ERR("Python: Failed to read script\n");
          goto error;

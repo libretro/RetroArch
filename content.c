@@ -42,7 +42,7 @@
 #endif
 
 static bool apply_patch_content(uint8_t **buf,
-      ssize_t *size, const char *patch_desc, const char *patch_path,
+      size_t *size, const char *patch_desc, const char *patch_path,
       patch_func_t func)
 {
    void *patch_data = NULL;
@@ -52,7 +52,10 @@ static bool apply_patch_content(uint8_t **buf,
    uint8_t *patched_content = NULL;
    ssize_t ret_size = *size;
    uint8_t *ret_buf = *buf;
-   ssize_t patch_size = read_file(patch_desc, &patch_data);
+   size_t patch_size;
+   
+   if (!read_file(patch_desc, &patch_data, &patch_size))
+      return false;
    if (patch_size < 0)
       return false;
 
@@ -102,7 +105,7 @@ error:
    return false;
 }
 
-static bool try_bps_patch(uint8_t **buf, ssize_t *size)
+static bool try_bps_patch(uint8_t **buf, size_t *size)
 {
    bool allow_bps = !g_extern.ups_pref && !g_extern.ips_pref;
 
@@ -115,7 +118,7 @@ static bool try_bps_patch(uint8_t **buf, ssize_t *size)
          bps_apply_patch);
 }
 
-static bool try_ups_patch(uint8_t **buf, ssize_t *size)
+static bool try_ups_patch(uint8_t **buf, size_t *size)
 {
    bool allow_ups = !g_extern.bps_pref && !g_extern.ips_pref;
 
@@ -128,7 +131,7 @@ static bool try_ups_patch(uint8_t **buf, ssize_t *size)
          ups_apply_patch);
 }
 
-static bool try_ips_patch(uint8_t **buf, ssize_t *size)
+static bool try_ips_patch(uint8_t **buf, size_t *size)
 {
    bool allow_ips = !g_extern.ups_pref && !g_extern.bps_pref;
 
@@ -149,7 +152,7 @@ static bool try_ips_patch(uint8_t **buf, ssize_t *size)
  * Apply patch to the content file in-memory.
  *
  **/
-static void patch_content(uint8_t **buf, ssize_t *size)
+static void patch_content(uint8_t **buf, size_t *size)
 {
    if (g_extern.ups_pref + g_extern.bps_pref + g_extern.ips_pref > 1)
    {
@@ -167,33 +170,36 @@ static void patch_content(uint8_t **buf, ssize_t *size)
  * read_content_file:
  * @path         : buffer of the content file.
  * @buf          : size   of the content file.
+ * @length       : size of the content file that has been read from.
  *
  * Read the content file into memory. Also performs soft patching
  * (see patch_content function) in case soft patching has not been
  * blocked by the enduser.
  *
- * Returns: size of the content file that has been read from.
+ * Returns: true if successful, false on error.
  **/
-static ssize_t read_content_file(const char *path, void **buf)
+static bool read_content_file(const char *path, void **buf,
+      size_t *length)
 {
    uint8_t *ret_buf = NULL;
-   ssize_t ret = -1;
 
    RARCH_LOG("Loading content file: %s.\n", path);
-   ret = read_file(path, (void**) &ret_buf);
+   if (!read_file(path, (void**) &ret_buf, length))
+      return false;
 
-   if (ret <= 0)
-      return ret;
+   if (*length <= 0)
+      return false;
 
    /* Attempt to apply a patch. */
    if (!g_extern.block_patch)
-      patch_content(&ret_buf, &ret);
+      patch_content(&ret_buf, length);
    
-   g_extern.content_crc = crc32_calculate(ret_buf, ret);
+   g_extern.content_crc = crc32_calculate(ret_buf, *length);
 
    RARCH_LOG("CRC32: 0x%x .\n", (unsigned)g_extern.content_crc);
    *buf = ret_buf;
-   return ret;
+
+   return true;
 }
 
 /**
@@ -301,12 +307,13 @@ bool load_state(const char *path)
    bool ret = true;
    void *buf = NULL;
    struct sram_block *blocks = NULL;
+   size_t size;
 
-   ssize_t size = read_file(path, &buf);
+   ret = read_file(path, &buf, &size);
 
    RARCH_LOG("Loading state: \"%s\".\n", path);
 
-   if (size < 0)
+   if (!ret || size < 0)
    {
       RARCH_ERR("Failed to load state from \"%s\".\n", path);
       return false;
@@ -376,7 +383,8 @@ bool load_state(const char *path)
  */
 void load_ram_file(const char *path, int type)
 {
-   ssize_t rc;
+   size_t rc;
+   bool ret = false;
    void *buf   = NULL;
    size_t size = pretro_get_memory_size(type);
    void *data  = pretro_get_memory_data(type);
@@ -384,7 +392,10 @@ void load_ram_file(const char *path, int type)
    if (size == 0 || !data)
       return;
 
-   rc = read_file(path, &buf);
+   ret = read_file(path, &buf, &rc);
+
+   if (!ret)
+      return;
 
    if (rc > 0)
    {
@@ -475,22 +486,26 @@ static bool load_content(const struct retro_subsystem_info *special,
 
       if (!need_fullpath && *path)
       {
+         size_t len;
          /* Load the content into memory. */
 
          /* First content file is significant, attempt to do patching,
           * CRC checking, etc. */
-         long size = (i == 0) ?
-            read_content_file(path, (void**)&info[i].data) :
-            read_file(path, (void**)&info[i].data);
+         bool ret = false;
+         
+         if (i == 0)
+            ret = read_content_file(path, (void**)&info[i].data, &len);
+         else
+            ret = read_file(path, (void**)&info[i].data, &len);
 
-         if (size < 0)
+         if (!ret || len < 0)
          {
             RARCH_ERR("Could not read content file \"%s\".\n", path);
             ret = false;
             goto end;
          }
 
-         info[i].size = size;
+         info[i].size = len;
       }
       else
       {
@@ -502,6 +517,8 @@ static bool load_content(const struct retro_subsystem_info *special,
          {
             if (need_fullpath && path_contains_compressed_file(path))
             {
+               bool ret = false;
+               size_t len;
                char new_path[PATH_MAX_LENGTH], new_basedir[PATH_MAX_LENGTH];
                union string_list_elem_attr attributes;
 
@@ -525,7 +542,16 @@ static bool load_content(const struct retro_subsystem_info *special,
                attributes.i = 0;
                fill_pathname_join(new_path, new_basedir,
                      path_basename(path), sizeof(new_path));
-               read_compressed_file(path,NULL,new_path);
+
+               ret = read_compressed_file(path,NULL,new_path, &len);
+
+               if (!ret || len < 0)
+               {
+                  RARCH_ERR("Could not read content file \"%s\".\n", path);
+                  ret = false;
+                  goto end;
+               }
+
                string_list_append(additional_path_allocs,new_path, attributes);
                info[i].path =
                   additional_path_allocs->elems
