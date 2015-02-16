@@ -29,6 +29,7 @@ extern "C" {
 typedef struct
 {
    bool blocking;
+   bool iterating;
    size_t list_ptr;
    struct string_list *list;
 } database_info_rdl_handle_t;
@@ -75,7 +76,11 @@ void database_info_list_free(database_info_list_t *list);
 int database_open_cursor(libretrodb_t *db,
       libretrodb_cursor_t *cur, const char *query);
 
-int database_info_write_rdl(const char *dir);
+database_info_rdl_handle_t *database_info_write_rdl_init(const char *dir);
+
+void database_info_write_rdl_free(database_info_rdl_handle_t *dbl);
+
+int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl);
 
 #ifdef __cplusplus
 }

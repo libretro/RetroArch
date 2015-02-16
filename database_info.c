@@ -68,14 +68,15 @@ database_info_rdl_handle_t *database_info_write_rdl_init(const char *dir)
    if (g_extern.core_info)
       exts = core_info_list_get_all_extensions(g_extern.core_info);
    
-   dbl->list     = dir_list_new(dir, exts, false);
-   dbl->list_ptr = 0;
-   dbl->blocking = false;
+   dbl->list      = dir_list_new(dir, exts, false);
+   dbl->list_ptr  = 0;
+   dbl->blocking  = false;
+   dbl->iterating = true;
 
    return dbl;
 }
 
-void database_info_write_rdl_deinit(database_info_rdl_handle_t *dbl)
+void database_info_write_rdl_free(database_info_rdl_handle_t *dbl)
 {
    if (!dbl)
       return;
@@ -83,61 +84,69 @@ void database_info_write_rdl_deinit(database_info_rdl_handle_t *dbl)
    free(dbl);
 }
 
-int database_info_write_rdl(const char *dir)
+int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl)
 {
-   database_info_rdl_handle_t *dbl = database_info_write_rdl_init(dir);
+   char parent_dir[PATH_MAX_LENGTH];
+   const char *name = NULL;
 
    if (!dbl)
       return -1;
-
    if (dbl->blocking)
       return 1;
-
-   for (; dbl->list_ptr < dbl->list->size; dbl->list_ptr++)
+   if (dbl->list_ptr < dbl->list->size) {}
+   else
    {
-      char parent_dir[PATH_MAX_LENGTH];
-      const char *name = dbl->list->elems[dbl->list_ptr].data;
-
-      if (!name)
-         continue;
-
-      path_parent_dir(parent_dir);
-
-#ifdef HAVE_ZLIB
-      if (!strcmp(path_get_extension(name), "zip"))
-      {
-         RARCH_LOG("[ZIP]: name: %s\n", name);
-
-         if (!zlib_parse_file(name, NULL, zlib_compare_crc32,
-                  (void*)parent_dir))
-            RARCH_LOG("Could not process ZIP file.\n");
-      }
-      else
-#endif
-      {
-         ssize_t ret;
-         uint32_t crc, target_crc = 0;
-         uint8_t *ret_buf = NULL;
-         bool read_from = false;
-
-         (void)target_crc;
-
-         read_from = read_file(name, (void**)&ret_buf, &ret);
-
-         if (!read_from || ret <= 0)
-            continue;
-
-         crc = crc32_calculate(ret_buf, ret);
-
-         RARCH_LOG("CRC32: 0x%x .\n", (unsigned)crc);
-
-         if (ret_buf)
-            free(ret_buf);
-      }
+      dbl->iterating = false;
+      return 1;
    }
 
-   database_info_write_rdl_deinit(dbl);
-   dbl = NULL;
+   name = dbl->list->elems[dbl->list_ptr].data;
+
+   if (!name)
+      return 0;
+
+   path_parent_dir(parent_dir);
+
+#ifdef HAVE_ZLIB
+   if (!strcmp(path_get_extension(name), "zip"))
+   {
+      RARCH_LOG("[ZIP]: name: %s\n", name);
+
+      if (!zlib_parse_file(name, NULL, zlib_compare_crc32,
+               (void*)parent_dir))
+         RARCH_LOG("Could not process ZIP file.\n");
+   }
+   else
+#endif
+   {
+      char msg[PATH_MAX_LENGTH];
+      ssize_t ret;
+      uint32_t crc, target_crc = 0;
+      uint8_t *ret_buf = NULL;
+      bool read_from = false;
+
+      (void)target_crc;
+
+      read_from = read_file(name, (void**)&ret_buf, &ret);
+
+      if (!read_from || ret <= 0)
+         return 0;
+
+      snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
+            dbl->list_ptr, dbl->list->size, name);
+
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+
+      crc = crc32_calculate(ret_buf, ret);
+
+      RARCH_LOG("CRC32: 0x%x .\n", (unsigned)crc);
+
+      if (ret_buf)
+         free(ret_buf);
+   }
+
+   dbl->list_ptr++;
 
    return 0;
 }

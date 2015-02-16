@@ -22,6 +22,7 @@
 #ifdef HAVE_LIBRETRODB
 #include "../libretrodb/libretrodb.h"
 #endif
+#include "../database_info.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,7 +31,7 @@ extern "C" {
 int menu_database_populate_query(file_list_t *list, const char *path,
                                      const char *query);
 
-void menu_database_free(menu_handle_t *menu);
+void menu_database_free(void *data);
 
 bool menu_database_realloc(const char *path,
       bool force);

@@ -17,7 +17,6 @@
 #include "menu_database.h"
 #include "menu_list.h"
 #include "menu_entries.h"
-#include "../database_info.h"
 #include "../playlist.h"
 #include <string.h>
 
@@ -49,8 +48,11 @@ static void menu_database_playlist_free(menu_handle_t *menu)
    menu->db_playlist = NULL;
 }
 
-void menu_database_free(menu_handle_t *menu)
+void menu_database_free(void *data)
 {
+   menu_handle_t *menu = (menu_handle_t*)data;
+   if (!menu)
+      return;
    menu_database_playlist_free(menu);
 }
 

@@ -4520,6 +4520,12 @@ static int action_iterate_main(const char *label, unsigned action)
          break;
 
       case MENU_ACTION_TEST:
+#if 0
+         menu->rdl = database_info_write_rdl_init("/home/twinaphex/roms");
+
+         if (!menu->rdl)
+            return -1;
+#endif
          break;
 
       default:

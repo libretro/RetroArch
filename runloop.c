@@ -984,6 +984,33 @@ static int rarch_main_iterate_http_poll(void)
 }
 #endif
 
+#ifdef HAVE_MENU
+static void rarch_main_iterate_rdl(void)
+{
+   if (!driver.menu->rdl)
+      return;
+
+   if (driver.menu->rdl->blocking)
+   {
+      /* Do nonblocking I/O transfers here. */
+      return;
+   }
+
+   if (!driver.menu->rdl->iterating)
+   {
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, "Scanning of directory finished.\n", 1, 180);
+
+      database_info_write_rdl_free(driver.menu->rdl);
+      driver.menu->rdl = NULL;
+      return;
+   }
+
+   database_info_write_rdl_iterate(driver.menu->rdl);
+
+}
+#endif
+
 /**
  * rarch_main_iterate:
  *
@@ -1026,6 +1053,9 @@ int rarch_main_iterate(void)
 #endif
 
 #ifdef HAVE_MENU
+   if (driver.menu && driver.menu->rdl)
+      rarch_main_iterate_rdl();
+
    if (g_extern.is_menu)
    {
       menu_handle_t *menu = menu_driver_resolve();

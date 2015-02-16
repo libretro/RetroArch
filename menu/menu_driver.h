@@ -23,6 +23,7 @@
 #include <retro_miscellaneous.h>
 #include "menu_animation.h"
 #include "menu_list.h"
+#include "menu_database.h"
 #include "../settings_list.h"
 #include "../playlist.h"
 
@@ -173,6 +174,7 @@ typedef struct
 
    content_playlist_t *db_playlist;
    char db_playlist_file[PATH_MAX_LENGTH];
+   database_info_rdl_handle_t *rdl;
 } menu_handle_t;
 
 typedef struct menu_file_list_cbs
