@@ -584,7 +584,7 @@ struct global
    msg_queue_t *msg_queue;
 #ifdef HAVE_NETWORKING
    msg_queue_t *http_msg_queue;
-   http_t      *http_handle;
+   struct http_t *http_handle;
    http_cb_t    http_cb;
 #endif
 

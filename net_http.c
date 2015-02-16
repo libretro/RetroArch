@@ -38,6 +38,21 @@ enum
    T_CHUNK
 };
 
+struct http_t
+{
+	int fd;
+	int status;
+	
+	char part;
+	char bodytype;
+	bool error;
+	
+	size_t pos;
+	size_t len;
+	size_t buflen;
+	char * data;
+};
+
 static bool net_http_parse_url(char *url, char **domain,
       int *port, char **location)
 {
@@ -174,12 +189,12 @@ static ssize_t net_http_recv(int fd, bool *error,
    return -1;
 }
 
-http_t *net_http_new(const char * url)
+struct http_t *net_http_new(const char * url)
 {
    bool error;
    char *domain = NULL, *location = NULL;
    int port = 0, fd = -1;
-   http_t *state      = NULL;
+   struct http_t *state      = NULL;
    char *urlcopy      =(char*)malloc(strlen(url)+1);
 
    strcpy(urlcopy, url);
@@ -218,7 +233,7 @@ http_t *net_http_new(const char * url)
 
    free(urlcopy);
 
-   state          = (http_t*)malloc(sizeof(http_t));
+   state          = (struct http_t*)malloc(sizeof(struct http_t));
    state->fd      = fd;
    state->status  = -1;
    state->data    = NULL;
@@ -239,12 +254,12 @@ fail:
    return NULL;
 }
 
-int net_http_fd(http_t *state)
+int net_http_fd(struct http_t *state)
 {
    return state->fd;
 }
 
-bool net_http_update(http_t *state, size_t* progress, size_t* total)
+bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 {
    ssize_t newlen = 0;
 
@@ -439,12 +454,12 @@ fail:
    return true;
 }
 
-int net_http_status(http_t *state)
+int net_http_status(struct http_t *state)
 {
    return state->status;
 }
 
-uint8_t* net_http_data(http_t *state, size_t* len, bool accept_error)
+uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error)
 {
    if (!accept_error && 
          (state->error || state->status<200 || state->status>299))
@@ -460,7 +475,7 @@ uint8_t* net_http_data(http_t *state, size_t* len, bool accept_error)
    return (uint8_t*)state->data;
 }
 
-void net_http_delete(http_t *state)
+void net_http_delete(struct http_t *state)
 {
    if (state->fd != -1)
       socket_close(state->fd);

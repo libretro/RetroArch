@@ -25,42 +25,29 @@
 extern "C" {
 #endif
 
-typedef struct
-{
-	int fd;
-	int status;
-	
-	char part;
-	char bodytype;
-	bool error;
-	
-	size_t pos;
-	size_t len;
-	size_t buflen;
-	char * data;
-} http_t;
+struct http_t;
 
-http_t *net_http_new(const char * url);
+struct http_t *net_http_new(const char * url);
 
 /* You can use this to call net_http_update 
  * only when something will happen; select() it for reading. */
-int net_http_fd(http_t *state);
+int net_http_fd(struct http_t *state);
 
 /* Returns true if it's done, or if something broke.
  * 'total' will be 0 if it's not known. */
-bool net_http_update(http_t *state, size_t* progress, size_t* total);
+bool net_http_update(struct http_t *state, size_t* progress, size_t* total);
 
 /* 200, 404, or whatever.  */
-int net_http_status(http_t *state);
+int net_http_status(struct http_t *state);
 
 /* Returns the downloaded data. The returned buffer is owned by the 
  * HTTP handler; it's freed by net_http_delete. 
  *
  * If the status is not 20x and accept_error is false, it returns NULL. */
-uint8_t* net_http_data(http_t *state, size_t* len, bool accept_error);
+uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error);
 
 /* Cleans up all memory. */
-void net_http_delete(http_t *state);
+void net_http_delete(struct http_t *state);
 
 #ifdef __cplusplus
 }
