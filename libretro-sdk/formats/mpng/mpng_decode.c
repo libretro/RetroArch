@@ -166,7 +166,11 @@ bool png_decode_iterate(const uint8_t *data, const uint8_t *data_end,
       struct mpng_ihdr *ihdr, struct mpng_image *img,
       uint32_t *palette, enum video_format format,
       unsigned int *bpl, int *palette_len, uint8_t *pixels,
-      uint8_t *pixelsat, uint8_t *pixelsend)
+      uint8_t *pixelsat, uint8_t *pixelsend
+#ifdef WANT_MINIZ
+      ,tinfl_decompressor *inflator
+#endif
+      )
 {
    unsigned int chunkchecksum;
    unsigned int actualchunkchecksum;
@@ -234,7 +238,7 @@ bool png_decode_iterate(const uint8_t *data, const uint8_t *data_end,
             byteshere           = (pixelsend - pixelsat)+1;
 
 #ifdef WANT_MINIZ
-            status = tinfl_decompress(&inflator,
+            status = tinfl_decompress(inflator,
                   (const mz_uint8 *)chunk.data,
                   &chunklen_copy, pixels,
                   pixelsat,
@@ -273,7 +277,7 @@ bool png_decode_iterate(const uint8_t *data, const uint8_t *data_end,
             finalbytes = (pixelsend - pixelsat);
 
 #ifdef WANT_MINIZ
-            status = tinfl_decompress(&inflator, (const mz_uint8 *)NULL, &zero, pixels, pixelsat, &finalbytes,
+            status = tinfl_decompress(inflator, (const mz_uint8 *)NULL, &zero, pixels, pixelsat, &finalbytes,
                   TINFL_FLAG_USING_NON_WRAPPING_OUTPUT_BUF | TINFL_FLAG_PARSE_ZLIB_HEADER);
 #endif
 
@@ -585,7 +589,11 @@ bool png_decode(const void *userdata, size_t len,
    {
       int ret = png_decode_iterate(data, data_end,
             &ihdr, img, palette, format, &bpl, &palette_len,
-            pixels, pixelsat, pixelsend);
+            pixels, pixelsat, pixelsend
+#ifdef WANT_MINIZ
+            ,&inflator
+#endif
+            );
 
       switch (ret)
       {
