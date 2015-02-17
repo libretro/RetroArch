@@ -139,6 +139,8 @@ static bool mpng_read_plte(struct mpng_ihdr *ihdr,
       uint32_t *buffer, unsigned entries)
 {
    unsigned i;
+   if (chunk->size % 3)
+      return false;
    if (!pixels || entries != 0)
       return false;
    if (chunk->size == 0 || chunk->size > 3 * 256)
@@ -234,11 +236,7 @@ bool png_decode(const void *userdata, size_t len,
                goto error;
             break;
          case MPNG_CHUNK_PLTE:
-            if (chunk.size % 3)
-               goto error;
-
             palette_len = chunk.size / 3;
-
             if (!mpng_read_plte(&ihdr, &chunk, pixels, palette, palette_len))
                goto error;
             break;
