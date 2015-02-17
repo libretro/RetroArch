@@ -38,7 +38,7 @@ void gl_load_texture_data(GLuint id,
    switch (filter_type)
    {
       case TEXTURE_FILTER_MIPMAP_LINEAR:
-         min_filter = GL_LINEAR_MIPMAP_LINEAR;
+         min_filter = GL_LINEAR_MIPMAP_NEAREST;
          mag_filter = GL_LINEAR;
 #ifndef HAVE_PSGL
          want_mipmap = true;
