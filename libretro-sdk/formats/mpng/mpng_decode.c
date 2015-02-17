@@ -20,10 +20,7 @@ static uint16_t word_be(const uint8_t *buf)
    return (buf[0] << 16) | (buf[1] << 8) | (buf[2] << 0);
 }
 
-#define read8r(source) (*(source))
-#define read8(target, chunkdata) do { target = read8r(chunkdata); chunkdata += 1; } while(0)
 #define read24(target, chunkdata) do { target = word_be(chunkdata); chunkdata  += 3; } while(0)
-#define read32(target, chunkdata) do { target = dword_be(chunkdata); chunkdata += 4; } while(0)
 
 enum mpng_chunk_type
 {
@@ -45,6 +42,10 @@ struct mpng_ihdr
    uint8_t interlace;
 };
 
+static const uint8_t mpng_magic[8] = {
+   0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a,
+};
+
 struct mpng_chunk
 {
    uint32_t size;
@@ -56,18 +57,18 @@ bool mpng_parse_ihdr(struct mpng_ihdr *ihdr, struct mpng_chunk *chunk,
       enum video_format format, unsigned int *bpl,
       uint8_t *pixels, uint8_t *pixelsat, uint8_t *pixelsend)
 {
-   read32(ihdr->width, chunk->data);
-   read32(ihdr->height, chunk->data);
-   read8(ihdr->depth, chunk->data);
-   read8(ihdr->color_type, chunk->data);
-   read8(ihdr->compression, chunk->data);
-   read8(ihdr->filter, chunk->data);
-   read8(ihdr->interlace, chunk->data);
-
-   if (ihdr->width >= 0x80000000)
-      return false;
+   ihdr->width       = dword_be(chunk->data + 0);
+   ihdr->height      = dword_be(chunk->data + 4);
+   ihdr->depth       = chunk->data[8];
+   ihdr->color_type  = chunk->data[9];
+   ihdr->compression = chunk->data[10];
+   ihdr->filter      = chunk->data[11];
+   ihdr->interlace   = chunk->data[12];
 
    if (ihdr->width == 0 || ihdr->height == 0)
+      return false;
+
+   if (ihdr->width >= 0x80000000)
       return false;
 
    if (ihdr->height >= 0x80000000)
@@ -128,8 +129,8 @@ bool mpng_parse_ihdr(struct mpng_ihdr *ihdr, struct mpng_chunk *chunk,
    if (!pixels)
       return false;
 
-   pixelsat  = pixels;
-   pixelsend = pixels + (*bpl + 1) * ihdr->height;
+   pixelsat  = (uint8_t*)pixels;
+   pixelsend = (uint8_t*)(pixels + (*bpl + 1) * ihdr->height);
 
    return true;
 }
@@ -162,10 +163,10 @@ bool png_decode(const void *userdata, size_t len,
    if (len < 8)
       return false;
 
-   if (memcmp(data, "\x89PNG\r\n\x1A\n", 8))
+   if (memcmp(data, mpng_magic, sizeof(mpng_magic)) != 0)
       return false;
 
-   data_end  = data + len;
+   data_end  = (const uint8_t*)(data + len);
    data     += 8;
 
    memset(palette, 0, sizeof(palette));
@@ -185,7 +186,7 @@ bool png_decode(const void *userdata, size_t len,
          goto error;
 
       chunk.size  = dword_be(data);
-      chunk.type  = dword_be(data+4);
+      chunk.type  = dword_be(data + 4);
 
       if (chunk.size >= 0x80000000)
          goto error;
@@ -560,8 +561,8 @@ bool png_decode(const void *userdata, size_t len,
             break;
          default:
             if (!(chunk.type & 0x20000000))
-               goto error;//unknown critical
-            //otherwise ignore
+               goto error; /* unknown critical */
+            /* otherwise ignore */
       }
    }
 
