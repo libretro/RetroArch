@@ -1,6 +1,6 @@
 TARGET := rpng
 
-SOURCES := $(wildcard *.c)
+SOURCES := $(wildcard *.c) ../../file/memory_stream.c
 OBJS := $(SOURCES:.c=.o)
 
 CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -DHAVE_ZLIB -DHAVE_ZLIB_DEFLATE -DRPNG_TEST -I../../include
