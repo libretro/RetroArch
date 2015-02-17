@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <boolean.h>
 
 #ifdef WANT_MINIZ
 #define MINIZ_HEADER_FILE_ONLY
@@ -31,10 +32,10 @@ enum mpng_chunk_type
    MPNG_CHUNK_IDAT = 0x49444154,
    MPNG_CHUNK_PLTE = 0x504c5445,
    MPNG_CHUNK_IEND = 0x49454e44,
-}
+};
 
 bool png_decode(const void *userdata, size_t len,
-      struct image *img, videoformat format)
+      struct mpng_image *img, enum video_format format)
 {
    /* chop off some warnings... these are all initialized in IHDR */
    unsigned int depth;
@@ -56,12 +57,12 @@ bool png_decode(const void *userdata, size_t len,
    if (!data)
       return false;
 
-   memset(img, 0, sizeof(struct image));
+   memset(img, 0, sizeof(struct mpng_image));
 
    /* Only works for RGB888, XRGB8888, and ARGB8888 */
-   if      (format != fmt_rgb888 
-         && format != fmt_xrgb8888
-         && format != fmt_argb8888)
+   if      (format != FMT_RGB888 
+         && format != FMT_XRGB8888
+         && format != FMT_ARGB8888)
       return false;
 
    if (len < 8)
@@ -147,7 +148,7 @@ bool png_decode(const void *userdata, size_t len,
                if (color_type == 6 && depth != 8)
                   goto error; /* truecolor with alpha */
 
-               if (color_type == 6 && format != fmt_argb8888)
+               if (color_type == 6 && format != FMT_ARGB8888)
                   goto error; /* can only decode alpha on ARGB formats */
 
                if (compression != 0)
@@ -199,7 +200,7 @@ bool png_decode(const void *userdata, size_t len,
             break;
          case MPNG_CHUNK_TRNS:
             {
-               if (format != fmt_argb8888 || !pixels || pixels != pixelsat)
+               if (format != FMT_ARGB8888 || !pixels || pixels != pixelsat)
                   goto error;
 
                if (color_type == 2)
@@ -218,6 +219,9 @@ bool png_decode(const void *userdata, size_t len,
             {
                size_t byteshere;
                size_t chunklen_copy;
+#ifdef WANT_MINIZ
+               tinfl_status status;
+#endif
 
                if (!pixels || (color_type == 3 && palette_len == 0))
                   goto error;
@@ -226,7 +230,7 @@ bool png_decode(const void *userdata, size_t len,
                byteshere           = (pixelsend - pixelsat)+1;
 
 #ifdef WANT_MINIZ
-               tinfl_status status = tinfl_decompress(&inflator,
+               status = tinfl_decompress(&inflator,
                      (const mz_uint8 *)chunkdata,
                      &chunklen_copy, pixels,
                      pixelsat,
@@ -238,12 +242,15 @@ bool png_decode(const void *userdata, size_t len,
 
                pixelsat += byteshere;
 
+#ifdef WANT_MINIZ
                if (status < TINFL_STATUS_DONE)
                   goto error;
+#endif
             }
             break;
          case MPNG_CHUNK_IEND:
             {
+               unsigned b, x, y;
 #ifdef WANT_MINIZ
                tinfl_status status;
 #endif
@@ -266,11 +273,13 @@ bool png_decode(const void *userdata, size_t len,
 
                pixelsat += finalbytes;
 
+#ifdef WANT_MINIZ
                if (status < TINFL_STATUS_DONE)
                   goto error;
 
                if (status > TINFL_STATUS_DONE)
                   goto error;
+#endif
 
                if (pixelsat != pixelsend)
                   goto error; /* too little data (can't be too much because we didn't give it that buffer size) */
@@ -282,6 +291,7 @@ bool png_decode(const void *userdata, size_t len,
                //run filters
                unsigned int bpppacked = ((color_type == 2) ? 3 : (color_type == 6) ? 4 : 1);
                uint8_t * prevout      = out + (4 * width * 1);
+
                if (height==1)
                {
                   /* This will blow up if a 1px high image is filtered with Paeth, but highly unlikely. */
@@ -293,7 +303,7 @@ bool png_decode(const void *userdata, size_t len,
 
                filteredline = pixels;
 
-               for (unsigned int y = 0; y < height; y++)
+               for (y = 0; y < height; y++)
                {
                   uint8_t * thisout=out+(bpl*y);
 
@@ -305,21 +315,21 @@ bool png_decode(const void *userdata, size_t len,
                      case 1:
                         memcpy(thisout, filteredline, bpppacked);
 
-                        for (unsigned int x=bpppacked;x<bpl;x++)
-                           thisout[x]=thisout[x-bpppacked]+filteredline[x];
+                        for (x = bpppacked; x < bpl; x++)
+                           thisout[x] = thisout[x-bpppacked] + filteredline[x];
                         break;
                      case 2:
-                        for (unsigned int x=0;x<bpl;x++)
-                           thisout[x]=prevout[x]+filteredline[x];
+                        for (x = 0; x < bpl; x++)
+                           thisout[x] = prevout[x] + filteredline[x];
                         break;
                      case 3:
-                        for (unsigned int x=0;x<bpppacked;x++)
+                        for (x = 0; x < bpppacked; x++)
                         {
-                           int a=0;
-                           int b=prevout[x];
-                           thisout[x]=(a+b)/2+filteredline[x];
+                           int a      = 0;
+                           int b      = prevout[x];
+                           thisout[x] = (a+b)/2 + filteredline[x];
                         }
-                        for (unsigned int x=bpppacked;x<bpl;x++)
+                        for (x = bpppacked; x < bpl; x++)
                         {
                            int a      = thisout[x - bpppacked];
                            int b      = prevout[x];
@@ -327,43 +337,50 @@ bool png_decode(const void *userdata, size_t len,
                         }
                         break;
                      case 4:
-                        for (unsigned int x=0;x<bpppacked;x++)
+                        for (x = 0; x < bpppacked; x++)
                         {
                            int prediction;
 
-                           int a=0;
-                           int b=prevout[x];
-                           int c=0;
+                           int a   = 0;
+                           int b   = prevout[x];
+                           int c   = 0;
 
-                           int p=a+b-c;
-                           int pa=abs(p-a);
-                           int pb=abs(p-b);
-                           int pc=abs(p-c);
+                           int p   = a+b-c;
+                           int pa  = abs(p-a);
+                           int pb  = abs(p-b);
+                           int pc  = abs(p-c);
 
-                           if (pa<=pb && pa<=pc) prediction=a;
-                           else if (pb<=pc) prediction=b;
-                           else prediction=c;
+                           if (pa <= pb && pa <= pc)
+                              prediction=a;
+                           else if (pb <= pc)
+                              prediction=b;
+                           else
+                              prediction=c;
 
-                           thisout[x]=filteredline[x]+prediction;
+                           thisout[x] = filteredline[x]+prediction;
                         }
-                        for (unsigned int x=bpppacked;x<bpl;x++)
+
+                        for (x = bpppacked; x < bpl; x++)
                         {
                            int prediction;
 
-                           int a=thisout[x-bpppacked];
-                           int b=prevout[x];
-                           int c=prevout[x-bpppacked];
+                           int a   = thisout[x-bpppacked];
+                           int b   = prevout[x];
+                           int c   = prevout[x-bpppacked];
 
-                           int p=a+b-c;
-                           int pa=abs(p-a);
-                           int pb=abs(p-b);
-                           int pc=abs(p-c);
+                           int p   = a+b-c;
+                           int pa  = abs(p-a);
+                           int pb  = abs(p-b);
+                           int pc  = abs(p-c);
 
-                           if (pa<=pb && pa<=pc) prediction=a;
-                           else if (pb<=pc) prediction=b;
-                           else prediction=c;
+                           if (pa <= pb && pa <= pc)
+                              prediction = a;
+                           else if (pb <= pc)
+                              prediction = b;
+                           else
+                              prediction = c;
 
-                           thisout[x]=filteredline[x]+prediction;
+                           thisout[x] = filteredline[x] + prediction;
                         }
                         break;
                      default:
@@ -395,12 +412,12 @@ bool png_decode(const void *userdata, size_t len,
                               {
                                  x--;
                                  inp--;
-                                 for (int b=0;b<8;b++)
+                                 for (b = 0; b < 8; b++)
                                  {
-                                    int rgb32=palette[((*inp)>>b)&1];
-                                    *(--outp)=rgb32>>0;
-                                    *(--outp)=rgb32>>8;
-                                    *(--outp)=rgb32>>16;
+                                    int rgb32 = palette[((*inp)>>b)&1];
+                                    *(--outp) = rgb32 >> 0;
+                                    *(--outp) = rgb32 >> 8;
+                                    *(--outp) = rgb32 >> 16;
                                  }
                               } while(x);
                               y--;
@@ -422,10 +439,10 @@ bool png_decode(const void *userdata, size_t len,
                                  inp--;
                                  for (b = 0;b < 8; b += 2)
                                  {
-                                    int rgb32=palette[((*inp)>>b)&3];
-                                    *(--outp)=rgb32>>0;
-                                    *(--outp)=rgb32>>8;
-                                    *(--outp)=rgb32>>16;
+                                    int rgb32 = palette[((*inp)>>b)&3];
+                                    *(--outp) = rgb32 >> 0;
+                                    *(--outp) = rgb32 >> 8;
+                                    *(--outp) = rgb32 >> 16;
                                  }
                               } while(x);
                               y--;
@@ -470,8 +487,8 @@ bool png_decode(const void *userdata, size_t len,
                            {
                               int rgb32;
                               i--;
-                              inp-=1;
-                              rgb32  = palette[*inp];
+                              inp       -= 1;
+                              rgb32      = palette[*inp];
 
                               *(--outp)  = rgb32 >> 0;
                               *(--outp)  = rgb32 >> 8;
@@ -483,7 +500,7 @@ bool png_decode(const void *userdata, size_t len,
                }
 
                /* unpack to 32bpp if requested */
-               if (format != fmt_rgb888 && color_type == 2)
+               if (format != FMT_RGB888 && color_type == 2)
                {
                   uint8_t  *inp   = out + width * height * 3;
                   uint32_t *outp  = ((uint32_t*)out) + width * height;
@@ -516,6 +533,6 @@ bool png_decode(const void *userdata, size_t len,
 
 error:
    free(pixels);
-   memset(img, 0, sizeof(struct image));
+   memset(img, 0, sizeof(struct mpng_image));
    return false;
 }
