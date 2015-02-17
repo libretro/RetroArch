@@ -20,8 +20,6 @@ static uint16_t word_be(const uint8_t *buf)
    return (buf[0] << 16) | (buf[1] << 8) | (buf[2] << 0);
 }
 
-#define read24(target, chunkdata) do { target = word_be(chunkdata); chunkdata  += 3; } while(0)
-
 enum mpng_chunk_type
 {
    MPNG_CHUNK_TRNS = 0x74524E53,
@@ -153,8 +151,10 @@ static bool mpng_read_plte(struct mpng_ihdr *ihdr,
 
    for (i = 0; i < entries; i++)
    {
-      read24(buffer[i], chunk->data);
-      buffer[i] |= 0xFF000000;
+      uint32_t r = chunk->data[3 * i + 0];
+      uint32_t g = chunk->data[3 * i + 1];
+      uint32_t b = chunk->data[3 * i + 2];
+      buffer[i] = (r << 16) | (g << 8) | (b << 0) | (0xffu << 24);
    }
 
    return true;
