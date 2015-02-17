@@ -21,9 +21,9 @@ static uint16_t word_be(const uint8_t *buf)
 }
 
 #define read8r(source) (*(source))
-#define read8(target) do { target = read8r(chunkdata); chunkdata += 1; } while(0)
-#define read24(target) do { target = word_be(chunkdata); chunkdata  += 3; } while(0)
-#define read32(target) do { target = dword_be(chunkdata); chunkdata += 4; } while(0)
+#define read8(target, chunkdata) do { target = read8r(chunkdata); chunkdata += 1; } while(0)
+#define read24(target, chunkdata) do { target = word_be(chunkdata); chunkdata  += 3; } while(0)
+#define read32(target, chunkdata) do { target = dword_be(chunkdata); chunkdata += 4; } while(0)
 
 enum mpng_chunk_type
 {
@@ -34,19 +34,105 @@ enum mpng_chunk_type
    MPNG_CHUNK_IEND = 0x49454e44,
 };
 
+struct mpng_ihdr
+{
+   uint32_t width;
+   uint32_t height;
+   uint8_t depth;
+   uint8_t color_type;
+   uint8_t compression;
+   uint8_t filter;
+   uint8_t interlace;
+};
+
+bool mpng_parse_ihdr(struct mpng_ihdr *ihdr, const uint8_t * chunk,
+      enum video_format format, unsigned int *bpl,
+      uint8_t *pixels, uint8_t *pixelsat, uint8_t *pixelsend)
+{
+   read32(ihdr->width, chunk);
+   read32(ihdr->height, chunk);
+   read8(ihdr->depth, chunk);
+   read8(ihdr->color_type, chunk);
+   read8(ihdr->compression, chunk);
+   read8(ihdr->filter, chunk);
+   read8(ihdr->interlace, chunk);
+
+   if (ihdr->width >= 0x80000000)
+      return false;
+
+   if (ihdr->width == 0 || ihdr->height == 0)
+      return false;
+
+   if (ihdr->height >= 0x80000000)
+      return false;
+
+   if (     ihdr->color_type != 2
+         && ihdr->color_type != 3
+         && ihdr->color_type != 6)
+      return false;
+
+
+   if (ihdr->compression != 0)
+      return false;
+   if (ihdr->filter != 0)
+      return false;
+   if (ihdr->interlace != 0 && ihdr->interlace != 1)
+      return false;
+
+   /*
+    * Greyscale 	0
+    * Truecolour 	2
+    * Indexed-colour 	3
+    * Greyscale with alpha 	4
+    * Truecolour with alpha 	6
+    **/
+
+   switch (ihdr->color_type)
+   {
+      case 2:
+         /* Truecolor; can be 16bpp but I don't want that. */
+         if (ihdr->depth != 8)
+            return false;
+         *bpl = 3 * ihdr->width;
+         break;
+      case 3:
+         /* Paletted. */
+         if (ihdr->depth != 1
+               && ihdr->depth != 2
+               && ihdr->depth != 4
+               && ihdr->depth != 8)
+            return false;
+         *bpl = (ihdr->width * ihdr->depth + ihdr->depth - 1) / 8;
+         break;
+      case 6:
+         /* Truecolor with alpha. */
+         if (ihdr->depth != 8)
+            return false;
+
+         /* Can only decode alpha on ARGB formats. */
+         if (format != FMT_ARGB8888)
+            return false;
+         *bpl = 4 * ihdr->width;
+         break;
+   }
+
+   pixels    = (uint8_t*)malloc((*bpl + 1) * ihdr->height);
+
+   if (!pixels)
+      return false;
+
+   pixelsat  = pixels;
+   pixelsend = pixels + (*bpl + 1) * ihdr->height;
+
+   return true;
+}
+
 bool png_decode(const void *userdata, size_t len,
       struct mpng_image *img, enum video_format format)
 {
-   /* chop off some warnings... these are all initialized in IHDR */
-   unsigned int depth;
-   unsigned int color_type;
-   unsigned int compression;
-   unsigned int filter;
-   unsigned int interlace;
+   struct mpng_ihdr ihdr = {0};
    unsigned int bpl;
    unsigned int palette[256];
-   unsigned int width;
-   unsigned int height;
    int palette_len = 0;
    uint8_t *pixelsat = NULL;
    uint8_t *pixelsend = NULL;
@@ -111,74 +197,9 @@ bool png_decode(const void *userdata, size_t len,
       switch (chunktype)
       {
          case MPNG_CHUNK_IHDR:
-            {
-               read32(width);
-               read32(height);
-               read8(depth);
-               read8(color_type);
-               read8(compression);
-               read8(filter);
-               read8(interlace);
-
-               if (width >= 0x80000000)
-                  goto error;
-
-               if (width == 0 || height == 0)
-                  goto error;
-
-               if (height >= 0x80000000)
-                  goto error;
-
-               if (color_type != 2 && color_type != 3 && color_type != 6)
-                  goto error;
-
-               /*
-                * Greyscale 	0
-                * Truecolour 	2
-                * Indexed-colour 	3
-                * Greyscale with alpha 	4
-                * Truecolour with alpha 	6
-                **/
-               
-               /* Truecolor; can be 16bpp but I don't want that. */
-               if (color_type == 2 && depth != 8)
-                  goto error; 
-
-               /* Paletted. */
-               if (color_type == 3 && depth != 1 && depth != 2 && depth != 4 && depth != 8)
-                  goto error;
-
-               /* Truecolor with alpha. */
-               if (color_type == 6 && depth != 8)
-                  goto error;
-
-               /* Can only decode alpha on ARGB formats. */
-               if (color_type == 6 && format != FMT_ARGB8888)
-                  goto error;
-
-               if (compression != 0)
-                  goto error;
-
-               if (filter != 0)
-                  goto error;
-               if (interlace != 0 && interlace != 1)
-                  goto error;
-
-               if (color_type == 2)
-                  bpl = 3 * width;
-               if (color_type == 3)
-                  bpl = (width * depth + depth - 1) / 8;
-               if (color_type == 6)
-                  bpl = 4 * width;
-
-               pixels = (uint8_t*)malloc((bpl + 1) * height);
-
-               if (!pixels)
-                  goto error;
-
-               pixelsat  = pixels;
-               pixelsend = pixels + (bpl + 1) * height;
-            }
+            if (!mpng_parse_ihdr(&ihdr, chunkdata, format, &bpl, pixels,
+                     pixelsat, pixelsend))
+               goto error;
             break;
          case MPNG_CHUNK_PLTE:
             {
@@ -191,14 +212,14 @@ bool png_decode(const void *userdata, size_t len,
 
                /* Palette on RGB is allowed but rare, 
                 * and it's just a recommendation anyways. */
-               if (color_type != 3)
+               if (ihdr.color_type != 3)
                   break;
 
                palette_len = chunklen / 3;
 
                for (i = 0; i < palette_len; i++)
                {
-                  read24(palette[i]);
+                  read24(palette[i], chunkdata);
                   palette[i] |= 0xFF000000;
                }
             }
@@ -208,13 +229,13 @@ bool png_decode(const void *userdata, size_t len,
                if (format != FMT_ARGB8888 || !pixels || pixels != pixelsat)
                   goto error;
 
-               if (color_type == 2)
+               if (ihdr.color_type == 2)
                {
                   if (palette_len == 0)
                      goto error;
                   goto error;
                }
-               else if (color_type == 3)
+               else if (ihdr.color_type == 3)
                   goto error;
                else
                   goto error;
@@ -228,7 +249,7 @@ bool png_decode(const void *userdata, size_t len,
                tinfl_status status;
 #endif
 
-               if (!pixels || (color_type == 3 && palette_len == 0))
+               if (!pixels || (ihdr.color_type == 3 && palette_len == 0))
                   goto error;
 
                chunklen_copy       = chunklen;
@@ -292,25 +313,25 @@ bool png_decode(const void *userdata, size_t len,
                if (pixelsat != pixelsend)
                   goto error; 
 
-               out = (uint8_t*)malloc(videofmt_byte_per_pixel(format) * width * height);
+               out = (uint8_t*)malloc(videofmt_byte_per_pixel(format) * ihdr.width * ihdr.height);
 
                /* TODO: deinterlace at random point */
 
                /* run filters */
-               bpp_packed = ((color_type == 2) ? 3 : (color_type == 6) ? 4 : 1);
-               prevout    = (out + (4 * width * 1));
+               bpp_packed = ((ihdr.color_type == 2) ? 3 : (ihdr.color_type == 6) ? 4 : 1);
+               prevout    = (out + (4 * ihdr.width * 1));
 
                /* This will blow up if a 1px high image 
                 * is filtered with Paeth, but highly unlikely. */
-               if (height==1)
-                  prevout=out;
+               if (ihdr.height==1)
+                  prevout = out;
 
                /* Not using bpp here because we only need a chunk of black anyways */
-               memset(prevout, 0, 4 * width * 1);
+               memset(prevout, 0, 4 * ihdr.width * 1);
 
                filteredline = pixels;
 
-               for (y = 0; y < height; y++)
+               for (y = 0; y < ihdr.height; y++)
                {
                   uint8_t *thisout = (uint8_t*)(out + (bpl*y));
 
@@ -402,19 +423,18 @@ bool png_decode(const void *userdata, size_t len,
                 * but the prerequisites for that bugging up 
                 * are pretty much impossible to hit.
                 **/
-               if (color_type == 3)
+               if (ihdr.color_type == 3)
                {
-                  switch (depth)
+                  switch (ihdr.depth)
                   {
                      case 1:
                         {
-                           int y=height;
-                           uint8_t * outp=out+3*width*height;
+                           int y          = ihdr.height;
+                           uint8_t * outp = out + 3 * ihdr.width * ihdr.height;
                            do
                            {
-                              uint8_t * inp=out+y*bpl;
-
-                              int x=(width+7)/8;
+                              uint8_t * inp = (uint8_t*)(out + y * bpl);
+                              int x         = (ihdr.width + 7) / 8;
                               do
                               {
                                  x--;
@@ -433,12 +453,12 @@ bool png_decode(const void *userdata, size_t len,
                         break;
                      case 2:
                         {
-                           int y=height;
-                           uint8_t * outp=out+3*width*height;
+                           int y          = ihdr.height;
+                           uint8_t * outp = (uint8_t*)(out + 3 * ihdr.width * ihdr.height);
                            do
                            {
                               unsigned char *inp = out + y * bpl;
-                              int x              = (width + 3) / 4;
+                              int x              = (ihdr.width + 3) / 4;
                               do
                               {
                                  int b;
@@ -458,13 +478,13 @@ bool png_decode(const void *userdata, size_t len,
                         break;
                      case 4:
                         {
-                           int y = height;
-                           uint8_t *outp = out + 3 * width * height;
+                           int y         = ihdr.height;
+                           uint8_t *outp = out + 3 * ihdr.width * ihdr.height;
 
                            do
                            {
                               unsigned char *inp = out + y * bpl;
-                              int x              = (width+1) / 2;
+                              int x              = (ihdr.width + 1) / 2;
 
                               do
                               {
@@ -487,9 +507,9 @@ bool png_decode(const void *userdata, size_t len,
                         break;
                      case 8:
                         {
-                           uint8_t *inp  = out + width * height;
-                           uint8_t *outp = out + 3 * width * height;
-                           int i         = width * height;
+                           uint8_t *inp  = (uint8_t*)(out + ihdr.width * ihdr.height);
+                           uint8_t *outp = (uint8_t*)(out + 3 * ihdr.width * ihdr.height);
+                           int i         = ihdr.width * ihdr.height;
                            do
                            {
                               int rgb32;
@@ -507,11 +527,11 @@ bool png_decode(const void *userdata, size_t len,
                }
 
                /* unpack to 32bpp if requested */
-               if (format != FMT_RGB888 && color_type == 2)
+               if (format != FMT_RGB888 && ihdr.color_type == 2)
                {
-                  uint8_t  *inp   = out + width * height * 3;
-                  uint32_t *outp  = ((uint32_t*)out) + width * height;
-                  int i           = width*height;
+                  uint8_t  *inp   = (uint8_t*)(out + ihdr.width * ihdr.height * 3);
+                  uint32_t *outp  = (uint32_t*)(((uint32_t*)out) + ihdr.width * ihdr.height);
+                  int i           = ihdr.width * ihdr.height;
 
                   do
                   {
@@ -522,10 +542,10 @@ bool png_decode(const void *userdata, size_t len,
                   } while(i);
                }
 
-               img->width    = width;
-               img->height   = height;
+               img->width    = ihdr.width;
+               img->height   = ihdr.height;
                img->pixels   = out;
-               img->pitch    = videofmt_byte_per_pixel(format)*width;
+               img->pitch    = videofmt_byte_per_pixel(format) * ihdr.width;
                img->format   = format;
                free(pixels);
                return true;
