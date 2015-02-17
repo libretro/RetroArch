@@ -60,6 +60,11 @@ enum
    XMB_TEXTURE_RESUME,
    XMB_TEXTURE_SAVESTATE,
    XMB_TEXTURE_LOADSTATE,
+   XMB_TEXTURE_CORE_INFO,
+   XMB_TEXTURE_CORE_OPTIONS,
+   XMB_TEXTURE_INPUT_REMAPPING_OPTIONS,
+   XMB_TEXTURE_CHEAT_OPTIONS,
+   XMB_TEXTURE_DISK_OPTIONS,
    XMB_TEXTURE_SCREENSHOT,
    XMB_TEXTURE_RELOAD,
    XMB_TEXTURE_FILE,
@@ -999,6 +1004,21 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
          case MENU_SETTING_ACTION_LOADSTATE:
             icon = xmb->textures.list[XMB_TEXTURE_LOADSTATE].id;
             break;
+         case MENU_SETTING_ACTION_CORE_INFORMATION:
+            icon = xmb->textures.list[XMB_TEXTURE_CORE_INFO].id;
+            break;
+         case MENU_SETTING_ACTION_CORE_OPTIONS:
+            icon = xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS].id;
+            break;
+         case MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS:
+            icon = xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS].id;
+            break;
+         case MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS:
+            icon = xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS].id;
+            break;
+         case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
+            icon = xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS].id;
+            break;
          case MENU_SETTING_ACTION_SCREENSHOT:
             icon = xmb->textures.list[XMB_TEXTURE_SCREENSHOT].id;
             break;
@@ -1439,6 +1459,16 @@ static void xmb_context_reset(void)
          "savestate.png", sizeof(xmb->textures.list[XMB_TEXTURE_SAVESTATE].path));
    fill_pathname_join(xmb->textures.list[XMB_TEXTURE_LOADSTATE].path, iconpath,
          "loadstate.png", sizeof(xmb->textures.list[XMB_TEXTURE_LOADSTATE].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_CORE_INFO].path, iconpath,
+         "core-infos.png", sizeof(xmb->textures.list[XMB_TEXTURE_CORE_INFO].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS].path, iconpath,
+         "core-options.png", sizeof(xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS].path, iconpath,
+         "core-input-remapping-options.png", sizeof(xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS].path, iconpath,
+         "core-cheat-options.png", sizeof(xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS].path, iconpath,
+         "core-disk-options.png", sizeof(xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS].path));
    fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SCREENSHOT].path, iconpath,
          "screenshot.png", sizeof(xmb->textures.list[XMB_TEXTURE_SCREENSHOT].path));
    fill_pathname_join(xmb->textures.list[XMB_TEXTURE_RELOAD].path, iconpath,
