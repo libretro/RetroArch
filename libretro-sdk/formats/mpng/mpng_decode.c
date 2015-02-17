@@ -139,17 +139,22 @@ bool png_decode(const void *userdata, size_t len,
                 * Greyscale with alpha 	4
                 * Truecolour with alpha 	6
                 **/
+               
+               /* Truecolor; can be 16bpp but I don't want that. */
                if (color_type == 2 && depth != 8)
-                  goto error; /* truecolor; can be 16bpp but I don't want that. */
+                  goto error; 
 
+               /* Paletted. */
                if (color_type == 3 && depth != 1 && depth != 2 && depth != 4 && depth != 8)
-                  goto error; /* paletted */
+                  goto error;
 
+               /* Truecolor with alpha. */
                if (color_type == 6 && depth != 8)
-                  goto error; /* truecolor with alpha */
+                  goto error;
 
+               /* Can only decode alpha on ARGB formats. */
                if (color_type == 6 && format != FMT_ARGB8888)
-                  goto error; /* can only decode alpha on ARGB formats */
+                  goto error;
 
                if (compression != 0)
                   goto error;
@@ -184,7 +189,7 @@ bool png_decode(const void *userdata, size_t len,
                if (chunklen == 0 || chunklen % 3 || chunklen > 3 * 256)
                   goto error;
 
-               /* palette on RGB is allowed but rare, 
+               /* Palette on RGB is allowed but rare, 
                 * and it's just a recommendation anyways. */
                if (color_type != 3)
                   break;
@@ -255,6 +260,8 @@ bool png_decode(const void *userdata, size_t len,
                tinfl_status status;
 #endif
                size_t finalbytes;
+               unsigned int bpp_packed;
+               uint8_t *prevout;
                size_t            zero = 0;
                uint8_t *          out = NULL;
                uint8_t * filteredline = NULL;
@@ -280,23 +287,23 @@ bool png_decode(const void *userdata, size_t len,
                if (status > TINFL_STATUS_DONE)
                   goto error;
 #endif
-
+               /* Too little data (can't be too much 
+                * because we didn't give it that buffer size) */
                if (pixelsat != pixelsend)
-                  goto error; /* too little data (can't be too much because we didn't give it that buffer size) */
+                  goto error; 
 
                out = (uint8_t*)malloc(videofmt_byte_per_pixel(format) * width * height);
 
-               //TODO: deinterlace at random point
+               /* TODO: deinterlace at random point */
 
-               //run filters
-               unsigned int bpppacked = ((color_type == 2) ? 3 : (color_type == 6) ? 4 : 1);
-               uint8_t * prevout      = out + (4 * width * 1);
+               /* run filters */
+               bpp_packed = ((color_type == 2) ? 3 : (color_type == 6) ? 4 : 1);
+               prevout    = (out + (4 * width * 1));
 
+               /* This will blow up if a 1px high image 
+                * is filtered with Paeth, but highly unlikely. */
                if (height==1)
-               {
-                  /* This will blow up if a 1px high image is filtered with Paeth, but highly unlikely. */
                   prevout=out;
-               }
 
                /* Not using bpp here because we only need a chunk of black anyways */
                memset(prevout, 0, 4 * width * 1);
@@ -305,7 +312,7 @@ bool png_decode(const void *userdata, size_t len,
 
                for (y = 0; y < height; y++)
                {
-                  uint8_t * thisout=out+(bpl*y);
+                  uint8_t *thisout = (uint8_t*)(out + (bpl*y));
 
                   switch (*(filteredline++))
                   {
@@ -313,31 +320,31 @@ bool png_decode(const void *userdata, size_t len,
                         memcpy(thisout, filteredline, bpl);
                         break;
                      case 1:
-                        memcpy(thisout, filteredline, bpppacked);
+                        memcpy(thisout, filteredline, bpp_packed);
 
-                        for (x = bpppacked; x < bpl; x++)
-                           thisout[x] = thisout[x-bpppacked] + filteredline[x];
+                        for (x = bpp_packed; x < bpl; x++)
+                           thisout[x] = thisout[x - bpp_packed] + filteredline[x];
                         break;
                      case 2:
                         for (x = 0; x < bpl; x++)
                            thisout[x] = prevout[x] + filteredline[x];
                         break;
                      case 3:
-                        for (x = 0; x < bpppacked; x++)
+                        for (x = 0; x < bpp_packed; x++)
                         {
                            int a      = 0;
                            int b      = prevout[x];
                            thisout[x] = (a+b)/2 + filteredline[x];
                         }
-                        for (x = bpppacked; x < bpl; x++)
+                        for (x = bpp_packed; x < bpl; x++)
                         {
-                           int a      = thisout[x - bpppacked];
+                           int a      = thisout[x - bpp_packed];
                            int b      = prevout[x];
                            thisout[x] = (a + b) / 2 + filteredline[x];
                         }
                         break;
                      case 4:
-                        for (x = 0; x < bpppacked; x++)
+                        for (x = 0; x < bpp_packed; x++)
                         {
                            int prediction;
 
@@ -360,13 +367,13 @@ bool png_decode(const void *userdata, size_t len,
                            thisout[x] = filteredline[x]+prediction;
                         }
 
-                        for (x = bpppacked; x < bpl; x++)
+                        for (x = bpp_packed; x < bpl; x++)
                         {
                            int prediction;
 
-                           int a   = thisout[x-bpppacked];
+                           int a   = thisout[x - bpp_packed];
                            int b   = prevout[x];
-                           int c   = prevout[x-bpppacked];
+                           int c   = prevout[x - bpp_packed];
 
                            int p   = a+b-c;
                            int pa  = abs(p-a);
