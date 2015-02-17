@@ -13,11 +13,6 @@ fi
 
 WORKDIR=$(pwd)
 
-echo_cmd() {
-	echo "$@"
-	"$@"
-}
-
 
 # A stripped-down version of the fetch_git rule from libretro-super
 # Clones or pulls updates from a git repository into a local directory
@@ -27,9 +22,13 @@ echo_cmd() {
 fetch_git() {
 	fetch_dir="$WORKDIR/$2"
 	if [ -d "$fetch_dir/.git" ]; then
-		echo_cmd git -C "$fetch_dir" pull
+		echo "cd \"$fetch_dir\""
+		cd "$fetch_dir"
+		echo git pull
+		git pull
 	else
-		echo_cmd git clone "$1" "$fetch_dir"
+		echo "git clone \"$1\" \"$fetch_dir\""
+		git clone "$1" "$fetch_dir"
 	fi
 }
 
