@@ -234,32 +234,28 @@ bool png_decode(const void *userdata, size_t len,
                goto error;
             break;
          case MPNG_CHUNK_PLTE:
-            {
-               if (chunk.size % 3)
-                  goto error;
+            if (chunk.size % 3)
+               goto error;
 
-               palette_len = chunk.size / 3;
+            palette_len = chunk.size / 3;
 
-               if (!mpng_read_plte(&ihdr, &chunk, pixels, palette, palette_len))
-                  goto error;
-            }
+            if (!mpng_read_plte(&ihdr, &chunk, pixels, palette, palette_len))
+               goto error;
             break;
          case MPNG_CHUNK_TRNS:
-            {
-               if (format != FMT_ARGB8888 || !pixels || pixels != pixelsat)
-                  goto error;
+            if (format != FMT_ARGB8888 || !pixels || pixels != pixelsat)
+               goto error;
 
-               if (ihdr.color_type == 2)
-               {
-                  if (palette_len == 0)
-                     goto error;
+            if (ihdr.color_type == 2)
+            {
+               if (palette_len == 0)
                   goto error;
-               }
-               else if (ihdr.color_type == 3)
-                  goto error;
-               else
-                  goto error;
+               goto error;
             }
+            else if (ihdr.color_type == 3)
+               goto error;
+            else
+               goto error;
             break;
          case MPNG_CHUNK_IDAT:
             {
@@ -334,6 +330,9 @@ bool png_decode(const void *userdata, size_t len,
                   goto error; 
 
                out = (uint8_t*)malloc(videofmt_byte_per_pixel(format) * ihdr.width * ihdr.height);
+
+               if (!out)
+                  goto error;
 
                /* TODO: deinterlace at random point */
 
