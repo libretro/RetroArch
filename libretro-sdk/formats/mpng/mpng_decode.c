@@ -45,17 +45,24 @@ struct mpng_ihdr
    uint8_t interlace;
 };
 
-bool mpng_parse_ihdr(struct mpng_ihdr *ihdr, const uint8_t * chunk,
+struct mpng_chunk
+{
+   uint32_t size;
+   uint32_t type;
+   const uint8_t *data;
+};
+
+bool mpng_parse_ihdr(struct mpng_ihdr *ihdr, struct mpng_chunk *chunk,
       enum video_format format, unsigned int *bpl,
       uint8_t *pixels, uint8_t *pixelsat, uint8_t *pixelsend)
 {
-   read32(ihdr->width, chunk);
-   read32(ihdr->height, chunk);
-   read8(ihdr->depth, chunk);
-   read8(ihdr->color_type, chunk);
-   read8(ihdr->compression, chunk);
-   read8(ihdr->filter, chunk);
-   read8(ihdr->interlace, chunk);
+   read32(ihdr->width, chunk->data);
+   read32(ihdr->height, chunk->data);
+   read8(ihdr->depth, chunk->data);
+   read8(ihdr->color_type, chunk->data);
+   read8(ihdr->compression, chunk->data);
+   read8(ihdr->filter, chunk->data);
+   read8(ihdr->interlace, chunk->data);
 
    if (ihdr->width >= 0x80000000)
       return false;
@@ -127,6 +134,7 @@ bool mpng_parse_ihdr(struct mpng_ihdr *ihdr, const uint8_t * chunk,
    return true;
 }
 
+
 bool png_decode(const void *userdata, size_t len,
       struct mpng_image *img, enum video_format format)
 {
@@ -169,35 +177,34 @@ bool png_decode(const void *userdata, size_t len,
 
    while (1)
    {
-      unsigned int chunklen, chunktype;
       unsigned int chunkchecksum;
       unsigned int actualchunkchecksum;
-      const uint8_t * chunkdata = NULL;
+      struct mpng_chunk chunk = {0};
 
       if ((data + 4 + 4) > data_end)
          goto error;
 
-      chunklen  = dword_be(data);
-      chunktype = dword_be(data+4);
+      chunk.size  = dword_be(data);
+      chunk.type  = dword_be(data+4);
 
-      if (chunklen>=0x80000000)
+      if (chunk.size >= 0x80000000)
          goto error;
-      if ((data + 4 + chunklen + 4) > data_end)
+      if ((data + 4 + chunk.size + 4) > data_end)
          goto error;
 
-      chunkchecksum       = mz_crc32(mz_crc32(0, NULL, 0), (uint8_t*)data+4, 4 + chunklen);
-      chunkdata           = data + 4 + 4;
-      actualchunkchecksum = dword_be(data + 4 + 4 + chunklen);
+      chunkchecksum       = mz_crc32(mz_crc32(0, NULL, 0), (uint8_t*)data+4, 4 + chunk.size);
+      chunk.data          = (const uint8_t*)(data + 4 + 4);
+      actualchunkchecksum = dword_be(data + 4 + 4 + chunk.size);
 
       if (actualchunkchecksum != chunkchecksum)
          goto error;
 
-      data += 4 + 4 + chunklen + 4;
+      data += 4 + 4 + chunk.size + 4;
 
-      switch (chunktype)
+      switch (chunk.type)
       {
          case MPNG_CHUNK_IHDR:
-            if (!mpng_parse_ihdr(&ihdr, chunkdata, format, &bpl, pixels,
+            if (!mpng_parse_ihdr(&ihdr, &chunk, format, &bpl, pixels,
                      pixelsat, pixelsend))
                goto error;
             break;
@@ -207,7 +214,7 @@ bool png_decode(const void *userdata, size_t len,
 
                if (!pixels || palette_len != 0)
                   goto error;
-               if (chunklen == 0 || chunklen % 3 || chunklen > 3 * 256)
+               if (chunk.size == 0 || chunk.size % 3 || chunk.size > 3 * 256)
                   goto error;
 
                /* Palette on RGB is allowed but rare, 
@@ -215,11 +222,11 @@ bool png_decode(const void *userdata, size_t len,
                if (ihdr.color_type != 3)
                   break;
 
-               palette_len = chunklen / 3;
+               palette_len = chunk.size / 3;
 
                for (i = 0; i < palette_len; i++)
                {
-                  read24(palette[i], chunkdata);
+                  read24(palette[i], chunk.data);
                   palette[i] |= 0xFF000000;
                }
             }
@@ -252,12 +259,12 @@ bool png_decode(const void *userdata, size_t len,
                if (!pixels || (ihdr.color_type == 3 && palette_len == 0))
                   goto error;
 
-               chunklen_copy       = chunklen;
+               chunklen_copy       = chunk.size;
                byteshere           = (pixelsend - pixelsat)+1;
 
 #ifdef WANT_MINIZ
                status = tinfl_decompress(&inflator,
-                     (const mz_uint8 *)chunkdata,
+                     (const mz_uint8 *)chunk.data,
                      &chunklen_copy, pixels,
                      pixelsat,
                      &byteshere,
@@ -289,7 +296,7 @@ bool png_decode(const void *userdata, size_t len,
 
                if (data != data_end)
                   goto error;
-               if (chunklen)
+               if (chunk.size)
                   goto error;
 
                finalbytes = (pixelsend - pixelsat);
@@ -552,7 +559,7 @@ bool png_decode(const void *userdata, size_t len,
             }
             break;
          default:
-            if (!(chunktype & 0x20000000))
+            if (!(chunk.type & 0x20000000))
                goto error;//unknown critical
             //otherwise ignore
       }
