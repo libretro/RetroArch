@@ -135,13 +135,37 @@ bool mpng_parse_ihdr(struct mpng_ihdr *ihdr, struct mpng_chunk *chunk,
    return true;
 }
 
+static bool mpng_read_plte(struct mpng_ihdr *ihdr,
+      struct mpng_chunk *chunk,
+      uint8_t *pixels,
+      uint32_t *buffer, unsigned entries)
+{
+   unsigned i;
+   if (!pixels || entries != 0)
+      return false;
+   if (chunk->size == 0 || chunk->size > 3 * 256)
+      return false;
+
+   /* Palette on RGB is allowed but rare, 
+    * and it's just a recommendation anyways. */
+   if (ihdr->color_type != 3)
+      return true; /* not sure about this - Alcaro review? */
+
+   for (i = 0; i < entries; i++)
+   {
+      read24(buffer[i], chunk->data);
+      buffer[i] |= 0xFF000000;
+   }
+
+   return true;
+}
 
 bool png_decode(const void *userdata, size_t len,
       struct mpng_image *img, enum video_format format)
 {
    struct mpng_ihdr ihdr = {0};
    unsigned int bpl;
-   unsigned int palette[256];
+   uint32_t palette[256];
    int palette_len = 0;
    uint8_t *pixelsat = NULL;
    uint8_t *pixelsend = NULL;
@@ -211,25 +235,13 @@ bool png_decode(const void *userdata, size_t len,
             break;
          case MPNG_CHUNK_PLTE:
             {
-               unsigned i;
-
-               if (!pixels || palette_len != 0)
+               if (chunk.size % 3)
                   goto error;
-               if (chunk.size == 0 || chunk.size % 3 || chunk.size > 3 * 256)
-                  goto error;
-
-               /* Palette on RGB is allowed but rare, 
-                * and it's just a recommendation anyways. */
-               if (ihdr.color_type != 3)
-                  break;
 
                palette_len = chunk.size / 3;
 
-               for (i = 0; i < palette_len; i++)
-               {
-                  read24(palette[i], chunk.data);
-                  palette[i] |= 0xFF000000;
-               }
+               if (!mpng_read_plte(&ihdr, &chunk, pixels, palette, palette_len))
+                  goto error;
             }
             break;
          case MPNG_CHUNK_TRNS:
