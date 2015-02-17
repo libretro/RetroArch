@@ -1,10 +1,11 @@
-#include "nbio.h"
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+
+#include <file/nbio.h>
 
 static void nbio_write_test(void)
 {
-   size_t size, prog;
+   size_t size;
    bool looped = false;
    void* ptr = NULL;
    struct nbio_t* write = nbio_open("test.bin", NBIO_WRITE);
@@ -18,7 +19,7 @@ static void nbio_write_test(void)
    memset(ptr, 0x42, 1024*1024);
    nbio_begin_write(write);
 
-   while (!nbio_iterate(write, &prog, &size)) looped=true;
+   while (!nbio_iterate(write)) looped=true;
 
    if (!looped)
       puts("Write finished immediately?");
@@ -28,7 +29,7 @@ static void nbio_write_test(void)
 
 static void nbio_read_test(void)
 {
-   size_t size, prog;
+   size_t size;
    bool looped = false;
    struct nbio_t* read = nbio_open("test.bin", NBIO_READ);
    void* ptr           = nbio_get_ptr(read, &size);
