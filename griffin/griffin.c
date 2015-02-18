@@ -799,11 +799,11 @@ XML
  LIBRETRODB
 ============================================================ */
 #ifdef HAVE_LIBRETRODB
-#include "../libretrodb/bintree.c"
-#include "../libretrodb/libretrodb.c"
-#include "../libretrodb/rmsgpack.c"
-#include "../libretrodb/rmsgpack_dom.c"
-#include "../libretrodb/query.c"
+#include "../libretro-db/bintree.c"
+#include "../libretro-db/libretrodb.c"
+#include "../libretro-db/rmsgpack.c"
+#include "../libretro-db/rmsgpack_dom.c"
+#include "../libretro-db/query.c"
 #include "../database_info.c"
 #endif
 

@@ -170,11 +170,11 @@ OBJ += frontend/frontend.o \
 # LibretroDB
 
 ifeq ($(HAVE_LIBRETRODB), 1)
-OBJ += libretrodb/bintree.o \
-		 libretrodb/libretrodb.o \
-		 libretrodb/query.o \
-		 libretrodb/rmsgpack.o \
-		 libretrodb/rmsgpack_dom.o \
+OBJ += libretro-db/bintree.o \
+		 libretro-db/libretrodb.o \
+		 libretro-db/query.o \
+		 libretro-db/rmsgpack.o \
+		 libretro-db/rmsgpack_dom.o \
 		 database_info.o
 endif
 

@@ -20,7 +20,7 @@
 
 #include <stddef.h>
 #include <boolean.h>
-#include "libretrodb/libretrodb.h"
+#include "libretro-db/libretrodb.h"
 
 #ifdef __cplusplus
 extern "C" {

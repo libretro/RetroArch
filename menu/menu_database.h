@@ -20,7 +20,7 @@
 #include <boolean.h>
 #include <file/file_list.h>
 #ifdef HAVE_LIBRETRODB
-#include "../libretrodb/libretrodb.h"
+#include "../libretro-db/libretrodb.h"
 #endif
 #include "../database_info.h"
 
