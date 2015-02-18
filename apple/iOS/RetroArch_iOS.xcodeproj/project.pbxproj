@@ -495,7 +495,7 @@
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../,
-					"../../libretro-sdk/include",
+					"../../libretro-common/include",
 					../../,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/RetroArch-Info.plist";
@@ -558,7 +558,7 @@
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../,
-					"../../libretro-sdk/include",
+					"../../libretro-common/include",
 					../../,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/RetroArch-Info.plist";

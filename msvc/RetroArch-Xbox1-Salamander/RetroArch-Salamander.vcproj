@@ -20,7 +20,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\..\libretro-sdk\include&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\..\libretro-common\include&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
 				PreprocessorDefinitions="_DEBUG;_XBOX;_XBOX1;IS_SALAMANDER;RARCH_CONSOLE;HAVE_RARCH_EXEC"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -68,7 +68,7 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\..\libretro-sdk\include&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\..\libretro-common\include&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
 				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;PROFILE;IS_SALAMANDER;RARCH_CONSOLE;HAVE_RARCH_EXEC"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
@@ -120,7 +120,7 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\..\libretro-sdk\include&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\..\libretro-common\include&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
 				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;PROFILE;FASTCAP;IS_SALAMANDER;RARCH_CONSOLE;HAVE_RARCH_EXEC"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
@@ -173,7 +173,7 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\..\libretro-sdk\include&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\..\libretro-common\include&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
 				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;IS_SALAMANDER;RARCH_CONSOLE;HAVE_RARCH_EXEC"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
@@ -225,7 +225,7 @@
 				Optimization="3"
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\..\libretro-sdk\include&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\msvc-stdint&quot;;&quot;$(SolutionDir)\..\libretro-common\include&quot;;&quot;$(SolutionDir)\msvc-71&quot;"
 				PreprocessorDefinitions="NDEBUG;_XBOX;_XBOX1;LTCG;IS_SALAMANDER;RARCH_CONSOLE;HAVE_RARCH_EXEC"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
@@ -375,23 +375,23 @@
 				</FileConfiguration>
 			</File>
 			<Filter
-				Name="libretro-sdk"
+				Name="libretro-common"
 				Filter="">
 				<Filter
 					Name="compat"
 					Filter="">
 					<File
-						RelativePath="..\..\libretro-sdk\compat\compat.c">
+						RelativePath="..\..\libretro-common\compat\compat.c">
 					</File>
 				</Filter>
 				<Filter
 					Name="file"
 					Filter="">
 					<File
-						RelativePath="..\..\libretro-sdk\file\config_file.c">
+						RelativePath="..\..\libretro-common\file\config_file.c">
 					</File>
 					<File
-						RelativePath="..\..\libretro-sdk\file\dir_list.c">
+						RelativePath="..\..\libretro-common\file\dir_list.c">
 						<FileConfiguration
 							Name="Debug|Xbox">
 							<Tool
@@ -424,7 +424,7 @@
 						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\libretro-sdk\file\file_path.c">
+						RelativePath="..\..\libretro-common\file\file_path.c">
 						<FileConfiguration
 							Name="Debug|Xbox">
 							<Tool
@@ -461,7 +461,7 @@
 					Name="string"
 					Filter="">
 					<File
-						RelativePath="..\..\libretro-sdk\string\string_list.c">
+						RelativePath="..\..\libretro-common\string\string_list.c">
 						<FileConfiguration
 							Name="Debug|Xbox">
 							<Tool

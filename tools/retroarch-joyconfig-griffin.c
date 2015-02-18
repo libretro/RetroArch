@@ -41,10 +41,10 @@
 #include "../input/drivers_joypad/sdl_joypad.c"
 #endif
 
-#include "../libretro-sdk/file/config_file.c"
-#include "../libretro-sdk/file/file_path.c"
-#include "../libretro-sdk/string/string_list.c"
-#include "../libretro-sdk/compat/compat.c"
+#include "../libretro-common/file/config_file.c"
+#include "../libretro-common/file/file_path.c"
+#include "../libretro-common/string/string_list.c"
+#include "../libretro-common/compat/compat.c"
 
 #include "../input/drivers/nullinput.c"
 #include "../input/drivers_joypad/nullinput_joypad.c"
@@ -54,4 +54,4 @@
 #include "../input/input_common.c"
 #include "../input/input_keymaps.c"
 
-#include "../libretro-sdk/queues/message_queue.c"
+#include "../libretro-common/queues/message_queue.c"

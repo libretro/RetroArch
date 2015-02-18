@@ -85,7 +85,7 @@ OBJ              :=
 JOYCONFIG_OBJ    :=
 LIBS             := -lm
 JOYCONFIG_LIBS   :=
-DEFINES          := -I. -Ilibretro-sdk/include -DRARCH_INTERNAL -DHAVE_OVERLAY
+DEFINES          := -I. -Ilibretro-common/include -DRARCH_INTERNAL -DHAVE_OVERLAY
 LDFLAGS          := -L. -static-libgcc
 
 include Makefile.common

@@ -46,7 +46,7 @@ else
    CFLAGS += -O2
 endif
 
-CFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I. -Ilibretro-sdk/include -std=gnu99
+CFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I. -Ilibretro-common/include -std=gnu99
 
 all: $(TARGET)
 
@@ -85,7 +85,7 @@ clean:
 	rm -f record/*.o
 	rm -f input/*.o
 	rm -f tools/*.o
-	rm -f libretro-sdk/*/*.o
+	rm -f libretro-common/*/*.o
 	rm -f $(TARGET)
 	rm -f *.d
 

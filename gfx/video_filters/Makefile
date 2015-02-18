@@ -56,8 +56,8 @@ DYLIB = dll
 endif
 
 CC      := $(compiler)
-CXX     := $(subst CC,++,$(compiler)) -std=gnu++0x
-flags   := -fPIC $(extra_flags) -I../../libretro-sdk/include
+CXX     := $(subst CC,++,$(compiler))
+flags   := -fPIC $(extra_flags) -I../../libretro-common/include
 asflags := -fPIC  $(extra_flags)
 objects :=
 flags   += -std=c99

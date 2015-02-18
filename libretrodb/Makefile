@@ -1,5 +1,5 @@
 CFLAGS   = -g
-INCFLAGS = -I. -I../libretro-sdk/include
+INCFLAGS = -I. -I../libretro-common/include
 
 LUA_CONVERTER_OBJ = rmsgpack.o \
 		    rmsgpack_dom.o \

@@ -39,7 +39,7 @@ ifeq ($(REENTRANT_TEST), 1)
    OBJ += console/test.o
 endif
 
-CFLAGS += -I./libretro-sdk/include
+CFLAGS += -I./libretro-common/include
 
 # Switches
 
@@ -96,12 +96,12 @@ OBJ += frontend/frontend.o \
 		retroarch.o \
 		runloop.o \
 		content.o \
-		libretro-sdk/file/file_list.o \
-		libretro-sdk/file/dir_list.o \
-		libretro-sdk/string/string_list.o \
+		libretro-common/file/file_list.o \
+		libretro-common/file/dir_list.o \
+		libretro-common/string/string_list.o \
 		file_ops.o \
-		libretro-sdk/file//nbio/nbio_stdio.o \
-		libretro-sdk/file/file_path.o \
+		libretro-common/file//nbio/nbio_stdio.o \
+		libretro-common/file/file_path.o \
 		hash.o \
 		audio/audio_driver.o \
 		audio/audio_monitor.o \
@@ -119,7 +119,7 @@ OBJ += frontend/frontend.o \
 		settings_data.o \
 		dynamic.o \
 		dynamic_dummy.o \
-		libretro-sdk/queues/message_queue.o \
+		libretro-common/queues/message_queue.o \
 		rewind.o \
 		gfx/drivers_font_renderer/bitmapfont.o \
 		input/input_autodetect.o \
@@ -132,22 +132,22 @@ OBJ += frontend/frontend.o \
 		input/keyboard_line.o \
 		input/input_overlay.o \
 		patch.o \
-		libretro-sdk/queues/fifo_buffer.o \
+		libretro-common/queues/fifo_buffer.o \
 		core_options.o \
-		libretro-sdk/compat/compat.o \
-		libretro-sdk/compat/compat_fnmatch.o \
+		libretro-common/compat/compat.o \
+		libretro-common/compat/compat_fnmatch.o \
 		cheats.o \
 		core_info.o \
-		libretro-sdk/file/config_file.o \
-		libretro-sdk/file/config_file_userdata.o \
+		libretro-common/file/config_file.o \
+		libretro-common/file/config_file_userdata.o \
 		screenshot.o \
-		libretro-sdk/gfx/scaler/scaler.o \
+		libretro-common/gfx/scaler/scaler.o \
 		gfx/drivers_shader/shader_null.o \
 		gfx/video_shader_driver.o \
 		gfx/video_shader_parse.o \
-		libretro-sdk/gfx/scaler/pixconv.o \
-		libretro-sdk/gfx/scaler/scaler_int.o \
-		libretro-sdk/gfx/scaler/scaler_filter.o \
+		libretro-common/gfx/scaler/pixconv.o \
+		libretro-common/gfx/scaler/scaler_int.o \
+		libretro-common/gfx/scaler/scaler_filter.o \
 		gfx/image/image_rpng.o \
 		gfx/font_renderer_driver.o \
 		gfx/video_filter.o \
@@ -322,7 +322,7 @@ ifeq ($(HAVE_FREETYPE), 1)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o libretro-sdk/rthreads/rthreads.o gfx/video_thread_wrapper.o audio/audio_thread_wrapper.o
+   OBJ += autosave.o libretro-common/rthreads/rthreads.o gfx/video_thread_wrapper.o audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
    ifeq ($(findstring Haiku,$(OS)),)
       LIBS += -lpthread
@@ -387,9 +387,9 @@ ifeq ($(HAVE_OPENGL), 1)
 			 gfx/drivers_context/gfx_null_ctx.o \
 			 gfx/font_gl_driver.o \
 			 gfx/drivers_font/gl_raster_font.o \
-			 libretro-sdk/gfx/math/matrix_4x4.o \
+			 libretro-common/gfx/math/matrix_4x4.o \
 			 gfx/video_state_tracker.o \
-			 libretro-sdk/glsym/rglgen.o
+			 libretro-common/glsym/rglgen.o
 
    ifeq ($(HAVE_KMS), 1)
       OBJ += gfx/drivers_context/drm_egl_ctx.o
@@ -442,10 +442,10 @@ ifeq ($(HAVE_OPENGL), 1)
       ifeq ($(HAVE_GLES3), 1)
          DEFINES += -DHAVE_OPENGLES3
       endif
-      OBJ += libretro-sdk/glsym/glsym_es2.o
+      OBJ += libretro-common/glsym/glsym_es2.o
    else
       DEFINES += -DHAVE_GL_SYNC
-      OBJ += libretro-sdk/glsym/glsym_gl.o
+      OBJ += libretro-common/glsym/glsym_gl.o
       ifeq ($(OSX), 1)
          LIBS += -framework OpenGL
       else ifneq ($(findstring Win32,$(OS)),)
@@ -500,7 +500,7 @@ ifeq ($(HAVE_EXYNOS), 1)
 endif
 
 ifeq ($(HAVE_VG), 1)
-   OBJ += gfx/drivers/vg.o libretro-sdk/gfx/math/matrix_3x3.o
+   OBJ += gfx/drivers/vg.o libretro-common/gfx/math/matrix_3x3.o
    DEFINES += $(VG_CFLAGS)
    LIBS += $(VG_LIBS)
 endif
@@ -536,7 +536,7 @@ endif
    #LIBS += $(LIBXML2_LIBS)
    #DEFINES += $(LIBXML2_CFLAGS)
 #else
-   #OBJ += libretro-sdk/formats/xml/rxml.o
+   #OBJ += libretro-common/formats/xml/rxml.o
 #endif
 
 # Compression/Archive
@@ -566,7 +566,7 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
    ZLIB_OBJS =	decompress/zip_support.o 
-   OBJ += libretro-sdk/formats/png/rpng.o file_extract.o
+   OBJ += libretro-common/formats/png/rpng.o file_extract.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1 

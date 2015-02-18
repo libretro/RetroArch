@@ -66,7 +66,7 @@ PERFORMANCE
 COMPATIBILITY
 ============================================================ */
 #include "../compat/compat.c"
-#include "../libretro-sdk/compat/compat_fnmatch.c"
+#include "../libretro-common/compat/compat_fnmatch.c"
 
 /*============================================================
 CONFIG FILE
@@ -77,8 +77,8 @@ CONFIG FILE
 #undef strcasecmp
 #endif
 
-#include "../libretro-sdk/file/config_file.c"
-#include "../libretro-sdk/file/config_file_userdata.c"
+#include "../libretro-common/file/config_file.c"
+#include "../libretro-common/file/config_file_userdata.c"
 #include "../core_options.c"
 
 /*============================================================
@@ -180,14 +180,14 @@ VIDEO IMAGE
 #include "../gfx/image/image_rpng.c"
 #endif
 
-#include "../libretro-sdk/formats/png/rpng.c"
+#include "../libretro-common/formats/png/rpng.c"
 
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
 
 #if defined(HAVE_OPENGL)
-#include "../libretro-sdk/gfx/math/matrix_4x4.c"
+#include "../libretro-common/gfx/math/matrix_4x4.c"
 #elif defined(GEKKO)
 #ifdef HW_RVL
 #include "../wii/vi_encoder.c"
@@ -197,7 +197,7 @@ VIDEO DRIVER
 
 #ifdef HAVE_VG
 #include "../gfx/drivers/vg.c"
-#include "../libretro-sdk/gfx/math/matrix_3x3.c"
+#include "../libretro-common/gfx/math/matrix_3x3.c"
 #endif
 
 #ifdef HAVE_OMAP
@@ -213,11 +213,11 @@ VIDEO DRIVER
 #include "../gfx/gl_common.c"
 
 #ifndef HAVE_PSGL
-#include "../libretro-sdk/glsym/rglgen.c"
+#include "../libretro-common/glsym/rglgen.c"
 #ifdef HAVE_OPENGLES2
-#include "../libretro-sdk/glsym/glsym_es2.c"
+#include "../libretro-common/glsym/glsym_es2.c"
 #else
-#include "../libretro-sdk/glsym/glsym_gl.c"
+#include "../libretro-common/glsym/glsym_gl.c"
 #endif
 #endif
 
@@ -412,7 +412,7 @@ STATE TRACKER
 /*============================================================
 FIFO BUFFER
 ============================================================ */
-#include "../libretro-sdk/queues/fifo_buffer.c"
+#include "../libretro-common/queues/fifo_buffer.c"
 
 /*============================================================
 AUDIO RESAMPLER
@@ -519,10 +519,10 @@ DRIVERS
 /*============================================================
 SCALERS
 ============================================================ */
-#include "../libretro-sdk/gfx/scaler/scaler_filter.c"
-#include "../libretro-sdk/gfx/scaler/pixconv.c"
-#include "../libretro-sdk/gfx/scaler/scaler.c"
-#include "../libretro-sdk/gfx/scaler/scaler_int.c"
+#include "../libretro-common/gfx/scaler/scaler_filter.c"
+#include "../libretro-common/gfx/scaler/pixconv.c"
+#include "../libretro-common/gfx/scaler/scaler.c"
+#include "../libretro-common/gfx/scaler/scaler_int.c"
 
 /*============================================================
 FILTERS
@@ -562,17 +562,17 @@ DYNAMIC
 FILE
 ============================================================ */
 #include "../content.c"
-#include "../libretro-sdk/file/file_path.c"
-#include "../libretro-sdk/file/dir_list.c"
-#include "../libretro-sdk/string/string_list.c"
+#include "../libretro-common/file/file_path.c"
+#include "../libretro-common/file/dir_list.c"
+#include "../libretro-common/string/string_list.c"
 #include "../file_ops.c"
-#include "../libretro-sdk/file/nbio/nbio_stdio.c"
-#include "../libretro-sdk/file/file_list.c"
+#include "../libretro-common/file/nbio/nbio_stdio.c"
+#include "../libretro-common/file/file_list.c"
 
 /*============================================================
 MESSAGE
 ============================================================ */
-#include "../libretro-sdk/queues/message_queue.c"
+#include "../libretro-common/queues/message_queue.c"
 
 /*============================================================
 PATCH
@@ -645,7 +645,7 @@ THREAD
 #if defined(HAVE_THREADS) && defined(XENON)
 #include "../thread/xenon_sdl_threads.c"
 #elif defined(HAVE_THREADS)
-#include "../libretro-sdk/rthreads/rthreads.c"
+#include "../libretro-common/rthreads/rthreads.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
 #include "../autosave.c"
@@ -780,7 +780,7 @@ XML
 #if 0
 #ifndef HAVE_LIBXML2
 #define RXML_LIBXML2_COMPAT
-#include "../libretro-sdk/formats/xml/rxml.c"
+#include "../libretro-common/formats/xml/rxml.c"
 #endif
 #endif
 

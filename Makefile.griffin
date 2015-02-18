@@ -139,7 +139,7 @@ CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 
 OBJ = griffin/griffin.o  $(PLATOBJS)
 
-INCLUDE += -I./libretro-sdk/include
+INCLUDE += -I./libretro-common/include
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER

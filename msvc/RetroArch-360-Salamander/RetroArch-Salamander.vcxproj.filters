@@ -9,13 +9,13 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Source Files\libretro-sdk">
+    <Filter Include="Source Files\libretro-common">
       <UniqueIdentifier>{f4a792cf-e151-4c18-90e8-937df3d3562a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\libretro-sdk\compat">
+    <Filter Include="Source Files\libretro-common\compat">
       <UniqueIdentifier>{442ff913-d338-430f-8b84-57bd7d4117db}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\libretro-sdk\file">
+    <Filter Include="Source Files\libretro-common\file">
       <UniqueIdentifier>{b4898f5c-14c7-4816-88fa-c27a52e45e84}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -32,20 +32,20 @@
     <ClCompile Include="..\..\frontend\platform\platform_xdk.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libretro-sdk\compat\compat.c">
-      <Filter>Source Files\libretro-sdk\compat</Filter>
+    <ClCompile Include="..\..\libretro-common\compat\compat.c">
+      <Filter>Source Files\libretro-common\compat</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libretro-sdk\file\dir_list.c">
-      <Filter>Source Files\libretro-sdk\file</Filter>
+    <ClCompile Include="..\..\libretro-common\file\dir_list.c">
+      <Filter>Source Files\libretro-common\file</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libretro-sdk\file\file_path.c">
-      <Filter>Source Files\libretro-sdk\file</Filter>
+    <ClCompile Include="..\..\libretro-common\file\file_path.c">
+      <Filter>Source Files\libretro-common\file</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libretro-sdk\string\string_list.c">
-      <Filter>Source Files\libretro-sdk\file</Filter>
+    <ClCompile Include="..\..\libretro-common\string\string_list.c">
+      <Filter>Source Files\libretro-common\file</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libretro-sdk\file\config_file.c">
-      <Filter>Source Files\libretro-sdk\file</Filter>
+    <ClCompile Include="..\..\libretro-common\file\config_file.c">
+      <Filter>Source Files\libretro-common\file</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

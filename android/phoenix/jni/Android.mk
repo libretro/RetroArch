@@ -5,9 +5,9 @@ LOCAL_MODULE := retroarch-jni
 RARCH_DIR := ../../..
 LOCAL_CFLAGS += -std=gnu99 -Wall -DHAVE_LOGGER -DRARCH_DUMMY_LOG -DHAVE_ZLIB -DHAVE_MMAP -DRARCH_INTERNAL
 LOCAL_LDLIBS := -llog -lz
-LOCAL_SRC_FILES := apk-extract/apk-extract.c $(RARCH_DIR)/file_extract.c $(RARCH_DIR)/libretro-sdk/file/file_path.c $(RARCH_DIR)/file_ops.c $(RARCH_DIR)/libretro-sdk/string/string_list.c $(RARCH_DIR)/libretro-sdk/compat/compat.c
+LOCAL_SRC_FILES := apk-extract/apk-extract.c $(RARCH_DIR)/file_extract.c $(RARCH_DIR)/libretro-common/file/file_path.c $(RARCH_DIR)/file_ops.c $(RARCH_DIR)/libretro-common/string/string_list.c $(RARCH_DIR)/libretro-common/compat/compat.c
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/$(RARCH_DIR)/libretro-sdk/include/
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include/
 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -64,7 +64,7 @@ LOCAL_CFLAGS += -DHAVE_7ZIP
 LOCAL_CFLAGS += -O2
 
 LOCAL_LDLIBS	:= -L$(SYSROOT)/usr/lib -landroid -lEGL $(GLES_LIB) $(LOGGER_LDLIBS) -ldl
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/$(RARCH_DIR)/libretro-sdk/include/
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include/
 
 LOCAL_CFLAGS += -DHAVE_SL
 LOCAL_LDLIBS += -lOpenSLES -lz

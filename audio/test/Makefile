@@ -13,7 +13,7 @@ TESTS := test-sinc-lowest \
 
 CFLAGS += -O3 -ffast-math -g -Wall -pedantic -march=native -std=gnu99
 CFLAGS += -DRESAMPLER_TEST -DRARCH_DUMMY_LOG
-CFLAGS += -I../../libretro-sdk/include -I../../
+CFLAGS += -I../../libretro-common/include -I../../
 
 LDFLAGS += -lm
 

@@ -364,7 +364,7 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/..",
 					"$(SRCROOT)/../gfx/inc",
-					"$(SRCROOT)/../libretro-sdk/include",
+					"$(SRCROOT)/../libretro-common/include",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/RetroArch-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -418,7 +418,7 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/..",
 					"$(SRCROOT)/../gfx/inc",
-					"$(SRCROOT)/../libretro-sdk/include",
+					"$(SRCROOT)/../libretro-common/include",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/RetroArch-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
