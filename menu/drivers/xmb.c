@@ -1057,7 +1057,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       else if (!strcmp(entry_label, "restart_content"))
          icon = xmb->textures.list[XMB_TEXTURE_RELOAD].id;
       else if (!strcmp(entry_label, "resume_content"))
-         icon = xmb->textures.list[XMB_TEXTURE_RUN].id;
+         icon = xmb->textures.list[XMB_TEXTURE_RESUME].id;
 
       xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
 
