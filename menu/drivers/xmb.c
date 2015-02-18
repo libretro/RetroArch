@@ -1038,6 +1038,27 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             break;
       }
 
+      if (!strcmp(entry_label, "core_options"))
+         icon = xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS].id;
+      else if (!strcmp(entry_label, "core_information"))
+         icon = xmb->textures.list[XMB_TEXTURE_CORE_INFO].id;
+      else if (!strcmp(entry_label, "core_input_remapping_options"))
+         icon = xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS].id;
+      else if (!strcmp(entry_label, "core_cheat_options"))
+         icon = xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS].id;
+      else if (!strcmp(entry_label, "core_disk_options"))
+         icon = xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS].id;
+      else if (!strcmp(entry_label, "savestate"))
+         icon = xmb->textures.list[XMB_TEXTURE_SAVESTATE].id;
+      else if (!strcmp(entry_label, "loadstate"))
+         icon = xmb->textures.list[XMB_TEXTURE_LOADSTATE].id;
+      else if (!strcmp(entry_label, "take_screenshot"))
+         icon = xmb->textures.list[XMB_TEXTURE_SCREENSHOT].id;
+      else if (!strcmp(entry_label, "restart_content"))
+         icon = xmb->textures.list[XMB_TEXTURE_RELOAD].id;
+      else if (!strcmp(entry_label, "resume_content"))
+         icon = xmb->textures.list[XMB_TEXTURE_RUN].id;
+
       xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
 
       menu_animation_ticker_line(name, 35, g_extern.frame_count / 20, path_buf,
