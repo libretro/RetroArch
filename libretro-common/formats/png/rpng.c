@@ -674,7 +674,7 @@ bool rpng_load_image_argb_iterate(FILE *file, struct png_chunk *chunk,
             if (fread(&palette, 3, entries, file) != entries)
                return false;
 
-            if (!png_read_plte_into_buf(palette, chunk->size / 3))
+            if (!png_read_plte_into_buf(palette, entries))
                return false;
 
             *increment_size = sizeof(uint32_t);
