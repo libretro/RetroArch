@@ -818,11 +818,9 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             data, width, height, &file_len))
       GOTO_END_ERROR();
 
-   pos = ftell(file);
-
    /* feof() apparently isn't triggered after a seek (IEND). */
 
-   for (; pos < file_len && pos >= 0; pos = ftell(file))
+   for (pos = 0; pos < file_len && pos >= 0; pos = ftell(file))
    {
       size_t increment = 0;
 
