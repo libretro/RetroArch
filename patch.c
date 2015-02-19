@@ -17,12 +17,16 @@
 /* BPS/UPS/IPS implementation from bSNES (nall::).
  * Modified for RetroArch. */
 
-#include "patch.h"
-#include "hash.h"
+#include <file/file_path.h>
 #include <boolean.h>
 #include <compat/msvc.h>
 #include <stdint.h>
 #include <string.h>
+#include "patch.h"
+#include "hash.h"
+#include "file_ops.h"
+#include "general.h"
+#include "retroarch_logger.h"
 
 enum bps_mode
 {
@@ -422,3 +426,127 @@ patch_error_t ips_apply_patch(
    return PATCH_PATCH_INVALID;
 }
 
+static bool apply_patch_content(uint8_t **buf,
+      ssize_t *size, const char *patch_desc, const char *patch_path,
+      patch_func_t func)
+{
+   void *patch_data = NULL;
+   size_t target_size;
+   patch_error_t err = PATCH_UNKNOWN;
+   bool success = false;
+   uint8_t *patched_content = NULL;
+   ssize_t ret_size = *size;
+   uint8_t *ret_buf = *buf;
+   ssize_t patch_size;
+   
+   if (!read_file(patch_desc, &patch_data, &patch_size))
+      return false;
+   if (patch_size < 0)
+      return false;
+
+   if (!path_file_exists(patch_path))
+      return false;
+
+   RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n",
+         patch_desc, patch_path);
+
+   target_size = ret_size * 4; /* Just to be sure. */
+
+   patched_content = (uint8_t*)malloc(target_size);
+
+   if (!patched_content)
+   {
+      RARCH_ERR("Failed to allocate memory for patched content ...\n");
+      goto error;
+   }
+
+   err = func((const uint8_t*)patch_data, patch_size, ret_buf,
+         ret_size, patched_content, &target_size);
+
+   if (err == PATCH_SUCCESS)
+   {
+      RARCH_LOG("Content patched successfully (%s).\n", patch_desc);
+      success = true;
+   }
+   else
+      RARCH_ERR("Failed to patch %s: Error #%u\n", patch_desc,
+            (unsigned)err);
+
+   if (success)
+   {
+      free(ret_buf);
+      *buf = patched_content;
+      *size = target_size;
+   }
+
+   free(patch_data);
+   return true;
+
+error:
+   *buf = ret_buf;
+   *size = ret_size;
+   free(patch_data);
+
+   return false;
+}
+
+static bool try_bps_patch(uint8_t **buf, ssize_t *size)
+{
+   bool allow_bps = !g_extern.ups_pref && !g_extern.ips_pref;
+
+   if (!allow_bps)
+      return false;
+   if (g_extern.bps_name[0] == '\0')
+      return false;
+
+   return apply_patch_content(buf, size, "BPS", g_extern.bps_name,
+         bps_apply_patch);
+}
+
+static bool try_ups_patch(uint8_t **buf, ssize_t *size)
+{
+   bool allow_ups = !g_extern.bps_pref && !g_extern.ips_pref;
+
+   if (!allow_ups)
+      return false;
+   if (g_extern.ups_name[0] == '\0')
+      return false;
+
+   return apply_patch_content(buf, size, "UPS", g_extern.ups_name,
+         ups_apply_patch);
+}
+
+static bool try_ips_patch(uint8_t **buf, ssize_t *size)
+{
+   bool allow_ips = !g_extern.ups_pref && !g_extern.bps_pref;
+
+   if (!allow_ips)
+      return false;
+   if (g_extern.ips_name[0] == '\0')
+      return false;
+
+   return apply_patch_content(buf, size, "IPS", g_extern.ips_name,
+         ips_apply_patch);
+}
+
+/**
+ * patch_content:
+ * @buf          : buffer of the content file.
+ * @size         : size   of the content file.
+ *
+ * Apply patch to the content file in-memory.
+ *
+ **/
+void patch_content(uint8_t **buf, ssize_t *size)
+{
+   if (g_extern.ups_pref + g_extern.bps_pref + g_extern.ips_pref > 1)
+   {
+      RARCH_WARN("Several patches are explicitly defined, ignoring all ...\n");
+      return;
+   }
+
+   if (!try_ups_patch(buf, size) && !try_bps_patch(buf, size) && !try_ips_patch(buf, size))
+   {
+      RARCH_WARN("Did not find a valid content patch.\n");
+   }
+}

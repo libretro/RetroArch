@@ -58,4 +58,14 @@ patch_error_t ips_apply_patch(
       const uint8_t *source_data, size_t source_length,
       uint8_t *target_data, size_t *target_length);
 
+/**
+ * patch_content:
+ * @buf          : buffer of the content file.
+ * @size         : size   of the content file.
+ *
+ * Apply patch to the content file in-memory.
+ *
+ **/
+void patch_content(uint8_t **buf, ssize_t *size);
+
 #endif
