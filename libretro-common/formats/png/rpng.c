@@ -629,6 +629,105 @@ static bool png_read_plte_into_buf(uint32_t *buffer, unsigned entries)
    return true;
 }
 
+bool rpng_load_image_argb_iterate(FILE *file, uint32_t *palette,
+      struct png_ihdr *ihdr, struct idat_buffer *idat_buf,
+      bool *has_ihdr, bool *has_idat,
+      bool *has_iend, bool *has_plte)
+{
+   struct png_chunk chunk = {0};
+
+   if (!read_chunk_header(file, &chunk))
+      return false;
+
+   switch (png_chunk_type(&chunk))
+   {
+      case PNG_CHUNK_NOOP:
+      default:
+         if (!file_increment_ptr(file, chunk.size + sizeof(uint32_t)))
+            return false;
+         break;
+
+      case PNG_CHUNK_ERROR:
+         return false;
+
+      case PNG_CHUNK_IHDR:
+         if (*has_ihdr || *has_idat || *has_iend)
+            return false;
+
+         if (!png_alloc_chunk(&chunk))
+            return false;
+
+         if (fread(chunk.data, 1, chunk.size + 
+                  sizeof(uint32_t), file) != (chunk.size + sizeof(uint32_t)))
+         {
+            free(chunk.data);
+            return false;
+         }
+
+         if (!png_parse_ihdr(&chunk, ihdr))
+            return false;
+
+         *has_ihdr = true;
+         break;
+
+      case PNG_CHUNK_PLTE:
+         {
+            unsigned entries = chunk.size / 3;
+
+            if (!*has_ihdr || *has_plte || *has_iend || *has_idat)
+               return false;
+
+            if (chunk.size % 3)
+               return false;
+
+            if (entries > 256)
+               return false;
+
+            if (fread(&palette, 3, entries, file) != entries)
+               return false;
+
+            if (!png_read_plte_into_buf(palette, chunk.size / 3))
+               return false;
+
+            if (!file_increment_ptr(file, sizeof(uint32_t)))
+               return false;
+
+            *has_plte = true;
+         }
+         break;
+
+      case PNG_CHUNK_IDAT:
+         if (!(*has_ihdr) || *has_iend || (ihdr->color_type == 3 && !(*has_plte)))
+            return false;
+
+         if (!png_realloc_idat(&chunk, idat_buf))
+            return false;
+
+         if (fread(idat_buf->data + idat_buf->size, 1, chunk.size, file) != chunk.size)
+            return false;
+
+         if (!file_increment_ptr(file, sizeof(uint32_t)))
+            return false;
+
+         idat_buf->size += chunk.size;
+
+         *has_idat = true;
+         break;
+
+      case PNG_CHUNK_IEND:
+         if (!(*has_ihdr) || !(*has_idat))
+            return false;
+
+         if (!file_increment_ptr(file, sizeof(uint32_t)))
+            return false;
+
+         *has_iend = true;
+         break;
+   }
+
+   return true;
+}
+
 bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
@@ -665,100 +764,17 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
       GOTO_END_ERROR();
 
+   pos = ftell(file);
+
    /* feof() apparently isn't triggered after a seek (IEND). */
-   for (pos = ftell(file); 
-         pos < file_len && pos >= 0; pos = ftell(file))
+
+   for (; pos < file_len && pos >= 0; pos = ftell(file))
    {
-      struct png_chunk chunk = {0};
-
-      if (!read_chunk_header(file, &chunk))
+      ret = rpng_load_image_argb_iterate(
+            file, palette, &ihdr, &idat_buf,
+            &has_ihdr, &has_idat, &has_iend, &has_plte);
+      if (!ret)
          GOTO_END_ERROR();
-
-      switch (png_chunk_type(&chunk))
-      {
-         case PNG_CHUNK_NOOP:
-         default:
-            if (!file_increment_ptr(file, chunk.size + sizeof(uint32_t)))
-               GOTO_END_ERROR();
-            break;
-
-         case PNG_CHUNK_ERROR:
-            GOTO_END_ERROR();
-
-         case PNG_CHUNK_IHDR:
-            if (has_ihdr || has_idat || has_iend)
-               GOTO_END_ERROR();
-
-            if (!png_alloc_chunk(&chunk))
-               GOTO_END_ERROR();
-
-            if (fread(chunk.data, 1, chunk.size + 
-                     sizeof(uint32_t), file) != (chunk.size + sizeof(uint32_t)))
-            {
-               free(chunk.data);
-               return false;
-            }
-
-            if (!png_parse_ihdr(&chunk, &ihdr))
-               GOTO_END_ERROR();
-
-            has_ihdr = true;
-            break;
-
-         case PNG_CHUNK_PLTE:
-            {
-               unsigned entries = chunk.size / 3;
-
-               if (!has_ihdr || has_plte || has_iend || has_idat)
-                  GOTO_END_ERROR();
-
-               if (chunk.size % 3)
-                  GOTO_END_ERROR();
-
-               if (entries > 256)
-                  return false;
-
-               if (fread(&palette, 3, entries, file) != entries)
-                  return false;
-
-               if (!png_read_plte_into_buf(palette, chunk.size / 3))
-                  GOTO_END_ERROR();
-
-               if (!file_increment_ptr(file, sizeof(uint32_t)))
-                  GOTO_END_ERROR();
-
-               has_plte = true;
-            }
-            break;
-
-         case PNG_CHUNK_IDAT:
-            if (!has_ihdr || has_iend || (ihdr.color_type == 3 && !has_plte))
-               GOTO_END_ERROR();
-
-            if (!png_realloc_idat(&chunk, &idat_buf))
-               GOTO_END_ERROR();
-
-            if (fread(idat_buf.data + idat_buf.size, 1, chunk.size, file) != chunk.size)
-               GOTO_END_ERROR();
-
-            if (!file_increment_ptr(file, sizeof(uint32_t)))
-               GOTO_END_ERROR();
-
-            idat_buf.size += chunk.size;
-
-            has_idat = true;
-            break;
-
-         case PNG_CHUNK_IEND:
-            if (!has_ihdr || !has_idat)
-               GOTO_END_ERROR();
-
-            if (!file_increment_ptr(file, sizeof(uint32_t)))
-               GOTO_END_ERROR();
-
-            has_iend = true;
-            break;
-      }
    }
 
    if (!has_ihdr || !has_idat || !has_iend)
