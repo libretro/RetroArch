@@ -622,21 +622,17 @@ static bool png_read_plte_into_buf(uint32_t *buffer, unsigned entries)
    return true;
 }
 
-bool rpng_load_image_argb_iterate(FILE *file, uint32_t *palette,
+bool rpng_load_image_argb_iterate(FILE *file, struct png_chunk *chunk,
+      uint32_t *palette,
       struct png_ihdr *ihdr, struct idat_buffer *idat_buf,
       bool *has_ihdr, bool *has_idat,
       bool *has_iend, bool *has_plte, size_t *increment_size)
 {
-   struct png_chunk chunk = {0};
-
-   if (!read_chunk_header(file, &chunk))
-      return false;
-
-   switch (png_chunk_type(&chunk))
+   switch (png_chunk_type(chunk))
    {
       case PNG_CHUNK_NOOP:
       default:
-         *increment_size = chunk.size + sizeof(uint32_t);
+         *increment_size = chunk->size + sizeof(uint32_t);
          break;
 
       case PNG_CHUNK_ERROR:
@@ -646,17 +642,17 @@ bool rpng_load_image_argb_iterate(FILE *file, uint32_t *palette,
          if (*has_ihdr || *has_idat || *has_iend)
             return false;
 
-         if (!png_alloc_chunk(&chunk))
+         if (!png_alloc_chunk(chunk))
             return false;
 
-         if (fread(chunk.data, 1, chunk.size + 
-                  sizeof(uint32_t), file) != (chunk.size + sizeof(uint32_t)))
+         if (fread(chunk->data, 1, chunk->size + 
+                  sizeof(uint32_t), file) != (chunk->size + sizeof(uint32_t)))
          {
-            free(chunk.data);
+            free(chunk->data);
             return false;
          }
 
-         if (!png_parse_ihdr(&chunk, ihdr))
+         if (!png_parse_ihdr(chunk, ihdr))
             return false;
 
          *has_ihdr = true;
@@ -664,12 +660,12 @@ bool rpng_load_image_argb_iterate(FILE *file, uint32_t *palette,
 
       case PNG_CHUNK_PLTE:
          {
-            unsigned entries = chunk.size / 3;
+            unsigned entries = chunk->size / 3;
 
             if (!*has_ihdr || *has_plte || *has_iend || *has_idat)
                return false;
 
-            if (chunk.size % 3)
+            if (chunk->size % 3)
                return false;
 
             if (entries > 256)
@@ -678,7 +674,7 @@ bool rpng_load_image_argb_iterate(FILE *file, uint32_t *palette,
             if (fread(&palette, 3, entries, file) != entries)
                return false;
 
-            if (!png_read_plte_into_buf(palette, chunk.size / 3))
+            if (!png_read_plte_into_buf(palette, chunk->size / 3))
                return false;
 
             *increment_size = sizeof(uint32_t);
@@ -690,14 +686,14 @@ bool rpng_load_image_argb_iterate(FILE *file, uint32_t *palette,
          if (!(*has_ihdr) || *has_iend || (ihdr->color_type == 3 && !(*has_plte)))
             return false;
 
-         if (!png_realloc_idat(&chunk, idat_buf))
+         if (!png_realloc_idat(chunk, idat_buf))
             return false;
 
-         if (fread(idat_buf->data + idat_buf->size, 1, chunk.size, file) != chunk.size)
+         if (fread(idat_buf->data + idat_buf->size, 1, chunk->size, file) != chunk->size)
             return false;
 
          *increment_size = sizeof(uint32_t);
-         idat_buf->size += chunk.size;
+         idat_buf->size += chunk->size;
 
          *has_idat = true;
          break;
@@ -826,13 +822,15 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    for (pos = 0; pos < file_len && pos >= 0; pos = ftell(file))
    {
       size_t increment = 0;
+      struct png_chunk chunk = {0};
 
-      ret = rpng_load_image_argb_iterate(
-            file, palette, &ihdr, &idat_buf,
+      if (!read_chunk_header(file, &chunk))
+         GOTO_END_ERROR();
+
+      if (!rpng_load_image_argb_iterate(
+            file, &chunk, palette, &ihdr, &idat_buf,
             &has_ihdr, &has_idat, &has_iend, &has_plte,
-            &increment);
-
-      if (!ret)
+            &increment))
          GOTO_END_ERROR();
 
       if (increment != 0)
