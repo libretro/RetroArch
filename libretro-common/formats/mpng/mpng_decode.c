@@ -80,17 +80,17 @@ bool png_decode(const void * pngdata, size_t pnglen, struct mpng_image * img, en
    unsigned i;
    unsigned b, x, y;
 
-	unsigned int bitsperchannel;
-	unsigned int colortype;
-	unsigned int compressiontype;
-	unsigned int filtertype;
-	unsigned int interlacetype;
-	unsigned int bpl;
+	unsigned int bitsperchannel = 0;
+	unsigned int colortype = 0;
+	unsigned int compressiontype = 0;
+	unsigned int filtertype = 0;
+	unsigned int interlacetype = 0;
+	unsigned int bpl = 0;
 
-	unsigned int width;
-	unsigned int height;
-	uint8_t * pixelsat;
-	uint8_t * pixelsend;
+	unsigned int width = 0;
+	unsigned int height = 0;
+	uint8_t * pixelsat = NULL;
+	uint8_t * pixelsend = NULL;
 	
 	unsigned int palette[256];
    int palettelen = 0;
@@ -195,19 +195,19 @@ bool png_decode(const void * pngdata, size_t pnglen, struct mpng_image * img, en
                goto bad;
 				
 				if (colortype==2)
-               bpl=3*width;
+               bpl = 3*width;
 				if (colortype==3)
-               bpl=(width*bitsperchannel + bitsperchannel-1)/8;
+               bpl = (width*bitsperchannel + bitsperchannel-1)/8;
 				if (colortype==6)
-               bpl=4*width;
+               bpl = 4*width;
 
-				pixels = (uint8_t*)malloc((bpl+1)*height); if (!pixels) goto bad;
+				pixels = (uint8_t*)malloc((bpl + 1)*height); if (!pixels) goto bad;
 
             if (!pixels)
                goto bad;
 
 				pixelsat  = pixels;
-				pixelsend = pixels+(bpl+1)*height;
+				pixelsend = pixels+(bpl + 1)*height;
 			}
 			break;
 			case 0x504c5445: //PLTE
@@ -253,7 +253,7 @@ bool png_decode(const void * pngdata, size_t pnglen, struct mpng_image * img, en
 				if (pixels == NULL || (colortype == 3 && palettelen == 0))
                goto bad;
 				chunklencopy = chunklen;
-				byteshere    = (pixelsend-pixelsat)+1;
+				byteshere    = (pixelsend - pixelsat)+1;
             status       = tinfl_decompress(&inflator, (const uint8_t*)chunkdata,
                   &chunklencopy, pixels, pixelsat, &byteshere,
                   TINFL_FLAG_HAS_MORE_INPUT | TINFL_FLAG_USING_NON_WRAPPING_OUTPUT_BUF 
@@ -409,7 +409,7 @@ bool png_decode(const void * pngdata, size_t pnglen, struct mpng_image * img, en
                {
                   case 1:
                      {
-                        int y         = height;
+                        y         = height;
                         uint8_t *outp = out + 3 * width * height;
 
                         do
