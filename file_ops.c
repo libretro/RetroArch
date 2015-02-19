@@ -107,11 +107,15 @@ static bool read_generic_file(const char *path, void **buf, ssize_t *len)
    if (!file)
       goto error;
 
-   fseek(file, 0, SEEK_END);
+   if (fseek(file, 0, SEEK_END) != 0)
+      goto error;
 
    _len     = ftell(file);
+   if (_len < 0)
+      goto error;
 
-   rewind(file);
+   if (fseek(file, 0, SEEK_SET) != 0)
+      goto error;
 
    rom_buf = malloc(_len + 1);
 
@@ -129,7 +133,9 @@ static bool read_generic_file(const char *path, void **buf, ssize_t *len)
    /* Allow for easy reading of strings to be safe.
     * Will only work with sane character formatting (Unix). */
    ((char*)rom_buf)[_len] = '\0';
-   fclose(file);
+
+   if (fclose(file) != 0)
+      RARCH_WARN("Failed to close file stream.\n");
 
    if (len)
       *len = ret;
