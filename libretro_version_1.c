@@ -37,16 +37,16 @@
 #include "netplay.h"
 #endif
 
-static void video_frame_scale(const void *data,
+static bool video_frame_scale(const void *data,
       unsigned width, unsigned height,
       size_t pitch)
 {
    RARCH_PERFORMANCE_INIT(video_frame_conv);
 
    if (!data)
-      return;
+      return false;
    if (data == RETRO_HW_FRAME_BUFFER_VALID)
-      return;
+      return false;
 
    RARCH_PERFORMANCE_START(video_frame_conv);
 
@@ -59,10 +59,9 @@ static void video_frame_scale(const void *data,
 
    scaler_ctx_scale(&driver.scaler, driver.scaler_out, data);
 
-   data                        = driver.scaler_out;
-   pitch                       = driver.scaler.out_stride;
-
    RARCH_PERFORMANCE_STOP(video_frame_conv);
+   
+   return true;
 }
 
 static bool video_frame_filter(const void *data,
@@ -120,7 +119,13 @@ static void video_frame(const void *data, unsigned width,
    g_extern.frame_cache.pitch  = pitch;
 
    if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
-      video_frame_scale(data, width, height, pitch);
+   {
+      if (video_frame_scale(data, width, height, pitch))
+      {
+         data                        = driver.scaler_out;
+         pitch                       = driver.scaler.out_stride;
+      }
+   }
 
    /* Slightly messy code,
     * but we really need to do processing before blocking on VSync
