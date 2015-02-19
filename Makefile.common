@@ -148,7 +148,6 @@ OBJ += frontend/frontend.o \
 		libretro-common/gfx/scaler/pixconv.o \
 		libretro-common/gfx/scaler/scaler_int.o \
 		libretro-common/gfx/scaler/scaler_filter.o \
-		gfx/image/image_rpng.o \
 		gfx/font_renderer_driver.o \
 		gfx/video_filter.o \
 		audio/audio_resampler_driver.o \
@@ -166,6 +165,11 @@ OBJ += frontend/frontend.o \
 		movie.o \
 		record/record_driver.o \
 		performance.o
+
+OBJ += gfx/image/image_rpng.o
+
+#OBJ += gfx/image/image_mpng.o \
+		 libretro-common/formats/mpng/mpng_decode.o
 
 # LibretroDB
 
