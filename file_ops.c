@@ -133,7 +133,9 @@ static bool read_generic_file(const char *path, void **buf, ssize_t *len)
    /* Allow for easy reading of strings to be safe.
     * Will only work with sane character formatting (Unix). */
    ((char*)rom_buf)[_len] = '\0';
-   fclose(file);
+
+   if (fclose(file) != 0)
+      RARCH_WARN("Failed to close file stream.\n");
 
    if (len)
       *len = ret;
