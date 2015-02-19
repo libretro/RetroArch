@@ -32,16 +32,6 @@
 #include <malloc.h>
 #endif
 
-#ifdef RARCH_INTERNAL
-#include "../../../hash.h"
-#else
-
-static inline uint32_t crc32_calculate(const uint8_t *data, size_t length)
-{
-   return crc32(0, data, length);
-}
-#endif
-
 #undef GOTO_END_ERROR
 #define GOTO_END_ERROR() do { \
    fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__); \
@@ -829,7 +819,7 @@ static void dword_write_be(uint8_t *buf, uint32_t val)
 
 static bool png_write_crc(FILE *file, const uint8_t *data, size_t size)
 {
-   uint32_t crc = crc32_calculate(data, size);
+   uint32_t crc = crc32(0, data, size);
    uint8_t crc_raw[4] = {0};
    dword_write_be(crc_raw, crc);
    return fwrite(crc_raw, 1, sizeof(crc_raw), file) == sizeof(crc_raw);
