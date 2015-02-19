@@ -45,6 +45,8 @@ static bool video_frame_scale(const void *data,
 
    if (!data)
       return false;
+   if (g_extern.system.pix_fmt != RETRO_PIXEL_FORMAT_0RGB1555)
+      return false;
    if (data == RETRO_HW_FRAME_BUFFER_VALID)
       return false;
 
@@ -118,13 +120,10 @@ static void video_frame(const void *data, unsigned width,
    g_extern.frame_cache.height = height;
    g_extern.frame_cache.pitch  = pitch;
 
-   if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
+   if (video_frame_scale(data, width, height, pitch))
    {
-      if (video_frame_scale(data, width, height, pitch))
-      {
-         data                        = driver.scaler_out;
-         pitch                       = driver.scaler.out_stride;
-      }
+      data                        = driver.scaler_out;
+      pitch                       = driver.scaler.out_stride;
    }
 
    /* Slightly messy code,
