@@ -768,7 +768,7 @@ bool rpng_load_image_argb_process(uint8_t *inflate_buf,
    return true;
 }
 
-bool rpng_load_image_argb_init(FILE *file,
+static bool rpng_load_image_argb_init(FILE *file,
       uint32_t **data,
       unsigned *width, unsigned *height,
       long *file_len)
