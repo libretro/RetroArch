@@ -59,25 +59,11 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
 
    ptr = nbio_get_ptr(read, &len);
 
-   if (len != 1024*1024)
-      RARCH_ERR("ERROR: wrong size (2).\n");
-   if (ptr)
-      RARCH_WARN("Read pointer is available before iterating?\n");
-
    nbio_begin_read(read);
 
-   while (!nbio_iterate(read))
-      looped=true;
-
-   if (!looped)
-      RARCH_LOG("Read finished immediately?\n");
+   while (!nbio_iterate(read)) {}
 
    ptr = nbio_get_ptr(read, &len);
-
-   if (len != 1024*1024)
-      puts("ERROR: wrong size (3)");
-   if (*(char*)ptr != 0x42 || memcmp(ptr, (char*)ptr+1, 1024*1024-1))
-      puts("ERROR: wrong data");
 
    if (!png_decode(ptr, len, &img, FMT_ARGB8888))
       goto error;
