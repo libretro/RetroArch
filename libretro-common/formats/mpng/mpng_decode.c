@@ -93,7 +93,7 @@ bool png_decode(const void * pngdata, size_t pnglen, struct mpng_image * img, en
 	uint8_t * pixelsend = NULL;
 	
 	unsigned int palette[256];
-   int palettelen = 0;
+   unsigned palettelen = 0;
 
    const uint8_t *data    = NULL;
    const uint8_t *dataend = NULL;
