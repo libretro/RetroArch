@@ -81,7 +81,7 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
    texture_image_load_file(read, ptr, path, &len);
 
    if (!png_decode(ptr, len, &img, FMT_ARGB8888))
-      return false;
+      goto error;
 
    out_img->width  = img.width;
    out_img->height = img.height;
@@ -90,4 +90,9 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
    nbio_free(read);
 
    return true;
+
+error:
+   if (read)
+      nbio_free(read);
+   return false;
 }
