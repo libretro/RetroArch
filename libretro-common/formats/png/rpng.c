@@ -606,13 +606,6 @@ static bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *
    return true;
 }
 
-static bool file_increment_ptr(FILE *file, size_t increment_size)
-{
-   if (fseek(file, increment_size, SEEK_CUR) < 0)
-      return false;
-   return true;
-}
-
 static bool png_read_plte_into_buf(uint32_t *buffer, unsigned entries)
 {
    unsigned i;
@@ -840,7 +833,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
 
       if (increment != 0)
       {
-         if (!file_increment_ptr(file, increment))
+         if (fseek(file, increment, SEEK_CUR) < 0)
             GOTO_END_ERROR();
       }
 
