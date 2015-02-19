@@ -785,12 +785,34 @@ bool rpng_load_image_argb_process(uint8_t *inflate_buf,
    return true;
 }
 
+bool rpng_load_image_argb_init(FILE *file,
+      const char *path, uint32_t **data,
+      unsigned *width, unsigned *height,
+      long *file_len)
+{
+   char header[8];
+
+   *data   = NULL;
+   *width  = 0;
+   *height = 0;
+
+   fseek(file, 0, SEEK_END);
+   *file_len = ftell(file);
+   rewind(file);
+
+   if (fread(header, 1, sizeof(header), file) != sizeof(header))
+      return false;
+
+   if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
+      return false;
+
+   return true;
+}
+
 bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
    long pos, file_len;
-   FILE *file;
-   char header[8];
    uint8_t *inflate_buf = NULL;
    struct idat_buffer idat_buf = {0};
    struct png_ihdr ihdr = {0};
@@ -800,23 +822,13 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    bool has_iend = false;
    bool has_plte = false;
    bool ret      = true;
+   FILE *file = fopen(path, "rb");
 
-   *data   = NULL;
-   *width  = 0;
-   *height = 0;
-
-   file = fopen(path, "rb");
    if (!file)
       return false;
 
-   fseek(file, 0, SEEK_END);
-   file_len = ftell(file);
-   rewind(file);
-
-   if (fread(header, 1, sizeof(header), file) != sizeof(header))
-      GOTO_END_ERROR();
-
-   if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
+   if (!rpng_load_image_argb_init(file, path,
+            data, width, height, &file_len))
       GOTO_END_ERROR();
 
    pos = ftell(file);
