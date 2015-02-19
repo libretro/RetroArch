@@ -51,7 +51,8 @@ static tinfl_status tinfl_decompress(tinfl_decompressor* r,
 
 static void tinfl_deinit(tinfl_decompressor* r)
 {
-	inflateEnd(r);
+   if (r)
+      inflateEnd(r);
 }
 #endif
 
@@ -75,10 +76,11 @@ uint32_t read32r(const uint8_t* source)
 
 bool png_decode(const void * pngdata, size_t pnglen, struct mpng_image * img, enum video_format format)
 {
-	tinfl_decompressor inflator;
 
    unsigned i;
    unsigned b, x, y;
+
+	tinfl_decompressor inflator = {0};
 
 	unsigned int bitsperchannel = 0;
 	unsigned int colortype = 0;

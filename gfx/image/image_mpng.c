@@ -38,13 +38,28 @@ void texture_image_free(struct texture_image *img)
 }
 
 
-bool texture_image_load_file(struct nbio_t* read,
-      void *ptr, const char *path, size_t *len)
+bool texture_image_load(struct texture_image *out_img, const char *path)
 {
+   size_t len;
    bool looped = false;
-   ptr = nbio_get_ptr(read, len);
 
-   if (*len != 1024*1024)
+   bool ret         = false;
+   bool use_rgba    = driver.gfx_use_rgba;
+   unsigned a_shift = 24;
+   unsigned r_shift = use_rgba ? 0 : 16;
+   unsigned g_shift = 8;
+   unsigned b_shift = use_rgba ? 16 : 0;
+
+   void *ptr = NULL;
+   struct mpng_image img = {0};
+   struct nbio_t* read = nbio_open(path, NBIO_READ);
+
+   if (!read)
+      return false;
+
+   ptr = nbio_get_ptr(read, &len);
+
+   if (len != 1024*1024)
       RARCH_ERR("ERROR: wrong size (2).\n");
    if (ptr)
       RARCH_WARN("Read pointer is available before iterating?\n");
@@ -57,28 +72,12 @@ bool texture_image_load_file(struct nbio_t* read,
    if (!looped)
       RARCH_LOG("Read finished immediately?\n");
 
-   ptr = nbio_get_ptr(read, len);
+   ptr = nbio_get_ptr(read, &len);
 
-   if (*len != 1024*1024)
+   if (len != 1024*1024)
       puts("ERROR: wrong size (3)");
    if (*(char*)ptr != 0x42 || memcmp(ptr, (char*)ptr+1, 1024*1024-1))
       puts("ERROR: wrong data");
-
-
-   return true;
-}
-
-bool texture_image_load(struct texture_image *out_img, const char *path)
-{
-   size_t len;
-   void *ptr = NULL;
-   struct mpng_image img = {0};
-   struct nbio_t* read = nbio_open(path, NBIO_READ);
-
-   if (!read)
-      return false;
-
-   texture_image_load_file(read, ptr, path, &len);
 
    if (!png_decode(ptr, len, &img, FMT_ARGB8888))
       goto error;
@@ -86,6 +85,25 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
    out_img->width  = img.width;
    out_img->height = img.height;
    out_img->pixels = img.pixels;
+
+   /* This is quite uncommon. */
+   if (a_shift != 24 || r_shift != 16 || g_shift != 8 || b_shift != 0)
+   {
+      uint32_t i;
+      uint32_t num_pixels = out_img->width * out_img->height;
+      uint32_t *pixels = (uint32_t*)out_img->pixels;
+
+      for (i = 0; i < num_pixels; i++)
+      {
+         uint32_t col = pixels[i];
+         uint8_t a = (uint8_t)(col >> 24);
+         uint8_t r = (uint8_t)(col >> 16);
+         uint8_t g = (uint8_t)(col >>  8);
+         uint8_t b = (uint8_t)(col >>  0);
+         pixels[i] = (a << a_shift) |
+            (r << r_shift) | (g << g_shift) | (b << b_shift);
+      }
+   }
 
    nbio_free(read);
 
