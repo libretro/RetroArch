@@ -515,11 +515,11 @@ bool png_decode(const void * pngdata, size_t pnglen, struct mpng_image * img, en
 					} while(i);
 				}
 				
-				img->width=width;
-				img->height=height;
-				img->pixels=out;
-				img->pitch=videofmt_byte_per_pixel(format)*width;
-				img->format=format;
+				img->width  = width;
+				img->height = height;
+				img->pixels = out;
+				img->pitch  = videofmt_byte_per_pixel(format)*width;
+				img->format = format;
 				tinfl_deinit(&inflator);
 				free(pixels);
 				return true;
