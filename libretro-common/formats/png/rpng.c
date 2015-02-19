@@ -825,7 +825,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    FILE *file = fopen(path, "rb");
 
    if (!file)
-      return false;
+      GOTO_END_ERROR();
 
    if (!rpng_load_image_argb_init(file, path,
             data, width, height, &file_len))
@@ -856,8 +856,10 @@ end:
       fclose(file);
    if (!ret)
       free(*data);
-   free(idat_buf.data);
-   free(inflate_buf);
+   if (idat_buf.data)
+      free(idat_buf.data);
+   if (inflate_buf)
+      free(inflate_buf);
    return ret;
 }
 
