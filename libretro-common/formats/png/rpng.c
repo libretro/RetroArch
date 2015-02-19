@@ -632,7 +632,7 @@ static bool png_read_plte_into_buf(uint32_t *buffer, unsigned entries)
 bool rpng_load_image_argb_iterate(FILE *file, uint32_t *palette,
       struct png_ihdr *ihdr, struct idat_buffer *idat_buf,
       bool *has_ihdr, bool *has_idat,
-      bool *has_iend, bool *has_plte)
+      bool *has_iend, bool *has_plte, size_t *increment_size)
 {
    struct png_chunk chunk = {0};
 
@@ -643,8 +643,7 @@ bool rpng_load_image_argb_iterate(FILE *file, uint32_t *palette,
    {
       case PNG_CHUNK_NOOP:
       default:
-         if (!file_increment_ptr(file, chunk.size + sizeof(uint32_t)))
-            return false;
+         *increment_size = chunk.size + sizeof(uint32_t);
          break;
 
       case PNG_CHUNK_ERROR:
@@ -689,9 +688,7 @@ bool rpng_load_image_argb_iterate(FILE *file, uint32_t *palette,
             if (!png_read_plte_into_buf(palette, chunk.size / 3))
                return false;
 
-            if (!file_increment_ptr(file, sizeof(uint32_t)))
-               return false;
-
+            *increment_size = sizeof(uint32_t);
             *has_plte = true;
          }
          break;
@@ -706,9 +703,7 @@ bool rpng_load_image_argb_iterate(FILE *file, uint32_t *palette,
          if (fread(idat_buf->data + idat_buf->size, 1, chunk.size, file) != chunk.size)
             return false;
 
-         if (!file_increment_ptr(file, sizeof(uint32_t)))
-            return false;
-
+         *increment_size = sizeof(uint32_t);
          idat_buf->size += chunk.size;
 
          *has_idat = true;
@@ -718,9 +713,8 @@ bool rpng_load_image_argb_iterate(FILE *file, uint32_t *palette,
          if (!(*has_ihdr) || !(*has_idat))
             return false;
 
-         if (!file_increment_ptr(file, sizeof(uint32_t)))
-            return false;
 
+         *increment_size = sizeof(uint32_t);
          *has_iend = true;
          break;
    }
@@ -837,9 +831,19 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
 
    for (; pos < file_len && pos >= 0; pos = ftell(file))
    {
+      size_t increment = 0;
+
       ret = rpng_load_image_argb_iterate(
             file, palette, &ihdr, &idat_buf,
-            &has_ihdr, &has_idat, &has_iend, &has_plte);
+            &has_ihdr, &has_idat, &has_iend, &has_plte,
+            &increment);
+
+      if (increment != 0)
+      {
+         if (!file_increment_ptr(file, increment))
+            GOTO_END_ERROR();
+      }
+
       if (!ret)
          GOTO_END_ERROR();
    }
