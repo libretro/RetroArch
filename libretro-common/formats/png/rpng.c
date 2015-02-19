@@ -812,7 +812,10 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    FILE *file = fopen(path, "rb");
 
    if (!file)
+   {
+      fprintf(stderr, "Tried to open file: %s\n", path);
       GOTO_END_ERROR();
+   }
 
    if (!rpng_load_image_argb_init(file, path,
             data, width, height, &file_len))
@@ -829,14 +832,15 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             &has_ihdr, &has_idat, &has_iend, &has_plte,
             &increment);
 
+      if (!ret)
+         GOTO_END_ERROR();
+
       if (increment != 0)
       {
          if (fseek(file, increment, SEEK_CUR) < 0)
             GOTO_END_ERROR();
       }
 
-      if (!ret)
-         GOTO_END_ERROR();
    }
 
    if (!has_ihdr || !has_idat || !has_iend)
