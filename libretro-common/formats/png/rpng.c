@@ -769,7 +769,7 @@ bool rpng_load_image_argb_process(uint8_t *inflate_buf,
 }
 
 bool rpng_load_image_argb_init(FILE *file,
-      const char *path, uint32_t **data,
+      uint32_t **data,
       unsigned *width, unsigned *height,
       long *file_len)
 {
@@ -813,8 +813,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
       GOTO_END_ERROR();
    }
 
-   if (!rpng_load_image_argb_init(file, path,
-            data, width, height, &file_len))
+   if (!rpng_load_image_argb_init(file, data, width, height, &file_len))
       GOTO_END_ERROR();
 
    /* feof() apparently isn't triggered after a seek (IEND). */
