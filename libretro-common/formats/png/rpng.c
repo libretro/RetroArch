@@ -125,21 +125,12 @@ static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
    return PNG_CHUNK_NOOP;
 }
 
-static bool png_read_chunk(FILE *file, struct png_chunk *chunk)
+static bool png_alloc_chunk(struct png_chunk *chunk)
 {
    free(chunk->data);
    chunk->data = (uint8_t*)calloc(1, chunk->size + sizeof(uint32_t)); /* CRC32 */
    if (!chunk->data)
       return false;
-
-   if (fread(chunk->data, 1, chunk->size + 
-            sizeof(uint32_t), file) != (chunk->size + sizeof(uint32_t)))
-   {
-      free(chunk->data);
-      return false;
-   }
-
-   /* Ignore CRC. */
    return true;
 }
 
@@ -152,14 +143,11 @@ static void png_free_chunk(struct png_chunk *chunk)
    chunk->data = NULL;
 }
 
-static bool png_parse_ihdr(FILE *file,
-      struct png_chunk *chunk, struct png_ihdr *ihdr)
+static bool png_parse_ihdr(struct png_chunk *chunk,
+      struct png_ihdr *ihdr)
 {
    unsigned i;
    bool ret = true;
-
-   if (!png_read_chunk(file, chunk))
-      return false;
 
    if (chunk->size != 13)
       GOTO_END_ERROR();
@@ -607,8 +595,7 @@ static bool png_reverse_filter_adam7(uint32_t *data,
    return true;
 }
 
-static bool png_append_idat(FILE *file,
-      const struct png_chunk *chunk, struct idat_buffer *buf)
+static bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
 {
    uint8_t *new_buffer = (uint8_t*)realloc(buf->data, buf->size + chunk->size);
 
@@ -616,8 +603,6 @@ static bool png_append_idat(FILE *file,
       return false;
 
    buf->data  = new_buffer;
-   if (fread(buf->data + buf->size, 1, chunk->size, file) != chunk->size)
-      return false;
    return true;
 }
 
@@ -628,16 +613,10 @@ static bool file_increment_ptr(FILE *file, size_t increment_size)
    return true;
 }
 
-static bool png_read_plte(FILE *file, uint32_t *buffer, unsigned entries)
+static bool png_read_plte_into_buf(uint32_t *buffer, unsigned entries)
 {
    unsigned i;
    uint8_t buf[256 * 3];
-
-   if (entries > 256)
-      return false;
-
-   if (fread(buf, 3, entries, file) != entries)
-      return false;
 
    for (i = 0; i < entries; i++)
    {
@@ -710,33 +689,56 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             if (has_ihdr || has_idat || has_iend)
                GOTO_END_ERROR();
 
-            if (!png_parse_ihdr(file, &chunk, &ihdr))
+            if (!png_alloc_chunk(&chunk))
+               GOTO_END_ERROR();
+
+            if (fread(chunk.data, 1, chunk.size + 
+                     sizeof(uint32_t), file) != (chunk.size + sizeof(uint32_t)))
+            {
+               free(chunk.data);
+               return false;
+            }
+
+            if (!png_parse_ihdr(&chunk, &ihdr))
                GOTO_END_ERROR();
 
             has_ihdr = true;
             break;
 
          case PNG_CHUNK_PLTE:
-            if (!has_ihdr || has_plte || has_iend || has_idat)
-               GOTO_END_ERROR();
+            {
+               unsigned entries = chunk.size / 3;
 
-            if (chunk.size % 3)
-               GOTO_END_ERROR();
+               if (!has_ihdr || has_plte || has_iend || has_idat)
+                  GOTO_END_ERROR();
 
-            if (!png_read_plte(file, palette, chunk.size / 3))
-               GOTO_END_ERROR();
+               if (chunk.size % 3)
+                  GOTO_END_ERROR();
 
-            if (!file_increment_ptr(file, sizeof(uint32_t)))
-               GOTO_END_ERROR();
+               if (entries > 256)
+                  return false;
 
-            has_plte = true;
+               if (fread(&palette, 3, entries, file) != entries)
+                  return false;
+
+               if (!png_read_plte_into_buf(palette, chunk.size / 3))
+                  GOTO_END_ERROR();
+
+               if (!file_increment_ptr(file, sizeof(uint32_t)))
+                  GOTO_END_ERROR();
+
+               has_plte = true;
+            }
             break;
 
          case PNG_CHUNK_IDAT:
             if (!has_ihdr || has_iend || (ihdr.color_type == 3 && !has_plte))
                GOTO_END_ERROR();
 
-            if (!png_append_idat(file, &chunk, &idat_buf))
+            if (!png_realloc_idat(&chunk, &idat_buf))
+               GOTO_END_ERROR();
+
+            if (fread(idat_buf.data + idat_buf.size, 1, chunk.size, file) != chunk.size)
                GOTO_END_ERROR();
 
             if (!file_increment_ptr(file, sizeof(uint32_t)))
