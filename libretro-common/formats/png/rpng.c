@@ -618,9 +618,13 @@ static bool png_append_idat(FILE *file,
    buf->data  = new_buffer;
    if (fread(buf->data + buf->size, 1, chunk->size, file) != chunk->size)
       return false;
-   if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
+   return true;
+}
+
+static bool file_increment_ptr(FILE *file, size_t increment_size)
+{
+   if (fseek(file, increment_size, SEEK_CUR) < 0)
       return false;
-   buf->size += chunk->size;
    return true;
 }
 
@@ -642,9 +646,6 @@ static bool png_read_plte(FILE *file, uint32_t *buffer, unsigned entries)
       uint32_t b = buf[3 * i + 2];
       buffer[i] = (r << 16) | (g << 8) | (b << 0) | (0xffu << 24);
    }
-
-   if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
-      return false;
 
    return true;
 }
@@ -698,7 +699,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
       {
          case PNG_CHUNK_NOOP:
          default:
-            if (fseek(file, chunk.size + sizeof(uint32_t), SEEK_CUR) < 0)
+            if (!file_increment_ptr(file, chunk.size + sizeof(uint32_t)))
                GOTO_END_ERROR();
             break;
 
@@ -725,6 +726,9 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             if (!png_read_plte(file, palette, chunk.size / 3))
                GOTO_END_ERROR();
 
+            if (!file_increment_ptr(file, sizeof(uint32_t)))
+               GOTO_END_ERROR();
+
             has_plte = true;
             break;
 
@@ -735,6 +739,11 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             if (!png_append_idat(file, &chunk, &idat_buf))
                GOTO_END_ERROR();
 
+            if (!file_increment_ptr(file, sizeof(uint32_t)))
+               GOTO_END_ERROR();
+
+            idat_buf.size += chunk.size;
+
             has_idat = true;
             break;
 
@@ -742,7 +751,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             if (!has_ihdr || !has_idat)
                GOTO_END_ERROR();
 
-            if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
+            if (!file_increment_ptr(file, sizeof(uint32_t)))
                GOTO_END_ERROR();
 
             has_iend = true;
