@@ -24,6 +24,7 @@
 #ifdef __SSE__
 #include <xmmintrin.h>
 #endif
+#include <retro_inline.h>
 
 /* Rough SNR values for upsampling:
  * LOWEST: 40 dB
@@ -112,7 +113,7 @@ typedef struct rarch_sinc_resampler
    float *main_buffer;
 } rarch_sinc_resampler_t;
 
-static inline double sinc(double val)
+static INLINE double sinc(double val)
 {
    if (fabs(val) < 0.00001)
       return 1.0;
@@ -120,14 +121,14 @@ static inline double sinc(double val)
 }
 
 #if defined(SINC_WINDOW_LANCZOS)
-static inline double window_function(double idx)
+static INLINE double window_function(double idx)
 {
    return sinc(M_PI * idx);
 }
 #elif defined(SINC_WINDOW_KAISER)
 /* Modified Bessel function of first order.
  * Check Wiki for mathematical definition ... */
-static inline double besseli0(double x)
+static INLINE double besseli0(double x)
 {
    unsigned i;
    double sum = 0.0;
@@ -153,7 +154,7 @@ static inline double besseli0(double x)
    return sum;
 }
 
-static inline double window_function(double idx)
+static INLINE double window_function(double idx)
 {
    return besseli0(SINC_WINDOW_KAISER_BETA * sqrt(1 - idx * idx));
 }
@@ -242,7 +243,7 @@ static void aligned_free__(void *ptr)
 }
 
 #if !(defined(__AVX__) && ENABLE_AVX) && !defined(__SSE__)
-static inline void process_sinc_C(rarch_sinc_resampler_t *resamp,
+static INLINE void process_sinc_C(rarch_sinc_resampler_t *resamp,
       float *out_buffer)
 {
    unsigned i;

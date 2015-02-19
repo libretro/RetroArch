@@ -22,6 +22,7 @@
 #ifdef __SSE__
 #include <xmmintrin.h>
 #endif
+#include <retro_inline.h>
 
 /* Since SSE and NEON don't provide support for trigonometric functions
  * we approximate those with polynoms
@@ -407,18 +408,18 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 #define CC_RESAMPLER_IDENT "C"
 
 #if (CC_RESAMPLER_PRECISION > 4)
-static inline float cc_int(float x, float b)
+static INLINE float cc_int(float x, float b)
 {
    float val = x * b * M_PI + sinf(x * b * M_PI);
    return (val > M_PI) ? M_PI : (val < -M_PI) ? -M_PI : val;
 }
 
-static inline float cc_kernel(float x, float b)
+static INLINE float cc_kernel(float x, float b)
 {
    return (cc_int(x + 0.5, b) - cc_int(x - 0.5, b)) / (2.0 * M_PI);
 }
 #else
-static inline float cc_int(float x, float b)
+static INLINE float cc_int(float x, float b)
 {
    float val = x * b;
 #if (CC_RESAMPLER_PRECISION > 0)
@@ -427,13 +428,13 @@ static inline float cc_int(float x, float b)
    return (val > 0.5) ? 0.5 : (val < -0.5) ? -0.5 : val;
 }
 
-static inline float cc_kernel(float x, float b)
+static INLINE float cc_kernel(float x, float b)
 {
    return (cc_int(x + 0.5, b) - cc_int(x - 0.5, b));
 }
 #endif
 
-static inline void add_to(const audio_frame_float_t *source,
+static INLINE void add_to(const audio_frame_float_t *source,
       audio_frame_float_t *target, float ratio)
 {
    target->l += source->l * ratio;
