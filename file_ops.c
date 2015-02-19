@@ -121,6 +121,9 @@ static bool read_generic_file(const char *path, void **buf, ssize_t *len)
    if ((ret = fread(rom_buf, 1, _len, file)) < _len)
       RARCH_WARN("Didn't read whole file.\n");
 
+   if (!rom_buf)
+      goto error;
+
    *buf    = rom_buf;
 
    /* Allow for easy reading of strings to be safe.
