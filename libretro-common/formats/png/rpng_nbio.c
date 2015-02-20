@@ -88,20 +88,14 @@ static bool read_chunk_header(uint8_t *buf, struct png_chunk *chunk)
    uint8_t dword[4] = {0};
 
    for (i = 0; i < 4; i++)
-   {
       dword[i] = buf[i];
-      fprintf(stderr, "dword is: %c\n", buf[i]);
-   }
 
    buf += 4;
 
    chunk->size = dword_be(dword);
 
    for (i = 0; i < 4; i++)
-   {
       chunk->type[i] = buf[i];
-      fprintf(stderr, "chun type is: %c\n", buf[i]);
-   }
 
    buf += 4;
 
@@ -153,15 +147,6 @@ static bool png_parse_ihdr(uint8_t *buf,
    ihdr->compression = buf[10];
    ihdr->filter      = buf[11];
    ihdr->interlace   = buf[12];
-
-   buf += 4 + 4 + 1 + 1 + 1 + 1 + 1;
-
-   fprintf(stderr, "IHDR: (%u x %u), bpc = %u, palette = %s, color = %s, alpha = %s, adam7 = %s.\n",
-         ihdr->width, ihdr->height,
-         ihdr->depth, ihdr->color_type == 3 ? "yes" : "no",
-         ihdr->color_type & 2 ? "yes" : "no",
-         ihdr->color_type & 4 ? "yes" : "no",
-         ihdr->interlace == 1 ? "yes" : "no");
 
    if (ihdr->width == 0 || ihdr->height == 0)
       GOTO_END_ERROR();
