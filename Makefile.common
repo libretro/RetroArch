@@ -169,7 +169,7 @@ OBJ += frontend/frontend.o \
 OBJ += gfx/image/image_rpng.o
 #OBJ += gfx/image/image_mpng.o
 
-OBJ += libretro-common/formats/mpng/mpng_decode.o
+#OBJ += libretro-common/formats/mpng/mpng_decode.o
 
 # LibretroDB
 
