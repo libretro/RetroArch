@@ -178,11 +178,11 @@ VIDEO IMAGE
 #include "../gfx/image/image_xdk1.c"
 #else
 #include "../gfx/image/image_rpng.c"
-//#include "../gfx/image/image_mpng.c"
 #endif
 
 #include "../libretro-common/formats/png/rpng.c"
-//#include "../libretro-common/formats/mpng/mpng_decode.c"
+#include "../libretro-common/formats/png/rpng_nbio.c"
+#include "../libretro-common/formats/png/rpng_encode.c"
 
 /*============================================================
 VIDEO DRIVER
