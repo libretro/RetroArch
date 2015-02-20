@@ -1,7 +1,10 @@
+#ifndef _NBIO_STDIO_H
+#define _NBIO_STDIO_H
+
 #include <stddef.h>
 #include <boolean.h>
 
-enum nbio_mode_t
+enum nbio_mode
 {
    /* The comments tell which mode in fopen() it corresponds to. */
    NBIO_READ = 0,/* rb */
@@ -55,3 +58,5 @@ void nbio_cancel(struct nbio_t* handle);
  * Deletes the nbio structure and its associated pointer.
  */
 void nbio_free(struct nbio_t* handle);
+
+#endif
