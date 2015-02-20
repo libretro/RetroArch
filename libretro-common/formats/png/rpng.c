@@ -77,7 +77,7 @@ static void png_free_chunk(struct png_chunk *chunk)
    chunk->data = NULL;
 }
 
-static bool png_parse_ihdr(FILE *file,
+static bool png_parse_ihdr_fio(FILE *file,
       struct png_chunk *chunk, struct png_ihdr *ihdr)
 {
    unsigned i;
@@ -267,7 +267,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             if (has_ihdr || has_idat || has_iend)
                GOTO_END_ERROR();
 
-            if (!png_parse_ihdr(file, &chunk, &ihdr))
+            if (!png_parse_ihdr_fio(file, &chunk, &ihdr))
                GOTO_END_ERROR();
 
             has_ihdr = true;
