@@ -25,11 +25,16 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#ifdef HAVE_IMLIB2
 #include <Imlib2.h>
+#endif
 
 int main(int argc, char *argv[])
 {
+#ifdef HAVE_IMLIB2
    Imlib_Image img;
+   const uint32_t *imlib_data = NULL;
+#endif
    const uint32_t test_data[] = {
       0xff000000 | 0x50, 0xff000000 | 0x80,
       0xff000000 | 0x40, 0xff000000 | 0x88,
@@ -43,7 +48,6 @@ int main(int argc, char *argv[])
    uint32_t *data = NULL;
    unsigned width = 0;
    unsigned height = 0;
-   const uint32_t *imlib_data = NULL;
    const char *in_path = "/tmp/test.png";
 
    if (argc > 2)
@@ -76,6 +80,7 @@ int main(int argc, char *argv[])
    }
 #endif
 
+#ifdef HAVE_IMLIB2
    /* Validate with imlib2 as well. */
    img = imlib_load_image(in_path);
    if (!img)
@@ -106,6 +111,7 @@ int main(int argc, char *argv[])
       fprintf(stderr, "Imlib and RPNG are equivalent!\n");
 
    imlib_free_image();
+#endif
    free(data);
 }
 

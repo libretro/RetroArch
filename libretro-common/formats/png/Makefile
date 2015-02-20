@@ -1,4 +1,12 @@
 TARGET := rpng
+HAVE_IMLIB2=1
+
+LDFLAGS +=  -lz
+
+ifeq ($(HAVE_IMLIB2),1)
+CFLAGS += -DHAVE_IMLIB2
+LDFLAGS += -lImlib2
+endif
 
 SOURCES := rpng.c rpng_test.c ../../file/nbio/nbio_stdio.c
 OBJS := $(SOURCES:.c=.o)
@@ -11,7 +19,7 @@ all: $(TARGET)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS) -lz -lImlib2
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
 	rm -f $(TARGET) $(OBJS)
