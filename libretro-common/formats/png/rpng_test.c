@@ -29,8 +29,12 @@
 #include <Imlib2.h>
 #endif
 
-static bool test_write_image(const char *path)
+int main(int argc, char *argv[])
 {
+#ifdef HAVE_IMLIB2
+   Imlib_Image img;
+   const uint32_t *imlib_data = NULL;
+#endif
    const uint32_t test_data[] = {
       0xff000000 | 0x50, 0xff000000 | 0x80,
       0xff000000 | 0x40, 0xff000000 | 0x88,
@@ -41,21 +45,28 @@ static bool test_write_image(const char *path)
       0xff000000 | 0xc3, 0xff000000 | 0xd3,
       0xff000000 | 0xc3, 0xff000000 | 0xd3,
    };
-
-   if (!rpng_save_image_argb(path, test_data, 4, 4, 16))
-      return false;
-   return true;
-}
-
-static bool test_load_image(const char *path, uint32_t *data)
-{
+   uint32_t *data = NULL;
    unsigned width = 0;
    unsigned height = 0;
+   const char *in_path = "/tmp/test.png";
 
-   if (!rpng_load_image_argb(path, &data, &width, &height))
-      return false;
+   if (argc > 2)
+   {
+      fprintf(stderr, "Usage: %s <png file>\n", argv[0]);
+      return 1;
+   }
 
-   fprintf(stderr, "Path: %s.\n", path);
+   if (argc == 2)
+      in_path = argv[1];
+
+   if (!rpng_save_image_argb("/tmp/test.png", test_data, 4, 4, 16))
+      return 1;
+
+
+   if (!rpng_load_image_argb(in_path, &data, &width, &height))
+      return 2;
+
+   fprintf(stderr, "Path: %s.\n", in_path);
    fprintf(stderr, "Got image: %u x %u.\n", width, height);
 
 #if 0
@@ -69,20 +80,11 @@ static bool test_load_image(const char *path, uint32_t *data)
    }
 #endif
 
-   return true;
-}
-
-static bool test_with_imlib(const char *in_path, uint32_t *data)
-{
 #ifdef HAVE_IMLIB2
-   Imlib_Image img;
-   unsigned width, height;
-   const uint32_t *imlib_data = NULL;
-
    /* Validate with imlib2 as well. */
    img = imlib_load_image(in_path);
    if (!img)
-      return false;
+      return 4;
 
    imlib_context_set_image(img);
 
@@ -100,53 +102,15 @@ static bool test_with_imlib(const char *in_path, uint32_t *data)
    }
 #endif
 
-   if (memcmp(imlib_data, &data, width * height * sizeof(uint32_t)) != 0)
+   if (memcmp(imlib_data, data, width * height * sizeof(uint32_t)) != 0)
    {
       fprintf(stderr, "Imlib and RPNG differs!\n");
-      return false;
+      return 5;
    }
    else
       fprintf(stderr, "Imlib and RPNG are equivalent!\n");
 
    imlib_free_image();
 #endif
-   return true;
-}
-
-static int test_blocking_rpng(const char *path, uint32_t *data)
-{
-   if (!test_write_image("/tmp/test.png"))
-      return 1;
-   if (!test_load_image(path, data))
-      return 2;
-
-#ifdef HAVE_IMLIB2
-   if (!test_with_imlib(path, data))
-      return 5;
-#endif
-
-   return 0;
-}
-
-int main(int argc, char *argv[])
-{
-   int ret = 0;
-   uint32_t *data = NULL;
-   const char *in_path = "/tmp/test.png";
-
-   if (argc > 2)
-   {
-      fprintf(stderr, "Usage: %s <png file>\n", argv[0]);
-      return 1;
-   }
-
-   if (argc == 2)
-      in_path = argv[1];
-
-   ret = test_blocking_rpng(in_path, data);
-
    free(data);
-
-   return ret;
 }
-
