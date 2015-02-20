@@ -182,7 +182,7 @@ VIDEO IMAGE
 #endif
 
 #include "../libretro-common/formats/png/rpng.c"
-#include "../libretro-common/formats/mpng/mpng_decode.c"
+//#include "../libretro-common/formats/mpng/mpng_decode.c"
 
 /*============================================================
 VIDEO DRIVER
