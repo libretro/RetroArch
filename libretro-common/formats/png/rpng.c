@@ -630,14 +630,6 @@ bool rpng_load_image_argb_iterate(FILE *file, struct png_chunk *chunk,
       bool *has_ihdr, bool *has_idat,
       bool *has_iend, bool *has_plte, size_t *increment_size)
 {
-#ifdef RPNG_TEST
-   unsigned i;
-   for (i = 0; i < 4; i++)
-   {
-      fprintf(stderr, "chunktype: %c\n", chunk->type[i]);
-   }
-#endif
-   
    switch (png_chunk_type(chunk))
    {
       case PNG_CHUNK_NOOP:
@@ -705,12 +697,6 @@ bool rpng_load_image_argb_iterate(FILE *file, struct png_chunk *chunk,
 
             *increment_size = sizeof(uint32_t);
             idat_buf->size += chunk->size;
-
-            for (i = 0; i < idat_buf->size; i++)
-            {
-               fprintf(stderr, "%c", idat_buf->data[i]);
-            }
-            fprintf(stderr, "\n");
 
             *has_idat = true;
          }
