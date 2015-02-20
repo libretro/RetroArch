@@ -61,6 +61,9 @@ struct nbio_t* nbio_open(const char * filename, enum nbio_mode_t mode)
 
 void nbio_begin_read(struct nbio_t* handle)
 {
+   if (!handle)
+      return;
+
    if (handle->op >= 0)
    {
       puts("ERROR - attempted file read operation while busy");
@@ -89,6 +92,9 @@ void nbio_begin_write(struct nbio_t* handle)
 bool nbio_iterate(struct nbio_t* handle)
 {
    size_t amount = 65536;
+
+   if (!handle)
+      return false;
 
    if (amount > handle->len - handle->progress)
       amount = handle->len - handle->progress;
@@ -126,6 +132,8 @@ void nbio_resize(struct nbio_t* handle, size_t len)
 
 void* nbio_get_ptr(struct nbio_t* handle, size_t* len)
 {
+   if (!handle)
+      return NULL;
    if (len)
       *len = handle->len;
    if (handle->op == -1)

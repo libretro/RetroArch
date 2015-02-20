@@ -28,6 +28,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <file/nbio.h>
+
 #ifdef GEKKO
 #include <malloc.h>
 #endif
@@ -42,6 +44,8 @@
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #endif
+
+//#define NONBLOCKING_TEST
 
 static const uint8_t png_magic[8] = {
    0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a,
@@ -805,7 +809,20 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    bool has_iend = false;
    bool has_plte = false;
    bool ret      = true;
-   FILE *file = fopen(path, "rb");
+   FILE *file;
+#ifdef NONBLOCKING_TEST
+   size_t size = 0;
+   bool looped = false;
+   struct nbio_t* read = nbio_open(path, NBIO_READ);
+   void* ptr           = nbio_get_ptr(read, &size);
+   nbio_begin_read(read);
+
+   while (!nbio_iterate(read)) looped=true;
+   ptr = nbio_get_ptr(read, &size);
+   (void)ptr;
+   (void)looped;
+#endif
+   file = fopen(path, "rb");
 
    if (!file)
    {
@@ -848,6 +865,9 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
          width, height);
 
 end:
+#ifdef NONBLOCKING_TEST
+   nbio_free(read);
+#endif
    if (file)
       fclose(file);
    if (!ret)
