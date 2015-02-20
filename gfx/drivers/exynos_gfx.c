@@ -874,12 +874,16 @@ static int exynos_alloc(struct exynos_data *pdata)
     }
   }
 
+  /* Setup CRTC: display the last allocated page. */
+  if (drmModeSetCrtc(pdata->fd, pdata->drm->crtc_id, pages[pdata->num_pages - 1].buf_id,
+                     0, 0, &pdata->drm->connector_id, 1, pdata->drm->mode))
+  {
+     RARCH_ERR("video_exynos: initial crtc setup failed\n");
+     goto fail;
+  }
+
   pdata->pages = pages;
   pdata->device = device;
-
-  /* Setup CRTC: display the last allocated page. */
-  drmModeSetCrtc(pdata->fd, pdata->drm->crtc_id, pages[pdata->num_pages - 1].buf_id,
-                 0, 0, &pdata->drm->connector_id, 1, pdata->drm->mode);
 
   return 0;
 
@@ -898,8 +902,9 @@ static void exynos_free(struct exynos_data *pdata)
    unsigned i;
 
    /* Disable the CRTC. */
-   drmModeSetCrtc(pdata->fd, pdata->drm->crtc_id, 0,
-         0, 0, &pdata->drm->connector_id, 1, NULL);
+   if (drmModeSetCrtc(pdata->fd, pdata->drm->crtc_id, 0,
+                      0, 0, &pdata->drm->connector_id, 1, NULL))
+      RARCH_WARN("video_exynos: failed to disable the crtc\n");
 
    clean_up_pages(pdata->pages, pdata->num_pages);
 
