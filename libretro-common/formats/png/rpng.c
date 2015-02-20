@@ -771,16 +771,22 @@ bool rpng_load_image_argb_process(uint8_t *inflate_buf,
 static bool rpng_load_image_argb_init(FILE *file,
       uint32_t **data,
       unsigned *width, unsigned *height,
-      long *file_len)
+      ssize_t *file_len)
 {
    char header[8];
+   long pos;
 
    *data   = NULL;
    *width  = 0;
    *height = 0;
 
    fseek(file, 0, SEEK_END);
-   *file_len = ftell(file);
+
+   pos = ftell(file);
+   if (pos < 0)
+      return false;
+   *file_len = (ssize_t)pos;
+
    rewind(file);
 
    if (fread(header, 1, sizeof(header), file) != sizeof(header))
@@ -795,7 +801,7 @@ static bool rpng_load_image_argb_init(FILE *file,
 bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
-   long pos, file_len;
+   ssize_t pos, file_len;
    uint8_t *inflate_buf = NULL;
    struct idat_buffer idat_buf = {0};
    struct png_ihdr ihdr = {0};
@@ -818,7 +824,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
 
    /* feof() apparently isn't triggered after a seek (IEND). */
 
-   for (pos = 0; pos < file_len && pos >= 0; pos = ftell(file))
+   for (pos = 0; pos < file_len && pos >= 0; pos = (ssize_t)ftell(file))
    {
       size_t increment = 0;
       struct png_chunk chunk = {0};
