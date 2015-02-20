@@ -28,8 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <file/nbio.h>
-
 #ifdef GEKKO
 #include <malloc.h>
 #endif
@@ -127,12 +125,21 @@ static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
    return PNG_CHUNK_NOOP;
 }
 
-static bool png_alloc_chunk(struct png_chunk *chunk)
+static bool png_read_chunk(FILE *file, struct png_chunk *chunk)
 {
    free(chunk->data);
    chunk->data = (uint8_t*)calloc(1, chunk->size + sizeof(uint32_t)); /* CRC32 */
    if (!chunk->data)
       return false;
+
+   if (fread(chunk->data, 1, chunk->size + 
+            sizeof(uint32_t), file) != (chunk->size + sizeof(uint32_t)))
+   {
+      free(chunk->data);
+      return false;
+   }
+
+   /* Ignore CRC. */
    return true;
 }
 
@@ -145,11 +152,14 @@ static void png_free_chunk(struct png_chunk *chunk)
    chunk->data = NULL;
 }
 
-static bool png_parse_ihdr(struct png_chunk *chunk,
-      struct png_ihdr *ihdr)
+static bool png_parse_ihdr(FILE *file,
+      struct png_chunk *chunk, struct png_ihdr *ihdr)
 {
    unsigned i;
    bool ret = true;
+
+   if (!png_read_chunk(file, chunk))
+      return false;
 
    if (chunk->size != 13)
       GOTO_END_ERROR();
@@ -597,7 +607,8 @@ static bool png_reverse_filter_adam7(uint32_t *data,
    return true;
 }
 
-static bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
+static bool png_append_idat(FILE *file,
+      const struct png_chunk *chunk, struct idat_buffer *buf)
 {
    uint8_t *new_buffer = (uint8_t*)realloc(buf->data, buf->size + chunk->size);
 
@@ -605,13 +616,24 @@ static bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *
       return false;
 
    buf->data  = new_buffer;
+   if (fread(buf->data + buf->size, 1, chunk->size, file) != chunk->size)
+      return false;
+   if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
+      return false;
+   buf->size += chunk->size;
    return true;
 }
 
-static bool png_read_plte_into_buf(uint32_t *buffer, unsigned entries)
+static bool png_read_plte(FILE *file, uint32_t *buffer, unsigned entries)
 {
    unsigned i;
    uint8_t buf[256 * 3];
+
+   if (entries > 256)
+      return false;
+
+   if (fread(buf, 3, entries, file) != entries)
+      return false;
 
    for (i = 0; i < entries; i++)
    {
@@ -621,171 +643,8 @@ static bool png_read_plte_into_buf(uint32_t *buffer, unsigned entries)
       buffer[i] = (r << 16) | (g << 8) | (b << 0) | (0xffu << 24);
    }
 
-   return true;
-}
-
-bool rpng_load_image_argb_iterate(FILE *file, struct png_chunk *chunk,
-      uint32_t *palette,
-      struct png_ihdr *ihdr, struct idat_buffer *idat_buf,
-      bool *has_ihdr, bool *has_idat,
-      bool *has_iend, bool *has_plte, size_t *increment_size)
-{
-   switch (png_chunk_type(chunk))
-   {
-      case PNG_CHUNK_NOOP:
-      default:
-         *increment_size = chunk->size + sizeof(uint32_t);
-         break;
-
-      case PNG_CHUNK_ERROR:
-         return false;
-
-      case PNG_CHUNK_IHDR:
-         if (*has_ihdr || *has_idat || *has_iend)
-            return false;
-
-         if (!png_alloc_chunk(chunk))
-            return false;
-
-         if (fread(chunk->data, 1, chunk->size + 
-                  sizeof(uint32_t), file) != (chunk->size + sizeof(uint32_t)))
-         {
-            free(chunk->data);
-            return false;
-         }
-
-         if (!png_parse_ihdr(chunk, ihdr))
-            return false;
-
-         *has_ihdr = true;
-         break;
-
-      case PNG_CHUNK_PLTE:
-         {
-            unsigned entries = chunk->size / 3;
-
-            if (!*has_ihdr || *has_plte || *has_iend || *has_idat)
-               return false;
-
-            if (chunk->size % 3)
-               return false;
-
-            if (entries > 256)
-               return false;
-
-            if (fread(&palette, 3, entries, file) != entries)
-               return false;
-
-            if (!png_read_plte_into_buf(palette, entries))
-               return false;
-
-            *increment_size = sizeof(uint32_t);
-            *has_plte = true;
-         }
-         break;
-
-      case PNG_CHUNK_IDAT:
-         {
-            if (!(*has_ihdr) || *has_iend || (ihdr->color_type == 3 && !(*has_plte)))
-               return false;
-
-            if (!png_realloc_idat(chunk, idat_buf))
-               return false;
-
-            if (fread(idat_buf->data + idat_buf->size, 1, chunk->size, file) != chunk->size)
-               return false;
-
-            *increment_size = sizeof(uint32_t);
-            idat_buf->size += chunk->size;
-
-            *has_idat = true;
-         }
-         break;
-
-      case PNG_CHUNK_IEND:
-         if (!(*has_ihdr) || !(*has_idat))
-            return false;
-
-
-         *increment_size = sizeof(uint32_t);
-         *has_iend = true;
-         break;
-   }
-
-   return true;
-}
-
-bool rpng_load_image_argb_process(uint8_t *inflate_buf,
-      struct png_ihdr *ihdr,
-      struct idat_buffer *idat_buf, uint32_t **data,
-      uint32_t *palette,
-      unsigned *width, unsigned *height)
-{
-   z_stream stream = {0};
-   size_t inflate_buf_size = 0;
-
-   if (inflateInit(&stream) != Z_OK)
+   if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
       return false;
-
-   png_pass_geom(ihdr, ihdr->width,
-         ihdr->height, NULL, NULL, &inflate_buf_size);
-   if (ihdr->interlace == 1) /* To be sure. */
-      inflate_buf_size *= 2;
-
-   inflate_buf = (uint8_t*)malloc(inflate_buf_size);
-   if (!inflate_buf)
-      return false;
-
-   stream.next_in   = idat_buf->data;
-   stream.avail_in  = idat_buf->size;
-   stream.avail_out = inflate_buf_size;
-   stream.next_out  = inflate_buf;
-
-   if (inflate(&stream, Z_FINISH) != Z_STREAM_END)
-   {
-      inflateEnd(&stream);
-      return false;
-   }
-   inflateEnd(&stream);
-
-   *width  = ihdr->width;
-   *height = ihdr->height;
-#ifdef GEKKO
-   /* we often use these in textures, make sure they're 32-byte aligned */
-   *data = (uint32_t*)memalign(32, ihdr->width * ihdr->height * sizeof(uint32_t));
-#else
-   *data = (uint32_t*)malloc(ihdr->width * ihdr->height * sizeof(uint32_t));
-#endif
-   if (!*data)
-      return false;
-
-   if (ihdr->interlace == 1)
-   {
-      if (!png_reverse_filter_adam7(*data,
-               ihdr, inflate_buf, stream.total_out, palette))
-         return false;
-   }
-   else if (!png_reverse_filter(*data,
-            ihdr, inflate_buf, stream.total_out, palette))
-      return false;
-
-   return true;
-}
-
-static bool rpng_load_image_argb_init(FILE *file,
-      uint32_t **data,
-      unsigned *width, unsigned *height,
-      long *file_len)
-{
-
-   *data   = NULL;
-   *width  = 0;
-   *height = 0;
-
-   fseek(file, 0, SEEK_END);
-   *file_len = ftell(file);
-   rewind(file);
-
 
    return true;
 }
@@ -794,7 +653,11 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
    long pos, file_len;
+   FILE *file;
+   char header[8];
    uint8_t *inflate_buf = NULL;
+   size_t inflate_buf_size = 0;
+   z_stream stream = {0};
    struct idat_buffer idat_buf = {0};
    struct png_ihdr ihdr = {0};
    uint32_t palette[256] = {0};
@@ -803,68 +666,144 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    bool has_iend = false;
    bool has_plte = false;
    bool ret      = true;
-   FILE *file;
+
+   *data   = NULL;
+   *width  = 0;
+   *height = 0;
+
    file = fopen(path, "rb");
-
    if (!file)
-   {
-      fprintf(stderr, "Tried to open file: %s\n", path);
+      return false;
+
+   fseek(file, 0, SEEK_END);
+   file_len = ftell(file);
+   rewind(file);
+
+   if (fread(header, 1, sizeof(header), file) != sizeof(header))
       GOTO_END_ERROR();
-   }
 
-   if (!rpng_load_image_argb_init(file, data, width, height, &file_len))
+   if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
       GOTO_END_ERROR();
-
-   {
-      char header[8];
-
-      if (fread(header, 1, sizeof(header), file) != sizeof(header))
-         return false;
-
-      if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
-         return false;
-   }
 
    /* feof() apparently isn't triggered after a seek (IEND). */
-
-   for (pos = 0; pos < file_len && pos >= 0; pos = ftell(file))
+   for (pos = ftell(file); 
+         pos < file_len && pos >= 0; pos = ftell(file))
    {
-      size_t increment = 0;
       struct png_chunk chunk = {0};
 
       if (!read_chunk_header(file, &chunk))
          GOTO_END_ERROR();
 
-      if (!rpng_load_image_argb_iterate(
-            file, &chunk, palette, &ihdr, &idat_buf,
-            &has_ihdr, &has_idat, &has_iend, &has_plte,
-            &increment))
-         GOTO_END_ERROR();
-
-      if (increment != 0)
+      switch (png_chunk_type(&chunk))
       {
-         if (fseek(file, increment, SEEK_CUR) < 0)
-            GOTO_END_ERROR();
-      }
+         case PNG_CHUNK_NOOP:
+         default:
+            if (fseek(file, chunk.size + sizeof(uint32_t), SEEK_CUR) < 0)
+               GOTO_END_ERROR();
+            break;
 
+         case PNG_CHUNK_ERROR:
+            GOTO_END_ERROR();
+
+         case PNG_CHUNK_IHDR:
+            if (has_ihdr || has_idat || has_iend)
+               GOTO_END_ERROR();
+
+            if (!png_parse_ihdr(file, &chunk, &ihdr))
+               GOTO_END_ERROR();
+
+            has_ihdr = true;
+            break;
+
+         case PNG_CHUNK_PLTE:
+            if (!has_ihdr || has_plte || has_iend || has_idat)
+               GOTO_END_ERROR();
+
+            if (chunk.size % 3)
+               GOTO_END_ERROR();
+
+            if (!png_read_plte(file, palette, chunk.size / 3))
+               GOTO_END_ERROR();
+
+            has_plte = true;
+            break;
+
+         case PNG_CHUNK_IDAT:
+            if (!has_ihdr || has_iend || (ihdr.color_type == 3 && !has_plte))
+               GOTO_END_ERROR();
+
+            if (!png_append_idat(file, &chunk, &idat_buf))
+               GOTO_END_ERROR();
+
+            has_idat = true;
+            break;
+
+         case PNG_CHUNK_IEND:
+            if (!has_ihdr || !has_idat)
+               GOTO_END_ERROR();
+
+            if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
+               GOTO_END_ERROR();
+
+            has_iend = true;
+            break;
+      }
    }
 
    if (!has_ihdr || !has_idat || !has_iend)
       GOTO_END_ERROR();
-   
-   rpng_load_image_argb_process(inflate_buf,
-         &ihdr, &idat_buf, data, palette,
-         width, height);
+
+   if (inflateInit(&stream) != Z_OK)
+      GOTO_END_ERROR();
+
+   png_pass_geom(&ihdr, ihdr.width, ihdr.height, NULL, NULL, &inflate_buf_size);
+   if (ihdr.interlace == 1) /* To be sure. */
+      inflate_buf_size *= 2;
+
+   inflate_buf = (uint8_t*)malloc(inflate_buf_size);
+   if (!inflate_buf)
+      GOTO_END_ERROR();
+
+   stream.next_in   = idat_buf.data;
+   stream.avail_in  = idat_buf.size;
+   stream.avail_out = inflate_buf_size;
+   stream.next_out  = inflate_buf;
+
+   if (inflate(&stream, Z_FINISH) != Z_STREAM_END)
+   {
+      inflateEnd(&stream);
+      GOTO_END_ERROR();
+   }
+   inflateEnd(&stream);
+
+   *width  = ihdr.width;
+   *height = ihdr.height;
+#ifdef GEKKO
+   /* we often use these in textures, make sure they're 32-byte aligned */
+   *data = (uint32_t*)memalign(32, ihdr.width * ihdr.height * sizeof(uint32_t));
+#else
+   *data = (uint32_t*)malloc(ihdr.width * ihdr.height * sizeof(uint32_t));
+#endif
+   if (!*data)
+      GOTO_END_ERROR();
+
+   if (ihdr.interlace == 1)
+   {
+      if (!png_reverse_filter_adam7(*data,
+               &ihdr, inflate_buf, stream.total_out, palette))
+         GOTO_END_ERROR();
+   }
+   else if (!png_reverse_filter(*data,
+            &ihdr, inflate_buf, stream.total_out, palette))
+      GOTO_END_ERROR();
 
 end:
    if (file)
       fclose(file);
    if (!ret)
       free(*data);
-   if (idat_buf.data)
-      free(idat_buf.data);
-   if (inflate_buf)
-      free(inflate_buf);
+   free(idat_buf.data);
+   free(inflate_buf);
    return ret;
 }
 
