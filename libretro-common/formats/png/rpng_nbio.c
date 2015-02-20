@@ -82,17 +82,28 @@ static uint32_t dword_be(const uint8_t *buf)
    return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
 }
 
-static bool read_chunk_header(FILE *file, struct png_chunk *chunk)
+static bool read_chunk_header(uint8_t *buf, struct png_chunk *chunk)
 {
+   unsigned i;
    uint8_t dword[4] = {0};
 
-   if (fread(dword, 1, 4, file) != 4)
-      return false;
+   for (i = 0; i < 4; i++)
+   {
+      dword[i] = buf[i];
+      fprintf(stderr, "dword is: %c\n", buf[i]);
+   }
+
+   buf += 4;
 
    chunk->size = dword_be(dword);
 
-   if (fread(chunk->type, 1, 4, file) != 4)
-      return false;
+   for (i = 0; i < 4; i++)
+   {
+      chunk->type[i] = buf[i];
+      fprintf(stderr, "chun type is: %c\n", buf[i]);
+   }
+
+   buf += 4;
 
    return true;
 }
@@ -127,40 +138,30 @@ static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
    return PNG_CHUNK_NOOP;
 }
 
-static bool png_alloc_chunk(struct png_chunk *chunk)
-{
-   free(chunk->data);
-   chunk->data = (uint8_t*)calloc(1, chunk->size + sizeof(uint32_t)); /* CRC32 */
-   if (!chunk->data)
-      return false;
-   return true;
-}
-
-static void png_free_chunk(struct png_chunk *chunk)
-{
-   if (!chunk)
-      return;
-
-   free(chunk->data);
-   chunk->data = NULL;
-}
-
-static bool png_parse_ihdr(struct png_chunk *chunk,
+static bool png_parse_ihdr(uint8_t *buf,
       struct png_ihdr *ihdr)
 {
    unsigned i;
    bool ret = true;
 
-   if (chunk->size != 13)
-      GOTO_END_ERROR();
+   buf += 4 + 4;
 
-   ihdr->width       = dword_be(chunk->data + 0);
-   ihdr->height      = dword_be(chunk->data + 4);
-   ihdr->depth       = chunk->data[8];
-   ihdr->color_type  = chunk->data[9];
-   ihdr->compression = chunk->data[10];
-   ihdr->filter      = chunk->data[11];
-   ihdr->interlace   = chunk->data[12];
+   ihdr->width       = dword_be(buf + 0);
+   ihdr->height      = dword_be(buf + 4);
+   ihdr->depth       = buf[8];
+   ihdr->color_type  = buf[9];
+   ihdr->compression = buf[10];
+   ihdr->filter      = buf[11];
+   ihdr->interlace   = buf[12];
+
+   buf += 4 + 4 + 1 + 1 + 1 + 1 + 1;
+
+   fprintf(stderr, "IHDR: (%u x %u), bpc = %u, palette = %s, color = %s, alpha = %s, adam7 = %s.\n",
+         ihdr->width, ihdr->height,
+         ihdr->depth, ihdr->color_type == 3 ? "yes" : "no",
+         ihdr->color_type & 2 ? "yes" : "no",
+         ihdr->color_type & 4 ? "yes" : "no",
+         ihdr->interlace == 1 ? "yes" : "no");
 
    if (ihdr->width == 0 || ihdr->height == 0)
       GOTO_END_ERROR();
@@ -226,7 +227,6 @@ static bool png_parse_ihdr(struct png_chunk *chunk,
 #endif
 
 end:
-   png_free_chunk(chunk);
    return ret;
 }
 
@@ -624,17 +624,24 @@ static bool png_read_plte_into_buf(uint32_t *buffer, unsigned entries)
    return true;
 }
 
-bool rpng_load_image_argb_iterate(FILE *file, struct png_chunk *chunk,
+bool rpng_load_image_argb_iterate(uint8_t *buf,
+      struct png_chunk *chunk,
       uint32_t *palette,
       struct png_ihdr *ihdr, struct idat_buffer *idat_buf,
       bool *has_ihdr, bool *has_idat,
       bool *has_iend, bool *has_plte, size_t *increment_size)
 {
+   unsigned i;
+
+   for (i = 0; i < 4; i++)
+   {
+      fprintf(stderr, "chunktype: %c\n", chunk->type[i]);
+   }
+
    switch (png_chunk_type(chunk))
    {
       case PNG_CHUNK_NOOP:
       default:
-         *increment_size = chunk->size + sizeof(uint32_t);
          break;
 
       case PNG_CHUNK_ERROR:
@@ -644,17 +651,10 @@ bool rpng_load_image_argb_iterate(FILE *file, struct png_chunk *chunk,
          if (*has_ihdr || *has_idat || *has_iend)
             return false;
 
-         if (!png_alloc_chunk(chunk))
+         if (chunk->size != 13)
             return false;
 
-         if (fread(chunk->data, 1, chunk->size + 
-                  sizeof(uint32_t), file) != (chunk->size + sizeof(uint32_t)))
-         {
-            free(chunk->data);
-            return false;
-         }
-
-         if (!png_parse_ihdr(chunk, ihdr))
+         if (!png_parse_ihdr(buf, ihdr))
             return false;
 
          *has_ihdr = true;
@@ -673,13 +673,12 @@ bool rpng_load_image_argb_iterate(FILE *file, struct png_chunk *chunk,
             if (entries > 256)
                return false;
 
-            if (fread(&palette, 3, entries, file) != entries)
-               return false;
+            for (i = 0; i < entries; i++)
+               palette[i] = buf[i];
 
             if (!png_read_plte_into_buf(palette, entries))
                return false;
 
-            *increment_size = sizeof(uint32_t);
             *has_plte = true;
          }
          break;
@@ -691,11 +690,8 @@ bool rpng_load_image_argb_iterate(FILE *file, struct png_chunk *chunk,
          if (!png_realloc_idat(chunk, idat_buf))
             return false;
 
-         if (fread(idat_buf->data + idat_buf->size, 1, chunk->size, file) != chunk->size)
-            return false;
-
-         *increment_size = sizeof(uint32_t);
-         idat_buf->size += chunk->size;
+         for (i = 0; i < chunk->size; i++)
+            idat_buf->data[i + idat_buf->size] = buf[i];
 
          *has_idat = true;
          break;
@@ -704,10 +700,8 @@ bool rpng_load_image_argb_iterate(FILE *file, struct png_chunk *chunk,
          if (!(*has_ihdr) || !(*has_idat))
             return false;
 
-
-         *increment_size = sizeof(uint32_t);
          *has_iend = true;
-         break;
+         return false;
    }
 
    return true;
@@ -770,28 +764,10 @@ bool rpng_load_image_argb_process(uint8_t *inflate_buf,
    return true;
 }
 
-static bool rpng_load_image_argb_init(FILE *file,
-      uint32_t **data,
-      unsigned *width, unsigned *height,
-      long *file_len)
-{
-
-   *data   = NULL;
-   *width  = 0;
-   *height = 0;
-
-   fseek(file, 0, SEEK_END);
-   *file_len = ftell(file);
-   rewind(file);
-
-
-   return true;
-}
-
 bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
-   long pos, file_len;
+   size_t file_len;
    uint8_t *buff_data = NULL;
    struct nbio_t* nbread = NULL;
    uint8_t *inflate_buf = NULL;
@@ -803,33 +779,22 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    bool has_iend = false;
    bool has_plte = false;
    bool ret      = true;
-   FILE *file = NULL;
    void* ptr = NULL;
+   size_t increment = 0;
+
    {
-      size_t size = 0;
       bool looped = false;
       nbread = nbio_open(path, NBIO_READ);
-      ptr  = nbio_get_ptr(nbread, &size);
+      ptr  = nbio_get_ptr(nbread, &file_len);
       nbio_begin_read(nbread);
 
       while (!nbio_iterate(nbread)) looped=true;
-      ptr = nbio_get_ptr(nbread, &size);
+      ptr = nbio_get_ptr(nbread, &file_len);
       (void)ptr;
       (void)looped;
 
       buff_data = (uint8_t*)ptr;
    }
-
-   file = fopen(path, "rb");
-
-   if (!file)
-   {
-      fprintf(stderr, "Tried to open file: %s\n", path);
-      GOTO_END_ERROR();
-   }
-
-   if (!rpng_load_image_argb_init(file, data, width, height, &file_len))
-      GOTO_END_ERROR();
 
    {
       unsigned i;
@@ -840,34 +805,29 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
 
       if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
          return false;
+
+      buff_data += 8;
    }
 
-   if (fseek(file, 8, SEEK_CUR) < 0)
-      GOTO_END_ERROR();
-
-   /* feof() apparently isn't triggered after a seek (IEND). */
-
-   for (pos = 0; pos < file_len && pos >= 0; pos = ftell(file))
+   while (1)
    {
-      size_t increment = 0;
       struct png_chunk chunk = {0};
 
-      if (!read_chunk_header(file, &chunk))
+      if (!read_chunk_header(buff_data, &chunk))
          GOTO_END_ERROR();
 
       if (!rpng_load_image_argb_iterate(
-            file, &chunk, palette, &ihdr, &idat_buf,
+            buff_data, &chunk, palette, &ihdr, &idat_buf,
             &has_ihdr, &has_idat, &has_iend, &has_plte,
             &increment))
-         GOTO_END_ERROR();
+         break;
 
-      if (increment != 0)
-      {
-         if (fseek(file, increment, SEEK_CUR) < 0)
-            GOTO_END_ERROR();
-      }
-
+      buff_data += 4 + 4 + chunk.size + 4;
    }
+
+   fprintf(stderr, "has_ihdr: %d\n", has_ihdr);
+   fprintf(stderr, "has_idat: %d\n", has_idat);
+   fprintf(stderr, "has_iend: %d\n", has_iend);
 
    if (!has_ihdr || !has_idat || !has_iend)
       GOTO_END_ERROR();
@@ -878,8 +838,6 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
 
 end:
    nbio_free(nbread);
-   if (file)
-      fclose(file);
    if (!ret)
       free(*data);
    if (idat_buf.data)

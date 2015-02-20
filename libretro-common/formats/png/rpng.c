@@ -630,6 +630,14 @@ bool rpng_load_image_argb_iterate(FILE *file, struct png_chunk *chunk,
       bool *has_ihdr, bool *has_idat,
       bool *has_iend, bool *has_plte, size_t *increment_size)
 {
+#ifdef RPNG_TEST
+   unsigned i;
+   for (i = 0; i < 4; i++)
+   {
+      fprintf(stderr, "chunktype: %c\n", chunk->type[i]);
+   }
+#endif
+   
    switch (png_chunk_type(chunk))
    {
       case PNG_CHUNK_NOOP:
@@ -814,7 +822,6 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
       GOTO_END_ERROR();
 
    {
-      unsigned i;
       char header[8];
 
       if (fread(header, 1, sizeof(header), file) != sizeof(header))
