@@ -660,6 +660,8 @@ bool rpng_load_image_argb_iterate(uint8_t *buf,
             if (entries > 256)
                return false;
 
+            buf += 8;
+
             for (i = 0; i < entries; i++)
                palette[i] = buf[i];
 

@@ -570,7 +570,7 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
    ZLIB_OBJS =	decompress/zip_support.o 
-   OBJ += libretro-common/formats/png/rpng.o file_extract.o
+   OBJ += libretro-common/formats/png/rpng_nbio.o file_extract.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1 
