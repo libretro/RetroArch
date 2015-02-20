@@ -22,6 +22,12 @@
 
 #include <formats/rpng.h>
 
+/*
+ * temporarily added by cxd4 (due to slowness at learning the NBIO API)
+ * In a future commit, this should be replaced with <file/nbio.h>.
+ */
+#include <file_ops.h>
+
 #include <zlib.h>
 
 #include <stdio.h>
@@ -768,28 +774,22 @@ bool rpng_load_image_argb_process(uint8_t *inflate_buf,
    return true;
 }
 
-static bool rpng_load_image_argb_init(FILE *file,
+static bool rpng_load_image_argb_init(
+      const char * path,
       uint32_t **data,
       unsigned *width, unsigned *height,
       ssize_t *file_len)
 {
-   char header[8];
-   long pos;
+   uint8_t * header;
 
    *data   = NULL;
    *width  = 0;
    *height = 0;
 
-   fseek(file, 0, SEEK_END);
-
-   pos = ftell(file);
-   if (pos < 0)
+   if (!read_file(path, (void **)&header, file_len))
       return false;
-   *file_len = (ssize_t)pos;
 
-   rewind(file);
-
-   if (fread(header, 1, sizeof(header), file) != sizeof(header))
+   if (*file_len < sizeof(png_magic))
       return false;
 
    if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
@@ -802,6 +802,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
    ssize_t pos, file_len;
+   FILE * file;
    uint8_t *inflate_buf = NULL;
    struct idat_buffer idat_buf = {0};
    struct png_ihdr ihdr = {0};
@@ -811,18 +812,18 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    bool has_iend = false;
    bool has_plte = false;
    bool ret      = true;
-   FILE *file = fopen(path, "rb");
 
-   if (!file)
+   if (!rpng_load_image_argb_init(path, data, width, height, &file_len))
+      GOTO_END_ERROR();
+
+   /* feof() apparently isn't triggered after a seek (IEND). */
+
+   file = fopen(path, "rb");
+   if (file == NULL)
    {
       fprintf(stderr, "Tried to open file: %s\n", path);
       GOTO_END_ERROR();
    }
-
-   if (!rpng_load_image_argb_init(file, data, width, height, &file_len))
-      GOTO_END_ERROR();
-
-   /* feof() apparently isn't triggered after a seek (IEND). */
 
    for (pos = 0; pos < file_len && pos >= 0; pos = (ssize_t)ftell(file))
    {
