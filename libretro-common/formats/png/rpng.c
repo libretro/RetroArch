@@ -45,7 +45,7 @@
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #endif
 
-//#define NONBLOCKING_TEST
+#define NONBLOCKING_TEST
 
 static const uint8_t png_magic[8] = {
    0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a,
@@ -777,7 +777,6 @@ static bool rpng_load_image_argb_init(FILE *file,
       unsigned *width, unsigned *height,
       long *file_len)
 {
-   char header[8];
 
    *data   = NULL;
    *width  = 0;
@@ -787,11 +786,6 @@ static bool rpng_load_image_argb_init(FILE *file,
    *file_len = ftell(file);
    rewind(file);
 
-   if (fread(header, 1, sizeof(header), file) != sizeof(header))
-      return false;
-
-   if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
-      return false;
 
    return true;
 }
@@ -832,6 +826,20 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
 
    if (!rpng_load_image_argb_init(file, data, width, height, &file_len))
       GOTO_END_ERROR();
+
+   {
+      char header[8];
+
+#ifdef NONBLOCKING_TEST
+      /* TODO/FIXME */
+#else
+      if (fread(header, 1, sizeof(header), file) != sizeof(header))
+         return false;
+
+      if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
+         return false;
+#endif
+   }
 
    /* feof() apparently isn't triggered after a seek (IEND). */
 
