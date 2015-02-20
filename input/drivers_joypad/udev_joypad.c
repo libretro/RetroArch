@@ -159,9 +159,9 @@ static bool hotplug_available(void)
 }
 
 static void check_device(struct udev_device *dev, const char *path, bool hotplugged);
-static void remove_device(const char *path);
+static void udev_joypad_remove_device(const char *path);
 
-static void handle_hotplug(void)
+static void udev_joypad_handle_hotplug(void)
 {
    struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
    if (!dev)
@@ -182,7 +182,7 @@ static void handle_hotplug(void)
    else if (!strcmp(action, "remove"))
    {
       RARCH_LOG("[udev]: Hotplug remove: %s.\n", devnode);
-      remove_device(devnode);
+      udev_joypad_remove_device(devnode);
    }
 
 end:
@@ -264,7 +264,7 @@ static void udev_joypad_poll(void)
 {
    unsigned i;
    while (hotplug_available())
-      handle_hotplug();
+      udev_joypad_handle_hotplug();
 
    for (i = 0; i < MAX_USERS; i++)
       udev_poll_pad(&udev_pads[i], i);
@@ -471,7 +471,7 @@ static void check_device(struct udev_device *dev, const char *path, bool hotplug
    }
 }
 
-static void remove_device(const char *path)
+static void udev_joypad_remove_device(const char *path)
 {
    unsigned i;
 
