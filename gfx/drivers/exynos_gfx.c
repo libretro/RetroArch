@@ -743,6 +743,7 @@ static int exynos_init(struct exynos_data *pdata, unsigned bpp)
    }
 
    drm->crtc_id = drm->encoder->crtc_id;
+   drm->connector_id = drm->connector->connector_id;
    drm->orig_crtc = drmModeGetCrtc(fd, drm->crtc_id);
    if (!drm->orig_crtc)
       RARCH_WARN("video_exynos: cannot find original crtc\n");
