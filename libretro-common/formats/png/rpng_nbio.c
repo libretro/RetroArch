@@ -618,10 +618,12 @@ bool rpng_load_image_argb_iterate(uint8_t *buf,
 {
    unsigned i;
 
+#if 0
    for (i = 0; i < 4; i++)
    {
       fprintf(stderr, "chunktype: %c\n", chunk->type[i]);
    }
+#endif
 
    switch (png_chunk_type(chunk))
    {
@@ -675,8 +677,12 @@ bool rpng_load_image_argb_iterate(uint8_t *buf,
          if (!png_realloc_idat(chunk, idat_buf))
             return false;
 
+         buf += 8;
+
          for (i = 0; i < chunk->size; i++)
             idat_buf->data[i + idat_buf->size] = buf[i];
+
+         idat_buf->size += chunk->size;
 
          *has_idat = true;
          break;
@@ -810,9 +816,11 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
       buff_data += 4 + 4 + chunk.size + 4;
    }
 
+#if 0
    fprintf(stderr, "has_ihdr: %d\n", has_ihdr);
    fprintf(stderr, "has_idat: %d\n", has_idat);
    fprintf(stderr, "has_iend: %d\n", has_iend);
+#endif
 
    if (!has_ihdr || !has_idat || !has_iend)
       GOTO_END_ERROR();

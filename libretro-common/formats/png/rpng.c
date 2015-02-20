@@ -693,19 +693,27 @@ bool rpng_load_image_argb_iterate(FILE *file, struct png_chunk *chunk,
          break;
 
       case PNG_CHUNK_IDAT:
-         if (!(*has_ihdr) || *has_iend || (ihdr->color_type == 3 && !(*has_plte)))
-            return false;
+         {
+            if (!(*has_ihdr) || *has_iend || (ihdr->color_type == 3 && !(*has_plte)))
+               return false;
 
-         if (!png_realloc_idat(chunk, idat_buf))
-            return false;
+            if (!png_realloc_idat(chunk, idat_buf))
+               return false;
 
-         if (fread(idat_buf->data + idat_buf->size, 1, chunk->size, file) != chunk->size)
-            return false;
+            if (fread(idat_buf->data + idat_buf->size, 1, chunk->size, file) != chunk->size)
+               return false;
 
-         *increment_size = sizeof(uint32_t);
-         idat_buf->size += chunk->size;
+            *increment_size = sizeof(uint32_t);
+            idat_buf->size += chunk->size;
 
-         *has_idat = true;
+            for (i = 0; i < idat_buf->size; i++)
+            {
+               fprintf(stderr, "%c", idat_buf->data[i]);
+            }
+            fprintf(stderr, "\n");
+
+            *has_idat = true;
+         }
          break;
 
       case PNG_CHUNK_IEND:
