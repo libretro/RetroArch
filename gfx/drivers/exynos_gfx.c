@@ -910,6 +910,9 @@ static void exynos_free(struct exynos_data *pdata)
       exynos_bo_destroy(pdata->buf[i]);
       pdata->buf[i] = NULL;
    }
+
+   exynos_device_destroy(pdata->device);
+   pdata->device = NULL;
 }
 
 #if (EXYNOS_GFX_DEBUG_LOG == 1)
