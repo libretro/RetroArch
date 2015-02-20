@@ -29,7 +29,7 @@
 #include <Imlib2.h>
 #endif
 
-int main(int argc, char *argv[])
+static int test_nonblocking_rpng(const char *in_path)
 {
 #ifdef HAVE_IMLIB2
    Imlib_Image img;
@@ -48,16 +48,6 @@ int main(int argc, char *argv[])
    uint32_t *data = NULL;
    unsigned width = 0;
    unsigned height = 0;
-   const char *in_path = "/tmp/test.png";
-
-   if (argc > 2)
-   {
-      fprintf(stderr, "Usage: %s <png file>\n", argv[0]);
-      return 1;
-   }
-
-   if (argc == 2)
-      in_path = argv[1];
 
    if (!rpng_save_image_argb("/tmp/test.png", test_data, 4, 4, 16))
       return 1;
@@ -113,4 +103,22 @@ int main(int argc, char *argv[])
    imlib_free_image();
 #endif
    free(data);
+
+   return 0;
+}
+
+int main(int argc, char *argv[])
+{
+   const char *in_path = "/tmp/test.png";
+
+   if (argc > 2)
+   {
+      fprintf(stderr, "Usage: %s <png file>\n", argv[0]);
+      return 1;
+   }
+
+   if (argc == 2)
+      in_path = argv[1];
+
+   return test_nonblocking_rpng(in_path);
 }
