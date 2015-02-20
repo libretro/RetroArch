@@ -20,7 +20,7 @@ struct nbio_t
 
 static const char * modes[]={ "rb", "wb", "r+b" };
 
-struct nbio_t* nbio_open(const char * filename, enum nbio_mode_t mode)
+struct nbio_t* nbio_open(const char * filename, unsigned mode)
 {
    struct nbio_t* handle = NULL;
    FILE* f=fopen(filename, modes[mode]);

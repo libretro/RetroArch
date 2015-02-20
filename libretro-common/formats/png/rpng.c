@@ -794,6 +794,10 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
    long pos, file_len;
+#ifdef NONBLOCKING_TEST
+   uint8_t *buff_data = NULL;
+   struct nbio_t* nbread = NULL;
+#endif
    uint8_t *inflate_buf = NULL;
    struct idat_buffer idat_buf = {0};
    struct png_ihdr ihdr = {0};
@@ -805,16 +809,20 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    bool ret      = true;
    FILE *file;
 #ifdef NONBLOCKING_TEST
-   size_t size = 0;
-   bool looped = false;
-   struct nbio_t* read = nbio_open(path, NBIO_READ);
-   void* ptr           = nbio_get_ptr(read, &size);
-   nbio_begin_read(read);
+   {
+      size_t size = 0;
+      bool looped = false;
+      nbread = nbio_open(path, NBIO_READ);
+      void* ptr           = nbio_get_ptr(nbread, &size);
+      nbio_begin_read(nbread);
 
-   while (!nbio_iterate(read)) looped=true;
-   ptr = nbio_get_ptr(read, &size);
-   (void)ptr;
-   (void)looped;
+      while (!nbio_iterate(nbread)) looped=true;
+      ptr = nbio_get_ptr(nbread, &size);
+      (void)ptr;
+      (void)looped;
+
+      buff_data = (uint8_t*)ptr;
+   }
 #endif
    file = fopen(path, "rb");
 
@@ -828,17 +836,19 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
       GOTO_END_ERROR();
 
    {
+      unsigned i;
       char header[8];
 
 #ifdef NONBLOCKING_TEST
-      /* TODO/FIXME */
+      for (i = 0; i < 8; i++)
+         header[i] = buff_data[i];
 #else
       if (fread(header, 1, sizeof(header), file) != sizeof(header))
          return false;
+#endif
 
       if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
          return false;
-#endif
    }
 
    /* feof() apparently isn't triggered after a seek (IEND). */
@@ -874,7 +884,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
 
 end:
 #ifdef NONBLOCKING_TEST
-   nbio_free(read);
+   nbio_free(nbread);
 #endif
    if (file)
       fclose(file);

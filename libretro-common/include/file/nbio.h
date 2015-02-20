@@ -4,20 +4,16 @@
 #include <stddef.h>
 #include <boolean.h>
 
-enum nbio_mode
-{
-   /* The comments tell which mode in fopen() it corresponds to. */
-   NBIO_READ = 0,/* rb */
-   NBIO_WRITE,   /* wb */
-   NBIO_UPDATE,  /* r+b */
-};
+#define NBIO_READ   0
+#define NBIO_WRITE  1
+#define NBIO_UPDATE 2
 
 struct nbio_t;
 
 /*
  * Creates an nbio structure for performing the given operation on the given file.
  */
-struct nbio_t* nbio_open(const char * filename, enum nbio_mode_t mode);
+struct nbio_t* nbio_open(const char * filename, unsigned mode);
 
 /*
  * Starts reading the given file. When done, it will be available in nbio_get_ptr.
