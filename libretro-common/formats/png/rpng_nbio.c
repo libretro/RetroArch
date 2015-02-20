@@ -47,43 +47,6 @@
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #endif
 
-static const uint8_t png_magic[8] = {
-   0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a,
-};
-
-struct png_chunk
-{
-   uint32_t size;
-   char type[4];
-   uint8_t *data;
-};
-
-struct png_ihdr
-{
-   uint32_t width;
-   uint32_t height;
-   uint8_t depth;
-   uint8_t color_type;
-   uint8_t compression;
-   uint8_t filter;
-   uint8_t interlace;
-};
-
-enum png_chunk_type
-{
-   PNG_CHUNK_NOOP = 0,
-   PNG_CHUNK_ERROR,
-   PNG_CHUNK_IHDR,
-   PNG_CHUNK_IDAT,
-   PNG_CHUNK_PLTE,
-   PNG_CHUNK_IEND
-};
-
-static uint32_t dword_be(const uint8_t *buf)
-{
-   return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
-}
-
 static bool read_chunk_header(uint8_t *buf, struct png_chunk *chunk)
 {
    unsigned i;
@@ -102,36 +65,6 @@ static bool read_chunk_header(uint8_t *buf, struct png_chunk *chunk)
    buf += 4;
 
    return true;
-}
-
-struct
-{
-   const char *id;
-   enum png_chunk_type type;
-} static const chunk_map[] = {
-   { "IHDR", PNG_CHUNK_IHDR },
-   { "IDAT", PNG_CHUNK_IDAT },
-   { "IEND", PNG_CHUNK_IEND },
-   { "PLTE", PNG_CHUNK_PLTE },
-};
-
-struct idat_buffer
-{
-   uint8_t *data;
-   size_t size;
-};
-
-static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
-{
-   unsigned i;
-
-   for (i = 0; i < ARRAY_SIZE(chunk_map); i++)
-   {
-      if (memcmp(chunk->type, chunk_map[i].id, 4) == 0)
-         return chunk_map[i].type;
-   }
-
-   return PNG_CHUNK_NOOP;
 }
 
 static bool png_parse_ihdr(uint8_t *buf,
@@ -215,121 +148,6 @@ static bool png_parse_ihdr(uint8_t *buf,
 
 end:
    return ret;
-}
-
-static inline void copy_line_rgb(uint32_t *data,
-      const uint8_t *decoded, unsigned width, unsigned bpp)
-{
-   unsigned i;
-
-   bpp /= 8;
-
-   for (i = 0; i < width; i++)
-   {
-      uint32_t r, g, b;
-
-      r        = *decoded;
-      decoded += bpp;
-      g        = *decoded;
-      decoded += bpp;
-      b        = *decoded;
-      decoded += bpp;
-      data[i]  = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
-   }
-}
-
-static inline void copy_line_rgba(uint32_t *data,
-      const uint8_t *decoded, unsigned width, unsigned bpp)
-{
-   unsigned i;
-
-   bpp /= 8;
-
-   for (i = 0; i < width; i++)
-   {
-      uint32_t r, g, b, a;
-      r        = *decoded;
-      decoded += bpp;
-      g        = *decoded;
-      decoded += bpp;
-      b        = *decoded;
-      decoded += bpp;
-      a        = *decoded;
-      decoded += bpp;
-      data[i]  = (a << 24) | (r << 16) | (g << 8) | (b << 0);
-   }
-}
-
-static inline void copy_line_bw(uint32_t *data,
-      const uint8_t *decoded, unsigned width, unsigned depth)
-{
-   unsigned i, bit;
-   static const unsigned mul_table[] = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
-   unsigned mul, mask;
-   
-   if (depth == 16)
-   {
-      for (i = 0; i < width; i++)
-      {
-         uint32_t val = decoded[i << 1];
-         data[i]      = (val * 0x010101) | (0xffu << 24);
-      }
-      return;
-   }
-
-   mul  = mul_table[depth];
-   mask = (1 << depth) - 1;
-   bit  = 0;
-
-   for (i = 0; i < width; i++, bit += depth)
-   {
-      unsigned byte = bit >> 3;
-      unsigned val  = decoded[byte] >> (8 - depth - (bit & 7));
-
-      val          &= mask;
-      val          *= mul;
-      data[i]       = (val * 0x010101) | (0xffu << 24);
-   }
-}
-
-static inline void copy_line_gray_alpha(uint32_t *data,
-      const uint8_t *decoded, unsigned width,
-      unsigned bpp)
-{
-   unsigned i;
-
-   bpp /= 8;
-
-   for (i = 0; i < width; i++)
-   {
-      uint32_t gray, alpha;
-
-      gray     = *decoded;
-      decoded += bpp;
-      alpha    = *decoded;
-      decoded += bpp;
-
-      data[i]  = (gray * 0x010101) | (alpha << 24);
-   }
-}
-
-static inline void copy_line_plt(uint32_t *data,
-      const uint8_t *decoded, unsigned width,
-      unsigned depth, const uint32_t *palette)
-{
-   unsigned i, bit;
-   unsigned mask = (1 << depth) - 1;
-
-   bit = 0;
-
-   for (i = 0; i < width; i++, bit += depth)
-   {
-      unsigned byte = bit >> 3;
-      unsigned val  = decoded[byte] >> (8 - depth - (bit & 7));
-
-      val          &= mask;
-      data[i]       = palette[val];
-   }
 }
 
 static void png_pass_geom(const struct png_ihdr *ihdr,
@@ -596,7 +414,7 @@ static bool png_read_plte_into_buf(uint32_t *buffer, unsigned entries)
    return true;
 }
 
-bool rpng_load_image_argb_iterate(uint8_t *buf,
+bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
       struct png_chunk *chunk,
       uint32_t *palette,
       struct png_ihdr *ihdr, struct idat_buffer *idat_buf,
@@ -687,7 +505,7 @@ bool rpng_load_image_argb_iterate(uint8_t *buf,
    return true;
 }
 
-bool rpng_load_image_argb_process(uint8_t *inflate_buf,
+bool rpng_nbio_load_image_argb_process(uint8_t *inflate_buf,
       struct png_ihdr *ihdr,
       struct idat_buffer *idat_buf, uint32_t **data,
       uint32_t *palette,
@@ -744,7 +562,7 @@ bool rpng_load_image_argb_process(uint8_t *inflate_buf,
    return true;
 }
 
-bool rpng_load_image_argb(const char *path, uint32_t **data,
+bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
    size_t file_len;
@@ -796,7 +614,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
       if (!read_chunk_header(buff_data, &chunk))
          GOTO_END_ERROR();
 
-      if (!rpng_load_image_argb_iterate(
+      if (!rpng_nbio_load_image_argb_iterate(
             buff_data, &chunk, palette, &ihdr, &idat_buf,
             &has_ihdr, &has_idat, &has_iend, &has_plte,
             &increment))
@@ -814,7 +632,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    if (!has_ihdr || !has_idat || !has_iend)
       GOTO_END_ERROR();
    
-   rpng_load_image_argb_process(inflate_buf,
+   rpng_nbio_load_image_argb_process(inflate_buf,
          &ihdr, &idat_buf, data, palette,
          width, height);
 
