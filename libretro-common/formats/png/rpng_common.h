@@ -25,6 +25,13 @@
 
 #include <retro_inline.h>
 
+#undef GOTO_END_ERROR
+#define GOTO_END_ERROR() do { \
+   fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__); \
+   ret = false; \
+   goto end; \
+} while(0)
+
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #endif
@@ -65,6 +72,14 @@ enum png_chunk_type
    PNG_CHUNK_IDAT,
    PNG_CHUNK_PLTE,
    PNG_CHUNK_IEND
+};
+
+struct adam7_pass
+{
+   unsigned x;
+   unsigned y;
+   unsigned stride_x;
+   unsigned stride_y;
 };
 
 /* Paeth prediction filter. */
