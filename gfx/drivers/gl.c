@@ -2969,6 +2969,7 @@ static uintptr_t gl_get_current_framebuffer(void *data)
    gl_t *gl = (gl_t*)data;
    return gl->hw_render_fbo[(gl->tex_index + 1) % gl->textures];
 }
+#endif
 
 static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 {
@@ -2976,7 +2977,6 @@ static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 
    return gl->ctx_driver->get_proc_address(sym);
 }
-#endif
 
 static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
