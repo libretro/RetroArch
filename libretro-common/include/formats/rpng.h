@@ -35,6 +35,14 @@
 extern "C" {
 #endif
 
+struct rpng_t
+{
+   bool has_ihdr;
+   bool has_idat;
+   bool has_iend;
+   bool has_plte;
+};
+
 bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height);
 

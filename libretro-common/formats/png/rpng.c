@@ -219,10 +219,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    struct idat_buffer idat_buf = {0};
    struct png_ihdr ihdr = {0};
    uint32_t palette[256] = {0};
-   bool has_ihdr = false;
-   bool has_idat = false;
-   bool has_iend = false;
-   bool has_plte = false;
+   struct rpng_t rpng = {0};
    bool ret      = true;
 
    *data   = NULL;
@@ -264,17 +261,17 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             GOTO_END_ERROR();
 
          case PNG_CHUNK_IHDR:
-            if (has_ihdr || has_idat || has_iend)
+            if (rpng.has_ihdr || rpng.has_idat || rpng.has_iend)
                GOTO_END_ERROR();
 
             if (!png_parse_ihdr_fio(file, &chunk, &ihdr))
                GOTO_END_ERROR();
 
-            has_ihdr = true;
+            rpng.has_ihdr = true;
             break;
 
          case PNG_CHUNK_PLTE:
-            if (!has_ihdr || has_plte || has_iend || has_idat)
+            if (!rpng.has_ihdr || rpng.has_plte || rpng.has_iend || rpng.has_idat)
                GOTO_END_ERROR();
 
             if (chunk.size % 3)
@@ -283,32 +280,32 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             if (!png_read_plte_fio(file, palette, chunk.size / 3))
                GOTO_END_ERROR();
 
-            has_plte = true;
+            rpng.has_plte = true;
             break;
 
          case PNG_CHUNK_IDAT:
-            if (!has_ihdr || has_iend || (ihdr.color_type == 3 && !has_plte))
+            if (!rpng.has_ihdr || rpng.has_iend || (ihdr.color_type == 3 && !rpng.has_plte))
                GOTO_END_ERROR();
 
             if (!png_append_idat_fio(file, &chunk, &idat_buf))
                GOTO_END_ERROR();
 
-            has_idat = true;
+            rpng.has_idat = true;
             break;
 
          case PNG_CHUNK_IEND:
-            if (!has_ihdr || !has_idat)
+            if (!rpng.has_ihdr || !rpng.has_idat)
                GOTO_END_ERROR();
 
             if (fseek(file, sizeof(uint32_t), SEEK_CUR) < 0)
                GOTO_END_ERROR();
 
-            has_iend = true;
+            rpng.has_iend = true;
             break;
       }
    }
 
-   if (!has_ihdr || !has_idat || !has_iend)
+   if (!rpng.has_ihdr || !rpng.has_idat || !rpng.has_iend)
       GOTO_END_ERROR();
 
    if (inflateInit(&stream) != Z_OK)
