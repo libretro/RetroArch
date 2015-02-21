@@ -213,10 +213,8 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    long pos, file_len;
    FILE *file;
    char header[8];
-   uint8_t *inflate_buf = NULL;
    size_t inflate_buf_size = 0;
    z_stream stream = {0};
-   struct idat_buffer idat_buf = {0};
    struct png_ihdr ihdr = {0};
    uint32_t palette[256] = {0};
    struct rpng_t rpng = {0};
@@ -287,7 +285,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             if (!rpng.has_ihdr || rpng.has_iend || (ihdr.color_type == 3 && !rpng.has_plte))
                GOTO_END_ERROR();
 
-            if (!png_append_idat_fio(file, &chunk, &idat_buf))
+            if (!png_append_idat_fio(file, &chunk, &rpng.idat_buf))
                GOTO_END_ERROR();
 
             rpng.has_idat = true;
@@ -315,14 +313,14 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    if (ihdr.interlace == 1) /* To be sure. */
       inflate_buf_size *= 2;
 
-   inflate_buf = (uint8_t*)malloc(inflate_buf_size);
-   if (!inflate_buf)
+   rpng.inflate_buf = (uint8_t*)malloc(inflate_buf_size);
+   if (!rpng.inflate_buf)
       GOTO_END_ERROR();
 
-   stream.next_in   = idat_buf.data;
-   stream.avail_in  = idat_buf.size;
+   stream.next_in   = rpng.idat_buf.data;
+   stream.avail_in  = rpng.idat_buf.size;
    stream.avail_out = inflate_buf_size;
-   stream.next_out  = inflate_buf;
+   stream.next_out  = rpng.inflate_buf;
 
    if (inflate(&stream, Z_FINISH) != Z_STREAM_END)
    {
@@ -345,11 +343,11 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    if (ihdr.interlace == 1)
    {
       if (!png_reverse_filter_adam7(*data,
-               &ihdr, inflate_buf, stream.total_out, palette))
+               &ihdr, rpng.inflate_buf, stream.total_out, palette))
          GOTO_END_ERROR();
    }
    else if (!png_reverse_filter(*data,
-            &ihdr, inflate_buf, stream.total_out, palette))
+            &ihdr, rpng.inflate_buf, stream.total_out, palette))
       GOTO_END_ERROR();
 
 end:
@@ -357,7 +355,7 @@ end:
       fclose(file);
    if (!ret)
       free(*data);
-   free(idat_buf.data);
-   free(inflate_buf);
+   free(rpng.idat_buf.data);
+   free(rpng.inflate_buf);
    return ret;
 }
