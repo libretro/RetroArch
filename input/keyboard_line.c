@@ -42,9 +42,7 @@ static void input_keyboard_line_toggle_osk(bool enable)
    if (!g_settings.osk.enable)
       return;
 
-   rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
-   driver.osk_active = enable;
-   rarch_main_command(RARCH_CMD_OVERLAY_INIT);
+   driver.keyboard_linefeed_enable = enable;
 }
 
 /**

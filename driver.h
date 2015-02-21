@@ -213,7 +213,8 @@ typedef struct driver
    bool video_active;
    bool camera_active;
    bool location_active;
-   bool osk_active;
+   bool osk_enable;
+   bool keyboard_linefeed_enable;
 
 #ifdef HAVE_MENU
    menu_handle_t *menu;

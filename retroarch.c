@@ -2353,7 +2353,7 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_OVERLAY_INIT:
          rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
 #ifdef HAVE_OVERLAY
-         if (driver.osk_active)
+         if (driver.osk_enable)
          {
             if (!*g_settings.osk.overlay)
                break;
@@ -2364,8 +2364,8 @@ bool rarch_main_command(unsigned cmd)
                break;
          }
 
-         driver.overlay = input_overlay_new(driver.osk_active ? g_settings.osk.overlay : g_settings.input.overlay,
-               driver.osk_active ? g_settings.osk.enable   : g_settings.input.overlay_enable,
+         driver.overlay = input_overlay_new(driver.osk_enable ? g_settings.osk.overlay : g_settings.input.overlay,
+               driver.osk_enable ? g_settings.osk.enable   : g_settings.input.overlay_enable,
                g_settings.input.overlay_opacity, g_settings.input.overlay_scale);
          if (!driver.overlay)
             RARCH_ERR("Failed to load overlay.\n");
