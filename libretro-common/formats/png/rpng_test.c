@@ -29,6 +29,49 @@
 #include <Imlib2.h>
 #endif
 
+static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
+      unsigned *width, unsigned *height)
+{
+   bool ret      = true;
+
+   struct rpng_t *rpng = rpng_nbio_load_image_argb_init(path);
+
+   if (!rpng)
+   {
+      ret = false;
+      goto end;
+   }
+
+   while (1)
+   {
+      if (!rpng_nbio_load_image_argb_iterate(
+            rpng->buff_data, rpng))
+         break;
+   }
+
+#if 0
+   fprintf(stderr, "has_ihdr: %d\n", rpng->has_ihdr);
+   fprintf(stderr, "has_idat: %d\n", rpng->has_idat);
+   fprintf(stderr, "has_iend: %d\n", rpng->has_iend);
+#endif
+
+   if (!rpng->has_ihdr || !rpng->has_idat || !rpng->has_iend)
+   {
+      ret = false;
+      goto end;
+   }
+   
+   rpng_nbio_load_image_argb_process(rpng, data, width, height);
+
+end:
+   rpng_nbio_load_image_free(rpng);
+   rpng = NULL;
+   if (!ret)
+      free(*data);
+
+   return ret;
+}
+
 static int test_nonblocking_rpng(const char *in_path)
 {
 #ifdef HAVE_IMLIB2

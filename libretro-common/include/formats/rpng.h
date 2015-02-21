@@ -72,8 +72,15 @@ struct rpng_t
 bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height);
 
-bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
-      unsigned *width, unsigned *height);
+struct rpng_t *rpng_nbio_load_image_argb_init(const char *path);
+
+void rpng_nbio_load_image_free(struct rpng_t *rpng);
+
+bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
+      struct rpng_t *rpng);
+
+bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
+      uint32_t **data, unsigned *width, unsigned *height);
 
 #ifdef HAVE_ZLIB_DEFLATE
 bool rpng_save_image_argb(const char *path, const uint32_t *data,
