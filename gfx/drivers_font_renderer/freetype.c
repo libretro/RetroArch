@@ -24,9 +24,9 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#define ATLAS_ROWS 8
-#define ATLAS_COLS 16
-#define ATLAS_SIZE (ATLAS_ROWS * ATLAS_COLS)
+#define FT_ATLAS_ROWS 8
+#define FT_ATLAS_COLS 16
+#define FT_ATLAS_SIZE (FT_ATLAS_ROWS * FT_ATLAS_COLS)
 
 typedef struct freetype_renderer
 {
@@ -34,7 +34,7 @@ typedef struct freetype_renderer
    FT_Face face;
 
    struct font_atlas atlas;
-   struct font_glyph glyphs[ATLAS_SIZE];
+   struct font_glyph glyphs[FT_ATLAS_SIZE];
 } font_renderer_t;
 
 static const struct font_atlas *font_renderer_ft_get_atlas(void *data)
@@ -51,7 +51,7 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
    font_renderer_t *handle = (font_renderer_t*)data;
    if (!handle)
       return NULL;
-   return code < ATLAS_SIZE ? &handle->glyphs[code] : NULL;
+   return code < FT_ATLAS_SIZE ? &handle->glyphs[code] : NULL;
 }
 
 static void font_renderer_ft_free(void *data)
@@ -74,13 +74,13 @@ static bool font_renderer_create_atlas(font_renderer_t *handle)
    unsigned i;
    bool ret = true;
 
-   uint8_t *buffer[ATLAS_SIZE] = {NULL};
-   unsigned pitches[ATLAS_SIZE] = {0};
+   uint8_t *buffer[FT_ATLAS_SIZE] = {NULL};
+   unsigned pitches[FT_ATLAS_SIZE] = {0};
 
    unsigned max_width = 0;
    unsigned max_height = 0;
 
-   for (i = 0; i < ATLAS_SIZE; i++)
+   for (i = 0; i < FT_ATLAS_SIZE; i++)
    {
       struct font_glyph *glyph = &handle->glyphs[i];
 
@@ -115,8 +115,8 @@ static bool font_renderer_create_atlas(font_renderer_t *handle)
       max_height = max(max_height, (unsigned)slot->bitmap.rows);
    }
 
-   handle->atlas.width = max_width * ATLAS_COLS;
-   handle->atlas.height = max_height * ATLAS_ROWS;
+   handle->atlas.width = max_width * FT_ATLAS_COLS;
+   handle->atlas.height = max_height * FT_ATLAS_ROWS;
 
    handle->atlas.buffer = (uint8_t*)
       calloc(handle->atlas.width * handle->atlas.height, 1);
@@ -128,12 +128,12 @@ static bool font_renderer_create_atlas(font_renderer_t *handle)
    }
 
    /* Blit our texture atlas. */
-   for (i = 0; i < ATLAS_SIZE; i++)
+   for (i = 0; i < FT_ATLAS_SIZE; i++)
    {
       unsigned r, c;
       uint8_t *dst      = NULL;
-      unsigned offset_x = (i % ATLAS_COLS) * max_width;
-      unsigned offset_y = (i / ATLAS_COLS) * max_height;
+      unsigned offset_x = (i % FT_ATLAS_COLS) * max_width;
+      unsigned offset_y = (i / FT_ATLAS_COLS) * max_height;
 
       handle->glyphs[i].atlas_offset_x = offset_x;
       handle->glyphs[i].atlas_offset_y = offset_y;
@@ -153,7 +153,7 @@ static bool font_renderer_create_atlas(font_renderer_t *handle)
    }
 
 end:
-   for (i = 0; i < ATLAS_SIZE; i++)
+   for (i = 0; i < FT_ATLAS_SIZE; i++)
       free(buffer[i]);
    return ret;
 }

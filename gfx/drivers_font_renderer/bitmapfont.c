@@ -21,14 +21,14 @@
 #include <math.h>
 #include <boolean.h>
 
-#define ATLAS_COLS 16
-#define ATLAS_ROWS 16
-#define ATLAS_SIZE (ATLAS_COLS * ATLAS_ROWS)
+#define BMP_ATLAS_COLS 16
+#define BMP_ATLAS_ROWS 16
+#define BMP_ATLAS_SIZE (BMP_ATLAS_COLS * BMP_ATLAS_ROWS)
 
 typedef struct bm_renderer
 {
    unsigned scale_factor;
-   struct font_glyph glyphs[ATLAS_SIZE];
+   struct font_glyph glyphs[BMP_ATLAS_SIZE];
    struct font_atlas atlas;
 } bm_renderer_t;
 
@@ -46,7 +46,7 @@ static const struct font_glyph *font_renderer_bmp_get_glyph(
    bm_renderer_t *handle = (bm_renderer_t*)data;
    if (!handle)
       return NULL;
-   return code < ATLAS_SIZE ? &handle->glyphs[code] : NULL;
+   return code < BMP_ATLAS_SIZE ? &handle->glyphs[code] : NULL;
 }
 
 static void char_to_texture(bm_renderer_t *handle, uint8_t letter,
@@ -90,14 +90,14 @@ static void *font_renderer_bmp_init(const char *font_path, float font_size)
    if (!handle->scale_factor)
       handle->scale_factor = 1;
 
-   handle->atlas.width  = FONT_WIDTH * handle->scale_factor * ATLAS_COLS;
-   handle->atlas.height = FONT_HEIGHT * handle->scale_factor * ATLAS_ROWS;
+   handle->atlas.width  = FONT_WIDTH * handle->scale_factor * BMP_ATLAS_COLS;
+   handle->atlas.height = FONT_HEIGHT * handle->scale_factor * BMP_ATLAS_ROWS;
    handle->atlas.buffer = (uint8_t*)calloc(handle->atlas.width * handle->atlas.height, 1);
 
-   for (i = 0; i < ATLAS_SIZE; i++)
+   for (i = 0; i < BMP_ATLAS_SIZE; i++)
    {
-      unsigned x = (i % ATLAS_COLS) * handle->scale_factor * FONT_WIDTH;
-      unsigned y = (i / ATLAS_COLS) * handle->scale_factor * FONT_HEIGHT;
+      unsigned x = (i % BMP_ATLAS_COLS) * handle->scale_factor * FONT_WIDTH;
+      unsigned y = (i / BMP_ATLAS_COLS) * handle->scale_factor * FONT_HEIGHT;
 
       char_to_texture(handle, i, x, y);
 
