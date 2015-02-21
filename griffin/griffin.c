@@ -180,8 +180,8 @@ VIDEO IMAGE
 #include "../gfx/image/image_rpng.c"
 #endif
 
-#include "../libretro-common/formats/png/rpng.c"
-#include "../libretro-common/formats/png/rpng_nbio.c"
+#include "../libretro-common/formats/png/rpng_decode_fbio.c"
+#include "../libretro-common/formats/png/rpng_decode_fnbio.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
 
 /*============================================================
