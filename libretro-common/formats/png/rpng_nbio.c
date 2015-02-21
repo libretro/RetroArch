@@ -318,71 +318,109 @@ bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
    return true;
 }
 
+void rpng_nbio_load_image_free(struct rpng_t *rpng)
+{
+   if (!rpng)
+      return;
+
+   nbio_free((struct nbio_t*)rpng->userdata);
+   if (rpng->idat_buf.data)
+      free(rpng->idat_buf.data);
+   if (rpng->inflate_buf)
+      free(rpng->inflate_buf);
+
+   if (rpng)
+      free(rpng);
+}
+
+struct rpng_t *rpng_nbio_load_image_argb_init(const char *path)
+{
+   unsigned i;
+   char header[8];
+   size_t file_len;
+   bool looped = false;
+   struct nbio_t* nbread = NULL;
+   struct rpng_t *rpng = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+
+   if (!rpng)
+      goto error;
+
+   rpng->userdata = (void*)nbio_open(path, NBIO_READ);
+
+   nbread = (struct nbio_t*)rpng->userdata;
+
+   if (!nbread)
+      goto error;
+
+   rpng->ptr  = nbio_get_ptr(nbread, &file_len);
+
+   nbio_begin_read(nbread);
+
+   while (!nbio_iterate(nbread))
+      looped = true;
+
+   rpng->ptr = nbio_get_ptr(nbread, &file_len);
+   (void)looped;
+
+   rpng->buff_data = (uint8_t*)rpng->ptr;
+
+   for (i = 0; i < 8; i++)
+      header[i] = rpng->buff_data[i];
+
+   if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
+      goto error;
+
+   rpng->buff_data += 8;
+
+   return rpng;
+
+error:
+   if (rpng)
+   {
+      rpng->userdata = NULL;
+      free(rpng);
+   }
+   if (nbread)
+      nbio_free(nbread);
+   return NULL;
+}
+
 bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
-   size_t file_len;
-   struct rpng_t rpng = {0};
    bool ret      = true;
 
-   struct nbio_t* nbread = (struct nbio_t*)rpng.userdata;
+   struct rpng_t *rpng = rpng_nbio_load_image_argb_init(path);
 
-   {
-      bool looped = false;
-      nbread = nbio_open(path, NBIO_READ);
-      rpng.ptr  = nbio_get_ptr(nbread, &file_len);
-      nbio_begin_read(nbread);
-
-      while (!nbio_iterate(nbread))
-         looped=true;
-      rpng.ptr = nbio_get_ptr(nbread, &file_len);
-      (void)looped;
-
-      rpng.buff_data = (uint8_t*)rpng.ptr;
-   }
-
-   {
-      unsigned i;
-      char header[8];
-
-      for (i = 0; i < 8; i++)
-         header[i] = rpng.buff_data[i];
-
-      if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
-         return false;
-
-      rpng.buff_data += 8;
-   }
+   if (!rpng)
+      GOTO_END_ERROR();
 
    while (1)
    {
       if (!rpng_nbio_load_image_argb_iterate(
-            rpng.buff_data, rpng.palette, &rpng.ihdr,
-            &rpng))
+            rpng->buff_data, rpng->palette, &rpng->ihdr,
+            rpng))
          break;
-
    }
 
 #if 0
-   fprintf(stderr, "has_ihdr: %d\n", rpng.has_ihdr);
-   fprintf(stderr, "has_idat: %d\n", rpng.has_idat);
-   fprintf(stderr, "has_iend: %d\n", rpng.has_iend);
+   fprintf(stderr, "has_ihdr: %d\n", rpng->has_ihdr);
+   fprintf(stderr, "has_idat: %d\n", rpng->has_idat);
+   fprintf(stderr, "has_iend: %d\n", rpng->has_iend);
 #endif
 
-   if (!rpng.has_ihdr || !rpng.has_idat || !rpng.has_iend)
+   if (!rpng->has_ihdr || !rpng->has_idat || !rpng->has_iend)
       GOTO_END_ERROR();
    
-   rpng_nbio_load_image_argb_process(&rpng,
-         &rpng.ihdr, data, rpng.palette,
+   rpng_nbio_load_image_argb_process(rpng,
+         &rpng->ihdr, data, rpng->palette,
          width, height);
 
 end:
-   nbio_free((struct nbio_t*)rpng.userdata);
+   rpng_nbio_load_image_free(rpng);
+   rpng = NULL;
    if (!ret)
       free(*data);
-   if (rpng.idat_buf.data)
-      free(rpng.idat_buf.data);
-   if (rpng.inflate_buf)
-      free(rpng.inflate_buf);
+
    return ret;
 }
