@@ -168,21 +168,24 @@ static bool png_read_plte_into_buf(uint32_t *buffer, unsigned entries)
 }
 
 bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
-      struct png_chunk *chunk,
       uint32_t *palette,
       struct png_ihdr *ihdr,
       struct rpng_t *rpng)
 {
    unsigned i;
+   struct png_chunk chunk = {0};
+
+   if (!read_chunk_header(rpng->buff_data, &chunk))
+      return false;
 
 #if 0
    for (i = 0; i < 4; i++)
    {
-      fprintf(stderr, "chunktype: %c\n", chunk->type[i]);
+      fprintf(stderr, "chunktype: %c\n", chunk.type[i]);
    }
 #endif
 
-   switch (png_chunk_type(chunk))
+   switch (png_chunk_type(&chunk))
    {
       case PNG_CHUNK_NOOP:
       default:
@@ -195,7 +198,7 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
          if (rpng->has_ihdr || rpng->has_idat || rpng->has_iend)
             return false;
 
-         if (chunk->size != 13)
+         if (chunk.size != 13)
             return false;
 
          if (!png_parse_ihdr(buf, ihdr))
@@ -206,12 +209,12 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
 
       case PNG_CHUNK_PLTE:
          {
-            unsigned entries = chunk->size / 3;
+            unsigned entries = chunk.size / 3;
 
             if (!rpng->has_ihdr || rpng->has_plte || rpng->has_iend || rpng->has_idat)
                return false;
 
-            if (chunk->size % 3)
+            if (chunk.size % 3)
                return false;
 
             if (entries > 256)
@@ -233,15 +236,15 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
          if (!(rpng->has_ihdr) || rpng->has_iend || (ihdr->color_type == 3 && !(rpng->has_plte)))
             return false;
 
-         if (!png_realloc_idat(chunk, &rpng->idat_buf))
+         if (!png_realloc_idat(&chunk, &rpng->idat_buf))
             return false;
 
          buf += 8;
 
-         for (i = 0; i < chunk->size; i++)
+         for (i = 0; i < chunk.size; i++)
             rpng->idat_buf.data[i + rpng->idat_buf.size] = buf[i];
 
-         rpng->idat_buf.size += chunk->size;
+         rpng->idat_buf.size += chunk.size;
 
          rpng->has_idat = true;
          break;
@@ -253,6 +256,8 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
          rpng->has_iend = true;
          return false;
    }
+
+   rpng->buff_data += 4 + 4 + chunk.size + 4;
 
    return true;
 }
@@ -351,17 +356,11 @@ bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
 
    while (1)
    {
-      struct png_chunk chunk = {0};
-
-      if (!read_chunk_header(rpng.buff_data, &chunk))
-         GOTO_END_ERROR();
-
       if (!rpng_nbio_load_image_argb_iterate(
-            rpng.buff_data, &chunk, rpng.palette, &rpng.ihdr,
+            rpng.buff_data, rpng.palette, &rpng.ihdr,
             &rpng))
          break;
 
-      rpng.buff_data += 4 + 4 + chunk.size + 4;
    }
 
 #if 0
