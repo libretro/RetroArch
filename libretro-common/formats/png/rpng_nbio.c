@@ -375,13 +375,10 @@ struct rpng_t *rpng_nbio_load_image_argb_init(const char *path)
    return rpng;
 
 error:
+   if (rpng->userdata)
+      nbio_free((struct nbio_t*)rpng->userdata);
    if (rpng)
-   {
-      rpng->userdata = NULL;
       free(rpng);
-   }
-   if (nbread)
-      nbio_free(nbread);
    return NULL;
 }
 
