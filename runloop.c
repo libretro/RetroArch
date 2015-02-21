@@ -1036,17 +1036,26 @@ void rarch_main_iterate_overlay_state(void)
 
 static void rarch_main_iterate_linefeed(void)
 {
+   static char prev_overlay_restore = false;
+
    if (driver.osk_enable && !driver.keyboard_linefeed_enable)
    {
-      driver.osk_enable = false;
+      driver.osk_enable    = false;
+      prev_overlay_restore = true;
       rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
       return;
    }
    else if (!driver.osk_enable && driver.keyboard_linefeed_enable)
    {
-      driver.osk_enable = true;
+      driver.osk_enable    = true;
+      prev_overlay_restore = false;
       rarch_main_command(RARCH_CMD_OVERLAY_INIT);
       return;
+   }
+   else if (prev_overlay_restore)
+   {
+      rarch_main_command(RARCH_CMD_OVERLAY_INIT);
+      prev_overlay_restore = false;
    }
 }
 
@@ -1081,8 +1090,7 @@ int rarch_main_iterate(void)
 
    do_pre_state_checks(input, old_input, trigger_input);
 
-   if (driver.keyboard_linefeed_enable || driver.osk_enable)
-      rarch_main_iterate_linefeed();
+   rarch_main_iterate_linefeed();
 
 #ifdef HAVE_OVERLAY
    if (driver.overlay)
