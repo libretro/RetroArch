@@ -58,12 +58,6 @@ struct png_ihdr
    uint8_t interlace;
 };
 
-struct idat_buffer
-{
-   uint8_t *data;
-   size_t size;
-};
-
 enum png_chunk_type
 {
    PNG_CHUNK_NOOP = 0,

@@ -24,6 +24,7 @@
 #define __LIBRETRO_SDK_FORMAT_RPNG_H__
 
 #include <stdint.h>
+#include <stddef.h>
 
 #include <boolean.h>
 
@@ -35,12 +36,19 @@
 extern "C" {
 #endif
 
+struct idat_buffer
+{
+   uint8_t *data;
+   size_t size;
+};
+
 struct rpng_t
 {
    bool has_ihdr;
    bool has_idat;
    bool has_iend;
    bool has_plte;
+   struct idat_buffer idat_buf;
    uint8_t *inflate_buf;
    uint8_t *buff_data;
 };

@@ -170,7 +170,7 @@ static bool png_read_plte_into_buf(uint32_t *buffer, unsigned entries)
 bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
       struct png_chunk *chunk,
       uint32_t *palette,
-      struct png_ihdr *ihdr, struct idat_buffer *idat_buf,
+      struct png_ihdr *ihdr,
       struct rpng_t *rpng)
 {
    unsigned i;
@@ -233,15 +233,15 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
          if (!(rpng->has_ihdr) || rpng->has_iend || (ihdr->color_type == 3 && !(rpng->has_plte)))
             return false;
 
-         if (!png_realloc_idat(chunk, idat_buf))
+         if (!png_realloc_idat(chunk, &rpng->idat_buf))
             return false;
 
          buf += 8;
 
          for (i = 0; i < chunk->size; i++)
-            idat_buf->data[i + idat_buf->size] = buf[i];
+            rpng->idat_buf.data[i + rpng->idat_buf.size] = buf[i];
 
-         idat_buf->size += chunk->size;
+         rpng->idat_buf.size += chunk->size;
 
          rpng->has_idat = true;
          break;
@@ -259,7 +259,7 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
 
 bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
       struct png_ihdr *ihdr,
-      struct idat_buffer *idat_buf, uint32_t **data,
+      uint32_t **data,
       uint32_t *palette,
       unsigned *width, unsigned *height)
 {
@@ -278,8 +278,8 @@ bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
    if (!rpng->inflate_buf)
       return false;
 
-   stream.next_in   = idat_buf->data;
-   stream.avail_in  = idat_buf->size;
+   stream.next_in   = rpng->idat_buf.data;
+   stream.avail_in  = rpng->idat_buf.size;
    stream.avail_out = inflate_buf_size;
    stream.next_out  = rpng->inflate_buf;
 
@@ -319,7 +319,6 @@ bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
 {
    size_t file_len;
    struct nbio_t* nbread = NULL;
-   struct idat_buffer idat_buf = {0};
    struct png_ihdr ihdr = {0};
    uint32_t palette[256] = {0};
    struct rpng_t rpng = {0};
@@ -361,7 +360,7 @@ bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
          GOTO_END_ERROR();
 
       if (!rpng_nbio_load_image_argb_iterate(
-            rpng.buff_data, &chunk, palette, &ihdr, &idat_buf,
+            rpng.buff_data, &chunk, palette, &ihdr,
             &rpng))
          break;
 
@@ -378,15 +377,15 @@ bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       GOTO_END_ERROR();
    
    rpng_nbio_load_image_argb_process(&rpng,
-         &ihdr, &idat_buf, data, palette,
+         &ihdr, data, palette,
          width, height);
 
 end:
    nbio_free(nbread);
    if (!ret)
       free(*data);
-   if (idat_buf.data)
-      free(idat_buf.data);
+   if (rpng.idat_buf.data)
+      free(rpng.idat_buf.data);
    if (rpng.inflate_buf)
       free(rpng.inflate_buf);
    return ret;
