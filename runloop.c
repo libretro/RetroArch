@@ -1034,7 +1034,8 @@ void rarch_main_iterate_overlay_state(void)
 }
 #endif
 
-static void rarch_main_iterate_linefeed(void)
+#ifdef HAVE_OVERLAY
+static void rarch_main_iterate_linefeed_overlay(void)
 {
    static char prev_overlay_restore = false;
 
@@ -1058,6 +1059,7 @@ static void rarch_main_iterate_linefeed(void)
       prev_overlay_restore = false;
    }
 }
+#endif
 
 /**
  * rarch_main_iterate:
@@ -1090,9 +1092,9 @@ int rarch_main_iterate(void)
 
    do_pre_state_checks(input, old_input, trigger_input);
 
-   rarch_main_iterate_linefeed();
-
 #ifdef HAVE_OVERLAY
+   rarch_main_iterate_linefeed_overlay();
+
    if (driver.overlay)
       rarch_main_iterate_overlay_state();
 #endif
