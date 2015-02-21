@@ -102,7 +102,7 @@ WHOLE_START := -Wl, --whole-archive
 WHOLE_END := -Wl, --no-whole-archive
 endif
 
-PPU_LDLIBS =  $(FONT_LIBS) $(GL_LIBS) $(WHOLE_START) -lretro_ps3 $(WHOLE_END) -lcgc -lgcm_cmdasm -lgcm_sys_stub -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_screenshot_stub -lsysutil_np_stub -lpngdec_stub -ljpgdec_stub -lsysmodule_stub -laudio_stub -lnet_stub -lnetctl_stub -lpthread
+PPU_LDLIBS =  $(FONT_LIBS) $(GL_LIBS) $(WHOLE_START) -lretro_ps3 $(WHOLE_END) -lcgc -lgcm_cmdasm -lgcm_sys_stub -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub -lsysutil_screenshot_stub -lsysutil_np_stub -lpngdec_stub -lsysmodule_stub -laudio_stub -lnet_stub -lnetctl_stub -lpthread
 
 PPU_RANLIB = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ranlib.exe
 

@@ -30,7 +30,6 @@
 #ifdef __PSL1GHT__
 #include <ppu-asm.h>
 #include <ppu-types.h>
-#include <jpgdec/jpgdec.h>
 #include <pngdec/pngdec.h>
 #else
 #include <cell/codec.h>
@@ -67,121 +66,6 @@ static int img_free(void *ptr, void *a)
 
    free(ptr);
    return 0;
-}
-
-static bool ps3_load_jpeg(const char *path, struct texture_image *out_img)
-{
-   size_t img_size;
-#ifndef __PSL1GHT__
-   CtrlMallocArg              MallocArg;
-   CtrlFreeArg                FreeArg;
-   CellJpgDecDataCtrlParam       dCtrlParam;
-#endif
-   CellJpgDecMainHandle          mHandle = PTR_NULL;
-   CellJpgDecSubHandle           sHandle = PTR_NULL;
-   CellJpgDecThreadInParam       InParam;
-   CellJpgDecThreadOutParam      OutParam;
-   CellJpgDecSrc                 src;
-   CellJpgDecOpnInfo             opnInfo;
-   CellJpgDecInfo                info;
-   CellJpgDecInParam             inParam;
-   CellJpgDecOutParam            outParam;
-   CellJpgDecDataOutInfo         dOutInfo;
-
-   InParam.spu_enable = CELL_JPGDEC_SPU_THREAD_ENABLE;
-   InParam.ppu_prio = 1001;
-   InParam.spu_prio = 250;
-#ifdef __PSL1GHT__
-   InParam.malloc_func = __get_addr32(__get_opd32(img_malloc));
-   InParam.free_func = __get_addr32(__get_opd32(img_free));
-   InParam.malloc_arg = 0;
-   InParam.free_arg = 0;
-#else
-   MallocArg.mallocCallCounts = 0;
-   FreeArg.freeCallCounts = 0;
-   InParam.malloc_func = img_malloc;
-   InParam.free_func = img_free;
-   InParam.malloc_arg = &MallocArg;
-   InParam.free_arg = &FreeArg;
-#endif
-
-   int ret_jpeg, ret = -1;
-   ret_jpeg = cellJpgDecCreate(&mHandle, &InParam, &OutParam);
-
-   if (ret_jpeg != CELL_OK)
-      goto error;
-
-   memset(&src, 0, sizeof(CellJpgDecSrc));
-   src.stream_select    = CELL_JPGDEC_FILE;
-#ifdef __PSL1GHT__
-   src.file_name        = __get_addr32(path);
-#else
-   src.file_name        = path;
-#endif
-   src.file_offset      = 0;
-   src.file_size        = 0;
-   src.stream_ptr       = PTR_NULL;
-   src.stream_size      = 0;
-
-   src.spu_enable  = CELL_JPGDEC_SPU_THREAD_ENABLE;
-
-   ret = cellJpgDecOpen(mHandle, &sHandle, &src, &opnInfo);
-
-   if (ret != CELL_OK)
-      goto error;
-
-   ret = cellJpgDecReadHeader(mHandle, sHandle, &info);
-
-   if (ret != CELL_OK)
-      goto error;
-
-   inParam.cmd_ptr            = PTR_NULL;
-   inParam.quality            = CELL_JPGDEC_FAST;
-   inParam.output_mode        = CELL_JPGDEC_TOP_TO_BOTTOM;
-   inParam.color_space        = CELL_JPG_ARGB;
-   inParam.down_scale         = 1;
-   inParam.color_alpha        = 0xfe;
-   ret = cellJpgDecSetParameter(mHandle, sHandle, &inParam, &outParam);
-
-   if (ret != CELL_OK)
-      goto error;
-
-   img_size = outParam.output_width * outParam.output_height * sizeof(uint32_t);
-   out_img->pixels = (uint32_t*)malloc(img_size);
-
-   if (!out_img->pixels)
-      goto error;
-
-   memset(out_img->pixels, 0, img_size);
-
-#ifdef __PSL1GHT__
-   uint64_t output_bytes_per_line = outParam.output_width * 4;
-   ret = cellJpgDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &output_bytes_per_line, &dOutInfo);
-#else
-   dCtrlParam.output_bytes_per_line = outParam.output_width * 4;
-   ret = cellJpgDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &dCtrlParam, &dOutInfo);
-#endif
-
-   if (ret != CELL_OK || dOutInfo.status != CELL_JPGDEC_DEC_STATUS_FINISH)
-      goto error;
-
-   out_img->width = outParam.output_width;
-   out_img->height = outParam.output_height;
-
-   cellJpgDecClose(mHandle, sHandle);
-   cellJpgDecDestroy(mHandle);
-
-   return true;
-
-error:
-   if (out_img->pixels)
-      free(out_img->pixels);
-   out_img->pixels = 0;
-   if (mHandle && sHandle)
-	   cellJpgDecClose(mHandle, sHandle);
-   if (mHandle)
-	   cellJpgDecDestroy(mHandle);
-   return false;
 }
 
 static bool ps3_load_png(const char *path, struct texture_image *out_img)
@@ -316,9 +200,6 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
       if (!ps3_load_png(path, out_img))
          return false;
    }
-
-   if (!ps3_load_jpeg(path, out_img))
-      return false;
 
    return true;
 }
