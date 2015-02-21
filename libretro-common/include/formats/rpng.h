@@ -65,6 +65,8 @@ struct rpng_t
    size_t inflate_buf_size;
    uint8_t *buff_data;
    uint32_t palette[256];
+   void *userdata;
+   void *ptr;
 };
 
 bool rpng_load_image_argb(const char *path, uint32_t **data,
