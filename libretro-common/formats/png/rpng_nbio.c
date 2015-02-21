@@ -167,10 +167,7 @@ static bool png_read_plte_into_buf(uint32_t *buffer, unsigned entries)
    return true;
 }
 
-bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
-      uint32_t *palette,
-      struct png_ihdr *ihdr,
-      struct rpng_t *rpng)
+bool rpng_nbio_load_image_argb_iterate(uint8_t *buf, struct rpng_t *rpng)
 {
    unsigned i;
    struct png_chunk chunk = {0};
@@ -201,7 +198,7 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
          if (chunk.size != 13)
             return false;
 
-         if (!png_parse_ihdr(buf, ihdr))
+         if (!png_parse_ihdr(buf, &rpng->ihdr))
             return false;
 
          rpng->has_ihdr = true;
@@ -223,9 +220,9 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
             buf += 8;
 
             for (i = 0; i < entries; i++)
-               palette[i] = buf[i];
+               rpng->palette[i] = buf[i];
 
-            if (!png_read_plte_into_buf(palette, entries))
+            if (!png_read_plte_into_buf(rpng->palette, entries))
                return false;
 
             rpng->has_plte = true;
@@ -233,7 +230,7 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
          break;
 
       case PNG_CHUNK_IDAT:
-         if (!(rpng->has_ihdr) || rpng->has_iend || (ihdr->color_type == 3 && !(rpng->has_plte)))
+         if (!(rpng->has_ihdr) || rpng->has_iend || (rpng->ihdr.color_type == 3 && !(rpng->has_plte)))
             return false;
 
          if (!png_realloc_idat(&chunk, &rpng->idat_buf))
@@ -263,19 +260,16 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
 }
 
 bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
-      struct png_ihdr *ihdr,
-      uint32_t **data,
-      uint32_t *palette,
-      unsigned *width, unsigned *height)
+      uint32_t **data, unsigned *width, unsigned *height)
 {
    z_stream stream = {0};
 
    if (inflateInit(&stream) != Z_OK)
       return false;
 
-   png_pass_geom(ihdr, ihdr->width,
-         ihdr->height, NULL, NULL, &rpng->inflate_buf_size);
-   if (ihdr->interlace == 1) /* To be sure. */
+   png_pass_geom(&rpng->ihdr, rpng->ihdr.width,
+         rpng->ihdr.height, NULL, NULL, &rpng->inflate_buf_size);
+   if (rpng->ihdr.interlace == 1) /* To be sure. */
       rpng->inflate_buf_size *= 2;
 
    rpng->inflate_buf = (uint8_t*)malloc(rpng->inflate_buf_size);
@@ -294,25 +288,27 @@ bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
    }
    inflateEnd(&stream);
 
-   *width  = ihdr->width;
-   *height = ihdr->height;
+   *width  = rpng->ihdr.width;
+   *height = rpng->ihdr.height;
 #ifdef GEKKO
    /* we often use these in textures, make sure they're 32-byte aligned */
-   *data = (uint32_t*)memalign(32, ihdr->width * ihdr->height * sizeof(uint32_t));
+   *data = (uint32_t*)memalign(32, rpng->ihdr.width * 
+         rpng->ihdr.height * sizeof(uint32_t));
 #else
-   *data = (uint32_t*)malloc(ihdr->width * ihdr->height * sizeof(uint32_t));
+   *data = (uint32_t*)malloc(rpng->ihdr.width * 
+         rpng->ihdr.height * sizeof(uint32_t));
 #endif
    if (!*data)
       return false;
 
-   if (ihdr->interlace == 1)
+   if (rpng->ihdr.interlace == 1)
    {
       if (!png_reverse_filter_adam7(*data,
-               ihdr, rpng->inflate_buf, stream.total_out, palette))
+               &rpng->ihdr, rpng->inflate_buf, stream.total_out, rpng->palette))
          return false;
    }
    else if (!png_reverse_filter(*data,
-            ihdr, rpng->inflate_buf, stream.total_out, palette))
+            &rpng->ihdr, rpng->inflate_buf, stream.total_out, rpng->palette))
       return false;
 
    return true;
@@ -395,8 +391,7 @@ bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
    while (1)
    {
       if (!rpng_nbio_load_image_argb_iterate(
-            rpng->buff_data, rpng->palette, &rpng->ihdr,
-            rpng))
+            rpng->buff_data, rpng))
          break;
    }
 
@@ -409,9 +404,7 @@ bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
    if (!rpng->has_ihdr || !rpng->has_idat || !rpng->has_iend)
       GOTO_END_ERROR();
    
-   rpng_nbio_load_image_argb_process(rpng,
-         &rpng->ihdr, data, rpng->palette,
-         width, height);
+   rpng_nbio_load_image_argb_process(rpng, data, width, height);
 
 end:
    rpng_nbio_load_image_free(rpng);
