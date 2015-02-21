@@ -21,6 +21,7 @@
  */
 
 #include <formats/rpng.h>
+#include <file/nbio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -42,12 +43,17 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       goto end;
    }
 
-   while (1)
-   {
-      if (!rpng_nbio_load_image_argb_iterate(
-            rpng->buff_data, rpng))
-         break;
+   while (!nbio_iterate((struct nbio_t*)rpng->userdata));
 
+   if (!rpng_nbio_load_image_argb_start(rpng))
+   {
+      ret = false;
+      goto end;
+   }
+
+   while (rpng_nbio_load_image_argb_iterate(
+            rpng->buff_data, rpng))
+   {
       rpng->buff_data += 4 + 4 + rpng->chunk.size + 4;
    }
 

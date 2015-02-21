@@ -331,10 +331,7 @@ void rpng_nbio_load_image_free(struct rpng_t *rpng)
 
 struct rpng_t *rpng_nbio_load_image_argb_init(const char *path)
 {
-   unsigned i;
-   char header[8];
    size_t file_len;
-   bool looped = false;
    struct nbio_t* nbread = NULL;
    struct rpng_t *rpng = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
 
@@ -352,22 +349,6 @@ struct rpng_t *rpng_nbio_load_image_argb_init(const char *path)
 
    nbio_begin_read(nbread);
 
-   while (!nbio_iterate(nbread))
-      looped = true;
-
-   rpng->ptr = nbio_get_ptr(nbread, &file_len);
-   (void)looped;
-
-   rpng->buff_data = (uint8_t*)rpng->ptr;
-
-   for (i = 0; i < 8; i++)
-      header[i] = rpng->buff_data[i];
-
-   if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
-      goto error;
-
-   rpng->buff_data += 8;
-
    return rpng;
 
 error:
@@ -376,4 +357,40 @@ error:
    if (rpng)
       free(rpng);
    return NULL;
+}
+
+bool rpng_nbio_load_image_argb_start(struct rpng_t *rpng)
+{
+   unsigned i;
+   size_t file_len;
+   char header[8];
+   struct nbio_t *nbread = NULL;
+
+   if (!rpng)
+      return false;
+   
+   nbread    = (struct nbio_t*)rpng->userdata;
+
+   if (!nbread)
+      return false;
+
+   rpng->ptr = nbio_get_ptr(nbread, &file_len);
+
+   if (!rpng->ptr)
+      return false;
+
+   rpng->buff_data = (uint8_t*)rpng->ptr;
+
+   if (!rpng->buff_data)
+      return false;
+
+   for (i = 0; i < 8; i++)
+      header[i] = rpng->buff_data[i];
+
+   if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
+      return false;
+
+   rpng->buff_data += 8;
+
+   return true;
 }
