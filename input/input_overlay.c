@@ -520,10 +520,93 @@ static bool input_overlay_resolve_targets(struct overlay *ol,
    return true;
 }
 
+bool input_overlay_load_overlays_resolve_iterate(input_overlay_t *ol)
+{
+   bool not_done = true;
+   config_file_t *conf = NULL;
+
+   if (!ol)
+      return false;
+   conf = config_file_new(ol->overlay_path);
+
+   if (!conf)
+   {
+      RARCH_ERR("Failed to load config file: %s.\n", ol->overlay_path);
+      return false;
+   }
+
+   not_done = ol->pos < ol->size;
+
+   if (!not_done)
+   {
+      ol->state = OVERLAY_STATUS_DEFERRED_DONE;
+      return true;
+   }
+
+   if (!input_overlay_resolve_targets(ol->overlays, ol->pos, ol->size))
+   {
+      RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
+      goto error;
+   }
+
+   ol->pos += 1;
+
+   config_file_free(conf);
+
+   return true;
+error:
+   config_file_free(conf);
+   ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
+
+   return false;
+}
+
+bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
+{
+   bool not_done = true;
+   config_file_t *conf = NULL;
+
+   if (!ol)
+      return false;
+   conf = config_file_new(ol->overlay_path);
+
+   if (!conf)
+   {
+      RARCH_ERR("Failed to load config file: %s.\n", ol->overlay_path);
+      return false;
+   }
+
+   not_done = ol->pos < ol->size;
+
+   if (!not_done)
+   {
+      ol->pos   = 0;
+      ol->state = OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE;
+      return true;
+   }
+
+   if (!input_overlay_load_overlay(ol, conf,
+            ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
+   {
+      RARCH_ERR("[Overlay]: Failed to load overlay #%u.\n", (unsigned)ol->pos);
+      goto error;
+   }
+
+   ol->pos += 1;
+
+   config_file_free(conf);
+
+   return true;
+error:
+   config_file_free(conf);
+   ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
+
+   return false;
+}
+
 bool input_overlay_load_overlays(input_overlay_t *ol)
 {
    size_t i;
-   bool ret = true;
    unsigned overlays = 0;
    config_file_t *conf = NULL;
 
@@ -541,54 +624,29 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
    if (!config_get_uint(conf, "overlays", &overlays))
    {
       RARCH_ERR("overlays variable not defined in config.\n");
-      ret = false;
-      goto end;
+      goto error;
    }
 
    if (!overlays)
-   {
-      ret = false;
-      goto end;
-   }
+      goto error;
 
    ol->overlays = (struct overlay*)calloc(overlays, sizeof(*ol->overlays));
    if (!ol->overlays)
-   {
-      ret = false;
-      goto end;
-   }
+      goto error;
 
    ol->size = overlays;
+   ol->pos  = 0;
+   ol->state = OVERLAY_STATUS_DEFERRED_LOADING;
 
-   for (i = 0; i < ol->size; i++)
-   {
-      if (!input_overlay_load_overlay(ol, conf,
-               ol->overlay_path, &ol->overlays[i], i))
-      {
-         RARCH_ERR("[Overlay]: Failed to load overlay #%u.\n", (unsigned)i);
-         ret = false;
-         goto end;
-      }
-   }
-
-   for (i = 0; i < ol->size; i++)
-   {
-      if (!input_overlay_resolve_targets(ol->overlays, i, ol->size))
-      {
-         RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
-         ret = false;
-         goto end;
-      }
-   }
-
-   ol->state = OVERLAY_STATUS_DEFERRED_DONE;
-
-end:
    config_file_free(conf);
-   if (!ret)
-      ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
 
-   return ret;
+   return true;
+
+error:
+   config_file_free(conf);
+   ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
+
+   return false;
 }
 
 static void input_overlay_load_active(input_overlay_t *ol,
