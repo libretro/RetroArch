@@ -47,17 +47,6 @@ struct png_chunk
    uint8_t *data;
 };
 
-struct png_ihdr
-{
-   uint32_t width;
-   uint32_t height;
-   uint8_t depth;
-   uint8_t color_type;
-   uint8_t compression;
-   uint8_t filter;
-   uint8_t interlace;
-};
-
 enum png_chunk_type
 {
    PNG_CHUNK_NOOP = 0,

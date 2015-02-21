@@ -42,6 +42,17 @@ struct idat_buffer
    size_t size;
 };
 
+struct png_ihdr
+{
+   uint32_t width;
+   uint32_t height;
+   uint8_t depth;
+   uint8_t color_type;
+   uint8_t compression;
+   uint8_t filter;
+   uint8_t interlace;
+};
+
 struct rpng_t
 {
    bool has_ihdr;
@@ -49,6 +60,7 @@ struct rpng_t
    bool has_iend;
    bool has_plte;
    struct idat_buffer idat_buf;
+   struct png_ihdr ihdr;
    uint8_t *inflate_buf;
    uint8_t *buff_data;
 };

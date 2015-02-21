@@ -319,7 +319,6 @@ bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
 {
    size_t file_len;
    struct nbio_t* nbread = NULL;
-   struct png_ihdr ihdr = {0};
    uint32_t palette[256] = {0};
    struct rpng_t rpng = {0};
    bool ret      = true;
@@ -360,7 +359,7 @@ bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
          GOTO_END_ERROR();
 
       if (!rpng_nbio_load_image_argb_iterate(
-            rpng.buff_data, &chunk, palette, &ihdr,
+            rpng.buff_data, &chunk, palette, &rpng.ihdr,
             &rpng))
          break;
 
@@ -377,7 +376,7 @@ bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       GOTO_END_ERROR();
    
    rpng_nbio_load_image_argb_process(&rpng,
-         &ihdr, data, palette,
+         &rpng.ihdr, data, palette,
          width, height);
 
 end:

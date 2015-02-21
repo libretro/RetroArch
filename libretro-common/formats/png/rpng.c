@@ -215,7 +215,6 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    char header[8];
    size_t inflate_buf_size = 0;
    z_stream stream = {0};
-   struct png_ihdr ihdr = {0};
    uint32_t palette[256] = {0};
    struct rpng_t rpng = {0};
    bool ret      = true;
@@ -262,7 +261,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             if (rpng.has_ihdr || rpng.has_idat || rpng.has_iend)
                GOTO_END_ERROR();
 
-            if (!png_parse_ihdr_fio(file, &chunk, &ihdr))
+            if (!png_parse_ihdr_fio(file, &chunk, &rpng.ihdr))
                GOTO_END_ERROR();
 
             rpng.has_ihdr = true;
@@ -282,7 +281,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             break;
 
          case PNG_CHUNK_IDAT:
-            if (!rpng.has_ihdr || rpng.has_iend || (ihdr.color_type == 3 && !rpng.has_plte))
+            if (!rpng.has_ihdr || rpng.has_iend || (rpng.ihdr.color_type == 3 && !rpng.has_plte))
                GOTO_END_ERROR();
 
             if (!png_append_idat_fio(file, &chunk, &rpng.idat_buf))
@@ -309,8 +308,8 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    if (inflateInit(&stream) != Z_OK)
       GOTO_END_ERROR();
 
-   png_pass_geom(&ihdr, ihdr.width, ihdr.height, NULL, NULL, &inflate_buf_size);
-   if (ihdr.interlace == 1) /* To be sure. */
+   png_pass_geom(&rpng.ihdr, rpng.ihdr.width, rpng.ihdr.height, NULL, NULL, &inflate_buf_size);
+   if (rpng.ihdr.interlace == 1) /* To be sure. */
       inflate_buf_size *= 2;
 
    rpng.inflate_buf = (uint8_t*)malloc(inflate_buf_size);
@@ -329,25 +328,25 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    }
    inflateEnd(&stream);
 
-   *width  = ihdr.width;
-   *height = ihdr.height;
+   *width  = rpng.ihdr.width;
+   *height = rpng.ihdr.height;
 #ifdef GEKKO
    /* we often use these in textures, make sure they're 32-byte aligned */
-   *data = (uint32_t*)memalign(32, ihdr.width * ihdr.height * sizeof(uint32_t));
+   *data = (uint32_t*)memalign(32, rpng.ihdr.width * rpng.ihdr.height * sizeof(uint32_t));
 #else
-   *data = (uint32_t*)malloc(ihdr.width * ihdr.height * sizeof(uint32_t));
+   *data = (uint32_t*)malloc(rpng.ihdr.width * rpng.ihdr.height * sizeof(uint32_t));
 #endif
    if (!*data)
       GOTO_END_ERROR();
 
-   if (ihdr.interlace == 1)
+   if (rpng.ihdr.interlace == 1)
    {
       if (!png_reverse_filter_adam7(*data,
-               &ihdr, rpng.inflate_buf, stream.total_out, palette))
+               &rpng.ihdr, rpng.inflate_buf, stream.total_out, palette))
          GOTO_END_ERROR();
    }
    else if (!png_reverse_filter(*data,
-            &ihdr, rpng.inflate_buf, stream.total_out, palette))
+            &rpng.ihdr, rpng.inflate_buf, stream.total_out, palette))
       GOTO_END_ERROR();
 
 end:
