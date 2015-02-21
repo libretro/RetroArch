@@ -47,6 +47,8 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       if (!rpng_nbio_load_image_argb_iterate(
             rpng->buff_data, rpng))
          break;
+
+      rpng->buff_data += 4 + 4 + rpng->chunk.size + 4;
    }
 
 #if 0

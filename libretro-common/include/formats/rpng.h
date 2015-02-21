@@ -42,6 +42,13 @@ struct idat_buffer
    size_t size;
 };
 
+struct png_chunk
+{
+   uint32_t size;
+   char type[4];
+   uint8_t *data;
+};
+
 struct png_ihdr
 {
    uint32_t width;
@@ -65,6 +72,7 @@ struct rpng_t
    size_t inflate_buf_size;
    uint8_t *buff_data;
    uint32_t palette[256];
+   struct png_chunk chunk;
    void *userdata;
    void *ptr;
 };
