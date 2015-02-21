@@ -264,23 +264,22 @@ bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
       unsigned *width, unsigned *height)
 {
    z_stream stream = {0};
-   size_t inflate_buf_size = 0;
 
    if (inflateInit(&stream) != Z_OK)
       return false;
 
    png_pass_geom(ihdr, ihdr->width,
-         ihdr->height, NULL, NULL, &inflate_buf_size);
+         ihdr->height, NULL, NULL, &rpng->inflate_buf_size);
    if (ihdr->interlace == 1) /* To be sure. */
-      inflate_buf_size *= 2;
+      rpng->inflate_buf_size *= 2;
 
-   rpng->inflate_buf = (uint8_t*)malloc(inflate_buf_size);
+   rpng->inflate_buf = (uint8_t*)malloc(rpng->inflate_buf_size);
    if (!rpng->inflate_buf)
       return false;
 
    stream.next_in   = rpng->idat_buf.data;
    stream.avail_in  = rpng->idat_buf.size;
-   stream.avail_out = inflate_buf_size;
+   stream.avail_out = rpng->inflate_buf_size;
    stream.next_out  = rpng->inflate_buf;
 
    if (inflate(&stream, Z_FINISH) != Z_STREAM_END)
@@ -319,7 +318,6 @@ bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
 {
    size_t file_len;
    struct nbio_t* nbread = NULL;
-   uint32_t palette[256] = {0};
    struct rpng_t rpng = {0};
    bool ret      = true;
    void* ptr = NULL;
@@ -359,7 +357,7 @@ bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
          GOTO_END_ERROR();
 
       if (!rpng_nbio_load_image_argb_iterate(
-            rpng.buff_data, &chunk, palette, &rpng.ihdr,
+            rpng.buff_data, &chunk, rpng.palette, &rpng.ihdr,
             &rpng))
          break;
 
@@ -376,7 +374,7 @@ bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       GOTO_END_ERROR();
    
    rpng_nbio_load_image_argb_process(&rpng,
-         &rpng.ihdr, data, palette,
+         &rpng.ihdr, data, rpng.palette,
          width, height);
 
 end:

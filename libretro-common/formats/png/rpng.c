@@ -213,9 +213,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    long pos, file_len;
    FILE *file;
    char header[8];
-   size_t inflate_buf_size = 0;
    z_stream stream = {0};
-   uint32_t palette[256] = {0};
    struct rpng_t rpng = {0};
    bool ret      = true;
 
@@ -274,7 +272,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             if (chunk.size % 3)
                GOTO_END_ERROR();
 
-            if (!png_read_plte_fio(file, palette, chunk.size / 3))
+            if (!png_read_plte_fio(file, rpng.palette, chunk.size / 3))
                GOTO_END_ERROR();
 
             rpng.has_plte = true;
@@ -308,17 +306,17 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    if (inflateInit(&stream) != Z_OK)
       GOTO_END_ERROR();
 
-   png_pass_geom(&rpng.ihdr, rpng.ihdr.width, rpng.ihdr.height, NULL, NULL, &inflate_buf_size);
+   png_pass_geom(&rpng.ihdr, rpng.ihdr.width, rpng.ihdr.height, NULL, NULL, &rpng.inflate_buf_size);
    if (rpng.ihdr.interlace == 1) /* To be sure. */
-      inflate_buf_size *= 2;
+      rpng.inflate_buf_size *= 2;
 
-   rpng.inflate_buf = (uint8_t*)malloc(inflate_buf_size);
+   rpng.inflate_buf = (uint8_t*)malloc(rpng.inflate_buf_size);
    if (!rpng.inflate_buf)
       GOTO_END_ERROR();
 
    stream.next_in   = rpng.idat_buf.data;
    stream.avail_in  = rpng.idat_buf.size;
-   stream.avail_out = inflate_buf_size;
+   stream.avail_out = rpng.inflate_buf_size;
    stream.next_out  = rpng.inflate_buf;
 
    if (inflate(&stream, Z_FINISH) != Z_STREAM_END)
@@ -342,11 +340,11 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    if (rpng.ihdr.interlace == 1)
    {
       if (!png_reverse_filter_adam7(*data,
-               &rpng.ihdr, rpng.inflate_buf, stream.total_out, palette))
+               &rpng.ihdr, rpng.inflate_buf, stream.total_out, rpng.palette))
          GOTO_END_ERROR();
    }
    else if (!png_reverse_filter(*data,
-            &rpng.ihdr, rpng.inflate_buf, stream.total_out, palette))
+            &rpng.ihdr, rpng.inflate_buf, stream.total_out, rpng.palette))
       GOTO_END_ERROR();
 
 end:

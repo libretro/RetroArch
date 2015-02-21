@@ -62,7 +62,9 @@ struct rpng_t
    struct idat_buffer idat_buf;
    struct png_ihdr ihdr;
    uint8_t *inflate_buf;
+   size_t inflate_buf_size;
    uint8_t *buff_data;
+   uint32_t palette[256];
 };
 
 bool rpng_load_image_argb(const char *path, uint32_t **data,
