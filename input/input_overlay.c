@@ -19,7 +19,6 @@
 #include "input_overlay.h"
 #include "../driver.h"
 #include "../general.h"
-#include <file/config_file.h>
 #include <compat/posix_string.h>
 #include "input_common.h"
 #include <file/file_path.h>
@@ -523,17 +522,9 @@ static bool input_overlay_resolve_targets(struct overlay *ol,
 bool input_overlay_load_overlays_resolve_iterate(input_overlay_t *ol)
 {
    bool not_done = true;
-   config_file_t *conf = NULL;
 
    if (!ol)
       return false;
-   conf = config_file_new(ol->overlay_path);
-
-   if (!conf)
-   {
-      RARCH_ERR("Failed to load config file: %s.\n", ol->overlay_path);
-      return false;
-   }
 
    not_done = ol->pos < ol->size;
 
@@ -551,11 +542,8 @@ bool input_overlay_load_overlays_resolve_iterate(input_overlay_t *ol)
 
    ol->pos += 1;
 
-   config_file_free(conf);
-
    return true;
 error:
-   config_file_free(conf);
    ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
 
    return false;
@@ -564,17 +552,9 @@ error:
 bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
 {
    bool not_done = true;
-   config_file_t *conf = NULL;
 
    if (!ol)
       return false;
-   conf = config_file_new(ol->overlay_path);
-
-   if (!conf)
-   {
-      RARCH_ERR("Failed to load config file: %s.\n", ol->overlay_path);
-      return false;
-   }
 
    not_done = ol->pos < ol->size;
 
@@ -585,7 +565,7 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
       return true;
    }
 
-   if (!input_overlay_load_overlay(ol, conf,
+   if (!input_overlay_load_overlay(ol, ol->conf,
             ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
    {
       RARCH_ERR("[Overlay]: Failed to load overlay #%u.\n", (unsigned)ol->pos);
@@ -594,11 +574,8 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
 
    ol->pos += 1;
 
-   config_file_free(conf);
-
    return true;
 error:
-   config_file_free(conf);
    ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
 
    return false;
@@ -608,20 +585,19 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
 {
    size_t i;
    unsigned overlays = 0;
-   config_file_t *conf = NULL;
 
    if (!ol)
       return false;
    
-   conf = config_file_new(ol->overlay_path);
+   ol->conf = config_file_new(ol->overlay_path);
 
-   if (!conf)
+   if (!ol->conf)
    {
       RARCH_ERR("Failed to load config file: %s.\n", ol->overlay_path);
       return false;
    }
 
-   if (!config_get_uint(conf, "overlays", &overlays))
+   if (!config_get_uint(ol->conf, "overlays", &overlays))
    {
       RARCH_ERR("overlays variable not defined in config.\n");
       goto error;
@@ -636,14 +612,12 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
 
    ol->size = overlays;
    ol->pos  = 0;
-   ol->state = OVERLAY_STATUS_DEFERRED_LOADING;
 
-   config_file_free(conf);
+   ol->state = OVERLAY_STATUS_DEFERRED_LOADING;
 
    return true;
 
 error:
-   config_file_free(conf);
    ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
 
    return false;
@@ -678,6 +652,10 @@ bool input_overlay_new_done(input_overlay_t *ol)
    ol->next_index = (ol->index + 1) % ol->size;
 
    ol->state = OVERLAY_STATUS_ALIVE;
+
+   if (ol->conf)
+      config_file_free(ol->conf);
+   ol->conf = NULL;
 
    return true;
 }
@@ -1027,6 +1005,9 @@ void input_overlay_free(input_overlay_t *ol)
    if (ol->iface)
       ol->iface->enable(ol->iface_data, false);
 
+   if (ol->conf)
+      config_file_free(ol->conf);
+   ol->conf = NULL;
    free(ol->overlay_path);
    free(ol);
 }
