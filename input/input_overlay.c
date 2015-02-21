@@ -321,19 +321,12 @@ end:
    return ret;
 }
 
-static bool input_overlay_load_overlay(input_overlay_t *ol,
+static bool input_overlay_load_overlay_image(input_overlay_t *ol,
       config_file_t *conf, const char *config_path,
       struct overlay *overlay, unsigned idx)
 {
-   size_t i;
-   char overlay_path_key[64], overlay_name_key[64], overlay_rect_key[64];
-   char conf_key[64], overlay_full_screen_key[64], overlay_descs_key[64];
-   char overlay_rect[256];
+   char overlay_path_key[64];
    char overlay_path[PATH_MAX_LENGTH], overlay_resolved_path[PATH_MAX_LENGTH];
-   unsigned descs = 0;
-   bool normalized = false;
-   float alpha_mod = 1.0f;
-   float range_mod = 1.0f;
 
    snprintf(overlay_path_key, sizeof(overlay_path_key),
          "overlay%u_overlay", idx);
@@ -356,6 +349,25 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
       }
    }
 
+   return true;
+}
+
+static bool input_overlay_load_overlay(input_overlay_t *ol,
+      config_file_t *conf, const char *config_path,
+      struct overlay *overlay, unsigned idx)
+{
+   size_t i;
+   char overlay_path_key[64], overlay_name_key[64], overlay_rect_key[64];
+   char conf_key[64], overlay_full_screen_key[64], overlay_descs_key[64];
+   char overlay_rect[256];
+   unsigned descs = 0;
+   bool normalized = false;
+   float alpha_mod = 1.0f;
+   float range_mod = 1.0f;
+
+   snprintf(overlay_path_key, sizeof(overlay_path_key),
+         "overlay%u_overlay", idx);
+    
    snprintf(overlay_name_key, sizeof(overlay_name_key),
          "overlay%u_name", idx);
    config_get_array(conf, overlay_name_key,
@@ -563,6 +575,13 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
       ol->pos   = 0;
       ol->state = OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE;
       return true;
+   }
+
+   if (!input_overlay_load_overlay_image(ol, ol->conf,
+            ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
+   {
+      RARCH_ERR("[Overlay]: Failed to load overlay image #%u.\n", (unsigned)ol->pos);
+      goto error;
    }
 
    if (!input_overlay_load_overlay(ol, ol->conf,
