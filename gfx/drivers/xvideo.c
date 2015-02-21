@@ -90,7 +90,7 @@ static void xv_set_nonblock_state(void *data, bool state)
 }
 
 static volatile sig_atomic_t g_quit = 0;
-static void sighandler(int sig)
+static void xvideo_sighandler(int sig)
 {
    g_quit = 1;
 }
@@ -548,7 +548,7 @@ static void *xv_init(const video_info_t *video,
    if (xv->quit_atom)
       XSetWMProtocols(xv->display, xv->window, &xv->quit_atom, 1);
 
-   sa.sa_handler = sighandler;
+   sa.sa_handler = xvideo_sighandler;
    sa.sa_flags = SA_RESTART;
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);

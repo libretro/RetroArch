@@ -62,7 +62,7 @@ static enum gfx_ctx_api g_api;
 static unsigned g_major;
 static unsigned g_minor;
 
-static void sighandler(int sig)
+static void egl_sighandler(int sig)
 {
    (void)sig;
    g_quit = 1;
@@ -75,7 +75,7 @@ static Bool egl_wait_notify(Display *d, XEvent *e, char *arg)
    return e->type == MapNotify && e->xmap.window == g_win;
 }
 
-static int nul_handler(Display *dpy, XErrorEvent *event)
+static int egl_nul_handler(Display *dpy, XErrorEvent *event)
 {
    (void)dpy;
    (void)event;
@@ -365,7 +365,7 @@ error:
    return false;
 }
 
-static EGLint *egl_fill_attribs(EGLint *attr)
+static EGLint *xegl_fill_attribs(EGLint *attr)
 {
    switch (g_api)
    {
@@ -445,7 +445,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    XSetWindowAttributes swa = {0};
    XVisualInfo *vi = NULL;
 
-   sa.sa_handler = sighandler;
+   sa.sa_handler = egl_sighandler;
    sa.sa_flags   = SA_RESTART;
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
@@ -457,7 +457,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
 
    attr = egl_attribs;
-   attr = egl_fill_attribs(attr);
+   attr = xegl_fill_attribs(attr);
 
    if (!eglGetConfigAttrib(g_egl_dpy, g_config, EGL_NATIVE_VISUAL_ID, &vid))
       goto error;
@@ -592,7 +592,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    /* This can blow up on some drivers. It's not fatal, 
     * so override errors for this call.
     */
-   old_handler = XSetErrorHandler(nul_handler);
+   old_handler = XSetErrorHandler(egl_nul_handler);
    XSetInputFocus(g_dpy, g_win, RevertToNone, CurrentTime);
    XSync(g_dpy, False);
    XSetErrorHandler(old_handler);

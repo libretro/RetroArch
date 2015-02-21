@@ -64,7 +64,7 @@ static unsigned g_minor;
 
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
 
-static void sighandler(int sig)
+static void glx_sighandler(int sig)
 {
    (void)sig;
    g_quit = 1;
@@ -82,7 +82,7 @@ static Bool glx_wait_notify(Display *d, XEvent *e, char *arg)
    return (e->type == MapNotify) && (e->xmap.window == glx->g_win);
 }
 
-static int nul_handler(Display *dpy, XErrorEvent *event)
+static int glx_nul_handler(Display *dpy, XErrorEvent *event)
 {
    (void)dpy;
    (void)event;
@@ -401,7 +401,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
    struct sigaction sa = {{0}};
 
-   sa.sa_handler = sighandler;
+   sa.sa_handler = glx_sighandler;
    sa.sa_flags   = SA_RESTART;
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
@@ -595,7 +595,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    gfx_ctx_glx_swap_interval(data, glx->g_interval);
 
    /* This can blow up on some drivers. It's not fatal, so override errors for this call. */
-   old_handler = XSetErrorHandler(nul_handler);
+   old_handler = XSetErrorHandler(glx_nul_handler);
    XSetInputFocus(glx->g_dpy, glx->g_win, RevertToNone, CurrentTime);
    XSync(glx->g_dpy, False);
    XSetErrorHandler(old_handler);
