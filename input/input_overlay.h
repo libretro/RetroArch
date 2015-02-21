@@ -72,6 +72,7 @@ enum overlay_status
 {
    OVERLAY_STATUS_NONE = 0,
    OVERLAY_STATUS_DEFERRED_LOAD,
+   OVERLAY_STATUS_DEFERRED_LOADING_IMAGE,
    OVERLAY_STATUS_DEFERRED_LOADING,
    OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE,
    OVERLAY_STATUS_DEFERRED_DONE,
@@ -181,6 +182,8 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
       float alpha_mod, float scale_factor);
 
 bool input_overlay_load_overlays(input_overlay_t *ol);
+
+bool input_overlay_load_overlays_image_iterate(input_overlay_t *ol);
 
 bool input_overlay_load_overlays_iterate(input_overlay_t *ol);
 

@@ -1024,6 +1024,9 @@ void rarch_main_iterate_overlay_state(void)
       case OVERLAY_STATUS_DEFERRED_LOAD:
          input_overlay_load_overlays(driver.overlay);
          break;
+      case OVERLAY_STATUS_DEFERRED_LOADING_IMAGE:
+         input_overlay_load_overlays_image_iterate(driver.overlay);
+         break;
       case OVERLAY_STATUS_DEFERRED_LOADING:
          input_overlay_load_overlays_iterate(driver.overlay);
          break;
