@@ -41,6 +41,8 @@ struct rpng_t
    bool has_idat;
    bool has_iend;
    bool has_plte;
+   uint8_t *inflate_buf;
+   uint8_t *buff_data;
 };
 
 bool rpng_load_image_argb(const char *path, uint32_t **data,
