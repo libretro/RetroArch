@@ -583,7 +583,6 @@ error:
 
 bool input_overlay_load_overlays(input_overlay_t *ol)
 {
-   size_t i;
    unsigned overlays = 0;
 
    if (!ol)
