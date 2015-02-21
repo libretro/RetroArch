@@ -1013,6 +1013,27 @@ static void rarch_main_iterate_rdl(void)
 }
 #endif
 
+#ifdef HAVE_OVERLAY
+void rarch_main_iterate_overlay_state(void)
+{
+   switch (driver.overlay->state)
+   {
+      case OVERLAY_STATUS_NONE:
+      case OVERLAY_STATUS_ALIVE:
+         break;
+      case OVERLAY_STATUS_DEFERRED_LOAD:
+         input_overlay_load_overlays(driver.overlay);
+         break;
+      case OVERLAY_STATUS_DEFERRED_DONE:
+         input_overlay_new_done(driver.overlay);
+         break;
+      case OVERLAY_STATUS_DEFERRED_ERROR:
+         input_overlay_free(driver.overlay);
+         break;
+   }
+}
+#endif
+
 /**
  * rarch_main_iterate:
  *
@@ -1043,6 +1064,11 @@ int rarch_main_iterate(void)
       update_frame_time();
 
    do_pre_state_checks(input, old_input, trigger_input);
+
+#ifdef HAVE_OVERLAY
+   if (driver.overlay)
+      rarch_main_iterate_overlay_state();
+#endif
 
 #ifdef HAVE_NETWORKING
    if (g_extern.http.handle)

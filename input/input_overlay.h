@@ -67,6 +67,15 @@ enum overlay_type
    OVERLAY_TYPE_KEYBOARD
 };
 
+enum overlay_status
+{
+   OVERLAY_STATUS_NONE = 0,
+   OVERLAY_STATUS_DEFERRED_LOAD,
+   OVERLAY_STATUS_DEFERRED_DONE,
+   OVERLAY_STATUS_DEFERRED_ERROR,
+   OVERLAY_STATUS_ALIVE,
+};
+
 struct overlay_desc
 {
    float x;
@@ -131,6 +140,15 @@ struct input_overlay
 
    unsigned next_index;
    char *overlay_path;
+
+   enum overlay_status state;
+
+   struct
+   {
+      bool enable;
+      float opacity;
+      float scale_factor;
+   } deferred;
 };
 
 typedef struct input_overlay input_overlay_t;
@@ -156,6 +174,10 @@ typedef struct input_overlay_state
  **/
 input_overlay_t *input_overlay_new(const char *path, bool enable,
       float alpha_mod, float scale_factor);
+
+bool input_overlay_load_overlays(input_overlay_t *ol);
+
+bool input_overlay_new_done(input_overlay_t *ol);
 
 /**
  * input_overlay_free:

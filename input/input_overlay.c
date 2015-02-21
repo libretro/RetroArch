@@ -520,16 +520,21 @@ static bool input_overlay_resolve_targets(struct overlay *ol,
    return true;
 }
 
-static bool input_overlay_load_overlays(input_overlay_t *ol, const char *path)
+bool input_overlay_load_overlays(input_overlay_t *ol)
 {
    size_t i;
    bool ret = true;
    unsigned overlays = 0;
-   config_file_t *conf = config_file_new(path);
+   config_file_t *conf = NULL;
+
+   if (!ol)
+      return false;
+   
+   conf = config_file_new(ol->overlay_path);
 
    if (!conf)
    {
-      RARCH_ERR("Failed to load config file: %s.\n", path);
+      RARCH_ERR("Failed to load config file: %s.\n", ol->overlay_path);
       return false;
    }
 
@@ -557,7 +562,8 @@ static bool input_overlay_load_overlays(input_overlay_t *ol, const char *path)
 
    for (i = 0; i < ol->size; i++)
    {
-      if (!input_overlay_load_overlay(ol, conf, path, &ol->overlays[i], i))
+      if (!input_overlay_load_overlay(ol, conf,
+               ol->overlay_path, &ol->overlays[i], i))
       {
          RARCH_ERR("[Overlay]: Failed to load overlay #%u.\n", (unsigned)i);
          ret = false;
@@ -575,8 +581,13 @@ static bool input_overlay_load_overlays(input_overlay_t *ol, const char *path)
       }
    }
 
+   ol->state = OVERLAY_STATUS_DEFERRED_DONE;
+
 end:
    config_file_free(conf);
+   if (!ret)
+      ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
+
    return ret;
 }
 
@@ -594,20 +605,21 @@ static void input_overlay_load_active(input_overlay_t *ol,
    ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
 }
 
-static bool input_overlay_new_done(input_overlay_t *ol, bool enable,
-      float opacity, float scale_factor)
+bool input_overlay_new_done(input_overlay_t *ol)
 {
    if (!ol)
       return false;
 
    ol->active = &ol->overlays[0];
 
-   input_overlay_load_active(ol, opacity);
-   input_overlay_enable(ol, enable);
+   input_overlay_load_active(ol, ol->deferred.opacity);
+   input_overlay_enable(ol, ol->deferred.enable);
 
-   input_overlay_set_alpha_mod(ol, opacity);
-   input_overlay_set_scale_factor(ol, scale_factor);
+   input_overlay_set_alpha_mod(ol, ol->deferred.opacity);
+   input_overlay_set_scale_factor(ol, ol->deferred.scale_factor);
    ol->next_index = (ol->index + 1) % ol->size;
+
+   ol->state = OVERLAY_STATUS_ALIVE;
 
    return true;
 }
@@ -649,10 +661,10 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
    if (!ol->iface)
       goto error;
 
-   if (!input_overlay_load_overlays(ol, path))
-      goto error;
-   if (!input_overlay_new_done(ol, enable, opacity, scale_factor))
-      goto error;
+   ol->state                 = OVERLAY_STATUS_DEFERRED_LOAD;
+   ol->deferred.enable       = enable;
+   ol->deferred.opacity      = opacity;
+   ol->deferred.scale_factor = scale_factor;
 
    return ol;
 

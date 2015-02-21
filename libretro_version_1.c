@@ -482,6 +482,9 @@ static inline void input_poll_overlay(input_overlay_t *overlay_device, float opa
    uint16_t key_mod = 0;
    bool polled = false;
 
+   if (overlay_device->state != OVERLAY_STATUS_ALIVE)
+      return;
+
    memcpy(old_key_state.keys, driver.overlay_state.keys,
          sizeof(driver.overlay_state.keys));
    memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
