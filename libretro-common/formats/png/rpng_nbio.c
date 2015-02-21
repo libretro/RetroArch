@@ -171,7 +171,7 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
       struct png_chunk *chunk,
       uint32_t *palette,
       struct png_ihdr *ihdr, struct idat_buffer *idat_buf,
-      struct rpng_t *rpng, size_t *increment_size)
+      struct rpng_t *rpng)
 {
    unsigned i;
 
@@ -327,7 +327,6 @@ bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
    struct rpng_t rpng = {0};
    bool ret      = true;
    void* ptr = NULL;
-   size_t increment = 0;
 
    {
       bool looped = false;
@@ -365,7 +364,7 @@ bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
 
       if (!rpng_nbio_load_image_argb_iterate(
             buff_data, &chunk, palette, &ihdr, &idat_buf,
-            &rpng, &increment))
+            &rpng))
          break;
 
       buff_data += 4 + 4 + chunk.size + 4;
