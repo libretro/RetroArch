@@ -594,6 +594,24 @@ static void input_overlay_load_active(input_overlay_t *ol,
    ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
 }
 
+static bool input_overlay_new_done(input_overlay_t *ol, bool enable,
+      float opacity, float scale_factor)
+{
+   if (!ol)
+      return false;
+
+   ol->active = &ol->overlays[0];
+
+   input_overlay_load_active(ol, opacity);
+   input_overlay_enable(ol, enable);
+
+   input_overlay_set_alpha_mod(ol, opacity);
+   input_overlay_set_scale_factor(ol, scale_factor);
+   ol->next_index = (ol->index + 1) % ol->size;
+
+   return true;
+}
+
 /**
  * input_overlay_new:
  * @path                  : Path to overlay file.
@@ -633,15 +651,8 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
 
    if (!input_overlay_load_overlays(ol, path))
       goto error;
-
-   ol->active = &ol->overlays[0];
-
-   input_overlay_load_active(ol, opacity);
-   input_overlay_enable(ol, enable);
-
-   input_overlay_set_alpha_mod(ol, opacity);
-   input_overlay_set_scale_factor(ol, scale_factor);
-   ol->next_index = (ol->index + 1) % ol->size;
+   if (!input_overlay_new_done(ol, enable, opacity, scale_factor))
+      goto error;
 
    return ol;
 
