@@ -28,8 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <file/nbio.h>
-
 #ifdef GEKKO
 #include <malloc.h>
 #endif
@@ -319,7 +317,6 @@ void rpng_nbio_load_image_free(struct rpng_t *rpng)
    if (!rpng)
       return;
 
-   nbio_free((struct nbio_t*)rpng->userdata);
    if (rpng->idat_buf.data)
       free(rpng->idat_buf.data);
    if (rpng->inflate_buf)
@@ -329,61 +326,14 @@ void rpng_nbio_load_image_free(struct rpng_t *rpng)
       free(rpng);
 }
 
-struct rpng_t *rpng_nbio_load_image_argb_init(const char *path)
-{
-   size_t file_len;
-   struct nbio_t* handle = NULL;
-   struct rpng_t *rpng = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
-
-   if (!rpng)
-      goto error;
-
-   rpng->userdata = (void*)nbio_open(path, NBIO_READ);
-
-   handle = (struct nbio_t*)rpng->userdata;
-
-   if (!handle)
-      goto error;
-
-   rpng->ptr  = nbio_get_ptr(handle, &file_len);
-
-   nbio_begin_read(handle);
-
-   return rpng;
-
-error:
-   if (rpng->userdata)
-      nbio_free((struct nbio_t*)rpng->userdata);
-   if (rpng)
-      free(rpng);
-   return NULL;
-}
-
 bool rpng_nbio_load_image_argb_start(struct rpng_t *rpng)
 {
    unsigned i;
-   size_t file_len;
    char header[8];
-   struct nbio_t *handle = NULL;
 
    if (!rpng)
       return false;
    
-   handle    = (struct nbio_t*)rpng->userdata;
-
-   if (!handle)
-      return false;
-
-   rpng->ptr = nbio_get_ptr(handle, &file_len);
-
-   if (!rpng->ptr)
-      return false;
-
-   rpng->buff_data = (uint8_t*)rpng->ptr;
-
-   if (!rpng->buff_data)
-      return false;
-
    for (i = 0; i < 8; i++)
       header[i] = rpng->buff_data[i];
 
