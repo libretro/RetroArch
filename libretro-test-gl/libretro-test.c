@@ -10,6 +10,20 @@ static struct retro_hw_render_callback hw_render;
 
 #include "../libretro-common/include/glsym/glsym.h"
 
+#if defined(HAVE_PSGL)
+#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
+#define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
+#define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
+#elif defined(OSX_PPC)
+#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_EXT
+#define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_EXT
+#define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
+#else
+#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER
+#define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE
+#define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0
+#endif
+
 #define BASE_WIDTH 320
 #define BASE_HEIGHT 240
 #ifdef GLES
@@ -143,15 +157,15 @@ static void init_multisample(unsigned samples)
       glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
       glGenFramebuffers(1, &fbo);
-      glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, fbo);
 
-      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+      glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0,
             GL_RENDERBUFFER, rbo_color);
-      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+      glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
             GL_RENDERBUFFER, rbo_depth_stencil);
 
-      GLenum ret = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-      if (ret == GL_FRAMEBUFFER_COMPLETE)
+      GLenum ret = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
+      if (ret == RARCH_GL_FRAMEBUFFER_COMPLETE)
       {
          fprintf(stderr, "Using multisampled FBO.\n");
          multisample_fbo = true;
@@ -159,7 +173,7 @@ static void init_multisample(unsigned samples)
       else
          fprintf(stderr, "Multisampled FBO failed.\n");
 
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0);
    }
    else
       fprintf(stderr, "Multisampled FBOs not supported.\n");
@@ -337,10 +351,10 @@ void retro_run(void)
 #ifdef CORE
    glBindVertexArray(vao);
    if (multisample_fbo)
-      glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, fbo);
    else
 #endif
-      glBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
+      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
 
    glClearColor(0.3, 0.4, 0.5, 1.0);
    glViewport(0, 0, width, height);

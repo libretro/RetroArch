@@ -1,15 +1,34 @@
 
 ifeq ($(platform),)
-platform = unix
-ifeq ($(shell uname -a),)
-   platform = win
-else ifneq ($(findstring MINGW,$(shell uname -a)),)
-   platform = win
-else ifneq ($(findstring Darwin,$(shell uname -a)),)
-   platform = osx
-else ifneq ($(findstring win,$(shell uname -a)),)
-   platform = win
+	platform = unix
+	ifeq ($(shell uname -a),)
+		platform = win
+	else ifneq ($(findstring MINGW,$(shell uname -a)),)
+		platform = win
+	else ifneq ($(findstring Darwin,$(shell uname -a)),)
+		platform = osx
+		arch = intel
+	ifeq ($(shell uname -p),powerpc)
+		arch = ppc
+	endif
+	else ifneq ($(findstring win,$(shell uname -a)),)
+		platform = win
+	endif
 endif
+
+# system platform
+system_platform = unix
+ifeq ($(shell uname -a),)
+	EXE_EXT = .exe
+	system_platform = win
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+	system_platform = osx
+	arch = intel
+	ifeq ($(shell uname -p),powerpc)
+		arch = ppc
+	endif
+	else ifneq ($(findstring MINGW,$(shell uname -a)),)
+	system_platform = win
 endif
 
 TARGET_NAME = testgl
@@ -25,6 +44,14 @@ else ifeq ($(platform), osx)
    SHARED := -dynamiclib
    GL_LIB := -framework OpenGL
    CFLAGS += -DOSX
+	ifeq ($(arch),ppc)
+		CFLAGS += -DBLARGG_BIG_ENDIAN=1 -D__ppc__ -DOSX_PPC
+	endif
+	OSXVER = `sw_vers -productVersion | cut -d. -f 2`
+	OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
+	ifeq ($(OSX_LT_MAVERICKS),"YES")
+		fpic += -mmacosx-version-min=10.5
+	endif
 else ifeq ($(platform), pi)
    TARGET := $(TARGET_NAME)_libretro.so
    fpic := -fPIC
