@@ -24,6 +24,7 @@ else ifeq ($(platform), osx)
    fpic := -fPIC
    SHARED := -dynamiclib
    GL_LIB := -framework OpenGL
+   CFLAGS += -DOSX
 else ifeq ($(platform), pi)
    TARGET := $(TARGET_NAME)_libretro.so
    fpic := -fPIC
