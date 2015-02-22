@@ -880,8 +880,6 @@ static int rarch_main_iterate_quit(void)
 
 static int rarch_main_iterate_nbio_transfer(void)
 {
-   size_t pos = 0, tot = 0;
-
    if (!nbio_iterate(g_extern.nbio.handle))
       return -1;
 
