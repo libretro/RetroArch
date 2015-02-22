@@ -878,9 +878,36 @@ static int rarch_main_iterate_quit(void)
    return -1;
 }
 
+static int rarch_main_iterate_nbio_transfer(void)
+{
+   size_t pos = 0, tot = 0;
+
+   if (!nbio_iterate(g_extern.nbio.handle))
+      return -1;
+
+   return 0;
+}
+
+static int rarch_main_iterate_nbio_parse(void)
+{
+   size_t len;
+   char *data = nbio_get_ptr(g_extern.nbio.handle, &len);
+
+   if (data && g_extern.nbio.cb)
+      g_extern.nbio.cb(data, len);
+
+   nbio_free(g_extern.nbio.handle);
+   g_extern.nbio.handle = NULL;
+
+   msg_queue_clear(g_extern.nbio.msg_queue);
+
+   return 0;
+}
+
 #ifdef HAVE_NETWORKING
 int cb_core_updater_download(void *data_, size_t len);
 int cb_core_updater_list(void *data_, size_t len);
+
 
 /**
  * rarch_main_iterate_http_transfer:
@@ -919,8 +946,6 @@ static int rarch_main_iterate_http_parse(void)
 
    g_extern.http.handle = NULL;
    msg_queue_clear(g_extern.http.msg_queue);
-   msg_queue_clear(g_extern.nbio.msg_queue);
-   msg_queue_clear(g_extern.images.msg_queue);
 
    return 0;
 }
@@ -985,6 +1010,82 @@ static int rarch_main_iterate_http_poll(void)
    return 0;
 }
 #endif
+
+#ifdef HAVE_OVERLAY
+static int cb_nbio_image_overlay_load(void *data, size_t len)
+{
+   (void)data;
+   (void)len;
+
+   return 0;
+}
+#endif
+
+static int cb_nbio_default(void *data, size_t len)
+{
+   (void)data;
+   (void)len;
+
+   return 0;
+}
+
+static int rarch_main_iterate_nbio_poll(void)
+{
+   struct nbio_t* handle;
+   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+   struct string_list *str_list = NULL;
+   const char *path = msg_queue_pull(g_extern.nbio.msg_queue);
+
+   if (!path)
+      return -1;
+
+   /* Can only deal with one HTTP transfer at a time for now */
+   if (g_extern.nbio.handle)
+      return -1; 
+
+   str_list         = string_split(path, "|"); 
+
+   if (!str_list)
+      goto error;
+
+   if (str_list->size > 0)
+      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   if (str_list->size > 1)
+      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+
+   handle = nbio_open(elem0, NBIO_READ);
+
+   if (!handle)
+   {
+      RARCH_ERR("Could not create new file loading handle.\n");
+      goto error;
+   }
+
+   g_extern.nbio.handle = handle;
+   g_extern.nbio.cb     = NULL;
+
+   if (elem1[0] != '\0')
+   {
+#ifdef HAVE_OVERLAY
+      if (!strcmp(elem1, "cb_image_overlay_load"))
+         g_extern.nbio.cb = &cb_nbio_image_overlay_load;
+      else
+#endif
+         g_extern.nbio.cb = &cb_nbio_default;
+   }
+
+   nbio_begin_read(handle);
+
+   string_list_free(str_list);
+
+   return 0;
+
+error:
+   if (str_list)
+      string_list_free(str_list);
+
+   return -1;
+}
 
 #ifdef HAVE_MENU
 static void rarch_main_iterate_rdl(void)
@@ -1107,6 +1208,14 @@ int rarch_main_iterate(void)
    if (driver.overlay)
       rarch_main_iterate_overlay_state();
 #endif
+   
+   if (g_extern.nbio.handle)
+   {
+      if (!rarch_main_iterate_nbio_transfer())
+         rarch_main_iterate_nbio_parse();
+   }
+   else
+      rarch_main_iterate_nbio_poll();
 
 #ifdef HAVE_NETWORKING
    if (g_extern.http.handle)

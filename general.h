@@ -33,6 +33,7 @@
 #include <retro_miscellaneous.h>
 #include "gfx/video_viewport.h"
 
+#include <file/nbio.h>
 #include <formats/rpng.h>
 
 #include "playlist.h"
@@ -593,6 +594,8 @@ struct global
 
    struct
    {
+      transfer_cb_t  cb;
+      struct nbio_t *handle;
       msg_queue_t *msg_queue;
    } nbio;
 

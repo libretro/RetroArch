@@ -332,7 +332,7 @@ void rpng_nbio_load_image_free(struct rpng_t *rpng)
 struct rpng_t *rpng_nbio_load_image_argb_init(const char *path)
 {
    size_t file_len;
-   struct nbio_t* nbread = NULL;
+   struct nbio_t* handle = NULL;
    struct rpng_t *rpng = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
 
    if (!rpng)
@@ -340,14 +340,14 @@ struct rpng_t *rpng_nbio_load_image_argb_init(const char *path)
 
    rpng->userdata = (void*)nbio_open(path, NBIO_READ);
 
-   nbread = (struct nbio_t*)rpng->userdata;
+   handle = (struct nbio_t*)rpng->userdata;
 
-   if (!nbread)
+   if (!handle)
       goto error;
 
-   rpng->ptr  = nbio_get_ptr(nbread, &file_len);
+   rpng->ptr  = nbio_get_ptr(handle, &file_len);
 
-   nbio_begin_read(nbread);
+   nbio_begin_read(handle);
 
    return rpng;
 
@@ -364,17 +364,17 @@ bool rpng_nbio_load_image_argb_start(struct rpng_t *rpng)
    unsigned i;
    size_t file_len;
    char header[8];
-   struct nbio_t *nbread = NULL;
+   struct nbio_t *handle = NULL;
 
    if (!rpng)
       return false;
    
-   nbread    = (struct nbio_t*)rpng->userdata;
+   handle    = (struct nbio_t*)rpng->userdata;
 
-   if (!nbread)
+   if (!handle)
       return false;
 
-   rpng->ptr = nbio_get_ptr(nbread, &file_len);
+   rpng->ptr = nbio_get_ptr(handle, &file_len);
 
    if (!rpng->ptr)
       return false;
