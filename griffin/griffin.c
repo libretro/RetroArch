@@ -174,6 +174,7 @@ VIDEO IMAGE
 
 #include "../gfx/image/image.c"
 
+#include "../libretro-common/formats/tga/tga_decode.c"
 #include "../libretro-common/formats/png/rpng_decode_fbio.c"
 #include "../libretro-common/formats/png/rpng_decode_fnbio.c"
 #include "../libretro-common/formats/png/rpng_encode.c"

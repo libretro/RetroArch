@@ -22,7 +22,7 @@
 #include "../../driver.h"
 #include "../../performance.h"
 #include <gfx/scaler/scaler.h>
-#include "../image/image.h"
+#include <formats/image.h>
 
 #include <stdint.h>
 #include "../../libretro.h"

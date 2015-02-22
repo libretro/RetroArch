@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <boolean.h>
 #include "../libretro.h"
-#include "../gfx/image/image.h"
+#include <formats/image.h>
 #include <file/config_file.h>
 
 #ifdef __cplusplus

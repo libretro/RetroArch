@@ -18,7 +18,7 @@
 #include "../../config.h"
 #endif
 
-#include "image.h"
+#include <formats/image.h>
 #ifdef _XBOX1
 #include "../d3d/d3d_wrapper.h"
 #endif
@@ -47,73 +47,6 @@
 #ifdef HAVE_NONBLOCKING_TEST
 #include <file/nbio.h>
 #endif
-
-static bool rtga_image_load_shift(uint8_t *buf,
-      struct texture_image *out_img,
-      unsigned a_shift, unsigned r_shift,
-      unsigned g_shift, unsigned b_shift)
-{
-   unsigned i, bits, size, bits_mul;
-   uint8_t info[6];
-   unsigned width = 0;
-   unsigned height = 0;
-   const uint8_t *tmp = NULL;
-
-   if (buf[2] != 2)
-   {
-      RARCH_ERR("TGA image is not uncompressed RGB.\n");
-      return false;
-   }
-
-   memcpy(info, buf + 12, 6);
-
-   width  = info[0] + ((unsigned)info[1] * 256);
-   height = info[2] + ((unsigned)info[3] * 256);
-   bits   = info[4];
-
-   RARCH_LOG("Loaded TGA: (%ux%u @ %u bpp)\n", width, height, bits);
-
-   size            = width * height * sizeof(uint32_t);
-   out_img->pixels = (uint32_t*)malloc(size);
-   out_img->width  = width;
-   out_img->height = height;
-
-   if (!out_img->pixels)
-   {
-      RARCH_ERR("Failed to allocate TGA pixels.\n");
-      return false;
-   }
-
-   tmp      = buf + 18;
-   bits_mul = 3;
-
-   if (bits != 32 && bits != 24)
-   {
-      RARCH_ERR("Bit depth of TGA image is wrong. Only 32-bit and 24-bit supported.\n");
-      free(out_img->pixels);
-      out_img->pixels = NULL;
-      return false;
-   }
-
-   if (bits == 32)
-      bits_mul = 4;
-
-   for (i = 0; i < width * height; i++)
-   {
-      uint32_t b = tmp[i * bits_mul + 0];
-      uint32_t g = tmp[i * bits_mul + 1];
-      uint32_t r = tmp[i * bits_mul + 2];
-      uint32_t a = tmp[i * bits_mul + 3];
-
-      if (bits == 24)
-         a = 0xff;
-
-      out_img->pixels[i] = (a << a_shift) |
-         (r << r_shift) | (g << g_shift) | (b << b_shift);
-   }
-
-   return true;
-}
 
 #ifdef HAVE_ZLIB
 #ifdef HAVE_NONBLOCKING_TEST
