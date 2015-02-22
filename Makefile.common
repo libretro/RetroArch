@@ -166,10 +166,7 @@ OBJ += frontend/frontend.o \
 		record/record_driver.o \
 		performance.o
 
-OBJ += gfx/image/image_rpng.o
-#OBJ += gfx/image/image_mpng.o
-
-#OBJ += libretro-common/formats/mpng/mpng_decode.o
+OBJ += gfx/image/image.o
 
 # LibretroDB
 

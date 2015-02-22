@@ -172,13 +172,7 @@ VIDEO SHADERS
 VIDEO IMAGE
 ============================================================ */
 
-#if defined(__CELLOS_LV2__)
-#include "../gfx/image/image_ps3.c"
-#elif defined(_XBOX1)
-#include "../gfx/image/image_xdk1.c"
-#else
-#include "../gfx/image/image_rpng.c"
-#endif
+#include "../gfx/image/image.c"
 
 #include "../libretro-common/formats/png/rpng_decode_fbio.c"
 #include "../libretro-common/formats/png/rpng_decode_fnbio.c"
