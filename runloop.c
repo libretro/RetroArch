@@ -1027,6 +1027,9 @@ static int cb_nbio_image_overlay_load(void *data, size_t len)
    (void)data;
    (void)len;
 
+   g_extern.nbio.is_blocking = true;
+   g_extern.nbio.is_finished = false;
+
    return 0;
 }
 #endif
@@ -1052,7 +1055,7 @@ static int rarch_main_iterate_nbio_poll(void)
    if (!path)
       return -1;
 
-   /* Can only deal with one HTTP transfer at a time for now */
+   /* Can only deal with one NBIO transfer at a time for now */
    if (g_extern.nbio.handle)
       return -1; 
 
@@ -1074,8 +1077,10 @@ static int rarch_main_iterate_nbio_poll(void)
       goto error;
    }
 
-   g_extern.nbio.handle = handle;
-   g_extern.nbio.cb     = NULL;
+   g_extern.nbio.handle      = handle;
+   g_extern.nbio.cb          = NULL;
+   g_extern.nbio.is_blocking = false;
+   g_extern.nbio.is_finished = false;
 
    if (elem1[0] != '\0')
    {
