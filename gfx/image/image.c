@@ -42,77 +42,14 @@
 
 #endif
 
-//#define HAVE_NONBLOCKING_TEST
-
-#ifdef HAVE_NONBLOCKING_TEST
-#include <file/nbio.h>
-#endif
-
 #ifdef HAVE_ZLIB
-#ifdef HAVE_NONBLOCKING_TEST
-static bool rpng_load_image_argb_nonblocking(
-      const char *path, uint32_t **data,
-      unsigned *width, unsigned *height)
-{
-   bool ret      = true;
-   struct rpng_t *rpng = rpng_nbio_load_image_argb_init(path);
-
-   if (!rpng)
-   {
-      ret = false;
-      goto end;
-   }
-
-   while (!nbio_iterate((struct nbio_t*)rpng->userdata));
-
-   if (!rpng_nbio_load_image_argb_start(rpng))
-   {
-      ret = false;
-      goto end;
-   }
-
-   while (rpng_nbio_load_image_argb_iterate(
-            rpng->buff_data, rpng))
-   {
-      rpng->buff_data += 4 + 4 + rpng->chunk.size + 4;
-   }
-
-#if 0
-   fprintf(stderr, "has_ihdr: %d\n", rpng->has_ihdr);
-   fprintf(stderr, "has_idat: %d\n", rpng->has_idat);
-   fprintf(stderr, "has_iend: %d\n", rpng->has_iend);
-#endif
-
-   if (!rpng->has_ihdr || !rpng->has_idat || !rpng->has_iend)
-   {
-      ret = false;
-      goto end;
-   }
-
-   rpng_nbio_load_image_argb_process(rpng, data, width, height);
-
-end:
-   rpng_nbio_load_image_free(rpng);
-   rpng = NULL;
-   if (!ret)
-      free(*data);
-
-   return ret;
-}
-#endif
-
 static bool rpng_image_load_argb_shift(const char *path,
       struct texture_image *out_img,
       unsigned a_shift, unsigned r_shift,
       unsigned g_shift, unsigned b_shift)
 {
-#ifdef HAVE_NONBLOCKING_TEST
-   bool ret = rpng_load_image_argb_nonblocking(path,
-         &out_img->pixels, &out_img->width, &out_img->height);
-#else
    bool ret = rpng_load_image_argb(path,
          &out_img->pixels, &out_img->width, &out_img->height);
-#endif
 
    if (!ret)
       return false;
