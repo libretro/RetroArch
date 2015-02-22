@@ -35,22 +35,28 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
 {
    size_t file_len;
    bool ret = true;
-   struct nbio_t* handle = NULL;
-   struct rpng_t *rpng = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
-
-   if (!rpng)
-      return false;
-
-   rpng->userdata = (void*)nbio_open(path, NBIO_READ);
-
-   handle = (struct nbio_t*)rpng->userdata;
+   struct rpng_t *rpng = NULL;
+   void *ptr = NULL;
+   struct nbio_t* handle = (void*)nbio_open(path, NBIO_READ);
 
    if (!handle)
       goto end;
 
-   rpng->ptr  = nbio_get_ptr(handle, &file_len);
+   ptr  = nbio_get_ptr(handle, &file_len);
 
    nbio_begin_read(handle);
+
+   while (!nbio_iterate(handle));
+
+   ptr = nbio_get_ptr(handle, &file_len);
+
+   if (!ptr)
+   {
+      ret = false;
+      goto end;
+   }
+
+   rpng = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
 
    if (!rpng)
    {
@@ -58,17 +64,7 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       goto end;
    }
 
-   while (!nbio_iterate(handle));
-
-   rpng->ptr = nbio_get_ptr(handle, &file_len);
-
-   if (!rpng->ptr)
-   {
-      ret = false;
-      goto end;
-   }
-
-   rpng->buff_data = (uint8_t*)rpng->ptr;
+   rpng->buff_data = (uint8_t*)ptr;
 
    if (!rpng->buff_data)
    {
@@ -103,15 +99,13 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
    rpng_nbio_load_image_argb_process(rpng, data, width, height);
 
 end:
-   if (rpng->userdata)
-      nbio_free((struct nbio_t*)rpng->userdata);
+   if (handle)
+      nbio_free(handle);
    if (rpng)
-   {
       rpng_nbio_load_image_free(rpng);
-   }
+   rpng = NULL;
    if (!ret)
       free(*data);
-   rpng = NULL;
    return ret;
 }
 

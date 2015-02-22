@@ -73,8 +73,6 @@ struct rpng_t
    uint8_t *buff_data;
    uint32_t palette[256];
    struct png_chunk chunk;
-   void *userdata;
-   void *ptr;
 };
 
 bool rpng_load_image_argb(const char *path, uint32_t **data,
