@@ -194,29 +194,8 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
    unsigned g_shift = 8;
    unsigned b_shift = use_rgba ? 16 : 0;
 
-   if (strstr(path, ".tga"))
-   {
-      void *raw_buf = NULL;
-      uint8_t *buf = NULL;
-      ssize_t len;
-      bool ret = read_file(path, &raw_buf, &len);
-
-      if (!ret || len < 0)
-      {
-         RARCH_ERR("Failed to read image: %s.\n", path);
-         return false;
-      }
-
-      buf = (uint8_t*)raw_buf;
-
-      ret = rtga_image_load_shift(buf, out_img,
-            a_shift, r_shift, g_shift, b_shift);
-
-      if (buf)
-         free(buf);
-   }
 #ifdef HAVE_ZLIB
-   else if (strstr(path, ".png"))
+   if (strstr(path, ".png"))
    {
       ret = rpng_image_load_argb_shift(path, out_img,
             a_shift, r_shift, g_shift, b_shift);

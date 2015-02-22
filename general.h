@@ -33,6 +33,8 @@
 #include <retro_miscellaneous.h>
 #include "gfx/video_viewport.h"
 
+#include <formats/rpng.h>
+
 #include "playlist.h"
 
 #ifdef HAVE_CONFIG_H
@@ -593,6 +595,12 @@ struct global
    {
       msg_queue_t *msg_queue;
    } nbio;
+
+   struct
+   {
+      msg_queue_t *msg_queue;
+      struct rpng_t *handle;
+   } images;
 
    bool exec;
 

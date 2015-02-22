@@ -919,8 +919,8 @@ static int rarch_main_iterate_http_parse(void)
 
    g_extern.http.handle = NULL;
    msg_queue_clear(g_extern.http.msg_queue);
-
    msg_queue_clear(g_extern.nbio.msg_queue);
+   msg_queue_clear(g_extern.images.msg_queue);
 
    return 0;
 }
