@@ -594,6 +594,8 @@ struct global
 
    struct
    {
+      bool is_blocking;
+      bool is_finished;
       transfer_cb_t  cb;
       struct nbio_t *handle;
       msg_queue_t *msg_queue;

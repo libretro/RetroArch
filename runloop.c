@@ -888,6 +888,21 @@ static int rarch_main_iterate_nbio_transfer(void)
    return 0;
 }
 
+static int rarch_main_iterate_nbio_parse_free(void)
+{
+   if (!g_extern.nbio.is_finished)
+      return -1;
+
+   nbio_free(g_extern.nbio.handle);
+   g_extern.nbio.handle      = NULL;
+   g_extern.nbio.is_blocking = false;
+   g_extern.nbio.is_finished = false;
+
+   msg_queue_clear(g_extern.nbio.msg_queue);
+
+   return 0;
+}
+
 static int rarch_main_iterate_nbio_parse(void)
 {
    size_t len;
@@ -895,11 +910,6 @@ static int rarch_main_iterate_nbio_parse(void)
 
    if (data && g_extern.nbio.cb)
       g_extern.nbio.cb(data, len);
-
-   nbio_free(g_extern.nbio.handle);
-   g_extern.nbio.handle = NULL;
-
-   msg_queue_clear(g_extern.nbio.msg_queue);
 
    return 0;
 }
@@ -1025,6 +1035,9 @@ static int cb_nbio_default(void *data, size_t len)
 {
    (void)data;
    (void)len;
+
+   g_extern.nbio.is_blocking = false;
+   g_extern.nbio.is_finished = true;
 
    return 0;
 }
@@ -1211,8 +1224,13 @@ int rarch_main_iterate(void)
    
    if (g_extern.nbio.handle)
    {
-      if (!rarch_main_iterate_nbio_transfer())
-         rarch_main_iterate_nbio_parse();
+      if (!g_extern.nbio.is_blocking)
+      {
+         if (!rarch_main_iterate_nbio_transfer())
+            rarch_main_iterate_nbio_parse();
+      }
+      else if (g_extern.nbio.is_finished)
+         rarch_main_iterate_nbio_parse_free();
    }
    else
       rarch_main_iterate_nbio_poll();
