@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <boolean.h>
 
+#include <formats/rpng.h>
+
 #ifdef _WIN32
 #include "../drivers_context/win32_common.h"
 #ifdef _XBOX1
