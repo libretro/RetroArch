@@ -135,7 +135,13 @@ static int cb_image_overlay(void *data, size_t len)
 {
    g_extern.images.is_finished   = true;
    g_extern.images.is_blocking   = true;
-   g_extern.images.is_processing = true;
+
+   if (!driver.overlay)
+      return -1;
+
+   RARCH_LOG("Gets here.\n");
+
+   driver.overlay->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
 
    return 0;
 }

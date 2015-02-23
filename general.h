@@ -604,7 +604,6 @@ struct global
    struct
    {
       bool is_blocking;
-      bool is_processing;
       bool is_finished;
       transfer_cb_t  cb;
       msg_queue_t *msg_queue;

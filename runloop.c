@@ -900,6 +900,8 @@ void rarch_main_iterate_overlay_state(void)
       case OVERLAY_STATUS_DEFERRED_ERROR:
          input_overlay_free(driver.overlay);
          break;
+      default:
+         break;
    }
 }
 

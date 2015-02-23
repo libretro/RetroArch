@@ -73,11 +73,20 @@ enum overlay_status
    OVERLAY_STATUS_NONE = 0,
    OVERLAY_STATUS_DEFERRED_LOAD,
    OVERLAY_STATUS_DEFERRED_LOADING_IMAGE,
+   OVERLAY_STATUS_DEFERRED_LOADING_IMAGE_PROCESS,
    OVERLAY_STATUS_DEFERRED_LOADING,
    OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE,
    OVERLAY_STATUS_DEFERRED_DONE,
    OVERLAY_STATUS_DEFERRED_ERROR,
    OVERLAY_STATUS_ALIVE,
+};
+
+enum overlay_image_transfer_status
+{
+   OVERLAY_IMAGE_TRANSFER_NONE = 0,
+   OVERLAY_IMAGE_TRANSFER_BUSY,
+   OVERLAY_IMAGE_TRANSFER_DONE,
+   OVERLAY_IMAGE_TRANSFER_ERROR,
 };
 
 struct overlay_desc
@@ -135,6 +144,7 @@ struct input_overlay
    const video_overlay_interface_t *iface;
    bool enable;
 
+   enum overlay_image_transfer_status loading_status;
    bool blocked;
 
    struct overlay *overlays;
