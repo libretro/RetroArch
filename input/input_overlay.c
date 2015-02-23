@@ -591,6 +591,9 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
             goto error;
          }
 
+         ol->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
+         break;
+      case OVERLAY_IMAGE_TRANSFER_DONE:
          if (!input_overlay_load_overlay(ol, ol->conf,
                   ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
          {
@@ -598,9 +601,6 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
             goto error;
          }
 
-         ol->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
-         break;
-      case OVERLAY_IMAGE_TRANSFER_DONE:
          ol->pos += 1;
          ol->loading_status = OVERLAY_IMAGE_TRANSFER_NONE;
          break;
