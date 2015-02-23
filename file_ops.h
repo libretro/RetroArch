@@ -49,7 +49,7 @@ bool read_compressed_file(const char * path, void **buf,
  *
  * Returns: true if file read, false on error.
  */
-bool read_file(const char *path, void **buf, ssize_t *length);
+int read_file(const char *path, void **buf, ssize_t *length);
 
 /**
  * write_file:

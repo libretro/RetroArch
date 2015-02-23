@@ -233,7 +233,7 @@ bool read_compressed_file(const char * path, void **buf,
  *
  * Returns: true if file read, false on error.
  */
-bool read_file(const char *path, void **buf, ssize_t *length)
+int read_file(const char *path, void **buf, ssize_t *length)
 {
 #ifdef HAVE_COMPRESSION
    /* Here we check, whether the file, we are about to read is
@@ -250,7 +250,7 @@ bool read_file(const char *path, void **buf, ssize_t *length)
          return true;
 #endif
    if (read_generic_file(path, buf, length))
-      return true;
+      return 1;
    *length = -1;
-   return false;
+   return 0;
 }
