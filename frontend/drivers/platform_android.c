@@ -468,7 +468,9 @@ void frontend_android_get_version_sdk(int32_t *sdk)
 
   *sdk = 0;
   if (os_version_str[0])
+  {
     int num_read = sscanf(os_version_str, "%d", sdk);
+  }
 }
 
 static bool device_is_xperia_play(const char *name)

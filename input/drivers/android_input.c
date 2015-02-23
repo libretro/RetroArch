@@ -90,7 +90,7 @@ typedef struct android_input
    const rarch_joypad_driver_t *joypad;
 } android_input_t;
 
-void frontent_android_get_version_sdk(int32_t *sdk);
+void frontend_android_get_version_sdk(int32_t *sdk);
 
 bool (*engine_lookup_name)(char *buf,
       int *vendorId, int *productId, size_t size, int id);
@@ -306,7 +306,7 @@ static void *android_input_init(void)
    android->pads_connected = 0;
    android->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
 
-   frontent_android_get_version_sdk(&sdk);
+   frontend_android_get_version_sdk(&sdk);
 
    engine_lookup_name = android_input_lookup_name_post_gingerbread;
 
