@@ -177,23 +177,10 @@ static int cb_nbio_image_overlay(void *data, size_t len)
  *
  **/
 
-static int cb_image_default(void *data, size_t len)
-{
-   (void)data;
-   (void)len;
-
-   g_extern.images.is_blocking = false;
-   g_extern.images.is_finished = true;
-
-   return 0;
-}
-
 static int rarch_main_iterate_image_poll(void)
 {
    char newstring[PATH_MAX_LENGTH];
-   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
-   struct string_list *str_list = NULL;
-   const char *path = msg_queue_pull(g_extern.nbio.msg_queue);
+   const char *path = msg_queue_pull(g_extern.images.msg_queue);
 
    if (!path)
       return -1;
@@ -202,43 +189,15 @@ static int rarch_main_iterate_image_poll(void)
    if (g_extern.images.handle)
       return -1; 
 
-   str_list         = string_split(path, "|"); 
-
-   if (!str_list)
-      goto error;
-
-   if (str_list->size > 0)
-      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-   if (str_list->size > 1)
-      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
-
-   if (elem1[0] != '\0')
-   {
-#ifdef HAVE_OVERLAY
-      if (!strcmp(elem1, "cb_image_overlay_load"))
-         g_extern.nbio.cb = &cb_nbio_image_overlay;
-      else
+#if 0
+   RARCH_LOG("Gets here, path: %s\n", path);
 #endif
-         g_extern.nbio.cb = &cb_image_default;
-   }
-
-   strlcpy(newstring, elem0, sizeof(newstring));
-   strlcat(newstring, "|",   sizeof(newstring));
-   strlcat(newstring, elem1,   sizeof(newstring));
 
    /* We need to load the image file first. */
    msg_queue_clear(g_extern.nbio.msg_queue);
    msg_queue_push(g_extern.nbio.msg_queue, newstring, 1, 180);
 
-   string_list_free(str_list);
-
    return 0;
-
-error:
-   if (str_list)
-      string_list_free(str_list);
-
-   return -1;
 }
 
 static int rarch_main_iterate_image_transfer(void)
