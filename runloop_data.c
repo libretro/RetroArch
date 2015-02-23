@@ -24,6 +24,11 @@ int cb_core_updater_download(void *data_, size_t len);
 int cb_core_updater_list(void *data_, size_t len);
 
 /**
+ * HTTP
+ *
+ **/
+
+/**
  * rarch_main_iterate_http_transfer:
  *
  * Resumes HTTP transfer update.
@@ -138,6 +143,11 @@ static int cb_nbio_image_overlay_load(void *data, size_t len)
 }
 #endif
 
+/**
+ * NBIO
+ *
+ **/
+
 static int cb_nbio_default(void *data, size_t len)
 {
    (void)data;
@@ -209,33 +219,6 @@ error:
    return -1;
 }
 
-#ifdef HAVE_MENU
-static void rarch_main_iterate_rdl(void)
-{
-   if (!driver.menu->rdl)
-      return;
-
-   if (driver.menu->rdl->blocking)
-   {
-      /* Do nonblocking I/O transfers here. */
-      return;
-   }
-
-   if (!driver.menu->rdl->iterating)
-   {
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, "Scanning of directory finished.\n", 1, 180);
-
-      database_info_write_rdl_free(driver.menu->rdl);
-      driver.menu->rdl = NULL;
-      return;
-   }
-
-   database_info_write_rdl_iterate(driver.menu->rdl);
-
-}
-#endif
-
 static int rarch_main_iterate_nbio_transfer(void)
 {
    if (!nbio_iterate(g_extern.nbio.handle))
@@ -269,6 +252,40 @@ static int rarch_main_iterate_nbio_parse(void)
 
    return 0;
 }
+
+/**
+ *
+ * RDB
+ *
+ **/
+
+#ifdef HAVE_MENU
+static void rarch_main_iterate_rdl(void)
+{
+   if (!driver.menu->rdl)
+      return;
+
+   if (driver.menu->rdl->blocking)
+   {
+      /* Do nonblocking I/O transfers here. */
+      return;
+   }
+
+   if (!driver.menu->rdl->iterating)
+   {
+      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_push(g_extern.msg_queue, "Scanning of directory finished.\n", 1, 180);
+
+      database_info_write_rdl_free(driver.menu->rdl);
+      driver.menu->rdl = NULL;
+      return;
+   }
+
+   database_info_write_rdl_iterate(driver.menu->rdl);
+
+}
+#endif
+
 
 void do_data_state_checks(void)
 {
