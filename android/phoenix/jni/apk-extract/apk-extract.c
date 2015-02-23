@@ -20,7 +20,7 @@ struct userdata
    const char *dest;
 };
 
-static bool zlib_cb(const char *name, const char *valid_exts,
+static int zlib_cb(const char *name, const char *valid_exts,
       const uint8_t *cdata,
       unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
@@ -32,7 +32,7 @@ static bool zlib_cb(const char *name, const char *valid_exts,
    const char *dest   = user->dest;
 
    if (strstr(name, subdir) != name)
-      return true;
+      return 1;
 
    name += strlen(subdir) + 1;
 
@@ -42,7 +42,7 @@ static bool zlib_cb(const char *name, const char *valid_exts,
    if (!path_mkdir(path_dir))
    {
       RARCH_ERR("Failed to create dir: %s.\n", path_dir);
-      return false;
+      return 0;
    }
 
    RARCH_LOG("Extracting %s -> %s ...\n", name, path);
@@ -53,7 +53,7 @@ static bool zlib_cb(const char *name, const char *valid_exts,
          if (!write_file(path, cdata, size))
          {
             RARCH_ERR("Failed to write file: %s.\n", path);
-            return false;
+            return 0;
          }
          break;
 
@@ -62,15 +62,15 @@ static bool zlib_cb(const char *name, const char *valid_exts,
                   csize, size, crc32))
          {
             RARCH_ERR("Failed to deflate to: %s.\n", path);
-            return false;
+            return 0;
          }
          break;
 
       default:
-         return false;
+         return 0;
    }
 
-   return true;
+   return 1;
 }
 
 JNIEXPORT jboolean JNICALL Java_com_retroarch_browser_NativeInterface_extractArchiveTo(

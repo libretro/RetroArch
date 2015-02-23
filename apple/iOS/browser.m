@@ -28,7 +28,7 @@
 
 static const void* const associated_module_key = &associated_module_key;
 
-static bool zlib_extract_callback(const char *name, const char *valid_exts,
+static int zlib_extract_callback(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
 {
@@ -46,7 +46,7 @@ static bool zlib_extract_callback(const char *name, const char *valid_exts,
 
    // Ignore directories
    if (name[strlen(name) - 1] == '/')
-      return true;
+      return 1;
 
    fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
 
@@ -60,7 +60,7 @@ static bool zlib_extract_callback(const char *name, const char *valid_exts,
          break;
    }
 
-   return true;
+   return 1;
 }
 
 static void unzip_file(const char* path, const char* output_directory)

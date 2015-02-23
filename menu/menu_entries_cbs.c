@@ -1603,7 +1603,7 @@ static int action_ok_save_state(const char *path,
  * call each other. */
 static char core_updater_path[PATH_MAX_LENGTH];
 
-static bool zlib_extract_core_callback(const char *name, const char *valid_exts,
+static int zlib_extract_core_callback(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
 {
@@ -1616,12 +1616,12 @@ static bool zlib_extract_core_callback(const char *name, const char *valid_exts,
    if (!path_mkdir(path))
    {
       RARCH_ERR("Failed to create directory: %s.\n", path);
-      return false;
+      return 0;
    }
 
    /* Ignore directories. */
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
-      return true;
+      return 1;
 
    fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
 
@@ -1637,7 +1637,7 @@ static bool zlib_extract_core_callback(const char *name, const char *valid_exts,
          break;
    }
 
-   return true;
+   return 1;
 }
 
 int cb_core_updater_download(void *data_, size_t len)

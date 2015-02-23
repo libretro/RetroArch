@@ -47,13 +47,13 @@ int database_open_cursor(libretrodb_t *db,
 }
 
 #ifdef HAVE_ZLIB
-static bool zlib_compare_crc32(const char *name, const char *valid_exts,
+static int zlib_compare_crc32(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
 {
    RARCH_LOG("CRC32: 0x%x\n", crc32);
 
-   return true;
+   return 1;
 }
 #endif
 

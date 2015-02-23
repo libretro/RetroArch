@@ -231,10 +231,10 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-bool zlib_inflate_data_to_file(const char *path, const char *valid_exts,
+int zlib_inflate_data_to_file(const char *path, const char *valid_exts,
       const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t checksum)
 {
-   bool ret = true;
+   int ret = true;
    uint32_t real_checksum = 0;
    z_stream stream = {0};
    uint8_t *out_data = (uint8_t*)malloc(size);
@@ -383,7 +383,7 @@ struct zip_extract_userdata
    bool found_content;
 };
 
-static bool zip_extract_cb(const char *name, const char *valid_exts,
+static int zip_extract_cb(const char *name, const char *valid_exts,
       const uint8_t *cdata,
       unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t checksum, void *userdata)
@@ -417,16 +417,16 @@ static bool zip_extract_cb(const char *name, const char *valid_exts,
             {
                strlcpy(data->zip_path, new_path, data->zip_path_size);
                data->found_content = true;
-               return false;
+               return 0;
             }
-            return false;
+            return 0;
 
          default:
-            return false;
+            return 0;
       }
    }
 
-   return true;
+   return 1;
 }
 
 /**
@@ -481,7 +481,7 @@ end:
    return ret;
 }
 
-static bool zlib_get_file_list_cb(const char *path, const char *valid_exts,
+static int zlib_get_file_list_cb(const char *path, const char *valid_exts,
       const uint8_t *cdata,
       unsigned cmode, uint32_t csize, uint32_t size, uint32_t checksum,
       void *userdata)
@@ -528,7 +528,7 @@ static bool zlib_get_file_list_cb(const char *path, const char *valid_exts,
    return string_list_append(list, path, attr);
 error:
    string_list_free(ext_list);
-   return false;
+   return 0;
 }
 
 /**
