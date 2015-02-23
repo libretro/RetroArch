@@ -131,17 +131,148 @@ static int rarch_main_iterate_http_poll(void)
 #endif
 
 #ifdef HAVE_OVERLAY
-static int cb_nbio_image_overlay_load(void *data, size_t len)
+static int cb_image_overlay(void *data, size_t len)
 {
-   (void)data;
+   g_extern.images.is_finished   = true;
+   g_extern.images.is_blocking   = true;
+   g_extern.images.is_processing = true;
+
+   return 0;
+}
+
+static int cb_nbio_image_overlay(void *data, size_t len)
+{
    (void)len;
 
+   g_extern.nbio.is_finished = true;
+
+   g_extern.images.handle = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+
+   if (!g_extern.images.handle)
+      return -1;
+
+   g_extern.images.handle->buff_data = (uint8_t*)data;
+
+   if (!rpng_nbio_load_image_argb_start(g_extern.images.handle))
+   {
+      rpng_nbio_load_image_free(g_extern.images.handle);
+      return -1;
+   }
+
+   g_extern.images.cb        = &cb_image_overlay;
    g_extern.nbio.is_blocking = true;
-   g_extern.nbio.is_finished = false;
 
    return 0;
 }
 #endif
+
+/**
+ * IMAGES
+ *
+ **/
+
+static int cb_image_default(void *data, size_t len)
+{
+   (void)data;
+   (void)len;
+
+   g_extern.images.is_blocking = false;
+   g_extern.images.is_finished = true;
+
+   return 0;
+}
+
+static int rarch_main_iterate_image_poll(void)
+{
+   char newstring[PATH_MAX_LENGTH];
+   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+   struct string_list *str_list = NULL;
+   const char *path = msg_queue_pull(g_extern.nbio.msg_queue);
+
+   if (!path)
+      return -1;
+
+   /* Can only deal with one image transfer at a time for now */
+   if (g_extern.images.handle)
+      return -1; 
+
+   str_list         = string_split(path, "|"); 
+
+   if (!str_list)
+      goto error;
+
+   if (str_list->size > 0)
+      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
+   if (str_list->size > 1)
+      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
+
+   if (elem1[0] != '\0')
+   {
+#ifdef HAVE_OVERLAY
+      if (!strcmp(elem1, "cb_image_overlay_load"))
+         g_extern.nbio.cb = &cb_nbio_image_overlay;
+      else
+#endif
+         g_extern.nbio.cb = &cb_image_default;
+   }
+
+   strlcpy(newstring, elem0, sizeof(newstring));
+   strlcat(newstring, "|",   sizeof(newstring));
+   strlcat(newstring, elem1,   sizeof(newstring));
+
+   /* We need to load the image file first. */
+   msg_queue_clear(g_extern.nbio.msg_queue);
+   msg_queue_push(g_extern.nbio.msg_queue, newstring, 1, 180);
+
+   string_list_free(str_list);
+
+   return 0;
+
+error:
+   if (str_list)
+      string_list_free(str_list);
+
+   return -1;
+}
+
+static int rarch_main_iterate_image_transfer(void)
+{
+   if (rpng_nbio_load_image_argb_iterate(
+            g_extern.images.handle->buff_data,
+            g_extern.images.handle))
+   {
+      g_extern.images.handle->buff_data += 
+         4 + 4 + g_extern.images.handle->chunk.size + 4;
+      return 0;
+   }
+
+   return -1;
+}
+
+static int rarch_main_iterate_image_parse_free(void)
+{
+   if (!g_extern.images.is_finished)
+      return -1;
+
+   rpng_nbio_load_image_free(g_extern.images.handle);
+   g_extern.images.handle      = NULL;
+   g_extern.images.is_blocking = false;
+   g_extern.images.is_finished = false;
+
+   msg_queue_clear(g_extern.images.msg_queue);
+
+   return 0;
+}
+
+static int rarch_main_iterate_image_parse(void)
+{
+   size_t len = 0;
+
+   if (g_extern.images.handle && g_extern.images.cb)
+      g_extern.images.cb(g_extern.images.handle, len);
+
+   return 0;
+}
 
 /**
  * NBIO
@@ -158,6 +289,7 @@ static int cb_nbio_default(void *data, size_t len)
 
    return 0;
 }
+
 
 static int rarch_main_iterate_nbio_poll(void)
 {
@@ -200,7 +332,7 @@ static int rarch_main_iterate_nbio_poll(void)
    {
 #ifdef HAVE_OVERLAY
       if (!strcmp(elem1, "cb_image_overlay_load"))
-         g_extern.nbio.cb = &cb_nbio_image_overlay_load;
+         g_extern.nbio.cb = &cb_nbio_image_overlay;
       else
 #endif
          g_extern.nbio.cb = &cb_nbio_default;
@@ -301,6 +433,19 @@ void do_data_state_checks(void)
    }
    else
       rarch_main_iterate_nbio_poll();
+
+   if (g_extern.images.handle)
+   {
+      if (!g_extern.images.is_blocking)
+      {
+         if (!rarch_main_iterate_image_transfer())
+            rarch_main_iterate_image_parse();
+      }
+      else if (g_extern.images.is_finished)
+         rarch_main_iterate_image_parse_free();
+   }
+   else
+      rarch_main_iterate_image_poll();
 
 
 #ifdef HAVE_NETWORKING
