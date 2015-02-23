@@ -334,6 +334,8 @@ static bool input_overlay_load_overlay_image(input_overlay_t *ol,
    if (config_get_path(conf, overlay_path_key,
             overlay_path, sizeof(overlay_path)))
    {
+      ol->loading_status = OVERLAY_IMAGE_TRANSFER_BUSY;
+
       struct texture_image img = {0};
 
       fill_pathname_resolve_relative(overlay_resolved_path, config_path,
@@ -345,8 +347,11 @@ static bool input_overlay_load_overlay_image(input_overlay_t *ol,
       {
          RARCH_ERR("[Overlay]: Failed to load image: %s.\n",
                overlay_resolved_path);
+         ol->loading_status = OVERLAY_IMAGE_TRANSFER_ERROR;
          return false;
       }
+
+      ol->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
    }
 
    return true;
@@ -577,21 +582,32 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
       return true;
    }
 
-   if (!input_overlay_load_overlay_image(ol, ol->conf,
-            ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
+   switch (ol->loading_status)
    {
-      RARCH_ERR("[Overlay]: Failed to load overlay image #%u.\n", (unsigned)ol->pos);
-      goto error;
-   }
+      case OVERLAY_IMAGE_TRANSFER_NONE:
+         if (!input_overlay_load_overlay_image(ol, ol->conf,
+                  ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
+         {
+            RARCH_ERR("[Overlay]: Failed to load overlay image #%u.\n", (unsigned)ol->pos);
+            goto error;
+         }
 
-   if (!input_overlay_load_overlay(ol, ol->conf,
-            ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
-   {
-      RARCH_ERR("[Overlay]: Failed to load overlay #%u.\n", (unsigned)ol->pos);
-      goto error;
-   }
+         if (!input_overlay_load_overlay(ol, ol->conf,
+                  ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
+         {
+            RARCH_ERR("[Overlay]: Failed to load overlay #%u.\n", (unsigned)ol->pos);
+            goto error;
+         }
 
-   ol->pos += 1;
+         ol->pos += 1;
+         break;
+      case OVERLAY_IMAGE_TRANSFER_BUSY:
+         break;
+      case OVERLAY_IMAGE_TRANSFER_DONE:
+         break;
+      case OVERLAY_IMAGE_TRANSFER_ERROR:
+         break;
+   }
 
    return true;
 error:
