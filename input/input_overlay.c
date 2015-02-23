@@ -451,34 +451,15 @@ static bool input_overlay_resolve_targets(struct overlay *ol,
    return true;
 }
 
-bool input_overlay_load_overlays_resolve_iterate(input_overlay_t *ol)
+static bool input_overlay_load_overlays_resolve_iterate(input_overlay_t *ol)
 {
-   bool not_done = true;
-
    if (!ol)
       return false;
 
-   not_done = ol->pos < ol->size;
-
-   if (!not_done)
-   {
-      ol->state = OVERLAY_STATUS_DEFERRED_DONE;
-      return true;
-   }
-
    if (!input_overlay_resolve_targets(ol->overlays, ol->pos, ol->size))
-   {
-      RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
-      goto error;
-   }
-
-   ol->pos += 1;
+      return false;
 
    return true;
-error:
-   ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
-
-   return false;
 }
 
 
@@ -511,7 +492,8 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
    if (!not_done)
    {
       ol->pos   = 0;
-      ol->state = OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE;
+      ol->state          = OVERLAY_STATUS_DEFERRED_DONE;
+      ol->loading_status = OVERLAY_IMAGE_TRANSFER_NONE;
       return true;
    }
 
@@ -539,8 +521,17 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
          }
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_DONE:
+         if (!input_overlay_load_overlays_resolve_iterate(ol))
+         {
+            RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
+            goto error;
+         }
+         if (ol->pos == 0)
+         {
+            /* First active overlay, load already. */
+            input_overlay_new_done(driver.overlay);
+         }
          ol->pos += 1;
-         ol->loading_status = OVERLAY_IMAGE_TRANSFER_NONE;
          break;
       case OVERLAY_IMAGE_TRANSFER_ERROR:
          goto error;
