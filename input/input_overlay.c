@@ -364,31 +364,34 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
       struct overlay *overlay, unsigned idx)
 {
    size_t i;
-   bool not_done = overlay->pos < overlay->size;
 
-   if (!not_done)
+   for (i = 0; i < overlay->pos_increment; i++)
    {
-      overlay->pos   = 0;
-      ol->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_DONE;
-      return true;
-   }
+      bool not_done = overlay->pos < overlay->size;
+      if (!not_done)
+      {
+         overlay->pos   = 0;
+         ol->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_DONE;
+         return true;
+      }
 
-   if (!input_overlay_load_desc(ol, &overlay->descs[overlay->pos], idx, overlay->pos,
-            overlay->image.width, overlay->image.height,
-            overlay->config.normalized,
-            overlay->config.alpha_mod, overlay->config.range_mod))
-   {
-      RARCH_ERR("[Overlay]: Failed to load overlay descs for overlay #%u.\n",
-            (unsigned)overlay->pos);
-      goto error;
-   }
+      if (!input_overlay_load_desc(ol, &overlay->descs[overlay->pos], idx, overlay->pos,
+               overlay->image.width, overlay->image.height,
+               overlay->config.normalized,
+               overlay->config.alpha_mod, overlay->config.range_mod))
+      {
+         RARCH_ERR("[Overlay]: Failed to load overlay descs for overlay #%u.\n",
+               (unsigned)overlay->pos);
+         goto error;
+      }
 
-   if (overlay->descs[overlay->pos].image.pixels)
-   {
-      overlay->descs[overlay->pos].image_index = overlay->load_images_size;
-      overlay->load_images[overlay->load_images_size++] = overlay->descs[overlay->pos].image;
+      if (overlay->descs[overlay->pos].image.pixels)
+      {
+         overlay->descs[overlay->pos].image_index = overlay->load_images_size;
+         overlay->load_images[overlay->load_images_size++] = overlay->descs[overlay->pos].image;
+      }
+      overlay->pos ++;
    }
-   overlay->pos++;
 
    return true;
 
@@ -483,7 +486,15 @@ static bool input_overlay_load_overlay_image_done(struct overlay *overlay)
 {
    if (overlay->image.pixels)
       overlay->load_images[overlay->load_images_size++] = overlay->image;
+
    overlay->pos = 0;
+   /* Divide iteration steps by half of total descs if size is even,
+    * otherwise default to 8 (arbitrary value for now to speed things up). */
+   overlay->pos_increment = (overlay->size / 2) ? (overlay->size / 2) : 8;
+
+#if 0
+   RARCH_LOG("pos increment: %u\n", overlay->pos_increment);
+#endif
 
    return true;
 }

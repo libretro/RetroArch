@@ -124,6 +124,7 @@ struct overlay
    struct overlay_desc *descs;
    size_t size;
    size_t pos;
+   unsigned pos_increment;
 
    struct texture_image image;
 
