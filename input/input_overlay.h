@@ -86,6 +86,8 @@ enum overlay_image_transfer_status
    OVERLAY_IMAGE_TRANSFER_NONE = 0,
    OVERLAY_IMAGE_TRANSFER_BUSY,
    OVERLAY_IMAGE_TRANSFER_DONE,
+   OVERLAY_IMAGE_TRANSFER_DESC_ITERATE,
+   OVERLAY_IMAGE_TRANSFER_DESC_DONE,
    OVERLAY_IMAGE_TRANSFER_ERROR,
 };
 
@@ -121,6 +123,7 @@ struct overlay
 {
    struct overlay_desc *descs;
    size_t size;
+   size_t pos;
 
    struct texture_image image;
 
