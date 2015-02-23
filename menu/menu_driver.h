@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <retro_miscellaneous.h>
+#include <queues/message_queue.h>
 #include "menu_animation.h"
 #include "menu_list.h"
 #include "menu_database.h"
@@ -128,6 +129,7 @@ typedef struct
     */
    char message_contents[PATH_MAX_LENGTH];
 
+   msg_queue_t *msg_queue;
 
    char default_glslp[PATH_MAX_LENGTH];
    char default_cgp[PATH_MAX_LENGTH];

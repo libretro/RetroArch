@@ -207,6 +207,8 @@ void *menu_init(const void *data)
    if (!menu->animation)
       goto error;
 
+   rarch_assert(menu->msg_queue = msg_queue_new(8));
+
    return menu;
 error:
    if (menu->menu_list)
@@ -268,6 +270,10 @@ void menu_free(void *data)
 #ifdef HAVE_DYNAMIC
    libretro_free_system_info(&g_extern.menu.info);
 #endif
+
+   if (menu->msg_queue)
+      msg_queue_free(menu->msg_queue);
+   menu->msg_queue = NULL;
 
    menu_animation_free(menu->animation);
    menu->animation = NULL;
