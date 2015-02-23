@@ -152,6 +152,8 @@ static int cb_nbio_image_overlay(void *data, size_t len)
 
    g_extern.nbio.is_finished = true;
 
+   RARCH_LOG("Gets here.\n");
+
    g_extern.images.handle = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
 
    if (!g_extern.images.handle)
@@ -272,6 +274,7 @@ static int rarch_main_iterate_nbio_poll(void)
 
    str_list         = string_split(path, "|"); 
 
+
    if (!str_list)
       goto error;
 
@@ -287,6 +290,10 @@ static int rarch_main_iterate_nbio_poll(void)
       RARCH_ERR("Could not create new file loading handle.\n");
       goto error;
    }
+
+#if 0
+   RARCH_LOG("path is: %s\n", path);
+#endif
 
    g_extern.nbio.handle      = handle;
    g_extern.nbio.cb          = NULL;
