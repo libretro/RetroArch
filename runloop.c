@@ -32,10 +32,6 @@
 #include "netplay.h"
 #endif
 
-#ifdef HAVE_NETWORKING
-#include "net_http.h"
-#endif
-
 /* Convenience macros. */
 #define check_oneshot_func(trigger_input) (check_is_oneshot(BIT64_GET(trigger_input, RARCH_FRAMEADVANCE), BIT64_GET(trigger_input, RARCH_REWIND)))
 #define check_slowmotion_func(input)      (check_slowmotion(BIT64_GET(input, RARCH_SLOWMOTION)))
@@ -878,258 +874,6 @@ static int rarch_main_iterate_quit(void)
    return -1;
 }
 
-static int rarch_main_iterate_nbio_transfer(void)
-{
-   if (!nbio_iterate(g_extern.nbio.handle))
-      return -1;
-
-   return 0;
-}
-
-static int rarch_main_iterate_nbio_parse_free(void)
-{
-   if (!g_extern.nbio.is_finished)
-      return -1;
-
-   nbio_free(g_extern.nbio.handle);
-   g_extern.nbio.handle      = NULL;
-   g_extern.nbio.is_blocking = false;
-   g_extern.nbio.is_finished = false;
-
-   msg_queue_clear(g_extern.nbio.msg_queue);
-
-   return 0;
-}
-
-static int rarch_main_iterate_nbio_parse(void)
-{
-   size_t len = 0;
-   char *data = (char*)nbio_get_ptr(g_extern.nbio.handle, &len);
-
-   if (data && g_extern.nbio.cb)
-      g_extern.nbio.cb(data, len);
-
-   return 0;
-}
-
-#ifdef HAVE_NETWORKING
-int cb_core_updater_download(void *data_, size_t len);
-int cb_core_updater_list(void *data_, size_t len);
-
-
-/**
- * rarch_main_iterate_http_transfer:
- *
- * Resumes HTTP transfer update.
- *
- * Returns: 0 when finished, -1 when we should continue
- * with the transfer on the next frame.
- **/
-static int rarch_main_iterate_http_transfer(void)
-{
-   size_t pos = 0, tot = 0;
-
-   if (!net_http_update(g_extern.http.handle, &pos, &tot))
-   {
-#ifdef _WIN32
-		RARCH_LOG("%.9I64u / %.9I64u       \r", (unsigned long long)pos, (unsigned long long)tot);
-#else
-		RARCH_LOG("%.9llu / %.9llu        \r", (unsigned long long)pos, (unsigned long long)tot);
-#endif
-      return -1;
-   }
-
-   return 0;
-}
-
-static int rarch_main_iterate_http_parse(void)
-{
-   size_t len;
-   char *data = (char*)net_http_data(g_extern.http.handle, &len, false);
-
-   if (data && g_extern.http.cb)
-      g_extern.http.cb(data, len);
-
-   net_http_delete(g_extern.http.handle);
-
-   g_extern.http.handle = NULL;
-   msg_queue_clear(g_extern.http.msg_queue);
-
-   return 0;
-}
-
-/**
- * rarch_main_iterate_http_transfer:
- *
- * Polls HTTP message queue to see if any new URLs 
- * are pending.
- *
- * If handle is freed, will set up a new http handle. 
- * The transfer will be started on the next frame.
- *
- * Returns: 0 when an URL has been pulled and we will
- * begin transferring on the next frame. Returns -1 if
- * no HTTP URL has been pulled. Do nothing in that case.
- **/
-static int rarch_main_iterate_http_poll(void)
-{
-   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
-   struct string_list *str_list = NULL;
-   const char *url = msg_queue_pull(g_extern.http.msg_queue);
-
-   if (!url)
-      return -1;
-
-   /* Can only deal with one HTTP transfer at a time for now */
-   if (g_extern.http.handle)
-      return -1; 
-
-   str_list         = string_split(url, "|"); 
-
-   if (!str_list)
-      return -1;
-
-   if (str_list->size > 0)
-      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-   if (str_list->size > 1)
-      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
-
-   g_extern.http.handle = net_http_new(elem0);
-
-   if (!g_extern.http.handle)
-   {
-      RARCH_ERR("Could not create new HTTP session handle.\n");
-      string_list_free(str_list);
-      return -1;
-   }
-
-   g_extern.http.cb     = NULL;
-
-   if (elem1[0] != '\0')
-   {
-      if (!strcmp(elem1, "cb_core_updater_download"))
-         g_extern.http.cb = &cb_core_updater_download;
-      if (!strcmp(elem1, "cb_core_updater_list"))
-         g_extern.http.cb = &cb_core_updater_list;
-   }
-
-   string_list_free(str_list);
-   
-   return 0;
-}
-#endif
-
-#ifdef HAVE_OVERLAY
-static int cb_nbio_image_overlay_load(void *data, size_t len)
-{
-   (void)data;
-   (void)len;
-
-   g_extern.nbio.is_blocking = true;
-   g_extern.nbio.is_finished = false;
-
-   return 0;
-}
-#endif
-
-static int cb_nbio_default(void *data, size_t len)
-{
-   (void)data;
-   (void)len;
-
-   g_extern.nbio.is_blocking = false;
-   g_extern.nbio.is_finished = true;
-
-   return 0;
-}
-
-static int rarch_main_iterate_nbio_poll(void)
-{
-   struct nbio_t* handle;
-   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
-   struct string_list *str_list = NULL;
-   const char *path = msg_queue_pull(g_extern.nbio.msg_queue);
-
-   if (!path)
-      return -1;
-
-   /* Can only deal with one NBIO transfer at a time for now */
-   if (g_extern.nbio.handle)
-      return -1; 
-
-   str_list         = string_split(path, "|"); 
-
-   if (!str_list)
-      goto error;
-
-   if (str_list->size > 0)
-      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-   if (str_list->size > 1)
-      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
-
-   handle = nbio_open(elem0, NBIO_READ);
-
-   if (!handle)
-   {
-      RARCH_ERR("Could not create new file loading handle.\n");
-      goto error;
-   }
-
-   g_extern.nbio.handle      = handle;
-   g_extern.nbio.cb          = NULL;
-   g_extern.nbio.is_blocking = false;
-   g_extern.nbio.is_finished = false;
-
-   if (elem1[0] != '\0')
-   {
-#ifdef HAVE_OVERLAY
-      if (!strcmp(elem1, "cb_image_overlay_load"))
-         g_extern.nbio.cb = &cb_nbio_image_overlay_load;
-      else
-#endif
-         g_extern.nbio.cb = &cb_nbio_default;
-   }
-
-   nbio_begin_read(handle);
-
-   string_list_free(str_list);
-
-   return 0;
-
-error:
-   if (str_list)
-      string_list_free(str_list);
-
-   return -1;
-}
-
-#ifdef HAVE_MENU
-static void rarch_main_iterate_rdl(void)
-{
-   if (!driver.menu->rdl)
-      return;
-
-   if (driver.menu->rdl->blocking)
-   {
-      /* Do nonblocking I/O transfers here. */
-      return;
-   }
-
-   if (!driver.menu->rdl->iterating)
-   {
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, "Scanning of directory finished.\n", 1, 180);
-
-      database_info_write_rdl_free(driver.menu->rdl);
-      driver.menu->rdl = NULL;
-      return;
-   }
-
-   database_info_write_rdl_iterate(driver.menu->rdl);
-
-}
-#endif
-
 #ifdef HAVE_OVERLAY
 void rarch_main_iterate_overlay_state(void)
 {
@@ -1158,9 +902,7 @@ void rarch_main_iterate_overlay_state(void)
          break;
    }
 }
-#endif
 
-#ifdef HAVE_OVERLAY
 static void rarch_main_iterate_linefeed_overlay(void)
 {
    static char prev_overlay_restore = false;
@@ -1225,33 +967,9 @@ int rarch_main_iterate(void)
       rarch_main_iterate_overlay_state();
 #endif
    
-   if (g_extern.nbio.handle)
-   {
-      if (!g_extern.nbio.is_blocking)
-      {
-         if (!rarch_main_iterate_nbio_transfer())
-            rarch_main_iterate_nbio_parse();
-      }
-      else if (g_extern.nbio.is_finished)
-         rarch_main_iterate_nbio_parse_free();
-   }
-   else
-      rarch_main_iterate_nbio_poll();
-
-#ifdef HAVE_NETWORKING
-   if (g_extern.http.handle)
-   {
-      if (!rarch_main_iterate_http_transfer())
-         rarch_main_iterate_http_parse();
-   }
-   else
-      rarch_main_iterate_http_poll();
-#endif
+   do_data_state_checks();
 
 #ifdef HAVE_MENU
-   if (driver.menu && driver.menu->rdl)
-      rarch_main_iterate_rdl();
-
    if (g_extern.is_menu)
    {
       menu_handle_t *menu = menu_driver_resolve();

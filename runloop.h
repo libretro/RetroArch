@@ -31,6 +31,8 @@ extern "C" {
  **/
 int rarch_main_iterate(void);
 
+void do_data_state_checks(void);
+
 #ifdef __cplusplus
 }
 #endif

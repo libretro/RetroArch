@@ -95,6 +95,7 @@ OBJ += frontend/frontend.o \
 		libretro_version_1.o \
 		retroarch.o \
 		runloop.o \
+		runloop_data.o \
 		content.o \
 		libretro-common/file/file_list.o \
 		libretro-common/file/dir_list.o \
