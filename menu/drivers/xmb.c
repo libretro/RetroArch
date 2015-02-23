@@ -744,7 +744,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb, file_list_t *list, int dir, s
       node->label_alpha = 0;
 
       if (i == current)
-         ia = 1.0;
+         ia = xmb->item.active.alpha;
       
       xmb_push_animations(node, ia, 0);
    }
