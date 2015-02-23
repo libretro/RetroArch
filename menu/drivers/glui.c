@@ -411,20 +411,6 @@ static void glui_frame(void)
          y, type_str_buf, selected);
    }
 
-#ifdef GEKKO
-   const char *message_queue;
-
-   if (menu->msg_force)
-   {
-      message_queue = msg_queue_pull(g_extern.msg_queue);
-      menu->msg_force = false;
-   }
-   else
-      message_queue = driver.current_msg;
-
-   glui_render_messagebox(message_queue);
-#endif
-
    if (menu->keyboard.display)
    {
       char msg[PATH_MAX_LENGTH];

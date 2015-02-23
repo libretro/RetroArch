@@ -1212,20 +1212,6 @@ static void xmb_frame(void)
                node->zoom);
    }
 
-#ifdef GEKKO
-   const char *message_queue;
-
-   if (menu->msg_force)
-   {
-      message_queue = msg_queue_pull(g_extern.msg_queue);
-      menu->msg_force = false;
-   }
-   else
-      message_queue = driver.current_msg;
-
-   xmb_render_messagebox(message_queue);
-#endif
-
    if (menu->keyboard.display)
    {
       char msg[PATH_MAX_LENGTH];
