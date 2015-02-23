@@ -18,7 +18,7 @@
 #include "../../config.h"
 #endif
 
-#include "image.h"
+#include <formats/image.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -28,12 +28,33 @@
 #include <file/nbio.h>
 
 #ifdef HAVE_ZLIB
-static bool rpng_load_image_argb_nonblocking(
-      const char *path, uint32_t **data,
+static bool rpng_nbio_load_image_argb_nonblocking(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
-   bool ret      = true;
-   struct rpng_t *rpng = rpng_nbio_load_image_argb_init(path);
+   size_t file_len;
+   bool ret = true;
+   struct rpng_t *rpng = NULL;
+   void *ptr = NULL;
+   struct nbio_t* handle = (void*)nbio_open(path, NBIO_READ);
+
+   if (!handle)
+      goto end;
+
+   ptr  = nbio_get_ptr(handle, &file_len);
+
+   nbio_begin_read(handle);
+
+   while (!nbio_iterate(handle));
+
+   ptr = nbio_get_ptr(handle, &file_len);
+
+   if (!ptr)
+   {
+      ret = false;
+      goto end;
+   }
+
+   rpng = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
 
    if (!rpng)
    {
@@ -41,7 +62,13 @@ static bool rpng_load_image_argb_nonblocking(
       goto end;
    }
 
-   while (!nbio_iterate((struct nbio_t*)rpng->userdata));
+   rpng->buff_data = (uint8_t*)ptr;
+
+   if (!rpng->buff_data)
+   {
+      ret = false;
+      goto end;
+   }
 
    if (!rpng_nbio_load_image_argb_start(rpng))
    {
@@ -66,15 +93,17 @@ static bool rpng_load_image_argb_nonblocking(
       ret = false;
       goto end;
    }
-
+   
    rpng_nbio_load_image_argb_process(rpng, data, width, height);
 
 end:
-   rpng_nbio_load_image_free(rpng);
+   if (handle)
+      nbio_free(handle);
+   if (rpng)
+      rpng_nbio_load_image_free(rpng);
    rpng = NULL;
    if (!ret)
       free(*data);
-
    return ret;
 }
 
@@ -83,7 +112,7 @@ static bool rpng_image_load_argb_shift(const char *path,
       unsigned a_shift, unsigned r_shift,
       unsigned g_shift, unsigned b_shift)
 {
-   bool ret = rpng_load_image_argb_nonblocking(path,
+   bool ret = rpng_nbio_load_image_argb_nonblocking(path,
          &out_img->pixels, &out_img->width, &out_img->height);
 
    if (!ret)
