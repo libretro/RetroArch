@@ -1082,7 +1082,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       ret = config_append_file(conf, extra_path);
       if (!ret)
          RARCH_ERR("Failed to append config \"%s\"\n", extra_path);
-      extra_path = strtok_r(NULL, ";", &save);
+      extra_path = strtok_r(NULL, ",", &save);
    }
 
    if (g_extern.verbosity)
