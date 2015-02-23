@@ -561,38 +561,6 @@ error:
    return false;
 }
 
-bool input_overlay_load_overlays_image_iterate(input_overlay_t *ol)
-{
-   bool not_done = true;
-
-   if (!ol)
-      return false;
-
-   not_done = ol->pos < ol->size;
-
-   if (!not_done)
-   {
-      ol->pos   = 0;
-      ol->state = OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE;
-      return true;
-   }
-
-   if (!input_overlay_load_overlay_image(ol, ol->conf,
-            ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
-   {
-      RARCH_ERR("[Overlay]: Failed to load overlay image #%u.\n", (unsigned)ol->pos);
-      goto error;
-   }
-
-   ol->state = OVERLAY_STATUS_DEFERRED_LOADING;
-
-   return true;
-error:
-   ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
-
-   return false;
-}
-
 bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
 {
    bool not_done = true;
@@ -663,7 +631,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
    ol->size = overlays;
    ol->pos  = 0;
 
-   ol->state = OVERLAY_STATUS_DEFERRED_LOADING_IMAGE;
+   ol->state = OVERLAY_STATUS_DEFERRED_LOADING;
 
    return true;
 
