@@ -500,6 +500,8 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
    overlay->center_x = overlay->x + 0.5f * overlay->w;
    overlay->center_y = overlay->y + 0.5f * overlay->h;
 
+   config_file_free(conf);
+
    return true;
 
 error:
