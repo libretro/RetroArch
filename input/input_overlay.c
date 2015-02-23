@@ -390,11 +390,6 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
       overlay->load_images[overlay->load_images_size++] = overlay->descs[i].image;
    }
 
-   /* Assume for now that scaling center is in the middle.
-    * TODO: Make this configurable. */
-   overlay->block_scale = false;
-   overlay->center_x = overlay->x + 0.5f * overlay->w;
-   overlay->center_y = overlay->y + 0.5f * overlay->h;
 
    return true;
 
@@ -662,6 +657,12 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
          overlay->h = (float)strtod(list->elems[3].data, NULL);
          string_list_free(list);
       }
+
+      /* Assume for now that scaling center is in the middle.
+       * TODO: Make this configurable. */
+      overlay->block_scale = false;
+      overlay->center_x = overlay->x + 0.5f * overlay->w;
+      overlay->center_y = overlay->y + 0.5f * overlay->h;
    }
 
    ol->state = OVERLAY_STATUS_DEFERRED_LOADING;
