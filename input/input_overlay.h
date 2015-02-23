@@ -158,6 +158,10 @@ struct overlay
          char key[64];
          unsigned size;
       } descs;
+
+      bool normalized;
+      float alpha_mod;
+      float range_mod;
    } config;
 
    struct texture_image *load_images;

@@ -364,44 +364,19 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
       struct overlay *overlay, unsigned idx)
 {
    size_t i;
-   char conf_key[64], overlay_full_screen_key[64];
-   bool normalized = false;
-   float alpha_mod = 1.0f;
-   float range_mod = 1.0f;
-   config_file_t *conf = config_file_new(ol->overlay_path);
-
-   if (!conf)
-      return false;
-
-   snprintf(overlay_full_screen_key, sizeof(overlay_full_screen_key),
-         "overlay%u_full_screen", idx);
-   overlay->full_screen = false;
-   config_get_bool(conf, overlay_full_screen_key, &overlay->full_screen);
-
-
-   snprintf(conf_key, sizeof(conf_key),
-         "overlay%u_normalized", idx);
-   config_get_bool(conf, conf_key, &normalized);
-
-
-   snprintf(conf_key, sizeof(conf_key), "overlay%u_alpha_mod", idx);
-   config_get_float(conf, conf_key, &alpha_mod);
-
-   snprintf(conf_key, sizeof(conf_key), "overlay%u_range_mod", idx);
-   config_get_float(conf, conf_key, &range_mod);
 
    for (i = 0; i < overlay->size; i++)
    {
       if (!input_overlay_load_desc(ol, &overlay->descs[i], idx, i,
                overlay->image.width, overlay->image.height,
-               normalized, alpha_mod, range_mod))
+               overlay->config.normalized,
+               overlay->config.alpha_mod, overlay->config.range_mod))
       {
          RARCH_ERR("[Overlay]: Failed to load overlay descs for overlay #%u.\n",
                (unsigned)i);
          goto error;
       }
    }
-
 
    if (overlay->image.pixels)
       overlay->load_images[overlay->load_images_size++] = overlay->image;
@@ -421,12 +396,9 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
    overlay->center_x = overlay->x + 0.5f * overlay->w;
    overlay->center_y = overlay->y + 0.5f * overlay->h;
 
-   config_file_free(conf);
-
    return true;
 
 error:
-   config_file_free(conf);
    return false;
 }
 
@@ -596,6 +568,8 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
 
    for (i = 0; i < ol->size; i++)
    {
+      char conf_key[64];
+      char overlay_full_screen_key[64];
       struct overlay *overlay = &ol->overlays[i];
 
       if (!overlay)
@@ -621,6 +595,25 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       }
 
       overlay->size = overlay->config.descs.size;
+
+      snprintf(overlay_full_screen_key, sizeof(overlay_full_screen_key),
+            "overlay%u_full_screen", i);
+      overlay->full_screen = false;
+      config_get_bool(conf, overlay_full_screen_key, &overlay->full_screen);
+
+      overlay->config.normalized = false;
+      overlay->config.alpha_mod  = 1.0f;
+      overlay->config.range_mod  = 1.0f;
+
+      snprintf(conf_key, sizeof(conf_key),
+            "overlay%u_normalized", i);
+      config_get_bool(conf, conf_key, &overlay->config.normalized);
+
+      snprintf(conf_key, sizeof(conf_key), "overlay%u_alpha_mod", i);
+      config_get_float(conf, conf_key, &overlay->config.alpha_mod);
+
+      snprintf(conf_key, sizeof(conf_key), "overlay%u_range_mod", i);
+      config_get_float(conf, conf_key, &overlay->config.range_mod);
 
       /* Precache load image array for simplicity. */
       overlay->load_images = (struct texture_image*)
