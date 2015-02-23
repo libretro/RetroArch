@@ -607,15 +607,20 @@ static int action_ok_menu_wallpaper_load(const char *path,
 
    fill_pathname_join(wallpaper_path, menu_path, path, sizeof(wallpaper_path));
 
-   if (!path_file_exists(wallpaper_path))
-      goto end;
+   if (path_file_exists(wallpaper_path))
+   {
+      struct texture_image ti = {0};
 
-   strlcpy(g_settings.menu.wallpaper, wallpaper_path, sizeof(g_settings.menu.wallpaper));
+      strlcpy(g_settings.menu.wallpaper, wallpaper_path, sizeof(g_settings.menu.wallpaper));
 
-   if (driver.menu_ctx && driver.menu_ctx->load_background)
-      driver.menu_ctx->load_background(wallpaper_path);
+      texture_image_load(&ti, wallpaper_path);
 
-end:
+      if (driver.menu_ctx && driver.menu_ctx->load_background)
+         driver.menu_ctx->load_background(&ti);
+
+      texture_image_free(&ti);
+   }
+
    menu_list_pop_stack_by_needle(menu->menu_list, setting->name);
 
    return 0;

@@ -1391,9 +1391,8 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
          font_path, xmb_font_size);
 }
 
-static bool xmb_load_wallpaper(const char *path)
+static bool xmb_load_wallpaper(void *data)
 {
-   struct texture_image ti = {0};
    xmb_handle_t *xmb = NULL;
    menu_handle_t *menu = menu_driver_resolve();
 
@@ -1404,23 +1403,15 @@ static bool xmb_load_wallpaper(const char *path)
 
    if (!xmb)
       return false;
-   if (!path)
+   if (!data)
       return false;
 
    if (xmb->textures.bg.id)
       glDeleteTextures(1, &xmb->textures.bg.id);
 
-   if (! path_file_exists(path))
-      return false;
-
-   texture_image_load(&ti, path);
-
-   strlcpy(xmb->textures.bg.path, path, sizeof(xmb->textures.bg.path));
-
-   xmb->textures.bg.id   = menu_texture_load(&ti,
+   xmb->textures.bg.id   = menu_texture_load(data,
          TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
-   texture_image_free(&ti);
 
    return true;
 }
@@ -1467,12 +1458,6 @@ static void xmb_context_reset(void)
 
    xmb_font_init_first(&gl->font_driver, &xmb->font.buf, gl, fontpath, xmb->font.size);
 
-   if (*g_settings.menu.wallpaper)
-      strlcpy(xmb->textures.bg.path, g_settings.menu.wallpaper,
-            sizeof(xmb->textures.bg.path));
-   else
-      fill_pathname_join(xmb->textures.bg.path, iconpath,
-            "bg.png", sizeof(xmb->textures.bg.path));
    fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SETTINGS].path, iconpath,
          "settings.png", sizeof(xmb->textures.list[XMB_TEXTURE_SETTINGS].path));
    fill_pathname_join(xmb->textures.list[XMB_TEXTURE_SETTING].path, iconpath,
@@ -1536,7 +1521,26 @@ static void xmb_context_reset(void)
       texture_image_free(&ti);
    }
 
-   xmb_load_wallpaper(xmb->textures.bg.path);
+   {
+      char path[PATH_MAX_LENGTH];
+      struct texture_image ti = {0};
+
+      fill_pathname_join(path, iconpath,
+            "bg.png", sizeof(path));
+
+      if (*g_settings.menu.wallpaper)
+         strlcpy(path, g_settings.menu.wallpaper,
+               sizeof(path));
+
+      if ( path_file_exists(path))
+      {
+         texture_image_load(&ti, path);
+
+         xmb_load_wallpaper(&ti);
+
+         texture_image_free(&ti);
+      }
+   }
 
    xmb->settings_node.icon  = xmb->textures.list[XMB_TEXTURE_SETTINGS].id;
    xmb->settings_node.alpha = xmb->categories.active.alpha;

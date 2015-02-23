@@ -228,7 +228,7 @@ typedef struct menu_ctx_driver
    void  (*list_cache)(bool, unsigned);
    void  (*list_set_selection)(file_list_t *list);
    int   (*entry_iterate)(unsigned);
-   bool  (*load_background)(const char * path);
+   bool  (*load_background)(void *data);
    const char *ident;
 } menu_ctx_driver_t;
 

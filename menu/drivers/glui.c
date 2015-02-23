@@ -512,9 +512,8 @@ static void glui_context_destroy(void)
       glDeleteTextures(1, &glui->textures.bg.id);
 }
 
-static bool glui_load_wallpaper(const char *path)
+static bool glui_load_wallpaper(void *data)
 {
-   struct texture_image ti = {0};
    glui_handle_t *glui = NULL;
    menu_handle_t *menu = menu_driver_resolve();
 
@@ -525,29 +524,19 @@ static bool glui_load_wallpaper(const char *path)
 
    if (!glui)
       return false;
-   if (!path)
-      return false;
 
    if (glui->textures.bg.id)
       glDeleteTextures(1, &glui->textures.bg.id);
 
-   if (! path_file_exists(path))
-      return false;
-
-   texture_image_load(&ti, path);
-
-   strlcpy(glui->textures.bg.path, path, sizeof(glui->textures.bg.path));
-
-   glui->textures.bg.id   = menu_texture_load(&ti,
+   glui->textures.bg.id   = menu_texture_load(data,
          TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
-
-   texture_image_free(&ti);
 
    return true;
 }
 
 static void glui_context_reset(void)
 {
+   const char *path = NULL;
    glui_handle_t *glui = NULL;
    menu_handle_t *menu = menu_driver_resolve();
     
@@ -570,8 +559,19 @@ static void glui_context_reset(void)
             glui->textures.bg.path, "bg.png",
             sizeof(glui->textures.bg.path));
 
-   if (path_file_exists(glui->textures.bg.path))
-      glui_load_wallpaper(glui->textures.bg.path);
+   path = glui->textures.bg.path;
+
+   if (path_file_exists(path))
+   {
+      struct texture_image ti = {0};
+      texture_image_load(&ti, path);
+
+      strlcpy(glui->textures.bg.path, path, sizeof(glui->textures.bg.path));
+
+      glui_load_wallpaper(&ti);
+
+      texture_image_free(&ti);
+   }
 }
 
 static void glui_navigation_clear(bool pending_push)
