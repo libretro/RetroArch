@@ -334,8 +334,6 @@ static bool input_overlay_load_overlay_image(input_overlay_t *ol,
    if (config_get_path(conf, overlay_path_key,
             overlay_path, sizeof(overlay_path)))
    {
-      ol->loading_status = OVERLAY_IMAGE_TRANSFER_BUSY;
-
       struct texture_image img = {0};
 
       fill_pathname_resolve_relative(overlay_resolved_path, config_path,
@@ -350,8 +348,6 @@ static bool input_overlay_load_overlay_image(input_overlay_t *ol,
          ol->loading_status = OVERLAY_IMAGE_TRANSFER_ERROR;
          return false;
       }
-
-      ol->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
    }
 
    return true;
@@ -585,6 +581,9 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
    switch (ol->loading_status)
    {
       case OVERLAY_IMAGE_TRANSFER_NONE:
+         ol->loading_status = OVERLAY_IMAGE_TRANSFER_BUSY;
+         break;
+      case OVERLAY_IMAGE_TRANSFER_BUSY:
          if (!input_overlay_load_overlay_image(ol, ol->conf,
                   ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
          {
@@ -599,14 +598,14 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
             goto error;
          }
 
-         ol->pos += 1;
-         break;
-      case OVERLAY_IMAGE_TRANSFER_BUSY:
+         ol->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
          break;
       case OVERLAY_IMAGE_TRANSFER_DONE:
+         ol->pos += 1;
+         ol->loading_status = OVERLAY_IMAGE_TRANSFER_NONE;
          break;
       case OVERLAY_IMAGE_TRANSFER_ERROR:
-         break;
+         goto error;
    }
 
    return true;
