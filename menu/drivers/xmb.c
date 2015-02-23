@@ -744,7 +744,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb, file_list_t *list, int dir, s
       node->label_alpha = 0;
 
       if (i == current)
-         ia = 1.0;
+         ia = xmb->item.active.alpha;
       
       xmb_push_animations(node, ia, 0);
    }
@@ -781,7 +781,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
    }
 }
 
-static void xmb_list_open(xmb_handle_t *xmb)
+static void xmb_list_switch(xmb_handle_t *xmb)
 {
    unsigned j;
    int dir = -1;
@@ -827,7 +827,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
    xmb->categories.active.idx_old = menu->categories.selection_ptr;
 }
 
-static void xmb_list_switch(xmb_handle_t *xmb)
+static void xmb_list_open(xmb_handle_t *xmb)
 {
    unsigned j;
    int dir = 0;
@@ -905,9 +905,9 @@ static void xmb_populate_entries(const char *path,
    xmb_set_title(xmb);
 
    if (menu->categories.selection_ptr != xmb->categories.active.idx_old)
-      xmb_list_open(xmb);
-   else
       xmb_list_switch(xmb);
+   else
+      xmb_list_open(xmb);
 }
 
 static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
