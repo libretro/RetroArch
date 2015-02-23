@@ -21,7 +21,6 @@
 #include <boolean.h>
 #include "../libretro.h"
 #include <formats/image.h>
-#include <file/config_file.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -152,7 +151,6 @@ struct input_overlay
    size_t index;
    size_t size;
    size_t pos;
-   config_file_t *conf;
 
    unsigned next_index;
    char *overlay_path;

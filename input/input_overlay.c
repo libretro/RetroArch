@@ -22,6 +22,7 @@
 #include <compat/posix_string.h>
 #include "input_common.h"
 #include <file/file_path.h>
+#include <file/config_file.h>
 #include <clamping.h>
 #include <stddef.h>
 #include <math.h>
@@ -148,7 +149,7 @@ static void input_overlay_free_overlays(input_overlay_t *ol)
 }
 
 static bool input_overlay_load_desc(input_overlay_t *ol,
-      config_file_t *conf, struct overlay_desc *desc,
+      struct overlay_desc *desc,
       unsigned ol_idx, unsigned desc_idx,
       unsigned width, unsigned height,
       bool normalized, float alpha_mod, float range_mod)
@@ -162,6 +163,13 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
    const char *x            = NULL;
    const char *y            = NULL;
    const char *box          = NULL;
+   config_file_t *conf = config_file_new(ol->overlay_path);
+
+   if (!conf)
+   {
+      ret = false;
+      goto end;
+   }
 
    snprintf(overlay_desc_key, sizeof(overlay_desc_key),
          "overlay%u_desc%u", ol_idx, desc_idx);
@@ -316,17 +324,23 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
    desc->range_y_mod = desc->range_y;
 
 end:
+   if (conf)
+      config_file_free(conf);
    if (list)
       string_list_free(list);
    return ret;
 }
 
 static bool input_overlay_load_overlay_image(input_overlay_t *ol,
-      config_file_t *conf, const char *config_path,
+      const char *config_path,
       struct overlay *overlay, unsigned idx)
 {
    char overlay_path_key[64];
    char overlay_path[PATH_MAX_LENGTH], overlay_resolved_path[PATH_MAX_LENGTH];
+   config_file_t *conf = config_file_new(ol->overlay_path);
+
+   if (!conf)
+      return false;
 
    snprintf(overlay_path_key, sizeof(overlay_path_key),
          "overlay%u_overlay", idx);
@@ -344,17 +358,22 @@ static bool input_overlay_load_overlay_image(input_overlay_t *ol,
          RARCH_ERR("[Overlay]: Failed to load image: %s.\n",
                overlay_resolved_path);
          ol->loading_status = OVERLAY_IMAGE_TRANSFER_ERROR;
-         return false;
+         goto error;
       }
 
       overlay->image = img;
    }
 
    return true;
+
+error:
+   if (conf)
+      config_file_free(conf);
+   return false;
 }
 
 static bool input_overlay_load_overlay(input_overlay_t *ol,
-      config_file_t *conf, const char *config_path,
+      const char *config_path,
       struct overlay *overlay, unsigned idx)
 {
    size_t i;
@@ -365,6 +384,10 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
    bool normalized = false;
    float alpha_mod = 1.0f;
    float range_mod = 1.0f;
+   config_file_t *conf = config_file_new(ol->overlay_path);
+
+   if (!conf)
+      return false;
 
    snprintf(overlay_path_key, sizeof(overlay_path_key),
          "overlay%u_overlay", idx);
@@ -391,7 +414,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
          RARCH_ERR("[Overlay]: Failed to split rect \"%s\" into at least four tokens.\n",
                overlay_rect);
          string_list_free(list);
-         return false;
+         goto error;
       }
 
       overlay->x = (float)strtod(list->elems[0].data, NULL);
@@ -412,7 +435,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
    {
       RARCH_ERR("[Overlay]: Failed to read number of descs from config key: %s.\n",
             overlay_descs_key);
-      return false;
+      goto error;
    }
 
    overlay->descs = (struct overlay_desc*)
@@ -421,7 +444,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
    if (!overlay->descs)
    {
       RARCH_ERR("[Overlay]: Failed to allocate descs.\n");
-      return false;
+      goto error;
    }
 
    overlay->size = descs;
@@ -439,13 +462,13 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
 
    for (i = 0; i < overlay->size; i++)
    {
-      if (!input_overlay_load_desc(ol, conf, &overlay->descs[i], idx, i,
+      if (!input_overlay_load_desc(ol, &overlay->descs[i], idx, i,
                overlay->image.width, overlay->image.height,
                normalized, alpha_mod, range_mod))
       {
          RARCH_ERR("[Overlay]: Failed to load overlay descs for overlay #%u.\n",
                (unsigned)i);
-         return false;
+         goto error;
       }
    }
 
@@ -456,7 +479,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
    if (!overlay->load_images)
    {
       RARCH_ERR("[Overlay]: Failed to allocate load_images.\n");
-      return false;
+      goto error;
    }
 
    if (overlay->image.pixels)
@@ -478,6 +501,10 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
    overlay->center_y = overlay->y + 0.5f * overlay->h;
 
    return true;
+
+error:
+   config_file_free(conf);
+   return false;
 }
 
 static ssize_t input_overlay_find_index(const struct overlay *ol,
@@ -581,7 +608,7 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
    switch (ol->loading_status)
    {
       case OVERLAY_IMAGE_TRANSFER_NONE:
-         if (!input_overlay_load_overlay_image(ol, ol->conf,
+         if (!input_overlay_load_overlay_image(ol,
                   ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
          {
             RARCH_ERR("[Overlay]: Failed to load overlay image #%u.\n", (unsigned)ol->pos);
@@ -594,7 +621,7 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
          ol->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
          break;
       case OVERLAY_IMAGE_TRANSFER_DONE:
-         if (!input_overlay_load_overlay(ol, ol->conf,
+         if (!input_overlay_load_overlay(ol, 
                   ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
          {
             RARCH_ERR("[Overlay]: Failed to load overlay #%u.\n", (unsigned)ol->pos);
@@ -617,20 +644,21 @@ error:
 
 bool input_overlay_load_overlays(input_overlay_t *ol)
 {
+   config_file_t *conf = NULL;
    unsigned overlays = 0;
 
    if (!ol)
       return false;
    
-   ol->conf = config_file_new(ol->overlay_path);
+   conf = config_file_new(ol->overlay_path);
 
-   if (!ol->conf)
+   if (!conf)
    {
       RARCH_ERR("Failed to load config file: %s.\n", ol->overlay_path);
       return false;
    }
 
-   if (!config_get_uint(ol->conf, "overlays", &overlays))
+   if (!config_get_uint(conf, "overlays", &overlays))
    {
       RARCH_ERR("overlays variable not defined in config.\n");
       goto error;
@@ -648,9 +676,12 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
 
    ol->state = OVERLAY_STATUS_DEFERRED_LOADING;
 
+   config_file_free(conf);
+
    return true;
 
 error:
+   config_file_free(conf);
    ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
 
    return false;
@@ -686,9 +717,6 @@ bool input_overlay_new_done(input_overlay_t *ol)
 
    ol->state = OVERLAY_STATUS_ALIVE;
 
-   if (ol->conf)
-      config_file_free(ol->conf);
-   ol->conf = NULL;
 
    return true;
 }
@@ -1038,9 +1066,6 @@ void input_overlay_free(input_overlay_t *ol)
    if (ol->iface)
       ol->iface->enable(ol->iface_data, false);
 
-   if (ol->conf)
-      config_file_free(ol->conf);
-   ol->conf = NULL;
    free(ol->overlay_path);
    free(ol);
 }
