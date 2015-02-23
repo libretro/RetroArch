@@ -337,6 +337,7 @@ static bool input_overlay_load_overlay_image(input_overlay_t *ol,
 {
    char overlay_path_key[64];
    char overlay_path[PATH_MAX_LENGTH];
+   bool ret = false;
    config_file_t *conf = config_file_new(ol->overlay_path);
 
    if (!conf)
@@ -363,13 +364,14 @@ static bool input_overlay_load_overlay_image(input_overlay_t *ol,
       }
 
       overlay->image = img;
-      return true;
+
+      ret = true;
    }
 
 error:
    if (conf)
       config_file_free(conf);
-   return false;
+   return ret;
 }
 
 static bool input_overlay_load_overlay(input_overlay_t *ol,
