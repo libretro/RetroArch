@@ -903,7 +903,7 @@ static void exynos_free(struct exynos_data *pdata)
 
    /* Disable the CRTC. */
    if (drmModeSetCrtc(pdata->fd, pdata->drm->crtc_id, 0,
-                      0, 0, &pdata->drm->connector_id, 1, NULL))
+                      0, 0, NULL, 0, NULL))
       RARCH_WARN("video_exynos: failed to disable the crtc\n");
 
    clean_up_pages(pdata->pages, pdata->num_pages);
