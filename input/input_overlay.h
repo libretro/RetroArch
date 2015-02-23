@@ -237,8 +237,6 @@ bool input_overlay_load_overlays_image_iterate(input_overlay_t *ol);
 
 bool input_overlay_load_overlays_iterate(input_overlay_t *ol);
 
-bool input_overlay_new_done(input_overlay_t *ol);
-
 /**
  * input_overlay_free:
  * @ol                    : Overlay handle.

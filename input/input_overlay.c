@@ -471,11 +471,45 @@ static bool input_overlay_load_overlay_image_done(struct overlay *overlay)
    overlay->pos = 0;
    /* Divide iteration steps by half of total descs if size is even,
     * otherwise default to 8 (arbitrary value for now to speed things up). */
-   overlay->pos_increment = (overlay->size / 2) ? (overlay->size / 2) : 8;
+   overlay->pos_increment = (overlay->size / 2) ? (overlay->size / 2) : 1;
 
 #if 0
    RARCH_LOG("pos increment: %u\n", overlay->pos_increment);
 #endif
+
+   return true;
+}
+
+static void input_overlay_load_active(input_overlay_t *ol,
+      float opacity)
+{
+   if (!ol)
+      return;
+
+   ol->iface->load(ol->iface_data, ol->active->load_images,
+         ol->active->load_images_size);
+
+   input_overlay_set_alpha_mod(ol, opacity);
+   input_overlay_set_vertex_geom(ol);
+   ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
+}
+
+static bool input_overlay_render_active(input_overlay_t *ol)
+{
+   if (!ol)
+      return false;
+
+   ol->active = &ol->overlays[0];
+
+   input_overlay_load_active(ol, ol->deferred.opacity);
+   input_overlay_enable(ol, ol->deferred.enable);
+
+   input_overlay_set_alpha_mod(ol, ol->deferred.opacity);
+   input_overlay_set_scale_factor(ol, ol->deferred.scale_factor);
+   ol->next_index = (ol->index + 1) % ol->size;
+
+   ol->state = OVERLAY_STATUS_ALIVE;
+
 
    return true;
 }
@@ -528,8 +562,8 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
          }
          if (ol->pos == 0)
          {
-            /* First active overlay, load already. */
-            input_overlay_new_done(driver.overlay);
+            /* First active overlay, load and render already. */
+            input_overlay_render_active(driver.overlay);
          }
          ol->pos += 1;
          break;
@@ -694,39 +728,7 @@ error:
    return false;
 }
 
-static void input_overlay_load_active(input_overlay_t *ol,
-      float opacity)
-{
-   if (!ol)
-      return;
 
-   ol->iface->load(ol->iface_data, ol->active->load_images,
-         ol->active->load_images_size);
-
-   input_overlay_set_alpha_mod(ol, opacity);
-   input_overlay_set_vertex_geom(ol);
-   ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
-}
-
-bool input_overlay_new_done(input_overlay_t *ol)
-{
-   if (!ol)
-      return false;
-
-   ol->active = &ol->overlays[0];
-
-   input_overlay_load_active(ol, ol->deferred.opacity);
-   input_overlay_enable(ol, ol->deferred.enable);
-
-   input_overlay_set_alpha_mod(ol, ol->deferred.opacity);
-   input_overlay_set_scale_factor(ol, ol->deferred.scale_factor);
-   ol->next_index = (ol->index + 1) % ol->size;
-
-   ol->state = OVERLAY_STATUS_ALIVE;
-
-
-   return true;
-}
 
 /**
  * input_overlay_new:
