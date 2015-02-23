@@ -29,7 +29,7 @@ enum texture_backend_type
 extern "C" {
 #endif
 
-unsigned menu_texture_load(const char *path,
+unsigned menu_texture_load(void *data,
       enum texture_backend_type type,
       enum texture_filter_type  filter_type);
 

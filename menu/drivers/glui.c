@@ -514,6 +514,7 @@ static void glui_context_destroy(void)
 
 static bool glui_load_wallpaper(const char *path)
 {
+   struct texture_image ti = {0};
    glui_handle_t *glui = NULL;
    menu_handle_t *menu = menu_driver_resolve();
 
@@ -530,10 +531,17 @@ static bool glui_load_wallpaper(const char *path)
    if (glui->textures.bg.id)
       glDeleteTextures(1, &glui->textures.bg.id);
 
+   if (! path_file_exists(path))
+      return false;
+
+   texture_image_load(&ti, path);
+
    strlcpy(glui->textures.bg.path, path, sizeof(glui->textures.bg.path));
 
-   glui->textures.bg.id   = menu_texture_load(glui->textures.bg.path,
+   glui->textures.bg.id   = menu_texture_load(&ti,
          TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+
+   texture_image_free(&ti);
 
    return true;
 }

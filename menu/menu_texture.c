@@ -38,22 +38,20 @@ static void menu_texture_png_load_gl(struct texture_image *ti,
 }
 #endif
 
-static unsigned menu_texture_png_load(const char *path,
+static unsigned menu_texture_png_load(void *data,
       enum texture_backend_type type,
       enum texture_filter_type  filter_type)
 {
    unsigned id = 0;
-   struct texture_image ti = {0};
-   if (! path_file_exists(path))
-      return 0;
 
-   texture_image_load(&ti, path);
+   if (!data)
+      return 0;
 
    switch (type)
    {
       case TEXTURE_BACKEND_OPENGL:
 #ifdef HAVE_OPENGL
-         menu_texture_png_load_gl(&ti, filter_type, &id);
+         menu_texture_png_load_gl((struct texture_image*)data, filter_type, &id);
 #endif
          break;
       case TEXTURE_BACKEND_DEFAULT:
@@ -61,39 +59,28 @@ static unsigned menu_texture_png_load(const char *path,
          break;
    }
 
-   free(ti.pixels);
-
    return id;
 }
 
 static int menu_texture_png_load_wrap(void *data)
 {
-   const char *filename = (const char*)data;
-   if (!filename)
-      return 0;
-   return menu_texture_png_load(filename, TEXTURE_BACKEND_DEFAULT,
+   return menu_texture_png_load(data, TEXTURE_BACKEND_DEFAULT,
          TEXTURE_FILTER_LINEAR);
 }
 
 static int menu_texture_png_load_wrap_gl_mipmap(void *data)
 {
-   const char *filename = (const char*)data;
-   if (!filename)
-      return 0;
-   return menu_texture_png_load(filename, TEXTURE_BACKEND_OPENGL,
+   return menu_texture_png_load(data, TEXTURE_BACKEND_OPENGL,
          TEXTURE_FILTER_MIPMAP_LINEAR);
 }
 
 static int menu_texture_png_load_wrap_gl(void *data)
 {
-   const char *filename = (const char*)data;
-   if (!filename)
-      return 0;
-   return menu_texture_png_load(filename, TEXTURE_BACKEND_OPENGL,
+   return menu_texture_png_load(data, TEXTURE_BACKEND_OPENGL,
          TEXTURE_FILTER_LINEAR);
 }
 
-unsigned menu_texture_load(const char *path,
+unsigned menu_texture_load(void *data,
       enum texture_backend_type type,
       enum texture_filter_type  filter_type)
 {
@@ -120,7 +107,7 @@ unsigned menu_texture_load(const char *path,
             break;
       }
 
-      thr->cmd_data.custom_command.data   = (void*)path;
+      thr->cmd_data.custom_command.data   = (void*)data;
 
       thr->send_cmd_func(thr, CMD_CUSTOM_COMMAND);
       thr->wait_reply_func(thr, CMD_CUSTOM_COMMAND);
@@ -128,5 +115,5 @@ unsigned menu_texture_load(const char *path,
       return thr->cmd_data.custom_command.return_value;
    }
 
-   return menu_texture_png_load(path, type, filter_type);
+   return menu_texture_png_load(data, type, filter_type);
 }

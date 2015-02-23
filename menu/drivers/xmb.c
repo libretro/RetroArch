@@ -1393,6 +1393,7 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
 
 static bool xmb_load_wallpaper(const char *path)
 {
+   struct texture_image ti = {0};
    xmb_handle_t *xmb = NULL;
    menu_handle_t *menu = menu_driver_resolve();
 
@@ -1409,10 +1410,17 @@ static bool xmb_load_wallpaper(const char *path)
    if (xmb->textures.bg.id)
       glDeleteTextures(1, &xmb->textures.bg.id);
 
+   if (! path_file_exists(path))
+      return false;
+
+   texture_image_load(&ti, path);
+
    strlcpy(xmb->textures.bg.path, path, sizeof(xmb->textures.bg.path));
 
-   xmb->textures.bg.id   = menu_texture_load(xmb->textures.bg.path,
+   xmb->textures.bg.id   = menu_texture_load(&ti,
          TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+
+   texture_image_free(&ti);
 
    return true;
 }
@@ -1425,6 +1433,7 @@ static void xmb_context_reset(void)
          fontpath[PATH_MAX_LENGTH], core_id[PATH_MAX_LENGTH], texturepath[PATH_MAX_LENGTH],
          content_texturepath[PATH_MAX_LENGTH];
 
+   struct texture_image ti = {0};
    core_info_t* info = NULL;
    core_info_list_t* info_list = NULL;
    gl_t *gl = NULL;
@@ -1514,8 +1523,18 @@ static void xmb_context_reset(void)
          "clock.png", sizeof(xmb->textures.list[XMB_TEXTURE_CLOCK].path));
 
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
-      xmb->textures.list[k].id   = menu_texture_load(xmb->textures.list[k].path,
+   {
+      const char *path = xmb->textures.list[k].path;
+      if (! path_file_exists(path))
+         continue;
+
+      texture_image_load(&ti, path);
+
+      xmb->textures.list[k].id   = menu_texture_load(&ti,
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+
+      texture_image_free(&ti);
+   }
 
    xmb_load_wallpaper(xmb->textures.bg.path);
 
@@ -1530,6 +1549,7 @@ static void xmb_context_reset(void)
 
    for (i = 1; i < menu->categories.size; i++)
    {
+      struct texture_image ti = {0};
       node = xmb_get_userdata_from_core(xmb, i - 1);
 
       fill_pathname_join(mediapath, g_settings.assets_directory,
@@ -1562,11 +1582,20 @@ static void xmb_context_reset(void)
 
       node->alpha        = 0;
       node->zoom         = xmb->categories.passive.zoom;
-      node->icon         = menu_texture_load(texturepath,
-            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
-      node->content_icon = menu_texture_load(content_texturepath,
+
+      texture_image_load(&ti, texturepath);
+
+      node->icon         = menu_texture_load(&ti,
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
+      texture_image_free(&ti);
+
+      texture_image_load(&ti, content_texturepath);
+
+      node->content_icon = menu_texture_load(&ti,
+            TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
+
+      texture_image_free(&ti);
 
       if (i == xmb->categories.active.idx)
       {
