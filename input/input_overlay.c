@@ -335,43 +335,28 @@ static bool input_overlay_load_overlay_image(input_overlay_t *ol,
       const char *config_path,
       struct overlay *overlay, unsigned idx)
 {
-   char overlay_path_key[64];
-   char overlay_path[PATH_MAX_LENGTH];
-   bool ret = false;
-   config_file_t *conf = config_file_new(ol->overlay_path);
-
-   if (!conf)
-      return false;
-
-   snprintf(overlay_path_key, sizeof(overlay_path_key),
-         "overlay%u_overlay", idx);
-    
-   if (config_get_path(conf, overlay_path_key,
-            overlay_path, sizeof(overlay_path)))
+   if (overlay->config.paths.path[0] != '\0')
    {
       char overlay_resolved_path[PATH_MAX_LENGTH];
       struct texture_image img = {0};
 
       fill_pathname_resolve_relative(overlay_resolved_path, config_path,
-            overlay_path, sizeof(overlay_resolved_path));
+            overlay->config.paths.path, sizeof(overlay_resolved_path));
 
       if (!texture_image_load(&img, overlay_resolved_path))
       {
          RARCH_ERR("[Overlay]: Failed to load image: %s.\n",
                overlay_resolved_path);
          ol->loading_status = OVERLAY_IMAGE_TRANSFER_ERROR;
-         goto error;
+         return false;
       }
 
       overlay->image = img;
 
-      ret = true;
+      return true;
    }
 
-error:
-   if (conf)
-      config_file_free(conf);
-   return ret;
+   return false;
 }
 
 static bool input_overlay_load_overlay(input_overlay_t *ol,
@@ -379,9 +364,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
       struct overlay *overlay, unsigned idx)
 {
    size_t i;
-   char overlay_path_key[64], overlay_name_key[64], overlay_rect_key[64];
    char conf_key[64], overlay_full_screen_key[64], overlay_descs_key[64];
-   char overlay_rect[256];
    unsigned descs = 0;
    bool normalized = false;
    float alpha_mod = 1.0f;
@@ -390,41 +373,6 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
 
    if (!conf)
       return false;
-
-   snprintf(overlay_path_key, sizeof(overlay_path_key),
-         "overlay%u_overlay", idx);
-    
-   snprintf(overlay_name_key, sizeof(overlay_name_key),
-         "overlay%u_name", idx);
-   config_get_array(conf, overlay_name_key,
-         overlay->name, sizeof(overlay->name));
-
-   /* By default, we stretch the overlay out in full. */
-   overlay->x = overlay->y = 0.0f;
-   overlay->w = overlay->h = 1.0f;
-
-   snprintf(overlay_rect_key, sizeof(overlay_rect_key),
-         "overlay%u_rect", idx);
-
-   if (config_get_array(conf, overlay_rect_key,
-            overlay_rect, sizeof(overlay_rect)))
-   {
-      struct string_list *list = string_split(overlay_rect, ", ");
-
-      if (!list || list->size < 4)
-      {
-         RARCH_ERR("[Overlay]: Failed to split rect \"%s\" into at least four tokens.\n",
-               overlay_rect);
-         string_list_free(list);
-         goto error;
-      }
-
-      overlay->x = (float)strtod(list->elems[0].data, NULL);
-      overlay->y = (float)strtod(list->elems[1].data, NULL);
-      overlay->w = (float)strtod(list->elems[2].data, NULL);
-      overlay->h = (float)strtod(list->elems[3].data, NULL);
-      string_list_free(list);
-   }
 
    snprintf(overlay_full_screen_key, sizeof(overlay_full_screen_key),
          "overlay%u_full_screen", idx);
@@ -440,8 +388,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
       goto error;
    }
 
-   overlay->descs = (struct overlay_desc*)
-      calloc(descs, sizeof(*overlay->descs));
+   overlay->descs = (struct overlay_desc*)calloc(descs, sizeof(*overlay->descs));
 
    if (!overlay->descs)
    {
@@ -644,8 +591,8 @@ error:
 
 bool input_overlay_load_overlays(input_overlay_t *ol)
 {
+   unsigned i;
    config_file_t *conf = NULL;
-   unsigned overlays = 0;
 
    if (!ol)
       return false;
@@ -658,21 +605,68 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       return false;
    }
 
-   if (!config_get_uint(conf, "overlays", &overlays))
+   if (!config_get_uint(conf, "overlays", &ol->config.overlays.size))
    {
       RARCH_ERR("overlays variable not defined in config.\n");
       goto error;
    }
 
-   if (!overlays)
+   if (!ol->config.overlays.size)
       goto error;
 
-   ol->overlays = (struct overlay*)calloc(overlays, sizeof(*ol->overlays));
+   ol->overlays = (struct overlay*)calloc(
+         ol->config.overlays.size, sizeof(*ol->overlays));
    if (!ol->overlays)
       goto error;
 
-   ol->size = overlays;
+   ol->size = ol->config.overlays.size;
    ol->pos  = 0;
+
+   for (i = 0; i < ol->size; i++)
+   {
+      struct overlay *overlay = &ol->overlays[i];
+
+      if (!overlay)
+         continue;
+
+      snprintf(overlay->config.paths.key, sizeof(overlay->config.paths.key),
+            "overlay%u_overlay", i);
+
+      config_get_path(conf, overlay->config.paths.key,
+               overlay->config.paths.path, sizeof(overlay->config.paths.path));
+
+      snprintf(overlay->config.names.key, sizeof(overlay->config.names.key),
+            "overlay%u_name", i);
+      config_get_array(conf, overlay->config.names.key,
+            overlay->name, sizeof(overlay->name));
+
+      /* By default, we stretch the overlay out in full. */
+      overlay->x = overlay->y = 0.0f;
+      overlay->w = overlay->h = 1.0f;
+
+      snprintf(overlay->config.rect.key, sizeof(overlay->config.rect.key),
+            "overlay%u_rect", i);
+
+      if (config_get_array(conf, overlay->config.rect.key,
+               overlay->config.rect.array, sizeof(overlay->config.rect.array)))
+      {
+         struct string_list *list = string_split(overlay->config.rect.array, ", ");
+
+         if (!list || list->size < 4)
+         {
+            RARCH_ERR("[Overlay]: Failed to split rect \"%s\" into at least four tokens.\n",
+                  overlay->config.rect.array);
+            string_list_free(list);
+            goto error;
+         }
+
+         overlay->x = (float)strtod(list->elems[0].data, NULL);
+         overlay->y = (float)strtod(list->elems[1].data, NULL);
+         overlay->w = (float)strtod(list->elems[2].data, NULL);
+         overlay->h = (float)strtod(list->elems[3].data, NULL);
+         string_list_free(list);
+      }
+   }
 
    ol->state = OVERLAY_STATUS_DEFERRED_LOADING;
 

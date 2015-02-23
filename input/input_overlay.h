@@ -21,6 +21,7 @@
 #include <boolean.h>
 #include "../libretro.h"
 #include <formats/image.h>
+#include <retro_miscellaneous.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -133,6 +134,26 @@ struct overlay
 
    char name[64];
 
+   struct
+   {
+      struct
+      {
+         char key[64];
+         char path[PATH_MAX_LENGTH];
+      } paths;
+
+      struct
+      {
+         char key[64];
+      } names;
+
+      struct
+      {
+         char array[256];
+         char key[64];
+      } rect;
+   } config;
+
    struct texture_image *load_images;
    unsigned load_images_size;
 };
@@ -156,6 +177,14 @@ struct input_overlay
    char *overlay_path;
 
    enum overlay_status state;
+
+   struct
+   {
+      struct
+      {
+         unsigned size;
+      } overlays;
+   } config;
 
    struct
    {
