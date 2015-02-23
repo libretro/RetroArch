@@ -610,14 +610,11 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
    switch (ol->loading_status)
    {
       case OVERLAY_IMAGE_TRANSFER_NONE:
-         if (!input_overlay_load_overlay_image(ol,
+         if (input_overlay_load_overlay_image(ol,
                   ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
          {
-            RARCH_ERR("[Overlay]: Failed to load overlay image #%u.\n", (unsigned)ol->pos);
-            goto error;
+            ol->loading_status = OVERLAY_IMAGE_TRANSFER_BUSY;
          }
-
-         ol->loading_status = OVERLAY_IMAGE_TRANSFER_BUSY;
          break;
       case OVERLAY_IMAGE_TRANSFER_BUSY:
          ol->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
