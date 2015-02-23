@@ -18,6 +18,7 @@
 #ifndef DATABASE_INFO_H_
 #define DATABASE_INFO_H_
 
+#include <stdint.h>
 #include <stddef.h>
 #include <boolean.h>
 #include "libretro-db/libretrodb.h"

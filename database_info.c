@@ -123,13 +123,15 @@ int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl)
       ssize_t ret;
       uint32_t crc, target_crc = 0;
       uint8_t *ret_buf = NULL;
-      bool read_from = false;
+      int read_from = 0;
 
       (void)target_crc;
 
       read_from = read_file(name, (void**)&ret_buf, &ret);
 
-      if (!read_from || ret <= 0)
+      if (read_from != 1)
+         return 0;
+      if (ret <= 0)
          return 0;
 
       snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",

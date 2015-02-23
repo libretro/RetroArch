@@ -903,7 +903,7 @@ static int rarch_main_iterate_nbio_parse_free(void)
 
 static int rarch_main_iterate_nbio_parse(void)
 {
-   size_t len;
+   size_t len = 0;
    char *data = nbio_get_ptr(g_extern.nbio.handle, &len);
 
    if (data && g_extern.nbio.cb)
