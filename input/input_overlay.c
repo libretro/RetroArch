@@ -470,7 +470,7 @@ static bool input_overlay_load_overlay_image_done(struct overlay *overlay)
 
    overlay->pos = 0;
    /* Divide iteration steps by half of total descs if size is even,
-    * otherwise default to 8 (arbitrary value for now to speed things up). */
+    * otherwise default to 1. */
    overlay->pos_increment = (overlay->size / 2) ? (overlay->size / 2) : 1;
 
 #if 0
