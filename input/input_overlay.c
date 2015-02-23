@@ -336,7 +336,7 @@ static bool input_overlay_load_overlay_image(input_overlay_t *ol,
       struct overlay *overlay, unsigned idx)
 {
    char overlay_path_key[64];
-   char overlay_path[PATH_MAX_LENGTH], overlay_resolved_path[PATH_MAX_LENGTH];
+   char overlay_path[PATH_MAX_LENGTH];
    config_file_t *conf = config_file_new(ol->overlay_path);
 
    if (!conf)
@@ -348,6 +348,7 @@ static bool input_overlay_load_overlay_image(input_overlay_t *ol,
    if (config_get_path(conf, overlay_path_key,
             overlay_path, sizeof(overlay_path)))
    {
+      char overlay_resolved_path[PATH_MAX_LENGTH];
       struct texture_image img = {0};
 
       fill_pathname_resolve_relative(overlay_resolved_path, config_path,
