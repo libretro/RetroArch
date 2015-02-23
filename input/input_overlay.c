@@ -364,8 +364,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
       struct overlay *overlay, unsigned idx)
 {
    size_t i;
-   char conf_key[64], overlay_full_screen_key[64], overlay_descs_key[64];
-   unsigned descs = 0;
+   char conf_key[64], overlay_full_screen_key[64];
    bool normalized = false;
    float alpha_mod = 1.0f;
    float range_mod = 1.0f;
@@ -379,24 +378,6 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
    overlay->full_screen = false;
    config_get_bool(conf, overlay_full_screen_key, &overlay->full_screen);
 
-   snprintf(overlay_descs_key, sizeof(overlay_descs_key), "overlay%u_descs", idx);
-
-   if (!config_get_uint(conf, overlay_descs_key, &descs))
-   {
-      RARCH_ERR("[Overlay]: Failed to read number of descs from config key: %s.\n",
-            overlay_descs_key);
-      goto error;
-   }
-
-   overlay->descs = (struct overlay_desc*)calloc(descs, sizeof(*overlay->descs));
-
-   if (!overlay->descs)
-   {
-      RARCH_ERR("[Overlay]: Failed to allocate descs.\n");
-      goto error;
-   }
-
-   overlay->size = descs;
 
    snprintf(conf_key, sizeof(conf_key),
          "overlay%u_normalized", idx);
@@ -421,15 +402,6 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
       }
    }
 
-   /* Precache load image array for simplicity. */
-   overlay->load_images = (struct texture_image*)
-      calloc(1 + overlay->size, sizeof(struct texture_image));
-
-   if (!overlay->load_images)
-   {
-      RARCH_ERR("[Overlay]: Failed to allocate load_images.\n");
-      goto error;
-   }
 
    if (overlay->image.pixels)
       overlay->load_images[overlay->load_images_size++] = overlay->image;
@@ -628,6 +600,37 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
 
       if (!overlay)
          continue;
+
+      snprintf(overlay->config.descs.key,
+            sizeof(overlay->config.descs.key), "overlay%u_descs", i);
+
+      if (!config_get_uint(conf, overlay->config.descs.key, &overlay->config.descs.size))
+      {
+         RARCH_ERR("[Overlay]: Failed to read number of descs from config key: %s.\n",
+               overlay->config.descs.key);
+         goto error;
+      }
+
+      overlay->descs = (struct overlay_desc*)
+         calloc(overlay->config.descs.size, sizeof(*overlay->descs));
+
+      if (!overlay->descs)
+      {
+         RARCH_ERR("[Overlay]: Failed to allocate descs.\n");
+         goto error;
+      }
+
+      overlay->size = overlay->config.descs.size;
+
+      /* Precache load image array for simplicity. */
+      overlay->load_images = (struct texture_image*)
+         calloc(1 + overlay->size, sizeof(struct texture_image));
+
+      if (!overlay->load_images)
+      {
+         RARCH_ERR("[Overlay]: Failed to allocate load_images.\n");
+         goto error;
+      }
 
       snprintf(overlay->config.paths.key, sizeof(overlay->config.paths.key),
             "overlay%u_overlay", i);

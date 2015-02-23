@@ -152,6 +152,12 @@ struct overlay
          char array[256];
          char key[64];
       } rect;
+
+      struct
+      {
+         char key[64];
+         unsigned size;
+      } descs;
    } config;
 
    struct texture_image *load_images;
