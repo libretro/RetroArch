@@ -97,11 +97,16 @@ typedef struct
 {
    void *userdata;
 
+   /* Delta timing */
+   float dt;
+   float cur_time;
+   float old_time;
+
    /* Used for key repeat */
    struct
    {
-      unsigned timer;
-      unsigned count;
+      float timer;
+      float count;
    } delay;
 
    size_t begin;

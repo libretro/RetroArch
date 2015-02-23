@@ -21,6 +21,7 @@
 #include "../dynamic.h"
 #include "../frontend/frontend.h"
 #include "../../retroarch.h"
+#include "../../performance.h"
 #include <file/file_path.h>
 
 /**
@@ -370,6 +371,12 @@ int menu_iterate(retro_input_t input,
 {
    int32_t ret     = 0;
    unsigned action = menu_input_frame(input, trigger_input);
+
+   menu_handle_t   *menu = menu_driver_resolve();
+
+   menu->cur_time = rarch_get_time_usec();
+   menu->dt = menu->cur_time - menu->old_time;
+   menu->old_time = menu->cur_time;
 
    if (driver.menu_ctx)
    {
