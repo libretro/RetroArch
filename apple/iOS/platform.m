@@ -83,13 +83,14 @@ const void* apple_get_frontend_settings(void)
    return settings;
 }
 
+extern CGFloat apple_gfx_ctx_get_native_scale(void);
 
-// Input helpers: This is kept here because it needs objective-c
+/* Input helpers: This is kept here because it needs ObjC */
 static void handle_touch_event(NSArray* touches)
 {
    NSUInteger i;
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-   const float scale = [[UIScreen mainScreen] scale];
+   const float scale = apple_gfx_ctx_get_native_scale();
 
    if (!apple)
       return;
