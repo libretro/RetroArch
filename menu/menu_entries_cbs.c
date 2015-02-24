@@ -1236,12 +1236,10 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
 
    ret = 0;
 
-#endif
-
 done:
-#ifdef HAVE_LIBRETRODB
    string_list_free(str_list);
 #endif
+
    return ret;
 }
 
