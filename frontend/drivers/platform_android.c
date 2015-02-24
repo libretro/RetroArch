@@ -430,30 +430,37 @@ static bool android_run_events(void *data)
 
 static int system_property_get(const char *name, char *value)
 {
-   char cmd[1024];
+   FILE *pipe;
+   int length = 0;
+   char buffer[PATH_MAX_LENGTH];
+   char cmd[PATH_MAX_LENGTH];
+   char *curpos = NULL;
 
-   sprintf(cmd, "getprop %s", name);
-   FILE *pipe = popen(cmd, "r");
+   snprintf(cmd, sizeof(cmd), "getprop %s", name);
+
+   pipe = popen(cmd, "r");
+
    if (!pipe)
    {
       RARCH_ERR("Could not create pipe.\n");
       return 0;
    }
 
-   int length = 0;
-   char buffer[128];
-   char *curpos = value;
+   curpos = value;
    
    while (!feof(pipe))
    {
       if (fgets(buffer, 128, pipe) != NULL)
       {
          int curlen = strlen(buffer);
+
          memcpy(curpos, buffer, curlen);
-         curpos += curlen;
-         length += curlen;
+
+         curpos    += curlen;
+         length    += curlen;
       }
    }
+
    *curpos = '\0';
 
    pclose(pipe);
