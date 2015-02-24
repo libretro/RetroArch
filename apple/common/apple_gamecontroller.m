@@ -17,8 +17,14 @@
 #include "RetroArch_Apple.h"
 #ifdef __IPHONE_7_0
 #import <GameController/GameController.h>
+#endif
 #include "apple_gamecontroller.h"
 #include "../../input/drivers/apple_input.h"
+
+enum
+{
+   GCCONTROLLER_PLAYER_INDEX_UNSET = -1,
+};
 
 static BOOL apple_gamecontroller_available(void)
 {
@@ -119,7 +125,7 @@ static void apple_gamecontroller_connect(GCController *controller)
 {
     int32_t slot = apple_joypad_connect_gcapi(slots);
     
-    controller.playerIndex = (slot >= 0 && slot < MAX_USERS) ? slot : GCControllerPlayerIndexUnset;
+    controller.playerIndex = (slot >= 0 && slot < MAX_USERS) ? slot : GCCONTROLLER_PLAYER_INDEX_UNSET;
     
     if (controller.playerIndex == GCControllerPlayerIndexUnset)
         return;
@@ -130,19 +136,17 @@ static void apple_gamecontroller_connect(GCController *controller)
 static void apple_gamecontroller_disconnect(GCController* controller)
 {
    unsigned pad = (uint32_t)controller.playerIndex;
-    if (pad == GCControllerPlayerIndexUnset)
+    if (pad == GCCONTROLLER_PLAYER_INDEX_UNSET)
         return;
     
     pad_connection_pad_deinit(&slots[pad], pad);
 }
-#endif
 
 void apple_gamecontroller_init(void)
 {
+   if (!apple_gamecontroller_available())
+      return;
 #ifdef __IPHONE_7_0
-    if (!apple_gamecontroller_available())
-        return;
-    
     [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidConnectNotification
                                                       object:nil
                                                        queue:[NSOperationQueue mainQueue]
