@@ -138,6 +138,8 @@ enum
    GX_RESOLUTIONS_LAST,
 };
 
+static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
+
 unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
    { 512, 192 },
    { 598, 200 },
@@ -200,7 +202,8 @@ static void gx_free_overlay(gx_video_t *gx)
 }
 #endif
 
-void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
+static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
+      bool fullscreen)
 {
    unsigned modetype, level, viHeightMultiplier, viWidth, tvmode,
             max_width, max_height, i;
@@ -433,7 +436,7 @@ static void setup_video_mode(void *data)
    OSInitThreadQueue(&g_video_cond);
 
    VIDEO_GetPreferredMode(&gx_mode);
-   gx_set_video_mode(data, 0, 0);
+   gx_set_video_mode(data, 0, 0, true);
 }
 
 static void init_texture(void *data, unsigned width, unsigned height)
@@ -1241,13 +1244,13 @@ static void gx_get_video_output_size(void *data, unsigned *width, unsigned *heig
    *height = menu_gx_resolutions[menu_current_gx_resolution][1];
 }
 
-static void gx_video_output_get_prev(void *data)
+static void gx_get_video_output_prev(void *data)
 {
    if (menu_current_gx_resolution > 0)
       menu_current_gx_resolution--;
 }
 
-static void gx_video_output_get_next(void *data)
+static void gx_get_video_output_next(void *data)
 {
    if (menu_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
    {
@@ -1262,6 +1265,7 @@ static void gx_video_output_get_next(void *data)
 }
 
 static const video_poke_interface_t gx_poke_interface = {
+   gx_set_video_mode,
    NULL,
    gx_get_video_output_size,
    gx_get_video_output_prev,

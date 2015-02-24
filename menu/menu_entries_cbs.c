@@ -45,10 +45,6 @@
 
 #include "../gfx/video_viewport.h"
 
-#ifdef GEKKO
-unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
-#endif
-
 static unsigned rdb_entry_start_game_selection_ptr;
 
 static int archive_open(void)
@@ -2376,7 +2372,6 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-#ifdef GEKKO
    if (driver.video_data && driver.video_poke &&
          driver.video_poke->get_video_output_size)
    {
@@ -2384,24 +2379,11 @@ static int action_ok_video_resolution(const char *path,
       driver.video_poke->get_video_output_size(driver.video_data,
             &width, &height);
 
-      gx_set_video_mode(driver.video_data, width, height);
+      if (driver.video_data && driver.video_poke &&
+            driver.video_poke->set_video_mode)
+         driver.video_poke->set_video_mode(driver.video_data,
+               width, height, true);
    }
-#elif defined(__CELLOS_LV2__)
-   if (g_extern.console.screen.resolutions.list[
-         g_extern.console.screen.resolutions.current.idx] == 
-         CELL_VIDEO_OUT_RESOLUTION_576)
-   {
-      if (g_extern.console.screen.pal_enable)
-         g_extern.console.screen.pal60_enable = true;
-   }
-   else
-   {
-      g_extern.console.screen.pal_enable = false;
-      g_extern.console.screen.pal60_enable = false;
-   }
-
-   rarch_main_command(RARCH_CMD_REINIT);
-#endif
    return 0;
 }
 

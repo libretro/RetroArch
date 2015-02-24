@@ -861,6 +861,15 @@ static void gl_set_rotation(void *data, unsigned rotation)
    gl_set_projection(gl, &ortho, true);
 }
 
+static void gl_set_video_mode(void *data, unsigned width, unsigned height,
+      bool fullscreen)
+{
+   gl_t *gl = (gl_t*)data;
+
+   if (gl && gl->ctx_driver && gl->ctx_driver->set_video_mode)
+      gl->ctx_driver->set_video_mode(gl, width, height, fullscreen);
+}
+
 #ifdef HAVE_FBO
 static inline void gl_start_frame_fbo(gl_t *gl)
 {
@@ -3114,6 +3123,7 @@ static void gl_get_video_output_next(void *data)
 
 
 static const video_poke_interface_t gl_poke_interface = {
+   gl_set_video_mode,
    NULL,
    gl_get_video_output_size,
    gl_get_video_output_prev,

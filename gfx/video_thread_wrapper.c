@@ -249,6 +249,14 @@ static void thread_loop(void *data)
             break;
 #endif
 
+         case CMD_POKE_SET_VIDEO_MODE:
+            if (thr->poke && thr->poke->set_video_mode)
+               thr->poke->set_video_mode(thr->driver_data,
+                     thr->cmd_data.new_mode.width,
+                     thr->cmd_data.new_mode.height,
+                     thr->cmd_data.new_mode.fullscreen);
+            thread_reply(thr, CMD_POKE_SET_VIDEO_MODE);
+            break;
          case CMD_POKE_SET_FILTERING:
             if (thr->poke && thr->poke->set_filtering)
                thr->poke->set_filtering(thr->driver_data,
@@ -767,6 +775,20 @@ static void thread_get_overlay_interface(void *data,
 }
 #endif
 
+static void thread_set_video_mode(void *data, unsigned width, unsigned height,
+      bool fullscreen)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr)
+      return;
+   thr->cmd_data.new_mode.width      = width;
+   thr->cmd_data.new_mode.height     = height;
+   thr->cmd_data.new_mode.fullscreen = fullscreen;
+   thread_send_cmd(thr, CMD_POKE_SET_VIDEO_MODE);
+   thread_wait_reply(thr, CMD_POKE_SET_VIDEO_MODE);
+}
+
 static void thread_set_filtering(void *data, unsigned idx, bool smooth)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -904,6 +926,7 @@ static struct video_shader *thread_get_current_shader(void *data)
 }
 
 static const video_poke_interface_t thread_poke = {
+   thread_set_video_mode,
    thread_set_filtering,
    thread_get_video_output_size,
    thread_get_video_output_prev,

@@ -315,6 +315,21 @@ static bool gfx_ctx_ps3_set_video_mode(void *data,
       bool fullscreen)
 {
    (void)data;
+
+   if (g_extern.console.screen.resolutions.list[
+         g_extern.console.screen.resolutions.current.idx] == 
+         CELL_VIDEO_OUT_RESOLUTION_576)
+   {
+      if (g_extern.console.screen.pal_enable)
+         g_extern.console.screen.pal60_enable = true;
+   }
+   else
+   {
+      g_extern.console.screen.pal_enable = false;
+      g_extern.console.screen.pal60_enable = false;
+   }
+
+   rarch_main_command(RARCH_CMD_REINIT);
    return true;
 }
 

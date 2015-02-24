@@ -41,6 +41,7 @@ enum thread_cmd
    CMD_OVERLAY_FULL_SCREEN,
 #endif
 
+   CMD_POKE_SET_VIDEO_MODE,
    CMD_POKE_SET_FILTERING,
    CMD_POKE_GET_VIDEO_OUTPUT_SIZE,
    CMD_POKE_GET_VIDEO_OUTPUT_PREV,
@@ -142,6 +143,13 @@ typedef struct thread_video
          unsigned width;
          unsigned height;
       } output;
+
+      struct
+      {
+         unsigned width;
+         unsigned height;
+         bool fullscreen;
+      } new_mode;
 
       struct
       {
