@@ -1136,7 +1136,7 @@ static void xmb_frame(void)
    if (!gl)
       return;
 
-   menu_animation_update(menu->animation, menu->dt / 8000000.0);
+   menu_animation_update(menu->animation, menu->dt / 7500000.0);
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 

@@ -382,10 +382,6 @@ int menu_iterate(retro_input_t input,
 
    menu->cur_time = rarch_get_time_usec();
    menu->dt = menu->cur_time - menu->old_time;
-   if (menu->dt > 30000)
-      menu->dt = 30000;
-   if (menu->dt < 4000)
-      menu->dt = 4000;
    menu->old_time = menu->cur_time;
 
    if (driver.menu_ctx)
