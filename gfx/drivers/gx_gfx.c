@@ -26,7 +26,6 @@
 #include "../../wii/mem2_manager.h"
 #endif
 
-#include "gx_gfx.h"
 #include <gccore.h>
 #include <ogcsys.h>
 #include <malloc.h>
@@ -36,6 +35,32 @@
 #include "ppc_asm.h"
 #include "gx_gfx_inl.h"
 #include "gx_sdk_defines.h"
+
+struct gx_overlay_data
+{
+   GXTexObj tex;
+   float tex_coord[8];
+   float vertex_coord[8];
+   float alpha_mod;
+};
+
+typedef struct gx_video
+{
+   bool should_resize;
+   bool keep_aspect;
+   bool double_strike;
+   bool rgb32;
+   uint32_t *menu_data; /* FIXME: Should be const uint16_t*. */
+   bool menu_texture_enable;
+   video_viewport_t vp;
+   unsigned scale;
+#ifdef HAVE_OVERLAY
+   struct gx_overlay_data *overlay;
+   unsigned overlays;
+   bool overlay_enable;
+   bool overlay_full_screen;
+#endif
+} gx_video_t;
 
 #define SYSMEM1_SIZE 0x01800000
 
