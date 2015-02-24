@@ -5,7 +5,7 @@
 //  Copyright (c) 2012 Apple Inc. All rights reserved.
 //
 
-#import <GameController/GameController.h>
+#import "GameController.h"
 
 /**
  Use these constants with NSNotificationCenter to listen to connection and disconnection events.

@@ -16,6 +16,7 @@
 		501232DA192E606D0063A359 /* menu.m in Sources */ = {isa = PBXBuildFile; fileRef = 501232D9192E606D0063A359 /* menu.m */; };
 		501881EC184BAD6D006F665D /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 501881EB184BAD6D006F665D /* AVFoundation.framework */; };
 		501881EE184BB54C006F665D /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 501881ED184BB54C006F665D /* CoreMedia.framework */; };
+		5041BAF41A9D40D000A77A33 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 963C3C33186E3DED00A6EB1E /* GameController.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		5073C58A196C0BA40026E146 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 5073C587196C0BA40026E146 /* RAGameView.m */; };
 		5073C58B196C0BA40026E146 /* utility.m in Sources */ = {isa = PBXBuildFile; fileRef = 5073C588196C0BA40026E146 /* utility.m */; };
 		50CCC828185E0E7D001F5BC8 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */; };
@@ -90,6 +91,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5041BAF41A9D40D000A77A33 /* GameController.framework in Frameworks */,
 				696012F219F3389A006A1088 /* CoreText.framework in Frameworks */,
 				50CCC828185E0E7D001F5BC8 /* CoreLocation.framework in Frameworks */,
 				501881EE184BB54C006F665D /* CoreMedia.framework in Frameworks */,
