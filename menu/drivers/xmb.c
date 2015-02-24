@@ -26,7 +26,6 @@
 
 #include <file/file_path.h>
 #include "../../gfx/gl_common.h"
-#include "../../performance.h"
 #include "../../gfx/video_thread_wrapper.h"
 #include <compat/posix_string.h>
 
@@ -37,7 +36,7 @@
 #endif
 
 #ifndef XMB_DELAY
-#define XMB_DELAY 10
+#define XMB_DELAY 0.02
 #endif
 
 typedef struct
@@ -1137,7 +1136,7 @@ static void xmb_frame(void)
    if (!gl)
       return;
 
-   menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
+   menu_animation_update(menu->animation, menu->dt / 8000000.0);
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 

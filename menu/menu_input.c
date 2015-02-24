@@ -497,7 +497,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 
    menu->mouse.enable = g_settings.menu.mouse_enable;
 
-   menu->delay.count += menu->dt / IDEAL_DT;
+   menu->delay.count += menu->dt / 10000.0;
 
    if (driver.block_input)
       trigger_input = 0;
