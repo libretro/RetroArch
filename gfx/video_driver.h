@@ -94,6 +94,8 @@ typedef struct video_poke_interface
 {
    void (*set_filtering)(void *data, unsigned index, bool smooth);
    void (*get_video_output_size)(void *data, unsigned *width, unsigned *height);
+   void (*get_video_output_prev)(void *data);
+   void (*get_video_output_next)(void *data);
 #ifdef HAVE_FBO
    uintptr_t (*get_current_framebuffer)(void *data);
 #endif

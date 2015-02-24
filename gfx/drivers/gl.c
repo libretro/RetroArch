@@ -3096,9 +3096,28 @@ static void gl_get_video_output_size(void *data, unsigned *width, unsigned *heig
       gl->ctx_driver->get_video_output_size(gl, width, height);
 }
 
+static void gl_get_video_output_prev(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+
+   if (gl && gl->ctx_driver->get_video_output_prev)
+      gl->ctx_driver->get_video_output_prev(gl);
+}
+
+static void gl_get_video_output_next(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+
+   if (gl && gl->ctx_driver->get_video_output_next)
+      gl->ctx_driver->get_video_output_next(gl);
+}
+
+
 static const video_poke_interface_t gl_poke_interface = {
    NULL,
    gl_get_video_output_size,
+   gl_get_video_output_prev,
+   gl_get_video_output_next,
 #ifdef HAVE_FBO
    gl_get_current_framebuffer,
 #endif

@@ -216,9 +216,6 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    viHeightMultiplier = 1;
    viWidth    = g_settings.video.viwidth;
 #if defined(HW_RVL)
-#if 0
-#endif
-
    progressive = CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable();
    switch (CONF_GetVideo())
    {
@@ -1244,9 +1241,31 @@ static void gx_get_video_output_size(void *data, unsigned *width, unsigned *heig
    *height = menu_gx_resolutions[menu_current_gx_resolution][1];
 }
 
+static void gx_video_output_get_prev(void *data)
+{
+   if (menu_current_gx_resolution > 0)
+      menu_current_gx_resolution--;
+}
+
+static void gx_video_output_get_next(void *data)
+{
+   if (menu_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
+   {
+#ifdef HW_RVL
+      if ((menu_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
+         if (CONF_GetVideo() != CONF_VIDEO_PAL)
+            return;
+#endif
+
+      menu_current_gx_resolution++;
+   }
+}
+
 static const video_poke_interface_t gx_poke_interface = {
    NULL,
    gx_get_video_output_size,
+   gx_get_video_output_prev,
+   gx_get_video_output_next,
    NULL,
    gx_set_aspect_ratio,
    gx_apply_state_changes,

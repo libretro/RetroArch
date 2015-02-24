@@ -140,7 +140,9 @@ const gfx_ctx_driver_t gfx_ctx_null = {
    gfx_ctx_null_swap_interval,
    gfx_ctx_null_set_video_mode,
    gfx_ctx_null_get_video_size,
-   NULL,
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
    NULL,
    gfx_ctx_null_update_window_title,
    gfx_ctx_null_check_window,

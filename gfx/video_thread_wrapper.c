@@ -265,6 +265,18 @@ static void thread_loop(void *data)
             thread_reply(thr, CMD_POKE_GET_VIDEO_OUTPUT_SIZE);
             break;
 
+         case CMD_POKE_GET_VIDEO_OUTPUT_PREV:
+            if (thr->poke && thr->poke->get_video_output_prev)
+               thr->poke->get_video_output_prev(thr->driver_data);
+            thread_reply(thr, CMD_POKE_GET_VIDEO_OUTPUT_PREV);
+            break;
+
+         case CMD_POKE_GET_VIDEO_OUTPUT_NEXT:
+            if (thr->poke && thr->poke->get_video_output_next)
+               thr->poke->get_video_output_next(thr->driver_data);
+            thread_reply(thr, CMD_POKE_GET_VIDEO_OUTPUT_NEXT);
+            break;
+
          case CMD_POKE_SET_ASPECT_RATIO:
             thr->poke->set_aspect_ratio(thr->driver_data,
                   thr->cmd_data.i);
@@ -780,6 +792,26 @@ static void thread_get_video_output_size(void *data,
    *height = thr->cmd_data.output.width;
 }
 
+static void thread_get_video_output_prev(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr)
+      return;
+   thread_send_cmd(thr, CMD_POKE_GET_VIDEO_OUTPUT_PREV);
+   thread_wait_reply(thr, CMD_POKE_GET_VIDEO_OUTPUT_PREV);
+}
+
+static void thread_get_video_output_next(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr)
+      return;
+   thread_send_cmd(thr, CMD_POKE_GET_VIDEO_OUTPUT_NEXT);
+   thread_wait_reply(thr, CMD_POKE_GET_VIDEO_OUTPUT_NEXT);
+}
+
 static void thread_set_aspect_ratio(void *data, unsigned aspectratio_idx)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -874,6 +906,8 @@ static struct video_shader *thread_get_current_shader(void *data)
 static const video_poke_interface_t thread_poke = {
    thread_set_filtering,
    thread_get_video_output_size,
+   thread_get_video_output_prev,
+   thread_get_video_output_next,
 #ifdef HAVE_FBO
    NULL,
 #endif

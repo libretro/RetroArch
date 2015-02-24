@@ -684,7 +684,9 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_swap_interval,
    gfx_ctx_wgl_set_video_mode,
    gfx_ctx_wgl_get_video_size,
-   NULL,
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
    NULL,
    gfx_ctx_wgl_update_window_title,
    gfx_ctx_wgl_check_window,

@@ -378,6 +378,8 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_set_video_mode,
    gfx_ctx_ps3_get_video_size,
    gfx_ctx_ps3_get_video_output_size,
+   gfx_ctx_ps3_get_video_output_prev,
+   gfx_ctx_ps3_get_video_output_next,
    NULL,
    gfx_ctx_ps3_update_window_title,
    gfx_ctx_ps3_check_window,

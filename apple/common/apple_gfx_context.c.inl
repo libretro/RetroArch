@@ -401,7 +401,9 @@ const gfx_ctx_driver_t gfx_ctx_apple = {
    apple_gfx_ctx_swap_interval,
    apple_gfx_ctx_set_video_mode,
    apple_gfx_ctx_get_video_size,
-   NULL,
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
    NULL,
    apple_gfx_ctx_update_window_title,
    apple_gfx_ctx_check_window,

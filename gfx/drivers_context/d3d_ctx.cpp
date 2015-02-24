@@ -499,7 +499,9 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_swap_interval,
    NULL,
    gfx_ctx_d3d_get_video_size,
-   NULL,
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
    NULL,
    gfx_ctx_d3d_update_title,
    gfx_ctx_d3d_check_window,

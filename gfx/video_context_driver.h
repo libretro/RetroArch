@@ -72,6 +72,10 @@ typedef struct gfx_ctx_driver
 
    void (*get_video_output_size)(void*, unsigned*, unsigned*);
 
+   void (*get_video_output_prev)(void*);
+
+   void (*get_video_output_next)(void*);
+
    /* Translates a window size to an aspect ratio.
     * In most cases this will be just width / height, but
     * some contexts will better know which actual aspect ratio is used.

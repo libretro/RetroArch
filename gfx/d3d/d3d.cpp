@@ -1919,6 +1919,8 @@ static void d3d_set_menu_texture_enable(void *data,
 static const video_poke_interface_t d3d_poke_interface = {
    NULL,
    NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
 #ifdef HAVE_FBO
    NULL,
 #endif
