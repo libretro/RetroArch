@@ -234,21 +234,17 @@ CGFloat apple_gfx_ctx_get_native_scale(void)
     if (!screen)
         return 0.0f;
     
-    (void)selector;
-    
-#ifdef IOS
-   if ([[UIScreen mainScreen] respondsToSelector:selector])
+   if ([screen respondsToSelector:selector])
    {
        float ret;
        NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
-                                   [[[UIScreen mainScreen] class] instanceMethodSignatureForSelector:selector]];
+                                   [[screen class] instanceMethodSignatureForSelector:selector]];
        [invocation setSelector:selector];
-       [invocation setTarget:[UIScreen mainScreen]];
+       [invocation setTarget:screen];
        [invocation invoke];
        [invocation getReturnValue:&ret];
        return ret;
    }
-#endif
     
    return screen.scale;
 }
@@ -258,7 +254,10 @@ static void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* 
    RAScreen *screen = (RAScreen*)get_chosen_screen();
    CGRect size = screen.bounds;
    gl_t *gl = (gl_t*)data;
-   CGFloat screenscale = apple_gfx_ctx_get_native_scale();
+   static CGFloat screenscale = 0.0f;
+    
+   if (screenscale == 0.0f)
+      screenscale = apple_gfx_ctx_get_native_scale();
 	
    if (gl)
    {

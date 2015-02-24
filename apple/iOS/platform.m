@@ -90,10 +90,12 @@ static void handle_touch_event(NSArray* touches)
 {
    NSUInteger i;
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-   const float scale = apple_gfx_ctx_get_native_scale();
+   static CGFloat scale = 0.0f;
 
    if (!apple)
       return;
+   if (scale == 0.0f)
+      scale = apple_gfx_ctx_get_native_scale();
 
    apple->touch_count = 0;
    
