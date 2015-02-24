@@ -90,7 +90,7 @@ typedef struct android_input
    const rarch_joypad_driver_t *joypad;
 } android_input_t;
 
-void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *bugfix);
+static void frontend_android_get_version_sdk(int32_t *sdk);
 
 bool (*engine_lookup_name)(char *buf,
       int *vendorId, int *productId, size_t size, int id);
@@ -152,9 +152,11 @@ static void engine_handle_dpad_getaxisvalue(android_input_t *android,
    android->analog_state[port][9] = (int16_t)(gas * 32767.0f);
 }
 
-static bool android_input_lookup_name_gingerbread(char *buf,
+static bool android_input_lookup_name_prekitkat(char *buf,
       int *vendorId, int *productId, size_t size, int id)
 {
+   RARCH_LOG("Using old lookup");
+
    jclass class;
    jmethodID method, getName;
    jobject device, name;
@@ -210,9 +212,11 @@ error:
    return false;
 }
 
-static bool android_input_lookup_name_post_gingerbread(char *buf,
+static bool android_input_lookup_name(char *buf,
       int *vendorId, int *productId, size_t size, int id)
 {
+   RARCH_LOG("Using new lookup");
+
    jclass class;
    jmethodID method, getName, getVendorId, getProductId;
    jobject device, name;
@@ -297,7 +301,7 @@ error:
 
 static void *android_input_init(void)
 {
-   int32_t major, minor, bugfix;
+   int32_t sdk;
    android_input_t *android = (android_input_t*)calloc(1, sizeof(*android));
 
    if (!android)
@@ -306,12 +310,14 @@ static void *android_input_init(void)
    android->pads_connected = 0;
    android->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
 
-   frontend_android_get_version(&major, &minor, &bugfix);
+   frontend_android_get_version_sdk(&sdk);
 
-   engine_lookup_name = android_input_lookup_name_post_gingerbread;
-
-   if (major == 2 && minor == 3)
-      engine_lookup_name = android_input_lookup_name_gingerbread;
+   RARCH_LOG("sdk version: %d\n", sdk);
+   
+   if (sdk >= 19)
+      engine_lookup_name = android_input_lookup_name;
+   else
+      engine_lookup_name = android_input_lookup_name_prekitkat;
 
    return android;
 }

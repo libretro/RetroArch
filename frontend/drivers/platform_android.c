@@ -20,7 +20,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/resource.h>
-#include <sys/system_properties.h>
 
 #include "platform_android.h"
 
@@ -429,16 +428,48 @@ static bool android_run_events(void *data)
    return true;
 }
 
+static int system_property_get(const char *name, char *value)
+{
+   char cmd[1024];
+
+   sprintf(cmd, "getprop %s", name);
+   FILE *pipe = popen(cmd, "r");
+   if (!pipe)
+   {
+      RARCH_ERR("Could not create pipe.\n");
+      return 0;
+   }
+
+   int length = 0;
+   char buffer[128];
+   char *curpos = value;
+   
+   while (!feof(pipe))
+   {
+      if (fgets(buffer, 128, pipe) != NULL)
+      {
+         memcpy(curpos, buffer, strlen(buffer));
+         curpos += strlen(buffer);
+         length += strlen(buffer);
+      }
+   }
+   *curpos = '\0';
+
+   pclose(pipe);
+
+   return length;
+}
+
 static void frontend_android_get_name(char *name, size_t sizeof_name)
 {
-   int len = __system_property_get("ro.product.model", name);
+   int len = system_property_get("ro.product.model", name);
    (void)len;
 }
 
-void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *bugfix)
+static void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *bugfix)
 {
    char os_version_str[PROP_VALUE_MAX];
-   __system_property_get("ro.build.version.release", os_version_str);
+   system_property_get("ro.build.version.release", os_version_str);
 
    *major  = 0;
    *minor  = 0;
@@ -459,6 +490,19 @@ void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *bugfi
          return;
       }
    }
+}
+
+static void frontend_android_get_version_sdk(int32_t *sdk)
+{
+  char os_version_str[PROP_VALUE_MAX];
+  system_property_get("ro.build.version.sdk", os_version_str);
+
+  *sdk = 0;
+  if (os_version_str[0])
+  {
+    int num_read = sscanf(os_version_str, "%d", sdk);
+	(void) num_read;
+  }
 }
 
 static bool device_is_xperia_play(const char *name)
@@ -669,7 +713,7 @@ static void frontend_android_get_environment_settings(int *argc,
    }
 
    frontend_android_get_name(device_model, sizeof(device_model));
-   __system_property_get("ro.product.id", device_id);
+   system_property_get("ro.product.id", device_id);
 
    g_defaults.settings.video_threaded_enable = true;
 
