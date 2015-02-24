@@ -28,9 +28,7 @@
 struct android_app *g_android;
 static pthread_key_t thread_key;
 
-//forward decls
-static void frontend_android_deinit(void *data);
-static void frontend_android_shutdown(bool unused);
+/* Forward declaration. */
 extern void android_app_entry(void *args);
 
 void engine_handle_cmd(void *data)
@@ -748,6 +746,37 @@ static void frontend_android_get_environment_settings(int *argc,
 #endif
 }
 
+static void frontend_android_deinit(void *data)
+{
+   JNIEnv *env;
+   struct android_app *android_app = (struct android_app*)data;
+
+   if (!android_app)
+      return;
+
+   RARCH_LOG("Deinitializing RetroArch ...\n");
+   android_app->activityState = APP_CMD_DEAD;
+
+   env = jni_thread_getenv();
+
+   if (env && android_app->onRetroArchExit)
+      CALL_VOID_METHOD(env, android_app->activity->clazz,
+            android_app->onRetroArchExit);
+
+   if (android_app->inputQueue)
+   {
+      RARCH_LOG("Detaching Android input queue looper ...\n");
+      AInputQueue_detachLooper(android_app->inputQueue);
+   }
+}
+
+static void frontend_android_shutdown(bool unused)
+{
+   (void)unused;
+   // Cleaner approaches don't work sadly.
+   exit(0);
+}
+
 static void frontend_android_init(void *data)
 {
    JNIEnv *env;
@@ -801,37 +830,6 @@ static void frontend_android_init(void *data)
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
          "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
-}
-
-static void frontend_android_deinit(void *data)
-{
-   JNIEnv *env;
-   struct android_app *android_app = (struct android_app*)data;
-
-   if (!android_app)
-      return;
-
-   RARCH_LOG("Deinitializing RetroArch ...\n");
-   android_app->activityState = APP_CMD_DEAD;
-
-   env = jni_thread_getenv();
-
-   if (env && android_app->onRetroArchExit)
-      CALL_VOID_METHOD(env, android_app->activity->clazz,
-            android_app->onRetroArchExit);
-
-   if (android_app->inputQueue)
-   {
-      RARCH_LOG("Detaching Android input queue looper ...\n");
-      AInputQueue_detachLooper(android_app->inputQueue);
-   }
-}
-
-static void frontend_android_shutdown(bool unused)
-{
-   (void)unused;
-   // Cleaner approaches don't work sadly.
-   exit(0);
 }
 
 static int frontend_android_get_rating(void)
