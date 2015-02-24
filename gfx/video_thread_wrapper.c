@@ -257,6 +257,14 @@ static void thread_loop(void *data)
             thread_reply(thr, CMD_POKE_SET_FILTERING);
             break;
 
+         case CMD_POKE_GET_VIDEO_OUTPUT_SIZE:
+            if (thr->poke && thr->poke->get_video_output_size)
+               thr->poke->get_video_output_size(thr->driver_data,
+                     &thr->cmd_data.output.width,
+                     &thr->cmd_data.output.height);
+            thread_reply(thr, CMD_POKE_GET_VIDEO_OUTPUT_SIZE);
+            break;
+
          case CMD_POKE_SET_ASPECT_RATIO:
             thr->poke->set_aspect_ratio(thr->driver_data,
                   thr->cmd_data.i);
@@ -759,6 +767,19 @@ static void thread_set_filtering(void *data, unsigned idx, bool smooth)
    thread_wait_reply(thr, CMD_POKE_SET_FILTERING);
 }
 
+static void thread_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr)
+      return;
+   thread_send_cmd(thr, CMD_POKE_GET_VIDEO_OUTPUT_SIZE);
+   thread_wait_reply(thr, CMD_POKE_GET_VIDEO_OUTPUT_SIZE);
+   *width  = thr->cmd_data.output.width;
+   *height = thr->cmd_data.output.width;
+}
+
 static void thread_set_aspect_ratio(void *data, unsigned aspectratio_idx)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -852,6 +873,7 @@ static struct video_shader *thread_get_current_shader(void *data)
 
 static const video_poke_interface_t thread_poke = {
    thread_set_filtering,
+   thread_get_video_output_size,
 #ifdef HAVE_FBO
    NULL,
 #endif

@@ -841,6 +841,7 @@ static void psp_viewport_info(void *data, struct video_viewport *vp)
 
 static const video_poke_interface_t psp_poke_interface = {
    psp_set_filtering,
+   NULL, /* get_video_output_size */
    NULL,
    NULL,
    psp_set_aspect_ratio,

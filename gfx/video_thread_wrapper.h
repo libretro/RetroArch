@@ -42,6 +42,7 @@ enum thread_cmd
 #endif
 
    CMD_POKE_SET_FILTERING,
+   CMD_POKE_GET_VIDEO_OUTPUT_SIZE,
 #ifdef HAVE_FBO
    CMD_POKE_SET_FBO_STATE,
    CMD_POKE_GET_FBO_STATE,
@@ -133,6 +134,12 @@ typedef struct thread_video
          const struct texture_image *data;
          unsigned num;
       } image;
+
+      struct
+      {
+         unsigned width;
+         unsigned height;
+      } output;
 
       struct
       {

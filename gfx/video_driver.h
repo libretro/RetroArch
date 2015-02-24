@@ -93,6 +93,7 @@ enum texture_filter_type
 typedef struct video_poke_interface
 {
    void (*set_filtering)(void *data, unsigned index, bool smooth);
+   void (*get_video_output_size)(void *data, unsigned *width, unsigned *height);
 #ifdef HAVE_FBO
    uintptr_t (*get_current_framebuffer)(void *data);
 #endif

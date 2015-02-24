@@ -3090,6 +3090,7 @@ static struct video_shader *gl_get_current_shader(void *data)
 
 static const video_poke_interface_t gl_poke_interface = {
    NULL,
+   NULL, /* get_video_output_size */
 #ifdef HAVE_FBO
    gl_get_current_framebuffer,
 #endif

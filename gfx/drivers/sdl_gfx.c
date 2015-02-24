@@ -507,6 +507,7 @@ static void sdl_grab_mouse_toggle(void *data)
 
 static const video_poke_interface_t sdl_poke_interface = {
    sdl_set_filtering,
+   NULL, /* get_video_output_size */
 #ifdef HAVE_FBO
    NULL,
    NULL,
