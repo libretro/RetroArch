@@ -15,6 +15,7 @@
 
 #include <Availability.h>
 #include "RetroArch_Apple.h"
+#ifdef __IPHONE_7_0
 #import <GameController/GameController.h>
 #include "apple_gamecontroller.h"
 #include "../../input/drivers/apple_input.h"
@@ -25,7 +26,11 @@ static BOOL apple_gamecontroller_available(void)
         return false;
     /* by checking for extern symbols defined by the framework, we can check for its
      * existence at runtime. This is the Apple endorsed way of dealing with this */
+#ifdef __IPHONE_7_0
     return (&GCControllerDidConnectNotification && &GCControllerDidDisconnectNotification);
+#else
+   return false;
+#endif
 }
 
 static void apple_gamecontroller_poll(GCController *controller)
@@ -130,9 +135,11 @@ static void apple_gamecontroller_disconnect(GCController* controller)
     
     pad_connection_pad_deinit(&slots[pad], pad);
 }
+#endif
 
 void apple_gamecontroller_init(void)
 {
+#ifdef __IPHONE_7_0
     if (!apple_gamecontroller_available())
         return;
     
@@ -149,4 +156,5 @@ void apple_gamecontroller_init(void)
                                                   usingBlock:^(NSNotification *note) {
                                                       apple_gamecontroller_disconnect([note object]);
                                                   } ];
+#endif
 }
