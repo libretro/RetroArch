@@ -461,6 +461,18 @@ void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *bugfi
    }
 }
 
+void frontend_android_get_version_sdk(int32_t *sdk)
+{
+  char os_version_str[PROP_VALUE_MAX];
+  __system_property_get("ro.build.version.sdk", os_version_str);
+
+  *sdk = 0;
+  if (os_version_str[0])
+  {
+    int num_read = sscanf(os_version_str, "%d", sdk);
+  }
+}
+
 static bool device_is_xperia_play(const char *name)
 {
    if (

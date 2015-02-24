@@ -90,7 +90,7 @@ typedef struct android_input
    const rarch_joypad_driver_t *joypad;
 } android_input_t;
 
-void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *bugfix);
+void frontend_android_get_version_sdk(int32_t *sdk);
 
 bool (*engine_lookup_name)(char *buf,
       int *vendorId, int *productId, size_t size, int id);
@@ -297,7 +297,7 @@ error:
 
 static void *android_input_init(void)
 {
-   int32_t major, minor, bugfix;
+   int32_t sdk;
    android_input_t *android = (android_input_t*)calloc(1, sizeof(*android));
 
    if (!android)
@@ -306,11 +306,11 @@ static void *android_input_init(void)
    android->pads_connected = 0;
    android->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
 
-   frontend_android_get_version(&major, &minor, &bugfix);
+   frontend_android_get_version_sdk(&sdk);
 
    engine_lookup_name = android_input_lookup_name_post_gingerbread;
 
-   if (major == 2 && minor == 3)
+   if (sdk <= 18)
       engine_lookup_name = android_input_lookup_name_gingerbread;
 
    return android;
