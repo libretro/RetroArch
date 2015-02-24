@@ -448,9 +448,10 @@ static int system_property_get(const char *name, char *value)
    {
       if (fgets(buffer, 128, pipe) != NULL)
       {
-         memcpy(curpos, buffer, strlen(buffer));
-         curpos += strlen(buffer);
-         length += strlen(buffer);
+         int curlen = strlen(buffer);
+         memcpy(curpos, buffer, curlen);
+         curpos += curlen;
+         length += curlen;
       }
    }
    *curpos = '\0';
@@ -501,7 +502,7 @@ static void frontend_android_get_version_sdk(int32_t *sdk)
   if (os_version_str[0])
   {
     int num_read = sscanf(os_version_str, "%d", sdk);
-	(void) num_read;
+    (void) num_read;
   }
 }
 
