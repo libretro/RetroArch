@@ -205,7 +205,7 @@ enum
    if (event.allTouches.count)
       handle_touch_event(event.allTouches.allObjects);
 
-   if (!(IOS_IS_VERSION_7_OR_HIGHER()) && [event respondsToSelector:@selector(_gsEvent)])
+   if (!(get_ios_version_major() >= 7) && [event respondsToSelector:@selector(_gsEvent)])
    {
       // Stolen from: http://nacho4d-nacho4d.blogspot.com/2012/01/catching-keyboard-events-in-ios.html
       const uint8_t* eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);

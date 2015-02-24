@@ -326,8 +326,8 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       {
          bool is_zip;
          UIActionSheet *menu;
-         NSString *button4_name = (IOS_IS_VERSION_7_OR_HIGHER()) ? @"AirDrop" : @"Delete";
-         NSString *button5_name = (IOS_IS_VERSION_7_OR_HIGHER()) ? @"Delete" : nil;
+         NSString *button4_name = (get_ios_version_major() >= 7) ? @"AirDrop" : @"Delete";
+         NSString *button5_name = (get_ios_version_major() >= 7) ? @"Delete" : nil;
          
          self.selectedItem = [self itemForIndexPath:idx_path];
          is_zip = !(strcmp(self.selectedItem.path.pathExtension.UTF8String, "zip"));
@@ -367,7 +367,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [alertView show];
    }
 #ifdef __IPHONE_7_0
-   else if (!strcmp(action.UTF8String, "AirDrop") && IOS_IS_VERSION_7_OR_HIGHER())
+   else if (!strcmp(action.UTF8String, "AirDrop") && (get_ios_version_major() >= 7))
    {
       // TODO: Zip if not already zipped
 
