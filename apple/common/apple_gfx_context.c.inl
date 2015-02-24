@@ -226,12 +226,39 @@ static bool apple_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned he
    return true;
 }
 
+static CGFloat apple_gfx_ctx_get_native_scale(void)
+{
+    SEL selector = NSSelectorFromString(BOXSTRING("scale"));
+    RAScreen *screen = (RAScreen*)get_chosen_screen();
+    
+    if (!screen)
+        return 0.0f;
+    
+    (void)selector;
+    
+#ifdef IOS
+   if ([screen respondsToSelector:@selector(nativeScale)])
+   {
+       float ret;
+       NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
+                                   [[[UIScreen mainScreen] class] instanceMethodSignatureForSelector:selector]];
+       [invocation setSelector:selector];
+       [invocation setTarget:[UIScreen mainScreen]];
+       [invocation invoke];
+       [invocation getReturnValue:&ret];
+       return ret;
+   }
+#endif
+    
+   return screen.scale;
+}
+
 static void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height)
 {
    RAScreen *screen = (RAScreen*)get_chosen_screen();
    CGRect size = screen.bounds;
    gl_t *gl = (gl_t*)data;
-   CGFloat screenscale = screen.scale;
+   CGFloat screenscale = apple_gfx_ctx_get_native_scale();
 	
    if (gl)
    {
@@ -242,9 +269,6 @@ static void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* 
       size = g_view.bounds;
 #endif
    }
-    
-   if ([screen respondsToSelector:@selector(nativeScale)])
-       screenscale = screen.nativeScale;
     
    *width  = CGRectGetWidth(size)  * screenscale;
    *height = CGRectGetHeight(size) * screenscale;
