@@ -35,7 +35,6 @@
 		84F9A9C81A87E250003AF12F /* cht in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C11A87E180003AF12F /* cht */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
-		963C3C34186E3DED00A6EB1E /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 963C3C33186E3DED00A6EB1E /* GameController.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
 		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
 		96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
@@ -92,7 +91,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				696012F219F3389A006A1088 /* CoreText.framework in Frameworks */,
-				963C3C34186E3DED00A6EB1E /* GameController.framework in Frameworks */,
 				50CCC828185E0E7D001F5BC8 /* CoreLocation.framework in Frameworks */,
 				501881EE184BB54C006F665D /* CoreMedia.framework in Frameworks */,
 				501881EC184BAD6D006F665D /* AVFoundation.framework in Frameworks */,
@@ -415,6 +413,7 @@
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
 				);
+				"OTHER_LDFLAGS[arch=*]" = "";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = "armv7 armv7s";
@@ -470,6 +469,7 @@
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
 				);
+				"OTHER_LDFLAGS[arch=*]" = "";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;

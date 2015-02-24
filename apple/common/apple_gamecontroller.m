@@ -15,9 +15,7 @@
 
 #include <Availability.h>
 #include "RetroArch_Apple.h"
-#ifdef __IPHONE_7_0
-#import <GameController/GameController.h>
-#endif
+#import "GameController/GameController.h"
 #include "apple_gamecontroller.h"
 #include "../../input/drivers/apple_input.h"
 
