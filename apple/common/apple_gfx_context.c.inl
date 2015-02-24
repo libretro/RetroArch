@@ -231,6 +231,7 @@ static void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* 
    RAScreen *screen = (RAScreen*)get_chosen_screen();
    CGRect size = screen.bounds;
    gl_t *gl = (gl_t*)data;
+   CGFloat screenscale = screen.scale;
 	
    if (gl)
    {
@@ -241,9 +242,12 @@ static void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* 
       size = g_view.bounds;
 #endif
    }
-
-   *width  = CGRectGetWidth(size)  * screen.scale;
-   *height = CGRectGetHeight(size) * screen.scale;
+    
+   if ([screen respondsToSelector:@selector(nativeScale)])
+       screenscale = screen.nativeScale;
+    
+   *width  = CGRectGetWidth(size)  * screenscale;
+   *height = CGRectGetHeight(size) * screenscale;
 }
 
 static void apple_gfx_ctx_update_window_title(void *data)
