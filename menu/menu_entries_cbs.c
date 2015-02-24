@@ -786,6 +786,7 @@ static int deferred_push_core_information(void *data, void *userdata,
    return 0;
 }
 
+#ifdef HAVE_LIBRETRODB
 static int create_string_list_rdb_entry_string(const char *desc, const char *label,
       const char *actual_string, const char *path, file_list_t *list)
 {
@@ -872,7 +873,7 @@ static int create_string_list_rdb_entry_int(const char *desc, const char *label,
 
    return 0;
 }
-
+#endif
 
 static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
