@@ -44,6 +44,10 @@ extern "C" {
 #define MAX_COUNTERS 64
 #endif
 
+#ifndef IDEAL_DT
+#define IDEAL_DT (1.0 / 60.0 * 1000000.0)
+#endif
+
 extern const struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
 extern const struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
 extern unsigned perf_ptr_rarch;
