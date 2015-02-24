@@ -2408,50 +2408,19 @@ static int action_ok_video_resolution(const char *path,
 static int action_toggle_video_resolution(unsigned type, const char *label,
       unsigned action)
 {
-#ifdef GEKKO
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         if (menu_current_gx_resolution > 0)
-            menu_current_gx_resolution--;
+         if (driver.video_data && driver.video_poke &&
+               driver.video_poke->get_video_output_prev)
+            driver.video_poke->get_video_output_prev(driver.video_data);
          break;
       case MENU_ACTION_RIGHT:
-         if (menu_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
-         {
-#ifdef HW_RVL
-            if ((menu_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
-               if (CONF_GetVideo() != CONF_VIDEO_PAL)
-                  return 0;
-#endif
-
-            menu_current_gx_resolution++;
-         }
+         if (driver.video_data && driver.video_poke &&
+               driver.video_poke->get_video_output_next)
+            driver.video_poke->get_video_output_next(driver.video_data);
          break;
    }
-#elif defined(__CELLOS_LV2__)
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         if (g_extern.console.screen.resolutions.current.idx)
-         {
-            g_extern.console.screen.resolutions.current.idx--;
-            g_extern.console.screen.resolutions.current.id =
-               g_extern.console.screen.resolutions.list
-               [g_extern.console.screen.resolutions.current.idx];
-         }
-         break;
-      case MENU_ACTION_RIGHT:
-         if (g_extern.console.screen.resolutions.current.idx + 1 <
-               g_extern.console.screen.resolutions.count)
-         {
-            g_extern.console.screen.resolutions.current.idx++;
-            g_extern.console.screen.resolutions.current.id =
-               g_extern.console.screen.resolutions.list
-               [g_extern.console.screen.resolutions.current.idx];
-         }
-         break;
-   }
-#endif
 
    return 0;
 }
