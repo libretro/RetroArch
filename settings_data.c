@@ -3081,16 +3081,11 @@ static void general_write_handler(void *data)
    if (!(settings_list_append(list, list_info, setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, PLAYER_OFFSET, DEF, group_info, subgroup_info)))) return false; \
 }
 
-
 #ifdef GEKKO
 #define MAX_GAMMA_SETTING 2
 #else
 #define MAX_GAMMA_SETTING 1
 #endif
-
-
-
-
 
 static void setting_data_add_special_callbacks(
       rarch_setting_t **list,
