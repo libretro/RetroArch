@@ -15,6 +15,7 @@
  */
 
 #include "../../driver.h"
+#include "../../retroarch.h"
 #include "../../ps3/sdk_defines.h"
 
 #ifdef HAVE_LIBDBGFONT
@@ -236,6 +237,29 @@ static void gfx_ctx_ps3_get_video_output_size(void *data,
 
    *width  = resolution.width;
    *height = resolution.height;
+}
+
+static void gfx_ctx_ps3_get_video_output_prev(void *data)
+{
+   if (g_extern.console.screen.resolutions.current.idx)
+   {
+      g_extern.console.screen.resolutions.current.idx--;
+      g_extern.console.screen.resolutions.current.id =
+         g_extern.console.screen.resolutions.list
+         [g_extern.console.screen.resolutions.current.idx];
+   }
+}
+
+static void gfx_ctx_ps3_get_video_output_next(void *data)
+{
+   if (g_extern.console.screen.resolutions.current.idx + 1 <
+         g_extern.console.screen.resolutions.count)
+   {
+      g_extern.console.screen.resolutions.current.idx++;
+      g_extern.console.screen.resolutions.current.id =
+         g_extern.console.screen.resolutions.list
+         [g_extern.console.screen.resolutions.current.idx];
+   }
 }
 
 static bool gfx_ctx_ps3_init(void *data)
