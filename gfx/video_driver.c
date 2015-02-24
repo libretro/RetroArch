@@ -529,7 +529,9 @@ void init_video(void)
    g_extern.frame_cache.pitch = 8;
    g_extern.frame_cache.data = &dummy_pixels;
 
+#if defined(PSP)
    if (driver.video_poke && driver.video_poke->set_texture_frame)
       driver.video_poke->set_texture_frame(driver.video_data,
                &dummy_pixels, false, 1, 1, 1.0f);
+#endif
 }
