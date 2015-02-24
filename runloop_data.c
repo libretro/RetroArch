@@ -130,45 +130,59 @@ static int rarch_main_iterate_http_poll(void)
 }
 #endif
 
-#ifdef HAVE_OVERLAY
-static int cb_image_overlay(void *data, size_t len)
+#ifdef HAVE_MENU
+static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
 {
-   g_extern.images.is_finished   = true;
-   g_extern.images.is_blocking   = true;
+   struct rpng_t *rpng = NULL;
+   void *ptr = NULL;
+   struct texture_image ti = {0};
+   uint32_t **pixels = NULL;
+   unsigned *width = NULL;
+   unsigned *height = NULL;
+   
+   rpng = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
 
-   if (!driver.overlay)
+   if (!rpng)
       return -1;
 
-   RARCH_LOG("Gets here.\n");
+   ptr = nbio_get_ptr(g_extern.nbio.handle, &len);
 
-   driver.overlay->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
+   rpng->buff_data = (uint8_t*)ptr;
 
-   return 0;
-}
-
-static int cb_nbio_image_overlay(void *data, size_t len)
-{
-   (void)len;
-
-   g_extern.nbio.is_finished = true;
-
-   RARCH_LOG("Gets here.\n");
-
-   g_extern.images.handle = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
-
-   if (!g_extern.images.handle)
-      return -1;
-
-   g_extern.images.handle->buff_data = (uint8_t*)data;
-
-   if (!rpng_nbio_load_image_argb_start(g_extern.images.handle))
+   if (!rpng_nbio_load_image_argb_start(rpng))
    {
-      rpng_nbio_load_image_free(g_extern.images.handle);
+      rpng_nbio_load_image_free(rpng);
       return -1;
    }
 
-   g_extern.images.cb        = &cb_image_overlay;
-   g_extern.nbio.is_blocking = true;
+   while (rpng_nbio_load_image_argb_iterate(
+            rpng->buff_data,
+            rpng))
+   {
+      rpng->buff_data += 
+         4 + 4 + rpng->chunk.size + 4;
+   }
+
+   if (!rpng->has_ihdr || !rpng->has_idat || !rpng->has_iend)
+      return -1;
+
+   pixels = &ti.pixels;
+   width  = &ti.width;
+   height = &ti.height;
+   
+   rpng_nbio_load_image_argb_process(rpng, pixels, width, height);
+
+   if (driver.menu_ctx && driver.menu_ctx->load_background)
+      driver.menu_ctx->load_background(&ti);
+
+   texture_image_free(&ti);
+
+   if (rpng)
+      rpng_nbio_load_image_free(rpng);
+   rpng = NULL;
+
+   g_extern.nbio.is_blocking   = true;
+   g_extern.nbio.is_finished   = true;
 
    return 0;
 }
@@ -191,23 +205,23 @@ static int rarch_main_iterate_image_poll(void)
    if (g_extern.images.handle)
       return -1; 
 
-#if 0
-   RARCH_LOG("Gets here, path: %s\n", path);
-#endif
-
    /* We need to load the image file first. */
    msg_queue_clear(g_extern.nbio.msg_queue);
-   msg_queue_push(g_extern.nbio.msg_queue, newstring, 1, 180);
+   msg_queue_push(g_extern.nbio.msg_queue, path, 0, 1);
 
    return 0;
 }
 
 static int rarch_main_iterate_image_transfer(void)
 {
+   if (g_extern.images.is_finished)
+      return 0;
+
    if (rpng_nbio_load_image_argb_iterate(
             g_extern.images.handle->buff_data,
             g_extern.images.handle))
    {
+      RARCH_LOG("Pass.\n");
       g_extern.images.handle->buff_data += 
          4 + 4 + g_extern.images.handle->chunk.size + 4;
       return 0;
@@ -274,7 +288,6 @@ static int rarch_main_iterate_nbio_poll(void)
 
    str_list         = string_split(path, "|"); 
 
-
    if (!str_list)
       goto error;
 
@@ -291,23 +304,17 @@ static int rarch_main_iterate_nbio_poll(void)
       goto error;
    }
 
-#if 0
-   RARCH_LOG("path is: %s\n", path);
-#endif
-
    g_extern.nbio.handle      = handle;
-   g_extern.nbio.cb          = NULL;
    g_extern.nbio.is_blocking = false;
    g_extern.nbio.is_finished = false;
+   g_extern.nbio.cb          = &cb_nbio_default;
 
    if (elem1[0] != '\0')
    {
-#ifdef HAVE_OVERLAY
-      if (!strcmp(elem1, "cb_image_overlay_load"))
-         g_extern.nbio.cb = &cb_nbio_image_overlay;
-      else
+#ifdef HAVE_MENU
+      if (!strcmp(elem1, "cb_menu_wallpaper"))
+         g_extern.nbio.cb = &cb_nbio_image_menu_wallpaper;
 #endif
-         g_extern.nbio.cb = &cb_nbio_default;
    }
 
    nbio_begin_read(handle);
@@ -326,9 +333,9 @@ error:
 static int rarch_main_iterate_nbio_transfer(void)
 {
    if (!nbio_iterate(g_extern.nbio.handle))
-      return -1;
+      return 0;
 
-   return 0;
+   return -1;
 }
 
 static int rarch_main_iterate_nbio_parse_free(void)
@@ -397,7 +404,7 @@ void do_data_state_checks(void)
    {
       if (!g_extern.nbio.is_blocking)
       {
-         if (!rarch_main_iterate_nbio_transfer())
+         if (rarch_main_iterate_nbio_transfer() == -1)
             rarch_main_iterate_nbio_parse();
       }
       else if (g_extern.nbio.is_finished)
@@ -410,7 +417,7 @@ void do_data_state_checks(void)
    {
       if (!g_extern.images.is_blocking)
       {
-         if (!rarch_main_iterate_image_transfer())
+         if (rarch_main_iterate_image_transfer() == -1)
             rarch_main_iterate_image_parse();
       }
       else if (g_extern.images.is_finished)

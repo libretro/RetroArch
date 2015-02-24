@@ -609,16 +609,11 @@ static int action_ok_menu_wallpaper_load(const char *path,
 
    if (path_file_exists(wallpaper_path))
    {
-      struct texture_image ti = {0};
-
       strlcpy(g_settings.menu.wallpaper, wallpaper_path, sizeof(g_settings.menu.wallpaper));
+      strlcat(wallpaper_path, "|cb_menu_wallpaper", sizeof(wallpaper_path));
 
-      texture_image_load(&ti, wallpaper_path);
-
-      if (driver.menu_ctx && driver.menu_ctx->load_background)
-         driver.menu_ctx->load_background(&ti);
-
-      texture_image_free(&ti);
+      msg_queue_clear(g_extern.images.msg_queue);
+      msg_queue_push(g_extern.images.msg_queue, wallpaper_path, 0, 1);
    }
 
    menu_list_pop_stack_by_needle(menu->menu_list, setting->name);
