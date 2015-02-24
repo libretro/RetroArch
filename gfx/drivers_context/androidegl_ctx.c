@@ -381,6 +381,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_set_video_mode,
    android_gfx_ctx_get_video_size,
    NULL,
+   NULL,
    android_gfx_ctx_update_window_title,
    android_gfx_ctx_check_window,
    android_gfx_ctx_set_resize,

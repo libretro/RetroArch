@@ -452,6 +452,7 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    gfx_ctx_qnx_set_video_mode,
    gfx_ctx_qnx_get_video_size,
    NULL,
+   NULL,
    gfx_ctx_qnx_update_window_title,
    gfx_ctx_qnx_check_window,
    gfx_ctx_qnx_set_resize,

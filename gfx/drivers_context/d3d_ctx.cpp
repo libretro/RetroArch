@@ -500,6 +500,7 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    NULL,
    gfx_ctx_d3d_get_video_size,
    NULL,
+   NULL,
    gfx_ctx_d3d_update_title,
    gfx_ctx_d3d_check_window,
    d3d_resize,

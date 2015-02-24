@@ -734,6 +734,7 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_glx_set_video_mode,
    gfx_ctx_glx_get_video_size,
    NULL,
+   NULL,
    gfx_ctx_glx_update_window_title,
    gfx_ctx_glx_check_window,
    gfx_ctx_glx_set_resize,

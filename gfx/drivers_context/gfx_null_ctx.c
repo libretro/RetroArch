@@ -141,6 +141,7 @@ const gfx_ctx_driver_t gfx_ctx_null = {
    gfx_ctx_null_set_video_mode,
    gfx_ctx_null_get_video_size,
    NULL,
+   NULL,
    gfx_ctx_null_update_window_title,
    gfx_ctx_null_check_window,
    gfx_ctx_null_set_resize,

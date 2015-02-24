@@ -47,22 +47,6 @@ typedef struct gfx_ctx_ps3_data
 #endif
 } gfx_ctx_ps3_data_t;
 
-static unsigned gfx_ctx_ps3_get_resolution_width(unsigned resolution_id)
-{
-   CellVideoOutResolution resolution;
-   cellVideoOutGetResolution(resolution_id, &resolution);
-
-   return resolution.width;
-}
-
-static unsigned gfx_ctx_ps3_get_resolution_height(unsigned resolution_id)
-{
-   CellVideoOutResolution resolution;
-   cellVideoOutGetResolution(resolution_id, &resolution);
-
-   return resolution.height;
-}
-
 static float gfx_ctx_ps3_get_aspect_ratio(void *data)
 {
    CellVideoOutState videoState;
@@ -240,6 +224,19 @@ static void gfx_ctx_ps3_get_video_size(void *data,
 #endif
 }
 
+static void gfx_ctx_ps3_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   if (!width || !height)
+      return;
+
+   CellVideoOutResolution resolution;
+   cellVideoOutGetResolution(resolution_id, &resolution);
+
+   *width  = resolution.width;
+   *height = resolution.height;
+}
+
 static bool gfx_ctx_ps3_init(void *data)
 {
    gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
@@ -379,6 +376,7 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_set_swap_interval,
    gfx_ctx_ps3_set_video_mode,
    gfx_ctx_ps3_get_video_size,
+   gfx_ctx_ps3_get_video_output_size,
    NULL,
    gfx_ctx_ps3_update_window_title,
    gfx_ctx_ps3_check_window,

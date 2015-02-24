@@ -308,6 +308,7 @@ const gfx_ctx_driver_t gfx_ctx_emscripten = {
    gfx_ctx_emscripten_swap_interval,
    gfx_ctx_emscripten_set_video_mode,
    gfx_ctx_emscripten_get_video_size,
+   NULL,
    gfx_ctx_emscripten_translate_aspect,
    gfx_ctx_emscripten_update_window_title,
    gfx_ctx_emscripten_check_window,

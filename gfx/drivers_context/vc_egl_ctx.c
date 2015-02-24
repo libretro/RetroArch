@@ -640,6 +640,7 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_swap_interval,
    gfx_ctx_vc_set_video_mode,
    gfx_ctx_vc_get_video_size,
+   NULL,
    gfx_ctx_vc_translate_aspect,
    gfx_ctx_vc_update_window_title,
    gfx_ctx_vc_check_window,

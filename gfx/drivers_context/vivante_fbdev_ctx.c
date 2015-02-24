@@ -304,6 +304,7 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    gfx_ctx_vivante_set_video_mode,
    gfx_ctx_vivante_get_video_size,
    NULL,
+   NULL,
    gfx_ctx_vivante_update_window_title,
    gfx_ctx_vivante_check_window,
    gfx_ctx_vivante_set_resize,

@@ -881,6 +881,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_set_video_mode,
    gfx_ctx_wl_get_video_size,
    NULL,
+   NULL,
    gfx_ctx_wl_update_window_title,
    gfx_ctx_wl_check_window,
    gfx_ctx_wl_set_resize,
