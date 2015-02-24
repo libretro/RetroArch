@@ -46,92 +46,6 @@
 #include "../gfx/video_viewport.h"
 
 #ifdef GEKKO
-enum
-{
-   GX_RESOLUTIONS_512_192 = 0,
-   GX_RESOLUTIONS_598_200,
-   GX_RESOLUTIONS_640_200,
-   GX_RESOLUTIONS_384_224,
-   GX_RESOLUTIONS_448_224,
-   GX_RESOLUTIONS_480_224,
-   GX_RESOLUTIONS_512_224,
-   GX_RESOLUTIONS_576_224,
-   GX_RESOLUTIONS_608_224,
-   GX_RESOLUTIONS_640_224,
-   GX_RESOLUTIONS_340_232,
-   GX_RESOLUTIONS_512_232,
-   GX_RESOLUTIONS_512_236,
-   GX_RESOLUTIONS_336_240,
-   GX_RESOLUTIONS_352_240,
-   GX_RESOLUTIONS_384_240,
-   GX_RESOLUTIONS_512_240,
-   GX_RESOLUTIONS_530_240,
-   GX_RESOLUTIONS_608_240,
-   GX_RESOLUTIONS_640_240,
-   GX_RESOLUTIONS_512_384,
-   GX_RESOLUTIONS_598_400,
-   GX_RESOLUTIONS_640_400,
-   GX_RESOLUTIONS_384_448,
-   GX_RESOLUTIONS_448_448,
-   GX_RESOLUTIONS_480_448,
-   GX_RESOLUTIONS_512_448,
-   GX_RESOLUTIONS_576_448,
-   GX_RESOLUTIONS_608_448,
-   GX_RESOLUTIONS_640_448,
-   GX_RESOLUTIONS_340_464,
-   GX_RESOLUTIONS_512_464,
-   GX_RESOLUTIONS_512_472,
-   GX_RESOLUTIONS_352_480,
-   GX_RESOLUTIONS_384_480,
-   GX_RESOLUTIONS_512_480,
-   GX_RESOLUTIONS_530_480,
-   GX_RESOLUTIONS_608_480,
-   GX_RESOLUTIONS_640_480,
-   GX_RESOLUTIONS_LAST,
-};
-
-unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
-   { 512, 192 },
-   { 598, 200 },
-   { 640, 200 },
-   { 384, 224 },
-   { 448, 224 },
-   { 480, 224 },
-   { 512, 224 },
-   { 576, 224 },
-   { 608, 224 },
-   { 640, 224 },
-   { 340, 232 },
-   { 512, 232 },
-   { 512, 236 },
-   { 336, 240 },
-   { 352, 240 },
-   { 384, 240 },
-   { 512, 240 },
-   { 530, 240 },
-   { 608, 240 },
-   { 640, 240 },
-   { 512, 384 },
-   { 598, 400 },
-   { 640, 400 },
-   { 384, 448 },
-   { 448, 448 },
-   { 480, 448 },
-   { 512, 448 },
-   { 576, 448 },
-   { 608, 448 },
-   { 640, 448 },
-   { 340, 464 },
-   { 512, 464 },
-   { 512, 472 },
-   { 352, 480 },
-   { 384, 480 },
-   { 512, 480 },
-   { 530, 480 },
-   { 608, 480 },
-   { 640, 480 },
-};
-
 unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
@@ -2462,10 +2376,15 @@ static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx)
 {
 #ifdef GEKKO
-   if (driver.video_data)
-      gx_set_video_mode(driver.video_data, menu_gx_resolutions
-            [menu_current_gx_resolution][0],
-            menu_gx_resolutions[menu_current_gx_resolution][1]);
+   if (driver.video_data && driver.video_poke &&
+         driver.video_poke->get_video_output_size)
+   {
+      unsigned width = 0, height = 0;
+      driver.video_poke->get_video_output_size(driver.video_data,
+            &width, &height);
+
+      gx_set_video_mode(driver.video_data, width, height);
+   }
 #elif defined(__CELLOS_LV2__)
    if (g_extern.console.screen.resolutions.list[
          g_extern.console.screen.resolutions.current.idx] == 
@@ -5040,12 +4959,6 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
    (void)width;
    (void)height;
 
-#if defined(GEKKO)
-   snprintf(type_str, type_str_size, "%.3ux%.3u%c",
-         menu_gx_resolutions[menu_current_gx_resolution][0],
-         menu_gx_resolutions[menu_current_gx_resolution][1],
-         menu_gx_resolutions[menu_current_gx_resolution][1] > 300 ? 'i' : 'p');
-#else
    if (driver.video_data && driver.video_poke &&
          driver.video_poke->get_video_output_size)
    {
@@ -5055,7 +4968,6 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
    }
    else
       strlcpy(type_str, "N/A", type_str_size);
-#endif
 }
 
 static void menu_action_setting_generic_disp_set_label(

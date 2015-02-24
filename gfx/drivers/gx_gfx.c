@@ -94,6 +94,94 @@ u8 color_ptr[16] ATTRIBUTE_ALIGN(32)  = {
    0xFF, 0xFF, 0xFF, 0xFF,
 };
 
+enum
+{
+   GX_RESOLUTIONS_512_192 = 0,
+   GX_RESOLUTIONS_598_200,
+   GX_RESOLUTIONS_640_200,
+   GX_RESOLUTIONS_384_224,
+   GX_RESOLUTIONS_448_224,
+   GX_RESOLUTIONS_480_224,
+   GX_RESOLUTIONS_512_224,
+   GX_RESOLUTIONS_576_224,
+   GX_RESOLUTIONS_608_224,
+   GX_RESOLUTIONS_640_224,
+   GX_RESOLUTIONS_340_232,
+   GX_RESOLUTIONS_512_232,
+   GX_RESOLUTIONS_512_236,
+   GX_RESOLUTIONS_336_240,
+   GX_RESOLUTIONS_352_240,
+   GX_RESOLUTIONS_384_240,
+   GX_RESOLUTIONS_512_240,
+   GX_RESOLUTIONS_530_240,
+   GX_RESOLUTIONS_608_240,
+   GX_RESOLUTIONS_640_240,
+   GX_RESOLUTIONS_512_384,
+   GX_RESOLUTIONS_598_400,
+   GX_RESOLUTIONS_640_400,
+   GX_RESOLUTIONS_384_448,
+   GX_RESOLUTIONS_448_448,
+   GX_RESOLUTIONS_480_448,
+   GX_RESOLUTIONS_512_448,
+   GX_RESOLUTIONS_576_448,
+   GX_RESOLUTIONS_608_448,
+   GX_RESOLUTIONS_640_448,
+   GX_RESOLUTIONS_340_464,
+   GX_RESOLUTIONS_512_464,
+   GX_RESOLUTIONS_512_472,
+   GX_RESOLUTIONS_352_480,
+   GX_RESOLUTIONS_384_480,
+   GX_RESOLUTIONS_512_480,
+   GX_RESOLUTIONS_530_480,
+   GX_RESOLUTIONS_608_480,
+   GX_RESOLUTIONS_640_480,
+   GX_RESOLUTIONS_LAST,
+};
+
+unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
+   { 512, 192 },
+   { 598, 200 },
+   { 640, 200 },
+   { 384, 224 },
+   { 448, 224 },
+   { 480, 224 },
+   { 512, 224 },
+   { 576, 224 },
+   { 608, 224 },
+   { 640, 224 },
+   { 340, 232 },
+   { 512, 232 },
+   { 512, 236 },
+   { 336, 240 },
+   { 352, 240 },
+   { 384, 240 },
+   { 512, 240 },
+   { 530, 240 },
+   { 608, 240 },
+   { 640, 240 },
+   { 512, 384 },
+   { 598, 400 },
+   { 640, 400 },
+   { 384, 448 },
+   { 448, 448 },
+   { 480, 448 },
+   { 512, 448 },
+   { 576, 448 },
+   { 608, 448 },
+   { 640, 448 },
+   { 340, 464 },
+   { 512, 464 },
+   { 512, 472 },
+   { 352, 480 },
+   { 384, 480 },
+   { 512, 480 },
+   { 530, 480 },
+   { 608, 480 },
+   { 640, 480 },
+};
+
+extern unsigned menu_current_gx_resolution;
+
 static void retrace_callback(u32 retrace_count)
 {
    (void)retrace_count;
@@ -1148,9 +1236,17 @@ static bool gx_read_viewport(void *data, uint8_t *buffer)
    return true;
 }
 
+static void gx_get_video_output_size(void *data, unsigned *width, unsigned *height)
+{
+   (void)data;
+
+   *width  = menu_gx_resolutions[menu_current_gx_resolution][0];
+   *height = menu_gx_resolutions[menu_current_gx_resolution][1];
+}
+
 static const video_poke_interface_t gx_poke_interface = {
    NULL,
-   NULL, /* get_video_output_size */
+   gx_get_video_output_size,
    NULL,
    gx_set_aspect_ratio,
    gx_apply_state_changes,
