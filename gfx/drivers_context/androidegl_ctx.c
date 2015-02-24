@@ -22,7 +22,7 @@
 #include <EGL/egl.h>
 
 #include "../../frontend/drivers/platform_android.h"
-#include "../image/image.h"
+#include <formats/image.h>
 
 #include <stdint.h>
 
