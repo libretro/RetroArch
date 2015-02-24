@@ -195,7 +195,6 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
 
 static int rarch_main_iterate_image_poll(void)
 {
-   char newstring[PATH_MAX_LENGTH];
    const char *path = msg_queue_pull(g_extern.images.msg_queue);
 
    if (!path)
