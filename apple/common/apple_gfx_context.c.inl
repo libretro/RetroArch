@@ -242,8 +242,8 @@ static void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* 
 #endif
    }
 
-   *width  = CGRectGetWidth(size)  * screen.scale;
-   *height = CGRectGetHeight(size) * screen.scale;
+   *width  = CGRectGetWidth(size)  * screen.nativeScale;
+   *height = CGRectGetHeight(size) * screen.nativeScale;
 }
 
 static void apple_gfx_ctx_update_window_title(void *data)
