@@ -521,8 +521,7 @@ end:
 
 static void xmb_selection_pointer_changed(void)
 {
-   int i;
-   unsigned current, end;
+   unsigned i, current, end;
    xmb_handle_t *xmb = NULL;
    menu_handle_t *menu = menu_driver_resolve();
 
