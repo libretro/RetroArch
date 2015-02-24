@@ -594,6 +594,15 @@ struct global
 
    struct
    {
+      struct
+      {
+         bool is_blocking;
+         bool is_finished;
+         transfer_cb_t  cb;
+         msg_queue_t *msg_queue;
+         struct rpng_t *handle;
+      } image;
+
       bool is_blocking;
       bool is_finished;
       transfer_cb_t  cb;
@@ -601,14 +610,6 @@ struct global
       msg_queue_t *msg_queue;
    } nbio;
 
-   struct
-   {
-      bool is_blocking;
-      bool is_finished;
-      transfer_cb_t  cb;
-      msg_queue_t *msg_queue;
-      struct rpng_t *handle;
-   } images;
 
    bool exec;
 

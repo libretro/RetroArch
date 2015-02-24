@@ -195,13 +195,13 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
 
 static int rarch_main_iterate_image_poll(void)
 {
-   const char *path = msg_queue_pull(g_extern.images.msg_queue);
+   const char *path = msg_queue_pull(g_extern.nbio.image.msg_queue);
 
    if (!path)
       return -1;
 
    /* Can only deal with one image transfer at a time for now */
-   if (g_extern.images.handle)
+   if (g_extern.nbio.image.handle)
       return -1; 
 
    /* We need to load the image file first. */
@@ -213,16 +213,15 @@ static int rarch_main_iterate_image_poll(void)
 
 static int rarch_main_iterate_image_transfer(void)
 {
-   if (g_extern.images.is_finished)
+   if (g_extern.nbio.image.is_finished)
       return 0;
 
    if (rpng_nbio_load_image_argb_iterate(
-            g_extern.images.handle->buff_data,
-            g_extern.images.handle))
+            g_extern.nbio.image.handle->buff_data,
+            g_extern.nbio.image.handle))
    {
-      RARCH_LOG("Pass.\n");
-      g_extern.images.handle->buff_data += 
-         4 + 4 + g_extern.images.handle->chunk.size + 4;
+      g_extern.nbio.image.handle->buff_data += 
+         4 + 4 + g_extern.nbio.image.handle->chunk.size + 4;
       return 0;
    }
 
@@ -231,15 +230,15 @@ static int rarch_main_iterate_image_transfer(void)
 
 static int rarch_main_iterate_image_parse_free(void)
 {
-   if (!g_extern.images.is_finished)
+   if (!g_extern.nbio.image.is_finished)
       return -1;
 
-   rpng_nbio_load_image_free(g_extern.images.handle);
-   g_extern.images.handle      = NULL;
-   g_extern.images.is_blocking = false;
-   g_extern.images.is_finished = false;
+   rpng_nbio_load_image_free(g_extern.nbio.image.handle);
+   g_extern.nbio.image.handle      = NULL;
+   g_extern.nbio.image.is_blocking = false;
+   g_extern.nbio.image.is_finished = false;
 
-   msg_queue_clear(g_extern.images.msg_queue);
+   msg_queue_clear(g_extern.nbio.image.msg_queue);
 
    return 0;
 }
@@ -248,8 +247,8 @@ static int rarch_main_iterate_image_parse(void)
 {
    size_t len = 0;
 
-   if (g_extern.images.handle && g_extern.images.cb)
-      g_extern.images.cb(g_extern.images.handle, len);
+   if (g_extern.nbio.image.handle && g_extern.nbio.image.cb)
+      g_extern.nbio.image.cb(g_extern.nbio.image.handle, len);
 
    return 0;
 }
@@ -414,14 +413,14 @@ void do_data_state_checks(void)
    else
       rarch_main_iterate_nbio_poll();
 
-   if (g_extern.images.handle)
+   if (g_extern.nbio.image.handle)
    {
-      if (!g_extern.images.is_blocking)
+      if (!g_extern.nbio.image.is_blocking)
       {
          if (rarch_main_iterate_image_transfer() == -1)
             rarch_main_iterate_image_parse();
       }
-      else if (g_extern.images.is_finished)
+      else if (g_extern.nbio.image.is_finished)
          rarch_main_iterate_image_parse_free();
    }
    else
