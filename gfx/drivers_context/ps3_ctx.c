@@ -227,11 +227,12 @@ static void gfx_ctx_ps3_get_video_size(void *data,
 static void gfx_ctx_ps3_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
+   unsigned ident = g_extern.console.screen.resolutions.current.id;
    if (!width || !height)
       return;
 
    CellVideoOutResolution resolution;
-   cellVideoOutGetResolution(resolution_id, &resolution);
+   cellVideoOutGetResolution(ident, &resolution);
 
    *width  = resolution.width;
    *height = resolution.height;
@@ -270,8 +271,8 @@ static bool gfx_ctx_ps3_init(void *data)
    if (g_extern.console.screen.resolutions.current.id)
    {
       params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
-      params.width = gfx_ctx_ps3_get_resolution_width(g_extern.console.screen.resolutions.current.id);
-      params.height = gfx_ctx_ps3_get_resolution_height(g_extern.console.screen.resolutions.current.id);
+      
+      gfx_ctx_ps3_get_video_output_size(data, &params.width, &params.height);
       g_extern.console.screen.pal_enable = false;
 
       if (params.width == 720 && params.height == 576)

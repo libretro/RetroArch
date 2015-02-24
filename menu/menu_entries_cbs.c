@@ -5045,14 +5045,16 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
          menu_gx_resolutions[menu_current_gx_resolution][0],
          menu_gx_resolutions[menu_current_gx_resolution][1],
          menu_gx_resolutions[menu_current_gx_resolution][1] > 300 ? 'i' : 'p');
-#elif defined(__CELLOS_LV2__)
-   width = gfx_ctx_get_resolution_width(
-         g_extern.console.screen.resolutions.list
-         [g_extern.console.screen.resolutions.current.idx]);
-   height = gfx_ctx_get_resolution_height(
-         g_extern.console.screen.resolutions.list
-         [g_extern.console.screen.resolutions.current.idx]);
-   snprintf(type_str, type_str_size, "%ux%u", width, height);
+#else
+   if (driver.video_data && driver.video_poke &&
+         driver.video_poke->get_video_output_size)
+   {
+      driver.video_poke->get_video_output_size(driver.video_data,
+            &width, &height);
+      snprintf(type_str, type_str_size, "%ux%u", width, height);
+   }
+   else
+      strlcpy(type_str, "N/A", type_str_size);
 #endif
 }
 
