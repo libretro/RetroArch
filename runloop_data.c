@@ -381,6 +381,7 @@ static void rarch_main_iterate_rdl(void)
       return;
    }
 
+#ifdef HAVE_LIBRETRODB
    if (!driver.menu->rdl->iterating)
    {
       msg_queue_clear(g_extern.msg_queue);
@@ -392,6 +393,7 @@ static void rarch_main_iterate_rdl(void)
    }
 
    database_info_write_rdl_iterate(driver.menu->rdl);
+#endif
 
 }
 #endif

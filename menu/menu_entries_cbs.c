@@ -963,12 +963,12 @@ static int create_string_list_rdb_entry_int(const char *desc, const char *label,
 static int deferred_push_rdb_entry_detail(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   int ret = 0;
 #ifdef HAVE_LIBRETRODB
    content_playlist_t *playlist;
    char query[PATH_MAX_LENGTH];
    char path_rdl[PATH_MAX_LENGTH], path_base[PATH_MAX_LENGTH];
    unsigned i, j;
-   int ret = 0;
    database_info_list_t *db_info = NULL;
    file_list_t *list = NULL;
    file_list_t *menu_list = NULL;
@@ -3041,6 +3041,7 @@ static int deferred_push_video_shader_preset_parameters(void *data, void *userda
 static int deferred_push_video_shader_parameters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+#ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = video_shader_driver_get_current_shader();
    if (!shader)
       return 0;
@@ -3048,6 +3049,9 @@ static int deferred_push_video_shader_parameters(void *data, void *userdata,
    return deferred_push_video_shader_parameters_common(data, userdata,
          path, label, type,
          shader, MENU_SETTINGS_SHADER_PARAMETER_0);
+#else
+   return 0;
+#endif
 }
 
 static int deferred_push_settings(void *data, void *userdata,
