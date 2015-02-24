@@ -228,7 +228,7 @@ static bool apple_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned he
 
 CGFloat apple_gfx_ctx_get_native_scale(void)
 {
-    SEL selector = NSSelectorFromString(BOXSTRING("scale"));
+    SEL selector = NSSelectorFromString(BOXSTRING("nativeScale"));
     RAScreen *screen = (RAScreen*)get_chosen_screen();
     
     if (!screen)
@@ -237,7 +237,7 @@ CGFloat apple_gfx_ctx_get_native_scale(void)
     (void)selector;
     
 #ifdef IOS
-   if ([screen respondsToSelector:@selector(nativeScale)])
+   if ([[UIScreen mainScreen] respondsToSelector:selector])
    {
        float ret;
        NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
