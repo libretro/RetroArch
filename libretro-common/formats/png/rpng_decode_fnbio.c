@@ -257,7 +257,6 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf, struct rpng_t *rpng)
 bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
-   bool ret = true;
    struct rpng_process_t pngp = {0};
    z_stream stream = {0};
 
@@ -314,13 +313,11 @@ bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
          return false;
    }
    else
-      ret = png_reverse_filter(*data,
-               &rpng->ihdr, &pngp);
-
-   png_reverse_filter_deinit(&pngp);
-
-   if (!ret)
-      return false;
+   {
+      if (!png_reverse_filter(*data,
+               &rpng->ihdr, &pngp))
+         return false;
+   }
 
    return true;
 }
