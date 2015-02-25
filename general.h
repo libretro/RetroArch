@@ -601,12 +601,14 @@ struct global
          transfer_cb_t  cb;
          msg_queue_t *msg_queue;
          struct rpng_t *handle;
+         unsigned pos_increment;
       } image;
 
       bool is_blocking;
       bool is_finished;
       transfer_cb_t  cb;
       struct nbio_t *handle;
+      unsigned pos_increment;
       msg_queue_t *msg_queue;
    } nbio;
 

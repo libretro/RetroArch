@@ -131,58 +131,58 @@ static int rarch_main_iterate_http_poll(void)
 #endif
 
 #ifdef HAVE_MENU
-static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
+static int cb_image_menu_wallpaper(void *data, size_t len)
 {
-   struct rpng_t *rpng = NULL;
-   void *ptr = NULL;
    struct texture_image ti = {0};
-   uint32_t **pixels = NULL;
-   unsigned *width = NULL;
-   unsigned *height = NULL;
-   
-   rpng = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+   uint32_t **pixels = &ti.pixels;
+   unsigned *width   = &ti.width;
+   unsigned *height  = &ti.height;
 
-   if (!rpng)
+   if (  !g_extern.nbio.image.handle->has_ihdr || 
+         !g_extern.nbio.image.handle->has_idat || 
+         !g_extern.nbio.image.handle->has_iend)
       return -1;
 
-   ptr = nbio_get_ptr(g_extern.nbio.handle, &len);
-
-   rpng->buff_data = (uint8_t*)ptr;
-
-   if (!rpng_nbio_load_image_argb_start(rpng))
-   {
-      rpng_nbio_load_image_free(rpng);
-      return -1;
-   }
-
-   while (rpng_nbio_load_image_argb_iterate(
-            rpng->buff_data,
-            rpng))
-   {
-      rpng->buff_data += 
-         4 + 4 + rpng->chunk.size + 4;
-   }
-
-   if (!rpng->has_ihdr || !rpng->has_idat || !rpng->has_iend)
-      return -1;
-
-   pixels = &ti.pixels;
-   width  = &ti.width;
-   height = &ti.height;
-   
-   rpng_nbio_load_image_argb_process(rpng, pixels, width, height);
+   rpng_nbio_load_image_argb_process(g_extern.nbio.image.handle, pixels, width, height);
 
    if (driver.menu_ctx && driver.menu_ctx->load_background)
       driver.menu_ctx->load_background(&ti);
 
    texture_image_free(&ti);
 
-   if (rpng)
-      rpng_nbio_load_image_free(rpng);
-   rpng = NULL;
+   g_extern.nbio.image.is_blocking   = true;
+   g_extern.nbio.image.is_finished   = true;
+   g_extern.nbio.is_blocking    = true;
+   g_extern.nbio.is_finished    = true;
 
-   g_extern.nbio.is_blocking   = true;
-   g_extern.nbio.is_finished   = true;
+   return 0;
+}
+
+static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
+{
+   void *ptr = NULL;
+   
+   g_extern.nbio.image.handle = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+   g_extern.nbio.image.cb = &cb_image_menu_wallpaper;
+
+   if (!g_extern.nbio.image.handle)
+      return -1;
+
+   ptr = nbio_get_ptr(g_extern.nbio.handle, &len);
+
+   g_extern.nbio.image.handle->buff_data = (uint8_t*)ptr;
+   g_extern.nbio.image.pos_increment = (len / 4) ? (len / 4) : 1;
+
+   if (!rpng_nbio_load_image_argb_start(g_extern.nbio.image.handle))
+   {
+      rpng_nbio_load_image_free(g_extern.nbio.image.handle);
+      return -1;
+   }
+
+   g_extern.nbio.image.is_blocking   = false;
+   g_extern.nbio.image.is_finished   = false;
+   g_extern.nbio.is_blocking    = false;
+   g_extern.nbio.is_finished    = true;
 
    return 0;
 }
@@ -213,16 +213,21 @@ static int rarch_main_iterate_image_poll(void)
 
 static int rarch_main_iterate_image_transfer(void)
 {
+   unsigned i;
+
    if (g_extern.nbio.image.is_finished)
       return 0;
 
-   if (rpng_nbio_load_image_argb_iterate(
-            g_extern.nbio.image.handle->buff_data,
-            g_extern.nbio.image.handle))
+   for (i = 0; i < g_extern.nbio.image.pos_increment; i++)
    {
-      g_extern.nbio.image.handle->buff_data += 
-         4 + 4 + g_extern.nbio.image.handle->chunk.size + 4;
-      return 0;
+      if (rpng_nbio_load_image_argb_iterate(
+               g_extern.nbio.image.handle->buff_data,
+               g_extern.nbio.image.handle))
+      {
+         g_extern.nbio.image.handle->buff_data += 
+            4 + 4 + g_extern.nbio.image.handle->chunk.size + 4;
+         return 0;
+      }
    }
 
    return -1;
@@ -230,13 +235,8 @@ static int rarch_main_iterate_image_transfer(void)
 
 static int rarch_main_iterate_image_parse_free(void)
 {
-   if (!g_extern.nbio.image.is_finished)
-      return -1;
-
    rpng_nbio_load_image_free(g_extern.nbio.image.handle);
    g_extern.nbio.image.handle      = NULL;
-   g_extern.nbio.image.is_blocking = false;
-   g_extern.nbio.image.is_finished = false;
 
    msg_queue_clear(g_extern.nbio.image.msg_queue);
 
@@ -330,6 +330,9 @@ error:
 
 static int rarch_main_iterate_nbio_transfer(void)
 {
+   if (g_extern.nbio.is_finished)
+      return 0;
+
    if (!nbio_iterate(g_extern.nbio.handle))
       return 0;
 
