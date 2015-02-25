@@ -353,8 +353,13 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
                &rpng.ihdr, &pngp))
          GOTO_END_ERROR();
    }
-   else if (!png_reverse_filter(*data,
-            &rpng.ihdr, &pngp))
+   else
+      ret = png_reverse_filter(*data,
+               &rpng.ihdr, &pngp);
+
+   png_reverse_filter_deinit(&pngp);
+
+   if (!ret)
       GOTO_END_ERROR();
 
 end:

@@ -124,7 +124,6 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
    unsigned i;
-   bool ret = true;
 
    for (; pngp->h < ihdr->height;
          pngp->h++, pngp->inflate_buf += pngp->pitch, data += ihdr->width)
@@ -173,7 +172,7 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
             break;
 
          default:
-            GOTO_END_ERROR();
+            return false;
       }
 
       if (ihdr->color_type == 0)
@@ -192,9 +191,7 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       memcpy(pngp->prev_scanline, pngp->decoded_scanline, pngp->pitch);
    }
 
-end:
-   png_reverse_filter_deinit(pngp);
-   return ret;
+   return true;
 }
 
 static bool png_reverse_filter_adam7(uint32_t *data,
@@ -213,6 +210,7 @@ static bool png_reverse_filter_adam7(uint32_t *data,
 
    for (; pngp->pass < ARRAY_SIZE(passes); pngp->pass++)
    {
+      bool ret = true;
       unsigned pass_width, pass_height;
       struct png_ihdr tmp_ihdr;
       uint32_t *tmp_data = NULL;
@@ -245,8 +243,12 @@ static bool png_reverse_filter_adam7(uint32_t *data,
          return false;
       }
 
-      if (!png_reverse_filter(tmp_data,
-               &tmp_ihdr, pngp))
+      ret = png_reverse_filter(tmp_data,
+            &tmp_ihdr, pngp);
+
+      png_reverse_filter_deinit(pngp);
+
+      if (ret)
       {
          free(tmp_data);
          return false;
