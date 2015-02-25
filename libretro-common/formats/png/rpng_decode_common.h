@@ -90,7 +90,7 @@ static void deinterlace_pass(uint32_t *data, const struct png_ihdr *ihdr,
 }
 
 static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
-      const uint8_t *inflate_buf, struct rpng_process_t *pngp,
+      struct rpng_process_t *pngp,
       const uint32_t *palette)
 {
    unsigned i, h;
@@ -113,47 +113,47 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       GOTO_END_ERROR();
 
    for (h = 0; h < ihdr->height;
-         h++, inflate_buf += pitch, data += ihdr->width)
+         h++, pngp->inflate_buf += pitch, data += ihdr->width)
    {
-      unsigned filter = *inflate_buf++;
+      unsigned filter = *pngp->inflate_buf++;
 
       switch (filter)
       {
          case 0: /* None */
-            memcpy(decoded_scanline, inflate_buf, pitch);
+            memcpy(decoded_scanline, pngp->inflate_buf, pitch);
             break;
 
          case 1: /* Sub */
             for (i = 0; i < bpp; i++)
-               decoded_scanline[i] = inflate_buf[i];
+               decoded_scanline[i] = pngp->inflate_buf[i];
             for (i = bpp; i < pitch; i++)
-               decoded_scanline[i] = decoded_scanline[i - bpp] + inflate_buf[i];
+               decoded_scanline[i] = decoded_scanline[i - bpp] + pngp->inflate_buf[i];
             break;
 
          case 2: /* Up */
             for (i = 0; i < pitch; i++)
-               decoded_scanline[i] = prev_scanline[i] + inflate_buf[i];
+               decoded_scanline[i] = prev_scanline[i] + pngp->inflate_buf[i];
             break;
 
          case 3: /* Average */
             for (i = 0; i < bpp; i++)
             {
                uint8_t avg = prev_scanline[i] >> 1;
-               decoded_scanline[i] = avg + inflate_buf[i];
+               decoded_scanline[i] = avg + pngp->inflate_buf[i];
             }
             for (i = bpp; i < pitch; i++)
             {
                uint8_t avg = (decoded_scanline[i - bpp] + prev_scanline[i]) >> 1;
-               decoded_scanline[i] = avg + inflate_buf[i];
+               decoded_scanline[i] = avg + pngp->inflate_buf[i];
             }
             break;
 
          case 4: /* Paeth */
             for (i = 0; i < bpp; i++)
-               decoded_scanline[i] = paeth(0, prev_scanline[i], 0) + inflate_buf[i];
+               decoded_scanline[i] = paeth(0, prev_scanline[i], 0) + pngp->inflate_buf[i];
             for (i = bpp; i < pitch; i++)
                decoded_scanline[i] = paeth(decoded_scanline[i - bpp],
-                     prev_scanline[i], prev_scanline[i - bpp]) + inflate_buf[i];
+                     prev_scanline[i], prev_scanline[i - bpp]) + pngp->inflate_buf[i];
             break;
 
          default:
@@ -184,7 +184,7 @@ end:
 
 static bool png_reverse_filter_adam7(uint32_t *data,
       const struct png_ihdr *ihdr,
-      const uint8_t *inflate_buf, struct rpng_process_t *pngp,
+      struct rpng_process_t *pngp,
       const uint32_t *palette)
 {
    unsigned pass;
@@ -234,14 +234,14 @@ static bool png_reverse_filter_adam7(uint32_t *data,
       }
 
       if (!png_reverse_filter(tmp_data,
-               &tmp_ihdr, inflate_buf, pngp, palette))
+               &tmp_ihdr, pngp, palette))
       {
          free(tmp_data);
          return false;
       }
 
-      inflate_buf += pass_size;
-      pngp->total_out -= pass_size;
+      pngp->inflate_buf     += pass_size;
+      pngp->total_out       -= pass_size;
 
       deinterlace_pass(data,
             ihdr, tmp_data, pass_width, pass_height, &passes[pass]);
