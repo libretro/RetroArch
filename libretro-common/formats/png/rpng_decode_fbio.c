@@ -215,6 +215,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    char header[8];
    z_stream stream = {0};
    struct rpng_t rpng = {0};
+   struct rpng_process_t process = {0};
    bool ret      = true;
 
    *data   = NULL;
@@ -337,14 +338,16 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    if (!*data)
       GOTO_END_ERROR();
 
+   process.total_out = stream.total_out;
+
    if (rpng.ihdr.interlace == 1)
    {
       if (!png_reverse_filter_adam7(*data,
-               &rpng.ihdr, rpng.inflate_buf, stream.total_out, rpng.palette))
+               &rpng.ihdr, rpng.inflate_buf, &process, rpng.palette))
          GOTO_END_ERROR();
    }
    else if (!png_reverse_filter(*data,
-            &rpng.ihdr, rpng.inflate_buf, stream.total_out, rpng.palette))
+            &rpng.ihdr, rpng.inflate_buf, &process, rpng.palette))
       GOTO_END_ERROR();
 
 end:

@@ -60,6 +60,11 @@ struct png_ihdr
    uint8_t interlace;
 };
 
+struct rpng_process_t
+{
+   size_t total_out;
+};
+
 struct rpng_t
 {
    bool has_ihdr;

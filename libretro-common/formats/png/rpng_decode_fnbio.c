@@ -257,6 +257,7 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf, struct rpng_t *rpng)
 bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
+   struct rpng_process_t process = {0};
    z_stream stream = {0};
 
    if (inflateInit(&stream) != Z_OK)
@@ -296,14 +297,16 @@ bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
    if (!*data)
       return false;
 
+   process.total_out = stream.total_out;
+
    if (rpng->ihdr.interlace == 1)
    {
       if (!png_reverse_filter_adam7(*data,
-               &rpng->ihdr, rpng->inflate_buf, stream.total_out, rpng->palette))
+               &rpng->ihdr, rpng->inflate_buf, &process, rpng->palette))
          return false;
    }
    else if (!png_reverse_filter(*data,
-            &rpng->ihdr, rpng->inflate_buf, stream.total_out, rpng->palette))
+            &rpng->ihdr, rpng->inflate_buf, &process, rpng->palette))
       return false;
 
    return true;

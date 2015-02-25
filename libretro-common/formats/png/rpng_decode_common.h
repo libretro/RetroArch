@@ -90,7 +90,7 @@ static void deinterlace_pass(uint32_t *data, const struct png_ihdr *ihdr,
 }
 
 static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
-      const uint8_t *inflate_buf, size_t inflate_buf_size,
+      const uint8_t *inflate_buf, struct rpng_process_t *pngp,
       const uint32_t *palette)
 {
    unsigned i, h;
@@ -103,7 +103,7 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
 
    png_pass_geom(ihdr, ihdr->width, ihdr->height, &bpp, &pitch, &pass_size);
 
-   if (inflate_buf_size < pass_size)
+   if (pngp->total_out < pass_size)
       return false;
 
    prev_scanline    = (uint8_t*)calloc(1, pitch);
@@ -184,7 +184,7 @@ end:
 
 static bool png_reverse_filter_adam7(uint32_t *data,
       const struct png_ihdr *ihdr,
-      const uint8_t *inflate_buf, size_t inflate_buf_size,
+      const uint8_t *inflate_buf, struct rpng_process_t *pngp,
       const uint32_t *palette)
 {
    unsigned pass;
@@ -227,21 +227,21 @@ static bool png_reverse_filter_adam7(uint32_t *data,
       png_pass_geom(&tmp_ihdr, pass_width,
             pass_height, NULL, NULL, &pass_size);
 
-      if (pass_size > inflate_buf_size)
+      if (pass_size > pngp->total_out)
       {
          free(tmp_data);
          return false;
       }
 
       if (!png_reverse_filter(tmp_data,
-               &tmp_ihdr, inflate_buf, pass_size, palette))
+               &tmp_ihdr, inflate_buf, pngp, palette))
       {
          free(tmp_data);
          return false;
       }
 
       inflate_buf += pass_size;
-      inflate_buf_size -= pass_size;
+      pngp->total_out -= pass_size;
 
       deinterlace_pass(data,
             ihdr, tmp_data, pass_width, pass_height, &passes[pass]);
