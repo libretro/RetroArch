@@ -48,8 +48,9 @@
 #define CLOCK_MONOTONIC 2
 #endif
 
-#if defined(__mips__)
+#if defined(PSP)
 #include <sys/time.h>
+#include <psprtc.h>
 #endif
 
 #if defined(__PSL1GHT__)
@@ -175,6 +176,8 @@ retro_perf_tick_t rarch_get_perf_counter(void)
    asm volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time_ticks) );
 #elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
    time_ticks = __mftb();
+#elif defined(PSP)
+   sceRtcGetCurrentTick(&time_ticks);
 #elif defined(__mips__)
    struct timeval tv;
    gettimeofday(&tv,NULL);
@@ -342,6 +345,8 @@ unsigned rarch_get_cpu_cores(void)
 #elif defined(ANDROID)
    return android_getCpuCount();
 #elif defined(GEKKO)
+   return 1;
+#elif defined(PSP)
    return 1;
 #elif defined(_SC_NPROCESSORS_ONLN)
    /* Linux, most UNIX-likes. */
