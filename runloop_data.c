@@ -209,10 +209,9 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
  *
  **/
 
-static int rarch_main_iterate_image_poll(void)
+static int rarch_main_iterate_image_poll(nbio_handle_t *nbio)
 {
    const char *path    = NULL;
-   nbio_handle_t *nbio = (nbio_handle_t*)&g_extern.nbio;
 
    if (!nbio)
       return -1;
@@ -233,10 +232,9 @@ static int rarch_main_iterate_image_poll(void)
    return 0;
 }
 
-static int rarch_main_iterate_image_transfer(void)
+static int rarch_main_iterate_image_transfer(nbio_handle_t *nbio)
 {
    unsigned i;
-   nbio_handle_t *nbio = (nbio_handle_t*)&g_extern.nbio;
 
    if (!nbio)
       return -1;
@@ -261,21 +259,24 @@ static int rarch_main_iterate_image_transfer(void)
    return -1;
 }
 
-static int rarch_main_iterate_image_parse_free(void)
+static int rarch_main_iterate_image_parse_free(nbio_handle_t *nbio)
 {
-   rpng_nbio_load_image_free(g_extern.nbio.image.handle);
-   g_extern.nbio.image.handle      = NULL;
+   if (!nbio)
+      return -1;
 
-   msg_queue_clear(g_extern.nbio.image.msg_queue);
+   rpng_nbio_load_image_free(nbio->image.handle);
+   nbio->image.handle      = NULL;
+
+   msg_queue_clear(nbio->image.msg_queue);
 
    return 0;
 }
 
-static int rarch_main_iterate_image_parse(void)
+static int rarch_main_iterate_image_parse(nbio_handle_t *nbio)
 {
    size_t len = 0;
-   if (g_extern.nbio.image.handle && g_extern.nbio.image.cb)
-      g_extern.nbio.image.cb(&g_extern.nbio, len);
+   if (nbio->image.handle && nbio->image.cb)
+      nbio->image.cb(nbio, len);
 
    return 0;
 }
@@ -301,12 +302,11 @@ static int cb_nbio_default(void *data, size_t len)
 }
 
 
-static int rarch_main_iterate_nbio_poll(void)
+static int rarch_main_iterate_nbio_poll(nbio_handle_t *nbio)
 {
    struct nbio_t* handle;
    char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
    struct string_list *str_list = NULL;
-   nbio_handle_t *nbio = (nbio_handle_t*)&g_extern.nbio;
    const char *path = NULL;
 
    if (!nbio)
@@ -365,10 +365,9 @@ error:
    return -1;
 }
 
-static int rarch_main_iterate_nbio_transfer(void)
+static int rarch_main_iterate_nbio_transfer(nbio_handle_t *nbio)
 {
    size_t i;
-   nbio_handle_t *nbio = (nbio_handle_t*)&g_extern.nbio;
 
    if (!nbio)
       return -1;
@@ -387,10 +386,8 @@ static int rarch_main_iterate_nbio_transfer(void)
    return -1;
 }
 
-static int rarch_main_iterate_nbio_parse_free(void)
+static int rarch_main_iterate_nbio_parse_free(nbio_handle_t *nbio)
 {
-   nbio_handle_t *nbio = (nbio_handle_t*)&g_extern.nbio;
-
    if (!nbio)
       return -1;
    if (!nbio->is_finished)
@@ -406,10 +403,9 @@ static int rarch_main_iterate_nbio_parse_free(void)
    return 0;
 }
 
-static int rarch_main_iterate_nbio_parse(void)
+static int rarch_main_iterate_nbio_parse(nbio_handle_t *nbio)
 {
    int len = 0;
-   nbio_handle_t *nbio = (nbio_handle_t*)&g_extern.nbio;
 
    if (!nbio)
       return -1;
@@ -455,35 +451,41 @@ static void rarch_main_iterate_rdl(void)
 }
 #endif
 
+void do_data_nbio_state_checks(nbio_handle_t *nbio)
+{
+   if (!nbio)
+      return;
+
+   if (nbio->handle)
+   {
+      if (!nbio->is_blocking)
+      {
+         if (rarch_main_iterate_nbio_transfer(nbio) == -1)
+            rarch_main_iterate_nbio_parse(nbio);
+      }
+      else if (nbio->is_finished)
+         rarch_main_iterate_nbio_parse_free(nbio);
+   }
+   else
+      rarch_main_iterate_nbio_poll(nbio);
+
+   if (nbio->image.handle)
+   {
+      if (!nbio->image.is_blocking)
+      {
+         if (rarch_main_iterate_image_transfer(nbio) == -1)
+            rarch_main_iterate_image_parse(nbio);
+      }
+      else if (nbio->image.is_finished)
+         rarch_main_iterate_image_parse_free(nbio);
+   }
+   else
+      rarch_main_iterate_image_poll(nbio);
+}
 
 void do_data_state_checks(void)
 {
-   if (g_extern.nbio.handle)
-   {
-      if (!g_extern.nbio.is_blocking)
-      {
-         if (rarch_main_iterate_nbio_transfer() == -1)
-            rarch_main_iterate_nbio_parse();
-      }
-      else if (g_extern.nbio.is_finished)
-         rarch_main_iterate_nbio_parse_free();
-   }
-   else
-      rarch_main_iterate_nbio_poll();
-
-   if (g_extern.nbio.image.handle)
-   {
-      if (!g_extern.nbio.image.is_blocking)
-      {
-         if (rarch_main_iterate_image_transfer() == -1)
-            rarch_main_iterate_image_parse();
-      }
-      else if (g_extern.nbio.image.is_finished)
-         rarch_main_iterate_image_parse_free();
-   }
-   else
-      rarch_main_iterate_image_poll();
-
+   do_data_nbio_state_checks(&g_extern.nbio);
 
 #ifdef HAVE_NETWORKING
    if (g_extern.http.handle)
