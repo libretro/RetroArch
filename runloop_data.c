@@ -332,11 +332,18 @@ error:
 
 static int rarch_main_iterate_nbio_transfer(void)
 {
+   size_t i;
+   
+   g_extern.nbio.pos_increment = 5;
+
    if (g_extern.nbio.is_finished)
       return 0;
 
-   if (!nbio_iterate(g_extern.nbio.handle))
-      return 0;
+   for (i = 0; i < g_extern.nbio.pos_increment; i++)
+   {
+      if (!nbio_iterate(g_extern.nbio.handle))
+         return 0;
+   }
 
    return -1;
 }
