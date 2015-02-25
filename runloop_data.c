@@ -137,7 +137,7 @@ static int cb_image_menu_wallpaper(void *data, size_t len)
    uint32_t **pixels   = &ti.pixels;
    unsigned *width     = &ti.width;
    unsigned *height    = &ti.height;
-   nbio_handle_t *nbio = data; 
+   nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
    if (!nbio || !data)
       return -1;
@@ -165,7 +165,7 @@ static int cb_image_menu_wallpaper(void *data, size_t len)
 static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
 {
    void *ptr = NULL;
-   nbio_handle_t *nbio = data; 
+   nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
    if (!nbio || !data)
       return -1;
