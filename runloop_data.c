@@ -171,7 +171,7 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
    ptr = nbio_get_ptr(g_extern.nbio.handle, &len);
 
    g_extern.nbio.image.handle->buff_data = (uint8_t*)ptr;
-   g_extern.nbio.image.pos_increment = (len / 4) ? (len / 4) : 1;
+   g_extern.nbio.image.pos_increment = (len / 2) ? (len / 2) : 1;
 
    if (!rpng_nbio_load_image_argb_start(g_extern.nbio.image.handle))
    {
