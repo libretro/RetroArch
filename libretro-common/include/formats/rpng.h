@@ -64,13 +64,6 @@ struct rpng_process_t
 {
    const uint8_t *inflate_buf;
    const uint32_t *palette;
-   uint8_t *prev_scanline;
-   uint8_t *decoded_scanline;
-   unsigned bpp;
-   unsigned h;
-   unsigned pitch;
-   unsigned pass;
-   size_t pass_size;
    size_t total_out;
 };
 
