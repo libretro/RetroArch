@@ -306,13 +306,19 @@ static int rarch_main_iterate_nbio_poll(void)
    struct nbio_t* handle;
    char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
    struct string_list *str_list = NULL;
-   const char *path = msg_queue_pull(g_extern.nbio.msg_queue);
+   nbio_handle_t *nbio = (nbio_handle_t*)&g_extern.nbio;
+   const char *path = NULL;
+
+   if (!nbio)
+      return -1;
+   
+   path = msg_queue_pull(nbio->msg_queue);
 
    if (!path)
       return -1;
 
    /* Can only deal with one NBIO transfer at a time for now */
-   if (g_extern.nbio.handle)
+   if (nbio->handle)
       return -1; 
 
    str_list         = string_split(path, "|"); 
@@ -333,16 +339,16 @@ static int rarch_main_iterate_nbio_poll(void)
       goto error;
    }
 
-   g_extern.nbio.handle      = handle;
-   g_extern.nbio.is_blocking = false;
-   g_extern.nbio.is_finished = false;
-   g_extern.nbio.cb          = &cb_nbio_default;
+   nbio->handle      = handle;
+   nbio->is_blocking = false;
+   nbio->is_finished = false;
+   nbio->cb          = &cb_nbio_default;
 
    if (elem1[0] != '\0')
    {
 #ifdef HAVE_MENU
       if (!strcmp(elem1, "cb_menu_wallpaper"))
-         g_extern.nbio.cb = &cb_nbio_image_menu_wallpaper;
+         nbio->cb = &cb_nbio_image_menu_wallpaper;
 #endif
    }
 
