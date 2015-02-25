@@ -89,14 +89,6 @@ static void deinterlace_pass(uint32_t *data, const struct png_ihdr *ihdr,
    }
 }
 
-static void png_reverse_filter_deinit(struct rpng_process_t *pngp)
-{
-   if (pngp->decoded_scanline)
-      free(pngp->decoded_scanline);
-   if (pngp->prev_scanline)
-      free(pngp->prev_scanline);
-}
-
 static bool png_reverse_filter_init(uint32_t *data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
@@ -113,7 +105,8 @@ static bool png_reverse_filter_init(uint32_t *data, const struct png_ihdr *ihdr,
 
    if (!pngp->prev_scanline || !pngp->decoded_scanline)
    {
-      png_reverse_filter_deinit(pngp);
+      free(pngp->decoded_scanline);
+      free(pngp->prev_scanline);
       return false;
    }
 
@@ -193,7 +186,10 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
    }
 
 end:
-   png_reverse_filter_deinit(pngp);
+   if (pngp->decoded_scanline)
+      free(pngp->decoded_scanline);
+   if (pngp->prev_scanline)
+      free(pngp->prev_scanline);
    return ret;
 }
 
