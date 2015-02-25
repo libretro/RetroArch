@@ -174,7 +174,10 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
    nbio->image.cb = &cb_image_menu_wallpaper;
 
    if (!nbio->image.handle)
+   {
+      nbio->image.cb = NULL;
       return -1;
+   }
 
    ptr = nbio_get_ptr(nbio->handle, &len);
 
@@ -182,6 +185,7 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
    {
       free(nbio->image.handle);
       nbio->image.handle = NULL;
+      nbio->image.cb     = NULL;
 
       return -1;
    }
