@@ -228,6 +228,8 @@ static int rarch_main_iterate_image_transfer(void)
             4 + 4 + g_extern.nbio.image.handle->chunk.size + 4;
          return 0;
       }
+      else
+         break;
    }
 
    return -1;
