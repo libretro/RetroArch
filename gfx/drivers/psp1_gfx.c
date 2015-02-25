@@ -845,7 +845,9 @@ static const video_poke_interface_t psp_poke_interface = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
+#ifdef HAVE_FBO
    NULL,
+#endif
    NULL,
    psp_set_aspect_ratio,
    psp_apply_state_changes,

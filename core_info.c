@@ -134,7 +134,7 @@ core_info_list_t *core_info_list_new(const char *modules_path)
             sizeof(info_path_base));
       path_remove_extension(info_path_base);
 
-#if defined(RARCH_MOBILE) || defined(RARCH_CONSOLE)
+#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP))
       char *substr = strrchr(info_path_base, '_');
       if (substr)
          *substr = '\0';
