@@ -340,16 +340,15 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
 
    process.total_out   = stream.total_out;
    process.inflate_buf = rpng.inflate_buf;
-   process.palette     = rpng.palette;
 
    if (rpng.ihdr.interlace == 1)
    {
       if (!png_reverse_filter_adam7(*data,
-               &rpng.ihdr, &process))
+               &rpng.ihdr, &process, rpng.palette))
          GOTO_END_ERROR();
    }
    else if (!png_reverse_filter(*data,
-            &rpng.ihdr, &process))
+            &rpng.ihdr, &process, rpng.palette))
       GOTO_END_ERROR();
 
 end:
