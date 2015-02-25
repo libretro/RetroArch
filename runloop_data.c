@@ -134,26 +134,30 @@ static int rarch_main_iterate_http_poll(void)
 static int cb_image_menu_wallpaper(void *data, size_t len)
 {
    struct texture_image ti = {0};
-   uint32_t **pixels = &ti.pixels;
-   unsigned *width   = &ti.width;
-   unsigned *height  = &ti.height;
+   uint32_t **pixels   = &ti.pixels;
+   unsigned *width     = &ti.width;
+   unsigned *height    = &ti.height;
+   nbio_handle_t *nbio = data; 
 
-   if (  !g_extern.nbio.image.handle->has_ihdr || 
-         !g_extern.nbio.image.handle->has_idat || 
-         !g_extern.nbio.image.handle->has_iend)
+   if (!nbio || !data)
       return -1;
 
-   rpng_nbio_load_image_argb_process(g_extern.nbio.image.handle, pixels, width, height);
+   if (  !nbio->image.handle->has_ihdr || 
+         !nbio->image.handle->has_idat || 
+         !nbio->image.handle->has_iend)
+      return -1;
+
+   rpng_nbio_load_image_argb_process(nbio->image.handle, pixels, width, height);
 
    if (driver.menu_ctx && driver.menu_ctx->load_background)
       driver.menu_ctx->load_background(&ti);
 
    texture_image_free(&ti);
 
-   g_extern.nbio.image.is_blocking   = true;
-   g_extern.nbio.image.is_finished   = true;
-   g_extern.nbio.is_blocking    = true;
-   g_extern.nbio.is_finished    = true;
+   nbio->image.is_blocking   = true;
+   nbio->image.is_finished   = true;
+   nbio->is_blocking    = true;
+   nbio->is_finished    = true;
 
    return 0;
 }
@@ -161,28 +165,40 @@ static int cb_image_menu_wallpaper(void *data, size_t len)
 static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
 {
    void *ptr = NULL;
-   
-   g_extern.nbio.image.handle = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
-   g_extern.nbio.image.cb = &cb_image_menu_wallpaper;
+   nbio_handle_t *nbio = data; 
 
-   if (!g_extern.nbio.image.handle)
+   if (!nbio || !data)
+      return -1;
+   
+   nbio->image.handle = (struct rpng_t*)calloc(1, sizeof(struct rpng_t));
+   nbio->image.cb = &cb_image_menu_wallpaper;
+
+   if (!nbio->image.handle)
       return -1;
 
-   ptr = nbio_get_ptr(g_extern.nbio.handle, &len);
+   ptr = nbio_get_ptr(nbio->handle, &len);
 
-   g_extern.nbio.image.handle->buff_data = (uint8_t*)ptr;
-   g_extern.nbio.image.pos_increment = (len / 2) ? (len / 2) : 1;
-
-   if (!rpng_nbio_load_image_argb_start(g_extern.nbio.image.handle))
+   if (!ptr)
    {
-      rpng_nbio_load_image_free(g_extern.nbio.image.handle);
+      free(nbio->image.handle);
+      nbio->image.handle = NULL;
+
       return -1;
    }
 
-   g_extern.nbio.image.is_blocking   = false;
-   g_extern.nbio.image.is_finished   = false;
-   g_extern.nbio.is_blocking    = false;
-   g_extern.nbio.is_finished    = true;
+   nbio->image.handle->buff_data = (uint8_t*)ptr;
+   nbio->image.pos_increment = (len / 2) ? (len / 2) : 1;
+
+   if (!rpng_nbio_load_image_argb_start(nbio->image.handle))
+   {
+      rpng_nbio_load_image_free(nbio->image.handle);
+      return -1;
+   }
+
+   nbio->image.is_blocking   = false;
+   nbio->image.is_finished   = false;
+   nbio->is_blocking    = false;
+   nbio->is_finished    = true;
 
    return 0;
 }
@@ -248,9 +264,8 @@ static int rarch_main_iterate_image_parse_free(void)
 static int rarch_main_iterate_image_parse(void)
 {
    size_t len = 0;
-
    if (g_extern.nbio.image.handle && g_extern.nbio.image.cb)
-      g_extern.nbio.image.cb(g_extern.nbio.image.handle, len);
+      g_extern.nbio.image.cb(&g_extern.nbio, len);
 
    return 0;
 }
@@ -262,11 +277,15 @@ static int rarch_main_iterate_image_parse(void)
 
 static int cb_nbio_default(void *data, size_t len)
 {
-   (void)data;
+   nbio_handle_t *nbio = (nbio_handle_t*)data;
+
+   if (!data)
+      return -1;
+
    (void)len;
 
-   g_extern.nbio.is_blocking = false;
-   g_extern.nbio.is_finished = true;
+   nbio->is_blocking = false;
+   nbio->is_finished = true;
 
    return 0;
 }
@@ -365,11 +384,9 @@ static int rarch_main_iterate_nbio_parse_free(void)
 
 static int rarch_main_iterate_nbio_parse(void)
 {
-   size_t len = 0;
-   char *data = (char*)nbio_get_ptr(g_extern.nbio.handle, &len);
-
-   if (data && g_extern.nbio.cb)
-      g_extern.nbio.cb(data, len);
+   int len = 0;
+   if (g_extern.nbio.cb)
+      g_extern.nbio.cb(&g_extern.nbio, len);
 
    return 0;
 }

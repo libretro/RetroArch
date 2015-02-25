@@ -398,6 +398,27 @@ typedef struct rarch_resolution
 
 typedef int (*transfer_cb_t               )(void *data, size_t len);
 
+typedef struct nbio_image_handle
+{
+   bool is_blocking;
+   bool is_finished;
+   transfer_cb_t  cb;
+   msg_queue_t *msg_queue;
+   struct rpng_t *handle;
+   unsigned pos_increment;
+} nbio_image_handle_t;
+
+typedef struct nbio_handle
+{
+   nbio_image_handle_t image;
+   bool is_blocking;
+   bool is_finished;
+   transfer_cb_t  cb;
+   struct nbio_t *handle;
+   unsigned pos_increment;
+   msg_queue_t *msg_queue;
+} nbio_handle_t;
+
 /* All run-time- / command line flag-related globals go here. */
 
 struct global
@@ -592,26 +613,7 @@ struct global
    } http;
 #endif
 
-   struct
-   {
-      struct
-      {
-         bool is_blocking;
-         bool is_finished;
-         transfer_cb_t  cb;
-         msg_queue_t *msg_queue;
-         struct rpng_t *handle;
-         unsigned pos_increment;
-      } image;
-
-      bool is_blocking;
-      bool is_finished;
-      transfer_cb_t  cb;
-      struct nbio_t *handle;
-      unsigned pos_increment;
-      msg_queue_t *msg_queue;
-   } nbio;
-
+   nbio_handle_t nbio;
 
    bool exec;
 
