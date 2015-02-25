@@ -275,7 +275,10 @@ void notify_content_loaded(void) {
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {
+   dispatch_async(dispatch_get_main_queue(),
+                  ^{
    main_exit_save_config();
+                  });
   [self showPauseMenu: self];
 }
 
