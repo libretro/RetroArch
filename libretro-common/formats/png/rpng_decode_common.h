@@ -90,8 +90,7 @@ static void deinterlace_pass(uint32_t *data, const struct png_ihdr *ihdr,
 }
 
 static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
-      struct rpng_process_t *pngp,
-      const uint32_t *palette)
+      struct rpng_process_t *pngp)
 {
    unsigned i, h;
    unsigned bpp;
@@ -166,7 +165,7 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
          copy_line_rgb(data, decoded_scanline, ihdr->width, ihdr->depth);
       else if (ihdr->color_type == 3)
          copy_line_plt(data, decoded_scanline, ihdr->width,
-               ihdr->depth, palette);
+               ihdr->depth, pngp->palette);
       else if (ihdr->color_type == 4)
          copy_line_gray_alpha(data, decoded_scanline, ihdr->width,
                ihdr->depth);
@@ -184,8 +183,7 @@ end:
 
 static bool png_reverse_filter_adam7(uint32_t *data,
       const struct png_ihdr *ihdr,
-      struct rpng_process_t *pngp,
-      const uint32_t *palette)
+      struct rpng_process_t *pngp)
 {
    unsigned pass;
    static const struct adam7_pass passes[] = {
@@ -234,7 +232,7 @@ static bool png_reverse_filter_adam7(uint32_t *data,
       }
 
       if (!png_reverse_filter(tmp_data,
-               &tmp_ihdr, pngp, palette))
+               &tmp_ihdr, pngp))
       {
          free(tmp_data);
          return false;

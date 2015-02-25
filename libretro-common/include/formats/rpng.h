@@ -63,6 +63,7 @@ struct png_ihdr
 struct rpng_process_t
 {
    const uint8_t *inflate_buf;
+   const uint32_t *palette;
    size_t total_out;
 };
 
