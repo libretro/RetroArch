@@ -89,11 +89,11 @@ static void deinterlace_pass(uint32_t *data, const struct png_ihdr *ihdr,
    }
 }
 
-static bool png_reverse_filter_init(uint32_t *data, const struct png_ihdr *ihdr,
+static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
-   if (ihdr->interlace == 1)
-      return true;
+   unsigned i;
+   bool ret = true;
 
    png_pass_geom(ihdr, ihdr->width, ihdr->height, &pngp->bpp, &pngp->pitch, &pngp->pass_size);
 
@@ -104,22 +104,9 @@ static bool png_reverse_filter_init(uint32_t *data, const struct png_ihdr *ihdr,
    pngp->decoded_scanline = (uint8_t*)calloc(1, pngp->pitch);
 
    if (!pngp->prev_scanline || !pngp->decoded_scanline)
-   {
-      free(pngp->decoded_scanline);
-      free(pngp->prev_scanline);
-      return false;
-   }
+      GOTO_END_ERROR();
 
-   return true;
-}
-
-static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
-      struct rpng_process_t *pngp)
-{
-   unsigned i;
-   bool ret = true;
-
-   for (; pngp->h < ihdr->height;
+   for (pngp->h = 0; pngp->h < ihdr->height;
          pngp->h++, pngp->inflate_buf += pngp->pitch, data += ihdr->width)
    {
       unsigned filter = *pngp->inflate_buf++;
@@ -186,10 +173,8 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
    }
 
 end:
-   if (pngp->decoded_scanline)
-      free(pngp->decoded_scanline);
-   if (pngp->prev_scanline)
-      free(pngp->prev_scanline);
+   free(pngp->decoded_scanline);
+   free(pngp->prev_scanline);
    return ret;
 }
 
@@ -207,7 +192,7 @@ static bool png_reverse_filter_adam7(uint32_t *data,
       { 0, 1, 1, 2 },
    };
 
-   for (; pngp->pass < ARRAY_SIZE(passes); pngp->pass++)
+   for (pngp->pass = 0; pngp->pass < ARRAY_SIZE(passes); pngp->pass++)
    {
       unsigned pass_width, pass_height;
       struct png_ihdr tmp_ihdr;
