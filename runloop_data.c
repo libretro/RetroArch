@@ -248,18 +248,19 @@ static int rarch_main_iterate_image_transfer(nbio_handle_t *nbio)
 
    for (i = 0; i < nbio->image.pos_increment; i++)
    {
-      if (rpng_nbio_load_image_argb_iterate(
+      if (!rpng_nbio_load_image_argb_iterate(
                nbio->image.handle->buff_data,
                nbio->image.handle))
-      {
-         nbio->image.handle->buff_data += 
-            4 + 4 + nbio->image.handle->chunk.size + 4;
-         return 0;
-      }
-      else
-         break;
+         goto error;
+
+      nbio->image.handle->buff_data += 
+         4 + 4 + nbio->image.handle->chunk.size + 4;
    }
 
+   nbio->image.frame_count++;
+   return 0;
+
+error:
    return -1;
 }
 
@@ -383,10 +384,14 @@ static int rarch_main_iterate_nbio_transfer(nbio_handle_t *nbio)
 
    for (i = 0; i < nbio->pos_increment; i++)
    {
-      if (!nbio_iterate(nbio->handle))
-         return 0;
+      if (nbio_iterate(nbio->handle))
+         goto error;
    }
 
+   nbio->frame_count++;
+   return 0;
+
+error:
    return -1;
 }
 

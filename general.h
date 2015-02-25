@@ -403,9 +403,10 @@ typedef struct nbio_image_handle
    bool is_blocking;
    bool is_finished;
    transfer_cb_t  cb;
-   msg_queue_t *msg_queue;
    struct rpng_t *handle;
    unsigned pos_increment;
+   uint64_t frame_count;
+   msg_queue_t *msg_queue;
 } nbio_image_handle_t;
 
 typedef struct nbio_handle
@@ -416,6 +417,7 @@ typedef struct nbio_handle
    transfer_cb_t  cb;
    struct nbio_t *handle;
    unsigned pos_increment;
+   uint64_t frame_count;
    msg_queue_t *msg_queue;
 } nbio_handle_t;
 
