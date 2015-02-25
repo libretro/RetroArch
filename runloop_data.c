@@ -211,18 +211,24 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
 
 static int rarch_main_iterate_image_poll(void)
 {
-   const char *path = msg_queue_pull(g_extern.nbio.image.msg_queue);
+   const char *path    = NULL;
+   nbio_handle_t *nbio = (nbio_handle_t*)&g_extern.nbio;
+
+   if (!nbio)
+      return -1;
+   
+   path = msg_queue_pull(nbio->image.msg_queue);
 
    if (!path)
       return -1;
 
    /* Can only deal with one image transfer at a time for now */
-   if (g_extern.nbio.image.handle)
+   if (nbio->image.handle)
       return -1; 
 
    /* We need to load the image file first. */
-   msg_queue_clear(g_extern.nbio.msg_queue);
-   msg_queue_push(g_extern.nbio.msg_queue, path, 0, 1);
+   msg_queue_clear(nbio->msg_queue);
+   msg_queue_push(nbio->msg_queue, path, 0, 1);
 
    return 0;
 }
@@ -230,18 +236,22 @@ static int rarch_main_iterate_image_poll(void)
 static int rarch_main_iterate_image_transfer(void)
 {
    unsigned i;
+   nbio_handle_t *nbio = (nbio_handle_t*)&g_extern.nbio;
 
-   if (g_extern.nbio.image.is_finished)
+   if (!nbio)
+      return -1;
+
+   if (nbio->image.is_finished)
       return 0;
 
-   for (i = 0; i < g_extern.nbio.image.pos_increment; i++)
+   for (i = 0; i < nbio->image.pos_increment; i++)
    {
       if (rpng_nbio_load_image_argb_iterate(
-               g_extern.nbio.image.handle->buff_data,
-               g_extern.nbio.image.handle))
+               nbio->image.handle->buff_data,
+               nbio->image.handle))
       {
-         g_extern.nbio.image.handle->buff_data += 
-            4 + 4 + g_extern.nbio.image.handle->chunk.size + 4;
+         nbio->image.handle->buff_data += 
+            4 + 4 + nbio->image.handle->chunk.size + 4;
          return 0;
       }
       else
@@ -352,15 +362,19 @@ error:
 static int rarch_main_iterate_nbio_transfer(void)
 {
    size_t i;
-   
-   g_extern.nbio.pos_increment = 5;
+   nbio_handle_t *nbio = (nbio_handle_t*)&g_extern.nbio;
 
-   if (g_extern.nbio.is_finished)
+   if (!nbio)
+      return -1;
+   
+   nbio->pos_increment = 5;
+
+   if (nbio->is_finished)
       return 0;
 
-   for (i = 0; i < g_extern.nbio.pos_increment; i++)
+   for (i = 0; i < nbio->pos_increment; i++)
    {
-      if (!nbio_iterate(g_extern.nbio.handle))
+      if (!nbio_iterate(nbio->handle))
          return 0;
    }
 
@@ -369,15 +383,19 @@ static int rarch_main_iterate_nbio_transfer(void)
 
 static int rarch_main_iterate_nbio_parse_free(void)
 {
-   if (!g_extern.nbio.is_finished)
+   nbio_handle_t *nbio = (nbio_handle_t*)&g_extern.nbio;
+
+   if (!nbio)
+      return -1;
+   if (!nbio->is_finished)
       return -1;
 
-   nbio_free(g_extern.nbio.handle);
-   g_extern.nbio.handle      = NULL;
-   g_extern.nbio.is_blocking = false;
-   g_extern.nbio.is_finished = false;
+   nbio_free(nbio->handle);
+   nbio->handle      = NULL;
+   nbio->is_blocking = false;
+   nbio->is_finished = false;
 
-   msg_queue_clear(g_extern.nbio.msg_queue);
+   msg_queue_clear(nbio->msg_queue);
 
    return 0;
 }
@@ -385,8 +403,13 @@ static int rarch_main_iterate_nbio_parse_free(void)
 static int rarch_main_iterate_nbio_parse(void)
 {
    int len = 0;
-   if (g_extern.nbio.cb)
-      g_extern.nbio.cb(&g_extern.nbio, len);
+   nbio_handle_t *nbio = (nbio_handle_t*)&g_extern.nbio;
+
+   if (!nbio)
+      return -1;
+
+   if (nbio->cb)
+      nbio->cb(nbio, len);
 
    return 0;
 }
