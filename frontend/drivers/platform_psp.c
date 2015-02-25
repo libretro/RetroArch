@@ -54,8 +54,6 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 {
    (void)args;
 #ifndef IS_SALAMANDER
-   g_extern.verbosity = true;
-
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
