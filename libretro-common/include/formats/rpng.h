@@ -63,19 +63,20 @@ struct png_ihdr
 
 struct rpng_process_t
 {
+   uint8_t *inflate_buf;
+   size_t inflate_buf_size;
    z_stream stream;
 };
 
 struct rpng_t
 {
+   struct rpng_process_t process;
    bool has_ihdr;
    bool has_idat;
    bool has_iend;
    bool has_plte;
    struct idat_buffer idat_buf;
    struct png_ihdr ihdr;
-   uint8_t *inflate_buf;
-   size_t inflate_buf_size;
    uint8_t *buff_data;
    uint32_t palette[256];
    struct png_chunk chunk;

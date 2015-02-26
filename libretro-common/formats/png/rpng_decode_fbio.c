@@ -211,8 +211,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    long pos, file_len;
    FILE *file;
    char header[8];
-   struct rpng_t rpng = {0};
-   struct rpng_process_t process = {{0}};
+   struct rpng_t rpng = {{0}};
    bool ret      = true;
 
    *data   = NULL;
@@ -301,28 +300,28 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    if (!rpng.has_ihdr || !rpng.has_idat || !rpng.has_iend)
       GOTO_END_ERROR();
 
-   if (inflateInit(&process.stream) != Z_OK)
+   if (inflateInit(&rpng.process.stream) != Z_OK)
       GOTO_END_ERROR();
 
-   png_pass_geom(&rpng.ihdr, rpng.ihdr.width, rpng.ihdr.height, NULL, NULL, &rpng.inflate_buf_size);
+   png_pass_geom(&rpng.ihdr, rpng.ihdr.width, rpng.ihdr.height, NULL, NULL, &rpng.process.inflate_buf_size);
    if (rpng.ihdr.interlace == 1) /* To be sure. */
-      rpng.inflate_buf_size *= 2;
+      rpng.process.inflate_buf_size *= 2;
 
-   rpng.inflate_buf = (uint8_t*)malloc(rpng.inflate_buf_size);
-   if (!rpng.inflate_buf)
+   rpng.process.inflate_buf = (uint8_t*)malloc(rpng.process.inflate_buf_size);
+   if (!rpng.process.inflate_buf)
       GOTO_END_ERROR();
 
-   process.stream.next_in   = rpng.idat_buf.data;
-   process.stream.avail_in  = rpng.idat_buf.size;
-   process.stream.avail_out = rpng.inflate_buf_size;
-   process.stream.next_out  = rpng.inflate_buf;
+   rpng.process.stream.next_in   = rpng.idat_buf.data;
+   rpng.process.stream.avail_in  = rpng.idat_buf.size;
+   rpng.process.stream.avail_out = rpng.process.inflate_buf_size;
+   rpng.process.stream.next_out  = rpng.process.inflate_buf;
 
-   if (inflate(&process.stream, Z_FINISH) != Z_STREAM_END)
+   if (inflate(&rpng.process.stream, Z_FINISH) != Z_STREAM_END)
    {
-      inflateEnd(&process.stream);
+      inflateEnd(&rpng.process.stream);
       GOTO_END_ERROR();
    }
-   inflateEnd(&process.stream);
+   inflateEnd(&rpng.process.stream);
 
    *width  = rpng.ihdr.width;
    *height = rpng.ihdr.height;
@@ -338,11 +337,11 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    if (rpng.ihdr.interlace == 1)
    {
       if (!png_reverse_filter_adam7(*data,
-               &rpng.ihdr, rpng.inflate_buf, &process, rpng.palette))
+               &rpng.ihdr, rpng.process.inflate_buf, &rpng.process, rpng.palette))
          GOTO_END_ERROR();
    }
    else if (!png_reverse_filter(*data,
-            &rpng.ihdr, rpng.inflate_buf, &process, rpng.palette))
+            &rpng.ihdr, rpng.process.inflate_buf, &rpng.process, rpng.palette))
       GOTO_END_ERROR();
 
 end:
@@ -351,6 +350,6 @@ end:
    if (!ret)
       free(*data);
    free(rpng.idat_buf.data);
-   free(rpng.inflate_buf);
+   free(rpng.process.inflate_buf);
    return ret;
 }
