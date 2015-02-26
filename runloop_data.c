@@ -271,6 +271,7 @@ static int rarch_main_iterate_image_parse_free(nbio_handle_t *nbio)
 
    rpng_nbio_load_image_free(nbio->image.handle);
    nbio->image.handle      = NULL;
+   nbio->image.frame_count = 0;
 
    msg_queue_clear(nbio->image.msg_queue);
 
@@ -408,6 +409,7 @@ static int rarch_main_iterate_nbio_parse_free(nbio_handle_t *nbio)
    nbio->handle      = NULL;
    nbio->is_blocking = false;
    nbio->is_finished = false;
+   nbio->frame_count = 0;
 
    msg_queue_clear(nbio->msg_queue);
 
