@@ -466,4 +466,20 @@ static bool png_reverse_filter_adam7(uint32_t *data,
    return true;
 }
 
+static bool png_reverse_filter_loop(struct rpng_t *rpng,
+      uint32_t **data)
+{
+   if (rpng->ihdr.interlace == 1)
+   {
+      if (!png_reverse_filter_adam7(*data,
+               &rpng->ihdr, rpng->process.inflate_buf, &rpng->process, rpng->palette))
+         return false;
+   }
+   else if (!png_reverse_filter(*data,
+            &rpng->ihdr, rpng->process.inflate_buf, &rpng->process, rpng->palette))
+      return false;
+
+   return true;
+}
+
 #endif

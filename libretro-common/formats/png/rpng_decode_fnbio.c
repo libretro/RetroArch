@@ -258,34 +258,32 @@ bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
    if (!rpng)
       return false;
 
-   struct rpng_process_t *process = &rpng->process;
+   rpng->process.inflate_buf_size = 0;
+   rpng->process.inflate_buf      = NULL;
 
-   process->inflate_buf_size = 0;
-   process->inflate_buf      = NULL;
-
-   if (inflateInit(&process->stream) != Z_OK)
+   if (inflateInit(&rpng->process.stream) != Z_OK)
       return false;
 
    png_pass_geom(&rpng->ihdr, rpng->ihdr.width,
-         rpng->ihdr.height, NULL, NULL, &process->inflate_buf_size);
+         rpng->ihdr.height, NULL, NULL, &rpng->process.inflate_buf_size);
    if (rpng->ihdr.interlace == 1) /* To be sure. */
-      process->inflate_buf_size *= 2;
+      rpng->process.inflate_buf_size *= 2;
 
-   process->inflate_buf = (uint8_t*)malloc(process->inflate_buf_size);
-   if (!process->inflate_buf)
+   rpng->process.inflate_buf = (uint8_t*)malloc(rpng->process.inflate_buf_size);
+   if (!rpng->process.inflate_buf)
       return false;
 
-   process->stream.next_in   = rpng->idat_buf.data;
-   process->stream.avail_in  = rpng->idat_buf.size;
-   process->stream.avail_out = process->inflate_buf_size;
-   process->stream.next_out  = process->inflate_buf;
+   rpng->process.stream.next_in   = rpng->idat_buf.data;
+   rpng->process.stream.avail_in  = rpng->idat_buf.size;
+   rpng->process.stream.avail_out = rpng->process.inflate_buf_size;
+   rpng->process.stream.next_out  = rpng->process.inflate_buf;
 
-   if (inflate(&process->stream, Z_FINISH) != Z_STREAM_END)
+   if (inflate(&rpng->process.stream, Z_FINISH) != Z_STREAM_END)
    {
-      inflateEnd(&process->stream);
+      inflateEnd(&rpng->process.stream);
       return false;
    }
-   inflateEnd(&process->stream);
+   inflateEnd(&rpng->process.stream);
 
    *width  = rpng->ihdr.width;
    *height = rpng->ihdr.height;
@@ -300,14 +298,7 @@ bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
    if (!*data)
       return false;
 
-   if (rpng->ihdr.interlace == 1)
-   {
-      if (!png_reverse_filter_adam7(*data,
-               &rpng->ihdr, process->inflate_buf, process, rpng->palette))
-         return false;
-   }
-   else if (!png_reverse_filter(*data,
-            &rpng->ihdr, process->inflate_buf, process, rpng->palette))
+   if (!png_reverse_filter_loop(rpng, data))
       return false;
 
    return true;
