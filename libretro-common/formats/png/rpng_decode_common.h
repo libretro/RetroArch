@@ -220,6 +220,7 @@ begin:
    goto begin;
 
    return 0;
+
 error:
    png_reverse_filter_deinit(pngp);
    return -1;
@@ -239,8 +240,12 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
          return -1;
    }
 
-   while((ret = png_reverse_filter_wrapper(data,
-            ihdr, inflate_buf, pngp, palette)) == 0);
+   do{
+      ret = png_reverse_filter_wrapper(data,
+                  ihdr, inflate_buf, pngp, palette);
+      if (ret == 1 || ret == -1)
+         break;
+   }while(1);
 
    if (ret == 1)
       return true;
