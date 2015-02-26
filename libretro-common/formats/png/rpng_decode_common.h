@@ -396,8 +396,6 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
 {
    int ret;
 
-   if (!pngp)
-      return -1;
    if (png_reverse_filter_init(ihdr, inflate_buf, pngp, palette) == -1)
       return -1;
 
