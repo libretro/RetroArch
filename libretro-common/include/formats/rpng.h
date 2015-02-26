@@ -27,6 +27,7 @@
 #include <stddef.h>
 
 #include <boolean.h>
+#include <zlib.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -62,7 +63,7 @@ struct png_ihdr
 
 struct rpng_process_t
 {
-   size_t total_out;
+   z_stream stream;
 };
 
 struct rpng_t

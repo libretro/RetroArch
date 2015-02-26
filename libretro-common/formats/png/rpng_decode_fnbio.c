@@ -22,8 +22,6 @@
 
 #include <formats/rpng.h>
 
-#include <zlib.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -257,10 +255,9 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf, struct rpng_t *rpng)
 bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
-   struct rpng_process_t process = {0};
-   z_stream stream = {0};
+   struct rpng_process_t process = {{0}};
 
-   if (inflateInit(&stream) != Z_OK)
+   if (inflateInit(&process.stream) != Z_OK)
       return false;
 
    png_pass_geom(&rpng->ihdr, rpng->ihdr.width,
@@ -272,17 +269,17 @@ bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
    if (!rpng->inflate_buf)
       return false;
 
-   stream.next_in   = rpng->idat_buf.data;
-   stream.avail_in  = rpng->idat_buf.size;
-   stream.avail_out = rpng->inflate_buf_size;
-   stream.next_out  = rpng->inflate_buf;
+   process.stream.next_in   = rpng->idat_buf.data;
+   process.stream.avail_in  = rpng->idat_buf.size;
+   process.stream.avail_out = rpng->inflate_buf_size;
+   process.stream.next_out  = rpng->inflate_buf;
 
-   if (inflate(&stream, Z_FINISH) != Z_STREAM_END)
+   if (inflate(&process.stream, Z_FINISH) != Z_STREAM_END)
    {
-      inflateEnd(&stream);
+      inflateEnd(&process.stream);
       return false;
    }
-   inflateEnd(&stream);
+   inflateEnd(&process.stream);
 
    *width  = rpng->ihdr.width;
    *height = rpng->ihdr.height;
@@ -296,8 +293,6 @@ bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
 #endif
    if (!*data)
       return false;
-
-   process.total_out = stream.total_out;
 
    if (rpng->ihdr.interlace == 1)
    {

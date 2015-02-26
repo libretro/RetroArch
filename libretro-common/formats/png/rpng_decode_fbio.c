@@ -22,8 +22,6 @@
 
 #include <formats/rpng.h>
 
-#include <zlib.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -213,9 +211,8 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    long pos, file_len;
    FILE *file;
    char header[8];
-   z_stream stream = {0};
    struct rpng_t rpng = {0};
-   struct rpng_process_t process = {0};
+   struct rpng_process_t process = {{0}};
    bool ret      = true;
 
    *data   = NULL;
@@ -304,7 +301,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    if (!rpng.has_ihdr || !rpng.has_idat || !rpng.has_iend)
       GOTO_END_ERROR();
 
-   if (inflateInit(&stream) != Z_OK)
+   if (inflateInit(&process.stream) != Z_OK)
       GOTO_END_ERROR();
 
    png_pass_geom(&rpng.ihdr, rpng.ihdr.width, rpng.ihdr.height, NULL, NULL, &rpng.inflate_buf_size);
@@ -315,17 +312,17 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    if (!rpng.inflate_buf)
       GOTO_END_ERROR();
 
-   stream.next_in   = rpng.idat_buf.data;
-   stream.avail_in  = rpng.idat_buf.size;
-   stream.avail_out = rpng.inflate_buf_size;
-   stream.next_out  = rpng.inflate_buf;
+   process.stream.next_in   = rpng.idat_buf.data;
+   process.stream.avail_in  = rpng.idat_buf.size;
+   process.stream.avail_out = rpng.inflate_buf_size;
+   process.stream.next_out  = rpng.inflate_buf;
 
-   if (inflate(&stream, Z_FINISH) != Z_STREAM_END)
+   if (inflate(&process.stream, Z_FINISH) != Z_STREAM_END)
    {
-      inflateEnd(&stream);
+      inflateEnd(&process.stream);
       GOTO_END_ERROR();
    }
-   inflateEnd(&stream);
+   inflateEnd(&process.stream);
 
    *width  = rpng.ihdr.width;
    *height = rpng.ihdr.height;
@@ -337,8 +334,6 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
 #endif
    if (!*data)
       GOTO_END_ERROR();
-
-   process.total_out = stream.total_out;
 
    if (rpng.ihdr.interlace == 1)
    {

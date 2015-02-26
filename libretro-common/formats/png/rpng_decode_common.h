@@ -103,7 +103,7 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
 
    png_pass_geom(ihdr, ihdr->width, ihdr->height, &bpp, &pitch, &pass_size);
 
-   if (pngp->total_out < pass_size)
+   if (pngp->stream.total_out < pass_size)
       return false;
 
    prev_scanline    = (uint8_t*)calloc(1, pitch);
@@ -227,7 +227,7 @@ static bool png_reverse_filter_adam7(uint32_t *data,
       png_pass_geom(&tmp_ihdr, pass_width,
             pass_height, NULL, NULL, &pass_size);
 
-      if (pass_size > pngp->total_out)
+      if (pass_size > pngp->stream.total_out)
       {
          free(tmp_data);
          return false;
@@ -240,8 +240,8 @@ static bool png_reverse_filter_adam7(uint32_t *data,
          return false;
       }
 
-      inflate_buf += pass_size;
-      pngp->total_out -= pass_size;
+      inflate_buf            += pass_size;
+      pngp->stream.total_out -= pass_size;
 
       deinterlace_pass(data,
             ihdr, tmp_data, pass_width, pass_height, &passes[pass]);
