@@ -609,6 +609,12 @@ struct global
 #ifdef HAVE_NETWORKING
    struct
    {
+      struct
+      {
+         struct http_connection_t *handle;
+         transfer_cb_t  cb;
+         char elem1[PATH_MAX_LENGTH];
+      } connection;
       msg_queue_t *msg_queue;
       struct http_t *handle;
       transfer_cb_t  cb;

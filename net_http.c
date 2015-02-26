@@ -53,42 +53,15 @@ struct http_t
 	char * data;
 };
 
-static bool net_http_parse_url(char *url, char **domain,
-      int *port, char **location)
+struct http_connection_t
 {
+   char *domain;
+   char *location;
+   char *urlcopy;
    char* scan;
+   int port;
+};
 
-   if (strncmp(url, "http://", strlen("http://")) != 0)
-      return false;
-
-   scan    = url + strlen("http://");
-   *domain = scan;
-
-   while (*scan != '/' && *scan != ':' && *scan != '\0')
-      scan++;
-
-   if (*scan == '\0')
-      return false;
-
-   *scan   = '\0';
-   *port   = 80;
-
-   if (*scan == ':')
-   {
-
-      if (!isdigit(scan[1]))
-         return false;
-
-      *port = strtoul(scan + 1, &scan, 10);
-
-      if (*scan != '/')
-         return false;
-   }
-
-   *location = scan + 1;
-
-   return true;
-}
 
 static int net_http_new_socket(const char * domain, int port)
 {
@@ -189,38 +162,118 @@ static ssize_t net_http_recv(int fd, bool *error,
    return -1;
 }
 
-struct http_t *net_http_new(const char * url)
+struct http_connection_t *net_http_connection_new(const char *url)
+{
+   char **domain = NULL;
+   struct http_connection_t *conn = (struct http_connection_t*)calloc(1, 
+         sizeof(struct http_connection_t));
+
+   if (!conn)
+      return NULL;
+
+   conn->urlcopy      = (char*)malloc(strlen(url) + 1);
+
+   if (!conn->urlcopy)
+      goto error;
+
+   strcpy(conn->urlcopy, url);
+
+   if (strncmp(url, "http://", strlen("http://")) != 0)
+      goto error;
+
+   conn->scan    = conn->urlcopy + strlen("http://");
+
+   domain        = &conn->domain;
+
+   *domain = conn->scan;
+
+   return conn;
+
+error:
+   if (conn->urlcopy)
+      free(conn->urlcopy);
+   conn->urlcopy = NULL;
+   if (conn)
+      free(conn);
+   return NULL;
+}
+
+bool net_http_connection_iterate(struct http_connection_t *conn)
+{
+   if (*conn->scan != '/' && *conn->scan != ':' && *conn->scan != '\0')
+   {
+      conn->scan++;
+      return false;
+   }
+   return true;
+}
+
+bool net_http_connection_done(struct http_connection_t *conn)
+{
+   char **location = NULL;
+
+   if (!conn)
+      return false;
+
+   location = &conn->location;
+
+   if (*conn->scan == '\0')
+      return false;
+
+   *conn->scan   = '\0';
+   conn->port   = 80;
+
+   if (*conn->scan == ':')
+   {
+
+      if (!isdigit(conn->scan[1]))
+         return false;
+
+      conn->port = strtoul(conn->scan + 1, &conn->scan, 10);
+
+      if (*conn->scan != '/')
+         return false;
+   }
+
+   *location = conn->scan + 1;
+
+   return true;
+}
+
+void net_http_connection_free(struct http_connection_t *conn)
+{
+   if (conn->urlcopy)
+      free(conn->urlcopy);
+}
+
+struct http_t *net_http_new(struct http_connection_t *conn)
 {
    bool error;
-   char *domain = NULL, *location = NULL;
-   int port = 0, fd = -1;
+   int fd = -1;
    struct http_t *state      = NULL;
-   char *urlcopy      =(char*)malloc(strlen(url)+1);
 
-   strcpy(urlcopy, url);
+   if (!conn)
+      goto error;
 
-   if (!net_http_parse_url(urlcopy, &domain, &port, &location))
-      goto fail;
-
-   fd = net_http_new_socket(domain, port);
+   fd = net_http_new_socket(conn->domain, conn->port);
    if (fd == -1)
-      goto fail;
+      goto error;
 
    error=false;
 
    /* This is a bit lazy, but it works. */
    net_http_send_str(fd, &error, "GET /");
-   net_http_send_str(fd, &error, location);
+   net_http_send_str(fd, &error, conn->location);
    net_http_send_str(fd, &error, " HTTP/1.1\r\n");
 
    net_http_send_str(fd, &error, "Host: ");
-   net_http_send_str(fd, &error, domain);
+   net_http_send_str(fd, &error, conn->domain);
 
-   if (port!=80)
+   if (conn->port != 80)
    {
       char portstr[16];
 
-      snprintf(portstr, sizeof(portstr), ":%i", port);
+      snprintf(portstr, sizeof(portstr), ":%i", conn->port);
       net_http_send_str(fd, &error, portstr);
    }
 
@@ -229,9 +282,7 @@ struct http_t *net_http_new(const char * url)
    net_http_send_str(fd, &error, "\r\n");
 
    if (error)
-      goto fail;
-
-   free(urlcopy);
+      goto error;
 
    state          = (struct http_t*)malloc(sizeof(struct http_t));
    state->fd      = fd;
@@ -246,14 +297,13 @@ struct http_t *net_http_new(const char * url)
    state->data    = (char*)malloc(state->buflen);
 
    if (!state->data)
-      goto fail;
+      goto error;
 
    return state;
 
-fail:
+error:
    if (fd != -1)
       socket_close(fd);
-   free(urlcopy);
    return NULL;
 }
 

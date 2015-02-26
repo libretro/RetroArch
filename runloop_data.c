@@ -50,6 +50,28 @@ static int rarch_main_iterate_http_transfer(void)
    return 0;
 }
 
+static int rarch_main_iterate_http_conn_transfer(void)
+{
+   if (!net_http_connection_iterate(g_extern.http.connection.handle))
+      return -1;
+   return 0;
+}
+
+static int rarch_main_iterate_http_conn_parse(void)
+{
+   if (net_http_connection_done(g_extern.http.connection.handle))
+   {
+      if (g_extern.http.connection.handle && g_extern.http.connection.cb)
+         g_extern.http.connection.cb(g_extern.http.connection.handle, 0);
+   }
+   
+   net_http_connection_free(g_extern.http.connection.handle);
+
+   g_extern.http.connection.handle = NULL;
+
+   return 0;
+}
+
 static int rarch_main_iterate_http_parse(void)
 {
    size_t len;
@@ -62,6 +84,29 @@ static int rarch_main_iterate_http_parse(void)
 
    g_extern.http.handle = NULL;
    msg_queue_clear(g_extern.http.msg_queue);
+
+   return 0;
+}
+
+static int cb_http_conn_default(void *data_, size_t len)
+{
+   g_extern.http.handle = net_http_new(g_extern.http.connection.handle);
+
+   if (!g_extern.http.handle)
+   {
+      RARCH_ERR("Could not create new HTTP session handle.\n");
+      return -1;
+   }
+
+   g_extern.http.cb     = NULL;
+
+   if (g_extern.http.connection.elem1[0] != '\0')
+   {
+      if (!strcmp(g_extern.http.connection.elem1, "cb_core_updater_download"))
+         g_extern.http.cb = &cb_core_updater_download;
+      if (!strcmp(g_extern.http.connection.elem1, "cb_core_updater_list"))
+         g_extern.http.cb = &cb_core_updater_list;
+   }
 
    return 0;
 }
@@ -81,7 +126,7 @@ static int rarch_main_iterate_http_parse(void)
  **/
 static int rarch_main_iterate_http_poll(void)
 {
-   char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
+   char elem0[PATH_MAX_LENGTH];
    struct string_list *str_list = NULL;
    const char *url = msg_queue_pull(g_extern.http.msg_queue);
 
@@ -99,27 +144,18 @@ static int rarch_main_iterate_http_poll(void)
 
    if (str_list->size > 0)
       strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-   if (str_list->size > 1)
-      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
 
-   g_extern.http.handle = net_http_new(elem0);
+   g_extern.http.connection.handle = net_http_connection_new(elem0);
 
-   if (!g_extern.http.handle)
-   {
-      RARCH_ERR("Could not create new HTTP session handle.\n");
-      string_list_free(str_list);
+   if (!g_extern.http.connection.handle)
       return -1;
-   }
 
-   g_extern.http.cb     = NULL;
+   g_extern.http.connection.cb     = &cb_http_conn_default;
 
-   if (elem1[0] != '\0')
-   {
-      if (!strcmp(elem1, "cb_core_updater_download"))
-         g_extern.http.cb = &cb_core_updater_download;
-      if (!strcmp(elem1, "cb_core_updater_list"))
-         g_extern.http.cb = &cb_core_updater_list;
-   }
+   if (str_list->size > 1)
+      strlcpy(g_extern.http.connection.elem1,
+            str_list->elems[1].data,
+            sizeof(g_extern.http.connection.elem1));
 
    string_list_free(str_list);
    
@@ -500,6 +536,12 @@ void do_data_state_checks(void)
    do_data_nbio_state_checks(&g_extern.nbio);
 
 #ifdef HAVE_NETWORKING
+   if (g_extern.http.connection.handle)
+   {
+      if (!rarch_main_iterate_http_conn_transfer())
+         rarch_main_iterate_http_conn_parse();
+   }
+
    if (g_extern.http.handle)
    {
       if (!rarch_main_iterate_http_transfer())

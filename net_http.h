@@ -26,8 +26,17 @@ extern "C" {
 #endif
 
 struct http_t;
+struct http_connection_t;
 
-struct http_t *net_http_new(const char * url);
+struct http_connection_t *net_http_connection_new(const char *url);
+
+bool net_http_connection_iterate(struct http_connection_t *conn);
+
+bool net_http_connection_done(struct http_connection_t *conn);
+
+void net_http_connection_free(struct http_connection_t *conn);
+
+struct http_t *net_http_new(struct http_connection_t *conn);
 
 /* You can use this to call net_http_update 
  * only when something will happen; select() it for reading. */
