@@ -99,6 +99,7 @@ static void png_reverse_filter_deinit(struct rpng_process_t *pngp)
    pngp->prev_scanline    = NULL;
 
    pngp->pass_initialized = false;
+   pngp->h                = 0;
 }
 
 static bool png_reverse_filter_init(uint32_t *data, const struct png_ihdr *ihdr,
@@ -138,8 +139,10 @@ static int png_reverse_filter_wrapper(uint32_t *data, const struct png_ihdr *ihd
    if (!pngp)
       return -1;
    if (!pngp->pass_initialized)
+   {
       if (!png_reverse_filter_init(data, ihdr, inflate_buf, pngp, palette))
          return -1;
+   }
 
    cont = pngp->h < ihdr->height;
 
@@ -149,9 +152,15 @@ static int png_reverse_filter_wrapper(uint32_t *data, const struct png_ihdr *ihd
       return 1;
    }
 
-   for (; pngp->h < ihdr->height; )
+   for (;; )
    {
-      unsigned filter = *inflate_buf++;
+      unsigned filter;
+      
+      if (pngp->h < ihdr->height) {}
+      else
+         break;
+
+      filter = *inflate_buf++;
 
       switch (filter)
       {
