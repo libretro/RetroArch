@@ -272,12 +272,9 @@ static int png_reverse_filter_wrapper(uint32_t *data, const struct png_ihdr *ihd
       const uint32_t *palette)
 {
    unsigned i, filter;
-   bool cont;
 
 begin:
-   cont = pngp->h < ihdr->height;
-
-   if (!cont)
+   if (!(pngp->h < ihdr->height))
    {
       png_reverse_filter_deinit(pngp);
       return 1;
