@@ -679,6 +679,7 @@ MENU
 #include "../menu/menu_setting.c"
 #include "../menu/menu_list.c"
 #include "../menu/menu_entries.c"
+#include "../menu/menu_entries_ok_cbs.c"
 #include "../menu/menu_entries_cbs.c"
 #include "../menu/menu_shader.c"
 #include "../menu/menu_texture.c"
