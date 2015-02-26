@@ -78,27 +78,5 @@ static INLINE uint32_t dword_be(const uint8_t *buf)
    return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
 }
 
-static INLINE enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
-{
-   unsigned i;
-   struct
-   {
-      const char *id;
-      enum png_chunk_type type;
-   } static const chunk_map[] = {
-      { "IHDR", PNG_CHUNK_IHDR },
-      { "IDAT", PNG_CHUNK_IDAT },
-      { "IEND", PNG_CHUNK_IEND },
-      { "PLTE", PNG_CHUNK_PLTE },
-   };
-
-   for (i = 0; i < ARRAY_SIZE(chunk_map); i++)
-   {
-      if (memcmp(chunk->type, chunk_map[i].id, 4) == 0)
-         return chunk_map[i].type;
-   }
-
-   return PNG_CHUNK_NOOP;
-}
 
 #endif
