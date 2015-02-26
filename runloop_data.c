@@ -283,6 +283,8 @@ static int rarch_main_iterate_image_parse(nbio_handle_t *nbio)
    if (nbio->image.handle && nbio->image.cb)
       nbio->image.cb(nbio, len);
 
+   RARCH_LOG("Image transfer took %d frames.\n", (unsigned)nbio->image.frame_count);
+
    return 0;
 }
 
@@ -421,6 +423,8 @@ static int rarch_main_iterate_nbio_parse(nbio_handle_t *nbio)
 
    if (nbio->cb)
       nbio->cb(nbio, len);
+
+   RARCH_LOG("File transfer took %d frames.\n", (unsigned)nbio->frame_count);
 
    return 0;
 }
