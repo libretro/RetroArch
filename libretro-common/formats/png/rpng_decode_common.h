@@ -23,6 +23,123 @@
 #ifndef _RPNG_DECODE_COMMON_H
 #define _RPNG_DECODE_COMMON_H
 
+#include <retro_inline.h>
+
+static INLINE void copy_line_rgb(uint32_t *data,
+      const uint8_t *decoded, unsigned width, unsigned bpp)
+{
+   unsigned i;
+
+   bpp /= 8;
+
+   for (i = 0; i < width; i++)
+   {
+      uint32_t r, g, b;
+
+      r        = *decoded;
+      decoded += bpp;
+      g        = *decoded;
+      decoded += bpp;
+      b        = *decoded;
+      decoded += bpp;
+      data[i]  = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
+   }
+}
+
+static INLINE void copy_line_rgba(uint32_t *data,
+      const uint8_t *decoded, unsigned width, unsigned bpp)
+{
+   unsigned i;
+
+   bpp /= 8;
+
+   for (i = 0; i < width; i++)
+   {
+      uint32_t r, g, b, a;
+      r        = *decoded;
+      decoded += bpp;
+      g        = *decoded;
+      decoded += bpp;
+      b        = *decoded;
+      decoded += bpp;
+      a        = *decoded;
+      decoded += bpp;
+      data[i]  = (a << 24) | (r << 16) | (g << 8) | (b << 0);
+   }
+}
+
+static INLINE void copy_line_bw(uint32_t *data,
+      const uint8_t *decoded, unsigned width, unsigned depth)
+{
+   unsigned i, bit;
+   static const unsigned mul_table[] = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
+   unsigned mul, mask;
+   
+   if (depth == 16)
+   {
+      for (i = 0; i < width; i++)
+      {
+         uint32_t val = decoded[i << 1];
+         data[i]      = (val * 0x010101) | (0xffu << 24);
+      }
+      return;
+   }
+
+   mul  = mul_table[depth];
+   mask = (1 << depth) - 1;
+   bit  = 0;
+
+   for (i = 0; i < width; i++, bit += depth)
+   {
+      unsigned byte = bit >> 3;
+      unsigned val  = decoded[byte] >> (8 - depth - (bit & 7));
+
+      val          &= mask;
+      val          *= mul;
+      data[i]       = (val * 0x010101) | (0xffu << 24);
+   }
+}
+
+static INLINE void copy_line_gray_alpha(uint32_t *data,
+      const uint8_t *decoded, unsigned width,
+      unsigned bpp)
+{
+   unsigned i;
+
+   bpp /= 8;
+
+   for (i = 0; i < width; i++)
+   {
+      uint32_t gray, alpha;
+
+      gray     = *decoded;
+      decoded += bpp;
+      alpha    = *decoded;
+      decoded += bpp;
+
+      data[i]  = (gray * 0x010101) | (alpha << 24);
+   }
+}
+
+static INLINE void copy_line_plt(uint32_t *data,
+      const uint8_t *decoded, unsigned width,
+      unsigned depth, const uint32_t *palette)
+{
+   unsigned i, bit;
+   unsigned mask = (1 << depth) - 1;
+
+   bit = 0;
+
+   for (i = 0; i < width; i++, bit += depth)
+   {
+      unsigned byte = bit >> 3;
+      unsigned val  = decoded[byte] >> (8 - depth - (bit & 7));
+
+      val          &= mask;
+      data[i]       = palette[val];
+   }
+}
+
 static void png_pass_geom(const struct png_ihdr *ihdr,
       unsigned width, unsigned height,
       unsigned *bpp_out, unsigned *pitch_out, size_t *pass_size)
