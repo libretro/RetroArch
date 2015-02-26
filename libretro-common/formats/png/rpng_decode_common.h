@@ -240,11 +240,14 @@ static void png_reverse_filter_deinit(struct rpng_process_t *pngp)
    pngp->h                = 0;
 }
 
-static bool png_reverse_filter_init(uint32_t *data, const struct png_ihdr *ihdr,
+static bool png_reverse_filter_init(const struct png_ihdr *ihdr,
       const uint8_t *inflate_buf, struct rpng_process_t *pngp,
       const uint32_t *palette)
 {
    size_t pass_size;
+   
+   if (pngp->pass_initialized)
+      return true;
 
    png_pass_geom(ihdr, ihdr->width, ihdr->height, &pngp->bpp, &pngp->pitch, &pass_size);
 
@@ -275,14 +278,9 @@ static int png_reverse_filter_wrapper(uint32_t *data, const struct png_ihdr *ihd
 
 begin:
    if (!(pngp->h < ihdr->height))
-   {
-      png_reverse_filter_deinit(pngp);
       return 1;
-   }
 
-   filter = *inflate_buf++;
-
-   switch (filter)
+   switch (*inflate_buf++)
    {
       case 0: /* None */
          memcpy(pngp->decoded_scanline, inflate_buf, pngp->pitch);
@@ -322,7 +320,7 @@ begin:
          break;
 
       default:
-         goto error;
+         return -1;
    }
 
    switch (ihdr->color_type)
@@ -355,10 +353,6 @@ begin:
    goto begin;
 
    return 0;
-
-error:
-   png_reverse_filter_deinit(pngp);
-   return -1;
 }
 
 static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
@@ -369,17 +363,21 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
 
    if (!pngp)
       return -1;
-   if (!pngp->pass_initialized)
-   {
-      if (!png_reverse_filter_init(data, ihdr, inflate_buf, pngp, palette))
-         return -1;
-   }
+   if (!png_reverse_filter_init(ihdr, inflate_buf, pngp, palette))
+      return -1;
 
    do{
-      ret = png_reverse_filter_wrapper(data,
-                  ihdr, inflate_buf, pngp, palette);
+      ret = 1;
+
+      if (pngp->h < ihdr->height)
+         ret = png_reverse_filter_wrapper(data,
+               ihdr, inflate_buf, pngp, palette);
+
       if (ret == 1 || ret == -1)
+      {
+         png_reverse_filter_deinit(pngp);
          break;
+      }
    }while(1);
 
    if (ret == 1)
