@@ -63,6 +63,8 @@ struct png_ihdr
 
 struct rpng_process_t
 {
+   uint8_t *prev_scanline;
+   uint8_t *decoded_scanline;
    uint8_t *inflate_buf;
    size_t inflate_buf_size;
    z_stream stream;

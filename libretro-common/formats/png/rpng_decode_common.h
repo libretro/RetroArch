@@ -97,8 +97,6 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
    unsigned bpp;
    unsigned pitch;
    size_t pass_size;
-   uint8_t *prev_scanline = NULL;
-   uint8_t *decoded_scanline = NULL;
    bool ret = true;
 
    png_pass_geom(ihdr, ihdr->width, ihdr->height, &bpp, &pitch, &pass_size);
@@ -106,10 +104,10 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
    if (pngp->stream.total_out < pass_size)
       return false;
 
-   prev_scanline    = (uint8_t*)calloc(1, pitch);
-   decoded_scanline = (uint8_t*)calloc(1, pitch);
+   pngp->prev_scanline    = (uint8_t*)calloc(1, pitch);
+   pngp->decoded_scanline = (uint8_t*)calloc(1, pitch);
 
-   if (!prev_scanline || !decoded_scanline)
+   if (!pngp->prev_scanline || !pngp->decoded_scanline)
       GOTO_END_ERROR();
 
    for (h = 0; h < ihdr->height;
@@ -120,40 +118,40 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       switch (filter)
       {
          case 0: /* None */
-            memcpy(decoded_scanline, inflate_buf, pitch);
+            memcpy(pngp->decoded_scanline, inflate_buf, pitch);
             break;
 
          case 1: /* Sub */
             for (i = 0; i < bpp; i++)
-               decoded_scanline[i] = inflate_buf[i];
+               pngp->decoded_scanline[i] = inflate_buf[i];
             for (i = bpp; i < pitch; i++)
-               decoded_scanline[i] = decoded_scanline[i - bpp] + inflate_buf[i];
+               pngp->decoded_scanline[i] = pngp->decoded_scanline[i - bpp] + inflate_buf[i];
             break;
 
          case 2: /* Up */
             for (i = 0; i < pitch; i++)
-               decoded_scanline[i] = prev_scanline[i] + inflate_buf[i];
+               pngp->decoded_scanline[i] = pngp->prev_scanline[i] + inflate_buf[i];
             break;
 
          case 3: /* Average */
             for (i = 0; i < bpp; i++)
             {
-               uint8_t avg = prev_scanline[i] >> 1;
-               decoded_scanline[i] = avg + inflate_buf[i];
+               uint8_t avg = pngp->prev_scanline[i] >> 1;
+               pngp->decoded_scanline[i] = avg + inflate_buf[i];
             }
             for (i = bpp; i < pitch; i++)
             {
-               uint8_t avg = (decoded_scanline[i - bpp] + prev_scanline[i]) >> 1;
-               decoded_scanline[i] = avg + inflate_buf[i];
+               uint8_t avg = (pngp->decoded_scanline[i - bpp] + pngp->prev_scanline[i]) >> 1;
+               pngp->decoded_scanline[i] = avg + inflate_buf[i];
             }
             break;
 
          case 4: /* Paeth */
             for (i = 0; i < bpp; i++)
-               decoded_scanline[i] = paeth(0, prev_scanline[i], 0) + inflate_buf[i];
+               pngp->decoded_scanline[i] = paeth(0, pngp->prev_scanline[i], 0) + inflate_buf[i];
             for (i = bpp; i < pitch; i++)
-               decoded_scanline[i] = paeth(decoded_scanline[i - bpp],
-                     prev_scanline[i], prev_scanline[i - bpp]) + inflate_buf[i];
+               pngp->decoded_scanline[i] = paeth(pngp->decoded_scanline[i - bpp],
+                     pngp->prev_scanline[i], pngp->prev_scanline[i - bpp]) + inflate_buf[i];
             break;
 
          default:
@@ -161,24 +159,24 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       }
 
       if (ihdr->color_type == 0)
-         copy_line_bw(data, decoded_scanline, ihdr->width, ihdr->depth);
+         copy_line_bw(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
       else if (ihdr->color_type == 2)
-         copy_line_rgb(data, decoded_scanline, ihdr->width, ihdr->depth);
+         copy_line_rgb(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
       else if (ihdr->color_type == 3)
-         copy_line_plt(data, decoded_scanline, ihdr->width,
+         copy_line_plt(data, pngp->decoded_scanline, ihdr->width,
                ihdr->depth, palette);
       else if (ihdr->color_type == 4)
-         copy_line_gray_alpha(data, decoded_scanline, ihdr->width,
+         copy_line_gray_alpha(data, pngp->decoded_scanline, ihdr->width,
                ihdr->depth);
       else if (ihdr->color_type == 6)
-         copy_line_rgba(data, decoded_scanline, ihdr->width, ihdr->depth);
+         copy_line_rgba(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
 
-      memcpy(prev_scanline, decoded_scanline, pitch);
+      memcpy(pngp->prev_scanline, pngp->decoded_scanline, pitch);
    }
 
 end:
-   free(decoded_scanline);
-   free(prev_scanline);
+   free(pngp->decoded_scanline);
+   free(pngp->prev_scanline);
    return ret;
 }
 
