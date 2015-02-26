@@ -787,24 +787,6 @@ int cb_core_updater_download(void *data_, size_t len)
 }
 #endif
 
-static int action_cancel_lookup_setting(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   return menu_setting_set(type, label, MENU_ACTION_CANCEL);
-}
-
-static int action_cancel_pop_default(const char *path,
-      const char *label, unsigned type, size_t idx)
-{
-   menu_handle_t *menu = menu_driver_resolve();
-   if (!menu)
-      return -1;
-
-   menu_apply_deferred_settings();
-   menu_list_pop_stack(menu->menu_list);
-   return 0;
-}
-
 static int action_start_remap_file_load(unsigned type, const char *label,
       unsigned action)
 {
@@ -4219,18 +4201,6 @@ static void menu_entries_cbs_init_bind_content_list_switch(menu_file_list_cbs_t 
    cbs->action_content_list_switch = deferred_push_content_list;
 }
 
-static void menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1)
-{
-   if (!cbs)
-      return;
-
-   cbs->action_cancel = action_cancel_lookup_setting;
-
-   /* TODO - add some stuff here. */
-   cbs->action_cancel = action_cancel_pop_default;
-}
 
 static int is_settings_entry(const char *label)
 {
