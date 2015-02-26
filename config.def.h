@@ -447,6 +447,8 @@ static const bool default_overlay_enable = false;
 
 #ifdef HAVE_MENU
 static bool default_block_config_read = true;
+
+static bool collapse_subgroups_enable = true;
 #else
 static bool default_block_config_read = false;
 #endif

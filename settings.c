@@ -493,7 +493,7 @@ static void config_set_defaults(void)
    g_settings.menu.navigation.wraparound.horizontal_enable = true;
    g_settings.menu.navigation.wraparound.vertical_enable = true;
    g_settings.menu.navigation.browser.filter.supported_extensions_enable = true;
-   g_settings.menu.collapse_subgroups_enable = false;
+   g_settings.menu.collapse_subgroups_enable = collapse_subgroups_enable;
 #endif
 
    g_settings.ui.menubar_enable = true;

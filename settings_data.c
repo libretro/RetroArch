@@ -5193,7 +5193,7 @@ static bool setting_data_append_list_menu_options(
          g_settings.menu.collapse_subgroups_enable,
          "menu_collapse_subgroups_enable",
          "Collapse SubGroups",
-         true,
+         collapse_subgroups_enable,
          "OFF",
          "ON",
          group_info.name,
