@@ -134,17 +134,7 @@ static int png_reverse_filter_wrapper(uint32_t *data, const struct png_ihdr *ihd
       const uint32_t *palette)
 {
    unsigned i;
-   bool cont = true;
-
-   if (!pngp)
-      return -1;
-   if (!pngp->pass_initialized)
-   {
-      if (!png_reverse_filter_init(data, ihdr, inflate_buf, pngp, palette))
-         return -1;
-   }
-
-   cont = pngp->h < ihdr->height;
+   bool cont = pngp->h < ihdr->height;
 
    if (!cont)
    {
@@ -152,7 +142,7 @@ static int png_reverse_filter_wrapper(uint32_t *data, const struct png_ihdr *ihd
       return 1;
    }
 
-   for (;; )
+   do
    {
       unsigned filter;
       
@@ -205,25 +195,33 @@ static int png_reverse_filter_wrapper(uint32_t *data, const struct png_ihdr *ihd
             goto error;
       }
 
-      if (ihdr->color_type == 0)
-         copy_line_bw(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
-      else if (ihdr->color_type == 2)
-         copy_line_rgb(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
-      else if (ihdr->color_type == 3)
-         copy_line_plt(data, pngp->decoded_scanline, ihdr->width,
-               ihdr->depth, palette);
-      else if (ihdr->color_type == 4)
-         copy_line_gray_alpha(data, pngp->decoded_scanline, ihdr->width,
-               ihdr->depth);
-      else if (ihdr->color_type == 6)
-         copy_line_rgba(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
+      switch (ihdr->color_type)
+      {
+         case 0:
+            copy_line_bw(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
+            break;
+         case 2:
+            copy_line_rgb(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
+            break;
+         case 3:
+            copy_line_plt(data, pngp->decoded_scanline, ihdr->width,
+                  ihdr->depth, palette);
+            break;
+         case 4:
+            copy_line_gray_alpha(data, pngp->decoded_scanline, ihdr->width,
+                  ihdr->depth);
+            break;
+         case 6:
+            copy_line_rgba(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
+            break;
+      }
 
       memcpy(pngp->prev_scanline, pngp->decoded_scanline, pngp->pitch);
 
       pngp->h++;
       inflate_buf += pngp->pitch;
       data += ihdr->width;
-   }
+   }while(1);
 
    return 0;
 error:
@@ -236,6 +234,15 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       const uint32_t *palette)
 {
    int ret;
+
+   if (!pngp)
+      return -1;
+   if (!pngp->pass_initialized)
+   {
+      if (!png_reverse_filter_init(data, ihdr, inflate_buf, pngp, palette))
+         return -1;
+   }
+
    while((ret = png_reverse_filter_wrapper(data,
             ihdr, inflate_buf, pngp, palette)) == 0);
 
