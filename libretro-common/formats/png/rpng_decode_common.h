@@ -133,8 +133,11 @@ static int png_reverse_filter_wrapper(uint32_t *data, const struct png_ihdr *ihd
       const uint8_t *inflate_buf, struct rpng_process_t *pngp,
       const uint32_t *palette)
 {
-   unsigned i;
-   bool cont = pngp->h < ihdr->height;
+   unsigned i, filter;
+   bool cont;
+
+begin:
+   cont = pngp->h < ihdr->height;
 
    if (!cont)
    {
@@ -142,86 +145,79 @@ static int png_reverse_filter_wrapper(uint32_t *data, const struct png_ihdr *ihd
       return 1;
    }
 
-   do
+   filter = *inflate_buf++;
+
+   switch (filter)
    {
-      unsigned filter;
-      
-      if (pngp->h < ihdr->height) {}
-      else
+      case 0: /* None */
+         memcpy(pngp->decoded_scanline, inflate_buf, pngp->pitch);
          break;
 
-      filter = *inflate_buf++;
+      case 1: /* Sub */
+         for (i = 0; i < pngp->bpp; i++)
+            pngp->decoded_scanline[i] = inflate_buf[i];
+         for (i = pngp->bpp; i < pngp->pitch; i++)
+            pngp->decoded_scanline[i] = pngp->decoded_scanline[i - pngp->bpp] + inflate_buf[i];
+         break;
 
-      switch (filter)
-      {
-         case 0: /* None */
-            memcpy(pngp->decoded_scanline, inflate_buf, pngp->pitch);
-            break;
+      case 2: /* Up */
+         for (i = 0; i < pngp->pitch; i++)
+            pngp->decoded_scanline[i] = pngp->prev_scanline[i] + inflate_buf[i];
+         break;
 
-         case 1: /* Sub */
-            for (i = 0; i < pngp->bpp; i++)
-               pngp->decoded_scanline[i] = inflate_buf[i];
-            for (i = pngp->bpp; i < pngp->pitch; i++)
-               pngp->decoded_scanline[i] = pngp->decoded_scanline[i - pngp->bpp] + inflate_buf[i];
-            break;
+      case 3: /* Average */
+         for (i = 0; i < pngp->bpp; i++)
+         {
+            uint8_t avg = pngp->prev_scanline[i] >> 1;
+            pngp->decoded_scanline[i] = avg + inflate_buf[i];
+         }
+         for (i = pngp->bpp; i < pngp->pitch; i++)
+         {
+            uint8_t avg = (pngp->decoded_scanline[i - pngp->bpp] + pngp->prev_scanline[i]) >> 1;
+            pngp->decoded_scanline[i] = avg + inflate_buf[i];
+         }
+         break;
 
-         case 2: /* Up */
-            for (i = 0; i < pngp->pitch; i++)
-               pngp->decoded_scanline[i] = pngp->prev_scanline[i] + inflate_buf[i];
-            break;
+      case 4: /* Paeth */
+         for (i = 0; i < pngp->bpp; i++)
+            pngp->decoded_scanline[i] = paeth(0, pngp->prev_scanline[i], 0) + inflate_buf[i];
+         for (i = pngp->bpp; i < pngp->pitch; i++)
+            pngp->decoded_scanline[i] = paeth(pngp->decoded_scanline[i - pngp->bpp],
+                  pngp->prev_scanline[i], pngp->prev_scanline[i - pngp->bpp]) + inflate_buf[i];
+         break;
 
-         case 3: /* Average */
-            for (i = 0; i < pngp->bpp; i++)
-            {
-               uint8_t avg = pngp->prev_scanline[i] >> 1;
-               pngp->decoded_scanline[i] = avg + inflate_buf[i];
-            }
-            for (i = pngp->bpp; i < pngp->pitch; i++)
-            {
-               uint8_t avg = (pngp->decoded_scanline[i - pngp->bpp] + pngp->prev_scanline[i]) >> 1;
-               pngp->decoded_scanline[i] = avg + inflate_buf[i];
-            }
-            break;
+      default:
+         goto error;
+   }
 
-         case 4: /* Paeth */
-            for (i = 0; i < pngp->bpp; i++)
-               pngp->decoded_scanline[i] = paeth(0, pngp->prev_scanline[i], 0) + inflate_buf[i];
-            for (i = pngp->bpp; i < pngp->pitch; i++)
-               pngp->decoded_scanline[i] = paeth(pngp->decoded_scanline[i - pngp->bpp],
-                     pngp->prev_scanline[i], pngp->prev_scanline[i - pngp->bpp]) + inflate_buf[i];
-            break;
+   switch (ihdr->color_type)
+   {
+      case 0:
+         copy_line_bw(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
+         break;
+      case 2:
+         copy_line_rgb(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
+         break;
+      case 3:
+         copy_line_plt(data, pngp->decoded_scanline, ihdr->width,
+               ihdr->depth, palette);
+         break;
+      case 4:
+         copy_line_gray_alpha(data, pngp->decoded_scanline, ihdr->width,
+               ihdr->depth);
+         break;
+      case 6:
+         copy_line_rgba(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
+         break;
+   }
 
-         default:
-            goto error;
-      }
+   memcpy(pngp->prev_scanline, pngp->decoded_scanline, pngp->pitch);
 
-      switch (ihdr->color_type)
-      {
-         case 0:
-            copy_line_bw(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
-            break;
-         case 2:
-            copy_line_rgb(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
-            break;
-         case 3:
-            copy_line_plt(data, pngp->decoded_scanline, ihdr->width,
-                  ihdr->depth, palette);
-            break;
-         case 4:
-            copy_line_gray_alpha(data, pngp->decoded_scanline, ihdr->width,
-                  ihdr->depth);
-            break;
-         case 6:
-            copy_line_rgba(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
-            break;
-      }
+   pngp->h++;
+   inflate_buf += pngp->pitch;
+   data += ihdr->width;
 
-      memcpy(pngp->prev_scanline, pngp->decoded_scanline, pngp->pitch);
-
-      pngp->h++;
-      inflate_buf += pngp->pitch;
-      data += ihdr->width;
-   }while(1);
+   goto begin;
 
    return 0;
 error:
@@ -313,6 +309,7 @@ static bool png_reverse_filter_adam7(uint32_t *data,
 
       deinterlace_pass(data,
             ihdr, tmp_data, pass_width, pass_height, &passes[pngp->pass]);
+
       free(tmp_data);
    }
 
