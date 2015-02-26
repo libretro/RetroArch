@@ -23,9 +23,7 @@
 #ifndef _RPNG_DECODE_COMMON_H
 #define _RPNG_DECODE_COMMON_H
 
-#include <retro_inline.h>
-
-static INLINE void copy_line_rgb(uint32_t *data,
+static void copy_line_rgb(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp)
 {
    unsigned i;
@@ -46,7 +44,7 @@ static INLINE void copy_line_rgb(uint32_t *data,
    }
 }
 
-static INLINE void copy_line_rgba(uint32_t *data,
+static void copy_line_rgba(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp)
 {
    unsigned i;
@@ -68,7 +66,7 @@ static INLINE void copy_line_rgba(uint32_t *data,
    }
 }
 
-static INLINE void copy_line_bw(uint32_t *data,
+static void copy_line_bw(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned depth)
 {
    unsigned i, bit;
@@ -100,7 +98,7 @@ static INLINE void copy_line_bw(uint32_t *data,
    }
 }
 
-static INLINE void copy_line_gray_alpha(uint32_t *data,
+static void copy_line_gray_alpha(uint32_t *data,
       const uint8_t *decoded, unsigned width,
       unsigned bpp)
 {
@@ -121,7 +119,7 @@ static INLINE void copy_line_gray_alpha(uint32_t *data,
    }
 }
 
-static INLINE void copy_line_plt(uint32_t *data,
+static void copy_line_plt(uint32_t *data,
       const uint8_t *decoded, unsigned width,
       unsigned depth, const uint32_t *palette)
 {
