@@ -681,6 +681,7 @@ MENU
 #include "../menu/menu_entries.c"
 #include "../menu/menu_entries_cbs_ok.c"
 #include "../menu/menu_entries_cbs_cancel.c"
+#include "../menu/menu_entries_cbs_deferred_push.c"
 #include "../menu/menu_entries_cbs.c"
 #include "../menu/menu_shader.c"
 #include "../menu/menu_texture.c"

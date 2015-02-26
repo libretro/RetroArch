@@ -23,7 +23,16 @@
 extern "C" {
 #endif
 
+/* FIXME - Externs, refactor */
+extern size_t hack_shader_pass;
+extern unsigned rdb_entry_start_game_selection_ptr;
+#ifdef HAVE_NETWORKING
+extern char core_updater_path[PATH_MAX_LENGTH];
+#endif
+
 void menu_entries_common_load_content(bool persist);
+
+int menu_entries_common_is_settings_entry(const char *label);
 
 void menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
@@ -32,6 +41,13 @@ void menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
 void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1, const char *menu_label);
+
+void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1);
+
+int deferred_push_content_list(void *data, void *userdata,
+      const char *path, const char *label, unsigned type);
 
 void menu_entries_cbs_init(void *data,
       const char *path, const char *label,
