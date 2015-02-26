@@ -272,15 +272,11 @@ error:
 
 static int png_reverse_filter_wrapper(uint32_t *data, const struct png_ihdr *ihdr,
       const uint8_t *inflate_buf, struct rpng_process_t *pngp,
-      const uint32_t *palette)
+      const uint32_t *palette, unsigned filter)
 {
-   unsigned i, filter;
+   unsigned i;
 
-begin:
-   if (!(pngp->h < ihdr->height))
-      return 1;
-
-   switch (*inflate_buf++)
+   switch (filter)
    {
       case 0: /* None */
          memcpy(pngp->decoded_scanline, inflate_buf, pngp->pitch);
@@ -346,12 +342,6 @@ begin:
 
    memcpy(pngp->prev_scanline, pngp->decoded_scanline, pngp->pitch);
 
-   pngp->h++;
-   inflate_buf += pngp->pitch;
-   data += ihdr->width;
-
-   goto begin;
-
    return 0;
 }
 
@@ -370,14 +360,21 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       ret = 1;
 
       if (pngp->h < ihdr->height)
+      {
+         unsigned filter = *inflate_buf++;
          ret = png_reverse_filter_wrapper(data,
-               ihdr, inflate_buf, pngp, palette);
+               ihdr, inflate_buf, pngp, palette, filter);
+      }
 
       if (ret == 1 || ret == -1)
       {
          png_reverse_filter_deinit(pngp);
          break;
       }
+
+      pngp->h++;
+      inflate_buf += pngp->pitch;
+      data += ihdr->width;
    }while(1);
 
    if (ret == 1)
