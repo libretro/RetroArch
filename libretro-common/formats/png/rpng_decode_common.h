@@ -108,6 +108,8 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
    if (!pngp->prev_scanline || !pngp->decoded_scanline)
       GOTO_END_ERROR();
 
+   pngp->h = 0;
+
    for (; pngp->h < ihdr->height;
          pngp->h++, inflate_buf += pngp->pitch, data += ihdr->width)
    {
