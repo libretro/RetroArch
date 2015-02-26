@@ -63,6 +63,7 @@ struct png_ihdr
 
 struct rpng_process_t
 {
+   bool pass_initialized;
    uint8_t *prev_scanline;
    uint8_t *decoded_scanline;
    uint8_t *inflate_buf;
