@@ -67,6 +67,8 @@ struct rpng_process_t
    uint8_t *decoded_scanline;
    uint8_t *inflate_buf;
    size_t inflate_buf_size;
+   unsigned bpp;
+   unsigned pitch;
    unsigned pass;
    unsigned h;
    z_stream stream;
