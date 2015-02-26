@@ -34,7 +34,9 @@
 #include "gfx/video_viewport.h"
 
 #include <file/nbio.h>
+#ifndef IS_SALAMANDER
 #include <formats/rpng.h>
+#endif
 
 #include "playlist.h"
 
