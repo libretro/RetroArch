@@ -63,15 +63,24 @@ struct png_ihdr
 
 struct rpng_process_t
 {
+   bool adam7_pass_initialized;
    bool pass_initialized;
+   uint32_t *data;
+   struct png_ihdr ihdr;
    uint8_t *prev_scanline;
    uint8_t *decoded_scanline;
    uint8_t *inflate_buf;
    size_t inflate_buf_size;
    unsigned bpp;
    unsigned pitch;
-   unsigned pass;
    unsigned h;
+   struct
+   {
+      unsigned width;
+      unsigned height;
+      size_t   size;
+      unsigned pos;
+   } pass;
    z_stream stream;
 };
 

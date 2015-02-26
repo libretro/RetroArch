@@ -245,6 +245,11 @@ static bool png_reverse_filter_init(const struct png_ihdr *ihdr,
       const uint32_t *palette)
 {
    size_t pass_size;
+
+   if (!pngp->adam7_pass_initialized && ihdr->interlace)
+   {
+      pngp->adam7_pass_initialized = true;
+   }
    
    if (pngp->pass_initialized)
       return true;
@@ -397,55 +402,55 @@ static bool png_reverse_filter_adam7(uint32_t *data,
       { 0, 1, 1, 2 },
    };
 
-   for (; pngp->pass < ARRAY_SIZE(passes); pngp->pass++)
+   for (; pngp->pass.pos < ARRAY_SIZE(passes); pngp->pass.pos++)
    {
-      unsigned pass_width, pass_height;
-      size_t pass_size;
-      struct png_ihdr tmp_ihdr;
-      uint32_t *tmp_data = NULL;
-
-      if (ihdr->width <= passes[pngp->pass].x ||
-            ihdr->height <= passes[pngp->pass].y) /* Empty pass */
+      if (ihdr->width <= passes[pngp->pass.pos].x ||
+            ihdr->height <= passes[pngp->pass.pos].y) /* Empty pass */
          continue;
 
-      pass_width  = (ihdr->width - 
-            passes[pngp->pass].x + passes[pngp->pass].stride_x - 1) / passes[pngp->pass].stride_x;
-      pass_height = (ihdr->height - passes[pngp->pass].y + 
-            passes[pngp->pass].stride_y - 1) / passes[pngp->pass].stride_y;
+      pngp->pass.width  = (ihdr->width - 
+            passes[pngp->pass.pos].x + passes[pngp->pass.pos].stride_x - 1) / passes[pngp->pass.pos].stride_x;
+      pngp->pass.height = (ihdr->height - passes[pngp->pass.pos].y + 
+            passes[pngp->pass.pos].stride_y - 1) / passes[pngp->pass.pos].stride_y;
 
-      tmp_data = (uint32_t*)malloc(
-            pass_width * pass_height * sizeof(uint32_t));
+      pngp->data = (uint32_t*)malloc(
+            pngp->pass.width * pngp->pass.height * sizeof(uint32_t));
 
-      if (!tmp_data)
+      if (!pngp->data)
          return false;
 
-      tmp_ihdr        = *ihdr;
-      tmp_ihdr.width  = pass_width;
-      tmp_ihdr.height = pass_height;
+      pngp->ihdr        = *ihdr;
+      pngp->ihdr.width  = pngp->pass.width;
+      pngp->ihdr.height = pngp->pass.height;
 
-      png_pass_geom(&tmp_ihdr, pass_width,
-            pass_height, NULL, NULL, &pass_size);
+      png_pass_geom(&pngp->ihdr, pngp->pass.width,
+            pngp->pass.height, NULL, NULL, &pngp->pass.size);
 
-      if (pass_size > pngp->stream.total_out)
+      if (pngp->pass.size > pngp->stream.total_out)
       {
-         free(tmp_data);
+         free(pngp->data);
          return false;
       }
 
-      if (!png_reverse_filter(tmp_data,
-               &tmp_ihdr, inflate_buf, pngp, palette))
+      if (!png_reverse_filter(pngp->data,
+               &pngp->ihdr, inflate_buf, pngp, palette))
       {
-         free(tmp_data);
+         free(pngp->data);
          return false;
       }
 
-      inflate_buf            += pass_size;
-      pngp->stream.total_out -= pass_size;
+      inflate_buf            += pngp->pass.size;
+      pngp->stream.total_out -= pngp->pass.size;
 
       deinterlace_pass(data,
-            ihdr, tmp_data, pass_width, pass_height, &passes[pngp->pass]);
+            ihdr, pngp->data, pngp->pass.width, pngp->pass.height, &passes[pngp->pass.pos]);
 
-      free(tmp_data);
+      free(pngp->data);
+
+      pngp->adam7_pass_initialized = false;
+      pngp->pass.width  = 0;
+      pngp->pass.height = 0;
+      pngp->pass.size   = 0;
    }
 
    return true;
