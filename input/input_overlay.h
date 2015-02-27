@@ -75,6 +75,7 @@ enum overlay_status
    OVERLAY_STATUS_DEFERRED_LOADING_IMAGE,
    OVERLAY_STATUS_DEFERRED_LOADING_IMAGE_PROCESS,
    OVERLAY_STATUS_DEFERRED_LOADING,
+   OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE,
    OVERLAY_STATUS_DEFERRED_DONE,
    OVERLAY_STATUS_DEFERRED_ERROR,
    OVERLAY_STATUS_ALIVE,
@@ -237,6 +238,10 @@ bool input_overlay_load_overlays_image_iterate(input_overlay_t *ol);
 
 bool input_overlay_load_overlays_iterate(input_overlay_t *ol);
 
+bool input_overlay_load_overlays_resolve_iterate(input_overlay_t *ol);
+
+bool input_overlay_new_done(input_overlay_t *ol);
+
 /**
  * input_overlay_free:
  * @ol                    : Overlay handle.
@@ -333,4 +338,3 @@ void input_overlay_next(input_overlay_t *ol, float opacity);
 #endif
 
 #endif
-
