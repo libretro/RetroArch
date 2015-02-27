@@ -689,6 +689,7 @@ MENU
 #include "../menu/menu_entries_cbs_representation.c"
 #include "../menu/menu_entries_cbs_iterate.c"
 #include "../menu/menu_entries_cbs_up_or_down.c"
+#include "../menu/menu_entries_cbs_contentlist_switch.c"
 #include "../menu/menu_entries_cbs.c"
 #include "../menu/menu_shader.c"
 #include "../menu/menu_texture.c"

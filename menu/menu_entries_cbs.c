@@ -152,16 +152,6 @@ int cb_core_updater_download(void *data_, size_t len)
 }
 #endif
 
-static void menu_entries_cbs_init_bind_content_list_switch(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1)
-{
-   if (!cbs)
-      return;
-
-   cbs->action_content_list_switch = deferred_push_content_list;
-}
-
 int menu_entries_common_is_settings_entry(const char *label)
 {
    return (

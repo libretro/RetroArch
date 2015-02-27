@@ -322,6 +322,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/menu_entries_cbs_representation.o \
 			 menu/menu_entries_cbs_iterate.o \
 			 menu/menu_entries_cbs_up_or_down.o \
+			 menu/menu_entries_cbs_contentlist_switch.o \
 			 menu/menu_entries_cbs.o \
 			 menu/menu_list.o \
 			 menu/menu_animation.o

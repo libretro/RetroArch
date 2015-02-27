@@ -54,6 +54,10 @@ void menu_entries_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1);
 
+void menu_entries_cbs_init_bind_content_list_switch(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1);
+
 void menu_entries_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1);
