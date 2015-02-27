@@ -331,34 +331,6 @@ end:
    return ret;
 }
 
-static bool input_overlay_load_overlay_image(input_overlay_t *ol,
-      const char *config_path,
-      struct overlay *overlay, unsigned idx)
-{
-   if (overlay->config.paths.path[0] != '\0')
-   {
-      char overlay_resolved_path[PATH_MAX_LENGTH];
-      struct texture_image img = {0};
-
-      fill_pathname_resolve_relative(overlay_resolved_path, config_path,
-            overlay->config.paths.path, sizeof(overlay_resolved_path));
-
-      if (!texture_image_load(&img, overlay_resolved_path))
-      {
-         RARCH_ERR("[Overlay]: Failed to load image: %s.\n",
-               overlay_resolved_path);
-         ol->loading_status = OVERLAY_IMAGE_TRANSFER_ERROR;
-         return false;
-      }
-
-      overlay->image = img;
-
-      return true;
-   }
-
-   return false;
-}
-
 static bool input_overlay_load_overlay(input_overlay_t *ol,
       const char *config_path,
       struct overlay *overlay, unsigned idx)
@@ -539,10 +511,7 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
    switch (ol->loading_status)
    {
       case OVERLAY_IMAGE_TRANSFER_NONE:
-         if (!input_overlay_load_overlay_image(ol,
-                  ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
-            ol->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
-         ol->loading_status = OVERLAY_IMAGE_TRANSFER_BUSY;
+         ol->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
          break;
       case OVERLAY_IMAGE_TRANSFER_BUSY:
          ol->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
@@ -674,6 +643,25 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
 
       config_get_path(conf, overlay->config.paths.key,
                overlay->config.paths.path, sizeof(overlay->config.paths.path));
+
+      if (overlay->config.paths.path[0] != '\0')
+      {
+         char overlay_resolved_path[PATH_MAX_LENGTH];
+         struct texture_image img = {0};
+
+         fill_pathname_resolve_relative(overlay_resolved_path, ol->overlay_path,
+               overlay->config.paths.path, sizeof(overlay_resolved_path));
+
+         if (!texture_image_load(&img, overlay_resolved_path))
+         {
+            RARCH_ERR("[Overlay]: Failed to load image: %s.\n",
+                  overlay_resolved_path);
+            ol->loading_status = OVERLAY_IMAGE_TRANSFER_ERROR;
+            goto error;
+         }
+
+         overlay->image = img;
+      }
 
       snprintf(overlay->config.names.key, sizeof(overlay->config.names.key),
             "overlay%u_name", i);
