@@ -30,6 +30,9 @@
 #include "../input/input_remapping.h"
 
 /* FIXME - Global variables, refactor */
+char core_updater_list_path[PATH_MAX_LENGTH];
+char core_updater_list_label[PATH_MAX_LENGTH];
+unsigned core_updater_list_type;
 unsigned rdb_entry_start_game_selection_ptr;
 size_t hack_shader_pass = 0;
 #ifdef HAVE_NETWORKING
@@ -251,6 +254,45 @@ static int action_ok_video_filter(const char *path,
          g_settings.video.filter_dir,
          "deferred_video_filter",
          0, idx);
+}
+
+static int action_ok_core_updater_list(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   char url_path[PATH_MAX_LENGTH];
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return -1;
+
+   driver.menu->nonblocking_refresh = true;
+
+   (void)url_path;
+#ifdef HAVE_NETWORKING
+   strlcpy(core_updater_list_path, path, sizeof(core_updater_list_path));
+   strlcpy(core_updater_list_label, label, sizeof(core_updater_list_label));
+   core_updater_list_type = type;
+#endif
+
+   if (g_settings.network.buildbot_url[0] == '\0')
+   {
+      return -1;
+   }
+
+#ifdef HAVE_NETWORKING
+   rarch_main_command(RARCH_CMD_NETWORK_INIT);
+
+   fill_pathname_join(url_path, g_settings.network.buildbot_url,
+         ".index", sizeof(url_path));
+
+   strlcat(url_path, "|cb_core_updater_list", sizeof(url_path));
+
+   msg_queue_clear(g_extern.http.msg_queue);
+   msg_queue_push(g_extern.http.msg_queue, url_path, 0, 1);
+#endif
+
+   return menu_list_push_stack_refresh(
+         menu->menu_list,
+         path, "deferred_core_updater_list", type, idx);
 }
 
 static int action_ok_remap_file(const char *path,
@@ -846,7 +888,7 @@ static int action_ok_save_state(const char *path,
    return generic_action_ok_command(RARCH_CMD_RESUME);
 }
 
-static int action_ok_core_updater_list(const char *path,
+static int action_ok_core_updater_download(const char *path,
       const char *label, unsigned type, size_t idx)
 {
 #ifdef HAVE_NETWORKING
@@ -1127,6 +1169,8 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       cbs->action_ok = action_ok_video_filter;
    else if (!strcmp(label, "remap_file_load"))
       cbs->action_ok = action_ok_remap_file;
+   else if (!strcmp(label, "core_updater_list"))
+      cbs->action_ok = action_ok_core_updater_list;
    else if (!strcmp(label, "video_shader_parameters") ||
          !strcmp(label, "video_shader_preset_parameters")
          )
@@ -1154,7 +1198,6 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
          )
       cbs->action_ok = action_ok_push_content_list;
    else if (!strcmp(label, "history_list") ||
-         !strcmp(label, "core_updater_list") ||
          !strcmp(label, "cursor_manager_list") ||
          !strcmp(label, "database_manager_list") ||
          (setting && setting->browser_selection_type == ST_DIR)
@@ -1229,7 +1272,7 @@ void menu_entries_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
             return;
          break;
       case MENU_FILE_DOWNLOAD_CORE:
-         cbs->action_ok = action_ok_core_updater_list;
+         cbs->action_ok = action_ok_core_updater_download;
          break;
       case MENU_FILE_DOWNLOAD_CORE_INFO:
          break;

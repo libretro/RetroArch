@@ -1539,14 +1539,15 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
-static char core_updater_list_path[PATH_MAX_LENGTH];
-static char core_updater_list_label[PATH_MAX_LENGTH];
-static unsigned core_updater_list_type;
+extern char core_updater_list_path[PATH_MAX_LENGTH];
+extern char core_updater_list_label[PATH_MAX_LENGTH];
+extern unsigned core_updater_list_type;
+static char *core_buf;
+static size_t core_len;
 
 int cb_core_updater_list(void *data_, size_t len)
 {
    char *data = (char*)data_;
-   file_list_t *list = NULL;
    menu_handle_t *menu    = menu_driver_resolve();
    if (!menu)
       return -1;
@@ -1554,20 +1555,15 @@ int cb_core_updater_list(void *data_, size_t len)
    if (!data)
       return -1;
 
-   list      = (file_list_t*)menu->menu_list->selection_buf;
+   core_buf = (char*)malloc(len * sizeof(char));
 
-   if (!list)
+   if (!core_buf)
       return -1;
 
-   menu_list_clear(list);
+   memcpy(core_buf, data, len * sizeof(char));
+   core_len = len;
 
-
-   print_buf_lines(list, data, len, MENU_FILE_DOWNLOAD_CORE);
-
-   menu_list_populate_generic(list, core_updater_list_path,
-         core_updater_list_label, core_updater_list_type);
-
-   driver.menu->nonblocking_refresh = false;
+   menu->nonblocking_refresh = false;
 
    return 0;
 }
@@ -1577,47 +1573,16 @@ int cb_core_updater_list(void *data_, size_t len)
 static int deferred_push_core_updater_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-#ifdef HAVE_NETWORKING
-   char url_path[PATH_MAX_LENGTH];
+   file_list_t *list      = (file_list_t*)data;
+   menu_list_clear(list);
 
-   strlcpy(core_updater_list_path, path, sizeof(core_updater_list_path));
-   strlcpy(core_updater_list_label, label, sizeof(core_updater_list_label));
-   core_updater_list_type = type;
-#endif
+   print_buf_lines(list, core_buf, core_len, MENU_FILE_DOWNLOAD_CORE);
 
-   if (g_settings.network.buildbot_url[0] == '\0')
-   {
-      file_list_t *list      = (file_list_t*)data;
+   if (core_buf)
+      free(core_buf);
 
-      menu_list_clear(list);
-#ifdef HAVE_NETWORKING
-      menu_list_push(list,
-            "Buildbot URL not configured.", "",
-            0, 0);
-#else
-      menu_list_push(list,
-            "Network not available.", "",
-            0, 0);
-#endif
-
-      menu_list_populate_generic(list, path, label, type);
-
-      return 0;
-   }
-
-#ifdef HAVE_NETWORKING
-   rarch_main_command(RARCH_CMD_NETWORK_INIT);
-
-   fill_pathname_join(url_path, g_settings.network.buildbot_url,
-         ".index", sizeof(url_path));
-
-   strlcat(url_path, "|cb_core_updater_list", sizeof(url_path));
-
-   msg_queue_clear(g_extern.http.msg_queue);
-   msg_queue_push(g_extern.http.msg_queue, url_path, 0, 1);
-#endif
-
-   driver.menu->nonblocking_refresh = true;
+   menu_list_populate_generic(list, core_updater_list_path,
+         core_updater_list_label, core_updater_list_type);
 
    return 0;
 }
@@ -1882,7 +1847,7 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    if (strstr(label, "deferred_rdb_entry_detail"))
       cbs->action_deferred_push = deferred_push_rdb_entry_detail;
-   else if (!strcmp(label, "core_updater_list"))
+   else if (!strcmp(label, "deferred_core_updater_list"))
       cbs->action_deferred_push = deferred_push_core_updater_list;
    else if (!strcmp(label, "history_list"))
       cbs->action_deferred_push = deferred_push_history_list;
