@@ -583,8 +583,9 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
    if (!ol->overlays)
       goto error;
 
-   ol->size = ol->config.overlays.size;
-   ol->pos  = 0;
+   ol->size          = ol->config.overlays.size;
+   ol->pos           = 0;
+   ol->resolve_pos   = 0;
 
    for (i = 0; i < ol->size; i++)
    {
