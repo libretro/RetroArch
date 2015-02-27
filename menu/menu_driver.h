@@ -117,6 +117,7 @@ typedef struct
    } categories;
 
    bool need_refresh;
+   bool nonblocking_refresh;
    bool msg_force;
    bool push_start_screen;
 

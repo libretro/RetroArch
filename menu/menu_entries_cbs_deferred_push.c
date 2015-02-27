@@ -1567,6 +1567,8 @@ int cb_core_updater_list(void *data_, size_t len)
    menu_list_populate_generic(list, core_updater_list_path,
          core_updater_list_label, core_updater_list_type);
 
+   driver.menu->nonblocking_refresh = false;
+
    return 0;
 }
 #endif
@@ -1614,6 +1616,8 @@ static int deferred_push_core_updater_list(void *data, void *userdata,
    msg_queue_clear(g_extern.http.msg_queue);
    msg_queue_push(g_extern.http.msg_queue, url_path, 0, 1);
 #endif
+
+   driver.menu->nonblocking_refresh = true;
 
    return 0;
 }

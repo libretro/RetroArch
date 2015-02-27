@@ -632,7 +632,7 @@ static int action_iterate_main(const char *label, unsigned action)
          return action_iterate_custom_bind(label, action);
    }
 
-   if (menu->need_refresh && action != MENU_ACTION_MESSAGE)
+   if (menu->need_refresh && !menu->nonblocking_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_REFRESH;
 
    switch (action)
