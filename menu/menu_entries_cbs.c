@@ -153,52 +153,6 @@ int cb_core_updater_download(void *data_, size_t len)
 #endif
 
 
-static int action_bind_up_or_down_generic(unsigned type, const char *label,
-      unsigned action)
-{
-   unsigned scroll_speed  = 0;
-   menu_handle_t *menu    = menu_driver_resolve();
-   if (!menu)
-      return -1;
-
-   scroll_speed = (max(menu->navigation.scroll.acceleration, 2) - 2) / 4 + 1;
-
-   if (menu_list_get_size(menu->menu_list) <= 0)
-      return 0;
-
-   switch (action)
-   {
-      case MENU_ACTION_UP:
-         if (menu->navigation.selection_ptr >= scroll_speed)
-               menu_navigation_set(&menu->navigation,
-                     menu->navigation.selection_ptr - scroll_speed, true);
-         else
-         {
-            if (g_settings.menu.navigation.wraparound.vertical_enable)
-               menu_navigation_set(&menu->navigation, 
-                     menu_list_get_size(menu->menu_list) - 1, true);
-            else
-               menu_navigation_set(&menu->navigation, 0, true);
-         }
-         break;
-      case MENU_ACTION_DOWN:
-         if (menu->navigation.selection_ptr + scroll_speed < (menu_list_get_size(menu->menu_list)))
-            menu_navigation_set(&menu->navigation,
-                  menu->navigation.selection_ptr + scroll_speed, true);
-         else
-         {
-            if (g_settings.menu.navigation.wraparound.vertical_enable)
-               menu_navigation_clear(&menu->navigation, false);
-            else
-               menu_navigation_set(&menu->navigation,
-                     menu_list_get_size(menu->menu_list) - 1, true);
-         }
-         break;
-   }
-
-   return 0;
-}
-
 static int action_refresh_default(file_list_t *list, file_list_t *menu_list)
 {
    int ret = 0;
@@ -246,17 +200,6 @@ int menu_entries_common_is_settings_entry(const char *label)
     !strcmp(label, "Path Settings") ||
     !strcmp(label, "Privacy Settings"));
 }
-
-static void menu_entries_cbs_init_bind_up_or_down(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1)
-{
-   if (!cbs)
-      return;
-
-   cbs->action_up_or_down = action_bind_up_or_down_generic;
-}
-
 
 static void menu_entries_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
