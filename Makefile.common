@@ -316,6 +316,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/menu_entries_cbs_cancel.o \
 			 menu/menu_entries_cbs_start.o \
 			 menu/menu_entries_cbs_select.o \
+			 menu/menu_entries_cbs_refresh.o \
 			 menu/menu_entries_cbs_toggle.o \
 			 menu/menu_entries_cbs_deferred_push.o \
 			 menu/menu_entries_cbs_representation.o \

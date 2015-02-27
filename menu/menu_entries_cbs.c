@@ -152,21 +152,6 @@ int cb_core_updater_download(void *data_, size_t len)
 }
 #endif
 
-
-static int action_refresh_default(file_list_t *list, file_list_t *menu_list)
-{
-   int ret = 0;
-   menu_handle_t *menu    = menu_driver_resolve();
-   if (!menu)
-      return -1;
-
-   ret = menu_entries_deferred_push(list, menu_list);
-
-   menu->need_refresh = false;
-
-   return ret;
-}
-
 static void menu_entries_cbs_init_bind_content_list_switch(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1)
@@ -199,14 +184,6 @@ int menu_entries_common_is_settings_entry(const char *label)
     !strcmp(label, "User Settings") ||
     !strcmp(label, "Path Settings") ||
     !strcmp(label, "Privacy Settings"));
-}
-
-static void menu_entries_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1)
-{
-   if (cbs)
-      cbs->action_refresh = action_refresh_default;
 }
 
 void menu_entries_cbs_init(void *data,
