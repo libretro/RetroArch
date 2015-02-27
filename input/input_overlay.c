@@ -458,7 +458,7 @@ bool input_overlay_load_overlays_resolve_iterate(input_overlay_t *ol)
    if (!ol)
       return false;
 
-   not_done = ol->pos < ol->size;
+   not_done = ol->resolve_pos < ol->size;
 
    if (!not_done)
    {
@@ -466,13 +466,13 @@ bool input_overlay_load_overlays_resolve_iterate(input_overlay_t *ol)
       return true;
    }
 
-   if (!input_overlay_resolve_targets(ol->overlays, ol->pos, ol->size))
+   if (!input_overlay_resolve_targets(ol->overlays, ol->resolve_pos, ol->size))
    {
       RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
       goto error;
    }
 
-   ol->pos += 1;
+   ol->resolve_pos += 1;
 
    return true;
 error:
@@ -510,7 +510,7 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
 
    if (!not_done)
    {
-      ol->pos   = 0;
+      ol->resolve_pos   = 0;
       ol->state = OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE;
       return true;
    }

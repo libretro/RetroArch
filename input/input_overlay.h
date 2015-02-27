@@ -186,6 +186,7 @@ struct input_overlay
    size_t index;
    size_t size;
    size_t pos;
+   size_t resolve_pos;
 
    unsigned next_index;
    char *overlay_path;
