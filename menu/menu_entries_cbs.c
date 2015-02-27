@@ -152,18 +152,6 @@ int cb_core_updater_download(void *data_, size_t len)
 }
 #endif
 
-static inline struct video_shader *shader_manager_get_current_shader(const char *label, unsigned type)
-{
-   menu_handle_t *menu = menu_driver_resolve();
-   if (!menu)
-      return NULL;
-
-   if (!strcmp(label, "video_shader_preset_parameters"))
-      return menu->shader;
-   else if (!strcmp(label, "video_shader_parameters"))
-      return video_shader_driver_get_current_shader();
-   return NULL;
-}
 
 static int action_bind_up_or_down_generic(unsigned type, const char *label,
       unsigned action)
