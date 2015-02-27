@@ -1295,6 +1295,9 @@ static void *xmb_init(void)
    xmb->item.active.factor      = 3.0;
    xmb->under_offset.item       = 5.0;
 
+   menu->frame_buf.width  = gl->win_width;
+   menu->frame_buf.height = gl->win_height;
+
    if (gl->win_width >= 3840)
       scale_factor              = 2.0;
    else if (gl->win_width >= 2560)

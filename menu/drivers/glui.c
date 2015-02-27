@@ -304,6 +304,9 @@ static void glui_frame(void)
    glui->term_width  = (gl->win_width - glui->margin * 2) / glui->glyph_width;
    glui->term_height = (gl->win_height - glui->margin * 2) / glui->line_height - 2;
 
+   menu->frame_buf.width  = gl->win_width;
+   menu->frame_buf.height = gl->win_height;
+
    menu->mouse.ptr = (menu->mouse.y - glui->margin) /
          glui->line_height - 2 + menu->begin;
 

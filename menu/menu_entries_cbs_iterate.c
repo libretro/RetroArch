@@ -162,9 +162,6 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
    if (!menu->mouse.enable)
       return 0;
 
-   if (menu->mouse.ptr <= menu_list_get_size(menu->menu_list)-1)
-      menu_navigation_set(&menu->navigation, menu->mouse.ptr, false);
-
    if (menu->mouse.left)
    {
       if (!menu->mouse.oldleft)
