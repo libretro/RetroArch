@@ -34,6 +34,10 @@ int menu_entries_parse_list(file_list_t *list, file_list_t *menu_list,
       unsigned default_type_plain, const char *exts,
       rarch_setting_t *setting);
 
+void menu_entries_cbs_init_bind_toggle(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx,
+      const char *elem0, const char *elem1, const char *menu_label);
+
 int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list);
 
 /**
