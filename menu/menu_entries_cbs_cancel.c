@@ -17,33 +17,7 @@
 #include "menu.h"
 #include "menu_entries_cbs.h"
 #include "menu_setting.h"
-#include "menu_input.h"
 #include "menu_entries.h"
-#include "menu_shader.h"
-#include "menu_navigation.h"
-
-#include "../file_ext.h"
-#include "../file_extract.h"
-#include "../file_ops.h"
-#include "../config.def.h"
-#include "../cheats.h"
-#include "../retroarch.h"
-#include "../performance.h"
-
-#ifdef HAVE_NETWORKING
-#include "../net_http.h"
-#endif
-
-#ifdef HAVE_LIBRETRODB
-#include "../database_info.h"
-#endif
-
-#include "menu_database.h"
-
-#include "../input/input_autodetect.h"
-#include "../input/input_remapping.h"
-
-#include "../gfx/video_viewport.h"
 
 static int action_cancel_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx)
