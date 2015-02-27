@@ -451,6 +451,20 @@ static bool input_overlay_resolve_targets(struct overlay *ol,
    return true;
 }
 
+static void input_overlay_load_active(input_overlay_t *ol,
+      float opacity)
+{
+   if (!ol)
+      return;
+
+   ol->iface->load(ol->iface_data, ol->active->load_images,
+         ol->active->load_images_size);
+
+   input_overlay_set_alpha_mod(ol, opacity);
+   input_overlay_set_vertex_geom(ol);
+   ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
+}
+
 bool input_overlay_load_overlays_resolve_iterate(input_overlay_t *ol)
 {
    bool not_done = true;
@@ -470,6 +484,14 @@ bool input_overlay_load_overlays_resolve_iterate(input_overlay_t *ol)
    {
       RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
       goto error;
+   }
+
+   if (ol->resolve_pos == 0)
+   {
+      ol->active = &ol->overlays[0];
+
+      input_overlay_load_active(ol, ol->deferred.opacity);
+      input_overlay_enable(ol, ol->deferred.enable);
    }
 
    ol->resolve_pos += 1;
@@ -510,7 +532,6 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
 
    if (!not_done)
    {
-      ol->resolve_pos   = 0;
       ol->state = OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE;
       return true;
    }
@@ -539,6 +560,8 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
          }
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_DONE:
+         if (ol->pos == 0)
+            input_overlay_load_overlays_resolve_iterate(ol);
          ol->pos += 1;
          ol->loading_status = OVERLAY_IMAGE_TRANSFER_NONE;
          break;
@@ -704,29 +727,11 @@ error:
    return false;
 }
 
-static void input_overlay_load_active(input_overlay_t *ol,
-      float opacity)
-{
-   if (!ol)
-      return;
-
-   ol->iface->load(ol->iface_data, ol->active->load_images,
-         ol->active->load_images_size);
-
-   input_overlay_set_alpha_mod(ol, opacity);
-   input_overlay_set_vertex_geom(ol);
-   ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
-}
 
 bool input_overlay_new_done(input_overlay_t *ol)
 {
    if (!ol)
       return false;
-
-   ol->active = &ol->overlays[0];
-
-   input_overlay_load_active(ol, ol->deferred.opacity);
-   input_overlay_enable(ol, ol->deferred.enable);
 
    input_overlay_set_alpha_mod(ol, ol->deferred.opacity);
    input_overlay_set_scale_factor(ol, ol->deferred.scale_factor);
