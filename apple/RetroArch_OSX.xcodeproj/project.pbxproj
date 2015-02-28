@@ -8,11 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
-		840222F51A889DE9009AB261 /* CFExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 840222F41A889DE9009AB261 /* CFExtensions.m */; };
-		840222F71A889DFC009AB261 /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 840222F61A889DFC009AB261 /* RAGameView.m */; };
-		840222F91A889E0C009AB261 /* utility.m in Sources */ = {isa = PBXBuildFile; fileRef = 840222F81A889E0C009AB261 /* utility.m */; };
+		509F0C9D1AA23AFC00619ECC /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
 		840222FC1A889EE2009AB261 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; };
-		840365B51A88960400C51FB4 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 840365B41A88960400C51FB4 /* settings.m */; };
 		841CBB881A8A343E0066E9F1 /* rdb in CopyFiles */ = {isa = PBXBuildFile; fileRef = 841CBB7F1A8A31650066E9F1 /* rdb */; };
 		841CBB891A8A34420066E9F1 /* cursors in CopyFiles */ = {isa = PBXBuildFile; fileRef = 841CBB7D1A8A314F0066E9F1 /* cursors */; };
 		841CBB8A1A8A34470066E9F1 /* cht in CopyFiles */ = {isa = PBXBuildFile; fileRef = 841CBB7B1A8A31370066E9F1 /* cht */; };
@@ -32,7 +29,6 @@
 		84DD5EB61A89E76C007336C1 /* Cg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB01A89E664007336C1 /* Cg.framework */; };
 		84DD5EB81A89F1C7007336C1 /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
-		8D11072D0486CEB800E47090 /* platform.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* platform.m */; settings = {ATTRIBUTES = (); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -66,13 +62,9 @@
 /* Begin PBXFileReference section */
 		089C165DFE840E0CC02AAC07 /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1DDD58150DA1D0A300B32029 /* MainMenu.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = MainMenu.xib; path = OSX/en.lproj/MainMenu.xib; sourceTree = "<group>"; };
-		29B97316FDCFA39411CA2CEA /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = OSX/platform.m; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
-		840222F41A889DE9009AB261 /* CFExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CFExtensions.m; path = common/CFExtensions.m; sourceTree = "<group>"; };
-		840222F61A889DFC009AB261 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RAGameView.m; path = common/RAGameView.m; sourceTree = "<group>"; };
-		840222F81A889E0C009AB261 /* utility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = utility.m; path = common/utility.m; sourceTree = "<group>"; };
+		509F0C9C1AA23AFC00619ECC /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../griffin/griffin_objc.m; sourceTree = "<group>"; };
 		840222FB1A889EE2009AB261 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
-		840365B41A88960400C51FB4 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = OSX/settings.m; sourceTree = "<group>"; };
 		841CBB731A8A308C0066E9F1 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../media/assets; sourceTree = "<group>"; };
 		841CBB751A8A30CC0066E9F1 /* autoconfig */ = {isa = PBXFileReference; lastKnownFileType = folder; name = autoconfig; path = ../media/autoconfig; sourceTree = "<group>"; };
 		841CBB771A8A30F00066E9F1 /* overlays */ = {isa = PBXFileReference; lastKnownFileType = folder; name = overlays; path = ../media/overlays; sourceTree = "<group>"; };
@@ -81,8 +73,6 @@
 		841CBB7D1A8A314F0066E9F1 /* cursors */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cursors; path = ../media/libretrodb/cursors; sourceTree = "<group>"; };
 		841CBB7F1A8A31650066E9F1 /* rdb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = rdb; path = ../media/libretrodb/rdb; sourceTree = "<group>"; };
 		84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
-		84DD5EA11A89658D007336C1 /* RetroArch_Apple.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RetroArch_Apple.h; path = common/RetroArch_Apple.h; sourceTree = "<group>"; };
-		84DD5EA21A896816007336C1 /* platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = platform.h; path = OSX/platform.h; sourceTree = "<group>"; };
 		84DD5EA41A89E2F6007336C1 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = /System/Library/Frameworks/AVFoundation.framework; sourceTree = "<absolute>"; };
 		84DD5EA61A89E406007336C1 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = /System/Library/Frameworks/CoreLocation.framework; sourceTree = "<absolute>"; };
 		84DD5EA81A89E4BE007336C1 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = /System/Library/Frameworks/CoreAudio.framework; sourceTree = "<absolute>"; };
@@ -160,8 +150,6 @@
 			isa = PBXGroup;
 			children = (
 				840222FA1A889EA2009AB261 /* Core */,
-				840222F21A889D62009AB261 /* Common */,
-				84F678D51A889446000C8F9C /* OSX */,
 				080E96DDFE201D6D7F000001 /* Classes */,
 				29B97315FDCFA39411CA2CEA /* Other Sources */,
 				841CBB821A8A33810066E9F1 /* Assets */,
@@ -202,20 +190,10 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		840222F21A889D62009AB261 /* Common */ = {
-			isa = PBXGroup;
-			children = (
-				84DD5EA11A89658D007336C1 /* RetroArch_Apple.h */,
-				840222F41A889DE9009AB261 /* CFExtensions.m */,
-				840222F61A889DFC009AB261 /* RAGameView.m */,
-				840222F81A889E0C009AB261 /* utility.m */,
-			);
-			name = Common;
-			sourceTree = "<group>";
-		};
 		840222FA1A889EA2009AB261 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				509F0C9C1AA23AFC00619ECC /* griffin_objc.m */,
 				840222FB1A889EE2009AB261 /* griffin.c */,
 			);
 			name = Core;
@@ -241,16 +219,6 @@
 				841CBB811A8A33640066E9F1 /* libretrodb */,
 			);
 			name = Assets;
-			sourceTree = "<group>";
-		};
-		84F678D51A889446000C8F9C /* OSX */ = {
-			isa = PBXGroup;
-			children = (
-				84DD5EA21A896816007336C1 /* platform.h */,
-				840365B41A88960400C51FB4 /* settings.m */,
-				29B97316FDCFA39411CA2CEA /* platform.m */,
-			);
-			name = OSX;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -317,11 +285,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8D11072D0486CEB800E47090 /* platform.m in Sources */,
-				840365B51A88960400C51FB4 /* settings.m in Sources */,
-				840222F51A889DE9009AB261 /* CFExtensions.m in Sources */,
-				840222F71A889DFC009AB261 /* RAGameView.m in Sources */,
-				840222F91A889E0C009AB261 /* utility.m in Sources */,
+				509F0C9D1AA23AFC00619ECC /* griffin_objc.m in Sources */,
 				840222FC1A889EE2009AB261 /* griffin.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
