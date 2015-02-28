@@ -1,6 +1,6 @@
 #include <Availability.h>
 
-#ifdef __IPHONE_7_0
+#if defined(__IPHONE_7_0) && defined(TARGET_OS_IPHONE)
 #define HAVE_MFI
 #endif
 
