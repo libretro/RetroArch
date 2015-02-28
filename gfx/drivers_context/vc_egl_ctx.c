@@ -643,7 +643,6 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   NULL,
    gfx_ctx_vc_translate_aspect,
    gfx_ctx_vc_update_window_title,
    gfx_ctx_vc_check_window,

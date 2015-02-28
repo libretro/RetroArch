@@ -419,7 +419,7 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_get_video_output_size,
    gfx_ctx_ps3_get_video_output_prev,
    gfx_ctx_ps3_get_video_output_next,
-   NULL,
+   NULL, /* translate_aspect */
    gfx_ctx_ps3_update_window_title,
    gfx_ctx_ps3_check_window,
    gfx_ctx_ps3_set_resize,
