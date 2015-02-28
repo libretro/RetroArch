@@ -16,7 +16,6 @@
 #include <sys/stat.h>
 
 #include "RetroArch_Apple.h"
-#include "../../settings_data.h"
 
 void apple_display_alert(const char *message, const char *title)
 {
