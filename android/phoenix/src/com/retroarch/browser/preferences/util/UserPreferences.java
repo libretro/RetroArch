@@ -31,21 +31,28 @@ public final class UserPreferences
 
 	/**
 	 * Retrieves the path to the default location of the libretro config.
-	 * 
+	 *
 	 * @param ctx the current {@link Context}
-	 * 
+	 *
 	 * @return the path to the default location of the libretro config.
 	 */
 	public static String getDefaultConfigPath(Context ctx)
 	{
 		// Internal/External storage dirs.
-		final String internal = System.getenv("INTERNAL_STORAGE");
-		final String external = System.getenv("EXTERNAL_STORAGE");
+		final String internal = ctx.getFilesDir().getAbsolutePath();
+		String external = null;
+
+		// Get the App's external storage folder
+		final String state = android.os.Environment.getExternalStorageState();
+		if (android.os.Environment.MEDIA_MOUNTED.equals(state)) {
+			File extsd = ctx.getExternalFilesDir(null);
+			external = extsd.getAbsolutePath();
+		}
 
 		// Native library directory and data directory for this front-end.
 		final String dataDir = ctx.getApplicationInfo().dataDir;
 		final String coreDir = dataDir + "/cores/";
-		
+
 		// Get libretro name and path
 		final SharedPreferences prefs = getPreferences(ctx);
 		final String libretro_path = prefs.getString("libretro_path", coreDir);
@@ -84,21 +91,32 @@ public final class UserPreferences
 				return confPath;
 		}
 
-		if (internal != null && new File(internal + append_path).canWrite())
-			return internal + append_path;
-		else if (external != null && new File(internal + append_path).canWrite())
-			return external + append_path;
+		// Config file does not exist. Create empty one.
+
+		// emergency fallback
+		String new_path = "/mnt/sd" + append_path;
+
+		if (external != null)
+			new_path = external + append_path;
+		else if (internal != null)
+			new_path = internal + append_path;
 		else if (dataDir != null)
-			return dataDir + append_path;
-		else
-			// emergency fallback, all else failed
-			return "/mnt/sd" + append_path;
+			new_path = dataDir + append_path;
+
+		try {
+			new File(new_path).createNewFile();
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, "Failed to create config file to: " + new_path);
+		}
+		return new_path;
 	}
 
 	/**
 	 * Re-reads the configuration file into the {@link SharedPreferences}
 	 * instance that contains all of the settings for the front-end.
-	 * 
+	 *
 	 * @param ctx the current {@link Context}.
 	 */
 	public static void readbackConfigFile(Context ctx)
@@ -107,7 +125,7 @@ public final class UserPreferences
 		ConfigFile config = new ConfigFile(path);
 
 		Log.i(TAG, "Config readback from: " + path);
-		
+
 		SharedPreferences prefs = getPreferences(ctx);
 		SharedPreferences.Editor edit = prefs.edit();
 
@@ -150,7 +168,7 @@ public final class UserPreferences
 	/**
 	 * Updates the libretro configuration file
 	 * with new values if settings have changed.
-	 * 
+	 *
 	 * @param ctx the current {@link Context}.
 	 */
 	public static void updateConfigFile(Context ctx)
@@ -164,7 +182,7 @@ public final class UserPreferences
 		final String coreDir = dataDir + "/cores/";
 
 		final SharedPreferences prefs = getPreferences(ctx);
-		
+
 		config.setString("libretro_path", prefs.getString("libretro_path", coreDir));
 		config.setString("libretro_directory", coreDir);
 		config.setString("rgui_browser_directory", prefs.getString("rgui_browser_directory", ""));
@@ -226,15 +244,15 @@ public final class UserPreferences
 
 		if (prefs.getBoolean("savefile_directory_enable", false))
 		{
-		   config.setString("savefile_directory", prefs.getString("savefile_directory", ""));
+			config.setString("savefile_directory", prefs.getString("savefile_directory", ""));
 		}
 		if (prefs.getBoolean("savestate_directory_enable", false))
 		{
-		   config.setString("savestate_directory", prefs.getString("savestate_directory", ""));
+			config.setString("savestate_directory", prefs.getString("savestate_directory", ""));
 		}
 		if (prefs.getBoolean("system_directory_enable", false))
 		{
-		   config.setString("system_directory", prefs.getString("system_directory", ""));
+			config.setString("system_directory", prefs.getString("system_directory", ""));
 		}
 
 		config.setBoolean("video_font_enable", prefs.getBoolean("video_font_enable", true));
@@ -244,11 +262,11 @@ public final class UserPreferences
 		for (int i = 1; i <= 4; i++)
 		{
 			final String[] btns =
-			{ 
-				"up", "down", "left", "right",
-				"a", "b", "x", "y", "start", "select",
-				"l", "r", "l2", "r2", "l3", "r3"
-			};
+					{
+							"up", "down", "left", "right",
+							"a", "b", "x", "y", "start", "select",
+							"l", "r", "l2", "r2", "l3", "r3"
+					};
 
 			for (String b : btns)
 			{
@@ -305,20 +323,20 @@ public final class UserPreferences
 	*/
 
 	/**
-	private static void readbackInt(ConfigFile cfg, SharedPreferences.Editor edit, String key)
-	{
-		if (cfg.keyExists(key))
-			edit.putInt(key, cfg.getInt(key));
-		else
-			edit.remove(key);
-	}
-	*/
+	 private static void readbackInt(ConfigFile cfg, SharedPreferences.Editor edit, String key)
+	 {
+	 if (cfg.keyExists(key))
+	 edit.putInt(key, cfg.getInt(key));
+	 else
+	 edit.remove(key);
+	 }
+	 */
 
 	/**
 	 * Sanitizes a libretro core path.
-	 * 
+	 *
 	 * @param path The path to the libretro core.
-	 * 
+	 *
 	 * @return the sanitized libretro path.
 	 */
 	private static String sanitizeLibretroPath(String path)
@@ -334,9 +352,9 @@ public final class UserPreferences
 
 	/**
 	 * Gets a {@link SharedPreferences} instance containing current settings.
-	 * 
+	 *
 	 * @param ctx the current {@link Context}.
-	 * 
+	 *
 	 * @return A SharedPreference instance containing current settings.
 	 */
 	public static SharedPreferences getPreferences(Context ctx)
@@ -346,9 +364,9 @@ public final class UserPreferences
 
 	/**
 	 * Gets the optimal sampling rate for low-latency audio playback.
-	 * 
+	 *
 	 * @param ctx the current {@link Context}.
-	 * 
+	 *
 	 * @return the optimal sampling rate for low-latency audio playback in Hz.
 	 */
 	@TargetApi(17)
@@ -362,9 +380,9 @@ public final class UserPreferences
 
 	/**
 	 * Gets the optimal buffer size for low-latency audio playback.
-	 * 
+	 *
 	 * @param ctx the current {@link Context}.
-	 * 
+	 *
 	 * @return the optimal output buffer size in decimal PCM frames.
 	 */
 	@TargetApi(17)
@@ -385,9 +403,9 @@ public final class UserPreferences
 	 * <p>
 	 * On other devices, it simply returns the regular optimal sampling rate
 	 * as returned by the hardware.
-	 * 
+	 *
 	 * @param ctx The current {@link Context}.
-	 * 
+	 *
 	 * @return the optimal audio sampling rate in Hz.
 	 */
 	private static int getOptimalSamplingRate(Context ctx)
@@ -404,7 +422,7 @@ public final class UserPreferences
 
 	/**
 	 * Retrieves the CPU info, as provided by /proc/cpuinfo.
-	 * 
+	 *
 	 * @return the CPU info.
 	 */
 	public static String readCPUInfo()
