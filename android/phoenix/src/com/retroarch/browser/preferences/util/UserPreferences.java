@@ -39,13 +39,20 @@ public final class UserPreferences
 	public static String getDefaultConfigPath(Context ctx)
 	{
 		// Internal/External storage dirs.
-		final String internal = System.getenv("INTERNAL_STORAGE");
-		final String external = System.getenv("EXTERNAL_STORAGE");
+		final String internal = ctx.getFilesDir().getAbsolutePath();
+		String external = null;
+
+		// Get the App's external storage folder
+		final String state = android.os.Environment.getExternalStorageState();
+		if (android.os.Environment.MEDIA_MOUNTED.equals(state)) {
+			File extsd = ctx.getExternalFilesDir(null);
+			external = extsd.getAbsolutePath();
+		}
 
 		// Native library directory and data directory for this front-end.
 		final String dataDir = ctx.getApplicationInfo().dataDir;
 		final String coreDir = dataDir + "/cores/";
-		
+
 		// Get libretro name and path
 		final SharedPreferences prefs = getPreferences(ctx);
 		final String libretro_path = prefs.getString("libretro_path", coreDir);
@@ -84,15 +91,26 @@ public final class UserPreferences
 				return confPath;
 		}
 
-		if (internal != null && new File(internal + append_path).canWrite())
-			return internal + append_path;
-		else if (external != null && new File(internal + append_path).canWrite())
-			return external + append_path;
+		// Config file does not exist. Create empty one.
+
+		// emergency fallback
+		String new_path = "/mnt/sd" + append_path;
+
+		if (external != null)
+			new_path = external + append_path;
+		else if (internal != null)
+			new_path = internal + append_path;
 		else if (dataDir != null)
-			return dataDir + append_path;
-		else
-			// emergency fallback, all else failed
-			return "/mnt/sd" + append_path;
+			new_path = dataDir + append_path;
+
+		try {
+			new File(new_path).createNewFile();
+		}
+		catch (IOException e)
+		{
+			Log.e(TAG, "Failed to create config file to: " + new_path);
+		}
+		return new_path;
 	}
 
 	/**
