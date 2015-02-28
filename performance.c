@@ -63,11 +63,28 @@
 #include <ogc/lwp_watchdog.h>
 #endif
 
-// OSX specific. OSX lacks clock_gettime().
+// iOS/OSX specific. Lacks clock_gettime(), so implement it.
 #ifdef __MACH__
-#include <mach/clock.h>
-#include <mach/mach.h>
-#include <mach/mach_time.h>
+#include <sys/time.h>
+
+#ifndef CLOCK_MONOTONIC
+#define CLOCK_MONOTONIC 0
+#endif
+
+#ifndef CLOCK_REALTIME
+#define CLOCK_REALTIME 0
+#endif
+
+static int clock_gettime(int clk_ik, struct timespec *t)
+{
+   struct timeval now;
+   int rv = gettimeofday(&now, NULL);
+   if (rv)
+      return rv;
+   t->tv_sec  = now.tv_sec;
+   t->tv_nsec = now.tv_usec * 1000;
+   return 0;
+}
 #endif
 
 #ifdef EMSCRIPTEN
@@ -152,11 +169,7 @@ void retro_perf_log(void)
 retro_perf_tick_t rarch_get_perf_counter(void)
 {
    retro_perf_tick_t time_ticks = 0;
-#if defined(__MACH__) && defined(__APPLE__)
-    struct mach_timebase_info convfact;
-    mach_timebase_info(&convfact);
-    time_ticks = mach_absolute_time();
-#elif defined(__linux__) || defined(__QNX__)
+#if defined(__linux__) || defined(__QNX__) || defined(__MACH__)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
       time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 + 
@@ -226,15 +239,7 @@ retro_time_t rarch_get_time_usec(void)
    return sys_time_get_system_time();
 #elif defined(GEKKO)
    return ticks_to_microsecs(gettime());
-#elif defined(__MACH__)
-   /* OSX doesn't have clock_gettime. */
-   clock_serv_t cclock;
-   mach_timespec_t mts;
-   host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-   clock_get_time(cclock, &mts);
-   mach_port_deallocate(mach_task_self(), cclock);
-   return mts.tv_sec * INT64_C(1000000) + (mts.tv_nsec + 500) / 1000;
-#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID)
+#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
