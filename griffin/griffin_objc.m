@@ -9,13 +9,13 @@
 
 #include "../apple/common/RAGameView.m"
 
-#if defined(OSX)
-#include "../apple/OSX/platform.m"
-#include "../apple/OSX/settings.m"
-#elif defined(IOS)
+#if TARGET_OS_IPHONE
 #include "../apple/iOS/platform.m"
 #include "../apple/iOS/menu.m"
 #include "../apple/iOS/browser.m"
+#else
+#include "../apple/OSX/platform.m"
+#include "../apple/OSX/settings.m"
 #endif
 
 #ifdef HAVE_MFI
