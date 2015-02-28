@@ -1,6 +1,10 @@
 #include <Availability.h>
 
-#if defined(__IPHONE_7_0) && defined(TARGET_OS_IPHONE)
+#ifndef __IPHONE_OS_VERSION_MAX_ALLOWED
+#define __IPHONE_OS_VERSION_MAX_ALLOWED 00000
+#endif
+
+#if __IPHONE_7_0 && __IPHONE_OS_VERSION_MAX_ALLOWED >= 70000
 #define HAVE_MFI
 #endif
 
