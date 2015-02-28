@@ -511,8 +511,6 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
    switch (ol->loading_status)
    {
       case OVERLAY_IMAGE_TRANSFER_NONE:
-         ol->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
-         break;
       case OVERLAY_IMAGE_TRANSFER_BUSY:
          ol->loading_status = OVERLAY_IMAGE_TRANSFER_DONE;
          break;
