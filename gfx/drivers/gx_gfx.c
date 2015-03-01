@@ -1082,10 +1082,10 @@ static bool gx_frame(void *data, const void *frame,
          convert_texture16(gx->menu_data, menu_tex.data,
                menu->frame_buf.width,
                menu->frame_buf.height,
-               menu->frame_buf.width * 2);
+               menu->frame_buf.pitch);
          DCFlushRange(menu_tex.data,
                menu->frame_buf.width * 
-               menu->frame_buf.height * 2);
+               menu->frame_buf.pitch);
       }
    }
 

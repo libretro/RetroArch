@@ -106,9 +106,9 @@ ifeq ($(USBGECKO), 1)
 endif
   APP_BOOTER_DIR = wii/app_booter
   PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
-  PLATCFLAGS := -DGEKKO
+  CFLAGS += -DGEKKO
 ifeq ($(USBGECKO), 1)
-  PLATCFLAGS += -DUSBGECKO
+  CFLAGS += -DUSBGECKO
 endif
 
   HAVE_FILTERS_BUILTIN     := 1
