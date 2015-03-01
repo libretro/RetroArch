@@ -1567,8 +1567,6 @@ int cb_core_updater_list(void *data_, size_t len)
 
    return 0;
 }
-#endif
-
 
 static int deferred_push_core_updater_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
@@ -1586,6 +1584,9 @@ static int deferred_push_core_updater_list(void *data, void *userdata,
 
    return 0;
 }
+#endif
+
+
 
 static int deferred_push_history_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
@@ -1847,8 +1848,10 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    if (strstr(label, "deferred_rdb_entry_detail"))
       cbs->action_deferred_push = deferred_push_rdb_entry_detail;
+#ifdef HAVE_NETWORKING
    else if (!strcmp(label, "deferred_core_updater_list"))
       cbs->action_deferred_push = deferred_push_core_updater_list;
+#endif
    else if (!strcmp(label, "history_list"))
       cbs->action_deferred_push = deferred_push_history_list;
    else if (!strcmp(label, "database_manager_list"))
