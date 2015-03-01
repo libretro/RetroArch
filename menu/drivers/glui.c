@@ -435,7 +435,7 @@ static void glui_frame(void)
    if (menu->mouse.enable)
       glui_draw_cursor(gl, glui, menu->mouse.x, menu->mouse.y);
 
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
 static void *glui_init(void)
