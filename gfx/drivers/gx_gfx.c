@@ -402,6 +402,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
       menu->frame_buf.width &= ~3;
       if (menu->frame_buf.width > 400)
          menu->frame_buf.width = 400;
+      menu->frame_buf.pitch = menu->frame_buf.width * 2;
    }
 
    if (tvmode == VI_PAL)
@@ -419,8 +420,11 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
          driver_set_refresh_rate(59.94f);
    }
 
-   /* Don't spam the queue when scrolling through resolutions. */
-   msg_queue_clear(g_extern.msg_queue);
+   /* custom viewports for older resolutions will most likely be corrupted, reset them */
+   g_extern.console.screen.viewports.custom_vp.x = 0;
+   g_extern.console.screen.viewports.custom_vp.y = 0;
+   g_extern.console.screen.viewports.custom_vp.width = 0;
+   g_extern.console.screen.viewports.custom_vp.height = 0;
 
    g_current_framebuf = 0;
 }
