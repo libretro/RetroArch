@@ -1231,7 +1231,7 @@ static void xmb_frame(void)
       xmb->box_message[0] = '\0';
    }
 
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
 static void *xmb_init(void)
