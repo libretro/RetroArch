@@ -396,6 +396,30 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
 static int action_toggle_video_resolution(unsigned type, const char *label,
       unsigned action)
 {
+#if defined(__CELLOS_LV2__)
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         if (g_extern.console.screen.resolutions.current.idx)
+         {
+            g_extern.console.screen.resolutions.current.idx--;
+            g_extern.console.screen.resolutions.current.id =
+               g_extern.console.screen.resolutions.list
+               [g_extern.console.screen.resolutions.current.idx];
+         }
+         break;
+      case MENU_ACTION_RIGHT:
+         if (g_extern.console.screen.resolutions.current.idx + 1 <
+               g_extern.console.screen.resolutions.count)
+         {
+            g_extern.console.screen.resolutions.current.idx++;
+            g_extern.console.screen.resolutions.current.id =
+               g_extern.console.screen.resolutions.list
+               [g_extern.console.screen.resolutions.current.idx];
+         }
+         break;
+   }
+#else
    switch (action)
    {
       case MENU_ACTION_LEFT:
@@ -409,6 +433,7 @@ static int action_toggle_video_resolution(unsigned type, const char *label,
             driver.video_poke->get_video_output_next(driver.video_data);
          break;
    }
+#endif
 
    return 0;
 }

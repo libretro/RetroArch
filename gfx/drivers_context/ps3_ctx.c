@@ -15,7 +15,6 @@
  */
 
 #include "../../driver.h"
-#include "../../retroarch.h"
 #include "../../ps3/sdk_defines.h"
 
 #ifdef HAVE_LIBDBGFONT
@@ -47,6 +46,22 @@ typedef struct gfx_ctx_ps3_data
    PSGLcontext* gl_context;
 #endif
 } gfx_ctx_ps3_data_t;
+
+static unsigned gfx_ctx_ps3_get_resolution_width(unsigned resolution_id)
+{
+   CellVideoOutResolution resolution;
+   cellVideoOutGetResolution(resolution_id, &resolution);
+
+   return resolution.width;
+}
+
+static unsigned gfx_ctx_ps3_get_resolution_height(unsigned resolution_id)
+{
+   CellVideoOutResolution resolution;
+   cellVideoOutGetResolution(resolution_id, &resolution);
+
+   return resolution.height;
+}
 
 static float gfx_ctx_ps3_get_aspect_ratio(void *data)
 {
@@ -225,43 +240,6 @@ static void gfx_ctx_ps3_get_video_size(void *data,
 #endif
 }
 
-static void gfx_ctx_ps3_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   unsigned ident = g_extern.console.screen.resolutions.current.id;
-   if (!width || !height)
-      return;
-
-   CellVideoOutResolution resolution;
-   cellVideoOutGetResolution(ident, &resolution);
-
-   *width  = resolution.width;
-   *height = resolution.height;
-}
-
-static void gfx_ctx_ps3_get_video_output_prev(void *data)
-{
-   if (g_extern.console.screen.resolutions.current.idx)
-   {
-      g_extern.console.screen.resolutions.current.idx--;
-      g_extern.console.screen.resolutions.current.id =
-         g_extern.console.screen.resolutions.list
-         [g_extern.console.screen.resolutions.current.idx];
-   }
-}
-
-static void gfx_ctx_ps3_get_video_output_next(void *data)
-{
-   if (g_extern.console.screen.resolutions.current.idx + 1 <
-         g_extern.console.screen.resolutions.count)
-   {
-      g_extern.console.screen.resolutions.current.idx++;
-      g_extern.console.screen.resolutions.current.id =
-         g_extern.console.screen.resolutions.list
-         [g_extern.console.screen.resolutions.current.idx];
-   }
-}
-
 static bool gfx_ctx_ps3_init(void *data)
 {
    gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
@@ -295,8 +273,8 @@ static bool gfx_ctx_ps3_init(void *data)
    if (g_extern.console.screen.resolutions.current.id)
    {
       params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
-      
-      gfx_ctx_ps3_get_video_output_size(data, &params.width, &params.height);
+      params.width = gfx_ctx_ps3_get_resolution_width(g_extern.console.screen.resolutions.current.id);
+      params.height = gfx_ctx_ps3_get_resolution_height(g_extern.console.screen.resolutions.current.id);
       g_extern.console.screen.pal_enable = false;
 
       if (params.width == 720 && params.height == 576)
@@ -339,21 +317,6 @@ static bool gfx_ctx_ps3_set_video_mode(void *data,
       bool fullscreen)
 {
    (void)data;
-
-   if (g_extern.console.screen.resolutions.list[
-         g_extern.console.screen.resolutions.current.idx] == 
-         CELL_VIDEO_OUT_RESOLUTION_576)
-   {
-      if (g_extern.console.screen.pal_enable)
-         g_extern.console.screen.pal60_enable = true;
-   }
-   else
-   {
-      g_extern.console.screen.pal_enable = false;
-      g_extern.console.screen.pal60_enable = false;
-   }
-
-   rarch_main_command(RARCH_CMD_REINIT);
    return true;
 }
 
@@ -416,10 +379,10 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_set_swap_interval,
    gfx_ctx_ps3_set_video_mode,
    gfx_ctx_ps3_get_video_size,
-   gfx_ctx_ps3_get_video_output_size,
-   gfx_ctx_ps3_get_video_output_prev,
-   gfx_ctx_ps3_get_video_output_next,
-   NULL, /* translate_aspect */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL,
    gfx_ctx_ps3_update_window_title,
    gfx_ctx_ps3_check_window,
    gfx_ctx_ps3_set_resize,

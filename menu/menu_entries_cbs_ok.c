@@ -249,11 +249,29 @@ static int action_ok_video_filter(const char *path,
    if (!menu)
       return -1;
 
+#ifdef __CELLOS_LV2__
+   if (g_extern.console.screen.resolutions.list[
+         g_extern.console.screen.resolutions.current.idx] == 
+         CELL_VIDEO_OUT_RESOLUTION_576)
+   {
+      if (g_extern.console.screen.pal_enable)
+         g_extern.console.screen.pal60_enable = true;
+   }
+   else
+   {
+      g_extern.console.screen.pal_enable = false;
+      g_extern.console.screen.pal60_enable = false;
+   }
+
+   rarch_main_command(RARCH_CMD_REINIT);
+   return 0;
+#else
    return menu_list_push_stack_refresh(
          menu->menu_list,
          g_settings.video.filter_dir,
          "deferred_video_filter",
          0, idx);
+#endif
 }
 
 static int action_ok_core_updater_list(const char *path,
