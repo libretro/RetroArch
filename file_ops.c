@@ -114,8 +114,7 @@ static bool read_generic_file(const char *path, void **buf, ssize_t *len)
    if (_len < 0)
       goto error;
 
-   if (fseek(file, 0, SEEK_SET) != 0)
-      goto error;
+   rewind(file);
 
    rom_buf = malloc(_len + 1);
 
