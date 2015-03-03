@@ -17,11 +17,18 @@ endif
 endif
 
 TARGET_NAME := test
+LIBM		= -lm
 
 ifeq ($(platform), unix)
    TARGET := $(TARGET_NAME)_libretro.so
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
+else ifeq ($(platform), linux-portable)
+   TARGET := $(TARGET_NAME)_libretro.so
+   fpic := -fPIC -nostdlib
+   SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
+	LIBM :=
+	LDFLAGS += -L. -lmusl
 else ifeq ($(platform), osx)
    TARGET := $(TARGET_NAME)_libretro.dylib
    fpic := -fPIC
@@ -46,6 +53,8 @@ else
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T -Wl,--no-undefined
 endif
 
+LDFLAGS += $(LIBM)
+
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
 else
@@ -64,7 +73,7 @@ endif
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) -lm
+	$(CC) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
