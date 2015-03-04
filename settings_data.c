@@ -4305,45 +4305,6 @@ static bool setting_data_append_list_video_options(
    return true;
 }
 
-static bool setting_data_append_list_shader_options(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info)
-{
-   rarch_setting_group_info_t group_info;
-   rarch_setting_group_info_t subgroup_info;
-
-   START_GROUP(group_info, "Shader Settings");
-   START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
-
-   CONFIG_BOOL(
-         g_settings.video.shader_enable,
-         "video_shader_enable",
-         "Enable Shaders",
-         shader_enable,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         NULL,
-         NULL);
-
-   CONFIG_PATH(
-         g_settings.video.shader_path,
-         "video_shader",
-         "Shader",
-         "",
-         group_info.name,
-         subgroup_info.name,
-         NULL,
-         NULL);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
-
-   END_SUB_GROUP(list, list_info);
-   END_GROUP(list, list_info);
-
-   return true;
-}
-
 static bool setting_data_append_list_font_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -6132,12 +6093,6 @@ rarch_setting_t *setting_data_new(unsigned mask)
    if (mask & SL_FLAG_GENERAL_OPTIONS)
    {
       if (!setting_data_append_list_video_options(&list, list_info))
-         goto error;
-   }
-
-   if (mask & SL_FLAG_SHADER_OPTIONS)
-   {
-      if (!setting_data_append_list_shader_options(&list, list_info))
          goto error;
    }
 

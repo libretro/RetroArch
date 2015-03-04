@@ -19,8 +19,12 @@ for f in *_ps3.a ; do
       whole_archive="WHOLE_ARCHIVE_LINK=1"
       echo $name yes
    fi
+   if [ $name = "tyrquake" ] ; then
+      echo "Tyrquake found, applying big stack..."
+      big_stack="BIG_STACK=1"
+   fi
    cp -f "$f" ../libretro_ps3.a
-   make -C ../ -f Makefile.ps3 $whole_archive -j3 || exit 1
+   make -C ../ -f Makefile.ps3 $whole_archive $big_stack -j3 || exit 1
    $MAKE_FSELF_NPDRM ../retroarch_ps3.elf ../CORE.SELF
    mv -f ../CORE.SELF ../ps3/pkg/USRDIR/cores/"${name}_libretro_ps3.SELF"
    rm -f ../retroarch_ps3.elf ../retroarch_ps3.self ../CORE.SELF
