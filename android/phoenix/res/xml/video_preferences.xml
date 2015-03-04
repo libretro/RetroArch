@@ -52,25 +52,6 @@
                 android:title="@string/set_os_reported_refresh_rate" />
         </PreferenceCategory>
 
-        <!-- Shaders -->
-        <PreferenceCategory android:title="@string/shaders" >
-            <CheckBoxPreference
-                android:defaultValue="true"
-                android:key="video_smooth"
-                android:summary="@string/bilinear_filter_desc"
-                android:title="@string/bilinear_filter" />
-            <CheckBoxPreference
-                android:summary="@string/first_pass_shader_desc"
-                android:defaultValue="false"
-                android:key="video_shader_enable"
-                android:title="@string/first_pass_shader" />
-            <Preference
-                android:key="glsl_shader_pref"
-                android:summary="@string/glsl_shader_desc"
-                android:title="@string/glsl_shader"
-                android:dependency="video_shader_enable" />
-        </PreferenceCategory>
-
         <!-- Fonts -->
         <PreferenceCategory android:title="@string/fonts">
             <CheckBoxPreference android:title="@string/onscreen_fonts"

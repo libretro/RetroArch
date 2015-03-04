@@ -226,14 +226,8 @@
     <string name="calibrate_refresh_rate_desc">Attempts to find the true refresh rate of monitor. Updates value in \'Force refresh rate (Hz)\' option. To help ensure accuracy, make sure no intense background services are running, and avoid triggering screensaver.</string>
     <string name="set_os_reported_refresh_rate">Set OS-reported refresh rate</string>
     <string name="set_os_reported_refresh_rate_desc">Sets refresh rate equal to OS-reported value. This might not be accurate for your device.</string>
-    <string name="shaders">Shaders</string>
     <string name="bilinear_filter">Bilinear filter</string>
     <string name="bilinear_filter_desc">Applies Bilinear filtering, smooths out edges (settings still apply even if no shader is selected).</string>
-    <string name="first_pass_shader">First-pass shader</string>
-    <string name="first_pass_shader_desc">Enable first pass shader (WARNING: performance varies per device and per shader).</string>
-    <string name="glsl_shader">GLSL shader</string>
-    <string name="glsl_shader_desc">Sets GLES2 style shader.</string>
-    <string name="glsl_shader_select">Select a GLSL shader</string>
     <string name="fonts">Fonts</string>
     <string name="onscreen_fonts">On-screen fonts</string>
     <string name="onscreen_fonts_desc">Enable rendering of on-screen fonts for messages.</string>

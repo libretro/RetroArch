@@ -234,9 +234,6 @@ public final class UserPreferences
 		}
 
 		config.setBoolean("video_scale_integer", prefs.getBoolean("video_scale_integer", false));
-		config.setString("video_shader", prefs.getString("video_shader", ""));
-		config.setBoolean("video_shader_enable", prefs.getBoolean("video_shader_enable", false) &&
-				new File(prefs.getString("video_shader", "")).exists());
 
 		if (prefs.contains("input_overlay_enable"))
 			config.setBoolean("input_overlay_enable", prefs.getBoolean("input_overlay_enable", true));

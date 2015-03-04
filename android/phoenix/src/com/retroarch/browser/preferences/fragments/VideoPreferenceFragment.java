@@ -1,9 +1,6 @@
 package com.retroarch.browser.preferences.fragments;
 
-import java.io.File;
-
 import com.retroarch.R;
-import com.retroarch.browser.dirfragment.DirectoryFragment;
 import com.retroarch.browser.preferences.fragments.util.PreferenceListFragment;
 
 import android.content.SharedPreferences;
@@ -30,7 +27,6 @@ public final class VideoPreferenceFragment extends PreferenceListFragment implem
 
 		// Set preference click listeners
 		findPreference("set_os_reported_ref_rate_pref").setOnPreferenceClickListener(this);
-		findPreference("glsl_shader_pref").setOnPreferenceClickListener(this);
 	}
 
 	@Override
@@ -51,19 +47,6 @@ public final class VideoPreferenceFragment extends PreferenceListFragment implem
 			edit.apply();
 
 			Toast.makeText(getActivity(), String.format(getString(R.string.using_os_reported_refresh_rate), rate), Toast.LENGTH_LONG).show();
-		}
-		// GLSL shader selection
-		else if (prefKey.equals("glsl_shader_pref"))
-		{
-			final DirectoryFragment shaderBrowser = DirectoryFragment.newInstance(R.string.glsl_shader_select);
-
-			File shaderDir = new File(getActivity().getApplicationInfo().dataDir, "shaders_glsl");
-			if (shaderDir.exists())
-				shaderBrowser.setStartDirectory(shaderDir.getAbsolutePath());
-
-			shaderBrowser.addAllowedExts(".glsl");
-			shaderBrowser.setPathSettingKey("video_shader");
-			shaderBrowser.show(getFragmentManager(), "shaderBrowser");
 		}
 
 		return true;
