@@ -847,8 +847,8 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
       const int max_width  = vid->width - base_x;
       const int max_height = vid->height - base_y;
 
-      glyph_width          = head->width;
-      glyph_height         = head->height;
+      glyph_width          = glyph->width;
+      glyph_height         = glyph->height;
 
       src                  = atlas->buffer + glyph->atlas_offset_x + 
          glyph->atlas_offset_y * atlas->width;
@@ -900,7 +900,7 @@ static void *omap_gfx_init(const video_info_t *video,
 
   /* Don't support filters at the moment since they make estimations  *
    * on the maximum used resolution difficult.                        */
-  if (g_extern.filter.active)
+  if (g_extern.filter.filter)
   {
     RARCH_ERR("video_omap: filters are not supported\n");
     return NULL;
