@@ -630,7 +630,6 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    gl->fbo_inited = true;
 }
 
-#ifndef HAVE_GCMGL
 static void gl_deinit_hw_render(gl_t *gl)
 {
    if (!gl)
@@ -738,7 +737,6 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    context_bind_hw_render(gl, false);
    return true;
 }
-#endif
 #endif
 
 static void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
@@ -1767,9 +1765,7 @@ static void gl_free(void *data)
 
 #ifdef HAVE_FBO
    gl_deinit_fbo(gl);
-#ifndef HAVE_GCMGL
    gl_deinit_hw_render(gl);
-#endif
 #endif
 
 #ifndef HAVE_OPENGLES
@@ -1885,11 +1881,7 @@ static bool resolve_extensions(gl_t *gl)
 #else
 #ifdef HAVE_FBO
    /* Float FBO is core in 3.2. */
-#ifdef HAVE_GCMGL
-   gl->has_fp_fbo = false; /* FIXME - rewrite GL implementation */
-#else
    gl->has_fp_fbo = gl->core_context || gl_query_extension(gl, "ARB_texture_float");
-#endif
    gl->has_srgb_fbo = gl->core_context || 
       (gl_query_extension(gl, "EXT_texture_sRGB")
        && gl_query_extension(gl, "ARB_framebuffer_sRGB"));
@@ -2398,7 +2390,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #ifdef HAVE_FBO
    gl_init_fbo(gl, gl->tex_w, gl->tex_h);
 
-#ifndef HAVE_GCMGL
    if (gl->hw_render_use && 
          !gl_init_hw_render(gl, gl->tex_w, gl->tex_h))
    {
@@ -2406,7 +2397,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       free(gl);
       return NULL;
    }
-#endif
 #endif
 
    if (input && input_data)
@@ -2595,7 +2585,7 @@ static bool gl_set_shader(void *data,
 
       if (textures > gl->textures) // Have to reinit a bit.
       {
-#if defined(HAVE_FBO) && !defined(HAVE_GCMGL)
+#if defined(HAVE_FBO)
          gl_deinit_hw_render(gl);
 #endif
 
@@ -2610,7 +2600,7 @@ static bool gl_set_shader(void *data,
          gl_init_textures(gl, &gl->video_info);
          gl_init_textures_data(gl);
 
-#if defined(HAVE_FBO) && !defined(HAVE_GCMGL)
+#if defined(HAVE_FBO)
          if (gl->hw_render_use)
             gl_init_hw_render(gl, gl->tex_w, gl->tex_h);
 #endif

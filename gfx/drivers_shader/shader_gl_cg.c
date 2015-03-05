@@ -923,10 +923,8 @@ static bool gl_cg_init(void *data, const char *path)
       goto error;
    }
 
-#ifndef HAVE_GCMGL
    RARCH_LOG("[Cg]: Vertex profile: %s\n",   cgGetProfileString(cg->cgVProf));
    RARCH_LOG("[Cg]: Fragment profile: %s\n", cgGetProfileString(cg->cgFProf));
-#endif
    cgGLSetOptimalOptions(cg->cgFProf);
    cgGLSetOptimalOptions(cg->cgVProf);
    cgGLEnableProfile(cg->cgFProf);
@@ -1046,11 +1044,9 @@ static unsigned gl_cg_get_prev_textures(void)
 
 static bool gl_cg_mipmap_input(unsigned idx)
 {
-#ifndef HAVE_GCMGL
    cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
    if (cg && idx)
       return cg->cg_shader->pass[idx - 1].mipmap;
-#endif
    return false;
 }
 

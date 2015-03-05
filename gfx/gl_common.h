@@ -68,7 +68,7 @@
 #define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_EXT
 #define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT_EXT
 #define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT_EXT
-#elif defined(HAVE_PSGL) && !defined(HAVE_GCMGL)
+#elif defined(HAVE_PSGL)
 #define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER_OES
 #define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_SCE
 #define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT_OES
@@ -82,7 +82,7 @@
 
 #ifdef OSX_PPC
 #define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE_EXT
-#elif defined(HAVE_PSGL) && !defined(HAVE_GCMGL)
+#elif defined(HAVE_PSGL)
 #define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE_OES
 #else
 #define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE
@@ -154,20 +154,6 @@
 /* Platform specific workarounds/hacks. */
 #if defined(__CELLOS_LV2__)
 #define NO_GL_READ_PIXELS
-
-/* Performance hacks. */
-#ifdef HAVE_GCMGL
-
-extern GLvoid* glMapBufferTextureReferenceRA( GLenum target, GLenum access );
-
-extern GLboolean glUnmapBufferTextureReferenceRA( GLenum target );
-
-extern void glBufferSubDataTextureReferenceRA( GLenum target,
-      GLintptr offset, GLsizeiptr size, const GLvoid *data );
-#define glMapBuffer(target, access) glMapBufferTextureReferenceRA(target, access)
-#define glUnmapBuffer(target) glUnmapBufferTextureReferenceRA(target)
-#define glBufferSubData(target, offset, size, data) glBufferSubDataTextureReferenceRA(target, offset, size, data)
-#endif
 #endif
 
 #if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
