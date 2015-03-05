@@ -517,8 +517,8 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       return MENU_ACTION_CANCEL;
    if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
       return MENU_ACTION_OK;
-   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_X))
-      return MENU_ACTION_SEARCH;
+//   if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_X))
+//      return MENU_ACTION_SEARCH;
    if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_Y))
       return MENU_ACTION_TEST;
    if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
