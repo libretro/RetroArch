@@ -5505,6 +5505,7 @@ static bool setting_data_append_list_netplay_options(
    return true;
 }
 
+#if 0
 static bool setting_data_append_list_patch_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -5556,6 +5557,7 @@ static bool setting_data_append_list_patch_options(
 
    return true;
 }
+#endif
 
 static bool setting_data_append_list_playlist_options(
       rarch_setting_t **list,
@@ -6138,11 +6140,13 @@ rarch_setting_t *setting_data_new(unsigned mask)
          goto error;
    }
 
+#if 0
    if (mask & SL_FLAG_PATCH_OPTIONS)
    {
       if (!setting_data_append_list_patch_options(&list, list_info))
          goto error;
    }
+#endif
 
    if (mask & SL_FLAG_PLAYLIST_OPTIONS)
    {
