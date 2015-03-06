@@ -512,6 +512,10 @@ ifeq ($(HAVE_EXYNOS), 1)
    DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
 endif
 
+ifeq ($(HAVE_SUNXI), 1)
+   OBJ += gfx/drivers/sunxi_gfx.o gfx/pixman/pixman-arm-neon-asm.o
+endif
+
 ifeq ($(HAVE_VG), 1)
    OBJ += gfx/drivers/vg.o libretro-common/gfx/math/matrix_3x3.o
    DEFINES += $(VG_CFLAGS)
