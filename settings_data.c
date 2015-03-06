@@ -4944,25 +4944,6 @@ static bool setting_data_append_list_input_options(
       END_SUB_GROUP(list, list_info);
    }
 
-   START_SUB_GROUP(
-         list,
-         list_info,
-         "Miscellaneous",
-         group_info.name,
-         subgroup_info);
-
-   CONFIG_BOOL(
-         g_settings.input.netplay_client_swap_input,
-         "netplay_client_swap_input",
-         "Swap Netplay Input",
-         netplay_client_swap_input,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-   END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
 
    return true;
@@ -5435,6 +5416,17 @@ static bool setting_data_append_list_netplay_options(
          general_write_handler,
          general_read_handler);
 
+   CONFIG_BOOL(
+         g_settings.input.netplay_client_swap_input,
+         "netplay_client_swap_input",
+         "Swap Netplay Input",
+         netplay_client_swap_input,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 
    CONFIG_STRING(
          g_extern.netplay_server,
@@ -5503,6 +5495,7 @@ static bool setting_data_append_list_netplay_options(
          "Miscellaneous",
          group_info.name,
          subgroup_info);
+
 
 #if defined(HAVE_NETWORK_CMD)
    CONFIG_BOOL(
