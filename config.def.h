@@ -667,6 +667,12 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/win-x8
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/win-x86/latest/";
 #endif
+#elif defined(__linux__)
+#if defined(__x86_64__)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86_64/latest/";
+#else
+static char buildbot_server_url[] = "";
+#endif
 #else
 static char buildbot_server_url[] = "";
 #endif
