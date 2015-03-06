@@ -536,17 +536,17 @@ typedef struct
    __disp_3d_out_mode_t out_trd_mode;
 } __disp_layer_info_t;
 
-int sunxi_hw_cursor_hide(sunxi_disp_t *ctx)
+static int sunxi_hw_cursor_hide(sunxi_disp_t *ctx)
 {
-    int result;
-    uint32_t tmp[4];
+   int result;
+   uint32_t tmp[4];
 
-    tmp[0] = ctx->fb_id;
-    result = ioctl(ctx->fd_disp, DISP_CMD_HWC_CLOSE, &tmp);
+   tmp[0] = ctx->fb_id;
+   result = ioctl(ctx->fd_disp, DISP_CMD_HWC_CLOSE, &tmp);
 
-    if (result >= 0)
-        ctx->cursor_enabled = 0;
-    return result;
+   if (result >= 0)
+      ctx->cursor_enabled = 0;
+   return result;
 }
 
 /*****************************************************************************
@@ -555,182 +555,182 @@ int sunxi_hw_cursor_hide(sunxi_disp_t *ctx)
 
 static int sunxi_layer_change_work_mode(sunxi_disp_t *ctx, int new_mode)
 {
-    __disp_layer_info_t layer_info;
-    uint32_t tmp[4];
+   __disp_layer_info_t layer_info;
+   uint32_t tmp[4];
 
-    if (ctx->layer_id < 0)
-        return -1;
+   if (ctx->layer_id < 0)
+      return -1;
 
-    tmp[0] = ctx->fb_id;
-    tmp[1] = ctx->layer_id;
-    tmp[2] = (uintptr_t)&layer_info;
+   tmp[0] = ctx->fb_id;
+   tmp[1] = ctx->layer_id;
+   tmp[2] = (uintptr_t)&layer_info;
 
-    if (ioctl(ctx->fd_disp, DISP_CMD_LAYER_GET_PARA, tmp) < 0)
-        return -1;
+   if (ioctl(ctx->fd_disp, DISP_CMD_LAYER_GET_PARA, tmp) < 0)
+      return -1;
 
-    layer_info.mode = new_mode;
+   layer_info.mode = new_mode;
 
-    tmp[0] = ctx->fb_id;
-    tmp[1] = ctx->layer_id;
-    tmp[2] = (uintptr_t)&layer_info;
-    return ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_PARA, tmp);
+   tmp[0] = ctx->fb_id;
+   tmp[1] = ctx->layer_id;
+   tmp[2] = (uintptr_t)&layer_info;
+   return ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_PARA, tmp);
 }
 
 static int sunxi_layer_reserve(sunxi_disp_t *ctx)
 {
-    __disp_layer_info_t layer_info;
-    uint32_t tmp[4];
+   __disp_layer_info_t layer_info;
+   uint32_t tmp[4];
 
-    /* try to allocate a layer */
+   /* try to allocate a layer */
 
-    tmp[0] = ctx->fb_id;
-    tmp[1] = DISP_LAYER_WORK_MODE_NORMAL;
-    ctx->layer_id = ioctl(ctx->fd_disp, DISP_CMD_LAYER_REQUEST, &tmp);
-    if (ctx->layer_id < 0)
-        return -1;
+   tmp[0] = ctx->fb_id;
+   tmp[1] = DISP_LAYER_WORK_MODE_NORMAL;
+   ctx->layer_id = ioctl(ctx->fd_disp, DISP_CMD_LAYER_REQUEST, &tmp);
+   if (ctx->layer_id < 0)
+      return -1;
 
-    /* Initially set the layer configuration to something reasonable */
+   /* Initially set the layer configuration to something reasonable */
 
-    tmp[0] = ctx->fb_id;
-    tmp[1] = ctx->layer_id;
-    tmp[2] = (uintptr_t)&layer_info;
-    if (ioctl(ctx->fd_disp, DISP_CMD_LAYER_GET_PARA, tmp) < 0)
-        return -1;
+   tmp[0] = ctx->fb_id;
+   tmp[1] = ctx->layer_id;
+   tmp[2] = (uintptr_t)&layer_info;
+   if (ioctl(ctx->fd_disp, DISP_CMD_LAYER_GET_PARA, tmp) < 0)
+      return -1;
 
-    /* the screen and overlay layers need to be in different pipes */
-    layer_info.pipe      = 1;
-    layer_info.alpha_en  = 1;
-    layer_info.alpha_val = 255;
+   /* the screen and overlay layers need to be in different pipes */
+   layer_info.pipe      = 1;
+   layer_info.alpha_en  = 1;
+   layer_info.alpha_val = 255;
 
-    layer_info.fb.addr[0] = ctx->framebuffer_paddr;
-    layer_info.fb.size.width = 1;
-    layer_info.fb.size.height = 1;
-    layer_info.fb.format = DISP_FORMAT_ARGB8888;
-    layer_info.fb.seq = DISP_SEQ_ARGB;
-    layer_info.fb.mode = DISP_MOD_INTERLEAVED;
+   layer_info.fb.addr[0] = ctx->framebuffer_paddr;
+   layer_info.fb.size.width = 1;
+   layer_info.fb.size.height = 1;
+   layer_info.fb.format = DISP_FORMAT_ARGB8888;
+   layer_info.fb.seq = DISP_SEQ_ARGB;
+   layer_info.fb.mode = DISP_MOD_INTERLEAVED;
 
-    tmp[0] = ctx->fb_id;
-    tmp[1] = ctx->layer_id;
-    tmp[2] = (uintptr_t)&layer_info;
-    if (ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_PARA, tmp) < 0)
-        return -1;
+   tmp[0] = ctx->fb_id;
+   tmp[1] = ctx->layer_id;
+   tmp[2] = (uintptr_t)&layer_info;
+   if (ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_PARA, tmp) < 0)
+      return -1;
 
-    /* Now probe the scaler mode to see if there is a free scaler available */
-    if (sunxi_layer_change_work_mode(ctx, DISP_LAYER_WORK_MODE_SCALER) == 0)
-        ctx->layer_has_scaler = 1;
+   /* Now probe the scaler mode to see if there is a free scaler available */
+   if (sunxi_layer_change_work_mode(ctx, DISP_LAYER_WORK_MODE_SCALER) == 0)
+      ctx->layer_has_scaler = 1;
 
-    /* Revert back to normal mode */
-    sunxi_layer_change_work_mode(ctx, DISP_LAYER_WORK_MODE_NORMAL);
-    ctx->layer_scaler_is_enabled = 0;
-    ctx->layer_format = DISP_FORMAT_ARGB8888;
+   /* Revert back to normal mode */
+   sunxi_layer_change_work_mode(ctx, DISP_LAYER_WORK_MODE_NORMAL);
+   ctx->layer_scaler_is_enabled = 0;
+   ctx->layer_format = DISP_FORMAT_ARGB8888;
 
-    return ctx->layer_id;
+   return ctx->layer_id;
 }
 
 static int sunxi_layer_set_output_window(sunxi_disp_t *ctx, int x, int y, int w, int h)
 {
-    __disp_rect_t buf_rect = {
-        ctx->layer_buf_x, ctx->layer_buf_y,
-        ctx->layer_buf_w, ctx->layer_buf_h
-    };
-    __disp_rect_t win_rect = { x, y, w, h };
-    uint32_t tmp[4];
-    int err;
+   __disp_rect_t buf_rect = {
+      ctx->layer_buf_x, ctx->layer_buf_y,
+      ctx->layer_buf_w, ctx->layer_buf_h
+   };
+   __disp_rect_t win_rect = { x, y, w, h };
+   uint32_t tmp[4];
+   int err;
 
-    if (ctx->layer_id < 0 || w <= 0 || h <= 0)
-        return -1;
+   if (ctx->layer_id < 0 || w <= 0 || h <= 0)
+      return -1;
 
-    /*
-     * Handle negative window Y coordinates (workaround a bug).
-     * The Allwinner A10/A13 display controller hardware is expected to
-     * support negative coordinates of the top left corners of the layers.
-     * But there is some bug either in the kernel driver or in the hardware,
-     * which messes up the picture on screen when the Y coordinate is negative
-     * for YUV layer. Negative X coordinates are not affected. RGB formats
-     * are not affected too.
-     *
-     * We fix this by just recalculating which part of the buffer in memory
-     * corresponds to Y=0 on screen and adjust the input buffer settings.
-     */
-    if (ctx->layer_format == DISP_FORMAT_YUV420 &&
-                                  (y < 0 || ctx->layer_win_y < 0))
-    {
-        if (win_rect.y < 0)
-        {
-            int y_shift = -(double)y * buf_rect.height / win_rect.height;
-            buf_rect.y      += y_shift;
-            buf_rect.height -= y_shift;
-            win_rect.height += win_rect.y;
-            win_rect.y       = 0;
-        }
+   /*
+    * Handle negative window Y coordinates (workaround a bug).
+    * The Allwinner A10/A13 display controller hardware is expected to
+    * support negative coordinates of the top left corners of the layers.
+    * But there is some bug either in the kernel driver or in the hardware,
+    * which messes up the picture on screen when the Y coordinate is negative
+    * for YUV layer. Negative X coordinates are not affected. RGB formats
+    * are not affected too.
+    *
+    * We fix this by just recalculating which part of the buffer in memory
+    * corresponds to Y=0 on screen and adjust the input buffer settings.
+    */
+   if (ctx->layer_format == DISP_FORMAT_YUV420 &&
+         (y < 0 || ctx->layer_win_y < 0))
+   {
+      if (win_rect.y < 0)
+      {
+         int y_shift = -(double)y * buf_rect.height / win_rect.height;
+         buf_rect.y      += y_shift;
+         buf_rect.height -= y_shift;
+         win_rect.height += win_rect.y;
+         win_rect.y       = 0;
+      }
 
-        if (buf_rect.height <= 0 || win_rect.height <= 0)
-        {
-            /* No part of the window is visible. Just construct a fake rectangle
-             * outside the screen as a window placement (but with a non-negative Y
-             * coordinate). Do this to avoid passing bogus negative heights to
-             * the kernel driver (who knows how it would react?) */
-            win_rect.x = -1;
-            win_rect.y = 0;
-            win_rect.width = 1;
-            win_rect.height = 1;
-            tmp[0] = ctx->fb_id;
-            tmp[1] = ctx->layer_id;
-            tmp[2] = (uintptr_t)&win_rect;
-            return ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_SCN_WINDOW, &tmp);
-        }
+      if (buf_rect.height <= 0 || win_rect.height <= 0)
+      {
+         /* No part of the window is visible. Just construct a fake rectangle
+          * outside the screen as a window placement (but with a non-negative Y
+          * coordinate). Do this to avoid passing bogus negative heights to
+          * the kernel driver (who knows how it would react?) */
+         win_rect.x = -1;
+         win_rect.y = 0;
+         win_rect.width = 1;
+         win_rect.height = 1;
+         tmp[0] = ctx->fb_id;
+         tmp[1] = ctx->layer_id;
+         tmp[2] = (uintptr_t)&win_rect;
+         return ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_SCN_WINDOW, &tmp);
+      }
 
-        tmp[0] = ctx->fb_id;
-        tmp[1] = ctx->layer_id;
-        tmp[2] = (uintptr_t)&buf_rect;
-        if ((err = ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_SRC_WINDOW, &tmp)))
-            return err;
-    }
+      tmp[0] = ctx->fb_id;
+      tmp[1] = ctx->layer_id;
+      tmp[2] = (uintptr_t)&buf_rect;
+      if ((err = ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_SRC_WINDOW, &tmp)))
+         return err;
+   }
 
-    /* Save the new non-adjusted window position */
-    ctx->layer_win_x = x;
-    ctx->layer_win_y = y;
+   /* Save the new non-adjusted window position */
+   ctx->layer_win_x = x;
+   ctx->layer_win_y = y;
 
-    tmp[0] = ctx->fb_id;
-    tmp[1] = ctx->layer_id;
-    tmp[2] = (uintptr_t)&win_rect;
-    return ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_SCN_WINDOW, &tmp);
+   tmp[0] = ctx->fb_id;
+   tmp[1] = ctx->layer_id;
+   tmp[2] = (uintptr_t)&win_rect;
+   return ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_SCN_WINDOW, &tmp);
 }
 
 static int sunxi_layer_show(sunxi_disp_t *ctx)
 {
-    uint32_t tmp[4];
+   uint32_t tmp[4];
 
-    if (ctx->layer_id < 0)
-        return -1;
+   if (ctx->layer_id < 0)
+      return -1;
 
-    /* YUV formats need to use a scaler */
-    if (ctx->layer_format == DISP_FORMAT_YUV420 && !ctx->layer_scaler_is_enabled)
-    {
-        if (sunxi_layer_change_work_mode(ctx, DISP_LAYER_WORK_MODE_SCALER) == 0)
-            ctx->layer_scaler_is_enabled = 1;
-    }
+   /* YUV formats need to use a scaler */
+   if (ctx->layer_format == DISP_FORMAT_YUV420 && !ctx->layer_scaler_is_enabled)
+   {
+      if (sunxi_layer_change_work_mode(ctx, DISP_LAYER_WORK_MODE_SCALER) == 0)
+         ctx->layer_scaler_is_enabled = 1;
+   }
 
-    tmp[0] = ctx->fb_id;
-    tmp[1] = ctx->layer_id;
-    return ioctl(ctx->fd_disp, DISP_CMD_LAYER_OPEN, &tmp);
+   tmp[0] = ctx->fb_id;
+   tmp[1] = ctx->layer_id;
+   return ioctl(ctx->fd_disp, DISP_CMD_LAYER_OPEN, &tmp);
 }
 
 static int sunxi_layer_release(sunxi_disp_t *ctx)
 {
-    int result;
-    uint32_t tmp[4];
+   int result;
+   uint32_t tmp[4];
 
-    if (ctx->layer_id < 0)
-        return -1;
+   if (ctx->layer_id < 0)
+      return -1;
 
-    tmp[0] = ctx->fb_id;
-    tmp[1] = ctx->layer_id;
-    ioctl(ctx->fd_disp, DISP_CMD_LAYER_RELEASE, &tmp);
+   tmp[0] = ctx->fb_id;
+   tmp[1] = ctx->layer_id;
+   ioctl(ctx->fd_disp, DISP_CMD_LAYER_RELEASE, &tmp);
 
-    ctx->layer_id = -1;
-    ctx->layer_has_scaler = 0;
-    return 0;
+   ctx->layer_id = -1;
+   ctx->layer_has_scaler = 0;
+   return 0;
 }
 
 
@@ -744,6 +744,7 @@ static int sunxi_layer_set_rgb_input_buffer(sunxi_disp_t *ctx,
    __disp_fb_t fb;
    __disp_rect_t rect = { 0, 0, width, height };
    uint32_t tmp[4];
+
    memset(&fb, 0, sizeof(fb));
 
    if (ctx->layer_id < 0)
@@ -759,6 +760,7 @@ static int sunxi_layer_set_rgb_input_buffer(sunxi_disp_t *ctx,
 
    fb.addr[0] = ctx->framebuffer_paddr + offset_in_framebuffer;
    fb.size.height = height;
+
    if (bpp == 32)
    {
       fb.format = DISP_FORMAT_ARGB8888;
@@ -796,165 +798,166 @@ static int sunxi_layer_set_rgb_input_buffer(sunxi_disp_t *ctx,
    return ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_SRC_WINDOW, &tmp);
 }
 
-sunxi_disp_t *sunxi_disp_init(const char *device, void *xserver_fbmem)
+static sunxi_disp_t *sunxi_disp_init(const char *device, void *xserver_fbmem)
 {
-    int tmp, version;
-    int gfx_layer_size;
-    int ovl_layer_size;
-    struct fb_var_screeninfo fb_var;
-    struct fb_fix_screeninfo fb_fix;
-    sunxi_disp_t *ctx = calloc(sizeof(sunxi_disp_t), 1);
+   int tmp, version;
+   int gfx_layer_size;
+   int ovl_layer_size;
+   struct fb_var_screeninfo fb_var;
+   struct fb_fix_screeninfo fb_fix;
 
-    if (!ctx)
-       return NULL;
+   sunxi_disp_t *ctx = calloc(sizeof(sunxi_disp_t), 1);
 
-    /* use /dev/fb0 by default */
-    if (!device)
-        device = "/dev/fb0";
+   if (!ctx)
+      return NULL;
 
-    if (strcmp(device, "/dev/fb0") == 0)
-        ctx->fb_id = 0;
-    else if (strcmp(device, "/dev/fb1") == 0)
-        ctx->fb_id = 1;
-    else
-    {
-        free(ctx);
-        return NULL;
-    }
+   /* use /dev/fb0 by default */
+   if (!device)
+      device = "/dev/fb0";
 
-    /* store the already existing mapping done by xserver */
-    ctx->xserver_fbmem = xserver_fbmem;
+   if (strcmp(device, "/dev/fb0") == 0)
+      ctx->fb_id = 0;
+   else if (strcmp(device, "/dev/fb1") == 0)
+      ctx->fb_id = 1;
+   else
+   {
+      free(ctx);
+      return NULL;
+   }
 
-    ctx->fd_disp = open("/dev/disp", O_RDWR);
+   /* store the already existing mapping done by xserver */
+   ctx->xserver_fbmem = xserver_fbmem;
 
-    /* maybe it's even not a sunxi hardware */
-    if (ctx->fd_disp < 0)
-    {
-        free(ctx);
-        return NULL;
-    }
+   ctx->fd_disp = open("/dev/disp", O_RDWR);
 
-    /* version check */
-    tmp = SUNXI_DISP_VERSION;
-    version = ioctl(ctx->fd_disp, DISP_CMD_VERSION, &tmp);
+   /* maybe it's even not a sunxi hardware */
+   if (ctx->fd_disp < 0)
+   {
+      free(ctx);
+      return NULL;
+   }
 
-    if (version < 0)
-    {
-        close(ctx->fd_disp);
-        free(ctx);
-        return NULL;
-    }
+   /* version check */
+   tmp = SUNXI_DISP_VERSION;
+   version = ioctl(ctx->fd_disp, DISP_CMD_VERSION, &tmp);
 
-    ctx->fd_fb = open(device, O_RDWR);
+   if (version < 0)
+   {
+      close(ctx->fd_disp);
+      free(ctx);
+      return NULL;
+   }
 
-    if (ctx->fd_fb < 0)
-    {
-        close(ctx->fd_disp);
-        free(ctx);
-        return NULL;
-    }
+   ctx->fd_fb = open(device, O_RDWR);
 
-    if (ioctl(ctx->fd_fb, FBIOGET_VSCREENINFO, &fb_var) < 0 ||
-        ioctl(ctx->fd_fb, FBIOGET_FSCREENINFO, &fb_fix) < 0)
-    {
-        close(ctx->fd_fb);
-        close(ctx->fd_disp);
-        free(ctx);
-        return NULL;
-    }
+   if (ctx->fd_fb < 0)
+   {
+      close(ctx->fd_disp);
+      free(ctx);
+      return NULL;
+   }
 
-    ctx->xres = fb_var.xres;
-    ctx->yres = fb_var.yres;
-    ctx->bits_per_pixel = fb_var.bits_per_pixel;
-    ctx->framebuffer_paddr = fb_fix.smem_start;
-    ctx->framebuffer_size = fb_fix.smem_len;
-    ctx->framebuffer_height = ctx->framebuffer_size /
-                              (ctx->xres * ctx->bits_per_pixel / 8);
-    ctx->gfx_layer_size = ctx->xres * ctx->yres * fb_var.bits_per_pixel / 8;
+   if (ioctl(ctx->fd_fb, FBIOGET_VSCREENINFO, &fb_var) < 0 ||
+         ioctl(ctx->fd_fb, FBIOGET_FSCREENINFO, &fb_fix) < 0)
+   {
+      close(ctx->fd_fb);
+      close(ctx->fd_disp);
+      free(ctx);
+      return NULL;
+   }
 
-    if (ctx->framebuffer_size < ctx->gfx_layer_size)
-    {
-        close(ctx->fd_fb);
-        close(ctx->fd_disp);
-        free(ctx);
-        return NULL;
-    }
+   ctx->xres               = fb_var.xres;
+   ctx->yres               = fb_var.yres;
+   ctx->bits_per_pixel     = fb_var.bits_per_pixel;
+   ctx->framebuffer_paddr  = fb_fix.smem_start;
+   ctx->framebuffer_size   = fb_fix.smem_len;
+   ctx->framebuffer_height = ctx->framebuffer_size /
+      (ctx->xres * ctx->bits_per_pixel / 8);
+   ctx->gfx_layer_size     = ctx->xres * ctx->yres * fb_var.bits_per_pixel / 8;
 
-    if (ctx->xserver_fbmem)
-    {
-        /* use already existing mapping */
-        ctx->framebuffer_addr = ctx->xserver_fbmem;
-    }
-    else
-    {
-        /* mmap framebuffer memory */
-        ctx->framebuffer_addr = (uint8_t *)mmap(0, ctx->framebuffer_size,
-                                                PROT_READ | PROT_WRITE,
-                                                MAP_SHARED, ctx->fd_fb, 0);
+   if (ctx->framebuffer_size < ctx->gfx_layer_size)
+   {
+      close(ctx->fd_fb);
+      close(ctx->fd_disp);
+      free(ctx);
+      return NULL;
+   }
 
-        if (ctx->framebuffer_addr == MAP_FAILED)
-        {
-            close(ctx->fd_fb);
-            close(ctx->fd_disp);
-            free(ctx);
-            return NULL;
-        }
-    }
+   if (ctx->xserver_fbmem)
+   {
+      /* use already existing mapping */
+      ctx->framebuffer_addr = ctx->xserver_fbmem;
+   }
+   else
+   {
+      /* mmap framebuffer memory */
+      ctx->framebuffer_addr = (uint8_t *)mmap(0, ctx->framebuffer_size,
+            PROT_READ | PROT_WRITE,
+            MAP_SHARED, ctx->fd_fb, 0);
 
-    ctx->cursor_enabled = 0;
-    ctx->cursor_x = -1;
-    ctx->cursor_y = -1;
+      if (ctx->framebuffer_addr == MAP_FAILED)
+      {
+         close(ctx->fd_fb);
+         close(ctx->fd_disp);
+         free(ctx);
+         return NULL;
+      }
+   }
 
-    /* Get the id of the screen layer */
-    if (ioctl(ctx->fd_fb,
-              ctx->fb_id == 0 ? FBIOGET_LAYER_HDL_0 : FBIOGET_LAYER_HDL_1,
-              &ctx->gfx_layer_id))
-    {
-        close(ctx->fd_fb);
-        close(ctx->fd_disp);
-        free(ctx);
-        return NULL;
-    }
+   ctx->cursor_enabled = 0;
+   ctx->cursor_x = -1;
+   ctx->cursor_y = -1;
 
-    if (sunxi_layer_reserve(ctx) < 0)
-    {
-        close(ctx->fd_fb);
-        close(ctx->fd_disp);
-        free(ctx);
-        return NULL;
-    }
+   /* Get the id of the screen layer */
+   if (ioctl(ctx->fd_fb,
+            ctx->fb_id == 0 ? FBIOGET_LAYER_HDL_0 : FBIOGET_LAYER_HDL_1,
+            &ctx->gfx_layer_id))
+   {
+      close(ctx->fd_fb);
+      close(ctx->fd_disp);
+      free(ctx);
+      return NULL;
+   }
 
-    ctx->fd_g2d = open("/dev/g2d", O_RDWR);
+   if (sunxi_layer_reserve(ctx) < 0)
+   {
+      close(ctx->fd_fb);
+      close(ctx->fd_disp);
+      free(ctx);
+      return NULL;
+   }
 
-    return ctx;
+   ctx->fd_g2d = open("/dev/g2d", O_RDWR);
+
+   return ctx;
 }
 
-int sunxi_disp_close(sunxi_disp_t *ctx)
+static int sunxi_disp_close(sunxi_disp_t *ctx)
 {
-    if (ctx->fd_disp >= 0)
-    {
-        if (ctx->fd_g2d >= 0)
-            close(ctx->fd_g2d);
+   if (ctx->fd_disp >= 0)
+   {
+      if (ctx->fd_g2d >= 0)
+         close(ctx->fd_g2d);
 
-        /* release layer */
-        sunxi_layer_release(ctx);
-        /* disable cursor */
-        if (ctx->cursor_enabled)
-            sunxi_hw_cursor_hide(ctx);
-        /* close descriptors */
-        if (!ctx->xserver_fbmem)
-            munmap(ctx->framebuffer_addr, ctx->framebuffer_size);
-        close(ctx->fd_fb);
-        close(ctx->fd_disp);
-        ctx->fd_disp = -1;
-        free(ctx);
-    }
-    return 0;
+      /* release layer */
+      sunxi_layer_release(ctx);
+      /* disable cursor */
+      if (ctx->cursor_enabled)
+         sunxi_hw_cursor_hide(ctx);
+      /* close descriptors */
+      if (!ctx->xserver_fbmem)
+         munmap(ctx->framebuffer_addr, ctx->framebuffer_size);
+      close(ctx->fd_fb);
+      close(ctx->fd_disp);
+      ctx->fd_disp = -1;
+      free(ctx);
+   }
+   return 0;
 }
 
-int sunxi_wait_for_vsync(sunxi_disp_t *ctx)
+static int sunxi_wait_for_vsync(sunxi_disp_t *ctx)
 {
-    return ioctl(ctx->fd_fb, FBIO_WAITFORVSYNC, 0);
+   return ioctl(ctx->fd_fb, FBIO_WAITFORVSYNC, 0);
 }
 
 /* END of lowlevel SunxiG2D functions block */
@@ -975,11 +978,11 @@ void pixman_composite_src_8888_8888_asm_neon(int width,
 
 /* Pointer to the blitting function. Will be asigned 
  * when we find out what bpp the core uses. */
-void(*pixman_blit)();
+void(*pixman_blit)(void);
 
 extern void *memcpy_neon(void *dst, const void *src, size_t n);
 
-static void *vsync_thread_func (void *arg);
+static void *vsync_thread_func(void *arg);
 
 pthread_t vsync_thread;
 
@@ -1039,13 +1042,13 @@ struct sunxi_video
 	bool aspect_changed;
 };
 
-int sunxi_wait_flip(void)
+static int sunxi_wait_flip(void)
 {
    /* Wait for next vsync */
    return ioctl(disp->fd_fb, FBIO_WAITFORVSYNC, 0);
 }
 
-void queue_page (struct sunxi_page *page, void *data)
+static void queue_page(struct sunxi_page *page, void *data)
 {
    struct sunxi_video *_dispvars = data;
    struct sunxi_page *ppage      = _dispvars->queue;
@@ -1061,7 +1064,7 @@ void queue_page (struct sunxi_page *page, void *data)
    }
 }
 
-struct sunxi_page *unqueue_page (void *data)
+static struct sunxi_page *unqueue_page(void *data)
 {
    struct sunxi_video *_dispvars = data;
    struct sunxi_page *      page = _dispvars->queue;	
@@ -1109,7 +1112,7 @@ static struct sunxi_page *sunxi_get_free_page(void *data)
 	return page;
 }
 
-static void sunxi_blank_console (void *data)
+static void sunxi_blank_console(void *data)
 {
    struct sunxi_video *_dispvars = data;
 
@@ -1120,28 +1123,28 @@ static void sunxi_blank_console (void *data)
    _dispvars->screensize = disp->xres * disp->yres * disp->bits_per_pixel / 8;
 
    /* Backup screen contents. */
-   _dispvars->screen_bck = (char *)malloc(_dispvars->screensize * sizeof (char));
+   _dispvars->screen_bck = (char*)malloc(_dispvars->screensize * sizeof(char));
 
    if (!_dispvars->screen_bck)
       return;
 
-   memcpy ((char*)_dispvars->screen_bck, (char*)disp->framebuffer_addr, _dispvars->screensize);
+   memcpy((char*)_dispvars->screen_bck, (char*)disp->framebuffer_addr, _dispvars->screensize);
 
    /* Blank screen. */
-   memset ((char*)(disp->framebuffer_addr), 0x00, _dispvars->screensize);
+   memset((char*)(disp->framebuffer_addr), 0x00, _dispvars->screensize);
 }
 
-static void sunxi_unblank_console (void *data)
+static void sunxi_unblank_console(void *data)
 {
 	struct sunxi_video *_dispvars = data;
 		
 	system("setterm -cursor on");
 
 #if 0
-	memcpy ((char*)disp->framebuffer_addr, (char*)_dispvars->screen_bck, _dispvars->screensize);
+	memcpy((char*)disp->framebuffer_addr, (char*)_dispvars->screen_bck, _dispvars->screensize);
 #endif
 
-	free (_dispvars->screen_bck);
+	free(_dispvars->screen_bck);
 }
 
 static void *sunxi_gfx_init(const video_info_t *video,
@@ -1162,7 +1165,7 @@ static void *sunxi_gfx_init(const video_info_t *video,
 	sunxi_blank_console(_dispvars);
 	
 	_dispvars->numpages = 2;
-	_dispvars->pages = calloc (_dispvars->numpages, sizeof (struct sunxi_page));
+	_dispvars->pages = calloc(_dispvars->numpages, sizeof (struct sunxi_page));
 
    if (!_dispvars->pages)
    {
@@ -1211,7 +1214,7 @@ static void *sunxi_gfx_init(const video_info_t *video,
 	return _dispvars;
 }
 
-static void *vsync_thread_func (void *arg)
+static void *vsync_thread_func(void *arg)
 {
 	struct sunxi_page *page;
 	struct sunxi_video *_dispvars = arg;
@@ -1272,9 +1275,7 @@ static void sunxi_gfx_free(void *data)
    free(_dispvars);
 }
 
-
-
-static void sunxi_blit_flip (struct sunxi_page *page, const void *frame, void *data)
+static void sunxi_blit_flip(struct sunxi_page *page, const void *frame, void *data)
 {
    struct sunxi_video *_dispvars = data;	
 
