@@ -449,6 +449,7 @@ static const bool default_overlay_enable = false;
 static bool default_block_config_read = true;
 
 static bool collapse_subgroups_enable = true;
+static bool show_advanced_settings    = false;
 #else
 static bool default_block_config_read = false;
 #endif

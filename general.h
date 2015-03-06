@@ -221,6 +221,7 @@ struct settings
          } browser;
       } navigation;
       bool collapse_subgroups_enable;
+      bool show_advanced_settings;
    } menu;
 #endif
 

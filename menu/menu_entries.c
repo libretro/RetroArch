@@ -101,7 +101,8 @@ int menu_entries_push_list(menu_handle_t *menu,
       if (
             setting->type == ST_GROUP ||
             setting->type == ST_SUB_GROUP ||
-            setting->type == ST_END_SUB_GROUP
+            setting->type == ST_END_SUB_GROUP ||
+            (setting->flags & SD_FLAG_ADVANCED && !g_settings.menu.show_advanced_settings)
          )
          continue;
 

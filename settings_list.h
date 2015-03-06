@@ -57,6 +57,7 @@ enum setting_flags
    SD_FLAG_CMD_APPLY_AUTO = (1 << 8),
    SD_FLAG_IS_DEFERRED    = (1 << 9),
    SD_FLAG_BROWSER_ACTION = (1 << 10),
+   SD_FLAG_ADVANCED       = (1 << 11)
 };
 
 enum setting_list_flags

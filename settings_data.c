@@ -3268,6 +3268,7 @@ static bool setting_data_append_list_main_menu_options(
             "Performance Counters",
             group_info.name,
             subgroup_info.name);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
    }
    if (g_extern.main_is_init && !g_extern.libretro_dummy)
    {
@@ -3497,6 +3498,7 @@ static bool setting_data_append_list_general_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
          g_settings.core_specific_config,
@@ -3554,6 +3556,7 @@ static bool setting_data_append_list_general_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(g_settings.config_save_on_exit,
          "config_save_on_exit",
@@ -3604,6 +3607,7 @@ static bool setting_data_append_list_general_options(
             general_write_handler,
             general_read_handler);
    settings_list_current_add_range(list, list_info, 1, 32768, 1, true, false);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    END_SUB_GROUP(list, list_info);
 
@@ -3764,6 +3768,7 @@ static bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    END_SUB_GROUP(list, list_info);
    START_SUB_GROUP(list, list_info, "Monitor", group_info.name, subgroup_info);
@@ -3781,6 +3786,7 @@ static bool setting_data_append_list_video_options(
    settings_list_current_add_range(list, list_info, 0, 1, 1, true, false);
    (*list)[list_info->index - 1].get_string_representation = 
       &setting_data_get_string_representation_uint_video_monitor_index;
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
    CONFIG_BOOL(
@@ -3818,6 +3824,7 @@ static bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
          g_settings.video.fullscreen_y,
@@ -3828,6 +3835,7 @@ static bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_FLOAT(
          g_settings.video.refresh_rate,
@@ -3881,7 +3889,7 @@ static bool setting_data_append_list_video_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
 
    END_SUB_GROUP(list, list_info);
 
@@ -3985,6 +3993,7 @@ static bool setting_data_append_list_video_options(
          subgroup_info.name,
          NULL,
          NULL);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
    
    CONFIG_INT(
          g_extern.console.screen.viewports.custom_vp.y,
@@ -3995,6 +4004,7 @@ static bool setting_data_append_list_video_options(
          subgroup_info.name,
          NULL,
          NULL);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
          g_extern.console.screen.viewports.custom_vp.width,
@@ -4005,6 +4015,7 @@ static bool setting_data_append_list_video_options(
          subgroup_info.name,
          NULL,
          NULL);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
          g_extern.console.screen.viewports.custom_vp.height,
@@ -4015,6 +4026,7 @@ static bool setting_data_append_list_video_options(
          subgroup_info.name,
          NULL,
          NULL);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
 #ifdef GEKKO
    CONFIG_UINT(
@@ -4079,6 +4091,7 @@ static bool setting_data_append_list_video_options(
    settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
    (*list)[list_info->index - 1].get_string_representation = 
       &setting_data_get_string_representation_uint_video_rotation;
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
 #if defined(HW_RVL) || defined(_XBOX360)
    CONFIG_UINT(
@@ -4102,7 +4115,8 @@ static bool setting_data_append_list_video_options(
          1,
          true,
          true);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
+
 #endif
    END_SUB_GROUP(list, list_info);
 
@@ -4126,7 +4140,7 @@ static bool setting_data_append_list_video_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
 #endif
 
    CONFIG_BOOL(
@@ -4152,7 +4166,7 @@ static bool setting_data_append_list_video_options(
          general_read_handler);
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
    settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
          g_settings.video.hard_sync,
@@ -4176,6 +4190,7 @@ static bool setting_data_append_list_video_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
          g_settings.video.frame_delay,
@@ -4187,6 +4202,8 @@ static bool setting_data_append_list_video_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
 #if !defined(RARCH_MOBILE)
    CONFIG_BOOL(
          g_settings.video.black_frame_insertion,
@@ -4220,6 +4237,7 @@ static bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
          g_settings.video.gpu_record,
@@ -4232,6 +4250,7 @@ static bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
          g_settings.video.gpu_screenshot,
@@ -4244,6 +4263,7 @@ static bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
          g_settings.video.allow_rotate,
@@ -4256,6 +4276,7 @@ static bool setting_data_append_list_video_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
          g_settings.video.crop_overscan,
@@ -4462,6 +4483,7 @@ static bool setting_data_append_list_audio_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
          g_settings.audio.latency,
@@ -4474,7 +4496,7 @@ static bool setting_data_append_list_audio_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_range(list, list_info, 1, 256, 1.0, true, true);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DEFERRED);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DEFERRED|SD_FLAG_ADVANCED);
 
    CONFIG_FLOAT(
          g_settings.audio.rate_control_delta,
@@ -4494,6 +4516,7 @@ static bool setting_data_append_list_audio_options(
          0.001,
          true,
          false);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_FLOAT(
          g_settings.audio.max_timing_skew,
@@ -4513,6 +4536,7 @@ static bool setting_data_append_list_audio_options(
          0.01,
          true,
          true);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
          g_settings.audio.block_frames,
@@ -4523,6 +4547,7 @@ static bool setting_data_append_list_audio_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    END_SUB_GROUP(list, list_info);
 
@@ -5161,6 +5186,19 @@ static bool setting_data_append_list_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+   CONFIG_BOOL(
+         g_settings.menu.show_advanced_settings,
+         "menu_show_advanced_settings",
+         "Show advanced settings",
+         show_advanced_settings,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
 
    END_SUB_GROUP(list, list_info);
 
@@ -5442,6 +5480,7 @@ static bool setting_data_append_list_netplay_options(
          general_write_handler,
          general_read_handler);
    settings_list_current_add_range(list, list_info, 0, 10, 1, true, false);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
          g_extern.netplay_port,
@@ -5476,6 +5515,7 @@ static bool setting_data_append_list_netplay_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 #if 0
    CONFIG_INT(
          g_settings.network_cmd_port,
@@ -5485,6 +5525,7 @@ static bool setting_data_append_list_netplay_options(
          group_info.name,
          subgroup_info.name,
          NULL);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 #endif
    CONFIG_BOOL(
          g_settings.stdin_cmd_enable,
@@ -5497,6 +5538,7 @@ static bool setting_data_append_list_netplay_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 #endif
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
