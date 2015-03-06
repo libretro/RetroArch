@@ -25,7 +25,7 @@
 #include <file/file_path.h>
 #include "zip_support.h"
 
-#include "../deps/rzlib/unzip.h"
+#include "../deps/zlib/unzip.h"
 
 /* Undefined at the end of the file
  * Don't use outside of this file

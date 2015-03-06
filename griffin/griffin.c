@@ -738,26 +738,26 @@ extern "C" {
 DEPENDENCIES
 ============================================================ */
 #ifdef WANT_MINIZ
-#include "../deps/rzlib/adler32.c"
-#include "../deps/rzlib/compress.c"
-#include "../deps/rzlib/crc32.c"
-#include "../deps/rzlib/deflate.c"
-#include "../deps/rzlib/gzclose.c"
-#include "../deps/rzlib/gzlib.c"
-#include "../deps/rzlib/gzread.c"
-#include "../deps/rzlib/gzwrite.c"
-#include "../deps/rzlib/inffast.c"
-#include "../deps/rzlib/inflate.c"
-#include "../deps/rzlib/inftrees.c"
-#include "../deps/rzlib/trees.c"
-#include "../deps/rzlib/uncompr.c"
-#include "../deps/rzlib/zutil.c"
+#include "../deps/zlib/adler32.c"
+#include "../deps/zlib/compress.c"
+#include "../deps/zlib/crc32.c"
+#include "../deps/zlib/deflate.c"
+#include "../deps/zlib/gzclose.c"
+#include "../deps/zlib/gzlib.c"
+#include "../deps/zlib/gzread.c"
+#include "../deps/zlib/gzwrite.c"
+#include "../deps/zlib/inffast.c"
+#include "../deps/zlib/inflate.c"
+#include "../deps/zlib/inftrees.c"
+#include "../deps/zlib/trees.c"
+#include "../deps/zlib/uncompr.c"
+#include "../deps/zlib/zutil.c"
 #endif
 
 /* Decompression support always requires the next two files */
 #if defined(WANT_MINIZ) || defined(HAVE_ZLIB)
-#include "../deps/rzlib/ioapi.c"
-#include "../deps/rzlib/unzip.c"
+#include "../deps/zlib/ioapi.c"
+#include "../deps/zlib/unzip.c"
 #endif
 
 #ifdef HAVE_7ZIP

@@ -60,7 +60,7 @@ ifeq ($(platform), ngc)
   ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
   EXT_TARGET := $(TARGET_NAME)_ngc.dol
   EXT_INTER_TARGET := $(TARGET_NAME)_ngc.elf
-  INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/rzlib
+  INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/zlib
   LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube -L.
   MACHDEP := -DGEKKO -DHW_DOL -mogc -mcpu=750 -meabi -mhard-float -DMSB_FIRST
   LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map
@@ -93,7 +93,7 @@ else ifeq ($(platform), wii)
   ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
   EXT_TARGET := $(TARGET_NAME)_wii.dol
   EXT_INTER_TARGET := $(TARGET_NAME)_wii.elf
-  INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/rzlib
+  INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/zlib
   LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii -L.
   MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float -DMSB_FIRST
   LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size

@@ -64,7 +64,7 @@ $(TARGET): $(OBJ)
 
 clean:
 	rm -f *.o
-	rm -f deps/rzlib/*.o
+	rm -f deps/zlib/*.o
 	rm -f frontend/*.o
 	rm -f menu/*.o
 	rm -f menu/disp/*.o
