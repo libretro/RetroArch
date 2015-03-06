@@ -27,6 +27,7 @@
 #include "menu_database.h"
 #include "../settings_list.h"
 #include "../playlist.h"
+#include "../../libretro.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -98,11 +99,16 @@ typedef struct
 {
    void *userdata;
 
+   /* Delta timing */
+   float dt;
+   retro_time_t cur_time;
+   retro_time_t old_time;
+
    /* Used for key repeat */
    struct
    {
-      unsigned timer;
-      unsigned count;
+      float timer;
+      float count;
    } delay;
 
    size_t begin;

@@ -36,7 +36,7 @@
 #endif
 
 #ifndef XMB_DELAY
-#define XMB_DELAY 0.02
+#define XMB_DELAY 10
 #endif
 
 typedef struct
@@ -1135,7 +1135,7 @@ static void xmb_frame(void)
    if (!gl)
       return;
 
-   menu_animation_update(menu->animation, 0.002);
+   menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
