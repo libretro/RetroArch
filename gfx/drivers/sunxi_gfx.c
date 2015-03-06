@@ -576,7 +576,7 @@ static int sunxi_layer_change_work_mode(sunxi_disp_t *ctx, int new_mode)
     return ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_PARA, tmp);
 }
 
-int sunxi_layer_reserve(sunxi_disp_t *ctx)
+static int sunxi_layer_reserve(sunxi_disp_t *ctx)
 {
     __disp_layer_info_t layer_info;
     uint32_t tmp[4];
@@ -627,7 +627,7 @@ int sunxi_layer_reserve(sunxi_disp_t *ctx)
     return ctx->layer_id;
 }
 
-int sunxi_layer_set_output_window(sunxi_disp_t *ctx, int x, int y, int w, int h)
+static int sunxi_layer_set_output_window(sunxi_disp_t *ctx, int x, int y, int w, int h)
 {
     __disp_rect_t buf_rect = {
         ctx->layer_buf_x, ctx->layer_buf_y,
@@ -697,7 +697,7 @@ int sunxi_layer_set_output_window(sunxi_disp_t *ctx, int x, int y, int w, int h)
     return ioctl(ctx->fd_disp, DISP_CMD_LAYER_SET_SCN_WINDOW, &tmp);
 }
 
-int sunxi_layer_show(sunxi_disp_t *ctx)
+static int sunxi_layer_show(sunxi_disp_t *ctx)
 {
     uint32_t tmp[4];
 
@@ -716,7 +716,7 @@ int sunxi_layer_show(sunxi_disp_t *ctx)
     return ioctl(ctx->fd_disp, DISP_CMD_LAYER_OPEN, &tmp);
 }
 
-int sunxi_layer_release(sunxi_disp_t *ctx)
+static int sunxi_layer_release(sunxi_disp_t *ctx)
 {
     int result;
     uint32_t tmp[4];
@@ -734,7 +734,7 @@ int sunxi_layer_release(sunxi_disp_t *ctx)
 }
 
 
-int sunxi_layer_set_rgb_input_buffer(sunxi_disp_t *ctx,
+static int sunxi_layer_set_rgb_input_buffer(sunxi_disp_t *ctx,
       int           bpp,
       uint32_t      offset_in_framebuffer,
       int           width,
@@ -1109,7 +1109,7 @@ static struct sunxi_page *sunxi_get_free_page(void *data)
 	return page;
 }
 
-void sunxi_blank_console (void *data)
+static void sunxi_blank_console (void *data)
 {
    struct sunxi_video *_dispvars = data;
 
@@ -1120,14 +1120,18 @@ void sunxi_blank_console (void *data)
    _dispvars->screensize = disp->xres * disp->yres * disp->bits_per_pixel / 8;
 
    /* Backup screen contents. */
-   _dispvars->screen_bck = (char *) malloc (_dispvars->screensize * sizeof (char));
+   _dispvars->screen_bck = (char *)malloc(_dispvars->screensize * sizeof (char));
+
+   if (!_dispvars->screen_bck)
+      return;
+
    memcpy ((char*)_dispvars->screen_bck, (char*)disp->framebuffer_addr, _dispvars->screensize);
 
    /* Blank screen. */
    memset ((char*)(disp->framebuffer_addr), 0x00, _dispvars->screensize);
 }
 
-void sunxi_unblank_console (void *data)
+static void sunxi_unblank_console (void *data)
 {
 	struct sunxi_video *_dispvars = data;
 		
@@ -1270,7 +1274,7 @@ static void sunxi_gfx_free(void *data)
 
 
 
-void sunxi_blit_flip (struct sunxi_page *page, const void *frame, void *data)
+static void sunxi_blit_flip (struct sunxi_page *page, const void *frame, void *data)
 {
    struct sunxi_video *_dispvars = data;	
 
