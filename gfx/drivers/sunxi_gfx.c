@@ -48,14 +48,6 @@
 #define FBIOGET_LAYER_HDL_0 0x4700
 #define FBIOGET_LAYER_HDL_1 0x4701
 
-#define FALLBACK_BLT() sunxi_g2d_try_fallback_blt(self, src_bits,        \
-                                                  dst_bits, src_stride,  \
-                                                  dst_stride, src_bpp,   \
-                                                  dst_bpp, src_x, src_y, \
-                                                  dst_x, dst_y, w, h);
-
-#define __bool signed char
-
 typedef struct
 {
 	__u8 alpha;
@@ -502,9 +494,9 @@ typedef struct
    /*
     * blue red color swap flag, FALSE:RGB; TRUE:BGR,only used in rgb format
     */
-   __bool br_swap;
+   signed char br_swap;
    __disp_cs_mode_t cs_mode; /* color space */
-   __bool b_trd_src; /* if 3d source, used for scaler mode layer */
+   signed char b_trd_src; /* if 3d source, used for scaler mode layer */
    /* source 3d mode, used for scaler mode layer */
    __disp_3d_src_mode_t trd_mode;
    __u32 trd_right_addr[3]; /* used when in frame packing 3d mode */
@@ -513,7 +505,7 @@ typedef struct
 typedef struct
 {
    __disp_layer_work_mode_t mode; /* layer work mode */
-   __bool b_from_screen;
+   signed char b_from_screen;
    /*
     * layer pipe,0/1,if in scaler mode, scaler0 must be pipe0,
     * scaler1 must be pipe1
@@ -524,14 +516,14 @@ typedef struct
     * From bottom to top, priority from low to high
     */
    __u8 prio;
-   __bool alpha_en; /* layer global alpha enable */
+   signed char alpha_en; /* layer global alpha enable */
    __u16 alpha_val; /* layer global alpha value */
-   __bool ck_enable; /* layer color key enable */
+   signed char ck_enable; /* layer color key enable */
    /*  framebuffer source window,only care x,y if is not scaler mode */
    __disp_rect_t src_win;
    __disp_rect_t scn_win; /* screen window */
    __disp_fb_t fb; /* framebuffer */
-   __bool b_trd_out; /* if output 3d mode, used for scaler mode layer */
+   signed char b_trd_out; /* if output 3d mode, used for scaler mode layer */
    /* output 3d mode, used for scaler mode layer */
    __disp_3d_out_mode_t out_trd_mode;
 } __disp_layer_info_t;
@@ -1048,10 +1040,14 @@ static int sunxi_wait_flip(void)
    return ioctl(disp->fd_fb, FBIO_WAITFORVSYNC, 0);
 }
 
-static void queue_page(struct sunxi_page *page, void *data)
+static void queue_page(struct sunxi_page *page, struct sunxi_video *_dispvars)
 {
-   struct sunxi_video *_dispvars = data;
-   struct sunxi_page *ppage      = _dispvars->queue;
+   struct sunxi_page *ppage = NULL;
+
+   if (!_dispvars)
+      return;
+   
+   ppage = _dispvars->queue;
 
    if (ppage == NULL)
       _dispvars->queue = page;
@@ -1064,10 +1060,14 @@ static void queue_page(struct sunxi_page *page, void *data)
    }
 }
 
-static struct sunxi_page *unqueue_page(void *data)
+static struct sunxi_page *unqueue_page(struct sunxi_video *_dispvars)
 {
-   struct sunxi_video *_dispvars = data;
-   struct sunxi_page *      page = _dispvars->queue;	
+   struct sunxi_page *page = NULL;
+
+   if (!_dispvars)
+      return NULL;
+      
+   page = _dispvars->queue;	
 
    if (page != NULL)
    {
@@ -1075,16 +1075,19 @@ static struct sunxi_page *unqueue_page(void *data)
       page->next = NULL;
       return page;
    }
-   else return NULL;
+
+   return NULL;
 }
 
 /* Find a free page, clear it if necessary, and return the page. If  *
  * no free page is available when called, wait for a page flip.      */
-static struct sunxi_page *sunxi_get_free_page(void *data)
+static struct sunxi_page *sunxi_get_free_page(struct sunxi_video *_dispvars)
 {
 	unsigned i;
-	struct sunxi_video *_dispvars = data;
 	struct sunxi_page *page = NULL;
+
+   if (!_dispvars)
+      return NULL;
 
 	/* Wait until a free page is available. */
 	while (!page)
@@ -1112,9 +1115,10 @@ static struct sunxi_page *sunxi_get_free_page(void *data)
 	return page;
 }
 
-static void sunxi_blank_console(void *data)
+static void sunxi_blank_console(struct sunxi_video *_dispvars)
 {
-   struct sunxi_video *_dispvars = data;
+   if (!_dispvars)
+      return;
 
    /* Disable cursor blinking so it's not visible. */
    system("setterm -cursor off");
@@ -1134,17 +1138,18 @@ static void sunxi_blank_console(void *data)
    memset((char*)(disp->framebuffer_addr), 0x00, _dispvars->screensize);
 }
 
-static void sunxi_unblank_console(void *data)
+static void sunxi_unblank_console(struct sunxi_video *_dispvars)
 {
-	struct sunxi_video *_dispvars = data;
-		
-	system("setterm -cursor on");
+   if (!_dispvars)
+      return;
+
+   system("setterm -cursor on");
 
 #if 0
-	memcpy((char*)disp->framebuffer_addr, (char*)_dispvars->screen_bck, _dispvars->screensize);
+   memcpy((char*)disp->framebuffer_addr, (char*)_dispvars->screen_bck, _dispvars->screensize);
 #endif
 
-	free(_dispvars->screen_bck);
+   free(_dispvars->screen_bck);
 }
 
 static void *sunxi_gfx_init(const video_info_t *video,
@@ -1275,10 +1280,8 @@ static void sunxi_gfx_free(void *data)
    free(_dispvars);
 }
 
-static void sunxi_blit_flip(struct sunxi_page *page, const void *frame, void *data)
+static void sunxi_blit_flip(struct sunxi_page *page, const void *frame, struct sunxi_video *_dispvars)
 {
-   struct sunxi_video *_dispvars = data;	
-
    pixman_blit(
          _dispvars->src_width,
          _dispvars->src_height,
@@ -1306,7 +1309,7 @@ static void sunxi_blit_flip(struct sunxi_page *page, const void *frame, void *da
          _dispvars->src_width, _dispvars->src_height, disp->xres);
 
    pthread_mutex_lock(&queue_mutex);
-   queue_page(page, (void *)_dispvars);
+   queue_page(page, _dispvars);
    //_dispvars->pageflip_pending++;	
    pthread_mutex_unlock(&queue_mutex);
 }
@@ -1379,7 +1382,7 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
    }
 
    page = sunxi_get_free_page((void*)_dispvars);
-   sunxi_blit_flip(page, frame, (void *)_dispvars);
+   sunxi_blit_flip(page, frame, _dispvars);
 
    return true;
 }
@@ -1411,6 +1414,7 @@ static bool sunxi_gfx_focus(void *data)
 static void sunxi_gfx_set_rotation(void *data, unsigned rotation)
 {
    (void)data;
+   (void)rotation;
 }
 
 static bool sunxi_gfx_has_windowed(void *data)
