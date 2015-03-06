@@ -136,8 +136,6 @@ static void remove_device(void* context, IOReturn result, void* sender)
       pad_connection_pad_deinit(&slots[connection->slot], connection->slot);
       free(connection);
    }
-
-   IOHIDDeviceClose(sender, kIOHIDOptionsTypeSeizeDevice);
 }
 
 static void hid_device_report(void* context, IOReturn result, void *sender,
