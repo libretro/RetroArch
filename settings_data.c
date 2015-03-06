@@ -4567,7 +4567,7 @@ static bool setting_data_append_list_audio_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT | SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
          g_settings.audio.out_rate,
@@ -4578,6 +4578,7 @@ static bool setting_data_append_list_audio_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_PATH(
          g_settings.audio.dsp_plugin,
