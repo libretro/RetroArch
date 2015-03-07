@@ -74,9 +74,6 @@ static void do_iteration(CFRunLoopObserverRef observer, CFRunLoopActivity activi
             if (ret == -1)
                 return;
             
-            if (   g_runloop.frames.video.current.menu.framebuf_dirty
-                || g_runloop.frames.video.current.menu.is_animated
-                )
             CFRunLoopWakeUp(CFRunLoopGetMain());
             
             /* TODO/FIXME
