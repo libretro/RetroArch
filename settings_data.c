@@ -3855,17 +3855,6 @@ static bool setting_data_append_list_video_options(
          general_read_handler);
    settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
 
-   CONFIG_BOOL(g_settings.fps_monitor_enable,
-         "fps_monitor_enable",
-         "Monitor FPS Enable",
-         true,
-         "OFF",
-         "ON",
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-
    CONFIG_FLOAT(
          g_settings.video.refresh_rate,
          "video_refresh_rate_auto",

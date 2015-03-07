@@ -120,8 +120,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    unsigned samples   = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
          g_runloop.measure_data.frame_time_samples_count);
 
-   if (!g_settings.fps_monitor_enable || 
-         g_settings.video.threaded || (samples < 2))
+   if (g_settings.video.threaded || (samples < 2))
       return false;
 
    /* Measure statistics on frame time (microsecs), *not* FPS. */

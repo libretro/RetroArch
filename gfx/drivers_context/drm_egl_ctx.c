@@ -264,15 +264,9 @@ static void gfx_ctx_drm_egl_set_resize(void *data,
 static void gfx_ctx_drm_egl_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
-   bool fps_draw = g_settings.fps_show || g_settings.fps_monitor_enable;
-
-   (void)data;
-
-   if (!fps_draw)
-      return;
 
    video_monitor_get_fps(buf, sizeof(buf),
-         g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps));
+         buf_fps, sizeof(buf_fps));
    if (g_settings.fps_show)
       msg_queue_push(g_runloop.msg_queue, buf_fps, 1, 1);
 }

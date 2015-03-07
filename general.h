@@ -379,7 +379,6 @@ struct settings
    bool menu_show_start_screen;
 #endif
    bool fps_show;
-   bool fps_monitor_enable;
    bool load_dummy_on_core_shutdown;
 
    bool core_specific_config;

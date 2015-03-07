@@ -331,14 +331,13 @@ static void gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 static void gfx_ctx_wl_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
-   bool fps_draw = g_settings.fps_show || g_settings.fps_monitor_enable;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
       driver.video_context_data;
 
    (void)data;
 
-   if (video_monitor_get_fps(buf, sizeof(buf), g_settings.fps_show ? 
-            buf_fps : NULL, sizeof(buf_fps)))
+   if (video_monitor_get_fps(buf, sizeof(buf),  
+            buf_fps, sizeof(buf_fps)))
       wl_shell_surface_set_title(wl->g_shell_surf, buf);
 
    if (g_settings.fps_show)
