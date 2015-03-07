@@ -34,6 +34,7 @@ enum basic_event
    RARCH_CMD_LOAD_CONTENT_PERSIST,
    /* Loads core. */
    RARCH_CMD_LOAD_CORE,
+   RARCH_CMD_LOAD_CORE_PERSIST,
    RARCH_CMD_LOAD_STATE,
    RARCH_CMD_SAVE_STATE,
    /* Takes screenshot. */

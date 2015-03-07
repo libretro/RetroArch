@@ -67,7 +67,7 @@ static void menu_update_libretro_info(struct retro_system_info *info)
    if (driver.menu_ctx && driver.menu_ctx->context_reset)
       driver.menu_ctx->context_reset();
 
-   rarch_update_system_info(info, NULL);
+   rarch_main_command(RARCH_CMD_LOAD_CORE_PERSIST);
 }
 
 static void menu_environment_get(int *argc, char *argv[],

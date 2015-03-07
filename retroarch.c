@@ -2168,7 +2168,7 @@ bool rarch_main_command(unsigned cmd)
          rarch_main_command(RARCH_CMD_QUIT);
 #endif
          break;
-      case RARCH_CMD_LOAD_CORE:
+      case RARCH_CMD_LOAD_CORE_PERSIST:
          {
 #ifdef HAVE_MENU
             menu_handle_t *menu = menu_driver_resolve();
@@ -2176,10 +2176,13 @@ bool rarch_main_command(unsigned cmd)
                rarch_update_system_info(&g_extern.menu.info,
                      &menu->load_no_content);
 #endif
-#ifndef HAVE_DYNAMIC
-            rarch_main_command(RARCH_CMD_QUIT);
-#endif
          }
+         break;
+      case RARCH_CMD_LOAD_CORE:
+         rarch_main_command(RARCH_CMD_LOAD_CORE_PERSIST);
+#ifndef HAVE_DYNAMIC
+         rarch_main_command(RARCH_CMD_QUIT);
+#endif
          break;
       case RARCH_CMD_LOAD_STATE:
          /* Immutable - disallow savestate load when 
