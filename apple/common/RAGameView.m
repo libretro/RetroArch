@@ -17,6 +17,8 @@
 #import <Availability.h>
 #import "RetroArch_Apple.h"
 #include "../../general.h"
+#include "../../runloop.h"
+#include "../../frontend/frontend.h"
 
 /* Define compatibility symbols and categories. */
 
@@ -193,3 +195,4 @@ static void apple_gfx_ctx_update(void);
 #ifdef HAVE_LOCATION
 #include "apple_location.c.inl"
 #endif
+

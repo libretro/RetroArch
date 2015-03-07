@@ -265,7 +265,44 @@ void notify_content_loaded(void) {
    
    apple_gamecontroller_init();
 
-   apple_start_iteration();
+   [self apple_start_iteration];
+}
+
+#if 0
+- (void) poll_iteration
+{
+    UIEvent *event;
+    
+    do
+    {
+        event = [UIApplication nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
+        
+        
+        [UIApplication sendEvent: event];
+    }while(event != nil);
+}
+#endif
+
+- (void) do_iteration
+{
+    int ret = 0;
+    while (ret != -1)
+    {
+        //[self poll_iteration];
+        ret = rarch_main_iterate();
+        while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
+    }
+    
+    main_exit(NULL);
+}
+
+- (void) apple_start_iteration
+{
+    [self performSelectorOnMainThread:@selector(do_iteration) withObject:nil waitUntilDone:NO];
+}
+
+- (void) apple_stop_iteration
+{
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application

@@ -185,14 +185,48 @@ static char** waiting_argv;
    waiting_argc = 0;
 }
 
+- (void) poll_iteration
+{
+    NSEvent *event;
+    
+    do
+    {
+        event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
+        
+        [NSApp sendEvent: event];
+    }while(event != nil);
+}
+
+- (void) do_iteration
+{
+    int ret = 0;
+    while (ret != -1)
+    {
+        [self poll_iteration];
+        ret = rarch_main_iterate();
+        while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
+    }
+    
+    main_exit(NULL);
+}
+
+- (void) apple_start_iteration
+{
+    [self performSelectorOnMainThread:@selector(do_iteration) withObject:nil waitUntilDone:NO];
+}
+
+- (void) apple_stop_iteration
+{
+}
+
 - (void)applicationDidBecomeActive:(NSNotification *)notification
 {
-   apple_start_iteration();
+   [self apple_start_iteration];
 }
 
 - (void)applicationWillResignActive:(NSNotification *)notification
 {
-   apple_stop_iteration();
+   [self apple_stop_iteration];
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
