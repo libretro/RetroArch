@@ -57,7 +57,7 @@ static void draw_frame(void)
  *
  * Update menu state which depends on config.
  **/
-void menu_update_libretro_info(struct retro_system_info *info)
+static void menu_update_libretro_info(struct retro_system_info *info)
 {
 #ifndef HAVE_DYNAMIC
    retro_get_system_info(info);

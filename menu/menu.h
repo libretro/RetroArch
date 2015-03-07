@@ -188,14 +188,6 @@ bool menu_load_content(void);
 
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
 
-/**
- * menu_update_libretro_info:
- * @info                     : Pointer to system info
- *
- * Update menu state which depends on config.
- **/
-void menu_update_libretro_info(struct retro_system_info *info);
-
 void menu_apply_deferred_settings(void);
 
 #ifdef __cplusplus
