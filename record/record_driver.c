@@ -100,7 +100,7 @@ void recording_dump_frame(const void *data, unsigned width,
    ffemu_data.height  = height;
    ffemu_data.data    = data;
 
-   if (g_extern.record_gpu_buffer)
+   if (g_extern.record.gpu_buffer)
    {
       struct video_viewport vp = {0};
 
@@ -117,8 +117,8 @@ void recording_dump_frame(const void *data, unsigned width,
       }
 
       /* User has resized. We kinda have a problem now. */
-      if (vp.width != g_extern.record_gpu_width ||
-            vp.height != g_extern.record_gpu_height)
+      if (vp.width != g_extern.record.gpu_width ||
+            vp.height != g_extern.record.gpu_height)
       {
          static const char msg[] = "Recording terminated due to resize.";
          RARCH_WARN("%s\n", msg);
@@ -134,19 +134,19 @@ void recording_dump_frame(const void *data, unsigned width,
        * it might take 3-4 times before this returns true. */
       if (driver.video && driver.video->read_viewport)
          if (!driver.video->read_viewport(driver.video_data,
-                  g_extern.record_gpu_buffer))
+                  g_extern.record.gpu_buffer))
             return;
 
-      ffemu_data.pitch  = g_extern.record_gpu_width * 3;
-      ffemu_data.width  = g_extern.record_gpu_width;
-      ffemu_data.height = g_extern.record_gpu_height;
-      ffemu_data.data   = g_extern.record_gpu_buffer +
+      ffemu_data.pitch  = g_extern.record.gpu_width * 3;
+      ffemu_data.width  = g_extern.record.gpu_width;
+      ffemu_data.height = g_extern.record.gpu_height;
+      ffemu_data.data   = g_extern.record.gpu_buffer +
          (ffemu_data.height - 1) * ffemu_data.pitch;
 
       ffemu_data.pitch  = -ffemu_data.pitch;
    }
 
-   if (!g_extern.record_gpu_buffer)
+   if (!g_extern.record.gpu_buffer)
       ffemu_data.is_dupe = !data;
 
    if (driver.recording && driver.recording->push_video)
@@ -184,7 +184,7 @@ bool recording_init(void)
    struct ffemu_params params = {0};
    const struct retro_system_av_info *info = &g_extern.system.av_info;
 
-   if (!g_extern.recording_enable)
+   if (!g_extern.record.enable)
       return false;
 
    if (g_extern.libretro_dummy)
@@ -209,15 +209,15 @@ bool recording_init(void)
    params.fb_width   = info->geometry.max_width;
    params.fb_height  = info->geometry.max_height;
    params.channels   = 2;
-   params.filename   = g_extern.record_path;
+   params.filename   = g_extern.record.path;
    params.fps        = g_extern.system.av_info.timing.fps;
    params.samplerate = g_extern.system.av_info.timing.sample_rate;
    params.pix_fmt    = (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888) ?
       FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
    params.config     = NULL;
    
-   if (*g_extern.record_config)
-      params.config = g_extern.record_config;
+   if (*g_extern.record.config)
+      params.config = g_extern.record.config;
 
    if (g_settings.video.gpu_record && driver.video->read_viewport)
    {
@@ -245,14 +245,14 @@ bool recording_init(void)
          params.aspect_ratio  = (float)vp.width / vp.height;
 
       params.pix_fmt             = FFEMU_PIX_BGR24;
-      g_extern.record_gpu_width  = vp.width;
-      g_extern.record_gpu_height = vp.height;
+      g_extern.record.gpu_width  = vp.width;
+      g_extern.record.gpu_height = vp.height;
 
       RARCH_LOG("Detected viewport of %u x %u\n",
             vp.width, vp.height);
 
-      g_extern.record_gpu_buffer = (uint8_t*)malloc(vp.width * vp.height * 3);
-      if (!g_extern.record_gpu_buffer)
+      g_extern.record.gpu_buffer = (uint8_t*)malloc(vp.width * vp.height * 3);
+      if (!g_extern.record.gpu_buffer)
       {
          RARCH_ERR("Failed to allocate GPU record buffer.\n");
          return false;
@@ -260,10 +260,10 @@ bool recording_init(void)
    }
    else
    {
-      if (g_extern.record_width || g_extern.record_height)
+      if (g_extern.record.width || g_extern.record.height)
       {
-         params.out_width = g_extern.record_width;
-         params.out_height = g_extern.record_height;
+         params.out_width  = g_extern.record.width;
+         params.out_height = g_extern.record.height;
       }
 
       if (g_settings.video.force_aspect &&
@@ -290,7 +290,7 @@ bool recording_init(void)
    }
 
    RARCH_LOG("Recording to %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
-         g_extern.record_path,
+         g_extern.record.path,
          params.out_width, params.out_height,
          params.fb_width, params.fb_height,
          (unsigned)params.pix_fmt);

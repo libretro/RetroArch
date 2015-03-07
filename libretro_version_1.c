@@ -132,7 +132,7 @@ static void video_frame(const void *data, unsigned width,
     */
    if ((!g_extern.filter.filter
             || !g_settings.video.post_filter_record || !data
-            || g_extern.record_gpu_buffer)
+            || g_extern.record.gpu_buffer)
       )
       recording_dump_frame(data, width, height, pitch);
 

@@ -1971,7 +1971,7 @@ static void gl_init_pbo_readback(gl_t *gl)
     * not initialized yet.
     */
    gl->pbo_readback_enable = g_settings.video.gpu_record 
-      && g_extern.recording_enable;
+      && g_extern.record.enable;
    if (!gl->pbo_readback_enable)
       return;
 

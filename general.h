@@ -704,15 +704,18 @@ struct global
 #endif
 
    /* Recording. */
-   char record_path[PATH_MAX_LENGTH];
-   char record_config[PATH_MAX_LENGTH];
-   bool recording_enable;
-   unsigned record_width;
-   unsigned record_height;
+   struct
+   {
+      char path[PATH_MAX_LENGTH];
+      char config[PATH_MAX_LENGTH];
+      bool enable;
+      unsigned width;
+      unsigned height;
 
-   uint8_t *record_gpu_buffer;
-   size_t record_gpu_width;
-   size_t record_gpu_height;
+      uint8_t *gpu_buffer;
+      size_t gpu_width;
+      size_t gpu_height;
+   } record;
 
    struct
    {

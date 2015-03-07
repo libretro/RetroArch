@@ -568,9 +568,9 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'r':
-            strlcpy(g_extern.record_path, optarg,
-                  sizeof(g_extern.record_path));
-            g_extern.recording_enable = true;
+            strlcpy(g_extern.record.path, optarg,
+                  sizeof(g_extern.record.path));
+            g_extern.record.enable = true;
             break;
 
 #ifdef HAVE_DYNAMIC
@@ -714,8 +714,8 @@ static void parse_input(int argc, char *argv[])
 
                case 's':
                {
-                  if (sscanf(optarg, "%ux%u", &g_extern.record_width,
-                           &g_extern.record_height) != 2)
+                  if (sscanf(optarg, "%ux%u", &g_extern.record.width,
+                           &g_extern.record.height) != 2)
                   {
                      RARCH_ERR("Wrong format for --size.\n");
                      print_help();
@@ -725,8 +725,8 @@ static void parse_input(int argc, char *argv[])
                }
 
                case 'R':
-                  strlcpy(g_extern.record_config, optarg,
-                        sizeof(g_extern.record_config));
+                  strlcpy(g_extern.record.config, optarg,
+                        sizeof(g_extern.record.config));
                   break;
                case 'f':
                   print_features();
@@ -2401,9 +2401,9 @@ bool rarch_main_command(unsigned cmd)
                   g_settings.audio.dsp_plugin);
          break;
       case RARCH_CMD_GPU_RECORD_DEINIT:
-         if (g_extern.record_gpu_buffer)
-            free(g_extern.record_gpu_buffer);
-         g_extern.record_gpu_buffer = NULL;
+         if (g_extern.record.gpu_buffer)
+            free(g_extern.record.gpu_buffer);
+         g_extern.record.gpu_buffer = NULL;
          break;
       case RARCH_CMD_RECORD_DEINIT:
          if (!recording_deinit())
