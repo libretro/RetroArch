@@ -422,12 +422,15 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata)
   mem_size = geom->max_width * geom->max_height *
              pdata->bpp * pdata->num_pages;
 
-  mi.size = mem_size;
-
-  if (ioctl(pdata->fd, OMAPFB_SETUP_MEM, &mi) != 0)
+  if (mi.size < mem_size)
   {
-    RARCH_ERR("video_omap: allocation of %u bytes of VRAM failed\n", mem_size);
-    return -1;
+    mi.size = mem_size;
+
+    if (ioctl(pdata->fd, OMAPFB_SETUP_MEM, &mi) != 0)
+    {
+      RARCH_ERR("video_omap: allocation of %u bytes of VRAM failed\n", mem_size);
+      return -1;
+    }
   }
 
   mem = mmap(NULL, mi.size, PROT_WRITE|PROT_READ, MAP_SHARED, pdata->fd, 0);
@@ -772,6 +775,13 @@ typedef struct omap_video
   /* current dimensions */
   unsigned width;
   unsigned height;
+
+  struct
+  {
+    bool active;
+    void *frame;
+    struct scaler_ctx scaler;
+  } menu;
 } omap_video_t;
 
 
@@ -786,6 +796,9 @@ static void omap_gfx_free(void *data)
 
   if (vid->font)
      vid->font_driver->free(vid->font);
+
+  scaler_ctx_gen_reset(&vid->menu.scaler);
+  free(vid->menu.frame);
 
   free(vid);
 }
@@ -847,8 +860,8 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
       const int max_width  = vid->width - base_x;
       const int max_height = vid->height - base_y;
 
-      glyph_width          = head->width;
-      glyph_height         = head->height;
+      glyph_width          = glyph->width;
+      glyph_height         = glyph->height;
 
       src                  = atlas->buffer + glyph->atlas_offset_x + 
          glyph->atlas_offset_y * atlas->width;
@@ -900,7 +913,7 @@ static void *omap_gfx_init(const video_info_t *video,
 
   /* Don't support filters at the moment since they make estimations  *
    * on the maximum used resolution difficult.                        */
-  if (g_extern.filter.active)
+  if (g_extern.filter.filter)
   {
     RARCH_ERR("video_omap: filters are not supported\n");
     return NULL;
@@ -924,10 +937,25 @@ static void *omap_gfx_init(const video_info_t *video,
       omapfb_mmap(vid->omap) != 0)
      goto fail_omapfb;
 
+  /* set some initial mode for the menu */
+  vid->width = 320;
+  vid->height = 240;
+
+  if (omapfb_set_mode(vid->omap, vid->width, vid->height) != 0)
+    goto fail_omapfb;
+
   if (input && input_data)
     *input = NULL;
 
   omap_init_font(vid, g_settings.video.font_path, g_settings.video.font_size);
+
+  vid->menu.frame = calloc(vid->width * vid->height, vid->bytes_per_pixel);
+  if (vid->menu.frame == NULL)
+    goto fail_omapfb;
+
+  vid->menu.scaler.scaler_type = SCALER_TYPE_BILINEAR;
+  vid->menu.scaler.out_fmt = (vid->bytes_per_pixel == 4)
+    ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
 
   return vid;
 
@@ -949,11 +977,8 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
      return true;
   vid = data;
 
-  if (width != vid->width || height != vid->height)
+  if (width > 4 && height > 4 && (width != vid->width || height != vid->height))
   {
-    if (width == 0 || height == 0)
-       return true;
-
     RARCH_LOG("video_omap: mode set (resolution changed by core)\n");
 
     if (omapfb_set_mode(vid->omap, width, height) != 0)
@@ -968,8 +993,12 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
 
   omapfb_prepare(vid->omap);
   omapfb_blit_frame(vid->omap, frame, vid->height, pitch);
+  if (vid->menu.active)
+    omapfb_blit_frame(vid->omap, vid->menu.frame,
+      vid->menu.scaler.out_height,
+      vid->menu.scaler.out_stride);
   if (msg)
-     omap_render_msg(vid, msg);
+    omap_render_msg(vid, msg);
 
   g_extern.frame_count++;
 
@@ -1052,11 +1081,80 @@ static bool omap_gfx_read_viewport(void *data, uint8_t *buffer)
    return true;
 }
 
+static void update_scaler(omap_video_t *vid, struct scaler_ctx *scaler,
+                          enum scaler_pix_fmt format, unsigned width,
+                          unsigned height, unsigned pitch)
+{
+   if (
+          width  != scaler->in_width
+       || height != scaler->in_height
+       || format != scaler->in_fmt
+       || pitch  != scaler->in_stride
+      )
+   {
+      scaler->in_fmt    = format;
+      scaler->in_width  = width;
+      scaler->in_height = height;
+      scaler->in_stride = pitch;
+
+      scaler->out_width  = vid->width;
+      scaler->out_height = vid->height;
+      scaler->out_stride = vid->width * vid->bytes_per_pixel;
+
+      if (!scaler_ctx_gen_filter(scaler))
+         RARCH_ERR("video_omap: scaler_ctx_gen_filter failed\n");
+   }
+}
+
+static void omap_gfx_set_texture_frame(void *data, const void *frame, bool rgb32,
+      unsigned width, unsigned height, float alpha)
+{
+   (void) alpha;
+   omap_video_t *vid = (omap_video_t*)data;
+
+   enum scaler_pix_fmt format = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
+
+   update_scaler(vid, &vid->menu.scaler, format, width, height,
+                 width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
+
+   scaler_ctx_scale(&vid->menu.scaler, vid->menu.frame, frame);
+}
+
+static void omap_gfx_set_texture_enable(void *data, bool state, bool full_screen)
+{
+   (void) full_screen;
+
+   omap_video_t *vid = (omap_video_t*)data;
+   vid->menu.active = state;
+}
+
+static const video_poke_interface_t omap_gfx_poke_interface = {
+   NULL,
+   NULL, /* set_filtering */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+#ifdef HAVE_FBO
+   NULL,
+   NULL,
+#endif
+   NULL, /* set_aspect_ratio */
+   NULL, /* apply_state_changes */
+#ifdef HAVE_MENU
+   omap_gfx_set_texture_frame,
+   omap_gfx_set_texture_enable,
+#endif
+   NULL,
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL
+};
+
 static void omap_gfx_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
    (void)data;
-   (void)iface;
+   *iface = &omap_gfx_poke_interface;
 }
 
 video_driver_t video_omap = {

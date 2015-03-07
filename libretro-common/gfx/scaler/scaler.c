@@ -150,6 +150,8 @@ static bool set_direct_pix_conv(struct scaler_ctx *ctx)
       case SCALER_FMT_RGBA4444:
          if (ctx->out_fmt == SCALER_FMT_ARGB8888)
             ctx->direct_pixconv = conv_rgba4444_argb8888;
+         else if (ctx->out_fmt == SCALER_FMT_RGB565)
+            ctx->direct_pixconv = conv_rgba4444_rgb565;
          break;
       case SCALER_FMT_ABGR8888:
          /* FIXME/TODO */
