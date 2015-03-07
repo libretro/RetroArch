@@ -18,6 +18,7 @@
 #include <math.h>
 #include <string.h>
 #include <compat/strl.h>
+#include "../general.h"
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
@@ -442,7 +443,12 @@ void menu_animation_update(animation_t *animation, float dt)
       menu_animation_iterate(&animation->list[i], dt, &active_tweens);
 
    if (!active_tweens)
+   {
       animation->size = 0;
+      return;
+   }
+
+   g_runloop.frames.video.current.menu.is_animated = true;
 }
 
 /**
@@ -502,4 +508,6 @@ void menu_animation_ticker_line(char *buf, size_t len, unsigned idx,
       strlcpy(buf, str + str_len - len, len + 1);
    else
       strlcpy(buf, str + right_offset, len + 1);
+
+   g_runloop.frames.video.current.menu.is_animated = true;
 }

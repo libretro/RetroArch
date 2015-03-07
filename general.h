@@ -466,6 +466,14 @@ struct runloop
       {
          unsigned count;
          unsigned max;
+         struct
+         {
+            struct
+            {
+               bool is_animated;
+               bool framebuf_dirty;
+            } menu;
+         } current;
       } video;
 
       struct

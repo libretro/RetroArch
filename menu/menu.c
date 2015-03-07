@@ -385,6 +385,9 @@ int menu_iterate(retro_input_t input,
       menu->dt = IDEAL_DT / 4;
    menu->old_time = menu->cur_time;
 
+   g_runloop.frames.video.current.menu.is_animated    = false;
+   g_runloop.frames.video.current.menu.framebuf_dirty = false;
+
    if (driver.menu_ctx)
    {
       if (driver.menu_ctx->set_texture)
