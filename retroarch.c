@@ -2134,6 +2134,27 @@ static bool save_core_config(void)
    return ret;
 }
 
+static bool rarch_update_system_info(struct retro_system_info *_info,
+      bool *load_no_content)
+{
+#if defined(HAVE_DYNAMIC)
+   libretro_free_system_info(_info);
+   if (!(*g_settings.libretro))
+      return false;
+
+   libretro_get_system_info(g_settings.libretro, _info,
+         load_no_content);
+#endif
+   if (!g_extern.core_info)
+      return false;
+
+   if (!core_info_list_get_info(g_extern.core_info,
+            g_extern.core_info_current, g_settings.libretro))
+      return false;
+
+   return true;
+}
+
 /**
  * rarch_main_command:
  * @cmd                  : Command index.
@@ -2971,23 +2992,3 @@ bool rarch_replace_config(const char *path)
    return true;
 }
 
-bool rarch_update_system_info(struct retro_system_info *_info,
-      bool *load_no_content)
-{
-#if defined(HAVE_DYNAMIC)
-   libretro_free_system_info(_info);
-   if (!(*g_settings.libretro))
-      return false;
-
-   libretro_get_system_info(g_settings.libretro, _info,
-         load_no_content);
-#endif
-   if (!g_extern.core_info)
-      return false;
-
-   if (!core_info_list_get_info(g_extern.core_info,
-            g_extern.core_info_current, g_settings.libretro))
-      return false;
-
-   return true;
-}
