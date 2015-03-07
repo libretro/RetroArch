@@ -775,7 +775,6 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
    if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
       XStoreName(xv->display, xv->window, buf);
 
-   g_runloop.frames.video.count++;
    return true;
 }
 

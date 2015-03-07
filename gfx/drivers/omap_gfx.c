@@ -1000,8 +1000,6 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
   if (msg)
     omap_render_msg(vid, msg);
 
-  g_runloop.frames.video.count++;
-
   return true;
 }
 

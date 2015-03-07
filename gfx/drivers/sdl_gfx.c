@@ -376,7 +376,6 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
       SDL_WM_SetCaption(buf, NULL);
 
    SDL_Flip(vid->screen);
-   g_runloop.frames.video.count++;
 
    return true;
 }

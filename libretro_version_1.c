@@ -148,8 +148,13 @@ static void video_frame(const void *data, unsigned width,
       pitch  = output_pitch;
    }
 
-   if (!driver.video->frame(driver.video_data, data, width, height, pitch, msg))
-      driver.video_active = false;
+   if (driver.video->frame(driver.video_data, data, width, height, pitch, msg))
+   {
+      g_runloop.frames.video.count++;
+      return;
+   }
+
+   driver.video_active = false;
 }
 
 /**

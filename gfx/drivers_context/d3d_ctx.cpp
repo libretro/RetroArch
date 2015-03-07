@@ -147,10 +147,6 @@ static void gfx_ctx_d3d_update_title(void *data)
 #endif
       msg_queue_push(g_runloop.msg_queue, buffer_fps, 1, 1);
    }
-
-#ifndef _XBOX
-   g_runloop.frames.video.count++;
-#endif
 }
 
 static void gfx_ctx_d3d_show_mouse(void *data, bool state)

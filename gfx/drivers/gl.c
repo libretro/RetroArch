@@ -1681,8 +1681,6 @@ static bool gl_frame(void *data, const void *frame,
 
    context_bind_hw_render(gl, true);
 
-   g_runloop.frames.video.count++;
-
    return true;
 }
 
