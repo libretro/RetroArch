@@ -1060,7 +1060,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
 
-      menu_animation_ticker_line(name, 35, g_extern.frame_count / 20, path_buf,
+      menu_animation_ticker_line(name, 35, g_runloop.frames.video.count / 20, path_buf,
          (i == current));
 
       xmb_draw_text(gl, xmb, name,
@@ -1068,7 +1068,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             xmb->margins.screen.top + node->y + xmb->margins.label.top, 
             1, node->label_alpha, 0);
 
-      menu_animation_ticker_line(value, 35, g_extern.frame_count / 20, type_str,
+      menu_animation_ticker_line(value, 35, g_runloop.frames.video.count / 20, type_str,
             (i == current));
 
       if((     strcmp(type_str, "...")

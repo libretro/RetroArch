@@ -149,7 +149,7 @@ static void gfx_ctx_d3d_update_title(void *data)
    }
 
 #ifndef _XBOX
-   g_extern.frame_count++;
+   g_runloop.frames.video.count++;
 #endif
 }
 

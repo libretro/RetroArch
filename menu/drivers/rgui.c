@@ -354,7 +354,7 @@ static void rgui_render(void)
    get_title(label, dir, menu_type, title, sizeof(title));
 
    menu_animation_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
-         g_extern.frame_count / RGUI_TERM_START_X, title, true);
+         g_runloop.frames.video.count / RGUI_TERM_START_X, title, true);
    blit_line(menu, RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, true);
 
    core_name = g_extern.menu.info.library_name;
@@ -424,8 +424,8 @@ static void rgui_render(void)
          continue;
 
       menu_animation_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2),
-            g_extern.frame_count / RGUI_TERM_START_X, path_buf, selected);
-      menu_animation_ticker_line(type_str_buf, w, g_extern.frame_count / RGUI_TERM_START_X,
+            g_runloop.frames.video.count / RGUI_TERM_START_X, path_buf, selected);
+      menu_animation_ticker_line(type_str_buf, w, g_runloop.frames.video.count / RGUI_TERM_START_X,
             type_str, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",

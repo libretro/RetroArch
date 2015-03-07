@@ -180,7 +180,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
 
    new_time = rarch_get_time_usec();
 
-   if (g_extern.frame_count)
+   if (g_runloop.frames.video.count)
    {
       bool ret = false;
       unsigned write_index = 
@@ -190,19 +190,19 @@ bool video_monitor_get_fps(char *buf, size_t size,
          new_time - fps_time;
       fps_time = new_time;
 
-      if ((g_extern.frame_count % FPS_UPDATE_INTERVAL) == 0)
+      if ((g_runloop.frames.video.count % FPS_UPDATE_INTERVAL) == 0)
       {
          last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
          curr_time = new_time;
 
          snprintf(buf, size, "%s || FPS: %6.1f || Frames: %u",
-               g_extern.title_buf, last_fps, g_extern.frame_count);
+               g_extern.title_buf, last_fps, g_runloop.frames.video.count);
          ret = true;
       }
 
       if (buf_fps)
          snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: %u",
-               last_fps, g_extern.frame_count);
+               last_fps, g_runloop.frames.video.count);
 
       return ret;
    }

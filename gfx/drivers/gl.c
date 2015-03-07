@@ -996,7 +996,7 @@ static void gl_frame_fbo(gl_t *gl,
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
       gl->shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
-            gl->vp.width, gl->vp.height, g_extern.frame_count, 
+            gl->vp.width, gl->vp.height, g_runloop.frames.video.count, 
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
       gl->coords.vertices = 4;
@@ -1043,7 +1043,7 @@ static void gl_frame_fbo(gl_t *gl,
    gl->shader->set_params(gl,
          prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
-         gl->vp.width, gl->vp.height, g_extern.frame_count, 
+         gl->vp.width, gl->vp.height, g_runloop.frames.video.count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
    gl->coords.vertex = gl->vertex_ptr;
@@ -1569,7 +1569,7 @@ static bool gl_frame(void *data, const void *frame,
    gl->shader->set_params(gl, width, height,
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
-         g_extern.frame_count, 
+         g_runloop.frames.video.count, 
          &gl->tex_info, gl->prev_info, NULL, 0);
 
    gl->coords.vertices = 4;
@@ -1649,7 +1649,6 @@ static bool gl_frame(void *data, const void *frame,
    }
 
    gl->ctx_driver->swap_buffers(gl);
-   g_extern.frame_count++;
 
 #ifdef HAVE_GL_SYNC
    if (g_settings.video.hard_sync && gl->have_sync)
@@ -1681,6 +1680,8 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 
    context_bind_hw_render(gl, true);
+
+   g_runloop.frames.video.count++;
 
    return true;
 }
@@ -2435,7 +2436,7 @@ static bool gl_alive(void *data)
 
    gl->ctx_driver->check_window(gl, &quit,
          &resize, &gl->win_width, &gl->win_height,
-         g_extern.frame_count);
+         g_runloop.frames.video.count);
 
    if (quit)
       gl->quitting = true;

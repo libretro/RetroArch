@@ -454,6 +454,15 @@ struct runloop
    } db;
 #endif
 
+   struct
+   {
+      struct
+      {
+         unsigned count;
+         unsigned max;
+      } video;
+   } frames;
+
    nbio_handle_t nbio;
    msg_queue_t *msg_queue;
 };
@@ -711,8 +720,6 @@ struct global
       size_t pitch;
    } frame_cache;
 
-   unsigned frame_count;
-   unsigned max_frames;
 
    char title_buf[64];
 

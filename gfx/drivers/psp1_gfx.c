@@ -527,7 +527,7 @@ static bool psp_frame(void *data, const void *frame,
 #endif
 
    psp->draw_buffer = FROM_GU_POINTER(sceGuSwapBuffers());
-   g_extern.frame_count++;
+   g_runloop.frames.video.count++;
 
 
    RARCH_PERFORMANCE_INIT(psp_frame_run);

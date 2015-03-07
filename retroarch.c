@@ -652,7 +652,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'm':
-            g_extern.max_frames = strtoul(optarg, NULL, 10);
+            g_runloop.frames.video.max = strtoul(optarg, NULL, 10);
             break;
 
          case 0:

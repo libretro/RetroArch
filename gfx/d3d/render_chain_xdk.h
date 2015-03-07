@@ -138,7 +138,7 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
 
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 
-   g_extern.frame_count++;
+   g_runloop.frames.video.count++;
 
    renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
 }
@@ -222,7 +222,7 @@ static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, 
          d3d->shader->use(d3d, pass);
       if (d3d->shader->set_params)
          d3d->shader->set_params(d3d, width, height, d3d->tex_w, d3d->tex_h, d3d->screen_width,
-               d3d->screen_height, g_extern.frame_count,
+               d3d->screen_height, g_runloop.frames.video.count,
                NULL, NULL, NULL, 0);
    }
 #endif

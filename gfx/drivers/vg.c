@@ -409,7 +409,7 @@ static bool vg_alive(void *data)
 
    vg->driver->check_window(vg, &quit,
          &vg->should_resize, &vg->mScreenWidth, &vg->mScreenHeight,
-         g_extern.frame_count);
+         g_runloop.frames.video.count);
    return !quit;
 }
 

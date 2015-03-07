@@ -1461,7 +1461,7 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
    if (exynos_flip(vid->data, page) != 0)
       goto fail;
 
-   g_extern.frame_count++;
+   g_runloop.frames.video.count++;
 
    return true;
 

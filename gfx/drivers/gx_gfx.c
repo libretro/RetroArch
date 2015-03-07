@@ -1149,7 +1149,7 @@ static bool gx_frame(void *data, const void *frame,
    VISetNextFrameBuffer(g_framebuf[g_current_framebuf]);
    VIFlush();
 
-   g_extern.frame_count++;
+   g_runloop.frames.video.count++;
 
    RARCH_PERFORMANCE_STOP(gx_frame);
 

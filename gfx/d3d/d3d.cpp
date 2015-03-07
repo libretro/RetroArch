@@ -406,7 +406,7 @@ static bool d3d_alive(void *data)
 
    if (d3d->ctx_driver && d3d->ctx_driver->check_window)
       d3d->ctx_driver->check_window(d3d, &quit, &resize,
-            &d3d->screen_width, &d3d->screen_height, g_extern.frame_count);
+            &d3d->screen_width, &d3d->screen_height, g_runloop.frames.video.count);
 
    if (quit)
       d3d->quitting = quit;

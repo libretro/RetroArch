@@ -191,7 +191,7 @@ static void rmenu_render(void)
    get_title(label, dir, menu_type, title, sizeof(title));
 
    menu_animation_ticker_line(title_buf, RMENU_TERM_WIDTH,
-         g_extern.frame_count / 15, title, true);
+         g_runloop.frames.video.count / 15, title, true);
 
    font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
    font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET
@@ -258,8 +258,8 @@ static void rmenu_render(void)
       selected = (i == menu->navigation.selection_ptr);
 
       menu_animation_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2),
-            g_extern.frame_count / 15, path, selected);
-      menu_animation_ticker_line(type_str_buf, w, g_extern.frame_count / 15,
+            g_runloop.frames.video.count / 15, path, selected);
+      menu_animation_ticker_line(type_str_buf, w, g_runloop.frames.video.count / 15,
             type_str, selected);
 
       snprintf(message, sizeof(message), "%c %s",
