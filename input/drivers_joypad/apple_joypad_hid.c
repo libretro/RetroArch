@@ -244,8 +244,8 @@ static bool apple_hid_init(void)
     
     IOHIDManagerRegisterDeviceMatchingCallback(g_hid_manager,
                                                add_device, 0);
-    IOHIDManagerScheduleWithRunLoop(g_hid_manager, CFRunLoopGetMain(),
-                                    kCFRunLoopCommonModes);
+    IOHIDManagerScheduleWithRunLoop(g_hid_manager, CFRunLoopGetCurrent(),
+                                    kCFRunLoopDefaultMode);
     
     IOHIDManagerOpen(g_hid_manager, kIOHIDOptionsTypeNone);
     
