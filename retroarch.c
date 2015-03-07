@@ -2138,7 +2138,6 @@ static bool rarch_update_system_info(struct retro_system_info *_info,
       bool *load_no_content)
 {
 #if defined(HAVE_DYNAMIC)
-   libretro_free_system_info(_info);
    if (!(*g_settings.libretro))
       return false;
 
@@ -2189,7 +2188,13 @@ bool rarch_main_command(unsigned cmd)
          rarch_main_command(RARCH_CMD_QUIT);
 #endif
          break;
+      case RARCH_CMD_LOAD_CORE_DEINIT:
+#ifdef HAVE_DYNAMIC
+         libretro_free_system_info(&g_extern.menu.info);
+#endif
+         break;
       case RARCH_CMD_LOAD_CORE_PERSIST:
+         rarch_main_command(RARCH_CMD_LOAD_CORE_DEINIT);
          {
 #ifdef HAVE_MENU
             menu_handle_t *menu = menu_driver_resolve();
