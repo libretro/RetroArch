@@ -422,12 +422,15 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata)
   mem_size = geom->max_width * geom->max_height *
              pdata->bpp * pdata->num_pages;
 
-  mi.size = mem_size;
-
-  if (ioctl(pdata->fd, OMAPFB_SETUP_MEM, &mi) != 0)
+  if (mi.size < mem_size)
   {
-    RARCH_ERR("video_omap: allocation of %u bytes of VRAM failed\n", mem_size);
-    return -1;
+    mi.size = mem_size;
+
+    if (ioctl(pdata->fd, OMAPFB_SETUP_MEM, &mi) != 0)
+    {
+      RARCH_ERR("video_omap: allocation of %u bytes of VRAM failed\n", mem_size);
+      return -1;
+    }
   }
 
   mem = mmap(NULL, mi.size, PROT_WRITE|PROT_READ, MAP_SHARED, pdata->fd, 0);
