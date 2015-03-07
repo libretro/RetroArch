@@ -463,7 +463,7 @@ error:
    return (void*)-1;
 }
 
-#define DISPLAY_FPS
+//#define DISPLAY_FPS
 
 static bool psp_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
