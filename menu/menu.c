@@ -105,7 +105,7 @@ static void push_to_history_playlist(void)
 
       fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
       snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
-      msg_queue_push(g_extern.msg_queue, str, 1, 1);
+      msg_queue_push(g_runloop.msg_queue, str, 1, 1);
    }
 
    content_playlist_push(g_defaults.history,
@@ -143,7 +143,7 @@ bool menu_load_content(void)
 
       fill_pathname_base(name, g_extern.fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
-      msg_queue_push(g_extern.msg_queue, msg, 1, 90);
+      msg_queue_push(g_runloop.msg_queue, msg, 1, 90);
 
       if (driver.menu)
          driver.menu->msg_force = true;

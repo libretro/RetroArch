@@ -44,7 +44,7 @@ bool screenshot_dump(const char *folder, const void *frame,
    if(ret == S_OK)
    {
       RARCH_LOG("Screenshot saved: %s.\n", filename);
-      msg_queue_push(g_extern.msg_queue, "Screenshot saved.", 1, 30);
+      msg_queue_push(g_runloop.msg_queue, "Screenshot saved.", 1, 30);
       return true;
    }
 

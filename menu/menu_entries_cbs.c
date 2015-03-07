@@ -115,8 +115,8 @@ int cb_core_updater_download(void *data_, size_t len)
    snprintf(msg, sizeof(msg), "Download complete: %s.",
          core_updater_path);
 
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, msg, 1, 90);
+   msg_queue_clear(g_runloop.msg_queue);
+   msg_queue_push(g_runloop.msg_queue, msg, 1, 90);
 
 #ifdef HAVE_ZLIB
    file_ext = path_get_extension(output_path);

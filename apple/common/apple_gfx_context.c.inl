@@ -283,7 +283,7 @@ static void apple_gfx_ctx_update_window_title(void *data)
    if (got_text)
        [[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
     if (g_settings.fps_show)
-        msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+        msg_queue_push(g_runloop.msg_queue, buf_fps, 1, 1);
 #endif
 }
 

@@ -33,6 +33,7 @@
  * with special #ifdefs.
  */
 struct settings g_settings;
+struct runloop g_runloop;
 struct global g_extern;
 driver_t driver;
 

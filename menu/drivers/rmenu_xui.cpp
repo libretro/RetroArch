@@ -461,7 +461,7 @@ static void rmenu_xui_frame(void)
       xui_render_message(message);
    else
    {
-      const char *message = msg_queue_pull(g_extern.msg_queue);
+      const char *message = msg_queue_pull(g_runloop.msg_queue);
       if (message)
          xui_render_message(message);
    }

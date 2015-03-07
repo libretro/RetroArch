@@ -201,7 +201,7 @@ static void gfx_ctx_glx_update_window_title(void *data)
             g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps)))
       XStoreName(glx->g_dpy, glx->g_win, buf);
    if (g_settings.fps_show)
-      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+      msg_queue_push(g_runloop.msg_queue, buf_fps, 1, 1);
 }
 
 static void gfx_ctx_glx_get_video_size(void *data,

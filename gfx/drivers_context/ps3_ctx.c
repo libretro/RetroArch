@@ -224,7 +224,7 @@ static void gfx_ctx_ps3_update_window_title(void *data)
    video_monitor_get_fps(buf, sizeof(buf),
          g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps));
    if (g_settings.fps_show)
-      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+      msg_queue_push(g_runloop.msg_queue, buf_fps, 1, 1);
 }
 
 static void gfx_ctx_ps3_get_video_size(void *data,

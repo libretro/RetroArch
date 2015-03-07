@@ -136,7 +136,7 @@ static void video_frame(const void *data, unsigned width,
       )
       recording_dump_frame(data, width, height, pitch);
 
-   msg                = msg_queue_pull(g_extern.msg_queue);
+   msg                = msg_queue_pull(g_runloop.msg_queue);
    driver.current_msg = msg;
 
    if (video_frame_filter(data, width, height, pitch,

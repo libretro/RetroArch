@@ -122,8 +122,8 @@ struct netplay
 static void warn_hangup(void)
 {
    RARCH_WARN("Netplay has disconnected. Will continue without connection ...\n");
-   if (g_extern.msg_queue)
-      msg_queue_push(g_extern.msg_queue, "Netplay has disconnected. Will continue without connection.", 0, 480);
+   if (g_runloop.msg_queue)
+      msg_queue_push(g_runloop.msg_queue, "Netplay has disconnected. Will continue without connection.", 0, 480);
 }
 
 /**
@@ -279,7 +279,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
          netplay->flip_frame = flip_frame;
 
          RARCH_LOG("Netplay users are flipped.\n");
-         msg_queue_push(g_extern.msg_queue, "Netplay users are flipped.", 1, 180);
+         msg_queue_push(g_runloop.msg_queue, "Netplay users are flipped.", 1, 180);
 
          return netplay_cmd_ack(netplay);
 
@@ -606,7 +606,7 @@ static void log_connection(const struct sockaddr_storage *their_addr,
       char msg[512];
       snprintf(msg, sizeof(msg), "Got connection from: \"%s (%s)\" (#%u)",
             nick, str, slot);
-      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
       RARCH_LOG("%s\n", msg);
    }
 }
@@ -912,7 +912,7 @@ static bool send_info(netplay_t *netplay)
 
    snprintf(msg, sizeof(msg), "Connected to: \"%s\"", netplay->other_nick);
    RARCH_LOG("%s\n", msg);
-   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
 
    return true;
 }
@@ -1062,7 +1062,7 @@ static bool get_info_spectate(netplay_t *netplay)
    }
 
    snprintf(msg, sizeof(msg), "Connected to \"%s\"", netplay->other_nick);
-   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
    RARCH_LOG("%s\n", msg);
 
 
@@ -1265,7 +1265,7 @@ void netplay_flip_users(netplay_t *netplay)
          && netplay_get_response(netplay))
    {
       RARCH_LOG("Netplay users are flipped.\n");
-      msg_queue_push(g_extern.msg_queue, "Netplay users are flipped.", 1, 180);
+      msg_queue_push(g_runloop.msg_queue, "Netplay users are flipped.", 1, 180);
 
       /* Queue up a flip well enough in the future. */
       netplay->flip ^= true;
@@ -1281,7 +1281,7 @@ void netplay_flip_users(netplay_t *netplay)
 
 error:
    RARCH_WARN("%s\n", msg);
-   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
 }
 
 /**
@@ -1367,8 +1367,8 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
       return swap_if_big16(inp);
 
    RARCH_ERR("Connection with host was cut.\n");
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue,
+   msg_queue_clear(g_runloop.msg_queue);
+   msg_queue_push(g_runloop.msg_queue,
          "Connection with host was cut.", 1, 180);
 
    pretro_set_input_state(netplay->cbs.state_cb);
@@ -1586,7 +1586,7 @@ static void netplay_post_frame_spectate(netplay_t *netplay)
       RARCH_LOG("Client (#%u) disconnected ...\n", i);
 
       snprintf(msg, sizeof(msg), "Client (#%u) disconnected.", i);
-      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
 
       socket_close(netplay->spectate_fds[i]);
       netplay->spectate_fds[i] = -1;

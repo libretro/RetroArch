@@ -137,8 +137,8 @@ int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl)
       snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
             dbl->list_ptr, dbl->list->size, name);
 
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      msg_queue_clear(g_runloop.msg_queue);
+      msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
 
       crc = crc32_calculate(ret_buf, ret);
 

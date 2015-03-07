@@ -145,7 +145,7 @@ static void gfx_ctx_d3d_update_title(void *data)
             stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
       strlcat(buffer_fps, mem, sizeof(buffer_fps));
 #endif
-      msg_queue_push(g_extern.msg_queue, buffer_fps, 1, 1);
+      msg_queue_push(g_runloop.msg_queue, buffer_fps, 1, 1);
    }
 
 #ifndef _XBOX

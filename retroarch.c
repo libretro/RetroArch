@@ -939,7 +939,7 @@ static void init_movie(void)
       }
 
       g_extern.bsv.movie_playback = true;
-      msg_queue_push(g_extern.msg_queue, "Starting movie playback.", 2, 180);
+      msg_queue_push(g_runloop.msg_queue, "Starting movie playback.", 2, 180);
       RARCH_LOG("Starting movie playback.\n");
       g_settings.rewind_granularity = 1;
    }
@@ -949,17 +949,17 @@ static void init_movie(void)
       snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".",
             g_extern.bsv.movie_start_path);
 
-      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_clear(g_runloop.msg_queue);
 
       if (!(g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path,
                   RARCH_MOVIE_RECORD)))
       {
-         msg_queue_push(g_extern.msg_queue, "Failed to start movie record.", 1, 180);
+         msg_queue_push(g_runloop.msg_queue, "Failed to start movie record.", 1, 180);
          RARCH_ERR("Failed to start movie record.\n");
          return;
       }
 
-      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
       RARCH_LOG("Starting movie record to \"%s\".\n",
             g_extern.bsv.movie_start_path);
       g_settings.rewind_granularity = 1;
@@ -1014,8 +1014,8 @@ static bool init_netplay(void)
    g_extern.netplay_is_client = false;
    RARCH_WARN(RETRO_LOG_INIT_NETPLAY_FAILED);
 
-   if (g_extern.msg_queue)
-      msg_queue_push(g_extern.msg_queue,
+   if (g_runloop.msg_queue)
+      msg_queue_push(g_runloop.msg_queue,
             RETRO_MSG_INIT_NETPLAY_FAILED,
             0, 180);
    return false;
@@ -1268,7 +1268,7 @@ static void load_auto_state(void)
 
    snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" %s.",
          savestate_name_auto, ret ? "succeeded" : "failed");
-   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
    RARCH_LOG("%s\n", msg);
 }
 
@@ -1367,8 +1367,8 @@ static void main_state(unsigned cmd)
    else
       strlcpy(msg, "Core does not support save states.", sizeof(msg));
 
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, msg, 2, 180);
+   msg_queue_clear(g_runloop.msg_queue);
+   msg_queue_push(g_runloop.msg_queue, msg, 2, 180);
    RARCH_LOG("%s\n", msg);
 }
 
@@ -1398,8 +1398,8 @@ void rarch_disk_control_append_image(const char *path)
 
    snprintf(msg, sizeof(msg), "Appended disk: %s", path);
    RARCH_LOG("%s\n", msg);
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, msg, 0, 180);
+   msg_queue_clear(g_runloop.msg_queue);
+   msg_queue_push(g_runloop.msg_queue, msg, 0, 180);
 
    rarch_main_command(RARCH_CMD_AUTOSAVE_DEINIT);
 
@@ -1460,8 +1460,8 @@ void rarch_disk_control_set_eject(bool new_state, bool print_log)
       /* Only noise in menu. */
       if (print_log)
       {
-         msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+         msg_queue_clear(g_runloop.msg_queue);
+         msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
       }
    }
 }
@@ -1511,8 +1511,8 @@ void rarch_disk_control_set_index(unsigned idx)
          RARCH_ERR("%s\n", msg);
       else
          RARCH_LOG("%s\n", msg);
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+      msg_queue_clear(g_runloop.msg_queue);
+      msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
    }
 }
 
@@ -2058,8 +2058,8 @@ static bool save_core_config(void)
    else
    {
       const char *message = "Config directory not set. Cannot save new config.";
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, message, 1, 180);
+      msg_queue_clear(g_runloop.msg_queue);
+      msg_queue_push(g_runloop.msg_queue, message, 1, 180);
       RARCH_ERR("%s\n", message);
       return false;
    }
@@ -2121,8 +2121,8 @@ static bool save_core_config(void)
       RARCH_ERR("%s\n", msg);
    }
 
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   msg_queue_clear(g_runloop.msg_queue);
+   msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
 
    return ret;
 }
@@ -2208,8 +2208,8 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_RESET:
          RARCH_LOG(RETRO_LOG_RESETTING_CONTENT);
-         msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, "Reset.", 1, 120);
+         msg_queue_clear(g_runloop.msg_queue);
+         msg_queue_push(g_runloop.msg_queue, "Reset.", 1, 120);
          pretro_reset();
 
          /* bSNES since v073r01 resets controllers to JOYPAD
@@ -2337,8 +2337,8 @@ bool rarch_main_command(unsigned cmd)
                return false;
             }
 
-            msg_queue_clear(g_extern.msg_queue);
-            msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+            msg_queue_clear(g_runloop.msg_queue);
+            msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
             RARCH_LOG("%s\n", msg);
          }
          break;
@@ -2602,22 +2602,22 @@ bool rarch_main_command(unsigned cmd)
             rarch_main_command(RARCH_CMD_AUTOSAVE_INIT);
          break;
       case RARCH_CMD_MSG_QUEUE_DEINIT:
-         if (g_extern.msg_queue)
-            msg_queue_free(g_extern.msg_queue);
-         g_extern.msg_queue = NULL;
+         if (g_runloop.msg_queue)
+            msg_queue_free(g_runloop.msg_queue);
+         g_runloop.msg_queue = NULL;
          break;
       case RARCH_CMD_MSG_QUEUE_INIT:
          rarch_main_command(RARCH_CMD_MSG_QUEUE_DEINIT);
-         if (!g_extern.msg_queue)
-            rarch_assert(g_extern.msg_queue = msg_queue_new(8));
+         if (!g_runloop.msg_queue)
+            rarch_assert(g_runloop.msg_queue = msg_queue_new(8));
 #ifdef HAVE_NETWORKING
-         if (!g_extern.http.msg_queue)
-            rarch_assert(g_extern.http.msg_queue = msg_queue_new(8));
+         if (!g_runloop.http.msg_queue)
+            rarch_assert(g_runloop.http.msg_queue = msg_queue_new(8));
 #endif
-         if (!g_extern.nbio.msg_queue)
-            rarch_assert(g_extern.nbio.msg_queue = msg_queue_new(8));
-         if (!g_extern.nbio.image.msg_queue)
-            rarch_assert(g_extern.nbio.image.msg_queue = msg_queue_new(8));
+         if (!g_runloop.nbio.msg_queue)
+            rarch_assert(g_runloop.nbio.msg_queue = msg_queue_new(8));
+         if (!g_runloop.nbio.image.msg_queue)
+            rarch_assert(g_runloop.nbio.image.msg_queue = msg_queue_new(8));
          break;
       case RARCH_CMD_BSV_MOVIE_DEINIT:
          if (g_extern.bsv.movie)
@@ -2719,8 +2719,8 @@ bool rarch_main_command(unsigned cmd)
          }
          else
          {
-            msg_queue_clear(g_extern.msg_queue);
-            msg_queue_push(g_extern.msg_queue, "Core does not support Disk Options.", 1, 120);
+            msg_queue_clear(g_runloop.msg_queue);
+            msg_queue_push(g_runloop.msg_queue, "Core does not support Disk Options.", 1, 120);
          }
          break;
       case RARCH_CMD_DISK_NEXT:
@@ -2740,8 +2740,8 @@ bool rarch_main_command(unsigned cmd)
          }
          else
          {
-            msg_queue_clear(g_extern.msg_queue);
-            msg_queue_push(g_extern.msg_queue, "Core does not support Disk Options.", 1, 120);
+            msg_queue_clear(g_runloop.msg_queue);
+            msg_queue_push(g_runloop.msg_queue, "Core does not support Disk Options.", 1, 120);
          }
          break;
       case RARCH_CMD_DISK_PREV:
@@ -2761,8 +2761,8 @@ bool rarch_main_command(unsigned cmd)
          }
          else
          {
-            msg_queue_clear(g_extern.msg_queue);
-            msg_queue_push(g_extern.msg_queue, "Core does not support Disk Options.", 1, 120);
+            msg_queue_clear(g_runloop.msg_queue);
+            msg_queue_push(g_runloop.msg_queue, "Core does not support Disk Options.", 1, 120);
          }
          break;
       case RARCH_CMD_RUMBLE_STOP:

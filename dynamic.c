@@ -674,10 +674,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const struct retro_message *msg = (const struct retro_message*)data;
          RARCH_LOG("Environ SET_MESSAGE: %s\n", msg->msg);
-         if (g_extern.msg_queue)
+         if (g_runloop.msg_queue)
          {
-            msg_queue_clear(g_extern.msg_queue);
-            msg_queue_push(g_extern.msg_queue, msg->msg, 1, msg->frames);
+            msg_queue_clear(g_runloop.msg_queue);
+            msg_queue_push(g_runloop.msg_queue, msg->msg, 1, msg->frames);
          }
          break;
       }

@@ -59,7 +59,7 @@ void video_monitor_set_refresh_rate(float hz)
 {
    char msg[PATH_MAX_LENGTH];
    snprintf(msg, sizeof(msg), "Setting refresh rate to: %.3f Hz.", hz);
-   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
    RARCH_LOG("%s\n", msg);
 
    g_settings.video.refresh_rate = hz;

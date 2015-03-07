@@ -147,7 +147,8 @@ bool driver_location_start(void)
       if (g_settings.location.allow)
          return driver.location->start(driver.location_data);
 
-      msg_queue_push(g_extern.msg_queue, "Location is explicitly disabled.\n", 1, 180);
+      msg_queue_clear(g_runloop.msg_queue);
+      msg_queue_push(g_runloop.msg_queue, "Location is explicitly disabled.\n", 1, 180);
    }
    return false;
 }

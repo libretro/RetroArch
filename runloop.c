@@ -59,8 +59,8 @@ static void set_volume(float gain)
    g_settings.audio.volume = min(g_settings.audio.volume, 12.0f);
 
    snprintf(msg, sizeof(msg), "Volume: %.1f dB", g_settings.audio.volume);
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   msg_queue_clear(g_runloop.msg_queue);
+   msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
    RARCH_LOG("%s\n", msg);
 
    g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
@@ -174,15 +174,13 @@ static void check_stateslots(bool pressed_increase, bool pressed_decrease)
    else
       return;
 
-
-   if (g_extern.msg_queue)
-      msg_queue_clear(g_extern.msg_queue);
+   msg_queue_clear(g_runloop.msg_queue);
 
    snprintf(msg, sizeof(msg), "State slot: %d",
          g_settings.state_slot);
 
-   if (g_extern.msg_queue)
-      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+   if (g_runloop.msg_queue)
+      msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
 
    RARCH_LOG("%s\n", msg);
 }
@@ -239,13 +237,13 @@ static void check_rewind(bool pressed)
    {
       const void *buf = NULL;
 
-      msg_queue_clear(g_extern.msg_queue);
+      msg_queue_clear(g_runloop.msg_queue);
       if (state_manager_pop(g_extern.rewind.state, &buf))
       {
          g_extern.rewind.frame_is_reverse = true;
          setup_rewind_audio();
 
-         msg_queue_push(g_extern.msg_queue, RETRO_MSG_REWINDING, 0,
+         msg_queue_push(g_runloop.msg_queue, RETRO_MSG_REWINDING, 0,
                g_runloop.is_paused ? 1 : 30);
          pretro_unserialize(buf, g_extern.rewind.size);
 
@@ -253,7 +251,7 @@ static void check_rewind(bool pressed)
             bsv_movie_frame_rewind(g_extern.bsv.movie);
       }
       else
-         msg_queue_push(g_extern.msg_queue,
+         msg_queue_push(g_runloop.msg_queue,
                RETRO_MSG_REWIND_REACHED_END, 0, 30);
    }
    else
@@ -296,8 +294,8 @@ static void check_slowmotion(bool pressed)
    if (g_settings.video.black_frame_insertion)
       rarch_render_cached_frame();
 
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, g_extern.rewind.frame_is_reverse ?
+   msg_queue_clear(g_runloop.msg_queue);
+   msg_queue_push(g_runloop.msg_queue, g_extern.rewind.frame_is_reverse ?
          "Slow motion rewind." : "Slow motion.", 0, 30);
 }
 
@@ -329,8 +327,8 @@ static bool check_movie_init(void)
    if (!g_extern.bsv.movie)
       ret = false;
 
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ?
+   msg_queue_clear(g_runloop.msg_queue);
+   msg_queue_push(g_runloop.msg_queue, g_extern.bsv.movie ?
          msg : "Failed to start movie record.", 1, 180);
 
    if (g_extern.bsv.movie)
@@ -353,8 +351,8 @@ static bool check_movie_record(void)
    if (!g_extern.bsv.movie)
       return false;
 
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue,
+   msg_queue_clear(g_runloop.msg_queue);
+   msg_queue_push(g_runloop.msg_queue,
          RETRO_MSG_MOVIE_RECORD_STOPPING, 2, 180);
    RARCH_LOG(RETRO_LOG_MOVIE_RECORD_STOPPING);
 
@@ -375,7 +373,7 @@ static bool check_movie_playback(void)
    if (!g_extern.bsv.movie_end)
       return false;
 
-   msg_queue_push(g_extern.msg_queue,
+   msg_queue_push(g_runloop.msg_queue,
          RETRO_MSG_MOVIE_PLAYBACK_ENDED, 1, 180);
    RARCH_LOG(RETRO_LOG_MOVIE_PLAYBACK_ENDED);
 
@@ -441,11 +439,11 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
    else
       return;
 
-   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_clear(g_runloop.msg_queue);
 
    snprintf(msg, sizeof(msg), "Shader #%u: \"%s\".",
          (unsigned)g_extern.shader_dir.ptr, shader);
-   msg_queue_push(g_extern.msg_queue, msg, 1, 120);
+   msg_queue_push(g_runloop.msg_queue, msg, 1, 120);
    RARCH_LOG("Applying shader \"%s\".\n", shader);
 
    if (!video_driver_set_shader(type, shader))

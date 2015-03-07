@@ -91,7 +91,7 @@ found:
          idx, name);
 
    if (!block_osd_spam)
-      msg_queue_push(g_extern.msg_queue, msg, 0, 60);
+      msg_queue_push(g_runloop.msg_queue, msg, 0, 60);
    RARCH_LOG("%s\n", msg);
 
    return true;

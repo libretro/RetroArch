@@ -230,10 +230,10 @@ static bool cmd_set_shader(const char *arg)
    if (type == RARCH_SHADER_NONE)
       return false;
 
-   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_clear(g_runloop.msg_queue);
 
    snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
-   msg_queue_push(g_extern.msg_queue, msg, 1, 120);
+   msg_queue_push(g_runloop.msg_queue, msg, 1, 120);
    RARCH_LOG("Applying shader \"%s\".\n", arg);
 
    return driver.video->set_shader(driver.video_data, type, arg);

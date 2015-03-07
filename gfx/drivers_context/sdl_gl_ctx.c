@@ -291,7 +291,7 @@ static void sdl_ctx_update_window_title(void *data)
 #endif
    }
    if (g_settings.fps_show)
-      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
+      msg_queue_push(g_runloop.msg_queue, buf_fps, 1, 1);
 }
 
 static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *width,

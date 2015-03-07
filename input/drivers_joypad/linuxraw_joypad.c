@@ -97,7 +97,7 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
          {
             char msg[512];
             snprintf(msg, sizeof(msg), "Joypad #%u (%s) connected.", (unsigned)(pad - linuxraw_pads), pad->ident);
-            msg_queue_push(g_extern.msg_queue, msg, 0, 60);
+            msg_queue_push(g_runloop.msg_queue, msg, 0, 60);
          }
 #endif
       }
@@ -153,7 +153,7 @@ static void handle_plugged_pad(void)
                {
                   char msg[512];
                   snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", idx, linuxraw_pads[idx].ident);
-                  msg_queue_push(g_extern.msg_queue, msg, 0, 60);
+                  msg_queue_push(g_runloop.msg_queue, msg, 0, 60);
                }
 #endif
 

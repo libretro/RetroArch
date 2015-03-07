@@ -444,7 +444,7 @@ static void rgui_render(void)
 
    if (menu->msg_force)
    {
-      message_queue = msg_queue_pull(g_extern.msg_queue);
+      message_queue = msg_queue_pull(g_runloop.msg_queue);
       menu->msg_force = false;
    }
    else

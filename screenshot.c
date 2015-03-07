@@ -258,7 +258,7 @@ bool take_screenshot(void)
       driver.video->viewport_info;
 
    /* Clear out message queue to avoid OSD fonts to appear on screenshot. */
-   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_clear(g_runloop.msg_queue);
 
    if (viewport_read)
    {
@@ -292,7 +292,7 @@ bool take_screenshot(void)
       msg = RETRO_MSG_TAKE_SCREENSHOT_FAILED;
    }
 
-   msg_queue_push(g_extern.msg_queue, msg, 1, g_runloop.is_paused ? 1 : 180);
+   msg_queue_push(g_runloop.msg_queue, msg, 1, g_runloop.is_paused ? 1 : 180);
 
    if (g_runloop.is_paused)
       rarch_render_cached_frame();
