@@ -2436,7 +2436,7 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_CORE_INFO_INIT:
          rarch_main_command(RARCH_CMD_CORE_INFO_DEINIT);
 
-         if (*g_settings.libretro_directory && !g_extern.core_info)
+         if (*g_settings.libretro_directory)
             g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
          break;
       case RARCH_CMD_CORE_DEINIT:

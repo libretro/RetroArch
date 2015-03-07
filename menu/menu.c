@@ -63,10 +63,7 @@ void menu_update_libretro_info(struct retro_system_info *info)
    retro_get_system_info(info);
 #endif
 
-   core_info_list_free(g_extern.core_info);
-   g_extern.core_info = NULL;
-   if (*g_settings.libretro_directory)
-      g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
+   rarch_main_command(RARCH_CMD_CORE_INFO_INIT);
    if (driver.menu_ctx && driver.menu_ctx->context_reset)
       driver.menu_ctx->context_reset();
 
