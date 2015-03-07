@@ -1761,7 +1761,7 @@ static void validate_cpu_features(void)
 static void init_system_av_info(void)
 {
    pretro_get_system_av_info(&g_extern.system.av_info);
-   g_extern.frame_limit.last_frame_time = rarch_get_time_usec();
+   g_runloop.frames.limit.last_time = rarch_get_time_usec();
 }
 
 static void deinit_core(void)

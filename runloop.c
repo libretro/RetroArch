@@ -698,23 +698,23 @@ static void limit_frame_time(void)
       * g_settings.fastforward_ratio;
    mft_f         = 1000000.0f / effective_fps;
 
-   g_extern.frame_limit.minimum_frame_time = (retro_time_t) roundf(mft_f);
+   g_runloop.frames.limit.minimum_time = (retro_time_t) roundf(mft_f);
 
-   target        = g_extern.frame_limit.last_frame_time + 
-                   g_extern.frame_limit.minimum_frame_time;
+   target        = g_runloop.frames.limit.last_time + 
+                   g_runloop.frames.limit.minimum_time;
    to_sleep_ms   = (target - current) / 1000;
 
    if (to_sleep_ms <= 0)
    {
-      g_extern.frame_limit.last_frame_time = rarch_get_time_usec();
+      g_runloop.frames.limit.last_time = rarch_get_time_usec();
       return;
    }
 
    rarch_sleep((unsigned int)to_sleep_ms);
 
    /* Combat jitter a bit. */
-   g_extern.frame_limit.last_frame_time += 
-      g_extern.frame_limit.minimum_frame_time;
+   g_runloop.frames.limit.last_time += 
+      g_runloop.frames.limit.minimum_time;
 }
 
 /**

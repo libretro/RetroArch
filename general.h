@@ -461,6 +461,12 @@ struct runloop
          unsigned count;
          unsigned max;
       } video;
+
+      struct
+      {
+         retro_time_t minimum_time;
+         retro_time_t last_time;
+      } limit;
    } frames;
 
    struct
@@ -558,11 +564,6 @@ struct global
       unsigned windowed_scale;
    } pending;
 
-   struct
-   {
-      retro_time_t minimum_frame_time;
-      retro_time_t last_frame_time;
-   } frame_limit;
 
    struct
    {
