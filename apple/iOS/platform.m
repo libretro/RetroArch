@@ -268,27 +268,11 @@ void notify_content_loaded(void) {
    [self apple_start_iteration];
 }
 
-#if 0
-- (void) poll_iteration
-{
-    UIEvent *event;
-    
-    do
-    {
-        event = [UIApplication nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
-        
-        
-        [UIApplication sendEvent: event];
-    }while(event != nil);
-}
-#endif
-
 - (void) do_iteration
 {
     int ret = 0;
     while (ret != -1)
     {
-        //[self poll_iteration];
         ret = rarch_main_iterate();
         while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
     }
