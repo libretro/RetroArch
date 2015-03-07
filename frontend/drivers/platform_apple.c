@@ -87,7 +87,7 @@ static void do_iteration(void)
       main_exit, WAIT doesn't wake up the loop, and AGAIN does. It
       would then return AGAIN when a core was active. An ugly way to
       get the same effect is to look have this code just look at
-      g_extern.is_menu and use the WAIT behavior in that case.
+      g_runloop.is_menu and use the WAIT behavior in that case.
 
       Approach 2: Instead of signalling outside of RA whether a core
       is running, instead externalize the frame time that is inside

@@ -68,7 +68,7 @@ void engine_handle_cmd(void *data)
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
-         if (g_extern.is_paused)
+         if (g_runloop.is_paused)
             rarch_main_command(RARCH_CMD_REINIT);
          break;
 
@@ -95,7 +95,7 @@ void engine_handle_cmd(void *data)
          if (!g_extern.system.shutdown)
          {
             RARCH_LOG("Pausing RetroArch.\n");
-            g_extern.is_paused = true;
+            g_runloop.is_paused = true;
          }
          break;
 
@@ -124,7 +124,7 @@ void engine_handle_cmd(void *data)
          break;
 
       case APP_CMD_GAINED_FOCUS:
-         g_extern.is_paused = false;
+         g_runloop.is_paused = false;
 
          if ((android_app->sensor_state_mask 
                   & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))

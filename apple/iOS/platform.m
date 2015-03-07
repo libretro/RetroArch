@@ -312,12 +312,12 @@ void notify_content_loaded(void) {
    [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[RAGameView get]];
-   g_extern.is_paused = false;
+   g_runloop.is_paused = false;
 }
 
 - (IBAction)showPauseMenu:(id)sender
 {
-   g_extern.is_paused = true;
+   g_runloop.is_paused = true;
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:false];
    [self.window setRootViewController:self];

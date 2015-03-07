@@ -396,7 +396,7 @@ int menu_iterate(retro_input_t input,
          ret = driver.menu_ctx->entry_iterate(action);
    }
 
-   if (g_extern.is_menu)
+   if (g_runloop.is_menu)
       draw_frame();
    if (g_settings.menu.throttle && (g_settings.menu.pause_libretro || !g_extern.content_is_init))
       draw_frame();

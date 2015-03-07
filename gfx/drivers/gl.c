@@ -1585,7 +1585,7 @@ static bool gl_frame(void *data, const void *frame,
    gl_set_prev_texture(gl, &gl->tex_info);
 
 #if defined(HAVE_MENU)
-   if (g_extern.is_menu
+   if (g_runloop.is_menu
          && driver.menu_ctx && driver.menu_ctx->frame)
       driver.menu_ctx->frame();
 
@@ -1641,8 +1641,8 @@ static bool gl_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (g_settings.video.black_frame_insertion &&
-         !driver.nonblock_state && !g_extern.is_slowmotion
-         && !g_extern.is_paused)
+         !driver.nonblock_state && !g_runloop.is_slowmotion
+         && !g_runloop.is_paused)
    {
       gl->ctx_driver->swap_buffers(gl);
       glClear(GL_COLOR_BUFFER_BIT);

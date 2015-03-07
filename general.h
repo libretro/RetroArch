@@ -424,6 +424,16 @@ typedef struct nbio_handle
    msg_queue_t *msg_queue;
 } nbio_handle_t;
 
+/* All runloop-related globals go here. */
+
+struct runloop
+{
+   /* Lifecycle state checks. */
+   bool is_paused;
+   bool is_menu;
+   bool is_slowmotion;
+};
+
 /* All run-time- / command line flag-related globals go here. */
 
 struct global
@@ -655,10 +665,6 @@ struct global
    bool sram_save_disable;
    bool use_sram;
 
-   /* Lifecycle state checks. */
-   bool is_paused;
-   bool is_menu;
-   bool is_slowmotion;
 
    /* Turbo support. */
    bool turbo_frame_enable[MAX_USERS];
@@ -780,6 +786,7 @@ struct global
 
 /* Public data structures. */
 extern struct settings g_settings;
+extern struct runloop g_runloop;
 extern struct global g_extern;
 extern struct defaults g_defaults;
 

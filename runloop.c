@@ -80,11 +80,11 @@ static bool check_pause(bool pressed, bool frameadvance_pressed)
 {
    static bool old_focus    = true;
    bool focus               = true;
-   bool old_is_paused       = g_extern.is_paused;
+   bool old_is_paused       = g_runloop.is_paused;
    unsigned cmd             = RARCH_CMD_NONE;
 
    /* FRAMEADVANCE will set us into pause mode. */
-   pressed |= !g_extern.is_paused && frameadvance_pressed;
+   pressed |= !g_runloop.is_paused && frameadvance_pressed;
 
    if (g_settings.pause_nonactive)
       focus = video_driver_has_focus();
@@ -101,7 +101,7 @@ static bool check_pause(bool pressed, bool frameadvance_pressed)
    if (cmd != RARCH_CMD_NONE)
       rarch_main_command(cmd);
 
-   if (g_extern.is_paused == old_is_paused)
+   if (g_runloop.is_paused == old_is_paused)
       return false;
 
    return true;
@@ -246,7 +246,7 @@ static void check_rewind(bool pressed)
          setup_rewind_audio();
 
          msg_queue_push(g_extern.msg_queue, RETRO_MSG_REWINDING, 0,
-               g_extern.is_paused ? 1 : 30);
+               g_runloop.is_paused ? 1 : 30);
          pretro_unserialize(buf, g_extern.rewind.size);
 
          if (g_extern.bsv.movie)
@@ -288,9 +288,9 @@ static void check_rewind(bool pressed)
  **/
 static void check_slowmotion(bool pressed)
 {
-   g_extern.is_slowmotion = pressed;
+   g_runloop.is_slowmotion = pressed;
 
-   if (!g_extern.is_slowmotion)
+   if (!g_runloop.is_slowmotion)
       return;
 
    if (g_settings.video.black_frame_insertion)
@@ -474,7 +474,7 @@ static void check_cheats(retro_input_t trigger_input)
 #ifdef HAVE_MENU
 static void do_state_check_menu_toggle(void)
 {
-   if (g_extern.is_menu)
+   if (g_runloop.is_menu)
    {
       if (g_extern.main_is_init && !g_extern.libretro_dummy)
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
@@ -506,7 +506,7 @@ static int do_pre_state_checks(
    if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))
       rarch_main_command(RARCH_CMD_OVERLAY_NEXT);
 
-   if (!g_extern.is_paused || g_extern.is_menu)
+   if (!g_runloop.is_paused || g_runloop.is_menu)
    {
       if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
          rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
@@ -543,7 +543,7 @@ static int do_pause_state_checks(
 {
    check_pause_func(trigger_input);
 
-   if (!g_extern.is_paused)
+   if (!g_runloop.is_paused)
       return 0;
 
    if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
@@ -667,13 +667,13 @@ static void update_frame_time(void)
 {
    retro_time_t curr_time = rarch_get_time_usec();
    retro_time_t delta     = curr_time - g_extern.system.frame_time_last;
-   bool is_locked_fps     = g_extern.is_paused || driver.nonblock_state;
+   bool is_locked_fps     = g_runloop.is_paused || driver.nonblock_state;
    is_locked_fps         |= !!driver.recording_data;
 
    if (!g_extern.system.frame_time_last || is_locked_fps)
       delta = g_extern.system.frame_time.reference;
 
-   if (!is_locked_fps && g_extern.is_slowmotion)
+   if (!is_locked_fps && g_runloop.is_slowmotion)
       delta /= g_settings.slowmotion_ratio;
 
    g_extern.system.frame_time_last = curr_time;
@@ -841,7 +841,7 @@ static bool input_flush(retro_input_t *input)
 
    /* If core was paused before entering menu, evoke
     * pause toggle to wake it up. */
-   if (g_extern.is_paused)
+   if (g_runloop.is_paused)
       BIT64_SET(*input, RARCH_PAUSE_TOGGLE);
 
    return true;
@@ -969,7 +969,7 @@ int rarch_main_iterate(void)
    do_data_state_checks();
 
 #ifdef HAVE_MENU
-   if (g_extern.is_menu)
+   if (g_runloop.is_menu)
    {
       menu_handle_t *menu = menu_driver_resolve();
       if (menu)

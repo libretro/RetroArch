@@ -557,7 +557,7 @@ static void rmenu_xui_render(void)
    if (!menu)
       return;
 	if (menu->need_refresh && 
-		g_extern.is_menu && !menu->msg_force)
+		g_runloop.is_menu && !menu->msg_force)
 		return;
 
 	rmenu_xui_render_background();

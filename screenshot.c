@@ -292,9 +292,9 @@ bool take_screenshot(void)
       msg = RETRO_MSG_TAKE_SCREENSHOT_FAILED;
    }
 
-   msg_queue_push(g_extern.msg_queue, msg, 1, g_extern.is_paused ? 1 : 180);
+   msg_queue_push(g_extern.msg_queue, msg, 1, g_runloop.is_paused ? 1 : 180);
 
-   if (g_extern.is_paused)
+   if (g_runloop.is_paused)
       rarch_render_cached_frame();
 
    return ret;

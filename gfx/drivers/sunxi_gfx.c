@@ -1381,7 +1381,7 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
       sunxi_layer_show(disp);
    }
 
-   page = sunxi_get_free_page((void*)_dispvars);
+   page = sunxi_get_free_page(_dispvars);
    sunxi_blit_flip(page, frame, _dispvars);
 
    return true;

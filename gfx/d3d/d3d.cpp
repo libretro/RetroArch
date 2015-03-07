@@ -1668,7 +1668,7 @@ static bool d3d_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_MENU
-   if (g_extern.is_menu 
+   if (g_runloop.is_menu 
          && driver.menu_ctx && driver.menu_ctx->frame)
       driver.menu_ctx->frame();
 

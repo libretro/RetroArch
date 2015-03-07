@@ -1622,6 +1622,7 @@ static void main_clear_state_extern(void)
    rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
 
    memset(&g_extern, 0, sizeof(g_extern));
+   memset(&g_runloop, 0, sizeof(g_runloop));
 }
 
 /**
@@ -1979,7 +1980,7 @@ void rarch_main_set_state(unsigned cmd)
 
             menu->need_refresh = true;
             g_extern.system.frame_time_last = 0;
-            g_extern.is_menu = true;
+            g_runloop.is_menu = true;
          }
 #endif
          break;
@@ -1999,7 +2000,7 @@ void rarch_main_set_state(unsigned cmd)
          if (driver.menu_ctx && driver.menu_ctx->toggle)
             driver.menu_ctx->toggle(false);
 
-         g_extern.is_menu = false;
+         g_runloop.is_menu = false;
 
          driver_set_nonblock_state(driver.nonblock_state);
 
@@ -2197,7 +2198,7 @@ bool rarch_main_command(unsigned cmd)
          g_extern.pending.windowed_scale = 0;
          break;
       case RARCH_CMD_MENU_TOGGLE:
-         if (g_extern.is_menu)
+         if (g_runloop.is_menu)
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
          else
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
@@ -2255,7 +2256,7 @@ bool rarch_main_command(unsigned cmd)
          driver.input->poll(driver.input_data);
 
 #ifdef HAVE_MENU
-         if (g_extern.is_menu)
+         if (g_runloop.is_menu)
              rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
 #endif
          break;
@@ -2512,7 +2513,7 @@ bool rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_PAUSE_CHECKS:
-         if (g_extern.is_paused)
+         if (g_runloop.is_paused)
          {
             RARCH_LOG("Paused.\n");
             rarch_main_command(RARCH_CMD_AUDIO_STOP);
@@ -2527,19 +2528,19 @@ bool rarch_main_command(unsigned cmd)
          }
          break;
       case RARCH_CMD_PAUSE_TOGGLE:
-         g_extern.is_paused = !g_extern.is_paused;
+         g_runloop.is_paused = !g_runloop.is_paused;
          rarch_main_command(RARCH_CMD_PAUSE_CHECKS);
          break;
       case RARCH_CMD_UNPAUSE:
-         g_extern.is_paused = false;
+         g_runloop.is_paused = false;
          rarch_main_command(RARCH_CMD_PAUSE_CHECKS);
          break;
       case RARCH_CMD_PAUSE:
-         g_extern.is_paused = true;
+         g_runloop.is_paused = true;
          rarch_main_command(RARCH_CMD_PAUSE_CHECKS);
          break;
       case RARCH_CMD_MENU_PAUSE_LIBRETRO:
-         if (g_extern.is_menu)
+         if (g_runloop.is_menu)
          {
             if (g_settings.menu.pause_libretro)
                rarch_main_command(RARCH_CMD_AUDIO_STOP);

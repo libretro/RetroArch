@@ -164,7 +164,7 @@ static void rmenu_render(void)
       return;
    }
 
-   if (menu->need_refresh && g_extern.is_menu
+   if (menu->need_refresh && g_runloop.is_menu
          && !menu->msg_force)
       return;
 

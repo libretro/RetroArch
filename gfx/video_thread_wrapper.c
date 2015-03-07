@@ -394,7 +394,7 @@ static bool thread_alive(void *data)
    bool ret;
    thread_video_t *thr = (thread_video_t*)data;
 
-   if (g_extern.is_paused)
+   if (g_runloop.is_paused)
    {
       thread_send_cmd(thr, CMD_ALIVE);
       thread_wait_reply(thr, CMD_ALIVE);

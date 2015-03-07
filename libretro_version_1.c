@@ -181,7 +181,7 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
          driver.recording->push_audio(driver.recording_data, &ffemu_data);
    }
 
-   if (g_extern.is_paused || g_settings.audio.mute_enable)
+   if (g_runloop.is_paused || g_settings.audio.mute_enable)
       return true;
    if (!driver.audio_active || !g_extern.audio_data.data)
       return false;
@@ -218,7 +218,7 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
       audio_driver_readjust_input_rate();
 
    src_data.ratio = g_extern.audio_data.src_ratio;
-   if (g_extern.is_slowmotion)
+   if (g_runloop.is_slowmotion)
       src_data.ratio *= g_settings.slowmotion_ratio;
 
    RARCH_PERFORMANCE_INIT(resampler_proc);
