@@ -525,7 +525,7 @@ void init_video(void)
    rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
    rarch_main_command(RARCH_CMD_OVERLAY_INIT);
 
-   g_extern.measure_data.frame_time_samples_count = 0;
+   g_runloop.measure_data.frame_time_samples_count = 0;
 
    g_extern.frame_cache.width = 4;
    g_extern.frame_cache.height = 4;

@@ -81,7 +81,7 @@ void video_monitor_compute_fps_statistics(void)
       return;
    }
 
-   if (g_extern.measure_data.frame_time_samples_count <
+   if (g_runloop.measure_data.frame_time_samples_count <
          2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
    {
       RARCH_LOG(
@@ -118,7 +118,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    unsigned i;
    retro_time_t accum = 0, avg, accum_var = 0;
    unsigned samples   = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
-         g_extern.measure_data.frame_time_samples_count);
+         g_runloop.measure_data.frame_time_samples_count);
 
    if (!g_settings.fps_monitor_enable || 
          g_settings.video.threaded || (samples < 2))
@@ -126,12 +126,12 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 
    /* Measure statistics on frame time (microsecs), *not* FPS. */
    for (i = 0; i < samples; i++)
-      accum += g_extern.measure_data.frame_time_samples[i];
+      accum += g_runloop.measure_data.frame_time_samples[i];
 
 #if 0
    for (i = 0; i < samples; i++)
       RARCH_LOG("Interval #%u: %d usec / frame.\n",
-            i, (int)g_extern.measure_data.frame_time_samples[i]);
+            i, (int)g_runloop.measure_data.frame_time_samples[i]);
 #endif
 
    avg = accum / samples;
@@ -139,7 +139,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    /* Drop first measurement. It is likely to be bad. */
    for (i = 0; i < samples; i++)
    {
-      retro_time_t diff = g_extern.measure_data.frame_time_samples[i] - avg;
+      retro_time_t diff = g_runloop.measure_data.frame_time_samples[i] - avg;
       accum_var += diff * diff;
    }
 
@@ -184,9 +184,9 @@ bool video_monitor_get_fps(char *buf, size_t size,
    {
       bool ret = false;
       unsigned write_index = 
-         g_extern.measure_data.frame_time_samples_count++ &
+         g_runloop.measure_data.frame_time_samples_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
-      g_extern.measure_data.frame_time_samples[write_index] = 
+      g_runloop.measure_data.frame_time_samples[write_index] = 
          new_time - fps_time;
       fps_time = new_time;
 

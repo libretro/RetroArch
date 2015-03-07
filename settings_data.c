@@ -384,7 +384,7 @@ static int setting_data_action_start_video_refresh_rate_auto(
    if (!setting)
       return -1;
 
-   g_extern.measure_data.frame_time_samples_count = 0;
+   g_runloop.measure_data.frame_time_samples_count = 0;
 
    return 0;
 }
