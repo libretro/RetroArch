@@ -26,6 +26,12 @@
 #include "../../general.h"
 #include "menu_input.h"
 
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifndef HAVE_SHADER_MANAGER
+#define HAVE_SHADER_MANAGER
+#endif
+#endif
+
 #ifndef GFX_MAX_SHADERS
 #define GFX_MAX_SHADERS 16
 #endif

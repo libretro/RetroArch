@@ -33,6 +33,8 @@
 
 #include "menu_database.h"
 
+#include "../gfx/video_shader_driver.h"
+
 #ifdef HAVE_LIBRETRODB
 static int create_string_list_rdb_entry_string(const char *desc, const char *label,
       const char *actual_string, const char *path, file_list_t *list)
@@ -1254,8 +1256,10 @@ static int deferred_push_options(void *data, void *userdata,
    }
    menu_list_push(list, "Video Options", "video_options",
          MENU_SETTING_ACTION, 0);
+#ifdef HAVE_SHADER_MANAGER
    menu_list_push(list, "Shader Options", "shader_options",
          MENU_SETTING_ACTION, 0);
+#endif
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(path, label, type);
