@@ -433,26 +433,32 @@ struct runloop
    bool is_menu;
    bool is_slowmotion;
 
-#ifdef HAVE_NETWORKING
    struct
    {
+#ifdef HAVE_NETWORKING
       struct
       {
-         struct http_connection_t *handle;
+         struct
+         {
+            struct http_connection_t *handle;
+            transfer_cb_t  cb;
+            char elem1[PATH_MAX_LENGTH];
+         } connection;
+         msg_queue_t *msg_queue;
+         struct http_t *handle;
          transfer_cb_t  cb;
-         char elem1[PATH_MAX_LENGTH];
-      } connection;
-      msg_queue_t *msg_queue;
-      struct http_t *handle;
-      transfer_cb_t  cb;
-   } http;
+      } http;
 #endif
 
 #ifdef HAVE_LIBRETRODB
-   struct
-   {
-   } db;
+      struct
+      {
+      } db;
 #endif
+
+      nbio_handle_t nbio;
+
+   } data;
 
    struct
    {
@@ -478,7 +484,6 @@ struct runloop
       uint64_t frame_time_samples_count;
    } measure_data;
 
-   nbio_handle_t nbio;
    msg_queue_t *msg_queue;
 };
 

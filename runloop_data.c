@@ -37,7 +37,7 @@ static int rarch_main_iterate_http_transfer(void)
 {
    size_t pos = 0, tot = 0;
 
-   if (!net_http_update(g_runloop.http.handle, &pos, &tot))
+   if (!net_http_update(g_runloop.data.http.handle, &pos, &tot))
    {
 #ifdef _WIN32
 		RARCH_LOG("%.9I64u / %.9I64u       \r", (unsigned long long)pos, (unsigned long long)tot);
@@ -52,22 +52,22 @@ static int rarch_main_iterate_http_transfer(void)
 
 static int rarch_main_iterate_http_conn_transfer(void)
 {
-   if (!net_http_connection_iterate(g_runloop.http.connection.handle))
+   if (!net_http_connection_iterate(g_runloop.data.http.connection.handle))
       return -1;
    return 0;
 }
 
 static int rarch_main_iterate_http_conn_parse(void)
 {
-   if (net_http_connection_done(g_runloop.http.connection.handle))
+   if (net_http_connection_done(g_runloop.data.http.connection.handle))
    {
-      if (g_runloop.http.connection.handle && g_runloop.http.connection.cb)
-         g_runloop.http.connection.cb(g_runloop.http.connection.handle, 0);
+      if (g_runloop.data.http.connection.handle && g_runloop.data.http.connection.cb)
+         g_runloop.data.http.connection.cb(g_runloop.data.http.connection.handle, 0);
    }
    
-   net_http_connection_free(g_runloop.http.connection.handle);
+   net_http_connection_free(g_runloop.data.http.connection.handle);
 
-   g_runloop.http.connection.handle = NULL;
+   g_runloop.data.http.connection.handle = NULL;
 
    return 0;
 }
@@ -75,37 +75,37 @@ static int rarch_main_iterate_http_conn_parse(void)
 static int rarch_main_iterate_http_parse(void)
 {
    size_t len;
-   char *data = (char*)net_http_data(g_runloop.http.handle, &len, false);
+   char *data = (char*)net_http_data(g_runloop.data.http.handle, &len, false);
 
-   if (data && g_runloop.http.cb)
-      g_runloop.http.cb(data, len);
+   if (data && g_runloop.data.http.cb)
+      g_runloop.data.http.cb(data, len);
 
-   net_http_delete(g_runloop.http.handle);
+   net_http_delete(g_runloop.data.http.handle);
 
-   g_runloop.http.handle = NULL;
-   msg_queue_clear(g_runloop.http.msg_queue);
+   g_runloop.data.http.handle = NULL;
+   msg_queue_clear(g_runloop.data.http.msg_queue);
 
    return 0;
 }
 
 static int cb_http_conn_default(void *data_, size_t len)
 {
-   g_runloop.http.handle = net_http_new(g_runloop.http.connection.handle);
+   g_runloop.data.http.handle = net_http_new(g_runloop.data.http.connection.handle);
 
-   if (!g_runloop.http.handle)
+   if (!g_runloop.data.http.handle)
    {
       RARCH_ERR("Could not create new HTTP session handle.\n");
       return -1;
    }
 
-   g_runloop.http.cb     = NULL;
+   g_runloop.data.http.cb     = NULL;
 
-   if (g_runloop.http.connection.elem1[0] != '\0')
+   if (g_runloop.data.http.connection.elem1[0] != '\0')
    {
-      if (!strcmp(g_runloop.http.connection.elem1, "cb_core_updater_download"))
-         g_runloop.http.cb = &cb_core_updater_download;
-      if (!strcmp(g_runloop.http.connection.elem1, "cb_core_updater_list"))
-         g_runloop.http.cb = &cb_core_updater_list;
+      if (!strcmp(g_runloop.data.http.connection.elem1, "cb_core_updater_download"))
+         g_runloop.data.http.cb = &cb_core_updater_download;
+      if (!strcmp(g_runloop.data.http.connection.elem1, "cb_core_updater_list"))
+         g_runloop.data.http.cb = &cb_core_updater_list;
    }
 
    return 0;
@@ -128,13 +128,13 @@ static int rarch_main_iterate_http_poll(void)
 {
    char elem0[PATH_MAX_LENGTH];
    struct string_list *str_list = NULL;
-   const char *url = msg_queue_pull(g_runloop.http.msg_queue);
+   const char *url = msg_queue_pull(g_runloop.data.http.msg_queue);
 
    if (!url)
       return -1;
 
    /* Can only deal with one HTTP transfer at a time for now */
-   if (g_runloop.http.handle)
+   if (g_runloop.data.http.handle)
       return -1; 
 
    str_list         = string_split(url, "|"); 
@@ -145,17 +145,17 @@ static int rarch_main_iterate_http_poll(void)
    if (str_list->size > 0)
       strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
 
-   g_runloop.http.connection.handle = net_http_connection_new(elem0);
+   g_runloop.data.http.connection.handle = net_http_connection_new(elem0);
 
-   if (!g_runloop.http.connection.handle)
+   if (!g_runloop.data.http.connection.handle)
       return -1;
 
-   g_runloop.http.connection.cb     = &cb_http_conn_default;
+   g_runloop.data.http.connection.cb     = &cb_http_conn_default;
 
    if (str_list->size > 1)
-      strlcpy(g_runloop.http.connection.elem1,
+      strlcpy(g_runloop.data.http.connection.elem1,
             str_list->elems[1].data,
-            sizeof(g_runloop.http.connection.elem1));
+            sizeof(g_runloop.data.http.connection.elem1));
 
    string_list_free(str_list);
    
@@ -533,16 +533,16 @@ void do_data_nbio_state_checks(nbio_handle_t *nbio)
 
 void do_data_state_checks(void)
 {
-   do_data_nbio_state_checks(&g_runloop.nbio);
+   do_data_nbio_state_checks(&g_runloop.data.nbio);
 
 #ifdef HAVE_NETWORKING
-   if (g_runloop.http.connection.handle)
+   if (g_runloop.data.http.connection.handle)
    {
       if (!rarch_main_iterate_http_conn_transfer())
          rarch_main_iterate_http_conn_parse();
    }
 
-   if (g_runloop.http.handle)
+   if (g_runloop.data.http.handle)
    {
       if (!rarch_main_iterate_http_transfer())
          rarch_main_iterate_http_parse();

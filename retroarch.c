@@ -2618,13 +2618,13 @@ bool rarch_main_command(unsigned cmd)
          if (!g_runloop.msg_queue)
             rarch_assert(g_runloop.msg_queue = msg_queue_new(8));
 #ifdef HAVE_NETWORKING
-         if (!g_runloop.http.msg_queue)
-            rarch_assert(g_runloop.http.msg_queue = msg_queue_new(8));
+         if (!g_runloop.data.http.msg_queue)
+            rarch_assert(g_runloop.data.http.msg_queue = msg_queue_new(8));
 #endif
-         if (!g_runloop.nbio.msg_queue)
-            rarch_assert(g_runloop.nbio.msg_queue = msg_queue_new(8));
-         if (!g_runloop.nbio.image.msg_queue)
-            rarch_assert(g_runloop.nbio.image.msg_queue = msg_queue_new(8));
+         if (!g_runloop.data.nbio.msg_queue)
+            rarch_assert(g_runloop.data.nbio.msg_queue = msg_queue_new(8));
+         if (!g_runloop.data.nbio.image.msg_queue)
+            rarch_assert(g_runloop.data.nbio.image.msg_queue = msg_queue_new(8));
          break;
       case RARCH_CMD_BSV_MOVIE_DEINIT:
          if (g_extern.bsv.movie)
