@@ -28,23 +28,63 @@
 #include <stddef.h>
 #include <string.h>
 
+//#define DEBUG_RUNLOOP
+
 void apple_start_iteration(void);
 
 void apple_stop_iteration(void);
 
 static CFRunLoopObserverRef iterate_observer = NULL;
 
-static void do_iteration(void)
+static int do_ra_iteration(void)
 {
-   int ret = rarch_main_iterate();
+    int ret = rarch_main_iterate();
+    if (ret == -1)
+        main_exit(NULL);
+    
+    return ret;
+}
 
-   if (ret == -1)
-   {
-      main_exit(NULL);
-      return;
-   }
+static void do_iteration(CFRunLoopObserverRef observer, CFRunLoopActivity activity,
+                         void *info)
+{
+#ifdef DEBUG_RUNLOOP
+    if (activity & kCFRunLoopEntry)
+    {
+        RARCH_LOG("RUNLOOP ENTRY, frame: %d.\n", g_runloop.frames.video.count);
+    }
+    if (activity & kCFRunLoopBeforeTimers)
+    {
+        RARCH_LOG("RUNLOOP BEFORE TIMERS, frame: %d.\n", g_runloop.frames.video.count);
+    }
+    if (activity & kCFRunLoopAfterWaiting)
+    {
+        RARCH_LOG("RUNLOOP AFTER WAITING, frame: %d.\n", g_runloop.frames.video.count);
+    }
+    if (activity & kCFRunLoopBeforeSources)
+    {
+        RARCH_LOG("RUNLOOP BEFORE SOURCES, frame: %d\n.", g_runloop.frames.video.count);
+    }
+    if (activity & kCFRunLoopExit)
+    {
+        RARCH_LOG("RUNLOOP EXIT, frame: %d.\n", g_runloop.frames.video.count);
+    }
+    if (activity & kCFRunLoopAllActivities)
+    {
+        RARCH_LOG("RUNLOOP ALL ACTIVITIES, frame: %d.\n", g_runloop.frames.video.count);
+    }
+    if (activity & kCFRunLoopBeforeWaiting)
+#endif
+    {
+#ifdef DEBUG_RUNLOOP
+        RARCH_LOG("RUNLOOP BEFORE WAITING, frame: %d.\n", g_runloop.frames.video.count);
+#endif
+        int ret = do_ra_iteration();
+        if (ret == -1)
+            return;
+        CFRunLoopWakeUp(CFRunLoopGetMain());
+    }
 
-   CFRunLoopWakeUp(CFRunLoopGetMain());
 
    /* TODO/FIXME
       I am almost positive that this is not necessary and is actually a
