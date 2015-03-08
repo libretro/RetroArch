@@ -333,13 +333,19 @@ static void rgui_render(void)
 
    if (!menu)
       return;
+
    if (menu->need_refresh && g_runloop.is_menu
          && !menu->msg_force)
       return;
+
    if (!g_runloop.frames.video.current.menu.framebuf.dirty
        && !g_runloop.frames.video.current.menu.animation.is_active
        && !g_runloop.frames.video.current.menu.label.is_updated)
       return;
+
+   g_runloop.frames.video.current.menu.animation.is_active = false;
+   g_runloop.frames.video.current.menu.label.is_updated    = false;
+   g_runloop.frames.video.current.menu.framebuf.dirty      = false;
 
    menu->mouse.ptr = menu->mouse.y / 11 - 2 + menu->begin;
 
