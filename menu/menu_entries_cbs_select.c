@@ -24,6 +24,7 @@ static int action_select_default(unsigned type, const char *label,
       return 0;
    menu_list_push_stack(menu->menu_list, "", "info_screen",
          0, menu->navigation.selection_ptr);
+   g_runloop.frames.video.current.menu.action.active = true;
    return 0;
 }
 
