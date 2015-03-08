@@ -560,6 +560,10 @@ static void rmenu_xui_render(void)
 		g_runloop.is_menu && !menu->msg_force)
 		return;
 
+   g_runloop.frames.video.current.menu.animation.is_active = false;
+   g_runloop.frames.video.current.menu.label.is_updated    = false;
+   g_runloop.frames.video.current.menu.framebuf.dirty      = false;
+
 	rmenu_xui_render_background();
 
 	menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);

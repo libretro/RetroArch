@@ -168,6 +168,10 @@ static void rmenu_render(void)
          && !menu->msg_force)
       return;
 
+   g_runloop.frames.video.current.menu.animation.is_active = false;
+   g_runloop.frames.video.current.menu.label.is_updated    = false;
+   g_runloop.frames.video.current.menu.framebuf.dirty      = false;
+
    if (!menu->menu_list->selection_buf)
       return;
 
