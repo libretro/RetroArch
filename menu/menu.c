@@ -211,6 +211,8 @@ void *menu_init(const void *data)
 
    rarch_assert(menu->msg_queue = msg_queue_new(8));
 
+   g_runloop.frames.video.current.menu.framebuf.dirty = true;
+
    return menu;
 error:
    if (menu->menu_list)
@@ -389,10 +391,6 @@ int menu_iterate(retro_input_t input,
       menu->dt = IDEAL_DT / 4;
    menu->old_time = menu->cur_time;
 
-   g_runloop.frames.video.current.menu.animation.is_active    = false;
-   g_runloop.frames.video.current.menu.label.is_updated       = false;
-   g_runloop.frames.video.current.menu.framebuf.dirty         = false;
-
    if (driver.menu_ctx)
    {
       if (driver.menu_ctx->set_texture)
@@ -405,6 +403,10 @@ int menu_iterate(retro_input_t input,
       draw_frame();
    if (g_settings.menu.throttle && (g_settings.menu.pause_libretro || !g_extern.content_is_init))
       draw_frame();
+
+   g_runloop.frames.video.current.menu.animation.is_active = false;
+   g_runloop.frames.video.current.menu.label.is_updated    = false;
+   g_runloop.frames.video.current.menu.framebuf.dirty      = false;
 
    if (ret)
       return -1;
