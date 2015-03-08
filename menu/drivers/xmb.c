@@ -1136,6 +1136,15 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    }
 }
 
+static void xmb_render(void)
+{
+   menu_handle_t *menu = menu_driver_resolve();
+   if (!menu)
+      return;
+
+   menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
+}
+
 static void xmb_frame(void)
 {
    int i, depth;
@@ -1161,7 +1170,6 @@ static void xmb_frame(void)
    if (!gl)
       return;
 
-   menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
 
    xmb_render_background(gl, xmb, false);
 
@@ -1853,7 +1861,7 @@ static void xmb_toggle(bool menu_on)
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_render_messagebox_internal,
-   NULL,
+   xmb_render,
    xmb_frame,
    xmb_init,
    xmb_free,
