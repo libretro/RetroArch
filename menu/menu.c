@@ -47,8 +47,11 @@ static void draw_frame(void)
          return;
       }
    }
-
-   rarch_render_cached_frame();
+    
+   if (g_runloop.frames.video.current.menu.action.active ||
+       g_runloop.frames.video.current.menu.animation.is_active ||
+       g_runloop.frames.video.current.menu.label.is_updated)
+       rarch_render_cached_frame();
 }
 
 /**
