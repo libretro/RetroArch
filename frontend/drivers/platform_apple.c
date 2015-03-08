@@ -18,7 +18,6 @@
 #include "../../apple/common/CFExtensions.h"
 
 #include "../frontend.h"
-#include "../../runloop.h"
 #ifdef IOS
 #include "../../menu/drivers/ios.h"
 #endif
