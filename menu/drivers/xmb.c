@@ -303,6 +303,26 @@ static char *xmb_str_replace (const char *string,
    return newstr;
 }
 
+static void xmb_draw_icon_begin(gl_t *gl, xmb_handle_t *xmb)
+{
+   if (!gl)
+      return;
+
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+static void xmb_draw_icon_end(gl_t *gl, xmb_handle_t *xmb)
+{
+   if (!gl)
+      return;
+
+   glDisable(GL_BLEND);
+}
+
 static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
       GLuint texture, float x, float y,
       float alpha, float rotation, float scale_factor)
@@ -330,9 +350,6 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
       1.0f, 1.0f, 1.0f, alpha,
    };
 
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-
    glViewport(x, gl->win_height - y, xmb->icon.size, xmb->icon.size);
 
    coords.vertices      = 4;
@@ -351,10 +368,7 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    gl->shader->set_coords(&coords);
    gl->shader->set_mvp(gl, &mymat);
 
-   glEnable(GL_BLEND);
-   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   glDisable(GL_BLEND);
 }
 
 static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
@@ -1058,7 +1072,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       else if (!strcmp(entry_label, "resume_content"))
          icon = xmb->textures.list[XMB_TEXTURE_RESUME].id;
 
+      xmb_draw_icon_begin(gl, xmb);
       xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
+      xmb_draw_icon_end(gl, xmb);
 
       menu_animation_ticker_line(name, 35, g_runloop.frames.video.count / 20, path_buf,
          (i == current));
@@ -1093,6 +1109,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                0);
 
       if (!strcmp(type_str, "ON") && xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
+      {
+         xmb_draw_icon_begin(gl, xmb);
          xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal
                + xmb->icon.size / 2.0 + xmb->margins.setting.left,
@@ -1100,8 +1118,12 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                node->alpha,
                0,
                1);
+         xmb_draw_icon_end(gl, xmb);
+      }
 
       if (!strcmp(type_str, "OFF") && xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
+      {
+         xmb_draw_icon_begin(gl, xmb);
          xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal
                + xmb->icon.size / 2.0 + xmb->margins.setting.left,
@@ -1109,6 +1131,8 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                node->alpha,
                0,
                1);
+         xmb_draw_icon_end(gl, xmb);
+      }
    }
 }
 
@@ -1154,8 +1178,10 @@ static void xmb_frame(void)
             timedate, gl->win_width - xmb->margins.title.left - xmb->icon.size / 4, 
             xmb->margins.title.top, 1, 1, 1);
 
+      xmb_draw_icon_begin(gl, xmb);
       xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
             gl->win_width - xmb->icon.size, xmb->icon.size, 1, 0, 1);
+      xmb_draw_icon_end(gl, xmb);
    }
 
    if (g_settings.menu.core_enable)
@@ -1180,10 +1206,12 @@ static void xmb_frame(void)
             gl->win_height - xmb->margins.title.bottom, 1, 1, 0);
    }
 
+   xmb_draw_icon_begin(gl, xmb);
    xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_ARROW].id,
          xmb->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal - xmb->icon.size / 2.0 + xmb->icon.size,
          xmb->margins.screen.top + xmb->icon.size / 2.0 + xmb->icon.spacing.vertical * xmb->item.active.factor,
          xmb->textures.arrow.alpha, 0, 1);
+   xmb_draw_icon_end(gl, xmb);
 
    depth = file_list_get_size(menu->menu_list->menu_stack);
 
@@ -1205,12 +1233,16 @@ static void xmb_frame(void)
       xmb_node_t *node = i ? xmb_get_userdata_from_core(xmb, i - 1) : &xmb->settings_node;
 
       if (node)
+      {
+         xmb_draw_icon_begin(gl, xmb);
          xmb_draw_icon(gl, xmb, node->icon, 
                xmb->x + xmb->categories.x_pos + xmb->margins.screen.left + xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
                xmb->margins.screen.top + xmb->icon.size / 2.0, 
                node->alpha, 
                0, 
                node->zoom);
+         xmb_draw_icon_end(gl, xmb);
+      }
    }
 
    if (menu->keyboard.display)
