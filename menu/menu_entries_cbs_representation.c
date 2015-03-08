@@ -397,6 +397,8 @@ static void menu_action_setting_disp_set_label_perf_counters(
          ((unsigned long long)counters[offset]->total /
           (unsigned long long)counters[offset]->call_cnt),
          (unsigned long long)counters[offset]->call_cnt);
+
+   g_runloop.frames.video.current.menu.label.is_updated = true;
 }
 
 static void menu_action_setting_disp_set_label_libretro_perf_counters(
@@ -430,6 +432,8 @@ static void menu_action_setting_disp_set_label_libretro_perf_counters(
          ((unsigned long long)counters[offset]->total /
           (unsigned long long)counters[offset]->call_cnt),
          (unsigned long long)counters[offset]->call_cnt);
+
+   g_runloop.frames.video.current.menu.label.is_updated = true;
 }
 
 static void menu_action_setting_disp_set_label_menu_more(
