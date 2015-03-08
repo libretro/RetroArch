@@ -484,6 +484,11 @@ struct runloop
                {
                   bool dirty;
                } framebuf;
+
+               struct
+               {
+                  bool active;
+               } action;
             } menu;
          } current;
       } video;
