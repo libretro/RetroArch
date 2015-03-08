@@ -270,7 +270,7 @@ static void android_gfx_ctx_update_window_title(void *data)
 
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
-   if (g_setings.fps_show)
+   if (g_settings.fps_show)
       msg_queue_push(g_runloop.msg_queue, buf_fps, 1, 1);
 }
 
