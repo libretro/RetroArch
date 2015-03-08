@@ -401,8 +401,6 @@ int menu_iterate(retro_input_t input,
 
    if (g_runloop.is_menu)
       draw_frame();
-   if (g_settings.menu.throttle && (g_settings.menu.pause_libretro || !g_extern.content_is_init))
-      draw_frame();
 
    g_runloop.frames.video.current.menu.animation.is_active = false;
    g_runloop.frames.video.current.menu.label.is_updated    = false;
