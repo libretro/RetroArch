@@ -1163,8 +1163,6 @@ static void xmb_frame(void)
 
    menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
 
-   glViewport(0, 0, gl->win_width, gl->win_height);
-
    xmb_render_background(gl, xmb, false);
 
    xmb_draw_text(gl, xmb,
