@@ -78,6 +78,9 @@ void rarch_render_cached_frame(void)
 {
    void *recording   = driver.recording_data;
 
+   if (g_runloop.is_idle)
+      return;
+
    /* Cannot allow recording when pushing duped frames. */
    driver.recording_data = NULL;
 

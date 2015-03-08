@@ -226,18 +226,23 @@ enum
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
 }
 
-void switch_to_ios(void) {
-  if ( apple_platform != NULL ) {
-    RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-    [ap showPauseMenu:ap];
-  }
+void switch_to_ios(void)
+{
+   if (!apple_platform)
+      return;
+    
+   RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
+   g_runloop.is_idle = true;
+   [ap showPauseMenu:ap];
 }
 
-void notify_content_loaded(void) {
-  if ( apple_platform != NULL ) {    
-    RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-    [ap showGameView];
-  }
+void notify_content_loaded(void)
+{
+   if (!apple_platform)
+      return;
+    
+   RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
+   [ap showGameView];
 }
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
@@ -334,11 +339,13 @@ void notify_content_loaded(void) {
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[RAGameView get]];
    g_runloop.is_paused = false;
+   g_runloop.is_idle = false;
 }
 
 - (IBAction)showPauseMenu:(id)sender
 {
    g_runloop.is_paused = true;
+   g_runloop.is_idle   = true;
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:false];
    [self.window setRootViewController:self];
