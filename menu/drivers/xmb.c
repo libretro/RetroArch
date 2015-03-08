@@ -76,6 +76,7 @@ enum
    XMB_TEXTURE_SWITCH_ON,
    XMB_TEXTURE_SWITCH_OFF,
    XMB_TEXTURE_CLOCK,
+   XMB_TEXTURE_POINTER,
    XMB_TEXTURE_LAST
 };
 
@@ -160,6 +161,10 @@ typedef struct xmb_handle
       int size;
    } icon;
 
+   struct
+   {
+      int size;
+   } cursor;
 
    struct
    {
@@ -1135,48 +1140,41 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    }
 }
 
-static void xmb_draw_cursor(gl_t *gl, float x, float y)
+static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 {
    struct gl_coords coords;
-   static const GLfloat vertex[] = {
-      0, 0,
-      1, 0,
-      0, 1,
-      1, 1,
-   };
+   math_matrix_4x4 mymat, mrot, mscal;
 
-   static const GLfloat tex_coord[] = {
-      0, 1,
-      1, 1,
-      0, 0,
-      1, 0,
-   };
    GLfloat color[] = {
-      1.0f, 1.0f, 1.0f, 1.0f,
-      1.0f, 1.0f, 1.0f, 1.0f,
-      1.0f, 1.0f, 1.0f, 1.0f,
-      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, xmb->alpha,
+      1.0f, 1.0f, 1.0f, xmb->alpha,
+      1.0f, 1.0f, 1.0f, xmb->alpha,
+      1.0f, 1.0f, 1.0f, xmb->alpha,
    };
 
-   glViewport(x - 5, gl->win_height - y + 5, 11, 11);
+   glViewport(x, gl->win_height - y, xmb->cursor.size, xmb->cursor.size);
 
    coords.vertices      = 4;
-   coords.vertex        = vertex;
-   coords.tex_coord     = tex_coord;
-   coords.lut_tex_coord = tex_coord;
+   coords.vertex        = rmb_vertex;
+   coords.tex_coord     = rmb_tex_coord;
+   coords.lut_tex_coord = rmb_tex_coord;
+   coords.color         = color;
+   glBindTexture(GL_TEXTURE_2D, xmb->textures.list[XMB_TEXTURE_POINTER].id);
 
-   coords.color = color;
-   glBindTexture(GL_TEXTURE_2D, 0);
+   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
-   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-   gl->shader->set_coords(&coords);
-   gl->shader->set_mvp(gl, &gl->mvp_no_rot);
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    glEnable(GL_BLEND);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   glDisable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-   gl->coords.color = gl->white_color_ptr;
+   gl->shader->set_coords(&coords);
+   gl->shader->set_mvp(gl, &mymat);
+
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+   glDisable(GL_BLEND);
 }
 
 static void xmb_render(void)
@@ -1337,7 +1335,7 @@ static void xmb_frame(void)
    }
 
    if (menu->mouse.enable)
-      xmb_draw_cursor(gl, menu->mouse.x, menu->mouse.y);
+      xmb_draw_cursor(gl, xmb, menu->mouse.x, menu->mouse.y);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
@@ -1422,6 +1420,7 @@ static void *xmb_init(void)
    strlcpy(xmb->icon.dir, "256", sizeof(xmb->icon.dir));
 
    xmb->icon.size               = 128.0 * scale_factor;
+   xmb->cursor.size             = 48.0;
    xmb->font.size               = 32.0 * scale_factor;
    xmb->icon.spacing.horizontal = 200.0 * scale_factor;
    xmb->icon.spacing.vertical   = 64.0 * scale_factor;
@@ -1602,6 +1601,8 @@ static void xmb_context_reset(void)
          "off.png", sizeof(xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].path));
    fill_pathname_join(xmb->textures.list[XMB_TEXTURE_CLOCK].path, iconpath,
          "clock.png", sizeof(xmb->textures.list[XMB_TEXTURE_CLOCK].path));
+   fill_pathname_join(xmb->textures.list[XMB_TEXTURE_POINTER].path, iconpath,
+         "pointer.png", sizeof(xmb->textures.list[XMB_TEXTURE_POINTER].path));
 
    for (k = 0; k < XMB_TEXTURE_LAST; k++)
    {
