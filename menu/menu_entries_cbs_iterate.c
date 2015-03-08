@@ -558,6 +558,9 @@ static int mouse_iterate(unsigned action)
    menu->mouse.dy = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
 
+   if (menu->mouse.dx != 0 || menu->mouse.dy !=0)
+      g_runloop.frames.video.current.menu.animation.is_active = true;
+
    menu->mouse.x += menu->mouse.dx;
    menu->mouse.y += menu->mouse.dy;
 
@@ -576,13 +579,8 @@ static int mouse_iterate(unsigned action)
    menu->mouse.right = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
 
-   menu->mouse.wheelup = driver.input->input_state(driver.input_data,
-         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP)
-         || menu->mouse.y == 5;
-
-   menu->mouse.wheeldown = driver.input->input_state(driver.input_data,
-         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN)
-         || menu->mouse.y == menu->frame_buf.height - 5;
+   menu->mouse.wheelup = menu->mouse.y == 5;
+   menu->mouse.wheeldown = menu->mouse.y == menu->frame_buf.height - 5;
 
    return 0;
 }
