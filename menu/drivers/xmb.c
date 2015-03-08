@@ -1228,22 +1228,20 @@ static void xmb_frame(void)
          menu->navigation.selection_ptr,
          menu->categories.selection_ptr);
 
+   xmb_draw_icon_begin(gl, xmb);
    for (i = 0; i < menu->categories.size; i++)
    {
       xmb_node_t *node = i ? xmb_get_userdata_from_core(xmb, i - 1) : &xmb->settings_node;
 
       if (node)
-      {
-         xmb_draw_icon_begin(gl, xmb);
          xmb_draw_icon(gl, xmb, node->icon, 
                xmb->x + xmb->categories.x_pos + xmb->margins.screen.left + xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
                xmb->margins.screen.top + xmb->icon.size / 2.0, 
                node->alpha, 
                0, 
                node->zoom);
-         xmb_draw_icon_end(gl, xmb);
-      }
    }
+   xmb_draw_icon_end(gl, xmb);
 
    if (menu->keyboard.display)
    {
