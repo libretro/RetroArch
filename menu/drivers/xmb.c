@@ -1187,11 +1187,6 @@ static void xmb_frame(void)
       xmb_draw_text(gl, xmb,
             timedate, gl->win_width - xmb->margins.title.left - xmb->icon.size / 4, 
             xmb->margins.title.top, 1, 1, 1);
-
-      xmb_draw_icon_begin(gl, xmb);
-      xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
-            gl->win_width - xmb->icon.size, xmb->icon.size, 1, 0, 1);
-      xmb_draw_icon_end(gl, xmb);
    }
 
    if (g_settings.menu.core_enable)
@@ -1216,13 +1211,6 @@ static void xmb_frame(void)
             gl->win_height - xmb->margins.title.bottom, 1, 1, 0);
    }
 
-   xmb_draw_icon_begin(gl, xmb);
-   xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_ARROW].id,
-         xmb->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal - xmb->icon.size / 2.0 + xmb->icon.size,
-         xmb->margins.screen.top + xmb->icon.size / 2.0 + xmb->icon.spacing.vertical * xmb->item.active.factor,
-         xmb->textures.arrow.alpha, 0, 1);
-   xmb_draw_icon_end(gl, xmb);
-
    depth = file_list_get_size(menu->menu_list->menu_stack);
 
    xmb_draw_items(xmb, gl,
@@ -1239,6 +1227,15 @@ static void xmb_frame(void)
          menu->categories.selection_ptr);
 
    xmb_draw_icon_begin(gl, xmb);
+
+   if (g_settings.menu.timedate_enable)
+      xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
+            gl->win_width - xmb->icon.size, xmb->icon.size, 1, 0, 1);
+
+   xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_ARROW].id,
+         xmb->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal - xmb->icon.size / 2.0 + xmb->icon.size,
+         xmb->margins.screen.top + xmb->icon.size / 2.0 + xmb->icon.spacing.vertical * xmb->item.active.factor,
+         xmb->textures.arrow.alpha, 0, 1);
    for (i = 0; i < menu->categories.size; i++)
    {
       xmb_node_t *node = i ? xmb_get_userdata_from_core(xmb, i - 1) : &xmb->settings_node;
