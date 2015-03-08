@@ -571,6 +571,9 @@ static int do_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
+   if (g_runloop.is_idle)
+      return 1;
+
    if (BIT64_GET(trigger_input, RARCH_SCREENSHOT))
       rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
 

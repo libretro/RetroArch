@@ -429,6 +429,7 @@ struct runloop
 {
    /* Lifecycle state checks. */
    bool is_paused;
+   bool is_idle;
    bool is_menu;
    bool is_slowmotion;
 
