@@ -378,6 +378,7 @@ void menu_apply_deferred_settings(void)
 int menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input)
 {
+   static retro_time_t last_clock_update = 0;
    int32_t ret     = 0;
    unsigned action = menu_input_frame(input, trigger_input);
 
@@ -390,6 +391,12 @@ int menu_iterate(retro_input_t input,
    if (menu->dt <= IDEAL_DT / 4)
       menu->dt = IDEAL_DT / 4;
    menu->old_time = menu->cur_time;
+
+   if (menu->cur_time - last_clock_update > 1000000 && g_settings.menu.timedate_enable)
+   {
+      g_runloop.frames.video.current.menu.label.is_updated = true;
+      last_clock_update = menu->cur_time;
+   }
 
    if (driver.menu_ctx && driver.menu_ctx->entry_iterate)
       ret = driver.menu_ctx->entry_iterate(action);
