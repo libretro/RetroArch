@@ -46,7 +46,11 @@ static int rgui_entry_iterate(unsigned action)
       return -1;
 
    if (action != MENU_ACTION_NOOP || menu->need_refresh)
-      g_runloop.frames.video.current.menu.framebuf.dirty = true;
+   {
+      g_runloop.frames.video.current.menu.framebuf.dirty   = true;
+      g_runloop.frames.video.current.menu.label.is_updated = true;
+   }
+
 
    cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
          menu->menu_list->selection_buf, menu->navigation.selection_ptr);
@@ -343,9 +347,9 @@ static void rgui_render(void)
        && !g_runloop.frames.video.current.menu.label.is_updated)
       return;
 
+   /* framebuf.dirty will be cleared in set_texture() */
    g_runloop.frames.video.current.menu.animation.is_active = false;
    g_runloop.frames.video.current.menu.label.is_updated    = false;
-   g_runloop.frames.video.current.menu.framebuf.dirty      = false;
 
    menu->mouse.ptr = menu->mouse.y / 11 - 2 + menu->begin;
 
@@ -560,6 +564,10 @@ static void rgui_set_texture(void)
       return;
    if (!driver.video_poke->set_texture_frame)
       return;
+   if (!g_runloop.frames.video.current.menu.framebuf.dirty)
+      return;
+
+   g_runloop.frames.video.current.menu.framebuf.dirty = false;
 
    driver.video_poke->set_texture_frame(driver.video_data,
          menu->frame_buf.data, false, menu->frame_buf.width, menu->frame_buf.height, 1.0f);
