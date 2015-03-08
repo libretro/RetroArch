@@ -45,10 +45,11 @@ static int rgui_entry_iterate(unsigned action)
    if (!menu->menu_list)
       return -1;
 
-   if (action != MENU_ACTION_NOOP || menu->need_refresh)
+   if (action != MENU_ACTION_NOOP || menu->need_refresh ||
+       g_runloop.frames.video.current.menu.label.is_updated ||
+       g_runloop.frames.video.current.menu.animation.is_active)
    {
       g_runloop.frames.video.current.menu.framebuf.dirty   = true;
-      g_runloop.frames.video.current.menu.label.is_updated = true;
    }
 
 
@@ -347,7 +348,8 @@ static void rgui_render(void)
        && !g_runloop.frames.video.current.menu.label.is_updated)
       return;
 
-   /* framebuf.dirty will be cleared in set_texture() */
+   /* ensures the framebuffer will be rendered on the screen */
+   g_runloop.frames.video.current.menu.framebuf.dirty = true;
    g_runloop.frames.video.current.menu.animation.is_active = false;
    g_runloop.frames.video.current.menu.label.is_updated    = false;
 
