@@ -45,6 +45,9 @@ static int rgui_entry_iterate(unsigned action)
    if (!menu->menu_list)
       return -1;
 
+   if (action != MENU_ACTION_NOOP || menu->need_refresh)
+      g_runloop.frames.video.current.menu.framebuf.dirty = true;
+
    cbs = (menu_file_list_cbs_t*)menu_list_get_actiondata_at_offset(
          menu->menu_list->selection_buf, menu->navigation.selection_ptr);
 
@@ -332,6 +335,10 @@ static void rgui_render(void)
       return;
    if (menu->need_refresh && g_runloop.is_menu
          && !menu->msg_force)
+      return;
+   if (!g_runloop.frames.video.current.menu.framebuf.dirty
+       && !g_runloop.frames.video.current.menu.animation.is_active
+       && !g_runloop.frames.video.current.menu.label.is_updated)
       return;
 
    menu->mouse.ptr = menu->mouse.y / 11 - 2 + menu->begin;
