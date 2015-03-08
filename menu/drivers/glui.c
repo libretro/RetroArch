@@ -263,6 +263,53 @@ end:
    string_list_free(list);
 }
 
+static void glui_render(void)
+{
+   glui_handle_t *glui = NULL;
+   gl_t *gl = NULL;
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return;
+
+   glui = (glui_handle_t*)menu->userdata;
+
+   if (!glui)
+      return;
+
+   gl = (gl_t*)video_driver_resolve(NULL);
+
+   if (!gl)
+      return;
+
+   glui->line_height = g_settings.video.font_size * 4 / 3;
+   glui->glyph_width = glui->line_height / 2;
+   glui->margin      = gl->win_width / 20 ;
+   glui->term_width  = (gl->win_width - glui->margin * 2) / glui->glyph_width;
+   glui->term_height = (gl->win_height - glui->margin * 2) / glui->line_height - 2;
+
+   menu->frame_buf.width  = gl->win_width;
+   menu->frame_buf.height = gl->win_height;
+
+   g_runloop.frames.video.current.menu.animation.is_active = false;
+   g_runloop.frames.video.current.menu.label.is_updated    = false;
+   g_runloop.frames.video.current.menu.framebuf.dirty      = false;
+
+   menu->mouse.ptr = (menu->mouse.y - glui->margin) /
+         glui->line_height - 2 + menu->begin;
+
+   if (menu->mouse.wheeldown && menu->begin
+         < menu_list_get_size(menu->menu_list) - glui->term_height)
+      menu->begin++;
+
+   if (menu->mouse.wheelup && menu->begin > 0)
+      menu->begin--;
+
+   /* Do not scroll if all items are visible. */
+   if (menu_list_get_size(menu->menu_list) <= glui->term_height)
+      menu->begin = 0;
+}
+
 static void glui_frame(void)
 {
    unsigned x, y;
@@ -298,30 +345,7 @@ static void glui_frame(void)
          && !menu->msg_force)
       return;
 
-   glui->line_height = g_settings.video.font_size * 4 / 3;
-   glui->glyph_width = glui->line_height / 2;
-   glui->margin      = gl->win_width / 20 ;
-   glui->term_width  = (gl->win_width - glui->margin * 2) / glui->glyph_width;
-   glui->term_height = (gl->win_height - glui->margin * 2) / glui->line_height - 2;
-
-   menu->frame_buf.width  = gl->win_width;
-   menu->frame_buf.height = gl->win_height;
-
-   menu->mouse.ptr = (menu->mouse.y - glui->margin) /
-         glui->line_height - 2 + menu->begin;
-
    glViewport(0, 0, gl->win_width, gl->win_height);
-
-   if (menu->mouse.wheeldown && menu->begin
-         < menu_list_get_size(menu->menu_list) - glui->term_height)
-      menu->begin++;
-
-   if (menu->mouse.wheelup && menu->begin > 0)
-      menu->begin--;
-
-   /* Do not scroll if all items are visible. */
-   if (menu_list_get_size(menu->menu_list) <= glui->term_height)
-      menu->begin = 0;
 
    end = (menu->begin + glui->term_height <=
          menu_list_get_size(menu->menu_list)) ?
@@ -621,7 +645,7 @@ static void glui_navigation_ascend_alphabet(size_t *unused)
 menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    glui_get_message,
-   NULL,
+   glui_render,
    glui_frame,
    glui_init,
    glui_free,

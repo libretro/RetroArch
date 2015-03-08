@@ -1143,6 +1143,10 @@ static void xmb_render(void)
       return;
 
    menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
+
+   g_runloop.frames.video.current.menu.animation.is_active = false;
+   g_runloop.frames.video.current.menu.label.is_updated    = false;
+   g_runloop.frames.video.current.menu.framebuf.dirty      = false;
 }
 
 static void xmb_frame(void)
