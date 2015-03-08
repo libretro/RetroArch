@@ -2295,6 +2295,7 @@ bool rarch_main_command(unsigned cmd)
          driver.input->poll(driver.input_data);
 
 #ifdef HAVE_MENU
+         g_runloop.frames.video.current.menu.framebuf.dirty = true;
          if (g_runloop.is_menu)
              rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
 #endif
