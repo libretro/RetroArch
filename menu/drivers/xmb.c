@@ -459,7 +459,7 @@ static void xmb_render_background(gl_t *gl, xmb_handle_t *xmb,
    gl->coords.color = gl->white_color_ptr;
 }
 
-static void xmb_get_message(const char *message)
+static void xmb_render_messagebox_internal(const char *message)
 {
    xmb_handle_t *xmb = NULL;
    menu_handle_t *menu = menu_driver_resolve();
@@ -1115,7 +1115,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 static void xmb_frame(void)
 {
    int i, depth;
+   char msg[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
+   bool render_background = false;
    const char *core_name = NULL;
    const char *core_version = NULL;
    xmb_handle_t *xmb = NULL;
@@ -1213,22 +1215,27 @@ static void xmb_frame(void)
 
    if (menu->keyboard.display)
    {
-      char msg[PATH_MAX_LENGTH];
       const char *str = *menu->keyboard.buffer;
 
       if (!str)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s",
             menu->keyboard.label, str);
-      xmb_render_background(gl, xmb, true);
-      xmb_render_messagebox(msg);
+      render_background = true;
    }
 
    if (xmb->box_message[0] != '\0')
    {
-      xmb_render_background(gl, xmb, true);
-      xmb_render_messagebox(xmb->box_message);
+      strlcpy(msg, xmb->box_message,
+            sizeof(msg));
       xmb->box_message[0] = '\0';
+      render_background = true;
+   }
+
+   if (render_background)
+   {
+      xmb_render_background(gl, xmb, true);
+      xmb_render_messagebox(msg);
    }
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
@@ -1817,7 +1824,7 @@ static void xmb_toggle(bool menu_on)
 
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
-   xmb_get_message,
+   xmb_render_messagebox_internal,
    NULL,
    xmb_frame,
    xmb_init,
