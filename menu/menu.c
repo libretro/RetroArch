@@ -50,7 +50,8 @@ static void draw_frame(void)
     
    if (g_runloop.frames.video.current.menu.action.active ||
        g_runloop.frames.video.current.menu.animation.is_active ||
-       g_runloop.frames.video.current.menu.label.is_updated)
+       g_runloop.frames.video.current.menu.label.is_updated ||
+       g_runloop.frames.video.current.menu.framebuf.dirty)
        rarch_render_cached_frame();
 }
 
