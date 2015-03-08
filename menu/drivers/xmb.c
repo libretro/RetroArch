@@ -1072,9 +1072,6 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       else if (!strcmp(entry_label, "resume_content"))
          icon = xmb->textures.list[XMB_TEXTURE_RESUME].id;
 
-      xmb_draw_icon_begin(gl, xmb);
-      xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
-      xmb_draw_icon_end(gl, xmb);
 
       menu_animation_ticker_line(name, 35, g_runloop.frames.video.count / 20, path_buf,
          (i == current));
@@ -1108,9 +1105,12 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                node->label_alpha,
                0);
 
+      xmb_draw_icon_begin(gl, xmb);
+
+      xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
+
       if (!strcmp(type_str, "ON") && xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
       {
-         xmb_draw_icon_begin(gl, xmb);
          xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal
                + xmb->icon.size / 2.0 + xmb->margins.setting.left,
@@ -1118,12 +1118,10 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                node->alpha,
                0,
                1);
-         xmb_draw_icon_end(gl, xmb);
       }
 
       if (!strcmp(type_str, "OFF") && xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
       {
-         xmb_draw_icon_begin(gl, xmb);
          xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal
                + xmb->icon.size / 2.0 + xmb->margins.setting.left,
@@ -1131,8 +1129,9 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                node->alpha,
                0,
                1);
-         xmb_draw_icon_end(gl, xmb);
       }
+
+      xmb_draw_icon_end(gl, xmb);
    }
 }
 
