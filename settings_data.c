@@ -1142,8 +1142,11 @@ static void setting_data_get_string_representation_st_float_video_refresh_rate_a
       return;
 
    if (video_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
+   {
       snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
+      g_runloop.frames.video.current.menu.label.is_updated = true;
+   }
    else
       strlcpy(type_str, "N/A", type_str_size);
 }
