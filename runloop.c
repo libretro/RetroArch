@@ -878,6 +878,9 @@ static int rarch_main_iterate_quit(void)
 #ifdef HAVE_OVERLAY
 void rarch_main_iterate_overlay_state(void)
 {
+   if (g_runloop.is_idle)
+      return;
+
    switch (driver.overlay->state)
    {
       case OVERLAY_STATUS_NONE:
