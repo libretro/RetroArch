@@ -391,16 +391,14 @@ int menu_iterate(retro_input_t input,
       menu->dt = IDEAL_DT / 4;
    menu->old_time = menu->cur_time;
 
-   if (driver.menu_ctx)
-   {
-      if (driver.menu_ctx->set_texture)
-         driver.menu_ctx->set_texture();
-      if (driver.menu_ctx->entry_iterate) 
-         ret = driver.menu_ctx->entry_iterate(action);
-   }
+   if (driver.menu_ctx && driver.menu_ctx->entry_iterate)
+      ret = driver.menu_ctx->entry_iterate(action);
 
    if (g_runloop.is_menu)
       draw_frame();
+
+   if (driver.menu_ctx && driver.menu_ctx->set_texture)
+      driver.menu_ctx->set_texture();
 
    if (ret)
       return -1;
