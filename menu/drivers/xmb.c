@@ -1135,13 +1135,75 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    }
 }
 
+static void xmb_draw_cursor(gl_t *gl, float x, float y)
+{
+   struct gl_coords coords;
+   static const GLfloat vertex[] = {
+      0, 0,
+      1, 0,
+      0, 1,
+      1, 1,
+   };
+
+   static const GLfloat tex_coord[] = {
+      0, 1,
+      1, 1,
+      0, 0,
+      1, 0,
+   };
+   GLfloat color[] = {
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+   };
+
+   glViewport(x - 5, gl->win_height - y + 5, 11, 11);
+
+   coords.vertices      = 4;
+   coords.vertex        = vertex;
+   coords.tex_coord     = tex_coord;
+   coords.lut_tex_coord = tex_coord;
+
+   coords.color = color;
+   glBindTexture(GL_TEXTURE_2D, 0);
+
+   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   gl->shader->set_coords(&coords);
+   gl->shader->set_mvp(gl, &gl->mvp_no_rot);
+
+   glEnable(GL_BLEND);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glDisable(GL_BLEND);
+
+   gl->coords.color = gl->white_color_ptr;
+}
+
 static void xmb_render(void)
 {
+   unsigned i, current, end;
+
    menu_handle_t *menu = menu_driver_resolve();
    if (!menu)
       return;
 
+   xmb_handle_t *xmb = (xmb_handle_t*)menu->userdata;
+
+   if (!xmb)
+      return;
+
    menu_animation_update(menu->animation, menu->dt / IDEAL_DT);
+
+   current = menu->navigation.selection_ptr;
+   end     = menu_list_get_size(menu->menu_list);
+
+   for (i = 0; i < end; i++)
+   {
+      float item_y = xmb->margins.screen.top + xmb_item_y(xmb, i, current);
+
+      if (menu->mouse.y > item_y && menu->mouse.y < item_y + xmb->icon.size)
+         menu->mouse.ptr = i;
+   }
 
    g_runloop.frames.video.current.menu.animation.is_active = false;
    g_runloop.frames.video.current.menu.label.is_updated    = false;
@@ -1273,6 +1335,9 @@ static void xmb_frame(void)
       xmb_render_background(gl, xmb, true);
       xmb_render_messagebox(msg);
    }
+
+   if (menu->mouse.enable)
+      xmb_draw_cursor(gl, menu->mouse.x, menu->mouse.y);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
