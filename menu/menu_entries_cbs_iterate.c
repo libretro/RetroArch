@@ -162,19 +162,18 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
    if (!menu->mouse.enable)
       return 0;
 
-   if (menu->mouse.ptr >= 0
-      && menu->mouse.ptr <= menu_list_get_size(menu->menu_list)-1)
-      menu_navigation_set(&menu->navigation, menu->mouse.ptr, false);
-
    if (menu->mouse.left)
    {
       if (!menu->mouse.oldleft)
       {
          menu->mouse.oldleft = true;
 
-         if (cbs && cbs->action_ok)
+         if (menu->mouse.ptr == menu->navigation.selection_ptr
+            && cbs && cbs->action_ok)
             return cbs->action_ok(path, label, type,
                   menu->navigation.selection_ptr);
+         else if (menu->mouse.ptr <= menu_list_get_size(menu->menu_list)-1)
+            menu_navigation_set(&menu->navigation, menu->mouse.ptr, false);
       }
    }
    else
@@ -562,9 +561,6 @@ static int mouse_iterate(unsigned action)
    menu->mouse.dy = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
 
-   if (menu->mouse.dx != 0 || menu->mouse.dy !=0)
-      g_runloop.frames.video.current.menu.animation.is_active = true;
-
    menu->mouse.x += menu->mouse.dx;
    menu->mouse.y += menu->mouse.dy;
 
@@ -585,6 +581,9 @@ static int mouse_iterate(unsigned action)
 
    menu->mouse.wheelup = menu->mouse.y == 5;
    menu->mouse.wheeldown = menu->mouse.y == menu->frame_buf.height - 5;
+
+   if (menu->mouse.dx != 0 || menu->mouse.dy !=0 || menu->mouse.left)
+      g_runloop.frames.video.current.menu.animation.is_active = true;
 
    return 0;
 }
