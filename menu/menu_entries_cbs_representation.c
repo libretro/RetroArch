@@ -492,6 +492,8 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
    (void)width;
    (void)height;
 
+   strlcpy(path_buf, path, path_buf_size);
+
    if (driver.video_data && driver.video_poke &&
          driver.video_poke->get_video_output_size)
    {
