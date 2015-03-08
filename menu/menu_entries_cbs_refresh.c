@@ -26,6 +26,7 @@ static int action_refresh_default(file_list_t *list, file_list_t *menu_list)
    ret = menu_entries_deferred_push(list, menu_list);
 
    menu->need_refresh = false;
+   g_runloop.frames.video.current.menu.action.active = true;
 
    return ret;
 }
