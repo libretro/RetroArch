@@ -158,7 +158,7 @@ static void glui_render_background(gl_t *gl, glui_handle_t *glui,
    gl->coords.color = gl->white_color_ptr;
 }
 
-static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui, float x, float y)
+static void glui_draw_cursor(gl_t *gl, float x, float y)
 {
    struct gl_coords coords;
    static const GLfloat vertex[] = {
@@ -181,7 +181,7 @@ static void glui_draw_cursor(gl_t *gl, glui_handle_t *glui, float x, float y)
       1.0f, 1.0f, 1.0f, 1.0f,
    };
 
-   glViewport(x - 5, gl->win_height - y, 11, 11);
+   glViewport(x - 5, gl->win_height - y + 5, 11, 11);
 
    coords.vertices      = 4;
    coords.vertex        = vertex;
@@ -457,7 +457,7 @@ static void glui_frame(void)
    }
 
    if (menu->mouse.enable)
-      glui_draw_cursor(gl, glui, menu->mouse.x, menu->mouse.y);
+      glui_draw_cursor(gl, menu->mouse.x, menu->mouse.y);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
