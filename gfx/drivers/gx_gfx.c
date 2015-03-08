@@ -1115,7 +1115,8 @@ static bool gx_frame(void *data, const void *frame,
    video_monitor_get_fps(fps_txt, sizeof(fps_txt),
          fps_text_buf, sizeof(fps_text_buf));
 
-   if (g_settings.fps_draw)
+   // TODO: is FPS monitoring gone forever?
+   if (0)
    {
       char mem1_txt[128];
       unsigned x = 15;
