@@ -660,11 +660,11 @@ static inline int time_to_exit(retro_input_t input)
 }
 
 /**
- * update_frame_time:
+ * rarch_update_frame_time:
  *
  * Updates frame timing if frame timing callback is in use by the core.
  **/
-static void update_frame_time(void)
+static void rarch_update_frame_time(void)
 {
    retro_time_t curr_time = rarch_get_time_usec();
    retro_time_t delta     = curr_time - g_extern.system.frame_time_last;
@@ -687,11 +687,11 @@ static void update_frame_time(void)
 
 
 /**
- * limit_frame_time:
+ * rarch_limit_frame_time:
  *
  * Limit frame time if fast forward ratio throttle is enabled.
  **/
-static void limit_frame_time(void)
+static void rarch_limit_frame_time(void)
 {
    double effective_fps, mft_f;
    retro_time_t current, target = 0, to_sleep_ms = 0;
@@ -956,7 +956,7 @@ int rarch_main_iterate(void)
       return rarch_main_iterate_quit();
 
    if (g_extern.system.frame_time.callback)
-      update_frame_time();
+      rarch_update_frame_time();
 
    do_pre_state_checks(input, old_input, trigger_input);
 
@@ -1055,7 +1055,7 @@ int rarch_main_iterate(void)
 
 success:
    if (g_settings.fastforward_ratio_throttle_enable)
-      limit_frame_time();
+      rarch_limit_frame_time();
 
    return ret;
 }
