@@ -223,7 +223,17 @@ static void rgui_render_background(void)
    if (!menu)
       return;
 
-   fill_rect(&menu->frame_buf, 0, 0, menu->frame_buf.width, menu->frame_buf.height, gray_filler);
+   size_t pitch_in_pixels = menu->frame_buf.pitch >> 1;
+   size_t size = menu->frame_buf.pitch * 4;
+   uint16_t *src = menu->frame_buf.data + pitch_in_pixels * menu->frame_buf.height;
+   uint16_t *dst = menu->frame_buf.data;
+
+   while (dst < src)
+   {
+      memcpy(dst, src, size);
+      dst += pitch_in_pixels * 4;
+   }
+
    fill_rect(&menu->frame_buf, 5, 5, menu->frame_buf.width - 10, 5, green_filler);
    fill_rect(&menu->frame_buf, 5, menu->frame_buf.height - 10, menu->frame_buf.width - 10, 5,
          green_filler);
@@ -475,7 +485,8 @@ static void *rgui_init(void)
    if (!menu)
       return NULL;
 
-   menu->frame_buf.data = (uint16_t*)calloc(400 * 240, sizeof(uint16_t)); 
+   /* 4 extra lines to cache  the checked background */
+   menu->frame_buf.data = (uint16_t*)calloc(400 * (240 + 4), sizeof(uint16_t));
 
    if (!menu->frame_buf.data)
       goto error;
@@ -492,6 +503,8 @@ static void *rgui_init(void)
       RARCH_ERR("No font bitmap or binary, abort");
       goto error;
    }
+
+   fill_rect(&menu->frame_buf, 0, menu->frame_buf.height, menu->frame_buf.width, 4, gray_filler);
 
    return menu;
 
