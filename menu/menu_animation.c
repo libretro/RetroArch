@@ -448,7 +448,7 @@ void menu_animation_update(animation_t *animation, float dt)
       return;
    }
 
-   g_runloop.frames.video.current.menu.is_animated = true;
+   g_runloop.frames.video.current.menu.animation.is_active = true;
 }
 
 /**
@@ -509,5 +509,5 @@ void menu_animation_ticker_line(char *buf, size_t len, unsigned idx,
    else
       strlcpy(buf, str + right_offset, len + 1);
 
-   g_runloop.frames.video.current.menu.is_animated = true;
+   g_runloop.frames.video.current.menu.animation.is_active = true;
 }

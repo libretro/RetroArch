@@ -470,8 +470,20 @@ struct runloop
          {
             struct
             {
-               bool is_animated;
-               bool framebuf_dirty;
+               struct
+               {
+                  bool is_updated;
+               } label;
+
+               struct
+               {
+                  bool is_active;
+               } animation;
+
+               struct
+               {
+                  bool dirty;
+               } framebuf;
             } menu;
          } current;
       } video;
