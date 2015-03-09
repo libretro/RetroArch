@@ -491,7 +491,6 @@ static void config_set_defaults(void)
    g_settings.menu.mouse_enable = false;
    g_settings.menu.timedate_enable = true;
    g_settings.menu.core_enable = true;
-   g_settings.menu.throttle = false;
    *g_settings.menu.wallpaper = '\0';
    g_settings.menu.navigation.wraparound.horizontal_enable = true;
    g_settings.menu.navigation.wraparound.vertical_enable = true;
@@ -1121,7 +1120,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(menu.collapse_subgroups_enable,   "menu_collapse_subgroups_enable");
    CONFIG_GET_BOOL(menu.show_advanced_settings,   "menu_show_advanced_settings");
    CONFIG_GET_PATH(menu.wallpaper, "menu_wallpaper");
-   CONFIG_GET_BOOL(menu.throttle,   "menu_throttle");
    if (!strcmp(g_settings.menu.wallpaper, "default"))
       *g_settings.menu.wallpaper = '\0';
 #endif
@@ -1889,7 +1887,6 @@ bool config_save_file(const char *path)
    config_set_bool(conf,"menu_mouse_enable", g_settings.menu.mouse_enable);
    config_set_bool(conf,"menu_timedate_enable", g_settings.menu.timedate_enable);
    config_set_bool(conf,"menu_core_enable", g_settings.menu.core_enable);
-   config_set_bool(conf,"menu_throttle", g_settings.menu.throttle);
    config_set_path(conf, "menu_wallpaper", g_settings.menu.wallpaper);
 #endif
    config_set_bool(conf,  "video_vsync", g_settings.video.vsync);
