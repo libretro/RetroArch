@@ -707,7 +707,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                    if (cbs && cbs->action_start)
                      cbs->action_start(type, entry_label, MENU_ACTION_START);
                    if (cbs && cbs->action_toggle)
-                     cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT);
+                     cbs->action_toggle(type, entry_label, MENU_ACTION_RIGHT, true);
                    menu_list_push_stack(menu->menu_list, "",
                                         "info_screen", 0, i);
                  }
