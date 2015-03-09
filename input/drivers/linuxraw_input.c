@@ -57,8 +57,8 @@ static void linuxraw_exitGracefully(int sig)
 
 static void *linuxraw_input_init(void)
 {
-   linuxraw_input_t *linuxraw;
    struct sigaction sa;
+   linuxraw_input_t *linuxraw = NULL;
 
    /* Only work on terminals. */
    if (!isatty(0))

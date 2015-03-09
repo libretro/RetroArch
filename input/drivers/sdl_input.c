@@ -290,6 +290,8 @@ static bool sdl_set_rumble(void *data, unsigned port,
 static const rarch_joypad_driver_t *sdl_get_joypad_driver(void *data)
 {
    sdl_input_t *sdl = (sdl_input_t*)data;
+   if (!sdl)
+      return NULL;
    return sdl->joypad;
 }
 
