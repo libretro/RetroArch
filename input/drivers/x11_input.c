@@ -76,9 +76,10 @@ static bool x_key_pressed(x11_input_t *x11, int key)
    if (key >= RETROK_LAST)
       return false;
 
-   sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
+   sym     = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
    keycode = XKeysymToKeycode(x11->display, sym);
-   ret = x11->state[keycode >> 3] & (1 << (keycode & 7));
+   ret     = x11->state[keycode >> 3] & (1 << (keycode & 7));
+
    return ret;
 }
 
@@ -90,6 +91,7 @@ static bool x_is_pressed(x11_input_t *x11,
       const struct retro_keybind *bind = &binds[id];
       return bind->valid && x_key_pressed(x11, binds[id].key);
    }
+
    return false;
 }
 
@@ -145,9 +147,9 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
          }
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return x11->mouse_m;
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 static int16_t x_pointer_state(x11_input_t *x11,
@@ -184,9 +186,9 @@ static int16_t x_pointer_state(x11_input_t *x11,
          return res_y;
       case RETRO_DEVICE_ID_POINTER_PRESSED:
          return x11->mouse_l;
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 static int16_t x_lightgun_state(x11_input_t *x11, unsigned id)
@@ -245,10 +247,9 @@ static int16_t x_input_state(void *data,
 
       case RETRO_DEVICE_LIGHTGUN:
          return x_lightgun_state(x11, id);
-
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 static void x_input_free(void *data)
@@ -359,6 +360,9 @@ static bool x_set_rumble(void *data, unsigned port,
 static const rarch_joypad_driver_t *x_get_joypad_driver(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
+
+   if (!x11)
+      return NULL;
    return x11->joypad;
 }
 
