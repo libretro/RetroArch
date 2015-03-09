@@ -280,7 +280,7 @@ static int action_start_core_setting(unsigned type,
 static int action_start_lookup_setting(unsigned type, const char *label,
       unsigned action)
 {
-   int ret = menu_setting_set(type, label, MENU_ACTION_START);
+   int ret = menu_setting_set(type, label, MENU_ACTION_START, false);
    g_runloop.frames.video.current.menu.action.active = true;
 
    return ret;

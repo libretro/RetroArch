@@ -22,7 +22,7 @@
 static int action_cancel_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return menu_setting_set(type, label, MENU_ACTION_CANCEL);
+   return menu_setting_set(type, label, MENU_ACTION_CANCEL, false);
 }
 
 static int action_cancel_pop_default(const char *path,

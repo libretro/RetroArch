@@ -24,7 +24,7 @@
 #include "../retroarch.h"
 
 static int shader_action_parameter_toggle(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader_parameter *param = NULL;
@@ -58,7 +58,7 @@ static int shader_action_parameter_toggle(unsigned type, const char *label,
 }
 
 static int shader_action_parameter_preset_toggle(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
@@ -95,7 +95,7 @@ static int shader_action_parameter_preset_toggle(unsigned type, const char *labe
 }
 
 static int action_toggle_cheat(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
    cheat_manager_t *cheat = g_extern.cheat;
    size_t idx = type - MENU_SETTINGS_CHEAT_BEGIN;
@@ -117,7 +117,7 @@ static int action_toggle_cheat(unsigned type, const char *label,
 }
 
 static int action_toggle_input_desc(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
    unsigned inp_desc_user         = inp_desc_index_offset / RARCH_FIRST_CUSTOM_BIND;
@@ -145,7 +145,7 @@ static int action_toggle_input_desc(unsigned type, const char *label,
 }
 
 static int action_toggle_save_state(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
    switch (action)
    {
@@ -167,7 +167,7 @@ static int action_toggle_save_state(unsigned type, const char *label,
 }
 
 static int action_toggle_scroll(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
    menu_handle_t *menu = menu_driver_resolve();
@@ -209,7 +209,7 @@ static int action_toggle_scroll(unsigned type, const char *label,
 }
 
 static int action_toggle_mainmenu(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
    menu_file_list_cbs_t *cbs = NULL;
    unsigned push_list = 0;
@@ -261,7 +261,7 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
          g_runloop.frames.video.current.menu.action.active = true;
          break;
       case 2:
-         action_toggle_scroll(0, "", action);
+         action_toggle_scroll(0, "", action, false);
          g_runloop.frames.video.current.menu.action.active = true;
          break;
       case 0:
@@ -273,7 +273,7 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
 }
 
 static int action_toggle_shader_scale_pass(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
@@ -311,7 +311,7 @@ static int action_toggle_shader_scale_pass(unsigned type, const char *label,
 }
 
 static int action_toggle_shader_filter_pass(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
@@ -345,7 +345,7 @@ static int action_toggle_shader_filter_pass(unsigned type, const char *label,
 }
 
 static int action_toggle_shader_filter_default(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
    rarch_setting_t *setting = menu_setting_find("video_smooth");
@@ -356,7 +356,7 @@ static int action_toggle_shader_filter_default(unsigned type, const char *label,
 }
 
 static int action_toggle_cheat_num_passes(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
    unsigned new_size = 0;
    cheat_manager_t *cheat = g_extern.cheat;
@@ -390,7 +390,7 @@ static int action_toggle_cheat_num_passes(unsigned type, const char *label,
 }
 
 static int action_toggle_shader_num_passes(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
@@ -427,7 +427,7 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
 }
 
 static int action_toggle_video_resolution(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
 #if defined(__CELLOS_LV2__)
    switch (action)
@@ -478,7 +478,7 @@ static int action_toggle_video_resolution(unsigned type, const char *label,
 }
 
 static int core_setting_toggle(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
    unsigned idx = type - MENU_SETTINGS_CORE_OPTION_START;
 
@@ -501,7 +501,7 @@ static int core_setting_toggle(unsigned type, const char *label,
 }
 
 static int disk_options_disk_idx_toggle(unsigned type, const char *label,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
    switch (action)
    {

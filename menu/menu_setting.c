@@ -118,7 +118,8 @@ rarch_setting_t *menu_setting_find(const char *label)
          driver.menu->list_settings, label);
 }
 
-int menu_setting_set(unsigned type, const char *label, unsigned action)
+int menu_setting_set(unsigned type, const char *label,
+      unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = menu_setting_find(
          driver.menu->menu_list->selection_buf->list

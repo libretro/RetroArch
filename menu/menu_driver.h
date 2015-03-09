@@ -199,7 +199,8 @@ typedef struct menu_file_list_cbs
    int (*action_select)(unsigned type,  const char *label, unsigned action);
    int (*action_content_list_switch)(void *data, void *userdata, const char
          *path, const char *label, unsigned type);
-   int (*action_toggle)(unsigned type, const char *label, unsigned action);
+   int (*action_toggle)(unsigned type, const char *label, unsigned action,
+         bool wraparound);
    int (*action_refresh)(file_list_t *list, file_list_t *menu_list);
    int (*action_up_or_down)(unsigned type, const char *label, unsigned action);
    void (*action_get_representation)(file_list_t* list,

@@ -183,7 +183,7 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
             && cbs && cbs->action_toggle && setting &&
             (setting->type == ST_BOOL || setting->type == ST_UINT || setting->type == ST_FLOAT
              || setting->type == ST_STRING))
-            return cbs->action_toggle(type, label, MENU_ACTION_RIGHT);
+            return cbs->action_toggle(type, label, MENU_ACTION_RIGHT, true);
          if (menu->mouse.ptr == menu->navigation.selection_ptr
             && cbs && cbs->action_ok)
             return cbs->action_ok(path, label, type,
@@ -682,7 +682,7 @@ static int action_iterate_main(const char *label, unsigned action)
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
          if (cbs && cbs->action_toggle)
-            ret = cbs->action_toggle(type_offset, label_offset, action);
+            ret = cbs->action_toggle(type_offset, label_offset, action, false);
          break;
       case MENU_ACTION_SELECT:
          if (cbs && cbs->action_select)

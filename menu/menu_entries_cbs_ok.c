@@ -975,7 +975,7 @@ static int action_ok_shader_apply_changes(const char *path,
 static int action_ok_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return menu_setting_set(type, label, MENU_ACTION_OK);
+   return menu_setting_set(type, label, MENU_ACTION_OK, false);
 }
 
 static int action_ok_rdb_entry_submenu(const char *path,
