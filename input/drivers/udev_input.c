@@ -217,12 +217,6 @@ static void udev_handle_mouse(udev_input_t *udev,
             case BTN_MIDDLE:
                udev->mouse_m = event->value;
                break;
-            case BTN_FORWARD:
-               udev->mouse_wu = event->value;
-               break;
-            case BTN_BACK:
-               udev->mouse_wd = event->value;
-               break;
             default:
                break;
          }
@@ -237,6 +231,12 @@ static void udev_handle_mouse(udev_input_t *udev,
 
             case REL_Y:
                udev->mouse_y += event->value;
+               break;
+            case REL_WHEEL:
+               if (event->value == 1)
+                  udev->mouse_wu = 1;
+               else if (event->value == -1)
+                  udev->mouse_wd = 1;
                break;
 
             default:
