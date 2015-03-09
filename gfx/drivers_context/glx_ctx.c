@@ -159,7 +159,10 @@ static void gfx_ctx_glx_check_window(void *data, bool *quit,
             if (event.xunmap.window == glx->g_win)
                glx->g_has_focus = false;
             break;
-
+         case ButtonPress:
+            break;
+         case ButtonRelease:
+            break;
          case KeyPress:
          case KeyRelease:
             x11_handle_key_event(&event, glx->g_xic, filter);
@@ -418,7 +421,8 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
 
    swa.colormap = glx->g_cmap = XCreateColormap(glx->g_dpy,
          RootWindow(glx->g_dpy, vi->screen), vi->visual, AllocNone);
-   swa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask;
+   swa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask |
+      ButtonReleaseMask | ButtonPressMask;
    swa.override_redirect = fullscreen ? True : False;
 
    if (fullscreen && !windowed_full)
