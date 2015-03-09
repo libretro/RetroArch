@@ -55,8 +55,7 @@ void handle_xkb(
 
       if (*map_idx != XKB_MOD_INVALID)
          mod |= xkb_state_mod_index_is_active(
-               xkb_state,
-               *map_idx,
+               xkb_state, *map_idx,
                (enum xkb_state_component)((XKB_STATE_MODS_EFFECTIVE) > 0)) ? *map_bit : 0;
    }
 

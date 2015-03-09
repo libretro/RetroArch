@@ -49,18 +49,20 @@ static size_t conv_utf8_utf32(uint32_t *out,
    size_t ret = 0;
    while (in_size && out_chars)
    {
+      unsigned ones, extra, shift;
+      uint32_t c;
       uint8_t first = *in++;
 
-      unsigned ones = leading_ones(first);
+      ones = leading_ones(first);
       if (ones > 6 || ones == 1) /* Invalid or desync. */
          break;
 
-      unsigned extra = ones ? ones - 1 : ones;
+      extra = ones ? ones - 1 : ones;
       if (1 + extra > in_size) /* Overflow. */
          break;
 
-      unsigned shift = (extra - 1) * 6;
-      uint32_t c = (first & ((1 << (7 - ones)) - 1)) << (6 * extra);
+      shift = (extra - 1) * 6;
+      c     = (first & ((1 << (7 - ones)) - 1)) << (6 * extra);
 
       for (i = 0; i < extra; i++, in++, shift -= 6)
          c |= (*in & 0x3f) << shift;
