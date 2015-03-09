@@ -41,6 +41,7 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_RGUI)
    &menu_ctx_rgui,
 #endif
+   &menu_ctx_null,
    NULL
 };
 

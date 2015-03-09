@@ -696,7 +696,10 @@ MENU
 #include "../menu/menu_navigation.c"
 #include "../menu/menu_animation.c"
 #include "../menu/menu_database.c"
+
+#include "../menu/drivers/null.c"
 #endif
+
 
 #ifdef HAVE_RMENU
 #include "../menu/drivers/rmenu.c"
