@@ -88,7 +88,7 @@ enum setting_list_flags
 #define SL_FLAG_ALL_SETTINGS (SL_FLAG_ALL - SL_FLAG_MAIN_MENU)
 
 typedef void (*change_handler_t               )(void *data);
-typedef int  (*action_toggle_handler_t        )(void *data, unsigned action);
+typedef int  (*action_toggle_handler_t        )(void *data, unsigned action, bool wraparound);
 typedef int  (*action_up_or_down_handler_t    )(void *data, unsigned action);
 typedef int  (*action_start_handler_t         )(void *data);
 typedef int  (*action_iterate_handler_t       )(unsigned action);

@@ -472,7 +472,8 @@ static int setting_data_bind_action_start(void *data)
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_data_action_toggle_analog_dpad_mode(void *data, unsigned action)
+static int setting_data_action_toggle_analog_dpad_mode(void *data,
+      unsigned action, bool wraparound)
 {
    unsigned port = 0;
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -512,7 +513,7 @@ static int setting_data_action_toggle_analog_dpad_mode(void *data, unsigned acti
  * Returns: 0 on success, -1 on error.
  **/
 static int setting_data_action_toggle_libretro_device_type(
-      void *data, unsigned action)
+      void *data, unsigned action, bool wraparound)
 {
    unsigned current_device, current_idx, i, devices[128],
             types = 0, port = 0;
@@ -591,7 +592,7 @@ static int setting_data_action_toggle_libretro_device_type(
  * Returns: 0 on success, -1 on error.
  **/
 static int setting_data_action_toggle_savestates(
-      void *data, unsigned action)
+      void *data, unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -624,7 +625,8 @@ static int setting_data_action_toggle_savestates(
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_data_action_toggle_bind_device(void *data, unsigned action)
+static int setting_data_action_toggle_bind_device(void *data,
+      unsigned action, bool wraparound)
 {
    unsigned *p = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -651,7 +653,8 @@ static int setting_data_action_toggle_bind_device(void *data, unsigned action)
    return 0;
 }
 
-static int setting_data_bool_action_toggle_default(void *data, unsigned action)
+static int setting_data_bool_action_toggle_default(void *data,
+      unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -669,7 +672,8 @@ static int setting_data_bool_action_toggle_default(void *data, unsigned action)
    return 0;
 }
 
-static int setting_data_uint_action_toggle_default(void *data, unsigned action)
+static int setting_data_uint_action_toggle_default(void *data,
+      unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -706,7 +710,7 @@ static int setting_data_uint_action_toggle_default(void *data, unsigned action)
 }
 
 static int setting_data_fraction_action_toggle_default(
-      void *data, unsigned action)
+      void *data, unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -742,7 +746,7 @@ static int setting_data_fraction_action_toggle_default(
 }
 
 static int setting_data_string_action_toggle_driver(void *data,
-      unsigned action)
+      unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -762,7 +766,7 @@ static int setting_data_string_action_toggle_driver(void *data,
    return 0;
 }
 
-static int core_list_action_toggle(void *data, unsigned action)
+static int core_list_action_toggle(void *data, unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
 
@@ -790,7 +794,8 @@ static int core_list_action_toggle(void *data, unsigned action)
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int load_content_action_toggle(void *data, unsigned action)
+static int load_content_action_toggle(void *data, unsigned action,
+      bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
 

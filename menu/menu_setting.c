@@ -54,7 +54,7 @@ static void setting_handler(rarch_setting_t *setting, unsigned action)
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
          if (setting->action_toggle)
-            setting->action_toggle(setting, action);
+            setting->action_toggle(setting, action, false);
          break;
       case MENU_ACTION_OK:
          if (setting->action_ok)
@@ -79,7 +79,7 @@ int menu_setting_handler(rarch_setting_t *setting, unsigned action)
 }
 
 static int menu_action_handle_setting(rarch_setting_t *setting,
-      unsigned type, unsigned action)
+      unsigned type, unsigned action, bool wraparound)
 {
    if (!setting)
       return -1;
@@ -128,5 +128,6 @@ int menu_setting_set(unsigned type, const char *label,
    if (!setting)
       return 0;
 
-   return menu_action_handle_setting(setting, type, action);
+   return menu_action_handle_setting(setting,
+         type, action, wraparound);
 }
