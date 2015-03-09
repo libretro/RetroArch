@@ -181,8 +181,8 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
 
          if (menu->mouse.ptr == menu->navigation.selection_ptr
             && cbs && cbs->action_toggle && setting &&
-            (setting->type == 2 || setting->type == 4 || setting->type == 5
-             || setting->type == 8))
+            (setting->type == ST_BOOL || setting->type == ST_UINT || setting->type == ST_FLOAT
+             || setting->type == ST_STRING))
             return cbs->action_toggle(type, label, MENU_ACTION_RIGHT);
          if (menu->mouse.ptr == menu->navigation.selection_ptr
             && cbs && cbs->action_ok)
