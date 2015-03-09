@@ -443,7 +443,8 @@ static void xmb_frame_background(gl_t *gl, xmb_handle_t *xmb,
       0.0f, 0.0f, 0.0f, alpha,
    };
 
-   glViewport(0, 0, gl->win_width, gl->win_height);
+   /* force viewport to fullscreen */
+   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
 
    coords.vertices      = 4;
    coords.vertex        = vertex;
@@ -1155,6 +1156,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
    coords.tex_coord     = rmb_tex_coord;
    coords.lut_tex_coord = rmb_tex_coord;
    coords.color         = color;
+
    glBindTexture(GL_TEXTURE_2D, xmb->textures.list[XMB_TEXTURE_POINTER].id);
 
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
