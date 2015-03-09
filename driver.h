@@ -329,8 +329,10 @@ void uninit_drivers(int flags);
  * @sizeof_str         : size of @str.
  *
  * Find previous driver in driver array.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
  **/
-void find_prev_driver(const char *label, char *str, size_t sizeof_str);
+bool find_prev_driver(const char *label, char *str, size_t sizeof_str);
 
 /**
  * find_next_driver:
@@ -339,8 +341,10 @@ void find_prev_driver(const char *label, char *str, size_t sizeof_str);
  * @sizeof_str         : size of @str.
  *
  * Find next driver in driver array.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
  **/
-void find_next_driver(const char *label, char *str, size_t sizeof_str);
+bool find_next_driver(const char *label, char *str, size_t sizeof_str);
 
 /**
  * driver_set_nonblock_state:

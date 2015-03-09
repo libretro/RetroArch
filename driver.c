@@ -142,14 +142,18 @@ int find_driver_index(const char * label, const char *drv)
  *
  * Find previous driver in driver array.
  **/
-void find_prev_driver(const char *label, char *str, size_t sizeof_str)
+bool find_prev_driver(const char *label, char *str, size_t sizeof_str)
 {
    int i = find_driver_index(label, str);
    if (i > 0)
       find_driver_nonempty(label, i - 1, str, sizeof_str);
    else
+   {
       RARCH_WARN(
             "Couldn't find any previous driver (current one: \"%s\").\n", str);
+      return false;
+   }
+   return true;
 }
 
 /**
@@ -160,13 +164,17 @@ void find_prev_driver(const char *label, char *str, size_t sizeof_str)
  *
  * Find next driver in driver array.
  **/
-void find_next_driver(const char *label, char *str, size_t sizeof_str)
+bool find_next_driver(const char *label, char *str, size_t sizeof_str)
 {
    int i = find_driver_index(label, str);
    if (i >= 0)
       find_driver_nonempty(label, i + 1, str, sizeof_str);
    else
+   {
       RARCH_WARN("Couldn't find any next driver (current one: \"%s\").\n", str);
+      return false;
+   }
+   return true;
 }
 
 /**
