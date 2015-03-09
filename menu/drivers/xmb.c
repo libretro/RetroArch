@@ -1143,7 +1143,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 {
    struct gl_coords coords;
-   math_matrix_4x4 mymat, mrot, mscal;
+   math_matrix_4x4 mymat, mrot;
 
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, xmb->alpha,
