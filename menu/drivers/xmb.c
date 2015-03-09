@@ -410,7 +410,7 @@ static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
                                       str, &params, xmb->font.buf);
 }
 
-static void xmb_render_background(gl_t *gl, xmb_handle_t *xmb,
+static void xmb_frame_background(gl_t *gl, xmb_handle_t *xmb,
       bool force_transparency)
 {
    struct gl_coords coords;
@@ -494,7 +494,7 @@ static void xmb_render_messagebox_internal(const char *message)
    strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
 }
 
-static void xmb_render_messagebox(const char *message)
+static void xmb_frame_messagebox(const char *message)
 {
    int x, y;
    unsigned i;
@@ -1233,8 +1233,7 @@ static void xmb_frame(void)
    if (!gl)
       return;
 
-
-   xmb_render_background(gl, xmb, false);
+   xmb_frame_background(gl, xmb, false);
 
    xmb_draw_text(gl, xmb,
          xmb->title_name, xmb->margins.title.left, xmb->margins.title.top, 1, 1, 0);
@@ -1330,8 +1329,8 @@ static void xmb_frame(void)
 
    if (render_background)
    {
-      xmb_render_background(gl, xmb, true);
-      xmb_render_messagebox(msg);
+      xmb_frame_background(gl, xmb, true);
+      xmb_frame_messagebox(msg);
    }
 
    if (menu->mouse.enable)
