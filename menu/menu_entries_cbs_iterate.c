@@ -175,12 +175,12 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
 #if 0
          RARCH_LOG("action OK: %d\n", cbs && cbs->action_ok);
          RARCH_LOG("action toggle: %d\n", cbs && cbs->action_toggle);
-         if (setting->type)
+         if (setting && setting->type)
             RARCH_LOG("action type: %d\n", setting->type);
 #endif
 
          if (menu->mouse.ptr == menu->navigation.selection_ptr
-            && cbs && cbs->action_toggle && 
+            && cbs && cbs->action_toggle && setting &&
             (setting->type == 2 || setting->type == 4 || setting->type == 5
              || setting->type == 8))
             return cbs->action_toggle(type, label, MENU_ACTION_RIGHT);
