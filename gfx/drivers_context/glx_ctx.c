@@ -25,7 +25,6 @@
 #include <X11/Xutil.h>
 #include <GL/glx.h>
 
-
 static int (*g_pglSwapInterval)(int);
 static void (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
 
@@ -113,6 +112,8 @@ static void gfx_ctx_glx_swap_interval(void *data, unsigned interval)
    }
 }
 
+void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch);
+
 static void gfx_ctx_glx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
@@ -160,6 +161,7 @@ static void gfx_ctx_glx_check_window(void *data, bool *quit,
                glx->g_has_focus = false;
             break;
          case ButtonPress:
+            x_input_poll_wheel(driver.input_data, &event.xbutton, true);
             break;
          case ButtonRelease:
             break;

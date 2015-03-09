@@ -578,6 +578,10 @@ static int mouse_iterate(unsigned *action)
    wheel_is_down = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
 
+#if 0
+   RARCH_LOG("wheel up: %d, wheel down: %d\n", wheel_is_up, wheel_is_down);
+#endif
+
    menu->mouse.dx = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
    menu->mouse.dy = driver.input->input_state(driver.input_data,

@@ -132,9 +132,17 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
          return x11->mouse_r;
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         return x11->mouse_wu;
+         {
+            int16_t ret = x11->mouse_wu;
+            x11->mouse_wu = 0;
+            return ret;
+         }
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         return x11->mouse_wd;
+         {
+            int16_t ret = x11->mouse_wd;
+            x11->mouse_wd = 0;
+            return ret;
+         }
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return x11->mouse_m;
       default:
@@ -277,8 +285,6 @@ static void x_input_poll_mouse(x11_input_t *x11)
    x11->mouse_l  = mask & Button1Mask; 
    x11->mouse_m  = mask & Button2Mask; 
    x11->mouse_r  = mask & Button3Mask; 
-   x11->mouse_wu = mask & Button4Mask; 
-   x11->mouse_wd = mask & Button5Mask; 
 
    /* Somewhat hacky, but seem to do the job. */
    if (x11->grab_mouse && driver.video->focus(driver.video_data))
@@ -298,6 +304,24 @@ static void x_input_poll_mouse(x11_input_t *x11)
       }
       x11->mouse_last_x = mid_w;
       x11->mouse_last_y = mid_h;
+   }
+}
+
+void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch)
+{
+   x11_input_t *x11 = (x11_input_t*)data;
+
+   if (!x11)
+      return;
+
+   switch (event->button)
+   {
+      case 4:
+         x11->mouse_wu = 1;
+         break;
+      case 5:
+         x11->mouse_wd = 1;
+         break;
    }
 }
 
