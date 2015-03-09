@@ -313,9 +313,6 @@ static void xmb_draw_icon_begin(gl_t *gl, xmb_handle_t *xmb)
    if (!gl)
       return;
 
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
@@ -467,7 +464,6 @@ static void xmb_frame_background(gl_t *gl, xmb_handle_t *xmb,
       glBindTexture(GL_TEXTURE_2D, 0);
    }
 
-   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
    gl->shader->set_coords(&coords);
    gl->shader->set_mvp(gl, &gl->mvp_no_rot);
 
@@ -1163,9 +1159,6 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -1232,6 +1225,9 @@ static void xmb_frame(void)
 
    if (!gl)
       return;
+
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    xmb_frame_background(gl, xmb, false);
 
