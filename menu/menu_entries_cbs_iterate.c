@@ -166,8 +166,24 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
    {
       if (!menu->mouse.oldleft)
       {
+         rarch_setting_t *setting =
+            (rarch_setting_t*)setting_data_find_setting
+            (driver.menu->list_settings,
+             driver.menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
          menu->mouse.oldleft = true;
 
+#if 0
+         RARCH_LOG("action OK: %d\n", cbs && cbs->action_ok);
+         RARCH_LOG("action toggle: %d\n", cbs && cbs->action_toggle);
+         if (setting->type)
+            RARCH_LOG("action type: %d\n", setting->type);
+#endif
+
+         if (menu->mouse.ptr == menu->navigation.selection_ptr
+            && cbs && cbs->action_toggle && 
+            (setting->type == 2 || setting->type == 4 || setting->type == 5
+             || setting->type == 8))
+            return cbs->action_toggle(type, label, MENU_ACTION_RIGHT);
          if (menu->mouse.ptr == menu->navigation.selection_ptr
             && cbs && cbs->action_ok)
             return cbs->action_ok(path, label, type,
