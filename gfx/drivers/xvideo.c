@@ -487,7 +487,7 @@ static void *xv_init(const video_info_t *video,
    attributes.colormap = xv->colormap;
    attributes.border_pixel = 0;
    attributes.event_mask = StructureNotifyMask | KeyPressMask | 
-      KeyReleaseMask | DestroyNotify | ClientMessage;
+      KeyReleaseMask | ButtonReleaseMask | ButtonPressMask | DestroyNotify | ClientMessage;
 
    width = video->fullscreen ? ((video->width == 0) ? geom->base_width : video->width) : video->width;
    height = video->fullscreen ? ((video->height == 0) ? geom->base_height : video->height) : video->height;
@@ -802,6 +802,11 @@ static bool xv_alive(void *data)
             break;
          case UnmapNotify:
             xv->focus = false;
+            break;
+
+         case ButtonPress:
+            break;
+         case ButtonRelease:
             break;
 
          case KeyPress:

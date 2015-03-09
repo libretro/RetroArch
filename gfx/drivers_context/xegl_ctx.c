@@ -183,6 +183,12 @@ static void gfx_ctx_xegl_check_window(void *data, bool *quit,
                g_has_focus = false;
             break;
 
+         case ButtonPress:
+            break;
+
+         case ButtonRelease:
+            break;
+
          case KeyPress:
          case KeyRelease:
             if (event.xkey.window == g_win)
@@ -469,7 +475,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    swa.colormap = g_cmap = XCreateColormap(g_dpy, RootWindow(g_dpy, vi->screen),
          vi->visual, AllocNone);
-   swa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask;
+   swa.event_mask = StructureNotifyMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | KeyReleaseMask;
    swa.override_redirect = fullscreen ? True : False;
 
    if (fullscreen && !windowed_full)
