@@ -434,7 +434,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
        self.setting->flags & SD_FLAG_BROWSER_ACTION &&
        self.setting->action_toggle &&
        self.setting->change_handler )
-     self.setting->action_toggle( self.setting, MENU_ACTION_RIGHT );
+     self.setting->action_toggle( self.setting, MENU_ACTION_RIGHT, false);
 
    path = BOXSTRING(self.setting->value.string);
    
