@@ -756,10 +756,20 @@ static int setting_data_string_action_toggle_driver(void *data,
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         find_prev_driver(setting->name, setting->value.string, setting->size);
+         if (!find_prev_driver(setting->name, setting->value.string, setting->size))
+         {
+#if 0
+            if (wraparound)
+               find_last_driver(setting->name, setting->value.string, setting->size);
+#endif
+         }
          break;
       case MENU_ACTION_RIGHT:
-         find_next_driver(setting->name, setting->value.string, setting->size);
+         if (!find_next_driver(setting->name, setting->value.string, setting->size))
+         {
+            if (wraparound)
+               find_first_driver(setting->name, setting->value.string, setting->size);
+         }
          break;
    }
 

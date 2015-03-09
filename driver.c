@@ -133,6 +133,11 @@ int find_driver_index(const char * label, const char *drv)
    return -1;
 }
 
+bool find_first_driver(const char *label, char *str, size_t sizeof_str)
+{
+   find_driver_nonempty(label, 0, str, sizeof_str);
+   return true;
+}
 
 /**
  * find_prev_driver:
@@ -167,7 +172,7 @@ bool find_prev_driver(const char *label, char *str, size_t sizeof_str)
 bool find_next_driver(const char *label, char *str, size_t sizeof_str)
 {
    int i = find_driver_index(label, str);
-   if (i >= 0)
+   if (i >= 0 && (strcmp(str, "null") != 0))
       find_driver_nonempty(label, i + 1, str, sizeof_str);
    else
    {

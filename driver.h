@@ -322,6 +322,8 @@ void init_drivers_pre(void);
  **/
 void uninit_drivers(int flags);
 
+bool find_first_driver(const char *label, char *str, size_t sizeof_str);
+
 /**
  * find_prev_driver:
  * @label              : string of driver type to be found.

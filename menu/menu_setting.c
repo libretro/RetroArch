@@ -54,7 +54,7 @@ static void setting_handler(rarch_setting_t *setting, unsigned action)
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
          if (setting->action_toggle)
-            setting->action_toggle(setting, action, false);
+            setting->action_toggle(setting, action, true);
          break;
       case MENU_ACTION_OK:
          if (setting->action_ok)
