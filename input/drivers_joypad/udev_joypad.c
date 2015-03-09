@@ -576,9 +576,9 @@ static bool udev_joypad_hat(const struct udev_joypad *pad, uint16_t hat)
          return pad->hats[h][1] < 0;
       case HAT_DOWN_MASK:
          return pad->hats[h][1] > 0;
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 static bool udev_joypad_button(unsigned port, uint16_t joykey)
