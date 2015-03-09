@@ -778,6 +778,8 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
+void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch);
+
 static bool xv_alive(void *data)
 {
    XEvent event;
@@ -805,6 +807,7 @@ static bool xv_alive(void *data)
             break;
 
          case ButtonPress:
+            x_input_poll_wheel(driver.input_data, &event.xbutton, true);
             break;
          case ButtonRelease:
             break;
