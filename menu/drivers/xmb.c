@@ -925,6 +925,60 @@ static void xmb_populate_entries(const char *path,
       xmb_list_open(xmb);
 }
 
+static GLuint xmb_icon_get_type(xmb_handle_t *xmb,
+      xmb_node_t *core_node, unsigned type)
+{
+   switch(type)
+   {
+      case MENU_FILE_DIRECTORY:
+         return xmb->textures.list[XMB_TEXTURE_FOLDER].id;
+      case MENU_FILE_PLAIN:
+         return xmb->textures.list[XMB_TEXTURE_FILE].id;
+      case MENU_FILE_PLAYLIST_ENTRY:
+         return xmb->textures.list[XMB_TEXTURE_FILE].id;
+      case MENU_FILE_CONTENTLIST_ENTRY:
+         if (core_node)
+            return core_node->content_icon;
+         return xmb->textures.list[XMB_TEXTURE_FILE].id;
+      case MENU_FILE_CARCHIVE:
+         return xmb->textures.list[XMB_TEXTURE_ZIP].id;
+      case MENU_FILE_CORE:
+         return xmb->textures.list[XMB_TEXTURE_CORE].id;
+      case MENU_FILE_RDB:
+         return xmb->textures.list[XMB_TEXTURE_RDB].id;
+      case MENU_FILE_CURSOR:
+         return xmb->textures.list[XMB_TEXTURE_CURSOR].id;
+      case MENU_SETTING_ACTION_RUN:
+         return xmb->textures.list[XMB_TEXTURE_RUN].id;
+      case MENU_SETTING_ACTION_SAVESTATE:
+         return xmb->textures.list[XMB_TEXTURE_SAVESTATE].id;
+      case MENU_SETTING_ACTION_LOADSTATE:
+         return xmb->textures.list[XMB_TEXTURE_LOADSTATE].id;
+      case MENU_SETTING_ACTION_CORE_INFORMATION:
+         return xmb->textures.list[XMB_TEXTURE_CORE_INFO].id;
+      case MENU_SETTING_ACTION_CORE_OPTIONS:
+         return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS].id;
+      case MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS:
+         return xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS].id;
+      case MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS:
+         return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS].id;
+      case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
+         return xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS].id;
+      case MENU_SETTING_ACTION_SCREENSHOT:
+         return xmb->textures.list[XMB_TEXTURE_SCREENSHOT].id;
+      case MENU_SETTING_ACTION_RESET:
+         return xmb->textures.list[XMB_TEXTURE_RELOAD].id;
+      case MENU_SETTING_ACTION:
+         if (xmb->depth == 3)
+            return xmb->textures.list[XMB_TEXTURE_SUBSETTING].id;
+         return xmb->textures.list[XMB_TEXTURE_SETTING].id;
+      case MENU_SETTING_GROUP:
+         return xmb->textures.list[XMB_TEXTURE_SETTING].id;
+   }
+
+   return xmb->textures.list[XMB_TEXTURE_SUBSETTING].id;
+}
+
 static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       file_list_t *list, file_list_t *stack,
       size_t current, size_t cat_selection_ptr)
@@ -982,76 +1036,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       if (type == MENU_FILE_CONTENTLIST_ENTRY)
          strlcpy(path_buf, path_basename(path_buf), sizeof(path_buf));
 
-      switch(type)
-      {
-         case MENU_FILE_DIRECTORY:
-            icon = xmb->textures.list[XMB_TEXTURE_FOLDER].id;
-            break;
-         case MENU_FILE_PLAIN:
-            icon = xmb->textures.list[XMB_TEXTURE_FILE].id;
-            break;
-         case MENU_FILE_PLAYLIST_ENTRY:
-            icon = xmb->textures.list[XMB_TEXTURE_FILE].id;
-            break;
-         case MENU_FILE_CONTENTLIST_ENTRY:
-            icon = xmb->textures.list[XMB_TEXTURE_FILE].id;
-            if (core_node)
-               icon = core_node->content_icon;
-            break;
-         case MENU_FILE_CARCHIVE:
-            icon = xmb->textures.list[XMB_TEXTURE_ZIP].id;
-            break;
-         case MENU_FILE_CORE:
-            icon = xmb->textures.list[XMB_TEXTURE_CORE].id;
-            break;
-         case MENU_FILE_RDB:
-            icon = xmb->textures.list[XMB_TEXTURE_RDB].id;
-            break;
-         case MENU_FILE_CURSOR:
-            icon = xmb->textures.list[XMB_TEXTURE_CURSOR].id;
-            break;
-         case MENU_SETTING_ACTION_RUN:
-            icon = xmb->textures.list[XMB_TEXTURE_RUN].id;
-            break;
-         case MENU_SETTING_ACTION_SAVESTATE:
-            icon = xmb->textures.list[XMB_TEXTURE_SAVESTATE].id;
-            break;
-         case MENU_SETTING_ACTION_LOADSTATE:
-            icon = xmb->textures.list[XMB_TEXTURE_LOADSTATE].id;
-            break;
-         case MENU_SETTING_ACTION_CORE_INFORMATION:
-            icon = xmb->textures.list[XMB_TEXTURE_CORE_INFO].id;
-            break;
-         case MENU_SETTING_ACTION_CORE_OPTIONS:
-            icon = xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS].id;
-            break;
-         case MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS:
-            icon = xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS].id;
-            break;
-         case MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS:
-            icon = xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS].id;
-            break;
-         case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
-            icon = xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS].id;
-            break;
-         case MENU_SETTING_ACTION_SCREENSHOT:
-            icon = xmb->textures.list[XMB_TEXTURE_SCREENSHOT].id;
-            break;
-         case MENU_SETTING_ACTION_RESET:
-            icon = xmb->textures.list[XMB_TEXTURE_RELOAD].id;
-            break;
-         case MENU_SETTING_ACTION:
-            icon = xmb->textures.list[XMB_TEXTURE_SETTING].id;
-            if (xmb->depth == 3)
-               icon = xmb->textures.list[XMB_TEXTURE_SUBSETTING].id;
-            break;
-         case MENU_SETTING_GROUP:
-            icon = xmb->textures.list[XMB_TEXTURE_SETTING].id;
-            break;
-         default:
-            icon = xmb->textures.list[XMB_TEXTURE_SUBSETTING].id;
-            break;
-      }
+      icon = xmb_icon_get_type(xmb, core_node, type);
 
       if (!strcmp(entry_label, "core_options"))
          icon = xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS].id;
