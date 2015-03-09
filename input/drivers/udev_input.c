@@ -408,6 +408,7 @@ static void udev_input_poll(void *data)
    udev_input_t *udev = (udev_input_t*)data;
 
    udev->mouse_x = udev->mouse_y = 0;
+   udev->mouse_wu = udev->mouse_wd = 0;
 
    while (udev_input_hotplug_available(udev))
       udev_input_handle_hotplug(udev);

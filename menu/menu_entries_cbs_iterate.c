@@ -562,15 +562,21 @@ static int action_iterate_message(const char *label, unsigned action)
    return 0;
 }
 
-static int mouse_iterate(unsigned action)
+static int mouse_iterate(unsigned *action)
 {
    const struct retro_keybind *binds[MAX_USERS];
+   bool wheel_is_up = false, wheel_is_down = false;
    menu_handle_t *menu    = menu_driver_resolve();
    if (!menu)
       return -1;
 
    if (!menu->mouse.enable)
       return 0;
+
+   wheel_is_up = driver.input->input_state(driver.input_data,
+         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
+   wheel_is_down = driver.input->input_state(driver.input_data,
+         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
 
    menu->mouse.dx = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
@@ -589,14 +595,15 @@ static int mouse_iterate(unsigned action)
    if (menu->mouse.y > menu->frame_buf.height - 5)
       menu->mouse.y = menu->frame_buf.height - 5;
 
+
    menu->mouse.left = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
 
    menu->mouse.right = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
 
-   menu->mouse.wheelup = menu->mouse.y == 5;
-   menu->mouse.wheeldown = menu->mouse.y == menu->frame_buf.height - 5;
+   menu->mouse.wheelup = wheel_is_up || (menu->mouse.y == 5);
+   menu->mouse.wheeldown =  wheel_is_down || (menu->mouse.y == menu->frame_buf.height - 5);
 
    if (menu->mouse.dx != 0 || menu->mouse.dy !=0 || menu->mouse.left)
       g_runloop.frames.video.current.menu.animation.is_active = true;
@@ -622,7 +629,7 @@ static int action_iterate_main(const char *label, unsigned action)
    menu_list_get_at_offset(menu->menu_list->selection_buf,
          menu->navigation.selection_ptr, &path_offset, &label_offset, &type_offset);
 
-   mouse_iterate(action);
+   mouse_iterate(&action);
 
    if (!strcmp(label, "help"))
       return action_iterate_help(label, action);
