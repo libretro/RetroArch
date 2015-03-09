@@ -658,6 +658,7 @@ static void disable_terminal_input(void)
 
    if (tcgetattr(0, &oldterm) < 0)
       return;
+
    newterm = oldterm;
    newterm.c_lflag &= ~(ECHO | ICANON | ISIG);
    newterm.c_iflag &= ~(ISTRIP | IGNCR | ICRNL | INLCR | IXOFF | IXON);

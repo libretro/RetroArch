@@ -136,9 +136,9 @@ static bool xdk_input_set_rumble(void *data, unsigned port,
 static const rarch_joypad_driver_t *xdk_input_get_joypad_driver(void *data)
 {
    xdk_input_t *xdk = (xdk_input_t*)data;
-   if (xdk)
-      return xdk->joypad;
-   return NULL;
+   if (!xdk)
+      return NULL;
+   return xdk->joypad;
 }
 
 input_driver_t input_xinput = {
