@@ -96,6 +96,7 @@ void engine_handle_cmd(void *data)
          {
             RARCH_LOG("Pausing RetroArch.\n");
             g_runloop.is_paused = true;
+            g_runloop.is_idle   = true;
          }
          break;
 
@@ -125,6 +126,7 @@ void engine_handle_cmd(void *data)
 
       case APP_CMD_GAINED_FOCUS:
          g_runloop.is_paused = false;
+         g_runloop.is_idle   = false;
 
          if ((android_app->sensor_state_mask 
                   & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
