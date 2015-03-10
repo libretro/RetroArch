@@ -275,6 +275,10 @@ static int16_t apple_mouse_state(apple_input_data_t *apple,
          return apple->mouse_buttons & 1;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
          return apple->mouse_buttons & 2;
+       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+           return apple->mouse_wu;
+       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+           return apple->mouse_wd;
    }
 
    return 0;

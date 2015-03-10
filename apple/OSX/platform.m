@@ -112,6 +112,9 @@ void apple_rarch_exited(void)
          apple->touches[0].screen_y = pos.y;
       }
          break;
+       case NSScrollWheel:
+           /* TODO/FIXME - properly implement. */
+           break;
       case NSLeftMouseDown:
       case NSRightMouseDown:
       case NSOtherMouseDown:
