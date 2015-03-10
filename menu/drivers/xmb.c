@@ -373,6 +373,48 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
+static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
+      math_matrix_4x4 *mymat,
+      GLuint texture, float x, float y,
+      float alpha, float rotation, float scale_factor)
+{
+   struct gl_coords coords;
+
+   if (alpha > xmb->alpha)
+      alpha = xmb->alpha;
+
+   if (alpha == 0)
+      return;
+
+   if (
+         x < -xmb->icon.size/2 || 
+         x > gl->win_width ||
+         y < xmb->icon.size/2 ||
+         y > gl->win_height + xmb->icon.size)
+      return;
+
+   GLfloat color[] = {
+      1.0f, 1.0f, 1.0f, alpha,
+      1.0f, 1.0f, 1.0f, alpha,
+      1.0f, 1.0f, 1.0f, alpha,
+      1.0f, 1.0f, 1.0f, alpha,
+   };
+
+   glViewport(x, gl->win_height - y, xmb->icon.size, xmb->icon.size);
+
+   coords.vertices      = 4;
+   coords.vertex        = rmb_vertex;
+   coords.tex_coord     = rmb_tex_coord;
+   coords.lut_tex_coord = rmb_tex_coord;
+   coords.color         = color;
+   glBindTexture(GL_TEXTURE_2D, texture);
+
+   gl->shader->set_coords(&coords);
+   gl->shader->set_mvp(gl, mymat);
+
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
 static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
       float y, float scale_factor, float alpha, bool align_right)
 {
@@ -983,6 +1025,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       file_list_t *list, file_list_t *stack,
       size_t current, size_t cat_selection_ptr)
 {
+   math_matrix_4x4 mymat, mrot, mscal;
    unsigned i;
    const char *label     = NULL;
    xmb_node_t *core_node = NULL;
@@ -997,6 +1040,12 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       core_node = xmb_get_userdata_from_core(xmb, cat_selection_ptr - 1);
 
    end = file_list_get_size(list);
+
+   matrix_4x4_rotate_z(&mrot, 0 /* rotation */);
+   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+
+   matrix_4x4_scale(&mscal, 1 /* scale_factor */, 1 /* scale_factor */, 1);
+   matrix_4x4_multiply(&mymat, &mscal, &mymat);
 
    for (i = 0; i < end; i++)
    {
@@ -1092,13 +1141,14 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
                node->label_alpha,
                0);
 
+
       xmb_draw_icon_begin(gl, xmb);
 
       xmb_draw_icon(gl, xmb, icon, icon_x, icon_y, node->alpha, 0, node->zoom);
 
       if (!strcmp(type_str, "ON") && xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
       {
-         xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id,
+         xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal
                + xmb->icon.size / 2.0 + xmb->margins.setting.left,
                xmb->margins.screen.top + node->y + xmb->icon.size / 2.0,
@@ -1109,7 +1159,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
 
       if (!strcmp(type_str, "OFF") && xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
       {
-         xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id,
+         xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id,
                node->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal
                + xmb->icon.size / 2.0 + xmb->margins.setting.left,
                xmb->margins.screen.top + node->y + xmb->icon.size / 2.0,
@@ -1190,6 +1240,7 @@ static void xmb_render(void)
 
 static void xmb_frame(void)
 {
+   math_matrix_4x4 mymat, mrot, mscal;
    int i, depth;
    char msg[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
@@ -1267,16 +1318,23 @@ static void xmb_frame(void)
          menu->navigation.selection_ptr,
          menu->categories.selection_ptr);
 
+   matrix_4x4_rotate_z(&mrot, 0 /* rotation */);
+   matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+
+   matrix_4x4_scale(&mscal, 1 /* scale_factor */, 1 /* scale_factor */, 1);
+   matrix_4x4_multiply(&mymat, &mscal, &mymat);
+
    xmb_draw_icon_begin(gl, xmb);
 
    if (g_settings.menu.timedate_enable)
-      xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
+      xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
             gl->win_width - xmb->icon.size, xmb->icon.size, 1, 0, 1);
 
-   xmb_draw_icon(gl, xmb, xmb->textures.list[XMB_TEXTURE_ARROW].id,
+   xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_ARROW].id,
          xmb->x + xmb->margins.screen.left + xmb->icon.spacing.horizontal - xmb->icon.size / 2.0 + xmb->icon.size,
          xmb->margins.screen.top + xmb->icon.size / 2.0 + xmb->icon.spacing.vertical * xmb->item.active.factor,
          xmb->textures.arrow.alpha, 0, 1);
+
    for (i = 0; i < menu->categories.size; i++)
    {
       xmb_node_t *node = i ? xmb_get_userdata_from_core(xmb, i - 1) : &xmb->settings_node;
