@@ -166,14 +166,7 @@
 #define MODE_COPY 1      /* copy input directly */
 #define MODE_GZIP 2      /* decompress a gzip stream */
 
-#if defined(__APPLE__) || defined(__QNX__) && !defined(HAVE_BB10)
-struct gzFile_s
-{
-    unsigned have;
-    unsigned char *next;
-    z_off64_t pos;
-};
-#endif
+struct gzFile_s;
 
 /* internal gzip file state data structure */
 typedef struct {
