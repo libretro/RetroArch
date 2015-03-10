@@ -291,10 +291,15 @@ static int16_t apple_pointer_state(apple_input_data_t *apple,
 
    if (idx < apple->touch_count && (idx < MAX_TOUCHES))
    {
+      int16_t x, y;
       const apple_touch_data_t *touch = (const apple_touch_data_t *)
          &apple->touches[idx];
-      int16_t x = touch->fixed_x;
-      int16_t y = touch->fixed_y;
+       
+       if (!touch)
+           return 0;
+       
+      x = touch->fixed_x;
+      y = touch->fixed_y;
       
       if (want_full)
       {
