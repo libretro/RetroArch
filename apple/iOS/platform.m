@@ -273,7 +273,7 @@ void notify_content_loaded(void)
    [self apple_start_iteration];
 }
 
-- (void) do_iteration
+- (void) rarch_main
 {
     int ret = 0;
     while (ret != -1)
@@ -287,7 +287,7 @@ void notify_content_loaded(void)
 
 - (void) apple_start_iteration
 {
-    [self performSelectorOnMainThread:@selector(do_iteration) withObject:nil waitUntilDone:NO];
+    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
 
 - (void) apple_stop_iteration

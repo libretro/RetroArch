@@ -197,7 +197,7 @@ static char** waiting_argv;
     }while(event != nil);
 }
 
-- (void) do_iteration
+- (void) rarch_main
 {
     int ret = 0;
     while (ret != -1)
@@ -212,7 +212,7 @@ static char** waiting_argv;
 
 - (void) apple_start_iteration
 {
-    [self performSelectorOnMainThread:@selector(do_iteration) withObject:nil waitUntilDone:NO];
+    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
 
 - (void) apple_stop_iteration
