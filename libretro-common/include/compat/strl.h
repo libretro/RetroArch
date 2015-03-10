@@ -37,11 +37,17 @@ extern "C" {
 #endif
 /* Avoid possible naming collisions during link since 
  * we prefer to use the actual name. */
+#ifndef strlcpy
 #define strlcpy(dst, src, size) strlcpy_rarch__(dst, src, size)
+#endif
+
+#ifndef strlcat
 #define strlcat(dst, src, size) strlcat_rarch__(dst, src, size)
+#endif
 
 size_t strlcpy(char *dest, const char *source, size_t size);
 size_t strlcat(char *dest, const char *source, size_t size);
+
 #ifdef __cplusplus
 }
 #endif
