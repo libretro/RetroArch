@@ -266,7 +266,6 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
          g_quit = true;
          return 0;
       }
-
       case WM_SIZE:
          /* Do not send resize message if we minimize. */
          if (wparam != SIZE_MAXHIDE && wparam != SIZE_MINIMIZED)
