@@ -571,7 +571,6 @@ static int action_iterate_message(const char *label, unsigned action)
 static int mouse_iterate(unsigned *action)
 {
    const struct retro_keybind *binds[MAX_USERS];
-   bool wheel_is_up = false, wheel_is_down = false;
    menu_handle_t *menu    = menu_driver_resolve();
    if (!menu)
       return -1;
