@@ -695,6 +695,7 @@ void fill_pathname_join_delim(char *out_path, const char *dir,
    rarch_assert(strlcat(out_path, path, size) < size);
 }
 
+#if defined(RARCH_INTERNAL)
 void fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size)
 {
@@ -735,6 +736,7 @@ void fill_pathname_expand_special(char *out_path,
 
    rarch_assert(strlcpy(out_path, in_path, size) < size);
 }
+#endif
 
 /**
  * fill_short_pathname_representation:
@@ -775,6 +777,7 @@ void fill_short_pathname_representation(char* out_rep,
       strlcpy(out_rep,path_short, size);
 }
 
+#if defined(RARCH_INTERNAL)
 void fill_pathname_abbreviate_special(char *out_path,
       const char *in_path, size_t size)
 {
@@ -820,7 +823,7 @@ void fill_pathname_abbreviate_special(char *out_path,
    rarch_assert(strlcpy(out_path, in_path, size) < size);
 }
 
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_CONSOLE)
 void fill_pathname_application_path(char *buf, size_t size)
 {
    size_t i;
@@ -877,4 +880,6 @@ void fill_pathname_application_path(char *buf, size_t size)
    /* Cannot resolve application path! This should not happen. */
 #endif
 }
+#endif
+
 #endif
