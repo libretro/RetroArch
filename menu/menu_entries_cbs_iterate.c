@@ -609,7 +609,8 @@ static int mouse_iterate(unsigned *action)
    menu->mouse.wheelup = wheel_is_up || (menu->mouse.y == 5);
    menu->mouse.wheeldown =  wheel_is_down || (menu->mouse.y == menu->frame_buf.height - 5);
 
-   if (menu->mouse.dx != 0 || menu->mouse.dy !=0 || menu->mouse.left)
+   if (menu->mouse.dx != 0 || menu->mouse.dy !=0 || menu->mouse.left
+      || menu->mouse.wheelup || menu->mouse.wheeldown)
       g_runloop.frames.video.current.menu.animation.is_active = true;
 
    return 0;
