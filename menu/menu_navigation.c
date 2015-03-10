@@ -44,12 +44,22 @@ void menu_navigation_clear(menu_navigation_t *nav, bool pending_push)
  *
  * Decrement the navigation pointer.
  **/
-void menu_navigation_decrement(menu_navigation_t *nav)
+void menu_navigation_decrement(menu_navigation_t *nav, unsigned scroll_speed)
 {
    if (!nav)
       return;
 
-   nav->selection_ptr--;
+   if (nav->selection_ptr >= scroll_speed)
+         menu_navigation_set(nav,
+               nav->selection_ptr - scroll_speed, true);
+   else
+   {
+      if (g_settings.menu.navigation.wraparound.vertical_enable)
+         menu_navigation_set(nav, 
+               menu_list_get_size(driver.menu->menu_list) - 1, true);
+      else
+         menu_navigation_set(nav, 0, true);
+   }
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_decrement)
       driver.menu_ctx->navigation_decrement();
@@ -60,12 +70,22 @@ void menu_navigation_decrement(menu_navigation_t *nav)
  *
  * Increment the navigation pointer.
  **/
-void menu_navigation_increment(menu_navigation_t *nav)
+void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed)
 {
    if (!nav)
       return;
 
-   nav->selection_ptr++;
+   if (nav->selection_ptr + scroll_speed < (menu_list_get_size(driver.menu->menu_list)))
+      menu_navigation_set(nav,
+            nav->selection_ptr + scroll_speed, true);
+   else
+   {
+      if (g_settings.menu.navigation.wraparound.vertical_enable)
+         menu_navigation_clear(nav, false);
+      else
+         menu_navigation_set(nav,
+               menu_list_get_size(driver.menu->menu_list) - 1, true);
+   }
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_increment)
       driver.menu_ctx->navigation_increment();
