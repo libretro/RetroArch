@@ -260,9 +260,6 @@ static void apple_input_poll(void *data)
 
    if (apple->icade_enabled)
       BIT32_SET(apple->buttons[0], apple->icade_buttons);
-
-   apple->mouse_x = 0;
-   apple->mouse_y = 0;
 }
 
 static int16_t apple_mouse_state(apple_input_data_t *apple,

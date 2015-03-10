@@ -1194,6 +1194,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 
    glBindTexture(GL_TEXTURE_2D, xmb->textures.list[XMB_TEXTURE_POINTER].id);
 
+   matrix_4x4_rotate_z(&mrot, 0);
    matrix_4x4_multiply(&mymat, &mrot, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
