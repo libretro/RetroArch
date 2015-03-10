@@ -103,8 +103,8 @@ void apple_rarch_exited(void)
       {
          NSPoint pos;
          // Relative
-         apple->mouse_x += event.deltaX;
-         apple->mouse_y += event.deltaY;
+         apple->mouse_x = event.deltaX;
+         apple->mouse_y = event.deltaY;
 
          // Absolute
          pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
@@ -188,6 +188,14 @@ static char** waiting_argv;
 - (void) poll_iteration
 {
     NSEvent *event;
+
+    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+
+    if (!apple)
+      return;
+
+    apple->mouse_x = 0;
+    apple->mouse_y = 0;
     
     do
     {
