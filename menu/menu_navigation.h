@@ -36,14 +36,14 @@ void menu_navigation_clear(menu_navigation_t *nav, bool pending_push);
  *
  * Decrement the navigation pointer.
  **/
-void menu_navigation_decrement(menu_navigation_t *nav);
+void menu_navigation_decrement(menu_navigation_t *nav, unsigned scroll_speed);
 
 /**
  * menu_navigation_increment:
  *
  * Increment the navigation pointer.
  **/
-void menu_navigation_increment(menu_navigation_t *nav);
+void menu_navigation_increment(menu_navigation_t *nav, unsigned scroll_speed);
 
 /**
  * menu_navigation_set:      

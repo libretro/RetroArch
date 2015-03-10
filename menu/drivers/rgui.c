@@ -355,11 +355,11 @@ static void rgui_render(void)
 
    menu->mouse.ptr = menu->mouse.y / 11 - 2 + menu->begin;
 
-   if (menu->mouse.wheeldown && menu->begin
+   if (menu->mouse.scrolldown && menu->begin
          < menu_list_get_size(menu->menu_list) - RGUI_TERM_HEIGHT)
       menu->begin++;
 
-   if (menu->mouse.wheelup && menu->begin > 0)
+   if (menu->mouse.scrollup && menu->begin > 0)
       menu->begin--;
 
    /* Do not scroll if all items are visible. */

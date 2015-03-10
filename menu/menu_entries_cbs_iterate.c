@@ -206,6 +206,12 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
    else
       menu->mouse.oldright = false;
 
+   if (menu->mouse.wheeldown)
+      menu_navigation_increment(&menu->navigation, 1);
+
+   if (menu->mouse.wheelup)
+      menu_navigation_decrement(&menu->navigation, 1);
+
    return 0;
 }
 
@@ -573,15 +579,14 @@ static int mouse_iterate(unsigned *action)
    if (!menu->mouse.enable)
       return 0;
 
-   wheel_is_up = driver.input->input_state(driver.input_data,
+   menu->mouse.left = driver.input->input_state(driver.input_data,
+         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
+   menu->mouse.right = driver.input->input_state(driver.input_data,
+         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
+   menu->mouse.wheelup = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
-   wheel_is_down = driver.input->input_state(driver.input_data,
+   menu->mouse.wheeldown = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
-
-#if 0
-   RARCH_LOG("wheel up: %d, wheel down: %d\n", wheel_is_up, wheel_is_down);
-#endif
-
    menu->mouse.dx = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
    menu->mouse.dy = driver.input->input_state(driver.input_data,
@@ -599,18 +604,12 @@ static int mouse_iterate(unsigned *action)
    if (menu->mouse.y > menu->frame_buf.height - 5)
       menu->mouse.y = menu->frame_buf.height - 5;
 
-
-   menu->mouse.left = driver.input->input_state(driver.input_data,
-         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
-
-   menu->mouse.right = driver.input->input_state(driver.input_data,
-         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
-
-   menu->mouse.wheelup = wheel_is_up || (menu->mouse.y == 5);
-   menu->mouse.wheeldown =  wheel_is_down || (menu->mouse.y == menu->frame_buf.height - 5);
+   menu->mouse.scrollup = (menu->mouse.y == 5);
+   menu->mouse.scrolldown = (menu->mouse.y == menu->frame_buf.height - 5);
 
    if (menu->mouse.dx != 0 || menu->mouse.dy !=0 || menu->mouse.left
-      || menu->mouse.wheelup || menu->mouse.wheeldown)
+      || menu->mouse.wheelup || menu->mouse.wheeldown
+      || menu->mouse.scrollup || menu->mouse.scrolldown)
       g_runloop.frames.video.current.menu.animation.is_active = true;
 
    return 0;

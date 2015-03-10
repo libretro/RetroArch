@@ -33,30 +33,10 @@ static int action_bind_up_or_down_generic(unsigned type, const char *label,
    switch (action)
    {
       case MENU_ACTION_UP:
-         if (menu->navigation.selection_ptr >= scroll_speed)
-               menu_navigation_set(&menu->navigation,
-                     menu->navigation.selection_ptr - scroll_speed, true);
-         else
-         {
-            if (g_settings.menu.navigation.wraparound.vertical_enable)
-               menu_navigation_set(&menu->navigation, 
-                     menu_list_get_size(menu->menu_list) - 1, true);
-            else
-               menu_navigation_set(&menu->navigation, 0, true);
-         }
+         menu_navigation_decrement(&menu->navigation, scroll_speed);
          break;
       case MENU_ACTION_DOWN:
-         if (menu->navigation.selection_ptr + scroll_speed < (menu_list_get_size(menu->menu_list)))
-            menu_navigation_set(&menu->navigation,
-                  menu->navigation.selection_ptr + scroll_speed, true);
-         else
-         {
-            if (g_settings.menu.navigation.wraparound.vertical_enable)
-               menu_navigation_clear(&menu->navigation, false);
-            else
-               menu_navigation_set(&menu->navigation,
-                     menu_list_get_size(menu->menu_list) - 1, true);
-         }
+         menu_navigation_increment(&menu->navigation, scroll_speed);
          break;
    }
 
