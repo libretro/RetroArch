@@ -408,7 +408,7 @@ int menu_iterate(retro_input_t input,
    if (driver.menu_ctx && driver.menu_ctx->entry_iterate)
       ret = driver.menu_ctx->entry_iterate(action);
 
-   if (g_runloop.is_menu)
+   if (g_runloop.is_menu && !g_runloop.is_idle)
       draw_frame();
 
    if (driver.menu_ctx && driver.menu_ctx->set_texture)
