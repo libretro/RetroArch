@@ -274,13 +274,27 @@ void notify_content_loaded(void)
    [self apple_start_iteration];
 }
 
+static void rarch_main_event_pump(void)
+{
+    SInt32 result;
+    const CFTimeInterval seconds = 0.002;
+    
+    do {
+        result = CFRunLoopRunInMode(kCFRunLoopDefaultMode, seconds, TRUE);
+    }while(result == kCFRunLoopRunHandledSource);
+}
+
 - (void) rarch_main
 {
     int ret = 0;
     while (ret != -1)
     {
+        rarch_main_event_pump();
+        
         ret = rarch_main_iterate();
-        while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
+        
+        if (ret == -1)
+            break;
         
         if (g_runloop.is_idle)
             continue;
@@ -293,6 +307,7 @@ void notify_content_loaded(void)
             [g_view display];
     }
     
+    main_exit_save_config();
     main_exit(NULL);
 }
 
@@ -305,6 +320,15 @@ void notify_content_loaded(void)
 {
 }
 
+- (void)applicationDidEnterBackground:(UIApplication *)application
+{
+    
+}
+
+- (void)applicationWillTerminate:(UIApplication *)application
+{
+}
+
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
   [self showGameView];
@@ -313,10 +337,10 @@ void notify_content_loaded(void)
 - (void)applicationWillResignActive:(UIApplication *)application
 {
    dispatch_async(dispatch_get_main_queue(),
-         ^{
-         main_exit_save_config();
-         [self showPauseMenu: self];
-         });
+                  ^{
+                      main_exit_save_config();
+                  });
+   [self showPauseMenu: self];
 }
 
 -(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
