@@ -776,6 +776,7 @@ static int setting_data_string_action_toggle_driver(void *data,
    return 0;
 }
 
+#if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
 static int core_list_action_toggle(void *data, unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
@@ -792,6 +793,15 @@ static int core_list_action_toggle(void *data, unsigned action, bool wraparound)
 
    return 0;
 }
+
+static void core_list_change_handler(void *data)
+{
+  rarch_setting_t *setting = (rarch_setting_t *)data;
+  (void)setting;
+
+  rarch_main_command(RARCH_CMD_LOAD_CORE);
+}
+#endif
 
 /**
  * load_content_action_toggle:
@@ -3152,13 +3162,6 @@ static void settings_data_list_current_add_flags(
    setting_data_add_special_callbacks(list, list_info, values);
 }
 
-static void core_list_change_handler(void *data)
-{
-  rarch_setting_t *setting = (rarch_setting_t *)data;
-  (void)setting;
-
-  rarch_main_command(RARCH_CMD_LOAD_CORE);
-}
 
 /**
  * load_content_change_handler:
