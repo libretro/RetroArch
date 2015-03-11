@@ -343,6 +343,9 @@ static void rgui_render(void)
          && !menu->msg_force)
       return;
 
+   if (g_runloop.is_idle)
+      return;
+
    if (!menu_display_update_pending())
       return;
 
