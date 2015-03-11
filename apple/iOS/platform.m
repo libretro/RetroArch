@@ -280,6 +280,9 @@ void notify_content_loaded(void)
     {
         ret = rarch_main_iterate();
         while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
+        
+        if (g_view && !g_runloop.is_idle)
+            [g_view display];
     }
     
     main_exit(NULL);
