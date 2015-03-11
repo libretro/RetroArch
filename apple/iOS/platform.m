@@ -21,6 +21,7 @@
 #include "../../settings_data.h"
 #include "../common/apple_gamecontroller.h"
 #include "menu.h"
+#include "../../menu/menu.h"
 
 #import "views.h"
 #include "bluetooth/btpad.h"
@@ -281,7 +282,12 @@ void notify_content_loaded(void)
         ret = rarch_main_iterate();
         while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
         
-        if (g_view && !g_runloop.is_idle)
+        if (g_runloop.is_idle)
+            continue;
+        if (g_runloop.is_menu && !menu_display_update_pending() && !g_runloop.frames.video.current.menu.action.active)
+            continue;
+        
+        if (g_view)
             [g_view display];
     }
     
