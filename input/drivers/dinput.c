@@ -305,14 +305,14 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
          return di->mouse_r;
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
           {
-              int16_t state = di->mouse_wu;
-              di->mouse_wu = 0;
+              int16_t state = di->mouse_wu ? 1 : 0;
+              di->mouse_wu = false;
               return state;
           }
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
           {
-              int16_t state = di->mouse_wd;
-              di->mouse_wd = 0;
+              int16_t state = di->mouse_wd ? 1 : 0;
+              di->mouse_wd = false;
               return state;
           }
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
@@ -554,9 +554,9 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
       case WM_MOUSEWHEEL:
           {
               if (((short) HIWORD(wParam))/120 > 0)
-                 di->mouse_wu += 1;
+                 di->mouse_wu = true;
               if (((short) HIWORD(wParam))/120 < 0)
-                 di->mouse_wd += 1;
+                 di->mouse_wd = true;
           }
           break;
    }
