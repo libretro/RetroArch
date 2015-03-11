@@ -554,9 +554,9 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
 	  case WM_MOUSEWHEEL:
 		  {
 			  if (((short) HIWORD(wParam))/120 > 0)
-			     di->mouse_wu  = 1;
+			     di->mouse_wu += 1;
 			  if (((short) HIWORD(wParam))/120 < 0)
-			     di->mouse_wd  = 1;
+			     di->mouse_wd += 1;
 		  }
 		  break;
    }
