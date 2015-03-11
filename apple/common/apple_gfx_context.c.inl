@@ -278,8 +278,9 @@ static void apple_gfx_ctx_update_window_title(void *data)
    static char buf[128], buf_fps[128];
    bool got_text = video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
-   static const char* const text = buf; /* < Can't access buffer directly in the block */
+   (void)got_text;
 #ifdef OSX
+   static const char* const text = buf; /* < Can't access buffer directly in the block */
    if (got_text)
        [[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
 #endif
