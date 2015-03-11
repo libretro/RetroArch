@@ -26,8 +26,7 @@
 
 bool menu_display_update_pending(void)
 {
-   if (g_runloop.frames.video.current.menu.action.active ||
-         g_runloop.frames.video.current.menu.animation.is_active ||
+   if (g_runloop.frames.video.current.menu.animation.is_active ||
          g_runloop.frames.video.current.menu.label.is_updated ||
          g_runloop.frames.video.current.menu.framebuf.dirty)
       return true;
@@ -58,7 +57,8 @@ static void draw_frame(void)
       }
    }
     
-   if (menu_display_update_pending())
+   if (menu_display_update_pending() ||
+         g_runloop.frames.video.current.menu.action.active )
       rarch_render_cached_frame();
 }
 
