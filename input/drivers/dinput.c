@@ -304,17 +304,17 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
          return di->mouse_r;
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-		  {
-			  int16_t state = di->mouse_wu;
-			  di->mouse_wu = 0;
+          {
+              int16_t state = di->mouse_wu;
+              di->mouse_wu = 0;
               return state;
-		  }
+          }
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-		  {
-			  int16_t state = di->mouse_wd;
-			  di->mouse_wd = 0;
-			  return state;
-		  }
+          {
+              int16_t state = di->mouse_wd;
+              di->mouse_wd = 0;
+              return state;
+          }
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return di->mouse_m;
    }
@@ -551,14 +551,14 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
          di->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
          break;
       }
-	  case WM_MOUSEWHEEL:
-		  {
-			  if (((short) HIWORD(wParam))/120 > 0)
-			     di->mouse_wu += 1;
-			  if (((short) HIWORD(wParam))/120 < 0)
-			     di->mouse_wd += 1;
-		  }
-		  break;
+      case WM_MOUSEWHEEL:
+          {
+              if (((short) HIWORD(wParam))/120 > 0)
+                 di->mouse_wu += 1;
+              if (((short) HIWORD(wParam))/120 < 0)
+                 di->mouse_wd += 1;
+          }
+          break;
    }
    return false;
 }
