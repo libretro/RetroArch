@@ -552,7 +552,7 @@ static bool psp_frame(void *data, const void *frame,
       if (frame)
       {
          sceKernelDcacheWritebackRange(frame,pitch * height);
-         sceGuCopyImage(GU_PSM_5650, ((u32)frame & 0xF) >> psp->bpp_log2,
+         sceGuCopyImage(psp->rgb32? GU_PSM_8888 : GU_PSM_5650, ((u32)frame & 0xF) >> psp->bpp_log2,
                0, width, height, pitch >> psp->bpp_log2,
                (void*)((u32)frame & ~0xF), 0, 0, width, psp->texture);
       }
