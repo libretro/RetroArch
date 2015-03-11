@@ -24,6 +24,16 @@
 #include "../../performance.h"
 #include <file/file_path.h>
 
+bool menu_display_update_pending(void)
+{
+   if (g_runloop.frames.video.current.menu.action.active ||
+         g_runloop.frames.video.current.menu.animation.is_active ||
+         g_runloop.frames.video.current.menu.label.is_updated ||
+         g_runloop.frames.video.current.menu.framebuf.dirty)
+      return true;
+   return false;
+}
+
 /**
  ** draw_frame:
  *
@@ -48,11 +58,8 @@ static void draw_frame(void)
       }
    }
     
-   if (g_runloop.frames.video.current.menu.action.active ||
-       g_runloop.frames.video.current.menu.animation.is_active ||
-       g_runloop.frames.video.current.menu.label.is_updated ||
-       g_runloop.frames.video.current.menu.framebuf.dirty)
-       rarch_render_cached_frame();
+   if (menu_display_update_pending())
+      rarch_render_cached_frame();
 }
 
 /**

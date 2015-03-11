@@ -343,9 +343,7 @@ static void rgui_render(void)
          && !menu->msg_force)
       return;
 
-   if (!g_runloop.frames.video.current.menu.framebuf.dirty
-       && !g_runloop.frames.video.current.menu.animation.is_active
-       && !g_runloop.frames.video.current.menu.label.is_updated)
+   if (!menu_display_update_pending())
       return;
 
    /* ensures the framebuffer will be rendered on the screen */
