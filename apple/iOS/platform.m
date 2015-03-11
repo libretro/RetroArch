@@ -378,12 +378,12 @@ void notify_content_loaded(void)
 
 - (void)refreshSystemConfig
 {
-   // Get enabled orientations
+   /* Get enabled orientations */
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
    
-   if (strcmp(apple_frontend_settings.orientations, "landscape") == 0)
+   if (!strcmp(apple_frontend_settings.orientations, "landscape"))
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskLandscape;
-   else if (strcmp(apple_frontend_settings.orientations, "portrait") == 0)
+   else if (!strcmp(apple_frontend_settings.orientations, "portrait"))
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
 
    // Set bluetooth mode
