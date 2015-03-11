@@ -102,11 +102,11 @@ void apple_rarch_exited(void)
       case NSOtherMouseDragged:
       {
          NSPoint pos;
-         // Relative
+         /* Relative */
          apple->mouse_x = event.deltaX;
          apple->mouse_y = event.deltaY;
 
-         // Absolute
+         /* Absolute */
          pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
          apple->touches[0].screen_x = pos.x;
          apple->touches[0].screen_y = pos.y;
