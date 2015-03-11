@@ -31,7 +31,7 @@
 #ifdef HW_RVL
 #include <wiiuse/wpad.h>
 #endif
-#enidf
+#endif
 
 #ifdef GEKKO
 #define WPADInit WPAD_Init
@@ -498,10 +498,10 @@ static void gx_joypad_poll(void)
 
          }
       }
+      else
 #else
       ptype = WPAD_EXP_GAMECUBE;
 #endif
-      else
       {
          if (gcpad & (1 << port))
          {
