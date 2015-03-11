@@ -57,9 +57,7 @@ static void draw_frame(void)
       }
    }
     
-   if (menu_display_update_pending() ||
-         g_runloop.frames.video.current.menu.action.active )
-      rarch_render_cached_frame();
+   rarch_render_cached_frame();
 }
 
 /**

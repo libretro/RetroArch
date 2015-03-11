@@ -39,12 +39,10 @@ static int shader_action_parameter_toggle(unsigned type, const char *label,
    {
       case MENU_ACTION_LEFT:
          param->current -= param->step;
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
 
       case MENU_ACTION_RIGHT:
          param->current += param->step;
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
 
       default:
@@ -76,12 +74,10 @@ static int shader_action_parameter_preset_toggle(unsigned type, const char *labe
    {
       case MENU_ACTION_LEFT:
          param->current -= param->step;
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
 
       case MENU_ACTION_RIGHT:
          param->current += param->step;
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
 
       default:
@@ -109,7 +105,6 @@ static int action_toggle_cheat(unsigned type, const char *label,
       case MENU_ACTION_RIGHT:
          cheat->cheats[idx].state = !cheat->cheats[idx].state;
          cheat_manager_update(cheat, idx);
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
    }
 
@@ -129,14 +124,12 @@ static int action_toggle_input_desc(unsigned type, const char *label,
          if (g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset] > 0)
          {
             g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset]--;
-            g_runloop.frames.video.current.menu.action.active = true;
          }
          break;
       case MENU_ACTION_RIGHT:
          if (g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_CUSTOM_BIND)
          {
             g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
-            g_runloop.frames.video.current.menu.action.active = true;
          }
          break;
    }
@@ -154,12 +147,10 @@ static int action_toggle_save_state(unsigned type, const char *label,
          if (g_settings.state_slot >= 0)
          {
             g_settings.state_slot--;
-            g_runloop.frames.video.current.menu.action.active = true;
          }
          break;
       case MENU_ACTION_RIGHT:
          g_settings.state_slot++;
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
    }
 
@@ -185,21 +176,18 @@ static int action_toggle_scroll(unsigned type, const char *label,
                   menu->navigation.selection_ptr - fast_scroll_speed, true);
          else
             menu_navigation_clear(&menu->navigation, false);
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
       case MENU_ACTION_RIGHT:
          if (menu->navigation.selection_ptr + fast_scroll_speed < (menu_list_get_size(menu->menu_list)))
          {
             menu_navigation_set(&menu->navigation,
                   menu->navigation.selection_ptr + fast_scroll_speed, true);
-            g_runloop.frames.video.current.menu.action.active = true;
          }
          else
          {
             if ((menu_list_get_size(menu->menu_list) > 0))
             {
                menu_navigation_set_last(&menu->navigation);
-               g_runloop.frames.video.current.menu.action.active = true;
             }
          }
          break;
@@ -258,11 +246,9 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
                   "",
                   0);
 
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
       case 2:
          action_toggle_scroll(0, "", action, false);
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
       case 0:
       default:
@@ -302,7 +288,6 @@ static int action_toggle_shader_scale_pass(unsigned type, const char *label,
             shader_pass->fbo.valid   = current_scale;
             shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
 
-            g_runloop.frames.video.current.menu.action.active = true;
          }
          break;
    }
@@ -336,7 +321,6 @@ static int action_toggle_shader_filter_pass(unsigned type, const char *label,
             unsigned delta = (action == MENU_ACTION_LEFT) ? 2 : 1;
             shader_pass->filter = ((shader_pass->filter + delta) % 3);
 
-            g_runloop.frames.video.current.menu.action.active = true;
          }
          break;
    }
@@ -373,13 +357,11 @@ static int action_toggle_cheat_num_passes(unsigned type, const char *label,
          if (cheat->size)
             new_size = cheat->size - 1;
          menu->need_refresh = true;
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
 
       case MENU_ACTION_RIGHT:
          new_size = cheat->size + 1;
          menu->need_refresh = true;
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
    }
 
@@ -408,14 +390,12 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
          if (shader->passes)
             shader->passes--;
          menu->need_refresh = true;
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
 
       case MENU_ACTION_RIGHT:
          if ((shader->passes < GFX_MAX_SHADERS))
             shader->passes++;
          menu->need_refresh = true;
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
    }
 
@@ -460,7 +440,6 @@ static int action_toggle_video_resolution(unsigned type, const char *label,
                driver.video_poke->get_video_output_prev)
          {
             driver.video_poke->get_video_output_prev(driver.video_data);
-            g_runloop.frames.video.current.menu.action.active = true;
          }
          break;
       case MENU_ACTION_RIGHT:
@@ -468,7 +447,6 @@ static int action_toggle_video_resolution(unsigned type, const char *label,
                driver.video_poke->get_video_output_next)
          {
             driver.video_poke->get_video_output_next(driver.video_data);
-            g_runloop.frames.video.current.menu.action.active = true;
          }
          break;
    }
@@ -488,12 +466,10 @@ static int core_setting_toggle(unsigned type, const char *label,
    {
       case MENU_ACTION_LEFT:
          core_option_prev(g_extern.system.core_options, idx);
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
 
       case MENU_ACTION_RIGHT:
          core_option_next(g_extern.system.core_options, idx);
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
    }
 
@@ -507,11 +483,9 @@ static int disk_options_disk_idx_toggle(unsigned type, const char *label,
    {
       case MENU_ACTION_LEFT:
          rarch_main_command(RARCH_CMD_DISK_PREV);
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
       case MENU_ACTION_RIGHT:
          rarch_main_command(RARCH_CMD_DISK_NEXT);
-         g_runloop.frames.video.current.menu.action.active = true;
          break;
    }
 

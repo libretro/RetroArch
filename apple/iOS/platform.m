@@ -284,8 +284,10 @@ void notify_content_loaded(void)
         
         if (g_runloop.is_idle)
             continue;
-        if (g_runloop.is_menu && !menu_display_update_pending() && !g_runloop.frames.video.current.menu.action.active)
+#if 0
+        if (g_runloop.is_menu && !menu_display_update_pending())
             continue;
+#endif
         
         if (g_view)
             [g_view display];

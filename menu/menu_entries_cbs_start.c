@@ -29,7 +29,6 @@ static int action_start_remap_file_load(unsigned type, const char *label,
 {
    g_settings.input.remapping_path[0] = '\0';
    input_remapping_set_defaults();
-   g_runloop.frames.video.current.menu.action.active = true;
    return 0;
 }
 
@@ -38,7 +37,6 @@ static int action_start_video_filter_file_load(unsigned type, const char *label,
 {
    g_settings.video.softfilter_plugin[0] = '\0';
    rarch_main_command(RARCH_CMD_REINIT);
-   g_runloop.frames.video.current.menu.action.active = true;
    return 0;
 }
 
@@ -56,7 +54,6 @@ static int action_start_performance_counters_core(unsigned type, const char *lab
    {
       counters[offset]->total = 0;
       counters[offset]->call_cnt = 0;
-      g_runloop.frames.video.current.menu.action.active = true;
    }
 
    return 0;
@@ -74,7 +71,6 @@ static int action_start_input_desc(unsigned type, const char *label,
 
    g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset] = 
       g_settings.input.binds[inp_desc_user][inp_desc_button_index_offset].id;
-   g_runloop.frames.video.current.menu.action.active = true;
 
    return 0;
 }
@@ -93,7 +89,6 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
    param->current = param->initial;
    param->current = min(max(param->minimum, param->current), param->maximum);
 
-   g_runloop.frames.video.current.menu.action.active = true;
 #endif
 
    return 0;
@@ -115,8 +110,6 @@ static int action_start_shader_action_preset_parameter(unsigned type, const char
    param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
    param->current = param->initial;
    param->current = min(max(param->minimum, param->current), param->maximum);
-
-   g_runloop.frames.video.current.menu.action.active = true;
 #endif
 
    return 0;
@@ -140,8 +133,6 @@ static int action_start_shader_pass(unsigned type, const char *label,
 
    if (shader_pass)
       *shader_pass->source.path = '\0';
-
-   g_runloop.frames.video.current.menu.action.active = true;
 #endif
 
    return 0;
@@ -169,7 +160,6 @@ static int action_start_shader_scale_pass(unsigned type, const char *label,
       {
          shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = 0;
          shader_pass->fbo.valid = false;
-         g_runloop.frames.video.current.menu.action.active = true;
       }
    }
 #endif
@@ -196,7 +186,6 @@ static int action_start_shader_filter_pass(unsigned type, const char *label,
       return -1;
 
    shader_pass->filter = RARCH_FILTER_UNSPEC;
-   g_runloop.frames.video.current.menu.action.active = true;
 #endif
 
    return 0;
@@ -219,7 +208,6 @@ static int action_start_shader_num_passes(unsigned type, const char *label,
    menu->need_refresh = true;
 
    video_shader_resolve_parameters(NULL, menu->shader);
-   g_runloop.frames.video.current.menu.action.active = true;
 #endif
    return 0;
 }
@@ -239,7 +227,6 @@ static int action_start_cheat_num_passes(unsigned type, const char *label,
    {
       cheat_manager_realloc(cheat, 0);
       menu->need_refresh = true;
-      g_runloop.frames.video.current.menu.action.active = true;
    }
 
    return 0;
@@ -258,7 +245,6 @@ static int action_start_performance_counters_frontend(unsigned type, const char 
    {
       counters[offset]->total = 0;
       counters[offset]->call_cnt = 0;
-      g_runloop.frames.video.current.menu.action.active = true;
    }
 
    return 0;
@@ -272,7 +258,6 @@ static int action_start_core_setting(unsigned type,
    (void)label;
 
    core_option_set_default(g_extern.system.core_options, idx);
-   g_runloop.frames.video.current.menu.action.active = true;
 
    return 0;
 }
@@ -281,7 +266,6 @@ static int action_start_lookup_setting(unsigned type, const char *label,
       unsigned action)
 {
    int ret = menu_setting_set(type, label, MENU_ACTION_START, false);
-   g_runloop.frames.video.current.menu.action.active = true;
 
    return ret;
 }
