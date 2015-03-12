@@ -41,6 +41,15 @@ NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
 #endif
 }
 
+NS_INLINE CF_RETURNS_RETAINED CFStringRef CFBridgingRetainStringRefCompat(id X)
+{
+#if __has_feature(objc_arc)
+    return (__bridge_retained CFStringRef)X;
+#else
+    return X;
+#endif
+}
+
 static NSSearchPathDirectory NSConvertFlagsCF(unsigned flags)
 {
     switch (flags)
@@ -61,6 +70,14 @@ static NSSearchPathDomainMask NSConvertDomainFlagsCF(unsigned flags)
     }
     
     return 0;
+}
+
+void CFTemporaryDirectory(char *buf, size_t sizeof_buf)
+{
+    CFStringRef path = (CFStringRef)(CFBridgingRetainStringRefCompat(NSTemporaryDirectory()));
+    
+    CFStringGetCString(path, buf, sizeof_buf, kCFStringEncodingUTF8);
+    CFRelease(path);
 }
 
 void CFSearchPathForDirectoriesInDomains(unsigned flags,
