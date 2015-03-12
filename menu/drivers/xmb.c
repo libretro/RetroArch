@@ -694,28 +694,13 @@ static void xmb_list_open_new(xmb_handle_t *xmb, file_list_t *list, int dir, siz
    xmb->old_depth = xmb->depth;
 }
 
-static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, int i)
+static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, core_info_t *info, int i)
 {
-   core_info_t *info           = NULL;
    xmb_node_t *node            = NULL;
-   core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
-
-   if (!info_list)
-      return NULL;
-
-   if (!info_list->count)
-      return NULL;
-
-   info = (core_info_t*)&info_list->list[i];
 
    if (!info)
       return NULL;
-
-   node = (xmb_node_t*)info->userdata;
-
-   if (node)
-      return node;
-
+   
    info->userdata = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
 
    if (!info->userdata)
@@ -737,6 +722,30 @@ static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, int i)
       node->alpha = xmb->categories.active.alpha;
       node->zoom  = xmb->categories.active.zoom;
    }
+
+   return node;
+}
+
+static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, int i)
+{
+   core_info_t *info           = NULL;
+   xmb_node_t *node            = NULL;
+   core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
+
+   if (!info_list)
+      return NULL;
+   if (!info_list->count)
+      return NULL;
+
+   info = (core_info_t*)&info_list->list[i];
+
+   if (!info)
+      return NULL;
+
+   node = (xmb_node_t*)info->userdata;
+
+   if (!node)
+      return xmb_node_allocate_userdata(xmb, info, i);
 
    return node;
 }
