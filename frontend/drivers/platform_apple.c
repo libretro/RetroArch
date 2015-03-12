@@ -38,7 +38,6 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    CFBundleRef bundle = CFBundleGetMainBundle();
     
    (void)support_path_buf;
-   (void)temp_dir;
 
    if (!bundle)
       return;
@@ -49,11 +48,12 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
    (void)home_dir_buf;
    
+   CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
+   strlcpy(g_defaults.extraction_dir, temp_dir, sizeof(g_defaults.extraction_dir));
+
 #ifdef IOS
    CFSearchPathForDirectoriesInDomains(CFDocumentDirectory, CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
     
-   CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
-   strlcpy(g_defaults.extraction_dir, temp_dir, sizeof(g_defaults.extraction_dir));
    
    fill_pathname_join(g_defaults.system_dir, home_dir_buf, ".RetroArch", sizeof(g_defaults.system_dir));
    fill_pathname_join(g_defaults.database_dir, home_dir_buf, "rdb", sizeof(g_defaults.database_dir));
