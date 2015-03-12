@@ -736,6 +736,8 @@ static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, int i)
       return NULL;
    if (!info_list->count)
       return NULL;
+   rarch_assert(i >= 0);
+   rarch_assert(i <= info_list->count);
    if (i >= info_list->count)
       return NULL;
 
@@ -1048,7 +1050,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    file_list_get_last(stack, NULL, &label, NULL);
 
    if (xmb->categories.active.idx)
-      core_node = xmb_get_userdata_from_core(xmb, cat_selection_ptr - 1);
+      core_node = xmb_get_userdata_from_core(xmb, cat_selection_ptr);
 
    end = file_list_get_size(list);
 
