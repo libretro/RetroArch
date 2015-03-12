@@ -726,9 +726,8 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, core_info_t *in
    return node;
 }
 
-static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, int i)
+static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, core_info_t *info, int i)
 {
-   core_info_t *info           = NULL;
    xmb_node_t *node            = NULL;
    core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
 
@@ -867,9 +866,10 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
    for (j = 0; j < menu->categories.size; j++)
    {
+      core_info_t *info           = NULL;
       float ia         = xmb->categories.passive.alpha;
       float iz         = xmb->categories.passive.zoom;
-      xmb_node_t *node = j ? xmb_get_userdata_from_core(xmb, j - 1) : &xmb->settings_node;
+      xmb_node_t *node = j ? xmb_get_userdata_from_core(xmb, info, j - 1) : &xmb->settings_node;
 
       if (!node)
          continue;
@@ -915,8 +915,9 @@ static void xmb_list_open(xmb_handle_t *xmb)
 
    for (j = 0; j < menu->categories.size; j++)
    {
+      core_info_t *info           = NULL;
       float ia = 0;
-      xmb_node_t *node = j ? xmb_get_userdata_from_core(xmb, j - 1) : &xmb->settings_node;
+      xmb_node_t *node = j ? xmb_get_userdata_from_core(xmb, info, j - 1) : &xmb->settings_node;
 
       if (!node)
          continue;
@@ -1038,6 +1039,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       file_list_t *list, file_list_t *stack,
       size_t current, size_t cat_selection_ptr)
 {
+   core_info_t *info           = NULL;
    math_matrix_4x4 mymat, mrot, mscal;
    unsigned i;
    const char *label     = NULL;
@@ -1050,7 +1052,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    file_list_get_last(stack, NULL, &label, NULL);
 
    if (xmb->categories.active.idx)
-      core_node = xmb_get_userdata_from_core(xmb, cat_selection_ptr);
+      core_node = xmb_get_userdata_from_core(xmb, info, cat_selection_ptr);
 
    end = file_list_get_size(list);
 
@@ -1351,7 +1353,8 @@ static void xmb_frame(void)
 
    for (i = 0; i < menu->categories.size; i++)
    {
-      xmb_node_t *node = i ? xmb_get_userdata_from_core(xmb, i - 1) : &xmb->settings_node;
+      core_info_t *info           = NULL;
+      xmb_node_t *node = i ? xmb_get_userdata_from_core(xmb, info, i - 1) : &xmb->settings_node;
 
       if (node)
          xmb_draw_icon(gl, xmb, node->icon, 
@@ -1704,8 +1707,9 @@ static void xmb_context_reset(void)
 
    for (i = 1; i < menu->categories.size; i++)
    {
+      core_info_t *info           = NULL;
       struct texture_image ti = {0};
-      node = xmb_get_userdata_from_core(xmb, i - 1);
+      node = xmb_get_userdata_from_core(xmb, info, i - 1);
 
       fill_pathname_join(mediapath, g_settings.assets_directory,
             "lakka", sizeof(mediapath));
@@ -1925,7 +1929,8 @@ static void xmb_context_destroy(void)
 
    for (i = 1; i < menu->categories.size; i++)
    {
-      xmb_node_t *node = xmb_get_userdata_from_core(xmb, i - 1);
+      core_info_t *info           = NULL;
+      xmb_node_t *node = xmb_get_userdata_from_core(xmb, info, i - 1);
 
       if (!node)
          continue;
@@ -1964,7 +1969,8 @@ static void xmb_toggle(bool menu_on)
 
    for (i = 0; i < menu->categories.size; i++)
    {
-      xmb_node_t *node = i ? xmb_get_userdata_from_core(xmb, i - 1) : &xmb->settings_node;
+      core_info_t *info           = NULL;
+      xmb_node_t *node = i ? xmb_get_userdata_from_core(xmb, info, i - 1) : &xmb->settings_node;
 
       if (!node)
          continue;
