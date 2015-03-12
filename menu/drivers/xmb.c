@@ -1875,18 +1875,22 @@ static void xmb_list_cache(bool horizontal, unsigned action)
 
    stack_size = menu->menu_list->menu_stack->size;
 
-   strlcpy(menu->menu_list->menu_stack->list[stack_size-1].label,
-         "Main Menu", PATH_MAX_LENGTH);
-   menu->menu_list->menu_stack->list[stack_size-1].type = 
-      MENU_SETTINGS;
+   if (menu->menu_list->menu_stack->list[stack_size - 1].label)
+	   free(menu->menu_list->menu_stack->list[stack_size - 1].label);
+   menu->menu_list->menu_stack->list[stack_size - 1].label = NULL;
 
    if (menu->categories.selection_ptr == 0)
-      return;
-
-   strlcpy(menu->menu_list->menu_stack->list[stack_size-1].label,
-         "Horizontal Menu", PATH_MAX_LENGTH);
-   menu->menu_list->menu_stack->list[stack_size-1].type = 
+   {
+	   menu->menu_list->menu_stack->list[stack_size - 1].label = strdup("Main Menu");
+	   menu->menu_list->menu_stack->list[stack_size - 1].type = 
+      MENU_SETTINGS;
+   }
+   else
+   {
+	   menu->menu_list->menu_stack->list[stack_size - 1].label = strdup("Horizontal Menu");
+	   menu->menu_list->menu_stack->list[stack_size - 1].type = 
       MENU_SETTING_HORIZONTAL_MENU;
+   }
 }
 
 static void xmb_context_destroy(void)
