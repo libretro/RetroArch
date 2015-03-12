@@ -443,10 +443,11 @@ static bool apply_patch_content(uint8_t **buf,
    ssize_t ret_size         = *size;
    uint8_t *ret_buf         = *buf;
    
-   if (!read_file(patch_desc, &patch_data, &patch_size))
+   if (!read_file(patch_path, &patch_data, &patch_size))
       return false;
    if (patch_size < 0)
       return false;
+
 
    if (!path_file_exists(patch_path))
       return false;
