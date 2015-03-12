@@ -56,7 +56,7 @@ struct dinput_input
    int mouse_rel_y;
    int mouse_x;
    int mouse_y;
-   bool mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
+   bool mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd, mouse_hwu, mouse_hwd;
    struct pointer_status pointer_head;  /* dummy head for easier iteration */
 };
 
@@ -315,6 +315,18 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
               di->mouse_wd = false;
               return state;
           }
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+          {
+              int16_t state = di->mouse_hwu ? 1 : 0;
+              di->mouse_hwu = false;
+              return state;
+          }
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+          {
+              int16_t state = di->mouse_hwd ? 1 : 0;
+              di->mouse_hwd = false;
+              return state;
+          }
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return di->mouse_m;
    }
@@ -557,6 +569,14 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
                  di->mouse_wu = true;
               if (((short) HIWORD(wParam))/120 < 0)
                  di->mouse_wd = true;
+          }
+          break;
+      case WM_MOUSEHWHEEL:
+          {
+              if (((short) HIWORD(wParam))/120 > 0)
+                 di->mouse_hwu = true;
+              if (((short) HIWORD(wParam))/120 < 0)
+                 di->mouse_hwd = true;
           }
           break;
    }
