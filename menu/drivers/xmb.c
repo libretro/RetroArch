@@ -1593,7 +1593,6 @@ static void xmb_context_reset(void)
          content_texturepath[PATH_MAX_LENGTH];
 
    struct texture_image ti = {0};
-   core_info_t* info = NULL;
    core_info_list_t* info_list = NULL;
    gl_t *gl = NULL;
    xmb_handle_t *xmb = NULL;
