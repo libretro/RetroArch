@@ -114,6 +114,7 @@ struct defaults
    char extraction_dir[PATH_MAX_LENGTH];
    char database_dir[PATH_MAX_LENGTH];
    char cursor_dir[PATH_MAX_LENGTH];
+   char cheats_dir[PATH_MAX_LENGTH];
 
    struct
    {

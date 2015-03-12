@@ -157,6 +157,8 @@ static void check_defaults_dirs(void)
       path_mkdir(g_defaults.database_dir);
    if (*g_defaults.cursor_dir)
       path_mkdir(g_defaults.cursor_dir);
+   if (*g_defaults.cheats_dir)
+      path_mkdir(g_defaults.cheats_dir);
 }
 
 static void history_playlist_push(content_playlist_t *playlist,
