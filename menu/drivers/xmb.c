@@ -736,6 +736,8 @@ static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, int i)
       return NULL;
    if (!info_list->count)
       return NULL;
+   if (i >= info_list->count)
+      return NULL;
 
    info = (core_info_t*)&info_list->list[i];
 
