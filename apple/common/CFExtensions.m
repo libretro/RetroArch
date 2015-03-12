@@ -41,12 +41,34 @@ NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
 #endif
 }
 
+static NSSearchPathDirectory NSConvertFlagsCF(unsigned flags)
+{
+    switch (flags)
+    {
+        case CFDocumentDirectory:
+            return NSDocumentDirectory;
+    }
+    
+    return 0;
+}
+
+static NSSearchPathDomainMask NSConvertDomainFlagsCF(unsigned flags)
+{
+    switch (flags)
+    {
+        case CFUserDomainMask:
+            return NSUserDomainMask;
+    }
+    
+    return 0;
+}
 
 void CFSearchPathForDirectoriesInDomains(unsigned flags,
-                                               unsigned domain_mask, unsigned expand_tilde,
-                                               char *buf, size_t sizeof_buf)
+        unsigned domain_mask, unsigned expand_tilde,
+        char *buf, size_t sizeof_buf)
 {
-   CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(NSSearchPathForDirectoriesInDomains(flags, domain_mask, (BOOL)expand_tilde));
+    
+   CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(NSSearchPathForDirectoriesInDomains(NSConvertFlagsCF(flags), NSConvertDomainFlagsCF(domain_mask), (BOOL)expand_tilde));
    CFArrayRef array = array_val ? CFRetain(array_val) : NULL;
    CFTypeRef path_val = (CFTypeRef)CFArrayGetValueAtIndex(array, 0);
    CFStringRef path = path_val ? CFRetain(path_val) : NULL;
