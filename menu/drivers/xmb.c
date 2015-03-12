@@ -728,7 +728,6 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, core_info_t *in
 
 static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, core_info_t *info, int i)
 {
-   xmb_node_t *node            = NULL;
    core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
 
    if (!info_list)
@@ -752,9 +751,7 @@ static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, core_info_t *in
          return NULL;
    }
 
-   node = (xmb_node_t*)info->userdata;
-
-   return node;
+   return (xmb_node_t*)info->userdata;
 }
 
 static void xmb_push_animations(xmb_node_t *node, float ia, float ix)
