@@ -99,7 +99,7 @@ struct udev_input
 
    int16_t mouse_x;
    int16_t mouse_y;
-   bool mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
+   bool mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd, mouse_whu, mouse_whd;
 };
 
 #ifdef HAVE_XKBCOMMON
@@ -238,7 +238,13 @@ static void udev_handle_mouse(udev_input_t *udev,
                else if (event->value == -1)
                   udev->mouse_wd = 1;
                break;
-
+            case REL_HWHEEL:
+               if (event->value == 1)
+                  udev->mouse_whu = 1;
+               else if (event->value == -1)
+                  udev->mouse_whd = 1;
+               break;
+               break;
             default:
                break;
          }
@@ -409,6 +415,7 @@ static void udev_input_poll(void *data)
 
    udev->mouse_x = udev->mouse_y = 0;
    udev->mouse_wu = udev->mouse_wd = 0;
+   udev->mouse_whu = udev->mouse_whd = 0;
 
    while (udev_input_hotplug_available(udev))
       udev_input_handle_hotplug(udev);
@@ -454,6 +461,10 @@ static int16_t udev_mouse_state(udev_input_t *udev, unsigned id)
          return udev->mouse_wu;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
          return udev->mouse_wd;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+         return udev->mouse_whu;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+         return udev->mouse_whd;
    }
 
    return 0;

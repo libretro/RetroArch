@@ -212,6 +212,7 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
    if (menu->mouse.wheelup)
       menu_navigation_decrement(&menu->navigation, 1);
 
+
    return 0;
 }
 
@@ -578,6 +579,20 @@ static int mouse_iterate(unsigned *action)
    if (!menu->mouse.enable)
       return 0;
 
+   if (menu->mouse.hwheeldown)
+   {
+      *action = MENU_ACTION_LEFT;
+      menu->mouse.hwheeldown = false;
+      return 0;
+   }
+
+   if (menu->mouse.hwheelup)
+   {
+      *action = MENU_ACTION_RIGHT;
+      menu->mouse.hwheelup = false;
+      return 0;
+   }
+
    menu->mouse.left = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
    menu->mouse.right = driver.input->input_state(driver.input_data,
@@ -586,6 +601,10 @@ static int mouse_iterate(unsigned *action)
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
    menu->mouse.wheeldown = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
+   menu->mouse.hwheelup = driver.input->input_state(driver.input_data,
+         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
+   menu->mouse.hwheeldown = driver.input->input_state(driver.input_data,
+         binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN);
    menu->mouse.dx = driver.input->input_state(driver.input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
    menu->mouse.dy = driver.input->input_state(driver.input_data,
@@ -608,6 +627,7 @@ static int mouse_iterate(unsigned *action)
 
    if (menu->mouse.dx != 0 || menu->mouse.dy !=0 || menu->mouse.left
       || menu->mouse.wheelup || menu->mouse.wheeldown
+      || menu->mouse.hwheelup || menu->mouse.hwheeldown
       || menu->mouse.scrollup || menu->mouse.scrolldown)
       g_runloop.frames.video.current.menu.animation.is_active = true;
 

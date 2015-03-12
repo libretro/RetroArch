@@ -165,6 +165,8 @@ typedef struct
       bool    oldright;
       bool    wheelup;
       bool    wheeldown;
+      bool    hwheelup;
+      bool    hwheeldown;
       bool    scrollup;
       bool    scrolldown;
       unsigned ptr;
