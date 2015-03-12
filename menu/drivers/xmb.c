@@ -1980,7 +1980,10 @@ static void xmb_toggle(bool menu_on)
    for (i = 0; i < menu->categories.size; i++)
    {
       core_info_t *info           = NULL;
-      xmb_node_t *node = i ? xmb_get_userdata_from_core(xmb, info, i - 1) : &xmb->settings_node;
+      xmb_node_t *node = &xmb->settings_node;
+      
+      if (i > 0)
+         node = xmb_get_userdata_from_core(xmb, info, i - 1);
 
       if (!node)
          continue;
