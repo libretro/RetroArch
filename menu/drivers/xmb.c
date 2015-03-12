@@ -696,7 +696,19 @@ static void xmb_list_open_new(xmb_handle_t *xmb, file_list_t *list, int dir, siz
 
 static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, core_info_t *info, int i)
 {
+   core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
    xmb_node_t *node            = NULL;
+
+   if (!info_list)
+      return NULL;
+   if (!info_list->count)
+      return NULL;
+   rarch_assert(i >= 0);
+   rarch_assert(i <= info_list->count);
+   if (i >= info_list->count)
+      return NULL;
+
+   info = (core_info_t*)&info_list->list[i];
 
    if (!info)
       return NULL;
@@ -744,12 +756,6 @@ static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, core_info_t *in
    if (!info)
       return NULL;
 
-   if (!info->userdata)
-   {
-      info->userdata = xmb_node_allocate_userdata(xmb, info, i);
-      if (!info->userdata)
-         return NULL;
-   }
 
    return (xmb_node_t*)info->userdata;
 }
@@ -1720,6 +1726,13 @@ static void xmb_context_reset(void)
       core_info_t *info           = NULL;
       struct texture_image ti = {0};
       node = xmb_get_userdata_from_core(xmb, info, i - 1);
+
+      if (!node)
+      {
+         node = xmb_node_allocate_userdata(xmb, info, i - 1);
+         if (!node)
+            continue;
+      }
 
       fill_pathname_join(mediapath, g_settings.assets_directory,
             "lakka", sizeof(mediapath));
