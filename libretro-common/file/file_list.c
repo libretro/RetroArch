@@ -71,8 +71,13 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
    if (list->size != 0)
    {
       --list->size;
-      free(list->list[list->size].path);
-      free(list->list[list->size].label);
+      if (list->list[list->size].path)
+         free(list->list[list->size].path);
+      list->list[list->size].path = NULL;
+
+      if (list->list[list->size].label)
+         free(list->list[list->size].label);
+      list->list[list->size].label = NULL;
    }
 
    if (directory_ptr)
@@ -88,12 +93,23 @@ void file_list_free(file_list_t *list)
 
    for (i = 0; i < list->size; i++)
    {
-      free(list->list[i].path);
-      free(list->list[i].label);
-      free(list->list[i].alt);
+      if (list->list[i].path)
+         free(list->list[i].path);
+      list->list[i].path = NULL;
+
+      if (list->list[i].label)
+         free(list->list[i].label);
+      list->list[i].label = NULL;
+
+      if (list->list[i].alt)
+         free(list->list[i].alt);
+      list->list[i].alt = NULL;
    }
-   free(list->list);
-   free(list);
+   if (list->list)
+      free(list->list);
+   list->list = NULL;
+   if (list)
+      free(list);
 }
 
 void file_list_clear(file_list_t *list)
@@ -102,11 +118,16 @@ void file_list_clear(file_list_t *list)
 
    for (i = 0; i < list->size; i++)
    {
-      free(list->list[i].path);
+      if (list->list[i].path)
+         free(list->list[i].path);
       list->list[i].path = NULL;
-      free(list->list[i].label);
+
+      if (list->list[i].label)
+         free(list->list[i].label);
       list->list[i].label = NULL;
-      free(list->list[i].alt);
+
+      if (list->list[i].alt)
+         free(list->list[i].alt);
       list->list[i].alt = NULL;
    }
 
@@ -145,7 +166,8 @@ void file_list_copy(file_list_t *list, file_list_t *list_old)
 void file_list_set_label_at_offset(file_list_t *list, size_t idx,
       const char *label)
 {
-   free(list->list[idx].label);
+   if (list->list[idx].label)
+      free(list->list[idx].label);
    list->list[idx].alt      = NULL;
 
    if (label)
@@ -166,7 +188,8 @@ void file_list_get_label_at_offset(const file_list_t *list, size_t idx,
 void file_list_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt)
 {
-   free(list->list[idx].alt);
+   if (list->list[idx].alt)
+      free(list->list[idx].alt);
    list->list[idx].alt      = NULL;
 
    if (alt)
