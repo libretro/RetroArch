@@ -248,7 +248,9 @@ CGFloat apple_gfx_ctx_get_native_scale(void)
        return ret;
    }
     
-   ret = screen.scale;
+   ret = 1.0f;
+   if ([screen respondsToSelector:@selector(scale)])
+      ret = screen.scale;
    return ret;
 }
 
