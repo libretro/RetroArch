@@ -1790,7 +1790,8 @@ static void xmb_context_reset(void)
 
 static void xmb_navigation_clear(bool pending_push)
 {
-   xmb_selection_pointer_changed();
+   if (!pending_push)
+      xmb_selection_pointer_changed();
 }
 
 static void xmb_navigation_decrement(void)
