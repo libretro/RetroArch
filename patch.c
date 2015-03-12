@@ -73,6 +73,9 @@ static uint64_t bps_decode(struct bps_data *bps)
 
 static void bps_write(struct bps_data *bps, uint8_t data)
 {
+   if (!bps)
+      return;
+
    bps->target_data[bps->output_offset++] = data;
    bps->target_checksum = crc32_adjust(bps->target_checksum, data);
 }
@@ -198,7 +201,7 @@ struct ups_data
 
 static uint8_t ups_patch_read(struct ups_data *data) 
 {
-   if (data->patch_offset < data->patch_length) 
+   if (data && data->patch_offset < data->patch_length) 
    {
       uint8_t n = data->patch_data[data->patch_offset++];
       data->patch_checksum = crc32_adjust(data->patch_checksum, n);
@@ -209,7 +212,7 @@ static uint8_t ups_patch_read(struct ups_data *data)
 
 static uint8_t ups_source_read(struct ups_data *data) 
 {
-   if (data->source_offset < data->source_length) 
+   if (data && data->source_offset < data->source_length) 
    {
       uint8_t n = data->source_data[data->source_offset++];
       data->source_checksum = crc32_adjust(data->source_checksum, n);
@@ -220,13 +223,14 @@ static uint8_t ups_source_read(struct ups_data *data)
 
 static void ups_target_write(struct ups_data *data, uint8_t n) 
 {
-   if (data->target_offset < data->target_length) 
+   if (data && data->target_offset < data->target_length) 
    {
       data->target_data[data->target_offset] = n;
       data->target_checksum = crc32_adjust(data->target_checksum, n);
    }
 
-   data->target_offset++;
+   if (data)
+      data->target_offset++;
 }
 
 static uint64_t ups_decode(struct ups_data *data) 
@@ -255,13 +259,13 @@ patch_error_t ups_apply_patch(
             target_read_checksum = 0, patch_result_checksum;
    struct ups_data data = {0};
 
-   data.patch_data = patchdata;
-   data.source_data = sourcedata;
-   data.target_data = targetdata;
-   data.patch_length = patchlength;
-   data.source_length = sourcelength;
-   data.target_length = *targetlength;
-   data.patch_checksum = ~0;
+   data.patch_data      = patchdata;
+   data.source_data     = sourcedata;
+   data.target_data     = targetdata;
+   data.patch_length    = patchlength;
+   data.source_length   = sourcelength;
+   data.target_length   = *targetlength;
+   data.patch_checksum  = ~0;
    data.source_checksum = ~0;
    data.target_checksum = ~0;
 
@@ -430,14 +434,14 @@ static bool apply_patch_content(uint8_t **buf,
       ssize_t *size, const char *patch_desc, const char *patch_path,
       patch_func_t func)
 {
-   void *patch_data = NULL;
    size_t target_size;
-   patch_error_t err = PATCH_UNKNOWN;
-   bool success = false;
-   uint8_t *patched_content = NULL;
-   ssize_t ret_size = *size;
-   uint8_t *ret_buf = *buf;
    ssize_t patch_size;
+   void *patch_data         = NULL;
+   patch_error_t err        = PATCH_UNKNOWN;
+   bool success             = false;
+   uint8_t *patched_content = NULL;
+   ssize_t ret_size         = *size;
+   uint8_t *ret_buf         = *buf;
    
    if (!read_file(patch_desc, &patch_data, &patch_size))
       return false;
