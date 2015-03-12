@@ -870,7 +870,10 @@ static void xmb_list_switch(xmb_handle_t *xmb)
       core_info_t *info           = NULL;
       float ia         = xmb->categories.passive.alpha;
       float iz         = xmb->categories.passive.zoom;
-      xmb_node_t *node = j ? xmb_get_userdata_from_core(xmb, info, j - 1) : &xmb->settings_node;
+      xmb_node_t *node = &xmb->settings_node;
+      
+      if (j > 0)
+         node = xmb_get_userdata_from_core(xmb, info, j - 1);
 
       if (!node)
          continue;
@@ -918,7 +921,10 @@ static void xmb_list_open(xmb_handle_t *xmb)
    {
       core_info_t *info           = NULL;
       float ia = 0;
-      xmb_node_t *node = j ? xmb_get_userdata_from_core(xmb, info, j - 1) : &xmb->settings_node;
+      xmb_node_t *node = &xmb->settings_node;
+      
+      if (j > 0)
+         node = xmb_get_userdata_from_core(xmb, info, j - 1);
 
       if (!node)
          continue;
@@ -1355,7 +1361,10 @@ static void xmb_frame(void)
    for (i = 0; i < menu->categories.size; i++)
    {
       core_info_t *info           = NULL;
-      xmb_node_t *node = i ? xmb_get_userdata_from_core(xmb, info, i - 1) : &xmb->settings_node;
+      xmb_node_t *node = &xmb->settings_node;
+      
+      if (i > 0)
+         node = xmb_get_userdata_from_core(xmb, info, i - 1);
 
       if (node)
          xmb_draw_icon(gl, xmb, node->icon, 
