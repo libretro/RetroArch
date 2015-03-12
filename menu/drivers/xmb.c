@@ -1050,7 +1050,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
    file_list_get_last(stack, NULL, &label, NULL);
 
    if (xmb->categories.active.idx)
-      core_node = xmb_get_userdata_from_core(xmb, cat_selection_ptr);
+      core_node = xmb_get_userdata_from_core(xmb, cat_selection_ptr ? cat_selection_ptr : 0);
 
    end = file_list_get_size(list);
 
