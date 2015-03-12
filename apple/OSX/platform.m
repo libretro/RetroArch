@@ -188,7 +188,7 @@ static char** waiting_argv;
    waiting_argc = 0;
 }
 
-- (void) poll_iteration
+static void poll_iteration(void)
 {
     NSEvent *event;
 
@@ -213,7 +213,7 @@ static char** waiting_argv;
     int ret = 0;
     while (ret != -1)
     {
-        [self poll_iteration];
+        poll_iteration();
         ret = rarch_main_iterate();
         while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
     }
