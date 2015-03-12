@@ -434,7 +434,7 @@ static int menu_animation_iterate(struct tween *tween, float dt,
    return 0;
 }
 
-void menu_animation_update(animation_t *animation, float dt)
+bool menu_animation_update(animation_t *animation, float dt)
 {
    unsigned i;
    unsigned active_tweens = 0;
@@ -445,10 +445,12 @@ void menu_animation_update(animation_t *animation, float dt)
    if (!active_tweens)
    {
       animation->size = 0;
-      return;
+      return false;
    }
 
    g_runloop.frames.video.current.menu.animation.is_active = true;
+
+   return true;
 }
 
 /**

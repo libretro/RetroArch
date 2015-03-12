@@ -100,7 +100,7 @@ bool menu_animation_push(animation_t *animation, float duration,
       float target_value, float* subject,
       enum animation_easing_type easing_enum, tween_cb cb);
 
-void menu_animation_update(animation_t *animation, float dt);
+bool menu_animation_update(animation_t *animation, float dt);
 
 /**
  * menu_animation_ticker_line:
