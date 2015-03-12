@@ -34,8 +34,6 @@ void menu_list_free(menu_list_t *menu_list);
 
 void *menu_list_new(void);
 
-void menu_list_destroy(file_list_t *list);
-
 void menu_list_flush_stack(menu_list_t *list,
       unsigned final_type);
 

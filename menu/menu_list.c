@@ -135,7 +135,7 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
       list->size - 1;
 }
 
-void menu_list_destroy(file_list_t *list)
+static void menu_list_destroy(file_list_t *list)
 {
    unsigned i;
 
