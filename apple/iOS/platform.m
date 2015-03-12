@@ -32,6 +32,8 @@
 
 id<RetroArch_Platform> apple_platform;
 
+CADisplayLink *displayLink;
+
 /* forward decls */
 
 void apple_rarch_exited(void);
@@ -288,6 +290,9 @@ static void rarch_main_event_pump(void)
 {
     int ret = 0;
     
+    if (displayLink == nil)
+        goto exit;
+    
     rarch_main_event_pump();
         
     ret = rarch_main_iterate();
@@ -310,12 +315,15 @@ exit:
 
 - (void) apple_start_iteration
 {
-    [[CADisplayLink displayLinkWithTarget:self
-                                 selector:@selector(rarch_draw:)] addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+    displayLink = [CADisplayLink displayLinkWithTarget:self
+                        selector:@selector(rarch_draw:)];
+    [displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
 }
 
 - (void) apple_stop_iteration
 {
+    [displayLink removeFromRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+    displayLink = nil;
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
@@ -325,6 +333,7 @@ exit:
 
 - (void)applicationWillTerminate:(UIApplication *)application
 {
+    [self apple_stop_iteration];
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
