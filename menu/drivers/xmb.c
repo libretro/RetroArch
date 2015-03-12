@@ -268,7 +268,7 @@ static int xmb_entry_iterate(unsigned action)
 static char *xmb_str_replace (const char *string,
       const char *substr, const char *replacement)
 {
-   char *tok, *newstr, *oldstr, *head;
+   char *tok, *newstr, *head;
 
    /* if either substr or replacement is NULL, 
     * duplicate string a let caller handle it. */
@@ -278,9 +278,9 @@ static char *xmb_str_replace (const char *string,
    newstr = strdup(string);
    head   = newstr;
 
-   while ( (tok = strstr ( head, substr )))
+   while ((tok = strstr (head, substr)))
    {
-      oldstr = newstr;
+      char* oldstr = newstr;
       newstr = (char*)malloc(
             strlen(oldstr) - strlen(substr) + strlen(replacement) + 1);
 
@@ -288,21 +288,20 @@ static char *xmb_str_replace (const char *string,
       {
          /* Failed to allocate memory,
           * free old string and return NULL. */
-         free (oldstr);
+         free(oldstr);
          return NULL;
       }
 
-      memcpy(newstr, oldstr, tok - oldstr );
-      memcpy(newstr + (tok - oldstr), replacement, strlen ( replacement ) );
-      memcpy(newstr + (tok - oldstr) + strlen( replacement ), tok +
-            strlen ( substr ), strlen ( oldstr ) -
-            strlen ( substr ) - ( tok - oldstr ) );
-      memset(newstr + strlen ( oldstr ) - strlen ( substr ) +
-            strlen ( replacement ) , 0, 1 );
+      memcpy(newstr, oldstr, tok - oldstr);
+      memcpy(newstr + (tok - oldstr), replacement, strlen(replacement));
+      memcpy(newstr + (tok - oldstr) + strlen(replacement),
+            tok + strlen(substr),
+            strlen(oldstr) - strlen(substr) - (tok - oldstr));
+      newstr[strlen(oldstr) - strlen(substr) + strlen(replacement)] = '\0';
 
       /* Move back head right after the last replacement. */
-      head = newstr + (tok - oldstr) + strlen( replacement );
-      free (oldstr);
+      head = newstr + (tok - oldstr) + strlen(replacement);
+      free(oldstr);
    }
 
    return newstr;
