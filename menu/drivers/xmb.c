@@ -745,10 +745,14 @@ static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, core_info_t *in
    if (!info)
       return NULL;
 
-   node = (xmb_node_t*)info->userdata;
+   if (!info->userdata)
+   {
+      info->userdata = xmb_node_allocate_userdata(xmb, info, i);
+      if (!info->userdata)
+         return NULL;
+   }
 
-   if (!node)
-      return xmb_node_allocate_userdata(xmb, info, i);
+   node = (xmb_node_t*)info->userdata;
 
    return node;
 }
