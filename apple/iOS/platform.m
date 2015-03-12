@@ -284,36 +284,34 @@ static void rarch_main_event_pump(void)
     }while(result == kCFRunLoopRunHandledSource);
 }
 
-- (void) rarch_main
+- (void) rarch_draw:(id)sender
 {
     int ret = 0;
-    while (ret != -1)
-    {
-        rarch_main_event_pump();
-        
-        ret = rarch_main_iterate();
-        
-        if (ret == -1)
-            break;
-        
-        if (g_runloop.is_idle)
-            continue;
-#if 0
-        if (g_runloop.is_menu && !menu_display_update_pending())
-            continue;
-#endif
-        
-        if (g_view)
-            [g_view display];
-    }
     
+    rarch_main_event_pump();
+        
+    ret = rarch_main_iterate();
+        
+    if (ret == -1)
+        goto exit;
+        
+    if (g_runloop.is_idle)
+        return;
+        
+    if (g_view)
+        [g_view display];
+    
+    return;
+    
+exit:
     main_exit_save_config();
     main_exit(NULL);
 }
 
 - (void) apple_start_iteration
 {
-    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
+    [[CADisplayLink displayLinkWithTarget:self
+                                 selector:@selector(rarch_draw:)] addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
 }
 
 - (void) apple_stop_iteration
