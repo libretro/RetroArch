@@ -416,9 +416,10 @@ static bool png_reverse_filter_iterate(uint32_t *data, const struct png_ihdr *ih
    return 0;
 }
 
-static bool png_reverse_filter_regular(uint32_t *data, const struct png_ihdr *ihdr,
+static bool png_reverse_filter_regular(uint32_t **data_, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
+   uint32_t *data = *data_;
    int ret;
 
    do{
@@ -436,12 +437,13 @@ static bool png_reverse_filter_regular(uint32_t *data, const struct png_ihdr *ih
    return false;
 }
 
-static int png_reverse_filter_adam7(uint32_t *data,
+static int png_reverse_filter_adam7(uint32_t **data_,
       const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
    int ret = 0;
    bool to_cont = pngp->pass.pos < ARRAY_SIZE(passes);
+   uint32_t *data = *data_;
 
    if (!to_cont)
    {
@@ -462,7 +464,7 @@ static int png_reverse_filter_adam7(uint32_t *data,
    if (png_reverse_filter_init(&pngp->ihdr, pngp) == -1)
       goto error;
 
-   if (!png_reverse_filter_regular(pngp->data,
+   if (!png_reverse_filter_regular(&pngp->data,
             &pngp->ihdr, pngp))
       goto error;
 
@@ -516,7 +518,7 @@ static bool png_reverse_filter_loop(struct rpng_t *rpng,
 
       do
       {
-         ret = png_reverse_filter_adam7(*data,
+         ret = png_reverse_filter_adam7(data,
                ihdr, pngp);
       }while(ret == 0);
 
@@ -527,7 +529,7 @@ static bool png_reverse_filter_loop(struct rpng_t *rpng,
    {
       if (png_reverse_filter_init(ihdr, pngp) == -1)
          return false;
-      if (!png_reverse_filter_regular(*data,
+      if (!png_reverse_filter_regular(data,
                ihdr, pngp))
          return false;
    }
