@@ -390,7 +390,7 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
    return 0;
 }
 
-static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
+static bool png_reverse_filter_regular(uint32_t *data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
    int ret;
@@ -451,7 +451,7 @@ static int png_reverse_filter_adam7(uint32_t *data,
       goto end;
    }
 
-   if (!png_reverse_filter(pngp->data,
+   if (!png_reverse_filter_regular(pngp->data,
             &pngp->ihdr, pngp))
    {
       free(pngp->data);
@@ -504,7 +504,7 @@ static bool png_reverse_filter_loop(struct rpng_t *rpng,
       if (ret == -1)
          return false;
    }
-   else if (!png_reverse_filter(*data,
+   else if (!png_reverse_filter_regular(*data,
             &rpng->ihdr, &rpng->process))
       return false;
 
