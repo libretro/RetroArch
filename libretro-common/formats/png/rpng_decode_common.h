@@ -390,31 +390,42 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
    return 0;
 }
 
+static bool png_reverse_filter_iterate(uint32_t *data, const struct png_ihdr *ihdr,
+      struct rpng_process_t *pngp)
+{
+   int ret = 1;
+
+   if (pngp->h < ihdr->height)
+   {
+      unsigned filter = *pngp->inflate_buf++;
+      pngp->restore_buf_size += 1;
+      ret = png_reverse_filter_copy_line(data,
+            ihdr, pngp, filter);
+   }
+
+   if (ret == 1 || ret == -1)
+   {
+      png_reverse_filter_deinit(pngp);
+      return ret;
+   }
+
+   pngp->h++;
+   pngp->inflate_buf      += pngp->pitch;
+   pngp->restore_buf_size += pngp->pitch;
+
+   return 0;
+}
+
 static bool png_reverse_filter_regular(uint32_t *data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
    int ret;
 
    do{
-      ret = 1;
+      ret = png_reverse_filter_iterate(data, ihdr, pngp);
 
-      if (pngp->h < ihdr->height)
-      {
-         unsigned filter = *pngp->inflate_buf++;
-         pngp->restore_buf_size += 1;
-         ret = png_reverse_filter_copy_line(data,
-               ihdr, pngp, filter);
-      }
-
-      if (ret == 1 || ret == -1)
-      {
-         png_reverse_filter_deinit(pngp);
+      if (ret != 0)
          break;
-      }
-
-      pngp->h++;
-      pngp->inflate_buf      += pngp->pitch;
-      pngp->restore_buf_size += pngp->pitch;
       data += ihdr->width;
    }while(1);
 
