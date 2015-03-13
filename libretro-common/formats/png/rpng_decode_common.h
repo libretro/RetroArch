@@ -429,28 +429,24 @@ static int png_reverse_filter_iterate(uint32_t *data, const struct png_ihdr *ihd
 static int png_reverse_filter_regular_loop(uint32_t **data_, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
-   uint32_t *data = *data_;
-   int ret;
+   int ret = png_reverse_filter_iterate(*data_, ihdr, pngp);
 
-   do
+   switch (ret)
    {
-      ret = png_reverse_filter_iterate(data, ihdr, pngp);
-
-      switch (ret)
-      {
-         case PNG_PROCESS_ERROR:
-         case PNG_PROCESS_ERROR_END:
-         case PNG_PROCESS_END:
-            break;
-         case PNG_PROCESS_NEXT:
-            data += ihdr->width;
-            pngp->data_restore_buf_size += ihdr->width;
-      }
-
-   }while(ret == PNG_PROCESS_NEXT);
+      case PNG_PROCESS_ERROR:
+      case PNG_PROCESS_ERROR_END:
+      case PNG_PROCESS_END:
+         break;
+      case PNG_PROCESS_NEXT:
+         *data_ += ihdr->width;
+         pngp->data_restore_buf_size += ihdr->width;
+         return PNG_PROCESS_NEXT;
+   }
 
    pngp->inflate_buf -= pngp->restore_buf_size;
+   *data_            -= pngp->data_restore_buf_size;
    pngp->data_restore_buf_size = 0;
+
    return ret;
 }
 
