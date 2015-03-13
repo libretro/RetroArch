@@ -442,10 +442,7 @@ static int png_reverse_filter_adam7(uint32_t *data,
    ret = png_reverse_filter_init(ihdr, pngp->inflate_buf, pngp, palette);
 
    if (ret == 1)
-   {
-      ret = 0;
       goto cont;
-   }
    if (ret == -1)
    {
       ret = -1;
