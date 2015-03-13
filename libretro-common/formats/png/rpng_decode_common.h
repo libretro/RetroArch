@@ -457,9 +457,9 @@ static int png_reverse_filter_adam7(uint32_t *data,
       goto end;
    }
 
-   pngp->inflate_buf      += pngp->pass.size;
-   pngp->restore_buf_size += pngp->pass.size;
-   pngp->stream.total_out -= pngp->pass.size;
+   pngp->inflate_buf            += pngp->pass.size;
+   pngp->adam7_restore_buf_size += pngp->pass.size;
+   pngp->stream.total_out       -= pngp->pass.size;
 
    png_reverse_filter_adam7_deinterlace_pass(data,
          ihdr, pngp->data, pngp->pass.width, pngp->pass.height, &passes[pngp->pass.pos]);
@@ -476,7 +476,8 @@ cont:
    return 0;
 
 end:
-   pngp->inflate_buf -= pngp->restore_buf_size;
+   pngp->inflate_buf -= pngp->adam7_restore_buf_size;
+   pngp->adam7_restore_buf_size = 0;
 
    return ret;
 }
@@ -487,6 +488,9 @@ static bool png_reverse_filter_loop(struct rpng_t *rpng,
    if (rpng->ihdr.interlace == 1)
    {
       int ret = 0;
+
+      rpng->process.adam7_restore_buf_size = 0;
+
       do
       {
          ret = png_reverse_filter_adam7(*data,
