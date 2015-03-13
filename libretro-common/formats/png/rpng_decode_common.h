@@ -392,7 +392,7 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
 }
 
 static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
-      const uint8_t *inflate_buf, struct rpng_process_t *pngp,
+      struct rpng_process_t *pngp,
       const uint32_t *palette)
 {
    int ret;
@@ -405,10 +405,10 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
 
       if (pngp->h < ihdr->height)
       {
-         unsigned filter = *inflate_buf++;
+         unsigned filter = *pngp->inflate_buf++;
          pngp->restore_buf_size += 1;
          ret = png_reverse_filter_copy_line(data,
-               ihdr, inflate_buf, pngp, palette, filter);
+               ihdr, pngp->inflate_buf, pngp, palette, filter);
       }
 
       if (ret == 1 || ret == -1)
@@ -418,10 +418,12 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       }
 
       pngp->h++;
-      inflate_buf            += pngp->pitch;
+      pngp->inflate_buf      += pngp->pitch;
       pngp->restore_buf_size += pngp->pitch;
       data += ihdr->width;
    }while(1);
+
+   pngp->inflate_buf -= pngp->restore_buf_size;
 
    if (ret == 1)
       return true;
@@ -453,7 +455,7 @@ static int png_reverse_filter_adam7(uint32_t *data,
    }
 
    if (!png_reverse_filter(pngp->data,
-            &pngp->ihdr, pngp->inflate_buf, pngp, palette))
+            &pngp->ihdr, pngp, palette))
    {
       free(pngp->data);
       ret = -1;
@@ -506,7 +508,7 @@ static bool png_reverse_filter_loop(struct rpng_t *rpng,
          return false;
    }
    else if (!png_reverse_filter(*data,
-            &rpng->ihdr, rpng->process.inflate_buf, &rpng->process, rpng->palette))
+            &rpng->ihdr, &rpng->process, rpng->palette))
       return false;
 
    return true;
