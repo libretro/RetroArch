@@ -38,6 +38,7 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    CFBundleRef bundle = CFBundleGetMainBundle();
     
    (void)support_path_buf;
+   (void)temp_dir;
 
    if (!bundle)
       return;
