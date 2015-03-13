@@ -448,10 +448,7 @@ static int png_reverse_filter_regular_loop(uint32_t **data_, const struct png_ih
    }while(ret == PNG_PROCESS_NEXT);
 
    pngp->inflate_buf -= pngp->restore_buf_size;
-
-   if (ret == 1)
-      return PNG_PROCESS_END;
-   return PNG_PROCESS_ERROR;
+   return ret;
 }
 
 
