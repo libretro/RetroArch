@@ -46,6 +46,75 @@ static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
    return PNG_CHUNK_NOOP;
 }
 
+static bool png_process_ihdr(struct png_ihdr *ihdr)
+{
+   unsigned i;
+   bool ret = true;
+
+   switch (ihdr->color_type)
+   {
+      case PNG_IHDR_COLOR_RGB:
+      case PNG_IHDR_COLOR_GRAY_ALPHA:
+      case PNG_IHDR_COLOR_RGBA:
+         if (ihdr->depth != 8 && ihdr->depth != 16)
+            GOTO_END_ERROR();
+         break;
+      case PNG_IHDR_COLOR_GRAY:
+         {
+            static const unsigned valid_bpp[] = { 1, 2, 4, 8, 16 };
+            bool correct_bpp = false;
+
+            for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
+            {
+               if (valid_bpp[i] == ihdr->depth)
+               {
+                  correct_bpp = true;
+                  break;
+               }
+            }
+
+            if (!correct_bpp)
+               GOTO_END_ERROR();
+         }
+         break;
+      case PNG_IHDR_COLOR_PLT:
+         {
+            static const unsigned valid_bpp[] = { 1, 2, 4, 8 };
+            bool correct_bpp = false;
+
+            for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
+            {
+               if (valid_bpp[i] == ihdr->depth)
+               {
+                  correct_bpp = true;
+                  break;
+               }
+            }
+
+            if (!correct_bpp)
+               GOTO_END_ERROR();
+         }
+         break;
+      default:
+         GOTO_END_ERROR();
+   }
+
+#ifdef RPNG_TEST
+   fprintf(stderr, "IHDR: (%u x %u), bpc = %u, palette = %s, color = %s, alpha = %s, adam7 = %s.\n",
+         ihdr->width, ihdr->height,
+         ihdr->depth, ihdr->color_type == PNG_IHDR_COLOR_PLT ? "yes" : "no",
+         ihdr->color_type & PNG_IHDR_COLOR_RGB ? "yes" : "no",
+         ihdr->color_type & PNG_IHDR_COLOR_GRAY_ALPHA ? "yes" : "no",
+         ihdr->interlace == 1 ? "yes" : "no");
+#endif
+
+   if (ihdr->compression != 0)
+      GOTO_END_ERROR();
+
+end:
+   return ret;
+}
+
 static void png_reverse_filter_copy_line_rgb(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp)
 {

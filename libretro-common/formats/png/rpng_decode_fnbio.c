@@ -56,7 +56,6 @@ static bool read_chunk_header(uint8_t *buf, struct png_chunk *chunk)
 static bool png_parse_ihdr(uint8_t *buf,
       struct png_ihdr *ihdr)
 {
-   unsigned i;
    bool ret = true;
 
    buf += 4 + 4;
@@ -70,75 +69,9 @@ static bool png_parse_ihdr(uint8_t *buf,
    ihdr->interlace   = buf[12];
 
    if (ihdr->width == 0 || ihdr->height == 0)
-      GOTO_END_ERROR();
+      return false;
 
-   switch (ihdr->color_type)
-   {
-      case PNG_IHDR_COLOR_RGB:
-      case PNG_IHDR_COLOR_GRAY_ALPHA:
-      case PNG_IHDR_COLOR_RGBA:
-         if (ihdr->depth != 8 && ihdr->depth != 16)
-            GOTO_END_ERROR();
-         break;
-      case PNG_IHDR_COLOR_GRAY:
-         {
-            static const unsigned valid_bpp[] = { 1, 2, 4, 8, 16 };
-            bool correct_bpp = false;
-
-            for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
-            {
-               if (valid_bpp[i] == ihdr->depth)
-               {
-                  correct_bpp = true;
-                  break;
-               }
-            }
-
-            if (!correct_bpp)
-               GOTO_END_ERROR();
-         }
-         break;
-      case PNG_IHDR_COLOR_PLT:
-         {
-            static const unsigned valid_bpp[] = { 1, 2, 4, 8 };
-            bool correct_bpp = false;
-
-            for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
-            {
-               if (valid_bpp[i] == ihdr->depth)
-               {
-                  correct_bpp = true;
-                  break;
-               }
-            }
-
-            if (!correct_bpp)
-               GOTO_END_ERROR();
-         }
-         break;
-      default:
-         GOTO_END_ERROR();
-   }
-
-#ifdef RPNG_TEST
-   fprintf(stderr, "IHDR: (%u x %u), bpc = %u, palette = %s, color = %s, alpha = %s, adam7 = %s.\n",
-         ihdr->width, ihdr->height,
-         ihdr->depth, ihdr->color_type == PNG_IHDR_COLOR_PLT ? "yes" : "no",
-         ihdr->color_type & PNG_IHDR_COLOR_RGB ? "yes" : "no",
-         ihdr->color_type & PNG_IHDR_COLOR_GRAY_ALPHA ? "yes" : "no",
-         ihdr->interlace == 1 ? "yes" : "no");
-#endif
-
-   if (ihdr->compression != 0)
-      GOTO_END_ERROR();
-
-#if 0
-   if (ihdr->interlace != 0) /* No Adam7 supported. */
-      GOTO_END_ERROR();
-#endif
-
-end:
-   return ret;
+   return true;
 }
 
 static bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
@@ -207,6 +140,9 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf, struct rpng_t *rpng)
             return false;
 
          if (!png_parse_ihdr(buf, &rpng->ihdr))
+            return false;
+
+         if (!png_process_ihdr(&rpng->ihdr))
             return false;
 
          rpng->has_ihdr = true;
