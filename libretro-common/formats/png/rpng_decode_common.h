@@ -315,7 +315,7 @@ error:
    return -1;
 }
 
-static int png_reverse_filter_wrapper(uint32_t *data, const struct png_ihdr *ihdr,
+static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *ihdr,
       const uint8_t *inflate_buf, struct rpng_process_t *pngp,
       const uint32_t *palette, unsigned filter)
 {
@@ -405,7 +405,7 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       if (pngp->h < ihdr->height)
       {
          unsigned filter = *inflate_buf++;
-         ret = png_reverse_filter_wrapper(data,
+         ret = png_reverse_filter_copy_line(data,
                ihdr, inflate_buf, pngp, palette, filter);
       }
 
