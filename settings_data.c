@@ -3640,16 +3640,6 @@ static bool setting_data_append_list_general_options(
 
    START_SUB_GROUP(list, list_info, "Saving", group_info.name, subgroup_info);
 
-   CONFIG_INT(
-         g_settings.state_slot,
-         "state_slot",
-         "State Slot",
-         0,
-         group_info.name,
-         subgroup_info.name,
-         general_write_handler,
-         general_read_handler);
-
    CONFIG_BOOL(
          g_settings.block_sram_overwrite,
          "block_sram_overwrite",
