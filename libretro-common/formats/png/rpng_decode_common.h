@@ -431,41 +431,52 @@ static int png_reverse_filter_adam7(uint32_t *data,
       const uint32_t *palette)
 {
    int ret = 0;
+   bool to_cont = pngp->pass.pos < ARRAY_SIZE(passes);
 
-   for (; pngp->pass.pos < ARRAY_SIZE(passes); pngp->pass.pos++)
+   if (!to_cont)
    {
-      int ret = png_reverse_filter_init(ihdr, pngp->inflate_buf, pngp, palette);
-
-      if (ret == 1)
-         continue;
-      if (ret == -1)
-      {
-         ret = -1;
-         goto end;
-      }
-
-      if (!png_reverse_filter(pngp->data,
-               &pngp->ihdr, pngp->inflate_buf, pngp, palette))
-      {
-         free(pngp->data);
-         ret = -1;
-         goto end;
-      }
-
-      pngp->inflate_buf      += pngp->pass.size;
-      pngp->restore_buf_size += pngp->pass.size;
-      pngp->stream.total_out -= pngp->pass.size;
-
-      deinterlace_pass(data,
-            ihdr, pngp->data, pngp->pass.width, pngp->pass.height, &passes[pngp->pass.pos]);
-
-      free(pngp->data);
-
-      pngp->pass.width  = 0;
-      pngp->pass.height = 0;
-      pngp->pass.size   = 0;
-      pngp->adam7_pass_initialized = false;
+      ret = 1;
+      goto end;
    }
+
+   ret = png_reverse_filter_init(ihdr, pngp->inflate_buf, pngp, palette);
+
+   if (ret == 1)
+   {
+      ret = 0;
+      goto cont;
+   }
+   if (ret == -1)
+   {
+      ret = -1;
+      goto end;
+   }
+
+   if (!png_reverse_filter(pngp->data,
+            &pngp->ihdr, pngp->inflate_buf, pngp, palette))
+   {
+      free(pngp->data);
+      ret = -1;
+      goto end;
+   }
+
+   pngp->inflate_buf      += pngp->pass.size;
+   pngp->restore_buf_size += pngp->pass.size;
+   pngp->stream.total_out -= pngp->pass.size;
+
+   deinterlace_pass(data,
+         ihdr, pngp->data, pngp->pass.width, pngp->pass.height, &passes[pngp->pass.pos]);
+
+   free(pngp->data);
+
+   pngp->pass.width  = 0;
+   pngp->pass.height = 0;
+   pngp->pass.size   = 0;
+   pngp->adam7_pass_initialized = false;
+
+cont:
+   pngp->pass.pos++;
+   return 0;
 
 end:
    pngp->inflate_buf -= pngp->restore_buf_size;
@@ -478,8 +489,13 @@ static bool png_reverse_filter_loop(struct rpng_t *rpng,
 {
    if (rpng->ihdr.interlace == 1)
    {
-      int ret = png_reverse_filter_adam7(*data,
+      int ret = 0;
+      do
+      {
+         ret = png_reverse_filter_adam7(*data,
                &rpng->ihdr, &rpng->process, rpng->palette);
+      }while(ret == 0);
+
       if (ret == -1)
          return false;
    }
