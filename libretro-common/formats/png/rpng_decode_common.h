@@ -46,7 +46,7 @@ static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
    return PNG_CHUNK_NOOP;
 }
 
-static void copy_line_rgb(uint32_t *data,
+static void png_reverse_filter_copy_line_rgb(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp)
 {
    unsigned i;
@@ -67,7 +67,7 @@ static void copy_line_rgb(uint32_t *data,
    }
 }
 
-static void copy_line_rgba(uint32_t *data,
+static void png_reverse_filter_copy_line_rgba(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp)
 {
    unsigned i;
@@ -89,7 +89,7 @@ static void copy_line_rgba(uint32_t *data,
    }
 }
 
-static void copy_line_bw(uint32_t *data,
+static void png_reverse_filter_copy_line_bw(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned depth)
 {
    unsigned i, bit;
@@ -121,7 +121,7 @@ static void copy_line_bw(uint32_t *data,
    }
 }
 
-static void copy_line_gray_alpha(uint32_t *data,
+static void png_reverse_filter_copy_line_gray_alpha(uint32_t *data,
       const uint8_t *decoded, unsigned width,
       unsigned bpp)
 {
@@ -142,7 +142,7 @@ static void copy_line_gray_alpha(uint32_t *data,
    }
 }
 
-static void copy_line_plt(uint32_t *data,
+static void png_reverse_filter_copy_line_plt(uint32_t *data,
       const uint8_t *decoded, unsigned width,
       unsigned depth, const uint32_t *palette)
 {
@@ -209,7 +209,8 @@ static void png_pass_geom(const struct png_ihdr *ihdr,
       *pitch_out = pitch;
 }
 
-static void deinterlace_pass(uint32_t *data, const struct png_ihdr *ihdr,
+static void png_reverse_filter_adam7_deinterlace_pass(uint32_t *data,
+      const struct png_ihdr *ihdr,
       const uint32_t *input, unsigned pass_width, unsigned pass_height,
       const struct adam7_pass *pass)
 {
@@ -367,21 +368,21 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
    switch (ihdr->color_type)
    {
       case 0:
-         copy_line_bw(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
+         png_reverse_filter_copy_line_bw(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
          break;
       case 2:
-         copy_line_rgb(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
+         png_reverse_filter_copy_line_rgb(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
          break;
       case 3:
-         copy_line_plt(data, pngp->decoded_scanline, ihdr->width,
+         png_reverse_filter_copy_line_plt(data, pngp->decoded_scanline, ihdr->width,
                ihdr->depth, palette);
          break;
       case 4:
-         copy_line_gray_alpha(data, pngp->decoded_scanline, ihdr->width,
+         png_reverse_filter_copy_line_gray_alpha(data, pngp->decoded_scanline, ihdr->width,
                ihdr->depth);
          break;
       case 6:
-         copy_line_rgba(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
+         png_reverse_filter_copy_line_rgba(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
          break;
    }
 
@@ -461,7 +462,7 @@ static int png_reverse_filter_adam7(uint32_t *data,
    pngp->restore_buf_size += pngp->pass.size;
    pngp->stream.total_out -= pngp->pass.size;
 
-   deinterlace_pass(data,
+   png_reverse_filter_adam7_deinterlace_pass(data,
          ihdr, pngp->data, pngp->pass.width, pngp->pass.height, &passes[pngp->pass.pos]);
 
    free(pngp->data);
