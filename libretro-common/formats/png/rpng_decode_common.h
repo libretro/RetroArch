@@ -251,6 +251,14 @@ static const struct adam7_pass passes[] = {
    { 0, 1, 1, 2 },
 };
 
+enum png_process_code
+{
+   PNG_PROCESS_ERROR     = -2,
+   PNG_PROCESS_ERROR_END = -1,
+   PNG_PROCESS_NEXT      =  0,
+   PNG_PROCESS_END       =  1,
+};
+
 static int png_reverse_filter_init(const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
@@ -317,6 +325,7 @@ error:
    return -1;
 }
 
+
 static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp, unsigned filter)
 {
@@ -362,7 +371,7 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
          break;
 
       default:
-         return -1;
+         return PNG_PROCESS_ERROR_END;
    }
 
    switch (ihdr->color_type)
@@ -388,21 +397,14 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
 
    memcpy(pngp->prev_scanline, pngp->decoded_scanline, pngp->pitch);
 
-   return 0;
+   return PNG_PROCESS_NEXT;
 }
 
-enum png_process_code
-{
-   PNG_PROCESS_ERROR     = -2,
-   PNG_PROCESS_ERROR_END = -1,
-   PNG_PROCESS_NEXT      =  0,
-   PNG_PROCESS_END       =  1,
-};
 
 static int png_reverse_filter_iterate(uint32_t *data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
-   int ret = 1;
+   int ret = PNG_PROCESS_END;
 
    if (pngp->h < ihdr->height)
    {
@@ -412,7 +414,7 @@ static int png_reverse_filter_iterate(uint32_t *data, const struct png_ihdr *ihd
             ihdr, pngp, filter);
    }
 
-   if (ret == 1 || ret == -1)
+   if (ret == PNG_PROCESS_END || ret == PNG_PROCESS_ERROR_END)
    {
       png_reverse_filter_deinit(pngp);
       return ret;
