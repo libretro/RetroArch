@@ -317,7 +317,7 @@ error:
 }
 
 static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *ihdr,
-      const uint8_t *inflate_buf, struct rpng_process_t *pngp,
+      struct rpng_process_t *pngp,
       const uint32_t *palette, unsigned filter)
 {
    unsigned i;
@@ -325,40 +325,40 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
    switch (filter)
    {
       case 0: /* None */
-         memcpy(pngp->decoded_scanline, inflate_buf, pngp->pitch);
+         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          break;
 
       case 1: /* Sub */
          for (i = 0; i < pngp->bpp; i++)
-            pngp->decoded_scanline[i] = inflate_buf[i];
+            pngp->decoded_scanline[i] = pngp->inflate_buf[i];
          for (i = pngp->bpp; i < pngp->pitch; i++)
-            pngp->decoded_scanline[i] = pngp->decoded_scanline[i - pngp->bpp] + inflate_buf[i];
+            pngp->decoded_scanline[i] = pngp->decoded_scanline[i - pngp->bpp] + pngp->inflate_buf[i];
          break;
 
       case 2: /* Up */
          for (i = 0; i < pngp->pitch; i++)
-            pngp->decoded_scanline[i] = pngp->prev_scanline[i] + inflate_buf[i];
+            pngp->decoded_scanline[i] = pngp->prev_scanline[i] + pngp->inflate_buf[i];
          break;
 
       case 3: /* Average */
          for (i = 0; i < pngp->bpp; i++)
          {
             uint8_t avg = pngp->prev_scanline[i] >> 1;
-            pngp->decoded_scanline[i] = avg + inflate_buf[i];
+            pngp->decoded_scanline[i] = avg + pngp->inflate_buf[i];
          }
          for (i = pngp->bpp; i < pngp->pitch; i++)
          {
             uint8_t avg = (pngp->decoded_scanline[i - pngp->bpp] + pngp->prev_scanline[i]) >> 1;
-            pngp->decoded_scanline[i] = avg + inflate_buf[i];
+            pngp->decoded_scanline[i] = avg + pngp->inflate_buf[i];
          }
          break;
 
       case 4: /* Paeth */
          for (i = 0; i < pngp->bpp; i++)
-            pngp->decoded_scanline[i] = paeth(0, pngp->prev_scanline[i], 0) + inflate_buf[i];
+            pngp->decoded_scanline[i] = paeth(0, pngp->prev_scanline[i], 0) + pngp->inflate_buf[i];
          for (i = pngp->bpp; i < pngp->pitch; i++)
             pngp->decoded_scanline[i] = paeth(pngp->decoded_scanline[i - pngp->bpp],
-                  pngp->prev_scanline[i], pngp->prev_scanline[i - pngp->bpp]) + inflate_buf[i];
+                  pngp->prev_scanline[i], pngp->prev_scanline[i - pngp->bpp]) + pngp->inflate_buf[i];
          break;
 
       default:
@@ -408,7 +408,7 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
          unsigned filter = *pngp->inflate_buf++;
          pngp->restore_buf_size += 1;
          ret = png_reverse_filter_copy_line(data,
-               ihdr, pngp->inflate_buf, pngp, palette, filter);
+               ihdr, pngp, palette, filter);
       }
 
       if (ret == 1 || ret == -1)
