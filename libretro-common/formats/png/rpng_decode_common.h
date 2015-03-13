@@ -425,6 +425,27 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
    return false;
 }
 
+static void png_reverse_filter_adam7_process(uint32_t *data,
+      const struct png_ihdr *ihdr,
+      const uint8_t *inflate_buf, struct rpng_process_t *pngp)
+{
+   if (!pngp)
+      return;
+
+   inflate_buf            += pngp->pass.size;
+   pngp->stream.total_out -= pngp->pass.size;
+
+   deinterlace_pass(data,
+         ihdr, pngp->data, pngp->pass.width, pngp->pass.height, &passes[pngp->pass.pos]);
+
+   free(pngp->data);
+
+   pngp->pass.width  = 0;
+   pngp->pass.height = 0;
+   pngp->pass.size   = 0;
+   pngp->adam7_pass_initialized = false;
+}
+
 static int png_reverse_filter_adam7(uint32_t *data,
       const struct png_ihdr *ihdr,
       const uint8_t *inflate_buf, struct rpng_process_t *pngp,
@@ -447,18 +468,7 @@ static int png_reverse_filter_adam7(uint32_t *data,
          return -1;
       }
 
-      inflate_buf            += pngp->pass.size;
-      pngp->stream.total_out -= pngp->pass.size;
-
-      deinterlace_pass(data,
-            ihdr, pngp->data, pngp->pass.width, pngp->pass.height, &passes[pngp->pass.pos]);
-
-      free(pngp->data);
-
-      pngp->pass.width  = 0;
-      pngp->pass.height = 0;
-      pngp->pass.size   = 0;
-      pngp->adam7_pass_initialized = false;
+      png_reverse_filter_adam7_process(data, ihdr, inflate_buf, pngp);
    }
 
    return 0;
