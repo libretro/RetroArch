@@ -22,44 +22,45 @@
 
 #include <string/stdstring.h>
 
-char *string_replace_substring(const char *in, const char *pattern, const char *by)
+char *string_replace_substring(const char *in, const char *pattern, const char *replacement)
 {
-   char *needle = NULL, *res = NULL;
-   size_t outsize = 0;
-   size_t resoffset = 0;
+   char *needle = NULL;
+   char *newstr = NULL;
+   char *head   = NULL;
 
-   if (!in)
-      return NULL;
+   /* if either pattern or replacement is NULL,
+    * duplicate in and let caller handle it. */
+   if (!pattern || !replacement)
+      return strdup(in);
 
-   outsize = strlen(in) + 1;
+   newstr = strdup(in);
+   head   = newstr;
 
-   /* TODO maybe avoid reallocating by counting the 
-    * non-overlapping occurences of pattern */
-   res = (char*)malloc(outsize);
-
-   if (!res)
-      return NULL;
-
-   while ((needle = strstr(in, pattern)))
+   while ((needle = strstr (head, pattern)))
    {
-      /* copy everything up to the pattern */
-      memcpy(res + resoffset, in, needle - in);
-      resoffset += needle - in;
+      char* oldstr = newstr;
+      newstr = (char*)malloc(
+            strlen(oldstr) - strlen(pattern) + strlen(replacement) + 1);
 
-      /* skip the pattern in the input-string */
-      in = needle + strlen(pattern);
+      if (!newstr)
+      {
+         /* Failed to allocate memory,
+          * free old string and return NULL. */
+         free(oldstr);
+         return NULL;
+      }
 
-      /* adjust space for replacement */
-      outsize = outsize - strlen(pattern) + strlen(by);
-      res = realloc(res, outsize);
+      memcpy(newstr, oldstr, needle - oldstr);
+      memcpy(newstr + (needle - oldstr), replacement, strlen(replacement));
+      memcpy(newstr + (needle - oldstr) + strlen(replacement),
+            needle + strlen(pattern),
+            strlen(oldstr) - strlen(pattern) - (needle - oldstr));
+      newstr[strlen(oldstr) - strlen(pattern) + strlen(replacement)] = '\0';
 
-      /* copy the pattern */
-      memcpy(res + resoffset, by, strlen(by));
-      resoffset += strlen(by);
+      /* Move back head right after the last replacement. */
+      head = newstr + (needle - oldstr) + strlen(replacement);
+      free(oldstr);
    }
 
-   /* copy the remaining input */
-   strcpy(res + resoffset, in);
-
-   return res;
+   return newstr;
 }
