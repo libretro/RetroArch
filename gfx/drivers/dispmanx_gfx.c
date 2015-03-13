@@ -119,7 +119,7 @@ struct dispmanx_page
    bool used;
 };
 
-void dispmanx_blank_console(void *data)
+static void dispmanx_blank_console(void *data)
 {
    struct fb_var_screeninfo vinfo;
    unsigned int fb_bytes_per_pixel;
@@ -158,7 +158,7 @@ end:
    close (_dispvars->fd);
 }
 
-void dispmanx_unblank_console(void *data)
+static void dispmanx_unblank_console(void *data)
 {
    struct dispmanx_video *_dispvars = data;
 
@@ -219,7 +219,7 @@ static struct dispmanx_page *dispmanx_get_free_page(void* data)
    return page;
 }
 
-void vsync_callback (DISPMANX_UPDATE_HANDLE_T u, void *data)
+static void vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
 {
    struct dispmanx_page *page = data;
 
@@ -249,7 +249,7 @@ void vsync_callback (DISPMANX_UPDATE_HANDLE_T u, void *data)
    page->dispvars->currentPage = page;
 }
 
-void dispmanx_flip (struct dispmanx_page *page, void *data)
+static void dispmanx_flip(struct dispmanx_page *page, void *data)
 {
    struct dispmanx_video *_dispvars = data;
 
@@ -279,7 +279,7 @@ void dispmanx_flip (struct dispmanx_page *page, void *data)
    pthread_mutex_unlock(&_dispvars->pending_mutex);
 }
 
-void dispmanx_free_main_resources(void *data)
+static void dispmanx_free_main_resources(void *data)
 {
    int i;	
    struct dispmanx_video *_dispvars = data;
@@ -296,7 +296,7 @@ void dispmanx_free_main_resources(void *data)
    vc_dispmanx_update_submit_sync(_dispvars->update);		
 }
 
-bool dispmanx_setup_scale (void *data, unsigned width,
+static bool dispmanx_setup_scale(void *data, unsigned width,
       unsigned height, unsigned pitch)
 {
 	int i, dst_ypos;
@@ -398,8 +398,8 @@ bool dispmanx_setup_scale (void *data, unsigned width,
 	return true;
 }
 
-void dispmanx_update_main (void *data, const void *frame)
-{	
+static void dispmanx_update_main(void *data, const void *frame)
+{
    struct dispmanx_page *page = NULL;
    struct dispmanx_video *_dispvars = data;
 
