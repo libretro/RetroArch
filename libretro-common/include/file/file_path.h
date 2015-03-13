@@ -29,6 +29,8 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+#include <retro_inline.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -349,6 +351,39 @@ void fill_pathname_expand_special(char *out_path,
 
 void fill_pathname_abbreviate_special(char *out_path,
       const char *in_path, size_t size);
+
+/**
+ * path_char_is_slash:
+ * @c                  : character
+ *
+ * Checks if character (@c) is a slash.
+ *
+ * Returns: true (1) if character is a slash, otherwise false (0).
+ */
+static INLINE bool path_char_is_slash(char c)
+{
+#ifdef _WIN32
+   return (c == '/') || (c == '\\');
+#else
+   return (c == '/');
+#endif
+}
+
+/**
+ * path_default_slash:
+ *
+ * Gets the default slash separator.
+ *
+ * Returns: default slash separator.
+ */
+static INLINE const char *path_default_slash(void)
+{
+#ifdef _WIN32
+   return "\\";
+#else
+   return "/";
+#endif
+}
 
 /** 
  * fill_pathname_slash:

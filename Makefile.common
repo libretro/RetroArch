@@ -103,6 +103,7 @@ OBJ += frontend/frontend.o \
 		file_ops.o \
 		libretro-common/file//nbio/nbio_stdio.o \
 		libretro-common/file/file_path.o \
+		file_path_special.o \
 		hash.o \
 		audio/audio_driver.o \
 		audio/audio_monitor.o \
