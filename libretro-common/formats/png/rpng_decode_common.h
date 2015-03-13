@@ -326,6 +326,24 @@ error:
 }
 
 
+enum png_line_filter
+{
+   PNG_FILTER_NONE = 0,
+   PNG_FILTER_SUB,
+   PNG_FILTER_UP,
+   PNG_FILTER_AVERAGE,
+   PNG_FILTER_PAETH,
+};
+
+enum png_ihdr_color_type
+{
+   PNG_IHDR_COLOR_BW         = 0,
+   PNG_IHDR_COLOR_RGB        = 2,
+   PNG_IHDR_COLOR_PLT        = 3,
+   PNG_IHDR_COLOR_GRAY_ALPHA = 4,
+   PNG_IHDR_COLOR_RGBA       = 6,
+};
+
 static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp, unsigned filter)
 {
@@ -333,23 +351,20 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
 
    switch (filter)
    {
-      case 0: /* None */
+      case PNG_FILTER_NONE:
          memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          break;
-
-      case 1: /* Sub */
+      case PNG_FILTER_SUB:
          for (i = 0; i < pngp->bpp; i++)
             pngp->decoded_scanline[i] = pngp->inflate_buf[i];
          for (i = pngp->bpp; i < pngp->pitch; i++)
             pngp->decoded_scanline[i] = pngp->decoded_scanline[i - pngp->bpp] + pngp->inflate_buf[i];
          break;
-
-      case 2: /* Up */
+      case PNG_FILTER_UP:
          for (i = 0; i < pngp->pitch; i++)
             pngp->decoded_scanline[i] = pngp->prev_scanline[i] + pngp->inflate_buf[i];
          break;
-
-      case 3: /* Average */
+      case PNG_FILTER_AVERAGE:
          for (i = 0; i < pngp->bpp; i++)
          {
             uint8_t avg = pngp->prev_scanline[i] >> 1;
@@ -361,8 +376,7 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
             pngp->decoded_scanline[i] = avg + pngp->inflate_buf[i];
          }
          break;
-
-      case 4: /* Paeth */
+      case PNG_FILTER_PAETH:
          for (i = 0; i < pngp->bpp; i++)
             pngp->decoded_scanline[i] = paeth(0, pngp->prev_scanline[i], 0) + pngp->inflate_buf[i];
          for (i = pngp->bpp; i < pngp->pitch; i++)
@@ -376,21 +390,21 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
 
    switch (ihdr->color_type)
    {
-      case 0:
+      case PNG_IHDR_COLOR_BW:
          png_reverse_filter_copy_line_bw(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
          break;
-      case 2:
+      case PNG_IHDR_COLOR_RGB:
          png_reverse_filter_copy_line_rgb(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
          break;
-      case 3:
+      case PNG_IHDR_COLOR_PLT:
          png_reverse_filter_copy_line_plt(data, pngp->decoded_scanline, ihdr->width,
                ihdr->depth, pngp->palette);
          break;
-      case 4:
+      case PNG_IHDR_COLOR_GRAY_ALPHA:
          png_reverse_filter_copy_line_gray_alpha(data, pngp->decoded_scanline, ihdr->width,
                ihdr->depth);
          break;
-      case 6:
+      case PNG_IHDR_COLOR_RGBA:
          png_reverse_filter_copy_line_rgba(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
          break;
    }
