@@ -28,6 +28,7 @@
 #include "../../gfx/gl_common.h"
 #include "../../gfx/video_thread_wrapper.h"
 #include <compat/posix_string.h>
+#include <string/stdstring.h>
 
 #include "shared.h"
 
@@ -263,48 +264,6 @@ static int xmb_entry_iterate(unsigned action)
       return cbs->action_iterate(label, action);
    
    return -1;
-}
-
-static char *xmb_str_replace (const char *string,
-      const char *substr, const char *replacement)
-{
-   char *tok, *newstr, *head;
-
-   /* if either substr or replacement is NULL, 
-    * duplicate string a let caller handle it. */
-   if (!substr || !replacement)
-      return strdup(string);
-
-   newstr = strdup(string);
-   head   = newstr;
-
-   while ((tok = strstr (head, substr)))
-   {
-      char* oldstr = newstr;
-      newstr = (char*)malloc(
-            strlen(oldstr) - strlen(substr) + strlen(replacement) + 1);
-
-      if (!newstr)
-      {
-         /* Failed to allocate memory,
-          * free old string and return NULL. */
-         free(oldstr);
-         return NULL;
-      }
-
-      memcpy(newstr, oldstr, tok - oldstr);
-      memcpy(newstr + (tok - oldstr), replacement, strlen(replacement));
-      memcpy(newstr + (tok - oldstr) + strlen(replacement),
-            tok + strlen(substr),
-            strlen(oldstr) - strlen(substr) - (tok - oldstr));
-      newstr[strlen(oldstr) - strlen(substr) + strlen(replacement)] = '\0';
-
-      /* Move back head right after the last replacement. */
-      head = newstr + (tok - oldstr) + strlen(replacement);
-      free(oldstr);
-   }
-
-   return newstr;
 }
 
 static void xmb_draw_icon_begin(gl_t *gl, xmb_handle_t *xmb)
@@ -1745,9 +1704,13 @@ static void xmb_context_reset(void)
 
       if (info->systemname)
       {
-         char *tmp = xmb_str_replace(info->systemname, "/", " ");
-         strlcpy(core_id, tmp, sizeof(core_id));
-         free(tmp);
+         char *tmp = string_replace_substring(info->systemname, "/", " ");
+
+         if (tmp)
+         {
+            strlcpy(core_id, tmp, sizeof(core_id));
+            free(tmp);
+         }
       }
       else
          strlcpy(core_id, "default", sizeof(core_id));

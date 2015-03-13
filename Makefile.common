@@ -100,6 +100,7 @@ OBJ += frontend/frontend.o \
 		libretro-common/file/file_list.o \
 		libretro-common/file/dir_list.o \
 		libretro-common/string/string_list.o \
+		libretro-common/string/stdstring.o \
 		file_ops.o \
 		libretro-common/file//nbio/nbio_stdio.o \
 		libretro-common/file/file_path.o \
