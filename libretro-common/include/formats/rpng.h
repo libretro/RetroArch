@@ -66,6 +66,7 @@ struct rpng_process_t
    bool adam7_pass_initialized;
    bool pass_initialized;
    uint32_t *data;
+   uint32_t *palette;
    struct png_ihdr ihdr;
    uint8_t *prev_scanline;
    uint8_t *decoded_scanline;
