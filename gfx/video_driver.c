@@ -60,6 +60,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_EXYNOS
    &video_exynos,
 #endif
+#ifdef HAVE_DISPMANX
+   &video_dispmanx,
+#endif
 #ifdef HAVE_SUNXI
    &video_sunxi,
 #endif

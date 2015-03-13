@@ -156,6 +156,8 @@ const char *config_get_default_video(void)
          return "omap";
       case VIDEO_EXYNOS:
          return "exynos";
+      case VIDEO_DISPMANX:
+         return "dispmanx";
       case VIDEO_SUNXI:
          return "sunxi";
       default:

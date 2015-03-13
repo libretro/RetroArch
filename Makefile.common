@@ -513,6 +513,12 @@ ifeq ($(HAVE_EXYNOS), 1)
    DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
 endif
 
+ifeq ($(HAVE_DISPMANX), 1)
+   OBJ += gfx/drivers/dispmanx_gfx.o
+   LIBS += $(DISPMANX_LIBS)
+   DEFINES += $(DISPMANX_CFLAGS)
+endif
+
 ifeq ($(HAVE_SUNXI), 1)
    OBJ += gfx/drivers/sunxi_gfx.o gfx/pixman/pixman-arm-neon-asm.o
 endif
