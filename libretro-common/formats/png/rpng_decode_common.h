@@ -460,7 +460,7 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
    uint32_t *data = *data_;
 
    if (!to_next)
-      return 1;
+      return PNG_PROCESS_END;
 
    ret = png_reverse_filter_init(ihdr, pngp);
 
@@ -538,8 +538,7 @@ static bool png_reverse_filter_loop(struct rpng_t *rpng,
    ihdr = &rpng->ihdr;
    pngp = &rpng->process;
 
-
-   if (rpng->ihdr.interlace == 1)
+   if (ihdr->interlace == 1)
    {
       do
       {
