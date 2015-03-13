@@ -20,6 +20,11 @@
 
 #undef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION 0x0800
+
+#ifndef WM_MOUSEHWHEEL
+#define WM_MOUSEHWHEEL 0x20e
+#endif
+
 #include <dinput.h>
 
 #include "../../general.h"
