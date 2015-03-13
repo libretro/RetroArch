@@ -252,7 +252,7 @@ static const struct adam7_pass passes[] = {
 };
 
 static int png_reverse_filter_init(const struct png_ihdr *ihdr,
-      struct rpng_process_t *pngp, const uint32_t *palette)
+      struct rpng_process_t *pngp)
 {
    size_t pass_size;
 
@@ -397,7 +397,7 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
 {
    int ret;
 
-   if (png_reverse_filter_init(ihdr, pngp, palette) == -1)
+   if (png_reverse_filter_init(ihdr, pngp) == -1)
       return -1;
 
    do{
@@ -444,7 +444,7 @@ static int png_reverse_filter_adam7(uint32_t *data,
       goto end;
    }
 
-   ret = png_reverse_filter_init(ihdr, pngp, palette);
+   ret = png_reverse_filter_init(ihdr, pngp);
 
    if (ret == 1)
       goto cont;
@@ -496,7 +496,6 @@ static bool png_reverse_filter_loop(struct rpng_t *rpng,
    if (rpng->ihdr.interlace == 1)
    {
       int ret = 0;
-
 
       do
       {
