@@ -84,8 +84,11 @@ void CFSearchPathForDirectoriesInDomains(unsigned flags,
         unsigned domain_mask, unsigned expand_tilde,
         char *buf, size_t sizeof_buf)
 {
-    
+#ifdef OSX
+   CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(NSSearchPathForDirectoriesInDomains(flags, domain_mask, (BOOL)expand_tilde));
+#else
    CFTypeRef array_val = (CFTypeRef)CFBridgingRetainCompat(NSSearchPathForDirectoriesInDomains(NSConvertFlagsCF(flags), NSConvertDomainFlagsCF(domain_mask), (BOOL)expand_tilde));
+#endif
    CFArrayRef array = array_val ? CFRetain(array_val) : NULL;
    CFTypeRef path_val = (CFTypeRef)CFArrayGetValueAtIndex(array, 0);
    CFStringRef path = path_val ? CFRetain(path_val) : NULL;
