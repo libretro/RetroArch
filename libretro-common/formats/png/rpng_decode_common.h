@@ -299,7 +299,8 @@ static int png_reverse_filter_init(const struct png_ihdr *ihdr,
    if (pngp->stream.total_out < pass_size)
       return -1;
 
-   pngp->restore_buf_size = 0;
+   pngp->restore_buf_size      = 0;
+   pngp->data_restore_buf_size = 0;
    pngp->prev_scanline    = (uint8_t*)calloc(1, pngp->pitch);
    pngp->decoded_scanline = (uint8_t*)calloc(1, pngp->pitch);
 
@@ -443,11 +444,13 @@ static int png_reverse_filter_regular_loop(uint32_t **data_, const struct png_ih
             break;
          case PNG_PROCESS_NEXT:
             data += ihdr->width;
+            pngp->data_restore_buf_size += ihdr->width;
       }
 
    }while(ret == PNG_PROCESS_NEXT);
 
    pngp->inflate_buf -= pngp->restore_buf_size;
+   pngp->data_restore_buf_size = 0;
    return ret;
 }
 

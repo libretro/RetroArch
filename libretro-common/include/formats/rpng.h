@@ -73,6 +73,7 @@ struct rpng_process_t
    uint8_t *inflate_buf;
    size_t restore_buf_size;
    size_t adam7_restore_buf_size;
+   size_t data_restore_buf_size;
    size_t inflate_buf_size;
    unsigned bpp;
    unsigned pitch;
