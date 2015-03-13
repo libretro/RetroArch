@@ -503,6 +503,7 @@ error:
 static bool png_reverse_filter_loop(struct rpng_t *rpng,
       uint32_t **data)
 {
+   int ret = 0;
    const struct png_ihdr *ihdr = NULL;
    struct rpng_process_t *pngp = NULL;
    rpng->process.adam7_restore_buf_size = 0;
@@ -512,27 +513,26 @@ static bool png_reverse_filter_loop(struct rpng_t *rpng,
    ihdr = &rpng->ihdr;
    pngp = &rpng->process;
 
+   if (png_reverse_filter_init(ihdr, pngp) == -1)
+      return false;
+
    if (rpng->ihdr.interlace == 1)
    {
-      int ret = 0;
-
       do
       {
          ret = png_reverse_filter_adam7(data,
                ihdr, pngp);
       }while(ret == 0);
-
-      if (ret == -1)
-         return false;
    }
    else
    {
-      if (png_reverse_filter_init(ihdr, pngp) == -1)
-         return false;
       if (!png_reverse_filter_regular(data,
                ihdr, pngp))
-         return false;
+         ret = -1;
    }
+
+   if (ret == -1)
+      return false;
 
    return true;
 }
