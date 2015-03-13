@@ -23,6 +23,24 @@
 #ifndef _RPNG_DECODE_COMMON_H
 #define _RPNG_DECODE_COMMON_H
 
+enum png_line_filter
+{
+   PNG_FILTER_NONE = 0,
+   PNG_FILTER_SUB,
+   PNG_FILTER_UP,
+   PNG_FILTER_AVERAGE,
+   PNG_FILTER_PAETH,
+};
+
+enum png_ihdr_color_type
+{
+   PNG_IHDR_COLOR_GRAY       = 0,
+   PNG_IHDR_COLOR_RGB        = 2,
+   PNG_IHDR_COLOR_PLT        = 3,
+   PNG_IHDR_COLOR_GRAY_ALPHA = 4,
+   PNG_IHDR_COLOR_RGBA       = 6,
+};
+
 static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 {
    unsigned i;
@@ -170,31 +188,26 @@ static void png_pass_geom(const struct png_ihdr *ihdr,
 
    switch (ihdr->color_type)
    {
-      case 0:
+      case PNG_IHDR_COLOR_GRAY:
          bpp   = (ihdr->depth + 7) / 8;
          pitch = (ihdr->width * ihdr->depth + 7) / 8;
          break;
-
-      case 2:
+      case PNG_IHDR_COLOR_RGB:
          bpp   = (ihdr->depth * 3 + 7) / 8;
          pitch = (ihdr->width * ihdr->depth * 3 + 7) / 8;
          break;
-
-      case 3:
+      case PNG_IHDR_COLOR_PLT:
          bpp   = (ihdr->depth + 7) / 8;
          pitch = (ihdr->width * ihdr->depth + 7) / 8;
          break;
-
-      case 4:
+      case PNG_IHDR_COLOR_GRAY_ALPHA:
          bpp   = (ihdr->depth * 2 + 7) / 8;
          pitch = (ihdr->width * ihdr->depth * 2 + 7) / 8;
          break;
-
-      case 6:
+      case PNG_IHDR_COLOR_RGBA:
          bpp   = (ihdr->depth * 4 + 7) / 8;
          pitch = (ihdr->width * ihdr->depth * 4 + 7) / 8;
          break;
-
       default:
          bpp = 0;
          pitch = 0;
@@ -326,23 +339,6 @@ error:
 }
 
 
-enum png_line_filter
-{
-   PNG_FILTER_NONE = 0,
-   PNG_FILTER_SUB,
-   PNG_FILTER_UP,
-   PNG_FILTER_AVERAGE,
-   PNG_FILTER_PAETH,
-};
-
-enum png_ihdr_color_type
-{
-   PNG_IHDR_COLOR_BW         = 0,
-   PNG_IHDR_COLOR_RGB        = 2,
-   PNG_IHDR_COLOR_PLT        = 3,
-   PNG_IHDR_COLOR_GRAY_ALPHA = 4,
-   PNG_IHDR_COLOR_RGBA       = 6,
-};
 
 static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp, unsigned filter)
@@ -390,7 +386,7 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
 
    switch (ihdr->color_type)
    {
-      case PNG_IHDR_COLOR_BW:
+      case PNG_IHDR_COLOR_GRAY:
          png_reverse_filter_copy_line_bw(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
          break;
       case PNG_IHDR_COLOR_RGB:
