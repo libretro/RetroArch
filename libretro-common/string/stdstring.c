@@ -24,14 +24,18 @@
 
 char *string_replace_substring(const char *in, const char *pattern, const char *by)
 {
-   char *needle;
-   size_t outsize = strlen(in) + 1;
-   /* use this to iterate over the output */
+   char *needle = NULL, *res = NULL;
+   size_t outsize = 0;
    size_t resoffset = 0;
+
+   if (!in)
+      return NULL;
+
+   outsize = strlen(in) + 1;
 
    /* TODO maybe avoid reallocating by counting the 
     * non-overlapping occurences of pattern */
-   char *res = malloc(outsize);
+   res = (char*)malloc(outsize);
 
    if (!res)
       return NULL;
