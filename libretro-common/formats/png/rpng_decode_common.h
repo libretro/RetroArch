@@ -290,7 +290,7 @@ static int png_reverse_filter_init(const struct png_ihdr *ihdr,
 
       return 0;
    }
-   
+
    if (pngp->pass_initialized)
       return 0;
 
@@ -299,6 +299,7 @@ static int png_reverse_filter_init(const struct png_ihdr *ihdr,
    if (pngp->stream.total_out < pass_size)
       return -1;
 
+   pngp->restore_buf_size = 0;
    pngp->prev_scanline    = (uint8_t*)calloc(1, pngp->pitch);
    pngp->decoded_scanline = (uint8_t*)calloc(1, pngp->pitch);
 
@@ -405,6 +406,7 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       if (pngp->h < ihdr->height)
       {
          unsigned filter = *inflate_buf++;
+         pngp->restore_buf_size += 1;
          ret = png_reverse_filter_copy_line(data,
                ihdr, inflate_buf, pngp, palette, filter);
       }
@@ -416,7 +418,8 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       }
 
       pngp->h++;
-      inflate_buf += pngp->pitch;
+      inflate_buf            += pngp->pitch;
+      pngp->restore_buf_size += pngp->pitch;
       data += ihdr->width;
    }while(1);
 
@@ -485,11 +488,13 @@ end:
 static bool png_reverse_filter_loop(struct rpng_t *rpng,
       uint32_t **data)
 {
+   rpng->process.adam7_restore_buf_size = 0;
+   rpng->process.restore_buf_size = 0;
+
    if (rpng->ihdr.interlace == 1)
    {
       int ret = 0;
 
-      rpng->process.adam7_restore_buf_size = 0;
 
       do
       {
