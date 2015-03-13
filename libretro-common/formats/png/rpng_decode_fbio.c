@@ -98,55 +98,60 @@ static bool png_parse_ihdr_fio(FILE *file,
    if (ihdr->width == 0 || ihdr->height == 0)
       GOTO_END_ERROR();
 
-   if (ihdr->color_type == 2 || 
-         ihdr->color_type == 4 || ihdr->color_type == 6)
+   switch (ihdr->color_type)
    {
-      if (ihdr->depth != 8 && ihdr->depth != 16)
-         GOTO_END_ERROR();
-   }
-   else if (ihdr->color_type == 0)
-   {
-      static const unsigned valid_bpp[] = { 1, 2, 4, 8, 16 };
-      bool correct_bpp = false;
-
-      for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
-      {
-         if (valid_bpp[i] == ihdr->depth)
+      case PNG_IHDR_COLOR_RGB:
+      case PNG_IHDR_COLOR_GRAY_ALPHA:
+      case PNG_IHDR_COLOR_RGBA:
+         if (ihdr->depth != 8 && ihdr->depth != 16)
+            GOTO_END_ERROR();
+         break;
+      case PNG_IHDR_COLOR_GRAY:
          {
-            correct_bpp = true;
-            break;
+            static const unsigned valid_bpp[] = { 1, 2, 4, 8, 16 };
+            bool correct_bpp = false;
+
+            for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
+            {
+               if (valid_bpp[i] == ihdr->depth)
+               {
+                  correct_bpp = true;
+                  break;
+               }
+            }
+
+            if (!correct_bpp)
+               GOTO_END_ERROR();
          }
-      }
-
-      if (!correct_bpp)
-         GOTO_END_ERROR();
-   }
-   else if (ihdr->color_type == 3)
-   {
-      static const unsigned valid_bpp[] = { 1, 2, 4, 8 };
-      bool correct_bpp = false;
-
-      for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
-      {
-         if (valid_bpp[i] == ihdr->depth)
+         break;
+      case PNG_IHDR_COLOR_PLT:
          {
-            correct_bpp = true;
-            break;
-         }
-      }
+            static const unsigned valid_bpp[] = { 1, 2, 4, 8 };
+            bool correct_bpp = false;
 
-      if (!correct_bpp)
+            for (i = 0; i < ARRAY_SIZE(valid_bpp); i++)
+            {
+               if (valid_bpp[i] == ihdr->depth)
+               {
+                  correct_bpp = true;
+                  break;
+               }
+            }
+
+            if (!correct_bpp)
+               GOTO_END_ERROR();
+         }
+         break;
+      default:
          GOTO_END_ERROR();
    }
-   else
-      GOTO_END_ERROR();
 
 #ifdef RPNG_TEST
    fprintf(stderr, "IHDR: (%u x %u), bpc = %u, palette = %s, color = %s, alpha = %s, adam7 = %s.\n",
          ihdr->width, ihdr->height,
-         ihdr->depth, ihdr->color_type == 3 ? "yes" : "no",
-         ihdr->color_type & 2 ? "yes" : "no",
-         ihdr->color_type & 4 ? "yes" : "no",
+         ihdr->depth, ihdr->color_type == PNG_IHDR_COLOR_PLT ? "yes" : "no",
+         ihdr->color_type & PNG_IHDR_COLOR_RGB ? "yes" : "no",
+         ihdr->color_type & PNG_IHDR_COLOR_GRAY_ALPHA ? "yes" : "no",
          ihdr->interlace == 1 ? "yes" : "no");
 #endif
 
@@ -276,7 +281,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             break;
 
          case PNG_CHUNK_IDAT:
-            if (!rpng.has_ihdr || rpng.has_iend || (rpng.ihdr.color_type == 3 && !rpng.has_plte))
+            if (!rpng.has_ihdr || rpng.has_iend || (rpng.ihdr.color_type == PNG_IHDR_COLOR_PLT && !rpng.has_plte))
                GOTO_END_ERROR();
 
             if (!png_append_idat_fio(file, &chunk, &rpng.idat_buf))

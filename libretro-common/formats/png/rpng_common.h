@@ -50,6 +50,24 @@ enum png_chunk_type
    PNG_CHUNK_IEND
 };
 
+enum png_line_filter
+{
+   PNG_FILTER_NONE = 0,
+   PNG_FILTER_SUB,
+   PNG_FILTER_UP,
+   PNG_FILTER_AVERAGE,
+   PNG_FILTER_PAETH,
+};
+
+enum png_ihdr_color_type
+{
+   PNG_IHDR_COLOR_GRAY       = 0,
+   PNG_IHDR_COLOR_RGB        = 2,
+   PNG_IHDR_COLOR_PLT        = 3,
+   PNG_IHDR_COLOR_GRAY_ALPHA = 4,
+   PNG_IHDR_COLOR_RGBA       = 6,
+};
+
 struct adam7_pass
 {
    unsigned x;
