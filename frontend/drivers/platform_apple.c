@@ -66,12 +66,13 @@ static void frontend_apple_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.cheats_dir, home_dir_buf, "cht", sizeof(g_defaults.cheats_dir));
    strlcpy(g_defaults.sram_dir, g_defaults.system_dir, sizeof(g_defaults.sram_dir));
    strlcpy(g_defaults.savestate_dir, g_defaults.system_dir, sizeof(g_defaults.savestate_dir));
-#ifdef IOS
+    
    CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
    strlcpy(g_defaults.extraction_dir, temp_dir, sizeof(g_defaults.extraction_dir));
-   
+    
    fill_pathname_join(g_defaults.shader_dir, home_dir_buf, "shaders_glsl", sizeof(g_defaults.shader_dir));
-#elif defined(OSX)
+    
+#if defined(OSX)
    fill_pathname_join(g_defaults.shader_dir, home_dir_buf, "shaders_cg", sizeof(g_defaults.shader_dir));
     fill_pathname_join(g_defaults.audio_filter_dir, home_dir_buf, "audio_filters", sizeof(g_defaults.audio_filter_dir));
     fill_pathname_join(g_defaults.video_filter_dir, home_dir_buf, "video_filters", sizeof(g_defaults.video_filter_dir));

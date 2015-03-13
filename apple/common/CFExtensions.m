@@ -63,24 +63,11 @@ static NSSearchPathDomainMask NSConvertDomainFlagsCF(unsigned flags)
     return 0;
 }
 
-#ifdef IOS
-NS_INLINE CF_RETURNS_RETAINED CFStringRef CFBridgingRetainStringRefCompat(id X)
-{
-#if __has_feature(objc_arc)
-    return (__bridge_retained CFStringRef)X;
-#else
-    return (CFStringRef)X;
-#endif
-}
-
 void CFTemporaryDirectory(char *buf, size_t sizeof_buf)
 {
-    CFStringRef path = (CFStringRef)(CFBridgingRetainStringRefCompat(NSTemporaryDirectory()));
-    
+    CFStringRef path = (CFStringRef)NSTemporaryDirectory();
     CFStringGetCString(path, buf, sizeof_buf, kCFStringEncodingUTF8);
-    CFRelease(path);
 }
-#endif
 
 void CFSearchPathForDirectoriesInDomains(unsigned flags,
         unsigned domain_mask, unsigned expand_tilde,

@@ -63,8 +63,6 @@ typedef enum
 void CFSearchPathForDirectoriesInDomains(unsigned flags,
       unsigned domain_mask, unsigned expand_tilde, char *buf, size_t sizeof_buf);
 
-#ifdef IOS
 void CFTemporaryDirectory(char *buf, size_t sizeof_buf);
-#endif
 
 #endif
