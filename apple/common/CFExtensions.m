@@ -41,6 +41,7 @@ NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
 #endif
 }
 
+#ifdef IOS
 NS_INLINE CF_RETURNS_RETAINED CFStringRef CFBridgingRetainStringRefCompat(id X)
 {
 #if __has_feature(objc_arc)
@@ -79,6 +80,7 @@ void CFTemporaryDirectory(char *buf, size_t sizeof_buf)
     CFStringGetCString(path, buf, sizeof_buf, kCFStringEncodingUTF8);
     CFRelease(path);
 }
+#endif
 
 void CFSearchPathForDirectoriesInDomains(unsigned flags,
         unsigned domain_mask, unsigned expand_tilde,
