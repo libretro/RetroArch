@@ -20,10 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _RPNG_DECODE_COMMON_H
-#define _RPNG_DECODE_COMMON_H
+#include <formats/rpng.h>
 
-static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "rpng_common.h"
+#include "rpng_decode.h"
+
+enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 {
    unsigned i;
    struct
@@ -46,7 +52,7 @@ static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
    return PNG_CHUNK_NOOP;
 }
 
-static bool png_process_ihdr(struct png_ihdr *ihdr)
+bool png_process_ihdr(struct png_ihdr *ihdr)
 {
    unsigned i;
    bool ret = true;
@@ -230,7 +236,7 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
    }
 }
 
-static void png_pass_geom(const struct png_ihdr *ihdr,
+void png_pass_geom(const struct png_ihdr *ihdr,
       unsigned width, unsigned height,
       unsigned *bpp_out, unsigned *pitch_out, size_t *pass_size)
 {
@@ -323,7 +329,7 @@ enum png_process_code
    PNG_PROCESS_END       =  1,
 };
 
-static int png_reverse_filter_init(const struct png_ihdr *ihdr,
+int png_reverse_filter_init(const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
    size_t pass_size;
@@ -388,8 +394,6 @@ error:
    png_reverse_filter_deinit(pngp);
    return -1;
 }
-
-
 
 static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp, unsigned filter)
@@ -461,7 +465,6 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
    return PNG_PROCESS_NEXT;
 }
 
-
 static int png_reverse_filter_iterate(uint32_t *data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
@@ -488,11 +491,10 @@ static int png_reverse_filter_iterate(uint32_t *data, const struct png_ihdr *ihd
    return PNG_PROCESS_NEXT;
 }
 
-
-static int png_reverse_filter_regular_loop(uint32_t **data_, const struct png_ihdr *ihdr,
+int png_reverse_filter_regular_loop(uint32_t **data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
-   int ret = png_reverse_filter_iterate(*data_, ihdr, pngp);
+   int ret = png_reverse_filter_iterate(*data, ihdr, pngp);
 
    switch (ret)
    {
@@ -501,18 +503,17 @@ static int png_reverse_filter_regular_loop(uint32_t **data_, const struct png_ih
       case PNG_PROCESS_END:
          break;
       case PNG_PROCESS_NEXT:
-         *data_ += ihdr->width;
+         *data += ihdr->width;
          pngp->data_restore_buf_size += ihdr->width;
          return PNG_PROCESS_NEXT;
    }
 
    pngp->inflate_buf -= pngp->restore_buf_size;
-   *data_            -= pngp->data_restore_buf_size;
+   *data             -= pngp->data_restore_buf_size;
    pngp->data_restore_buf_size = 0;
 
    return ret;
 }
-
 
 static int png_reverse_filter_adam7_iterate(uint32_t **data_,
       const struct png_ihdr *ihdr,
@@ -560,7 +561,7 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
    return PNG_PROCESS_NEXT;
 }
 
-static int png_reverse_filter_adam7(uint32_t **data_,
+int png_reverse_filter_adam7(uint32_t **data_,
       const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
@@ -588,7 +589,7 @@ static int png_reverse_filter_adam7(uint32_t **data_,
    return ret;
 }
 
-static bool png_reverse_filter_loop(struct rpng_t *rpng,
+bool png_reverse_filter_loop(struct rpng_t *rpng,
       uint32_t **data)
 {
    int ret = 0;
@@ -625,5 +626,3 @@ static bool png_reverse_filter_loop(struct rpng_t *rpng,
 
    return true;
 }
-
-#endif

@@ -31,7 +31,7 @@
 #endif
 
 #include "rpng_common.h"
-#include "rpng_decode_common.h"
+#include "rpng_decode.h"
 
 static bool read_chunk_header_fio(FILE *file, struct png_chunk *chunk)
 {
@@ -78,9 +78,6 @@ static void png_free_chunk(struct png_chunk *chunk)
 static bool png_parse_ihdr_fio(FILE *file,
       struct png_chunk *chunk, struct png_ihdr *ihdr)
 {
-   unsigned i;
-   bool ret = true;
-
    if (!png_read_chunk(file, chunk))
       return false;
 

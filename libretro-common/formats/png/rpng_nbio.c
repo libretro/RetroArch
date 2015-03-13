@@ -31,7 +31,7 @@
 #endif
 
 #include "rpng_common.h"
-#include "rpng_decode_common.h"
+#include "rpng_decode.h"
 
 static bool read_chunk_header(uint8_t *buf, struct png_chunk *chunk)
 {
@@ -56,8 +56,6 @@ static bool read_chunk_header(uint8_t *buf, struct png_chunk *chunk)
 static bool png_parse_ihdr(uint8_t *buf,
       struct png_ihdr *ihdr)
 {
-   bool ret = true;
-
    buf += 4 + 4;
 
    ihdr->width       = dword_be(buf + 0);

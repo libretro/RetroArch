@@ -594,8 +594,9 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
    ZLIB_OBJS =	decompress/zip_support.o 
-   OBJ += libretro-common/formats/png/rpng_decode_fnbio.o \
-			 libretro-common/formats/png/rpng_decode_fbio.o \
+   OBJ += libretro-common/formats/png/rpng_nbio.o \
+			 libretro-common/formats/png/rpng_fbio.o \
+			 libretro-common/formats/png/rpng_decode.o \
 			 libretro-common/formats/png/rpng_encode.o \
 			 file_extract.o
    OBJ += $(ZLIB_OBJS)

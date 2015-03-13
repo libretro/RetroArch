@@ -8,7 +8,7 @@ CFLAGS += -DHAVE_IMLIB2
 LDFLAGS += -lImlib2
 endif
 
-SOURCES := rpng_decode_fbio.c rpng_decode_fnbio.c rpng_encode.c rpng_test.c ../../file/nbio/nbio_stdio.c
+SOURCES := rpng_fbio.c rpng_nbio.c rpng_encode.c rpng_decode.c rpng_test.c ../../file/nbio/nbio_stdio.c
 OBJS := $(SOURCES:.c=.o)
 
 CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -DHAVE_ZLIB -DHAVE_ZLIB_DEFLATE -DRPNG_TEST -I../../include
