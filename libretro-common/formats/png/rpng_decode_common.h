@@ -473,8 +473,10 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
    if (png_reverse_filter_init(&pngp->ihdr, pngp) == -1)
       return PNG_PROCESS_ERROR;
 
-   ret = png_reverse_filter_regular_loop(&pngp->data,
+   do{
+      ret = png_reverse_filter_regular_loop(&pngp->data,
             &pngp->ihdr, pngp);
+   }while(ret == PNG_PROCESS_NEXT);
 
    if (ret == PNG_PROCESS_ERROR || ret == PNG_PROCESS_ERROR_END)
       return PNG_PROCESS_ERROR;
@@ -551,8 +553,10 @@ static bool png_reverse_filter_loop(struct rpng_t *rpng,
       if (png_reverse_filter_init(ihdr, pngp) == -1)
          return false;
 
-      ret = png_reverse_filter_regular_loop(data,
+      do{
+         ret = png_reverse_filter_regular_loop(data,
                ihdr, pngp);
+      }while(ret == PNG_PROCESS_NEXT);
    }
 
    if (ret == PNG_PROCESS_ERROR || ret == PNG_PROCESS_ERROR_END)
