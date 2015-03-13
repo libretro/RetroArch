@@ -437,6 +437,14 @@ static bool png_reverse_filter_regular(uint32_t **data_, const struct png_ihdr *
    return false;
 }
 
+enum png_process_code
+{
+   PNG_PROCESS_ERROR     = -2,
+   PNG_PROCESS_ERROR_END = -1,
+   PNG_PROCESS_NEXT      =  0,
+   PNG_PROCESS_END       =  1,
+};
+
 static int png_reverse_filter_adam7_iterate(uint32_t **data_,
       const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
@@ -451,16 +459,16 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
    ret = png_reverse_filter_init(ihdr, pngp);
 
    if (ret == 1)
-      return 0;
+      return PNG_PROCESS_NEXT;
    if (ret == -1)
-      return -1;
+      return PNG_PROCESS_ERROR_END;
 
    if (png_reverse_filter_init(&pngp->ihdr, pngp) == -1)
-      return -2;
+      return PNG_PROCESS_ERROR;
 
    if (!png_reverse_filter_regular(&pngp->data,
             &pngp->ihdr, pngp))
-      return -2;
+      return PNG_PROCESS_ERROR;
 
    pngp->inflate_buf            += pngp->pass.size;
    pngp->adam7_restore_buf_size += pngp->pass.size;
@@ -476,7 +484,7 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
    pngp->pass.size   = 0;
    pngp->adam7_pass_initialized = false;
 
-   return 0;
+   return PNG_PROCESS_NEXT;
 }
 
 static int png_reverse_filter_adam7(uint32_t **data_,
@@ -488,13 +496,13 @@ static int png_reverse_filter_adam7(uint32_t **data_,
 
    switch (ret)
    {
-      case -1:
-      case  1: /* end */
+      case PNG_PROCESS_ERROR_END:
+      case PNG_PROCESS_END:
          break;
-      case 0: /* continue iterating */
+      case PNG_PROCESS_NEXT:
          pngp->pass.pos++;
          return 0;
-      case -2: /* error */
+      case PNG_PROCESS_ERROR:
          if (pngp->data)
             free(pngp->data);
          pngp->inflate_buf -= pngp->adam7_restore_buf_size;
