@@ -499,6 +499,9 @@ static void config_set_defaults(void)
    g_settings.menu.navigation.browser.filter.supported_extensions_enable = true;
    g_settings.menu.collapse_subgroups_enable = collapse_subgroups_enable;
    g_settings.menu.show_advanced_settings = show_advanced_settings;
+   g_settings.menu.entry_normal_color = menu_entry_normal_color;
+   g_settings.menu.entry_hover_color  = menu_entry_hover_color;
+   g_settings.menu.title_color        = menu_title_color;
 #endif
 
    g_settings.ui.menubar_enable = true;
@@ -1124,6 +1127,9 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(menu.navigation.browser.filter.supported_extensions_enable,   "menu_navigation_browser_filter_supported_extensions_enable");
    CONFIG_GET_BOOL(menu.collapse_subgroups_enable,   "menu_collapse_subgroups_enable");
    CONFIG_GET_BOOL(menu.show_advanced_settings,   "menu_show_advanced_settings");
+   CONFIG_GET_HEX(menu.entry_normal_color,   "menu_entry_normal_color");
+   CONFIG_GET_HEX(menu.entry_hover_color,   "menu_entry_hover_color");
+   CONFIG_GET_HEX(menu.title_color,   "menu_title_color");
    CONFIG_GET_PATH(menu.wallpaper, "menu_wallpaper");
    if (!strcmp(g_settings.menu.wallpaper, "default"))
       *g_settings.menu.wallpaper = '\0';
@@ -1997,6 +2003,12 @@ bool config_save_file(const char *path)
          g_settings.menu.collapse_subgroups_enable);
    config_set_bool(conf, "menu_show_advanced_settings",
          g_settings.menu.show_advanced_settings);
+   config_set_hex(conf, "menu_entry_normal_color",
+         g_settings.menu.entry_normal_color);
+   config_set_hex(conf, "menu_entry_hover_color",
+         g_settings.menu.entry_hover_color);
+   config_set_hex(conf, "menu_title_color",
+         g_settings.menu.title_color);
 #endif
 
    config_set_path(conf, "game_history_path", g_settings.content_history_path);

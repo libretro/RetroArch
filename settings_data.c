@@ -1014,6 +1014,19 @@ static int setting_data_uint_action_ok_linefeed(void *data, unsigned action)
    return 0;
 }
 
+static int setting_data_hex_action_ok_linefeed(void *data, unsigned action)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   menu_input_key_start_line(setting->short_description,
+         setting->name, 0, 0, menu_input_st_hex_callback);
+
+   return 0;
+}
+
 static int setting_data_action_action_ok(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1413,6 +1426,15 @@ static void setting_data_get_string_representation_uint(void *data,
             *setting->value.unsigned_integer);
 }
 
+static void setting_data_get_string_representation_hex(void *data,
+      char *type_str, size_t type_str_size)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (setting)
+      snprintf(type_str, type_str_size, "%08x",
+            *setting->value.unsigned_integer);
+}
+
 /**
  ******* LIST BUILDING HELPER FUNCTIONS *******
 **/
@@ -1689,6 +1711,51 @@ rarch_setting_t setting_data_uint_setting(const char* name,
    result.action_ok                       = setting_data_uint_action_ok_default;
    result.action_cancel                   = NULL;
    result.get_string_representation       = &setting_data_get_string_representation_uint;
+
+   return result;
+}
+
+/**
+ * setting_data_uint_setting:
+ * @name               : name of setting.
+ * @short_description  : Short description of setting.
+ * @target             : Target of unsigned integer setting.
+ * @default_value      : Default value (in unsigned integer format).
+ * @group              : Group that the setting belongs to.
+ * @subgroup           : Subgroup that the setting belongs to.
+ * @change_handler     : Function callback for change handler function pointer.
+ * @read_handler       : Function callback for read handler function pointer.
+ *
+ * Initializes a setting of type ST_HEX.
+ *
+ * Returns: setting of type ST_HEX.
+ **/
+rarch_setting_t setting_data_hex_setting(const char* name,
+      const char* short_description, unsigned int* target,
+      unsigned int default_value, const char *group, const char *subgroup,
+      change_handler_t change_handler, change_handler_t read_handler)
+{
+   rarch_setting_t result;
+
+   memset(&result, 0, sizeof(result));
+
+   result.type                            = ST_HEX;
+   result.name                            = name;
+   result.size                            = sizeof(unsigned int);
+   result.short_description               = short_description;
+   result.group                           = group;
+   result.subgroup                        = subgroup;
+
+   result.change_handler                  = change_handler;
+   result.read_handler                    = read_handler;
+   result.value.unsigned_integer          = target;
+   result.original_value.unsigned_integer = *target;
+   result.default_value.unsigned_integer  = default_value;
+   result.action_start                    = setting_data_uint_action_start_default;
+   result.action_toggle                   = NULL;
+   result.action_ok                       = setting_data_uint_action_ok_default;
+   result.action_cancel                   = NULL;
+   result.get_string_representation       = &setting_data_get_string_representation_hex;
 
    return result;
 }
@@ -3108,7 +3175,10 @@ static void general_write_handler(void *data)
   if (!(settings_list_append(list, list_info, setting_data_string_setting_options(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", OPTS, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
-#define CONFIG_HEX(TARGET, NAME, SHORT, group_info, subgroup_info)
+#define CONFIG_HEX(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
+{ \
+   if (!(settings_list_append(list, list_info, setting_data_hex_setting(NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+}
 
 #define CONFIG_BIND(TARGET, PLAYER, PLAYER_OFFSET, NAME, SHORT, DEF, group_info, subgroup_info) \
 { \
@@ -3135,6 +3205,11 @@ static void setting_data_add_special_callbacks(
          case ST_UINT:
             (*list)[idx].action_start  = setting_data_uint_action_start_linefeed;
             (*list)[idx].action_ok     = setting_data_uint_action_ok_linefeed;
+            (*list)[idx].action_cancel = NULL;
+            break;
+         case ST_HEX:
+            (*list)[idx].action_start  = setting_data_uint_action_start_linefeed;
+            (*list)[idx].action_ok     = setting_data_hex_action_ok_linefeed;
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_STRING:
@@ -5174,6 +5249,39 @@ static bool setting_data_append_list_menu_options(
          subgroup_info.name,
          general_write_handler,
          general_read_handler);
+
+   CONFIG_HEX(
+         g_settings.menu.entry_normal_color,
+         "menu_entry_normal_color",
+         "Menu entry normal color",
+         menu_entry_hover_color,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+   CONFIG_HEX(
+         g_settings.menu.entry_hover_color,
+         "menu_entry_hover_color",
+         "Menu entry hover color",
+         menu_entry_hover_color,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+   CONFIG_HEX(
+         g_settings.menu.title_color,
+         "menu_title_color",
+         "Menu title color",
+         menu_title_color,
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    END_SUB_GROUP(list, list_info);
 

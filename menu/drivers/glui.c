@@ -77,11 +77,11 @@ static void glui_blit_line(gl_t *gl, float x, float y, const char *message, bool
    params.x           = x / gl->win_width;
    params.y           = 1.0f - y / gl->win_height;
    params.scale       = 1.0;
-   params.color       = FONT_COLOR_RGBA(255, 255, 255, 255);
+   params.color       = g_settings.menu.entry_normal_color;
    params.full_screen = true;
 
    if (green)
-      params.color = FONT_COLOR_RGBA(100, 255, 100, 255);
+      params.color = g_settings.menu.entry_hover_color;
     
    if (!driver.video_data)
       return;

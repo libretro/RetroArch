@@ -34,6 +34,17 @@
 #define RGUI_TERM_WIDTH (((menu->frame_buf.width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
 #define RGUI_TERM_HEIGHT (((menu->frame_buf.height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
 
+
+
+static inline uint16_t argb32_to_rgb565(uint32_t col)
+{
+   unsigned r = (col & 0xff) >> 4;
+   unsigned g = ((col >> 8) & 0xff) >> 4;
+   unsigned b = ((col >> 16) & 0xff) >> 4;
+   unsigned a = ((col >> 24) & 0xff) >> 4;
+   return r | g << 4  | b << 8 | a << 12;
+}
+
 static int rgui_entry_iterate(unsigned action)
 {
    const char *label = NULL;
@@ -152,6 +163,12 @@ static void color_rect(menu_handle_t *menu,
 static void blit_line(menu_handle_t *menu, int x, int y, const char *message, bool green)
 {
    unsigned i, j;
+#if defined(GEKKO)|| defined(PSP)
+   const uint16_t color = green ? (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
+#else
+   const uint16_t color = green ? argb32_to_rgb565(g_settings.menu.entry_hover_color) :
+                                  argb32_to_rgb565(g_settings.menu.entry_normal_color);
+#endif
 
    while (*message)
    {
@@ -168,12 +185,7 @@ static void blit_line(menu_handle_t *menu, int x, int y, const char *message, bo
                continue;
 
             menu->frame_buf.data[(y + j) *
-               (menu->frame_buf.pitch >> 1) + (x + i)] = green ?
-#if defined(GEKKO)|| defined(PSP)
-               (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
-#else
-            (15 << 0) | (7 << 4) | (15 << 8) | (7 << 12) : 0xFFFF;
-#endif
+               (menu->frame_buf.pitch >> 1) + (x + i)] = color;
          }
       }
 

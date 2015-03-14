@@ -96,6 +96,27 @@ void menu_input_st_uint_callback(void *userdata, const char *str)
    menu_input_key_end_line();
 }
 
+void menu_input_st_hex_callback(void *userdata, const char *str)
+{
+   menu_handle_t *menu = menu_driver_resolve();
+
+   if (!menu)
+      return;
+
+   if (str && *str)
+   {
+      rarch_setting_t *current_setting = NULL;
+      if ((current_setting = (rarch_setting_t*)
+               setting_data_find_setting(
+                  menu->list_settings, menu->keyboard.label_setting)))
+         if (str[0] == '#')
+            str++;
+         *current_setting->value.unsigned_integer = strtoul(str, NULL, 16);
+   }
+
+   menu_input_key_end_line();
+}
+
 
 void menu_input_st_string_callback(void *userdata, const char *str)
 {

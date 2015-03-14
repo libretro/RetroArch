@@ -52,6 +52,7 @@ void menu_input_key_start_line(const char *label,
       input_keyboard_line_complete_t cb);
 
 void menu_input_st_uint_callback(void *userdata, const char *str);
+void menu_input_st_hex_callback(void *userdata, const char *str);
 
 void menu_input_st_string_callback(void *userdata, const char *str);
 
