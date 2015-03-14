@@ -412,6 +412,8 @@ typedef struct nbio_image_handle
    struct rpng_t *handle;
    unsigned pos_increment;
    uint64_t frame_count;
+   uint64_t processing_frame_count;
+   int processing_final_state;
    msg_queue_t *msg_queue;
 } nbio_image_handle_t;
 

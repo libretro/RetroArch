@@ -164,6 +164,32 @@ static int rarch_main_iterate_http_poll(void)
 #endif
 
 #ifdef HAVE_MENU
+static int cb_image_menu_wallpaper_upload(void *data, size_t len)
+{
+   nbio_handle_t *nbio = (nbio_handle_t*)data; 
+
+   if (!nbio || !data)
+      return -1;
+
+   if (nbio->image.processing_final_state == IMAGE_PROCESS_ERROR ||
+         nbio->image.processing_final_state == IMAGE_PROCESS_ERROR_END)
+      return -1;
+
+   if (driver.menu_ctx && driver.menu_ctx->load_background)
+      driver.menu_ctx->load_background(&nbio->image.ti);
+
+   texture_image_free(&nbio->image.ti);
+
+   nbio->image.is_blocking_on_processing         = false;
+   nbio->image.is_finished_with_processing       = true;
+   nbio->image.is_blocking                       = true;
+   nbio->image.is_finished                       = true;
+   nbio->is_blocking                             = true;
+   nbio->is_finished                             = true;
+
+   return 0;
+}
+
 static int cb_image_menu_wallpaper(void *data, size_t len)
 {
    int retval;
@@ -177,25 +203,17 @@ static int cb_image_menu_wallpaper(void *data, size_t len)
          !nbio->image.handle->has_iend)
       return -1;
 
-   do{
-      retval = rpng_nbio_load_image_argb_process(nbio->image.handle,
-            &nbio->image.ti.pixels, &nbio->image.ti.width, &nbio->image.ti.height);
-   }while(retval == IMAGE_PROCESS_NEXT);
+   retval = rpng_nbio_load_image_argb_process(nbio->image.handle,
+         &nbio->image.ti.pixels, &nbio->image.ti.width, &nbio->image.ti.height);
 
    if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
       return -1;
 
-   if (driver.menu_ctx && driver.menu_ctx->load_background)
-      driver.menu_ctx->load_background(&nbio->image.ti);
+   nbio->image.cb = &cb_image_menu_wallpaper_upload;
 
-   texture_image_free(&nbio->image.ti);
-
-   nbio->image.is_blocking                       = true;
    nbio->image.is_blocking_on_processing         = true;
-   nbio->image.is_finished                       = true;
    nbio->image.is_finished_with_processing       = false;
-   nbio->is_blocking                             = true;
-   nbio->is_finished                             = true;
+   nbio->image.is_finished                       = false;
 
    return 0;
 }
@@ -302,16 +320,56 @@ error:
    return -1;
 }
 
+static int rarch_main_iterate_image_processing_transfer(nbio_handle_t *nbio)
+{
+   unsigned i;
+   int retval;
+
+   if (!nbio)
+      return -1;
+
+   for (i = 0; i < nbio->image.pos_increment; i++)
+   {
+      retval = rpng_nbio_load_image_argb_process(nbio->image.handle,
+            &nbio->image.ti.pixels, &nbio->image.ti.width, &nbio->image.ti.height);
+
+      if (retval != IMAGE_PROCESS_NEXT)
+         break;
+   }
+
+   if (retval == IMAGE_PROCESS_NEXT)
+   {
+      nbio->image.processing_frame_count++;
+      return 0;
+   }
+
+   nbio->image.processing_final_state = retval;
+   return -1;
+}
+
 static int rarch_main_iterate_image_parse_free(nbio_handle_t *nbio)
 {
    if (!nbio)
       return -1;
 
    rpng_nbio_load_image_free(nbio->image.handle);
-   nbio->image.handle      = NULL;
-   nbio->image.frame_count = 0;
+
+   nbio->image.handle                 = NULL;
+   nbio->image.frame_count            = 0;
+   nbio->image.processing_frame_count = 0;
 
    msg_queue_clear(nbio->image.msg_queue);
+
+   return 0;
+}
+
+static int rarch_main_iterate_image_process_parse(nbio_handle_t *nbio)
+{
+   size_t len = 0;
+   if (nbio->image.handle && nbio->image.cb)
+      nbio->image.cb(nbio, len);
+
+   RARCH_LOG("Image transfer processing took %d frames.\n", (unsigned)nbio->image.processing_frame_count);
 
    return 0;
 }
@@ -524,13 +582,12 @@ void do_data_nbio_state_checks(nbio_handle_t *nbio)
 
    if (nbio->image.handle)
    {
-#if 0
       if (nbio->image.is_blocking_on_processing)
       {
+         if (rarch_main_iterate_image_processing_transfer(nbio) == -1)
+            rarch_main_iterate_image_process_parse(nbio);
       }
-      else
-#endif
-         if (!nbio->image.is_blocking)
+      else if (!nbio->image.is_blocking)
       {
          if (rarch_main_iterate_image_transfer(nbio) == -1)
             rarch_main_iterate_image_parse(nbio);
