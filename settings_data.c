@@ -5250,6 +5250,7 @@ static bool setting_data_append_list_menu_options(
          general_write_handler,
          general_read_handler);
 
+   /* These colors are hints. The menu driver is not required to use them. */
    CONFIG_HEX(
          g_settings.menu.entry_normal_color,
          "menu_entry_normal_color",
