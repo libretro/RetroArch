@@ -46,7 +46,7 @@
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_AL"/>
 									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
-									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
+									<listOptionValue builtIn="false" value="WANT_ZLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="USING_GL20"/>
@@ -168,7 +168,7 @@
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_AL"/>
 									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
-									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
+									<listOptionValue builtIn="false" value="WANT_ZLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="USING_GL20"/>
@@ -292,7 +292,7 @@
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_AL"/>
 									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
-									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
+									<listOptionValue builtIn="false" value="WANT_ZLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="USING_GL20"/>
@@ -411,7 +411,7 @@
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
 									<listOptionValue builtIn="false" value="HAVE_AL"/>
 									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
-									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
+									<listOptionValue builtIn="false" value="WANT_ZLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
 									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
 									<listOptionValue builtIn="false" value="USING_GL20"/>

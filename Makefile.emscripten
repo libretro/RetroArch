@@ -12,14 +12,14 @@ HAVE_RGUI = 1
 HAVE_SDL = 0
 HAVE_ZLIB = 1
 HAVE_FBO = 1
-WANT_MINIZ = 1
+WANT_ZLIB = 1
 MEMORY = 268435456
 LTO = 0
 # XXX: setting this to 1/2 currently crashes Firefox nightly
 PRECISE_F32 = 2
 
 ifneq ($(NATIVE_ZLIB),)
-   WANT_MINIZ = 0
+   WANT_ZLIB = 0
 endif
 
 LIBS    :=

@@ -602,8 +602,8 @@ ifeq ($(HAVE_ZLIB), 1)
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1 
-   ifeq ($(WANT_MINIZ), 1)
-      DEFINES += -DWANT_MINIZ
+   ifeq ($(WANT_ZLIB), 1)
+      DEFINES += -DWANT_ZLIB
    else
       LIBS += -lz
 		HAVE_ZLIB_DEFLATE = 1
@@ -614,7 +614,7 @@ ifdef HAVE_COMPRESSION
    DEFINES += -DHAVE_COMPRESSION
 endif
 
-ifeq ($(WANT_MINIZ),1)
+ifeq ($(WANT_ZLIB),1)
 	OBJ += deps/zlib/adler32.o \
 			 deps/zlib/compress.o \
 			 deps/zlib/crc32.o \

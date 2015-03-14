@@ -743,7 +743,7 @@ extern "C" {
 /*============================================================
 DEPENDENCIES
 ============================================================ */
-#ifdef WANT_MINIZ
+#ifdef WANT_ZLIB
 #include "../deps/zlib/adler32.c"
 #include "../deps/zlib/compress.c"
 #include "../deps/zlib/crc32.c"
@@ -761,7 +761,7 @@ DEPENDENCIES
 #endif
 
 /* Decompression support always requires the next two files */
-#if defined(WANT_MINIZ) || defined(HAVE_ZLIB)
+#if defined(WANT_ZLIB) || defined(HAVE_ZLIB)
 #include "../deps/zlib/ioapi.c"
 #include "../deps/zlib/unzip.c"
 #endif

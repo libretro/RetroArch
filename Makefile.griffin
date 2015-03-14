@@ -169,7 +169,7 @@ CFLAGS      += -DHAVE_RARCH_EXEC
 endif
 
 ifeq ($(HAVE_ZLIB), 1)
-CFLAGS      += -DHAVE_ZLIB -DWANT_MINIZ
+CFLAGS      += -DHAVE_ZLIB -DWANT_ZLIB
 endif
 
 ifeq ($(HAVE_7ZIP), 1)
