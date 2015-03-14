@@ -186,8 +186,9 @@ struct input_overlay
    const struct overlay *active;
    size_t index;
    size_t size;
-   size_t pos;
+   unsigned pos;
    size_t resolve_pos;
+   size_t pos_increment;
 
    unsigned next_index;
    char *overlay_path;

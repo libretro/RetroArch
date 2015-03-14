@@ -547,17 +547,27 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
 {
    unsigned i;
 
-   for (i = 0; i < ol->size; i++)
+   for (i = 0; i < ol->pos_increment; i++, ol->pos++)
    {
       char conf_key[64];
       char overlay_full_screen_key[64];
-      struct overlay *overlay = &ol->overlays[i];
+      struct overlay *overlay = NULL;
+      bool to_cont = ol->pos < ol->size;
+      
+      if (!to_cont)
+      {
+         ol->pos   = 0;
+         ol->state = OVERLAY_STATUS_DEFERRED_LOADING;
+         break;
+      }
+
+      overlay = &ol->overlays[ol->pos];
 
       if (!overlay)
          continue;
 
       snprintf(overlay->config.descs.key,
-            sizeof(overlay->config.descs.key), "overlay%u_descs", i);
+            sizeof(overlay->config.descs.key), "overlay%u_descs", ol->pos);
 
       if (!config_get_uint(ol->conf, overlay->config.descs.key, &overlay->config.descs.size))
       {
@@ -578,7 +588,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       overlay->size = overlay->config.descs.size;
 
       snprintf(overlay_full_screen_key, sizeof(overlay_full_screen_key),
-            "overlay%u_full_screen", i);
+            "overlay%u_full_screen", ol->pos);
       overlay->full_screen = false;
       config_get_bool(ol->conf, overlay_full_screen_key, &overlay->full_screen);
 
@@ -587,13 +597,13 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       overlay->config.range_mod  = 1.0f;
 
       snprintf(conf_key, sizeof(conf_key),
-            "overlay%u_normalized", i);
+            "overlay%u_normalized", ol->pos);
       config_get_bool(ol->conf, conf_key, &overlay->config.normalized);
 
-      snprintf(conf_key, sizeof(conf_key), "overlay%u_alpha_mod", i);
+      snprintf(conf_key, sizeof(conf_key), "overlay%u_alpha_mod", ol->pos);
       config_get_float(ol->conf, conf_key, &overlay->config.alpha_mod);
 
-      snprintf(conf_key, sizeof(conf_key), "overlay%u_range_mod", i);
+      snprintf(conf_key, sizeof(conf_key), "overlay%u_range_mod", ol->pos);
       config_get_float(ol->conf, conf_key, &overlay->config.range_mod);
 
       /* Precache load image array for simplicity. */
@@ -607,7 +617,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       }
 
       snprintf(overlay->config.paths.key, sizeof(overlay->config.paths.key),
-            "overlay%u_overlay", i);
+            "overlay%u_overlay", ol->pos);
 
       config_get_path(ol->conf, overlay->config.paths.key,
                overlay->config.paths.path, sizeof(overlay->config.paths.path));
@@ -632,7 +642,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       }
 
       snprintf(overlay->config.names.key, sizeof(overlay->config.names.key),
-            "overlay%u_name", i);
+            "overlay%u_name", ol->pos);
       config_get_array(ol->conf, overlay->config.names.key,
             overlay->name, sizeof(overlay->name));
 
@@ -641,7 +651,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       overlay->w = overlay->h = 1.0f;
 
       snprintf(overlay->config.rect.key, sizeof(overlay->config.rect.key),
-            "overlay%u_rect", i);
+            "overlay%u_rect", ol->pos);
 
       if (config_get_array(ol->conf, overlay->config.rect.key,
                overlay->config.rect.array, sizeof(overlay->config.rect.array)))
@@ -670,11 +680,11 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       overlay->center_y = overlay->y + 0.5f * overlay->h;
    }
 
-   ol->state = OVERLAY_STATUS_DEFERRED_LOADING;
 
    return true;
 
 error:
+   ol->pos   = 0;
    ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
 
    return false;
@@ -718,6 +728,7 @@ static bool input_overlay_load_overlays_init(input_overlay_t *ol)
    ol->size          = ol->config.overlays.size;
    ol->pos           = 0;
    ol->resolve_pos   = 0;
+   ol->pos_increment = (ol->size / 4) ? (ol->size / 4) : 4;
 
    return true;
 
@@ -773,6 +784,7 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
    ol->deferred.enable       = enable;
    ol->deferred.opacity      = opacity;
    ol->deferred.scale_factor = scale_factor;
+   ol->pos                   = 0;
 
    input_overlay_load_overlays_init(ol);
 
