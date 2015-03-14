@@ -42,14 +42,6 @@ bool png_process_ihdr(struct png_ihdr *ihdr);
 int png_reverse_filter_init(const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp);
 
-int png_reverse_filter_adam7(uint32_t **data,
-      const struct png_ihdr *ihdr,
-      struct rpng_process_t *pngp);
-
-int png_reverse_filter_regular_loop(uint32_t **data,
-      const struct png_ihdr *ihdr,
-      struct rpng_process_t *pngp);
-
 int png_reverse_filter_iterate(struct rpng_t *rpng,
       uint32_t **data);
 

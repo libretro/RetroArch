@@ -483,7 +483,7 @@ static int png_reverse_filter_regular_iterate(uint32_t *data, const struct png_i
    return PNG_PROCESS_NEXT;
 }
 
-int png_reverse_filter_regular_loop(uint32_t **data, const struct png_ihdr *ihdr,
+static int png_reverse_filter_regular_loop(uint32_t **data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
    int ret = png_reverse_filter_regular_iterate(*data, ihdr, pngp);
@@ -553,7 +553,7 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
    return PNG_PROCESS_NEXT;
 }
 
-int png_reverse_filter_adam7(uint32_t **data_,
+static int png_reverse_filter_adam7(uint32_t **data_,
       const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
