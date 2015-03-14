@@ -410,6 +410,7 @@ typedef struct nbio_image_handle
    bool is_finished_with_processing;
    transfer_cb_t  cb;
    struct rpng_t *handle;
+   unsigned processing_pos_increment;
    unsigned pos_increment;
    uint64_t frame_count;
    uint64_t processing_frame_count;

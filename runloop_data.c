@@ -247,7 +247,8 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
    }
 
    nbio->image.handle->buff_data = (uint8_t*)ptr;
-   nbio->image.pos_increment = (len / 2) ? (len / 2) : 1;
+   nbio->image.pos_increment            = (len / 2) ? (len / 2) : 1;
+   nbio->image.processing_pos_increment = (len / 4) ? (len / 4) : 1;
 
    if (!rpng_nbio_load_image_argb_start(nbio->image.handle))
    {
@@ -328,7 +329,7 @@ static int rarch_main_iterate_image_processing_transfer(nbio_handle_t *nbio)
    if (!nbio)
       return -1;
 
-   for (i = 0; i < nbio->image.pos_increment; i++)
+   for (i = 0; i < nbio->image.processing_pos_increment; i++)
    {
       retval = rpng_nbio_load_image_argb_process(nbio->image.handle,
             &nbio->image.ti.pixels, &nbio->image.ti.width, &nbio->image.ti.height);
@@ -337,11 +338,10 @@ static int rarch_main_iterate_image_processing_transfer(nbio_handle_t *nbio)
          break;
    }
 
+   nbio->image.processing_frame_count++;
+
    if (retval == IMAGE_PROCESS_NEXT)
-   {
-      nbio->image.processing_frame_count++;
       return 0;
-   }
 
    nbio->image.processing_final_state = retval;
    return -1;
