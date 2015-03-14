@@ -542,32 +542,10 @@ error:
    return false;
 }
 
+
 bool input_overlay_load_overlays(input_overlay_t *ol)
 {
    unsigned i;
-
-   if (!ol)
-      return false;
-   if (!ol->conf)
-      return false;
-   
-   if (!config_get_uint(ol->conf, "overlays", &ol->config.overlays.size))
-   {
-      RARCH_ERR("overlays variable not defined in config.\n");
-      goto error;
-   }
-
-   if (!ol->config.overlays.size)
-      goto error;
-
-   ol->overlays = (struct overlay*)calloc(
-         ol->config.overlays.size, sizeof(*ol->overlays));
-   if (!ol->overlays)
-      goto error;
-
-   ol->size          = ol->config.overlays.size;
-   ol->pos           = 0;
-   ol->resolve_pos   = 0;
 
    for (i = 0; i < ol->size; i++)
    {
@@ -721,6 +699,34 @@ bool input_overlay_new_done(input_overlay_t *ol)
    return true;
 }
 
+static bool input_overlay_load_overlays_init(input_overlay_t *ol)
+{
+   if (!config_get_uint(ol->conf, "overlays", &ol->config.overlays.size))
+   {
+      RARCH_ERR("overlays variable not defined in config.\n");
+      goto error;
+   }
+
+   if (!ol->config.overlays.size)
+      goto error;
+
+   ol->overlays = (struct overlay*)calloc(
+         ol->config.overlays.size, sizeof(*ol->overlays));
+   if (!ol->overlays)
+      goto error;
+
+   ol->size          = ol->config.overlays.size;
+   ol->pos           = 0;
+   ol->resolve_pos   = 0;
+
+   return true;
+
+error:
+   ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
+
+   return false;
+}
+
 /**
  * input_overlay_new:
  * @path                  : Path to overlay file.
@@ -767,6 +773,8 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
    ol->deferred.enable       = enable;
    ol->deferred.opacity      = opacity;
    ol->deferred.scale_factor = scale_factor;
+
+   input_overlay_load_overlays_init(ol);
 
    return ol;
 
