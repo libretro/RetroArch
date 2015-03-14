@@ -34,6 +34,25 @@
 #define RGUI_TERM_WIDTH (((menu->frame_buf.width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
 #define RGUI_TERM_HEIGHT (((menu->frame_buf.height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
 
+#if defined(GEKKO)|| defined(PSP)
+#define HOVER_COLOR ((3 << 0) | (10 << 4) | (3 << 8) | (7 << 12))
+#define NORMAL_COLOR 0x7FFF
+#define TITLE_COLOR HOVER_COLOR
+#else
+#define HOVER_COLOR (argb32_to_argb4444(g_settings.menu.entry_hover_color))
+#define NORMAL_COLOR (argb32_to_argb4444(g_settings.menu.entry_normal_color))
+#define TITLE_COLOR (argb32_to_argb4444(g_settings.menu.title_color))
+#endif
+
+static inline uint16_t argb32_to_argb4444(uint32_t col)
+{
+   unsigned r = (col & 0xff) >> 4;
+   unsigned g = ((col >> 8) & 0xff) >> 4;
+   unsigned b = ((col >> 16) & 0xff) >> 4;
+   unsigned a = ((col >> 24) & 0xff) >> 4;
+   return r | g << 4  | b << 8 | a << 12;
+}
+
 static int rgui_entry_iterate(unsigned action)
 {
    const char *label = NULL;
@@ -149,7 +168,7 @@ static void color_rect(menu_handle_t *menu,
             menu->frame_buf.data[j * (menu->frame_buf.pitch >> 1) + i] = color;
 }
 
-static void blit_line(menu_handle_t *menu, int x, int y, const char *message, bool green)
+static void blit_line(menu_handle_t *menu, int x, int y, const char *message, uint16_t color)
 {
    unsigned i, j;
 
@@ -168,12 +187,7 @@ static void blit_line(menu_handle_t *menu, int x, int y, const char *message, bo
                continue;
 
             menu->frame_buf.data[(y + j) *
-               (menu->frame_buf.pitch >> 1) + (x + i)] = green ?
-#if defined(GEKKO)|| defined(PSP)
-               (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
-#else
-            (15 << 0) | (7 << 4) | (15 << 8) | (7 << 12) : 0xFFFF;
-#endif
+               (menu->frame_buf.pitch >> 1) + (x + i)] = color;
          }
       }
 
@@ -303,12 +317,14 @@ static void rgui_render_messagebox(const char *message)
    fill_rect(&menu->frame_buf, x + 5, y + height - 5, width - 5, 5, green_filler);
    fill_rect(&menu->frame_buf, x, y + 5, 5, height - 5, green_filler);
 
+   uint16_t color = NORMAL_COLOR;
+
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
       int offset_x = FONT_WIDTH_STRIDE * (glyphs_width - strlen(msg)) / 2;
       int offset_y = FONT_HEIGHT_STRIDE * i;
-      blit_line(menu, x + 8 + offset_x, y + 8 + offset_y, msg, false);
+      blit_line(menu, x + 8 + offset_x, y + 8 + offset_y, msg, color);
    }
 
 end:
@@ -385,7 +401,11 @@ static void rgui_render(void)
 
    menu_animation_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
          g_runloop.frames.video.count / RGUI_TERM_START_X, title, true);
-   blit_line(menu, RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, true);
+
+   uint16_t hover_color = HOVER_COLOR;
+   uint16_t normal_color = NORMAL_COLOR;
+
+   blit_line(menu, RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, TITLE_COLOR);
 
    core_name = g_extern.menu.info.library_name;
    if (!core_name)
@@ -407,7 +427,7 @@ static void rgui_render(void)
       blit_line(menu,
             RGUI_TERM_START_X + RGUI_TERM_START_X,
             (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
-            RGUI_TERM_START_Y + 2, title_msg, true);
+            RGUI_TERM_START_Y + 2, title_msg, hover_color);
    }
 
    if (g_settings.menu.timedate_enable)
@@ -417,7 +437,7 @@ static void rgui_render(void)
       blit_line(menu,
             (RGUI_TERM_WIDTH * FONT_HEIGHT_STRIDE) + (60),
             (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
-            RGUI_TERM_START_Y + 2, timedate, true);
+            RGUI_TERM_START_Y + 2, timedate, hover_color);
    }
 
 
@@ -466,7 +486,7 @@ static void rgui_render(void)
             w,
             type_str_buf);
 
-      blit_line(menu, x, y, message, selected);
+      blit_line(menu, x, y, message, selected ? hover_color : normal_color);
    }
 
 #ifdef GEKKO

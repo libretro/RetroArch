@@ -223,6 +223,10 @@ struct settings
       } navigation;
       bool collapse_subgroups_enable;
       bool show_advanced_settings;
+
+      unsigned entry_normal_color;
+      unsigned entry_hover_color;
+      unsigned title_color;
    } menu;
 #endif
 
