@@ -403,6 +403,7 @@ typedef int (*transfer_cb_t               )(void *data, size_t len);
 
 typedef struct nbio_image_handle
 {
+   struct texture_image ti;
    bool is_blocking;
    bool is_finished;
    transfer_cb_t  cb;
