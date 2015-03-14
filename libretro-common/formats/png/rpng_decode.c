@@ -595,31 +595,24 @@ bool png_reverse_filter_loop(struct rpng_t *rpng,
    int ret = 0;
    const struct png_ihdr *ihdr = NULL;
    struct rpng_process_t *pngp = NULL;
-   rpng->process.adam7_restore_buf_size = 0;
-   rpng->process.restore_buf_size = 0;
-   rpng->process.palette = rpng->palette;
+
+   if (!rpng)
+      return false;
 
    ihdr = &rpng->ihdr;
    pngp = &rpng->process;
 
-   if (ihdr->interlace == 1)
-   {
-      do
-      {
-         ret = png_reverse_filter_adam7(data,
-               ihdr, pngp);
-      }while(ret == PNG_PROCESS_NEXT);
-   }
-   else
-   {
-      if (png_reverse_filter_init(ihdr, pngp) == -1)
-         return false;
+   if (!ihdr || !pngp)
+      return false;
 
-      do{
+   do
+   {
+      if (ihdr->interlace)
+         ret = png_reverse_filter_adam7(data, ihdr, pngp);
+      else
          ret = png_reverse_filter_regular_loop(data,
                ihdr, pngp);
-      }while(ret == PNG_PROCESS_NEXT);
-   }
+   }while(ret == PNG_PROCESS_NEXT);
 
    if (ret == PNG_PROCESS_ERROR || ret == PNG_PROCESS_ERROR_END)
       return false;
@@ -669,6 +662,14 @@ bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
 #endif
    if (!*data)
       return false;
+
+   rpng->process.adam7_restore_buf_size = 0;
+   rpng->process.restore_buf_size = 0;
+   rpng->process.palette = rpng->palette;
+
+   if (rpng->ihdr.interlace != 1)
+      if (png_reverse_filter_init(&rpng->ihdr, &rpng->process) == -1)
+         return false;
 
    return true;
 }
