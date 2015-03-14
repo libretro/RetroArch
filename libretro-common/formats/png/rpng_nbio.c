@@ -194,11 +194,17 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf, struct rpng_t *rpng)
 bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
+   int retval = 0;
+
    if (!rpng_load_image_argb_process_init(rpng, data, width,
             height))
       return false;
 
-   if (!png_reverse_filter_loop(rpng, data))
+   do{
+      retval = png_reverse_filter_iterate(rpng, data);
+   }while(retval == PNG_PROCESS_NEXT);
+
+   if (retval == PNG_PROCESS_ERROR || retval == PNG_PROCESS_ERROR_END)
       return false;
 
    return true;

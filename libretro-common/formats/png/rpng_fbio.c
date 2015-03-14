@@ -227,6 +227,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    char header[8];
    struct rpng_t rpng = {{0}};
    bool ret      = true;
+   int retval = 0;
 
    *data   = NULL;
    *width  = 0;
@@ -261,7 +262,11 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
             height))
       GOTO_END_ERROR();
 
-   if (!png_reverse_filter_loop(&rpng, data))
+   do{
+      retval = png_reverse_filter_iterate(&rpng, data);
+   }while(retval == PNG_PROCESS_NEXT);
+
+   if (retval == PNG_PROCESS_ERROR || retval == PNG_PROCESS_ERROR_END)
       GOTO_END_ERROR();
 
 end:

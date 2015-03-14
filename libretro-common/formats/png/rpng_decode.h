@@ -23,6 +23,14 @@
 #ifndef _RPNG_DECODE_H
 #define _RPNG_DECODE_H
 
+enum png_process_code
+{
+   PNG_PROCESS_ERROR     = -2,
+   PNG_PROCESS_ERROR_END = -1,
+   PNG_PROCESS_NEXT      =  0,
+   PNG_PROCESS_END       =  1,
+};
+
 enum png_chunk_type png_chunk_type(const struct png_chunk *chunk);
 
 void png_pass_geom(const struct png_ihdr *ihdr,
@@ -42,7 +50,7 @@ int png_reverse_filter_regular_loop(uint32_t **data,
       const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp);
 
-bool png_reverse_filter_loop(struct rpng_t *rpng,
+int png_reverse_filter_iterate(struct rpng_t *rpng,
       uint32_t **data);
 
 bool rpng_load_image_argb_process_init(struct rpng_t *rpng,

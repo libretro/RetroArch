@@ -321,14 +321,6 @@ static const struct adam7_pass passes[] = {
    { 0, 1, 1, 2 },
 };
 
-enum png_process_code
-{
-   PNG_PROCESS_ERROR     = -2,
-   PNG_PROCESS_ERROR_END = -1,
-   PNG_PROCESS_NEXT      =  0,
-   PNG_PROCESS_END       =  1,
-};
-
 int png_reverse_filter_init(const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
@@ -465,7 +457,7 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
    return PNG_PROCESS_NEXT;
 }
 
-static int png_reverse_filter_iterate(uint32_t *data, const struct png_ihdr *ihdr,
+static int png_reverse_filter_regular_iterate(uint32_t *data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
    int ret = PNG_PROCESS_END;
@@ -494,7 +486,7 @@ static int png_reverse_filter_iterate(uint32_t *data, const struct png_ihdr *ihd
 int png_reverse_filter_regular_loop(uint32_t **data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
-   int ret = png_reverse_filter_iterate(*data, ihdr, pngp);
+   int ret = png_reverse_filter_regular_iterate(*data, ihdr, pngp);
 
    switch (ret)
    {
@@ -589,30 +581,16 @@ int png_reverse_filter_adam7(uint32_t **data_,
    return ret;
 }
 
-bool png_reverse_filter_loop(struct rpng_t *rpng,
+int png_reverse_filter_iterate(struct rpng_t *rpng,
       uint32_t **data)
 {
-   int ret = 0;
-
    if (!rpng)
       return false;
 
-   do
-   {
-      const struct png_ihdr *ihdr = &rpng->ihdr;
-      struct rpng_process_t *pngp = &rpng->process;
+   if (rpng->ihdr.interlace)
+      return png_reverse_filter_adam7(data, &rpng->ihdr, &rpng->process);
 
-      if (ihdr->interlace)
-         ret = png_reverse_filter_adam7(data, ihdr, pngp);
-      else
-         ret = png_reverse_filter_regular_loop(data,
-               ihdr, pngp);
-   }while(ret == PNG_PROCESS_NEXT);
-
-   if (ret == PNG_PROCESS_ERROR || ret == PNG_PROCESS_ERROR_END)
-      return false;
-
-   return true;
+   return png_reverse_filter_regular_loop(data, &rpng->ihdr, &rpng->process);
 }
 
 bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
