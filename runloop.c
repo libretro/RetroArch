@@ -970,7 +970,7 @@ int rarch_main_iterate(void)
       rarch_main_iterate_overlay_state();
 #endif
    
-   do_data_state_checks();
+   rarch_main_data_iterate();
 
 #ifdef HAVE_MENU
    if (g_runloop.is_menu)

@@ -26,14 +26,14 @@ int cb_core_updater_list(void *data_, size_t len);
  **/
 
 /**
- * rarch_main_iterate_http_transfer:
+ * rarch_main_data_http_iterate_transfer:
  *
  * Resumes HTTP transfer update.
  *
  * Returns: 0 when finished, -1 when we should continue
  * with the transfer on the next frame.
  **/
-static int rarch_main_iterate_http_transfer(void)
+static int rarch_main_data_http_iterate_transfer(void)
 {
    size_t pos = 0, tot = 0;
 
@@ -50,14 +50,14 @@ static int rarch_main_iterate_http_transfer(void)
    return 0;
 }
 
-static int rarch_main_iterate_http_conn_transfer(void)
+static int rarch_main_data_http_con_iterate_transfer(void)
 {
    if (!net_http_connection_iterate(g_runloop.data.http.connection.handle))
       return -1;
    return 0;
 }
 
-static int rarch_main_iterate_http_conn_parse(void)
+static int rarch_main_data_http_conn_iterate_transfer_parse(void)
 {
    if (net_http_connection_done(g_runloop.data.http.connection.handle))
    {
@@ -72,7 +72,7 @@ static int rarch_main_iterate_http_conn_parse(void)
    return 0;
 }
 
-static int rarch_main_iterate_http_parse(void)
+static int rarch_main_data_http_iterate_transfer_parse(void)
 {
    size_t len;
    char *data = (char*)net_http_data(g_runloop.data.http.handle, &len, false);
@@ -112,7 +112,7 @@ static int cb_http_conn_default(void *data_, size_t len)
 }
 
 /**
- * rarch_main_iterate_http_transfer:
+ * rarch_main_data_http_iterate_poll:
  *
  * Polls HTTP message queue to see if any new URLs 
  * are pending.
@@ -124,7 +124,7 @@ static int cb_http_conn_default(void *data_, size_t len)
  * begin transferring on the next frame. Returns -1 if
  * no HTTP URL has been pulled. Do nothing in that case.
  **/
-static int rarch_main_iterate_http_poll(void)
+static int rarch_main_data_http_iterate_poll(void)
 {
    char elem0[PATH_MAX_LENGTH];
    struct string_list *str_list = NULL;
@@ -270,7 +270,7 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
  *
  **/
 
-static int rarch_main_iterate_image_poll(nbio_handle_t *nbio)
+static int rarch_main_data_image_iterate_poll(nbio_handle_t *nbio)
 {
    const char *path    = NULL;
 
@@ -293,7 +293,7 @@ static int rarch_main_iterate_image_poll(nbio_handle_t *nbio)
    return 0;
 }
 
-static int rarch_main_iterate_image_transfer(nbio_handle_t *nbio)
+static int rarch_main_data_image_iterate_transfer(nbio_handle_t *nbio)
 {
    unsigned i;
 
@@ -321,7 +321,7 @@ error:
    return -1;
 }
 
-static int rarch_main_iterate_image_processing_transfer(nbio_handle_t *nbio)
+static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
 {
    unsigned i;
    int retval;
@@ -347,7 +347,7 @@ static int rarch_main_iterate_image_processing_transfer(nbio_handle_t *nbio)
    return -1;
 }
 
-static int rarch_main_iterate_image_parse_free(nbio_handle_t *nbio)
+static int rarch_main_data_image_iterate_parse_free(nbio_handle_t *nbio)
 {
    if (!nbio)
       return -1;
@@ -363,7 +363,7 @@ static int rarch_main_iterate_image_parse_free(nbio_handle_t *nbio)
    return 0;
 }
 
-static int rarch_main_iterate_image_process_parse(nbio_handle_t *nbio)
+static int rarch_main_data_image_iterate_process_transfer_parse(nbio_handle_t *nbio)
 {
    size_t len = 0;
    if (nbio->image.handle && nbio->image.cb)
@@ -374,7 +374,7 @@ static int rarch_main_iterate_image_process_parse(nbio_handle_t *nbio)
    return 0;
 }
 
-static int rarch_main_iterate_image_parse(nbio_handle_t *nbio)
+static int rarch_main_data_image_iterate_transfer_parse(nbio_handle_t *nbio)
 {
    size_t len = 0;
    if (nbio->image.handle && nbio->image.cb)
@@ -405,8 +405,7 @@ static int cb_nbio_default(void *data, size_t len)
    return 0;
 }
 
-
-static int rarch_main_iterate_nbio_poll(nbio_handle_t *nbio)
+static int rarch_main_data_nbio_iterate_poll(nbio_handle_t *nbio)
 {
    struct nbio_t* handle;
    char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
@@ -469,7 +468,7 @@ error:
    return -1;
 }
 
-static int rarch_main_iterate_nbio_transfer(nbio_handle_t *nbio)
+static int rarch_main_data_nbio_iterate_transfer(nbio_handle_t *nbio)
 {
    size_t i;
 
@@ -494,7 +493,7 @@ error:
    return -1;
 }
 
-static int rarch_main_iterate_nbio_parse_free(nbio_handle_t *nbio)
+static int rarch_main_data_nbio_iterate_parse_free(nbio_handle_t *nbio)
 {
    if (!nbio)
       return -1;
@@ -512,7 +511,7 @@ static int rarch_main_iterate_nbio_parse_free(nbio_handle_t *nbio)
    return 0;
 }
 
-static int rarch_main_iterate_nbio_parse(nbio_handle_t *nbio)
+static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
 {
    int len = 0;
 
@@ -534,7 +533,7 @@ static int rarch_main_iterate_nbio_parse(nbio_handle_t *nbio)
  **/
 
 #ifdef HAVE_MENU
-static void rarch_main_iterate_rdl(void)
+static void rarch_main_data_rdl_iterate(void)
 {
    if (!driver.menu->rdl)
       return;
@@ -562,7 +561,7 @@ static void rarch_main_iterate_rdl(void)
 }
 #endif
 
-void do_data_nbio_state_checks(nbio_handle_t *nbio)
+static void rarch_main_data_nbio_iterate(nbio_handle_t *nbio)
 {
    if (!nbio)
       return;
@@ -571,56 +570,64 @@ void do_data_nbio_state_checks(nbio_handle_t *nbio)
    {
       if (!nbio->is_blocking)
       {
-         if (rarch_main_iterate_nbio_transfer(nbio) == -1)
-            rarch_main_iterate_nbio_parse(nbio);
+         if (rarch_main_data_nbio_iterate_transfer(nbio) == -1)
+            rarch_main_data_nbio_iterate_parse(nbio);
       }
       else if (nbio->is_finished)
-         rarch_main_iterate_nbio_parse_free(nbio);
+         rarch_main_data_nbio_iterate_parse_free(nbio);
    }
    else
-      rarch_main_iterate_nbio_poll(nbio);
+      rarch_main_data_nbio_iterate_poll(nbio);
 
    if (nbio->image.handle)
    {
       if (nbio->image.is_blocking_on_processing)
       {
-         if (rarch_main_iterate_image_processing_transfer(nbio) == -1)
-            rarch_main_iterate_image_process_parse(nbio);
+         if (rarch_main_data_image_iterate_process_transfer(nbio) == -1)
+            rarch_main_data_image_iterate_process_transfer_parse(nbio);
       }
       else if (!nbio->image.is_blocking)
       {
-         if (rarch_main_iterate_image_transfer(nbio) == -1)
-            rarch_main_iterate_image_parse(nbio);
+         if (rarch_main_data_image_iterate_transfer(nbio) == -1)
+            rarch_main_data_image_iterate_transfer_parse(nbio);
       }
       else if (nbio->image.is_finished)
-         rarch_main_iterate_image_parse_free(nbio);
+         rarch_main_data_image_iterate_parse_free(nbio);
    }
    else
-      rarch_main_iterate_image_poll(nbio);
+      rarch_main_data_image_iterate_poll(nbio);
 }
 
-void do_data_state_checks(void)
+static void rarch_main_data_http_iterate(http_handle_t *http)
 {
-   do_data_nbio_state_checks(&g_runloop.data.nbio);
-
 #ifdef HAVE_NETWORKING
-   if (g_runloop.data.http.connection.handle)
+   if (http->connection.handle)
    {
-      if (!rarch_main_iterate_http_conn_transfer())
-         rarch_main_iterate_http_conn_parse();
+      if (!rarch_main_data_http_con_iterate_transfer())
+         rarch_main_data_http_conn_iterate_transfer_parse();
    }
 
-   if (g_runloop.data.http.handle)
+   if (http->handle)
    {
-      if (!rarch_main_iterate_http_transfer())
-         rarch_main_iterate_http_parse();
+      if (!rarch_main_data_http_iterate_transfer())
+         rarch_main_data_http_iterate_transfer_parse();
    }
    else
-      rarch_main_iterate_http_poll();
+      rarch_main_data_http_iterate_poll();
 #endif
+}
 
+static void rarch_main_data_db_iterate(void)
+{
 #ifdef HAVE_MENU
    if (driver.menu && driver.menu->rdl)
-      rarch_main_iterate_rdl();
+      rarch_main_data_rdl_iterate();
 #endif
+}
+
+void rarch_main_data_iterate(void)
+{
+   rarch_main_data_nbio_iterate(&g_runloop.data.nbio);
+   rarch_main_data_http_iterate(&g_runloop.data.http);
+   rarch_main_data_db_iterate();
 }

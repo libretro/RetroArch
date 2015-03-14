@@ -430,6 +430,21 @@ typedef struct nbio_handle
    msg_queue_t *msg_queue;
 } nbio_handle_t;
 
+#ifdef HAVE_NETWORKING
+typedef struct http_handle
+{
+   struct
+   {
+      struct http_connection_t *handle;
+      transfer_cb_t  cb;
+      char elem1[PATH_MAX_LENGTH];
+   } connection;
+   msg_queue_t *msg_queue;
+   struct http_t *handle;
+   transfer_cb_t  cb;
+} http_handle_t;
+#endif
+
 /* All runloop-related globals go here. */
 
 struct runloop
@@ -443,18 +458,7 @@ struct runloop
    struct
    {
 #ifdef HAVE_NETWORKING
-      struct
-      {
-         struct
-         {
-            struct http_connection_t *handle;
-            transfer_cb_t  cb;
-            char elem1[PATH_MAX_LENGTH];
-         } connection;
-         msg_queue_t *msg_queue;
-         struct http_t *handle;
-         transfer_cb_t  cb;
-      } http;
+      http_handle_t http;
 #endif
 
 #ifdef HAVE_LIBRETRODB
