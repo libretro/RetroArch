@@ -593,20 +593,15 @@ bool png_reverse_filter_loop(struct rpng_t *rpng,
       uint32_t **data)
 {
    int ret = 0;
-   const struct png_ihdr *ihdr = NULL;
-   struct rpng_process_t *pngp = NULL;
 
    if (!rpng)
       return false;
 
-   ihdr = &rpng->ihdr;
-   pngp = &rpng->process;
-
-   if (!ihdr || !pngp)
-      return false;
-
    do
    {
+      const struct png_ihdr *ihdr = &rpng->ihdr;
+      struct rpng_process_t *pngp = &rpng->process;
+
       if (ihdr->interlace)
          ret = png_reverse_filter_adam7(data, ihdr, pngp);
       else
