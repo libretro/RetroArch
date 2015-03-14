@@ -626,3 +626,49 @@ bool png_reverse_filter_loop(struct rpng_t *rpng,
 
    return true;
 }
+
+bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
+      uint32_t **data, unsigned *width, unsigned *height)
+{
+   rpng->process.inflate_buf_size = 0;
+   rpng->process.inflate_buf      = NULL;
+
+   if (inflateInit(&rpng->process.stream) != Z_OK)
+      return false;
+
+   png_pass_geom(&rpng->ihdr, rpng->ihdr.width,
+         rpng->ihdr.height, NULL, NULL, &rpng->process.inflate_buf_size);
+   if (rpng->ihdr.interlace == 1) /* To be sure. */
+      rpng->process.inflate_buf_size *= 2;
+
+   rpng->process.inflate_buf = (uint8_t*)malloc(rpng->process.inflate_buf_size);
+   if (!rpng->process.inflate_buf)
+      return false;
+
+   rpng->process.stream.next_in   = rpng->idat_buf.data;
+   rpng->process.stream.avail_in  = rpng->idat_buf.size;
+   rpng->process.stream.avail_out = rpng->process.inflate_buf_size;
+   rpng->process.stream.next_out  = rpng->process.inflate_buf;
+
+   if (inflate(&rpng->process.stream, Z_FINISH) != Z_STREAM_END)
+   {
+      inflateEnd(&rpng->process.stream);
+      return false;
+   }
+   inflateEnd(&rpng->process.stream);
+
+   *width  = rpng->ihdr.width;
+   *height = rpng->ihdr.height;
+#ifdef GEKKO
+   /* we often use these in textures, make sure they're 32-byte aligned */
+   *data = (uint32_t*)memalign(32, rpng->ihdr.width * 
+         rpng->ihdr.height * sizeof(uint32_t));
+#else
+   *data = (uint32_t*)malloc(rpng->ihdr.width * 
+         rpng->ihdr.height * sizeof(uint32_t));
+#endif
+   if (!*data)
+      return false;
+
+   return true;
+}

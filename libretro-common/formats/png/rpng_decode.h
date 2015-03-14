@@ -45,4 +45,7 @@ int png_reverse_filter_regular_loop(uint32_t **data,
 bool png_reverse_filter_loop(struct rpng_t *rpng,
       uint32_t **data);
 
+bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
+      uint32_t **data, unsigned *width, unsigned *height);
+
 #endif

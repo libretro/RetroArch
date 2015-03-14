@@ -257,38 +257,8 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    if (!rpng.has_ihdr || !rpng.has_idat || !rpng.has_iend)
       GOTO_END_ERROR();
 
-   if (inflateInit(&rpng.process.stream) != Z_OK)
-      GOTO_END_ERROR();
-
-   png_pass_geom(&rpng.ihdr, rpng.ihdr.width, rpng.ihdr.height, NULL, NULL, &rpng.process.inflate_buf_size);
-   if (rpng.ihdr.interlace == 1) /* To be sure. */
-      rpng.process.inflate_buf_size *= 2;
-
-   rpng.process.inflate_buf = (uint8_t*)malloc(rpng.process.inflate_buf_size);
-   if (!rpng.process.inflate_buf)
-      GOTO_END_ERROR();
-
-   rpng.process.stream.next_in   = rpng.idat_buf.data;
-   rpng.process.stream.avail_in  = rpng.idat_buf.size;
-   rpng.process.stream.avail_out = rpng.process.inflate_buf_size;
-   rpng.process.stream.next_out  = rpng.process.inflate_buf;
-
-   if (inflate(&rpng.process.stream, Z_FINISH) != Z_STREAM_END)
-   {
-      inflateEnd(&rpng.process.stream);
-      GOTO_END_ERROR();
-   }
-   inflateEnd(&rpng.process.stream);
-
-   *width  = rpng.ihdr.width;
-   *height = rpng.ihdr.height;
-#ifdef GEKKO
-   /* we often use these in textures, make sure they're 32-byte aligned */
-   *data = (uint32_t*)memalign(32, rpng.ihdr.width * rpng.ihdr.height * sizeof(uint32_t));
-#else
-   *data = (uint32_t*)malloc(rpng.ihdr.width * rpng.ihdr.height * sizeof(uint32_t));
-#endif
-   if (!*data)
+   if (!rpng_load_image_argb_process_init(&rpng, data, width,
+            height))
       GOTO_END_ERROR();
 
    if (!png_reverse_filter_loop(&rpng, data))
