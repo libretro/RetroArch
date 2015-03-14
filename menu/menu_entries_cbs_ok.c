@@ -284,10 +284,8 @@ static int action_ok_core_updater_list(const char *path,
    fill_pathname_join(url_path, g_settings.network.buildbot_url,
          ".index", sizeof(url_path));
 
-   strlcat(url_path, "|cb_core_updater_list", sizeof(url_path));
-
    msg_queue_clear(g_runloop.data.http.msg_queue);
-   msg_queue_push(g_runloop.data.http.msg_queue, url_path, 0, 1);
+   msg_queue_push_string_list(g_runloop.data.http.msg_queue, url_path, "cb_core_updater_list", 0, 1);
 #endif
 
    return menu_list_push_stack_refresh(
@@ -424,10 +422,9 @@ static int action_ok_menu_wallpaper_load(const char *path,
    if (path_file_exists(wallpaper_path))
    {
       strlcpy(g_settings.menu.wallpaper, wallpaper_path, sizeof(g_settings.menu.wallpaper));
-      strlcat(wallpaper_path, "|cb_menu_wallpaper", sizeof(wallpaper_path));
 
       msg_queue_clear(g_runloop.data.nbio.image.msg_queue);
-      msg_queue_push(g_runloop.data.nbio.image.msg_queue, wallpaper_path, 0, 1);
+      msg_queue_push_string_list(g_runloop.data.nbio.image.msg_queue, wallpaper_path, "cb_menu_wallpaper", 0, 1);
    }
 
    menu_list_pop_stack_by_needle(menu->menu_list, setting->name);
@@ -893,6 +890,7 @@ static int action_ok_core_updater_download(const char *path,
 {
 #ifdef HAVE_NETWORKING
    char core_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
+
    fill_pathname_join(core_path, g_settings.network.buildbot_url,
          path, sizeof(core_path));
 
@@ -902,10 +900,8 @@ static int action_ok_core_updater_download(const char *path,
    msg_queue_clear(g_runloop.msg_queue);
    msg_queue_push(g_runloop.msg_queue, msg, 1, 90);
 
-   strlcat(core_path, "|cb_core_updater_download", sizeof(core_path));
-
    msg_queue_clear(g_runloop.data.http.msg_queue);
-   msg_queue_push(g_runloop.data.http.msg_queue, core_path, 0, 1);
+   msg_queue_push_string_list(g_runloop.data.http.msg_queue, core_path, "cb_core_updater_download", 0, 1);
 #endif
    return 0;
 }

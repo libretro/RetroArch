@@ -24,6 +24,7 @@
 #include <string.h>
 #include <boolean.h>
 #include <queues/message_queue.h>
+#include <compat/strl.h>
 #include <compat/posix_string.h>
 
 struct queue_elem
@@ -86,6 +87,7 @@ void msg_queue_free(msg_queue_t *queue)
    free(queue);
 }
 
+
 /**
  * msg_queue_push:
  * @queue             : pointer to queue object
@@ -130,6 +132,18 @@ void msg_queue_push(msg_queue_t *queue, const char *msg,
 
       tmp_ptr >>= 1;
    }
+}
+
+void msg_queue_push_string_list(msg_queue_t *queue, const char *msg,
+      const char *msg2, unsigned prio, unsigned duration)
+{
+   char new_msg[8192];
+
+   strlcpy(new_msg, msg,  sizeof(new_msg));
+   strlcat(new_msg, "|",  sizeof(new_msg));
+   strlcat(new_msg, msg2, sizeof(new_msg));
+
+   msg_queue_push(queue, new_msg, prio, duration);
 }
 
 /**
