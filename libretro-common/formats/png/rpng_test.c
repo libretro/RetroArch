@@ -30,9 +30,18 @@
 #include <Imlib2.h>
 #endif
 
+enum image_process_code
+{
+   IMAGE_PROCESS_ERROR     = -2,
+   IMAGE_PROCESS_ERROR_END = -1,
+   IMAGE_PROCESS_NEXT      =  0,
+   IMAGE_PROCESS_END       =  1,
+};
+
 static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
+   int retval;
    size_t file_len;
    bool ret = true;
    struct rpng_t *rpng = NULL;
@@ -96,7 +105,13 @@ static bool rpng_nbio_load_image_argb(const char *path, uint32_t **data,
       goto end;
    }
    
-   rpng_nbio_load_image_argb_process(rpng, data, width, height);
+   do
+   {
+      retval = rpng_nbio_load_image_argb_process(rpng, data, width, height);
+   }while(retval == IMAGE_PROCESS_NEXT);
+
+   if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
+      ret = false;
 
 end:
    if (handle)
