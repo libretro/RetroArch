@@ -21,11 +21,6 @@ int cb_core_updater_download(void *data_, size_t len);
 int cb_core_updater_list(void *data_, size_t len);
 
 /**
- * HTTP
- *
- **/
-
-/**
  * rarch_main_data_http_iterate_transfer:
  *
  * Resumes HTTP transfer update.
@@ -265,11 +260,6 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
 }
 #endif
 
-/**
- * IMAGES
- *
- **/
-
 static int rarch_main_data_image_iterate_poll(nbio_handle_t *nbio)
 {
    const char *path    = NULL;
@@ -384,11 +374,6 @@ static int rarch_main_data_image_iterate_transfer_parse(nbio_handle_t *nbio)
 
    return 0;
 }
-
-/**
- * NBIO
- *
- **/
 
 static int cb_nbio_default(void *data, size_t len)
 {
@@ -525,12 +510,6 @@ static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
 
    return 0;
 }
-
-/**
- *
- * RDB
- *
- **/
 
 #ifdef HAVE_MENU
 static void rarch_main_data_rdl_iterate(void)
