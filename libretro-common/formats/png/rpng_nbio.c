@@ -191,26 +191,17 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf, struct rpng_t *rpng)
    return true;
 }
 
-bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
+int rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
-   int retval = 0;
-
    if (!rpng->process.initialized)
    {
       if (!rpng_load_image_argb_process_init(rpng, data, width,
                height))
-         return false;
+         return PNG_PROCESS_ERROR;
    }
 
-   do{
-      retval = png_reverse_filter_iterate(rpng, data);
-   }while(retval == PNG_PROCESS_NEXT);
-
-   if (retval == PNG_PROCESS_ERROR || retval == PNG_PROCESS_ERROR_END)
-      return false;
-
-   return true;
+   return png_reverse_filter_iterate(rpng, data);
 }
 
 void rpng_nbio_load_image_free(struct rpng_t *rpng)

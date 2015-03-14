@@ -166,10 +166,7 @@ static int rarch_main_iterate_http_poll(void)
 #ifdef HAVE_MENU
 static int cb_image_menu_wallpaper(void *data, size_t len)
 {
-   uint32_t **pixels   = NULL;
-   unsigned *width     = NULL;
-   unsigned *height    = NULL;
-   
+   int retval;
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
    if (!nbio || !data)
@@ -180,11 +177,13 @@ static int cb_image_menu_wallpaper(void *data, size_t len)
          !nbio->image.handle->has_iend)
       return -1;
 
-   pixels  = &nbio->image.ti.pixels;
-   width   = &nbio->image.ti.width;
-   height  = &nbio->image.ti.height;
+   do{
+      retval = rpng_nbio_load_image_argb_process(nbio->image.handle,
+            &nbio->image.ti.pixels, &nbio->image.ti.width, &nbio->image.ti.height);
+   }while(retval == IMAGE_PROCESS_NEXT);
 
-   rpng_nbio_load_image_argb_process(nbio->image.handle, pixels, width, height);
+   if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
+      return -1;
 
    if (driver.menu_ctx && driver.menu_ctx->load_background)
       driver.menu_ctx->load_background(&nbio->image.ti);
@@ -525,7 +524,13 @@ void do_data_nbio_state_checks(nbio_handle_t *nbio)
 
    if (nbio->image.handle)
    {
-      if (!nbio->image.is_blocking)
+#if 0
+      if (nbio->image.is_blocking_on_processing)
+      {
+      }
+      else
+#endif
+         if (!nbio->image.is_blocking)
       {
          if (rarch_main_iterate_image_transfer(nbio) == -1)
             rarch_main_iterate_image_parse(nbio);

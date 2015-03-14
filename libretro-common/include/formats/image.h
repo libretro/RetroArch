@@ -23,6 +23,14 @@
 #include <formats/rpng.h>
 #include <formats/tga.h>
 
+enum image_process_code
+{
+   IMAGE_PROCESS_ERROR     = -2,
+   IMAGE_PROCESS_ERROR_END = -1,
+   IMAGE_PROCESS_NEXT      =  0,
+   IMAGE_PROCESS_END       =  1,
+};
+
 struct texture_image
 {
    unsigned width;
