@@ -33,14 +33,7 @@ enum png_process_code
 
 enum png_chunk_type png_chunk_type(const struct png_chunk *chunk);
 
-void png_pass_geom(const struct png_ihdr *ihdr,
-      unsigned width, unsigned height,
-      unsigned *bpp_out, unsigned *pitch_out, size_t *pass_size);
-
 bool png_process_ihdr(struct png_ihdr *ihdr);
-
-int png_reverse_filter_init(const struct png_ihdr *ihdr,
-      struct rpng_process_t *pngp);
 
 int png_reverse_filter_iterate(struct rpng_t *rpng,
       uint32_t **data);

@@ -236,7 +236,7 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
    }
 }
 
-void png_pass_geom(const struct png_ihdr *ihdr,
+static void png_pass_geom(const struct png_ihdr *ihdr,
       unsigned width, unsigned height,
       unsigned *bpp_out, unsigned *pitch_out, size_t *pass_size)
 {
@@ -321,7 +321,7 @@ static const struct adam7_pass passes[] = {
    { 0, 1, 1, 2 },
 };
 
-int png_reverse_filter_init(const struct png_ihdr *ihdr,
+static int png_reverse_filter_init(const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
    size_t pass_size;
