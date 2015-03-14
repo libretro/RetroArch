@@ -57,7 +57,7 @@ static int rarch_main_data_http_conn_iterate_transfer_parse(http_handle_t *http)
    if (net_http_connection_done(http->connection.handle))
    {
       if (http->connection.handle && http->connection.cb)
-         http->connection.cb(http->connection.handle, 0);
+         http->connection.cb(http, 0);
    }
    
    net_http_connection_free(http->connection.handle);
@@ -85,22 +85,27 @@ static int rarch_main_data_http_iterate_transfer_parse(http_handle_t *http)
 
 static int cb_http_conn_default(void *data_, size_t len)
 {
-   g_runloop.data.http.handle = net_http_new(g_runloop.data.http.connection.handle);
+   http_handle_t *http = (http_handle_t*)data_;
 
-   if (!g_runloop.data.http.handle)
+   if (!http)
+      return -1;
+
+   http->handle = net_http_new(http->connection.handle);
+
+   if (!http->handle)
    {
       RARCH_ERR("Could not create new HTTP session handle.\n");
       return -1;
    }
 
-   g_runloop.data.http.cb     = NULL;
+   http->cb     = NULL;
 
-   if (g_runloop.data.http.connection.elem1[0] != '\0')
+   if (http->connection.elem1[0] != '\0')
    {
-      if (!strcmp(g_runloop.data.http.connection.elem1, "cb_core_updater_download"))
-         g_runloop.data.http.cb = &cb_core_updater_download;
-      if (!strcmp(g_runloop.data.http.connection.elem1, "cb_core_updater_list"))
-         g_runloop.data.http.cb = &cb_core_updater_list;
+      if (!strcmp(http->connection.elem1, "cb_core_updater_download"))
+         http->cb = &cb_core_updater_download;
+      if (!strcmp(http->connection.elem1, "cb_core_updater_list"))
+         http->cb = &cb_core_updater_list;
    }
 
    return 0;
