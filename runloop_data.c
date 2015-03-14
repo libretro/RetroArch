@@ -601,6 +601,9 @@ static void rarch_main_data_nbio_iterate(nbio_handle_t *nbio)
 static void rarch_main_data_http_iterate(http_handle_t *http)
 {
 #ifdef HAVE_NETWORKING
+   if (!http)
+      return;
+
    if (http->connection.handle)
    {
       if (!rarch_main_data_http_con_iterate_transfer())
