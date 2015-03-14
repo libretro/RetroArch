@@ -39,18 +39,18 @@
 #define NORMAL_COLOR 0x7FFF
 #define TITLE_COLOR HOVER_COLOR
 #else
-#define HOVER_COLOR (argb32_to_argb4444(g_settings.menu.entry_hover_color))
-#define NORMAL_COLOR (argb32_to_argb4444(g_settings.menu.entry_normal_color))
-#define TITLE_COLOR (argb32_to_argb4444(g_settings.menu.title_color))
+#define HOVER_COLOR (argb32_to_rgba4444(g_settings.menu.entry_hover_color))
+#define NORMAL_COLOR (argb32_to_rgba4444(g_settings.menu.entry_normal_color))
+#define TITLE_COLOR (argb32_to_rgba4444(g_settings.menu.title_color))
 #endif
 
-static inline uint16_t argb32_to_argb4444(uint32_t col)
+static inline uint16_t argb32_to_rgba4444(uint32_t col)
 {
    unsigned r = (col & 0xff) >> 4;
    unsigned g = ((col >> 8) & 0xff) >> 4;
    unsigned b = ((col >> 16) & 0xff) >> 4;
    unsigned a = ((col >> 24) & 0xff) >> 4;
-   return r | g << 4  | b << 8 | a << 12;
+   return (r << 12) | (g << 8)  | (b << 4) | a;
 }
 
 static int rgui_entry_iterate(unsigned action)
