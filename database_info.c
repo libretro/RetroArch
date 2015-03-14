@@ -80,8 +80,12 @@ void database_info_write_rdl_free(database_info_rdl_handle_t *dbl)
 {
    if (!dbl)
       return;
+
    string_list_free(dbl->list);
    free(dbl);
+
+   msg_queue_clear(g_runloop.msg_queue);
+   msg_queue_push(g_runloop.msg_queue, "Scanning of directory finished.\n", 1, 180);
 }
 
 int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl)

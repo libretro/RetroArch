@@ -531,9 +531,6 @@ static void rarch_main_data_rdl_iterate(void)
 #ifdef HAVE_LIBRETRODB
    if (!driver.menu->rdl->iterating)
    {
-      msg_queue_clear(g_runloop.msg_queue);
-      msg_queue_push(g_runloop.msg_queue, "Scanning of directory finished.\n", 1, 180);
-
       database_info_write_rdl_free(driver.menu->rdl);
       driver.menu->rdl = NULL;
       return;
