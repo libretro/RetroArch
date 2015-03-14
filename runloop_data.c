@@ -28,11 +28,11 @@ int cb_core_updater_list(void *data_, size_t len);
  * Returns: 0 when finished, -1 when we should continue
  * with the transfer on the next frame.
  **/
-static int rarch_main_data_http_iterate_transfer(void)
+static int rarch_main_data_http_iterate_transfer(http_handle_t *http)
 {
    size_t pos = 0, tot = 0;
 
-   if (!net_http_update(g_runloop.data.http.handle, &pos, &tot))
+   if (!net_http_update(http->handle, &pos, &tot))
    {
 #ifdef _WIN32
 		RARCH_LOG("%.9I64u / %.9I64u       \r", (unsigned long long)pos, (unsigned long long)tot);
@@ -45,40 +45,40 @@ static int rarch_main_data_http_iterate_transfer(void)
    return 0;
 }
 
-static int rarch_main_data_http_con_iterate_transfer(void)
+static int rarch_main_data_http_con_iterate_transfer(http_handle_t *http)
 {
-   if (!net_http_connection_iterate(g_runloop.data.http.connection.handle))
+   if (!net_http_connection_iterate(http->connection.handle))
       return -1;
    return 0;
 }
 
-static int rarch_main_data_http_conn_iterate_transfer_parse(void)
+static int rarch_main_data_http_conn_iterate_transfer_parse(http_handle_t *http)
 {
-   if (net_http_connection_done(g_runloop.data.http.connection.handle))
+   if (net_http_connection_done(http->connection.handle))
    {
-      if (g_runloop.data.http.connection.handle && g_runloop.data.http.connection.cb)
-         g_runloop.data.http.connection.cb(g_runloop.data.http.connection.handle, 0);
+      if (http->connection.handle && http->connection.cb)
+         http->connection.cb(http->connection.handle, 0);
    }
    
-   net_http_connection_free(g_runloop.data.http.connection.handle);
+   net_http_connection_free(http->connection.handle);
 
-   g_runloop.data.http.connection.handle = NULL;
+   http->connection.handle = NULL;
 
    return 0;
 }
 
-static int rarch_main_data_http_iterate_transfer_parse(void)
+static int rarch_main_data_http_iterate_transfer_parse(http_handle_t *http)
 {
    size_t len;
-   char *data = (char*)net_http_data(g_runloop.data.http.handle, &len, false);
+   char *data = (char*)net_http_data(http->handle, &len, false);
 
-   if (data && g_runloop.data.http.cb)
-      g_runloop.data.http.cb(data, len);
+   if (data && http->cb)
+      http->cb(data, len);
 
-   net_http_delete(g_runloop.data.http.handle);
+   net_http_delete(http->handle);
 
-   g_runloop.data.http.handle = NULL;
-   msg_queue_clear(g_runloop.data.http.msg_queue);
+   http->handle = NULL;
+   msg_queue_clear(http->msg_queue);
 
    return 0;
 }
@@ -119,17 +119,17 @@ static int cb_http_conn_default(void *data_, size_t len)
  * begin transferring on the next frame. Returns -1 if
  * no HTTP URL has been pulled. Do nothing in that case.
  **/
-static int rarch_main_data_http_iterate_poll(void)
+static int rarch_main_data_http_iterate_poll(http_handle_t *http)
 {
    char elem0[PATH_MAX_LENGTH];
    struct string_list *str_list = NULL;
-   const char *url = msg_queue_pull(g_runloop.data.http.msg_queue);
+   const char *url = msg_queue_pull(http->msg_queue);
 
    if (!url)
       return -1;
 
    /* Can only deal with one HTTP transfer at a time for now */
-   if (g_runloop.data.http.handle)
+   if (http->handle)
       return -1; 
 
    str_list         = string_split(url, "|"); 
@@ -140,17 +140,17 @@ static int rarch_main_data_http_iterate_poll(void)
    if (str_list->size > 0)
       strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
 
-   g_runloop.data.http.connection.handle = net_http_connection_new(elem0);
+   http->connection.handle = net_http_connection_new(elem0);
 
-   if (!g_runloop.data.http.connection.handle)
+   if (!http->connection.handle)
       return -1;
 
-   g_runloop.data.http.connection.cb     = &cb_http_conn_default;
+   http->connection.cb     = &cb_http_conn_default;
 
    if (str_list->size > 1)
-      strlcpy(g_runloop.data.http.connection.elem1,
+      strlcpy(http->connection.elem1,
             str_list->elems[1].data,
-            sizeof(g_runloop.data.http.connection.elem1));
+            sizeof(http->connection.elem1));
 
    string_list_free(str_list);
    
@@ -585,17 +585,17 @@ static void rarch_main_data_http_iterate(http_handle_t *http)
 
    if (http->connection.handle)
    {
-      if (!rarch_main_data_http_con_iterate_transfer())
-         rarch_main_data_http_conn_iterate_transfer_parse();
+      if (!rarch_main_data_http_con_iterate_transfer(http))
+         rarch_main_data_http_conn_iterate_transfer_parse(http);
    }
 
    if (http->handle)
    {
-      if (!rarch_main_data_http_iterate_transfer())
-         rarch_main_data_http_iterate_transfer_parse();
+      if (!rarch_main_data_http_iterate_transfer(http))
+         rarch_main_data_http_iterate_transfer_parse(http);
    }
    else
-      rarch_main_data_http_iterate_poll();
+      rarch_main_data_http_iterate_poll(http);
 #endif
 }
 
