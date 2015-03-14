@@ -325,9 +325,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
       const char *config_path,
       struct overlay *overlay, unsigned idx)
 {
-   size_t i;
-
-   for (i = 0; i < overlay->pos_increment; i++)
+   do
    {
       bool not_done = overlay->pos < overlay->size;
       if (!not_done)
@@ -353,7 +351,7 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
          overlay->load_images[overlay->load_images_size++] = overlay->descs[overlay->pos].image;
       }
       overlay->pos ++;
-   }
+   }while(overlay->pos < overlay->pos_increment);
 
    return true;
 
@@ -507,6 +505,7 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
       case OVERLAY_IMAGE_TRANSFER_DONE:
          input_overlay_load_overlay_image_done(&ol->overlays[ol->pos]);
          ol->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_ITERATE;
+         ol->overlays[ol->pos].pos = 0;
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_ITERATE:
          if (!input_overlay_load_overlay(ol, 
