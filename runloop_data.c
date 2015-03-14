@@ -191,10 +191,12 @@ static int cb_image_menu_wallpaper(void *data, size_t len)
 
    texture_image_free(&nbio->image.ti);
 
-   nbio->image.is_blocking   = true;
-   nbio->image.is_finished   = true;
-   nbio->is_blocking    = true;
-   nbio->is_finished    = true;
+   nbio->image.is_blocking                       = true;
+   nbio->image.is_blocking_on_processing         = true;
+   nbio->image.is_finished                       = true;
+   nbio->image.is_finished_with_processing       = false;
+   nbio->is_blocking                             = true;
+   nbio->is_finished                             = true;
 
    return 0;
 }

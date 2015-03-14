@@ -405,7 +405,9 @@ typedef struct nbio_image_handle
 {
    struct texture_image ti;
    bool is_blocking;
+   bool is_blocking_on_processing;
    bool is_finished;
+   bool is_finished_with_processing;
    transfer_cb_t  cb;
    struct rpng_t *handle;
    unsigned pos_increment;
