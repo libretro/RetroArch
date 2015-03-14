@@ -580,6 +580,7 @@ int png_reverse_filter_iterate(struct rpng_t *rpng,
 bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
+   int zstatus;
    rpng->process.inflate_buf_size = 0;
    rpng->process.inflate_buf      = NULL;
 
@@ -600,11 +601,19 @@ bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
    rpng->process.stream.avail_out = rpng->process.inflate_buf_size;
    rpng->process.stream.next_out  = rpng->process.inflate_buf;
 
-   if (inflate(&rpng->process.stream, Z_FINISH) != Z_STREAM_END)
+   do
    {
-      inflateEnd(&rpng->process.stream);
-      return false;
-   }
+      zstatus = inflate(&rpng->process.stream, Z_NO_FLUSH);
+      if (zstatus == Z_STREAM_END)
+         break;
+      if (zstatus != Z_OK && zstatus != Z_BUF_ERROR)
+      {
+         inflateEnd(&rpng->process.stream);
+         return false;
+      }
+   } while(rpng->process.stream.avail_in > 0
+         && rpng->process.stream.avail_out > 0);
+
    inflateEnd(&rpng->process.stream);
 
    *width  = rpng->ihdr.width;
