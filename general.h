@@ -403,7 +403,9 @@ typedef int (*transfer_cb_t               )(void *data, size_t len);
 
 typedef struct nbio_image_handle
 {
+#ifndef IS_SALAMANDER
    struct texture_image ti;
+#endif
    bool is_blocking;
    bool is_blocking_on_processing;
    bool is_finished;

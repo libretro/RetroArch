@@ -579,9 +579,9 @@ static void rarch_main_data_nbio_iterate(nbio_handle_t *nbio)
       rarch_main_data_image_iterate_poll(nbio);
 }
 
+#ifdef HAVE_NETWORKING
 static void rarch_main_data_http_iterate(http_handle_t *http)
 {
-#ifdef HAVE_NETWORKING
    if (!http)
       return;
 
@@ -598,8 +598,8 @@ static void rarch_main_data_http_iterate(http_handle_t *http)
    }
    else
       rarch_main_data_http_iterate_poll(http);
-#endif
 }
+#endif
 
 static void rarch_main_data_db_iterate(void)
 {
@@ -612,6 +612,8 @@ static void rarch_main_data_db_iterate(void)
 void rarch_main_data_iterate(void)
 {
    rarch_main_data_nbio_iterate(&g_runloop.data.nbio);
+#ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate(&g_runloop.data.http);
+#endif
    rarch_main_data_db_iterate();
 }
