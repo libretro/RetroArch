@@ -321,20 +321,12 @@ end:
    return ret;
 }
 
-static bool input_overlay_load_overlay(input_overlay_t *ol,
+static int input_overlay_load_overlay(input_overlay_t *ol,
       const char *config_path,
       struct overlay *overlay, unsigned idx)
 {
-   do
+   if(overlay->pos < overlay->size)
    {
-      bool not_done = overlay->pos < overlay->size;
-      if (!not_done)
-      {
-         overlay->pos   = 0;
-         ol->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_DONE;
-         return true;
-      }
-
       if (!input_overlay_load_desc(ol, &overlay->descs[overlay->pos], idx, overlay->pos,
                overlay->image.width, overlay->image.height,
                overlay->config.normalized,
@@ -351,12 +343,18 @@ static bool input_overlay_load_overlay(input_overlay_t *ol,
          overlay->load_images[overlay->load_images_size++] = overlay->descs[overlay->pos].image;
       }
       overlay->pos ++;
-   }while(overlay->pos < overlay->pos_increment);
+   }
+   else
+   {
+      overlay->pos   = 0;
+      ol->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_DONE;
+      return 1;
+   }
 
-   return true;
+   return 0;
 
 error:
-   return false;
+   return -1;
 }
 
 static ssize_t input_overlay_find_index(const struct overlay *ol,
@@ -483,6 +481,7 @@ static bool input_overlay_load_overlay_image_done(struct overlay *overlay)
 
 bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
 {
+   size_t i = 0;
    bool not_done = true;
 
    if (!ol)
@@ -508,11 +507,22 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
          ol->overlays[ol->pos].pos = 0;
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_ITERATE:
-         if (!input_overlay_load_overlay(ol, 
-                  ol->overlay_path, &ol->overlays[ol->pos], ol->pos))
          {
-            RARCH_ERR("[Overlay]: Failed to load overlay #%u.\n", (unsigned)ol->pos);
-            goto error;
+            struct overlay *overlay = &ol->overlays[ol->pos];
+            for (i = 0; i < overlay->pos_increment; i++)
+            {
+               int ret = input_overlay_load_overlay(ol, 
+                     ol->overlay_path, overlay, ol->pos);
+
+               if (ret == -1)
+               {
+                  RARCH_ERR("[Overlay]: Failed to load overlay #%u.\n", (unsigned)ol->pos);
+                  goto error;
+               }
+
+               if (ret == 1)
+                  break;
+            }
          }
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_DONE:
