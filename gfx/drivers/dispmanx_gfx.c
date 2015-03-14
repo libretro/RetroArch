@@ -209,9 +209,9 @@ void vsync_callback (DISPMANX_UPDATE_HANDLE_T u, void *data){
 		
 	// We mark as free the page that was visible until now
 	if (page->dispvars->currentPage != NULL) {
-		pthread_mutex_lock (&page->page_used_mutex);
+		pthread_mutex_lock(&page->dispvars->currentPage->page_used_mutex);
 		page->dispvars->currentPage->used = false;
-		pthread_mutex_unlock (&page->page_used_mutex);
+		pthread_mutex_unlock(&page->dispvars->currentPage->page_used_mutex);
 	}
 	
 	// The page on which we just issued the flip that caused this callback becomes the visible one
