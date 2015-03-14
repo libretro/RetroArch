@@ -22,6 +22,7 @@
 #include "../libretro.h"
 #include <formats/image.h>
 #include <retro_miscellaneous.h>
+#include <file/config_file.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -190,6 +191,7 @@ struct input_overlay
 
    unsigned next_index;
    char *overlay_path;
+   config_file_t *conf;
 
    enum overlay_status state;
 
