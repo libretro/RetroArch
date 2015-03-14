@@ -64,6 +64,7 @@ struct png_ihdr
 struct rpng_process_t
 {
    bool initialized;
+   bool inflate_initialized;
    bool adam7_pass_initialized;
    bool pass_initialized;
    uint32_t *data;
@@ -114,6 +115,9 @@ bool rpng_nbio_load_image_argb_iterate(uint8_t *buf,
       struct rpng_t *rpng);
 
 int rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
+      uint32_t **data, unsigned *width, unsigned *height);
+
+int rpng_load_image_argb_process_inflate_init(struct rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height);
 
 bool rpng_nbio_load_image_argb_start(struct rpng_t *rpng);

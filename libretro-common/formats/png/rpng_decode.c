@@ -577,10 +577,64 @@ int png_reverse_filter_iterate(struct rpng_t *rpng,
    return png_reverse_filter_regular_iterate(data, &rpng->ihdr, &rpng->process);
 }
 
-bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
+int rpng_load_image_argb_process_inflate_init(struct rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
    int zstatus;
+   bool to_continue = (rpng->process.stream.avail_in > 0
+         && rpng->process.stream.avail_out > 0);
+
+   if (!to_continue)
+      goto end;
+
+   zstatus = inflate(&rpng->process.stream, Z_NO_FLUSH);
+
+   if (zstatus == Z_STREAM_END)
+      goto end;
+
+   if (zstatus != Z_OK && zstatus != Z_BUF_ERROR)
+      goto error;
+
+   return 0;
+
+end:
+   inflateEnd(&rpng->process.stream);
+
+   *width  = rpng->ihdr.width;
+   *height = rpng->ihdr.height;
+#ifdef GEKKO
+   /* we often use these in textures, make sure they're 32-byte aligned */
+   *data = (uint32_t*)memalign(32, rpng->ihdr.width * 
+         rpng->ihdr.height * sizeof(uint32_t));
+#else
+   *data = (uint32_t*)malloc(rpng->ihdr.width * 
+         rpng->ihdr.height * sizeof(uint32_t));
+#endif
+   if (!*data)
+      goto false_end;
+
+   rpng->process.adam7_restore_buf_size = 0;
+   rpng->process.restore_buf_size = 0;
+   rpng->process.palette = rpng->palette;
+
+   if (rpng->ihdr.interlace != 1)
+      if (png_reverse_filter_init(&rpng->ihdr, &rpng->process) == -1)
+         goto false_end;
+
+   rpng->process.inflate_initialized = true;
+   return 1;
+
+error:
+   inflateEnd(&rpng->process.stream);
+
+false_end:
+   rpng->process.inflate_initialized = false;
+   return -1;
+}
+
+bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
+      uint32_t **data, unsigned *width, unsigned *height)
+{
    rpng->process.inflate_buf_size = 0;
    rpng->process.inflate_buf      = NULL;
 
@@ -600,42 +654,6 @@ bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
    rpng->process.stream.avail_in  = rpng->idat_buf.size;
    rpng->process.stream.avail_out = rpng->process.inflate_buf_size;
    rpng->process.stream.next_out  = rpng->process.inflate_buf;
-
-   do
-   {
-      zstatus = inflate(&rpng->process.stream, Z_NO_FLUSH);
-      if (zstatus == Z_STREAM_END)
-         break;
-      if (zstatus != Z_OK && zstatus != Z_BUF_ERROR)
-      {
-         inflateEnd(&rpng->process.stream);
-         return false;
-      }
-   } while(rpng->process.stream.avail_in > 0
-         && rpng->process.stream.avail_out > 0);
-
-   inflateEnd(&rpng->process.stream);
-
-   *width  = rpng->ihdr.width;
-   *height = rpng->ihdr.height;
-#ifdef GEKKO
-   /* we often use these in textures, make sure they're 32-byte aligned */
-   *data = (uint32_t*)memalign(32, rpng->ihdr.width * 
-         rpng->ihdr.height * sizeof(uint32_t));
-#else
-   *data = (uint32_t*)malloc(rpng->ihdr.width * 
-         rpng->ihdr.height * sizeof(uint32_t));
-#endif
-   if (!*data)
-      return false;
-
-   rpng->process.adam7_restore_buf_size = 0;
-   rpng->process.restore_buf_size = 0;
-   rpng->process.palette = rpng->palette;
-
-   if (rpng->ihdr.interlace != 1)
-      if (png_reverse_filter_init(&rpng->ihdr, &rpng->process) == -1)
-         return false;
 
    rpng->process.initialized = true;
 

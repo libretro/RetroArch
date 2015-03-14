@@ -263,6 +263,14 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
       GOTO_END_ERROR();
 
    do{
+      retval = rpng_load_image_argb_process_inflate_init(&rpng, data,
+               width, height);
+   }while(retval == 0);
+
+   if (retval == -1)
+      GOTO_END_ERROR();
+
+   do{
       retval = png_reverse_filter_iterate(&rpng, data);
    }while(retval == PNG_PROCESS_NEXT);
 

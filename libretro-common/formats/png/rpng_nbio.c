@@ -199,6 +199,16 @@ int rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
       if (!rpng_load_image_argb_process_init(rpng, data, width,
                height))
          return PNG_PROCESS_ERROR;
+      return 0;
+   }
+
+   if (!rpng->process.inflate_initialized)
+   {
+      int ret = rpng_load_image_argb_process_inflate_init(rpng, data,
+               width, height);
+      if (ret == -1)
+         return PNG_PROCESS_ERROR;
+      return 0;
    }
 
    return png_reverse_filter_iterate(rpng, data);
