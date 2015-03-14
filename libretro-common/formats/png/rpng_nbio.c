@@ -196,9 +196,12 @@ bool rpng_nbio_load_image_argb_process(struct rpng_t *rpng,
 {
    int retval = 0;
 
-   if (!rpng_load_image_argb_process_init(rpng, data, width,
-            height))
-      return false;
+   if (!rpng->process.initialized)
+   {
+      if (!rpng_load_image_argb_process_init(rpng, data, width,
+               height))
+         return false;
+   }
 
    do{
       retval = png_reverse_filter_iterate(rpng, data);

@@ -63,6 +63,7 @@ struct png_ihdr
 
 struct rpng_process_t
 {
+   bool initialized;
    bool adam7_pass_initialized;
    bool pass_initialized;
    uint32_t *data;

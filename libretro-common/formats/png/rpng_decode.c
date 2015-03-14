@@ -644,5 +644,7 @@ bool rpng_load_image_argb_process_init(struct rpng_t *rpng,
       if (png_reverse_filter_init(&rpng->ihdr, &rpng->process) == -1)
          return false;
 
+   rpng->process.initialized = true;
+
    return true;
 }
