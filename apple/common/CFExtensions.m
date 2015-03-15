@@ -65,7 +65,11 @@ static NSSearchPathDomainMask NSConvertDomainFlagsCF(unsigned flags)
 
 void CFTemporaryDirectory(char *buf, size_t sizeof_buf)
 {
+#if __has_feature(objc_arc)
+    CFStringRef path = (__bridge_retained CFStringRef)NSTemporaryDirectory();
+#else
     CFStringRef path = (CFStringRef)NSTemporaryDirectory();
+#endif
     CFStringGetCString(path, buf, sizeof_buf, kCFStringEncodingUTF8);
 }
 
