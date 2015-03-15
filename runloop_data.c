@@ -681,9 +681,11 @@ void rarch_main_data_msg_queue_push(unsigned type,
       case DATA_TYPE_IMAGE:
          queue = g_data_runloop.nbio.image.msg_queue;
          break;
+#ifdef HAVE_NETWORKING
       case DATA_TYPE_HTTP:
          queue = g_data_runloop.http.msg_queue;
          break;
+#endif
 #ifdef HAVE_OVERLAY
       case DATA_TYPE_OVERLAY:
          break;
