@@ -29,6 +29,7 @@
 		84F9A9C51A87E1D0003AF12F /* cursors in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C41A87E1D0003AF12F /* cursors */; };
 		84F9A9C71A87E1E8003AF12F /* rdb in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C61A87E1E8003AF12F /* rdb */; };
 		84F9A9C81A87E250003AF12F /* cht in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9C11A87E180003AF12F /* cht */; };
+		84FD66AE1AB530B20074AC3A /* shaders_glsl in Resources */ = {isa = PBXBuildFile; fileRef = 84FD66AD1AB530B20074AC3A /* shaders_glsl */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
 		967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
@@ -61,6 +62,7 @@
 		84F9A9C11A87E180003AF12F /* cht */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cht; path = ../../../media/libretrodb/cht; sourceTree = "<group>"; };
 		84F9A9C41A87E1D0003AF12F /* cursors */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cursors; path = ../../../media/libretrodb/cursors; sourceTree = "<group>"; };
 		84F9A9C61A87E1E8003AF12F /* rdb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = rdb; path = ../../../media/libretrodb/rdb; sourceTree = "<group>"; };
+		84FD66AD1AB530B20074AC3A /* shaders_glsl */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shaders_glsl; path = ../../../media/shaders_glsl; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		963C3C33186E3DED00A6EB1E /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
@@ -104,6 +106,7 @@
 		83D632D719ECFCC4009E3161 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
+				84FD66AD1AB530B20074AC3A /* shaders_glsl */,
 				84F9A9C31A87E1AA003AF12F /* Database */,
 				83EB675F19EEAF050096F441 /* modules */,
 				84F9A9BB1A87E068003AF12F /* assets */,
@@ -283,6 +286,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84FD66AE1AB530B20074AC3A /* shaders_glsl in Resources */,
 				83D632E219ECFCC4009E3161 /* ic_pause.png in Resources */,
 				967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */,
 				69D31DE41A547EC800EF4C92 /* Media.xcassets in Resources */,
@@ -311,7 +315,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "for a in python3.4 python3.3 python3.2 python3.1 python3 python; do\n    if command -v $a > /dev/null; then\n        PYTHON3=$a make -f Makefile.griffin shaders-convert-glsl\n        break\n    fi\ndone";
+			shellScript = "cd ../..\n\necho \"=== GLSL shaders\"\nmkdir -p \"media/shaders_glsl\"\nfor a in \"python3.4\" \"python3.3\" \"python3.2\" \"python3.1\" \"python3\" \"python\"; do\n    echo -n \"Checking for $a... \"\n    if command -v $a > /dev/null; then\n        echo \"yes.\"\n        make -f Makefile.griffin PYTHON3=$a shaders-convert-glsl\n        break\n    else\n        echo \"no.\"\n    fi\ndone";
 		};
 /* End PBXShellScriptBuildPhase section */
 
