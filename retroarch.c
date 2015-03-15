@@ -1608,15 +1608,28 @@ static void free_temporary_content(void)
  * (b) it can zero pointers that the rest of 
  * the code will look at.
  */
-static void main_clear_state_extern(void)
+static void main_clear_state_extern_global(void)
 {
+   if (g_extern.use_sram)
+      rarch_main_command(RARCH_CMD_AUTOSAVE_DEINIT);
+
+   rarch_main_command(RARCH_CMD_COMMAND_DEINIT);
    rarch_main_command(RARCH_CMD_TEMPORARY_CONTENT_DEINIT);
    rarch_main_command(RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
    rarch_main_command(RARCH_CMD_RECORD_DEINIT);
-   rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
-   rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
-
+   rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
+   rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
+   rarch_main_command(RARCH_CMD_CHEATS_DEINIT);
+   rarch_main_command(RARCH_CMD_REWIND_DEINIT);
+   rarch_main_command(RARCH_CMD_BSV_MOVIE_DEINIT);
    memset(&g_extern, 0, sizeof(g_extern));
+}
+
+static void main_clear_state_extern(void)
+{
+   rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
+   rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
+   main_clear_state_extern_global();
    memset(&g_runloop, 0, sizeof(g_runloop));
    memset(&g_data_runloop, 0, sizeof(g_data_runloop));
 }
@@ -2815,25 +2828,14 @@ bool rarch_main_command(unsigned cmd)
 void rarch_main_deinit(void)
 {
    rarch_main_command(RARCH_CMD_NETPLAY_DEINIT);
-   rarch_main_command(RARCH_CMD_COMMAND_DEINIT);
 
-   if (g_extern.use_sram)
-      rarch_main_command(RARCH_CMD_AUTOSAVE_DEINIT);
-
-   rarch_main_command(RARCH_CMD_RECORD_DEINIT);
    rarch_main_command(RARCH_CMD_SAVEFILES);
-
-   rarch_main_command(RARCH_CMD_REWIND_DEINIT);
-   rarch_main_command(RARCH_CMD_CHEATS_DEINIT);
-   rarch_main_command(RARCH_CMD_BSV_MOVIE_DEINIT);
 
    rarch_main_command(RARCH_CMD_AUTOSAVE_STATE);
 
    rarch_main_command(RARCH_CMD_CORE_DEINIT);
 
-   rarch_main_command(RARCH_CMD_TEMPORARY_CONTENT_DEINIT);
-   rarch_main_command(RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
-   rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
+   main_clear_state_extern_global();
 
    g_extern.main_is_init = false;
 }
