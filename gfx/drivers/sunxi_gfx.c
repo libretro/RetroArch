@@ -1049,11 +1049,11 @@ static void queue_page(struct sunxi_page *page, struct sunxi_video *_dispvars)
    
    ppage = _dispvars->queue;
 
-   if (ppage == NULL)
+   if (!ppage)
       _dispvars->queue = page;
    else
    {
-      while (ppage->next != NULL)
+      while (ppage->next)
          ppage = ppage->next;
       ppage->next = page;
       page->next = NULL;
@@ -1069,7 +1069,7 @@ static struct sunxi_page *unqueue_page(struct sunxi_video *_dispvars)
       
    page = _dispvars->queue;	
 
-   if (page != NULL)
+   if (page)
    {
       _dispvars->queue = page->next;
       page->next = NULL;
@@ -1101,7 +1101,7 @@ static struct sunxi_page *sunxi_get_free_page(struct sunxi_video *_dispvars)
          }
       }
 
-		if (page == NULL)
+		if (!page)
       {
 			slock_lock(vsync_cond_mutex);
 			scond_wait(vsync_condition, vsync_cond_mutex);
@@ -1169,11 +1169,13 @@ static void vsync_thread_func(void *arg)
       page = unqueue_page((void*)_dispvars);
       slock_unlock(queue_mutex);
 
-      /* We mark as free the page that was visible until now. */
-      if (_dispvars->current_page != NULL)
+      if (_dispvars->current_page)
       {
          slock_lock(_dispvars->current_page->page_used_mutex);
+
+         /* We mark as free the page that was visible until now. */
          _dispvars->current_page->used = false;
+
          slock_unlock(_dispvars->current_page->page_used_mutex);
       }
 
