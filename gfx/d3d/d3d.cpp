@@ -1467,7 +1467,10 @@ static bool d3d_overlay_load(void *data,
    unsigned i, y;
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-   d3d_free_overlays(data);
+   if (!d3d)
+	   return false;
+
+   d3d_free_overlays(d3d);
    d3d->overlays.resize(num_images);
 
    for (i = 0; i < num_images; i++)
