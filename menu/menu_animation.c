@@ -19,6 +19,7 @@
 #include <string.h>
 #include <compat/strl.h>
 #include "../general.h"
+#include "../runloop.h"
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 

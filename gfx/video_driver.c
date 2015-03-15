@@ -22,6 +22,7 @@
 #include "video_monitor.h"
 #include "../general.h"
 #include "../retroarch.h"
+#include "../runloop.h"
 
 static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_OPENGL

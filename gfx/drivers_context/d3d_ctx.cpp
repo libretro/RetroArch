@@ -18,6 +18,7 @@
 #include "../d3d/d3d.h"
 #include "win32_common.h"
 
+#include "../../runloop.h"
 #include "../video_monitor.h"
 
 #ifdef _MSC_VER
@@ -144,7 +145,7 @@ static void gfx_ctx_d3d_update_title(void *data)
             stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
       strlcat(buffer_fps, mem, sizeof(buffer_fps));
 #endif
-      msg_queue_push(g_runloop.msg_queue, buffer_fps, 1, 1);
+      rarch_main_msg_queue_push(buffer_fps, 1, 1, false);
    }
 }
 

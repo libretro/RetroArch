@@ -21,6 +21,7 @@
 #include "../dynamic.h"
 #include "../frontend/frontend.h"
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../performance.h"
 #include <file/file_path.h>
 
@@ -111,7 +112,7 @@ static void push_to_history_playlist(void)
 
       fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
       snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
-      msg_queue_push(g_runloop.msg_queue, str, 1, 1);
+      rarch_main_msg_queue_push(str, 1, 1, false);
    }
 
    content_playlist_push(g_defaults.history,

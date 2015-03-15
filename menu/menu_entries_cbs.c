@@ -25,6 +25,7 @@
 #include "../file_ops.h"
 #include "../config.def.h"
 #include "../retroarch.h"
+#include "../runloop.h"
 
 #ifdef HAVE_NETWORKING
 #include "../net_http.h"
@@ -115,8 +116,7 @@ int cb_core_updater_download(void *data_, size_t len)
    snprintf(msg, sizeof(msg), "Download complete: %s.",
          core_updater_path);
 
-   msg_queue_clear(g_runloop.msg_queue);
-   msg_queue_push(g_runloop.msg_queue, msg, 1, 90);
+   rarch_main_msg_queue_push(msg, 1, 90, true);
 
 #ifdef HAVE_ZLIB
    file_ext = path_get_extension(output_path);

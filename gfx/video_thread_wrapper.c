@@ -17,11 +17,11 @@
 #include "video_thread_wrapper.h"
 #include "video_viewport.h"
 #include "../performance.h"
+#include "../runloop.h"
 #include <file/dir_list.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-
 
 static void *thread_init_never_call(const video_info_t *video,
       const input_driver_t **input, void **input_data)

@@ -19,6 +19,7 @@
 #include "camera_driver.h"
 #include "../driver.h"
 #include "../general.h"
+#include "../runloop.h"
 
 static const camera_driver_t *camera_drivers[] = {
 #ifdef HAVE_V4L2

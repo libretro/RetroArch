@@ -19,6 +19,7 @@
  */
 
 #include "../../driver.h"
+#include "../../runloop.h"
 #include "../gl_common.h"
 #include "../video_monitor.h"
 #include <file/dir_list.h>
@@ -268,7 +269,7 @@ static void gfx_ctx_drm_egl_update_window_title(void *data)
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
    if (g_settings.fps_show)
-      msg_queue_push(g_runloop.msg_queue, buf_fps, 1, 1);
+      rarch_main_msg_queue_push( buf_fps, 1, 1, false);
 }
 
 static void gfx_ctx_drm_egl_get_video_size(void *data, unsigned *width, unsigned *height)

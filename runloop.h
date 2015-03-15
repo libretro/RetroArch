@@ -21,6 +21,15 @@
 #include <formats/image.h>
 #include <formats/rpng.h>
 #include <queues/message_queue.h>
+#include "libretro.h"
+
+#ifndef AUDIO_BUFFER_FREE_SAMPLES_COUNT
+#define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
+#endif
+
+#ifndef MEASURE_FRAME_TIME_SAMPLES_COUNT
+#define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -91,7 +100,71 @@ struct data_runloop
    nbio_handle_t nbio;
 };
 
+/* All libretro runloop-related globals go here. */
+
+struct runloop
+{
+   /* Lifecycle state checks. */
+   bool is_paused;
+   bool is_idle;
+   bool is_menu;
+   bool is_slowmotion;
+
+   struct
+   {
+      struct
+      {
+         unsigned count;
+         unsigned max;
+         struct
+         {
+            struct
+            {
+               struct
+               {
+                  bool is_updated;
+               } label;
+
+               struct
+               {
+                  bool is_active;
+               } animation;
+
+               struct
+               {
+                  bool dirty;
+               } framebuf;
+
+               struct
+               {
+                  bool active;
+               } action;
+            } menu;
+         } current;
+      } video;
+
+      struct
+      {
+         retro_time_t minimum_time;
+         retro_time_t last_time;
+      } limit;
+   } frames;
+
+   struct
+   {
+      unsigned buffer_free_samples[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
+      uint64_t buffer_free_samples_count;
+
+      retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
+      uint64_t frame_time_samples_count;
+   } measure_data;
+
+   msg_queue_t *msg_queue;
+};
+
+/* Public data structures. */
 extern struct data_runloop g_data_runloop;
+extern struct runloop g_runloop;
 
 /**
  * rarch_main_iterate:
@@ -102,6 +175,11 @@ extern struct data_runloop g_data_runloop;
  * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop. 
  **/
 int rarch_main_iterate(void);
+
+void rarch_main_msg_queue_push(const char *msg, unsigned prio,
+      unsigned duration, bool flush);
+
+const char *rarch_main_msg_queue_pull(void);
 
 void rarch_main_data_iterate(void);
 

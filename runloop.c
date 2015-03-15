@@ -59,8 +59,7 @@ static void set_volume(float gain)
    g_settings.audio.volume = min(g_settings.audio.volume, 12.0f);
 
    snprintf(msg, sizeof(msg), "Volume: %.1f dB", g_settings.audio.volume);
-   msg_queue_clear(g_runloop.msg_queue);
-   msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
+   rarch_main_msg_queue_push(msg, 1, 180, true);
    RARCH_LOG("%s\n", msg);
 
    g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
@@ -174,13 +173,10 @@ static void check_stateslots(bool pressed_increase, bool pressed_decrease)
    else
       return;
 
-   msg_queue_clear(g_runloop.msg_queue);
-
    snprintf(msg, sizeof(msg), "State slot: %d",
          g_settings.state_slot);
 
-   if (g_runloop.msg_queue)
-      msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
+   rarch_main_msg_queue_push(msg, 1, 180, true);
 
    RARCH_LOG("%s\n", msg);
 }
@@ -243,16 +239,16 @@ static void check_rewind(bool pressed)
          g_extern.rewind.frame_is_reverse = true;
          setup_rewind_audio();
 
-         msg_queue_push(g_runloop.msg_queue, RETRO_MSG_REWINDING, 0,
-               g_runloop.is_paused ? 1 : 30);
+         rarch_main_msg_queue_push(RETRO_MSG_REWINDING, 0,
+               g_runloop.is_paused ? 1 : 30, false);
          pretro_unserialize(buf, g_extern.rewind.size);
 
          if (g_extern.bsv.movie)
             bsv_movie_frame_rewind(g_extern.bsv.movie);
       }
       else
-         msg_queue_push(g_runloop.msg_queue,
-               RETRO_MSG_REWIND_REACHED_END, 0, 30);
+         rarch_main_msg_queue_push(RETRO_MSG_REWIND_REACHED_END,
+               0, 30, false);
    }
    else
    {
@@ -294,9 +290,8 @@ static void check_slowmotion(bool pressed)
    if (g_settings.video.black_frame_insertion)
       rarch_render_cached_frame();
 
-   msg_queue_clear(g_runloop.msg_queue);
-   msg_queue_push(g_runloop.msg_queue, g_extern.rewind.frame_is_reverse ?
-         "Slow motion rewind." : "Slow motion.", 0, 30);
+   rarch_main_msg_queue_push(g_extern.rewind.frame_is_reverse ?
+         "Slow motion rewind." : "Slow motion.", 0, 30, true);
 }
 
 static bool check_movie_init(void)
@@ -327,9 +322,8 @@ static bool check_movie_init(void)
    if (!g_extern.bsv.movie)
       ret = false;
 
-   msg_queue_clear(g_runloop.msg_queue);
-   msg_queue_push(g_runloop.msg_queue, g_extern.bsv.movie ?
-         msg : "Failed to start movie record.", 1, 180);
+   rarch_main_msg_queue_push(g_extern.bsv.movie ?
+         msg : "Failed to start movie record.", 1, 180, true);
 
    if (g_extern.bsv.movie)
       RARCH_LOG("Starting movie record to \"%s\".\n", path);
@@ -351,9 +345,8 @@ static bool check_movie_record(void)
    if (!g_extern.bsv.movie)
       return false;
 
-   msg_queue_clear(g_runloop.msg_queue);
-   msg_queue_push(g_runloop.msg_queue,
-         RETRO_MSG_MOVIE_RECORD_STOPPING, 2, 180);
+   rarch_main_msg_queue_push(
+         RETRO_MSG_MOVIE_RECORD_STOPPING, 2, 180, true);
    RARCH_LOG(RETRO_LOG_MOVIE_RECORD_STOPPING);
 
    rarch_main_command(RARCH_CMD_BSV_MOVIE_DEINIT);
@@ -373,8 +366,8 @@ static bool check_movie_playback(void)
    if (!g_extern.bsv.movie_end)
       return false;
 
-   msg_queue_push(g_runloop.msg_queue,
-         RETRO_MSG_MOVIE_PLAYBACK_ENDED, 1, 180);
+   rarch_main_msg_queue_push(
+         RETRO_MSG_MOVIE_PLAYBACK_ENDED, 1, 180, false);
    RARCH_LOG(RETRO_LOG_MOVIE_PLAYBACK_ENDED);
 
    rarch_main_command(RARCH_CMD_BSV_MOVIE_DEINIT);
@@ -439,11 +432,9 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
    else
       return;
 
-   msg_queue_clear(g_runloop.msg_queue);
-
    snprintf(msg, sizeof(msg), "Shader #%u: \"%s\".",
          (unsigned)g_extern.shader_dir.ptr, shader);
-   msg_queue_push(g_runloop.msg_queue, msg, 1, 120);
+   rarch_main_msg_queue_push(msg, 1, 120, true);
    RARCH_LOG("Applying shader \"%s\".\n", shader);
 
    if (!video_driver_set_shader(type, shader))
@@ -901,6 +892,22 @@ static void rarch_main_iterate_linefeed_overlay(void)
    }
 }
 #endif
+
+const char *rarch_main_msg_queue_pull(void)
+{
+   return msg_queue_pull(g_runloop.msg_queue);
+}
+
+void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
+      bool flush)
+{
+   if (!g_runloop.msg_queue)
+      return;
+
+   if (flush)
+      msg_queue_clear(g_runloop.msg_queue);
+   msg_queue_push(g_runloop.msg_queue, msg, 0, 60);
+}
 
 /**
  * rarch_main_iterate:

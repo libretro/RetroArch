@@ -21,6 +21,7 @@
 #include <string.h>
 #include "../../general.h"
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../performance.h"
 #include <gfx/scaler/scaler.h>
 #include "../video_viewport.h"

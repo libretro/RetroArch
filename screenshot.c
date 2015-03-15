@@ -26,6 +26,7 @@
 #include <file/file_path.h>
 #include "gfx/scaler/scaler.h"
 #include "retroarch.h"
+#include "runloop.h"
 #include "retroarch_logger.h"
 #include "screenshot.h"
 #include "gfx/video_viewport.h"
@@ -257,9 +258,6 @@ bool take_screenshot(void)
          != RETRO_HW_CONTEXT_NONE) && driver.video->read_viewport &&
       driver.video->viewport_info;
 
-   /* Clear out message queue to avoid OSD fonts to appear on screenshot. */
-   msg_queue_clear(g_runloop.msg_queue);
-
    if (viewport_read)
    {
 #ifdef HAVE_MENU
@@ -292,7 +290,7 @@ bool take_screenshot(void)
       msg = RETRO_MSG_TAKE_SCREENSHOT_FAILED;
    }
 
-   msg_queue_push(g_runloop.msg_queue, msg, 1, g_runloop.is_paused ? 1 : 180);
+   rarch_main_msg_queue_push(msg, 1, g_runloop.is_paused ? 1 : 180, true);
 
    if (g_runloop.is_paused)
       rarch_render_cached_frame();

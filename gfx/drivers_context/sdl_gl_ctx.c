@@ -15,6 +15,7 @@
  */
 
 #include "../../driver.h"
+#include "../../runloop.h"
 #include "../gl_common.h"
 #include "../video_monitor.h"
 
@@ -290,7 +291,7 @@ static void sdl_ctx_update_window_title(void *data)
 #endif
    }
    if (g_settings.fps_show)
-      msg_queue_push(g_runloop.msg_queue, buf_fps, 1, 1);
+      rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *width,

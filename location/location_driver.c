@@ -19,6 +19,7 @@
 #include "location_driver.h"
 #include "../driver.h"
 #include "../general.h"
+#include "../runloop.h"
 
 static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
@@ -147,8 +148,7 @@ bool driver_location_start(void)
       if (g_settings.location.allow)
          return driver.location->start(driver.location_data);
 
-      msg_queue_clear(g_runloop.msg_queue);
-      msg_queue_push(g_runloop.msg_queue, "Location is explicitly disabled.\n", 1, 180);
+      rarch_main_msg_queue_push("Location is explicitly disabled.\n", 1, 180, true);
    }
    return false;
 }

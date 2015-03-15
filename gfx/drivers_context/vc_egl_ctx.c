@@ -15,6 +15,7 @@
  */
 
 #include "../../driver.h"
+#include "../../runloop.h"
 #include "../video_context_driver.h"
 #include "../gl_common.h"
 #include "../video_monitor.h"
@@ -124,7 +125,7 @@ static void gfx_ctx_vc_update_window_title(void *data)
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
    if (g_settings.fps_show)
-      msg_queue_push(g_runloop.msg_queue, buf_fps, 1, 1);
+      msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static void gfx_ctx_vc_get_video_size(void *data,

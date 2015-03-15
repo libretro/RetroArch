@@ -395,71 +395,6 @@ typedef struct rarch_resolution
    unsigned id;
 } rarch_resolution_t;
 
-#define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
-#define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
-
-/* All libretro runloop-related globals go here. */
-
-struct runloop
-{
-   /* Lifecycle state checks. */
-   bool is_paused;
-   bool is_idle;
-   bool is_menu;
-   bool is_slowmotion;
-
-   struct
-   {
-      struct
-      {
-         unsigned count;
-         unsigned max;
-         struct
-         {
-            struct
-            {
-               struct
-               {
-                  bool is_updated;
-               } label;
-
-               struct
-               {
-                  bool is_active;
-               } animation;
-
-               struct
-               {
-                  bool dirty;
-               } framebuf;
-
-               struct
-               {
-                  bool active;
-               } action;
-            } menu;
-         } current;
-      } video;
-
-      struct
-      {
-         retro_time_t minimum_time;
-         retro_time_t last_time;
-      } limit;
-   } frames;
-
-   struct
-   {
-      unsigned buffer_free_samples[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
-      uint64_t buffer_free_samples_count;
-
-      retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
-      uint64_t frame_time_samples_count;
-   } measure_data;
-
-   msg_queue_t *msg_queue;
-};
-
 /* All run-time- / command line flag-related globals go here. */
 
 struct global
@@ -783,7 +718,6 @@ struct global
 
 /* Public data structures. */
 extern struct settings g_settings;
-extern struct runloop g_runloop;
 extern struct global g_extern;
 extern struct defaults g_defaults;
 

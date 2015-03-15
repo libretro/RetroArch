@@ -17,6 +17,7 @@
 #include "../input_autodetect.h"
 #include "../input_common.h"
 #include "../../general.h"
+#include "../../runloop.h"
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
@@ -97,7 +98,7 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
          {
             char msg[512];
             snprintf(msg, sizeof(msg), "Joypad #%u (%s) connected.", (unsigned)(pad - linuxraw_pads), pad->ident);
-            msg_queue_push(g_runloop.msg_queue, msg, 0, 60);
+            rarch_main_msg_queue_push(msg, 0, 60, false);
          }
 #endif
       }
@@ -153,7 +154,7 @@ static void handle_plugged_pad(void)
                {
                   char msg[512];
                   snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.", idx, linuxraw_pads[idx].ident);
-                  msg_queue_push(g_runloop.msg_queue, msg, 0, 60);
+                  rarch_main_msg_queue_push(msg, 0, 60, false);
                }
 #endif
 

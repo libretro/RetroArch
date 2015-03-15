@@ -16,6 +16,7 @@
 
 #include "../../driver.h"
 #include "../../general.h"
+#include "../../runloop.h"
 #include "../video_monitor.h"
 #include "../gl_common.h"
 
@@ -271,7 +272,7 @@ static void android_gfx_ctx_update_window_title(void *data)
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
    if (g_settings.fps_show)
-      msg_queue_push(g_runloop.msg_queue, buf_fps, 1, 1);
+      rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static bool android_gfx_ctx_set_video_mode(void *data,

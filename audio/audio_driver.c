@@ -22,6 +22,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../retroarch.h"
+#include "../runloop.h"
 
 static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA

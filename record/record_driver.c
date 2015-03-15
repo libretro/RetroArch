@@ -21,6 +21,7 @@
 #include "../dynamic.h"
 #include "../general.h"
 #include "../retroarch.h"
+#include "../runloop.h"
 #include "../intl/intl.h"
 #include "../gfx/video_viewport.h"
 
@@ -122,9 +123,8 @@ void recording_dump_frame(const void *data, unsigned width,
       {
          static const char msg[] = "Recording terminated due to resize.";
          RARCH_WARN("%s\n", msg);
-         msg_queue_clear(g_runloop.msg_queue);
-         msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
 
+         rarch_main_msg_queue_push(msg, 1, 180, true);
          rarch_main_command(RARCH_CMD_RECORD_DEINIT);
          return;
       }

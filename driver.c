@@ -17,6 +17,7 @@
 #include "driver.h"
 #include "general.h"
 #include "retroarch.h"
+#include "runloop.h"
 #include "compat/posix_string.h"
 #include "gfx/video_monitor.h"
 #include "audio/audio_monitor.h"
@@ -281,7 +282,7 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
    if (driver.recording_data)
    {
       static const char *msg = "Restarting recording due to driver reinit.";
-      msg_queue_push(g_runloop.msg_queue, msg, 2, 180);
+      rarch_main_msg_queue_push(msg, 2, 180, false);
       RARCH_WARN("%s\n", msg);
       rarch_main_command(RARCH_CMD_RECORD_DEINIT);
       rarch_main_command(RARCH_CMD_RECORD_INIT);

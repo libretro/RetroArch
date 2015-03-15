@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <boolean.h>
 #include "../../general.h"
+#include "../../runloop.h"
 #include "menu_input.h"
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)

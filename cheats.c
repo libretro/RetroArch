@@ -16,6 +16,7 @@
 
 #include "cheats.h"
 #include "general.h"
+#include "runloop.h"
 #include "dynamic.h"
 #include <file/config_file.h>
 #include <file/file_path.h>
@@ -232,7 +233,6 @@ void cheat_manager_free(cheat_manager_t *handle)
 
 void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
 {
-   msg_queue_clear(g_runloop.msg_queue);
    char msg[256];
 
    snprintf(msg, sizeof(msg), "Cheat: #%u [%s]: %s",
@@ -240,7 +240,7 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
          (handle->cheats[handle_idx].desc) ? 
          (handle->cheats[handle_idx].desc) : (handle->cheats[handle_idx].code)
          );
-   msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
+   rarch_main_msg_queue_push(msg, 1, 180, true);
    RARCH_LOG("%s\n", msg);
 }
 

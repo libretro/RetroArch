@@ -20,6 +20,7 @@
 #include "../input_autodetect.h"
 #include "../input_common.h"
 #include "../../general.h"
+#include "../../runloop.h"
 
 struct pad_connection
 {
@@ -127,7 +128,7 @@ static void remove_device(void* context, IOReturn result, void* sender)
 
       snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.",
             connection->slot, "N/A");
-      msg_queue_push(g_runloop.msg_queue, msg, 0, 60);
+      rarch_main_msg_queue_push(msg, 0, 60, false);
       RARCH_LOG("[apple_input]: %s\n", msg);
 
       apple->buttons[connection->slot] = 0;

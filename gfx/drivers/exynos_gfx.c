@@ -32,6 +32,7 @@
 
 #include "../../general.h"
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../font_renderer_driver.h"
@@ -1432,7 +1433,7 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
       char buffer[128], buffer_fps[128];
       video_monitor_get_fps(buffer, sizeof(buffer),
             g_settings.fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
-      msg_queue_push(g_runloop.msg_queue, buffer_fps, 1, 1);
+      rarch_main_msg_queue_push(buffer_fps, 1, 1, false);
    }
 
    /* If at this point the dimension parameters are still zero, setup some  *

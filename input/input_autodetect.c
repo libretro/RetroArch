@@ -22,6 +22,7 @@
 #include <ctype.h>
 
 #include "../general.h"
+#include "../runloop.h"
 
 static void input_autoconfigure_joypad_conf(config_file_t *conf,
       struct retro_keybind *binds)
@@ -91,7 +92,7 @@ found:
          idx, name);
 
    if (!block_osd_spam)
-      msg_queue_push(g_runloop.msg_queue, msg, 0, 60);
+      rarch_main_msg_queue_push(msg, 0, 60, false);
    RARCH_LOG("%s\n", msg);
 
    return true;

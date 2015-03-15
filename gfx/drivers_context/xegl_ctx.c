@@ -19,6 +19,7 @@
  */
 
 #include "../../driver.h"
+#include "../../runloop.h"
 #include "../gl_common.h"
 #include "../video_monitor.h"
 #include "x11_common.h"
@@ -227,7 +228,7 @@ static void gfx_ctx_xegl_update_window_title(void *data)
             buf_fps, sizeof(buf_fps)))
       XStoreName(g_dpy, g_win, buf);
    if (g_settings.fps_show)
-      msg_queue_push(g_runloop.msg_queue, buf_fps, 1, 1);
+      rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static void gfx_ctx_xegl_get_video_size(void *data,

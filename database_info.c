@@ -20,6 +20,7 @@
 #include "file_ops.h"
 #include "file_extract.h"
 #include "general.h"
+#include "runloop.h"
 #include <file/file_path.h>
 #include "file_ext.h"
 #include <file/dir_list.h>
@@ -84,8 +85,7 @@ void database_info_write_rdl_free(database_info_rdl_handle_t *dbl)
    string_list_free(dbl->list);
    free(dbl);
 
-   msg_queue_clear(g_runloop.msg_queue);
-   msg_queue_push(g_runloop.msg_queue, "Scanning of directory finished.\n", 1, 180);
+   rarch_main_msg_queue_push("Scanning of directory finished.\n", 1, 180, true);
 }
 
 int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl)
@@ -141,8 +141,7 @@ int database_info_write_rdl_iterate(database_info_rdl_handle_t *dbl)
       snprintf(msg, sizeof(msg), "%zu/%zu: Scanning %s...\n",
             dbl->list_ptr, dbl->list->size, name);
 
-      msg_queue_clear(g_runloop.msg_queue);
-      msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
+      rarch_main_msg_queue_push(msg, 1, 180, true);
 
       crc = crc32_calculate(ret_buf, ret);
 

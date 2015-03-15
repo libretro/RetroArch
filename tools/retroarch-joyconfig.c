@@ -491,3 +491,8 @@ int main(int argc, char *argv[])
    free(g_auto_path);
    return 0;
 }
+
+void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
+      bool flush)
+{
+}

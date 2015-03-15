@@ -22,6 +22,7 @@
 #endif
 
 #include "general.h"
+#include "runloop.h"
 #include "compat/strl.h"
 #include "compat/posix_string.h"
 #include <file/file_path.h>
@@ -230,10 +231,8 @@ static bool cmd_set_shader(const char *arg)
    if (type == RARCH_SHADER_NONE)
       return false;
 
-   msg_queue_clear(g_runloop.msg_queue);
-
    snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
-   msg_queue_push(g_runloop.msg_queue, msg, 1, 120);
+   rarch_main_msg_queue_push(msg, 1, 120, true);
    RARCH_LOG("Applying shader \"%s\".\n", arg);
 
    return driver.video->set_shader(driver.video_data, type, arg);
