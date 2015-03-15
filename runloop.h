@@ -85,7 +85,7 @@ typedef struct http_handle
 
 /* All data runloop-related globals go here. */
 
-struct data_runloop
+typedef struct data_runloop
 {
 #ifdef HAVE_NETWORKING
    http_handle_t http;
@@ -98,11 +98,11 @@ struct data_runloop
 #endif
 
    nbio_handle_t nbio;
-};
+} data_runloop_t;
 
 /* All libretro runloop-related globals go here. */
 
-struct runloop
+typedef struct runloop
 {
    /* Lifecycle state checks. */
    bool is_paused;
@@ -160,7 +160,7 @@ struct runloop
    } measure_data;
 
    msg_queue_t *msg_queue;
-};
+} runloop_t;
 
 /* Public data structures. */
 extern struct data_runloop g_data_runloop;
