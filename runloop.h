@@ -181,6 +181,10 @@ void rarch_main_msg_queue_push(const char *msg, unsigned prio,
 
 const char *rarch_main_msg_queue_pull(void);
 
+void rarch_main_msg_queue_free(void);
+
+void rarch_main_msg_queue_init(void);
+
 void rarch_main_data_iterate(void);
 
 void rarch_main_data_init_queues(void);

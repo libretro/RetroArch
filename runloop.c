@@ -908,6 +908,19 @@ void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration
    msg_queue_push(g_runloop.msg_queue, msg, prio, duration);
 }
 
+void rarch_main_msg_queue_free(void)
+{
+   if (g_runloop.msg_queue)
+      msg_queue_free(g_runloop.msg_queue);
+   g_runloop.msg_queue = NULL;
+}
+
+void rarch_main_msg_queue_init(void)
+{
+   if (!g_runloop.msg_queue)
+      rarch_assert(g_runloop.msg_queue = msg_queue_new(8));
+}
+
 /**
  * rarch_main_iterate:
  *

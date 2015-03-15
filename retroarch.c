@@ -2631,14 +2631,11 @@ bool rarch_main_command(unsigned cmd)
             rarch_main_command(RARCH_CMD_AUTOSAVE_INIT);
          break;
       case RARCH_CMD_MSG_QUEUE_DEINIT:
-         if (g_runloop.msg_queue)
-            msg_queue_free(g_runloop.msg_queue);
-         g_runloop.msg_queue = NULL;
+         rarch_main_msg_queue_free();
          break;
       case RARCH_CMD_MSG_QUEUE_INIT:
          rarch_main_command(RARCH_CMD_MSG_QUEUE_DEINIT);
-         if (!g_runloop.msg_queue)
-            rarch_assert(g_runloop.msg_queue = msg_queue_new(8));
+         rarch_main_msg_queue_init();
          rarch_main_data_init_queues();
          break;
       case RARCH_CMD_BSV_MOVIE_DEINIT:
