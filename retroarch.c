@@ -1668,10 +1668,7 @@ void rarch_main_state_new(void)
 void rarch_main_state_free(void)
 {
    rarch_main_command(RARCH_CMD_MSG_QUEUE_DEINIT);
-   rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
-
    main_clear_state(false);
-
 }
 
 #ifdef HAVE_ZLIB
