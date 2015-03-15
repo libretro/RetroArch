@@ -13,11 +13,11 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <pthread.h>
 #include <stdio.h>
 #include <assert.h>
 #include <dlfcn.h>
 #include <CoreFoundation/CFRunLoop.h>
+#include <rthreads/rthreads.h>
 
 #define BUILDING_BTDYNAMIC
 #include "btdynamic.h"
@@ -64,7 +64,7 @@ extern void btpad_packet_handler(uint8_t packet_type,
 static bool btstack_tested;
 static bool btstack_loaded;
 
-static pthread_t btstack_thread;
+static sthread_t *btstack_thread;
 static CFRunLoopSourceRef btstack_quit_source;
 
 bool btstack_try_load(void)
@@ -145,12 +145,12 @@ void btstack_set_poweron(bool on)
       return;
 
    if (on && !btstack_thread)
-      pthread_create(&btstack_thread, 0, btstack_thread_func, 0);
+      btstack_thread = sthread_create(btstack_thread_func, NULL);
    else if (!on && btstack_thread && btstack_quit_source)
    {
       CFRunLoopSourceSignal(btstack_quit_source);
-      pthread_join(btstack_thread, 0);
-      btstack_thread = 0;
+      sthread_join(btstack_thread);
+      btstack_thread = NULL;
    }
 }
 
