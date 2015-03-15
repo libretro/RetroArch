@@ -138,7 +138,7 @@ static int deferred_push_core_information(void *data, void *userdata,
    info = (core_info_t*)g_extern.core_info_current;
    menu_list_clear(list);
 
-   if (info->data)
+   if (info && info->data)
    {
       char tmp[PATH_MAX_LENGTH];
 
