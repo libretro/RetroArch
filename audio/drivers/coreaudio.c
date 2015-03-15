@@ -183,15 +183,21 @@ static void *coreaudio_init(const char *device,
    size_t fifo_size;
    UInt32 i_size;
    AudioStreamBasicDescription real_desc;
+#ifdef OSX_PPC
+   Component comp;
+#else
+   AudioComponent comp;
+#endif
+#ifndef IOS
+   AudioChannelLayout layout = {0};
+#endif
    AURenderCallbackStruct cb = {0};
    AudioStreamBasicDescription stream_desc = {0};
    static bool session_initialized = false;
-   core_audio_t *dev = NULL;
+   coreaudio_t *dev = NULL;
 #ifdef OSX_PPC
-   Component comp;
    ComponentDescription desc = {0};
 #else
-   AudioComponent comp;
    AudioComponentDescription desc = {0};
 #endif
 
@@ -282,8 +288,6 @@ static void *coreaudio_init(const char *device,
 
    /* Set channel layout (fails on iOS). */
 #ifndef IOS
-   AudioChannelLayout layout = {0};
-
    layout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
    if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_AudioChannelLayout,
          kAudioUnitScope_Input, 0, &layout, sizeof(layout)) != noErr)
