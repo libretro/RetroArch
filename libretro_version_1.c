@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <retro_inline.h>
 #include <ctype.h>
 #include <errno.h>
 #include "general.h"
@@ -481,7 +482,7 @@ static int16_t input_state(unsigned port, unsigned device,
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/
-static inline void input_poll_overlay(input_overlay_t *overlay_device, float opacity)
+static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opacity)
 {
    input_overlay_state_t old_key_state;
    unsigned i, j, device;

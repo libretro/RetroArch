@@ -17,6 +17,7 @@
  */
 
 #include <file/file_path.h>
+#include <retro_inline.h>
 #include "dynamic.h"
 #include "performance.h"
 #include "retroarch_logger.h"
@@ -121,7 +122,7 @@ static bool check_pause(bool pressed, bool frameadvance_pressed)
  * Returns: true if libretro frame is one-shot, otherwise false..
  *
  **/
-static inline bool check_is_oneshot(bool oneshot_pressed, bool rewind_pressed)
+static INLINE bool check_is_oneshot(bool oneshot_pressed, bool rewind_pressed)
 {
    return (oneshot_pressed | rewind_pressed);
 }
@@ -183,7 +184,7 @@ static void check_stateslots(bool pressed_increase, bool pressed_decrease)
    RARCH_LOG("%s\n", msg);
 }
 
-static inline void setup_rewind_audio(void)
+static INLINE void setup_rewind_audio(void)
 {
    unsigned i;
 
@@ -637,7 +638,7 @@ static int do_state_checks(
  *
  * Returns: 1 if any of the above conditions are true, otherwise 0.
  **/
-static inline int time_to_exit(retro_input_t input)
+static INLINE int time_to_exit(retro_input_t input)
 {
    if (
          g_extern.system.shutdown
@@ -757,7 +758,7 @@ static bool check_block_hotkey(bool enable_hotkey)
  *
  * Returns: Input sample containg a mask of all pressed keys.
  */
-static inline retro_input_t input_keys_pressed(void)
+static INLINE retro_input_t input_keys_pressed(void)
 {
    unsigned i;
    static const struct retro_keybind *binds[MAX_USERS] = {
