@@ -43,6 +43,9 @@ enum runloop_data_type
    DATA_TYPE_FILE,
    DATA_TYPE_IMAGE,
    DATA_TYPE_HTTP,
+#ifdef HAVE_OVERLAY
+   DATA_TYPE_OVERLAY,
+#endif
 };
 
 typedef struct nbio_image_handle

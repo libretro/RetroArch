@@ -684,6 +684,10 @@ void rarch_main_data_msg_queue_push(unsigned type,
       case DATA_TYPE_HTTP:
          queue = g_data_runloop.http.msg_queue;
          break;
+#ifdef HAVE_OVERLAY
+      case DATA_TYPE_OVERLAY:
+         break;
+#endif
    }
 
    if (!queue)
