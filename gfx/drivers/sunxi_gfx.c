@@ -35,7 +35,7 @@
 #include <sys/ioctl.h>
 #include <linux/fb.h>
 #include <signal.h>
-#include <pthread.h>
+#include <rthreads/rthreads.h>
 
 /* Lowlevel SunxiG2D functions block */
 
@@ -976,11 +976,11 @@ extern void *memcpy_neon(void *dst, const void *src, size_t n);
 
 static void *vsync_thread_func(void *arg);
 
-pthread_t vsync_thread;
+sthread_t *vsync_thread;
 
-pthread_cond_t vsync_condition;	
-pthread_mutex_t queue_mutex;
-pthread_mutex_t vsync_cond_mutex;
+scond_t *vsync_condition;	
+slock_t *queue_mutex;
+slock_t *vsync_cond_mutex;
 
 sunxi_disp_t *disp;
 
@@ -993,7 +993,7 @@ struct sunxi_page
 	/* Since each page has it's own used bool, 
     * it needs it's own mutex to isolate write 
     * access to that bool. */
-	pthread_mutex_t page_used_mutex;
+	slock_t *page_used_mutex;
 	struct sunxi_page *next;
 };
 
@@ -1103,15 +1103,15 @@ static struct sunxi_page *sunxi_get_free_page(struct sunxi_video *_dispvars)
 
 		if (page == NULL)
       {
-			pthread_mutex_lock (&vsync_cond_mutex);
-			pthread_cond_wait (&vsync_condition, &vsync_cond_mutex);
-			pthread_mutex_unlock (&vsync_cond_mutex);
+			slock_lock(vsync_cond_mutex);
+			scond_wait(vsync_condition, vsync_cond_mutex);
+			slock_unlock(vsync_cond_mutex);
 		}
 	}
 
-	pthread_mutex_lock(&page->page_used_mutex);
+	slock_lock(page->page_used_mutex);
 	page->used = true;
-	pthread_mutex_unlock(&page->page_used_mutex);
+	slock_unlock(page->page_used_mutex);
 	return page;
 }
 
@@ -1199,13 +1199,14 @@ static void *sunxi_gfx_init(const video_info_t *video,
          return NULL;
    }
 
-	pthread_mutex_init(&queue_mutex, NULL);		
-	pthread_mutex_init(&vsync_cond_mutex, NULL);		
-	pthread_cond_init(&vsync_condition, NULL);
+	queue_mutex      = slock_new();
+	vsync_cond_mutex = slock_new();
+	vsync_condition  = scond_new();
 	
 	for (i = 0; i < _dispvars->numpages; i++)
    {
-		pthread_mutex_init(&_dispvars->pages[i].page_used_mutex, NULL);		
+		_dispvars->pages[i].page_used_mutex = slock_new();		
+
 		_dispvars->pages[i].numpage = i;
 		_dispvars->pages[i].next = NULL;
 	}
@@ -1214,7 +1215,7 @@ static void *sunxi_gfx_init(const video_info_t *video,
 		*input = NULL;
 	
 	/* Launching vsync thread */
-	pthread_create(&vsync_thread, NULL, vsync_thread_func, _dispvars);
+	vsync_thread = sthread_create(vsync_thread_func, _dispvars);
 
 	return _dispvars;
 }
@@ -1228,21 +1229,20 @@ static void *vsync_thread_func(void *arg)
    {
 		sunxi_wait_flip(disp);
 				
-		pthread_mutex_lock(&vsync_cond_mutex);
-		pthread_cond_signal (&vsync_condition);
-		pthread_mutex_unlock(&vsync_cond_mutex);
+		slock_lock(vsync_cond_mutex);
+		scond_signal(vsync_condition);
+		slock_unlock(vsync_cond_mutex);
 	
-		pthread_mutex_lock(&queue_mutex);
+		slock_lock(queue_mutex);
 		page = unqueue_page((void*)_dispvars);
-		//_dispvars->pageflip_pending--;	
-		pthread_mutex_unlock(&queue_mutex);
+		slock_unlock(queue_mutex);
 		
 		/* We mark as free the page that was visible until now. */
 		if (_dispvars->current_page != NULL)
       {
-			pthread_mutex_lock (&_dispvars->current_page->page_used_mutex);
+			slock_lock(_dispvars->current_page->page_used_mutex);
 			_dispvars->current_page->used = false;
-			pthread_mutex_unlock (&_dispvars->current_page->page_used_mutex);
+			slock_unlock(_dispvars->current_page->page_used_mutex);
 		}
 
       /* The page on which we just issued a flip 
@@ -1263,14 +1263,14 @@ static void sunxi_gfx_free(void *data)
 
    /* Stop the vsync thread	 */
    _dispvars->keep_vsync = false;
-   pthread_join(vsync_thread, NULL);
+   sthread_join(vsync_thread);
 
    for (i = 0; i < _dispvars->numpages; i++)
-      pthread_mutex_destroy(&_dispvars->pages[i].page_used_mutex);		
+      slock_free(_dispvars->pages[i].page_used_mutex);		
 
-   pthread_mutex_destroy(&queue_mutex);		
-   pthread_mutex_destroy(&vsync_cond_mutex);		
-   pthread_cond_destroy(&vsync_condition);
+   slock_free(queue_mutex);		
+   slock_free(vsync_cond_mutex);		
+   scond_free(vsync_condition);
 
    free(_dispvars->pages);	
 
@@ -1298,9 +1298,9 @@ static void sunxi_blit_flip(struct sunxi_page *page, const void *frame, struct s
     * and the other is the one the game used in the previous loop. */
    if (_dispvars->pageflip_pending > 0)
    {
-      pthread_mutex_lock(&vsync_cond_mutex);
-      pthread_cond_wait (&vsync_condition, &vsync_cond_mutex);
-      pthread_mutex_unlock(&vsync_cond_mutex);
+      slock_lock(vsync_cond_mutex);
+      scond_wait(vsync_condition, vsync_cond_mutex);
+      slock_unlock(vsync_cond_mutex);
    }
 #endif
 
@@ -1308,10 +1308,9 @@ static void sunxi_blit_flip(struct sunxi_page *page, const void *frame, struct s
    sunxi_layer_set_rgb_input_buffer(disp, disp->bits_per_pixel, (disp->yres + page->yoffset) * disp->xres * 4, 
          _dispvars->src_width, _dispvars->src_height, disp->xres);
 
-   pthread_mutex_lock(&queue_mutex);
+   slock_lock(queue_mutex);
    queue_page(page, _dispvars);
-   //_dispvars->pageflip_pending++;	
-   pthread_mutex_unlock(&queue_mutex);
+   slock_unlock(queue_mutex);
 }
 
 static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
