@@ -19,7 +19,11 @@
 #include "input/input_overlay.h"
 #ifdef HAVE_NETWORKING
 #include "net_http.h"
+#endif
 
+struct data_runloop g_data_runloop;
+
+#ifdef HAVE_NETWORKING
 int cb_core_updater_download(void *data_, size_t len);
 int cb_core_updater_list(void *data_, size_t len);
 

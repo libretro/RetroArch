@@ -36,8 +36,6 @@
 
 struct settings g_settings;
 struct global g_extern;
-struct runloop g_runloop;
-struct data_runloop g_data_runloop;
 struct defaults g_defaults;
 
 /**
