@@ -5256,7 +5256,7 @@ static bool setting_data_append_list_menu_options(
          g_settings.menu.entry_normal_color,
          "menu_entry_normal_color",
          "Menu entry normal color",
-         menu_entry_hover_color,
+         menu_entry_normal_color,
          group_info.name,
          subgroup_info.name,
          general_write_handler,
