@@ -239,11 +239,11 @@ static void vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
    slock_unlock(page->dispvars->pending_mutex);
 
    /* We mark as free the page that was visible until now */
-   if (page->dispvars->currentPage != NULL)
+   if (page->dispvars->currentPage)
    {
-      slock_lock(page->page_used_mutex);
+      slock_lock(page->dispvars->currentPage->page_used_mutex);
       page->dispvars->currentPage->used = false;
-      slock_unlock(page->page_used_mutex);
+      slock_unlock(page->dispvars->currentPage->page_used_mutex);
    }
 
    /* The page on which we just issued the flip that 
