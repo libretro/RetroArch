@@ -19,7 +19,7 @@
 #include <queues/fifo_buffer.h>
 #include <stdlib.h>
 #include <boolean.h>
-#include <pthread.h>
+#include <rthreads/rthreads.h>
 
 #ifdef OSX
 #include <CoreAudio/CoreAudio.h>
@@ -33,8 +33,8 @@
 
 typedef struct coreaudio
 {
-   pthread_mutex_t lock;
-   pthread_cond_t cond;
+   slock_t *lock;
+   scond_t *cond;
 
 #ifdef OSX_PPC
    ComponentInstance dev;
@@ -71,8 +71,8 @@ static void coreaudio_free(void *data)
    if (dev->buffer)
       fifo_free(dev->buffer);
 
-   pthread_mutex_destroy(&dev->lock);
-   pthread_cond_destroy(&dev->cond);
+   slock_free(dev->lock);
+   scond_free(dev->cond);
 
    free(dev);
 }
@@ -82,8 +82,8 @@ static OSStatus audio_write_cb(void *userdata,
       const AudioTimeStamp *time_stamp, UInt32 bus_number,
       UInt32 number_frames, AudioBufferList *io_data)
 {
-   void *outbuf;
    unsigned write_avail;
+   void *outbuf = NULL;
    coreaudio_t *dev = (coreaudio_t*)userdata;
 
    (void)time_stamp;
@@ -98,7 +98,7 @@ static OSStatus audio_write_cb(void *userdata,
    write_avail = io_data->mBuffers[0].mDataByteSize;
    outbuf = io_data->mBuffers[0].mData;
 
-   pthread_mutex_lock(&dev->lock);
+   slock_lock(dev->lock);
 
    if (fifo_read_avail(dev->buffer) < write_avail)
    {
@@ -107,16 +107,17 @@ static OSStatus audio_write_cb(void *userdata,
       /* Seems to be needed. */
       memset(outbuf, 0, write_avail);
 
-      pthread_mutex_unlock(&dev->lock);
+      slock_unlock(dev->lock);
 
       /* Technically possible to deadlock without. */
-      pthread_cond_signal(&dev->cond); 
+      scond_signal(dev->cond); 
       return noErr;
    }
 
    fifo_read(dev->buffer, outbuf, write_avail);
-   pthread_mutex_unlock(&dev->lock);
-   pthread_cond_signal(&dev->cond);
+   slock_unlock(dev->lock);
+   scond_signal(dev->cond);
+
    return noErr;
 }
 
@@ -124,7 +125,8 @@ static OSStatus audio_write_cb(void *userdata,
 static void choose_output_device(coreaudio_t *dev, const char* device)
 {
    unsigned i;
-   AudioDeviceID *devices;
+   UInt32 size = 0, deviceCount;
+   AudioDeviceID *devices = NULL;
    AudioObjectPropertyAddress propaddr =
    { 
       kAudioHardwarePropertyDevices, 
@@ -132,22 +134,23 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
       kAudioObjectPropertyElementMaster 
    };
 
-   UInt32 size = 0, deviceCount;
-
    if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
             &propaddr, 0, 0, &size) != noErr)
       return;
 
-   deviceCount = size / sizeof(AudioDeviceID);
-   devices = (AudioDeviceID*)malloc(size);
+   deviceCount       = size / sizeof(AudioDeviceID);
+   devices           = (AudioDeviceID*)malloc(size);
 
-   if (!devices || AudioObjectGetPropertyData(kAudioObjectSystemObject,
+   if (!devices)
+      goto done;
+
+   if (AudioObjectGetPropertyData(kAudioObjectSystemObject,
             &propaddr, 0, 0, &size, devices) != noErr)
       goto done;
 
-   propaddr.mScope = kAudioDevicePropertyScopeOutput;
+   propaddr.mScope    = kAudioDevicePropertyScopeOutput;
    propaddr.mSelector = kAudioDevicePropertyDeviceName;
-   size = 1024;
+   size               = 1024;
 
    for (i = 0; i < deviceCount; i ++)
    {
@@ -208,8 +211,22 @@ static void *coreaudio_init(const char *device,
    if (!dev)
       return NULL;
 
-   pthread_mutex_init(&dev->lock, NULL);
-   pthread_cond_init(&dev->cond, NULL);
+   dev->lock = slock_new();
+
+   if (!dev->lock)
+   {
+      free(dev);
+      return NULL;
+   }
+
+   dev->cond = scond_new();
+
+   if (!dev->cond)
+   {
+      free(dev->lock);
+      free(dev);
+      return NULL;
+   }
 
 #ifdef IOS
    if (!session_initialized)
@@ -268,7 +285,8 @@ static void *coreaudio_init(const char *device,
       goto error;
    
    /* Check returned audio format. */
-   i_size = sizeof(real_desc);
+   i_size                        = sizeof(real_desc);
+
    if (AudioUnitGetProperty(dev->dev, kAudioUnitProperty_StreamFormat, 
             kAudioUnitScope_Input, 0, &real_desc, &i_size) != noErr)
       goto error;
@@ -334,46 +352,40 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
    size_t written = 0;
 
 #ifdef IOS
-   struct timespec timeout;
    struct timeval time;
-
    gettimeofday(&time, 0);
-   
-   memset(&timeout, 0, sizeof(timeout));
-   timeout.tv_sec = time.tv_sec + 3;
-   timeout.tv_nsec = time.tv_usec * 1000;
 #endif
 
    while (!g_interrupted && size > 0)
    {
       size_t write_avail;
 
-      pthread_mutex_lock(&dev->lock);
+      slock_lock(dev->lock);
 
       write_avail = fifo_write_avail(dev->buffer);
       if (write_avail > size)
          write_avail = size;
 
       fifo_write(dev->buffer, buf, write_avail);
-      buf += write_avail;
+      buf     += write_avail;
       written += write_avail;
-      size -= write_avail;
+      size    -= write_avail;
 
       if (dev->nonblock)
       {
-         pthread_mutex_unlock(&dev->lock);
+         slock_unlock(dev->lock);
          break;
       }
 
 #ifdef IOS
-      if (write_avail == 0 && pthread_cond_timedwait(
-               &dev->cond, &dev->lock, &timeout) == ETIMEDOUT)
+      if (write_avail == 0 && scond_wait_timeout(
+               dev->cond, dev->lock, time.tv_usec) == ETIMEDOUT)
          g_interrupted = true;
 #else
       if (write_avail == 0)
-         pthread_cond_wait(&dev->cond, &dev->lock);
+         scond_wait(dev->cond, dev->lock);
 #endif
-      pthread_mutex_unlock(&dev->lock);
+      slock_unlock(dev->lock);
    }
 
    return written;
@@ -423,9 +435,9 @@ static size_t coreaudio_write_avail(void *data)
    size_t avail;
    coreaudio_t *dev = (coreaudio_t*)data;
 
-   pthread_mutex_lock(&dev->lock);
+   slock_lock(dev->lock);
    avail = fifo_write_avail(dev->buffer);
-   pthread_mutex_unlock(&dev->lock);
+   slock_unlock(dev->lock);
 
    return avail;
 }
