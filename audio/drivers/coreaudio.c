@@ -378,8 +378,8 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
       }
 
 #ifdef IOS
-      if (write_avail == 0 && scond_wait_timeout(
-               dev->cond, dev->lock, time.tv_usec) == ETIMEDOUT)
+      if (write_avail == 0 && !scond_wait_timeout(
+               dev->cond, dev->lock, time.tv_usec))
          g_interrupted = true;
 #else
       if (write_avail == 0)
