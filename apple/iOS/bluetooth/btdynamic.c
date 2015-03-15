@@ -112,14 +112,14 @@ void btstack_thread_stop()
    bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
 }
 
-static void* btstack_thread_func(void* data)
+static void btstack_thread_func(void* data)
 {
    RARCH_LOG("BTstack: Thread started");
 
    if (bt_open_ptr())
    {
       RARCH_LOG("BTstack: bt_open() failed\n");
-      return 0;
+      return;
    }
 
    CFRunLoopSourceContext ctx = { 0, 0, 0, 0, 0, 0, 0, 0, 0, btstack_thread_stop };
@@ -136,7 +136,6 @@ static void* btstack_thread_func(void* data)
 
    CFRunLoopSourceInvalidate(btstack_quit_source);
    CFRelease(btstack_quit_source);
-   return 0;
 }
 
 void btstack_set_poweron(bool on)
