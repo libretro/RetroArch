@@ -455,13 +455,13 @@ static void rmenu_xui_frame(void)
 
    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
 
-   const char *message = msg_queue_pull(xui_msg_queue);
+   const char *message = rarch_main_msg_queue_pull();
 
    if (message)
       xui_render_message(message);
    else
    {
-      const char *message = msg_queue_pull(g_runloop.msg_queue);
+      const char *message = rarch_main_msg_queue_pull();
       if (message)
          xui_render_message(message);
    }

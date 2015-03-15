@@ -494,7 +494,7 @@ static void rgui_render(void)
 
    if (menu->msg_force)
    {
-      message_queue = msg_queue_pull(g_runloop.msg_queue);
+      message_queue = rarch_main_msg_queue_pull();
       menu->msg_force = false;
    }
    else
