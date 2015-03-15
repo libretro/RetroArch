@@ -26,8 +26,9 @@
 #endif
 
 #include <stdarg.h>
+#include <retro_inline.h>
 
-static inline void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
+static INLINE void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
 #if TARGET_IPHONE_SIMULATOR
    vprintf(fmt, ap);
@@ -41,7 +42,7 @@ static inline void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #endif
 }
 
-static inline void RARCH_LOG(const char *fmt, ...)
+static INLINE void RARCH_LOG(const char *fmt, ...)
 {
    va_list ap;
    va_start(ap, fmt);
@@ -49,13 +50,13 @@ static inline void RARCH_LOG(const char *fmt, ...)
    va_end(ap);
 }
 
-static inline void RARCH_LOG_OUTPUT_V(const char *tag,
+static INLINE void RARCH_LOG_OUTPUT_V(const char *tag,
       const char *fmt, va_list ap)
 {
    RARCH_LOG_V(tag, fmt, ap);
 }
 
-static inline void RARCH_LOG_OUTPUT(const char *fmt, ...)
+static INLINE void RARCH_LOG_OUTPUT(const char *fmt, ...)
 {
    va_list ap;
    va_start(ap, fmt);
@@ -63,12 +64,12 @@ static inline void RARCH_LOG_OUTPUT(const char *fmt, ...)
    va_end(ap);
 }
 
-static inline void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap)
+static INLINE void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap)
 {
    RARCH_LOG_V(tag, fmt, ap);
 }
 
-static inline void RARCH_WARN(const char *fmt, ...)
+static INLINE void RARCH_WARN(const char *fmt, ...)
 {
    va_list ap;
    va_start(ap, fmt);
@@ -76,12 +77,12 @@ static inline void RARCH_WARN(const char *fmt, ...)
    va_end(ap);
 }
 
-static inline void RARCH_ERR_V(const char *tag, const char *fmt, va_list ap)
+static INLINE void RARCH_ERR_V(const char *tag, const char *fmt, va_list ap)
 {
    RARCH_LOG_V(tag, fmt, ap);
 }
 
-static inline void RARCH_ERR(const char *fmt, ...)
+static INLINE void RARCH_ERR(const char *fmt, ...)
 {
    va_list ap;
    va_start(ap, fmt);

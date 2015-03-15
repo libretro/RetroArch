@@ -24,6 +24,7 @@
 #include "platform_android.h"
 
 #include "../../general.h"
+#include <retro_inline.h>
 
 struct android_app *g_android;
 static pthread_key_t thread_key;
@@ -153,7 +154,7 @@ void engine_handle_cmd(void *data)
    }
 }
 
-static inline void android_app_write_cmd(void *data, int8_t cmd)
+static INLINE void android_app_write_cmd(void *data, int8_t cmd)
 {
    struct android_app *android_app = (struct android_app*)data;
 

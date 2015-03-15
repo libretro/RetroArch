@@ -24,6 +24,7 @@
 #include "font_gl_driver.h"
 #include <formats/image.h>
 #include "video_shader_driver.h"
+#include <retro_inline.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -361,7 +362,7 @@ typedef struct gl
    GLuint vao;
 } gl_t;
 
-static inline bool gl_check_error(void)
+static INLINE bool gl_check_error(void)
 {
    int error = glGetError();
    switch (error)

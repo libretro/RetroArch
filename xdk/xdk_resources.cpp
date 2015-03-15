@@ -15,6 +15,7 @@
 
 #include <xgraphics.h>
 #include "xdk_resources.h"
+#include <retro_inline.h>
 
 #ifdef _XBOX360
 struct XPR_HEADER
@@ -46,7 +47,7 @@ PackedResource::~PackedResource()
    Destroy();
 }
 
-void *PackedResource::GetData( const char *strName ) const
+void *PackedResource::GetData(const char *strName) const
 {
    if (m_pResourceTags == NULL || strName == NULL)
       return NULL;
@@ -64,7 +65,7 @@ void *PackedResource::GetData( const char *strName ) const
    return NULL;
 }
 
-static inline void* AllocateContiguousMemory( DWORD Size, DWORD Alignment)
+static INLINE void* AllocateContiguousMemory(DWORD Size, DWORD Alignment)
 {
 #if defined(_XBOX1)
    return D3D_AllocContiguousMemory(Size, Alignment);
@@ -74,7 +75,7 @@ static inline void* AllocateContiguousMemory( DWORD Size, DWORD Alignment)
 #endif
 }
 
-static inline void FreeContiguousMemory( void* pData )
+static INLINE void FreeContiguousMemory(void* pData)
 {
 #if defined(_XBOX1)
    return D3D_FreeContiguousMemory(pData);
@@ -87,7 +88,7 @@ static inline void FreeContiguousMemory( void* pData )
 #ifdef _XBOX1
 char g_strMediaPath[512] = "D:\\Media\\";
 
-static HRESULT FindMediaFile( char *strPath, const char *strFilename, size_t strPathsize)
+static HRESULT FindMediaFile(char *strPath, const char *strFilename, size_t strPathsize)
 {
    // Check for valid arguments
    if( strFilename == NULL || strPath == NULL )
@@ -123,10 +124,10 @@ static HRESULT FindMediaFile( char *strPath, const char *strFilename, size_t str
 #endif
 
 #if defined(_XBOX1)
-HRESULT PackedResource::Create( const char *strFilename,
+HRESULT PackedResource::Create(const char *strFilename,
       DWORD dwNumResourceTags, XBRESOURCE* pResourceTags)
 #elif defined(_XBOX360)
-HRESULT PackedResource::Create( const char *strFilename )
+HRESULT PackedResource::Create(const char *strFilename)
 #endif
 {
 #ifdef _XBOX1
@@ -269,8 +270,8 @@ HRESULT PackedResource::Create( const char *strFilename )
 }
 
 #ifdef _XBOX360
-void PackedResource::GetResourceTags( DWORD* pdwNumResourceTags,
-      XBRESOURCE** ppResourceTags )
+void PackedResource::GetResourceTags(DWORD* pdwNumResourceTags,
+      XBRESOURCE** ppResourceTags)
 {
    if (pdwNumResourceTags)
       (*pdwNumResourceTags) = m_dwNumResourceTags;

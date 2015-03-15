@@ -20,6 +20,8 @@
 #ifndef XAUDIO2_STRIPPED_H
 #define XAUDIO2_STRIPPED_H
 
+#include <retro_inline.h>
+
 // All structures defined in this file use tight field packing
 #pragma pack(push, 1)
 #define X2DEFAULT(x) = (x)
@@ -254,7 +256,7 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
 STDAPI XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2DEFAULT(0),
 		XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR));
 #else
-static inline HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32, XAUDIO2_PROCESSOR)
+static INLINE HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32, XAUDIO2_PROCESSOR)
 {
    IXAudio2 *pXAudio2;
 

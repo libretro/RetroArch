@@ -1,3 +1,5 @@
+#include <retro_inline.h>
+
 #define STRUCT_REGDEF_SIZE		1440
 #define WGPIPE (0xCC008000)
 
@@ -357,7 +359,7 @@ static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
    FIFO_PUTU16(vtxcnt)
 
 #ifdef HW_DOL
-static inline void __GX_UpdateBPMask(struct __gx_regdef *__gx)
+static INLINE void __GX_UpdateBPMask(struct __gx_regdef *__gx)
 {
    u32 i, nbmp, nres;
    u8 ntexmap;
@@ -414,7 +416,7 @@ static inline void __GX_UpdateBPMask(struct __gx_regdef *__gx)
       GX_LOAD_XF_REG(0x100d,__gx->chnMatColor[1]); \
    }
 
-static inline void __GX_SetTexCoordGen(struct __gx_regdef *__gx)
+static INLINE void __GX_SetTexCoordGen(struct __gx_regdef *__gx)
 {
    u32 i,mask;
    u32 texcoord;
@@ -459,7 +461,7 @@ static void __SetSURegs(struct __gx_regdef *__gx, u8 texmap,u8 texcoord)
    GX_LOAD_BP_REG(__gx->suTsize[reg]);
 }
 
-static inline void __GX_SetSUTexRegs(struct __gx_regdef *__gx)
+static INLINE void __GX_SetSUTexRegs(struct __gx_regdef *__gx)
 {
    u32 i, indtev, dirtev, tevreg, tevm, texcm;
    u8 texcoord, texmap;
@@ -747,7 +749,7 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
 #define Y_FACTOR 342.0
 #define ZFACTOR 16777215.0
 
-static inline void __GX_SetViewportJitter(f32 xOrig,f32 yOrig,f32 wd,f32 ht,f32 nearZ,f32 farZ,u32 field)
+static INLINE void __GX_SetViewportJitter(f32 xOrig,f32 yOrig,f32 wd,f32 ht,f32 nearZ,f32 farZ,u32 field)
 {
    f32 x0,y0,x1,y1,n,f,z;
    static f32 Xfactor = 0.5;

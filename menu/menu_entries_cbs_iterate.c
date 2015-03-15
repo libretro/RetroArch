@@ -14,6 +14,7 @@
  */
 
 #include <file/file_path.h>
+#include <retro_inline.h>
 #include "menu.h"
 #include "menu_entries_cbs.h"
 #include "menu_setting.h"
@@ -140,7 +141,7 @@ static int load_or_open_zip_iterate(unsigned action)
    return 0;
 }
 
-static inline struct video_shader *shader_manager_get_current_shader(const char *label, unsigned type)
+static INLINE struct video_shader *shader_manager_get_current_shader(const char *label, unsigned type)
 {
    menu_handle_t *menu = menu_driver_resolve();
    if (!menu)

@@ -30,6 +30,8 @@
 #include <linux/types.h>
 #include <linux/input.h>
 
+#include <retro_inline.h>
+
 /* Udev/evdev Linux joypad driver.
  * More complex and extremely low level,
  * but only Linux driver which can support joypad rumble.
@@ -74,7 +76,7 @@ static struct udev *g_udev;
 static struct udev_monitor *g_udev_mon;
 static struct udev_joypad udev_pads[MAX_USERS];
 
-static inline int16_t compute_axis(const struct input_absinfo *info, int value)
+static INLINE int16_t compute_axis(const struct input_absinfo *info, int value)
 {
    int range = info->maximum - info->minimum;
    int axis  = (value - info->minimum) * 0xffffll / range - 0x7fffll;

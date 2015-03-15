@@ -16,6 +16,8 @@
 
 #include "../input_autodetect.h"
 
+#include <retro_inline.h>
+
 static uint64_t pad_state[MAX_PADS];
 static int16_t analog_state[MAX_PADS][2][2];
 static unsigned pads_connected;
@@ -23,7 +25,7 @@ static unsigned pads_connected;
 sensor_t accelerometer_state[MAX_PADS];
 #endif
 
-static inline int16_t convert_u8_to_s16(uint8_t val)
+static INLINE int16_t convert_u8_to_s16(uint8_t val)
 {
    if (val == 0)
       return -0x7fff;

@@ -30,6 +30,8 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <retro_inline.h>
+
 /* Check if the definitions do not already exist.
  * Official and mingw xinput headers have different include guards.
  */
@@ -120,7 +122,7 @@ static XINPUT_VIBRATION g_xinput_rumble_states[4];
 
 static winxinput_joypad_state g_winxinput_states[4];
 
-static inline int pad_index_to_xuser_index(unsigned pad)
+static INLINE int pad_index_to_xuser_index(unsigned pad)
 {
    return g_xinput_pad_indexes[pad];
 }

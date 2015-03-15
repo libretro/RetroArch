@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <retro_inline.h>
+
 static uint8_t ATTRIBUTE_ALIGN(32) _ss_attributes_payload[] =
 {
     0x52,
@@ -181,13 +183,13 @@ static int _ss_send_attributes_payload(struct ss_device *dev)
          NULL, NULL);  
 }
 
-inline int ss_set_led(struct ss_device *dev, int led)
+static INLINE int ss_set_led(struct ss_device *dev, int led)
 {
    dev->attributes.led = led;
    return _ss_send_attributes_payload(dev);																
 }
 
-inline int ss_set_rumble(struct ss_device *dev, uint8_t duration_right,
+static INLINE int ss_set_rumble(struct ss_device *dev, uint8_t duration_right,
       uint8_t power_right, uint8_t duration_left, uint8_t power_left)
 {
    dev->attributes.rumble.duration_right = duration_right;

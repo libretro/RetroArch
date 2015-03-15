@@ -41,6 +41,7 @@
 #include <gccore.h>
 #include <ogcsys.h>
 #include "../gfx/drivers/ppc_asm.h"
+#include <retro_inline.h>
 
 #include "vi_encoder.h"
 
@@ -60,20 +61,20 @@ static u32 i2cIdentFirst = 0;
 static u32 i2cIdentFlag = 1;
 static vu32* const _i2cReg = (u32*)0xCD800000;
 
-static inline void __viOpenI2C(u32 channel)
+static INLINE void __viOpenI2C(u32 channel)
 {
 	u32 val = ((_i2cReg[49]&~0x8000)|0x4000);
 	val |= _SHIFTL(channel,15,1);
 	_i2cReg[49] = val;
 }
 
-static inline void __viSetSCL(u32 channel)
+static INLINE void __viSetSCL(u32 channel)
 {
 	u32 val = (_i2cReg[48]&~0x4000);
 	val |= _SHIFTL(channel,14,1);
 	_i2cReg[48] = val;
 }
-static inline void __viSetSDA(u32 channel)
+static INLINE void __viSetSDA(u32 channel)
 {
 	u32 val = (_i2cReg[48]&~0x8000);
 	val |= _SHIFTL(channel,15,1);

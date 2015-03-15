@@ -10,34 +10,35 @@
 #include <malloc.h>
 #include <unistd.h>
 #include "mem2_manager.h"
+#include <retro_inline.h>
 
 // Forbid the use of MEM2 through malloc
 u32 MALLOC_MEM2 = 0;
 
 /*** from libogc (lwp_heap.inl) ****/
 
-static inline heap_block *__lwp_heap_blockat(heap_block *block, u32 offset)
+static INLINE heap_block *__lwp_heap_blockat(heap_block *block, u32 offset)
 {
    return (heap_block *) ((char *) block + offset);
 }
 
-static inline heap_block *__lwp_heap_usrblockat(void *ptr)
+static INLINE heap_block *__lwp_heap_usrblockat(void *ptr)
 {
    u32 offset = *(((u32 *) ptr) - 1);
    return __lwp_heap_blockat(ptr, -offset + -HEAP_BLOCK_USED_OVERHEAD);
 }
 
-static inline bool __lwp_heap_blockin(heap_cntrl *heap, heap_block *block)
+static INLINE bool __lwp_heap_blockin(heap_cntrl *heap, heap_block *block)
 {
    return ((u32) block >= (u32) heap->start && (u32) block <= (u32) heap->final);
 }
 
-static inline bool __lwp_heap_blockfree(heap_block *block)
+static INLINE bool __lwp_heap_blockfree(heap_block *block)
 {
    return !(block->front_flag & HEAP_BLOCK_USED);
 }
 
-static inline u32 __lwp_heap_blocksize(heap_block *block)
+static INLINE u32 __lwp_heap_blocksize(heap_block *block)
 {
    return (block->front_flag & ~HEAP_BLOCK_USED);
 }

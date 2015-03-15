@@ -23,6 +23,7 @@ extern "C" {
 
 #include <stdint.h>
 #include "../driver.h"
+#include <retro_inline.h>
 
 /**
  * input_conv_analog_id_to_bind_id:
@@ -40,7 +41,7 @@ extern "C" {
  * Takes as input analog key identifiers and converts
  * them to corresponding bind IDs @ident_minus and @ident_plus.
  **/
-static inline void input_conv_analog_id_to_bind_id(unsigned idx, unsigned ident,
+static INLINE void input_conv_analog_id_to_bind_id(unsigned idx, unsigned ident,
       unsigned *ident_minus, unsigned *ident_plus)
 {
    switch ((idx << 1) | ident)

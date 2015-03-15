@@ -26,8 +26,9 @@
 #include "../driver.h"
 #include "keyboard_line.h"
 #include "input_keymaps.h"
+#include <retro_inline.h>
 
-static inline unsigned leading_ones(uint8_t c)
+static INLINE unsigned leading_ones(uint8_t c)
 {
    unsigned ones = 0;
    while (c & 0x80)

@@ -27,6 +27,8 @@
 #include "../../general.h"
 #include "../../driver.h"
 
+#include <retro_inline.h>
+
 #define MAX_TOUCH 16
 #define MAX_PADS 8
 
@@ -325,7 +327,7 @@ static void *android_input_init(void)
 static int zeus_id = -1;
 static int zeus_second_id = -1;
 
-static inline int android_input_poll_event_type_motion(
+static INLINE int android_input_poll_event_type_motion(
       android_input_t *android, AInputEvent *event,
       int port, int source)
 {
@@ -379,7 +381,7 @@ static inline int android_input_poll_event_type_motion(
    return 0;
 }
 
-static inline void android_input_poll_event_type_key(
+static INLINE void android_input_poll_event_type_key(
       android_input_t *android, struct android_app *android_app,
       AInputEvent *event, int port, int keycode, int source,
       int type_event, int *handled)

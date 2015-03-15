@@ -56,6 +56,8 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include <retro_inline.h>
+
 static  pthread_once_t     g_once;
 static  AndroidCpuFamily   g_cpuFamily;
 static  uint64_t           g_cpuFeatures;
@@ -70,7 +72,7 @@ static  int                g_cpuCount;
 #endif
 
 #ifdef __i386__
-static __inline__ void cpu_x86_cpuid(int func, int values[4])
+static INLINE void cpu_x86_cpuid(int func, int values[4])
 {
     int a, b, c, d;
     /* We need to preserve ebx since we're compiling PIC code */

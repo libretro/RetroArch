@@ -20,6 +20,7 @@
 #include "menu_navigation.h"
 #include "menu_entries.h"
 #include <string.h>
+#include <retro_inline.h>
 
 /**
  * Before a refresh, we could have deleted a 
@@ -53,7 +54,7 @@ static void menu_entries_refresh(file_list_t *list)
  *
  * Returns: true (1) if entry is a directory, otherwise false (0).
  **/
-static inline bool menu_entries_list_elem_is_dir(file_list_t *list,
+static INLINE bool menu_entries_list_elem_is_dir(file_list_t *list,
       unsigned offset)
 {
    const char *path  = NULL;
@@ -75,7 +76,7 @@ static inline bool menu_entries_list_elem_is_dir(file_list_t *list,
  *
  * Returns: first character of element in file list.
  **/
-static inline int menu_entries_list_get_first_char(
+static INLINE int menu_entries_list_get_first_char(
       file_list_t *list, unsigned offset)
 {
    int ret;
