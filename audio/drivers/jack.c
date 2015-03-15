@@ -26,6 +26,7 @@
 #include <boolean.h>
 #include <string.h>
 #include <assert.h>
+#include <rthreads/rthreads.h>
 
 #define FRAMES(x) (x / (sizeof(float) * 2))
 
@@ -38,8 +39,8 @@ typedef struct jack
    bool nonblock;
    bool is_paused;
 
-   pthread_cond_t cond;
-   pthread_mutex_t cond_lock;
+   scond_t *cond;
+   slock_t *cond_lock;
    size_t buffer_size;
 } jack_t;
 
@@ -51,7 +52,7 @@ static int process_cb(jack_nframes_t nframes, void *data)
 
    if (nframes <= 0)
    {
-      pthread_cond_signal(&jd->cond);
+      scond_signal(jd->cond);
       return 0;
    }
 
@@ -71,7 +72,7 @@ static int process_cb(jack_nframes_t nframes, void *data)
       for (f = min_avail; f < nframes; f++)
          out[f] = 0.0f;
    }
-   pthread_cond_signal(&jd->cond);
+   scond_signal(jd->cond);
    return 0;
 }
 
@@ -83,7 +84,7 @@ static void shutdown_cb(void *data)
       return;
 
    jd->shutdown = true;
-   pthread_cond_signal(&jd->cond);
+   scond_signal(jd->cond);
 }
 
 static int parse_ports(char **dest_ports, const char **jports)
@@ -143,8 +144,8 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
    if (!jd)
       return NULL;
 
-   pthread_cond_init(&jd->cond, NULL);
-   pthread_mutex_init(&jd->cond_lock, NULL);
+   jd->cond      = scond_new();
+   jd->cond_lock = slock_new();
 
    jd->client = jack_client_open("RetroArch", JackNullOption, NULL);
    if (jd->client == NULL)
@@ -254,9 +255,9 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
       }
       else
       {
-         pthread_mutex_lock(&jd->cond_lock);
-         pthread_cond_wait(&jd->cond, &jd->cond_lock);
-         pthread_mutex_unlock(&jd->cond_lock);
+         slock_lock(jd->cond_lock);
+         scond_wait(jd->cond, jd->cond_lock);
+         slock_unlock(jd->cond_lock);
       }
 
       if (jd->nonblock)
@@ -321,8 +322,10 @@ static void ja_free(void *data)
       if (jd->buffer[i] != NULL)
          jack_ringbuffer_free(jd->buffer[i]);
 
-   pthread_mutex_destroy(&jd->cond_lock);
-   pthread_cond_destroy(&jd->cond);
+   if (jd->cond_lock)
+      slock_free(jd->cond_lock);
+   if (jd->cond)
+      scond_free(jd->cond);
    free(jd);
 }
 
