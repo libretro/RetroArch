@@ -22,6 +22,7 @@
 #include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../font_renderer_driver.h"
+#include <retro_inline.h>
 
 #include "../drivers_context/x11_common.h"
 
@@ -95,7 +96,7 @@ static void xvideo_sighandler(int sig)
    g_quit = 1;
 }
 
-static inline void calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v, unsigned r, unsigned g, unsigned b)
+static INLINE void calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v, unsigned r, unsigned g, unsigned b)
 {
    int y_ = (int)(+((double)r * 0.257) + ((double)g * 0.504) + ((double)b * 0.098) +  16.0);
    int u_ = (int)(-((double)r * 0.148) - ((double)g * 0.291) + ((double)b * 0.439) + 128.0);

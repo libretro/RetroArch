@@ -19,6 +19,7 @@
 #include "../video_context_driver.h"
 #include "../gl_common.h"
 #include "../video_monitor.h"
+#include <retro_inline.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -61,7 +62,7 @@ static unsigned g_egl_res;
 static PFNEGLCREATEIMAGEKHRPROC peglCreateImageKHR;
 static PFNEGLDESTROYIMAGEKHRPROC peglDestroyImageKHR;
 
-static inline bool gfx_ctx_vc_egl_query_extension(const char *ext)
+static INLINE bool gfx_ctx_vc_egl_query_extension(const char *ext)
 {
    const char *str = (const char*)eglQueryString(g_egl_dpy, EGL_EXTENSIONS);
    bool ret = str && strstr(str, ext);

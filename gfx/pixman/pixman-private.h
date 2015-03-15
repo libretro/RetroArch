@@ -1,4 +1,5 @@
 #include <float.h>
+#include <retro_inline.h>
 
 #ifndef PIXMAN_PRIVATE_H
 #define PIXMAN_PRIVATE_H
@@ -769,7 +770,7 @@ _pixman_iter_init_bits_stride (pixman_iter_t *iter, const pixman_iter_info_t *in
 
 extern pixman_implementation_t *global_implementation;
 
-static force_inline pixman_implementation_t *
+static INLINE pixman_implementation_t *
 get_implementation (void)
 {
 #ifndef TOOLCHAIN_SUPPORTS_ATTRIBUTE_CONSTRUCTOR
@@ -840,14 +841,14 @@ struct pixman_list_t
     pixman_link_t *tail;
 };
 
-static force_inline void
+static INLINE void
 pixman_list_init (pixman_list_t *list)
 {
     list->head = (pixman_link_t *)list;
     list->tail = (pixman_link_t *)list;
 }
 
-static force_inline void
+static INLINE void
 pixman_list_prepend (pixman_list_t *list, pixman_link_t *link)
 {
     link->next = list->head;
@@ -856,14 +857,14 @@ pixman_list_prepend (pixman_list_t *list, pixman_link_t *link)
     list->head = link;
 }
 
-static force_inline void
+static INLINE void
 pixman_list_unlink (pixman_link_t *link)
 {
     link->prev->next = link->next;
     link->next->prev = link->prev;
 }
 
-static force_inline void
+static INLINE void
 pixman_list_move_to_front (pixman_list_t *list, pixman_link_t *link)
 {
     pixman_list_unlink (link);
@@ -902,7 +903,7 @@ pixman_list_move_to_front (pixman_list_t *list, pixman_link_t *link)
 
 /* Conversion between 8888 and 0565 */
 
-static force_inline uint16_t
+static INLINE uint16_t
 convert_8888_to_0565 (uint32_t s)
 {
     /* The following code can be compiled into just 4 instructions on ARM */
@@ -914,7 +915,7 @@ convert_8888_to_0565 (uint32_t s)
     return (uint16_t)a;
 }
 
-static force_inline uint32_t
+static INLINE uint32_t
 convert_0565_to_0888 (uint16_t s)
 {
     return (((((s) << 3) & 0xf8) | (((s) >> 2) & 0x7)) |
@@ -922,7 +923,7 @@ convert_0565_to_0888 (uint16_t s)
             ((((s) << 8) & 0xf80000) | (((s) << 3) & 0x70000)));
 }
 
-static force_inline uint32_t
+static INLINE uint32_t
 convert_0565_to_8888 (uint16_t s)
 {
     return convert_0565_to_0888 (s) | 0xff000000;
@@ -930,19 +931,19 @@ convert_0565_to_8888 (uint16_t s)
 
 /* Trivial versions that are useful in macros */
 
-static force_inline uint32_t
+static INLINE uint32_t
 convert_8888_to_8888 (uint32_t s)
 {
     return s;
 }
 
-static force_inline uint32_t
+static INLINE uint32_t
 convert_x888_to_8888 (uint32_t s)
 {
     return s | 0xff000000;
 }
 
-static force_inline uint16_t
+static INLINE uint16_t
 convert_0565_to_0565 (uint16_t s)
 {
     return s;
@@ -963,7 +964,7 @@ convert_0565_to_0565 (uint16_t s)
 #   define SCREEN_SHIFT_RIGHT(x,n)	((x) << (n))
 #endif
 
-static force_inline uint32_t
+static INLINE uint32_t
 unorm_to_unorm (uint32_t val, int from_bits, int to_bits)
 {
     uint32_t result;
@@ -1095,7 +1096,7 @@ pixman_transform_point_31_16_affine (const pixman_transform_t    *t,
 
 #ifdef PIXMAN_TIMERS
 
-static inline uint64_t
+static INLINE uint64_t
 oil_profile_stamp_rdtsc (void)
 {
     uint32_t hi, lo;

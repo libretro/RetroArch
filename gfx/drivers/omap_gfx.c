@@ -20,6 +20,7 @@
 #include "../../general.h"
 #include "../../retroarch.h"
 #include <gfx/scaler/scaler.h>
+#include <retro_inline.h>
 #include "../video_viewport.h"
 #include "../video_monitor.h"
 #include "../video_context_driver.h"
@@ -152,13 +153,13 @@ static int read_sysfs(const char *fname, char *buff, size_t size)
   return 0;
 }
 
-static inline void put_pixel_rgb565(uint16_t *p,
+static INLINE void put_pixel_rgb565(uint16_t *p,
       unsigned r, unsigned g, unsigned b)
 {
    *p = (((r  >> 3) & 0x1f) << 11) | (((g >> 2) & 0x3f) << 5) | ((b  >> 3) & 0x1f);
 }
 
-static inline void put_pixel_argb8888(uint32_t *p,
+static INLINE void put_pixel_argb8888(uint32_t *p,
       unsigned r, unsigned g, unsigned b)
 {
   *p = ((r << 16) & 0xff0000) | ((g << 8) & 0x00ff00) | ((b << 0) & 0x0000ff);

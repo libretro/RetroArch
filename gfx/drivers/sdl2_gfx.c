@@ -23,6 +23,7 @@
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../performance.h"
+#include <retro_inline.h>
 #include <gfx/scaler/scaler.h>
 #include "../video_viewport.h"
 #include "../video_monitor.h"
@@ -81,7 +82,7 @@ typedef struct _sdl2_video
 
 static void sdl2_gfx_free(void *data);
 
-static inline void sdl_tex_zero(sdl2_tex_t *t)
+static INLINE void sdl_tex_zero(sdl2_tex_t *t)
 {
    if (t->tex)
       SDL_DestroyTexture(t->tex);

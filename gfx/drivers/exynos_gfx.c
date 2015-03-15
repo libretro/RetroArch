@@ -30,6 +30,8 @@
 
 #include <exynos/exynos_fimg2d.h>
 
+#include <retro_inline.h>
+
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
@@ -164,8 +166,9 @@ struct exynos_data {
 #endif
 };
 
-static inline unsigned align_common(unsigned i, unsigned j) {
-  return (i + j - 1) & ~(j - 1);
+static INLINE unsigned align_common(unsigned i, unsigned j)
+{
+   return (i + j - 1) & ~(j - 1);
 }
 
 /* Find the index of a compatible DRM device. */

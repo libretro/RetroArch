@@ -21,6 +21,7 @@
 #include <EGL/eglext.h>
 #include "../video_context_driver.h"
 #include <gfx/math/matrix_3x3.h>
+#include <retro_inline.h>
 #include "../../libretro.h"
 #include "../../general.h"
 #include "../../retroarch.h"
@@ -70,7 +71,7 @@ static void vg_set_nonblock_state(void *data, bool state)
    vg->driver->swap_interval(vg, state ? 0 : 1);
 }
 
-static inline bool vg_query_extension(const char *ext)
+static INLINE bool vg_query_extension(const char *ext)
 {
    const char *str = (const char*)vgGetString(VG_EXTENSIONS);
    bool ret = str && strstr(str, ext);

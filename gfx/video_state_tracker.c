@@ -17,6 +17,7 @@
 #include "video_state_tracker.h"
 #include <stdlib.h>
 #include <compat/strl.h>
+#include <retro_inline.h>
 #include "../general.h"
 #include "../input/input_common.h"
 
@@ -171,7 +172,7 @@ void state_tracker_free(state_tracker_t *tracker)
    free(tracker);
 }
 
-static inline uint16_t state_tracker_fetch(
+static INLINE uint16_t state_tracker_fetch(
       const struct state_tracker_internal *info)
 {
    uint16_t val = info->ptr[info->addr];

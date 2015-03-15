@@ -21,6 +21,7 @@
 #include <pspgum.h>
 #include <psprtc.h>
 
+#include <retro_inline.h>
 #include "psp_sdk_defines.h"
 #include "../../general.h"
 #include "../../driver.h"
@@ -118,7 +119,7 @@ typedef struct psp1_video
 #define PSP_FRAME_SLICE_COUNT    (PSP_FRAME_ROWS_COUNT * PSP_FRAME_COLUMNS_COUNT)
 #define PSP_FRAME_VERTEX_COUNT   (PSP_FRAME_SLICE_COUNT * 2)
 
-static inline void psp_set_screen_coords (psp1_sprite_t* framecoords, 
+static INLINE void psp_set_screen_coords (psp1_sprite_t* framecoords, 
       int x, int y, int width, int height, unsigned rotation)
 {
    int i;
@@ -216,10 +217,9 @@ static inline void psp_set_screen_coords (psp1_sprite_t* framecoords,
          }
       }
    }
-
 }
 
-static inline void psp_set_tex_coords (psp1_sprite_t* framecoords,
+static INLINE void psp_set_tex_coords (psp1_sprite_t* framecoords,
       int width, int height)
 {
    int i;

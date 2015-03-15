@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <retro_inline.h>
 
 #ifdef RARCH_INTERNAL
 #define softfilter_get_implementation phosphor2x_get_implementation
@@ -78,7 +79,7 @@ struct filter_data
 #define blend_pixels_xrgb8888(a, b) (((a >> 1) & 0x7f7f7f7f) + ((b >> 1) & 0x7f7f7f7f))
 #define blend_pixels_rgb565(a, b) (((a&0xF7DE) >> 1) + ((b&0xF7DE) >> 1))
 
-static inline unsigned max_component_xrgb8888(uint32_t color)
+static INLINE unsigned max_component_xrgb8888(uint32_t color)
 {
    unsigned red, green, blue, max;
    red = red_xrgb8888(color);
@@ -91,7 +92,7 @@ static inline unsigned max_component_xrgb8888(uint32_t color)
    return max;
 }
 
-static inline unsigned max_component_rgb565(uint32_t color)
+static INLINE unsigned max_component_rgb565(uint32_t color)
 {
    unsigned red, green, blue, max;
    red = red_rgb565(color);

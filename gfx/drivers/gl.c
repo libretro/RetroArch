@@ -23,6 +23,7 @@
 #include "../../performance.h"
 #include <gfx/scaler/scaler.h>
 #include <formats/image.h>
+#include <retro_inline.h>
 
 #include <stdint.h>
 #include "../../libretro.h"
@@ -89,7 +90,7 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
 };
 
-static inline bool gl_query_extension(gl_t *gl, const char *ext)
+static INLINE bool gl_query_extension(gl_t *gl, const char *ext)
 {
    bool ret = false;
 
@@ -307,7 +308,7 @@ void apple_bind_game_view_fbo(void);
 #define gl_bind_backbuffer() glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0)
 #endif
 
-static inline GLenum min_filter_to_mag(GLenum type)
+static INLINE GLenum min_filter_to_mag(GLenum type)
 {
    switch (type)
    {
@@ -870,7 +871,7 @@ static void gl_set_video_mode(void *data, unsigned width, unsigned height,
 }
 
 #ifdef HAVE_FBO
-static inline void gl_start_frame_fbo(gl_t *gl)
+static INLINE void gl_start_frame_fbo(gl_t *gl)
 {
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[0]);
@@ -1113,7 +1114,7 @@ static void gl_update_input_size(gl_t *gl, unsigned width,
  * to use a custom SIMD-optimized conversion routine 
  * than letting GL do it. */
 #if !defined(HAVE_PSGL) && !defined(HAVE_OPENGLES2)
-static inline void gl_convert_frame_rgb16_32(gl_t *gl, void *output,
+static INLINE void gl_convert_frame_rgb16_32(gl_t *gl, void *output,
       const void *input, int width, int height, int in_pitch)
 {
    if (width != gl->scaler.in_width || height != gl->scaler.in_height)
@@ -1135,7 +1136,7 @@ static inline void gl_convert_frame_rgb16_32(gl_t *gl, void *output,
 #endif
 
 #ifdef HAVE_OPENGLES2
-static inline void gl_convert_frame_argb8888_abgr8888(gl_t *gl,
+static INLINE void gl_convert_frame_argb8888_abgr8888(gl_t *gl,
       void *output, const void *input,
       int width, int height, int in_pitch)
 {
@@ -1258,7 +1259,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
-static inline void gl_copy_frame(gl_t *gl, const void *frame,
+static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
    RARCH_PERFORMANCE_INIT(copy_frame);
@@ -1368,7 +1369,7 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame,
    RARCH_PERFORMANCE_STOP(copy_frame);
 }
 
-static inline void gl_set_prev_texture(gl_t *gl,
+static INLINE void gl_set_prev_texture(gl_t *gl,
       const struct gl_tex_info *tex_info)
 {
    memmove(gl->prev_info + 1, gl->prev_info,
@@ -1377,7 +1378,7 @@ static inline void gl_set_prev_texture(gl_t *gl,
          sizeof(*tex_info));
 }
 
-static inline void gl_set_shader_viewport(gl_t *gl, unsigned shader)
+static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned shader)
 {
    gl->shader->use(gl, shader);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
@@ -1417,7 +1418,7 @@ static void gl_pbo_async_readback(gl_t *gl)
 #endif
 
 #if defined(HAVE_MENU)
-static inline void gl_draw_texture(gl_t *gl)
+static INLINE void gl_draw_texture(gl_t *gl)
 {
    const GLfloat color[] = {
       1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
@@ -1928,7 +1929,7 @@ static bool resolve_extensions(gl_t *gl)
    return true;
 }
 
-static inline void gl_set_texture_fmts(gl_t *gl, bool rgb32)
+static INLINE void gl_set_texture_fmts(gl_t *gl, bool rgb32)
 {
    gl->internal_fmt = RARCH_GL_INTERNAL_FORMAT16;
    gl->texture_type = RARCH_GL_TEXTURE_TYPE16;

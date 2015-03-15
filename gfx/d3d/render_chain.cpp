@@ -16,15 +16,16 @@
 
 #include "render_chain.h"
 #include <string.h>
+#include <retro_inline.h>
 
-static inline D3DTEXTUREFILTERTYPE translate_filter(unsigned type)
+static INLINE D3DTEXTUREFILTERTYPE translate_filter(unsigned type)
 {
    if (type == RARCH_FILTER_UNSPEC)
       return g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
    return type == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT;
 }
 
-static inline D3DTEXTUREFILTERTYPE translate_filter(bool smooth)
+static INLINE D3DTEXTUREFILTERTYPE translate_filter(bool smooth)
 {
    if (smooth)
       return D3DTEXF_LINEAR;

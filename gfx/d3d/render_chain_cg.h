@@ -1,6 +1,8 @@
 #ifndef _D3D_CG
 #define _D3D_CG
 
+#include <retro_inline.h>
+
 static const char *stock_program =
     "void main_vertex"
     "("
@@ -25,7 +27,7 @@ static const char *stock_program =
     "   return color * tex2D(s0, tex);"
     "}";
 
-static inline bool validate_param_name(const char *name)
+static INLINE bool validate_param_name(const char *name)
 {
    static const char *illegal[] = {
       "PREV.",
@@ -50,7 +52,7 @@ static inline bool validate_param_name(const char *name)
    return true;
 }
 
-static inline CGparameter find_param_from_semantic(
+static INLINE CGparameter find_param_from_semantic(
       CGparameter param, const std::string &sem)
 {
    while (param)
@@ -78,7 +80,7 @@ static inline CGparameter find_param_from_semantic(
    return NULL;
 }
 
-static inline CGparameter find_param_from_semantic(CGprogram prog,
+static INLINE CGparameter find_param_from_semantic(CGprogram prog,
       const std::string &sem)
 {
    return find_param_from_semantic(cgGetFirstParameter(
