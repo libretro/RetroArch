@@ -37,6 +37,8 @@
 
 #include <bcm_host.h>
 
+#include <rthreads/rthreads.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -81,11 +83,11 @@ struct dispmanx_video
    char *screen_bck;
 
    /* For threading */
-   pthread_cond_t vsync_condition;	
-   pthread_mutex_t pending_mutex;
+   scond_t *vsync_condition;	
+   slock_t *pending_mutex;
 
    /* Mutex to isolate the vsync condition signaling */
-   pthread_mutex_t vsync_cond_mutex;
+   slock_t *vsync_cond_mutex;
 
    /* Menu */
    bool menu_active;
@@ -115,7 +117,7 @@ struct dispmanx_page
    struct dispmanx_video *dispvars;
    /* Each page has it's own mutex for 
     * isolating it's used flag access. */
-   pthread_mutex_t page_used_mutex;
+   slock_t *page_used_mutex;
    bool used;
 };
 
@@ -206,15 +208,15 @@ static struct dispmanx_page *dispmanx_get_free_page(void* data)
        * wait until a free page is freed by vsync CB. */
       if (!page)
       {
-         pthread_mutex_lock (&_dispvars->vsync_cond_mutex);
-         pthread_cond_wait (&_dispvars->vsync_condition, &_dispvars->vsync_cond_mutex);
-         pthread_mutex_unlock (&_dispvars->vsync_cond_mutex);
+         slock_lock(_dispvars->vsync_cond_mutex);
+         scond_wait(_dispvars->vsync_condition, _dispvars->vsync_cond_mutex);
+         slock_unlock(_dispvars->vsync_cond_mutex);
       }
    }
 
-   pthread_mutex_lock (&page->page_used_mutex);
+   slock_lock(page->page_used_mutex);
    page->used = true;
-   pthread_mutex_unlock (&page->page_used_mutex);
+   slock_unlock(page->page_used_mutex);
 
    return page;
 }
@@ -228,20 +230,20 @@ static void vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
 
    /* We signal the vsync condition, just in case 
     * we're waiting for it somewhere (no free pages, etc). */
-   pthread_mutex_lock(&page->dispvars->vsync_cond_mutex);
-   pthread_cond_signal(&page->dispvars->vsync_condition);
-   pthread_mutex_unlock(&page->dispvars->vsync_cond_mutex);
+   slock_lock(page->dispvars->vsync_cond_mutex);
+   scond_signal(page->dispvars->vsync_condition);
+   slock_unlock(page->dispvars->vsync_cond_mutex);
 
-   pthread_mutex_lock(&page->dispvars->pending_mutex);
+   slock_lock(page->dispvars->pending_mutex);
    page->dispvars->pageflip_pending--;	
-   pthread_mutex_unlock(&page->dispvars->pending_mutex);
+   slock_unlock(page->dispvars->pending_mutex);
 
    /* We mark as free the page that was visible until now */
    if (page->dispvars->currentPage != NULL)
    {
-      pthread_mutex_lock (&page->page_used_mutex);
+      slock_lock(page->page_used_mutex);
       page->dispvars->currentPage->used = false;
-      pthread_mutex_unlock (&page->page_used_mutex);
+      slock_unlock(page->page_used_mutex);
    }
 
    /* The page on which we just issued the flip that 
@@ -260,9 +262,9 @@ static void dispmanx_flip(struct dispmanx_page *page, void *data)
     * If we do, the second CB isn't called. */
    if (_dispvars->pageflip_pending > 0)
    {
-      pthread_mutex_lock(&_dispvars->vsync_cond_mutex);
-      pthread_cond_wait (&_dispvars->vsync_condition, &_dispvars->vsync_cond_mutex);
-      pthread_mutex_unlock(&_dispvars->vsync_cond_mutex);
+      slock_lock(_dispvars->vsync_cond_mutex);
+      scond_wait(_dispvars->vsync_condition, _dispvars->vsync_cond_mutex);
+      slock_unlock(_dispvars->vsync_cond_mutex);
    }
 
    /* Issue a page flip at the next vblank interval 
@@ -274,9 +276,9 @@ static void dispmanx_flip(struct dispmanx_page *page, void *data)
 
    vc_dispmanx_update_submit(_dispvars->update, vsync_callback, (void*)page);
 
-   pthread_mutex_lock(&_dispvars->pending_mutex);
+   slock_lock(_dispvars->pending_mutex);
    _dispvars->pageflip_pending++;	
-   pthread_mutex_unlock(&_dispvars->pending_mutex);
+   slock_unlock(_dispvars->pending_mutex);
 }
 
 static void dispmanx_free_main_resources(void *data)
@@ -444,16 +446,16 @@ static void *dispmanx_gfx_init(const video_info_t *video,
 
 	for (i = 0; i < NUMPAGES; i++)
    {
-		_dispvars->pages[i].numpage  = i;
-		_dispvars->pages[i].used     = false;
-		_dispvars->pages[i].dispvars = _dispvars;
-		pthread_mutex_init(&_dispvars->pages[i].page_used_mutex, NULL); 
+		_dispvars->pages[i].numpage         = i;
+		_dispvars->pages[i].used            = false;
+		_dispvars->pages[i].dispvars        = _dispvars;
+		_dispvars->pages[i].page_used_mutex = slock_new(); 
 	}
 
 	/* Initialize the rest of the mutexes and conditions. */
-	pthread_cond_init(&_dispvars->vsync_condition,   NULL); 
-	pthread_mutex_init(&_dispvars->pending_mutex,    NULL); 
-	pthread_mutex_init(&_dispvars->vsync_cond_mutex, NULL); 
+	_dispvars->vsync_condition  = scond_new();
+	_dispvars->pending_mutex    = slock_new();
+	_dispvars->vsync_cond_mutex = slock_new(); 
 
 	bcm_host_init();
 	_dispvars->display = vc_dispmanx_display_open(_dispvars->screen);
@@ -736,11 +738,11 @@ static void dispmanx_gfx_free(void *data)
    bcm_host_deinit();
 
    /* Destroy mutexes and conditions. */
-   pthread_mutex_destroy(&_dispvars->pending_mutex);
-   pthread_cond_destroy(&_dispvars->vsync_condition);		
+   slock_free(_dispvars->pending_mutex);
+   scond_free(_dispvars->vsync_condition);		
 
    for (i = 0; i < NUMPAGES; i++)
-      pthread_mutex_destroy(&_dispvars->pages[i].page_used_mutex);
+      slock_free(_dispvars->pages[i].page_used_mutex);
 
    free (_dispvars->pages);
 
