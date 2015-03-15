@@ -22,7 +22,6 @@
 #include <limits.h>
 #include <setjmp.h>
 #include "driver.h"
-#include <queues/message_queue.h>
 #include "rewind.h"
 #include "movie.h"
 #include "autosave.h"
@@ -30,7 +29,6 @@
 #include <compat/strl.h>
 #include "core_options.h"
 #include "core_info.h"
-#include <retro_miscellaneous.h>
 #include "gfx/video_viewport.h"
 
 #include "playlist.h"
@@ -58,10 +56,6 @@
 
 #ifdef HAVE_COMMAND
 #include "command.h"
-#endif
-
-#ifdef HAVE_NETWORKING
-#include "net_http.h"
 #endif
 
 #ifdef __cplusplus
