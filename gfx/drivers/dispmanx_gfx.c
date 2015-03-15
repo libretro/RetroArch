@@ -326,7 +326,7 @@ static bool dispmanx_setup_scale(void *data, unsigned width,
 	dispmanx_free_main_resources(_dispvars);
 	vc_dispmanx_display_get_info(_dispvars->display, &(_dispvars->amode));
 
-	// We choose the pixel format depending on the bpp of the frame.
+	/* We choose the pixel format depending on the bpp of the frame. */
 	switch (_dispvars->bytes_per_pixel)
    {
       case 2:	
