@@ -1625,15 +1625,6 @@ static void main_clear_state_extern_global(void)
    memset(&g_extern, 0, sizeof(g_extern));
 }
 
-static void main_clear_state_extern(void)
-{
-   rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
-   rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
-   main_clear_state_extern_global();
-   memset(&g_runloop, 0, sizeof(g_runloop));
-   memset(&g_data_runloop, 0, sizeof(g_data_runloop));
-}
-
 /**
  * main_clear_state:
  * @inited               : Init the drivers after teardown?
@@ -1651,8 +1642,13 @@ static void main_clear_state(bool inited)
 
    if (inited)
       rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
+   rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
+   rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
 
-   main_clear_state_extern();
+   main_clear_state_extern_global();
+
+   memset(&g_runloop, 0, sizeof(g_runloop));
+   memset(&g_data_runloop, 0, sizeof(g_data_runloop));
 
    if (inited)
       rarch_main_command(RARCH_CMD_DRIVERS_INIT);
