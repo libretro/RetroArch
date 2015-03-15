@@ -35,6 +35,7 @@
 
 #include <file/nbio.h>
 #ifndef IS_SALAMANDER
+#include <formats/image.h>
 #include <formats/rpng.h>
 #endif
 
