@@ -26,6 +26,7 @@
 #include "../input/input_common.h"
 #include "../input/input_joypad.h"
 #include "../general.h"
+#include "../runloop.h"
 #include <assert.h>
 
 /* Need to be present for build to work, but it's not *really* used.
