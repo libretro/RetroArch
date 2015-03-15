@@ -905,7 +905,7 @@ void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration
 
    if (flush)
       msg_queue_clear(g_runloop.msg_queue);
-   msg_queue_push(g_runloop.msg_queue, msg, 0, 60);
+   msg_queue_push(g_runloop.msg_queue, msg, prio, duration);
 }
 
 /**
