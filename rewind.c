@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <retro_inline.h>
 
 #ifndef UINT16_MAX
 #define UINT16_MAX 0xffff
@@ -82,12 +83,12 @@ size thisstart;
 
 /* These are called very few constant times per frame, 
  * keep it as simple as possible. */
-static inline void write_size_t(void *ptr, size_t val)
+static INLINE void write_size_t(void *ptr, size_t val)
 {
    memcpy(ptr, &val, sizeof(val));
 }
 
-static inline size_t read_size_t(const void *ptr)
+static INLINE size_t read_size_t(const void *ptr)
 {
    size_t ret;
 
@@ -274,7 +275,7 @@ void state_manager_push_where(state_manager_t *state, void **data)
 
 #if __SSE2__
 #if defined(__GNUC__)
-static inline int compat_ctz(unsigned x)
+static INLINE int compat_ctz(unsigned x)
 {
    return __builtin_ctz(x);
 }
@@ -283,7 +284,7 @@ static inline int compat_ctz(unsigned x)
 /* Only checks at nibble granularity, 
  * because that's what we need. */
 
-static inline int compat_ctz(unsigned x)
+static INLINE int compat_ctz(unsigned x)
 {
    if (x & 0x000f)
       return 0;
@@ -301,7 +302,7 @@ static inline int compat_ctz(unsigned x)
 /* There's no equivalent in libc, you'd think so ...
  * std::mismatch exists, but it's not optimized at all. */
 
-static inline size_t find_change(const uint16_t *a, const uint16_t *b)
+static INLINE size_t find_change(const uint16_t *a, const uint16_t *b)
 {
    const __m128i *a128 = (const __m128i*)a;
    const __m128i *b128 = (const __m128i*)b;
@@ -325,7 +326,7 @@ static inline size_t find_change(const uint16_t *a, const uint16_t *b)
    }
 }
 #else
-static inline size_t find_change(const uint16_t *a, const uint16_t *b)
+static INLINE size_t find_change(const uint16_t *a, const uint16_t *b)
 {
    const uint16_t *a_org = a;
 #ifdef NO_UNALIGNED_MEM
@@ -358,7 +359,7 @@ static inline size_t find_change(const uint16_t *a, const uint16_t *b)
 }
 #endif
 
-static inline size_t find_same(const uint16_t *a, const uint16_t *b)
+static INLINE size_t find_same(const uint16_t *a, const uint16_t *b)
 {
    const uint16_t *a_org = a;
 #ifdef NO_UNALIGNED_MEM
