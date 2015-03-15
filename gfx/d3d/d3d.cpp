@@ -26,6 +26,7 @@
 #endif
 #include "../video_viewport.h"
 #include "../video_monitor.h"
+#include "../../runloop.h"
 
 #ifndef _XBOX
 #include "../drivers_context/win32_common.h"
