@@ -98,6 +98,7 @@ static int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_BOOL:
       case ST_INT:
       case ST_UINT:
+      case ST_HEX:
       case ST_FLOAT:
       case ST_STRING:
       case ST_DIR:
