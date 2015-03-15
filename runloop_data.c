@@ -609,8 +609,43 @@ static void rarch_main_data_db_iterate(void)
 #endif
 }
 
+static void rarch_main_data_overlay_iterate(void)
+{
+   if (g_runloop.is_idle)
+      return;
+   if (!driver.overlay)
+      return;
+
+   switch (driver.overlay->state)
+   {
+      case OVERLAY_STATUS_NONE:
+      case OVERLAY_STATUS_ALIVE:
+         break;
+      case OVERLAY_STATUS_DEFERRED_LOAD:
+         input_overlay_load_overlays(driver.overlay);
+         break;
+      case OVERLAY_STATUS_DEFERRED_LOADING:
+         input_overlay_load_overlays_iterate(driver.overlay);
+         break;
+      case OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE:
+         input_overlay_load_overlays_resolve_iterate(driver.overlay);
+         break;
+      case OVERLAY_STATUS_DEFERRED_DONE:
+         input_overlay_new_done(driver.overlay);
+         break;
+      case OVERLAY_STATUS_DEFERRED_ERROR:
+         input_overlay_free(driver.overlay);
+         break;
+      default:
+         break;
+   }
+}
+
 void rarch_main_data_iterate(void)
 {
+#ifdef HAVE_OVERLAY
+   rarch_main_data_overlay_iterate();
+#endif
    rarch_main_data_nbio_iterate(&g_runloop.data.nbio);
 #ifdef HAVE_NETWORKING
    rarch_main_data_http_iterate(&g_runloop.data.http);

@@ -876,36 +876,6 @@ static int rarch_main_iterate_quit(void)
 }
 
 #ifdef HAVE_OVERLAY
-void rarch_main_iterate_overlay_state(void)
-{
-   if (g_runloop.is_idle)
-      return;
-
-   switch (driver.overlay->state)
-   {
-      case OVERLAY_STATUS_NONE:
-      case OVERLAY_STATUS_ALIVE:
-         break;
-      case OVERLAY_STATUS_DEFERRED_LOAD:
-         input_overlay_load_overlays(driver.overlay);
-         break;
-      case OVERLAY_STATUS_DEFERRED_LOADING:
-         input_overlay_load_overlays_iterate(driver.overlay);
-         break;
-      case OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE:
-         input_overlay_load_overlays_resolve_iterate(driver.overlay);
-         break;
-      case OVERLAY_STATUS_DEFERRED_DONE:
-         input_overlay_new_done(driver.overlay);
-         break;
-      case OVERLAY_STATUS_DEFERRED_ERROR:
-         input_overlay_free(driver.overlay);
-         break;
-      default:
-         break;
-   }
-}
-
 static void rarch_main_iterate_linefeed_overlay(void)
 {
    static char prev_overlay_restore = false;
@@ -965,9 +935,6 @@ int rarch_main_iterate(void)
 
 #ifdef HAVE_OVERLAY
    rarch_main_iterate_linefeed_overlay();
-
-   if (driver.overlay)
-      rarch_main_iterate_overlay_state();
 #endif
    
    rarch_main_data_iterate();
