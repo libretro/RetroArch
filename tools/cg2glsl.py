@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 """
 Python 3 script which converts simple RetroArch Cg shaders to modern GLSL (ES) format.
@@ -7,6 +7,10 @@ License: Public domain
 """
 
 import sys
+if sys.version_info<(3,0,0):
+    sys.stderr.write("You need python 3.0 or later to run this script\n")
+    exit(1)
+
 import os
 import errno
 import subprocess
