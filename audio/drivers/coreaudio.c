@@ -180,13 +180,25 @@ static void coreaudio_interrupt_listener(void *data, UInt32 interrupt_state)
 static void *coreaudio_init(const char *device,
       unsigned rate, unsigned latency)
 {
-   static bool session_initialized = false;
+   size_t fifo_size;
    UInt32 i_size;
+   AudioStreamBasicDescription real_desc;
+   AURenderCallbackStruct cb = {0};
+   AudioStreamBasicDescription stream_desc = {0};
+   static bool session_initialized = false;
+   core_audio_t *dev = NULL;
+#ifdef OSX_PPC
+   Component comp;
+   ComponentDescription desc = {0};
+#else
+   AudioComponent comp;
+   AudioComponentDescription desc = {0};
+#endif
 
    (void)session_initialized;
    (void)device;
 
-   coreaudio_t *dev = (coreaudio_t*)calloc(1, sizeof(*dev));
+   dev = (coreaudio_t*)calloc(1, sizeof(*dev));
    if (!dev)
       return NULL;
 
@@ -202,12 +214,7 @@ static void *coreaudio_init(const char *device,
    }
 #endif
 
-   // Create AudioComponent
-#ifdef OSX_PPC
-   ComponentDescription desc = {0};
-#else
-   AudioComponentDescription desc = {0};
-#endif
+   /* Create AudioComponent */
    desc.componentType = kAudioUnitType_Output;
 #ifdef IOS
    desc.componentSubType = kAudioUnitSubType_RemoteIO;
@@ -217,9 +224,9 @@ static void *coreaudio_init(const char *device,
    desc.componentManufacturer = kAudioUnitManufacturer_Apple;
 
 #ifdef OSX_PPC
-   Component comp = FindNextComponent(NULL, &desc);
+   comp = FindNextComponent(NULL, &desc);
 #else
-   AudioComponent comp = AudioComponentFindNext(NULL, &desc);
+   comp = AudioComponentFindNext(NULL, &desc);
 #endif
    if (comp == NULL)
       goto error;
@@ -238,18 +245,15 @@ static void *coreaudio_init(const char *device,
 
    dev->dev_alive = true;
 
-   // Set audio format
-   AudioStreamBasicDescription stream_desc = {0};
-   AudioStreamBasicDescription real_desc;
-   
-   stream_desc.mSampleRate = rate;
-   stream_desc.mBitsPerChannel = sizeof(float) * CHAR_BIT;
+   /* Set audio format */
+   stream_desc.mSampleRate       = rate;
+   stream_desc.mBitsPerChannel   = sizeof(float) * CHAR_BIT;
    stream_desc.mChannelsPerFrame = 2;
-   stream_desc.mBytesPerPacket = 2 * sizeof(float);
-   stream_desc.mBytesPerFrame = 2 * sizeof(float);
-   stream_desc.mFramesPerPacket = 1;
-   stream_desc.mFormatID = kAudioFormatLinearPCM;
-   stream_desc.mFormatFlags = kAudioFormatFlagIsFloat | 
+   stream_desc.mBytesPerPacket   = 2 * sizeof(float);
+   stream_desc.mBytesPerFrame    = 2 * sizeof(float);
+   stream_desc.mFramesPerPacket  = 1;
+   stream_desc.mFormatID         = kAudioFormatLinearPCM;
+   stream_desc.mFormatFlags      = kAudioFormatFlagIsFloat | 
       kAudioFormatFlagIsPacked | (is_little_endian() ? 
             0 : kAudioFormatFlagIsBigEndian);
    
@@ -276,7 +280,6 @@ static void *coreaudio_init(const char *device,
          (float)real_desc.mSampleRate);
    g_settings.audio.out_rate = real_desc.mSampleRate;
 
-
    /* Set channel layout (fails on iOS). */
 #ifndef IOS
    AudioChannelLayout layout = {0};
@@ -288,7 +291,6 @@ static void *coreaudio_init(const char *device,
 #endif
 
    /* Set callbacks and finish up. */
-   AURenderCallbackStruct cb = {0};
    cb.inputProc = audio_write_cb;
    cb.inputProcRefCon = dev;
 
@@ -298,8 +300,6 @@ static void *coreaudio_init(const char *device,
 
    if (AudioUnitInitialize(dev->dev) != noErr)
       goto error;
-
-   size_t fifo_size;
 
    fifo_size = (latency * g_settings.audio.out_rate) / 1000;
    fifo_size *= 2 * sizeof(float);
@@ -326,15 +326,15 @@ error:
 static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
-
    const uint8_t *buf = (const uint8_t*)buf_;
    size_t written = 0;
 
 #ifdef IOS
+   struct timespec timeout;
    struct timeval time;
+
    gettimeofday(&time, 0);
    
-   struct timespec timeout;
    memset(&timeout, 0, sizeof(timeout));
    timeout.tv_sec = time.tv_sec + 3;
    timeout.tv_nsec = time.tv_usec * 1000;
