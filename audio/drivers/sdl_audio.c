@@ -27,6 +27,7 @@
 
 #include "../../general.h"
 #include <queues/fifo_buffer.h>
+#include <retro_inline.h>
 
 typedef struct sdl_audio
 {
@@ -51,7 +52,7 @@ static void sdl_audio_cb(void *data, Uint8 *stream, int len)
    memset(stream + write_size, 0, len - write_size);
 }
 
-static inline int find_num_frames(int rate, int latency)
+static INLINE int find_num_frames(int rate, int latency)
 {
    int frames = (rate * latency) / 1000;
 

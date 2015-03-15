@@ -18,6 +18,7 @@
 #define _RARCH_PERF_H
 
 #include "general.h"
+#include <retro_inline.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,7 +86,7 @@ void retro_perf_log(void);
  *
  * Start performance counter. 
  **/
-static inline void rarch_perf_start(struct retro_perf_counter *perf)
+static INLINE void rarch_perf_start(struct retro_perf_counter *perf)
 {
    if (!g_extern.perfcnt_enable || !perf)
       return;
@@ -100,7 +101,7 @@ static inline void rarch_perf_start(struct retro_perf_counter *perf)
  *
  * Stop performance counter. 
  **/
-static inline void rarch_perf_stop(struct retro_perf_counter *perf)
+static INLINE void rarch_perf_stop(struct retro_perf_counter *perf)
 {
    if (!g_extern.perfcnt_enable || !perf)
       return;

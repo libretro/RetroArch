@@ -19,6 +19,7 @@
 #include <boolean.h>
 #include "../../general.h"
 #include <string.h>
+#include <retro_inline.h>
 
 #ifdef GEKKO
 #include <gccore.h>
@@ -116,7 +117,7 @@ static void *gx_audio_init(const char *device,
 }
 
 /* Wii uses silly R, L, R, L interleaving. */
-static inline void copy_swapped(uint32_t * restrict dst,
+static INLINE void copy_swapped(uint32_t * restrict dst,
       const uint32_t * restrict src, size_t size)
 {
    do

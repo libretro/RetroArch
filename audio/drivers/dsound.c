@@ -19,6 +19,8 @@
 #pragma comment(lib, "dxguid")
 #endif
 
+#include <retro_inline.h>
+
 #ifdef _XBOX
 #define DSERR_BUFFERLOST                MAKE_DSHRESULT(150)
 #define DSERR_INVALIDPARAM              E_INVALIDARG
@@ -73,12 +75,12 @@ typedef struct dsound
    volatile bool thread_alive;
 } dsound_t;
 
-static inline unsigned write_avail(unsigned read_ptr, unsigned write_ptr, unsigned buffer_size)
+static INLINE unsigned write_avail(unsigned read_ptr, unsigned write_ptr, unsigned buffer_size)
 {
    return (read_ptr + buffer_size - write_ptr) % buffer_size;
 }
 
-static inline void get_positions(dsound_t *ds, DWORD *read_ptr, DWORD *write_ptr)
+static INLINE void get_positions(dsound_t *ds, DWORD *read_ptr, DWORD *write_ptr)
 {
    IDirectSoundBuffer_GetCurrentPosition(ds->dsb, read_ptr, write_ptr);
 }
@@ -93,7 +95,7 @@ struct audio_lock
    DWORD size2;
 };
 
-static inline bool grab_region(dsound_t *ds, DWORD write_ptr,
+static INLINE bool grab_region(dsound_t *ds, DWORD write_ptr,
       struct audio_lock *region)
 {
    const char *err;
@@ -140,7 +142,7 @@ static inline bool grab_region(dsound_t *ds, DWORD write_ptr,
    return true;
 }
 
-static inline void release_region(dsound_t *ds, const struct audio_lock *region)
+static INLINE void release_region(dsound_t *ds, const struct audio_lock *region)
 {
    IDirectSoundBuffer_Unlock(ds->dsb, region->chunk1, region->size1, region->chunk2, region->size2);
 }

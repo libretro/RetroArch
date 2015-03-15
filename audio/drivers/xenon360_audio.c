@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <boolean.h>
 #include "../../general.h"
+#include <retro_inline.h>
 
 #include <xenon_sound/sound.h>
 
@@ -46,7 +47,7 @@ static void *xenon360_audio_init(const char *device,
    return calloc(1, sizeof(xenon_audio_t));
 }
 
-static inline uint32_t bswap_32(uint32_t val)
+static INLINE uint32_t bswap_32(uint32_t val)
 {
    return (val >> 24) | (val << 24) |
       ((val >> 8) & 0xff00) | ((val << 8) & 0xff0000);
