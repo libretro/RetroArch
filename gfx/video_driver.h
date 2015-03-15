@@ -81,11 +81,12 @@ enum texture_filter_type
    TEXTURE_FILTER_MIPMAP_NEAREST,
 };
 
-#define FONT_COLOR_RGBA(r, g, b, a) (((r) << 0) | ((g) << 8) | ((b) << 16) | ((a) << 24))
-#define FONT_COLOR_GET_RED(col)   (((col) >>  0) & 0xff)
-#define FONT_COLOR_GET_GREEN(col) (((col) >>  8) & 0xff)
-#define FONT_COLOR_GET_BLUE(col)  (((col) >> 16) & 0xff)
-#define FONT_COLOR_GET_ALPHA(col) (((col) >> 24) & 0xff)
+#define FONT_COLOR_RGBA(r, g, b, a) (((r) << 24) | ((g) << 16) | ((b) << 8) | ((a) << 0))
+#define FONT_COLOR_GET_RED(col)   (((col) >> 24) & 0xff)
+#define FONT_COLOR_GET_GREEN(col) (((col) >> 16) & 0xff)
+#define FONT_COLOR_GET_BLUE(col)  (((col) >>  8) & 0xff)
+#define FONT_COLOR_GET_ALPHA(col) (((col) >>  0) & 0xff)
+#define FONT_COLOR_ARGB_TO_RGBA(col) ( (((col) >> 24) & 0xff) | (((col) << 8) & 0xffffff00) )
 
 /* Optionally implemented interface to poke more
  * deeply into video driver. */

@@ -249,11 +249,13 @@ static void glui_render_messagebox(const char *message)
    x = gl->win_width  / 2 - strlen(list->elems[0].data) * glui->glyph_width / 2;
    y = gl->win_height / 2 - list->size * glui->line_height / 2;
 
+   const uint32_t normal_color = FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.entry_normal_color);
+
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         glui_blit_line(gl, x, y + i * glui->line_height, msg, g_settings.menu.entry_normal_color);
+         glui_blit_line(gl, x, y + i * glui->line_height, msg, normal_color);
    }
 
 end:
@@ -323,6 +325,8 @@ static void glui_frame(void)
    const char *core_name = NULL;
    const char *core_version = NULL;
    menu_handle_t *menu = menu_driver_resolve();
+   const uint32_t normal_color = FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.entry_normal_color);
+   const uint32_t hover_color = FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.entry_hover_color);
 
    if (!menu)
       return;
@@ -358,7 +362,7 @@ static void glui_frame(void)
    menu_animation_ticker_line(title_buf, glui->term_width - 3,
          g_runloop.frames.video.count / glui->margin, title, true);
    glui_blit_line(gl, glui->margin * 2, glui->margin + glui->line_height,
-         title_buf, g_settings.menu.title_color);
+         title_buf, FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.title_color));
 
    core_name = g_extern.menu.info.library_name;
    if (!core_name)
@@ -380,7 +384,7 @@ static void glui_frame(void)
       glui_blit_line(gl,
             glui->margin * 2,
             glui->margin + glui->term_height * glui->line_height 
-            + glui->line_height * 2, title_msg, g_settings.menu.entry_hover_color);
+            + glui->line_height * 2, title_msg, FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.title_color));
    }
 
 
@@ -390,7 +394,7 @@ static void glui_frame(void)
       glui_blit_line(gl,
             glui->margin * 14,
             glui->margin + glui->term_height * glui->line_height 
-            + glui->line_height * 2, timedate, g_settings.menu.entry_hover_color);
+            + glui->line_height * 2, timedate, hover_color);
    }
 
    x = glui->margin;
@@ -429,10 +433,10 @@ static void glui_frame(void)
 
       strlcpy(message, entry_title_buf, sizeof(message));
 
-      glui_blit_line(gl, x, y, message, selected ? g_settings.menu.entry_hover_color : g_settings.menu.entry_normal_color);
+      glui_blit_line(gl, x, y, message, selected ? hover_color : normal_color);
 
       glui_blit_line(gl, gl->win_width - glui->glyph_width * w - glui->margin , 
-         y, type_str_buf, selected ? g_settings.menu.entry_hover_color : g_settings.menu.entry_normal_color);
+         y, type_str_buf, selected ? hover_color : normal_color);
    }
 
    if (menu->keyboard.display)

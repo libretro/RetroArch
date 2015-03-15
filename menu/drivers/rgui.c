@@ -46,10 +46,10 @@
 
 static inline uint16_t argb32_to_rgba4444(uint32_t col)
 {
-   unsigned r = (col & 0xff) >> 4;
-   unsigned g = ((col >> 8) & 0xff) >> 4;
-   unsigned b = ((col >> 16) & 0xff) >> 4;
    unsigned a = ((col >> 24) & 0xff) >> 4;
+   unsigned r = ((col >> 16) & 0xff) >> 4;
+   unsigned g = ((col >> 8) & 0xff) >> 4;
+   unsigned b = (col & 0xff) >> 4;
    return (r << 12) | (g << 8)  | (b << 4) | a;
 }
 
