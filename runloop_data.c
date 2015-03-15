@@ -669,9 +669,7 @@ void rarch_main_data_msg_queue_push(unsigned type,
    char new_msg[PATH_MAX_LENGTH];
    msg_queue_t *queue = NULL;
 
-   strlcpy(new_msg, msg,  sizeof(new_msg));
-   strlcat(new_msg, "|",  sizeof(new_msg));
-   strlcat(new_msg, msg2, sizeof(new_msg));
+   snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
 
    switch(type)
    {
