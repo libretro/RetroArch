@@ -233,14 +233,13 @@ static void check_rewind(bool pressed)
    {
       const void *buf = NULL;
 
-      msg_queue_clear(g_runloop.msg_queue);
       if (state_manager_pop(g_extern.rewind.state, &buf))
       {
          g_extern.rewind.frame_is_reverse = true;
          setup_rewind_audio();
 
          rarch_main_msg_queue_push(RETRO_MSG_REWINDING, 0,
-               g_runloop.is_paused ? 1 : 30, false);
+               g_runloop.is_paused ? 1 : 30, true);
          pretro_unserialize(buf, g_extern.rewind.size);
 
          if (g_extern.bsv.movie)
@@ -248,7 +247,7 @@ static void check_rewind(bool pressed)
       }
       else
          rarch_main_msg_queue_push(RETRO_MSG_REWIND_REACHED_END,
-               0, 30, false);
+               0, 30, true);
    }
    else
    {

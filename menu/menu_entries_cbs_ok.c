@@ -898,8 +898,7 @@ static int action_ok_core_updater_download(const char *path,
    strlcpy(core_updater_path, path, sizeof(core_updater_path));
    snprintf(msg, sizeof(msg), "Starting download: %s.", path);
 
-   msg_queue_clear(g_runloop.msg_queue);
-   msg_queue_push(g_runloop.msg_queue, msg, 1, 90);
+   rarch_main_msg_queue_push(msg, 1, 90, true);
 
    msg_queue_clear(g_data_runloop.http.msg_queue);
    msg_queue_push_string_list(g_data_runloop.http.msg_queue, core_path, "cb_core_updater_download", 0, 1);

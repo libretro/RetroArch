@@ -17,6 +17,7 @@
 #include <xgraphics.h>
 #include <retro_miscellaneous.h>
 #include "../screenshot.h"
+#include "../runloop.h"
 
 bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
@@ -44,7 +45,7 @@ bool screenshot_dump(const char *folder, const void *frame,
    if(ret == S_OK)
    {
       RARCH_LOG("Screenshot saved: %s.\n", filename);
-      msg_queue_push(g_runloop.msg_queue, "Screenshot saved.", 1, 30);
+      rarch_main_msg_queue_push("Screenshot saved.", 1, 30, false);
       return true;
    }
 

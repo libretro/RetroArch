@@ -7,6 +7,7 @@
 #include "../../gfx/video_monitor.h"
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/gl_common.h"
+#include "../../runloop.h"
 
 //#define HAVE_NSOPENGL
 
@@ -287,7 +288,7 @@ static void apple_gfx_ctx_update_window_title(void *data)
        [[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
 #endif
     if (g_settings.fps_show)
-        msg_queue_push(g_runloop.msg_queue, buf_fps, 1, 1);
+        rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static bool apple_gfx_ctx_has_focus(void *data)

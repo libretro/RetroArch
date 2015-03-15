@@ -150,7 +150,7 @@ bool menu_load_content(void)
 
       fill_pathname_base(name, g_extern.fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
-      msg_queue_push(g_runloop.msg_queue, msg, 1, 90);
+      rarch_main_msg_queue_push(msg, 1, 90, false);
 
       if (driver.menu)
          driver.menu->msg_force = true;

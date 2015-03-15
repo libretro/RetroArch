@@ -943,7 +943,7 @@ static void init_movie(void)
       }
 
       g_extern.bsv.movie_playback = true;
-      msg_queue_push(g_runloop.msg_queue, "Starting movie playback.", 2, 180);
+      rarch_main_msg_queue_push("Starting movie playback.", 2, 180, false);
       RARCH_LOG("Starting movie playback.\n");
       g_settings.rewind_granularity = 1;
    }
@@ -953,17 +953,15 @@ static void init_movie(void)
       snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".",
             g_extern.bsv.movie_start_path);
 
-      msg_queue_clear(g_runloop.msg_queue);
-
       if (!(g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path,
                   RARCH_MOVIE_RECORD)))
       {
-         msg_queue_push(g_runloop.msg_queue, "Failed to start movie record.", 1, 180);
+         rarch_main_msg_queue_push("Failed to start movie record.", 1, 180, true);
          RARCH_ERR("Failed to start movie record.\n");
          return;
       }
 
-      msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
+      rarch_main_msg_queue_push(msg, 1, 180, true);
       RARCH_LOG("Starting movie record to \"%s\".\n",
             g_extern.bsv.movie_start_path);
       g_settings.rewind_granularity = 1;
@@ -1018,10 +1016,9 @@ static bool init_netplay(void)
    g_extern.netplay_is_client = false;
    RARCH_WARN(RETRO_LOG_INIT_NETPLAY_FAILED);
 
-   if (g_runloop.msg_queue)
-      msg_queue_push(g_runloop.msg_queue,
-            RETRO_MSG_INIT_NETPLAY_FAILED,
-            0, 180);
+   rarch_main_msg_queue_push(
+         RETRO_MSG_INIT_NETPLAY_FAILED,
+         0, 180, false);
    return false;
 }
 #endif
@@ -1272,7 +1269,7 @@ static void load_auto_state(void)
 
    snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" %s.",
          savestate_name_auto, ret ? "succeeded" : "failed");
-   msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
+   rarch_main_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
 }
 
@@ -1371,8 +1368,7 @@ static void main_state(unsigned cmd)
    else
       strlcpy(msg, "Core does not support save states.", sizeof(msg));
 
-   msg_queue_clear(g_runloop.msg_queue);
-   msg_queue_push(g_runloop.msg_queue, msg, 2, 180);
+   rarch_main_msg_queue_push(msg, 2, 180, true);
    RARCH_LOG("%s\n", msg);
 }
 
@@ -1402,8 +1398,7 @@ void rarch_disk_control_append_image(const char *path)
 
    snprintf(msg, sizeof(msg), "Appended disk: %s", path);
    RARCH_LOG("%s\n", msg);
-   msg_queue_clear(g_runloop.msg_queue);
-   msg_queue_push(g_runloop.msg_queue, msg, 0, 180);
+   rarch_main_msg_queue_push(msg, 0, 180, true);
 
    rarch_main_command(RARCH_CMD_AUTOSAVE_DEINIT);
 
@@ -1463,10 +1458,7 @@ void rarch_disk_control_set_eject(bool new_state, bool print_log)
 
       /* Only noise in menu. */
       if (print_log)
-      {
-         msg_queue_clear(g_runloop.msg_queue);
-         msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
-      }
+         rarch_main_msg_queue_push(msg, 1, 180, true);
    }
 }
 
@@ -1515,8 +1507,7 @@ void rarch_disk_control_set_index(unsigned idx)
          RARCH_ERR("%s\n", msg);
       else
          RARCH_LOG("%s\n", msg);
-      msg_queue_clear(g_runloop.msg_queue);
-      msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
+      rarch_main_msg_queue_push(msg, 1, 180, true);
    }
 }
 
@@ -2070,8 +2061,7 @@ static bool save_core_config(void)
    else
    {
       const char *message = "Config directory not set. Cannot save new config.";
-      msg_queue_clear(g_runloop.msg_queue);
-      msg_queue_push(g_runloop.msg_queue, message, 1, 180);
+      rarch_main_msg_queue_push(message, 1, 180, true);
       RARCH_ERR("%s\n", message);
       return false;
    }
@@ -2133,8 +2123,7 @@ static bool save_core_config(void)
       RARCH_ERR("%s\n", msg);
    }
 
-   msg_queue_clear(g_runloop.msg_queue);
-   msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
+   rarch_main_msg_queue_push(msg, 1, 180, true);
 
    return ret;
 }
@@ -2249,8 +2238,7 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_RESET:
          RARCH_LOG(RETRO_LOG_RESETTING_CONTENT);
-         msg_queue_clear(g_runloop.msg_queue);
-         msg_queue_push(g_runloop.msg_queue, "Reset.", 1, 120);
+         rarch_main_msg_queue_push("Reset.", 1, 120, true);
          pretro_reset();
 
          /* bSNES since v073r01 resets controllers to JOYPAD
@@ -2379,8 +2367,7 @@ bool rarch_main_command(unsigned cmd)
                return false;
             }
 
-            msg_queue_clear(g_runloop.msg_queue);
-            msg_queue_push(g_runloop.msg_queue, msg, 1, 180);
+            rarch_main_msg_queue_push(msg, 1, 180, true);
             RARCH_LOG("%s\n", msg);
          }
          break;
@@ -2753,10 +2740,7 @@ bool rarch_main_command(unsigned cmd)
                check_disk_eject(control);
          }
          else
-         {
-            msg_queue_clear(g_runloop.msg_queue);
-            msg_queue_push(g_runloop.msg_queue, "Core does not support Disk Options.", 1, 120);
-         }
+            rarch_main_msg_queue_push("Core does not support Disk Options.", 1, 120, true);
          break;
       case RARCH_CMD_DISK_NEXT:
          if (g_extern.system.disk_control.get_num_images)
@@ -2774,10 +2758,7 @@ bool rarch_main_command(unsigned cmd)
             check_disk_next(control);
          }
          else
-         {
-            msg_queue_clear(g_runloop.msg_queue);
-            msg_queue_push(g_runloop.msg_queue, "Core does not support Disk Options.", 1, 120);
-         }
+            rarch_main_msg_queue_push("Core does not support Disk Options.", 1, 120, true);
          break;
       case RARCH_CMD_DISK_PREV:
          if (g_extern.system.disk_control.get_num_images)
@@ -2795,10 +2776,7 @@ bool rarch_main_command(unsigned cmd)
             check_disk_prev(control);
          }
          else
-         {
-            msg_queue_clear(g_runloop.msg_queue);
-            msg_queue_push(g_runloop.msg_queue, "Core does not support Disk Options.", 1, 120);
-         }
+            rarch_main_msg_queue_push("Core does not support Disk Options.", 1, 120, true);
          break;
       case RARCH_CMD_RUMBLE_STOP:
          for (i = 0; i < MAX_USERS; i++)
