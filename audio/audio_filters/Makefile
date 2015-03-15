@@ -57,12 +57,12 @@ endif
 
 CC      := $(compiler) -Wall
 CXX     := $(subst CC,++,$(compiler)) -std=gnu++0x -Wall
-flags   := -fPIC $(extra_flags)
+flags   := -fPIC $(extra_flags) -I../../libretro-common/include
 asflags := -fPIC  $(extra_flags)
 objects :=
 
 ifeq (1,$(use_neon))
-   ASMFLAGS := -INEON/asm
+   ASMFLAGS := -INEON/asm 
    asflags += -mfpu=neon
 endif
 

@@ -18,6 +18,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <retro_inline.h>
 
 struct comb
 {
@@ -30,7 +31,15 @@ struct comb
    float damp1, damp2;
 };
 
-static inline float comb_process(struct comb *c, float input)
+struct allpass
+{
+   float *buffer;
+   float feedback;
+   unsigned bufsize;
+   unsigned bufidx;
+};
+
+static INLINE float comb_process(struct comb *c, float input)
 {
    float output = c->buffer[c->bufidx];
    c->filterstore = (output * c->damp2) + (c->filterstore * c->damp1);
@@ -44,15 +53,8 @@ static inline float comb_process(struct comb *c, float input)
    return output;
 }
 
-struct allpass
-{
-   float *buffer;
-   float feedback;
-   unsigned bufsize;
-   unsigned bufidx;
-};
 
-static inline float allpass_process(struct allpass *a, float input)
+static INLINE float allpass_process(struct allpass *a, float input)
 {
    float bufout = a->buffer[a->bufidx];
    float output = -input + bufout;

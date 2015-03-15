@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <retro_inline.h>
 
 #include "fft/fft.c"
 
@@ -185,7 +186,7 @@ static void generate_response(fft_complex_t *response,
 
 // Modified Bessel function of first order.
 // Check Wiki for mathematical definition ...
-static inline double kaiser_besseli0(double x)
+static INLINE double kaiser_besseli0(double x)
 {
    unsigned i;
    double sum = 0.0;
@@ -211,7 +212,7 @@ static inline double kaiser_besseli0(double x)
    return sum;
 }
 
-static inline double kaiser_window(double index, double beta)
+static INLINE double kaiser_window(double index, double beta)
 {
    return kaiser_besseli0(beta * sqrt(1 - index * index));
 }

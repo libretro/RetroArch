@@ -25,19 +25,20 @@
 #define sqr(a) ((a) * (a))
 
 /* filter types */
-enum IIRFilter {
-	LPF, /* low pass filter */
-	HPF, /* High pass filter */
-	BPCSGF,/* band pass filter 1 */
-	BPZPGF,/* band pass filter 2 */
-	APF, /* Allpass filter*/
-	NOTCH, /* Notch Filter */
-	RIAA_phono, /* RIAA record/tape deemphasis */
-	PEQ, /* Peaking band EQ filter */
-	BBOOST, /* Bassboost filter */
-	LSH, /* Low shelf filter */
-	HSH, /* High shelf filter */
-	RIAA_CD /* CD de-emphasis */
+enum IIRFilter
+{
+   LPF,        /* low pass filter */
+   HPF,        /* High pass filter */
+   BPCSGF,     /* band pass filter 1 */
+   BPZPGF,     /* band pass filter 2 */
+   APF,        /* Allpass filter*/
+   NOTCH,      /* Notch Filter */
+   RIAA_phono, /* RIAA record/tape deemphasis */
+   PEQ,        /* Peaking band EQ filter */
+   BBOOST,     /* Bassboost filter */
+   LSH,        /* Low shelf filter */
+   HSH,        /* High shelf filter */
+   RIAA_CD     /* CD de-emphasis */
 };
 
 struct iir_data
@@ -90,8 +91,8 @@ static void iir_process(void *data, struct dspfilter_output *output,
       float in_l = out[0];
       float in_r = out[1];
 
-      float l = (b0 * in_l + b1 * xn1_l + b2 * xn2_l - a1 * yn1_l - a2 * yn2_l) / a0;
-      float r = (b0 * in_r + b1 * xn1_r + b2 * xn2_r - a1 * yn1_r - a2 * yn2_r) / a0;
+      float l    = (b0 * in_l + b1 * xn1_l + b2 * xn2_l - a1 * yn1_l - a2 * yn2_l) / a0;
+      float r    = (b0 * in_r + b1 * xn1_r + b2 * xn2_r - a1 * yn1_r - a2 * yn2_r) / a0;
 
       xn2_l = xn1_l;
       xn1_l = in_l;
@@ -140,9 +141,11 @@ static void make_poly_from_roots(
       const double *roots, unsigned num_roots, float *poly)
 {
    unsigned i, j;
+
    poly[0] = 1;
    poly[1] = -roots[0];
    memset(poly + 2, 0, (num_roots + 1 - 2) * sizeof(*poly));
+
    for (i = 1; i < num_roots; i++)
       for (j = num_roots; j > 0; j--)
          poly[j] -= poly[j - 1] * roots[i];
