@@ -319,7 +319,7 @@ error:
 static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
 {
    unsigned i;
-   int retval;
+   int retval = 0;
 
    if (!nbio)
       return -1;
