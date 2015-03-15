@@ -1152,6 +1152,41 @@ static void sunxi_unblank_console(struct sunxi_video *_dispvars)
    free(_dispvars->screen_bck);
 }
 
+static void vsync_thread_func(void *arg)
+{
+   struct sunxi_page *page;
+   struct sunxi_video *_dispvars = arg;
+
+   while (_dispvars->keep_vsync)
+   {
+      sunxi_wait_flip(disp);
+
+      slock_lock(vsync_cond_mutex);
+      scond_signal(vsync_condition);
+      slock_unlock(vsync_cond_mutex);
+
+      slock_lock(queue_mutex);
+      page = unqueue_page((void*)_dispvars);
+      slock_unlock(queue_mutex);
+
+      /* We mark as free the page that was visible until now. */
+      if (_dispvars->current_page != NULL)
+      {
+         slock_lock(_dispvars->current_page->page_used_mutex);
+         _dispvars->current_page->used = false;
+         slock_unlock(_dispvars->current_page->page_used_mutex);
+      }
+
+      /* The page on which we just issued a flip 
+       * becomes the visible one, with the only purpose that
+       * we can mark it as free next time we get here.
+       *
+       * This variable is only accessed from this same thread 
+       * over and over, so it doesn't need to be isolated. */
+      _dispvars->current_page = page;
+   }	
+}
+
 static void *sunxi_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
@@ -1218,42 +1253,6 @@ static void *sunxi_gfx_init(const video_info_t *video,
 	vsync_thread = sthread_create(vsync_thread_func, _dispvars);
 
 	return _dispvars;
-}
-
-static void *vsync_thread_func(void *arg)
-{
-	struct sunxi_page *page;
-	struct sunxi_video *_dispvars = arg;
-
-	while (_dispvars->keep_vsync)
-   {
-		sunxi_wait_flip(disp);
-				
-		slock_lock(vsync_cond_mutex);
-		scond_signal(vsync_condition);
-		slock_unlock(vsync_cond_mutex);
-	
-		slock_lock(queue_mutex);
-		page = unqueue_page((void*)_dispvars);
-		slock_unlock(queue_mutex);
-		
-		/* We mark as free the page that was visible until now. */
-		if (_dispvars->current_page != NULL)
-      {
-			slock_lock(_dispvars->current_page->page_used_mutex);
-			_dispvars->current_page->used = false;
-			slock_unlock(_dispvars->current_page->page_used_mutex);
-		}
-
-      /* The page on which we just issued a flip 
-       * becomes the visible one, with the only purpose that
-       * we can mark it as free next time we get here.
-       *
-       * This variable is only accessed from this same thread 
-       * over and over, so it doesn't need to be isolated. */
-		_dispvars->current_page = page;
-	}	
-	return 0;
 }
 
 static void sunxi_gfx_free(void *data)
