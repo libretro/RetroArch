@@ -235,6 +235,7 @@
 			buildPhases = (
 				96AFAE2116C1D4EA009DE44C /* Sources */,
 				96AFAE2216C1D4EA009DE44C /* Frameworks */,
+				84FD66AC1AB520100074AC3A /* ShellScript */,
 				96AFAE2316C1D4EA009DE44C /* Resources */,
 			);
 			buildRules = (
@@ -297,6 +298,22 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		84FD66AC1AB520100074AC3A /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "for a in python3.4 python3.3 python3.2 python3.1 python3 python; do\n    if command -v $a > /dev/null; then\n        PYTHON3=$a make -f Makefile.griffin shaders-convert-glsl\n        break\n    fi\ndone";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		96AFAE2116C1D4EA009DE44C /* Sources */ = {
