@@ -29,6 +29,7 @@
 #include "../../performance.h"
 #include "../font_renderer_driver.h"
 #include "../../content.h"
+#include "../../runloop.h"
 #include "../video_viewport.h"
 
 typedef struct
