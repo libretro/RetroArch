@@ -13,7 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_miscellaneous.h>
+#include "runloop.h"
 #include "general.h"
+#include "input/input_overlay.h"
 #ifdef HAVE_NETWORKING
 #include "net_http.h"
 
@@ -643,14 +646,26 @@ static void rarch_main_data_overlay_iterate(void)
 }
 #endif
 
+void rarch_main_data_init_queues(void)
+{
+#ifdef HAVE_NETWORKING
+   if (!g_data_runloop.http.msg_queue)
+      rarch_assert(g_data_runloop.http.msg_queue = msg_queue_new(8));
+#endif
+   if (!g_data_runloop.nbio.msg_queue)
+      rarch_assert(g_data_runloop.nbio.msg_queue = msg_queue_new(8));
+   if (!g_data_runloop.nbio.image.msg_queue)
+      rarch_assert(g_data_runloop.nbio.image.msg_queue = msg_queue_new(8));
+}
+
 void rarch_main_data_iterate(void)
 {
 #ifdef HAVE_OVERLAY
    rarch_main_data_overlay_iterate();
 #endif
-   rarch_main_data_nbio_iterate(&g_runloop.data.nbio);
+   rarch_main_data_nbio_iterate(&g_data_runloop.nbio);
 #ifdef HAVE_NETWORKING
-   rarch_main_data_http_iterate(&g_runloop.data.http);
+   rarch_main_data_http_iterate(&g_data_runloop.http);
 #endif
    rarch_main_data_db_iterate();
 }

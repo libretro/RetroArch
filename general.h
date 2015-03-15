@@ -33,12 +33,6 @@
 #include <retro_miscellaneous.h>
 #include "gfx/video_viewport.h"
 
-#include <file/nbio.h>
-#ifndef IS_SALAMANDER
-#include <formats/image.h>
-#include <formats/rpng.h>
-#endif
-
 #include "playlist.h"
 
 #ifdef HAVE_CONFIG_H
@@ -404,55 +398,7 @@ typedef struct rarch_resolution
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
-typedef int (*transfer_cb_t               )(void *data, size_t len);
-
-typedef struct nbio_image_handle
-{
-#ifndef IS_SALAMANDER
-   struct texture_image ti;
-#endif
-   bool is_blocking;
-   bool is_blocking_on_processing;
-   bool is_finished;
-   bool is_finished_with_processing;
-   transfer_cb_t  cb;
-   struct rpng_t *handle;
-   unsigned processing_pos_increment;
-   unsigned pos_increment;
-   uint64_t frame_count;
-   uint64_t processing_frame_count;
-   int processing_final_state;
-   msg_queue_t *msg_queue;
-} nbio_image_handle_t;
-
-typedef struct nbio_handle
-{
-   nbio_image_handle_t image;
-   bool is_blocking;
-   bool is_finished;
-   transfer_cb_t  cb;
-   struct nbio_t *handle;
-   unsigned pos_increment;
-   uint64_t frame_count;
-   msg_queue_t *msg_queue;
-} nbio_handle_t;
-
-#ifdef HAVE_NETWORKING
-typedef struct http_handle
-{
-   struct
-   {
-      struct http_connection_t *handle;
-      transfer_cb_t  cb;
-      char elem1[PATH_MAX_LENGTH];
-   } connection;
-   msg_queue_t *msg_queue;
-   struct http_t *handle;
-   transfer_cb_t  cb;
-} http_handle_t;
-#endif
-
-/* All runloop-related globals go here. */
+/* All libretro runloop-related globals go here. */
 
 struct runloop
 {
@@ -461,22 +407,6 @@ struct runloop
    bool is_idle;
    bool is_menu;
    bool is_slowmotion;
-
-   struct
-   {
-#ifdef HAVE_NETWORKING
-      http_handle_t http;
-#endif
-
-#ifdef HAVE_LIBRETRODB
-      struct
-      {
-      } db;
-#endif
-
-      nbio_handle_t nbio;
-
-   } data;
 
    struct
    {

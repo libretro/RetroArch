@@ -26,6 +26,7 @@
 #include "gfx/video_viewport.h"
 #include "settings.h"
 #include "general.h"
+#include "runloop.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -36,6 +37,7 @@
 struct settings g_settings;
 struct global g_extern;
 struct runloop g_runloop;
+struct data_runloop g_data_runloop;
 struct defaults g_defaults;
 
 /**

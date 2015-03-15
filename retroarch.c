@@ -29,6 +29,7 @@
 #include <file/dir_list.h>
 #include "general.h"
 #include "retroarch.h"
+#include "runloop.h"
 #include "settings.h"
 #include <compat/strl.h>
 #include "screenshot.h"
@@ -1626,6 +1627,7 @@ static void main_clear_state_extern(void)
 
    memset(&g_extern, 0, sizeof(g_extern));
    memset(&g_runloop, 0, sizeof(g_runloop));
+   memset(&g_data_runloop, 0, sizeof(g_data_runloop));
 }
 
 /**
@@ -2650,14 +2652,7 @@ bool rarch_main_command(unsigned cmd)
          rarch_main_command(RARCH_CMD_MSG_QUEUE_DEINIT);
          if (!g_runloop.msg_queue)
             rarch_assert(g_runloop.msg_queue = msg_queue_new(8));
-#ifdef HAVE_NETWORKING
-         if (!g_runloop.data.http.msg_queue)
-            rarch_assert(g_runloop.data.http.msg_queue = msg_queue_new(8));
-#endif
-         if (!g_runloop.data.nbio.msg_queue)
-            rarch_assert(g_runloop.data.nbio.msg_queue = msg_queue_new(8));
-         if (!g_runloop.data.nbio.image.msg_queue)
-            rarch_assert(g_runloop.data.nbio.image.msg_queue = msg_queue_new(8));
+         rarch_main_data_init_queues();
          break;
       case RARCH_CMD_BSV_MOVIE_DEINIT:
          if (g_extern.bsv.movie)
