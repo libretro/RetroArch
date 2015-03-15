@@ -27,6 +27,7 @@
 #include "autosave.h"
 #include "cheats.h"
 #include <compat/strl.h>
+#include <retro_inline.h>
 #include "core_options.h"
 #include "core_info.h"
 #include "gfx/video_viewport.h"
@@ -730,7 +731,7 @@ int rarch_main(int argc, char *argv[]);
  *
  * Returns: voltage gain value.
  **/
-static inline float db_to_gain(float db)
+static INLINE float db_to_gain(float db)
 {
    return powf(10.0f, db / 20.0f);
 }
@@ -742,7 +743,7 @@ static inline float db_to_gain(float db)
  *
  * Sanely kills the program.
  **/
-static inline void rarch_fail(int error_code, const char *error)
+static INLINE void rarch_fail(int error_code, const char *error)
 {
    /* We cannot longjmp unless we're in rarch_main_init().
     * If not, something went very wrong, and we should 
