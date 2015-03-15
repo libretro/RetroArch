@@ -238,11 +238,13 @@ static void vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
    page->dispvars->pageflip_pending--;	
    slock_unlock(page->dispvars->pending_mutex);
 
-   /* We mark as free the page that was visible until now */
    if (page->dispvars->currentPage)
    {
       slock_lock(page->dispvars->currentPage->page_used_mutex);
+
+      /* We mark as free the page that was visible until now */
       page->dispvars->currentPage->used = false;
+
       slock_unlock(page->dispvars->currentPage->page_used_mutex);
    }
 
@@ -324,7 +326,7 @@ static bool dispmanx_setup_scale(void *data, unsigned width,
 	dispmanx_free_main_resources(_dispvars);
 	vc_dispmanx_display_get_info(_dispvars->display, &(_dispvars->amode));
 
-	// We chose the pixel format depending on the bpp of the frame
+	// We choose the pixel format depending on the bpp of the frame.
 	switch (_dispvars->bytes_per_pixel)
    {
       case 2:	
@@ -436,7 +438,7 @@ static void *dispmanx_gfx_init(const video_info_t *video,
 	_dispvars->vcImagePtr       = 0;
 	_dispvars->pageflip_pending = 0;	
 	_dispvars->currentPage      = NULL;
-	_dispvars->pages = calloc(NUMPAGES, sizeof(struct dispmanx_page));
+	_dispvars->pages            = calloc(NUMPAGES, sizeof(struct dispmanx_page));
 
    if (!_dispvars->pages)
    {
@@ -458,6 +460,7 @@ static void *dispmanx_gfx_init(const video_info_t *video,
 	_dispvars->vsync_cond_mutex = slock_new(); 
 
 	bcm_host_init();
+
 	_dispvars->display = vc_dispmanx_display_open(_dispvars->screen);
 
 	if (input && input_data)
@@ -469,45 +472,45 @@ static void *dispmanx_gfx_init(const video_info_t *video,
 static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, unsigned pitch, const char *msg)
 {
-	struct dispmanx_video *_dispvars = data;
+   struct dispmanx_video *_dispvars = data;
 
-	/* Check if neither menu nor core framebuffer is to be displayed. */
-	if (!_dispvars->menu_active && !frame)
-	   return true;
+   /* Check if neither menu nor core framebuffer is to be displayed. */
+   if (!_dispvars->menu_active && !frame)
+      return true;
 
-	if (width != _dispvars->width || height != _dispvars->height)
-	{
-		/* Sanity check. */
-		if (width == 0 || height == 0)
-			return true;
-
-		RARCH_LOG("video_dispmanx: internal frame resolution changed by core\n");
-
-		if (!dispmanx_setup_scale(_dispvars, width, height, pitch))
-		{
-			RARCH_ERR("video_dispmanx: frame resolution set failed\n");
-			return false;
-		}
-		dispmanx_blank_console (_dispvars);
-	}
-	
-	if (_dispvars->menu_active)
+   if (width != _dispvars->width || height != _dispvars->height)
    {
-		char buf[128];
-   		video_monitor_get_fps(buf, sizeof(buf), NULL, 0);
-	
-		/* Synchronous flipping of the menu buffers. */
-		_dispvars->update = vc_dispmanx_update_start(0);
-		vc_dispmanx_element_change_source(_dispvars->update, _dispvars->menu_element,
-			_dispvars->menu_resources[_dispvars->menu_flip_page]);
-		vc_dispmanx_update_submit_sync(_dispvars->update);		
-		return true;
-	}
-	
-	/* Update main game screen: locate free page, blit and flip. */
-	dispmanx_update_main(_dispvars, frame);
-	
-	return true;
+      /* Sanity check. */
+      if (width == 0 || height == 0)
+         return true;
+
+      RARCH_LOG("video_dispmanx: internal frame resolution changed by core\n");
+
+      if (!dispmanx_setup_scale(_dispvars, width, height, pitch))
+      {
+         RARCH_ERR("video_dispmanx: frame resolution set failed\n");
+         return false;
+      }
+      dispmanx_blank_console (_dispvars);
+   }
+
+   if (_dispvars->menu_active)
+   {
+      char buf[128];
+      video_monitor_get_fps(buf, sizeof(buf), NULL, 0);
+
+      /* Synchronous flipping of the menu buffers. */
+      _dispvars->update = vc_dispmanx_update_start(0);
+      vc_dispmanx_element_change_source(_dispvars->update, _dispvars->menu_element,
+            _dispvars->menu_resources[_dispvars->menu_flip_page]);
+      vc_dispmanx_update_submit_sync(_dispvars->update);		
+      return true;
+   }
+
+   /* Update main game screen: locate free page, blit and flip. */
+   dispmanx_update_main(_dispvars, frame);
+
+   return true;
 }
 
 static void dispmanx_free_menu_resources (void *data)
@@ -744,7 +747,9 @@ static void dispmanx_gfx_free(void *data)
    for (i = 0; i < NUMPAGES; i++)
       slock_free(_dispvars->pages[i].page_used_mutex);
 
-   free (_dispvars->pages);
+   if (_dispvars->pages)
+      free (_dispvars->pages);
+   _dispvars->pages = NULL;
 
    dispmanx_unblank_console(_dispvars);
 }
