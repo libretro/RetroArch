@@ -1608,21 +1608,17 @@ static void free_temporary_content(void)
  * (b) it can zero pointers that the rest of 
  * the code will look at.
  */
-static void main_clear_state_extern_global(void)
+static void main_clear_state_extern(void)
 {
-   if (g_extern.use_sram)
-      rarch_main_command(RARCH_CMD_AUTOSAVE_DEINIT);
-
-   rarch_main_command(RARCH_CMD_COMMAND_DEINIT);
    rarch_main_command(RARCH_CMD_TEMPORARY_CONTENT_DEINIT);
    rarch_main_command(RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
    rarch_main_command(RARCH_CMD_RECORD_DEINIT);
-   rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
-   rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
-   rarch_main_command(RARCH_CMD_CHEATS_DEINIT);
-   rarch_main_command(RARCH_CMD_REWIND_DEINIT);
-   rarch_main_command(RARCH_CMD_BSV_MOVIE_DEINIT);
+   rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
+   rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
+
    memset(&g_extern, 0, sizeof(g_extern));
+   memset(&g_runloop, 0, sizeof(g_runloop));
+   memset(&g_data_runloop, 0, sizeof(g_data_runloop));
 }
 
 /**
@@ -1642,13 +1638,8 @@ static void main_clear_state(bool inited)
 
    if (inited)
       rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
-   rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
-   rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
 
-   main_clear_state_extern_global();
-
-   memset(&g_runloop, 0, sizeof(g_runloop));
-   memset(&g_data_runloop, 0, sizeof(g_data_runloop));
+   main_clear_state_extern();
 
    if (inited)
       rarch_main_command(RARCH_CMD_DRIVERS_INIT);
@@ -1668,7 +1659,10 @@ void rarch_main_state_new(void)
 void rarch_main_state_free(void)
 {
    rarch_main_command(RARCH_CMD_MSG_QUEUE_DEINIT);
+   rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
+
    main_clear_state(false);
+
 }
 
 #ifdef HAVE_ZLIB
@@ -2821,14 +2815,25 @@ bool rarch_main_command(unsigned cmd)
 void rarch_main_deinit(void)
 {
    rarch_main_command(RARCH_CMD_NETPLAY_DEINIT);
+   rarch_main_command(RARCH_CMD_COMMAND_DEINIT);
 
+   if (g_extern.use_sram)
+      rarch_main_command(RARCH_CMD_AUTOSAVE_DEINIT);
+
+   rarch_main_command(RARCH_CMD_RECORD_DEINIT);
    rarch_main_command(RARCH_CMD_SAVEFILES);
+
+   rarch_main_command(RARCH_CMD_REWIND_DEINIT);
+   rarch_main_command(RARCH_CMD_CHEATS_DEINIT);
+   rarch_main_command(RARCH_CMD_BSV_MOVIE_DEINIT);
 
    rarch_main_command(RARCH_CMD_AUTOSAVE_STATE);
 
    rarch_main_command(RARCH_CMD_CORE_DEINIT);
 
-   main_clear_state_extern_global();
+   rarch_main_command(RARCH_CMD_TEMPORARY_CONTENT_DEINIT);
+   rarch_main_command(RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
+   rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
 
    g_extern.main_is_init = false;
 }
@@ -2965,4 +2970,3 @@ bool rarch_replace_config(const char *path)
 
    return true;
 }
-
