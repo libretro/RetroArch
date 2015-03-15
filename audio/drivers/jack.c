@@ -21,7 +21,6 @@
 #include <jack/jack.h>
 #include <jack/types.h>
 #include <jack/ringbuffer.h>
-#include <pthread.h>
 #include <stdint.h>
 #include <boolean.h>
 #include <string.h>
