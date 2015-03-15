@@ -285,8 +285,8 @@ static int action_ok_core_updater_list(const char *path,
    fill_pathname_join(url_path, g_settings.network.buildbot_url,
          ".index", sizeof(url_path));
 
-   msg_queue_clear(g_data_runloop.http.msg_queue);
-   msg_queue_push_string_list(g_data_runloop.http.msg_queue, url_path, "cb_core_updater_list", 0, 1);
+   rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, url_path, "cb_core_updater_list", 0, 1,
+         true);
 #endif
 
    return menu_list_push_stack_refresh(
@@ -424,8 +424,8 @@ static int action_ok_menu_wallpaper_load(const char *path,
    {
       strlcpy(g_settings.menu.wallpaper, wallpaper_path, sizeof(g_settings.menu.wallpaper));
 
-      msg_queue_clear(g_data_runloop.nbio.image.msg_queue);
-      msg_queue_push_string_list(g_data_runloop.nbio.image.msg_queue, wallpaper_path, "cb_menu_wallpaper", 0, 1);
+      rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, wallpaper_path, "cb_menu_wallpaper", 0, 1,
+            true);
    }
 
    menu_list_pop_stack_by_needle(menu->menu_list, setting->name);
@@ -900,8 +900,8 @@ static int action_ok_core_updater_download(const char *path,
 
    rarch_main_msg_queue_push(msg, 1, 90, true);
 
-   msg_queue_clear(g_data_runloop.http.msg_queue);
-   msg_queue_push_string_list(g_data_runloop.http.msg_queue, core_path, "cb_core_updater_download", 0, 1);
+   rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, core_path,
+         "cb_core_updater_download", 0, 1, true);
 #endif
    return 0;
 }

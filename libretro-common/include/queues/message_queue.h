@@ -56,9 +56,6 @@ msg_queue_t *msg_queue_new(size_t size);
 void msg_queue_push(msg_queue_t *queue, const char *msg,
       unsigned prio, unsigned duration);
 
-void msg_queue_push_string_list(msg_queue_t *queue, const char *msg,
-      const char *msg2, unsigned prio, unsigned duration);
-
 /**
  * msg_queue_pull:
  * @queue             : pointer to queue object

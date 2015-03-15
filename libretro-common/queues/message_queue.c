@@ -134,18 +134,6 @@ void msg_queue_push(msg_queue_t *queue, const char *msg,
    }
 }
 
-void msg_queue_push_string_list(msg_queue_t *queue, const char *msg,
-      const char *msg2, unsigned prio, unsigned duration)
-{
-   char new_msg[8192];
-
-   strlcpy(new_msg, msg,  sizeof(new_msg));
-   strlcat(new_msg, "|",  sizeof(new_msg));
-   strlcat(new_msg, msg2, sizeof(new_msg));
-
-   msg_queue_push(queue, new_msg, prio, duration);
-}
-
 /**
  * msg_queue_clear:
  * @queue             : pointer to queue object

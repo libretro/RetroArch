@@ -662,6 +662,40 @@ void rarch_main_data_init_queues(void)
       rarch_assert(g_data_runloop.nbio.image.msg_queue = msg_queue_new(8));
 }
 
+void rarch_main_data_msg_queue_push(unsigned type,
+      const char *msg, const char *msg2,
+      unsigned prio, unsigned duration, bool flush)
+{
+   char new_msg[PATH_MAX_LENGTH];
+   msg_queue_t *queue = NULL;
+
+   strlcpy(new_msg, msg,  sizeof(new_msg));
+   strlcat(new_msg, "|",  sizeof(new_msg));
+   strlcat(new_msg, msg2, sizeof(new_msg));
+
+   switch(type)
+   {
+      case DATA_TYPE_NONE:
+         break;
+      case DATA_TYPE_FILE:
+         queue = g_data_runloop.nbio.msg_queue;
+         break;
+      case DATA_TYPE_IMAGE:
+         queue = g_data_runloop.nbio.image.msg_queue;
+         break;
+      case DATA_TYPE_HTTP:
+         queue = g_data_runloop.http.msg_queue;
+         break;
+   }
+
+   if (!queue)
+      return;
+
+   if (flush)
+      msg_queue_clear(queue);
+   msg_queue_push(queue, new_msg, prio, duration);
+}
+
 void rarch_main_data_iterate(void)
 {
 #ifdef HAVE_OVERLAY
