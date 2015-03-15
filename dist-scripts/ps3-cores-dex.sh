@@ -1,11 +1,9 @@
 #!/bin/sh
 
 make -C ../ -f Makefile.ps3.salamander clean || exit 1
-make -C ../ -f Makefile.ps3.rgl clean || exit 1
 make -C ../ -f Makefile.ps3 clean || exit 1
 
 make -C ../ -f Makefile.ps3.salamander || exit 1
-make -C ../ -f Makefile.ps3.rgl || exit 1
 
 EXE_PATH=/usr/local/cell/host-win32/bin
 MAKE_FSELF_NPDRM=$EXE_PATH/make_fself_npdrm.exe
