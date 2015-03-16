@@ -98,12 +98,9 @@ static RECT d3d_monitor_rect(d3d_video_t *d3d);
 #endif
 
 #ifdef HAVE_MONITOR
-namespace Monitor
-{
-	static HMONITOR last_hm;
-	static HMONITOR all_hms[MAX_MONITORS];
-	static unsigned num_mons;
-}
+static HMONITOR monitor_last;
+static HMONITOR monitor_all[MAX_MONITORS];
+static unsigned monitor_count;
 #endif
 
 static void d3d_deinit_shader(void *data)
@@ -786,7 +783,7 @@ static void d3d_free(void *data)
       d3d->g_pD3D->Release();
 
 #ifdef HAVE_MONITOR
-   Monitor::last_hm = MonitorFromWindow(d3d->hWnd,
+   monitor_last = MonitorFromWindow(d3d->hWnd,
          MONITOR_DEFAULTTONEAREST);
    DestroyWindow(d3d->hWnd);
 #endif
@@ -809,7 +806,7 @@ static void d3d_free(void *data)
 static BOOL CALLBACK d3d_monitor_enum_proc(HMONITOR hMonitor,
       HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
-   Monitor::all_hms[Monitor::num_mons++] = hMonitor;
+   monitor_all[monitor_count++] = hMonitor;
    return TRUE;
 }
 
@@ -819,28 +816,28 @@ static RECT d3d_monitor_rect(d3d_video_t *d3d)
    unsigned fs_monitor, i;
    MONITORINFOEX current_mon;
    HMONITOR hm_to_use;
-   Monitor::num_mons = 0;
+   monitor_count = 0;
 
    EnumDisplayMonitors(NULL, NULL, d3d_monitor_enum_proc, 0);
 
-   if (!Monitor::last_hm)
-      Monitor::last_hm = MonitorFromWindow(
+   if (!monitor_last)
+      monitor_last = MonitorFromWindow(
             GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
 
-   hm_to_use  = Monitor::last_hm;
+   hm_to_use  = monitor_last;
    fs_monitor = g_settings.video.monitor_index;
 
-   if (fs_monitor && fs_monitor <= Monitor::num_mons 
-         && Monitor::all_hms[fs_monitor - 1])
+   if (fs_monitor && fs_monitor <= monitor_count 
+         && monitor_all[fs_monitor - 1])
    {
-      hm_to_use = Monitor::all_hms[fs_monitor - 1];
+      hm_to_use = monitor_all[fs_monitor - 1];
       d3d->cur_mon_id = fs_monitor - 1;
    }
    else
    {
-      for (i = 0; i < Monitor::num_mons; i++)
+      for (i = 0; i < monitor_count; i++)
       {
-         if (Monitor::all_hms[i] != hm_to_use)
+         if (monitor_all[i] != hm_to_use)
             continue;
 
          d3d->cur_mon_id = i;
