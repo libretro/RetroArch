@@ -173,8 +173,8 @@ typedef struct xmb_handle
       {
          float zoom;
          float alpha;
-         int idx;
-         int idx_old;
+         unsigned idx;
+         unsigned idx_old;
       } active;
 
       struct
@@ -231,7 +231,7 @@ static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
 {
    float iy = xmb->icon.spacing.vertical;
 
-   if (i < current)
+   if (i < (int)current)
       if (xmb->depth > 1)
          iy *= (i - (int)current + xmb->above_offset.subitem);
       else
@@ -239,7 +239,7 @@ static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
    else
       iy    *= (i - (int)current + xmb->under_offset.item);
 
-   if (i == current)
+   if (i == (int)current)
       iy = xmb->icon.spacing.vertical * xmb->item.active.factor;
 
    return iy;
@@ -580,7 +580,7 @@ static void xmb_selection_pointer_changed(void)
 
 static void xmb_list_open_old(xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
-   int i;
+   unsigned i;
    menu_handle_t *menu = menu_driver_resolve();
 
    if (!menu)
@@ -607,7 +607,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb, file_list_t *list, int dir, siz
 
 static void xmb_list_open_new(xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
-   int i;
+   unsigned i;
    menu_handle_t *menu = menu_driver_resolve();
 
    if (!menu)
@@ -652,7 +652,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb, file_list_t *list, int dir, siz
    xmb->old_depth = xmb->depth;
 }
 
-static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, core_info_t *info, int i)
+static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, core_info_t *info, unsigned i)
 {
    core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
    xmb_node_t *node            = NULL;
@@ -696,7 +696,7 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, core_info_t *in
    return node;
 }
 
-static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, core_info_t *info, int i)
+static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, core_info_t *info, unsigned i)
 {
    core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
 
@@ -731,7 +731,7 @@ static void xmb_push_animations(xmb_node_t *node, float ia, float ix)
 
 static void xmb_list_switch_old(xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
-   int i;
+   unsigned i;
    size_t end = 0;
    menu_handle_t *menu = menu_driver_resolve();
 
@@ -755,7 +755,7 @@ static void xmb_list_switch_old(xmb_handle_t *xmb, file_list_t *list, int dir, s
 
 static void xmb_list_switch_new(xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
-   int i;
+   unsigned i;
    size_t end = 0;
    menu_handle_t *menu = menu_driver_resolve();
 
@@ -1228,7 +1228,7 @@ static void xmb_render(void)
 static void xmb_frame(void)
 {
    math_matrix_4x4 mymat, mrot, mscal;
-   int i, depth;
+   unsigned i, depth;
    char msg[PATH_MAX_LENGTH];
    char title_msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
    bool render_background = false;
@@ -1544,7 +1544,7 @@ static bool xmb_load_wallpaper(void *data)
 
 static void xmb_context_reset(void)
 {
-   int i, k;
+   unsigned i, k;
    char bgpath[PATH_MAX_LENGTH];
    char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH], iconpath[PATH_MAX_LENGTH],
          fontpath[PATH_MAX_LENGTH], core_id[PATH_MAX_LENGTH], texturepath[PATH_MAX_LENGTH],
@@ -1927,7 +1927,7 @@ static void xmb_context_destroy(void)
 
 static void xmb_toggle(bool menu_on)
 {
-   int i;
+   unsigned i;
    xmb_handle_t *xmb = NULL;
    menu_handle_t *menu = menu_driver_resolve();
 
