@@ -392,7 +392,7 @@ static bool gfx_ctx_drm_egl_init(void *data)
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)calloc(1, sizeof(gfx_ctx_drm_egl_data_t));
 
    if (!drm)
-      return NULL;
+      return false;
 
    drm->g_drm_fd = -1;
    gpu_descriptors = (struct string_list*)dir_list_new("/dev/dri", NULL, false);
