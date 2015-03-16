@@ -62,13 +62,13 @@ static bool sdl_key_pressed(int key)
 
    sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
 
-#if HAVE_SDL2
+#ifdef HAVE_SDL2
    sym = SDL_GetScancodeFromKey(sym);
    keymap = SDL_GetKeyboardState(&num_keys);
 #else
    keymap = SDL_GetKeyState(&num_keys);
 #endif
-   if (sym < 0 || sym >= num_keys)
+   if (sym < 0 || sym >= (unsigned)num_keys)
       return false;
 
    return keymap[sym];
