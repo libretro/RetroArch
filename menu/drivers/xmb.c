@@ -310,6 +310,9 @@ static void xmb_draw_icon(gl_t *gl, xmb_handle_t *xmb,
       1.0f, 1.0f, 1.0f, alpha,
    };
 
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+
    glViewport(x, gl->win_height - y, xmb->icon.size, xmb->icon.size);
 
    coords.vertices      = 4;
@@ -357,6 +360,9 @@ static void xmb_draw_icon_predone(gl_t *gl, xmb_handle_t *xmb,
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
    };
+
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    glViewport(x, gl->win_height - y, xmb->icon.size, xmb->icon.size);
 
@@ -1250,9 +1256,6 @@ static void xmb_frame(void)
 
    if (!gl)
       return;
-
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    xmb_frame_background(gl, xmb, false);
 
