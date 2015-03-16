@@ -902,6 +902,7 @@ static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
 #ifndef _XBOX
 static bool d3d_init_imports(d3d_video_t *d3d)
 {
+   state_tracker_t *state_tracker = NULL;
    state_tracker_info tracker_info = {0};
 
    if (!d3d->shader.variables)
@@ -923,7 +924,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
       *d3d->shader.script_class ? d3d->shader.script_class : NULL;
 #endif
 
-   state_tracker_t *state_tracker = state_tracker_init(&tracker_info);
+   state_tracker = state_tracker_init(&tracker_info);
    if (!state_tracker)
    {
       RARCH_ERR("Failed to initialize state tracker.\n");
@@ -941,6 +942,9 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    unsigned current_width, current_height, out_width, out_height;
    unsigned i = 0;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+#ifndef _XBOX
+   LinkInfo link_info = {0};
+#endif
 
    (void)i;
    /* Setup information for first pass. */
@@ -952,7 +956,6 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 
    //d3d_deinit_chain(d3d);
 #else
-   LinkInfo link_info = {0};
    link_info.pass = &d3d->shader.pass[0];
    link_info.tex_w = link_info.tex_h = 
       video_info->input_scale * RARCH_SCALE_BASE;
@@ -1145,6 +1148,8 @@ static void d3d_draw_texture(d3d_video_t *d3d)
 static bool d3d_init_multipass(d3d_video_t *d3d)
 {
    unsigned i;
+   bool use_extra_pass;
+   video_shader_pass *pass = NULL;
    config_file_t *conf = config_file_new(d3d->cg_shader.c_str());
 
    if (!conf)
@@ -1179,22 +1184,22 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
          d3d->shader.pass[i].fbo.type_y = RARCH_SCALE_INPUT;
    }
 
-   bool use_extra_pass = d3d->shader.passes < GFX_MAX_SHADERS && 
+   use_extra_pass = d3d->shader.passes < GFX_MAX_SHADERS && 
       d3d->shader.pass[d3d->shader.passes - 1].fbo.valid;
 
    if (use_extra_pass)
    {
       d3d->shader.passes++;
-      video_shader_pass *dummy_pass = (video_shader_pass*)
+      pass = (video_shader_pass*)
          &d3d->shader.pass[d3d->shader.passes - 1];
 
-      dummy_pass->fbo.scale_x = dummy_pass->fbo.scale_y = 1.0f;
-      dummy_pass->fbo.type_x  = dummy_pass->fbo.type_y = RARCH_SCALE_VIEWPORT;
-      dummy_pass->filter      = RARCH_FILTER_UNSPEC;
+      pass->fbo.scale_x = pass->fbo.scale_y = 1.0f;
+      pass->fbo.type_x  = pass->fbo.type_y = RARCH_SCALE_VIEWPORT;
+      pass->filter      = RARCH_FILTER_UNSPEC;
    }
    else
    {
-      video_shader_pass *pass = (video_shader_pass*)
+      pass = (video_shader_pass*)
          &d3d->shader.pass[d3d->shader.passes - 1];
 
       pass->fbo.scale_x = pass->fbo.scale_y = 1.0f;
