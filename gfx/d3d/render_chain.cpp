@@ -506,8 +506,13 @@ void renderchain_set_vertices(void *data, Pass *pass,
 
 void renderchain_set_viewport(void *data, D3DVIEWPORT *vp)
 {
+   LPDIRECT3DDEVICE d3dr;
    renderchain_t *chain = (renderchain_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+
+   if (!chain)
+      return;
+
+   d3dr = (LPDIRECT3DDEVICE)chain->dev;
    d3d_set_viewport(d3dr, vp);
 }
 
@@ -517,6 +522,9 @@ void renderchain_set_mvp(void *data, CGprogram &vPrg,
 {
    D3DXMATRIX proj, ortho, rot, tmp;
    renderchain_t *chain = (renderchain_t*)data;
+
+   if (!chain)
+      return;
 
    D3DXMatrixOrthoOffCenterLH(&ortho, 0, vp_width, 0, vp_height, 0, 1);
 
@@ -537,6 +545,9 @@ void renderchain_convert_geometry(void *data, const LinkInfo *info,
       D3DVIEWPORT *final_viewport)
 {
    renderchain_t *chain = (renderchain_t*)data;
+
+   if (!chain || !info)
+      return;
 
    switch (info->pass->fbo.type_x)
    {
@@ -592,6 +603,7 @@ void renderchain_render_pass(void *data, Pass *pass, unsigned pass_index)
    unsigned i;
    renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+
    renderchain_set_shaders(chain, pass->fPrg, pass->vPrg);
 
    d3d_set_texture(d3dr, 0, pass->tex);
