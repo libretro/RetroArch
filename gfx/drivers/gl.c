@@ -2769,9 +2769,9 @@ static void* gl_read_frame_raw(void *data, unsigned *width_p,
 unsigned *height_p, size_t *pitch_p)
 {
 #ifdef HAVE_FBO
-   void* buffer;
+   void* buffer = NULL;
 #endif
-   void* buffer_texture;
+   void* buffer_texture = NULL;
    int i;
    gl_t *gl        = (gl_t*)data;
    unsigned width  = gl->last_width[gl->tex_index];
