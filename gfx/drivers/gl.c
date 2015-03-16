@@ -3163,6 +3163,7 @@ video_driver_t video_gl = {
    gl_viewport_info,
 
    gl_read_viewport,
+   NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
    gl_get_overlay_interface,

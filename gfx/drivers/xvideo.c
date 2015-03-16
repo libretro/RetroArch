@@ -937,6 +937,7 @@ video_driver_t video_xvideo = {
    xv_set_rotation,
    xv_viewport_info,
    xv_read_viewport,
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
 #endif

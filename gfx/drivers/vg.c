@@ -491,6 +491,7 @@ video_driver_t video_vg = {
    vg_set_rotation,
    vg_viewport_info,
    vg_read_viewport,
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
 #endif

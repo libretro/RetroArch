@@ -167,6 +167,13 @@ typedef struct video_driver
    /* Reads out in BGR byte order (24bpp). */
    bool (*read_viewport)(void *data, uint8_t *buffer);
 
+   /* Returns a pointer to a newly allocated buffer that can
+    * (and must) be passed to free() by the caller, containing a
+    * copy of the current raw frame in the active pixel format
+    * and sets width, height and pitch to the correct values. */
+   void* (*read_frame_raw)(void *data, unsigned *width,
+   unsigned *height, size_t *pitch);
+
 #ifdef HAVE_OVERLAY
    void (*overlay_interface)(void *data, const video_overlay_interface_t **iface);
 #endif

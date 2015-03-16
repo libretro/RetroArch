@@ -769,6 +769,7 @@ video_driver_t video_sdl2 = {
    sdl2_gfx_set_rotation,
    sdl2_gfx_viewport_info,
    sdl2_gfx_read_viewport,
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
     NULL,
 #endif
