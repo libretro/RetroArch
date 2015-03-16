@@ -46,9 +46,9 @@ typedef struct sdl2_tex
 {
    SDL_Texture *tex;
 
-   int w;
-   int h;
-   int pitch;
+   unsigned w;
+   unsigned h;
+   size_t pitch;
    bool active;
    bool rgb32;
 } sdl2_tex_t;
@@ -190,12 +190,12 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
 
       SDL_Rect srcrect = {
          tex_x, tex_y,
-         gly->width, gly->height
+         (int)gly->width, (int)gly->height
       };
 
       SDL_Rect dstrect = {
          x + delta_x + off_x, y + delta_y + off_y,
-         gly->width, gly->height
+         (int)gly->width, (int)gly->height
       };
 
       SDL_RenderCopyEx(vid->renderer, vid->font.tex, &srcrect, &dstrect, 0, NULL, SDL_FLIP_NONE);
@@ -251,7 +251,7 @@ static void sdl2_init_renderer(sdl2_video_t *vid)
 static void sdl_refresh_renderer(sdl2_video_t *vid)
 {
    SDL_RenderClear(vid->renderer);
-   SDL_Rect r = { vid->vp.x, vid->vp.y, vid->vp.width, vid->vp.height };
+   SDL_Rect r = { vid->vp.x, vid->vp.y, (int)vid->vp.width, (int)vid->vp.height };
    SDL_RenderSetViewport(vid->renderer, &r);
 
    // breaks int scaling
