@@ -79,6 +79,10 @@
 #define OSJoinThread(thread, val) LWP_JoinThread(thread, val)
 #endif
 
+#ifndef OSSignalCond
+#define OSSignalCond(thread) LWP_CondSignal(thread)
+#endif
+
 #ifndef OSCreateThread
 #define OSCreateThread(thread, func, intarg, ptrarg, stackbase, stacksize, priority, attrs) LWP_CreateThread(thread, func, ptrarg, stackbase, stacksize, priority)
 #endif
@@ -164,7 +168,7 @@ static inline int pthread_cond_init(pthread_cond_t *cond,
 
 static inline int pthread_cond_signal(pthread_cond_t *cond)
 {
-   return LWP_CondSignal(*cond);
+   return OSSignalCond(*cond);
 }
 
 static inline int pthread_cond_broadcast(pthread_cond_t *cond)
