@@ -2768,28 +2768,41 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 static void* gl_read_frame_raw(void *data, unsigned *width_p,
 unsigned *height_p, size_t *pitch_p)
 {
+#ifdef HAVE_FBO
+   void* buffer;
+#endif
+   void* buffer_texture;
    int i;
    gl_t *gl        = (gl_t*)data;
-   unsigned width = gl->last_width[gl->tex_index];
+   unsigned width  = gl->last_width[gl->tex_index];
    unsigned height = gl->last_height[gl->tex_index];
-   size_t pitch = gl->tex_w * gl->base_size;
-   void* buffer = malloc(pitch * height);
-   void* buffer_texture = malloc(pitch * gl->tex_h);
+   size_t pitch    = gl->tex_w * gl->base_size;
+
+#ifdef HAVE_FBO
+   if (gl->hw_render_use)
+      buffer = malloc(pitch * height);
+#endif
+   buffer_texture = malloc(pitch * gl->tex_h);
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    glGetTexImage(GL_TEXTURE_2D, 0,gl->texture_type, gl->texture_fmt, buffer_texture);
-
-   for(i = 0; i < height ; i++)
-      memcpy((uint8_t*)buffer + i * pitch,
-         (uint8_t*)buffer_texture + (height - 1 - i) * pitch, pitch);
 
    *width_p = width;
    *height_p = height;
    *pitch_p = pitch;
 
-   free(buffer_texture);
-   return buffer;
+#ifdef HAVE_FBO
+   if (gl->hw_render_use)
+   {
+      for(i = 0; i < height ; i++)
+         memcpy((uint8_t*)buffer + i * pitch,
+            (uint8_t*)buffer_texture + (height - 1 - i) * pitch, pitch);
 
+      free(buffer_texture);
+      return buffer;
+   }
+#endif
+   return buffer_texture;
 }
 #endif
 
