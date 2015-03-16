@@ -64,7 +64,7 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
    if (!dev)
       return NULL;
 
-   if (path != NULL)
+   if (path)
       hr = D3DXCreateTextureFromFileExA(dev,
             path, width, height, miplevels, usage, format,
             pool, filter, mipfilter, color_key, src_info,

@@ -181,8 +181,9 @@ static void d3d_deinitialize(d3d_video_t *d3d)
 
 static bool d3d_init_base(void *data, const video_info_t *info)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    D3DPRESENT_PARAMETERS d3dpp;
+   d3d_video_t *d3d = (d3d_video_t*)data;
+
    d3d_make_d3dpp(d3d, info, &d3dpp);
 
    d3d->g_pD3D = D3DCREATE_CTX(D3D_SDK_VERSION);
@@ -193,7 +194,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    }
 
 #ifdef _XBOX360
-   d3d->cur_mon_id=0;
+   d3d->cur_mon_id = 0;
 #endif
 
    if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
@@ -235,7 +236,9 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    else if (d3d->needs_restore)
    {
       D3DPRESENT_PARAMETERS d3dpp;
+
       d3d_make_d3dpp(d3d, info, &d3dpp);
+
       if (d3d->dev->Reset(&d3dpp) != D3D_OK)
       {
          /* Try to recreate the device completely. */
@@ -270,8 +273,6 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
          ret = d3d_init_base(d3d, info);
          if (ret)
             RARCH_LOG("[D3D]: Recovered from dead state.\n");
-         else
-            return ret;
       }
    }
 
@@ -393,6 +394,10 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
 static void d3d_set_nonblock_state(void *data, bool state)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+
+   if (!d3d)
+      return;
+
    d3d->video_info.vsync = !state;
 
    if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
@@ -466,8 +471,12 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    }
 
    g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
-   d3d->video_info.force_aspect = true;
-   d3d->should_resize = true;
+
+   if (d3d)
+   {
+      d3d->video_info.force_aspect = true;
+      d3d->should_resize = true;
+   }
 }
 
 static void d3d_apply_state_changes(void *data)
@@ -525,6 +534,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 
 #if defined(HAVE_WINDOW) && !defined(_XBOX)
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
+
    d3d->windowClass.cbSize        = sizeof(d3d->windowClass);
    d3d->windowClass.style         = CS_HREDRAW | CS_VREDRAW;
    d3d->windowClass.lpfnWndProc   = WindowProc;
@@ -603,6 +613,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    if (!info->fullscreen && g_settings.ui.menubar_enable)
    {
 	   RECT rc_temp = {0, 0, win_height, 0x7FFF};
+
 	   SetMenu(d3d->hWnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
 	   SendMessage(d3d->hWnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
 	   win_height += rc_temp.top + rect.top;
@@ -1031,6 +1042,9 @@ static void d3d_reinit_renderchain(void *data,
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
+   if (!d3d)
+      return;
+
    d3d->pixel_size        = video->rgb32 ?
       sizeof(uint32_t) : sizeof(uint16_t);
    d3d->tex_w = d3d->tex_h = 
@@ -1225,6 +1239,9 @@ static void d3d_set_font_rect(d3d_video_t *d3d,
       font_size *= params->scale;
    }
 
+   if (!d3d)
+      return;
+
    d3d->font_rect.left = d3d->final_viewport.X + 
       d3d->final_viewport.Width * pos_x;
    d3d->font_rect.right = d3d->final_viewport.X + 
@@ -1245,6 +1262,9 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
 {
 #ifndef _XBOX
    video_shader_pass *pass = NULL;
+
+   if (!d3d)
+      return false;
 
    memset(&d3d->shader, 0, sizeof(d3d->shader));
    d3d->shader.passes = 1;
@@ -1304,6 +1324,19 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
       float r, g, b, a;
    } vert[4];
    float overlay_width, overlay_height;
+#ifndef _XBOX1
+   LPDIRECT3DVERTEXDECLARATION vertex_decl;
+   /* set vertex declaration for overlay. */
+   D3DVERTEXELEMENT vElems[4] = {
+      {0, 0,  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
+         D3DDECLUSAGE_POSITION, 0},
+      {0, 12, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
+         D3DDECLUSAGE_TEXCOORD, 0},
+      {0, 20, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT,
+         D3DDECLUSAGE_COLOR, 0},
+      D3DDECL_END()
+   };
+#endif
 
    if (!d3d)
       return;
@@ -1369,17 +1402,6 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    d3d->dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 
 #ifndef _XBOX1
-   // set vertex decl for overlay
-   D3DVERTEXELEMENT vElems[4] = {
-      {0, 0,  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
-         D3DDECLUSAGE_POSITION, 0},
-      {0, 12, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
-         D3DDECLUSAGE_TEXCOORD, 0},
-      {0, 20, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT,
-         D3DDECLUSAGE_COLOR, 0},
-      D3DDECL_END()
-   };
-   LPDIRECT3DVERTEXDECLARATION vertex_decl;
    d3d->dev->CreateVertexDeclaration(vElems, &vertex_decl);
    d3d->dev->SetVertexDeclaration(vertex_decl);
    vertex_decl->Release();
@@ -1443,6 +1465,9 @@ static void d3d_overlay_tex_geom(void *data,
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
+   if (!d3d)
+      return;
+
    d3d->overlays[index].tex_coords.x = x;
    d3d->overlays[index].tex_coords.y = y;
    d3d->overlays[index].tex_coords.w = w;
@@ -1455,6 +1480,9 @@ static void d3d_overlay_vertex_geom(void *data,
       float w, float h)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+
+   if (!d3d)
+      return;
 
    y = 1.0f - y;
    h = -h;
@@ -1514,7 +1542,6 @@ static bool d3d_overlay_load(void *data,
 
       /* Default. Stretch to whole screen. */
       d3d_overlay_tex_geom(d3d, i, 0, 0, 1, 1);
-
       d3d_overlay_vertex_geom(d3d, i, 0, 0, 1, 1);
    }
 
@@ -1573,8 +1600,8 @@ static bool d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
-   unsigned i = 0;
    D3DVIEWPORT screen_vp;
+   unsigned i = 0;
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
@@ -1702,6 +1729,11 @@ static bool d3d_frame(void *data, const void *frame,
 
 static bool d3d_read_viewport(void *data, uint8_t *buffer)
 {
+#ifndef _XBOX
+   D3DLOCKED_RECT rect;
+   LPDIRECT3DSURFACE target = NULL;
+   LPDIRECT3DSURFACE dest   = NULL;
+#endif
    bool ret = true;
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
@@ -1715,9 +1747,6 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
 #ifdef _XBOX
    ret = false;
 #else
-   LPDIRECT3DSURFACE target = NULL;
-   LPDIRECT3DSURFACE dest   = NULL;
-
    if (FAILED(d3d->d3d_err = d3dr->GetRenderTarget(0, &target)))
    {
       ret = false;
@@ -1740,7 +1769,6 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
       goto end;
    }
 
-   D3DLOCKED_RECT rect;
    if (SUCCEEDED(dest->LockRect(&rect, NULL, D3DLOCK_READONLY)))
    {
       unsigned x, y;
@@ -1829,6 +1857,9 @@ static void d3d_set_menu_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
+#ifndef _XBOX
+   D3DLOCKED_RECT d3dlr;
+#endif
    d3d_video_t *d3d = (d3d_video_t*)data;
 
    (void)frame;
@@ -1862,8 +1893,6 @@ static void d3d_set_menu_texture_frame(void *data,
 
    d3d->menu->alpha_mod = alpha;
 
-
-   D3DLOCKED_RECT d3dlr;
    if (SUCCEEDED(d3d->menu->tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       unsigned h, w;
@@ -1913,11 +1942,14 @@ static void d3d_set_menu_texture_enable(void *data,
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
+   if (!d3d)
+      return;
+
 #ifdef _XBOX
    d3d->menu_texture_enable = state;
    d3d->menu_texture_full_screen = full_screen;
 #else
-   if (!d3d || !d3d->menu)
+   if (!d3d->menu)
       return;
 
    d3d->menu->enabled = state;
