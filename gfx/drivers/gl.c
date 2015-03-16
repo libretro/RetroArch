@@ -2768,15 +2768,15 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 static void* gl_read_frame_raw(void *data, unsigned *width_p,
 unsigned *height_p, size_t *pitch_p)
 {
-#ifdef HAVE_FBO
-   void* buffer = NULL;
-#endif
-   void* buffer_texture = NULL;
    int i;
    gl_t *gl        = (gl_t*)data;
    unsigned width  = gl->last_width[gl->tex_index];
    unsigned height = gl->last_height[gl->tex_index];
    size_t pitch    = gl->tex_w * gl->base_size;
+#ifdef HAVE_FBO
+   void* buffer = NULL;
+#endif
+   void* buffer_texture = NULL;
 
 #ifdef HAVE_FBO
    if (gl->hw_render_use)
