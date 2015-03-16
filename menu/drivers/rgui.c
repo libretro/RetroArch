@@ -270,6 +270,7 @@ static void rgui_render_messagebox(const char *message)
    size_t i;
    int x, y;
    unsigned width, glyphs_width, height;
+   uint16_t color;
    struct string_list *list = NULL;
    menu_handle_t *menu = menu_driver_resolve();
 
@@ -317,7 +318,7 @@ static void rgui_render_messagebox(const char *message)
    fill_rect(&menu->frame_buf, x + 5, y + height - 5, width - 5, 5, green_filler);
    fill_rect(&menu->frame_buf, x, y + 5, 5, height - 5, green_filler);
 
-   uint16_t color = NORMAL_COLOR;
+   color = NORMAL_COLOR;
 
    for (i = 0; i < list->size; i++)
    {
@@ -346,6 +347,7 @@ static void rgui_render(void)
    char title[256], title_buf[256], title_msg[64];
    char timedate[PATH_MAX_LENGTH];
    unsigned x, y, menu_type  = 0;
+   uint16_t hover_color, normal_color;
    const char *dir     = NULL;
    const char *label   = NULL;
    const char *core_name = NULL;
@@ -402,8 +404,8 @@ static void rgui_render(void)
    menu_animation_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
          g_runloop.frames.video.count / RGUI_TERM_START_X, title, true);
 
-   uint16_t hover_color = HOVER_COLOR;
-   uint16_t normal_color = NORMAL_COLOR;
+   hover_color = HOVER_COLOR;
+   normal_color = NORMAL_COLOR;
 
    blit_line(menu, RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, TITLE_COLOR);
 

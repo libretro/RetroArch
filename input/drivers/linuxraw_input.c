@@ -217,7 +217,7 @@ static const rarch_joypad_driver_t *linuxraw_get_joypad_driver(void *data)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
    if (!linuxraw)
-      return false;
+      return NULL;
    return linuxraw->joypad;
 }
 

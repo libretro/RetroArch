@@ -219,6 +219,7 @@ static void glui_get_message(const char *message)
 static void glui_render_messagebox(const char *message)
 {
    unsigned i;
+   uint32_t normal_color;
    int x, y;
    struct string_list *list = NULL;
    glui_handle_t *glui = NULL;
@@ -249,7 +250,7 @@ static void glui_render_messagebox(const char *message)
    x = gl->win_width  / 2 - strlen(list->elems[0].data) * glui->glyph_width / 2;
    y = gl->win_height / 2 - list->size * glui->line_height / 2;
 
-   const uint32_t normal_color = FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.entry_normal_color);
+   normal_color = FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.entry_normal_color);
 
    for (i = 0; i < list->size; i++)
    {
