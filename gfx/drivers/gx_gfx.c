@@ -1503,6 +1503,7 @@ video_driver_t video_gx = {
    gx_set_rotation,
    gx_viewport_info,
    gx_read_viewport,
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    gx_get_overlay_interface,
 #endif

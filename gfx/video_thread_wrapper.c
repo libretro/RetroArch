@@ -977,6 +977,7 @@ static const video_driver_t video_thread = {
    thread_set_rotation,
    thread_viewport_info,
    thread_read_viewport,
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    thread_get_overlay_interface, /* get_overlay_interface */
 #endif

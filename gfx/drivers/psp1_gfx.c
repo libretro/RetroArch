@@ -973,6 +973,7 @@ video_driver_t video_psp1 = {
    psp_set_rotation,
    psp_viewport_info,
    psp_read_viewport,
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL,
 #endif

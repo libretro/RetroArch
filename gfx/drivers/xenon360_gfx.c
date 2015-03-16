@@ -329,6 +329,7 @@ video_driver_t video_xenon360 = {
    xenon360_gfx_set_rotation,
    xenon360_gfx_viewport_info,
    xenon360_gfx_read_viewport,
+   NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
    NULL, /* overlay_interface */

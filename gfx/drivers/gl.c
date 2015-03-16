@@ -2760,6 +2760,39 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 }
 #endif
 
+#if 0
+#define READ_RAW_GL_FRAME_TEST
+#endif
+
+#if defined(READ_RAW_GL_FRAME_TEST)
+static void* gl_read_frame_raw(void *data, unsigned *width_p,
+unsigned *height_p, size_t *pitch_p)
+{
+   int i;
+   gl_t *gl        = (gl_t*)data;
+   unsigned width = gl->last_width[gl->tex_index];
+   unsigned height = gl->last_height[gl->tex_index];
+   size_t pitch = gl->tex_w * gl->base_size;
+   void* buffer = malloc(pitch * height);
+   void* buffer_texture = malloc(pitch * gl->tex_h);
+
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   glGetTexImage(GL_TEXTURE_2D, 0,gl->texture_type, gl->texture_fmt, buffer_texture);
+
+   for(i = 0; i < height ; i++)
+      memcpy((uint8_t*)buffer + i * pitch,
+         (uint8_t*)buffer_texture + (height - 1 - i) * pitch, pitch);
+
+   *width_p = width;
+   *height_p = height;
+   *pitch_p = pitch;
+
+   free(buffer_texture);
+   return buffer;
+
+}
+#endif
+
 #ifdef HAVE_OVERLAY
 static void gl_free_overlay(gl_t *gl);
 static bool gl_overlay_load(void *data, 
@@ -3163,6 +3196,11 @@ video_driver_t video_gl = {
    gl_viewport_info,
 
    gl_read_viewport,
+#if defined(READ_RAW_GL_FRAME_TEST)
+   gl_read_frame_raw,
+#else
+   NULL,
+#endif
 
 #ifdef HAVE_OVERLAY
    gl_get_overlay_interface,

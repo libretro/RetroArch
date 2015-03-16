@@ -1966,6 +1966,7 @@ video_driver_t video_d3d = {
    d3d_set_rotation,
    d3d_viewport_info,
    d3d_read_viewport,
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d_get_overlay_interface,
 #endif
