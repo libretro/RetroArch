@@ -2780,9 +2780,22 @@ unsigned *height_p, size_t *pitch_p)
 
 #ifdef HAVE_FBO
    if (gl->hw_render_use)
+   {
       buffer = malloc(pitch * height);
+      if (!buffer)
+         return NULL;
+   }
 #endif
    buffer_texture = malloc(pitch * gl->tex_h);
+
+   if (!buffer_texture)
+   {
+#ifdef HAVE_FBO
+      if (buffer)
+         free(buffer);
+#endif
+      return NULL;
+   }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    glGetTexImage(GL_TEXTURE_2D, 0,gl->texture_type, gl->texture_fmt, buffer_texture);
