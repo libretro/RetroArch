@@ -102,10 +102,12 @@ typedef struct data_runloop
    http_handle_t http;
 #endif
 
+#if 0
 #ifdef HAVE_LIBRETRODB
    struct
    {
    } db;
+#endif
 #endif
 
    nbio_handle_t nbio;
