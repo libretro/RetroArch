@@ -254,9 +254,9 @@ bool take_screenshot(void)
       return false;
 
    viewport_read = (g_settings.video.gpu_screenshot ||
-         g_extern.system.hw_render_callback.context_type
-         != RETRO_HW_CONTEXT_NONE) && driver.video->read_viewport &&
-      driver.video->viewport_info;
+         ((g_extern.system.hw_render_callback.context_type
+         != RETRO_HW_CONTEXT_NONE) && !driver.video->read_frame_raw))
+         && driver.video->read_viewport && driver.video->viewport_info;
 
    if (viewport_read)
    {
@@ -276,8 +276,32 @@ bool take_screenshot(void)
    else if (g_extern.frame_cache.data &&
          (g_extern.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
       ret = take_screenshot_raw();
-   else
-      RARCH_ERR(RETRO_LOG_TAKE_SCREENSHOT_ERROR);
+   else if (driver.video->read_frame_raw)
+   {
+      const void* old_data = g_extern.frame_cache.data;
+      unsigned old_width   = g_extern.frame_cache.width;
+      unsigned old_height  = g_extern.frame_cache.height;
+      size_t old_pitch     = g_extern.frame_cache.pitch;
+
+      void* frame_data = driver.video->read_frame_raw
+         (driver.video_data, &g_extern.frame_cache.width,
+          &g_extern.frame_cache.height, &g_extern.frame_cache.pitch);
+
+      if (frame_data)
+      {
+         g_extern.frame_cache.data = frame_data;
+         ret = take_screenshot_raw();
+         free(frame_data);
+      }
+      else
+         RARCH_ERR(RETRO_LOG_TAKE_SCREENSHOT_ERROR);
+
+      g_extern.frame_cache.data   = old_data;
+      g_extern.frame_cache.width  = old_width;
+      g_extern.frame_cache.height = old_height;
+      g_extern.frame_cache.pitch  = old_pitch;
+   }
+
 
    if (ret)
    {
