@@ -609,7 +609,7 @@ static void config_set_defaults(void)
    *g_settings.input_remapping_directory = '\0';
    *g_settings.input.autoconfig_dir = '\0';
    *g_settings.input.overlay = '\0';
-   *g_settings.content_directory = '\0';
+   *g_settings.core_assets_directory = '\0';
    *g_settings.assets_directory = '\0';
    *g_settings.playlist_directory = '\0';
    *g_settings.video.shader_path = '\0';
@@ -1348,11 +1348,11 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_PATH(resampler_directory, "resampler_directory");
    CONFIG_GET_PATH(extraction_directory, "extraction_directory");
    CONFIG_GET_PATH(input_remapping_directory, "input_remapping_directory");
-   CONFIG_GET_PATH(content_directory, "content_directory");
+   CONFIG_GET_PATH(core_assets_directory, "core_assets_directory");
    CONFIG_GET_PATH(assets_directory, "assets_directory");
    CONFIG_GET_PATH(playlist_directory, "playlist_directory");
-   if (!strcmp(g_settings.content_directory, "default"))
-      *g_settings.content_directory = '\0';
+   if (!strcmp(g_settings.core_assets_directory, "default"))
+      *g_settings.core_assets_directory = '\0';
    if (!strcmp(g_settings.assets_directory, "default"))
       *g_settings.assets_directory = '\0';
    if (!strcmp(g_settings.playlist_directory, "default"))
@@ -1975,9 +1975,9 @@ bool config_save_file(const char *path)
          *g_settings.audio.filter_dir ?
          g_settings.audio.filter_dir : "default");
 
-   config_set_path(conf, "content_directory",
-         *g_settings.content_directory ?
-         g_settings.content_directory : "default");
+   config_set_path(conf, "core_assets_directory",
+         *g_settings.core_assets_directory ?
+         g_settings.core_assets_directory : "default");
    config_set_path(conf, "assets_directory",
          *g_settings.assets_directory ?
          g_settings.assets_directory : "default");

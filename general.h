@@ -366,7 +366,7 @@ struct settings
    uint16_t network_cmd_port;
    bool stdin_cmd_enable;
 
-   char content_directory[PATH_MAX_LENGTH];
+   char core_assets_directory[PATH_MAX_LENGTH];
    char assets_directory[PATH_MAX_LENGTH];
    char menu_config_directory[PATH_MAX_LENGTH];
 #if defined(HAVE_MENU)

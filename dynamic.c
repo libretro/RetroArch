@@ -1087,14 +1087,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
-      case RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY:
+      case RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY:
       {
          const char **dir = (const char**)data;
 
-         *dir = *g_settings.content_directory ?
-            g_settings.content_directory : NULL;
-         RARCH_LOG("Environ CONTENT_DIRECTORY: \"%s\".\n",
-               g_settings.content_directory);
+         *dir = *g_settings.core_assets_directory ?
+            g_settings.core_assets_directory : NULL;
+         RARCH_LOG("Environ CORE_ASSETS_DIRECTORY: \"%s\".\n",
+               g_settings.core_assets_directory);
          break;
       }
 

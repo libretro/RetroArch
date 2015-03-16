@@ -695,9 +695,9 @@ enum retro_mod
                                             * location-based information from the host device,
                                             * such as current latitude / longitude.
                                             */
-#define RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY 30
+#define RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY 30
                                            /* const char ** --
-                                            * Returns the "content" directory of the frontend.
+                                            * Returns the "core assets" directory of the frontend.
                                             * This directory can be used to store specific assets that the 
                                             * core relies upon, such as art assets,
                                             * input data, etc etc.

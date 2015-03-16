@@ -5812,9 +5812,9 @@ static bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_settings.content_directory,
-         "content_directory",
-         "Content Directory",
+         g_settings.core_assets_directory,
+         "core_assets_directory",
+         "Core Assets Directory",
          "",
          "<default>",
          group_info.name,
