@@ -1331,14 +1331,17 @@ static void xmb_frame(void)
          node = xmb_get_userdata_from_core(xmb, info, i - 1);
 
       if (node)
+      {
+         xmb_draw_icon_begin(gl, xmb);
          xmb_draw_icon(gl, xmb, node->icon, 
                xmb->x + xmb->categories.x_pos + xmb->margins.screen.left + xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
                xmb->margins.screen.top + xmb->icon.size / 2.0, 
                node->alpha, 
                0, 
                node->zoom);
+         xmb_draw_icon_end(gl, xmb);
+      }
    }
-   xmb_draw_icon_end(gl, xmb);
 
    if (menu->keyboard.display)
    {
