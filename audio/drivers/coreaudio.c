@@ -96,7 +96,7 @@ static OSStatus audio_write_cb(void *userdata,
       return noErr;
 
    write_avail = io_data->mBuffers[0].mDataByteSize;
-   outbuf = io_data->mBuffers[0].mData;
+   outbuf      = io_data->mBuffers[0].mData;
 
    slock_lock(dev->lock);
 
@@ -107,14 +107,12 @@ static OSStatus audio_write_cb(void *userdata,
       /* Seems to be needed. */
       memset(outbuf, 0, write_avail);
 
-      slock_unlock(dev->lock);
-
-      /* Technically possible to deadlock without. */
-      scond_signal(dev->cond); 
-      return noErr;
+      goto end;
    }
 
    fifo_read(dev->buffer, outbuf, write_avail);
+
+end:
    slock_unlock(dev->lock);
    scond_signal(dev->cond);
 
