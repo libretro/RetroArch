@@ -294,12 +294,17 @@ bool take_screenshot(void)
          free(frame_data);
       }
       else
-         RARCH_ERR(RETRO_LOG_TAKE_SCREENSHOT_ERROR);
+         ret = false;
 
       g_extern.frame_cache.data   = old_data;
       g_extern.frame_cache.width  = old_width;
       g_extern.frame_cache.height = old_height;
       g_extern.frame_cache.pitch  = old_pitch;
+   }
+   else
+   {
+      RARCH_ERR(RETRO_LOG_TAKE_SCREENSHOT_ERROR);
+      ret = false;
    }
 
 
