@@ -619,13 +619,13 @@ static int mouse_iterate(unsigned *action)
       menu->mouse.x = 5;
    if (menu->mouse.y < 5)
       menu->mouse.y = 5;
-   if (menu->mouse.x > menu->frame_buf.width - 5)
+   if (menu->mouse.x > (int)menu->frame_buf.width - 5)
       menu->mouse.x = menu->frame_buf.width - 5;
-   if (menu->mouse.y > menu->frame_buf.height - 5)
+   if (menu->mouse.y > (int)menu->frame_buf.height - 5)
       menu->mouse.y = menu->frame_buf.height - 5;
 
    menu->mouse.scrollup = (menu->mouse.y == 5);
-   menu->mouse.scrolldown = (menu->mouse.y == menu->frame_buf.height - 5);
+   menu->mouse.scrolldown = (menu->mouse.y == (int)menu->frame_buf.height - 5);
 
    if (menu->mouse.dx != 0 || menu->mouse.dy !=0 || menu->mouse.left
       || menu->mouse.wheelup || menu->mouse.wheeldown
