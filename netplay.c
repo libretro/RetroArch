@@ -250,7 +250,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
    cmd = ntohl(cmd);
 
    cmd_size = cmd & 0xffff;
-   cmd = cmd >> 16;
+   cmd      = cmd >> 16;
 
    switch (cmd)
    {
@@ -296,11 +296,10 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
 static int poll_input(netplay_t *netplay, bool block)
 {
-   int max_fd = (netplay->fd > netplay->udp_fd ? netplay->fd : netplay->udp_fd) + 1;
-
+   int max_fd        = (netplay->fd > netplay->udp_fd ? netplay->fd : netplay->udp_fd) + 1;
    struct timeval tv = {0};
-   tv.tv_sec = 0;
-   tv.tv_usec = block ? (RETRY_MS * 1000) : 0;
+   tv.tv_sec         = 0;
+   tv.tv_usec        = block ? (RETRY_MS * 1000) : 0;
 
    do
    { 
@@ -353,7 +352,9 @@ static bool receive_data(netplay_t *netplay, uint32_t *buffer, size_t size)
    if (recvfrom(netplay->udp_fd, (char*)buffer, size, 0,
             (struct sockaddr*)&netplay->their_addr, &addrlen) != (ssize_t)size)
       return false;
+
    netplay->has_client_addr = true;
+
    return true;
 }
 
@@ -418,10 +419,10 @@ static bool netplay_poll(netplay_t *netplay)
     * our host info so we don't block forever :') */
    if (netplay->frame_count == 0)
    {
-      netplay->buffer[0].used_real = true;
-      netplay->buffer[0].is_simulated = false;
+      netplay->buffer[0].used_real        = true;
+      netplay->buffer[0].is_simulated     = false;
       netplay->buffer[0].real_input_state = 0;
-      netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
+      netplay->read_ptr                   = NEXT_PTR(netplay->read_ptr);
       netplay->read_frame_count++;
       return true;
    }
@@ -919,9 +920,9 @@ static bool send_info(netplay_t *netplay)
 
 static bool get_info(netplay_t *netplay)
 {
-   const void *sram;
    unsigned sram_size;
    uint32_t header[3];
+   const void *sram = NULL;
 
    if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
    {
@@ -1239,7 +1240,7 @@ void netplay_flip_users(netplay_t *netplay)
 {
    uint32_t flip_frame     = netplay->frame_count + 2 * UDP_FRAME_PACKETS;
    uint32_t flip_frame_net = htonl(flip_frame);
-   const char *msg = NULL;
+   const char *msg         = NULL;
 
    if (netplay->spectate)
    {
