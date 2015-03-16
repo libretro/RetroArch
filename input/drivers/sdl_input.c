@@ -68,7 +68,7 @@ static bool sdl_key_pressed(int key)
 #else
    keymap = SDL_GetKeyState(&num_keys);
 #endif
-   if (sym < 0 || sym >= (unsigned)num_keys)
+   if (sym >= (unsigned)num_keys)
       return false;
 
    return keymap[sym];

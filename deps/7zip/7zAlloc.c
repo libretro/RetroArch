@@ -5,7 +5,7 @@
 
 void *SzAlloc(void *p, size_t size)
 {
-   p = p;
+   (void)p;
    if (size == 0)
       return 0;
    return malloc(size);
@@ -13,13 +13,13 @@ void *SzAlloc(void *p, size_t size)
 
 void SzFree(void *p, void *address)
 {
-   p = p;
+   (void)p;
    free(address);
 }
 
 void *SzAllocTemp(void *p, size_t size)
 {
-   p = p;
+   (void)p;
    if (size == 0)
       return 0;
    return malloc(size);
@@ -27,6 +27,6 @@ void *SzAllocTemp(void *p, size_t size)
 
 void SzFreeTemp(void *p, void *address)
 {
-   p = p;
+   (void)p;
    free(address);
 }

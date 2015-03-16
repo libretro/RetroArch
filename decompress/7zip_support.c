@@ -148,7 +148,7 @@ static SRes Utf16_To_Char(CBuf *buf, const uint16_t *s, int fileMode)
       }
    }
 #else
-   fileMode = fileMode;
+   (void)fileMode;
    return Utf16_To_Utf8Buf(buf, s, len);
 #endif
 }
