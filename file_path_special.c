@@ -91,16 +91,18 @@ void fill_pathname_expand_special(char *out_path,
 #endif
             )
    {
+      size_t src_size;
       char application_dir[PATH_MAX_LENGTH];
+
       fill_pathname_application_path(application_dir, sizeof(application_dir));
       path_basedir(application_dir);
 
-      size_t src_size = strlcpy(out_path, application_dir, size);
+      src_size   = strlcpy(out_path, application_dir, size);
       rarch_assert(src_size < size);
 
       out_path  += src_size;
-      size -= src_size;
-      in_path += 2;
+      size      -= src_size;
+      in_path   += 2;
    }
 #endif
 
@@ -113,9 +115,9 @@ void fill_pathname_abbreviate_special(char *out_path,
 {
 #if !defined(RARCH_CONSOLE)
    unsigned i;
-
-   const char *home = getenv("HOME");
    char application_dir[PATH_MAX_LENGTH];
+   const char *home = getenv("HOME");
+
    fill_pathname_application_path(application_dir, sizeof(application_dir));
    path_basedir(application_dir);
 
@@ -158,6 +160,7 @@ void fill_pathname_application_path(char *buf, size_t size)
 {
    size_t i;
    (void)i;
+
    if (!size)
       return;
 
