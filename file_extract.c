@@ -40,6 +40,10 @@ struct zlib_file_backend
    void (*free)(void *handle); /* Closes, unmaps and frees. */
 };
 
+#ifndef CENTRAL_FILE_HEADER_SIGNATURE
+#define CENTRAL_FILE_HEADER_SIGNATURE 0x02014b50
+#endif
+
 #ifndef END_OF_CENTRAL_DIR_SIGNATURE
 #define END_OF_CENTRAL_DIR_SIGNATURE 0x06054b50
 #endif
@@ -335,7 +339,7 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
       const uint8_t *cdata = NULL;
       uint32_t signature = read_le(directory + 0, 4);
 
-      if (signature != 0x02014b50)
+      if (signature != CENTRAL_FILE_HEADER_SIGNATURE)
          break;
 
       cmode         = read_le(directory + 10, 2);
