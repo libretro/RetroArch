@@ -1374,7 +1374,8 @@ static void xmb_frame(void)
    if (menu->mouse.enable)
       xmb_draw_cursor(gl, xmb, menu->mouse.x, menu->mouse.y);
 
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
+   if (!g_settings.menu.pause_libretro)
+      gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
 static void *xmb_init(void)
