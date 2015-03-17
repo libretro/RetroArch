@@ -19,8 +19,6 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
-#include "general.h"
-#include "retroarch_logger.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,6 +39,10 @@ struct zlib_file_backend
    size_t (*size)(void *handle);
    void (*free)(void *handle); /* Closes, unmaps and frees. */
 };
+
+#ifndef END_OF_CENTRAL_DIR_SIGNATURE
+#define END_OF_CENTRAL_DIR_SIGNATURE 0x06054b50
+#endif
 
 #ifdef HAVE_MMAP
 #include <sys/mman.h>
@@ -314,7 +316,7 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
    {
       if (footer <= data + 22)
          GOTO_END_ERROR();
-      if (read_le(footer, 4) == 0x06054b50)
+      if (read_le(footer, 4) == END_OF_CENTRAL_DIR_SIGNATURE)
       {
          unsigned comment_len = read_le(footer + 20, 2);
          if (footer + 22 + comment_len == data + zip_size)
@@ -383,6 +385,12 @@ struct zip_extract_userdata
    bool found_content;
 };
 
+enum
+{
+   ZLIB_MODE_UNCOMPRESSED = 0,
+   ZLIB_MODE_DEFLATE      = 8,
+} zlib_compression_mode;
+
 static int zip_extract_cb(const char *name, const char *valid_exts,
       const uint8_t *cdata,
       unsigned cmode, uint32_t csize, uint32_t size,
@@ -406,12 +414,10 @@ static int zip_extract_cb(const char *name, const char *valid_exts,
 
       switch (cmode)
       {
-         /* Uncompressed. */
-         case 0:
+         case ZLIB_MODE_UNCOMPRESSED:
             data->found_content = write_file(new_path, cdata, size);
             return false;
-         /* Deflate. */
-         case 8:
+         case ZLIB_MODE_DEFLATE:
             if (zlib_inflate_data_to_file(new_path, valid_exts,
                      cdata, csize, size, checksum))
             {
