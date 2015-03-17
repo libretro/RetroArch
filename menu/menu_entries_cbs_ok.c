@@ -1009,6 +1009,8 @@ static int action_ok_rdb_entry_submenu(const char *path,
     * element 2 : database path
     */
 
+   attr.i = 0;
+
    len += strlen(str_list->elems[1].data) + 1;
    string_list_append(str_list2, str_list->elems[1].data, attr);
 
