@@ -91,6 +91,8 @@ static int create_string_list_rdb_entry_int(const char *desc, const char *label,
    if (!str_list)
       return -1;
 
+   attr.i = 0;
+
    str_len += strlen(label) + 1;
    string_list_append(str_list, label, attr);
 
