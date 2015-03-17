@@ -59,8 +59,10 @@
 #define OSInitCond(cond) LWP_CondInit(cond)
 #endif
 
+#if 0
 #ifndef OSSignalCond
 #define OSSignalCond(cond) LWP_ThreadSignal(cond)
+#endif
 #endif
 
 #ifndef OSWaitCond
@@ -93,8 +95,8 @@ typedef OSThread pthread_t;
 typedef mutex_t pthread_mutex_t;
 typedef void* pthread_mutexattr_t;
 typedef int pthread_attr_t;
-typedef cond_t pthread_cond_t;
-typedef cond_t pthread_condattr_t;
+typedef OSCond pthread_cond_t;
+typedef OSCond pthread_condattr_t;
 
 static inline int pthread_create(pthread_t *thread,
       const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg)
@@ -168,7 +170,8 @@ static inline int pthread_cond_init(pthread_cond_t *cond,
 
 static inline int pthread_cond_signal(pthread_cond_t *cond)
 {
-   return OSSignalCond(*cond);
+   OSSignalCond(*cond);
+   return 0;
 }
 
 static inline int pthread_cond_broadcast(pthread_cond_t *cond)
