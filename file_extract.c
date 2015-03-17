@@ -34,10 +34,10 @@
 
 struct zlib_file_backend
 {
-   void *(*open)(const char *path);
+   void          *(*open)(const char *path);
    const uint8_t *(*data)(void *handle);
-   size_t (*size)(void *handle);
-   void (*free)(void *handle); /* Closes, unmaps and frees. */
+   size_t         (*size)(void *handle);
+   void           (*free)(void *handle); /* Closes, unmaps and frees. */
 };
 
 #ifndef CENTRAL_FILE_HEADER_SIGNATURE
