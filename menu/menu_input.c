@@ -516,8 +516,6 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       menu->navigation.scroll.acceleration = 0;
    }
 
-   menu->mouse.enable = g_settings.menu.mouse_enable;
-
    menu->delay.count += menu->dt / IDEAL_DT;
 
    if (driver.block_input)

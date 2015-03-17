@@ -1371,7 +1371,7 @@ static void xmb_frame(void)
       xmb_frame_messagebox(msg);
    }
 
-   if (menu->mouse.enable)
+   if (g_settings.menu.mouse.enable)
       xmb_draw_cursor(gl, xmb, menu->mouse.x, menu->mouse.y);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);

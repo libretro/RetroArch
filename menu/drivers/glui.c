@@ -458,7 +458,7 @@ static void glui_frame(void)
       glui->box_message[0] = '\0';
    }
 
-   if (menu->mouse.enable)
+   if (g_settings.menu.mouse.enable)
       glui_draw_cursor(gl, menu->mouse.x, menu->mouse.y);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);

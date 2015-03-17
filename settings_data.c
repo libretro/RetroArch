@@ -5183,7 +5183,7 @@ static bool setting_data_append_list_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    CONFIG_BOOL(
-         g_settings.menu.mouse_enable,
+         g_settings.menu.mouse.enable,
          "menu_mouse_enable",
          "Mouse Enable",
          false,

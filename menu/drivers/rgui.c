@@ -515,7 +515,7 @@ static void rgui_render(void)
       rgui_render_messagebox(msg);
    }
 
-   if (menu->mouse.enable)
+   if (g_settings.menu.mouse.enable)
       rgui_blit_cursor(menu);
 }
 

@@ -161,7 +161,7 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
    if (!menu)
       return -1;
 
-   if (!menu->mouse.enable)
+   if (!g_settings.menu.mouse.enable)
       return 0;
 
    if (menu->mouse.left)
@@ -578,7 +578,7 @@ static int mouse_iterate(unsigned *action)
    if (!menu)
       return -1;
 
-   if (!menu->mouse.enable)
+   if (!g_settings.menu.mouse.enable)
       return 0;
 
    if (menu->mouse.hwheeldown)

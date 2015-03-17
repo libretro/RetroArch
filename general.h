@@ -190,11 +190,15 @@ struct settings
    {
       char driver[32];
       bool pause_libretro;
-      bool mouse_enable;
       bool timedate_enable;
       bool core_enable;
       bool throttle;
       char wallpaper[PATH_MAX_LENGTH];
+
+      struct
+      {
+         bool enable;
+      } mouse;
 
       struct
       {
