@@ -162,7 +162,13 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
       return -1;
 
    if (!g_settings.menu.mouse.enable)
+   {
+      menu->mouse.wheeldown = false;
+      menu->mouse.wheelup   = false;
+      menu->mouse.oldleft   = false;
+      menu->mouse.oldright  = false;
       return 0;
+   }
 
    if (menu->mouse.left)
    {
@@ -579,7 +585,21 @@ static int mouse_iterate(unsigned *action)
       return -1;
 
    if (!g_settings.menu.mouse.enable)
+   {
+      menu->mouse.left       = 0;
+      menu->mouse.right      = 0;
+      menu->mouse.wheelup    = 0;
+      menu->mouse.wheeldown  = 0;
+      menu->mouse.hwheelup   = 0;
+      menu->mouse.hwheeldown = 0;
+      menu->mouse.dx         = 0;
+      menu->mouse.dy         = 0;
+      menu->mouse.x          = 0;
+      menu->mouse.y          = 0;
+      menu->mouse.scrollup   = 0;
+      menu->mouse.scrolldown = 0;
       return 0;
+   }
 
    if (menu->mouse.hwheeldown)
    {
