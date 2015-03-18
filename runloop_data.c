@@ -789,8 +789,10 @@ static void data_thread_loop(void *data)
 
 void rarch_main_data_iterate(void)
 {
+#ifdef HAVE_THREADS
    if (g_data_runloop.thread_inited)
       return;
+#endif
 
    data_runloop_iterate(&g_data_runloop);
 }
