@@ -176,7 +176,6 @@ typedef struct runloop
 } runloop_t;
 
 /* Public data structures. */
-extern struct data_runloop g_data_runloop;
 extern struct runloop g_runloop;
 
 /**
