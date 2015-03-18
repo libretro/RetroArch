@@ -26,9 +26,25 @@
 #include <stddef.h>
 #include <boolean.h>
 
+#ifndef NBIO_READ
 #define NBIO_READ   0
+#endif
+
+#ifndef NBIO_WRITE
 #define NBIO_WRITE  1
+#endif
+
+#ifndef NBIO_UPDATE
 #define NBIO_UPDATE 2
+#endif
+
+#ifndef BIO_READ
+#define BIO_READ    3
+#endif
+
+#ifndef BIO_WRITE
+#define BIO_WRITE   4
+#endif
 
 struct nbio_t;
 

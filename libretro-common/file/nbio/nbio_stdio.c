@@ -36,10 +36,15 @@ struct nbio_t* nbio_open(const char * filename, unsigned mode)
    handle->f             = f;
    handle->len           = 0;
 
-   if (mode != NBIO_WRITE)
+   switch (mode)
    {
-      fseek(handle->f, 0, SEEK_END);
-      handle->len = ftell(handle->f);
+      case NBIO_WRITE:
+      case BIO_WRITE:
+         break;
+      default:
+         fseek(handle->f, 0, SEEK_END);
+         handle->len = ftell(handle->f);
+         break;
    }
 
    handle->mode          = mode;
@@ -107,10 +112,25 @@ bool nbio_iterate(struct nbio_t* handle)
    switch (handle->op)
    {
       case NBIO_READ:
-         fread((char*)handle->data + handle->progress, 1,amount, handle->f);
+         if (handle->mode == BIO_READ)
+         {
+            amount = handle->len;
+            fread((char*)handle->data, 1, amount, handle->f);
+         }
+         else
+            fread((char*)handle->data + handle->progress, 1, amount, handle->f);
          break;
       case NBIO_WRITE:
-         fwrite((char*)handle->data + handle->progress, 1,amount, handle->f);
+         if (handle->mode == BIO_WRITE)
+         {
+            size_t written = 0;
+            amount = handle->len;
+            written = fwrite((char*)handle->data, 1, amount, handle->f);
+            if (written != amount)
+               return false;
+         }
+         else
+            fwrite((char*)handle->data + handle->progress, 1, amount, handle->f);
          break;
    }
 
