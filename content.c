@@ -47,13 +47,13 @@
  * @buf          : size   of the content file.
  * @length       : size of the content file that has been read from.
  *
- * Read the content file into memory. Also performs soft patching
+ * Read the content file. If read into memory, also performs soft patching
  * (see patch_content function) in case soft patching has not been
  * blocked by the enduser.
  *
  * Returns: true if successful, false on error.
  **/
-static bool read_content_file(const char *path, void **buf,
+static bool read_content_file(unsigned i, const char *path, void **buf,
       ssize_t *length)
 {
    uint8_t *ret_buf = NULL;
@@ -64,6 +64,9 @@ static bool read_content_file(const char *path, void **buf,
 
    if (*length <= 0)
       return false;
+
+   if (i != 0)
+      return true;
 
    /* Attempt to apply a patch. */
    if (!g_extern.block_patch)
@@ -326,12 +329,7 @@ static bool load_content_dont_need_fullpath(
 
    /* First content file is significant, attempt to do patching,
     * CRC checking, etc. */
-   bool ret = false;
-
-   if (i == 0)
-      ret = read_content_file(path, (void**)&info->data, &len);
-   else
-      ret = read_file(path, (void**)&info->data, &len);
+   bool ret = read_content_file(i, path, (void**)&info->data, &len);
 
    if (!ret || len < 0)
    {
