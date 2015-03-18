@@ -112,6 +112,7 @@ static bool dinput_init_context(void)
 static void *dinput_init(void)
 {
    struct dinput_input *di = NULL;
+   driver_t *driver = driver_get_ptr();
 
    if (!dinput_init_context())
    {
@@ -152,14 +153,14 @@ static void *dinput_init(void)
    {
       IDirectInputDevice8_SetDataFormat(di->keyboard, &c_dfDIKeyboard);
       IDirectInputDevice8_SetCooperativeLevel(di->keyboard,
-            (HWND)driver.video_window, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
+            (HWND)driver->video_window, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
       IDirectInputDevice8_Acquire(di->keyboard);
    }
 
    if (di->mouse)
    {
       IDirectInputDevice8_SetDataFormat(di->mouse, &c_dfDIMouse2);
-      IDirectInputDevice8_SetCooperativeLevel(di->mouse, (HWND)driver.video_window,
+      IDirectInputDevice8_SetCooperativeLevel(di->mouse, (HWND)driver->video_window,
             DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
       IDirectInputDevice8_Acquire(di->mouse);
    }
@@ -173,6 +174,7 @@ static void *dinput_init(void)
 static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
+   driver_t *driver = driver_get_ptr();
 
    memset(di->state, 0, sizeof(di->state));
    if (di->keyboard)
@@ -211,7 +213,7 @@ static void dinput_poll(void *data)
        * for RETRO_DEVICE_POINTER. Just use Win32 APIs. */
       POINT point = {0};
       GetCursorPos(&point);
-      ScreenToClient((HWND)driver.video_window, &point);
+      ScreenToClient((HWND)driver->video_window, &point);
       di->mouse_x = point.x;
       di->mouse_y = point.y;
    }
@@ -449,10 +451,11 @@ static int16_t dinput_input_state(void *data,
 void dinput_pointer_store_pos(struct pointer_status *pointer, WPARAM lParam)
 {
    POINT point;
+   driver_t *driver = driver_get_ptr();
 
    point.x = GET_X_LPARAM(lParam);
    point.y = GET_Y_LPARAM(lParam);
-   ScreenToClient((HWND)driver.video_window, &point);
+   ScreenToClient((HWND)driver->video_window, &point);
    pointer->pointer_x = point.x;
    pointer->pointer_y = point.y;
 }
@@ -619,10 +622,11 @@ static void dinput_free(void *data)
 static void dinput_grab_mouse(void *data, bool state)
 {
    struct dinput_input *di = (struct dinput_input*)data;
+   driver_t *driver = driver_get_ptr();
 
    IDirectInputDevice8_Unacquire(di->mouse);
    IDirectInputDevice8_SetCooperativeLevel(di->mouse,
-      (HWND)driver.video_window,
+      (HWND)driver->video_window,
       state ?
       (DISCL_EXCLUSIVE | DISCL_FOREGROUND) :
       (DISCL_NONEXCLUSIVE | DISCL_FOREGROUND));
@@ -807,6 +811,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
    bool is_xinput_pad;
    LPDIRECTINPUTDEVICE8 *pad = NULL;
+   driver_t *driver = driver_get_ptr();
 
    (void)p;
 
@@ -843,7 +848,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #endif
 
    IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
-   IDirectInputDevice8_SetCooperativeLevel(*pad, (HWND)driver.video_window,
+   IDirectInputDevice8_SetCooperativeLevel(*pad, (HWND)driver->video_window,
          DISCL_NONEXCLUSIVE | DISCL_BACKGROUND);
 
    IDirectInputDevice8_EnumObjects(*pad, enum_axes_cb, 

@@ -48,6 +48,8 @@ static int create_string_list_rdb_entry_string(const char *desc, const char *lab
    if (!str_list)
       return -1;
 
+   attr.i = 0;
+
    str_len += strlen(label) + 1;
    string_list_append(str_list, label, attr);
 
