@@ -134,6 +134,8 @@ error:
       fclose(file);
    if (rom_buf)
       free(rom_buf);
+   if (len)
+      *len = -1;
    *buf = NULL;
    return false;
 }
@@ -238,6 +240,5 @@ int read_file(const char *path, void **buf, ssize_t *length)
 #endif
    if (read_generic_file(path, buf, length))
       return 1;
-   *length = -1;
    return 0;
 }
