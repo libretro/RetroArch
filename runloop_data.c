@@ -18,6 +18,10 @@
 #include "general.h"
 #include "input/input_overlay.h"
 
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
+
 typedef int (*transfer_cb_t               )(void *data, size_t len);
 
 #ifdef HAVE_NETWORKING
@@ -85,6 +89,16 @@ typedef struct data_runloop
 
    nbio_handle_t nbio;
    bool inited;
+
+#ifdef HAVE_THREADS
+   bool thread_inited;
+   bool thread_quit;
+
+   slock_t *lock;
+   slock_t *cond_lock;
+   scond_t *cond;
+   sthread_t *thread;
+#endif
 } data_runloop_t;
 
 struct data_runloop g_data_runloop;
@@ -724,10 +738,61 @@ static void rarch_main_data_overlay_iterate(void)
 
 static void rarch_main_data_deinit(void)
 {
-   if (!g_data_runloop.inited)
+   data_runloop_t *runloop = &g_data_runloop;
+
+   if (!runloop->inited)
       return;
 
-   g_data_runloop.inited = false;
+#ifdef HAVE_THREADS
+   if (runloop->thread_inited)
+   {
+      slock_lock(runloop->cond_lock);
+      runloop->thread_quit = true;
+      slock_unlock(runloop->cond_lock);
+      scond_signal(runloop->cond);
+      sthread_join(runloop->thread);
+
+      slock_free(runloop->lock);
+      slock_free(runloop->cond_lock);
+      scond_free(runloop->cond);
+   }
+#endif
+
+   runloop->inited = false;
+}
+
+static void data_runloop_iterate(data_runloop_t *runloop)
+{
+#ifdef HAVE_OVERLAY
+   rarch_main_data_overlay_iterate();
+#endif
+   rarch_main_data_nbio_iterate(&runloop->nbio);
+#ifdef HAVE_NETWORKING
+   rarch_main_data_http_iterate(&runloop->http);
+#endif
+   rarch_main_data_db_iterate();
+}
+
+#ifdef HAVE_THREADS
+static void data_thread_loop(void *data)
+{
+   data_runloop_t *runloop = (data_runloop_t*)data;
+
+   while (!runloop->thread_quit)
+   {
+      slock_lock(runloop->lock);
+      data_runloop_iterate(runloop);
+      slock_unlock(runloop->lock);
+   }
+}
+#endif
+
+void rarch_main_data_iterate(void)
+{
+   if (g_data_runloop.thread_inited)
+      return;
+
+   data_runloop_iterate(&g_data_runloop);
 }
 
 static void rarch_main_data_init(void)
@@ -737,7 +802,28 @@ static void rarch_main_data_init(void)
 
    memset(&g_data_runloop, 0, sizeof(g_data_runloop));
 
+#ifdef HAVE_THREADS
+   if (g_settings.menu.threaded_data_runloop_enable)
+   {
+      if ((g_data_runloop.thread = sthread_create(data_thread_loop, &g_data_runloop)))
+      {
+         g_data_runloop.lock      = slock_new();
+         g_data_runloop.cond_lock = slock_new();
+         g_data_runloop.cond      = scond_new();
+      }
+      else
+         g_data_runloop.thread = NULL;
+   }
+#endif
+
+#ifdef HAVE_THREADS
+   g_data_runloop.thread_inited = (g_data_runloop.thread != NULL);
+#else
+   g_data_runloop.thread_inited = false;
+   g_data_runloop.thread_quit   = false;
+#endif
    g_data_runloop.inited = true;
+
 }
 
 void rarch_main_data_clear_state(void)
@@ -796,14 +882,3 @@ void rarch_main_data_msg_queue_push(unsigned type,
    msg_queue_push(queue, new_msg, prio, duration);
 }
 
-void rarch_main_data_iterate(void)
-{
-#ifdef HAVE_OVERLAY
-   rarch_main_data_overlay_iterate();
-#endif
-   rarch_main_data_nbio_iterate(&g_data_runloop.nbio);
-#ifdef HAVE_NETWORKING
-   rarch_main_data_http_iterate(&g_data_runloop.http);
-#endif
-   rarch_main_data_db_iterate();
-}
