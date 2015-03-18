@@ -632,9 +632,10 @@ static void android_input_poll(void *data)
    int ident;
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t    *android     = (android_input_t*)data;
+   driver_t *driver = driver_get_ptr();
 
    while ((ident = 
-            ALooper_pollAll((driver.input->key_pressed(driver.input_data, RARCH_PAUSE_TOGGLE))
+            ALooper_pollAll((driver->input->key_pressed(driver->input_data, RARCH_PAUSE_TOGGLE))
                ? -1 : 0,
                NULL, NULL, NULL)) >= 0)
    {
@@ -693,7 +694,7 @@ static void android_input_poll(void *data)
          }
       }
       else if (ident == LOOPER_ID_MAIN)
-         engine_handle_cmd(driver.input_data);
+         engine_handle_cmd(driver->input_data);
    }
 }
 
@@ -743,10 +744,11 @@ static int16_t android_input_state(void *data,
 
 static bool android_input_key_pressed(void *data, int key)
 {
+   driver_t *driver = driver_get_ptr();
    android_input_t *android = (android_input_t*)data;
    if (!android)
       return false;
-   return ((g_extern.lifecycle_state | driver.overlay_state.buttons)
+   return ((g_extern.lifecycle_state | driver->overlay_state.buttons)
          & (1ULL << key)) || input_joypad_pressed(android->joypad,
          0, g_settings.input.binds[0], key);
 }

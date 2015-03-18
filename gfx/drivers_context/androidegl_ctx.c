@@ -86,7 +86,7 @@ static void android_gfx_ctx_destroy_resources(gfx_ctx_android_data_t *android)
 
 static void android_gfx_ctx_destroy(void *data)
 {
-   driver_t *driver = driver_get_ptr;
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_android_data_t *android = NULL;
    
    android = (gfx_ctx_android_data_t*)driver->video_context_data;
