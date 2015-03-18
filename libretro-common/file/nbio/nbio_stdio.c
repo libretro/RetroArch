@@ -19,7 +19,7 @@ struct nbio_t
    signed char mode;
 };
 
-static const char * modes[]={ "rb", "wb", "r+b" };
+static const char * modes[]={ "rb", "wb", "r+b", "rb", "wb", "r+b" };
 
 struct nbio_t* nbio_open(const char * filename, unsigned mode)
 {
