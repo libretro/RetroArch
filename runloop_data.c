@@ -650,6 +650,11 @@ static void rarch_main_data_overlay_iterate(void)
 }
 #endif
 
+void rarch_main_data_clear_state(void)
+{
+   memset(&g_data_runloop, 0, sizeof(g_data_runloop));
+}
+
 void rarch_main_data_init_queues(void)
 {
 #ifdef HAVE_NETWORKING

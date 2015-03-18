@@ -202,6 +202,8 @@ void rarch_main_data_msg_queue_push(unsigned type,
       const char *msg, const char *msg2,
       unsigned prio, unsigned duration, bool flush);
 
+void rarch_main_data_clear_state(void);
+
 void rarch_main_data_iterate(void);
 
 void rarch_main_data_init_queues(void);

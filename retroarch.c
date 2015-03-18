@@ -1618,7 +1618,8 @@ static void main_clear_state_extern(void)
 
    memset(&g_extern, 0, sizeof(g_extern));
    memset(&g_runloop, 0, sizeof(g_runloop));
-   memset(&g_data_runloop, 0, sizeof(g_data_runloop));
+
+   rarch_main_data_clear_state();
 }
 
 /**
