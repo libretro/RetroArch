@@ -17,9 +17,74 @@
 #include "runloop.h"
 #include "general.h"
 #include "input/input_overlay.h"
+
+typedef int (*transfer_cb_t               )(void *data, size_t len);
+
 #ifdef HAVE_NETWORKING
 #include "net_http.h"
+
+typedef struct http_handle
+{
+   struct
+   {
+      struct http_connection_t *handle;
+      transfer_cb_t  cb;
+      char elem1[PATH_MAX_LENGTH];
+   } connection;
+   msg_queue_t *msg_queue;
+   struct http_t *handle;
+   transfer_cb_t  cb;
+} http_handle_t;
 #endif
+
+typedef struct nbio_image_handle
+{
+#ifndef IS_SALAMANDER
+   struct texture_image ti;
+#endif
+   bool is_blocking;
+   bool is_blocking_on_processing;
+   bool is_finished;
+   bool is_finished_with_processing;
+   transfer_cb_t  cb;
+   struct rpng_t *handle;
+   unsigned processing_pos_increment;
+   unsigned pos_increment;
+   uint64_t frame_count;
+   uint64_t processing_frame_count;
+   int processing_final_state;
+   msg_queue_t *msg_queue;
+} nbio_image_handle_t;
+
+typedef struct nbio_handle
+{
+   nbio_image_handle_t image;
+   bool is_blocking;
+   bool is_finished;
+   transfer_cb_t  cb;
+   struct nbio_t *handle;
+   unsigned pos_increment;
+   uint64_t frame_count;
+   msg_queue_t *msg_queue;
+} nbio_handle_t;
+
+
+typedef struct data_runloop
+{
+#ifdef HAVE_NETWORKING
+   http_handle_t http;
+#endif
+
+#if 0
+#ifdef HAVE_LIBRETRODB
+   struct
+   {
+   } db;
+#endif
+#endif
+
+   nbio_handle_t nbio;
+} data_runloop_t;
 
 struct data_runloop g_data_runloop;
 
