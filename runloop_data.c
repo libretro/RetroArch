@@ -84,6 +84,7 @@ typedef struct data_runloop
 #endif
 
    nbio_handle_t nbio;
+   bool inited;
 } data_runloop_t;
 
 struct data_runloop g_data_runloop;
@@ -721,9 +722,28 @@ static void rarch_main_data_overlay_iterate(void)
 }
 #endif
 
+static void rarch_main_data_deinit(void)
+{
+   if (!g_data_runloop.inited)
+      return;
+
+   g_data_runloop.inited = false;
+}
+
+static void rarch_main_data_init(void)
+{
+   if (g_data_runloop.inited)
+      return;
+
+   memset(&g_data_runloop, 0, sizeof(g_data_runloop));
+
+   g_data_runloop.inited = true;
+}
+
 void rarch_main_data_clear_state(void)
 {
-   memset(&g_data_runloop, 0, sizeof(g_data_runloop));
+   rarch_main_data_deinit();
+   rarch_main_data_init();
 }
 
 void rarch_main_data_init_queues(void)
