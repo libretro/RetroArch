@@ -41,10 +41,13 @@ void apple_rarch_exited(void)
 
 - (void)sendEvent:(NSEvent *)event
 {
+   NSEventType event_type;
+   apple_input_data_t *apple = NULL;
+   driver_t *driver = driver_get_ptr();
    [super sendEvent:event];
 
-	apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-   NSEventType event_type = event.type;
+   apple = (apple_input_data_t*)driver->input_data;
+   event_type = event.type;
    
    if (!apple)
       return;
@@ -190,9 +193,9 @@ static char** waiting_argv;
 
 static void poll_iteration(void)
 {
-    NSEvent *event;
-
-    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+    NSEvent *event = NULL;
+    driver_t *driver = driver_get_ptr();
+    apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
 
     if (!apple)
       return;

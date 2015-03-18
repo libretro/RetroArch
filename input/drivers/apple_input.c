@@ -127,14 +127,16 @@ const struct apple_key_name_map_entry apple_key_name_map[] =
 
 void apple_input_enable_small_keyboard(bool on)
 {
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   driver_t *driver = driver_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
    if (apple)
       apple->small_keyboard_enabled = on;
 }
 
 void apple_input_enable_icade(bool on)
 {
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   driver_t *driver = driver_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
     
    if (!apple)
       return;
@@ -145,7 +147,8 @@ void apple_input_enable_icade(bool on)
 
 void apple_input_reset_icade_buttons(void)
 {
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   driver_t *driver = driver_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
     
    if (apple)
       apple->icade_buttons = 0;
@@ -154,7 +157,8 @@ void apple_input_reset_icade_buttons(void)
 int32_t apple_input_find_any_key(void)
 {
    unsigned i;
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   driver_t *driver =driver_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
     
    if (!apple)
       return 0;
@@ -172,7 +176,8 @@ int32_t apple_input_find_any_key(void)
 int32_t apple_input_find_any_button(uint32_t port)
 {
    unsigned i, buttons = 0;
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   driver_t *driver = driver_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
 
    if (!apple)
       return -1;
@@ -195,7 +200,8 @@ int32_t apple_input_find_any_button(uint32_t port)
 int32_t apple_input_find_any_axis(uint32_t port)
 {
    int i;
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   driver_t *driver = driver_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
     
    if (apple && apple->joypad)
        apple->joypad->poll();

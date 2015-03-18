@@ -150,7 +150,8 @@ NSWindowDelegate>
    int i;
    NSMutableArray* thisGroup = nil;
    NSMutableArray* thisSubGroup = nil;
-   const rarch_setting_t *setting_data = (const rarch_setting_t *)driver.menu->list_settings;
+   driver_t *driver = driver_get_ptr();
+   const rarch_setting_t *setting_data = (const rarch_setting_t *)driver->menu->list_settings;
 
    self.settings = [NSMutableArray array];
 
@@ -253,6 +254,8 @@ NSWindowDelegate>
 
 - (id)outlineView:(NSOutlineView *)outlineView objectValueForTableColumn:(NSTableColumn *)tableColumn byItem:(id)item
 {
+   driver_t *driver = driver_get_ptr();
+    
    if (!tableColumn)
       return nil;
 
@@ -268,7 +271,7 @@ NSWindowDelegate>
    else
    {
       char buffer[PATH_MAX_LENGTH];
-      rarch_setting_t *setting_data = (rarch_setting_t*)driver.menu->list_settings;
+      rarch_setting_t *setting_data = (rarch_setting_t*)driver->menu->list_settings;
       rarch_setting_t *setting = (rarch_setting_t*)&setting_data[[item intValue]];
 
       if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
@@ -292,6 +295,7 @@ NSWindowDelegate>
 - (NSCell*)outlineView:(NSOutlineView *)outlineView dataCellForTableColumn:(NSTableColumn *)tableColumn item:(id)item
 {
    const rarch_setting_t *setting_data, *setting;
+   driver_t *driver = driver_get_ptr();
     
    if (!tableColumn)
       return nil;
@@ -302,7 +306,7 @@ NSWindowDelegate>
    if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
       return [tableColumn dataCell];
 
-   setting_data = (const rarch_setting_t *)driver.menu->list_settings;
+   setting_data = (const rarch_setting_t *)driver->menu->list_settings;
    setting      = (const rarch_setting_t *)&setting_data[[item intValue]];
 
    switch (setting->type)
@@ -321,6 +325,8 @@ NSWindowDelegate>
 - (IBAction)outlineViewClicked:(id)sender
 {
    id item;
+   driver_t *driver = driver_get_ptr();
+    
    if ([self.outline clickedColumn] != 1)
       return;
    
@@ -330,7 +336,7 @@ NSWindowDelegate>
       return;
    
       {
-          rarch_setting_t *setting_data = (rarch_setting_t*)driver.menu->list_settings;
+          rarch_setting_t *setting_data = (rarch_setting_t*)driver->menu->list_settings;
           rarch_setting_t *setting      = (rarch_setting_t*)&setting_data[[item intValue]];
           
           switch (setting->type)
@@ -352,8 +358,9 @@ NSWindowDelegate>
 
 - (void)controlTextDidEndEditing:(NSNotification*)notification
 {
-   NSText* editor;
    id item;
+   NSText* editor = NULL;
+   driver_t *driver = driver_get_ptr();
 
    if ([notification object] != self.outline)
       return;
@@ -365,7 +372,7 @@ NSWindowDelegate>
       return;
    
    {
-      rarch_setting_t *setting_data = (rarch_setting_t *)driver.menu->list_settings;
+      rarch_setting_t *setting_data = (rarch_setting_t *)driver->menu->list_settings;
       rarch_setting_t *setting      = (rarch_setting_t*)&setting_data[[item intValue]];
       NSString *editor_string       = (NSString*)editor.string;
 

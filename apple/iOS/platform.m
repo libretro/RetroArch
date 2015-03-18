@@ -92,7 +92,8 @@ extern CGFloat apple_gfx_ctx_get_native_scale(void);
 static void handle_touch_event(NSArray* touches)
 {
    NSUInteger i;
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   driver_t *driver = driver_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
    CGFloat scale = apple_gfx_ctx_get_native_scale();
 
    if (!apple)
@@ -253,6 +254,8 @@ void notify_content_loaded(void)
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
+   driver_t *driver = NULL;
+
    apple_platform = self;
    [self setDelegate:self];
 
@@ -268,8 +271,11 @@ void notify_content_loaded(void)
    if (rarch_main(0, NULL))
       apple_rarch_exited();
 
-   if ( driver.menu_ctx && driver.menu_ctx == &menu_ctx_ios && driver.menu && driver.menu->userdata ) {
-     ios_handle_t *ih = (ios_handle_t*)driver.menu->userdata;
+   driver = driver_get_ptr();
+    
+   if ( driver->menu_ctx && driver->menu_ctx == &menu_ctx_ios && driver->menu && driver->menu->userdata )
+   {
+     ios_handle_t *ih = (ios_handle_t*)driver->menu->userdata;
      ih->switch_to_ios = switch_to_ios;
      ih->notify_content_loaded = notify_content_loaded;
    }

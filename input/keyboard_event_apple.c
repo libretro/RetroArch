@@ -67,7 +67,8 @@ static bool handle_small_keyboard(unsigned* code, bool down)
       { KEY_X,          KP_2           }, { KEY_C,          KP_3           },
       { 0 }
    };
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   driver_t *driver = driver_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
    unsigned translated_code  = 0;
    
    if (!map_initialized)
@@ -118,7 +119,8 @@ static void handle_icade_event(unsigned keycode)
       { false,  5 }, { true , 11 }, { false,  0 }, { false,  1 }, // 8
       { false,  4 }, { true ,  1 }, { false, -1 }, { false, -1 }  // C
    };
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   driver_t *driver = driver_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
       
    if (apple->icade_enabled && (keycode < 0x20)
          && (icade_map[keycode].button >= 0))
@@ -135,7 +137,8 @@ static void handle_icade_event(unsigned keycode)
 void apple_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   driver_t *driver = driver_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
 
    if (!apple)
       return;

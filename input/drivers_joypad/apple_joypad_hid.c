@@ -49,7 +49,8 @@ static void hid_pad_connection_send_control(void *data, uint8_t* data_buf, size_
 static void hid_device_input_callback(void* context, IOReturn result,
       void* sender, IOHIDValueRef value)
 {
-   apple_input_data_t *apple         = (apple_input_data_t*)driver.input_data;
+   driver_t *driver = driver_get_ptr();
+   apple_input_data_t *apple         = (apple_input_data_t*)driver->input_data;
    struct pad_connection* connection = (struct pad_connection*)context;
    IOHIDElementRef element           = IOHIDValueGetElement(value);
    uint32_t type                     = IOHIDElementGetType(element);
@@ -119,7 +120,8 @@ static void hid_device_input_callback(void* context, IOReturn result,
 
 static void remove_device(void* context, IOReturn result, void* sender)
 {
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   driver_t *driver = driver_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
    struct pad_connection* connection = (struct pad_connection*)context;
 
    if (connection && connection->slot < MAX_USERS)
@@ -290,7 +292,8 @@ static void apple_joypad_destroy(void)
 
 static bool apple_joypad_button(unsigned port, uint16_t joykey)
 {
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   driver_t *driver = driver_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
    uint64_t buttons          = pad_connection_get_buttons(&slots[port], port);
 
    if (!apple || joykey == NO_BTN)
@@ -314,7 +317,8 @@ static uint64_t apple_joypad_get_buttons(unsigned port)
 
 static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   driver_t *driver = driver_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)driver->input_data;
    int16_t val = 0;
 
    if (!apple || joyaxis == AXIS_NONE)
