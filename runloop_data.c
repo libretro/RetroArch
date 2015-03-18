@@ -751,10 +751,8 @@ static void rarch_main_data_overlay_iterate(void)
 }
 #endif
 
-static void data_runloop_thread_deinit(void)
+static void data_runloop_thread_deinit(data_runloop_t *runloop)
 {
-   data_runloop_t *runloop = &g_data_runloop;
-
    if (!runloop->thread_inited)
    {
       slock_lock(runloop->cond_lock);
@@ -767,6 +765,8 @@ static void data_runloop_thread_deinit(void)
       slock_free(runloop->cond_lock);
       scond_free(runloop->cond);
    }
+
+   runloop->thread_inited = false;
 }
 
 static void rarch_main_data_deinit(void)
@@ -778,9 +778,7 @@ static void rarch_main_data_deinit(void)
 
 #ifdef HAVE_THREADS
    if (runloop->thread_inited)
-      data_runloop_thread_deinit();
-
-   runloop->thread_inited = false;
+      data_runloop_thread_deinit(runloop);
 #endif
 
    runloop->inited = false;
@@ -803,12 +801,23 @@ static void data_thread_loop(void *data)
 {
    data_runloop_t *runloop = (data_runloop_t*)data;
 
+   RARCH_LOG("[Data Thread]: Initializing data thread.\n");
+
+   slock_lock(runloop->lock);
+   while (!runloop->thread_inited)
+      scond_wait(runloop->cond, runloop->lock);
+   slock_unlock(runloop->lock);
+
+   RARCH_LOG("[Data Thread]: Starting data thread.\n");
+
    while (!runloop->thread_quit)
    {
       slock_lock(runloop->lock);
       data_runloop_iterate(runloop);
       slock_unlock(runloop->lock);
    }
+   
+   data_runloop_thread_deinit(runloop);
 }
 #endif
 
@@ -836,7 +845,7 @@ void rarch_main_data_iterate(void)
          return;
 
       if (g_data_runloop.thread_inited)
-         data_runloop_thread_deinit();
+         data_runloop_thread_deinit(&g_data_runloop);
       else
          rarch_main_data_thread_init();
    }
