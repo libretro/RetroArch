@@ -412,6 +412,9 @@ static void config_set_defaults(void)
    if (g_defaults.settings.video_threaded_enable != video_threaded)
       g_settings.video.threaded = g_defaults.settings.video_threaded_enable;
 
+#ifdef HAVE_THREADS
+   g_settings.menu.threaded_data_runloop_enable = true;
+#endif
    g_settings.video.shared_context = video_shared_context;
    g_settings.video.force_srgb_disable = false;
 #ifdef GEKKO
@@ -1118,6 +1121,9 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(video.hard_sync, "video_hard_sync");
 
 #ifdef HAVE_MENU
+#ifdef HAVE_THREADS
+   CONFIG_GET_BOOL(menu.threaded_data_runloop_enable, "threaded_data_runloop_enable");
+#endif
    CONFIG_GET_BOOL(menu.pause_libretro, "menu_pause_libretro");
    CONFIG_GET_BOOL(menu.mouse.enable,   "menu_mouse_enable");
    CONFIG_GET_BOOL(menu.timedate_enable,   "menu_timedate_enable");
@@ -1893,6 +1899,9 @@ bool config_save_file(const char *path)
    config_set_int(conf,   "video_fullscreen_y", g_settings.video.fullscreen_y);
    config_set_string(conf,"video_driver", g_settings.video.driver);
 #ifdef HAVE_MENU
+#ifdef HAVE_THREADS
+   config_set_bool(conf,"threaded_data_runloop_enable", g_settings.menu.threaded_data_runloop_enable);
+#endif
    config_set_string(conf,"menu_driver", g_settings.menu.driver);
    config_set_bool(conf,"menu_pause_libretro", g_settings.menu.pause_libretro);
    config_set_bool(conf,"menu_mouse_enable", g_settings.menu.mouse.enable);

@@ -5256,6 +5256,20 @@ static bool setting_data_append_list_menu_options(
          general_write_handler,
          general_read_handler);
 
+#ifdef HAVE_THREADS
+   CONFIG_BOOL(
+         g_settings.menu.threaded_data_runloop_enable,
+         "threaded_data_runloop_enable",
+         "Threaded data runloop",
+         true,
+         "OFF",
+         "ON",
+         group_info.name,
+         subgroup_info.name,
+         general_write_handler,
+         general_read_handler);
+#endif
+
    /* These colors are hints. The menu driver is not required to use them. */
    CONFIG_HEX(
          g_settings.menu.entry_normal_color,

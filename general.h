@@ -217,6 +217,9 @@ struct settings
       } navigation;
       bool collapse_subgroups_enable;
       bool show_advanced_settings;
+#ifdef HAVE_THREADS
+      bool threaded_data_runloop_enable;
+#endif
 
       unsigned entry_normal_color;
       unsigned entry_hover_color;
