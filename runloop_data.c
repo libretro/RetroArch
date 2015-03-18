@@ -736,15 +736,11 @@ static void rarch_main_data_overlay_iterate(void)
 }
 #endif
 
-static void rarch_main_data_deinit(void)
+static void data_runloop_thread_deinit(void)
 {
    data_runloop_t *runloop = &g_data_runloop;
 
-   if (!runloop->inited)
-      return;
-
-#ifdef HAVE_THREADS
-   if (runloop->thread_inited)
+   if (!runloop->thread_inited)
    {
       slock_lock(runloop->cond_lock);
       runloop->thread_quit = true;
@@ -755,9 +751,21 @@ static void rarch_main_data_deinit(void)
       slock_free(runloop->lock);
       slock_free(runloop->cond_lock);
       scond_free(runloop->cond);
-
-      runloop->thread_inited = false;
    }
+}
+
+static void rarch_main_data_deinit(void)
+{
+   data_runloop_t *runloop = &g_data_runloop;
+
+   if (!runloop->inited)
+      return;
+
+#ifdef HAVE_THREADS
+   if (runloop->thread_inited)
+      data_runloop_thread_deinit();
+
+   runloop->thread_inited = false;
 #endif
 
    runloop->inited = false;
@@ -789,11 +797,35 @@ static void data_thread_loop(void *data)
 }
 #endif
 
+static void rarch_main_data_thread_init(void)
+{
+   if ((g_data_runloop.thread = sthread_create(data_thread_loop, &g_data_runloop)))
+   {
+      g_data_runloop.lock      = slock_new();
+      g_data_runloop.cond_lock = slock_new();
+      g_data_runloop.cond      = scond_new();
+   }
+   else
+      g_data_runloop.thread = NULL;
+
+   g_data_runloop.thread_inited = (g_data_runloop.thread != NULL);
+}
+
 void rarch_main_data_iterate(void)
 {
 #ifdef HAVE_THREADS
-   if (g_data_runloop.thread_inited)
-      return;
+#if 0
+   if (g_settings.menu.threaded_data_runloop_enable)
+   {
+      if (g_data_runloop.thread_inited)
+         return;
+
+      if (g_data_runloop.thread_inited)
+         data_runloop_thread_deinit();
+      else
+         rarch_main_data_thread_init();
+   }
+#endif
 #endif
 
    data_runloop_iterate(&g_data_runloop);
@@ -808,22 +840,6 @@ static void rarch_main_data_init(void)
 
    g_data_runloop.thread_inited = false;
    g_data_runloop.thread_quit   = false;
-
-#ifdef HAVE_THREADS
-   if (g_settings.menu.threaded_data_runloop_enable)
-   {
-      if ((g_data_runloop.thread = sthread_create(data_thread_loop, &g_data_runloop)))
-      {
-         g_data_runloop.lock      = slock_new();
-         g_data_runloop.cond_lock = slock_new();
-         g_data_runloop.cond      = scond_new();
-      }
-      else
-         g_data_runloop.thread = NULL;
-
-      g_data_runloop.thread_inited = (g_data_runloop.thread != NULL);
-   }
-#endif
 
    g_data_runloop.inited = true;
 }
