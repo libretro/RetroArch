@@ -701,9 +701,24 @@ static void rarch_main_data_db_iterate(void)
 }
 
 #ifdef HAVE_OVERLAY
+driver_t *data_get_driver_ptr(void)
+{
+   driver_t *driver = NULL;
+#ifdef HAVE_THREADS
+   if (g_data_runloop.thread_inited)
+      slock_lock(g_data_runloop.lock);
+#endif
+   driver  = driver_get_ptr();
+#ifdef HAVE_THREADS
+   if (g_data_runloop.thread_inited)
+      slock_unlock(g_data_runloop.lock);
+#endif
+   return driver;
+}
+
 static void rarch_main_data_overlay_iterate(void)
 {
-   driver_t  *driver  = driver_get_ptr();
+   driver_t *driver = data_get_driver_ptr();
 
    if (rarch_main_is_idle())
       return;
