@@ -944,6 +944,11 @@ void rarch_main_clear_state(void)
    memset(&g_runloop, 0, sizeof(g_runloop));
 }
 
+bool rarch_main_is_idle(void)
+{
+   return g_runloop.is_idle;
+}
+
 /**
  * rarch_main_iterate:
  *
