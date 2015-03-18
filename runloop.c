@@ -568,6 +568,8 @@ static int do_state_checks(
 {
    driver_t *driver = driver_get_ptr();
 
+   (void)driver;
+
    if (g_runloop.is_idle)
       return 1;
 

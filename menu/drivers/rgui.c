@@ -355,6 +355,9 @@ static void rgui_render(void)
    const char *core_version = NULL;
    menu_handle_t *menu = menu_driver_resolve();
    runloop_t *runloop = rarch_main_get_ptr();
+   driver_t *driver   = driver_get_ptr();
+
+   (void)driver;
 
    if (!menu)
       return;

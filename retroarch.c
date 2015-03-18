@@ -888,6 +888,8 @@ static void init_cheats(void)
    driver_t *driver = driver_get_ptr();
    bool allow_cheats = true;
 
+   (void)driver;
+
 #ifdef HAVE_NETPLAY
    allow_cheats &= !driver->netplay_data;
 #endif
@@ -903,6 +905,8 @@ static void init_rewind(void)
 {
    void *state = NULL;
    driver_t *driver = driver_get_ptr();
+
+   (void)driver;
 
 #ifdef HAVE_NETPLAY
    if (driver->netplay_data)
