@@ -210,7 +210,7 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
 
    menu_list_clear(list);
 
-   menu_entries_push_cores_list(list, info, g_settings.menu_content_directory, true);
+   menu_entries_push_cores_list(list, info, g_settings.core_assets_directory, true);
 
    menu_list_populate_generic(list, path, label, menu_type);
 
