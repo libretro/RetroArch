@@ -248,6 +248,7 @@ bool take_screenshot(void)
    bool viewport_read = false;
    bool ret = true;
    const char *msg = NULL;
+   runloop_t *runloop = rarch_main_get_ptr();
 
    /* No way to infer screenshot directory. */
    if ((!*g_settings.screenshot_directory) && (!*g_extern.basename))
@@ -319,9 +320,9 @@ bool take_screenshot(void)
       msg = RETRO_MSG_TAKE_SCREENSHOT_FAILED;
    }
 
-   rarch_main_msg_queue_push(msg, 1, g_runloop.is_paused ? 1 : 180, true);
+   rarch_main_msg_queue_push(msg, 1, runloop->is_paused ? 1 : 180, true);
 
-   if (g_runloop.is_paused)
+   if (runloop->is_paused)
       rarch_render_cached_frame();
 
    return ret;

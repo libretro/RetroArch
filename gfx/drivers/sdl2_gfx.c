@@ -484,6 +484,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 {
    char buf[128];
    sdl2_video_t *vid = (sdl2_video_t*)data;
+   runloop_t *runloop = rarch_main_get_ptr();
 
    if (vid->should_resize)
       sdl_refresh_viewport(vid);
@@ -503,7 +504,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
 
 #ifdef HAVE_MENU
-   if (g_runloop.is_menu 
+   if (runloop->is_menu 
          && driver.menu_ctx && driver.menu_ctx->frame)
       driver.menu_ctx->frame();
 #endif

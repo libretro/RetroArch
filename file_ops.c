@@ -167,8 +167,10 @@ bool read_compressed_file(const char * path, void **buf,
    }
 
    //We split carchive path and relative path:
-   strlcpy(archive_path,path,sizeof(archive_path));
+   strlcpy(archive_path, path, sizeof(archive_path));
+
    archive_found = (char*)strchr(archive_path,'#');
+
    rarch_assert(archive_found != NULL);
 
    //We assure that there is something after the '#' symbol

@@ -581,6 +581,7 @@ static int mouse_iterate(unsigned *action)
 {
    const struct retro_keybind *binds[MAX_USERS];
    menu_handle_t *menu    = menu_driver_resolve();
+   runloop_t *runloop     = rarch_main_get_ptr();
    if (!menu)
       return -1;
 
@@ -651,7 +652,7 @@ static int mouse_iterate(unsigned *action)
       || menu->mouse.wheelup || menu->mouse.wheeldown
       || menu->mouse.hwheelup || menu->mouse.hwheeldown
       || menu->mouse.scrollup || menu->mouse.scrolldown)
-      g_runloop.frames.video.current.menu.animation.is_active = true;
+      runloop->frames.video.current.menu.animation.is_active = true;
 
    return 0;
 }

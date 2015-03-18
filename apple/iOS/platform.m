@@ -231,11 +231,14 @@ enum
 
 void switch_to_ios(void)
 {
+   RetroArch_iOS *ap;
+   runloop_t *runloop = rarch_main_get_ptr();
+
    if (!apple_platform)
       return;
     
-   RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-   g_runloop.is_idle = true;
+   ap = (RetroArch_iOS *)apple_platform;
+   runloop->is_idle = true;
    [ap showPauseMenu:ap];
 }
 
@@ -288,29 +291,30 @@ static void rarch_main_event_pump(void)
 
 - (void) rarch_draw:(id)sender
 {
-    int ret = 0;
-    
-    if (displayLink == nil)
-        goto exit;
-    
-    rarch_main_event_pump();
-        
-    ret = rarch_main_iterate();
-        
-    if (ret == -1)
-        goto exit;
-        
-    if (g_runloop.is_idle)
-        return;
-        
-    if (g_view)
-        [g_view display];
-    
-    return;
-    
+   runloop_t *runloop = rarch_main_get_ptr();
+   int ret = 0;
+
+   if (displayLink == nil)
+      goto exit;
+
+   rarch_main_event_pump();
+
+   ret = rarch_main_iterate();
+
+   if (ret == -1)
+      goto exit;
+
+   if (runloop->is_idle)
+      return;
+
+   if (g_view)
+      [g_view display];
+
+   return;
+
 exit:
-    main_exit_save_config();
-    main_exit(NULL);
+   main_exit_save_config();
+   main_exit(NULL);
 }
 
 - (void) apple_start_iteration
@@ -375,19 +379,24 @@ exit:
 
 - (void)showGameView
 {
+   runloop_t *runloop = rarch_main_get_ptr();
+
    [self popToRootViewControllerAnimated:NO];
    [self setToolbarHidden:true animated:NO];
    [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[RAGameView get]];
-   g_runloop.is_paused = false;
-   g_runloop.is_idle = false;
+
+   runloop->is_paused = false;
+   runloop->is_idle = false;
 }
 
 - (IBAction)showPauseMenu:(id)sender
 {
-   g_runloop.is_paused = true;
-   g_runloop.is_idle   = true;
+   runloop_t *runloop = rarch_main_get_ptr();
+
+   runloop->is_paused = true;
+   runloop->is_idle   = true;
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:false];
    [self.window setRootViewController:self];

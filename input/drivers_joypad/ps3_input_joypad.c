@@ -119,6 +119,7 @@ static void ps3_joypad_poll(void)
    unsigned port;
    CellPadInfo2 pad_info;
    uint64_t *lifecycle_state = (uint64_t*)&g_extern.lifecycle_state;
+   runloop_t *runloop = rarch_main_get_ptr();
 
    for (port = 0; port < MAX_PADS; port++)
    {
@@ -158,7 +159,7 @@ static void ps3_joypad_poll(void)
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_TRIANGLE) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_SQUARE) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
 
-         if (g_runloop.is_menu)
+         if (runloop->is_menu)
          {
             int value = 0;
             if (cellSysutilGetSystemParamInt(CELL_SYSUTIL_SYSTEMPARAM_ID_ENTER_BUTTON_ASSIGN, &value) == 0)

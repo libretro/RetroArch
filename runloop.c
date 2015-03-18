@@ -924,6 +924,16 @@ void rarch_main_msg_queue_init(void)
       rarch_assert(g_runloop.msg_queue = msg_queue_new(8));
 }
 
+runloop_t *rarch_main_get_ptr(void)
+{
+   return &g_runloop;
+}
+
+void rarch_main_clear_state(void)
+{
+   memset(&g_runloop, 0, sizeof(g_runloop));
+}
+
 /**
  * rarch_main_iterate:
  *

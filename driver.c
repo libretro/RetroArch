@@ -321,7 +321,9 @@ void init_drivers(int flags)
 
    if (flags & DRIVER_VIDEO)
    {
-      g_runloop.frames.video.count = 0;
+      runloop_t *runloop = rarch_main_get_ptr();
+
+      runloop->frames.video.count = 0;
 
       init_video();
 

@@ -58,6 +58,7 @@ static int rgui_entry_iterate(unsigned action)
    const char *label = NULL;
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t *menu = menu_driver_resolve();
+   runloop_t *runloop  = rarch_main_get_ptr();
 
    if (!menu)
       return -1;
@@ -65,10 +66,10 @@ static int rgui_entry_iterate(unsigned action)
       return -1;
 
    if (action != MENU_ACTION_NOOP || menu->need_refresh ||
-       g_runloop.frames.video.current.menu.label.is_updated ||
-       g_runloop.frames.video.current.menu.animation.is_active)
+       runloop->frames.video.current.menu.label.is_updated ||
+       runloop->frames.video.current.menu.animation.is_active)
    {
-      g_runloop.frames.video.current.menu.framebuf.dirty   = true;
+      runloop->frames.video.current.menu.framebuf.dirty   = true;
    }
 
 
@@ -353,24 +354,25 @@ static void rgui_render(void)
    const char *core_name = NULL;
    const char *core_version = NULL;
    menu_handle_t *menu = menu_driver_resolve();
+   runloop_t *runloop = rarch_main_get_ptr();
 
    if (!menu)
       return;
 
-   if (menu->need_refresh && g_runloop.is_menu
+   if (menu->need_refresh && runloop->is_menu
          && !menu->msg_force)
       return;
 
-   if (g_runloop.is_idle)
+   if (runloop->is_idle)
       return;
 
    if (!menu_display_update_pending())
       return;
 
    /* ensures the framebuffer will be rendered on the screen */
-   g_runloop.frames.video.current.menu.framebuf.dirty = true;
-   g_runloop.frames.video.current.menu.animation.is_active = false;
-   g_runloop.frames.video.current.menu.label.is_updated    = false;
+   runloop->frames.video.current.menu.framebuf.dirty = true;
+   runloop->frames.video.current.menu.animation.is_active = false;
+   runloop->frames.video.current.menu.label.is_updated    = false;
 
    menu->mouse.ptr = menu->mouse.y / 11 - 2 + menu->begin;
 
@@ -402,7 +404,7 @@ static void rgui_render(void)
    get_title(label, dir, menu_type, title, sizeof(title));
 
    menu_animation_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
-         g_runloop.frames.video.count / RGUI_TERM_START_X, title, true);
+         runloop->frames.video.count / RGUI_TERM_START_X, title, true);
 
    hover_color = HOVER_COLOR;
    normal_color = NORMAL_COLOR;
@@ -476,8 +478,8 @@ static void rgui_render(void)
          continue;
 
       menu_animation_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2),
-            g_runloop.frames.video.count / RGUI_TERM_START_X, path_buf, selected);
-      menu_animation_ticker_line(type_str_buf, w, g_runloop.frames.video.count / RGUI_TERM_START_X,
+            runloop->frames.video.count / RGUI_TERM_START_X, path_buf, selected);
+      menu_animation_ticker_line(type_str_buf, w, runloop->frames.video.count / RGUI_TERM_START_X,
             type_str, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
@@ -580,6 +582,8 @@ static void rgui_free(void *data)
 static void rgui_set_texture(void)
 {
    menu_handle_t *menu = menu_driver_resolve();
+   runloop_t *runloop  = rarch_main_get_ptr();
+
    if (!menu)
       return;
 
@@ -589,10 +593,10 @@ static void rgui_set_texture(void)
       return;
    if (!driver.video_poke->set_texture_frame)
       return;
-   if (!g_runloop.frames.video.current.menu.framebuf.dirty)
+   if (!runloop->frames.video.current.menu.framebuf.dirty)
       return;
 
-   g_runloop.frames.video.current.menu.framebuf.dirty = false;
+   runloop->frames.video.current.menu.framebuf.dirty = false;
 
    driver.video_poke->set_texture_frame(driver.video_data,
          menu->frame_buf.data, false, menu->frame_buf.width, menu->frame_buf.height, 1.0f);

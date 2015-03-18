@@ -1049,6 +1049,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
       menu_file_list_cbs_t *cbs = NULL;
       GLuint icon = 0;
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(list, i);
+      runloop_t *runloop = rarch_main_get_ptr();
 
       if (!node)
          continue;
@@ -1101,7 +1102,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
          icon = xmb->textures.list[XMB_TEXTURE_RESUME].id;
 
 
-      menu_animation_ticker_line(name, 35, g_runloop.frames.video.count / 20, path_buf,
+      menu_animation_ticker_line(name, 35, runloop->frames.video.count / 20, path_buf,
          (i == current));
 
       xmb_draw_text(gl, xmb, name,
@@ -1109,7 +1110,7 @@ static void xmb_draw_items(xmb_handle_t *xmb, gl_t *gl,
             xmb->margins.screen.top + node->y + xmb->margins.label.top, 
             1, node->label_alpha, 0);
 
-      menu_animation_ticker_line(value, 35, g_runloop.frames.video.count / 20, type_str,
+      menu_animation_ticker_line(value, 35, runloop->frames.video.count / 20, type_str,
             (i == current));
 
       if((     strcmp(type_str, "...")
@@ -1203,6 +1204,7 @@ static void xmb_draw_cursor(gl_t *gl, xmb_handle_t *xmb, float x, float y)
 static void xmb_render(void)
 {
    unsigned i, current, end;
+   runloop_t *runloop = rarch_main_get_ptr();
 
    menu_handle_t *menu = menu_driver_resolve();
    if (!menu)
@@ -1226,9 +1228,9 @@ static void xmb_render(void)
          menu->mouse.ptr = i;
    }
 
-   g_runloop.frames.video.current.menu.animation.is_active = false;
-   g_runloop.frames.video.current.menu.label.is_updated    = false;
-   g_runloop.frames.video.current.menu.framebuf.dirty      = false;
+   runloop->frames.video.current.menu.animation.is_active = false;
+   runloop->frames.video.current.menu.label.is_updated    = false;
+   runloop->frames.video.current.menu.framebuf.dirty      = false;
 }
 
 static void xmb_frame(void)

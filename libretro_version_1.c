@@ -113,6 +113,7 @@ static void video_frame(const void *data, unsigned width,
 {
    unsigned output_width  = 0, output_height = 0, output_pitch = 0;
    const char *msg = NULL;
+   runloop_t *runloop = rarch_main_get_ptr();
 
    if (!driver.video_active)
       return;
@@ -152,7 +153,7 @@ static void video_frame(const void *data, unsigned width,
 
    if (driver.video->frame(driver.video_data, data, width, height, pitch, msg))
    {
-      g_runloop.frames.video.count++;
+      runloop->frames.video.count++;
       return;
    }
 
@@ -177,6 +178,7 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
    size_t   output_size           = sizeof(float);
    struct resampler_data src_data = {0};
    struct rarch_dsp_data dsp_data = {0};
+   runloop_t *runloop             = rarch_main_get_ptr();
 
    if (driver.recording_data)
    {
@@ -188,7 +190,7 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
          driver.recording->push_audio(driver.recording_data, &ffemu_data);
    }
 
-   if (g_runloop.is_paused || g_settings.audio.mute_enable)
+   if (runloop->is_paused || g_settings.audio.mute_enable)
       return true;
    if (!driver.audio_active || !g_extern.audio_data.data)
       return false;
@@ -225,7 +227,7 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
       audio_driver_readjust_input_rate();
 
    src_data.ratio = g_extern.audio_data.src_ratio;
-   if (g_runloop.is_slowmotion)
+   if (runloop->is_slowmotion)
       src_data.ratio *= g_settings.slowmotion_ratio;
 
    RARCH_PERFORMANCE_INIT(resampler_proc);

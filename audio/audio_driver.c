@@ -95,20 +95,23 @@ static void compute_audio_buffer_statistics(void)
    float avg_filled, deviation;
    uint64_t accum = 0, accum_var = 0;
    unsigned low_water_count = 0, high_water_count = 0;
-   unsigned samples = min(g_runloop.measure_data.buffer_free_samples_count,
+   unsigned samples = 0;
+   runloop_t *runloop = rarch_main_get_ptr();
+   
+   samples = min(runloop->measure_data.buffer_free_samples_count,
          AUDIO_BUFFER_FREE_SAMPLES_COUNT);
 
    if (samples < 3)
       return;
 
    for (i = 1; i < samples; i++)
-      accum += g_runloop.measure_data.buffer_free_samples[i];
+      accum += runloop->measure_data.buffer_free_samples[i];
 
    avg = accum / (samples - 1);
 
    for (i = 1; i < samples; i++)
    {
-      int diff = avg - g_runloop.measure_data.buffer_free_samples[i];
+      int diff = avg - runloop->measure_data.buffer_free_samples[i];
       accum_var += diff * diff;
    }
 
@@ -121,9 +124,9 @@ static void compute_audio_buffer_statistics(void)
 
    for (i = 1; i < samples; i++)
    {
-      if (g_runloop.measure_data.buffer_free_samples[i] >= low_water_size)
+      if (runloop->measure_data.buffer_free_samples[i] >= low_water_size)
          low_water_count++;
-      else if (g_runloop.measure_data.buffer_free_samples[i] <= high_water_size)
+      else if (runloop->measure_data.buffer_free_samples[i] <= high_water_size)
          high_water_count++;
    }
 
@@ -265,6 +268,7 @@ void uninit_audio(void)
 void init_audio(void)
 {
    size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
+   runloop_t *runloop = rarch_main_get_ptr();
 
    audio_convert_init_simd();
 
@@ -383,7 +387,7 @@ void init_audio(void)
 
    rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
 
-   g_runloop.measure_data.buffer_free_samples_count = 0;
+   runloop->measure_data.buffer_free_samples_count = 0;
 
    if (driver.audio_active && !g_settings.audio.mute_enable &&
          g_extern.system.audio_callback.callback)
@@ -419,24 +423,24 @@ bool audio_driver_mute_toggle(void)
 void audio_driver_readjust_input_rate(void)
 {
    double direction, adjust;
-   int half_size, delta_mid, avail;
+   int half_size, delta_mid;
    unsigned write_idx;
-
-   avail = driver.audio->write_avail(driver.audio_data);
+   int avail = driver.audio->write_avail(driver.audio_data);
+   runloop_t *runloop = rarch_main_get_ptr();
 
 #if 0
    RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
          (unsigned)(100 - (avail * 100) / g_extern.audio_data.driver_buffer_size));
 #endif
 
-   write_idx   = g_runloop.measure_data.buffer_free_samples_count++ &
+   write_idx   = runloop->measure_data.buffer_free_samples_count++ &
       (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
    half_size   = g_extern.audio_data.driver_buffer_size / 2;
    delta_mid   = avail - half_size;
    direction   = (double)delta_mid / half_size;
    adjust      = 1.0 + g_settings.audio.rate_control_delta * direction;
 
-   g_runloop.measure_data.buffer_free_samples[write_idx] = avail;
+   runloop->measure_data.buffer_free_samples[write_idx] = avail;
    g_extern.audio_data.src_ratio = g_extern.audio_data.orig_src_ratio * adjust;
 
 #if 0

@@ -393,8 +393,9 @@ static bool thread_alive(void *data)
 {
    bool ret;
    thread_video_t *thr = (thread_video_t*)data;
+   runloop_t *runloop  = rarch_main_get_ptr();
 
-   if (g_runloop.is_paused)
+   if (runloop->is_paused)
    {
       thread_send_cmd(thr, CMD_ALIVE);
       thread_wait_reply(thr, CMD_ALIVE);

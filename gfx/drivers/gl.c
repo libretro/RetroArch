@@ -959,6 +959,7 @@ static void gl_frame_fbo(gl_t *gl,
    GLfloat xamt, yamt;
    unsigned fbo_tex_info_cnt = 0;
    GLfloat fbo_tex_coords[8] = {0.0f};
+   runloop_t *runloop = rarch_main_get_ptr();
 
    /* Render the rest of our passes. */
    gl->coords.tex_coord = fbo_tex_coords;
@@ -998,7 +999,7 @@ static void gl_frame_fbo(gl_t *gl,
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
       gl->shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
-            gl->vp.width, gl->vp.height, g_runloop.frames.video.count, 
+            gl->vp.width, gl->vp.height, runloop->frames.video.count, 
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
       gl->coords.vertices = 4;
@@ -1045,7 +1046,7 @@ static void gl_frame_fbo(gl_t *gl,
    gl->shader->set_params(gl,
          prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
-         gl->vp.width, gl->vp.height, g_runloop.frames.video.count, 
+         gl->vp.width, gl->vp.height, runloop->frames.video.count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
    gl->coords.vertex = gl->vertex_ptr;
@@ -1462,6 +1463,7 @@ static bool gl_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = (gl_t*)data;
+   runloop_t *runloop = rarch_main_get_ptr();
 
    RARCH_PERFORMANCE_INIT(frame_run);
    RARCH_PERFORMANCE_START(frame_run);
@@ -1571,7 +1573,7 @@ static bool gl_frame(void *data, const void *frame,
    gl->shader->set_params(gl, width, height,
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
-         g_runloop.frames.video.count, 
+         runloop->frames.video.count, 
          &gl->tex_info, gl->prev_info, NULL, 0);
 
    gl->coords.vertices = 4;
@@ -1587,7 +1589,7 @@ static bool gl_frame(void *data, const void *frame,
    gl_set_prev_texture(gl, &gl->tex_info);
 
 #if defined(HAVE_MENU)
-   if (g_runloop.is_menu
+   if (runloop->is_menu
          && driver.menu_ctx && driver.menu_ctx->frame)
       driver.menu_ctx->frame();
 
@@ -1643,8 +1645,8 @@ static bool gl_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (g_settings.video.black_frame_insertion &&
-         !driver.nonblock_state && !g_runloop.is_slowmotion
-         && !g_runloop.is_paused)
+         !driver.nonblock_state && !runloop->is_slowmotion
+         && !runloop->is_paused)
    {
       gl->ctx_driver->swap_buffers(gl);
       glClear(GL_COLOR_BUFFER_BIT);
@@ -2430,13 +2432,14 @@ static bool gl_alive(void *data)
 {
    bool quit = false, resize = false;
    gl_t *gl = (gl_t*)data;
+   runloop_t *runloop = rarch_main_get_ptr();
     
    if (!gl)
       return false;
 
    gl->ctx_driver->check_window(gl, &quit,
          &resize, &gl->win_width, &gl->win_height,
-         g_runloop.frames.video.count);
+         runloop->frames.video.count);
 
    if (quit)
       gl->quitting = true;

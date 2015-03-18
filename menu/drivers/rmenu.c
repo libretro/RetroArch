@@ -154,6 +154,7 @@ static void rmenu_render(void)
    const char *core_version = NULL;
    unsigned menu_type = 0;
    menu_handle_t *menu = menu_driver_resolve();
+   runloop_t *runloop = rarch_main_get_ptr();
 
    if (!menu)
       return;
@@ -164,13 +165,13 @@ static void rmenu_render(void)
       return;
    }
 
-   if (menu->need_refresh && g_runloop.is_menu
+   if (menu->need_refresh && runloop->is_menu
          && !menu->msg_force)
       return;
 
-   g_runloop.frames.video.current.menu.animation.is_active = false;
-   g_runloop.frames.video.current.menu.label.is_updated    = false;
-   g_runloop.frames.video.current.menu.framebuf.dirty      = false;
+   runloop->frames.video.current.menu.animation.is_active = false;
+   runloop->frames.video.current.menu.label.is_updated    = false;
+   runloop->frames.video.current.menu.framebuf.dirty      = false;
 
    if (!menu->menu_list->selection_buf)
       return;
@@ -195,7 +196,7 @@ static void rmenu_render(void)
    get_title(label, dir, menu_type, title, sizeof(title));
 
    menu_animation_ticker_line(title_buf, RMENU_TERM_WIDTH,
-         g_runloop.frames.video.count / 15, title, true);
+         runloop->frames.video.count / 15, title, true);
 
    font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
    font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET
@@ -262,8 +263,8 @@ static void rmenu_render(void)
       selected = (i == menu->navigation.selection_ptr);
 
       menu_animation_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2),
-            g_runloop.frames.video.count / 15, path, selected);
-      menu_animation_ticker_line(type_str_buf, w, g_runloop.frames.video.count / 15,
+            runloop->frames.video.count / 15, path, selected);
+      menu_animation_ticker_line(type_str_buf, w, runloop->frames.video.count / 15,
             type_str, selected);
 
       snprintf(message, sizeof(message), "%c %s",

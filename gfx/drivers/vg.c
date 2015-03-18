@@ -406,12 +406,13 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 static bool vg_alive(void *data)
 {
-   vg_t *vg = (vg_t*)data;
    bool quit;
+   vg_t *vg           = (vg_t*)data;
+   runloop_t *runloop = rarch_main_get_ptr();
 
    vg->driver->check_window(vg, &quit,
          &vg->should_resize, &vg->mScreenWidth, &vg->mScreenHeight,
-         g_runloop.frames.video.count);
+         runloop->frames.video.count);
    return !quit;
 }
 

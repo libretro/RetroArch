@@ -553,16 +553,17 @@ static void rmenu_xui_render(void)
 	const char *dir = NULL, *label = NULL;
 	unsigned menu_type = 0;
    menu_handle_t *menu = menu_driver_resolve();
+   runloop_t *runloop  = rarch_main_get_ptr();
 
    if (!menu)
       return;
 	if (menu->need_refresh && 
-		g_runloop.is_menu && !menu->msg_force)
+		runloop->is_menu && !menu->msg_force)
 		return;
 
-   g_runloop.frames.video.current.menu.animation.is_active = false;
-   g_runloop.frames.video.current.menu.label.is_updated    = false;
-   g_runloop.frames.video.current.menu.framebuf.dirty      = false;
+   runloop->frames.video.current.menu.animation.is_active = false;
+   runloop->frames.video.current.menu.label.is_updated    = false;
+   runloop->frames.video.current.menu.framebuf.dirty      = false;
 
 	rmenu_xui_render_background();
 
@@ -573,7 +574,7 @@ static void rmenu_xui_render(void)
 		get_title(label, dir, menu_type, title, sizeof(title));
 		mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
 		XuiTextElementSetText(m_menutitle, strw_buffer);
-		menu_animation_ticker_line(title, RXUI_TERM_WIDTH - 3, g_runloop.frames.video.count / 15, title, true);
+		menu_animation_ticker_line(title, RXUI_TERM_WIDTH - 3, runloop->frames.video.count / 15, title, true);
 	}
 
 	if (XuiHandleIsValid(m_menutitle))

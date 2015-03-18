@@ -108,8 +108,7 @@ typedef struct runloop
    msg_queue_t *msg_queue;
 } runloop_t;
 
-/* Public data structures. */
-extern struct runloop g_runloop;
+runloop_t *rarch_main_get_ptr(void);
 
 /**
  * rarch_main_iterate:
@@ -133,6 +132,8 @@ void rarch_main_msg_queue_init(void);
 void rarch_main_data_msg_queue_push(unsigned type,
       const char *msg, const char *msg2,
       unsigned prio, unsigned duration, bool flush);
+
+void rarch_main_clear_state(void);
 
 void rarch_main_data_clear_state(void);
 

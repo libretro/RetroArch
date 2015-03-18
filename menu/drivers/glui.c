@@ -268,6 +268,7 @@ static void glui_render(void)
    glui_handle_t *glui = NULL;
    gl_t *gl = NULL;
    menu_handle_t *menu = menu_driver_resolve();
+   runloop_t *runloop  = rarch_main_get_ptr();
 
    if (!menu)
       return;
@@ -291,9 +292,9 @@ static void glui_render(void)
    menu->frame_buf.width  = gl->win_width;
    menu->frame_buf.height = gl->win_height;
 
-   g_runloop.frames.video.current.menu.animation.is_active = false;
-   g_runloop.frames.video.current.menu.label.is_updated    = false;
-   g_runloop.frames.video.current.menu.framebuf.dirty      = false;
+   runloop->frames.video.current.menu.animation.is_active = false;
+   runloop->frames.video.current.menu.label.is_updated    = false;
+   runloop->frames.video.current.menu.framebuf.dirty      = false;
 
    menu->mouse.ptr = (menu->mouse.y - glui->margin) /
          glui->line_height - 2 + menu->begin;
@@ -328,6 +329,7 @@ static void glui_frame(void)
    menu_handle_t *menu = menu_driver_resolve();
    const uint32_t normal_color = FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.entry_normal_color);
    const uint32_t hover_color = FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.entry_hover_color);
+   runloop_t *runloop = rarch_main_get_ptr();
 
    if (!menu)
       return;
@@ -343,7 +345,7 @@ static void glui_frame(void)
       return;
 
    if (menu->need_refresh
-         && g_runloop.is_menu
+         && runloop->is_menu
          && !menu->msg_force)
       return;
 
@@ -361,7 +363,7 @@ static void glui_frame(void)
    get_title(label, dir, menu_type, title, sizeof(title));
 
    menu_animation_ticker_line(title_buf, glui->term_width - 3,
-         g_runloop.frames.video.count / glui->margin, title, true);
+         runloop->frames.video.count / glui->margin, title, true);
    glui_blit_line(gl, glui->margin * 2, glui->margin + glui->line_height,
          title_buf, FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.title_color));
 
@@ -428,9 +430,9 @@ static void glui_frame(void)
       selected = (i == menu->navigation.selection_ptr);
 
       menu_animation_ticker_line(entry_title_buf, glui->term_width - (w + 1 + 2),
-            g_runloop.frames.video.count / glui->margin, path_buf, selected);
+            runloop->frames.video.count / glui->margin, path_buf, selected);
       menu_animation_ticker_line(type_str_buf, w, 
-            g_runloop.frames.video.count / glui->margin, type_str, selected);
+            runloop->frames.video.count / glui->margin, type_str, selected);
 
       strlcpy(message, entry_title_buf, sizeof(message));
 

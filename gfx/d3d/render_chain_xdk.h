@@ -114,6 +114,7 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+   runloop_t *runloop = rarch_main_get_ptr();
 
 #if defined(_XBOX1)
    d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
@@ -138,7 +139,7 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
 
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 
-   g_runloop.frames.video.count++;
+   runloop->frames.video.count++;
 
    renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
 }
@@ -146,6 +147,7 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
 static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, unsigned height)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+   runloop_t *runloop = rarch_main_get_ptr();
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
@@ -222,7 +224,7 @@ static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, 
          d3d->shader->use(d3d, pass);
       if (d3d->shader->set_params)
          d3d->shader->set_params(d3d, width, height, d3d->tex_w, d3d->tex_h, d3d->screen_width,
-               d3d->screen_height, g_runloop.frames.video.count,
+               d3d->screen_height, runloop->frames.video.count,
                NULL, NULL, NULL, 0);
    }
 #endif

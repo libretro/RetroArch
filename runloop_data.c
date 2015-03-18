@@ -684,7 +684,8 @@ static void rarch_main_data_db_iterate(void)
 #ifdef HAVE_OVERLAY
 static void rarch_main_data_overlay_iterate(void)
 {
-   if (g_runloop.is_idle)
+   runloop_t *runloop = rarch_main_get_ptr();
+   if (runloop->is_idle)
       return;
    if (!driver.overlay)
       return;

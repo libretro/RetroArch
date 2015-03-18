@@ -27,9 +27,10 @@
 
 bool menu_display_update_pending(void)
 {
-   if (g_runloop.frames.video.current.menu.animation.is_active ||
-         g_runloop.frames.video.current.menu.label.is_updated ||
-         g_runloop.frames.video.current.menu.framebuf.dirty)
+   runloop_t *runloop = rarch_main_get_ptr();
+   if (runloop->frames.video.current.menu.animation.is_active ||
+         runloop->frames.video.current.menu.label.is_updated ||
+         runloop->frames.video.current.menu.framebuf.dirty)
       return true;
    return false;
 }
@@ -181,6 +182,7 @@ void *menu_init(const void *data)
 {
    menu_handle_t *menu = NULL;
    menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
+   runloop_t *runloop = rarch_main_get_ptr();
 
    if (!menu_ctx)
       return NULL;
@@ -217,7 +219,7 @@ void *menu_init(const void *data)
 
    rarch_assert(menu->msg_queue = msg_queue_new(8));
 
-   g_runloop.frames.video.current.menu.framebuf.dirty = true;
+   runloop->frames.video.current.menu.framebuf.dirty = true;
 
    return menu;
 error:
@@ -387,6 +389,7 @@ int menu_iterate(retro_input_t input,
    static retro_time_t last_clock_update = 0;
    int32_t ret     = 0;
    unsigned action = menu_input_frame(input, trigger_input);
+   runloop_t *runloop = rarch_main_get_ptr();
 
    menu_handle_t *menu = menu_driver_resolve();
 
@@ -400,14 +403,14 @@ int menu_iterate(retro_input_t input,
 
    if (menu->cur_time - last_clock_update > 1000000 && g_settings.menu.timedate_enable)
    {
-      g_runloop.frames.video.current.menu.label.is_updated = true;
+      runloop->frames.video.current.menu.label.is_updated = true;
       last_clock_update = menu->cur_time;
    }
 
    if (driver.menu_ctx && driver.menu_ctx->entry_iterate)
       ret = driver.menu_ctx->entry_iterate(action);
 
-   if (g_runloop.is_menu && !g_runloop.is_idle)
+   if (runloop->is_menu && !runloop->is_idle)
       draw_frame();
 
    if (driver.menu_ctx && driver.menu_ctx->set_texture)

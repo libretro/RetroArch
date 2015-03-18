@@ -391,6 +391,7 @@ void init_video(void)
    const struct retro_game_geometry *geom = NULL;
    video_info_t video = {0};
    static uint16_t dummy_pixels[32] = {0};
+   runloop_t *runloop = rarch_main_get_ptr();
 
    init_video_filter(g_extern.system.pix_fmt);
    rarch_main_command(RARCH_CMD_SHADER_DIR_INIT);
@@ -529,7 +530,7 @@ void init_video(void)
    rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
    rarch_main_command(RARCH_CMD_OVERLAY_INIT);
 
-   g_runloop.measure_data.frame_time_samples_count = 0;
+   runloop->measure_data.frame_time_samples_count = 0;
 
    g_extern.frame_cache.width = 4;
    g_extern.frame_cache.height = 4;

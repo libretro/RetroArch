@@ -406,13 +406,14 @@ static void d3d_set_nonblock_state(void *data, bool state)
 
 static bool d3d_alive(void *data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   bool quit        = false;
-   bool resize      = false;
+   d3d_video_t *d3d   = (d3d_video_t*)data;
+   bool quit          = false;
+   bool resize        = false;
+   runloop_t *runloop = rarch_main_get_ptr();
 
    if (d3d->ctx_driver && d3d->ctx_driver->check_window)
       d3d->ctx_driver->check_window(d3d, &quit, &resize,
-            &d3d->screen_width, &d3d->screen_height, g_runloop.frames.video.count);
+            &d3d->screen_width, &d3d->screen_height, runloop->frames.video.count);
 
    if (quit)
       d3d->quitting = quit;
@@ -1604,6 +1605,7 @@ static bool d3d_frame(void *data, const void *frame,
    unsigned i = 0;
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+   runloop_t *runloop    = rarch_main_get_ptr();
 
    (void)i;
 
@@ -1705,7 +1707,7 @@ static bool d3d_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_MENU
-   if (g_runloop.is_menu 
+   if (runloop->is_menu 
          && driver.menu_ctx && driver.menu_ctx->frame)
       driver.menu_ctx->frame();
 

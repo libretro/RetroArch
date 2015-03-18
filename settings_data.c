@@ -381,11 +381,12 @@ static int setting_data_action_start_video_refresh_rate_auto(
       void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   runloop_t *runloop = rarch_main_get_ptr();
 
    if (!setting)
       return -1;
 
-   g_runloop.measure_data.frame_time_samples_count = 0;
+   runloop->measure_data.frame_time_samples_count = 0;
 
    return 0;
 }
@@ -1182,9 +1183,11 @@ static void setting_data_get_string_representation_st_float_video_refresh_rate_a
 
    if (video_monitor_fps_statistics(&video_refresh_rate, &deviation, &sample_points))
    {
+      runloop_t *runloop = rarch_main_get_ptr();
+
       snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
-      g_runloop.frames.video.current.menu.label.is_updated = true;
+      runloop->frames.video.current.menu.label.is_updated = true;
    }
    else
       strlcpy(type_str, "N/A", type_str_size);
