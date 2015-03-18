@@ -181,13 +181,11 @@ bool save_state(const char *path)
 bool load_state(const char *path)
 {
    unsigned i;
+   ssize_t size;
    unsigned num_blocks = 0;
-   bool ret = true;
    void *buf = NULL;
    struct sram_block *blocks = NULL;
-   ssize_t size;
-
-   ret = read_file(path, &buf, &size);
+   bool ret = read_file(path, &buf, &size);
 
    RARCH_LOG("Loading state: \"%s\".\n", path);
 
@@ -422,20 +420,16 @@ static bool load_content(const struct retro_subsystem_info *special,
 {
    unsigned i;
    bool ret = true;
-   struct string_list* additional_path_allocs = string_list_new();
    struct retro_game_info *info = (struct retro_game_info*)
       calloc(content->size, sizeof(*info));
 
    if (!info)
-   {
-      string_list_free(additional_path_allocs);
       return false;
-   }
 
    for (i = 0; i < content->size; i++)
    {
-      const char *path = content->elems[i].data;
-      int         attr = content->elems[i].attr.i;
+      const char *path     = content->elems[i].data;
+      int         attr     = content->elems[i].attr.i;
 
       bool need_fullpath   = attr & 2;
       bool require_content = attr & 4;
@@ -459,11 +453,17 @@ static bool load_content(const struct retro_subsystem_info *special,
       }
       else
       {
+         bool retval = false;
+         struct string_list* additional_path_allocs = string_list_new();
          RARCH_LOG("Content loading skipped. Implementation will"
                " load it on its own.\n");
 
-         if (!load_content_need_fullpath(&info[i], i,
-                  additional_path_allocs, need_fullpath, path))
+         retval = load_content_need_fullpath(&info[i], i,
+                  additional_path_allocs, need_fullpath, path);
+
+         string_list_free(additional_path_allocs);
+
+         if (!retval)
             goto end;
       }
    }
@@ -480,7 +480,6 @@ end:
    for (i = 0; i < content->size; i++)
       free((void*)info[i].data);
 
-   string_list_free(additional_path_allocs);
    if (info)
       free(info);
    return ret;
@@ -588,7 +587,10 @@ bool init_content_file(void)
       valid_ext = special ? special->roms[i].valid_extensions :
          g_extern.system.info.valid_extensions;
 
-      if (ext && !strcasecmp(ext, "zip"))
+      if (!ext)
+         continue;
+
+      if (!strcasecmp(ext, "zip"))
       {
          char temporary_content[PATH_MAX_LENGTH];
 
