@@ -92,8 +92,9 @@ void recording_dump_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
    struct ffemu_video_data ffemu_data = {0};
+   driver_t *driver = driver_get_ptr();
 
-   if (!driver.recording_data)
+   if (!driver->recording_data)
       return;
 
    ffemu_data.pitch   = pitch;
@@ -105,8 +106,8 @@ void recording_dump_frame(const void *data, unsigned width,
    {
       struct video_viewport vp = {0};
 
-      if (driver.video && driver.video->viewport_info)
-         driver.video->viewport_info(driver.video_data, &vp);
+      if (driver->video && driver->video->viewport_info)
+         driver->video->viewport_info(driver->video_data, &vp);
 
       if (!vp.width || !vp.height)
       {
@@ -132,8 +133,8 @@ void recording_dump_frame(const void *data, unsigned width,
       /* Big bottleneck.
        * Since we might need to do read-backs asynchronously,
        * it might take 3-4 times before this returns true. */
-      if (driver.video && driver.video->read_viewport)
-         if (!driver.video->read_viewport(driver.video_data,
+      if (driver->video && driver->video->read_viewport)
+         if (!driver->video->read_viewport(driver->video_data,
                   g_extern.record.gpu_buffer))
             return;
 
@@ -149,23 +150,25 @@ void recording_dump_frame(const void *data, unsigned width,
    if (!g_extern.record.gpu_buffer)
       ffemu_data.is_dupe = !data;
 
-   if (driver.recording && driver.recording->push_video)
-      driver.recording->push_video(driver.recording_data, &ffemu_data);
+   if (driver->recording && driver->recording->push_video)
+      driver->recording->push_video(driver->recording_data, &ffemu_data);
 }
 
 bool recording_deinit(void)
 {
-   if (!driver.recording_data || !driver.recording)
+   driver_t *driver = driver_get_ptr();
+
+   if (!driver->recording_data || !driver->recording)
       return false;
 
-   if (driver.recording->finalize)
-      driver.recording->finalize(driver.recording_data);
+   if (driver->recording->finalize)
+      driver->recording->finalize(driver->recording_data);
 
-   if (driver.recording->free)
-      driver.recording->free(driver.recording_data);
+   if (driver->recording->free)
+      driver->recording->free(driver->recording_data);
 
-   driver.recording_data = NULL;
-   driver.recording = NULL;
+   driver->recording_data = NULL;
+   driver->recording      = NULL;
 
    rarch_main_command(RARCH_CMD_GPU_RECORD_DEINIT);
 
@@ -183,6 +186,7 @@ bool recording_init(void)
 {
    struct ffemu_params params = {0};
    const struct retro_system_av_info *info = &g_extern.system.av_info;
+   driver_t *driver = driver_get_ptr();
 
    if (!g_extern.record.enable)
       return false;
@@ -219,12 +223,12 @@ bool recording_init(void)
    if (*g_extern.record.config)
       params.config = g_extern.record.config;
 
-   if (g_settings.video.gpu_record && driver.video->read_viewport)
+   if (g_settings.video.gpu_record && driver->video->read_viewport)
    {
       struct video_viewport vp = {0};
 
-      if (driver.video && driver.video->viewport_info)
-         driver.video->viewport_info(driver.video_data, &vp);
+      if (driver->video && driver->video->viewport_info)
+         driver->video->viewport_info(driver->video_data, &vp);
 
       if (!vp.width || !vp.height)
       {
@@ -295,7 +299,7 @@ bool recording_init(void)
          params.fb_width, params.fb_height,
          (unsigned)params.pix_fmt);
 
-   if (!ffemu_init_first(&driver.recording, &driver.recording_data, &params))
+   if (!ffemu_init_first(&driver->recording, &driver->recording_data, &params))
    {
       RARCH_ERR(RETRO_LOG_INIT_RECORDING_FAILED);
       rarch_main_command(RARCH_CMD_GPU_RECORD_DEINIT);

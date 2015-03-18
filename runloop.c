@@ -139,18 +139,20 @@ static INLINE bool check_is_oneshot(bool oneshot_pressed, bool rewind_pressed)
 static void check_fast_forward_button(bool fastforward_pressed,
       bool hold_pressed, bool old_hold_pressed)
 {
+   driver_t *driver = driver_get_ptr();
+
    /* To avoid continous switching if we hold the button down, we require
     * that the button must go from pressed to unpressed back to pressed 
     * to be able to toggle between then.
     */
    if (fastforward_pressed)
-      driver.nonblock_state = !driver.nonblock_state;
+      driver->nonblock_state = !driver->nonblock_state;
    else if (old_hold_pressed != hold_pressed)
-      driver.nonblock_state = hold_pressed;
+      driver->nonblock_state = hold_pressed;
    else
       return;
 
-   driver_set_nonblock_state(driver.nonblock_state);
+   driver_set_nonblock_state(driver->nonblock_state);
 }
 
 /**
@@ -564,6 +566,8 @@ static int do_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
+   driver_t *driver = driver_get_ptr();
+
    if (g_runloop.is_idle)
       return 1;
 
@@ -579,7 +583,7 @@ static int do_state_checks(
       set_volume(-0.5f);
 
 #ifdef HAVE_NETPLAY
-   if (driver.netplay_data)
+   if (driver->netplay_data)
       return do_netplay_state_checks(input,
             old_input, trigger_input);
 #endif
@@ -659,10 +663,11 @@ static INLINE int time_to_exit(retro_input_t input)
  **/
 static void rarch_update_frame_time(void)
 {
+   driver_t *driver = driver_get_ptr();
    retro_time_t curr_time = rarch_get_time_usec();
    retro_time_t delta     = curr_time - g_extern.system.frame_time_last;
-   bool is_locked_fps     = g_runloop.is_paused || driver.nonblock_state;
-   is_locked_fps         |= !!driver.recording_data;
+   bool is_locked_fps     = g_runloop.is_paused || driver->nonblock_state;
+   is_locked_fps         |= !!driver->recording_data;
 
    if (!g_extern.system.frame_time_last || is_locked_fps)
       delta = g_extern.system.frame_time.reference;
@@ -726,10 +731,11 @@ static bool check_block_hotkey(bool enable_hotkey)
       &g_settings.input.binds[0][RARCH_ENABLE_HOTKEY];
    static const struct retro_keybind *autoconf_bind = 
       &g_settings.input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
+   driver_t *driver = driver_get_ptr();
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
-   driver.block_hotkey = driver.block_input;
+   driver->block_hotkey = driver->block_input;
 
    // If we haven't bound anything to this, always allow hotkeys.
    use_hotkey_enable = bind->key != RETROK_UNKNOWN ||
@@ -739,7 +745,7 @@ static bool check_block_hotkey(bool enable_hotkey)
       autoconf_bind->joykey != NO_BTN ||
       autoconf_bind->joyaxis != AXIS_NONE;
 
-   driver.block_hotkey = driver.block_input ||
+   driver->block_hotkey = driver->block_input ||
       (use_hotkey_enable && !enable_hotkey);
 
    /* If we hold ENABLE_HOTKEY button, block all libretro input to allow 
@@ -780,14 +786,15 @@ static INLINE retro_input_t input_keys_pressed(void)
       g_settings.input.binds[15],
    };
    retro_input_t ret = 0;
+   driver_t *driver = driver_get_ptr();
 
-   if (!driver.input || !driver.input_data)
+   if (!driver->input || !driver->input_data)
       return 0;
 
    g_extern.turbo_count++;
 
-   driver.block_libretro_input = check_block_hotkey(
-         driver.input->key_pressed(driver.input_data,
+   driver->block_libretro_input = check_block_hotkey(
+         driver->input->key_pressed(driver->input_data,
             RARCH_ENABLE_HOTKEY));
 
    for (i = 0; i < g_settings.input.max_users; i++)
@@ -800,12 +807,12 @@ static INLINE retro_input_t input_keys_pressed(void)
       g_extern.turbo_frame_enable[i] = 0;
    }
 
-   if (!driver.block_libretro_input)
+   if (!driver->block_libretro_input)
    {
       for (i = 0; i < g_settings.input.max_users; i++)
       {
          g_extern.turbo_frame_enable[i] = 
-            driver.input->input_state(driver.input_data, binds, i,
+            driver->input->input_state(driver->input_data, binds, i,
                   RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
       }
    }
@@ -872,18 +879,19 @@ static int rarch_main_iterate_quit(void)
 static void rarch_main_iterate_linefeed_overlay(void)
 {
    static char prev_overlay_restore = false;
+   driver_t *driver = driver_get_ptr();
 
-   if (driver.osk_enable && !driver.keyboard_linefeed_enable)
+   if (driver->osk_enable && !driver->keyboard_linefeed_enable)
    {
-      driver.osk_enable    = false;
-      prev_overlay_restore = true;
+      driver->osk_enable    = false;
+      prev_overlay_restore  = true;
       rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
       return;
    }
-   else if (!driver.osk_enable && driver.keyboard_linefeed_enable)
+   else if (!driver->osk_enable && driver->keyboard_linefeed_enable)
    {
-      driver.osk_enable    = true;
-      prev_overlay_restore = false;
+      driver->osk_enable    = true;
+      prev_overlay_restore  = false;
       rarch_main_command(RARCH_CMD_OVERLAY_INIT);
       return;
    }
@@ -951,9 +959,10 @@ int rarch_main_iterate(void)
    retro_input_t old_input         = last_input;
    retro_input_t input             = input_keys_pressed();
    last_input                      = input;
+   driver_t *driver                = driver_get_ptr();
 
-   if (driver.flushing_input)
-      driver.flushing_input = (input) ? input_flush(&input) : false;
+   if (driver->flushing_input)
+      driver->flushing_input = (input) ? input_flush(&input) : false;
 
    trigger_input = input & ~old_input;
 
@@ -994,7 +1003,7 @@ int rarch_main_iterate(void)
    if (do_state_checks(input, old_input, trigger_input))
    {
       /* RetroArch has been paused */
-      driver.retro_ctx.poll_cb();
+      driver->retro_ctx.poll_cb();
       rarch_sleep(10);
 
       return 1;
@@ -1005,8 +1014,8 @@ int rarch_main_iterate(void)
 #endif
 
 #ifdef HAVE_NETPLAY
-   if (driver.netplay_data)
-      netplay_pre_frame((netplay_t*)driver.netplay_data);
+   if (driver->netplay_data)
+      netplay_pre_frame((netplay_t*)driver->netplay_data);
 #endif
 
    if (g_extern.bsv.movie)
@@ -1027,7 +1036,7 @@ int rarch_main_iterate(void)
             g_settings.input.analog_dpad_mode[i]);
    }
 
-   if ((g_settings.video.frame_delay > 0) && !driver.nonblock_state)
+   if ((g_settings.video.frame_delay > 0) && !driver->nonblock_state)
       rarch_sleep(g_settings.video.frame_delay);
 
 
@@ -1047,8 +1056,8 @@ int rarch_main_iterate(void)
       bsv_movie_set_frame_end(g_extern.bsv.movie);
 
 #ifdef HAVE_NETPLAY
-   if (driver.netplay_data)
-      netplay_post_frame((netplay_t*)driver.netplay_data);
+   if (driver->netplay_data)
+      netplay_post_frame((netplay_t*)driver->netplay_data);
 #endif
 
 #if defined(HAVE_THREADS)

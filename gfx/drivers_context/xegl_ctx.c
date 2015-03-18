@@ -144,6 +144,7 @@ static void gfx_ctx_xegl_check_window(void *data, bool *quit,
    XEvent event;
    unsigned new_width  = *width;
    unsigned new_height = *height;
+   driver_t *driver = driver_get_ptr();
 
    (void)frame_count;
 
@@ -187,7 +188,7 @@ static void gfx_ctx_xegl_check_window(void *data, bool *quit,
             break;
 
          case ButtonPress:
-            x_input_poll_wheel(driver.input_data, &event.xbutton, true);
+            x_input_poll_wheel(driver->input_data, &event.xbutton, true);
             break;
 
          case ButtonRelease:
@@ -453,6 +454,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    XVisualInfo temp = {0};
    XSetWindowAttributes swa = {0};
    XVisualInfo *vi = NULL;
+   driver_t *driver = driver_get_ptr();
 
    sa.sa_handler = egl_sighandler;
    sa.sa_flags   = SA_RESTART;
@@ -613,9 +615,9 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    if (!x11_create_input_context(g_dpy, g_win, &g_xim, &g_xic))
       goto error;
 
-   driver.display_type  = RARCH_DISPLAY_X11;
-   driver.video_display = (uintptr_t)g_dpy;
-   driver.video_window  = (uintptr_t)g_win;
+   driver->display_type  = RARCH_DISPLAY_X11;
+   driver->video_display = (uintptr_t)g_dpy;
+   driver->video_window  = (uintptr_t)g_win;
    g_true_full = true_full;
 
    return true;
@@ -727,13 +729,15 @@ static bool gfx_ctx_xegl_has_focus(void *data)
 
 static bool gfx_ctx_xegl_suppress_screensaver(void *data, bool enable)
 {
+   driver_t *driver = driver_get_ptr();
+
    (void)data;
    (void)enable;
 
-   if (driver.display_type != RARCH_DISPLAY_X11)
+   if (driver->display_type != RARCH_DISPLAY_X11)
       return false;
 
-   x11_suspend_screensaver(driver.video_window);
+   x11_suspend_screensaver(driver->video_window);
 
    return true;
 }

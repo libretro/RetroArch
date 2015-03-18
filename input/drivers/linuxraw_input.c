@@ -39,6 +39,7 @@ typedef struct linuxraw_input
 
 static void linuxraw_resetKbmd(void)
 {
+   driver_t *driver = driver_get_ptr();
    if (oldKbmd != 0xffff)
    {
       ioctl(0, KDSKBMODE, oldKbmd);
@@ -46,7 +47,7 @@ static void linuxraw_resetKbmd(void)
       oldKbmd = 0xffff;
    }
 
-   driver.stdin_claimed = false;
+   driver->stdin_claimed = false;
 }
 
 static void linuxraw_exitGracefully(int sig)
@@ -59,12 +60,13 @@ static void *linuxraw_input_init(void)
 {
    struct sigaction sa;
    linuxraw_input_t *linuxraw = NULL;
+   driver_t *driver = driver_get_ptr();
 
    /* Only work on terminals. */
    if (!isatty(0))
       return NULL;
 
-   if (driver.stdin_claimed)
+   if (driver->stdin_claimed)
    {
       RARCH_WARN("stdin is already used for content loading. Cannot use stdin for input.\n");
       return NULL;
@@ -119,7 +121,7 @@ static void *linuxraw_input_init(void)
 
    /* We need to disable use of stdin command interface if 
     * stdin is supposed to be used for input. */
-   driver.stdin_claimed = true; 
+   driver->stdin_claimed = true; 
 
    return linuxraw;
 }

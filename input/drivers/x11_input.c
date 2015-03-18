@@ -47,7 +47,8 @@ typedef struct x11_input
 
 static void *x_input_init(void)
 {
-   if (driver.display_type != RARCH_DISPLAY_X11)
+   driver_t *driver = driver_get_ptr();
+   if (driver->display_type != RARCH_DISPLAY_X11)
    {
       RARCH_ERR("Currently active window is not an X11 window. Cannot use this driver.\n");
       return NULL;
@@ -58,8 +59,8 @@ static void *x_input_init(void)
       return NULL;
 
    /* Borrow the active X window ... */
-   x11->display = (Display*)driver.video_display;
-   x11->win     = (Window)driver.video_window;
+   x11->display = (Display*)driver->video_display;
+   x11->win     = (Window)driver->video_window;
 
    x11->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
    input_keymaps_init_keyboard_lut(rarch_key_map_x11);
@@ -270,6 +271,7 @@ static void x_input_poll_mouse(x11_input_t *x11)
    Window root_win, child_win;
    int root_x, root_y, win_x, win_y;
    unsigned mask;
+   driver_t *driver = driver_get_ptr();
 
    x11->mouse_last_x = x11->mouse_x;
    x11->mouse_last_y = x11->mouse_y;
@@ -288,12 +290,12 @@ static void x_input_poll_mouse(x11_input_t *x11)
    x11->mouse_r  = mask & Button3Mask; 
 
    /* Somewhat hacky, but seem to do the job. */
-   if (x11->grab_mouse && driver.video->focus(driver.video_data))
+   if (x11->grab_mouse && driver->video->focus(driver->video_data))
    {
       struct video_viewport vp = {0};
 
-      if (driver.video && driver.video->viewport_info)
-         driver.video->viewport_info(driver.video_data, &vp);
+      if (driver->video && driver->video->viewport_info)
+         driver->video->viewport_info(driver->video_data, &vp);
       int mid_w = vp.full_width >> 1;
       int mid_h = vp.full_height >> 1;
 
@@ -329,8 +331,9 @@ void x_input_poll_wheel(void *data, XButtonEvent *event, bool latch)
 static void x_input_poll(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
+   driver_t *driver = driver_get_ptr();
 
-   if (driver.video->focus(driver.video_data))
+   if (driver->video->focus(driver->video_data))
       XQueryKeymap(x11->display, x11->state);
    else
       memset(x11->state, 0, sizeof(x11->state));

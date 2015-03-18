@@ -46,6 +46,11 @@ static char *g_auto_path = NULL;
 static char *g_driver = NULL;
 static unsigned g_meta_level = 0;
 
+driver_t *driver_get_ptr(void)
+{
+   return &driver;
+}
+
 static void print_help(void)
 {
    puts("=====================");

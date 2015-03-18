@@ -416,6 +416,7 @@ static void *xv_init(const video_info_t *video,
    XVisualInfo *visualinfo = NULL;
    XVisualInfo visualtemplate = {0};
    const struct retro_game_geometry *geom = NULL;
+   driver_t *driver = driver_get_ptr();
    xv_t *xv = (xv_t*)calloc(1, sizeof(*xv));
    if (!xv)
       return NULL;
@@ -558,9 +559,9 @@ static void *xv_init(const video_info_t *video,
    xv_set_nonblock_state(xv, !video->vsync);
    xv->focus = true;
 
-   driver.display_type  = RARCH_DISPLAY_X11;
-   driver.video_display = (uintptr_t)xv->display;
-   driver.video_window  = (Window)xv->window;
+   driver->display_type  = RARCH_DISPLAY_X11;
+   driver->video_display = (uintptr_t)xv->display;
+   driver->video_window  = (Window)xv->window;
 
    if (input && input_data)
    {
@@ -785,6 +786,7 @@ static bool xv_alive(void *data)
 {
    XEvent event;
    xv_t *xv = (xv_t*)data;
+   driver_t *driver = driver_get_ptr();
 
    while (XPending(xv->display))
    {
@@ -808,7 +810,7 @@ static bool xv_alive(void *data)
             break;
 
          case ButtonPress:
-            x_input_poll_wheel(driver.input_data, &event.xbutton, true);
+            x_input_poll_wheel(driver->input_data, &event.xbutton, true);
             break;
          case ButtonRelease:
             break;
@@ -838,10 +840,11 @@ static bool xv_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
    (void)enable;
+   driver_t *driver = driver_get_ptr();
 
-   if (driver.display_type == RARCH_DISPLAY_X11)
+   if (driver->display_type == RARCH_DISPLAY_X11)
    {
-      x11_suspend_screensaver(driver.video_window);
+      x11_suspend_screensaver(driver->video_window);
       return true;
    }
 

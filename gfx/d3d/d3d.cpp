@@ -508,6 +508,7 @@ static bool d3d_construct(d3d_video_t *d3d,
       void **input_data)
 {
    unsigned full_x, full_y;
+   driver_t *driver = driver_get_ptr();
 
    d3d->should_resize = false;
 #ifndef _XBOX
@@ -598,9 +599,9 @@ static bool d3d_construct(d3d_video_t *d3d,
          win_width, win_height,
          NULL, NULL, NULL, d3d);
 
-   driver.display_type  = RARCH_DISPLAY_WIN32;
-   driver.video_display = 0;
-   driver.video_window  = (uintptr_t)d3d->hWnd;
+   driver->display_type  = RARCH_DISPLAY_WIN32;
+   driver->video_display = 0;
+   driver->video_window  = (uintptr_t)d3d->hWnd;
 #endif
 
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->show_mouse)
@@ -691,12 +692,13 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    TODO: GL core contexts through ANGLE? */
    enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
    unsigned major = 9, minor = 0;
+   driver_t *driver = driver_get_ptr();
 
 #if defined(_XBOX1)
    api = GFX_CTX_DIRECT3D8_API;
    major = 8;
 #endif
-   return gfx_ctx_init_first(driver.video_data,
+   return gfx_ctx_init_first(driver->video_data,
          g_settings.video.context_driver,
          api, major, minor, false);
 }
@@ -705,11 +707,12 @@ static void *d3d_init(const video_info_t *info,
       const input_driver_t **input, void **input_data)
 {
    d3d_video_t *vid = NULL;
+   driver_t *driver = driver_get_ptr();
 
 #ifdef _XBOX
-   if (driver.video_data)
+   if (driver->video_data)
    {
-      d3d_video_t *vid = (d3d_video_t*)driver.video_data;
+      d3d_video_t *vid = (d3d_video_t*)driver->video_data;
 
       /* Reinitialize renderchain as we 
        * might have changed pixel formats.*/
@@ -717,13 +720,13 @@ static void *d3d_init(const video_info_t *info,
 
       if (input && input_data)
       {
-         *input = driver.input;
-         *input_data = driver.input_data;
+         *input = driver->input;
+         *input_data = driver->input_data;
       }
 
-      driver.video_data_own = true;
-      driver.input_data_own = true;
-      return driver.video_data;
+      driver->video_data_own = true;
+      driver->input_data_own = true;
+      return driver->video_data;
    }
 #endif
 
@@ -763,8 +766,8 @@ static void *d3d_init(const video_info_t *info,
    }
 
 #ifdef _XBOX
-   driver.video_data_own = true;
-   driver.input_data_own = true;
+   driver->video_data_own = true;
+   driver->input_data_own = true;
 #endif
 
    return vid;
@@ -1606,6 +1609,7 @@ static bool d3d_frame(void *data, const void *frame,
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    runloop_t *runloop    = rarch_main_get_ptr();
+   driver_t *driver      = driver_get_ptr();
 
    (void)i;
 
@@ -1708,8 +1712,8 @@ static bool d3d_frame(void *data, const void *frame,
 
 #ifdef HAVE_MENU
    if (runloop->is_menu 
-         && driver.menu_ctx && driver.menu_ctx->frame)
-      driver.menu_ctx->frame();
+         && driver->menu_ctx && driver->menu_ctx->frame)
+      driver->menu_ctx->frame();
 
 #ifdef _XBOX
    /* TODO - should be refactored. */

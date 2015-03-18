@@ -158,7 +158,10 @@ void texture_image_free(struct texture_image *img)
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
    D3DXIMAGE_INFO m_imageInfo;
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = NULL;
+   driver_t *driver = driver_get_ptr();
+   
+   d3d = (d3d_video_t*)driver->video_data;
 
    out_img->vertex_buf  = NULL;
 
@@ -355,9 +358,11 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
 #else
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
+   driver_t *driver = driver_get_ptr();
+
    /* This interface "leak" is very ugly. FIXME: Fix this properly ... */
    bool ret         = false;
-   bool use_rgba    = driver.gfx_use_rgba;
+   bool use_rgba    = driver->gfx_use_rgba;
    unsigned a_shift = 24;
    unsigned r_shift = use_rgba ? 0 : 16;
    unsigned g_shift = 8;

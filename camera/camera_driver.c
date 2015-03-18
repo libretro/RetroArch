@@ -116,9 +116,11 @@ const char* config_get_camera_driver_options(void)
 
 void find_camera_driver(void)
 {
+   driver_t *driver = driver_get_ptr();
    int i = find_driver_index("camera_driver", g_settings.camera.driver);
+
    if (i >= 0)
-      driver.camera = (const camera_driver_t*)camera_driver_find_handle(i);
+      driver->camera = (const camera_driver_t*)camera_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -130,9 +132,9 @@ void find_camera_driver(void)
        
       RARCH_WARN("Going to default to first camera driver...\n");
        
-      driver.camera = (const camera_driver_t*)camera_driver_find_handle(0);
+      driver->camera = (const camera_driver_t*)camera_driver_find_handle(0);
        
-      if (!driver.camera)
+      if (!driver->camera)
          rarch_fail(1, "find_camera_driver()");
    }
 }
@@ -147,10 +149,11 @@ void find_camera_driver(void)
  **/
 bool driver_camera_start(void)
 {
-   if (driver.camera && driver.camera_data && driver.camera->start)
+   driver_t *driver = driver_get_ptr();
+   if (driver->camera && driver->camera_data && driver->camera->start)
    {
       if (g_settings.camera.allow)
-         return driver.camera->start(driver.camera_data);
+         return driver->camera->start(driver->camera_data);
 
       rarch_main_msg_queue_push(
             "Camera is explicitly disabled.\n", 1, 180, false);
@@ -168,8 +171,9 @@ bool driver_camera_start(void)
  **/
 void driver_camera_stop(void)
 {
-   if (driver.camera && driver.camera->stop && driver.camera_data)
-      driver.camera->stop(driver.camera_data);
+   driver_t *driver = driver_get_ptr();
+   if (driver->camera && driver->camera->stop && driver->camera_data)
+      driver->camera->stop(driver->camera_data);
 }
 
 /**
@@ -182,21 +186,26 @@ void driver_camera_stop(void)
  **/
 void driver_camera_poll(void)
 {
-   if (driver.camera && driver.camera->poll && driver.camera_data)
-      driver.camera->poll(driver.camera_data,
+   driver_t *driver = driver_get_ptr();
+   if (driver->camera && driver->camera->poll && driver->camera_data)
+      driver->camera->poll(driver->camera_data,
             g_extern.system.camera_callback.frame_raw_framebuffer,
             g_extern.system.camera_callback.frame_opengl_texture);
 }
 
 void init_camera(void)
 {
-   /* Resource leaks will follow if camera is initialized twice. */
-   if (driver.camera_data)
+   driver_t *driver = driver_get_ptr();
+
+   if (driver->camera_data)
+   {
+      /* Resource leaks will follow if camera is initialized twice. */
       return;
+   }
 
    find_camera_driver();
 
-   driver.camera_data = driver.camera->init(
+   driver->camera_data = driver->camera->init(
          *g_settings.camera.device ? g_settings.camera.device : NULL,
          g_extern.system.camera_callback.caps,
          g_settings.camera.width ?
@@ -204,10 +213,10 @@ void init_camera(void)
          g_settings.camera.height ?
          g_settings.camera.height : g_extern.system.camera_callback.height);
 
-   if (!driver.camera_data)
+   if (!driver->camera_data)
    {
       RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
-      driver.camera_active = false;
+      driver->camera_active = false;
    }
 
    if (g_extern.system.camera_callback.initialized)
@@ -216,13 +225,15 @@ void init_camera(void)
 
 void uninit_camera(void)
 {
-   if (driver.camera_data && driver.camera)
+   driver_t *driver = driver_get_ptr();
+
+   if (driver->camera_data && driver->camera)
    {
       if (g_extern.system.camera_callback.deinitialized)
          g_extern.system.camera_callback.deinitialized();
 
-      if (driver.camera->free)
-         driver.camera->free(driver.camera_data);
+      if (driver->camera->free)
+         driver->camera->free(driver->camera_data);
    }
-   driver.camera_data = NULL;
+   driver->camera_data = NULL;
 }

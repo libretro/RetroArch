@@ -207,10 +207,11 @@ static void menu_action_setting_disp_set_label_shader_parameter(
    const struct video_shader_parameter *param = NULL;
    struct video_shader *shader = NULL;
 #endif
+   driver_t *driver = driver_get_ptr();
 
-   if (!driver.video_poke)
+   if (!driver->video_poke)
       return;
-   if (!driver.video_data)
+   if (!driver->video_data)
       return;
 
    *type_str = '\0';
@@ -493,6 +494,8 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
       char *path_buf, size_t path_buf_size)
 {
    unsigned width = 0, height = 0;
+   driver_t *driver = driver_get_ptr();
+
    *w = 19;
    *type_str = '\0';
 
@@ -501,10 +504,10 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
 
    strlcpy(path_buf, path, path_buf_size);
 
-   if (driver.video_data && driver.video_poke &&
-         driver.video_poke->get_video_output_size)
+   if (driver->video_data && driver->video_poke &&
+         driver->video_poke->get_video_output_size)
    {
-      driver.video_poke->get_video_output_size(driver.video_data,
+      driver->video_poke->get_video_output_size(driver->video_data,
             &width, &height);
       snprintf(type_str, type_str_size, "%ux%u", width, height);
    }

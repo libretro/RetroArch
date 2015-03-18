@@ -99,6 +99,7 @@ int menu_setting_handler(rarch_setting_t *setting, unsigned action)
 static int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound)
 {
+   driver_t *driver = driver_get_ptr();
    if (!setting)
       return -1;
 
@@ -107,11 +108,11 @@ static int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_PATH:
          if (action == MENU_ACTION_OK)
             menu_list_push_stack_refresh(
-                  driver.menu->menu_list,
+                  driver->menu->menu_list,
                   setting->default_value.string,
                   setting->name,
                   type,
-                  driver.menu->navigation.selection_ptr);
+                  driver->menu->navigation.selection_ptr);
          /* fall-through. */
       case ST_BOOL:
       case ST_INT:
@@ -132,17 +133,19 @@ static int menu_action_handle_setting(rarch_setting_t *setting,
 
 rarch_setting_t *menu_setting_find(const char *label)
 {
+   driver_t *driver = driver_get_ptr();
    return (rarch_setting_t*)setting_data_find_setting(
-         driver.menu->list_settings, label);
+         driver->menu->list_settings, label);
 }
 
 int menu_setting_set(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
    int ret = 0;
+   driver_t *driver = driver_get_ptr();
    rarch_setting_t *setting = menu_setting_find(
-         driver.menu->menu_list->selection_buf->list
-         [driver.menu->navigation.selection_ptr].label);
+         driver->menu->menu_list->selection_buf->list
+         [driver->menu->navigation.selection_ptr].label);
 
    if (!setting)
       return 0;

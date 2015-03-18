@@ -340,7 +340,9 @@ static INLINE void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "AUTOCONFIG DIR %s", dir);
    else
    {
-      if (driver.menu->defer_core)
+      driver_t *driver = driver_get_ptr();
+
+      if (driver->menu->defer_core)
          snprintf(title, sizeof_title, "CONTENT %s", dir);
       else
       {

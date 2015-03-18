@@ -693,16 +693,17 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
 
 static void gl_glsl_deinit(void)
 {
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
 
    if (!glsl)
       return;
 
    gl_glsl_destroy_resources(glsl);
 
-   if (driver.video_shader_data)
-      free(driver.video_shader_data);
-   driver.video_shader_data = NULL;
+   if (driver->video_shader_data)
+      free(driver->video_shader_data);
+   driver->video_shader_data = NULL;
 }
 
 static bool gl_glsl_init(void *data, const char *path)
@@ -712,6 +713,7 @@ static bool gl_glsl_init(void *data, const char *path)
    glsl_shader_data_t *glsl   = NULL;
    const char *stock_vertex   = NULL;
    const char *stock_fragment = NULL;
+   driver_t *driver = driver_get_ptr();
 
    (void)data;
 
@@ -913,7 +915,7 @@ static bool gl_glsl_init(void *data, const char *path)
       glGenBuffers(1, &glsl->glsl_vbo[i].vbo_secondary);
    }
 
-   driver.video_shader_data = glsl;
+   driver->video_shader_data = glsl;
 
    return true;
 
@@ -944,7 +946,8 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    const struct gl_tex_info *prev_info = (const struct gl_tex_info*)_prev_info;
    const struct gl_tex_info *fbo_info = (const struct gl_tex_info*)_fbo_info;
    struct glsl_attrib *attr = (struct glsl_attrib*)attribs;
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
 
    if (!glsl)
       return;
@@ -1132,7 +1135,8 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
 static bool gl_glsl_set_mvp(void *data, const math_matrix_4x4 *mat)
 {
    int loc;
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
 
    (void)data;
 
@@ -1161,7 +1165,8 @@ static bool gl_glsl_set_coords(const void *data)
    struct glsl_attrib *attr = NULL;
    const struct shader_uniforms *uni = NULL;
    const struct gl_coords *coords = (const struct gl_coords*)data;
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
 
    if (!glsl || !glsl->glsl_shader->modern || !coords)
    {
@@ -1257,7 +1262,8 @@ static bool gl_glsl_set_coords(const void *data)
 
 static void gl_glsl_use(void *data, unsigned idx)
 {
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
 
    (void)data;
 
@@ -1272,7 +1278,8 @@ static void gl_glsl_use(void *data, unsigned idx)
 
 static unsigned gl_glsl_num(void)
 {
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
    if (glsl && glsl->glsl_shader)
       return glsl->glsl_shader->passes;
    return 0;
@@ -1280,7 +1287,8 @@ static unsigned gl_glsl_num(void)
 
 static bool gl_glsl_filter_type(unsigned idx, bool *smooth)
 {
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
    if (glsl && idx 
          && (glsl->glsl_shader->pass[idx - 1].filter != RARCH_FILTER_UNSPEC)
       )
@@ -1293,7 +1301,8 @@ static bool gl_glsl_filter_type(unsigned idx, bool *smooth)
 
 static enum gfx_wrap_type gl_glsl_wrap_type(unsigned idx)
 {
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
    if (glsl && idx)
       return glsl->glsl_shader->pass[idx - 1].wrap;
    return RARCH_WRAP_BORDER;
@@ -1301,7 +1310,8 @@ static enum gfx_wrap_type gl_glsl_wrap_type(unsigned idx)
 
 static void gl_glsl_shader_scale(unsigned idx, struct gfx_fbo_scale *scale)
 {
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
    if (glsl && idx)
       *scale = glsl->glsl_shader->pass[idx - 1].fbo;
    else
@@ -1312,8 +1322,8 @@ static unsigned gl_glsl_get_prev_textures(void)
 {
    unsigned i, j;
    unsigned max_prev = 0;
-
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
 
    if (!glsl)
       return 0;
@@ -1328,7 +1338,8 @@ static unsigned gl_glsl_get_prev_textures(void)
 
 static bool gl_glsl_mipmap_input(unsigned idx)
 {
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
    if (glsl && idx)
       return glsl->glsl_shader->pass[idx - 1].mipmap;
    return false;
@@ -1336,7 +1347,8 @@ static bool gl_glsl_mipmap_input(unsigned idx)
 
 static struct video_shader *gl_glsl_get_current_shader(void)
 {
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
    if (!glsl)
       return NULL;
    return glsl->glsl_shader;

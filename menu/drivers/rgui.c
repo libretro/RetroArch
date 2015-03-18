@@ -355,6 +355,7 @@ static void rgui_render(void)
    const char *core_version = NULL;
    menu_handle_t *menu = menu_driver_resolve();
    runloop_t *runloop = rarch_main_get_ptr();
+   driver_t *driver = driver_get_ptr();
 
    if (!menu)
       return;
@@ -502,7 +503,7 @@ static void rgui_render(void)
       menu->msg_force = false;
    }
    else
-      message_queue = driver.current_msg;
+      message_queue = driver->current_msg;
 
    rgui_render_messagebox( message_queue);
 #endif
@@ -583,22 +584,23 @@ static void rgui_set_texture(void)
 {
    menu_handle_t *menu = menu_driver_resolve();
    runloop_t *runloop  = rarch_main_get_ptr();
+   driver_t *driver    = driver_get_ptr();
 
    if (!menu)
       return;
 
-   if (!driver.video_data)
+   if (!driver->video_data)
       return;
-   if (!driver.video_poke)
+   if (!driver->video_poke)
       return;
-   if (!driver.video_poke->set_texture_frame)
+   if (!driver->video_poke->set_texture_frame)
       return;
    if (!runloop->frames.video.current.menu.framebuf.dirty)
       return;
 
    runloop->frames.video.current.menu.framebuf.dirty = false;
 
-   driver.video_poke->set_texture_frame(driver.video_data,
+   driver->video_poke->set_texture_frame(driver->video_data,
          menu->frame_buf.data, false, menu->frame_buf.width, menu->frame_buf.height, 1.0f);
 }
 

@@ -109,10 +109,11 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
 {
    unsigned user, key;
    int16_t res = 0;
+   driver_t *driver = driver_get_ptr();
    
    (void)self;
 
-   if (!driver.input_data)
+   if (!driver->input_data)
       return PyBool_FromLong(0);
 
    if (!PyArg_ParseTuple(args, "II", &user, &key))
@@ -121,8 +122,8 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    if (user > MAX_USERS || user < 1 || key >= RARCH_FIRST_META_KEY)
       return NULL;
 
-   if (!driver.block_libretro_input)
-      res = driver.input->input_state(driver.input_data,
+   if (!driver->block_libretro_input)
+      res = driver->input->input_state(driver->input_data,
             py_binds, user - 1, RETRO_DEVICE_JOYPAD, 0, key);
    return PyBool_FromLong(res);
 }
@@ -131,10 +132,11 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
 {
    unsigned user, index, id;
    int16_t res = 0;
+   driver_t *driver = driver_get_ptr();
 
    (void)self;
 
-   if (!driver.input_data)
+   if (!driver->input_data)
       return PyBool_FromLong(0);
 
    if (!PyArg_ParseTuple(args, "III", &user, &index, &id))
@@ -143,7 +145,7 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
    if (user > MAX_USERS || user < 1 || index > 1 || id > 1)
       return NULL;
 
-   res = driver.input->input_state(driver.input_data,
+   res = driver->input->input_state(driver->input_data,
          py_binds, user - 1, RETRO_DEVICE_ANALOG, index, id);
    return PyFloat_FromDouble((double)res / 0x7fff);
 }

@@ -42,19 +42,20 @@ bool menu_display_update_pending(void)
  **/
 static void draw_frame(void)
 {
-   if (driver.video_data && driver.video_poke &&
-         driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data,
+   driver_t *driver = driver_get_ptr();
+   if (driver->video_data && driver->video_poke &&
+         driver->video_poke->set_texture_enable)
+      driver->video_poke->set_texture_enable(driver->video_data,
             true, false);
 
    if (!g_settings.menu.pause_libretro)
    {
       if (g_extern.main_is_init && !g_extern.libretro_dummy)
       {
-         bool block_libretro_input = driver.block_libretro_input;
-         driver.block_libretro_input = true;
+         bool block_libretro_input = driver->block_libretro_input;
+         driver->block_libretro_input = true;
          pretro_run();
-         driver.block_libretro_input = block_libretro_input;
+         driver->block_libretro_input = block_libretro_input;
          return;
       }
    }
@@ -70,13 +71,15 @@ static void draw_frame(void)
  **/
 static void menu_update_libretro_info(struct retro_system_info *info)
 {
+   driver_t *driver = driver_get_ptr();
+
 #ifndef HAVE_DYNAMIC
    retro_get_system_info(info);
 #endif
 
    rarch_main_command(RARCH_CMD_CORE_INFO_INIT);
-   if (driver.menu_ctx && driver.menu_ctx->context_reset)
-      driver.menu_ctx->context_reset();
+   if (driver->menu_ctx && driver->menu_ctx->context_reset)
+      driver->menu_ctx->context_reset();
 
    rarch_main_command(RARCH_CMD_LOAD_CORE_PERSIST);
 }
@@ -85,11 +88,12 @@ static void menu_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
+   driver_t *driver = driver_get_ptr();
     
    if (!wrap_args)
       return;
 
-   wrap_args->no_content    = driver.menu->load_no_content;
+   wrap_args->no_content    = driver->menu->load_no_content;
    if (!g_extern.has_set_verbosity)
       wrap_args->verbose       = g_extern.verbosity;
    wrap_args->config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
@@ -132,20 +136,22 @@ static void push_to_history_playlist(void)
  **/
 bool menu_load_content(void)
 {
-   if (*g_extern.fullpath || (driver.menu && driver.menu->load_no_content))
+   driver_t *driver = driver_get_ptr();
+
+   if (*g_extern.fullpath || (driver->menu && driver->menu->load_no_content))
       push_to_history_playlist();
 
    /* redraw menu frame */
-   if (driver.menu)
-      driver.menu->msg_force = true;
+   if (driver->menu)
+      driver->menu->msg_force = true;
 
-   if (driver.menu_ctx && driver.menu_ctx->entry_iterate) 
-      driver.menu_ctx->entry_iterate(MENU_ACTION_NOOP);
+   if (driver->menu_ctx && driver->menu_ctx->entry_iterate) 
+      driver->menu_ctx->entry_iterate(MENU_ACTION_NOOP);
 
    draw_frame();
 
    if (!(main_load_content(0, NULL, NULL, menu_environment_get,
-         driver.frontend_ctx->process_args)))
+         driver->frontend_ctx->process_args)))
    {
       char name[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
 
@@ -153,15 +159,15 @@ bool menu_load_content(void)
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
       rarch_main_msg_queue_push(msg, 1, 90, false);
 
-      if (driver.menu)
-         driver.menu->msg_force = true;
+      if (driver->menu)
+         driver->menu->msg_force = true;
 
       return false;
    }
 
    menu_update_libretro_info(&g_extern.menu.info);
 
-   menu_shader_manager_init(driver.menu);
+   menu_shader_manager_init(driver->menu);
 
    rarch_main_command(RARCH_CMD_HISTORY_INIT);
    rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
@@ -262,6 +268,7 @@ void menu_free_list(void *data)
 void menu_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
+   driver_t *driver = driver_get_ptr();
 
    if (!menu)
       return;
@@ -272,8 +279,8 @@ void menu_free(void *data)
    menu->shader = NULL;
 #endif
 
-   if (driver.menu_ctx && driver.menu_ctx->free)
-      driver.menu_ctx->free(menu);
+   if (driver->menu_ctx && driver->menu_ctx->free)
+      driver->menu_ctx->free(menu);
 
 #ifdef HAVE_LIBRETRODB
    menu_database_free(menu);
@@ -392,6 +399,7 @@ int menu_iterate(retro_input_t input,
    runloop_t *runloop = rarch_main_get_ptr();
 
    menu_handle_t *menu = menu_driver_resolve();
+   driver_t *driver    = driver_get_ptr();
 
    menu->cur_time = rarch_get_time_usec();
    menu->dt = menu->cur_time - menu->old_time;
@@ -407,14 +415,14 @@ int menu_iterate(retro_input_t input,
       last_clock_update = menu->cur_time;
    }
 
-   if (driver.menu_ctx && driver.menu_ctx->entry_iterate)
-      ret = driver.menu_ctx->entry_iterate(action);
+   if (driver->menu_ctx && driver->menu_ctx->entry_iterate)
+      ret = driver->menu_ctx->entry_iterate(action);
 
    if (runloop->is_menu && !runloop->is_idle)
       draw_frame();
 
-   if (driver.menu_ctx && driver.menu_ctx->set_texture)
-      driver.menu_ctx->set_texture();
+   if (driver->menu_ctx && driver->menu_ctx->set_texture)
+      driver->menu_ctx->set_texture();
 
    if (ret)
       return -1;

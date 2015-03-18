@@ -106,6 +106,7 @@ static void create_gl_context(HWND hwnd)
 {
    bool core_context;
    bool debug = g_extern.system.hw_render_callback.debug_context;
+   driver_t *driver = driver_get_ptr();
 
 #ifdef _WIN32
    dll_handle = LoadLibrary("OpenGL32.dll");
@@ -122,7 +123,7 @@ static void create_gl_context(HWND hwnd)
    if (g_hrc)
    {
       RARCH_LOG("[WGL]: Using cached GL context.\n");
-      driver.video_cache_context_ack = true;
+      driver->video_cache_context_ack = true;
    }
    else
    {
@@ -466,6 +467,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
    bool windowed_full;
    RECT rect   = {0};
    HMONITOR hm_to_use = NULL;
+   driver_t *driver = driver_get_ptr();
 
    monitor_info(&current_mon, &hm_to_use);
    mon_rect = current_mon.rcMonitor;
@@ -548,9 +550,9 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
 
    gfx_ctx_wgl_swap_interval(data, g_interval);
 
-   driver.display_type  = RARCH_DISPLAY_WIN32;
-   driver.video_display = 0;
-   driver.video_window  = (uintptr_t)g_hwnd;
+   driver->display_type  = RARCH_DISPLAY_WIN32;
+   driver->video_display = 0;
+   driver->video_window  = (uintptr_t)g_hwnd;
 
    return true;
 
@@ -561,6 +563,8 @@ error:
 
 static void gfx_ctx_wgl_destroy(void *data)
 {
+   driver_t *driver = driver_get_ptr();
+
    (void)data;
 
    if (g_hrc)
@@ -568,7 +572,7 @@ static void gfx_ctx_wgl_destroy(void *data)
       glFinish();
       wglMakeCurrent(NULL, NULL);
 
-      if (!driver.video_cache_context)
+      if (!driver->video_cache_context)
       {
          if (g_hw_hrc)
             wglDeleteContext(g_hw_hrc);

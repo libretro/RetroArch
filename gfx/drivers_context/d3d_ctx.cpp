@@ -70,6 +70,8 @@ static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
         WPARAM wParam, LPARAM lParam)
 {
+   driver_t *driver = driver_get_ptr();
+
     switch (message)
     {
 		case WM_CREATE:
@@ -95,13 +97,13 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 				unsigned new_height = HIWORD(lParam);
 
 				if (new_width && new_height)
-					d3d_resize(driver.video_data, new_width, new_height);
+					d3d_resize(driver->video_data, new_width, new_height);
 			}
 			return 0;
 		case WM_COMMAND:
          if (g_settings.ui.menubar_enable)
 			{
-				d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+				d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
 				HWND        d3dr = d3d->hWnd;
 				LRESULT      ret = win32_menu_loop(d3dr, wParam);
 			}
@@ -303,7 +305,8 @@ static void gfx_ctx_d3d_check_window(void *data, bool *quit,
 #ifdef _XBOX
 static HANDLE GetFocus(void)
 {
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   driver_t *driver = driver_get_ptr();
+   d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
    return d3d->hWnd;
 }
 #endif

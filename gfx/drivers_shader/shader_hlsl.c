@@ -90,7 +90,8 @@ typedef struct hlsl_shader_data
 
 void hlsl_set_proj_matrix(XMMATRIX rotation_value)
 {
-   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver->video_shader_data;
    if (hlsl)
       hlsl->prg[hlsl->active_idx].mvp_val = rotation_value;
 }
@@ -113,7 +114,8 @@ static void hlsl_set_params(void *data, unsigned width, unsigned height,
    const struct gl_tex_info *info = (const struct gl_tex_info*)_info;
    const struct gl_tex_info *prev_info = (const struct gl_tex_info*)_prev_info;
    const struct gl_tex_info *fbo_info = (const struct gl_tex_info*)_fbo_info;
-   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver->video_shader_data;
 
    if (!hlsl)
       return;
@@ -352,6 +354,7 @@ static bool hlsl_init(void *data, const char *path)
    d3d_video_t *d3d = (d3d_video_t*)data;
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)
 	   calloc(1, sizeof(hlsl_shader_data_t));
+   driver_t *driver = driver_get_ptr();
 
    if (!hlsl)
 	   return false;
@@ -373,7 +376,7 @@ static bool hlsl_init(void *data, const char *path)
    d3d_set_vertex_shader(d3d->dev, 1, hlsl->prg[1].vprg);
    d3d->dev->SetPixelShader(hlsl->prg[1].fprg);
 
-   driver.video_shader_data = hlsl;
+   driver->video_shader_data = hlsl;
 
    return true;
 
@@ -386,22 +389,24 @@ error:
 // Full deinit.
 static void hlsl_deinit(void)
 {
-   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver->video_shader_data;
    if (!hlsl)
       return;
 
    hlsl_deinit_state(hlsl);
 
-   if (driver.video_shader_data)
-	   free(driver.video_shader_data);
-   driver.video_shader_data = NULL;
+   if (driver->video_shader_data)
+	   free(driver->video_shader_data);
+   driver->video_shader_data = NULL;
 }
 
 static void hlsl_use(void *data, unsigned idx)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver->video_shader_data;
 
    if (hlsl && hlsl->prg[idx].vprg && hlsl->prg[idx].fprg)
    {
@@ -417,7 +422,8 @@ static void hlsl_use(void *data, unsigned idx)
 
 static unsigned hlsl_num(void)
 {
-   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver->video_shader_data;
    if (hlsl)
       return hlsl->cg_shader->passes;
    return 0;
@@ -425,7 +431,8 @@ static unsigned hlsl_num(void)
 
 static bool hlsl_filter_type(unsigned idx, bool *smooth)
 {
-   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver->video_shader_data;
    if (hlsl && idx
          && (hlsl->cg_shader->pass[idx - 1].filter != RARCH_FILTER_UNSPEC))
    {
@@ -437,7 +444,8 @@ static bool hlsl_filter_type(unsigned idx, bool *smooth)
 
 static void hlsl_shader_scale(unsigned idx, struct gfx_fbo_scale *scale)
 {
-   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver->video_shader_data;
    if (hlsl && idx)
       *scale = hlsl->cg_shader->pass[idx - 1].fbo;
    else
@@ -448,7 +456,8 @@ static bool hlsl_set_mvp(void *data, const math_matrix_4x4 *mat)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
-   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)driver->video_shader_data;
 
    if(hlsl && hlsl->prg[hlsl->active_idx].mvp)
    {

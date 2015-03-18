@@ -256,6 +256,7 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
 {
    D3DLOCKED_RECT d3dlr;
    d3d_video_t *d3d = (d3d_video_t*)data;
+   driver_t *driver = driver_get_ptr();
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
@@ -263,6 +264,6 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
             0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    }
 
-   d3d_texture_blit(driver.video_data, NULL, d3d->tex,
+   d3d_texture_blit(driver->video_data, NULL, d3d->tex,
          &d3dlr, frame, width, height, pitch);
 }

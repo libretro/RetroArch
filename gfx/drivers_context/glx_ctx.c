@@ -73,7 +73,8 @@ static void glx_sighandler(int sig)
 
 static Bool glx_wait_notify(Display *d, XEvent *e, char *arg)
 {
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
 
    (void)d;
    (void)e;
@@ -97,7 +98,8 @@ static void gfx_ctx_glx_destroy(void *data);
 
 static void gfx_ctx_glx_swap_interval(void *data, unsigned interval)
 {
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
 
    glx->g_interval = interval;
 
@@ -126,7 +128,8 @@ static void gfx_ctx_glx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    XEvent event;
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
    unsigned new_width = *width, new_height = *height;
 
    (void)frame_count;
@@ -169,7 +172,7 @@ static void gfx_ctx_glx_check_window(void *data, bool *quit,
                glx->g_has_focus = false;
             break;
          case ButtonPress:
-            x_input_poll_wheel(driver.input_data, &event.xbutton, true);
+            x_input_poll_wheel(driver->input_data, &event.xbutton, true);
             break;
          case ButtonRelease:
             break;
@@ -185,7 +188,8 @@ static void gfx_ctx_glx_check_window(void *data, bool *quit,
 
 static void gfx_ctx_glx_swap_buffers(void *data)
 {
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
    (void)data;
 
    if (glx->g_is_double)
@@ -203,11 +207,8 @@ static void gfx_ctx_glx_set_resize(void *data,
 static void gfx_ctx_glx_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
-   gfx_ctx_glx_data_t *glx = NULL;
-
-   (void)data;
-
-   glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
 
    if (video_monitor_get_fps(buf, sizeof(buf),
             buf_fps, sizeof(buf_fps)))
@@ -219,7 +220,8 @@ static void gfx_ctx_glx_update_window_title(void *data)
 static void gfx_ctx_glx_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
 
    if (!glx)
       return;
@@ -252,6 +254,8 @@ static void gfx_ctx_glx_get_video_size(void *data,
 
 static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
 {
+   driver_t *driver = driver_get_ptr();
+
    if (!glx)
       return;
 
@@ -259,9 +263,11 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
 
    if (glx->g_dpy && glx->g_ctx)
    {
+
       glFinish();
       glXMakeContextCurrent(glx->g_dpy, None, None, NULL);
-      if (!driver.video_cache_context)
+
+      if (!driver->video_cache_context)
       {
          if (glx->g_hw_ctx)
             glXDestroyContext(glx->g_dpy, glx->g_hw_ctx);
@@ -309,7 +315,7 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
       glx->g_should_reset_mode = false;
    }
 
-   if (!driver.video_cache_context && glx->g_dpy)
+   if (!driver->video_cache_context && glx->g_dpy)
    {
       XCloseDisplay(glx->g_dpy);
       glx->g_dpy = NULL;
@@ -340,6 +346,7 @@ static bool gfx_ctx_glx_init(void *data)
    int nelements, major, minor;
    GLXFBConfig *fbcs = NULL;
    gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)calloc(1, sizeof(gfx_ctx_glx_data_t));
+   driver_t *driver = driver_get_ptr();
 
    if (!glx)
       return false;
@@ -387,7 +394,7 @@ static bool gfx_ctx_glx_init(void *data)
    glx->g_fbc = fbcs[0];
    XFree(fbcs);
 
-   driver.video_context_data = glx;
+   driver->video_context_data = glx;
 
    return true;
 
@@ -411,7 +418,8 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    XVisualInfo *vi = NULL;
    XSetWindowAttributes swa = {0};
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
    struct sigaction sa = {{0}};
 
    sa.sa_handler = glx_sighandler;
@@ -572,7 +580,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    }
    else
    {
-      driver.video_cache_context_ack = true;
+      driver->video_cache_context_ack = true;
       RARCH_LOG("[GLX]: Using cached GL context.\n");
    }
 
@@ -623,9 +631,9 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    if (!x11_create_input_context(glx->g_dpy, glx->g_win, &glx->g_xim, &glx->g_xic))
       goto error;
 
-   driver.display_type  = RARCH_DISPLAY_X11;
-   driver.video_display = (uintptr_t)glx->g_dpy;
-   driver.video_window  = (uintptr_t)glx->g_win;
+   driver->display_type  = RARCH_DISPLAY_X11;
+   driver->video_display = (uintptr_t)glx->g_dpy;
+   driver->video_window  = (uintptr_t)glx->g_win;
    glx->g_true_full = true_full;
 
    return true;
@@ -644,7 +652,8 @@ error:
 
 static void gfx_ctx_glx_destroy(void *data)
 {
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
 
    if (!glx)
       return;
@@ -653,9 +662,9 @@ static void gfx_ctx_glx_destroy(void *data)
 
    ctx_glx_destroy_resources(glx);
 
-   if (driver.video_context_data)
-      free(driver.video_context_data);
-   driver.video_context_data = NULL;
+   if (driver->video_context_data)
+      free(driver->video_context_data);
+   driver->video_context_data = NULL;
 }
 
 static void gfx_ctx_glx_input_driver(void *data,
@@ -673,7 +682,8 @@ static bool gfx_ctx_glx_has_focus(void *data)
 {
    Window win;
    int rev;
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
 
    (void)data;
 
@@ -684,10 +694,11 @@ static bool gfx_ctx_glx_has_focus(void *data)
 
 static bool gfx_ctx_glx_suppress_screensaver(void *data, bool enable)
 {
-   if (driver.display_type != RARCH_DISPLAY_X11)
+   driver_t *driver = driver_get_ptr();
+   if (driver->display_type != RARCH_DISPLAY_X11)
       return false;
 
-   x11_suspend_screensaver(driver.video_window);
+   x11_suspend_screensaver(driver->video_window);
 
    return true;
 }
@@ -716,7 +727,8 @@ static bool gfx_ctx_glx_bind_api(void *data, enum gfx_ctx_api api,
 
 static void gfx_ctx_glx_show_mouse(void *data, bool state)
 {
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
 
    (void)data;
 
@@ -725,7 +737,8 @@ static void gfx_ctx_glx_show_mouse(void *data, bool state)
 
 static void gfx_ctx_glx_bind_hw_render(void *data, bool enable)
 {
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
 
    if (!glx)
       return;

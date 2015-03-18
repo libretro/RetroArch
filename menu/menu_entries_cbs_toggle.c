@@ -201,13 +201,15 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
 {
    menu_file_list_cbs_t *cbs = NULL;
    unsigned push_list = 0;
+   driver_t *driver = driver_get_ptr();
    menu_handle_t *menu = menu_driver_resolve();
    if (!menu)
       return -1;
 
    if (file_list_get_size(menu->menu_list->menu_stack) == 1)
    {
-      if (!strcmp(driver.menu_ctx->ident, "xmb"))
+
+      if (!strcmp(driver->menu_ctx->ident, "xmb"))
       {
          menu->navigation.selection_ptr = 0;
          switch (action)
@@ -235,8 +237,8 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
    switch (push_list)
    {
       case 1:
-         if (driver.menu_ctx->list_cache)
-            driver.menu_ctx->list_cache(true, action);
+         if (driver->menu_ctx->list_cache)
+            driver->menu_ctx->list_cache(true, action);
 
          if (cbs && cbs->action_content_list_switch)
             return cbs->action_content_list_switch(
@@ -409,6 +411,8 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
 static int action_toggle_video_resolution(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
+   driver_t *driver = driver_get_ptr();
+
 #if defined(__CELLOS_LV2__)
    switch (action)
    {
@@ -436,17 +440,17 @@ static int action_toggle_video_resolution(unsigned type, const char *label,
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         if (driver.video_data && driver.video_poke &&
-               driver.video_poke->get_video_output_prev)
+         if (driver->video_data && driver->video_poke &&
+               driver->video_poke->get_video_output_prev)
          {
-            driver.video_poke->get_video_output_prev(driver.video_data);
+            driver->video_poke->get_video_output_prev(driver->video_data);
          }
          break;
       case MENU_ACTION_RIGHT:
-         if (driver.video_data && driver.video_poke &&
-               driver.video_poke->get_video_output_next)
+         if (driver->video_data && driver->video_poke &&
+               driver->video_poke->get_video_output_next)
          {
-            driver.video_poke->get_video_output_next(driver.video_data);
+            driver->video_poke->get_video_output_next(driver->video_data);
          }
          break;
    }

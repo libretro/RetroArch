@@ -2967,6 +2967,7 @@ static void general_write_handler(void *data)
 {
    unsigned rarch_cmd = RARCH_CMD_NONE;
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   driver_t *driver = driver_get_ptr();
 
    if (!setting)
       return;
@@ -3005,9 +3006,9 @@ static void general_write_handler(void *data)
    }
    else if (!strcmp(setting->name, "video_smooth"))
    {
-      if (driver.video_data && driver.video_poke
-            && driver.video_poke->set_filtering)
-         driver.video_poke->set_filtering(driver.video_data,
+      if (driver->video_data && driver->video_poke
+            && driver->video_poke->set_filtering)
+         driver->video_poke->set_filtering(driver->video_data,
                1, g_settings.video.smooth);
    }
    else if (!strcmp(setting->name, "pal60_enable"))
@@ -3019,8 +3020,8 @@ static void general_write_handler(void *data)
    }
    else if (!strcmp(setting->name, "video_rotation"))
    {
-      if (driver.video && driver.video->set_rotation)
-         driver.video->set_rotation(driver.video_data,
+      if (driver->video && driver->video->set_rotation)
+         driver->video->set_rotation(driver->video_data,
                (*setting->value.unsigned_integer +
                 g_extern.system.rotation) % 4);
    }
@@ -3060,7 +3061,7 @@ static void general_write_handler(void *data)
       g_settings.audio.max_timing_skew = *setting->value.fraction;
    else if (!strcmp(setting->name, "video_refresh_rate_auto"))
    {
-      if (driver.video && driver.video_data)
+      if (driver->video && driver->video_data)
       {
          driver_set_refresh_rate(*setting->value.fraction);
 
@@ -3282,6 +3283,7 @@ static bool setting_data_append_list_main_menu_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   driver_t *driver = driver_get_ptr();
 
    START_GROUP(group_info, "Main Menu");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
@@ -3320,7 +3322,7 @@ static bool setting_data_append_list_main_menu_options(
             subgroup_info.name);
    }
    if (
-         driver.menu 
+         driver->menu 
          && g_extern.core_info 
          && core_info_list_num_info_files(g_extern.core_info))
    {

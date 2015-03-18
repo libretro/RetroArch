@@ -87,7 +87,8 @@ unsigned menu_texture_load(void *data,
    if (g_settings.video.threaded
          && !g_extern.system.hw_render_callback.context_type)
    {
-      thread_video_t *thr = (thread_video_t*)driver.video_data;
+      driver_t     *driver = driver_get_ptr();
+      thread_video_t *thr  = (thread_video_t*)driver->video_data;
 
       if (!thr)
          return 0;

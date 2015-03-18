@@ -239,6 +239,7 @@ static int rarch_main_data_http_iterate_poll(http_handle_t *http)
 static int cb_image_menu_wallpaper_upload(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
+   driver_t *driver = driver_get_ptr();
 
    if (!nbio || !data)
       return -1;
@@ -247,8 +248,8 @@ static int cb_image_menu_wallpaper_upload(void *data, size_t len)
          nbio->image.processing_final_state == IMAGE_PROCESS_ERROR_END)
       return -1;
 
-   if (driver.menu_ctx && driver.menu_ctx->load_background)
-      driver.menu_ctx->load_background(&nbio->image.ti);
+   if (driver->menu_ctx && driver->menu_ctx->load_background)
+      driver->menu_ctx->load_background(&nbio->image.ti);
 
    texture_image_free(&nbio->image.ti);
 
@@ -591,24 +592,26 @@ static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
 #ifdef HAVE_MENU
 static void rarch_main_data_rdl_iterate(void)
 {
-   if (!driver.menu->rdl)
+   driver_t *driver = driver_get_ptr();
+
+   if (!driver->menu->rdl)
       return;
 
-   if (driver.menu->rdl->blocking)
+   if (driver->menu->rdl->blocking)
    {
       /* Do nonblocking I/O transfers here. */
       return;
    }
 
 #ifdef HAVE_LIBRETRODB
-   if (!driver.menu->rdl->iterating)
+   if (!driver->menu->rdl->iterating)
    {
-      database_info_write_rdl_free(driver.menu->rdl);
-      driver.menu->rdl = NULL;
+      database_info_write_rdl_free(driver->menu->rdl);
+      driver->menu->rdl = NULL;
       return;
    }
 
-   database_info_write_rdl_iterate(driver.menu->rdl);
+   database_info_write_rdl_iterate(driver->menu->rdl);
 #endif
 
 }
@@ -675,8 +678,9 @@ static void rarch_main_data_http_iterate(http_handle_t *http)
 
 static void rarch_main_data_db_iterate(void)
 {
+   driver_t *driver = driver_get_ptr();
 #ifdef HAVE_MENU
-   if (driver.menu && driver.menu->rdl)
+   if (driver->menu && driver->menu->rdl)
       rarch_main_data_rdl_iterate();
 #endif
 }
@@ -685,30 +689,32 @@ static void rarch_main_data_db_iterate(void)
 static void rarch_main_data_overlay_iterate(void)
 {
    runloop_t *runloop = rarch_main_get_ptr();
+   driver_t  *driver  = driver_get_ptr();
+
    if (runloop->is_idle)
       return;
-   if (!driver.overlay)
+   if (!driver->overlay)
       return;
 
-   switch (driver.overlay->state)
+   switch (driver->overlay->state)
    {
       case OVERLAY_STATUS_NONE:
       case OVERLAY_STATUS_ALIVE:
          break;
       case OVERLAY_STATUS_DEFERRED_LOAD:
-         input_overlay_load_overlays(driver.overlay);
+         input_overlay_load_overlays(driver->overlay);
          break;
       case OVERLAY_STATUS_DEFERRED_LOADING:
-         input_overlay_load_overlays_iterate(driver.overlay);
+         input_overlay_load_overlays_iterate(driver->overlay);
          break;
       case OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE:
-         input_overlay_load_overlays_resolve_iterate(driver.overlay);
+         input_overlay_load_overlays_resolve_iterate(driver->overlay);
          break;
       case OVERLAY_STATUS_DEFERRED_DONE:
-         input_overlay_new_done(driver.overlay);
+         input_overlay_new_done(driver->overlay);
          break;
       case OVERLAY_STATUS_DEFERRED_ERROR:
-         input_overlay_free(driver.overlay);
+         input_overlay_free(driver->overlay);
          break;
       default:
          break;

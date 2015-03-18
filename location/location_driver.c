@@ -112,9 +112,11 @@ const char* config_get_location_driver_options(void)
 
 void find_location_driver(void)
 {
+   driver_t *driver = driver_get_ptr();
    int i = find_driver_index("location_driver", g_settings.location.driver);
+
    if (i >= 0)
-      driver.location = (const location_driver_t*)location_driver_find_handle(i);
+      driver->location = (const location_driver_t*)location_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -126,9 +128,9 @@ void find_location_driver(void)
        
       RARCH_WARN("Going to default to first location driver...\n");
        
-      driver.location = (const location_driver_t*)location_driver_find_handle(0);
+      driver->location = (const location_driver_t*)location_driver_find_handle(0);
 
-      if (!driver.location)
+      if (!driver->location)
          rarch_fail(1, "find_location_driver()");
    }
 }
@@ -143,10 +145,11 @@ void find_location_driver(void)
  **/
 bool driver_location_start(void)
 {
-   if (driver.location && driver.location_data && driver.location->start)
+   driver_t *driver = driver_get_ptr();
+   if (driver->location && driver->location_data && driver->location->start)
    {
       if (g_settings.location.allow)
-         return driver.location->start(driver.location_data);
+         return driver->location->start(driver->location_data);
 
       rarch_main_msg_queue_push("Location is explicitly disabled.\n", 1, 180, true);
    }
@@ -163,8 +166,9 @@ bool driver_location_start(void)
  **/
 void driver_location_stop(void)
 {
-   if (driver.location && driver.location->stop && driver.location_data)
-      driver.location->stop(driver.location_data);
+   driver_t *driver = driver_get_ptr();
+   if (driver->location && driver->location->stop && driver->location_data)
+      driver->location->stop(driver->location_data);
 }
 
 /**
@@ -178,9 +182,10 @@ void driver_location_stop(void)
 void driver_location_set_interval(unsigned interval_msecs,
       unsigned interval_distance)
 {
-   if (driver.location && driver.location->set_interval
-         && driver.location_data)
-      driver.location->set_interval(driver.location_data,
+   driver_t *driver = driver_get_ptr();
+   if (driver->location && driver->location->set_interval
+         && driver->location_data)
+      driver->location->set_interval(driver->location_data,
             interval_msecs, interval_distance);
 }
 
@@ -200,9 +205,10 @@ void driver_location_set_interval(unsigned interval_msecs,
 bool driver_location_get_position(double *lat, double *lon,
       double *horiz_accuracy, double *vert_accuracy)
 {
-   if (driver.location && driver.location->get_position
-         && driver.location_data)
-      return driver.location->get_position(driver.location_data,
+   driver_t *driver = driver_get_ptr();
+   if (driver->location && driver->location->get_position
+         && driver->location_data)
+      return driver->location->get_position(driver->location_data,
             lat, lon, horiz_accuracy, vert_accuracy);
 
    *lat = 0.0;
@@ -214,18 +220,19 @@ bool driver_location_get_position(double *lat, double *lon,
 
 void init_location(void)
 {
+   driver_t *driver = driver_get_ptr();
    /* Resource leaks will follow if location interface is initialized twice. */
-   if (driver.location_data)
+   if (driver->location_data)
       return;
 
    find_location_driver();
 
-   driver.location_data = driver.location->init();
+   driver->location_data = driver->location->init();
 
-   if (!driver.location_data)
+   if (!driver->location_data)
    {
       RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
-      driver.location_active = false;
+      driver->location_active = false;
    }
 
    if (g_extern.system.location_callback.initialized)
@@ -234,13 +241,14 @@ void init_location(void)
 
 void uninit_location(void)
 {
-   if (driver.location_data && driver.location)
+   driver_t *driver = driver_get_ptr();
+   if (driver->location_data && driver->location)
    {
       if (g_extern.system.location_callback.deinitialized)
          g_extern.system.location_callback.deinitialized();
 
-      if (driver.location->free)
-         driver.location->free(driver.location_data);
+      if (driver->location->free)
+         driver->location->free(driver->location_data);
    }
-   driver.location_data = NULL;
+   driver->location_data = NULL;
 }

@@ -393,7 +393,7 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info);
  **/
 int find_driver_index(const char * label, const char *drv);
 
-extern driver_t driver;
+driver_t *driver_get_ptr(void);
   
 #ifdef __cplusplus
 }

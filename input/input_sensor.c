@@ -29,18 +29,22 @@
 bool input_sensor_set_state(unsigned port,
       enum retro_sensor_action action, unsigned rate)
 {
-   if (driver.input && driver.input_data &&
-         driver.input->set_sensor_state)
-      return driver.input->set_sensor_state(driver.input_data,
+   driver_t *driver = driver_get_ptr();
+
+   if (driver->input && driver->input_data &&
+         driver->input->set_sensor_state)
+      return driver->input->set_sensor_state(driver->input_data,
             port, action, rate);
    return false;
 }
 
 float input_sensor_get_input(unsigned port, unsigned id)
 {
-   if (driver.input && driver.input_data &&
-         driver.input->get_sensor_input)
-      return driver.input->get_sensor_input(driver.input_data,
+   driver_t *driver = driver_get_ptr();
+
+   if (driver->input && driver->input_data &&
+         driver->input->get_sensor_input)
+      return driver->input->get_sensor_input(driver->input_data,
             port, id);
    return 0.0f;
 }

@@ -139,17 +139,18 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
 static void menu_list_destroy(file_list_t *list)
 {
    unsigned i;
+   driver_t *driver = driver_get_ptr();
 
    if (!list)
       return;
 
-   if (!driver.menu_ctx)
+   if (!driver->menu_ctx)
       goto end;
 
    for (i = 0; i < list->size; i++)
    {
-      if (driver.menu_ctx->list_delete)
-         driver.menu_ctx->list_delete(list, i, list->size);
+      if (driver->menu_ctx->list_delete)
+         driver->menu_ctx->list_delete(list, i, list->size);
       menu_common_list_delete(list, i, list->size);
    }
 
@@ -279,14 +280,15 @@ void menu_list_flush_stack_by_needle(menu_list_t *list,
 void menu_list_pop_stack(menu_list_t *list)
 {
    menu_handle_t *menu = menu_driver_resolve();
+   driver_t *driver = driver_get_ptr();
    if (!menu || !list)
       return;
 
    if (file_list_get_size(list->menu_stack) <= 1)
       return;
 
-   if (driver.menu_ctx->list_cache)
-      driver.menu_ctx->list_cache(false, 0);
+   if (driver->menu_ctx->list_cache)
+      driver->menu_ctx->list_cache(false, 0);
 
    menu_list_pop(list->menu_stack, &menu->navigation.selection_ptr);
    menu->need_refresh = true;
@@ -315,37 +317,39 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
 
 void menu_list_pop(file_list_t *list, size_t *directory_ptr)
 {
-   if (!driver.menu_ctx)
+   driver_t *driver = driver_get_ptr();
+   if (!driver->menu_ctx)
       goto end;
 
    if (list->size != 0)
    {
       size_t list_size = list->size - 1;
 
-      if (driver.menu_ctx->list_delete)
-         driver.menu_ctx->list_delete(list, list_size, list_size);
+      if (driver->menu_ctx->list_delete)
+         driver->menu_ctx->list_delete(list, list_size, list_size);
       menu_common_list_delete(list, list_size, list_size);
    }
 
 end:
    file_list_pop(list, directory_ptr);
 
-   if (!driver.menu_ctx)
+   if (!driver->menu_ctx)
       return;
 
-   if (driver.menu_ctx->list_set_selection)
-      driver.menu_ctx->list_set_selection(list);
+   if (driver->menu_ctx->list_set_selection)
+      driver->menu_ctx->list_set_selection(list);
 
    menu_common_list_set_selection(list);
 }
 
 void menu_list_clear(file_list_t *list)
 {
-   if (!driver.menu_ctx)
+   driver_t *driver = driver_get_ptr();
+   if (!driver->menu_ctx)
       goto end;
 
-   if (driver.menu_ctx->list_clear)
-      driver.menu_ctx->list_clear(list);
+   if (driver->menu_ctx->list_clear)
+      driver->menu_ctx->list_clear(list);
 
 end:
    menu_common_list_clear(list);
@@ -355,11 +359,12 @@ static void menu_list_insert(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr)
 {
-   if (!driver.menu_ctx)
+   driver_t *driver = driver_get_ptr();
+   if (!driver->menu_ctx)
       return;
 
-   if (driver.menu_ctx->list_insert)
-      driver.menu_ctx->list_insert(list, path, label, list->size - 1);
+   if (driver->menu_ctx->list_insert)
+      driver->menu_ctx->list_insert(list, path, label, list->size - 1);
 
    menu_common_list_insert(list, path, label, type, list->size - 1);
 }
@@ -399,13 +404,14 @@ int menu_list_push_stack_refresh(menu_list_t *list, const char *path, const char
       unsigned type, size_t directory_ptr)
 {
    menu_handle_t *menu = menu_driver_resolve();
+   driver_t *driver = driver_get_ptr();
    if (!menu)
       return -1;
    if (!list)
       return -1;
 
-   if (driver.menu_ctx->list_cache)
-      driver.menu_ctx->list_cache(false, 0);
+   if (driver->menu_ctx->list_cache)
+      driver->menu_ctx->list_cache(false, 0);
 
    menu_list_push_stack(list, path, label, type, directory_ptr);
    menu_navigation_clear(&menu->navigation, true);
@@ -435,6 +441,7 @@ int menu_list_populate_generic(file_list_t *list, const char *path,
       const char *label, unsigned type)
 {
    menu_handle_t *menu = menu_driver_resolve();
+   driver_t *driver = driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -444,8 +451,8 @@ int menu_list_populate_generic(file_list_t *list, const char *path,
    menu_entries_build_scroll_indices(list);
    menu_entries_refresh(list);
 
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(path, label, type);
+   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
+      driver->menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }

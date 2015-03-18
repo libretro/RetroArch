@@ -71,11 +71,12 @@ const shader_backend_t *shader_ctx_init_first(void)
 
 struct video_shader *video_shader_driver_get_current_shader(void)
 {
-   if (!driver.video_poke)
+   driver_t *driver = driver_get_ptr();
+   if (!driver->video_poke)
       return NULL;
-   if (!driver.video_data)
+   if (!driver->video_data)
       return NULL;
-   if (!driver.video_poke->get_current_shader)
+   if (!driver->video_poke->get_current_shader)
       return NULL;
-   return driver.video_poke->get_current_shader(driver.video_data);
+   return driver->video_poke->get_current_shader(driver->video_data);
 }

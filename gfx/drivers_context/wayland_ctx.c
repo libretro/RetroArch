@@ -83,8 +83,9 @@ static void shell_surface_handle_configure(void *data,
       struct wl_shell_surface *shell_surface,
       uint32_t edges, int32_t width, int32_t height)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    (void)data;
    (void)shell_surface;
@@ -114,8 +115,9 @@ static const struct wl_shell_surface_listener shell_surface_listener = {
 static void registry_handle_global(void *data, struct wl_registry *reg,
       uint32_t id, const char *interface, uint32_t version)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    (void)data;
    (void)version;
@@ -236,8 +238,9 @@ static void egl_report_error(void)
 
 static void gfx_ctx_wl_swap_interval(void *data, unsigned interval)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    (void)data;
 
@@ -260,8 +263,9 @@ static void gfx_ctx_wl_swap_interval(void *data, unsigned interval)
 static void flush_wayland_fd(void)
 {
    struct pollfd fd = {0};
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    wl_display_dispatch_pending(wl->g_dpy);
    wl_display_flush(wl->g_dpy);
@@ -311,8 +315,9 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
 
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    (void)data;
 
@@ -321,8 +326,9 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 
 static void gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    (void)data;
 
@@ -332,8 +338,9 @@ static void gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 static void gfx_ctx_wl_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    (void)data;
 
@@ -348,8 +355,9 @@ static void gfx_ctx_wl_update_window_title(void *data)
 static void gfx_ctx_wl_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    (void)data;
 
@@ -399,6 +407,7 @@ static bool gfx_ctx_wl_init(void *data)
    EGLint egl_major = 0, egl_minor = 0;
    EGLint num_configs;
    const EGLint *attrib_ptr;
+   driver_t *driver = driver_get_ptr();
 
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
       calloc(1, sizeof(gfx_ctx_wayland_data_t));
@@ -437,7 +446,7 @@ static bool gfx_ctx_wl_init(void *data)
       goto error;
    }
 
-   driver.video_context_data = wl;
+   driver->video_context_data = wl;
 
    wl->g_registry = wl_display_get_registry(wl->g_dpy);
    wl_registry_add_listener(wl->g_registry, &registry_listener, NULL);
@@ -493,9 +502,9 @@ error:
    if (wl)
       free(wl);
 
-   if (driver.video_context_data)
-      free(driver.video_context_data);
-   driver.video_context_data = NULL;
+   if (driver->video_context_data)
+      free(driver->video_context_data);
+   driver->video_context_data = NULL;
 
    return false;
 }
@@ -562,8 +571,9 @@ static EGLint *egl_fill_attribs(EGLint *attr)
 
 static void gfx_ctx_wl_destroy(void *data)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    (void)data;
 
@@ -572,17 +582,18 @@ static void gfx_ctx_wl_destroy(void *data)
 
    gfx_ctx_wl_destroy_resources(wl);
 
-   if (driver.video_context_data)
-      free(driver.video_context_data);
-   driver.video_context_data = NULL;
+   if (driver->video_context_data)
+      free(driver->video_context_data);
+   driver->video_context_data = NULL;
 }
 
 static bool gfx_ctx_wl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
    struct sigaction sa = {{0}};
 
    sa.sa_handler = sighandler;
@@ -714,8 +725,9 @@ static bool gfx_ctx_wl_bind_api(void *data,
 
 static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    (void)data;
 
@@ -843,8 +855,9 @@ static const struct wl_pointer_listener pointer_listener = {
 static void seat_handle_capabilities(void *data,
 struct wl_seat *seat, unsigned caps)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !wl->g_wl_keyboard)
    {

@@ -280,8 +280,9 @@ static void state_tracker_update_input(state_tracker_t *tracker)
       g_settings.input.binds[0],
       g_settings.input.binds[1],
    };
+   driver_t *driver = driver_get_ptr();
 
-   if (!driver.input)
+   if (!driver->input)
       return;
 
    for (i = 0; i < 2; i++)
@@ -291,15 +292,15 @@ static void state_tracker_update_input(state_tracker_t *tracker)
       input_push_analog_dpad(g_settings.input.autoconf_binds[i],
             g_settings.input.analog_dpad_mode[i]);
 
-   if (!driver.block_libretro_input)
+   if (!driver->block_libretro_input)
    {
       for (i = 4; i < 16; i++)
       {
-         state[0] |= (driver.input->input_state(
-                  driver.input_data, binds, 0, 
+         state[0] |= (driver->input->input_state(
+                  driver->input_data, binds, 0, 
                   RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
-         state[1] |= (driver.input->input_state(
-                  driver.input_data, binds, 1, 
+         state[1] |= (driver->input->input_state(
+                  driver->input_data, binds, 1, 
                   RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
       }
    }

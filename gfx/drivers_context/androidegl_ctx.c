@@ -41,8 +41,10 @@ static bool g_es3;
 
 static void android_gfx_ctx_set_swap_interval(void *data, unsigned interval)
 {
-   gfx_ctx_android_data_t *android = (gfx_ctx_android_data_t*)
-      driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_android_data_t *android = NULL;
+   
+   android = (gfx_ctx_android_data_t*)driver->video_context_data;
 
    (void)data;
    if (!android)
@@ -84,8 +86,10 @@ static void android_gfx_ctx_destroy_resources(gfx_ctx_android_data_t *android)
 
 static void android_gfx_ctx_destroy(void *data)
 {
-   gfx_ctx_android_data_t *android = (gfx_ctx_android_data_t*)
-      driver.video_context_data;
+   driver_t *driver = driver_get_ptr;
+   gfx_ctx_android_data_t *android = NULL;
+   
+   android = (gfx_ctx_android_data_t*)driver->video_context_data;
    (void)data;
 
    if (!android)
@@ -93,17 +97,20 @@ static void android_gfx_ctx_destroy(void *data)
 
    android_gfx_ctx_destroy_resources(android);
 
-   if (driver.video_context_data)
-      free(driver.video_context_data);
-   driver.video_context_data = NULL;
+   if (driver->video_context_data)
+      free(driver->video_context_data);
+   driver->video_context_data = NULL;
 }
 
 static void android_gfx_ctx_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    EGLint gl_width, gl_height;
-   gfx_ctx_android_data_t *android = (gfx_ctx_android_data_t*)
-      driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_android_data_t *android = NULL;
+   
+   android = (gfx_ctx_android_data_t*)
+      driver->video_context_data;
 
    *width  = 0;
    *height = 0;
@@ -139,6 +146,7 @@ static bool android_gfx_ctx_init(void *data)
       EGL_ALPHA_SIZE, 8,
       EGL_NONE
    };
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_android_data_t *android = NULL;
    struct android_app *android_app = (struct android_app*)g_android;
    
@@ -210,7 +218,7 @@ static bool android_gfx_ctx_init(void *data)
             android->g_egl_surf, android->g_egl_ctx))
       goto error;
 
-   driver.video_context_data = android;
+   driver->video_context_data = android;
 
    return true;
 
@@ -225,8 +233,10 @@ error:
 
 static void android_gfx_ctx_swap_buffers(void *data)
 {
-   gfx_ctx_android_data_t *android = (gfx_ctx_android_data_t*)
-      driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_android_data_t *android = NULL;
+   
+   android = (gfx_ctx_android_data_t*)driver->video_context_data;
 
    (void)data;
 
@@ -348,8 +358,10 @@ static bool android_gfx_ctx_has_windowed(void *data)
 
 static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
 {
-   gfx_ctx_android_data_t *android = (gfx_ctx_android_data_t*)
-      driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_android_data_t *android = NULL;
+   
+   android = (gfx_ctx_android_data_t*)driver->video_context_data;
 
    (void)data;
 

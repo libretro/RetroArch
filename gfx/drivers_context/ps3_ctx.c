@@ -145,7 +145,8 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
 
 static void gfx_ctx_ps3_set_swap_interval(void *data, unsigned interval)
 {
-   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)driver->video_context_data;
 
    (void)data;
 
@@ -227,7 +228,8 @@ static void gfx_ctx_ps3_update_window_title(void *data)
 static void gfx_ctx_ps3_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)driver->video_context_data;
 
    (void)data;
 
@@ -239,6 +241,7 @@ static void gfx_ctx_ps3_get_video_size(void *data,
 
 static bool gfx_ctx_ps3_init(void *data)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
       calloc(1, sizeof(gfx_ctx_ps3_data_t));
 
@@ -304,7 +307,7 @@ static bool gfx_ctx_ps3_init(void *data)
 
    gfx_ctx_ps3_get_available_resolutions();
 
-   driver.video_context_data = ps3;
+   driver->video_context_data = ps3;
 
    return true;
 }
@@ -332,18 +335,19 @@ static void gfx_ctx_ps3_destroy_resources(gfx_ctx_ps3_data_t *ps3)
 
 static void gfx_ctx_ps3_destroy(void *data)
 {
-   (void)data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)driver->video_context_data;
 
-   gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)driver.video_context_data;
+   (void)data;
 
    if (!ps3)
       return;
 
    gfx_ctx_ps3_destroy_resources(ps3);
 
-   if (driver.video_context_data)
-      free(driver.video_context_data);
-   driver.video_context_data = NULL;
+   if (driver->video_context_data)
+      free(driver->video_context_data);
+   driver->video_context_data = NULL;
 }
 
 static void gfx_ctx_ps3_input_driver(void *data,

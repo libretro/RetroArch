@@ -51,6 +51,7 @@ void menu_input_key_start_line(const char *label,
 
 static void menu_input_key_end_line(void)
 {
+   driver_t *driver    = driver_get_ptr();
    menu_handle_t *menu = menu_driver_resolve();
    if (!menu)
       return;
@@ -60,7 +61,7 @@ static void menu_input_key_end_line(void)
    menu->keyboard.label_setting = NULL;
 
    /* Avoid triggering states on pressing return. */
-   driver.flushing_input = true;
+   driver->flushing_input = true;
 }
 
 static void menu_input_search_callback(void *userdata, const char *str)
@@ -169,6 +170,7 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
 
 void menu_input_search_start(void)
 {
+   driver_t *driver    = driver_get_ptr();
    menu_handle_t *menu = menu_driver_resolve();
    if (!menu)
       return;
@@ -176,7 +178,7 @@ void menu_input_search_start(void)
    menu->keyboard.display = true;
    menu->keyboard.label = "Search: ";
    menu->keyboard.buffer = 
-      input_keyboard_start_line(driver.menu, menu_input_search_callback);
+      input_keyboard_start_line(driver->menu, menu_input_search_callback);
 }
 
 void menu_input_key_event(bool down, unsigned keycode,
@@ -194,16 +196,17 @@ void menu_input_poll_bind_state(struct menu_bind_state *state)
 {
    unsigned i, b, a, h;
    const rarch_joypad_driver_t *joypad = NULL;
+   driver_t *driver = driver_get_ptr();
 
    if (!state)
       return;
 
    memset(state->state, 0, sizeof(state->state));
-   state->skip = driver.input->input_state(driver.input_data, NULL, 0,
+   state->skip = driver->input->input_state(driver->input_data, NULL, 0,
          RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
 
-   if (driver.input && driver.input_data && driver.input->get_joypad_driver)
-      joypad = driver.input->get_joypad_driver(driver.input_data);
+   if (driver->input && driver->input_data && driver->input->get_joypad_driver)
+      joypad = driver->input->get_joypad_driver(driver->input_data);
 
    if (!joypad)
    {
@@ -240,12 +243,13 @@ void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state)
 {
    unsigned i, a;
    const rarch_joypad_driver_t *joypad = NULL;
+   driver_t *driver = driver_get_ptr();
 
    if (!state)
       return;
 
-   if (driver.input && driver.input_data && driver.input->get_joypad_driver)
-      joypad = driver.input->get_joypad_driver(driver.input_data);
+   if (driver->input && driver->input_data && driver->input->get_joypad_driver)
+      joypad = driver->input->get_joypad_driver(driver->input_data);
 
    if (!joypad)
    {
@@ -373,34 +377,35 @@ int menu_input_bind_iterate(void)
    char msg[PATH_MAX_LENGTH];
    struct menu_bind_state binds;
    menu_handle_t *menu = menu_driver_resolve();
+   driver_t *driver = driver_get_ptr();
 
    if (!menu)
       return 1;
    
    binds = menu->binds;
     
-   if (driver.video_data && driver.menu_ctx &&
-         driver.menu_ctx->render)
-      driver.menu_ctx->render();
+   if (driver->video_data && driver->menu_ctx &&
+         driver->menu_ctx->render)
+      driver->menu_ctx->render();
 
    snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)",
          input_config_bind_map[
          menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
 
-   if (driver.video_data && driver.menu_ctx 
-         && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox( msg);
+   if (driver->video_data && driver->menu_ctx 
+         && driver->menu_ctx->render_messagebox)
+      driver->menu_ctx->render_messagebox( msg);
 
-   driver.block_input = true;
+   driver->block_input = true;
    menu_input_poll_bind_state(&binds);
 
    if ((binds.skip && !menu->binds.skip) ||
          menu_input_poll_find_trigger(&menu->binds, &binds))
    {
-      driver.block_input = false;
+      driver->block_input = false;
 
       /* Avoid new binds triggering things right away. */
-      driver.flushing_input = true;
+      driver->flushing_input = true;
 
       binds.begin++;
 
@@ -421,13 +426,14 @@ int menu_input_bind_iterate_keyboard(void)
    int timeout = 0;
    bool timed_out = false;
    menu_handle_t *menu = menu_driver_resolve();
+   driver_t *driver = driver_get_ptr();
 
    if (!menu)
       return -1;
 
-   if (driver.video_data && driver.menu_ctx &&
-         driver.menu_ctx->render)
-      driver.menu_ctx->render();
+   if (driver->video_data && driver->menu_ctx &&
+         driver->menu_ctx->render)
+      driver->menu_ctx->render();
 
    current = rarch_get_time_usec();
    timeout = (menu->binds.timeout_end - current) / 1000000;
@@ -436,9 +442,9 @@ int menu_input_bind_iterate_keyboard(void)
          menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
          timeout);
 
-   if (driver.video_data && driver.menu_ctx 
-         && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(msg);
+   if (driver->video_data && driver->menu_ctx 
+         && driver->menu_ctx->render_messagebox)
+      driver->menu_ctx->render_messagebox(msg);
 
    if (timeout <= 0)
    {
@@ -457,7 +463,7 @@ int menu_input_bind_iterate_keyboard(void)
    if (menu->binds.begin > menu->binds.last)
    {
       /* Avoid new binds triggering things right away. */
-      driver.flushing_input = true;
+      driver->flushing_input = true;
 
       /* We won't be getting any key events, so just cancel early. */
       if (timed_out)
@@ -481,11 +487,12 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
    menu_handle_t *menu = menu_driver_resolve();
+   driver_t *driver    = driver_get_ptr();
 
    if (!menu)
       return 0;
 
-   driver.retro_ctx.poll_cb();
+   driver->retro_ctx.poll_cb();
 
    /* don't run anything first frame, only capture held inputs
     * for old_input_state. */
@@ -518,7 +525,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
 
    menu->delay.count += menu->dt / IDEAL_DT;
 
-   if (driver.block_input)
+   if (driver->block_input)
       trigger_input = 0;
    if (trigger_input & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
       return MENU_ACTION_UP;

@@ -431,7 +431,8 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 
 static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   driver_t *driver = driver_get_ptr();
+   gx_video_t *gx = (gx_video_t*)driver->video_data;
 
    if (aspect_ratio_idx == ASPECT_RATIO_SQUARE)
       video_viewport_set_square_pixel(
@@ -934,7 +935,8 @@ static void gx_resize(void *data)
 
 static void gx_blit_line(unsigned x, unsigned y, const char *message)
 {
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   driver_t *driver = driver_get_ptr();
+   gx_video_t *gx = (gx_video_t*)driver->video_data;
 
    const GXColor b = {
       .r = 0x00,
@@ -1187,7 +1189,8 @@ static bool gx_has_windowed(void *data)
 
 static void gx_free(void *data)
 {
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   driver_t *driver = driver_get_ptr();
+   gx_video_t *gx = (gx_video_t*)driver->video_data;
 
 #ifdef HAVE_OVERLAY
    gx_free_overlay(gx);

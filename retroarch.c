@@ -77,28 +77,31 @@
  **/
 void rarch_render_cached_frame(void)
 {
-   void *recording    = driver.recording_data;
+   void *recording    = NULL;
+   driver_t *driver   = driver_get_ptr();
    runloop_t *runloop = rarch_main_get_ptr();
+
+   recording = driver->recording_data;
 
    if (runloop->is_idle)
       return;
 
    /* Cannot allow recording when pushing duped frames. */
-   driver.recording_data = NULL;
+   driver->recording_data = NULL;
 
    /* Not 100% safe, since the library might have
     * freed the memory, but no known implementations do this.
     * It would be really stupid at any rate ...
     */
-   if (driver.retro_ctx.frame_cb)
-      driver.retro_ctx.frame_cb(
+   if (driver->retro_ctx.frame_cb)
+      driver->retro_ctx.frame_cb(
             (g_extern.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)
             ? NULL : g_extern.frame_cache.data,
             g_extern.frame_cache.width,
             g_extern.frame_cache.height,
             g_extern.frame_cache.pitch);
 
-   driver.recording_data = recording;
+   driver->recording_data = recording;
 }
 
 #include "config.features.h"
@@ -882,9 +885,11 @@ static void init_remapping(void)
 
 static void init_cheats(void)
 {
+   driver_t *driver = driver_get_ptr();
    bool allow_cheats = true;
+
 #ifdef HAVE_NETPLAY
-   allow_cheats &= !driver.netplay_data;
+   allow_cheats &= !driver->netplay_data;
 #endif
    allow_cheats &= !g_extern.bsv.movie;
 
@@ -897,8 +902,10 @@ static void init_cheats(void)
 static void init_rewind(void)
 {
    void *state = NULL;
+   driver_t *driver = driver_get_ptr();
+
 #ifdef HAVE_NETPLAY
-   if (driver.netplay_data)
+   if (driver->netplay_data)
       return;
 #endif
 
@@ -987,6 +994,7 @@ static void init_movie(void)
 static bool init_netplay(void)
 {
    struct retro_callbacks cbs = {0};
+   driver_t *driver = driver_get_ptr();
 
    if (!g_extern.netplay_enable)
       return false;
@@ -1007,13 +1015,13 @@ static bool init_netplay(void)
    else
       RARCH_LOG("Waiting for client...\n");
 
-   driver.netplay_data = (netplay_t*)netplay_new(
+   driver->netplay_data = (netplay_t*)netplay_new(
          g_extern.netplay_is_client ? g_extern.netplay_server : NULL,
          g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT,
          g_extern.netplay_sync_frames, &cbs, g_extern.netplay_is_spectate,
          g_settings.username);
 
-   if (driver.netplay_data)
+   if (driver->netplay_data)
       return true;
 
    g_extern.netplay_is_client = false;
@@ -1029,17 +1037,19 @@ static bool init_netplay(void)
 #ifdef HAVE_COMMAND
 static void init_command(void)
 {
+   driver_t *driver = driver_get_ptr();
+
    if (!g_settings.stdin_cmd_enable && !g_settings.network_cmd_enable)
       return;
 
-   if (g_settings.stdin_cmd_enable && driver.stdin_claimed)
+   if (g_settings.stdin_cmd_enable && driver->stdin_claimed)
    {
       RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
             "Cannot use this command interface.\n");
    }
 
-   if (!(driver.command = rarch_cmd_new(g_settings.stdin_cmd_enable
-               && !driver.stdin_claimed,
+   if (!(driver->command = rarch_cmd_new(g_settings.stdin_cmd_enable
+               && !driver->stdin_claimed,
                g_settings.network_cmd_enable, g_settings.network_cmd_port)))
       RARCH_ERR("Failed to initialize command interface.\n");
 }
@@ -1577,8 +1587,10 @@ static void check_disk_prev(
 
 static void init_state(void)
 {
-   driver.video_active = true;
-   driver.audio_active = true;
+   driver_t *driver = driver_get_ptr();
+
+   driver->video_active = true;
+   driver->audio_active = true;
 }
 
 /**
@@ -1807,6 +1819,8 @@ static bool init_content(void)
 
 static bool init_core(void)
 {
+   driver_t *driver = driver_get_ptr();
+
    verify_api_version();
    pretro_init();
 
@@ -1816,7 +1830,7 @@ static bool init_core(void)
    if (!init_content())
       return false;
 
-   retro_init_libretro_cbs(&driver.retro_ctx);
+   retro_init_libretro_cbs(&driver->retro_ctx);
    init_system_av_info();
 
    return true;
@@ -1877,11 +1891,14 @@ int rarch_main_init(int argc, char *argv[])
 
    rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
 #if defined(GEKKO) && defined(HW_RVL)
-   rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
-     if (driver.video_data && driver.video_poke
-             && driver.video_poke->set_aspect_ratio)
-         driver.video_poke->set_aspect_ratio(driver.video_data,
-             g_settings.video.aspect_ratio_idx);
+   {
+      driver_t *driver = driver_get_ptr();
+      rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
+      if (driver->video_data && driver->video_poke
+            && driver->video_poke->set_aspect_ratio)
+         driver->video_poke->set_aspect_ratio(driver->video_data,
+               g_settings.video.aspect_ratio_idx);
+   }
 #endif
 
    g_extern.error_in_init = false;
@@ -1962,6 +1979,7 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 void rarch_main_set_state(unsigned cmd)
 {
    runloop_t *runloop = rarch_main_get_ptr();
+   driver_t *driver   = driver_get_ptr();
 
    switch (cmd)
    {
@@ -1972,8 +1990,8 @@ void rarch_main_set_state(unsigned cmd)
             if (!menu)
                return;
 
-            if (driver.menu_ctx && driver.menu_ctx->toggle)
-               driver.menu_ctx->toggle(true);
+            if (driver->menu_ctx && driver->menu_ctx->toggle)
+               driver->menu_ctx->toggle(true);
 
             /* Menu should always run with vsync on. */
             rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
@@ -2001,32 +2019,32 @@ void rarch_main_set_state(unsigned cmd)
          if (!menu_load_content())
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
 #endif
-         if (driver.frontend_ctx && driver.frontend_ctx->content_loaded)
-            driver.frontend_ctx->content_loaded();
+         if (driver->frontend_ctx && driver->frontend_ctx->content_loaded)
+            driver->frontend_ctx->content_loaded();
          break;
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU
          menu_apply_deferred_settings();
 
-         if (driver.menu_ctx && driver.menu_ctx->toggle)
-            driver.menu_ctx->toggle(false);
+         if (driver->menu_ctx && driver->menu_ctx->toggle)
+            driver->menu_ctx->toggle(false);
 
          runloop->is_menu = false;
 
-         driver_set_nonblock_state(driver.nonblock_state);
+         driver_set_nonblock_state(driver->nonblock_state);
 
          if (g_settings.menu.pause_libretro)
             rarch_main_command(RARCH_CMD_AUDIO_START);
 
          /* Prevent stray input from going to libretro core */
-         driver.flushing_input = true;
+         driver->flushing_input = true;
 
          /* Restore libretro keyboard callback. */
          g_extern.system.key_event = g_extern.frontend_key_event;
 #endif
-         if (driver.video_data && driver.video_poke &&
-               driver.video_poke->set_texture_enable)
-            driver.video_poke->set_texture_enable(driver.video_data,
+         if (driver->video_data && driver->video_poke &&
+               driver->video_poke->set_texture_enable)
+            driver->video_poke->set_texture_enable(driver->video_data,
                   false, false);
          break;
       case RARCH_ACTION_STATE_QUIT:
@@ -2169,6 +2187,7 @@ bool rarch_main_command(unsigned cmd)
    unsigned i   = 0;
    bool boolean = false;
    runloop_t *runloop = rarch_main_get_ptr();
+   driver_t  *driver  = driver_get_ptr();
 
    (void)i;
 
@@ -2220,7 +2239,7 @@ bool rarch_main_command(unsigned cmd)
             return false;
 
 #ifdef HAVE_NETPLAY
-         if (driver.netplay_data)
+         if (driver->netplay_data)
             return false;
 #endif
          main_state(cmd);
@@ -2284,14 +2303,14 @@ bool rarch_main_command(unsigned cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
          break;
       case RARCH_CMD_REINIT:
-         driver.video_cache_context = 
+         driver->video_cache_context = 
             g_extern.system.hw_render_callback.cache_context;
-         driver.video_cache_context_ack = false;
+         driver->video_cache_context_ack = false;
          rarch_main_command(RARCH_CMD_RESET_CONTEXT);
-         driver.video_cache_context = false;
+         driver->video_cache_context = false;
 
          /* Poll input to avoid possibly stale data to corrupt things. */
-         driver.input->poll(driver.input_data);
+         driver->input->poll(driver->input_data);
 
 #ifdef HAVE_MENU
          runloop->frames.video.current.menu.framebuf.dirty = true;
@@ -2316,7 +2335,7 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_REWIND_DEINIT:
 #ifdef HAVE_NETPLAY
-         if (driver.netplay_data)
+         if (driver->netplay_data)
             return false;
 #endif
          if (g_extern.rewind.state)
@@ -2347,22 +2366,22 @@ bool rarch_main_command(unsigned cmd)
          save_auto_state();
          break;
       case RARCH_CMD_AUDIO_STOP:
-         if (!driver.audio_data)
+         if (!driver->audio_data)
             return false;
-         if (!driver.audio->alive(driver.audio_data))
+         if (!driver->audio->alive(driver->audio_data))
             return false;
 
-         driver.audio->stop(driver.audio_data);
+         driver->audio->stop(driver->audio_data);
          break;
       case RARCH_CMD_AUDIO_START:
-         if (!driver.audio_data || driver.audio->alive(driver.audio_data))
+         if (!driver->audio_data || driver->audio->alive(driver->audio_data))
             return false;
 
          if (!g_settings.audio.mute_enable
-               && !driver.audio->start(driver.audio_data))
+               && !driver->audio->start(driver->audio_data))
          {
             RARCH_ERR("Failed to start audio driver. Will continue without audio.\n");
-            driver.audio_active = false;
+            driver->audio_active = false;
          }
          break;
       case RARCH_CMD_AUDIO_MUTE_TOGGLE:
@@ -2382,17 +2401,17 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
-         if (driver.overlay)
-            input_overlay_free(driver.overlay);
-         driver.overlay = NULL;
+         if (driver->overlay)
+            input_overlay_free(driver->overlay);
+         driver->overlay = NULL;
 
-         memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
+         memset(&driver->overlay_state, 0, sizeof(driver->overlay_state));
 #endif
          break;
       case RARCH_CMD_OVERLAY_INIT:
          rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
 #ifdef HAVE_OVERLAY
-         if (driver.osk_enable)
+         if (driver->osk_enable)
          {
             if (!*g_settings.osk.overlay)
                break;
@@ -2403,16 +2422,16 @@ bool rarch_main_command(unsigned cmd)
                break;
          }
 
-         driver.overlay = input_overlay_new(driver.osk_enable ? g_settings.osk.overlay : g_settings.input.overlay,
-               driver.osk_enable ? g_settings.osk.enable   : g_settings.input.overlay_enable,
+         driver->overlay = input_overlay_new(driver->osk_enable ? g_settings.osk.overlay : g_settings.input.overlay,
+               driver->osk_enable ? g_settings.osk.enable   : g_settings.input.overlay_enable,
                g_settings.input.overlay_opacity, g_settings.input.overlay_scale);
-         if (!driver.overlay)
+         if (!driver->overlay)
             RARCH_ERR("Failed to load overlay.\n");
 #endif
          break;
       case RARCH_CMD_OVERLAY_NEXT:
 #ifdef HAVE_OVERLAY
-         input_overlay_next(driver.overlay, g_settings.input.overlay_opacity);
+         input_overlay_next(driver->overlay, g_settings.input.overlay_opacity);
 #endif
          break;
       case RARCH_CMD_DSP_FILTER_DEINIT:
@@ -2478,37 +2497,37 @@ bool rarch_main_command(unsigned cmd)
             return false;
          break;
       case RARCH_CMD_VIDEO_APPLY_STATE_CHANGES:
-         if (driver.video_data && driver.video_poke
-               && driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(driver.video_data);
+         if (driver->video_data && driver->video_poke
+               && driver->video_poke->apply_state_changes)
+            driver->video_poke->apply_state_changes(driver->video_data);
          break;
       case RARCH_CMD_VIDEO_SET_NONBLOCKING_STATE:
          boolean = true; /* fall-through */
       case RARCH_CMD_VIDEO_SET_BLOCKING_STATE:
-         if (driver.video && driver.video->set_nonblock_state)
-            driver.video->set_nonblock_state(driver.video_data, boolean);
+         if (driver->video && driver->video->set_nonblock_state)
+            driver->video->set_nonblock_state(driver->video_data, boolean);
          break;
       case RARCH_CMD_VIDEO_SET_ASPECT_RATIO:
-         if (driver.video_data && driver.video_poke
-               && driver.video_poke->set_aspect_ratio)
-            driver.video_poke->set_aspect_ratio(driver.video_data,
+         if (driver->video_data && driver->video_poke
+               && driver->video_poke->set_aspect_ratio)
+            driver->video_poke->set_aspect_ratio(driver->video_data,
                   g_settings.video.aspect_ratio_idx);
          break;
       case RARCH_CMD_AUDIO_SET_NONBLOCKING_STATE:
          boolean = true; /* fall-through */
       case RARCH_CMD_AUDIO_SET_BLOCKING_STATE:
-         if (driver.audio && driver.audio->set_nonblock_state)
-            driver.audio->set_nonblock_state(driver.audio_data, boolean);
+         if (driver->audio && driver->audio->set_nonblock_state)
+            driver->audio->set_nonblock_state(driver->audio_data, boolean);
          break;
       case RARCH_CMD_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_scale_factor(driver.overlay,
+         input_overlay_set_scale_factor(driver->overlay,
                g_settings.input.overlay_scale);
 #endif
          break;
       case RARCH_CMD_OVERLAY_SET_ALPHA_MOD:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_alpha_mod(driver.overlay,
+         input_overlay_set_alpha_mod(driver->overlay,
                g_settings.input.overlay_opacity);
 #endif
          break;
@@ -2538,8 +2557,8 @@ bool rarch_main_command(unsigned cmd)
                SALAMANDER_FILE,
                sizeof(g_extern.fullpath));
 #endif
-         if (driver.frontend_ctx && driver.frontend_ctx->set_fork)
-            driver.frontend_ctx->set_fork(true, false);
+         if (driver->frontend_ctx && driver->frontend_ctx->set_fork)
+            driver->frontend_ctx->set_fork(true, false);
          break;
       case RARCH_CMD_MENU_SAVE_CONFIG:
          if (!save_core_config())
@@ -2629,7 +2648,7 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_SAVEFILES_INIT:
          g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable
 #ifdef HAVE_NETPLAY
-            && (!driver.netplay_data || !g_extern.netplay_is_client)
+            && (!driver->netplay_data || !g_extern.netplay_is_client)
 #endif
             ;
 
@@ -2659,10 +2678,10 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_NETPLAY_DEINIT:
 #ifdef HAVE_NETPLAY
          {
-            netplay_t *netplay = (netplay_t*)driver.netplay_data;
+            netplay_t *netplay = (netplay_t*)driver->netplay_data;
             if (netplay)
                netplay_free(netplay);
-            driver.netplay_data = NULL;
+            driver->netplay_data = NULL;
          }
 #endif
          break;
@@ -2686,7 +2705,7 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_NETPLAY_FLIP_PLAYERS:
 #ifdef HAVE_NETPLAY
          {
-            netplay_t *netplay = (netplay_t*)driver.netplay_data;
+            netplay_t *netplay = (netplay_t*)driver->netplay_data;
             if (!netplay)
                return false;
             netplay_flip_users(netplay);
@@ -2694,11 +2713,11 @@ bool rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_FULLSCREEN_TOGGLE:
-         if (!driver.video)
+         if (!driver->video)
             return false;
          /* If video driver/context does not support windowed
           * mode, don't perform command. */
-         if (!driver.video->has_windowed(driver.video_data))
+         if (!driver->video->has_windowed(driver->video_data))
             return false;
 
          /* If we go fullscreen we drop all drivers and 
@@ -2708,9 +2727,9 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_COMMAND_DEINIT:
 #ifdef HAVE_COMMAND
-         if (driver.command)
-            rarch_cmd_free(driver.command);
-         driver.command = NULL;
+         if (driver->command)
+            rarch_cmd_free(driver->command);
+         driver->command = NULL;
 #endif
          break;
       case RARCH_CMD_COMMAND_INIT:
@@ -2795,17 +2814,17 @@ bool rarch_main_command(unsigned cmd)
          {
             static bool grab_mouse_state  = false;
 
-            if (!driver.input || !driver.input->grab_mouse)
+            if (!driver->input || !driver->input->grab_mouse)
                return false;
 
             grab_mouse_state = !grab_mouse_state;
             RARCH_LOG("Grab mouse state: %s.\n",
                   grab_mouse_state ? "yes" : "no");
-            driver.input->grab_mouse(driver.input_data, grab_mouse_state);
+            driver->input->grab_mouse(driver->input_data, grab_mouse_state);
 
-            if (driver.video_poke && driver.video_poke->show_mouse)
-               driver.video_poke->show_mouse(
-                     driver.video_data, !grab_mouse_state);
+            if (driver->video_poke && driver->video_poke->show_mouse)
+               driver->video_poke->show_mouse(
+                     driver->video_data, !grab_mouse_state);
          }
          break;
       case RARCH_CMD_PERFCNT_REPORT_FRONTEND_LOG:

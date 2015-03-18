@@ -207,6 +207,8 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
 
 static void sdl2_gfx_set_handles(sdl2_video_t *vid)
 {
+   driver_t *driver = driver_get_ptr();
+
    /* SysWMinfo headers are broken on OSX. */
 #if defined(_WIN32) || defined(HAVE_X11)
    SDL_SysWMinfo info;
@@ -216,13 +218,13 @@ static void sdl2_gfx_set_handles(sdl2_video_t *vid)
       return;
 
 #if defined(_WIN32)
-   driver.display_type  = RARCH_DISPLAY_WIN32;
-   driver.video_display = 0;
-   driver.video_window  = (uintptr_t)info.info.win.window;
+   driver->display_type  = RARCH_DISPLAY_WIN32;
+   driver->video_display = 0;
+   driver->video_window  = (uintptr_t)info.info.win.window;
 #elif defined(HAVE_X11)
-   driver.display_type  = RARCH_DISPLAY_X11;
-   driver.video_display = (uintptr_t)info.info.x11.display;
-   driver.video_window  = (uintptr_t)info.info.x11.window;
+   driver->display_type  = RARCH_DISPLAY_X11;
+   driver->video_display = (uintptr_t)info.info.x11.display;
+   driver->video_window  = (uintptr_t)info.info.x11.window;
 #endif
 #endif
 }
@@ -485,6 +487,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    char buf[128];
    sdl2_video_t *vid = (sdl2_video_t*)data;
    runloop_t *runloop = rarch_main_get_ptr();
+   driver_t *driver = driver_get_ptr();
 
    if (vid->should_resize)
       sdl_refresh_viewport(vid);
@@ -505,8 +508,8 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
 #ifdef HAVE_MENU
    if (runloop->is_menu 
-         && driver.menu_ctx && driver.menu_ctx->frame)
-      driver.menu_ctx->frame();
+         && driver->menu_ctx && driver->menu_ctx->frame)
+      driver->menu_ctx->frame();
 #endif
 
    if (vid->menu.active)
@@ -547,13 +550,15 @@ static bool sdl2_gfx_focus(void *data)
 
 static bool sdl2_gfx_suppress_screensaver(void *data, bool enable)
 {
+   driver_t *driver = driver_get_ptr();
+
    (void)data;
    (void)enable;
 
-   if (driver.display_type == RARCH_DISPLAY_X11)
+   if (driver->display_type == RARCH_DISPLAY_X11)
    {
 #ifdef HAVE_X11
-      x11_suspend_screensaver(driver.video_window);
+      x11_suspend_screensaver(driver->video_window);
 #endif
       return true;
    }

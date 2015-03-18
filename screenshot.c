@@ -178,9 +178,10 @@ static bool take_screenshot_viewport(void)
    uint8_t *buffer = NULL;
    bool retval = false;
    struct video_viewport vp = {0};
+   driver_t *driver = driver_get_ptr();
 
-   if (driver.video && driver.video->viewport_info)
-      driver.video->viewport_info(driver.video_data, &vp);
+   if (driver->video && driver->video->viewport_info)
+      driver->video->viewport_info(driver->video_data, &vp);
 
    if (!vp.width || !vp.height)
       return false;
@@ -188,8 +189,8 @@ static bool take_screenshot_viewport(void)
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
-   if (driver.video && driver.video->read_viewport)
-      if (!driver.video->read_viewport(driver.video_data, buffer))
+   if (driver->video && driver->video->read_viewport)
+      if (!driver->video->read_viewport(driver->video_data, buffer))
          goto done;
 
    screenshot_dir = g_settings.screenshot_directory;
@@ -249,6 +250,7 @@ bool take_screenshot(void)
    bool ret = true;
    const char *msg = NULL;
    runloop_t *runloop = rarch_main_get_ptr();
+   driver_t *driver   = driver_get_ptr();
 
    /* No way to infer screenshot directory. */
    if ((!*g_settings.screenshot_directory) && (!*g_extern.basename))
@@ -256,19 +258,19 @@ bool take_screenshot(void)
 
    viewport_read = (g_settings.video.gpu_screenshot ||
          ((g_extern.system.hw_render_callback.context_type
-         != RETRO_HW_CONTEXT_NONE) && !driver.video->read_frame_raw))
-         && driver.video->read_viewport && driver.video->viewport_info;
+         != RETRO_HW_CONTEXT_NONE) && !driver->video->read_frame_raw))
+         && driver->video->read_viewport && driver->video->viewport_info;
 
    if (viewport_read)
    {
 #ifdef HAVE_MENU
       /* Avoid taking screenshot of GUI overlays. */
-      if (driver.video_poke && driver.video_poke->set_texture_enable)
-         driver.video_poke->set_texture_enable(driver.video_data,
+      if (driver->video_poke && driver->video_poke->set_texture_enable)
+         driver->video_poke->set_texture_enable(driver->video_data,
                false, false);
 #endif
 
-      if (driver.video)
+      if (driver->video)
          rarch_render_cached_frame();
    }
 
@@ -277,15 +279,15 @@ bool take_screenshot(void)
    else if (g_extern.frame_cache.data &&
          (g_extern.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
       ret = take_screenshot_raw();
-   else if (driver.video->read_frame_raw)
+   else if (driver->video->read_frame_raw)
    {
       const void* old_data = g_extern.frame_cache.data;
       unsigned old_width   = g_extern.frame_cache.width;
       unsigned old_height  = g_extern.frame_cache.height;
       size_t old_pitch     = g_extern.frame_cache.pitch;
 
-      void* frame_data = driver.video->read_frame_raw
-         (driver.video_data, &g_extern.frame_cache.width,
+      void* frame_data = driver->video->read_frame_raw
+         (driver->video_data, &g_extern.frame_cache.width,
           &g_extern.frame_cache.height, &g_extern.frame_cache.pitch);
 
       if (frame_data)

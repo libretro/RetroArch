@@ -171,7 +171,8 @@ static void gl_cg_reset_attrib(cg_shader_data_t *cg)
 
 static bool gl_cg_set_mvp(void *data, const math_matrix_4x4 *mat)
 {
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
 
    (void)data;
 
@@ -199,7 +200,8 @@ static bool gl_cg_set_mvp(void *data, const math_matrix_4x4 *mat)
 static bool gl_cg_set_coords(const void *data)
 {
    const struct gl_coords *coords = (const struct gl_coords*)data;
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
 
    if (!cg || !coords)
       goto fallback;
@@ -235,7 +237,8 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    const struct gl_tex_info *info = (const struct gl_tex_info*)_info;
    const struct gl_tex_info *prev_info = (const struct gl_tex_info*)_prev_info;
    const struct gl_tex_info *fbo_info = (const struct gl_tex_info*)_fbo_info;
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
 
    (void)data;
    if (!cg || (cg->active_idx == 0) ||
@@ -473,7 +476,8 @@ static void gl_cg_deinit_context_state(cg_shader_data_t *cg)
 /* Full deinit. */
 static void gl_cg_deinit(void)
 {
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
 
    if (!cg)
       return;
@@ -889,6 +893,7 @@ static bool gl_cg_init(void *data, const char *path)
    (void)data;
    cg_shader_data_t *cg = (cg_shader_data_t*)
       calloc(1, sizeof(cg_shader_data_t));
+   driver_t *driver = driver_get_ptr();
 
    if (!cg)
       return false;
@@ -960,7 +965,7 @@ static bool gl_cg_init(void *data, const char *path)
    cgGLBindProgram(cg->prg[1].fprg);
    cgGLBindProgram(cg->prg[1].vprg);
 
-   driver.video_shader_data = cg;
+   driver->video_shader_data = cg;
 
    return true;
 
@@ -973,7 +978,8 @@ error:
 
 static void gl_cg_use(void *data, unsigned idx)
 {
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
    (void)data;
 
    if (cg && cg->prg[idx].vprg && cg->prg[idx].fprg)
@@ -988,7 +994,8 @@ static void gl_cg_use(void *data, unsigned idx)
 
 static unsigned gl_cg_num(void)
 {
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
    if (!cg)
       return 0;
    return cg->cg_shader->passes;
@@ -996,7 +1003,8 @@ static unsigned gl_cg_num(void)
 
 static bool gl_cg_filter_type(unsigned idx, bool *smooth)
 {
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
    if (cg && idx &&
          (cg->cg_shader->pass[idx - 1].filter != RARCH_FILTER_UNSPEC)
       )
@@ -1010,7 +1018,8 @@ static bool gl_cg_filter_type(unsigned idx, bool *smooth)
 
 static enum gfx_wrap_type gl_cg_wrap_type(unsigned idx)
 {
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
    if (cg && idx)
       return cg->cg_shader->pass[idx - 1].wrap;
    return RARCH_WRAP_BORDER;
@@ -1018,7 +1027,8 @@ static enum gfx_wrap_type gl_cg_wrap_type(unsigned idx)
 
 static void gl_cg_shader_scale(unsigned idx, struct gfx_fbo_scale *scale)
 {
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
    if (cg && idx)
       *scale = cg->cg_shader->pass[idx - 1].fbo;
    else
@@ -1029,7 +1039,8 @@ static unsigned gl_cg_get_prev_textures(void)
 {
    unsigned i, j;
    unsigned max_prev = 0;
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
 
    if (!cg)
       return 0;
@@ -1044,7 +1055,8 @@ static unsigned gl_cg_get_prev_textures(void)
 
 static bool gl_cg_mipmap_input(unsigned idx)
 {
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
    if (cg && idx)
       return cg->cg_shader->pass[idx - 1].mipmap;
    return false;
@@ -1052,7 +1064,8 @@ static bool gl_cg_mipmap_input(unsigned idx)
 
 static struct video_shader *gl_cg_get_current_shader(void)
 {
-   cg_shader_data_t *cg = (cg_shader_data_t*)driver.video_shader_data;
+   driver_t *driver = driver_get_ptr();
+   cg_shader_data_t *cg = (cg_shader_data_t*)driver->video_shader_data;
    if (!cg)
       return NULL;
    return cg->cg_shader;

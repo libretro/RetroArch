@@ -751,6 +751,7 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
       float opacity, float scale_factor)
 {
    input_overlay_t *ol = (input_overlay_t*)calloc(1, sizeof(*ol));
+   driver_t *driver    = driver_get_ptr();
 
    if (!ol)
       goto error;
@@ -767,15 +768,15 @@ input_overlay_t *input_overlay_new(const char *path, bool enable,
    if (!ol->conf)
       goto error;
 
-   if (!driver.video->overlay_interface)
+   if (!driver->video->overlay_interface)
    {
       RARCH_ERR("Overlay interface is not present in video driver.\n");
       goto error;
    }
 
-   if (driver.video && driver.video->overlay_interface)
-      driver.video->overlay_interface(driver.video_data, &ol->iface);
-   ol->iface_data = driver.video_data;
+   if (driver->video && driver->video->overlay_interface)
+      driver->video->overlay_interface(driver->video_data, &ol->iface);
+   ol->iface_data = driver->video_data;
 
    if (!ol->iface)
       goto error;

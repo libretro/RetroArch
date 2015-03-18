@@ -146,8 +146,10 @@ const char* config_get_input_driver_options(void)
 void find_input_driver(void)
 {
    int i = find_driver_index("input_driver", g_settings.input.driver);
+   driver_t *driver = driver_get_ptr();
+
    if (i >= 0)
-      driver.input = (const input_driver_t*)input_driver_find_handle(i);
+      driver->input = (const input_driver_t*)input_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -158,9 +160,9 @@ void find_input_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", input_driver_find_ident(d));
       RARCH_WARN("Going to default to first input driver...\n");
 
-      driver.input = (const input_driver_t*)input_driver_find_handle(0);
+      driver->input = (const input_driver_t*)input_driver_find_handle(0);
 
-      if (!driver.input)
+      if (!driver->input)
          rarch_fail(1, "find_input_driver()");
    }
 }
@@ -177,8 +179,9 @@ void find_input_driver(void)
 bool input_driver_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   if (driver.input && driver.input_data && driver.input->set_rumble)
-      return driver.input->set_rumble(driver.input_data,
+   driver_t *driver = driver_get_ptr();
+   if (driver->input && driver->input_data && driver->input->set_rumble)
+      return driver->input->set_rumble(driver->input_data,
             port, effect, strength);
    return false;
 }
@@ -187,21 +190,22 @@ retro_input_t input_driver_keys_pressed(void)
 {
    int key;
    retro_input_t ret = 0;
+   driver_t *driver = driver_get_ptr();
 
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
       bool state = false;
-      if ((!driver.block_libretro_input && (key < RARCH_FIRST_META_KEY)) ||
-            !driver.block_hotkey)
-         state = driver.input->key_pressed(driver.input_data, key);
+      if ((!driver->block_libretro_input && (key < RARCH_FIRST_META_KEY)) ||
+            !driver->block_hotkey)
+         state = driver->input->key_pressed(driver->input_data, key);
 
 #ifdef HAVE_OVERLAY
-      state = state || (driver.overlay_state.buttons & (1ULL << key));
+      state = state || (driver->overlay_state.buttons & (1ULL << key));
 #endif
 
 #ifdef HAVE_COMMAND
-      if (driver.command)
-         state = state || rarch_cmd_get(driver.command, key);
+      if (driver->command)
+         state = state || rarch_cmd_get(driver->command, key);
 #endif
 
       if (state)

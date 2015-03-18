@@ -87,6 +87,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       unsigned type, unsigned setting_flags)
 {
    rarch_setting_t *setting = NULL;
+   driver_t *driver = driver_get_ptr();
    
    settings_list_free(menu->list_settings);
    menu->list_settings = (rarch_setting_t *)setting_data_new(setting_flags);
@@ -110,8 +111,8 @@ int menu_entries_push_list(menu_handle_t *menu,
             setting->name, menu_entries_setting_set_flags(setting), 0);
    }
 
-   if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(path, label, type);
+   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
+      driver->menu_ctx->populate_entries(path, label, type);
 
    return 0;
 }
@@ -332,9 +333,11 @@ int menu_entries_parse_list(
 
    if (!*dir)
    {
+      driver_t *driver = driver_get_ptr();
+
       menu_entries_parse_drive_list(list);
-      if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-         driver.menu_ctx->populate_entries(dir, label, type);
+      if (driver->menu_ctx && driver->menu_ctx->populate_entries)
+         driver->menu_ctx->populate_entries(dir, label, type);
       return 0;
    }
 #if defined(GEKKO) && defined(HW_RVL)
@@ -442,7 +445,9 @@ int menu_entries_parse_list(
 
    if (!strcmp(label, "core_list"))
    {
-      menu_list_get_last_stack(driver.menu->menu_list, &dir, NULL, NULL);
+      driver_t *driver = driver_get_ptr();
+
+      menu_list_get_last_stack(driver->menu->menu_list, &dir, NULL, NULL);
       list_size = file_list_get_size(list);
 
       for (i = 0; i < list_size; i++)
@@ -476,17 +481,18 @@ int menu_entries_deferred_push(file_list_t *list, file_list_t *menu_list)
    const char *path          = NULL;
    const char *label         = NULL;
    menu_file_list_cbs_t *cbs = NULL;
+   driver_t *driver = driver_get_ptr();
 
-   menu_list_get_last_stack(driver.menu->menu_list, &path, &label, &type);
+   menu_list_get_last_stack(driver->menu->menu_list, &path, &label, &type);
 
    if (!strcmp(label, "Main Menu"))
-      return menu_entries_push_list(driver.menu, list, path, label, type,
+      return menu_entries_push_list(driver->menu, list, path, label, type,
             SL_FLAG_MAIN_MENU);
    else if (!strcmp(label, "Horizontal Menu"))
-      return menu_entries_push_horizontal_menu_list(driver.menu, list, path, label, type);
+      return menu_entries_push_horizontal_menu_list(driver->menu, list, path, label, type);
 
    cbs = (menu_file_list_cbs_t*)
-      menu_list_get_last_stack_actiondata(driver.menu->menu_list);
+      menu_list_get_last_stack_actiondata(driver->menu->menu_list);
 
    if (!cbs->action_deferred_push)
       return 0;

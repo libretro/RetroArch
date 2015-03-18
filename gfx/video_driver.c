@@ -148,28 +148,30 @@ const char* config_get_video_driver_options(void)
 void find_video_driver(void)
 {
    int i;
+   driver_t *driver = driver_get_ptr();
+
 #if defined(HAVE_OPENGL) && defined(HAVE_FBO)
    if (g_extern.system.hw_render_callback.context_type)
    {
       RARCH_LOG("Using HW render, OpenGL driver forced.\n");
-      driver.video = &video_gl;
+      driver->video = &video_gl;
       return;
    }
 #endif
 
-   if (driver.frontend_ctx &&
-       driver.frontend_ctx->get_video_driver)
+   if (driver->frontend_ctx &&
+       driver->frontend_ctx->get_video_driver)
    {
-      driver.video = driver.frontend_ctx->get_video_driver();
+      driver->video = driver->frontend_ctx->get_video_driver();
 
-      if (driver.video)
+      if (driver->video)
          return;
       RARCH_WARN("Frontend supports get_video_driver() but did not specify one.\n");
    }
 
    i = find_driver_index("video_driver", g_settings.video.driver);
    if (i >= 0)
-      driver.video = (const video_driver_t*)video_driver_find_handle(i);
+      driver->video = (const video_driver_t*)video_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -180,9 +182,9 @@ void find_video_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", video_driver_find_ident(d));
       RARCH_WARN("Going to default to first video driver...\n");
 
-      driver.video = (const video_driver_t*)video_driver_find_handle(0);
+      driver->video = (const video_driver_t*)video_driver_find_handle(0);
 
-      if (!driver.video)
+      if (!driver->video)
          rarch_fail(1, "find_video_driver()");
    }
 }
@@ -198,15 +200,16 @@ void find_video_driver(void)
  **/
 void *video_driver_resolve(const video_driver_t **drv)
 {
+   driver_t *driver = driver_get_ptr();
 #ifdef HAVE_THREADS
    if (g_settings.video.threaded
          && !g_extern.system.hw_render_callback.context_type)
       return rarch_threaded_video_resolve(drv);
 #endif
    if (drv)
-      *drv = driver.video;
+      *drv = driver->video;
 
-   return driver.video_data;
+   return driver->video_data;
 }
 
 /**
@@ -220,34 +223,38 @@ void *video_driver_resolve(const video_driver_t **drv)
 uintptr_t video_driver_get_current_framebuffer(void)
 {
 #ifdef HAVE_FBO
-   if (driver.video_poke && driver.video_poke->get_current_framebuffer)
-      return driver.video_poke->get_current_framebuffer(driver.video_data);
+   driver_t *driver = driver_get_ptr();
+   if (driver->video_poke && driver->video_poke->get_current_framebuffer)
+      return driver->video_poke->get_current_framebuffer(driver->video_data);
 #endif
    return 0;
 }
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym)
 {
-   if (driver.video_poke && driver.video_poke->get_proc_address)
-      return driver.video_poke->get_proc_address(driver.video_data, sym);
+   driver_t *driver = driver_get_ptr();
+   if (driver->video_poke && driver->video_poke->get_proc_address)
+      return driver->video_poke->get_proc_address(driver->video_data, sym);
    return NULL;
 }
 
 bool video_driver_is_alive(void)
 {
+   driver_t *driver = driver_get_ptr();
    /* Possible race issue, return true */
-   if (!driver.video || !driver.video_data)
+   if (!driver->video || !driver->video_data)
       return true;
-   if (!driver.video->alive(driver.video_data))
+   if (!driver->video->alive(driver->video_data))
       return false;
    return true;
 }
 
 bool video_driver_has_focus(void)
 {
-   if (!driver.video || !driver.video_data)
+   driver_t *driver = driver_get_ptr();
+   if (!driver->video || !driver->video_data)
       return false;
-   if (!driver.video->focus(driver.video_data))
+   if (!driver->video->focus(driver->video_data))
       return false;
    return true;
 }
@@ -255,9 +262,10 @@ bool video_driver_has_focus(void)
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *shader)
 {
-   if (!driver.video || !driver.video_data)
+   driver_t *driver = driver_get_ptr();
+   if (!driver->video || !driver->video_data)
       return false;
-   if (!driver.video->set_shader(driver.video_data, type, shader))
+   if (!driver->video->set_shader(driver->video_data, type, shader))
       return false;
    return true;
 }
@@ -331,16 +339,18 @@ error:
 
 static void init_video_input(const input_driver_t *tmp)
 {
+   driver_t *driver = driver_get_ptr();
+
    /* Video driver didn't provide an input driver,
     * so we use configured one. */
    RARCH_LOG("Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
 
    if (tmp)
-      driver.input = tmp;
+      driver->input = tmp;
    else
       find_input_driver();
 
-   if (!driver.input)
+   if (!driver->input)
    {
       /* This should never really happen as tmp (driver.input) is always 
        * found before this in find_driver_input(), or we have aborted 
@@ -348,9 +358,9 @@ static void init_video_input(const input_driver_t *tmp)
       rarch_fail(1, "init_video_input()");
    }
 
-   driver.input_data = driver.input->init();
+   driver->input_data = driver->input->init();
 
-   if (driver.input_data)
+   if (driver->input_data)
       return;
 
    RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
@@ -359,21 +369,23 @@ static void init_video_input(const input_driver_t *tmp)
 
 void uninit_video_input(void)
 {
+   driver_t *driver = driver_get_ptr();
+
    rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
 
    if (
-         !driver.input_data_own &&
-         (driver.input_data != driver.video_data) &&
-         driver.input &&
-         driver.input->free)
-      driver.input->free(driver.input_data);
+         !driver->input_data_own &&
+         (driver->input_data != driver->video_data) &&
+         driver->input &&
+         driver->input->free)
+      driver->input->free(driver->input_data);
 
    if (
-         !driver.video_data_own &&
-         driver.video_data &&
-         driver.video &&
-         driver.video->free)
-      driver.video->free(driver.video_data);
+         !driver->video_data_own &&
+         driver->video_data &&
+         driver->video &&
+         driver->video->free)
+      driver->video->free(driver->video_data);
 
    deinit_pixel_converter();
 
@@ -392,6 +404,7 @@ void init_video(void)
    video_info_t video = {0};
    static uint16_t dummy_pixels[32] = {0};
    runloop_t *runloop = rarch_main_get_ptr();
+   driver_t *driver = driver_get_ptr();
 
    init_video_filter(g_extern.system.pix_fmt);
    rarch_main_command(RARCH_CMD_SHADER_DIR_INIT);
@@ -449,9 +462,9 @@ void init_video(void)
    else
       RARCH_LOG("Video @ fullscreen\n");
 
-   driver.display_type  = RARCH_DISPLAY_NONE;
-   driver.video_display = 0;
-   driver.video_window  = 0;
+   driver->display_type  = RARCH_DISPLAY_NONE;
+   driver->video_display = 0;
+   driver->video_window  = 0;
 
    if (!init_video_pixel_converter(RARCH_SCALE_BASE * scale))
    {
@@ -474,7 +487,7 @@ void init_video(void)
       g_extern.filter.out_rgb32 : 
       (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
-   tmp = (const input_driver_t*)driver.input;
+   tmp = (const input_driver_t*)driver->input;
    /* Need to grab the "real" video driver interface on a reinit. */
    find_video_driver();
 
@@ -484,9 +497,9 @@ void init_video(void)
       /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("Starting threaded video driver ...\n");
 
-      if (!rarch_threaded_video_init(&driver.video, &driver.video_data,
-               &driver.input, &driver.input_data,
-               driver.video, &video))
+      if (!rarch_threaded_video_init(&driver->video, &driver->video_data,
+               &driver->input, &driver->input_data,
+               driver->video, &video))
       {
          RARCH_ERR("Cannot open threaded video driver ... Exiting ...\n");
          rarch_fail(1, "init_video()");
@@ -494,37 +507,37 @@ void init_video(void)
    }
    else
 #endif
-      driver.video_data = driver.video->init(&video, &driver.input,
-            &driver.input_data);
+      driver->video_data = driver->video->init(&video, &driver->input,
+            &driver->input_data);
 
-   if (!driver.video_data)
+   if (!driver->video_data)
    {
       RARCH_ERR("Cannot open video driver ... Exiting ...\n");
       rarch_fail(1, "init_video()");
    }
 
-   driver.video_poke = NULL;
-   if (driver.video->poke_interface)
-      driver.video->poke_interface(driver.video_data, &driver.video_poke);
+   driver->video_poke = NULL;
+   if (driver->video->poke_interface)
+      driver->video->poke_interface(driver->video_data, &driver->video_poke);
 
-   if (driver.video->viewport_info && (!custom_vp->width ||
+   if (driver->video->viewport_info && (!custom_vp->width ||
             !custom_vp->height))
    {
       /* Force custom viewport to have sane parameters. */
       custom_vp->width = width;
       custom_vp->height = height;
-      driver.video->viewport_info(driver.video_data, custom_vp);
+      driver->video->viewport_info(driver->video_data, custom_vp);
    }
 
-   if (driver.video->set_rotation)
-      driver.video->set_rotation(driver.video_data,
+   if (driver->video->set_rotation)
+      driver->video->set_rotation(driver->video_data,
             (g_settings.video.rotation + g_extern.system.rotation) % 4);
 
-   if (driver.video->suppress_screensaver)
-      driver.video->suppress_screensaver(driver.video_data,
+   if (driver->video->suppress_screensaver)
+      driver->video->suppress_screensaver(driver->video_data,
             g_settings.ui.suspend_screensaver_enable);
 
-   if (!driver.input)
+   if (!driver->input)
       init_video_input(tmp);
 
    rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
@@ -538,8 +551,8 @@ void init_video(void)
    g_extern.frame_cache.data = &dummy_pixels;
 
 #if defined(PSP)
-   if (driver.video_poke && driver.video_poke->set_texture_frame)
-      driver.video_poke->set_texture_frame(driver.video_data,
+   if (driver->video_poke && driver->video_poke->set_texture_frame)
+      driver->video_poke->set_texture_frame(driver->video_data,
                &dummy_pixels, false, 1, 1, 1.0f);
 #endif
 }

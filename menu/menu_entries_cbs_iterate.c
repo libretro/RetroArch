@@ -111,6 +111,7 @@ static int load_or_open_zip_iterate(unsigned action)
 {
    char msg[PATH_MAX_LENGTH];
    menu_handle_t *menu = menu_driver_resolve();
+   driver_t *driver = driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -121,11 +122,11 @@ static int load_or_open_zip_iterate(unsigned action)
          " - OK to open as Folder\n"
          " - Cancel/Back to Load \n");
 
-   if (driver.video_data && driver.menu_ctx
-         && driver.menu_ctx->render_messagebox)
+   if (driver->video_data && driver->menu_ctx
+         && driver->menu_ctx->render_messagebox)
    {
       if (*msg && msg[0] != '\0')
-         driver.menu_ctx->render_messagebox(msg);
+         driver->menu_ctx->render_messagebox(msg);
    }
 
    switch (action)
@@ -174,10 +175,11 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
    {
       if (!menu->mouse.oldleft)
       {
+         driver_t *driver = driver_get_ptr();
          rarch_setting_t *setting =
             (rarch_setting_t*)setting_data_find_setting
-            (driver.menu->list_settings,
-             driver.menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
+            (driver->menu->list_settings,
+             driver->menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
          menu->mouse.oldleft = true;
 
 #if 0
@@ -240,11 +242,13 @@ static int action_iterate_help(const char *label, unsigned action)
    char desc[ARRAY_SIZE(binds)][64];
    char msg[PATH_MAX_LENGTH];
    menu_handle_t *menu    = menu_driver_resolve();
+   driver_t *driver = driver_get_ptr();
+
    if (!menu)
       return 0;
 
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render();
+   if (driver->video_data && driver->menu_ctx && driver->menu_ctx->render)
+      driver->menu_ctx->render();
 
    for (i = 0; i < ARRAY_SIZE(binds); i++)
    {
@@ -281,8 +285,8 @@ static int action_iterate_help(const char *label, unsigned action)
          "Press Accept/OK to continue.",
       desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6], desc[7]);
 
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(msg);
+   if (driver->video_data && driver->menu_ctx && driver->menu_ctx->render_messagebox)
+      driver->menu_ctx->render_messagebox(msg);
 
    if (action == MENU_ACTION_OK)
       menu_list_pop(menu->menu_list->menu_stack, NULL);
@@ -298,13 +302,14 @@ static int action_iterate_info(const char *label, unsigned action)
    rarch_setting_t *current_setting = NULL;
    file_list_t *list = NULL;
    menu_handle_t *menu    = menu_driver_resolve();
+   driver_t *driver = driver_get_ptr();
    if (!menu)
       return 0;
 
    list = (file_list_t*)menu->menu_list->selection_buf;
 
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render();
+   if (driver->video_data && driver->menu_ctx && driver->menu_ctx->render)
+      driver->menu_ctx->render();
 
    current_setting = (rarch_setting_t*)setting_data_find_setting(
          menu->list_settings,
@@ -332,11 +337,11 @@ static int action_iterate_info(const char *label, unsigned action)
 
    setting_data_get_description(needle, msg, sizeof(msg));
 
-   if (driver.video_data && driver.menu_ctx &&
-         driver.menu_ctx->render_messagebox)
+   if (driver->video_data && driver->menu_ctx &&
+         driver->menu_ctx->render_messagebox)
    {
       if (*msg && msg[0] != '\0')
-         driver.menu_ctx->render_messagebox(msg);
+         driver->menu_ctx->render_messagebox(msg);
    }
 
    if (action == MENU_ACTION_OK)
@@ -371,6 +376,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
    unsigned type = 0;
    video_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
    menu_handle_t *menu    = menu_driver_resolve();
+   driver_t *driver       = driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -463,9 +469,9 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
          {
             video_viewport_t vp;
 
-            if (driver.video_data && driver.video &&
-                  driver.video->viewport_info)
-               driver.video->viewport_info(driver.video_data, &vp);
+            if (driver->video_data && driver->video &&
+                  driver->video->viewport_info)
+               driver->video->viewport_info(driver->video_data, &vp);
 
             if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
             {
@@ -494,8 +500,8 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 
    menu_list_get_last_stack(menu->menu_list, NULL, &label, &type);
 
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render();
+   if (driver->video_data && driver->menu_ctx && driver->menu_ctx->render)
+      driver->menu_ctx->render();
 
    if (g_settings.video.scale_integer)
    {
@@ -524,9 +530,9 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
             base_msg, custom->x, custom->y, custom->width, custom->height);
    }
 
-   if (driver.video_data && driver.menu_ctx &&
-         driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(msg);
+   if (driver->video_data && driver->menu_ctx &&
+         driver->menu_ctx->render_messagebox)
+      driver->menu_ctx->render_messagebox(msg);
 
    if (!custom->width)
       custom->width = stride_x;
@@ -564,12 +570,14 @@ static int action_iterate_custom_bind_keyboard(const char *label, unsigned actio
 static int action_iterate_message(const char *label, unsigned action)
 {
    menu_handle_t *menu    = menu_driver_resolve();
+   driver_t *driver = driver_get_ptr();
+
    if (!menu)
       return -1;
 
-   if (driver.video_data && driver.menu_ctx
-         && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(menu->message_contents);
+   if (driver->video_data && driver->menu_ctx
+         && driver->menu_ctx->render_messagebox)
+      driver->menu_ctx->render_messagebox(menu->message_contents);
 
    if (action == MENU_ACTION_OK)
       menu_list_pop_stack(menu->menu_list);
@@ -582,6 +590,7 @@ static int mouse_iterate(unsigned *action)
    const struct retro_keybind *binds[MAX_USERS];
    menu_handle_t *menu    = menu_driver_resolve();
    runloop_t *runloop     = rarch_main_get_ptr();
+   driver_t *driver       = driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -616,21 +625,21 @@ static int mouse_iterate(unsigned *action)
       return 0;
    }
 
-   menu->mouse.left = driver.input->input_state(driver.input_data,
+   menu->mouse.left = driver->input->input_state(driver->input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
-   menu->mouse.right = driver.input->input_state(driver.input_data,
+   menu->mouse.right = driver->input->input_state(driver->input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
-   menu->mouse.wheelup = driver.input->input_state(driver.input_data,
+   menu->mouse.wheelup = driver->input->input_state(driver->input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
-   menu->mouse.wheeldown = driver.input->input_state(driver.input_data,
+   menu->mouse.wheeldown = driver->input->input_state(driver->input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
-   menu->mouse.hwheelup = driver.input->input_state(driver.input_data,
+   menu->mouse.hwheelup = driver->input->input_state(driver->input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
-   menu->mouse.hwheeldown = driver.input->input_state(driver.input_data,
+   menu->mouse.hwheeldown = driver->input->input_state(driver->input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN);
-   menu->mouse.dx = driver.input->input_state(driver.input_data,
+   menu->mouse.dx = driver->input->input_state(driver->input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
-   menu->mouse.dy = driver.input->input_state(driver.input_data,
+   menu->mouse.dy = driver->input->input_state(driver->input_data,
          binds, 0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
 
    menu->mouse.x += menu->mouse.dx;
@@ -665,6 +674,7 @@ static int action_iterate_main(const char *label, unsigned action)
    const char *path_offset = NULL;
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t *menu    = menu_driver_resolve();
+   driver_t *driver = driver_get_ptr();
    if (!menu)
       return 0;
 
@@ -774,8 +784,8 @@ static int action_iterate_main(const char *label, unsigned action)
 
    ret = mouse_post_iterate(cbs, path_offset, label_offset, type_offset, action);
 
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render();
+   if (driver->video_data && driver->menu_ctx && driver->menu_ctx->render)
+      driver->menu_ctx->render();
 
    /* Have to defer it so we let settings refresh. */
    if (menu->push_start_screen)

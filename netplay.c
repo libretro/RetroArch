@@ -186,8 +186,9 @@ static bool get_self_input_state(netplay_t *netplay)
    unsigned i;
    struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
    uint32_t state = 0;
+   driver_t *driver = driver_get_ptr();
 
-   if (!driver.block_libretro_input && netplay->frame_count > 0)
+   if (!driver->block_libretro_input && netplay->frame_count > 0)
    {
       /* First frame we always give zero input since relying on 
        * input from first frame screws up when we use -F 0. */
@@ -475,7 +476,8 @@ static bool netplay_poll(netplay_t *netplay)
 
 void input_poll_net(void)
 {
-   netplay_t *netplay = (netplay_t*)driver.netplay_data;
+   driver_t *driver = driver_get_ptr();
+   netplay_t *netplay = (netplay_t*)driver->netplay_data;
    if (!netplay_should_skip(netplay) && netplay_can_poll(netplay))
       netplay_poll(netplay);
 }
@@ -483,21 +485,24 @@ void input_poll_net(void)
 void video_frame_net(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
-   netplay_t *netplay = (netplay_t*)driver.netplay_data;
+   driver_t *driver = driver_get_ptr();
+   netplay_t *netplay = (netplay_t*)driver->netplay_data;
    if (!netplay_should_skip(netplay))
       netplay->cbs.frame_cb(data, width, height, pitch);
 }
 
 void audio_sample_net(int16_t left, int16_t right)
 {
-   netplay_t *netplay = (netplay_t*)driver.netplay_data;
+   driver_t *driver = driver_get_ptr();
+   netplay_t *netplay = (netplay_t*)driver->netplay_data;
    if (!netplay_should_skip(netplay))
       netplay->cbs.sample_cb(left, right);
 }
 
 size_t audio_sample_batch_net(const int16_t *data, size_t frames)
 {
-   netplay_t *netplay = (netplay_t*)driver.netplay_data;
+   driver_t *driver = driver_get_ptr();
+   netplay_t *netplay = (netplay_t*)driver->netplay_data;
    if (!netplay_should_skip(netplay))
       return netplay->cbs.sample_batch_cb(data, frames);
    return frames;
@@ -552,7 +557,8 @@ static int16_t netplay_input_state(netplay_t *netplay, bool port, unsigned devic
 int16_t input_state_net(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   netplay_t *netplay = (netplay_t*)driver.netplay_data;
+   driver_t *driver = driver_get_ptr();
+   netplay_t *netplay = (netplay_t*)driver->netplay_data;
    if (netplay_is_alive(netplay))
       return netplay_input_state(netplay, port, device, idx, id);
    return netplay->cbs.state_cb(port, device, idx, id);
@@ -1352,7 +1358,8 @@ static void netplay_set_spectate_input(netplay_t *netplay, int16_t input)
 int16_t input_state_spectate(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   netplay_t *netplay = (netplay_t*)driver.netplay_data;
+   driver_t *driver = driver_get_ptr();
+   netplay_t *netplay = (netplay_t*)driver->netplay_data;
    int16_t res        = netplay->cbs.state_cb(port, device, idx, id);
 
    netplay_set_spectate_input(netplay, res);
@@ -1377,7 +1384,8 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
 int16_t input_state_spectate_client(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   return netplay_get_spectate_input((netplay_t*)driver.netplay_data, port,
+   driver_t *driver = driver_get_ptr();
+   return netplay_get_spectate_input((netplay_t*)driver->netplay_data, port,
          device, idx, id);
 }
 

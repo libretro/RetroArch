@@ -27,6 +27,7 @@ void gl_load_texture_data(GLuint id,
    GLenum wrap;
    bool want_mipmap = false;
    bool rgb32 = (base_size == (sizeof(uint32_t)));
+   driver_t *driver = driver_get_ptr();
 
    glBindTexture(GL_TEXTURE_2D, id);
    
@@ -70,9 +71,9 @@ void gl_load_texture_data(GLuint id,
 #endif
    glTexImage2D(GL_TEXTURE_2D,
          0,
-         (driver.gfx_use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
+         (driver->gfx_use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
          width, height, 0,
-         (driver.gfx_use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
+         (driver->gfx_use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
          (rgb32) ? RARCH_GL_FORMAT32 : GL_UNSIGNED_SHORT_4_4_4_4, frame);
 
    if (want_mipmap)

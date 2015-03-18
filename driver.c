@@ -423,3 +423,8 @@ void uninit_drivers(int flags)
    if ((flags & DRIVER_AUDIO) && !driver.audio_data_own)
       driver.audio_data = NULL;
 }
+
+driver_t *driver_get_ptr(void)
+{
+   return &driver;
+}

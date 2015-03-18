@@ -107,7 +107,8 @@ static void sighandler(int sig)
 
 static void gfx_ctx_drm_egl_swap_interval(void *data, unsigned interval)
 {
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver->video_context_data;
 
    (void)data;
 
@@ -160,8 +161,9 @@ static void wait_flip(bool block)
    int timeout = 0;
    struct pollfd fds = {0};
    drmEventContext evctx   = {0};
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    fds.fd     = drm->g_drm_fd;
    fds.events = POLLIN;
@@ -202,8 +204,9 @@ static void queue_flip(void)
 {
    int ret;
    struct drm_fb *fb = NULL;
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-   driver.video_context_data;
+   driver->video_context_data;
 
    drm->g_next_bo = gbm_surface_lock_front_buffer(drm->g_gbm_surface);
 
@@ -223,8 +226,9 @@ static void queue_flip(void)
 
 static void gfx_ctx_drm_egl_swap_buffers(void *data)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-   driver.video_context_data;
+   driver->video_context_data;
 
    (void)data;
 
@@ -274,7 +278,8 @@ static void gfx_ctx_drm_egl_update_window_title(void *data)
 
 static void gfx_ctx_drm_egl_get_video_size(void *data, unsigned *width, unsigned *height)
 {
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
+   driver_t *driver = driver_get_ptr();
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver->video_context_data;
 
    if (!drm)
       return;
@@ -390,6 +395,7 @@ static bool gfx_ctx_drm_egl_init(void *data)
    struct string_list *gpu_descriptors  = NULL;
 
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)calloc(1, sizeof(gfx_ctx_drm_egl_data_t));
+   driver_t *driver = driver_get_ptr();
 
    if (!drm)
       return false;
@@ -523,7 +529,7 @@ nextgpu:
 
    dir_list_free(gpu_descriptors);
 
-   driver.video_context_data = drm;
+   driver->video_context_data = drm;
 
    return true;
 
@@ -540,8 +546,9 @@ error:
 
 static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
 {
+   driver_t *driver = driver_get_ptr();
    struct drm_fb *fb = (struct drm_fb*)data;
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver.video_context_data;
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)driver->video_context_data;
 
    if (drm && fb->fb_id)
       drmModeRmFB(drm->g_drm_fd, fb->fb_id);
@@ -687,8 +694,9 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    int i, ret = 0;
    struct sigaction sa = {{0}};
    struct drm_fb *fb = NULL;
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    if (!drm)
       return false;
@@ -841,8 +849,9 @@ error:
 
 static void gfx_ctx_drm_egl_destroy(void *data)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    if (!drm)
       return;
@@ -851,9 +860,9 @@ static void gfx_ctx_drm_egl_destroy(void *data)
 
    gfx_ctx_drm_egl_destroy_resources(drm);
 
-   if (driver.video_context_data)
-      free(driver.video_context_data);
-   driver.video_context_data = NULL;
+   if (driver->video_context_data)
+      free(driver->video_context_data);
+   driver->video_context_data = NULL;
 }
 
 static void gfx_ctx_drm_egl_input_driver(void *data,
@@ -866,8 +875,9 @@ static void gfx_ctx_drm_egl_input_driver(void *data,
 
 static bool gfx_ctx_drm_egl_has_focus(void *data)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
    (void)data;
 
    if (!drm)
@@ -925,8 +935,9 @@ static bool gfx_ctx_drm_egl_bind_api(void *data,
 
 static void gfx_ctx_drm_egl_bind_hw_render(void *data, bool enable)
 {
+   driver_t *driver = driver_get_ptr();
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
-      driver.video_context_data;
+      driver->video_context_data;
 
    if (!drm)
       return;

@@ -262,10 +262,11 @@ static int action_ok_core_updater_list(const char *path,
 {
    char url_path[PATH_MAX_LENGTH];
    menu_handle_t *menu = menu_driver_resolve();
+   driver_t *driver = driver_get_ptr();
    if (!menu)
       return -1;
 
-   driver.menu->nonblocking_refresh = true;
+   driver->menu->nonblocking_refresh = true;
 
    (void)url_path;
 #ifdef HAVE_NETWORKING
@@ -835,6 +836,7 @@ static int action_ok_custom_viewport(const char *path,
    /* Start with something sane. */
    video_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
    menu_handle_t *menu = menu_driver_resolve();
+   driver_t *driver = driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -847,9 +849,9 @@ static int action_ok_custom_viewport(const char *path,
          MENU_SETTINGS_CUSTOM_VIEWPORT,
          idx);
 
-   if (driver.video_data && driver.video &&
-         driver.video->viewport_info)
-      driver.video->viewport_info(driver.video_data, custom);
+   if (driver->video_data && driver->video &&
+         driver->video->viewport_info)
+      driver->video->viewport_info(driver->video_data, custom);
 
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
       (float)custom->width / custom->height;
@@ -1064,6 +1066,7 @@ static int action_ok_help(const char *path,
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+
 #ifdef __CELLOS_LV2__
    if (g_extern.console.screen.resolutions.list[
          g_extern.console.screen.resolutions.current.idx] == 
@@ -1080,16 +1083,18 @@ static int action_ok_video_resolution(const char *path,
 
    rarch_main_command(RARCH_CMD_REINIT);
 #else
-   if (driver.video_data && driver.video_poke &&
-         driver.video_poke->get_video_output_size)
+   driver_t *driver = driver_get_ptr();
+
+   if (driver->video_data && driver->video_poke &&
+         driver->video_poke->get_video_output_size)
    {
       unsigned width = 0, height = 0;
-      driver.video_poke->get_video_output_size(driver.video_data,
+      driver->video_poke->get_video_output_size(driver->video_data,
             &width, &height);
 
-      if (driver.video_data && driver.video_poke &&
-            driver.video_poke->set_video_mode)
-         driver.video_poke->set_video_mode(driver.video_data,
+      if (driver->video_data && driver->video_poke &&
+            driver->video_poke->set_video_mode)
+         driver->video_poke->set_video_mode(driver->video_data,
                width, height, true);
    }
 #endif

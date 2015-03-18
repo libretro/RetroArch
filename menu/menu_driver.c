@@ -123,9 +123,11 @@ const char* config_get_menu_driver_options(void)
 
 void find_menu_driver(void)
 {
+   driver_t *driver = driver_get_ptr();
+
    int i = find_driver_index("menu_driver", g_settings.menu.driver);
    if (i >= 0)
-      driver.menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
+      driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -136,26 +138,27 @@ void find_menu_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", menu_driver_find_ident(d));
       RARCH_WARN("Going to default to first menu driver...\n");
 
-      driver.menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(0);
+      driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(0);
 
-      if (!driver.menu_ctx)
+      if (!driver->menu_ctx)
          rarch_fail(1, "find_menu_driver()");
    }
 }
 
 void init_menu(void)
 {
-   if (driver.menu)
+   driver_t *driver = driver_get_ptr();
+   if (driver->menu)
       return;
 
    find_menu_driver();
-   if (!(driver.menu = (menu_handle_t*)menu_init(driver.menu_ctx)))
+   if (!(driver->menu = (menu_handle_t*)menu_init(driver->menu_ctx)))
    {
       RARCH_ERR("Cannot initialize menu.\n");
       rarch_fail(1, "init_menu()");
    }
 
-   if (!(menu_entries_init(driver.menu)))
+   if (!(menu_entries_init(driver->menu)))
    {
       RARCH_ERR("Cannot initialize menu lists.\n");
       rarch_fail(1, "init_menu()");
@@ -164,7 +167,8 @@ void init_menu(void)
 
 menu_handle_t *menu_driver_resolve(void)
 {
-   if (!driver.menu)
+   driver_t *driver = driver_get_ptr();
+   if (!driver->menu)
       return NULL;
-   return driver.menu;
+   return driver->menu;
 }

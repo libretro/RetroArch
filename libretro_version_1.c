@@ -43,6 +43,8 @@ static bool video_frame_scale(const void *data,
       unsigned width, unsigned height,
       size_t pitch)
 {
+   driver_t *driver = driver_get_ptr();
+
    RARCH_PERFORMANCE_INIT(video_frame_conv);
 
    if (!data)
@@ -54,14 +56,14 @@ static bool video_frame_scale(const void *data,
 
    RARCH_PERFORMANCE_START(video_frame_conv);
 
-   driver.scaler.in_width      = width;
-   driver.scaler.in_height     = height;
-   driver.scaler.out_width     = width;
-   driver.scaler.out_height    = height;
-   driver.scaler.in_stride     = pitch;
-   driver.scaler.out_stride    = width * sizeof(uint16_t);
+   driver->scaler.in_width      = width;
+   driver->scaler.in_height     = height;
+   driver->scaler.out_width     = width;
+   driver->scaler.out_height    = height;
+   driver->scaler.in_stride     = pitch;
+   driver->scaler.out_stride    = width * sizeof(uint16_t);
 
-   scaler_ctx_scale(&driver.scaler, driver.scaler_out, data);
+   scaler_ctx_scale(&driver->scaler, driver->scaler_out, data);
 
    RARCH_PERFORMANCE_STOP(video_frame_conv);
    
@@ -114,8 +116,9 @@ static void video_frame(const void *data, unsigned width,
    unsigned output_width  = 0, output_height = 0, output_pitch = 0;
    const char *msg = NULL;
    runloop_t *runloop = rarch_main_get_ptr();
+   driver_t  *driver  = driver_get_ptr();
 
-   if (!driver.video_active)
+   if (!driver->video_active)
       return;
 
    g_extern.frame_cache.data   = data;
@@ -125,8 +128,8 @@ static void video_frame(const void *data, unsigned width,
 
    if (video_frame_scale(data, width, height, pitch))
    {
-      data                        = driver.scaler_out;
-      pitch                       = driver.scaler.out_stride;
+      data                        = driver->scaler_out;
+      pitch                       = driver->scaler.out_stride;
    }
 
    /* Slightly messy code,
@@ -140,7 +143,7 @@ static void video_frame(const void *data, unsigned width,
       recording_dump_frame(data, width, height, pitch);
 
    msg                = rarch_main_msg_queue_pull();
-   driver.current_msg = msg;
+   driver->current_msg = msg;
 
    if (video_frame_filter(data, width, height, pitch,
             &output_width, &output_height, &output_pitch))
@@ -151,13 +154,13 @@ static void video_frame(const void *data, unsigned width,
       pitch  = output_pitch;
    }
 
-   if (driver.video->frame(driver.video_data, data, width, height, pitch, msg))
+   if (driver->video->frame(driver->video_data, data, width, height, pitch, msg))
    {
       runloop->frames.video.count++;
       return;
    }
 
-   driver.video_active = false;
+   driver->video_active = false;
 }
 
 /**
@@ -179,20 +182,21 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
    struct resampler_data src_data = {0};
    struct rarch_dsp_data dsp_data = {0};
    runloop_t *runloop             = rarch_main_get_ptr();
+   driver_t  *driver              = driver_get_ptr();
 
-   if (driver.recording_data)
+   if (driver->recording_data)
    {
       struct ffemu_audio_data ffemu_data = {0};
       ffemu_data.data                    = data;
       ffemu_data.frames                  = samples / 2;
 
-      if (driver.recording && driver.recording->push_audio)
-         driver.recording->push_audio(driver.recording_data, &ffemu_data);
+      if (driver->recording && driver->recording->push_audio)
+         driver->recording->push_audio(driver->recording_data, &ffemu_data);
    }
 
    if (runloop->is_paused || g_settings.audio.mute_enable)
       return true;
-   if (!driver.audio_active || !g_extern.audio_data.data)
+   if (!driver->audio_active || !g_extern.audio_data.data)
       return false;
 
    RARCH_PERFORMANCE_INIT(audio_convert_s16);
@@ -232,8 +236,8 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
 
    RARCH_PERFORMANCE_INIT(resampler_proc);
    RARCH_PERFORMANCE_START(resampler_proc);
-   rarch_resampler_process(driver.resampler,
-         driver.resampler_data, &src_data);
+   rarch_resampler_process(driver->resampler,
+         driver->resampler_data, &src_data);
    RARCH_PERFORMANCE_STOP(resampler_proc);
 
    output_data   = g_extern.audio_data.outsamples;
@@ -251,12 +255,12 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
       output_size = sizeof(int16_t);
    }
 
-   if (driver.audio->write(driver.audio_data, output_data,
+   if (driver->audio->write(driver->audio_data, output_data,
             output_frames * output_size * 2) < 0)
    {
       RARCH_ERR(RETRO_LOG_AUDIO_WRITE_FAILED);
 
-      driver.audio_active = false;
+      driver->audio_active = false;
       return false;
    }
 
@@ -404,6 +408,7 @@ static int16_t input_state(unsigned port, unsigned device,
       g_settings.input.binds[14],
       g_settings.input.binds[15],
    };
+   driver_t *driver = driver_get_ptr();
 
    device &= RETRO_DEVICE_MASK;
 
@@ -422,10 +427,10 @@ static int16_t input_state(unsigned port, unsigned device,
          id = g_settings.input.remap_ids[port][id];
    }
 
-   if (!driver.block_libretro_input)
+   if (!driver->block_libretro_input)
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
-         res = driver.input->input_state(driver.input_data, libretro_input_binds, port,
+         res = driver->input->input_state(driver->input_data, libretro_input_binds, port,
                device, idx, id);
 
 #ifdef HAVE_OVERLAY
@@ -434,13 +439,13 @@ static int16_t input_state(unsigned port, unsigned device,
          switch (device)
          {
             case RETRO_DEVICE_JOYPAD:
-               if (driver.overlay_state.buttons & (UINT64_C(1) << id))
+               if (driver->overlay_state.buttons & (UINT64_C(1) << id))
                   res |= 1;
                break;
             case RETRO_DEVICE_KEYBOARD:
                if (id < RETROK_LAST)
                {
-                  if (OVERLAY_GET_KEY(&driver.overlay_state, id))
+                  if (OVERLAY_GET_KEY(&driver->overlay_state, id))
                      res |= 1;
                }
                break;
@@ -452,8 +457,8 @@ static int16_t input_state(unsigned port, unsigned device,
                      base = 2;
                   if (id == RETRO_DEVICE_ID_ANALOG_Y)
                      base += 1;
-                  if (driver.overlay_state.analog[base])
-                     res = driver.overlay_state.analog[base];
+                  if (driver->overlay_state.analog[base])
+                     res = driver->overlay_state.analog[base];
                }
                break;
          }
@@ -462,7 +467,7 @@ static int16_t input_state(unsigned port, unsigned device,
    }
 
    /* flushing_input will be cleared in rarch_main_iterate. */
-   if (driver.flushing_input)
+   if (driver->flushing_input)
       res = 0;
 
    /* Don't allow turbo for D-pad. */
@@ -490,67 +495,68 @@ static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opa
    unsigned i, j, device;
    uint16_t key_mod = 0;
    bool polled = false;
+   driver_t *driver = driver_get_ptr();
 
    if (overlay_device->state != OVERLAY_STATUS_ALIVE)
       return;
 
-   memcpy(old_key_state.keys, driver.overlay_state.keys,
-         sizeof(driver.overlay_state.keys));
-   memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
+   memcpy(old_key_state.keys, driver->overlay_state.keys,
+         sizeof(driver->overlay_state.keys));
+   memset(&driver->overlay_state, 0, sizeof(driver->overlay_state));
 
    device = input_overlay_full_screen(overlay_device) ?
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
-         driver.input->input_state(driver.input_data, NULL, 0, device, i,
+         driver->input->input_state(driver->input_data, NULL, 0, device, i,
             RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
    {
       input_overlay_state_t polled_data;
-      int16_t x = driver.input->input_state(driver.input_data, NULL, 0,
+      int16_t x = driver->input->input_state(driver->input_data, NULL, 0,
             device, i, RETRO_DEVICE_ID_POINTER_X);
-      int16_t y = driver.input->input_state(driver.input_data, NULL, 0,
+      int16_t y = driver->input->input_state(driver->input_data, NULL, 0,
             device, i, RETRO_DEVICE_ID_POINTER_Y);
 
       input_overlay_poll(overlay_device, &polled_data, x, y);
 
-      driver.overlay_state.buttons |= polled_data.buttons;
+      driver->overlay_state.buttons |= polled_data.buttons;
 
-      for (j = 0; j < ARRAY_SIZE(driver.overlay_state.keys); j++)
-         driver.overlay_state.keys[j] |= polled_data.keys[j];
+      for (j = 0; j < ARRAY_SIZE(driver->overlay_state.keys); j++)
+         driver->overlay_state.keys[j] |= polled_data.keys[j];
 
       /* Fingers pressed later take prio and matched up
        * with overlay poll priorities. */
       for (j = 0; j < 4; j++)
          if (polled_data.analog[j])
-            driver.overlay_state.analog[j] = polled_data.analog[j];
+            driver->overlay_state.analog[j] = polled_data.analog[j];
 
       polled = true;
    }
 
-   if (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LSHIFT) ||
-         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RSHIFT))
+   if (OVERLAY_GET_KEY(&driver->overlay_state, RETROK_LSHIFT) ||
+         OVERLAY_GET_KEY(&driver->overlay_state, RETROK_RSHIFT))
       key_mod |= RETROKMOD_SHIFT;
 
-   if (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LCTRL) ||
-    OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RCTRL))
+   if (OVERLAY_GET_KEY(&driver->overlay_state, RETROK_LCTRL) ||
+    OVERLAY_GET_KEY(&driver->overlay_state, RETROK_RCTRL))
       key_mod |= RETROKMOD_CTRL;
 
-   if (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LALT) ||
-         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RALT))
+   if (OVERLAY_GET_KEY(&driver->overlay_state, RETROK_LALT) ||
+         OVERLAY_GET_KEY(&driver->overlay_state, RETROK_RALT))
       key_mod |= RETROKMOD_ALT;
 
-   if (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LMETA) ||
-         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RMETA))
+   if (OVERLAY_GET_KEY(&driver->overlay_state, RETROK_LMETA) ||
+         OVERLAY_GET_KEY(&driver->overlay_state, RETROK_RMETA))
       key_mod |= RETROKMOD_META;
 
    /* CAPSLOCK SCROLLOCK NUMLOCK */
-   for (i = 0; i < ARRAY_SIZE(driver.overlay_state.keys); i++)
+   for (i = 0; i < ARRAY_SIZE(driver->overlay_state.keys); i++)
    {
-      if (driver.overlay_state.keys[i] != old_key_state.keys[i])
+      if (driver->overlay_state.keys[i] != old_key_state.keys[i])
       {
          uint32_t orig_bits = old_key_state.keys[i];
-         uint32_t new_bits  = driver.overlay_state.keys[i];
+         uint32_t new_bits  = driver->overlay_state.keys[i];
 
          for (j = 0; j < 32; j++)
             if ((orig_bits & (1 << j)) != (new_bits & (1 << j)))
@@ -565,13 +571,13 @@ static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opa
       unsigned bind_plus  = RARCH_ANALOG_LEFT_X_PLUS + 2 * j;
       unsigned bind_minus = bind_plus + 1;
 
-      if (driver.overlay_state.analog[j])
+      if (driver->overlay_state.analog[j])
          continue;
 
-      if (driver.overlay_state.buttons & (1ULL << bind_plus))
-         driver.overlay_state.analog[j] += 0x7fff;
-      if (driver.overlay_state.buttons & (1ULL << bind_minus))
-         driver.overlay_state.analog[j] -= 0x7fff;
+      if (driver->overlay_state.buttons & (1ULL << bind_plus))
+         driver->overlay_state.analog[j] += 0x7fff;
+      if (driver->overlay_state.buttons & (1ULL << bind_minus))
+         driver->overlay_state.analog[j] -= 0x7fff;
    }
 
    /* Check for analog_dpad_mode.
@@ -587,17 +593,17 @@ static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opa
          if (g_settings.input.analog_dpad_mode[0] == ANALOG_DPAD_LSTICK)
             analog_base = 0;
 
-         analog_x = (float)driver.overlay_state.analog[analog_base + 0] / 0x7fff;
-         analog_y = (float)driver.overlay_state.analog[analog_base + 1] / 0x7fff;
+         analog_x = (float)driver->overlay_state.analog[analog_base + 0] / 0x7fff;
+         analog_y = (float)driver->overlay_state.analog[analog_base + 1] / 0x7fff;
 
          if (analog_x <= -g_settings.input.axis_threshold)
-            driver.overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
+            driver->overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
          if (analog_x >=  g_settings.input.axis_threshold)
-            driver.overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+            driver->overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
          if (analog_y <= -g_settings.input.axis_threshold)
-            driver.overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
+            driver->overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
          if (analog_y >=  g_settings.input.axis_threshold)
-            driver.overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
+            driver->overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
          break;
       }
 
@@ -619,16 +625,18 @@ static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opa
  **/
 static void input_poll(void)
 {
-   driver.input->poll(driver.input_data);
+   driver_t *driver = driver_get_ptr();
+
+   driver->input->poll(driver->input_data);
 
 #ifdef HAVE_OVERLAY
-   if (driver.overlay)
-      input_poll_overlay(driver.overlay, g_settings.input.overlay_opacity);
+   if (driver->overlay)
+      input_poll_overlay(driver->overlay, g_settings.input.overlay_opacity);
 #endif
 
 #ifdef HAVE_COMMAND
-   if (driver.command)
-      rarch_cmd_poll(driver.command);
+   if (driver->command)
+      rarch_cmd_poll(driver->command);
 #endif
 }
 
@@ -662,6 +670,7 @@ void retro_set_default_callbacks(void *data)
 void retro_init_libretro_cbs(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
+   driver_t *driver = driver_get_ptr();
 
    if (!cbs)
       return;
@@ -675,7 +684,7 @@ void retro_init_libretro_cbs(void *data)
    retro_set_default_callbacks(cbs);
 
 #ifdef HAVE_NETPLAY
-   if (!driver.netplay_data)
+   if (!driver->netplay_data)
       return;
 
    if (g_extern.netplay_is_spectate)

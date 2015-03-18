@@ -85,6 +85,8 @@ void main_exit_save_config(void)
  **/
 void main_exit(args_type() args)
 {
+   driver_t *driver = driver_get_ptr();
+
    g_extern.system.shutdown = false;
 
    main_exit_save_config();
@@ -93,7 +95,7 @@ void main_exit(args_type() args)
    {
 #ifdef HAVE_MENU
       /* Do not want menu context to live any more. */
-      driver.menu_data_own = false;
+      driver->menu_data_own = false;
 #endif
       rarch_main_deinit();
    }
@@ -104,17 +106,17 @@ void main_exit(args_type() args)
    logger_shutdown();
 #endif
 
-   if (driver.frontend_ctx && driver.frontend_ctx->deinit)
-      driver.frontend_ctx->deinit(args);
+   if (driver->frontend_ctx && driver->frontend_ctx->deinit)
+      driver->frontend_ctx->deinit(args);
 
-   if (driver.frontend_ctx && driver.frontend_ctx->exitspawn)
-      driver.frontend_ctx->exitspawn(g_settings.libretro,
+   if (driver->frontend_ctx && driver->frontend_ctx->exitspawn)
+      driver->frontend_ctx->exitspawn(g_settings.libretro,
             sizeof(g_settings.libretro));
 
    rarch_main_state_free();
 
-   if (driver.frontend_ctx && driver.frontend_ctx->shutdown)
-      driver.frontend_ctx->shutdown(false);
+   if (driver->frontend_ctx && driver->frontend_ctx->shutdown)
+      driver->frontend_ctx->shutdown(false);
 }
 
 static void check_defaults_dirs(void)
@@ -273,22 +275,23 @@ returntype main_entry(signature())
    declare_argv();
    args_type() args = (args_type())args_initial_ptr();
    int ret = 0;
+   driver_t *driver = driver_get_ptr();
 
-   driver.frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
+   driver->frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
-   if (!driver.frontend_ctx)
+   if (!driver->frontend_ctx)
       RARCH_WARN("Frontend context could not be initialized.\n");
 
-   if (driver.frontend_ctx && driver.frontend_ctx->init)
-      driver.frontend_ctx->init(args);
+   if (driver->frontend_ctx && driver->frontend_ctx->init)
+      driver->frontend_ctx->init(args);
 
    rarch_main_state_new();
 
-   if (driver.frontend_ctx)
+   if (driver->frontend_ctx)
    {
       if (!(ret = (main_load_content(argc, argv, args,
-         driver.frontend_ctx->environment_get,
-         driver.frontend_ctx->process_args))))
+         driver->frontend_ctx->environment_get,
+         driver->frontend_ctx->process_args))))
       {
          return_var(ret);
       }

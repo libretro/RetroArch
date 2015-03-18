@@ -123,12 +123,13 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
 {
 #ifdef HAVE_SHADER_MANAGER
    config_file_t *conf = NULL;
+   driver_t *driver = driver_get_ptr();
 
    g_settings.video.shader_enable = false;
 
-   if (!driver.video->set_shader)
+   if (!driver->video->set_shader)
       return;
-   if (!driver.video->set_shader(driver.video_data,
+   if (!driver->video->set_shader(driver->video_data,
             (enum rarch_shader_type)type, preset_path))
       return;
 
@@ -161,7 +162,7 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
    }
    config_file_free(conf);
 
-   driver.menu->need_refresh = true;
+   driver->menu->need_refresh = true;
 #endif
 }
 
@@ -180,14 +181,15 @@ void menu_shader_manager_save_preset(
    unsigned d, type = RARCH_SHADER_NONE;
    config_file_t *conf = NULL;
    bool ret = false;
+   driver_t *driver = driver_get_ptr();
 
-   if (!driver.menu)
+   if (!driver->menu)
    {
       RARCH_ERR("Cannot save shader preset, menu handle is not initialized.\n");
       return;
    }
 
-   type = menu_shader_manager_get_type(driver.menu->shader);
+   type = menu_shader_manager_get_type(driver->menu->shader);
 
    if (type == RARCH_SHADER_NONE)
       return;
@@ -210,7 +212,7 @@ void menu_shader_manager_save_preset(
    else
    {
       const char *conf_path = (type == RARCH_SHADER_GLSL) ?
-         driver.menu->default_glslp : driver.menu->default_cgp;
+         driver->menu->default_glslp : driver->menu->default_cgp;
       strlcpy(buffer, conf_path, sizeof(buffer));
    }
 
@@ -226,7 +228,7 @@ void menu_shader_manager_save_preset(
 
    if (!(conf = (config_file_t*)config_file_new(NULL)))
       return;
-   video_shader_write_conf_cgp(conf, driver.menu->shader);
+   video_shader_write_conf_cgp(conf, driver->menu->shader);
 
    for (d = 0; d < ARRAY_SIZE(dirs); d++)
    {
@@ -303,9 +305,10 @@ unsigned menu_shader_manager_get_type(const struct video_shader *shader)
 void menu_shader_manager_apply_changes(void)
 {
 #ifdef HAVE_SHADER_MANAGER
-   unsigned shader_type = menu_shader_manager_get_type(driver.menu->shader);
+   driver_t *driver = driver_get_ptr();
+   unsigned shader_type = menu_shader_manager_get_type(driver->menu->shader);
 
-   if (driver.menu->shader->passes 
+   if (driver->menu->shader->passes 
          && shader_type != RARCH_SHADER_NONE)
    {
       menu_shader_manager_save_preset(NULL, true);

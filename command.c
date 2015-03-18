@@ -217,8 +217,9 @@ static bool cmd_set_shader(const char *arg)
    char msg[PATH_MAX_LENGTH];
    const char *ext;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
+   driver_t *driver = driver_get_ptr();
 
-   if (!driver.video->set_shader)
+   if (!driver->video->set_shader)
       return false;
 
    ext = path_get_extension(arg);
@@ -235,7 +236,7 @@ static bool cmd_set_shader(const char *arg)
    rarch_main_msg_queue_push(msg, 1, 120, true);
    RARCH_LOG("Applying shader \"%s\".\n", arg);
 
-   return driver.video->set_shader(driver.video_data, type, arg);
+   return driver->video->set_shader(driver->video_data, type, arg);
 }
 
 static const struct cmd_action_map action_map[] = {

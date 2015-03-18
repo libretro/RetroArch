@@ -384,6 +384,7 @@ static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
 {
    uint8_t a8 = 0;
    struct font_params params = {0};
+   driver_t *driver = driver_get_ptr();
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -407,9 +408,9 @@ static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
    params.full_screen = true;
    params.align_right = align_right;
 
-   if (driver.video_data && driver.video_poke
-       && driver.video_poke->set_osd_msg)
-       driver.video_poke->set_osd_msg(driver.video_data,
+   if (driver->video_data && driver->video_poke
+       && driver->video_poke->set_osd_msg)
+       driver->video_poke->set_osd_msg(driver->video_data,
                                       str, &params, xmb->font.buf);
 }
 
@@ -1504,7 +1505,8 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
    if (g_settings.video.threaded
          && !g_extern.system.hw_render_callback.context_type)
    {
-      thread_video_t *thr = (thread_video_t*)driver.video_data;
+      driver_t *driver    = driver_get_ptr();
+      thread_video_t *thr = (thread_video_t*)driver->video_data;
 
       if (!thr)
          return false;

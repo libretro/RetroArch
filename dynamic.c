@@ -465,6 +465,8 @@ void init_libretro_sym(bool dummy)
  **/
 void uninit_libretro_sym(void)
 {
+   driver_t *driver = driver_get_ptr();
+
 #ifdef HAVE_DYNAMIC
    if (lib_handle)
       dylib_close(lib_handle);
@@ -481,8 +483,8 @@ void uninit_libretro_sym(void)
    free(g_extern.system.special);
    free(g_extern.system.ports);
    memset(&g_extern.system, 0, sizeof(g_extern.system));
-   driver.camera_active = false;
-   driver.location_active = false;
+   driver->camera_active = false;
+   driver->location_active = false;
 
    /* Performance counters no longer valid. */
    retro_perf_clear();
@@ -609,6 +611,7 @@ static void rarch_log_libretro(enum retro_log_level level,
 bool rarch_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
+   driver_t *driver = driver_get_ptr();
 
    if (ignore_environment_cb)
       return false;
@@ -688,10 +691,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          g_extern.system.rotation = rotation;
 
-         if (driver.video && driver.video->set_rotation)
+         if (driver->video && driver->video->set_rotation)
          {
-            if (driver.video_data)
-               driver.video->set_rotation(driver.video_data, rotation);
+            if (driver->video_data)
+               driver->video->set_rotation(driver->video_data, rotation);
          }
          else
             return false;
@@ -970,7 +973,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_audio_callback *info = 
             (const struct retro_audio_callback*)data;
 
-         if (driver.recording_data) // A/V sync is a must.
+         if (driver->recording_data) // A/V sync is a must.
             return false;
 
 #ifdef HAVE_NETPLAY
@@ -1016,9 +1019,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          uint64_t *mask = (uint64_t*)data;
 
          RARCH_LOG("Environ GET_INPUT_DEVICE_CAPABILITIES.\n");
-         if (driver.input &&
-               driver.input->get_capabilities && driver.input_data)
-            *mask = driver.input->get_capabilities(driver.input_data);
+         if (driver->input &&
+               driver->input->get_capabilities && driver->input_data)
+            *mask = driver->input->get_capabilities(driver->input_data);
          else
             return false;
          break;
@@ -1044,7 +1047,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->start = driver_camera_start;
          cb->stop = driver_camera_stop;
          g_extern.system.camera_callback = *cb;
-         driver.camera_active = cb->caps != 0;
+         driver->camera_active = cb->caps != 0;
          break;
       }
 
@@ -1059,7 +1062,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->get_position = driver_location_get_position;
          cb->set_interval = driver_location_set_interval;
          g_extern.system.location_callback = *cb;
-         driver.location_active = true;
+         driver->location_active = true;
          break;
       }
 
@@ -1218,8 +1221,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             *g_extern.fullpath = '\0';
 
 #if defined(RARCH_CONSOLE)
-         if (driver.frontend_ctx && driver.frontend_ctx->set_fork)
-            driver.frontend_ctx->set_fork(true, true);
+         if (driver->frontend_ctx && driver->frontend_ctx->set_fork)
+            driver->frontend_ctx->set_fork(true, true);
 #elif defined(HAVE_DYNAMIC)
          rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
 #endif

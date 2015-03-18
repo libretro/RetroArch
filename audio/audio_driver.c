@@ -213,9 +213,11 @@ const char* config_get_audio_driver_options(void)
 
 void find_audio_driver(void)
 {
+   driver_t *driver = driver_get_ptr();
    int i = find_driver_index("audio_driver", g_settings.audio.driver);
+
    if (i >= 0)
-      driver.audio = (const audio_driver_t*)audio_driver_find_handle(i);
+      driver->audio = (const audio_driver_t*)audio_driver_find_handle(i);
    else
    {
       unsigned d;
@@ -226,17 +228,19 @@ void find_audio_driver(void)
          RARCH_LOG_OUTPUT("\t%s\n", audio_driver_find_ident(d));
       RARCH_WARN("Going to default to first audio driver...\n");
 
-      driver.audio = (const audio_driver_t*)audio_driver_find_handle(0);
+      driver->audio = (const audio_driver_t*)audio_driver_find_handle(0);
 
-      if (!driver.audio)
+      if (!driver->audio)
          rarch_fail(1, "find_audio_driver()");
    }
 }
 
 void uninit_audio(void)
 {
-   if (driver.audio_data && driver.audio)
-      driver.audio->free(driver.audio_data);
+   driver_t *driver = driver_get_ptr();
+
+   if (driver->audio_data && driver->audio)
+      driver->audio->free(driver->audio_data);
 
    free(g_extern.audio_data.conv_outsamples);
    g_extern.audio_data.conv_outsamples = NULL;
@@ -247,12 +251,12 @@ void uninit_audio(void)
 
    if (!g_settings.audio.enable)
    {
-      driver.audio_active = false;
+      driver->audio_active = false;
       return;
    }
 
-   rarch_resampler_freep(&driver.resampler,
-         &driver.resampler_data);
+   rarch_resampler_freep(&driver->resampler,
+         &driver->resampler_data);
 
    free(g_extern.audio_data.data);
    g_extern.audio_data.data = NULL;
@@ -269,11 +273,12 @@ void init_audio(void)
 {
    size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    runloop_t *runloop = rarch_main_get_ptr();
+   driver_t *driver = driver_get_ptr();
 
    audio_convert_init_simd();
 
    /* Resource leaks will follow if audio is initialized twice. */
-   if (driver.audio_data)
+   if (driver->audio_data)
       return;
 
    /* Accomodate rewind since at some point we might have two full buffers. */
@@ -297,7 +302,7 @@ void init_audio(void)
 
    if (!g_settings.audio.enable)
    {
-      driver.audio_active = false;
+      driver->audio_active = false;
       return;
    }
 
@@ -306,10 +311,10 @@ void init_audio(void)
    if (g_extern.system.audio_callback.callback)
    {
       RARCH_LOG("Starting threaded audio driver ...\n");
-      if (!rarch_threaded_audio_init(&driver.audio, &driver.audio_data,
+      if (!rarch_threaded_audio_init(&driver->audio, &driver->audio_data,
                *g_settings.audio.device ? g_settings.audio.device : NULL,
                g_settings.audio.out_rate, g_settings.audio.latency,
-               driver.audio))
+               driver->audio))
       {
          RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
          rarch_fail(1, "init_audio()");
@@ -318,22 +323,22 @@ void init_audio(void)
    else
 #endif
    {
-      driver.audio_data = driver.audio->init(*g_settings.audio.device ?
+      driver->audio_data = driver->audio->init(*g_settings.audio.device ?
             g_settings.audio.device : NULL,
             g_settings.audio.out_rate, g_settings.audio.latency);
    }
 
-   if (!driver.audio_data)
+   if (!driver->audio_data)
    {
       RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
-      driver.audio_active = false;
+      driver->audio_active = false;
    }
 
    g_extern.audio_data.use_float = false;
-   if (driver.audio_active && driver.audio->use_float(driver.audio_data))
+   if (driver->audio_active && driver->audio->use_float(driver->audio_data))
       g_extern.audio_data.use_float = true;
 
-   if (!g_settings.audio.sync && driver.audio_active)
+   if (!g_settings.audio.sync && driver->audio_active)
    {
       rarch_main_command(RARCH_CMD_AUDIO_SET_NONBLOCKING_STATE);
       g_extern.audio_data.chunk_size = 
@@ -352,13 +357,13 @@ void init_audio(void)
       g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_extern.audio_data.in_rate;
 
-   if (!rarch_resampler_realloc(&driver.resampler_data,
-            &driver.resampler,
+   if (!rarch_resampler_realloc(&driver->resampler_data,
+            &driver->resampler,
          g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio))
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
             g_settings.audio.resampler);
-      driver.audio_active = false;
+      driver->audio_active = false;
    }
 
    rarch_assert(g_extern.audio_data.data = (float*)
@@ -372,13 +377,13 @@ void init_audio(void)
          malloc(outsamples_max * sizeof(float)));
 
    g_extern.audio_data.rate_control = false;
-   if (!g_extern.system.audio_callback.callback && driver.audio_active &&
+   if (!g_extern.system.audio_callback.callback && driver->audio_active &&
          g_settings.audio.rate_control)
    {
-      if (driver.audio->buffer_size && driver.audio->write_avail)
+      if (driver->audio->buffer_size && driver->audio->write_avail)
       {
          g_extern.audio_data.driver_buffer_size = 
-            driver.audio->buffer_size(driver.audio_data);
+            driver->audio->buffer_size(driver->audio_data);
          g_extern.audio_data.rate_control = true;
       }
       else
@@ -389,17 +394,18 @@ void init_audio(void)
 
    runloop->measure_data.buffer_free_samples_count = 0;
 
-   if (driver.audio_active && !g_settings.audio.mute_enable &&
+   if (driver->audio_active && !g_settings.audio.mute_enable &&
          g_extern.system.audio_callback.callback)
    {
       /* Threaded driver is initially stopped. */
-      driver.audio->start(driver.audio_data);
+      driver->audio->start(driver->audio_data);
    }
 }
 
 bool audio_driver_mute_toggle(void)
 {
-   if (!driver.audio_data || !driver.audio_active)
+   driver_t *driver = driver_get_ptr();
+   if (!driver->audio_data || !driver->audio_active)
       return false;
 
    g_settings.audio.mute_enable = !g_settings.audio.mute_enable;
@@ -408,7 +414,7 @@ bool audio_driver_mute_toggle(void)
       rarch_main_command(RARCH_CMD_AUDIO_STOP);
    else if (!rarch_main_command(RARCH_CMD_AUDIO_START))
    {
-      driver.audio_active = false;
+      driver->audio_active = false;
       return false;
    }
 
@@ -425,8 +431,11 @@ void audio_driver_readjust_input_rate(void)
    double direction, adjust;
    int half_size, delta_mid;
    unsigned write_idx;
-   int avail = driver.audio->write_avail(driver.audio_data);
    runloop_t *runloop = rarch_main_get_ptr();
+   driver_t *driver   = driver_get_ptr();
+   int avail = 0;
+   
+   avail = driver->audio->write_avail(driver->audio_data);
 
 #if 0
    RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",

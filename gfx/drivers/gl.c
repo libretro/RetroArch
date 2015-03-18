@@ -1286,10 +1286,12 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    else
 #endif
    {
+      driver_t *driver = driver_get_ptr();
+
       glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(width * gl->base_size));
 
       /* Fallback for GLES devices without GL_BGRA_EXT. */
-      if (gl->base_size == 4 && driver.gfx_use_rgba)
+      if (gl->base_size == 4 && driver->gfx_use_rgba)
       {
          gl_convert_frame_argb8888_abgr8888(gl, gl->conv_buffer,
                frame, width, height, pitch);
@@ -1464,6 +1466,7 @@ static bool gl_frame(void *data, const void *frame,
 {
    gl_t *gl = (gl_t*)data;
    runloop_t *runloop = rarch_main_get_ptr();
+   driver_t *driver = driver_get_ptr();
 
    RARCH_PERFORMANCE_INIT(frame_run);
    RARCH_PERFORMANCE_START(frame_run);
@@ -1589,12 +1592,15 @@ static bool gl_frame(void *data, const void *frame,
    gl_set_prev_texture(gl, &gl->tex_info);
 
 #if defined(HAVE_MENU)
-   if (runloop->is_menu
-         && driver.menu_ctx && driver.menu_ctx->frame)
-      driver.menu_ctx->frame();
+   {
+      driver_t *driver = driver_get_ptr();
+      if (runloop->is_menu
+            && driver->menu_ctx && driver->menu_ctx->frame)
+         driver->menu_ctx->frame();
 
-   if (gl->menu_texture_enable)
-      gl_draw_texture(gl);
+      if (gl->menu_texture_enable)
+         gl_draw_texture(gl);
+   }
 #endif
 
    if (msg && gl->font_driver && gl->font_handle)
@@ -1645,7 +1651,7 @@ static bool gl_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (g_settings.video.black_frame_insertion &&
-         !driver.nonblock_state && !runloop->is_slowmotion
+         !driver->nonblock_state && !runloop->is_slowmotion
          && !runloop->is_paused)
    {
       gl->ctx_driver->swap_buffers(gl);
@@ -1803,6 +1809,7 @@ static void gl_set_nonblock_state(void *data, bool state)
 
 static bool resolve_extensions(gl_t *gl)
 {
+   driver_t *driver = driver_get_ptr();
 #ifndef HAVE_OPENGLES
    const char *vendor   = NULL;
    const char *renderer = NULL;
@@ -1842,7 +1849,7 @@ static bool resolve_extensions(gl_t *gl)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 #endif
 
-   driver.gfx_use_rgba = false;
+   driver->gfx_use_rgba = false;
 #ifdef HAVE_OPENGLES2
    const char *version = NULL;
    bool gles3          = false;
@@ -1853,7 +1860,7 @@ static bool resolve_extensions(gl_t *gl)
       RARCH_LOG("[GL]: BGRA8888 extension found for GLES.\n");
    else
    {
-      driver.gfx_use_rgba = true;
+      driver->gfx_use_rgba = true;
       RARCH_WARN("[GL]: GLES implementation does not have BGRA8888 extension.\n"
                  "32-bit path will require conversion.\n");
    }
@@ -1933,6 +1940,8 @@ static bool resolve_extensions(gl_t *gl)
 
 static INLINE void gl_set_texture_fmts(gl_t *gl, bool rgb32)
 {
+   driver_t *driver = driver_get_ptr();
+
    gl->internal_fmt = RARCH_GL_INTERNAL_FORMAT16;
    gl->texture_type = RARCH_GL_TEXTURE_TYPE16;
    gl->texture_fmt  = RARCH_GL_FORMAT16;
@@ -1945,7 +1954,7 @@ static INLINE void gl_set_texture_fmts(gl_t *gl, bool rgb32)
       gl->texture_fmt  = RARCH_GL_FORMAT32;
       gl->base_size    = sizeof(uint32_t);
 
-      if (driver.gfx_use_rgba)
+      if (driver->gfx_use_rgba)
       {
          gl->internal_fmt = GL_RGBA;
          gl->texture_type = GL_RGBA;
