@@ -96,6 +96,7 @@ typedef struct data_runloop
 
    slock_t *lock;
    slock_t *cond_lock;
+   slock_t *overlay_lock;
    scond_t *cond;
    sthread_t *thread;
 #endif
@@ -632,7 +633,7 @@ static void rarch_main_data_rdl_iterate(void)
 }
 #endif
 
-static void rarch_main_data_nbio_iterate(nbio_handle_t *nbio)
+static void rarch_main_data_nbio_iterate(bool is_thread, nbio_handle_t *nbio)
 {
    if (!nbio)
       return;
@@ -670,7 +671,7 @@ static void rarch_main_data_nbio_iterate(nbio_handle_t *nbio)
 }
 
 #ifdef HAVE_NETWORKING
-static void rarch_main_data_http_iterate(http_handle_t *http)
+static void rarch_main_data_http_iterate(bool is_thread, http_handle_t *http)
 {
    if (!http)
       return;
@@ -701,29 +702,19 @@ static void rarch_main_data_db_iterate(void)
 }
 
 #ifdef HAVE_OVERLAY
-driver_t *data_get_driver_ptr(void)
+static void rarch_main_data_overlay_iterate(bool is_thread, data_runloop_t *runloop)
 {
-   driver_t *driver = NULL;
-#ifdef HAVE_THREADS
-   if (g_data_runloop.thread_inited)
-      slock_lock(g_data_runloop.lock);
-#endif
-   driver  = driver_get_ptr();
-#ifdef HAVE_THREADS
-   if (g_data_runloop.thread_inited)
-      slock_unlock(g_data_runloop.lock);
-#endif
-   return driver;
-}
-
-static void rarch_main_data_overlay_iterate(void)
-{
-   driver_t *driver = data_get_driver_ptr();
+   driver_t *driver = driver_get_ptr();
 
    if (rarch_main_is_idle())
       return;
    if (!driver->overlay)
       return;
+
+#ifdef HAVE_THREADS
+   if (is_thread)
+      slock_lock(runloop->overlay_lock);
+#endif
 
    switch (driver->overlay->state)
    {
@@ -748,6 +739,11 @@ static void rarch_main_data_overlay_iterate(void)
       default:
          break;
    }
+
+#ifdef HAVE_THREADS
+   if (is_thread)
+      slock_unlock(runloop->overlay_lock);
+#endif
 }
 #endif
 
@@ -763,6 +759,7 @@ static void data_runloop_thread_deinit(data_runloop_t *runloop)
 
       slock_free(runloop->lock);
       slock_free(runloop->cond_lock);
+      slock_free(runloop->overlay_lock);
       scond_free(runloop->cond);
    }
 
@@ -784,14 +781,14 @@ static void rarch_main_data_deinit(void)
    runloop->inited = false;
 }
 
-static void data_runloop_iterate(data_runloop_t *runloop)
+static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 {
 #ifdef HAVE_OVERLAY
-   rarch_main_data_overlay_iterate();
+   rarch_main_data_overlay_iterate(is_thread, runloop);
 #endif
-   rarch_main_data_nbio_iterate(&runloop->nbio);
+   rarch_main_data_nbio_iterate(is_thread, &runloop->nbio);
 #ifdef HAVE_NETWORKING
-   rarch_main_data_http_iterate(&runloop->http);
+   rarch_main_data_http_iterate(is_thread, &runloop->http);
 #endif
    rarch_main_data_db_iterate();
 }
@@ -810,12 +807,19 @@ static void data_thread_loop(void *data)
 
    RARCH_LOG("[Data Thread]: Starting data thread.\n");
 
-   while (!runloop->thread_quit)
+   for (;;)
    {
       slock_lock(runloop->lock);
-      data_runloop_iterate(runloop);
+
+      if (runloop->thread_quit)
+         break;
+
+      data_runloop_iterate(true, runloop);
+
       slock_unlock(runloop->lock);
    }
+
+   RARCH_LOG("[Data Thread]: Stopping data thread.\n");
    
    data_runloop_thread_deinit(runloop);
 }
@@ -825,14 +829,18 @@ static void rarch_main_data_thread_init(void)
 {
    if ((g_data_runloop.thread = sthread_create(data_thread_loop, &g_data_runloop)))
    {
-      g_data_runloop.lock      = slock_new();
-      g_data_runloop.cond_lock = slock_new();
-      g_data_runloop.cond      = scond_new();
+      g_data_runloop.lock         = slock_new();
+      g_data_runloop.cond_lock    = slock_new();
+      g_data_runloop.overlay_lock = slock_new();
+      g_data_runloop.cond         = scond_new();
    }
    else
       g_data_runloop.thread = NULL;
 
    g_data_runloop.thread_inited = (g_data_runloop.thread != NULL);
+
+   if (g_data_runloop.thread_inited)
+      g_data_runloop.thread_quit   = false;
 }
 
 void rarch_main_data_iterate(void)
@@ -841,7 +849,8 @@ void rarch_main_data_iterate(void)
 #if 0
    if (g_settings.menu.threaded_data_runloop_enable)
    {
-      if (g_data_runloop.thread_inited)
+      if (g_data_runloop.thread_inited 
+            && !g_data_runloop.thread_quit)
          return;
 
       if (g_data_runloop.thread_inited)
@@ -852,7 +861,7 @@ void rarch_main_data_iterate(void)
 #endif
 #endif
 
-   data_runloop_iterate(&g_data_runloop);
+   data_runloop_iterate(false, &g_data_runloop);
 }
 
 static void rarch_main_data_init(void)
@@ -863,7 +872,7 @@ static void rarch_main_data_init(void)
    memset(&g_data_runloop, 0, sizeof(g_data_runloop));
 
    g_data_runloop.thread_inited = false;
-   g_data_runloop.thread_quit   = false;
+   g_data_runloop.thread_quit   = true;
 
    g_data_runloop.inited = true;
 }
