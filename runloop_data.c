@@ -755,6 +755,8 @@ static void rarch_main_data_deinit(void)
       slock_free(runloop->lock);
       slock_free(runloop->cond_lock);
       scond_free(runloop->cond);
+
+      runloop->thread_inited = false;
    }
 #endif
 
@@ -804,6 +806,9 @@ static void rarch_main_data_init(void)
 
    memset(&g_data_runloop, 0, sizeof(g_data_runloop));
 
+   g_data_runloop.thread_inited = false;
+   g_data_runloop.thread_quit   = false;
+
 #ifdef HAVE_THREADS
    if (g_settings.menu.threaded_data_runloop_enable)
    {
@@ -815,17 +820,12 @@ static void rarch_main_data_init(void)
       }
       else
          g_data_runloop.thread = NULL;
+
+      g_data_runloop.thread_inited = (g_data_runloop.thread != NULL);
    }
 #endif
 
-#ifdef HAVE_THREADS
-   g_data_runloop.thread_inited = (g_data_runloop.thread != NULL);
-#else
-   g_data_runloop.thread_inited = false;
-   g_data_runloop.thread_quit   = false;
-#endif
    g_data_runloop.inited = true;
-
 }
 
 void rarch_main_data_clear_state(void)
