@@ -147,7 +147,7 @@ static void input_overlay_free_overlays(input_overlay_t *ol)
    free(ol->overlays);
 }
 
-static bool input_overlay_load_desc(input_overlay_t *ol,
+static bool input_overlay_load_desc_image(input_overlay_t *ol,
       struct overlay_desc *desc,
       struct overlay *input_overlay,
       unsigned ol_idx, unsigned desc_idx,
@@ -186,6 +186,33 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
          input_overlay->load_images[input_overlay->load_images_size++] = desc->image;
       }
    }
+
+   input_overlay->pos ++;
+
+   if (list)
+      string_list_free(list);
+   return ret;
+}
+
+static bool input_overlay_load_desc(input_overlay_t *ol,
+      struct overlay_desc *desc,
+      struct overlay *input_overlay,
+      unsigned ol_idx, unsigned desc_idx,
+      unsigned width, unsigned height,
+      bool normalized, float alpha_mod, float range_mod)
+{
+   bool ret = true, by_pixel;
+   char overlay_desc_key[64], conf_key[64],
+        overlay_desc_normalized_key[64], image_path[PATH_MAX_LENGTH];
+   char overlay[256], *save, *key;
+   float width_mod, height_mod;
+   struct string_list *list = NULL;
+   const char *x            = NULL;
+   const char *y            = NULL;
+   const char *box          = NULL;
+
+   snprintf(overlay_desc_key, sizeof(overlay_desc_key),
+         "overlay%u_desc%u", ol_idx, desc_idx);
 
    snprintf(overlay_desc_normalized_key, sizeof(overlay_desc_normalized_key),
          "overlay%u_desc%u_normalized", ol_idx, desc_idx);
@@ -474,8 +501,40 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
          break;
       case OVERLAY_IMAGE_TRANSFER_DONE:
          input_overlay_load_overlay_image_done(&ol->overlays[ol->pos]);
-         ol->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_ITERATE;
+         ol->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_IMAGE_ITERATE;
          ol->overlays[ol->pos].pos = 0;
+         break;
+      case OVERLAY_IMAGE_TRANSFER_DESC_IMAGE_ITERATE:
+         {
+            struct overlay *overlay = &ol->overlays[ol->pos];
+
+            for (i = 0; i < overlay->pos_increment; i++)
+            {
+               unsigned idx = ol->pos;
+
+               if (overlay->pos < overlay->size)
+               {
+                  if (!input_overlay_load_desc_image(ol, &overlay->descs[overlay->pos], overlay,
+                           idx, overlay->pos,
+                           overlay->image.width, overlay->image.height,
+                           overlay->config.normalized,
+                           overlay->config.alpha_mod, overlay->config.range_mod))
+                  {
+                     RARCH_ERR("[Overlay]: Failed to load overlay desc images for overlay #%u.\n",
+                           (unsigned)overlay->pos);
+                     goto error;
+                  }
+
+               }
+               else
+               {
+                  overlay->pos       = 0;
+                  ol->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_ITERATE;
+                  break;
+               }
+
+            }
+         }
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_ITERATE:
          {
@@ -501,7 +560,7 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
                }
                else
                {
-                  overlay->pos   = 0;
+                  overlay->pos       = 0;
                   ol->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_DONE;
                   break;
                }
