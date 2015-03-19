@@ -149,6 +149,7 @@ static void input_overlay_free_overlays(input_overlay_t *ol)
 
 static bool input_overlay_load_desc(input_overlay_t *ol,
       struct overlay_desc *desc,
+      struct overlay *input_overlay,
       unsigned ol_idx, unsigned desc_idx,
       unsigned width, unsigned height,
       bool normalized, float alpha_mod, float range_mod)
@@ -179,7 +180,11 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
             image_path, sizeof(path));
 
       if (texture_image_load(&img, path))
+      {
          desc->image = img;
+         desc->image_index = input_overlay->load_images_size;
+         input_overlay->load_images[input_overlay->load_images_size++] = desc->image;
+      }
    }
 
    snprintf(overlay_desc_normalized_key, sizeof(overlay_desc_normalized_key),
@@ -314,6 +319,8 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
 
    desc->range_x_mod = desc->range_x;
    desc->range_y_mod = desc->range_y;
+
+   input_overlay->pos ++;
 
 end:
    if (list)
@@ -480,7 +487,8 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
 
                if (overlay->pos < overlay->size)
                {
-                  if (!input_overlay_load_desc(ol, &overlay->descs[overlay->pos], idx, overlay->pos,
+                  if (!input_overlay_load_desc(ol, &overlay->descs[overlay->pos], overlay,
+                           idx, overlay->pos,
                            overlay->image.width, overlay->image.height,
                            overlay->config.normalized,
                            overlay->config.alpha_mod, overlay->config.range_mod))
@@ -490,12 +498,6 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
                      goto error;
                   }
 
-                  if (overlay->descs[overlay->pos].image.pixels)
-                  {
-                     overlay->descs[overlay->pos].image_index = overlay->load_images_size;
-                     overlay->load_images[overlay->load_images_size++] = overlay->descs[overlay->pos].image;
-                  }
-                  overlay->pos ++;
                }
                else
                {
