@@ -75,6 +75,7 @@ typedef struct nbio_handle
 enum
 {
    THREAD_CODE_INIT = 0,
+   THREAD_CODE_DEINIT,
    THREAD_CODE_ALIVE,
 } thread_code_enum;
 
@@ -772,7 +773,7 @@ static void data_runloop_thread_deinit(data_runloop_t *runloop)
    runloop->thread_inited = false;
 }
 
-static void rarch_main_data_deinit(void)
+void rarch_main_data_deinit(void)
 {
    data_runloop_t *runloop = &g_data_runloop;
 
@@ -781,7 +782,10 @@ static void rarch_main_data_deinit(void)
 
 #ifdef HAVE_THREADS
    if (runloop->thread_inited)
+   {
       data_runloop_thread_deinit(runloop);
+      g_data_runloop.thread_code = THREAD_CODE_DEINIT;
+   }
 #endif
 
    runloop->inited = false;
@@ -866,6 +870,8 @@ void rarch_main_data_iterate(void)
             break;
          case THREAD_CODE_INIT:
             rarch_main_data_thread_init();
+            break;
+         case THREAD_CODE_DEINIT:
             break;
       }
    }

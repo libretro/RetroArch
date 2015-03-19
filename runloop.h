@@ -141,6 +141,8 @@ void rarch_main_data_clear_state(void);
 
 void rarch_main_data_iterate(void);
 
+void rarch_main_data_deinit(void);
+
 void rarch_main_data_init_queues(void);
 
 #ifdef __cplusplus

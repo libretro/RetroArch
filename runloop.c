@@ -866,6 +866,7 @@ static int rarch_main_iterate_quit(void)
    if (g_extern.core_shutdown_initiated
          && g_settings.load_dummy_on_core_shutdown)
    {
+      rarch_main_data_deinit();
       if (!rarch_main_command(RARCH_CMD_PREPARE_DUMMY))
          return -1;
 
