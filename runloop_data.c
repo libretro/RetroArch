@@ -72,6 +72,11 @@ typedef struct nbio_handle
    msg_queue_t *msg_queue;
 } nbio_handle_t;
 
+enum
+{
+   THREAD_CODE_INIT = 0,
+   THREAD_CODE_ALIVE,
+} thread_code_enum;
 
 typedef struct data_runloop
 {
@@ -92,7 +97,8 @@ typedef struct data_runloop
 
 #ifdef HAVE_THREADS
    bool thread_inited;
-   bool thread_quit;
+   unsigned thread_code;
+   bool alive;
 
    slock_t *lock;
    slock_t *cond_lock;
@@ -752,9 +758,9 @@ static void data_runloop_thread_deinit(data_runloop_t *runloop)
    if (!runloop->thread_inited)
    {
       slock_lock(runloop->cond_lock);
-      runloop->thread_quit = true;
-      slock_unlock(runloop->cond_lock);
+      runloop->alive = false;
       scond_signal(runloop->cond);
+      slock_unlock(runloop->cond_lock);
       sthread_join(runloop->thread);
 
       slock_free(runloop->lock);
@@ -811,7 +817,7 @@ static void data_thread_loop(void *data)
    {
       slock_lock(runloop->lock);
 
-      if (runloop->thread_quit)
+      if (!runloop->alive)
          break;
 
       data_runloop_iterate(true, runloop);
@@ -839,8 +845,11 @@ static void rarch_main_data_thread_init(void)
 
    g_data_runloop.thread_inited = (g_data_runloop.thread != NULL);
 
-   if (g_data_runloop.thread_inited)
-      g_data_runloop.thread_quit   = false;
+   if (!g_data_runloop.thread_inited)
+      return;
+
+   g_data_runloop.alive       = true;
+   g_data_runloop.thread_code = THREAD_CODE_ALIVE;
 }
 
 void rarch_main_data_iterate(void)
@@ -849,14 +858,16 @@ void rarch_main_data_iterate(void)
 #if 0
    if (g_settings.menu.threaded_data_runloop_enable)
    {
-      if (g_data_runloop.thread_inited 
-            && !g_data_runloop.thread_quit)
-         return;
-
-      if (g_data_runloop.thread_inited)
-         data_runloop_thread_deinit(&g_data_runloop);
-      else
-         rarch_main_data_thread_init();
+      switch (g_data_runloop.thread_code)
+      {
+         case THREAD_CODE_ALIVE:
+            if (g_data_runloop.alive)
+               return;
+            break;
+         case THREAD_CODE_INIT:
+            rarch_main_data_thread_init();
+            break;
+      }
    }
 #endif
 #endif
@@ -872,7 +883,7 @@ static void rarch_main_data_init(void)
    memset(&g_data_runloop, 0, sizeof(g_data_runloop));
 
    g_data_runloop.thread_inited = false;
-   g_data_runloop.thread_quit   = true;
+   g_data_runloop.alive         = false;
 
    g_data_runloop.inited = true;
 }
