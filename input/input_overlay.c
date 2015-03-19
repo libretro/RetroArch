@@ -18,10 +18,10 @@
 #include <string.h>
 #include "input_overlay.h"
 #include "../driver.h"
-#include "../general.h"
 #include <compat/posix_string.h>
 #include "input_common.h"
 #include <file/file_path.h>
+#include <string/string_list.h>
 #include <clamping.h>
 #include <stddef.h>
 #include <math.h>
