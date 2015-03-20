@@ -111,6 +111,11 @@ typedef struct data_runloop
 
 struct data_runloop g_data_runloop;
 
+static void *rarch_main_data_get_ptr(void)
+{
+   return &g_data_runloop;
+}
+
 #ifdef HAVE_NETWORKING
 int cb_core_updater_download(void *data_, size_t len);
 int cb_core_updater_list(void *data_, size_t len);
@@ -777,20 +782,20 @@ static void data_runloop_thread_deinit(data_runloop_t *runloop)
 
 void rarch_main_data_deinit(void)
 {
-   data_runloop_t *runloop = &g_data_runloop;
+   data_runloop_t *data_runloop = rarch_main_data_get_ptr();
 
-   if (!runloop->inited)
+   if (!data_runloop || !data_runloop->inited)
       return;
 
 #ifdef HAVE_THREADS
-   if (runloop->thread_inited)
+   if (data_runloop->thread_inited)
    {
-      data_runloop_thread_deinit(runloop);
-      g_data_runloop.thread_code = THREAD_CODE_DEINIT;
+      data_runloop_thread_deinit(data_runloop);
+      data_runloop->thread_code = THREAD_CODE_DEINIT;
    }
 #endif
 
-   runloop->inited = false;
+   data_runloop->inited = false;
 }
 
 static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
@@ -838,37 +843,40 @@ static void data_thread_loop(void *data)
 
 static void rarch_main_data_thread_init(void)
 {
-   if ((g_data_runloop.thread = sthread_create(data_thread_loop, &g_data_runloop)))
+   data_runloop_t *data_runloop = rarch_main_data_get_ptr();
+
+   if ((data_runloop->thread = sthread_create(data_thread_loop, data_runloop)))
    {
-      g_data_runloop.lock         = slock_new();
-      g_data_runloop.cond_lock    = slock_new();
-      g_data_runloop.overlay_lock = slock_new();
-      g_data_runloop.cond         = scond_new();
+      data_runloop->lock         = slock_new();
+      data_runloop->cond_lock    = slock_new();
+      data_runloop->overlay_lock = slock_new();
+      data_runloop->cond         = scond_new();
    }
    else
-      g_data_runloop.thread = NULL;
+      data_runloop->thread = NULL;
 
-   g_data_runloop.thread_inited = (g_data_runloop.thread != NULL);
+   data_runloop->thread_inited = (data_runloop->thread != NULL);
 
-   if (!g_data_runloop.thread_inited)
+   if (!data_runloop->thread_inited)
       return;
 
-   g_data_runloop.alive       = true;
-   g_data_runloop.thread_code = THREAD_CODE_ALIVE;
+   data_runloop->alive       = true;
+   data_runloop->thread_code = THREAD_CODE_ALIVE;
 }
 #endif
 
 
 void rarch_main_data_iterate(void)
 {
+   data_runloop_t *data_runloop = rarch_main_data_get_ptr();
 #ifdef HAVE_THREADS
 #if 0
    if (g_settings.menu.threaded_data_runloop_enable)
    {
-      switch (g_data_runloop.thread_code)
+      switch (data_runloop->thread_code)
       {
          case THREAD_CODE_ALIVE:
-            if (g_data_runloop.alive)
+            if (data_runloop->alive)
                return;
             break;
          case THREAD_CODE_INIT:
@@ -881,22 +889,23 @@ void rarch_main_data_iterate(void)
 #endif
 #endif
 
-   data_runloop_iterate(false, &g_data_runloop);
+   data_runloop_iterate(false, data_runloop);
 }
 
 static void rarch_main_data_init(void)
 {
-   if (g_data_runloop.inited)
+   data_runloop_t *data_runloop = rarch_main_data_get_ptr();
+   if (!data_runloop || data_runloop->inited)
       return;
 
-   memset(&g_data_runloop, 0, sizeof(g_data_runloop));
+   memset(data_runloop, 0, sizeof(*data_runloop));
 
 #ifdef HAVE_THREADS
-   g_data_runloop.thread_inited = false;
-   g_data_runloop.alive         = false;
+   data_runloop->thread_inited = false;
+   data_runloop->alive         = false;
 #endif
 
-   g_data_runloop.inited = true;
+   data_runloop->inited = true;
 }
 
 void rarch_main_data_clear_state(void)
@@ -905,16 +914,18 @@ void rarch_main_data_clear_state(void)
    rarch_main_data_init();
 }
 
+
 void rarch_main_data_init_queues(void)
 {
+   data_runloop_t *data_runloop = rarch_main_data_get_ptr();
 #ifdef HAVE_NETWORKING
-   if (!g_data_runloop.http.msg_queue)
-      rarch_assert(g_data_runloop.http.msg_queue = msg_queue_new(8));
+   if (!data_runloop->http.msg_queue)
+      rarch_assert(data_runloop->http.msg_queue = msg_queue_new(8));
 #endif
-   if (!g_data_runloop.nbio.msg_queue)
-      rarch_assert(g_data_runloop.nbio.msg_queue = msg_queue_new(8));
-   if (!g_data_runloop.nbio.image.msg_queue)
-      rarch_assert(g_data_runloop.nbio.image.msg_queue = msg_queue_new(8));
+   if (!data_runloop->nbio.msg_queue)
+      rarch_assert(data_runloop->nbio.msg_queue = msg_queue_new(8));
+   if (!data_runloop->nbio.image.msg_queue)
+      rarch_assert(data_runloop->nbio.image.msg_queue = msg_queue_new(8));
 }
 
 void rarch_main_data_msg_queue_push(unsigned type,
@@ -923,6 +934,7 @@ void rarch_main_data_msg_queue_push(unsigned type,
 {
    char new_msg[PATH_MAX_LENGTH];
    msg_queue_t *queue = NULL;
+   data_runloop_t *data_runloop = rarch_main_data_get_ptr();
 
    snprintf(new_msg, sizeof(new_msg), "%s|%s", msg, msg2);
 
@@ -931,14 +943,14 @@ void rarch_main_data_msg_queue_push(unsigned type,
       case DATA_TYPE_NONE:
          break;
       case DATA_TYPE_FILE:
-         queue = g_data_runloop.nbio.msg_queue;
+         queue = data_runloop->nbio.msg_queue;
          break;
       case DATA_TYPE_IMAGE:
-         queue = g_data_runloop.nbio.image.msg_queue;
+         queue = data_runloop->nbio.image.msg_queue;
          break;
 #ifdef HAVE_NETWORKING
       case DATA_TYPE_HTTP:
-         queue = g_data_runloop.http.msg_queue;
+         queue = data_runloop->http.msg_queue;
          break;
 #endif
 #ifdef HAVE_OVERLAY
