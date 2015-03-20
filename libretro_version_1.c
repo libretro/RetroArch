@@ -395,26 +395,25 @@ static int16_t input_state(unsigned port, unsigned device,
 {
    int16_t res = 0;
    settings_t *settings           = config_get_ptr();
-
-   static const struct retro_keybind *libretro_input_binds[MAX_USERS] = {
-      g_settings.input.binds[0],
-      g_settings.input.binds[1],
-      g_settings.input.binds[2],
-      g_settings.input.binds[3],
-      g_settings.input.binds[4],
-      g_settings.input.binds[5],
-      g_settings.input.binds[6],
-      g_settings.input.binds[7],
-      g_settings.input.binds[8],
-      g_settings.input.binds[9],
-      g_settings.input.binds[10],
-      g_settings.input.binds[11],
-      g_settings.input.binds[12],
-      g_settings.input.binds[13],
-      g_settings.input.binds[14],
-      g_settings.input.binds[15],
+   driver_t *driver               = driver_get_ptr();
+   const struct retro_keybind *libretro_input_binds[MAX_USERS] = {
+      settings->input.binds[0],
+      settings->input.binds[1],
+      settings->input.binds[2],
+      settings->input.binds[3],
+      settings->input.binds[4],
+      settings->input.binds[5],
+      settings->input.binds[6],
+      settings->input.binds[7],
+      settings->input.binds[8],
+      settings->input.binds[9],
+      settings->input.binds[10],
+      settings->input.binds[11],
+      settings->input.binds[12],
+      settings->input.binds[13],
+      settings->input.binds[14],
+      settings->input.binds[15],
    };
-   driver_t *driver = driver_get_ptr();
 
    device &= RETRO_DEVICE_MASK;
 

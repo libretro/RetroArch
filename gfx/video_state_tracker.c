@@ -277,9 +277,9 @@ static void state_tracker_update_input(state_tracker_t *tracker)
    };
 
    /* Only bind for up to two players for now. */
-   static const struct retro_keybind *binds[2] = {
-      g_settings.input.binds[0],
-      g_settings.input.binds[1],
+   const struct retro_keybind *binds[2] = {
+      settings->input.binds[0],
+      settings->input.binds[1],
    };
    driver_t *driver = driver_get_ptr();
 

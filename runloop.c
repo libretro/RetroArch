@@ -751,11 +751,12 @@ static void rarch_limit_frame_time(void)
 static bool check_block_hotkey(bool enable_hotkey)
 {
    bool use_hotkey_enable;
-   static const struct retro_keybind *bind = 
-      &g_settings.input.binds[0][RARCH_ENABLE_HOTKEY];
-   static const struct retro_keybind *autoconf_bind = 
-      &g_settings.input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
-   driver_t *driver = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   const struct retro_keybind *bind = 
+      &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
+   const struct retro_keybind *autoconf_bind = 
+      &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
@@ -791,27 +792,27 @@ static bool check_block_hotkey(bool enable_hotkey)
 static INLINE retro_input_t input_keys_pressed(void)
 {
    unsigned i;
-   static const struct retro_keybind *binds[MAX_USERS] = {
-      g_settings.input.binds[0],
-      g_settings.input.binds[1],
-      g_settings.input.binds[2],
-      g_settings.input.binds[3],
-      g_settings.input.binds[4],
-      g_settings.input.binds[5],
-      g_settings.input.binds[6],
-      g_settings.input.binds[7],
-      g_settings.input.binds[8],
-      g_settings.input.binds[9],
-      g_settings.input.binds[10],
-      g_settings.input.binds[11],
-      g_settings.input.binds[12],
-      g_settings.input.binds[13],
-      g_settings.input.binds[14],
-      g_settings.input.binds[15],
-   };
    retro_input_t ret        = 0;
    driver_t *driver         = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
+   const struct retro_keybind *binds[MAX_USERS] = {
+      settings->input.binds[0],
+      settings->input.binds[1],
+      settings->input.binds[2],
+      settings->input.binds[3],
+      settings->input.binds[4],
+      settings->input.binds[5],
+      settings->input.binds[6],
+      settings->input.binds[7],
+      settings->input.binds[8],
+      settings->input.binds[9],
+      settings->input.binds[10],
+      settings->input.binds[11],
+      settings->input.binds[12],
+      settings->input.binds[13],
+      settings->input.binds[14],
+      settings->input.binds[15],
+   };
 
    if (!driver->input || !driver->input_data)
       return 0;
