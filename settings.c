@@ -1227,15 +1227,15 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(video.gpu_record, "video_gpu_record");
    CONFIG_GET_BOOL(video.gpu_screenshot, "video_gpu_screenshot");
 
-   CONFIG_GET_PATH(video.shader_dir, "video_shader_dir");
+   config_get_path(conf, "video_shader_dir", g_settings.video.shader_dir, sizeof(g_settings.video.shader_dir));
    if (!strcmp(settings->video.shader_dir, "default"))
       *settings->video.shader_dir = '\0';
 
-   CONFIG_GET_PATH(video.filter_dir, "video_filter_dir");
+   config_get_path(conf, "video_filter_dir", g_settings.video.filter_dir, sizeof(g_settings.video.filter_dir));
    if (!strcmp(settings->video.filter_dir, "default"))
       *settings->video.filter_dir = '\0';
 
-   CONFIG_GET_PATH(audio.filter_dir, "audio_filter_dir");
+   config_get_path(conf, "audio_filter_dir", g_settings.audio.filter_dir, sizeof(g_settings.audio.filter_dir));
    if (!strcmp(settings->audio.filter_dir, "default"))
       *settings->audio.filter_dir = '\0';
 
@@ -1252,8 +1252,10 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(input.autoconfig_descriptor_label_show,
          "autoconfig_descriptor_label_show");
 
-   CONFIG_GET_PATH(network.buildbot_url, "core_updater_buildbot_url");
-   CONFIG_GET_PATH(network.buildbot_assets_url, "core_updater_buildbot_assets_url");
+   config_get_path(conf, "core_updater_buildbot_url",
+         g_settings.network.buildbot_url, sizeof(g_settings.network.buildbot_url));
+   config_get_path(conf, "core_updater_buildbot_assets_url",
+         g_settings.network.buildbot_assets_url, sizeof(g_settings.network.buildbot_assets_url));
    CONFIG_GET_BOOL(network.buildbot_auto_extract_archive,
          "core_updater_auto_extract_archive");
 
@@ -1318,9 +1320,9 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_STRING(input.keyboard_layout, "input_keyboard_layout");
 
    if (!g_extern.has_set_libretro)
-      CONFIG_GET_PATH(libretro, "libretro_path");
+      config_get_path(conf, "libretro_path", settings->libretro, sizeof(settings->libretro));
    if (!g_extern.has_set_libretro_directory)
-      CONFIG_GET_PATH(libretro_directory, "libretro_directory");
+      config_get_path(conf, "libretro_directory", settings->libretro_directory, sizeof(settings->libretro_directory));
 
    /* Safe-guard against older behavior. */
    if (path_is_directory(settings->libretro))
@@ -1366,10 +1368,10 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (!strcmp(settings->playlist_directory, "default"))
       *settings->playlist_directory = '\0';
 #ifdef HAVE_MENU
-   CONFIG_GET_PATH(menu_content_directory, "rgui_browser_directory");
+   config_get_path(conf, "rgui_browser_directory", settings->menu_content_directory, sizeof(settings->menu_content_directory));
    if (!strcmp(settings->menu_content_directory, "default"))
       *settings->menu_content_directory = '\0';
-   CONFIG_GET_PATH(menu_config_directory, "rgui_config_directory");
+   config_get_path(conf, "rgui_config_directory", settings->menu_config_directory, sizeof(settings->menu_config_directory));
    if (!strcmp(settings->menu_config_directory, "default"))
       *settings->menu_config_directory = '\0';
    CONFIG_GET_BOOL(menu_show_start_screen, "rgui_show_start_screen");
@@ -1384,20 +1386,20 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT(archive.mode, "archive_mode");
 
 #ifdef HAVE_OVERLAY
-   CONFIG_GET_PATH_EXTERN(overlay_dir, "overlay_directory");
+   config_get_path(conf, "overlay_directory", g_extern.overlay_dir, sizeof(g_extern.overlay_dir));
    if (!strcmp(g_extern.overlay_dir, "default"))
       *g_extern.overlay_dir = '\0';
 
-   CONFIG_GET_PATH(input.overlay, "input_overlay");
+   config_get_path(conf, "input_overlay", settings->input.overlay, sizeof(settings->input.overlay));
    CONFIG_GET_BOOL(input.overlay_enable, "input_overlay_enable");
    CONFIG_GET_FLOAT(input.overlay_opacity, "input_overlay_opacity");
    CONFIG_GET_FLOAT(input.overlay_scale, "input_overlay_scale");
 
-   CONFIG_GET_PATH_EXTERN(osk_overlay_dir, "osk_overlay_directory");
+   config_get_path(conf, "osk_overlay_directory", g_extern.osk_overlay_dir, sizeof(g_extern.osk_overlay_dir));
    if (!strcmp(g_extern.osk_overlay_dir, "default"))
       *g_extern.osk_overlay_dir = '\0';
 
-   CONFIG_GET_PATH(osk.overlay, "input_osk_overlay");
+   config_get_path(conf, "input_osk_overlay", g_settings.osk.overlay, sizeof(g_settings.osk.overlay));
    CONFIG_GET_BOOL(osk.enable, "input_osk_overlay_enable");
 #endif
 
