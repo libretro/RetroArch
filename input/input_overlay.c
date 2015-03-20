@@ -457,8 +457,6 @@ error:
 
 static bool input_overlay_load_overlay_image_done(struct overlay *overlay)
 {
-   if (overlay->image.pixels)
-      overlay->load_images[overlay->load_images_size++] = overlay->image;
 
    overlay->pos = 0;
    /* Divide iteration steps by half of total descs if size is even,
@@ -677,6 +675,7 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
          }
 
          overlay->image = img;
+         overlay->load_images[overlay->load_images_size++] = overlay->image;
       }
 
       snprintf(overlay->config.names.key, sizeof(overlay->config.names.key),
