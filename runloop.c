@@ -56,16 +56,17 @@ static struct runloop *g_runloop;
 static void set_volume(float gain)
 {
    char msg[PATH_MAX_LENGTH];
+   settings_t *settings = config_get_ptr();
 
-   g_settings.audio.volume += gain;
-   g_settings.audio.volume = max(g_settings.audio.volume, -80.0f);
-   g_settings.audio.volume = min(g_settings.audio.volume, 12.0f);
+   settings->audio.volume += gain;
+   settings->audio.volume = max(settings->audio.volume, -80.0f);
+   settings->audio.volume = min(settings->audio.volume, 12.0f);
 
-   snprintf(msg, sizeof(msg), "Volume: %.1f dB", g_settings.audio.volume);
+   snprintf(msg, sizeof(msg), "Volume: %.1f dB", settings->audio.volume);
    rarch_main_msg_queue_push(msg, 1, 180, true);
    RARCH_LOG("%s\n", msg);
 
-   g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
+   g_extern.audio_data.volume_gain = db_to_gain(settings->audio.volume);
 }
 
 /**
@@ -85,11 +86,12 @@ static bool check_pause(bool pressed, bool frameadvance_pressed)
    bool focus               = true;
    unsigned cmd             = RARCH_CMD_NONE;
    bool old_is_paused       = runloop->is_paused;
+   settings_t *settings     = config_get_ptr();
 
    /* FRAMEADVANCE will set us into pause mode. */
    pressed |= !runloop->is_paused && frameadvance_pressed;
 
-   if (g_settings.pause_nonactive)
+   if (settings->pause_nonactive)
       focus = video_driver_has_focus();
 
    if (focus && pressed)
@@ -167,20 +169,21 @@ static void check_fast_forward_button(bool fastforward_pressed,
 static void check_stateslots(bool pressed_increase, bool pressed_decrease)
 {
    char msg[PATH_MAX_LENGTH];
+   settings_t *settings     = config_get_ptr();
 
    /* Save state slots */
    if (pressed_increase)
-      g_settings.state_slot++;
+      settings->state_slot++;
    else if (pressed_decrease)
    {
-      if (g_settings.state_slot > 0)
-         g_settings.state_slot--;
+      if (settings->state_slot > 0)
+         settings->state_slot--;
    }
    else
       return;
 
    snprintf(msg, sizeof(msg), "State slot: %d",
-         g_settings.state_slot);
+         settings->state_slot);
 
    rarch_main_msg_queue_push(msg, 1, 180, true);
 
@@ -259,9 +262,10 @@ static void check_rewind(bool pressed)
    else
    {
       static unsigned cnt = 0;
+      settings_t *settings     = config_get_ptr();
 
-      cnt = (cnt + 1) % (g_settings.rewind_granularity ?
-            g_settings.rewind_granularity : 1); /* Avoid possible SIGFPE. */
+      cnt = (cnt + 1) % (settings->rewind_granularity ?
+            settings->rewind_granularity : 1); /* Avoid possible SIGFPE. */
 
       if ((cnt == 0) || g_extern.bsv.movie)
       {
@@ -288,14 +292,15 @@ static void check_rewind(bool pressed)
  **/
 static void check_slowmotion(bool pressed)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
+   runloop_t *runloop       = rarch_main_get_ptr();
+   settings_t *settings     = config_get_ptr();
 
    runloop->is_slowmotion = pressed;
 
    if (!runloop->is_slowmotion)
       return;
 
-   if (g_settings.video.black_frame_insertion)
+   if (settings->video.black_frame_insertion)
       rarch_render_cached_frame();
 
    rarch_main_msg_queue_push(g_extern.rewind.frame_is_reverse ?
@@ -306,16 +311,17 @@ static bool check_movie_init(void)
 {
    char path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
    bool ret = true;
+   settings_t *settings     = config_get_ptr();
    
    if (g_extern.bsv.movie)
       return false;
 
-   g_settings.rewind_granularity = 1;
+   settings->rewind_granularity = 1;
 
-   if (g_settings.state_slot > 0)
+   if (settings->state_slot > 0)
    {
       snprintf(path, sizeof(path), "%s%d.bsv",
-            g_extern.bsv.movie_path, g_settings.state_slot);
+            g_extern.bsv.movie_path, settings->state_slot);
    }
    else
    {
@@ -676,18 +682,20 @@ static INLINE int time_to_exit(retro_input_t input)
  **/
 static void rarch_update_frame_time(void)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
-   driver_t *driver = driver_get_ptr();
-   retro_time_t curr_time = rarch_get_time_usec();
-   retro_time_t delta     = curr_time - g_extern.system.frame_time_last;
-   bool is_locked_fps     = runloop->is_paused || driver->nonblock_state;
+   runloop_t *runloop       = rarch_main_get_ptr();
+   driver_t *driver         = driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
+   retro_time_t curr_time   = rarch_get_time_usec();
+   retro_time_t delta       = curr_time - g_extern.system.frame_time_last;
+   bool is_locked_fps       = runloop->is_paused || driver->nonblock_state;
+
    is_locked_fps         |= !!driver->recording_data;
 
    if (!g_extern.system.frame_time_last || is_locked_fps)
       delta = g_extern.system.frame_time.reference;
 
    if (!is_locked_fps && runloop->is_slowmotion)
-      delta /= g_settings.slowmotion_ratio;
+      delta /= settings->slowmotion_ratio;
 
    g_extern.system.frame_time_last = curr_time;
 
@@ -707,11 +715,12 @@ static void rarch_limit_frame_time(void)
 {
    double effective_fps, mft_f;
    retro_time_t current, target = 0, to_sleep_ms = 0;
-   runloop_t *runloop = rarch_main_get_ptr();
+   runloop_t *runloop       = rarch_main_get_ptr();
+   settings_t *settings     = config_get_ptr();
 
    current       = rarch_get_time_usec();
    effective_fps = g_extern.system.av_info.timing.fps 
-      * g_settings.fastforward_ratio;
+      * settings->fastforward_ratio;
    mft_f         = 1000000.0f / effective_fps;
 
    runloop->frames.limit.minimum_time = (retro_time_t) roundf(mft_f);
@@ -800,8 +809,9 @@ static INLINE retro_input_t input_keys_pressed(void)
       g_settings.input.binds[14],
       g_settings.input.binds[15],
    };
-   retro_input_t ret = 0;
-   driver_t *driver = driver_get_ptr();
+   retro_input_t ret        = 0;
+   driver_t *driver         = driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
 
    if (!driver->input || !driver->input_data)
       return 0;
@@ -812,19 +822,19 @@ static INLINE retro_input_t input_keys_pressed(void)
          driver->input->key_pressed(driver->input_data,
             RARCH_ENABLE_HOTKEY));
 
-   for (i = 0; i < g_settings.input.max_users; i++)
+   for (i = 0; i < settings->input.max_users; i++)
    {
-      input_push_analog_dpad(g_settings.input.binds[i],
-            g_settings.input.analog_dpad_mode[i]);
-      input_push_analog_dpad(g_settings.input.autoconf_binds[i],
-            g_settings.input.analog_dpad_mode[i]);
+      input_push_analog_dpad(settings->input.binds[i],
+            settings->input.analog_dpad_mode[i]);
+      input_push_analog_dpad(settings->input.autoconf_binds[i],
+            settings->input.analog_dpad_mode[i]);
 
       g_extern.turbo_frame_enable[i] = 0;
    }
 
    if (!driver->block_libretro_input)
    {
-      for (i = 0; i < g_settings.input.max_users; i++)
+      for (i = 0; i < settings->input.max_users; i++)
       {
          g_extern.turbo_frame_enable[i] = 
             driver->input->input_state(driver->input_data, binds, i,
@@ -834,10 +844,10 @@ static INLINE retro_input_t input_keys_pressed(void)
 
    ret = input_driver_keys_pressed();
 
-   for (i = 0; i < g_settings.input.max_users; i++)
+   for (i = 0; i < settings->input.max_users; i++)
    {
-      input_pop_analog_dpad(g_settings.input.binds[i]);
-      input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
+      input_pop_analog_dpad(settings->input.binds[i]);
+      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
    }
 
    return ret;
@@ -878,8 +888,10 @@ static bool input_flush(retro_input_t *input)
  **/
 static int rarch_main_iterate_quit(void)
 {
+   settings_t *settings     = config_get_ptr();
+
    if (g_extern.core_shutdown_initiated
-         && g_settings.load_dummy_on_core_shutdown)
+         && settings->load_dummy_on_core_shutdown)
    {
       rarch_main_data_deinit();
       if (!rarch_main_command(RARCH_CMD_PREPARE_DUMMY))
@@ -1010,6 +1022,7 @@ int rarch_main_iterate(void)
    retro_input_t input             = input_keys_pressed();
    last_input                      = input;
    driver_t *driver                = driver_get_ptr();
+   settings_t *settings            = config_get_ptr();
 
    if (driver->flushing_input)
       driver->flushing_input = (input) ? input_flush(&input) : false;
@@ -1038,7 +1051,7 @@ int rarch_main_iterate(void)
          if (menu_iterate(input, old_input, trigger_input) == -1)
             rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
 
-      if (!input && g_settings.menu.pause_libretro)
+      if (!input && settings->menu.pause_libretro)
         ret = 1;
       goto success;
    }
@@ -1075,31 +1088,31 @@ int rarch_main_iterate(void)
       driver_camera_poll();
 
    /* Update binds for analog dpad modes. */
-   for (i = 0; i < g_settings.input.max_users; i++)
+   for (i = 0; i < settings->input.max_users; i++)
    {
-      if (!g_settings.input.analog_dpad_mode[i])
+      if (!settings->input.analog_dpad_mode[i])
          continue;
 
-      input_push_analog_dpad(g_settings.input.binds[i],
-            g_settings.input.analog_dpad_mode[i]);
-      input_push_analog_dpad(g_settings.input.autoconf_binds[i],
-            g_settings.input.analog_dpad_mode[i]);
+      input_push_analog_dpad(settings->input.binds[i],
+            settings->input.analog_dpad_mode[i]);
+      input_push_analog_dpad(settings->input.autoconf_binds[i],
+            settings->input.analog_dpad_mode[i]);
    }
 
-   if ((g_settings.video.frame_delay > 0) && !driver->nonblock_state)
-      rarch_sleep(g_settings.video.frame_delay);
+   if ((settings->video.frame_delay > 0) && !driver->nonblock_state)
+      rarch_sleep(settings->video.frame_delay);
 
 
    /* Run libretro for one frame. */
    pretro_run();
 
-   for (i = 0; i < g_settings.input.max_users; i++)
+   for (i = 0; i < settings->input.max_users; i++)
    {
-      if (!g_settings.input.analog_dpad_mode[i])
+      if (!settings->input.analog_dpad_mode[i])
          continue;
 
-      input_pop_analog_dpad(g_settings.input.binds[i]);
-      input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
+      input_pop_analog_dpad(settings->input.binds[i]);
+      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
    }
 
    if (g_extern.bsv.movie)
@@ -1115,7 +1128,7 @@ int rarch_main_iterate(void)
 #endif
 
 success:
-   if (g_settings.fastforward_ratio_throttle_enable)
+   if (settings->fastforward_ratio_throttle_enable)
       rarch_limit_frame_time();
 
    return ret;

@@ -323,19 +323,21 @@ static void load_symbols(bool is_dummy)
    else
    {
 #ifdef HAVE_DYNAMIC
+      settings_t *settings = config_get_ptr();
+
       /* Need to use absolute path for this setting. It can be 
        * saved to content history, and a relative path would 
        * break in that scenario. */
-      path_resolve_realpath(g_settings.libretro,
-            sizeof(g_settings.libretro));
+      path_resolve_realpath(settings->libretro,
+            sizeof(settings->libretro));
 
       RARCH_LOG("Loading dynamic libretro from: \"%s\"\n",
-            g_settings.libretro);
-      lib_handle = dylib_load(g_settings.libretro);
+            settings->libretro);
+      lib_handle = dylib_load(settings->libretro);
       if (!lib_handle)
       {
          RARCH_ERR("Failed to open dynamic library: \"%s\"\n",
-               g_settings.libretro);
+               settings->libretro);
          rarch_fail(1, "load_dynamic()");
       }
 #endif
@@ -430,18 +432,20 @@ void init_libretro_sym(bool dummy)
    if (!dummy)
    {
 #ifdef HAVE_DYNAMIC
-      /* Try to verify that -lretro was not linked in from other modules
-       * since loading it dynamically and with -l will fail hard. */
-      function_t sym = dylib_proc(NULL, "retro_init");
+      settings_t *settings = config_get_ptr();
+      function_t sym       = dylib_proc(NULL, "retro_init");
+
       if (sym)
       {
+         /* Try to verify that -lretro was not linked in from other modules
+          * since loading it dynamically and with -l will fail hard. */
          RARCH_ERR("Serious problem. RetroArch wants to load libretro dyamically, but it is already linked.\n");
          RARCH_ERR("This could happen if other modules RetroArch depends on link against libretro directly.\n");
          RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
          rarch_fail(1, "init_libretro_sym()");
       }
 
-      if (!*g_settings.libretro)
+      if (!*settings->libretro)
       {
          RARCH_ERR("RetroArch is built for dynamic libretro, but libretro_path is not set. Cannot continue.\n");
          rarch_fail(1, "init_libretro_sym()");
@@ -568,7 +572,9 @@ static void rarch_log_libretro(enum retro_log_level level,
       const char *fmt, ...)
 {
    va_list vp;
-   if ((unsigned)level < g_settings.libretro_log_level)
+   settings_t *settings = config_get_ptr();
+
+   if ((unsigned)level < settings->libretro_log_level)
       return;
 
    va_start(vp, fmt);
@@ -611,7 +617,8 @@ static void rarch_log_libretro(enum retro_log_level level,
 bool rarch_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (ignore_environment_cb)
       return false;
@@ -619,9 +626,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
    switch (cmd)
    {
       case RETRO_ENVIRONMENT_GET_OVERSCAN:
-         *(bool*)data = !g_settings.video.crop_overscan;
+         *(bool*)data = !settings->video.crop_overscan;
          RARCH_LOG("Environ GET_OVERSCAN: %u\n",
-               (unsigned)!g_settings.video.crop_overscan);
+               (unsigned)!settings->video.crop_overscan);
          break;
 
       case RETRO_ENVIRONMENT_GET_CAN_DUPE:
@@ -661,7 +668,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_variable *vars = 
             (const struct retro_variable*)data;
 
-         const char *options_path = g_settings.core_options_path;
+         const char *options_path = settings->core_options_path;
          char buf[PATH_MAX_LENGTH];
          if (!*options_path && *g_extern.config_path)
          {
@@ -686,7 +693,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          unsigned rotation = *(const unsigned*)data;
          RARCH_LOG("Environ SET_ROTATION: %u\n", rotation);
-         if (!g_settings.video.allow_rotate)
+         if (!settings->video.allow_rotate)
             break;
 
          g_extern.system.rotation = rotation;
@@ -714,10 +721,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
-         *(const char**)data = *g_settings.system_directory ?
-            g_settings.system_directory : NULL;
+         *(const char**)data = *settings->system_directory ?
+            settings->system_directory : NULL;
          RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
-               g_settings.system_directory);
+               settings->system_directory);
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
@@ -728,16 +735,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
-         *(const char**)data = *g_settings.username ?
-            g_settings.username : NULL;
+         *(const char**)data = *settings->username ?
+            settings->username : NULL;
          RARCH_LOG("Environ GET_USERNAME: \"%s\".\n",
-               g_settings.username);
+               settings->username);
          break;
 
       case RETRO_ENVIRONMENT_GET_LANGUAGE:
-         *(unsigned *)data = g_settings.user_language;
+         *(unsigned *)data = settings->user_language;
          RARCH_LOG("Environ GET_LANGUAGE: \"%u\".\n",
-               g_settings.user_language);
+               settings->user_language);
          break;
 
       case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
@@ -837,7 +844,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          };
 
          RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
-         for (p = 0; p < g_settings.input.max_users; p++)
+         for (p = 0; p < settings->input.max_users; p++)
          {
             for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
             {
@@ -956,7 +963,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const char **path = (const char**)data;
 #ifdef HAVE_DYNAMIC
-         *path = g_settings.libretro;
+         *path = settings->libretro;
 #else
          *path = NULL;
 #endif
@@ -1094,10 +1101,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const char **dir = (const char**)data;
 
-         *dir = *g_settings.core_assets_directory ?
-            g_settings.core_assets_directory : NULL;
+         *dir = *settings->core_assets_directory ?
+            settings->core_assets_directory : NULL;
          RARCH_LOG("Environ CORE_ASSETS_DIRECTORY: \"%s\".\n",
-               g_settings.core_assets_directory);
+               settings->core_assets_directory);
          break;
       }
 
@@ -1205,8 +1212,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ (Private) SET_LIBRETRO_PATH.\n");
 
          if (path_file_exists((const char*)data))
-            strlcpy(g_settings.libretro, (const char*)data,
-                  sizeof(g_settings.libretro));
+            strlcpy(settings->libretro, (const char*)data,
+                  sizeof(settings->libretro));
          else
             return false;
          break;

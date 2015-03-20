@@ -76,6 +76,7 @@ static bool video_frame_filter(const void *data,
       unsigned *output_width, unsigned *output_height,
       unsigned *output_pitch)
 {
+   settings_t *settings = config_get_ptr();
    RARCH_PERFORMANCE_INIT(softfilter_process);
 
    if (!g_extern.filter.filter)
@@ -94,7 +95,7 @@ static bool video_frame_filter(const void *data,
          data, width, height, pitch);
    RARCH_PERFORMANCE_STOP(softfilter_process);
 
-   if (g_settings.video.post_filter_record)
+   if (settings->video.post_filter_record)
       recording_dump_frame(g_extern.filter.buffer,
             *output_width, *output_height, *output_pitch);
 
@@ -115,8 +116,9 @@ static void video_frame(const void *data, unsigned width,
 {
    unsigned output_width  = 0, output_height = 0, output_pitch = 0;
    const char *msg = NULL;
-   runloop_t *runloop = rarch_main_get_ptr();
-   driver_t  *driver  = driver_get_ptr();
+   runloop_t *runloop   = rarch_main_get_ptr();
+   driver_t  *driver    = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!driver->video_active)
       return;
@@ -137,7 +139,7 @@ static void video_frame(const void *data, unsigned width,
     * for best possible scheduling.
     */
    if ((!g_extern.filter.filter
-            || !g_settings.video.post_filter_record || !data
+            || !settings->video.post_filter_record || !data
             || g_extern.record.gpu_buffer)
       )
       recording_dump_frame(data, width, height, pitch);
@@ -183,6 +185,7 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
    struct rarch_dsp_data dsp_data = {0};
    runloop_t *runloop             = rarch_main_get_ptr();
    driver_t  *driver              = driver_get_ptr();
+   settings_t *settings           = config_get_ptr();
 
    if (driver->recording_data)
    {
@@ -194,7 +197,7 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
          driver->recording->push_audio(driver->recording_data, &ffemu_data);
    }
 
-   if (runloop->is_paused || g_settings.audio.mute_enable)
+   if (runloop->is_paused || settings->audio.mute_enable)
       return true;
    if (!driver->audio_active || !g_extern.audio_data.data)
       return false;
@@ -232,7 +235,7 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
 
    src_data.ratio = g_extern.audio_data.src_ratio;
    if (runloop->is_slowmotion)
-      src_data.ratio *= g_settings.slowmotion_ratio;
+      src_data.ratio *= settings->slowmotion_ratio;
 
    RARCH_PERFORMANCE_INIT(resampler_proc);
    RARCH_PERFORMANCE_START(resampler_proc);
@@ -362,14 +365,16 @@ static size_t audio_sample_batch_rewind(const int16_t *data, size_t frames)
  **/
 static bool input_apply_turbo(unsigned port, unsigned id, bool res)
 {
+   settings_t *settings           = config_get_ptr();
+
    if (res && g_extern.turbo_frame_enable[port])
       g_extern.turbo_enable[port] |= (1 << id);
    else if (!res)
       g_extern.turbo_enable[port] &= ~(1 << id);
 
    if (g_extern.turbo_enable[port] & (1 << id))
-      return res && ((g_extern.turbo_count % g_settings.input.turbo_period)
-            < g_settings.input.turbo_duty_cycle);
+      return res && ((g_extern.turbo_count % settings->input.turbo_period)
+            < settings->input.turbo_duty_cycle);
    return res;
 }
 
@@ -389,6 +394,7 @@ static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    int16_t res = 0;
+   settings_t *settings           = config_get_ptr();
 
    static const struct retro_keybind *libretro_input_binds[MAX_USERS] = {
       g_settings.input.binds[0],
@@ -421,10 +427,10 @@ static int16_t input_state(unsigned port, unsigned device,
       g_extern.bsv.movie_end = true;
    }
 
-   if (g_settings.input.remap_binds_enable)
+   if (settings->input.remap_binds_enable)
    {
       if (id < RARCH_FIRST_CUSTOM_BIND)
-         id = g_settings.input.remap_ids[port][id];
+         id = settings->input.remap_ids[port][id];
    }
 
    if (!driver->block_libretro_input)
@@ -495,7 +501,8 @@ static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opa
    unsigned i, j, device;
    uint16_t key_mod = 0;
    bool polled = false;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver               = driver_get_ptr();
+   settings_t *settings           = config_get_ptr();
 
    if (overlay_device->state != OVERLAY_STATUS_ALIVE)
       return;
@@ -582,7 +589,7 @@ static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opa
 
    /* Check for analog_dpad_mode.
     * Map analogs to d-pad buttons when configured. */
-   switch (g_settings.input.analog_dpad_mode[0])
+   switch (settings->input.analog_dpad_mode[0])
    {
       case ANALOG_DPAD_LSTICK:
       case ANALOG_DPAD_RSTICK:
@@ -590,19 +597,19 @@ static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opa
          float analog_x, analog_y;
          unsigned analog_base = 2;
 
-         if (g_settings.input.analog_dpad_mode[0] == ANALOG_DPAD_LSTICK)
+         if (settings->input.analog_dpad_mode[0] == ANALOG_DPAD_LSTICK)
             analog_base = 0;
 
          analog_x = (float)driver->overlay_state.analog[analog_base + 0] / 0x7fff;
          analog_y = (float)driver->overlay_state.analog[analog_base + 1] / 0x7fff;
 
-         if (analog_x <= -g_settings.input.axis_threshold)
+         if (analog_x <= -settings->input.axis_threshold)
             driver->overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
-         if (analog_x >=  g_settings.input.axis_threshold)
+         if (analog_x >=  settings->input.axis_threshold)
             driver->overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
-         if (analog_y <= -g_settings.input.axis_threshold)
+         if (analog_y <= -settings->input.axis_threshold)
             driver->overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
-         if (analog_y >=  g_settings.input.axis_threshold)
+         if (analog_y >=  settings->input.axis_threshold)
             driver->overlay_state.buttons |= (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
          break;
       }
@@ -625,13 +632,15 @@ static INLINE void input_poll_overlay(input_overlay_t *overlay_device, float opa
  **/
 static void input_poll(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver               = driver_get_ptr();
+   settings_t *settings           = config_get_ptr();
 
    driver->input->poll(driver->input_data);
 
 #ifdef HAVE_OVERLAY
    if (driver->overlay)
-      input_poll_overlay(driver->overlay, g_settings.input.overlay_opacity);
+      input_poll_overlay(driver->overlay,
+            settings->input.overlay_opacity);
 #endif
 
 #ifdef HAVE_COMMAND

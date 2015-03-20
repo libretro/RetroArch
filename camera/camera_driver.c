@@ -116,8 +116,9 @@ const char* config_get_camera_driver_options(void)
 
 void find_camera_driver(void)
 {
-   driver_t *driver = driver_get_ptr();
-   int i = find_driver_index("camera_driver", g_settings.camera.driver);
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+   int i = find_driver_index("camera_driver", settings->camera.driver);
 
    if (i >= 0)
       driver->camera = (const camera_driver_t*)camera_driver_find_handle(i);
@@ -125,7 +126,7 @@ void find_camera_driver(void)
    {
       unsigned d;
       RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
-            g_settings.camera.driver);
+            settings->camera.driver);
       RARCH_LOG_OUTPUT("Available camera drivers are:\n");
       for (d = 0; camera_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", camera_driver_find_ident(d));
@@ -149,10 +150,12 @@ void find_camera_driver(void)
  **/
 bool driver_camera_start(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+
    if (driver->camera && driver->camera_data && driver->camera->start)
    {
-      if (g_settings.camera.allow)
+      if (settings->camera.allow)
          return driver->camera->start(driver->camera_data);
 
       rarch_main_msg_queue_push(
@@ -195,7 +198,8 @@ void driver_camera_poll(void)
 
 void init_camera(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (driver->camera_data)
    {
@@ -206,12 +210,12 @@ void init_camera(void)
    find_camera_driver();
 
    driver->camera_data = driver->camera->init(
-         *g_settings.camera.device ? g_settings.camera.device : NULL,
+         *settings->camera.device ? settings->camera.device : NULL,
          g_extern.system.camera_callback.caps,
-         g_settings.camera.width ?
-         g_settings.camera.width : g_extern.system.camera_callback.width,
-         g_settings.camera.height ?
-         g_settings.camera.height : g_extern.system.camera_callback.height);
+         settings->camera.width ?
+         settings->camera.width : g_extern.system.camera_callback.width,
+         settings->camera.height ?
+         settings->camera.height : g_extern.system.camera_callback.height);
 
    if (!driver->camera_data)
    {

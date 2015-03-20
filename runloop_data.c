@@ -871,9 +871,12 @@ static void rarch_main_data_thread_init(void)
 void rarch_main_data_iterate(void)
 {
    data_runloop_t *data_runloop = rarch_main_data_get_ptr();
+   settings_t     *settings     = config_get_ptr();
+   
+   (void)settings;
 #ifdef HAVE_THREADS
 #if 0
-   if (g_settings.menu.threaded_data_runloop_enable)
+   if (settings->menu.threaded_data_runloop_enable)
    {
       switch (data_runloop->thread_code)
       {
