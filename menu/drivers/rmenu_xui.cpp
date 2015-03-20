@@ -282,7 +282,8 @@ static void* rmenu_xui_init(void)
    d3d_video_t *d3d;
    video_info_t video_info = {0};
    TypefaceDescriptor typeface = {0};
-   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+   settings_t *settings = config_get_ptr();
+   menu_handle_t *menu  = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
       return NULL;
@@ -292,13 +293,12 @@ static void* rmenu_xui_init(void)
    if (d3d->resolution_hd_enable)
       RARCH_LOG("HD menus enabled.\n");
 
-
-   video_info.vsync = g_settings.video.vsync;
+   video_info.vsync        = settings->video.vsync;
    video_info.force_aspect = false;
-   video_info.smooth = g_settings.video.smooth;
-   video_info.input_scale = 2;
-   video_info.fullscreen = true;
-   video_info.rgb32 = false;
+   video_info.smooth       = settings->video.smooth;
+   video_info.input_scale  = 2;
+   video_info.fullscreen   = true;
+   video_info.rgb32        = false;
 
    d3d_make_d3dpp(d3d, &video_info, &d3dpp);
    

@@ -92,7 +92,8 @@ static void glui_blit_line(gl_t *gl, float x, float y, const char *message, uint
          message, &params, NULL);
 }
 
-static void glui_render_background(gl_t *gl, glui_handle_t *glui,
+static void glui_render_background(settings_t *settings,
+      gl_t *gl, glui_handle_t *glui,
       bool force_transparency)
 {
    static const GLfloat vertex[] = {
@@ -131,7 +132,7 @@ static void glui_render_background(gl_t *gl, glui_handle_t *glui,
    coords.tex_coord     = tex_coord;
    coords.lut_tex_coord = tex_coord;
 
-   if ((g_settings.menu.pause_libretro
+   if ((settings->menu.pause_libretro
       || !g_extern.main_is_init || g_extern.libretro_dummy)
       && !force_transparency
       && glui->textures.bg.id)
@@ -225,7 +226,8 @@ static void glui_render_messagebox(const char *message)
    struct string_list *list = NULL;
    glui_handle_t *glui = NULL;
    gl_t *gl = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_resolve();
+   settings_t *settings = config_get_ptr();
 
    if (!menu)
       return;
@@ -251,7 +253,7 @@ static void glui_render_messagebox(const char *message)
    x = gl->win_width  / 2 - strlen(list->elems[0].data) * glui->glyph_width / 2;
    y = gl->win_height / 2 - list->size * glui->line_height / 2;
 
-   normal_color = FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.entry_normal_color);
+   normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
 
    for (i = 0; i < list->size; i++)
    {
@@ -268,8 +270,9 @@ static void glui_render(void)
 {
    glui_handle_t *glui = NULL;
    gl_t *gl = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
-   runloop_t *runloop  = rarch_main_get_ptr();
+   menu_handle_t *menu  = menu_driver_resolve();
+   runloop_t *runloop   = rarch_main_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!menu)
       return;
@@ -284,7 +287,7 @@ static void glui_render(void)
    if (!gl)
       return;
 
-   glui->line_height = g_settings.video.font_size * 4 / 3;
+   glui->line_height = settings->video.font_size * 4 / 3;
    glui->glyph_width = glui->line_height / 2;
    glui->margin      = gl->win_width / 20 ;
    glui->term_width  = (gl->win_width - glui->margin * 2) / glui->glyph_width;
@@ -327,9 +330,10 @@ static void glui_frame(void)
    glui_handle_t *glui = NULL;
    const char *core_name = NULL;
    const char *core_version = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
-   const uint32_t normal_color = FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.entry_normal_color);
-   const uint32_t hover_color = FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.entry_hover_color);
+   menu_handle_t *menu  = menu_driver_resolve();
+   settings_t *settings = config_get_ptr();
+   const uint32_t normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
+   const uint32_t hover_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_hover_color);
    runloop_t *runloop = rarch_main_get_ptr();
 
    if (!menu)
@@ -357,7 +361,7 @@ static void glui_frame(void)
       menu->begin + glui->term_height :
       menu_list_get_size(menu->menu_list);
 
-   glui_render_background(gl, glui, false);
+   glui_render_background(settings, gl, glui, false);
 
    menu_list_get_last_stack(menu->menu_list, &dir, &label, &menu_type);
 
@@ -366,7 +370,7 @@ static void glui_frame(void)
    menu_animation_ticker_line(title_buf, glui->term_width - 3,
          runloop->frames.video.count / glui->margin, title, true);
    glui_blit_line(gl, glui->margin * 2, glui->margin + glui->line_height,
-         title_buf, FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.title_color));
+         title_buf, FONT_COLOR_ARGB_TO_RGBA(settings->menu.title_color));
 
    core_name = g_extern.menu.info.library_name;
    if (!core_name)
@@ -374,7 +378,7 @@ static void glui_frame(void)
    if (!core_name)
       core_name = "No Core";
 
-   if (g_settings.menu.core_enable)
+   if (settings->menu.core_enable)
    {
       core_version = g_extern.menu.info.library_version;
       if (!core_version)
@@ -388,11 +392,11 @@ static void glui_frame(void)
       glui_blit_line(gl,
             glui->margin * 2,
             glui->margin + glui->term_height * glui->line_height 
-            + glui->line_height * 2, title_msg, FONT_COLOR_ARGB_TO_RGBA(g_settings.menu.title_color));
+            + glui->line_height * 2, title_msg, FONT_COLOR_ARGB_TO_RGBA(settings->menu.title_color));
    }
 
 
-   if (g_settings.menu.timedate_enable)
+   if (settings->menu.timedate_enable)
    {
       disp_timedate_set_label(timedate, sizeof(timedate), 0);
       glui_blit_line(gl,
@@ -449,19 +453,19 @@ static void glui_frame(void)
       const char *str = *menu->keyboard.buffer;
       if (!str)
          str = "";
-      glui_render_background(gl, glui, true);
+      glui_render_background(settings, gl, glui, true);
       snprintf(msg, sizeof(msg), "%s\n%s", menu->keyboard.label, str);
       glui_render_messagebox(msg);
    }
 
    if (glui->box_message[0] != '\0')
    {
-      glui_render_background(gl, glui, true);
+      glui_render_background(settings, gl, glui, true);
       glui_render_messagebox(glui->box_message);
       glui->box_message[0] = '\0';
    }
 
-   if (g_settings.menu.mouse.enable)
+   if (settings->menu.mouse.enable)
       glui_draw_cursor(gl, menu->mouse.x, menu->mouse.y);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
@@ -556,7 +560,8 @@ static void glui_context_reset(void)
 {
    const char *path = NULL;
    glui_handle_t *glui = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_resolve();
+   settings_t *settings = config_get_ptr();
     
    if (!menu)
       return;
@@ -566,12 +571,12 @@ static void glui_context_reset(void)
    if (!glui)
       return;
 
-   fill_pathname_join(glui->textures.bg.path, g_settings.assets_directory,
+   fill_pathname_join(glui->textures.bg.path, settings->assets_directory,
          "glui", sizeof(glui->textures.bg.path));
 
-   if (*g_settings.menu.wallpaper)
+   if (*settings->menu.wallpaper)
       strlcpy(glui->textures.bg.path,
-            g_settings.menu.wallpaper, sizeof(glui->textures.bg.path));
+            settings->menu.wallpaper, sizeof(glui->textures.bg.path));
    else
       fill_pathname_join(glui->textures.bg.path,
             glui->textures.bg.path, "bg.png",

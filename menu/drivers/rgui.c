@@ -35,13 +35,13 @@
 #define RGUI_TERM_HEIGHT (((menu->frame_buf.height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
 
 #if defined(GEKKO)|| defined(PSP)
-#define HOVER_COLOR ((3 << 0) | (10 << 4) | (3 << 8) | (7 << 12))
-#define NORMAL_COLOR 0x7FFF
-#define TITLE_COLOR HOVER_COLOR
+#define HOVER_COLOR(settings) ((3 << 0) | (10 << 4) | (3 << 8) | (7 << 12))
+#define NORMAL_COLOR(settings) 0x7FFF
+#define TITLE_COLOR(settings) HOVER_COLOR(settings)
 #else
-#define HOVER_COLOR (argb32_to_rgba4444(g_settings.menu.entry_hover_color))
-#define NORMAL_COLOR (argb32_to_rgba4444(g_settings.menu.entry_normal_color))
-#define TITLE_COLOR (argb32_to_rgba4444(g_settings.menu.title_color))
+#define HOVER_COLOR(settings) (argb32_to_rgba4444(settings->menu.entry_hover_color))
+#define NORMAL_COLOR(settings) (argb32_to_rgba4444(settings->menu.entry_normal_color))
+#define TITLE_COLOR(settings) (argb32_to_rgba4444(settings->menu.title_color))
 #endif
 
 static inline uint16_t argb32_to_rgba4444(uint32_t col)
@@ -273,7 +273,8 @@ static void rgui_render_messagebox(const char *message)
    unsigned width, glyphs_width, height;
    uint16_t color;
    struct string_list *list = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_resolve();
+   settings_t *settings = config_get_ptr();
 
    if (!menu)
       return;
@@ -319,7 +320,7 @@ static void rgui_render_messagebox(const char *message)
    fill_rect(&menu->frame_buf, x + 5, y + height - 5, width - 5, 5, green_filler);
    fill_rect(&menu->frame_buf, x, y + 5, 5, height - 5, green_filler);
 
-   color = NORMAL_COLOR;
+   color = NORMAL_COLOR(settings);
 
    for (i = 0; i < list->size; i++)
    {
@@ -349,13 +350,14 @@ static void rgui_render(void)
    char timedate[PATH_MAX_LENGTH];
    unsigned x, y, menu_type  = 0;
    uint16_t hover_color, normal_color;
-   const char *dir     = NULL;
-   const char *label   = NULL;
-   const char *core_name = NULL;
+   const char *dir          = NULL;
+   const char *label        = NULL;
+   const char *core_name    = NULL;
    const char *core_version = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
-   runloop_t *runloop = rarch_main_get_ptr();
-   driver_t *driver   = driver_get_ptr();
+   menu_handle_t *menu      = menu_driver_resolve();
+   runloop_t *runloop       = rarch_main_get_ptr();
+   driver_t *driver         = driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
 
    (void)driver;
 
@@ -409,10 +411,10 @@ static void rgui_render(void)
    menu_animation_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
          runloop->frames.video.count / RGUI_TERM_START_X, title, true);
 
-   hover_color = HOVER_COLOR;
-   normal_color = NORMAL_COLOR;
+   hover_color = HOVER_COLOR(settings);
+   normal_color = NORMAL_COLOR(settings);
 
-   blit_line(menu, RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, TITLE_COLOR);
+   blit_line(menu, RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, TITLE_COLOR(settings));
 
    core_name = g_extern.menu.info.library_name;
    if (!core_name)
@@ -420,7 +422,7 @@ static void rgui_render(void)
    if (!core_name)
       core_name = "No Core";
 
-   if (g_settings.menu.core_enable)
+   if (settings->menu.core_enable)
    {
       core_version = g_extern.menu.info.library_version;
       if (!core_version)
@@ -437,7 +439,7 @@ static void rgui_render(void)
             RGUI_TERM_START_Y + 2, title_msg, hover_color);
    }
 
-   if (g_settings.menu.timedate_enable)
+   if (settings->menu.timedate_enable)
    {
       disp_timedate_set_label(timedate, sizeof(timedate), 3);
 
@@ -520,7 +522,7 @@ static void rgui_render(void)
       rgui_render_messagebox(msg);
    }
 
-   if (g_settings.menu.mouse.enable)
+   if (settings->menu.mouse.enable)
       rgui_blit_cursor(menu);
 }
 

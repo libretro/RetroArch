@@ -271,6 +271,7 @@ static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
 
 static bool ffmpeg_init_audio(ffmpeg_t *handle)
 {
+   settings_t *settings = config_get_ptr();
    struct ff_config_param *params = &handle->config;
    struct ff_audio_info *audio    = &handle->audio;
    struct ff_video_info *video    = &handle->video;
@@ -304,7 +305,7 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
 
       rarch_resampler_realloc(&audio->resampler_data,
             &audio->resampler,
-            g_settings.audio.resampler,
+            settings->audio.resampler,
             audio->ratio);
    }
    else

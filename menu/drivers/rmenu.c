@@ -320,7 +320,9 @@ static void rmenu_set_texture(void)
 
 static void rmenu_wallpaper_set_defaults(char *menu_bg, size_t sizeof_menu_bg)
 {
-   fill_pathname_join(menu_bg, g_settings.assets_directory,
+   settings_t *settings = config_get_ptr();
+
+   fill_pathname_join(menu_bg, settings->assets_directory,
          "rmenu", sizeof_menu_bg);
 #ifdef _XBOX1
    fill_pathname_join(menu_bg, menu_bg, "sd", sizeof_menu_bg);
@@ -333,13 +335,14 @@ static void rmenu_wallpaper_set_defaults(char *menu_bg, size_t sizeof_menu_bg)
 static void rmenu_context_reset(void)
 {
    char menu_bg[PATH_MAX_LENGTH];
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_resolve();
+   settings_t *settings = config_get_ptr();
 
    if (!menu)
       return;
 
-   if (*g_settings.menu.wallpaper)
-      strlcpy(menu_bg, g_settings.menu.wallpaper, sizeof(menu_bg));
+   if (*settings->menu.wallpaper)
+      strlcpy(menu_bg, settings->menu.wallpaper, sizeof(menu_bg));
    else
       rmenu_wallpaper_set_defaults(menu_bg, sizeof(menu_bg));
 

@@ -414,7 +414,8 @@ static void xmb_draw_text(gl_t *gl, xmb_handle_t *xmb, const char *str, float x,
                                       str, &params, xmb->font.buf);
 }
 
-static void xmb_frame_background(gl_t *gl, xmb_handle_t *xmb,
+static void xmb_frame_background(settings_t *settings,
+      gl_t *gl, xmb_handle_t *xmb,
       bool force_transparency)
 {
    struct gl_coords coords;
@@ -458,7 +459,7 @@ static void xmb_frame_background(gl_t *gl, xmb_handle_t *xmb,
    coords.tex_coord     = tex_coord;
    coords.lut_tex_coord = tex_coord;
 
-   if ((g_settings.menu.pause_libretro
+   if ((settings->menu.pause_libretro
       || !g_extern.main_is_init || g_extern.libretro_dummy)
       && !force_transparency
       && xmb->textures.bg.id)
@@ -1245,7 +1246,8 @@ static void xmb_frame(void)
    const char *core_version = NULL;
    xmb_handle_t *xmb = NULL;
    gl_t *gl = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_resolve();
+   settings_t *settings = config_get_ptr();
 
    if (!menu)
       return;
@@ -1260,12 +1262,12 @@ static void xmb_frame(void)
    if (!gl)
       return;
 
-   xmb_frame_background(gl, xmb, false);
+   xmb_frame_background(settings, gl, xmb, false);
 
    xmb_draw_text(gl, xmb,
          xmb->title_name, xmb->margins.title.left, xmb->margins.title.top, 1, 1, 0);
 
-   if (g_settings.menu.timedate_enable)
+   if (settings->menu.timedate_enable)
    {
       disp_timedate_set_label(timedate, sizeof(timedate), 0);
 
@@ -1274,7 +1276,7 @@ static void xmb_frame(void)
             xmb->margins.title.top, 1, 1, 1);
    }
 
-   if (g_settings.menu.core_enable)
+   if (settings->menu.core_enable)
    {
       core_name = g_extern.menu.info.library_name;
 
@@ -1319,7 +1321,7 @@ static void xmb_frame(void)
 
    xmb_draw_icon_begin(gl, xmb);
 
-   if (g_settings.menu.timedate_enable)
+   if (settings->menu.timedate_enable)
       xmb_draw_icon_predone(gl, xmb, &mymat, xmb->textures.list[XMB_TEXTURE_CLOCK].id,
             gl->win_width - xmb->icon.size, xmb->icon.size, 1, 0, 1);
 
@@ -1370,11 +1372,11 @@ static void xmb_frame(void)
 
    if (render_background)
    {
-      xmb_frame_background(gl, xmb, true);
+      xmb_frame_background(settings, gl, xmb, true);
       xmb_frame_messagebox(msg);
    }
 
-   if (g_settings.menu.mouse.enable)
+   if (settings->menu.mouse.enable)
       xmb_draw_cursor(gl, xmb, menu->mouse.x, menu->mouse.y);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
@@ -1502,7 +1504,9 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
       void **font_handle, void *video_data, const char *font_path,
       float xmb_font_size)
 {
-   if (g_settings.video.threaded
+   settings_t *settings = config_get_ptr();
+
+   if (settings->video.threaded
          && !g_extern.system.hw_render_callback.context_type)
    {
       driver_t *driver    = driver_get_ptr();
@@ -1565,7 +1569,8 @@ static void xmb_context_reset(void)
    gl_t *gl = NULL;
    xmb_handle_t *xmb = NULL;
    xmb_node_t *node = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_resolve();
+   settings_t *settings = config_get_ptr();
 
    if (!menu)
       return;
@@ -1578,12 +1583,12 @@ static void xmb_context_reset(void)
    if (!xmb)
       return;
 
-   fill_pathname_join(bgpath, g_settings.assets_directory,
+   fill_pathname_join(bgpath, settings->assets_directory,
          "xmb", sizeof(bgpath));
 
    fill_pathname_join(bgpath, bgpath, "bg.png", sizeof(bgpath));
 
-   fill_pathname_join(mediapath, g_settings.assets_directory,
+   fill_pathname_join(mediapath, settings->assets_directory,
          "lakka", sizeof(mediapath));
    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
    fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
@@ -1665,8 +1670,8 @@ static void xmb_context_reset(void)
       fill_pathname_join(path, iconpath,
             "bg.png", sizeof(path));
 
-      if (*g_settings.menu.wallpaper)
-         strlcpy(path, g_settings.menu.wallpaper,
+      if (*settings->menu.wallpaper)
+         strlcpy(path, settings->menu.wallpaper,
                sizeof(path));
 
       if ( path_file_exists(path))
@@ -1701,7 +1706,7 @@ static void xmb_context_reset(void)
             continue;
       }
 
-      fill_pathname_join(mediapath, g_settings.assets_directory,
+      fill_pathname_join(mediapath, settings->assets_directory,
             "lakka", sizeof(mediapath));
       fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
       fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
