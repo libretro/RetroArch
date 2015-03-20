@@ -117,7 +117,7 @@ OBJ += frontend/frontend.o \
 		menu/menu_driver.o \
 		location/location_driver.o \
 		driver.o \
-		settings.o \
+		configuration.o \
 		settings_list.o \
 		settings_data.o \
 		dynamic.o \

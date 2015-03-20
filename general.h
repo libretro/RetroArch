@@ -31,7 +31,7 @@
 #include "core_options.h"
 #include "core_info.h"
 #include "gfx/video_viewport.h"
-#include "settings.h"
+#include "configuration.h"
 #include "playlist.h"
 
 #ifdef HAVE_CONFIG_H

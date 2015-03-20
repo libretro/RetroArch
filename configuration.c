@@ -24,7 +24,7 @@
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
 #include "gfx/video_viewport.h"
-#include "settings.h"
+#include "configuration.h"
 #include "general.h"
 #include "runloop.h"
 
