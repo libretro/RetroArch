@@ -145,13 +145,19 @@ check_lib NETWORKING "$SOCKETLIB" socket "" "$SOCKETHEADER"
 
 if [ "$HAVE_NETWORKING" = 'yes' ]; then
    HAVE_GETADDRINFO=auto
-   check_lib GETADDRINFO "$SOCKETLIB" getaddrinfo
-   if [ "$HAVE_GETADDRINFO" = 'yes' ]; then
-      HAVE_SOCKET_LEGACY='no'
+   HAVE_SOCKET_LEGACY=no
+
+   # WinXP+ implements getaddrinfo()
+   if [ "$OS" = 'Win32' ]; then
+      HAVE_GETADDRINFO=yes
    else
-      HAVE_SOCKET_LEGACY='yes'
+      check_lib GETADDRINFO "$SOCKETLIB" getaddrinfo
+      if [ "$HAVE_GETADDRINFO" != 'yes' ]; then
+         HAVE_SOCKET_LEGACY=yes
+		 echo "Notice: RetroArch will use legacy socket support"
+      fi
    fi
-   HAVE_NETWORK_CMD='yes'
+   HAVE_NETWORK_CMD=yes
 
    [ "$HAVE_NETPLAY" != 'no' ] && HAVE_NETPLAY='yes'
 else
