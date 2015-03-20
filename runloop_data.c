@@ -754,6 +754,7 @@ static void rarch_main_data_overlay_iterate(bool is_thread, data_runloop_t *runl
 }
 #endif
 
+#ifdef HAVE_THREADS
 static void data_runloop_thread_deinit(data_runloop_t *runloop)
 {
    if (!runloop->thread_inited)
@@ -772,6 +773,7 @@ static void data_runloop_thread_deinit(data_runloop_t *runloop)
 
    runloop->thread_inited = false;
 }
+#endif
 
 void rarch_main_data_deinit(void)
 {
@@ -949,4 +951,3 @@ void rarch_main_data_msg_queue_push(unsigned type,
       msg_queue_clear(queue);
    msg_queue_push(queue, new_msg, prio, duration);
 }
-
