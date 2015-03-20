@@ -65,6 +65,7 @@ struct http_connection_t
 
 static int net_http_new_socket(const char * domain, int port)
 {
+   char portstr[16];
    int fd, i = 1;
 #ifdef _WIN32
    u_long mode = 1;
@@ -72,7 +73,6 @@ static int net_http_new_socket(const char * domain, int port)
    struct timeval timeout;
 #endif
    struct addrinfo hints, *addr = NULL;
-   char portstr[16];
 
    snprintf(portstr, sizeof(portstr), "%i", port);
 
