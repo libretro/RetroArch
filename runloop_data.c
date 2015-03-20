@@ -797,6 +797,7 @@ void rarch_main_data_deinit(void)
 
    data_runloop->inited = false;
 
+   free(data_runloop);
 }
 
 static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
