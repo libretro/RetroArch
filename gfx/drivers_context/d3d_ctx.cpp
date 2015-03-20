@@ -70,7 +70,8 @@ static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
         WPARAM wParam, LPARAM lParam)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
     switch (message)
     {
@@ -101,7 +102,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 			}
 			return 0;
 		case WM_COMMAND:
-         if (g_settings.ui.menubar_enable)
+         if (settings->ui.menubar_enable)
 			{
 				d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
 				HWND        d3dr = d3d->hWnd;
@@ -126,8 +127,9 @@ static void gfx_ctx_d3d_swap_buffers(void *data)
 
 static void gfx_ctx_d3d_update_title(void *data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    char buf[128], buffer_fps[128];
+   d3d_video_t *d3d     = (d3d_video_t*)data;
+   settings_t *settings = config_get_ptr();
 
    if (video_monitor_get_fps(buf, sizeof(buf),
             buffer_fps, sizeof(buffer_fps)))
@@ -137,7 +139,7 @@ static void gfx_ctx_d3d_update_title(void *data)
 #endif
    }
 
-   if (g_settings.fps_show)
+   if (settings->fps_show)
    {
 #ifdef _XBOX
       char mem[128];
@@ -165,20 +167,21 @@ static void gfx_ctx_d3d_show_mouse(void *data, bool state)
 
 void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t *d3d =(d3d_video_t*)data;
+   settings_t *settings = config_get_ptr();
 
    memset(d3dpp, 0, sizeof(*d3dpp));
 
 #ifdef _XBOX
    d3dpp->Windowed = false;
 #else
-   d3dpp->Windowed = g_settings.video.windowed_fullscreen || !info->fullscreen;
+   d3dpp->Windowed = settings->video.windowed_fullscreen || !info->fullscreen;
 #endif
    d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
    if (info->vsync)
    {
-      switch (g_settings.video.swap_interval)
+      switch (settings->video.swap_interval)
       {
          default:
          case 1:

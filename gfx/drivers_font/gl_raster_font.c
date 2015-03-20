@@ -248,6 +248,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
    bool align_right;
    gl_t *gl = NULL;
    gl_raster_t *font = (gl_raster_t*)data;
+   settings_t *settings = config_get_ptr();
 
    if (!font)
       return;
@@ -256,19 +257,19 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
 
    if (params)
    {
-      x = params->x;
-      y = params->y;
-      scale = params->scale;
+      x           = params->x;
+      y           = params->y;
+      scale       = params->scale;
       full_screen = params->full_screen;
       align_right = params->align_right;
-      drop_x = params->drop_x;
-      drop_y = params->drop_y;
-      drop_mod = params->drop_mod;
+      drop_x      = params->drop_x;
+      drop_y      = params->drop_y;
+      drop_mod    = params->drop_mod;
 
-      color[0] = FONT_COLOR_GET_RED(params->color) / 255.0f;
-      color[1] = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
-      color[2] = FONT_COLOR_GET_BLUE(params->color) / 255.0f;
-      color[3] = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
+      color[0]    = FONT_COLOR_GET_RED(params->color) / 255.0f;
+      color[1]    = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
+      color[2]    = FONT_COLOR_GET_BLUE(params->color) / 255.0f;
+      color[3]    = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
 
       /* If alpha is 0.0f, turn it into default 1.0f */
       if (color[3] <= 0.0f)
@@ -276,15 +277,15 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
    }
    else
    {
-      x = g_settings.video.msg_pos_x;
-      y = g_settings.video.msg_pos_y;
-      scale = 1.0f;
+      x           = settings->video.msg_pos_x;
+      y           = settings->video.msg_pos_y;
+      scale       = 1.0f;
       full_screen = false;
       align_right = false;
 
-      color[0] = g_settings.video.msg_color_r;
-      color[1] = g_settings.video.msg_color_g;
-      color[2] = g_settings.video.msg_color_b;
+      color[0]    = settings->video.msg_color_r;
+      color[1]    = settings->video.msg_color_g;
+      color[2]    = settings->video.msg_color_b;
       color[3] = 1.0f;
 
       drop_x = -2;

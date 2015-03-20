@@ -470,7 +470,7 @@ static bool psp_frame(void *data, const void *frame,
 {
    static char fps_txt[128], fps_text_buf[128];
    psp1_video_t *psp = (psp1_video_t*)data;
-
+   settings_t *settings = config_get_ptr();
 #ifdef DISPLAY_FPS
    static uint64_t currentTick,lastTick;
    static float fps=0.0;
@@ -493,10 +493,10 @@ static bool psp_frame(void *data, const void *frame,
    pspDebugScreenSetXY(0,0);
 
    video_monitor_get_fps(fps_txt, sizeof(fps_txt),
-         g_settings.fps_show ? fps_text_buf : NULL,
-         g_settings.fps_show ? sizeof(fps_text_buf) : 0);
+         settings->fps_show ? fps_text_buf : NULL,
+         settings->fps_show ? sizeof(fps_text_buf) : 0);
 
-   if(g_settings.fps_show)
+   if(settings->fps_show)
    {
       pspDebugScreenSetXY(68 - strlen(fps_text_buf) - 1,0);
       pspDebugScreenPuts(fps_text_buf);
@@ -692,13 +692,14 @@ static void psp_set_texture_enable(void *data, bool state, bool full_screen)
 
 static void psp_update_viewport(psp1_video_t* psp)
 {
+   int x = 0;
+   int y = 0;
    float device_aspect = ((float)SCEGU_SCR_WIDTH) / SCEGU_SCR_HEIGHT;
    float width = SCEGU_SCR_WIDTH;
    float height = SCEGU_SCR_HEIGHT;
-   int x = 0;
-   int y = 0;
+   settings_t *settings = config_get_ptr();
 
-   if (g_settings.video.scale_integer)
+   if (settings->video.scale_integer)
    {
       video_viewport_get_scaled_integer(&psp->vp, SCEGU_SCR_WIDTH,
             SCEGU_SCR_HEIGHT, g_extern.system.aspect_ratio, psp->keep_aspect);
@@ -711,7 +712,7 @@ static void psp_update_viewport(psp1_video_t* psp)
       float desired_aspect = g_extern.system.aspect_ratio;
 
 #if defined(HAVE_MENU)
-      if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport *custom = 
             &g_extern.console.screen.viewports.custom_vp;

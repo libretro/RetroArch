@@ -206,8 +206,9 @@ static bool gl_shader_init(gl_t *gl)
    enum rarch_shader_type type;
    bool ret = false;
    const shader_backend_t *backend = NULL;
-   const char *shader_path = (g_settings.video.shader_enable && *g_settings.video.shader_path) ?
-      g_settings.video.shader_path : NULL;
+   settings_t *settings = config_get_ptr();
+   const char *shader_path = (settings->video.shader_enable && *settings->video.shader_path) ?
+      settings->video.shader_path : NULL;
 
 
    if (!gl)
@@ -422,37 +423,43 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
 static void gl_create_fbo_textures(gl_t *gl)
 {
    int i;
-   GLuint base_filt     = g_settings.video.smooth ? GL_LINEAR : GL_NEAREST;
-   GLuint base_mip_filt = g_settings.video.smooth ? 
+   settings_t *settings = config_get_ptr();
+   GLuint base_filt     = settings->video.smooth ? GL_LINEAR : GL_NEAREST;
+   GLuint base_mip_filt = settings->video.smooth ? 
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
 
    glGenTextures(gl->fbo_pass, gl->fbo_texture);
 
    for (i = 0; i < gl->fbo_pass; i++)
    {
+      enum gfx_wrap_type wrap;
+      GLenum min_filter, mag_filter, wrap_enum;
+      bool mipmapped = false;
+      bool smooth = false;
+      bool fp_fbo, srgb_fbo;
+
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
 
-      bool mipmapped = gl->shader->mipmap_input(i + 2);
+      mipmapped = gl->shader->mipmap_input(i + 2);
 
-      GLenum min_filter = mipmapped ? base_mip_filt : base_filt;
-      bool smooth = false;
+      min_filter = mipmapped ? base_mip_filt : base_filt;
       if (gl->shader->filter_type(i + 2, &smooth))
          min_filter = mipmapped ? (smooth ? 
                GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
             : (smooth ? GL_LINEAR : GL_NEAREST);
 
-      GLenum mag_filter = min_filter_to_mag(min_filter);
+      mag_filter = min_filter_to_mag(min_filter);
 
-      enum gfx_wrap_type wrap = gl->shader->wrap_type(i + 2);
-      GLenum wrap_enum = gl_wrap_type_to_enum(wrap);
+      wrap = gl->shader->wrap_type(i + 2);
+      wrap_enum = gl_wrap_type_to_enum(wrap);
 
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_enum);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_enum);
 
-      bool fp_fbo   = gl->fbo_scale[i].fp_fbo;
-      bool srgb_fbo = gl->fbo_scale[i].srgb_fbo;
+      fp_fbo   = gl->fbo_scale[i].fp_fbo;
+      srgb_fbo = gl->fbo_scale[i].srgb_fbo;
 
       if (fp_fbo)
       {
@@ -465,7 +472,7 @@ static void gl_create_fbo_textures(gl_t *gl)
             RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result may have banding!\n");
       }
 
-      if (g_settings.video.force_srgb_disable)
+      if (settings->video.force_srgb_disable)
          srgb_fbo = false;
 
    #ifndef HAVE_OPENGLES2
@@ -763,13 +770,14 @@ void gl_set_viewport(gl_t *gl, unsigned width,
       unsigned height, bool force_full, bool allow_rotate)
 {
    int x = 0, y = 0;
-   float device_aspect = (float)width / height;
+   float device_aspect   = (float)width / height;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
+   settings_t *settings  = config_get_ptr();
 
    if (gl->ctx_driver->translate_aspect)
       device_aspect = gl->ctx_driver->translate_aspect(gl, width, height);
 
-   if (g_settings.video.scale_integer && !force_full)
+   if (settings->video.scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl->vp, width, height,
             g_extern.system.aspect_ratio, gl->keep_aspect);
@@ -782,7 +790,7 @@ void gl_set_viewport(gl_t *gl, unsigned width,
       float desired_aspect = g_extern.system.aspect_ratio;
 
 #if defined(HAVE_MENU)
-      if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport *custom = &g_extern.console.screen.viewports.custom_vp;
 
@@ -1465,8 +1473,9 @@ static bool gl_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
    gl_t *gl = (gl_t*)data;
-   runloop_t *runloop = rarch_main_get_ptr();
-   driver_t *driver = driver_get_ptr();
+   runloop_t *runloop   = rarch_main_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    RARCH_PERFORMANCE_INIT(frame_run);
    RARCH_PERFORMANCE_START(frame_run);
@@ -1650,7 +1659,7 @@ static bool gl_frame(void *data, const void *frame,
 #endif
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
-   if (g_settings.video.black_frame_insertion &&
+   if (settings->video.black_frame_insertion &&
          !driver->nonblock_state && !runloop->is_slowmotion
          && !runloop->is_paused)
    {
@@ -1661,7 +1670,7 @@ static bool gl_frame(void *data, const void *frame,
    gl->ctx_driver->swap_buffers(gl);
 
 #ifdef HAVE_GL_SYNC
-   if (g_settings.video.hard_sync && gl->have_sync)
+   if (settings->video.hard_sync && gl->have_sync)
    {
       RARCH_PERFORMANCE_INIT(gl_fence);
       RARCH_PERFORMANCE_START(gl_fence);
@@ -1669,7 +1678,7 @@ static bool gl_frame(void *data, const void *frame,
       gl->fences[gl->fence_count++] = 
          glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
-      while (gl->fence_count > g_settings.video.hard_sync_frames)
+      while (gl->fence_count > settings->video.hard_sync_frames)
       {
          glClientWaitSync(gl->fences[0],
                GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
@@ -1794,7 +1803,8 @@ static void gl_free(void *data)
 
 static void gl_set_nonblock_state(void *data, bool state)
 {
-   gl_t *gl = (gl_t*)data;
+   gl_t *gl             = (gl_t*)data;
+   settings_t *settings = config_get_ptr();
 
    if (!gl)
       return;
@@ -1803,13 +1813,14 @@ static void gl_set_nonblock_state(void *data, bool state)
 
    context_bind_hw_render(gl, false);
    gl->ctx_driver->swap_interval(gl,
-         state ? 0 : g_settings.video.swap_interval);
+         state ? 0 : settings->video.swap_interval);
    context_bind_hw_render(gl, true);
 }
 
 static bool resolve_extensions(gl_t *gl)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 #ifndef HAVE_OPENGLES
    const char *vendor   = NULL;
    const char *renderer = NULL;
@@ -1845,7 +1856,7 @@ static bool resolve_extensions(gl_t *gl)
 
 #ifdef HAVE_GL_SYNC
    gl->have_sync = check_sync_proc(gl);
-   if (gl->have_sync && g_settings.video.hard_sync)
+   if (gl->have_sync && settings->video.hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 #endif
 
@@ -1899,7 +1910,7 @@ static bool resolve_extensions(gl_t *gl)
 #endif
 
 #ifdef HAVE_FBO
-   if (g_settings.video.force_srgb_disable)
+   if (settings->video.force_srgb_disable)
       gl->has_srgb_fbo = false;
 #endif
 
@@ -1976,6 +1987,7 @@ static void gl_init_pbo_readback(gl_t *gl)
 {
    unsigned i;
    struct scaler_ctx *scaler = NULL;
+   settings_t *settings = config_get_ptr();
 
    (void)scaler;
    /* Only bother with this if we're doing GPU recording.
@@ -1983,7 +1995,7 @@ static void gl_init_pbo_readback(gl_t *gl)
     * driver.recording_data, because recording is 
     * not initialized yet.
     */
-   gl->pbo_readback_enable = g_settings.video.gpu_record 
+   gl->pbo_readback_enable = settings->video.gpu_record 
       && g_extern.record.enable;
    if (!gl->pbo_readback_enable)
       return;
@@ -2029,6 +2041,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
       &g_extern.system.hw_render_callback;
    unsigned major = cb->version_major;
    unsigned minor = cb->version_minor;
+   settings_t *settings = config_get_ptr();
 #ifdef HAVE_OPENGLES
    enum gfx_ctx_api api = GFX_CTX_OPENGL_ES_API;
    const char *api_name = "OpenGL ES 2.0";
@@ -2049,10 +2062,10 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
     
    (void)api_name;
 
-   gl->shared_context_use = g_settings.video.shared_context
+   gl->shared_context_use = settings->video.shared_context
       && cb->context_type != RETRO_HW_CONTEXT_NONE;
 
-   return gfx_ctx_init_first(gl, g_settings.video.context_driver,
+   return gfx_ctx_init_first(gl, settings->video.context_driver,
          api, major, minor, gl->shared_context_use);
 }
 
@@ -2202,6 +2215,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    const char *renderer               = NULL;
    const char *version                = NULL;
    struct retro_hw_render_callback *hw_render = NULL;
+   settings_t *settings               = config_get_ptr();
 #ifdef _WIN32
    gfx_set_dwm();
 #endif
@@ -2226,7 +2240,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    RARCH_LOG("Detecting screen resolution %ux%u.\n", gl->full_x, gl->full_y);
 
    gl->ctx_driver->swap_interval(gl,
-         video->vsync ? g_settings.video.swap_interval : 0);
+         video->vsync ? settings->video.swap_interval : 0);
 
    win_width  = video->width;
    win_height = video->height;
@@ -2414,11 +2428,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (input && input_data)
       gl->ctx_driver->input_driver(gl, input, input_data);
    
-   if (g_settings.video.font_enable)
+   if (settings->video.font_enable)
    {
       if (!gl_font_init_first(&gl->font_driver, &gl->font_handle,
-            gl, *g_settings.video.font_path 
-            ? g_settings.video.font_path : NULL, g_settings.video.font_size))
+            gl, *settings->video.font_path 
+            ? settings->video.font_path : NULL, settings->video.font_size))
          RARCH_ERR("[GL]: Failed to initialize font renderer.\n");
    }
 
@@ -2491,6 +2505,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    GLenum wrap_mode;
    GLuint new_filt;
    bool smooth = false;
+   settings_t *settings = config_get_ptr();
 
    if (!gl)
       return;
@@ -2498,7 +2513,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    context_bind_hw_render(gl, false);
 
    if (!gl->shader->filter_type(1, &smooth))
-      smooth = g_settings.video.smooth;
+      smooth = settings->video.smooth;
 
    wrap_mode             = gl_wrap_type_to_enum(gl->shader->wrap_type(1));
    gl->tex_mipmap        = gl->shader->mipmap_input(1);

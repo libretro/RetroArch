@@ -338,7 +338,8 @@ static void gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 static void gfx_ctx_wl_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver           = driver_get_ptr();
+   settings_t *settings       = config_get_ptr();
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
       driver->video_context_data;
 
@@ -348,7 +349,7 @@ static void gfx_ctx_wl_update_window_title(void *data)
             buf_fps, sizeof(buf_fps)))
       wl_shell_surface_set_title(wl->g_shell_surf, buf);
 
-   if (g_settings.fps_show)
+   if (settings->fps_show)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 

@@ -114,7 +114,8 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-   runloop_t *runloop = rarch_main_get_ptr();
+   runloop_t *runloop    = rarch_main_get_ptr();
+   settings_t *settings  = config_get_ptr();
 
 #if defined(_XBOX1)
    d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
@@ -126,8 +127,8 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
 
    d3d_set_texture(d3dr, 0, d3d->tex);
    d3d_set_viewport(d3d->dev, &d3d->final_viewport);
-   d3d_set_sampler_minfilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3d_set_sampler_magfilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   d3d_set_sampler_minfilter(d3dr, 0, settings->video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   d3d_set_sampler_magfilter(d3dr, 0, settings->video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
 
 #if defined(_XBOX1)
    d3d_set_vertex_shader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1, NULL);

@@ -173,7 +173,8 @@ static bool sdl_ctx_set_video_mode(void *data, unsigned width, unsigned height,
                                    bool fullscreen)
 {
    unsigned fsflag = 0;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver->video_context_data;
 
    (void)data;
@@ -185,7 +186,7 @@ static bool sdl_ctx_set_video_mode(void *data, unsigned width, unsigned height,
 
    if (fullscreen)
    {
-      if (g_settings.video.windowed_fullscreen)
+      if (settings->video.windowed_fullscreen)
          fsflag = SDL_WINDOW_FULLSCREEN_DESKTOP;
       else
          fsflag = SDL_WINDOW_FULLSCREEN;
@@ -200,7 +201,7 @@ static bool sdl_ctx_set_video_mode(void *data, unsigned width, unsigned height,
    }
    else
    {
-      unsigned display = g_settings.video.monitor_index;
+      unsigned display = settings->video.monitor_index;
 
       sdl->g_win = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
                                SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
@@ -242,7 +243,8 @@ error:
 static void sdl_ctx_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver->video_context_data;
 
    if (!sdl)
@@ -253,7 +255,7 @@ static void sdl_ctx_get_video_size(void *data,
 
    if (!sdl->g_win)
    {
-      int i = g_settings.video.monitor_index;
+      int i = settings->video.monitor_index;
 
 #ifdef HAVE_SDL2
       SDL_DisplayMode mode = {0};
@@ -280,7 +282,8 @@ static void sdl_ctx_get_video_size(void *data,
 static void sdl_ctx_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver        = driver_get_ptr();
+   settings_t *settings    = config_get_ptr();
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)driver->video_context_data;
 
    if (!sdl)
@@ -295,7 +298,7 @@ static void sdl_ctx_update_window_title(void *data)
       SDL_WM_SetCaption(buf, NULL);
 #endif
    }
-   if (g_settings.fps_show)
+   if (settings->fps_show)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 

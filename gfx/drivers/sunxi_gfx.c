@@ -1323,8 +1323,9 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
    if (_dispvars->src_width != width || _dispvars->src_height != height)
    {
       int i;
-      unsigned inc_yoffset, xpos, visible_width;
       float aspect;
+      unsigned inc_yoffset, xpos, visible_width;
+      settings_t *settings = config_get_ptr();
 
       /* Sanity check on new dimensions */
       if (width == 0 || height == 0)
@@ -1349,7 +1350,7 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
       for (i = 0; i < _dispvars->numpages; i++)
          _dispvars->pages[i].yoffset = i * inc_yoffset;
 
-      switch (g_settings.video.aspect_ratio_idx)
+      switch (settings->video.aspect_ratio_idx)
       {
          case ASPECT_RATIO_4_3:
             aspect = (float)4 / (float)3;

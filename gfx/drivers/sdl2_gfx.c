@@ -99,8 +99,9 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
    SDL_Surface *tmp;
    SDL_Palette *pal = NULL;
    const struct font_atlas *atlas = NULL;
+   settings_t *settings = config_get_ptr();
 
-   if (!g_settings.video.font_enable)
+   if (!settings->video.font_enable)
       return;
 
    if (!font_renderer_create_default(&vid->font_driver, &vid->font_data,
@@ -110,9 +111,9 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
       return;
    }
 
-   r = g_settings.video.msg_color_r * 255;
-   g = g_settings.video.msg_color_g * 255;
-   b = g_settings.video.msg_color_b * 255;
+   r = settings->video.msg_color_r * 255;
+   g = settings->video.msg_color_g * 255;
+   b = settings->video.msg_color_b * 255;
 
    r = (r < 0) ? 0 : (r > 255 ? 255 : r);
    g = (g < 0) ? 0 : (g > 255 ? 255 : g);
@@ -161,12 +162,13 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
    int x, y, delta_x, delta_y;
    unsigned width  = vid->vp.width;
    unsigned height = vid->vp.height;
+   settings_t *settings = config_get_ptr();
 
    if (!vid->font_data)
       return;
 
-   x       = g_settings.video.msg_pos_x * width;
-   y       = (1.0f - g_settings.video.msg_pos_y) * height;
+   x       = settings->video.msg_pos_x * width;
+   y       = (1.0f - settings->video.msg_pos_y) * height;
    delta_x = 0;
    delta_y = 0;
 
@@ -263,6 +265,7 @@ static void sdl_refresh_renderer(sdl2_video_t *vid)
 static void sdl_refresh_viewport(sdl2_video_t *vid)
 {
    int win_w, win_h;
+   settings_t *settings = config_get_ptr();
 
    SDL_GetWindowSize(vid->window, &win_w, &win_h);
 
@@ -273,10 +276,10 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
    vid->vp.full_width  = win_w;
    vid->vp.full_height = win_h;
 
-   if (g_settings.video.scale_integer)
+   if (settings->video.scale_integer)
       video_viewport_get_scaled_integer(&vid->vp, win_w, win_h, g_extern.system.aspect_ratio,
                         vid->video.force_aspect);
-   else if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   else if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       const struct video_viewport *custom = &g_extern.console.screen.viewports.custom_vp;
 
@@ -370,6 +373,8 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
 {
    int i;
    unsigned flags;
+   settings_t *settings = config_get_ptr();
+
 #ifdef _WIN32
    gfx_set_dwm();
 #endif
@@ -417,9 +422,7 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
 
 
    if (video->fullscreen)
-   {
-      flags = g_settings.video.windowed_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
-   }
+      flags = settings->video.windowed_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
    else
       flags = SDL_WINDOW_RESIZABLE;
 
@@ -433,7 +436,7 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
    }
 
    vid->video = *video;
-   vid->video.smooth  = g_settings.video.smooth;
+   vid->video.smooth  = settings->video.smooth;
    vid->should_resize = true;
 
    sdl_tex_zero(&vid->frame);
@@ -443,7 +446,7 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
       SDL_ShowCursor(SDL_DISABLE);
 
    sdl2_init_renderer(vid);
-   sdl2_init_font(vid, g_settings.video.font_path, g_settings.video.font_size);
+   sdl2_init_font(vid, settings->video.font_path, settings->video.font_size);
 
    sdl2_gfx_set_handles(vid);
 

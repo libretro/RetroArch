@@ -84,11 +84,14 @@ static INLINE bool vg_query_extension(const char *ext)
 
 static void *vg_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
-   vg_t *vg = (vg_t*)calloc(1, sizeof(vg_t));
+   VGfloat clearColor[4] = {0, 0, 0, 1};
+   settings_t *settings = config_get_ptr();
+   vg_t *vg             = (vg_t*)calloc(1, sizeof(vg_t));
+
    if (!vg)
       return NULL;
 
-   vg->driver = gfx_ctx_init_first(vg, g_settings.video.context_driver,
+   vg->driver = gfx_ctx_init_first(vg, settings->video.context_driver,
          GFX_CTX_OPENVG_API, 0, 0, false);
 
    if (!vg->driver)
@@ -129,7 +132,6 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    else
       vg->mScreenAspect = (float)vg->mScreenWidth / vg->mScreenHeight;
 
-   VGfloat clearColor[4] = {0, 0, 0, 1};
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
 
    vg->mTextureWidth = vg->mTextureHeight = video->input_scale * RARCH_SCALE_BASE;
@@ -139,8 +141,8 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    vg->driver->input_driver(vg, input, input_data);
 
-   if (g_settings.video.font_enable && font_renderer_create_default(&vg->font_driver, &vg->mFontRenderer,
-            *g_settings.video.font_path ? g_settings.video.font_path : NULL, g_settings.video.font_size))
+   if (settings->video.font_enable && font_renderer_create_default(&vg->font_driver, &vg->mFontRenderer,
+            *settings->video.font_path ? settings->video.font_path : NULL, settings->video.font_size))
    {
       vg->mFont = vgCreateFont(0);
 
@@ -148,12 +150,12 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
       {
          vg->mFontsOn = true;
 
-         vg->mFontHeight = g_settings.video.font_size;
+         vg->mFontHeight = settings->video.font_size;
 
          vg->mPaintFg = vgCreatePaint();
          vg->mPaintBg = vgCreatePaint();
-         VGfloat paintFg[] = { g_settings.video.msg_color_r, g_settings.video.msg_color_g, g_settings.video.msg_color_b, 1.0f };
-         VGfloat paintBg[] = { g_settings.video.msg_color_r / 2.0f, g_settings.video.msg_color_g / 2.0f, g_settings.video.msg_color_b / 2.0f, 0.5f };
+         VGfloat paintFg[] = { settings->video.msg_color_r, settings->video.msg_color_g, settings->video.msg_color_b, 1.0f };
+         VGfloat paintBg[] = { settings->video.msg_color_r / 2.0f, settings->video.msg_color_g / 2.0f, settings->video.msg_color_b / 2.0f, 0.5f };
 
          vgSetParameteri(vg->mPaintFg, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
          vgSetParameterfv(vg->mPaintFg, VG_PAINT_COLOR, 4, paintFg);
@@ -257,6 +259,8 @@ static void vg_render_message(vg_t *vg, const char *msg)
 
 static void vg_draw_message(vg_t *vg, const char *msg)
 {
+   settings_t *settings = config_get_ptr();
+
    if (!vg->mLastMsg || strcmp(vg->mLastMsg, msg))
       vg_render_message(vg, msg);
 
@@ -264,8 +268,8 @@ static void vg_draw_message(vg_t *vg, const char *msg)
    vgSeti(VG_IMAGE_MODE, VG_DRAW_IMAGE_STENCIL);
 
    VGfloat origins[] = {
-      vg->mScreenWidth * g_settings.video.msg_pos_x - 2.0f,
-      vg->mScreenHeight * g_settings.video.msg_pos_y - 2.0f,
+      vg->mScreenWidth  * settings->video.msg_pos_x - 2.0f,
+      vg->mScreenHeight * settings->video.msg_pos_y - 2.0f,
    };
 
    vgSetfv(VG_GLYPH_ORIGIN, 2, origins);

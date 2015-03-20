@@ -278,10 +278,11 @@ static void android_gfx_ctx_set_resize(void *data,
 static void android_gfx_ctx_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
+   settings_t *settings = config_get_ptr();
 
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
-   if (g_settings.fps_show)
+   if (settings->fps_show)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 

@@ -222,13 +222,14 @@ static void gfx_ctx_xegl_set_resize(void *data,
 static void gfx_ctx_xegl_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
+   settings_t *settings = config_get_ptr();
 
    (void)data;
 
    if (video_monitor_get_fps(buf, sizeof(buf),
             buf_fps, sizeof(buf_fps)))
       XStoreName(g_dpy, g_win, buf);
-   if (g_settings.fps_show)
+   if (settings->fps_show)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
@@ -454,7 +455,8 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    XVisualInfo temp = {0};
    XSetWindowAttributes swa = {0};
    XVisualInfo *vi = NULL;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    sa.sa_handler = egl_sighandler;
    sa.sa_flags   = SA_RESTART;
@@ -462,7 +464,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
 
-   windowed_full = g_settings.video.windowed_fullscreen;
+   windowed_full = settings->video.windowed_fullscreen;
    true_full = false;
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
@@ -495,8 +497,8 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          RARCH_ERR("[X/EGL]: Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 
-   if (g_settings.video.monitor_index)
-      g_screen = g_settings.video.monitor_index - 1;
+   if (settings->video.monitor_index)
+      g_screen = settings->video.monitor_index - 1;
 
 #ifdef HAVE_XINERAMA
    if (fullscreen || g_screen != 0)

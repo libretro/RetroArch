@@ -20,8 +20,9 @@
 
 static INLINE D3DTEXTUREFILTERTYPE translate_filter(unsigned type)
 {
+   settings_t *settings = config_get_ptr();
    if (type == RARCH_FILTER_UNSPEC)
-      return g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
+      return settings->video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
    return type == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT;
 }
 

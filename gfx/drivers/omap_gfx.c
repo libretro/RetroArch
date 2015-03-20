@@ -86,7 +86,8 @@ typedef struct omapfb_data
 static const char *get_fb_device(void)
 {
   static char fbname[12];
-  const int fbidx = g_settings.video.monitor_index;
+  settings_t *settings = config_get_ptr();
+  const int fbidx = settings->video.monitor_index;
 
   if (fbidx == 0)
      return "/dev/fb0";
@@ -555,6 +556,7 @@ static int omapfb_init(omapfb_data_t *pdata, unsigned bpp)
 {
   const char *fbname = get_fb_device();
   int             fd = open(fbname, O_RDWR);
+  settings_t *settings = config_get_ptr();
 
   if (fd == -1)
   {
@@ -579,7 +581,7 @@ static int omapfb_init(omapfb_data_t *pdata, unsigned bpp)
   pdata->bpp = bpp;
   pdata->num_pages = 3;
 
-  pdata->sync = g_settings.video.vsync;
+  pdata->sync = settings->video.vsync;
 
   return 0;
 }
@@ -807,21 +809,22 @@ static void omap_gfx_free(void *data)
 static void omap_init_font(omap_video_t *vid, const char *font_path, unsigned font_size)
 {
    int r, g, b;
+  settings_t *settings = config_get_ptr();
 
-   if (!g_settings.video.font_enable)
+   if (!settings->video.font_enable)
       return;
 
    if (!(font_renderer_create_default(&vid->font_driver, &vid->font,
-               *g_settings.video.font_path ? g_settings.video.font_path : NULL, g_settings.video.font_size)))
+               *settings->video.font_path ? settings->video.font_path : NULL, settings->video.font_size)))
    {
       RARCH_LOG("video_omap: font init failed\n");
       return;
    }
 
    {
-      r = g_settings.video.msg_color_r * 255;
-      g = g_settings.video.msg_color_g * 255;
-      b = g_settings.video.msg_color_b * 255;
+      r = settings->video.msg_color_r * 255;
+      g = settings->video.msg_color_g * 255;
+      b = settings->video.msg_color_b * 255;
 
       r = (r < 0) ? 0 : (r > 255 ? 255 : r);
       g = (g < 0) ? 0 : (g > 255 ? 255 : g);
@@ -836,8 +839,9 @@ static void omap_init_font(omap_video_t *vid, const char *font_path, unsigned fo
 static void omap_render_msg(omap_video_t *vid, const char *msg)
 {
    const struct font_atlas *atlas = NULL;
-   int msg_base_x = g_settings.video.msg_pos_x * vid->width;
-   int msg_base_y = (1.0 - g_settings.video.msg_pos_y) * vid->height;
+   settings_t *settings = config_get_ptr();
+   int msg_base_x = settings->video.msg_pos_x * vid->width;
+   int msg_base_y = (1.0 - settings->video.msg_pos_y) * vid->height;
 
    if (!vid->font)
       return;
@@ -911,6 +915,7 @@ static void *omap_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
   omap_video_t *vid = NULL;
+  settings_t *settings = config_get_ptr();
 
   /* Don't support filters at the moment since they make estimations  *
    * on the maximum used resolution difficult.                        */
@@ -948,7 +953,7 @@ static void *omap_gfx_init(const video_info_t *video,
   if (input && input_data)
     *input = NULL;
 
-  omap_init_font(vid, g_settings.video.font_path, g_settings.video.font_size);
+  omap_init_font(vid, settings->video.font_path, settings->video.font_size);
 
   vid->menu.frame = calloc(vid->width * vid->height, vid->bytes_per_pixel);
   if (vid->menu.frame == NULL)

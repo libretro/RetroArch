@@ -25,6 +25,7 @@ static bool d3dfonts_w32_init_font(void *data,
 {
    uint32_t r, g, b;
    d3d_video_t *d3d = (d3d_video_t*)data;
+   settings_t *settings = config_get_ptr();
    D3DXFONT_DESC desc = {
       static_cast<int>(font_size), 0, 400, 0,
       false, DEFAULT_CHARSET,
@@ -36,9 +37,9 @@ static bool d3dfonts_w32_init_font(void *data,
 
    (void)font_path;
 
-   r = static_cast<uint32_t>(g_settings.video.msg_color_r * 255) & 0xff;
-   g = static_cast<uint32_t>(g_settings.video.msg_color_g * 255) & 0xff;
-   b = static_cast<uint32_t>(g_settings.video.msg_color_b * 255) & 0xff;
+   r = static_cast<uint32_t>(settings->video.msg_color_r * 255) & 0xff;
+   g = static_cast<uint32_t>(settings->video.msg_color_g * 255) & 0xff;
+   b = static_cast<uint32_t>(settings->video.msg_color_b * 255) & 0xff;
 
    d3d->font_color = D3DCOLOR_XRGB(r, g, b);
 

@@ -594,8 +594,9 @@ static int exynos_open(struct exynos_data *pdata)
   int devidx;
   unsigned i;
   int fd = -1;
-  struct exynos_drm *drm = NULL;
+  struct exynos_drm *drm                 = NULL;
   struct exynos_fliphandler *fliphandler = NULL;
+  settings_t *settings                   = config_get_ptr();
 
   pdata->fd = -1;
 
@@ -632,8 +633,8 @@ static int exynos_open(struct exynos_data *pdata)
 
   for (i = 0; i < drm->resources->count_connectors; ++i)
   {
-    if (g_settings.video.monitor_index != 0 &&
-        g_settings.video.monitor_index - 1 != i)
+    if (settings->video.monitor_index != 0 &&
+        settings->video.monitor_index - 1 != i)
       continue;
 
     drm->connector = drmModeGetConnector(fd, drm->resources->connectors[i]);
@@ -716,16 +717,17 @@ static void exynos_close(struct exynos_data *pdata)
 static int exynos_init(struct exynos_data *pdata, unsigned bpp)
 {
    unsigned i;
+   int fd                 = pdata->fd;
    struct exynos_drm *drm = pdata->drm;
-   int fd = pdata->fd;
+   settings_t *settings   = config_get_ptr();
 
-   if (g_settings.video.fullscreen_x != 0 &&
-         g_settings.video.fullscreen_y != 0)
+   if (settings->video.fullscreen_x != 0 &&
+         settings->video.fullscreen_y != 0)
    {
       for (i = 0; i < drm->connector->count_modes; i++)
       {
-         if (drm->connector->modes[i].hdisplay == g_settings.video.fullscreen_x &&
-               drm->connector->modes[i].vdisplay == g_settings.video.fullscreen_y)
+         if (drm->connector->modes[i].hdisplay == settings->video.fullscreen_x &&
+               drm->connector->modes[i].vdisplay == settings->video.fullscreen_y)
          {
             drm->mode = &drm->connector->modes[i];
             break;
@@ -735,7 +737,7 @@ static int exynos_init(struct exynos_data *pdata, unsigned bpp)
       if (drm->mode == NULL)
       {
          RARCH_ERR("video_exynos: requested resolution (%ux%u) not available\n",
-               g_settings.video.fullscreen_x, g_settings.video.fullscreen_y);
+               settings->video.fullscreen_x, settings->video.fullscreen_y);
          goto fail;
       }
 
@@ -1177,21 +1179,22 @@ struct exynos_video
 static int exynos_init_font(struct exynos_video *vid)
 {
   struct exynos_data *pdata = vid->data;
-  struct g2d_image *src = pdata->src[EXYNOS_IMAGE_FONT];
+  struct g2d_image *src     = pdata->src[EXYNOS_IMAGE_FONT];
   const unsigned buf_height = defaults[EXYNOS_IMAGE_FONT].height;
-  const unsigned buf_width = align_common(pdata->aspect * (float)buf_height, 16);
-  const unsigned buf_bpp = defaults[EXYNOS_IMAGE_FONT].bpp;
+  const unsigned buf_width  = align_common(pdata->aspect * (float)buf_height, 16);
+  const unsigned buf_bpp    = defaults[EXYNOS_IMAGE_FONT].bpp;
+   settings_t *settings     = config_get_ptr();
 
-  if (!g_settings.video.font_enable)
+  if (!settings->video.font_enable)
      return 0;
 
   if (font_renderer_create_default(&vid->font_driver, &vid->font,
-      *g_settings.video.font_path ? g_settings.video.font_path : NULL,
-      g_settings.video.font_size))
+      *settings->video.font_path ? settings->video.font_path : NULL,
+      settings->video.font_size))
   {
-    const int r = g_settings.video.msg_color_r * 15;
-    const int g = g_settings.video.msg_color_g * 15;
-    const int b = g_settings.video.msg_color_b * 15;
+    const int r = settings->video.msg_color_r * 15;
+    const int g = settings->video.msg_color_g * 15;
+    const int b = settings->video.msg_color_b * 15;
 
     vid->font_color = ((b < 0 ? 0 : (b > 15 ? 15 : b)) << 0) |
                       ((g < 0 ? 0 : (g > 15 ? 15 : g)) << 4) |
@@ -1227,9 +1230,10 @@ static int exynos_render_msg(struct exynos_video *vid,
 {
   const struct font_atlas *atlas;
   struct exynos_data *pdata = vid->data;
-  struct g2d_image *dst = pdata->src[EXYNOS_IMAGE_FONT];
-  int msg_base_x = g_settings.video.msg_pos_x * dst->width;
-  int msg_base_y = (1.0f - g_settings.video.msg_pos_y) * dst->height;
+  struct g2d_image *dst     = pdata->src[EXYNOS_IMAGE_FONT];
+  settings_t *settings      = config_get_ptr();
+  int msg_base_x            = settings->video.msg_pos_x * dst->width;
+  int msg_base_y            = (1.0f - settings->video.msg_pos_y) * dst->height;
 
   if (vid->font == NULL || vid->font_driver == NULL)
     return -1;
@@ -1409,6 +1413,7 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
 {
    struct exynos_video *vid = data;
    struct exynos_page *page = NULL;
+  settings_t *settings      = config_get_ptr();
 
    /* Check if neither menu nor core framebuffer is to be displayed. */
    if (!vid->menu_active && frame == NULL)
@@ -1436,11 +1441,11 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
          goto fail;
    }
 
-   if (g_settings.fps_show)
+   if (settings->fps_show)
    {
       char buffer[128], buffer_fps[128];
       video_monitor_get_fps(buffer, sizeof(buffer),
-            g_settings.fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
+            settings->fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
       rarch_main_msg_queue_push(buffer_fps, 1, 1, false);
    }
 

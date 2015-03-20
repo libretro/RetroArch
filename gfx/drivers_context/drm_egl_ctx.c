@@ -269,10 +269,11 @@ static void gfx_ctx_drm_egl_set_resize(void *data,
 static void gfx_ctx_drm_egl_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
+   settings_t *settings = config_get_ptr();
 
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
-   if (g_settings.fps_show)
+   if (settings->fps_show)
       rarch_main_msg_queue_push( buf_fps, 1, 1, false);
 }
 
@@ -391,8 +392,9 @@ static bool gfx_ctx_drm_egl_init(void *data)
    int i;
    unsigned monitor_index;
    unsigned gpu_index = 0;
-   unsigned monitor = max(g_settings.video.monitor_index, 1);
    struct string_list *gpu_descriptors  = NULL;
+   settings_t *settings = config_get_ptr();
+   unsigned monitor = max(settings->video.monitor_index, 1);
 
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)calloc(1, sizeof(gfx_ctx_drm_egl_data_t));
    driver_t *driver = driver_get_ptr();
@@ -694,7 +696,8 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    int i, ret = 0;
    struct sigaction sa = {{0}};
    struct drm_fb *fb = NULL;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)
       driver->video_context_data;
 
@@ -729,7 +732,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
 
    /* If we use black frame insertion, 
     * we fake a 60 Hz monitor for 120 Hz one, etc, so try to match that. */
-   refresh_mod = g_settings.video.black_frame_insertion ? 0.5f : 1.0f;
+   refresh_mod = settings->video.black_frame_insertion ? 0.5f : 1.0f;
 
    /* Find desired video mode, and use that.
     * If not fullscreen, we get desired windowed size, 
@@ -738,7 +741,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       drm->g_drm_mode = &drm->g_connector->modes[0];
    else
    {
-      /* Try to match g_settings.video.refresh_rate as closely as possible.
+      /* Try to match settings->video.refresh_rate as closely as possible.
        * Lower resolutions tend to have multiple supported 
        * refresh rates as well.
        */
@@ -752,7 +755,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
             continue;
 
          float diff = fabsf(refresh_mod * 
-               drm->g_connector->modes[i].vrefresh - g_settings.video.refresh_rate);
+               drm->g_connector->modes[i].vrefresh - settings->video.refresh_rate);
          if (!drm->g_drm_mode || diff < minimum_fps_diff)
          {
             drm->g_drm_mode = &drm->g_connector->modes[i];

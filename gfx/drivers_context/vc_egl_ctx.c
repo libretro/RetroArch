@@ -120,39 +120,42 @@ static void gfx_ctx_vc_set_resize(void *data, unsigned width, unsigned height)
 static void gfx_ctx_vc_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
+   settings_t *settings = config_get_ptr();
 
    (void)data;
 
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
-   if (g_settings.fps_show)
+   if (settings->fps_show)
       msg_queue_push(buf_fps, 1, 1, false);
 }
 
 static void gfx_ctx_vc_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
+   settings_t *settings = config_get_ptr();
+
    (void)data;
    // Use dispmanx upscaling if fullscreen_x and fullscreen_y are set.
-   if (g_settings.video.fullscreen_x != 0 &&
-      g_settings.video.fullscreen_y != 0)
+   if (settings->video.fullscreen_x != 0 &&
+      settings->video.fullscreen_y != 0)
    {
       // Keep input and output aspect ratio equal.
       // There are other aspect ratio settings which can be used to stretch video output.
       // --------------------------------------------------------------------------------
       // Calculate source and destination aspect ratios.
-      float srcAspect = (float)g_settings.video.fullscreen_x / (float)g_settings.video.fullscreen_y;
+      float srcAspect = (float)settings->video.fullscreen_x / (float)settings->video.fullscreen_y;
       float dstAspect = (float)g_fb_width / (float)g_fb_height;
       // If source and destination aspect ratios are not equal correct source width.
       if (srcAspect != dstAspect)
       {   
-         *width = (unsigned)(g_settings.video.fullscreen_y * dstAspect);
+         *width = (unsigned)(settings->video.fullscreen_y * dstAspect);
       }
       else
       {   
-         *width = g_settings.video.fullscreen_x;
+         *width = settings->video.fullscreen_x;
       }
-      *height = g_settings.video.fullscreen_y;
+      *height = settings->video.fullscreen_y;
    }
    else
    {
@@ -190,6 +193,7 @@ static bool gfx_ctx_vc_init(void *data)
       EGL_CONTEXT_CLIENT_VERSION, 2,
       EGL_NONE
    };
+   settings_t *settings = config_get_ptr();
 
    RARCH_LOG("[VC/EGL]: Initializing...\n");
    if (g_inited)
@@ -243,25 +247,21 @@ static bool gfx_ctx_vc_init(void *data)
    src_rect.y = 0;
 
    // Use dispmanx upscaling if fullscreen_x and fullscreen_y are set.
-   if (g_settings.video.fullscreen_x != 0 &&
-      g_settings.video.fullscreen_y != 0)
+   if (settings->video.fullscreen_x != 0 &&
+      settings->video.fullscreen_y != 0)
    {
       // Keep input and output aspect ratio equal.
       // There are other aspect ratio settings which can be used to stretch video output.
       // --------------------------------------------------------------------------------
       // Calculate source and destination aspect ratios.
-      float srcAspect = (float)g_settings.video.fullscreen_x / (float)g_settings.video.fullscreen_y;
+      float srcAspect = (float)settings->video.fullscreen_x / (float)settings->video.fullscreen_y;
       float dstAspect = (float)g_fb_width / (float)g_fb_height;
       // If source and destination aspect ratios are not equal correct source width.
       if (srcAspect != dstAspect)
-      {   
-         src_rect.width = (unsigned)(g_settings.video.fullscreen_y * dstAspect) << 16;
-      }
+         src_rect.width = (unsigned)(settings->video.fullscreen_y * dstAspect) << 16;
       else
-      {   
-         src_rect.width = g_settings.video.fullscreen_x << 16;
-      }
-      src_rect.height = g_settings.video.fullscreen_y << 16;
+         src_rect.width = settings->video.fullscreen_x << 16;
+      src_rect.height = settings->video.fullscreen_y << 16;
    }
    else
    {
@@ -284,25 +284,21 @@ static bool gfx_ctx_vc_init(void *data)
 
    nativewindow.element = dispman_element;
    // Use dispmanx upscaling if fullscreen_x and fullscreen_y are set.
-   if (g_settings.video.fullscreen_x != 0 &&
-      g_settings.video.fullscreen_y != 0)
+   if (settings->video.fullscreen_x != 0 &&
+      settings->video.fullscreen_y != 0)
    {
       // Keep input and output aspect ratio equal.
       // There are other aspect ratio settings which can be used to stretch video output.
       // --------------------------------------------------------------------------------
       // Calculate source and destination aspect ratios.
-      float srcAspect = (float)g_settings.video.fullscreen_x / (float)g_settings.video.fullscreen_y;
+      float srcAspect = (float)settings->video.fullscreen_x / (float)settings->video.fullscreen_y;
       float dstAspect = (float)g_fb_width / (float)g_fb_height;
       // If source and destination aspect ratios are not equal correct source width.
       if (srcAspect != dstAspect)
-      {   
-         nativewindow.width = (unsigned)(g_settings.video.fullscreen_y * dstAspect);
-      }
+         nativewindow.width = (unsigned)(settings->video.fullscreen_y * dstAspect);
       else
-      {   
-         nativewindow.width = g_settings.video.fullscreen_x;
-      }
-      nativewindow.height = g_settings.video.fullscreen_y;
+         nativewindow.width = settings->video.fullscreen_x;
+      nativewindow.height = settings->video.fullscreen_y;
    }
    else
    {

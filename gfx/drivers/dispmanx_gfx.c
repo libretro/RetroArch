@@ -215,6 +215,7 @@ static bool dispmanx_setup_scale(void *data, unsigned width,
    int i, dst_ypos;
    VC_DISPMANX_ALPHA_T layerAlpha;    
    struct dispmanx_video *_dispvars = data;
+   settings_t *settings = config_get_ptr();
 
    if (!_dispvars)
       return false;
@@ -255,7 +256,7 @@ static bool dispmanx_setup_scale(void *data, unsigned width,
    layerAlpha.mask = 0;
    _dispvars->alpha = &layerAlpha;	
 
-   switch (g_settings.video.aspect_ratio_idx)
+   switch (settings->video.aspect_ratio_idx)
    {
       case ASPECT_RATIO_4_3: 
          _dispvars->aspect = (float)4 / (float)3;

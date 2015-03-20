@@ -122,14 +122,20 @@ static void d3d_deinit_shader(void *data)
 
 static bool d3d_init_shader(void *data)
 {
+   const char *shader_path = NULL;
+   const shader_backend_t *backend = NULL;
    d3d_video_t *d3d = (d3d_video_t*)data;
+   settings_t *settings = config_get_ptr();
+
    (void)d3d;
 	(void)data;
+
 #if defined(HAVE_HLSL)
    RARCH_LOG("D3D]: Using HLSL shader backend.\n");
-   const shader_backend_t *backend = &hlsl_backend;
-   const char *shader_path = g_settings.video.shader_path;
+   backend     = &hlsl_backend;
+   shader_path = settings->video.shader_path;
    d3d->shader = backend;
+
    if (!d3d->shader)
       return false;
 
@@ -227,6 +233,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
 static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 {
    bool ret = true;
+   settings_t *settings = config_get_ptr();
 
    if (!d3d)
       return false;
@@ -297,10 +304,10 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    }
 
 #if defined(_XBOX360)
-   strlcpy(g_settings.video.font_path, "game:\\media\\Arial_12.xpr",
-         sizeof(g_settings.video.font_path));
+   strlcpy(settings->video.font_path, "game:\\media\\Arial_12.xpr",
+         sizeof(settings->video.font_path));
 #endif
-   d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, 0);
+   d3d->font_ctx = d3d_font_init_first(d3d, settings->video.font_path, 0);
    if (!d3d->font_ctx)
    {
       RARCH_ERR("Failed to initialize font.\n");
@@ -349,7 +356,9 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
       unsigned width, unsigned height,
    bool keep, float desired_aspect)
 {
-   if (g_settings.video.scale_integer)
+   settings_t *settings = config_get_ptr();
+
+   if (settings->video.scale_integer)
    {
       struct video_viewport vp = {0};
       video_viewport_get_scaled_integer(&vp, width, height, desired_aspect, keep);
@@ -359,7 +368,7 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
       d3d_set_viewport(d3d, 0, 0, width, height);
    else
    {
-      if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const video_viewport_t *custom = 
             &g_extern.console.screen.viewports.custom_vp;
@@ -508,7 +517,8 @@ static bool d3d_construct(d3d_video_t *d3d,
       void **input_data)
 {
    unsigned full_x, full_y;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    d3d->should_resize = false;
 #ifndef _XBOX
@@ -556,7 +566,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 #ifdef HAVE_MONITOR
    RECT mon_rect = d3d_monitor_rect(d3d);
 
-   bool windowed_full = g_settings.video.windowed_fullscreen;
+   bool windowed_full = settings->video.windowed_fullscreen;
 
    full_x = (windowed_full || info->width  == 0) ? 
       (mon_rect.right  - mon_rect.left) : info->width;
@@ -612,7 +622,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    );
 
 #if defined(HAVE_WINDOW) && !defined(_XBOX)
-   if (!info->fullscreen && g_settings.ui.menubar_enable)
+   if (!info->fullscreen && settings->ui.menubar_enable)
    {
 	   RECT rc_temp = {0, 0, win_height, 0x7FFF};
 
@@ -634,9 +644,9 @@ static bool d3d_construct(d3d_video_t *d3d,
     * to avoid set_shader() to be overridden
     * later. */
    enum rarch_shader_type type = 
-      video_shader_parse_type(g_settings.video.shader_path, RARCH_SHADER_NONE);
-   if (g_settings.video.shader_enable && type == RARCH_SHADER_CG)
-      d3d->cg_shader = g_settings.video.shader_path;
+      video_shader_parse_type(settings->video.shader_path, RARCH_SHADER_NONE);
+   if (settings->video.shader_enable && type == RARCH_SHADER_CG)
+      d3d->cg_shader = settings->video.shader_path;
 
    if (!d3d_process_shader(d3d))
       return false;
@@ -692,14 +702,15 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    TODO: GL core contexts through ANGLE? */
    enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
    unsigned major = 9, minor = 0;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
 #if defined(_XBOX1)
    api = GFX_CTX_DIRECT3D8_API;
    major = 8;
 #endif
    return gfx_ctx_init_first(driver->video_data,
-         g_settings.video.context_driver,
+         settings->video.context_driver,
          api, major, minor, false);
 }
 
@@ -832,6 +843,7 @@ static RECT d3d_monitor_rect(d3d_video_t *d3d)
    MONITORINFOEX current_mon;
    HMONITOR hm_to_use;
    monitor_count = 0;
+   settings_t *settings = config_get_ptr();
 
    EnumDisplayMonitors(NULL, NULL, d3d_monitor_enum_proc, 0);
 
@@ -840,7 +852,7 @@ static RECT d3d_monitor_rect(d3d_video_t *d3d)
             GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
 
    hm_to_use  = monitor_last;
-   fs_monitor = g_settings.video.monitor_index;
+   fs_monitor = settings->video.monitor_index;
 
    if (fs_monitor && fs_monitor <= monitor_count 
          && monitor_all[fs_monitor - 1])
@@ -1232,9 +1244,10 @@ static void d3d_set_font_rect(d3d_video_t *d3d,
       const struct font_params *params)
 {
 #ifndef _XBOX
-   float pos_x = g_settings.video.msg_pos_x;
-   float pos_y = g_settings.video.msg_pos_y;
-   float font_size = g_settings.video.font_size;
+   settings_t *settings = config_get_ptr();
+   float pos_x = settings->video.msg_pos_x;
+   float pos_y = settings->video.msg_pos_y;
+   float font_size = settings->video.font_size;
 
    if (params)
    {
@@ -1299,13 +1312,14 @@ static bool d3d_process_shader(d3d_video_t *d3d)
 static bool d3d_init_luts(d3d_video_t *d3d)
 {
    unsigned i;
+   settings_t *settings = config_get_ptr();
 
    for (i = 0; i < d3d->shader.luts; i++)
    {
       bool ret = renderchain_add_lut(
             d3d->chain, d3d->shader.lut[i].id, d3d->shader.lut[i].path,
          d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
-            g_settings.video.smooth :
+            settings->video.smooth :
             (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR));
 
       if (!ret)
@@ -1610,6 +1624,7 @@ static bool d3d_frame(void *data, const void *frame,
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    runloop_t *runloop    = rarch_main_get_ptr();
    driver_t *driver      = driver_get_ptr();
+   settings_t *settings  = config_get_ptr();
 
    (void)i;
 
@@ -1657,7 +1672,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    /* Insert black frame first, so we 
     * can screenshot, etc. */
-   if (g_settings.video.black_frame_insertion)
+   if (settings->video.black_frame_insertion)
    {
       d3d_swap(d3d, d3dr);
       if (d3d->needs_restore)

@@ -128,19 +128,21 @@ static void init_yuv_tables(xv_t *xv)
 
 static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
 {
-   if (!g_settings.video.font_enable)
+   settings_t *settings = config_get_ptr();
+
+   if (!settings->video.font_enable)
       return;
 
    if (font_renderer_create_default(&xv->font_driver, 
-            &xv->font, *g_settings.video.font_path 
-            ? g_settings.video.font_path : NULL, g_settings.video.font_size))
+            &xv->font, *settings->video.font_path 
+            ? settings->video.font_path : NULL, settings->video.font_size))
    {
       int r, g, b;
-      r = g_settings.video.msg_color_r * 255;
+      r = settings->video.msg_color_r * 255;
       r = (r < 0 ? 0 : (r > 255 ? 255 : r));
-      g = g_settings.video.msg_color_g * 255;
+      g = settings->video.msg_color_g * 255;
       g = (g < 0 ? 0 : (g > 255 ? 255 : g));
-      b = g_settings.video.msg_color_b * 255;
+      b = settings->video.msg_color_b * 255;
       b = (b < 0 ? 0 : (b > 255 ? 255 : b));
 
       calculate_yuv(&xv->font_y, &xv->font_u, &xv->font_v,
@@ -354,13 +356,13 @@ static bool adaptor_set_format(xv_t *xv, Display *dpy,
 static void calc_out_rect(bool keep_aspect, struct video_viewport *vp,
       unsigned vp_width, unsigned vp_height)
 {
+   settings_t *settings = config_get_ptr();
+
    vp->full_width  = vp_width;
    vp->full_height = vp_height;
 
-   if (g_settings.video.scale_integer)
-   {
+   if (settings->video.scale_integer)
       video_viewport_get_scaled_integer(vp, vp_width, vp_height, g_extern.system.aspect_ratio, keep_aspect);
-   }
    else if (!keep_aspect)
    {
       vp->x = 0; vp->y = 0;
@@ -415,8 +417,10 @@ static void *xv_init(const video_info_t *video,
    void *xinput = NULL;
    XVisualInfo *visualinfo = NULL;
    XVisualInfo visualtemplate = {0};
+   XvAdaptorInfo *adaptor_info = NULL;
    const struct retro_game_geometry *geom = NULL;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
    xv_t *xv = (xv_t*)calloc(1, sizeof(*xv));
    if (!xv)
       return NULL;
@@ -436,7 +440,6 @@ static void *xv_init(const video_info_t *video,
 
    /* Find an appropriate Xv port. */
    xv->port = 0;
-   XvAdaptorInfo *adaptor_info;
    XvQueryAdaptors(xv->display,
          DefaultRootWindow(xv->display), &adaptor_count, &adaptor_info);
 
@@ -473,7 +476,7 @@ static void *xv_init(const video_info_t *video,
    visualtemplate.screen   = DefaultScreen(xv->display);
    visualtemplate.depth    = xv->depth;
    visualtemplate.visual   = 0;
-   visualinfo = XGetVisualInfo(xv->display, VisualIDMask | 
+   visualinfo              = XGetVisualInfo(xv->display, VisualIDMask | 
          VisualScreenMask | VisualDepthMask, &visualtemplate, &visualmatches);
 
    if (visualmatches < 1 || !visualinfo->visual)
@@ -576,7 +579,7 @@ static void *xv_init(const video_info_t *video,
    }
 
    init_yuv_tables(xv);
-   xv_init_font(xv, g_settings.video.font_path, g_settings.video.font_size);
+   xv_init_font(xv, settings->video.font_path, settings->video.font_size);
 
    if (!x11_create_input_context(xv->display, xv->window, &xv->xim, &xv->xic))
       goto error;
@@ -644,22 +647,27 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
 static void xv_render_msg(xv_t *xv, const char *msg,
       unsigned width, unsigned height)
 {
+   int x, y, msg_base_x, msg_base_y;
+   unsigned i, luma_index[2], pitch;
+   unsigned chroma_u_index, chroma_v_index;
+   settings_t *settings = config_get_ptr();
+   const struct font_atlas *atlas = NULL;
+
    if (!xv->font)
       return;
 
-   int x, y;
-   unsigned i;
+   atlas          = xv->font_driver->get_atlas(xv->font);
 
-   const struct font_atlas *atlas = xv->font_driver->get_atlas(xv->font);
+   msg_base_x     = settings->video.msg_pos_x * width;
+   msg_base_y     = height * (1.0f - settings->video.msg_pos_y);
 
-   int msg_base_x = g_settings.video.msg_pos_x * width;
-   int msg_base_y = height * (1.0f - g_settings.video.msg_pos_y);
+   luma_index[0]  = xv->luma_index[0];
+   luma_index[1]  = xv->luma_index[1];
 
-   unsigned luma_index[2] = { xv->luma_index[0], xv->luma_index[1] };
-   unsigned chroma_u_index = xv->chroma_u_index;
-   unsigned chroma_v_index = xv->chroma_v_index;
+   chroma_u_index = xv->chroma_u_index;
+   chroma_v_index = xv->chroma_v_index;
 
-   unsigned pitch = width << 1; /* YUV formats used are 16 bpp. */
+   pitch          = width << 1; /* YUV formats used are 16 bpp. */
 
    for (; *msg; msg++)
    {

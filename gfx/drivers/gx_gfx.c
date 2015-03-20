@@ -230,11 +230,12 @@ static void gx_free_overlay(gx_video_t *gx)
 static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
       bool fullscreen)
 {
+   bool progressive;
    unsigned modetype, level, viHeightMultiplier, viWidth, tvmode,
             max_width, max_height, i;
-   bool progressive;
-   gx_video_t *gx = (gx_video_t*)data;
-   menu_handle_t *menu = menu_driver_resolve();
+   gx_video_t *gx       = (gx_video_t*)data;
+   menu_handle_t *menu  = menu_driver_resolve();
+   settings_t *settings = config_get_ptr();
 
    (void)level;
 
@@ -242,7 +243,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    VISetBlack(true);
    VIFlush();
    viHeightMultiplier = 1;
-   viWidth    = g_settings.video.viwidth;
+   viWidth    = settings->video.viwidth;
 #if defined(HW_RVL)
    progressive = CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable();
    switch (CONF_GetVideo())
@@ -376,7 +377,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    GX_SetDispCopyDst(xfbWidth, xfbHeight);
 
    GX_SetCopyFilter(gx_mode.aa, gx_mode.sample_pattern,
-         (gx_mode.xfbMode == VI_XFBMODE_SF) ? GX_FALSE : g_settings.video.vfilter,
+         (gx_mode.xfbMode == VI_XFBMODE_SF) ? GX_FALSE : settings->video.vfilter,
          gx_mode.vfilter);
    GXColor color = { 0, 0, 0, 0xff };
    GX_SetCopyClear(color, GX_MAX_Z24);
@@ -476,11 +477,12 @@ static void init_texture(void *data, unsigned width, unsigned height)
    gx_video_t *gx = (gx_video_t*)data;
    struct __gx_texobj *fb_ptr = (struct __gx_texobj*)&g_tex.obj;
    struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_resolve();
+   settings_t *settings = config_get_ptr();
 
    width &= ~3;
    height &= ~3;
-   g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
+   g_filter = settings->video.smooth ? GX_LINEAR : GX_NEAR;
    menu_w = 320;
    menu_h = 240;
 
@@ -828,9 +830,9 @@ static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
 static void gx_resize(void *data)
 {
    gx_video_t *gx = (gx_video_t*)data;
-
    int x = 0, y = 0;
    unsigned width = gx->vp.full_width, height = gx->vp.full_height;
+   settings_t *settings = config_get_ptr();
 
 #ifdef HW_RVL
    VIDEO_SetTrapFilter(g_extern.console.softfilter_enable);
@@ -854,7 +856,7 @@ static void gx_resize(void *data)
       float delta;
 
 #ifdef RARCH_CONSOLE
-      if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          if (!g_extern.console.screen.viewports.custom_vp.width ||
                !g_extern.console.screen.viewports.custom_vp.height)
@@ -1029,6 +1031,7 @@ static bool gx_frame(void *data, const void *frame,
    gx_video_t *gx = (gx_video_t*)data;
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
    u8 clear_efb = GX_FALSE;
+   settings_t *settings = config_get_ptr();
 
    RARCH_PERFORMANCE_INIT(gx_frame);
    RARCH_PERFORMANCE_START(gx_frame);
@@ -1117,7 +1120,7 @@ static bool gx_frame(void *data, const void *frame,
    video_monitor_get_fps(fps_txt, sizeof(fps_txt),
          fps_text_buf, sizeof(fps_text_buf));
 
-   if (g_settings.fps_show)
+   if (settings->fps_show)
    {
       char mem1_txt[128];
       unsigned x = 15;

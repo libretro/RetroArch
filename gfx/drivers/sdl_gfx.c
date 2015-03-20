@@ -111,20 +111,22 @@ static void sdl_update_scaler(SDL_Surface *surf, struct scaler_ctx *scaler,
 static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font_size)
 {
    int r, g, b;
-   if (!g_settings.video.font_enable)
+   settings_t *settings = config_get_ptr();
+
+   if (!settings->video.font_enable)
       return;
 
    if (!font_renderer_create_default(&vid->font_driver, &vid->font,
-            *g_settings.video.font_path ? g_settings.video.font_path : NULL,
-            g_settings.video.font_size))
+            *settings->video.font_path ? settings->video.font_path : NULL,
+            settings->video.font_size))
    {
       RARCH_LOG("[SDL]: Could not initialize fonts.\n");
       return;
    }
 
-   r = g_settings.video.msg_color_r * 255;
-   g = g_settings.video.msg_color_g * 255;
-   b = g_settings.video.msg_color_b * 255;
+   r = settings->video.msg_color_r * 255;
+   g = settings->video.msg_color_g * 255;
+   b = settings->video.msg_color_b * 255;
 
    r = (r < 0) ? 0 : (r > 255 ? 255 : r);
    g = (g < 0) ? 0 : (g > 255 ? 255 : g);
@@ -140,14 +142,16 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
 {
    int x, y, msg_base_x, msg_base_y;
    unsigned rshift, gshift, bshift;
+   const struct font_atlas *atlas = NULL;
+   settings_t *settings = config_get_ptr();
 
    if (!vid->font)
       return;
 
-   const struct font_atlas *atlas = vid->font_driver->get_atlas(vid->font);
+   atlas = vid->font_driver->get_atlas(vid->font);
 
-   msg_base_x = g_settings.video.msg_pos_x * width;
-   msg_base_y = (1.0f - g_settings.video.msg_pos_y) * height;
+   msg_base_x = settings->video.msg_pos_x * width;
+   msg_base_y = (1.0f - settings->video.msg_pos_y) * height;
 
    rshift = fmt->Rshift;
    gshift = fmt->Gshift;
@@ -244,6 +248,8 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 {
    unsigned full_x, full_y;
    sdl_video_t *vid = NULL;
+   settings_t *settings = config_get_ptr();
+
 #ifdef _WIN32
    gfx_set_dwm();
 #endif
@@ -307,7 +313,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
       }
    }
 
-   sdl_init_font(vid, g_settings.video.font_path, g_settings.video.font_size);
+   sdl_init_font(vid, settings->video.font_path, settings->video.font_size);
 
    vid->scaler.scaler_type = video->smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
    vid->scaler.in_fmt  = video->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;

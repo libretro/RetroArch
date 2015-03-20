@@ -45,9 +45,10 @@ static void xfonts_deinit_font(void *data)
 static void xfonts_render_msg(void *data, const char *msg,
       const struct font_params *params)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    wchar_t str[PATH_MAX_LENGTH];
    float x, y;
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   settings_t *settings = config_get_ptr();
 
    if (params)
    {
@@ -56,8 +57,8 @@ static void xfonts_render_msg(void *data, const char *msg,
    }
    else
    {
-      x = g_settings.video.msg_pos_x;
-      y = g_settings.video.msg_pos_y;
+      x = settings->video.msg_pos_x;
+      y = settings->video.msg_pos_y;
    }
 
    d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &pFrontBuffer);

@@ -207,13 +207,14 @@ static void gfx_ctx_glx_set_resize(void *data,
 static void gfx_ctx_glx_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver        = driver_get_ptr();
+   settings_t *settings    = config_get_ptr();
    gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
 
    if (video_monitor_get_fps(buf, sizeof(buf),
             buf_fps, sizeof(buf_fps)))
       XStoreName(glx->g_dpy, glx->g_win, buf);
-   if (g_settings.fps_show)
+   if (settings->fps_show)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
@@ -421,6 +422,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    driver_t *driver = driver_get_ptr();
    gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)driver->video_context_data;
    struct sigaction sa = {{0}};
+   settings_t *settings    = config_get_ptr();
 
    sa.sa_handler = glx_sighandler;
    sa.sa_flags   = SA_RESTART;
@@ -431,7 +433,7 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    if (!glx)
       return false;
 
-   windowed_full = g_settings.video.windowed_fullscreen;
+   windowed_full = settings->video.windowed_fullscreen;
    true_full = false;
 
    vi = glXGetVisualFromFBConfig(glx->g_dpy, glx->g_fbc);
@@ -455,8 +457,8 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
          RARCH_ERR("[GLX]: Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 
-   if (g_settings.video.monitor_index)
-      glx->g_screen = g_settings.video.monitor_index - 1;
+   if (settings->video.monitor_index)
+      glx->g_screen = settings->video.monitor_index - 1;
 
 #ifdef HAVE_XINERAMA
    if (fullscreen || glx->g_screen != 0)

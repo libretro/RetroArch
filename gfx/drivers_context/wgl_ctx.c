@@ -234,6 +234,8 @@ static void *dinput_wgl;
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
+   settings_t *settings = config_get_ptr();
+
    switch (message)
    {
       case WM_SYSCOMMAND:
@@ -278,7 +280,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
          }
          return 0;
 	  case WM_COMMAND:
-         if (g_settings.ui.menubar_enable)
+         if (settings->ui.menubar_enable)
          {
             LRESULT ret = win32_menu_loop(g_hwnd, wparam);
          }
@@ -347,13 +349,14 @@ static void gfx_ctx_wgl_set_resize(void *data,
 static void gfx_ctx_wgl_update_window_title(void *data)
 {
    char buf[128], buf_fps[128];
+   settings_t *settings = config_get_ptr();
 
    (void)data;
 
    if (video_monitor_get_fps(buf, sizeof(buf),
             buf_fps, sizeof(buf_fps)))
       SetWindowText(g_hwnd, buf);
-   if (g_settings.fps_show)
+   if (settings->fps_show)
       rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 
@@ -442,12 +445,13 @@ static void show_cursor(bool show)
 static void monitor_info(MONITORINFOEX *mon, HMONITOR *hm_to_use)
 {
    unsigned fs_monitor;
+   settings_t *settings = config_get_ptr();
 
    if (!g_last_hm)
       g_last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
    *hm_to_use = g_last_hm;
 
-   fs_monitor = g_settings.video.monitor_index;
+   fs_monitor = settings->video.monitor_index;
    if (fs_monitor && fs_monitor <= g_num_mons && g_all_hms[fs_monitor - 1])
       *hm_to_use = g_all_hms[fs_monitor - 1];
 
@@ -467,15 +471,15 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
    bool windowed_full;
    RECT rect   = {0};
    HMONITOR hm_to_use = NULL;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    monitor_info(&current_mon, &hm_to_use);
-   mon_rect = current_mon.rcMonitor;
 
+   mon_rect        = current_mon.rcMonitor;
    g_resize_width  = width;
    g_resize_height = height;
-
-   windowed_full = g_settings.video.windowed_fullscreen;
+   windowed_full   = settings->video.windowed_fullscreen;
 
    if (fullscreen)
    {
@@ -519,7 +523,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
 
    if (!fullscreen || windowed_full)
    {
-      if (!fullscreen && g_settings.ui.menubar_enable)
+      if (!fullscreen && settings->ui.menubar_enable)
       {
          RECT rc_temp = {0, 0, height, 0x7FFF};
          SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));

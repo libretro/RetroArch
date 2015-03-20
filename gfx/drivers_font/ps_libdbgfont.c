@@ -65,20 +65,21 @@ static void libdbg_font_render_msg(void *data, const char *msg,
 {
    float x, y, scale;
    unsigned color;
+   settings_t *settings = config_get_ptr();
 
    (void)data;
 
    if (params)
    {
-      x = params->x;
-      y = params->y;
+      x     = params->x;
+      y     = params->y;
       scale = params->scale;
       color = params->color;
    }
    else
    {
-      x = g_settings.video.msg_pos_x;
-      y = 0.90f;
+      x     = settings->video.msg_pos_x;
+      y     = 0.90f;
       scale = 1.04f;
       color = SILVER;
    }
