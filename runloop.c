@@ -33,7 +33,7 @@
 #include "netplay.h"
 #endif
 
-struct runloop g_runloop;
+static struct runloop *g_runloop;
 
 /* Convenience macros. */
 #define check_oneshot_func(trigger_input) (check_is_oneshot(BIT64_GET(trigger_input, RARCH_FRAMEADVANCE), BIT64_GET(trigger_input, RARCH_REWIND)))
@@ -956,12 +956,33 @@ void rarch_main_msg_queue_init(void)
 
 runloop_t *rarch_main_get_ptr(void)
 {
-   return &g_runloop;
+   return g_runloop;
+}
+
+static void rarch_main_state_deinit(void)
+{
+   runloop_t *runloop = rarch_main_get_ptr();
+
+   if (!runloop)
+      return;
+
+   free(runloop);
+}
+
+static runloop_t *rarch_main_state_init(void)
+{
+   runloop_t *runloop = (runloop_t*)calloc(1, sizeof(runloop_t));
+
+   if (!runloop)
+      return NULL;
+
+   return runloop;
 }
 
 void rarch_main_clear_state(void)
 {
-   memset(&g_runloop, 0, sizeof(g_runloop));
+   rarch_main_state_deinit();
+   g_runloop = rarch_main_state_init();
 }
 
 bool rarch_main_is_idle(void)
