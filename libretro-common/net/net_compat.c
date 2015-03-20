@@ -15,7 +15,6 @@
  */
 
 #include <net/net_compat.h>
-#include "netplay.h"
 #include <stdlib.h>
 #include <string.h>
 
