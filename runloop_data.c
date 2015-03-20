@@ -342,7 +342,7 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
       return -1;
    }
 
-   nbio->image.handle->buff_data = (uint8_t*)ptr;
+   nbio->image.handle->buff_data        = (uint8_t*)ptr;
    nbio->image.pos_increment            = (len / 2) ? (len / 2) : 1;
    nbio->image.processing_pos_increment = (len / 4) ? (len / 4) : 1;
 
@@ -354,8 +354,8 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
 
    nbio->image.is_blocking   = false;
    nbio->image.is_finished   = false;
-   nbio->is_blocking    = false;
-   nbio->is_finished    = true;
+   nbio->is_blocking         = false;
+   nbio->is_finished         = true;
 
    return 0;
 }
