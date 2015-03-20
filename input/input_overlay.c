@@ -147,6 +147,20 @@ static void input_overlay_free_overlays(input_overlay_t *ol)
    free(ol->overlays);
 }
 
+static bool input_overlay_load_texture_image(struct overlay *overlay,
+      struct texture_image *image, const char *path)
+{
+   struct texture_image img = {0};
+
+   if (!texture_image_load(&img, path))
+      return false;
+
+   *image = img;
+   overlay->load_images[overlay->load_images_size++] = *image;
+   
+   return true;
+}
+
 static bool input_overlay_load_desc_image(input_overlay_t *ol,
       struct overlay_desc *desc,
       struct overlay *input_overlay,
@@ -169,17 +183,11 @@ static bool input_overlay_load_desc_image(input_overlay_t *ol,
             image_path, sizeof(image_path)))
    {
       char path[PATH_MAX_LENGTH];
-      struct texture_image img = {0};
-
       fill_pathname_resolve_relative(path, ol->overlay_path,
             image_path, sizeof(path));
 
-      if (texture_image_load(&img, path))
-      {
-         desc->image = img;
-         desc->image_index = input_overlay->load_images_size;
-         input_overlay->load_images[input_overlay->load_images_size++] = desc->image;
-      }
+      if (input_overlay_load_texture_image(input_overlay, &desc->image, path))
+         desc->image_index = input_overlay->load_images_size - 1;
    }
 
    input_overlay->pos ++;
@@ -652,12 +660,11 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
       if (overlay->config.paths.path[0] != '\0')
       {
          char overlay_resolved_path[PATH_MAX_LENGTH];
-         struct texture_image img = {0};
 
          fill_pathname_resolve_relative(overlay_resolved_path, ol->overlay_path,
                overlay->config.paths.path, sizeof(overlay_resolved_path));
 
-         if (!texture_image_load(&img, overlay_resolved_path))
+         if (!input_overlay_load_texture_image(overlay, &overlay->image, overlay_resolved_path))
          {
             RARCH_ERR("[Overlay]: Failed to load image: %s.\n",
                   overlay_resolved_path);
@@ -665,8 +672,6 @@ bool input_overlay_load_overlays(input_overlay_t *ol)
             goto error;
          }
 
-         overlay->image = img;
-         overlay->load_images[overlay->load_images_size++] = overlay->image;
       }
 
       snprintf(overlay->config.names.key, sizeof(overlay->config.names.key),
