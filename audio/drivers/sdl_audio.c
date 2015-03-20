@@ -69,7 +69,9 @@ static void *sdl_audio_init(const char *device,
    void *tmp;
    SDL_AudioSpec out;
    SDL_AudioSpec spec = {0};
-   sdl_audio_t *sdl = NULL;
+   settings_t *settings = config_get_ptr();
+   sdl_audio_t *sdl     = NULL;
+
    (void)device;
 
    if (SDL_WasInit(0) == 0)
@@ -103,13 +105,14 @@ static void *sdl_audio_init(const char *device,
       free(sdl);
       return 0;
    }
-   g_settings.audio.out_rate = out.freq;
+
+   settings->audio.out_rate = out.freq;
 
    sdl->lock = slock_new();
    sdl->cond = scond_new();
 
    RARCH_LOG("SDL audio: Requested %u ms latency, got %d ms\n", 
-         latency, (int)(out.samples * 4 * 1000 / g_settings.audio.out_rate));
+         latency, (int)(out.samples * 4 * 1000 / settings->audio.out_rate));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */
    bufsize = out.samples * 4 * sizeof(int16_t);

@@ -36,6 +36,7 @@ static void *xenon360_audio_init(const char *device,
       unsigned rate, unsigned latency)
 {
    static bool inited = false;
+   settings_t *settings = config_get_ptr();
 
    if (!inited)
    {
@@ -43,7 +44,7 @@ static void *xenon360_audio_init(const char *device,
       inited = true;
    }
 
-   g_settings.audio.out_rate = SOUND_FREQUENCY;
+   settings->audio.out_rate = SOUND_FREQUENCY;
    return calloc(1, sizeof(xenon_audio_t));
 }
 

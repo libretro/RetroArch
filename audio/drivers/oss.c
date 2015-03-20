@@ -45,6 +45,7 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
 {
    int frags, frag, channels, format, new_rate;
    int *fd = (int*)calloc(1, sizeof(int));
+   settings_t *settings = config_get_ptr();
 
    if (fd == NULL)
       return NULL;
@@ -99,7 +100,7 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
    if (new_rate != (int)rate)
    {
       RARCH_WARN("Requested sample rate not supported. Adjusting output rate to %d Hz.\n", new_rate);
-      g_settings.audio.out_rate = new_rate;
+      settings->audio.out_rate = new_rate;
    }
 
    return fd;

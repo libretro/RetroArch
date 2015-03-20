@@ -196,6 +196,7 @@ static void *coreaudio_init(const char *device,
    AudioStreamBasicDescription stream_desc = {0};
    static bool session_initialized = false;
    coreaudio_t *dev = NULL;
+   settings_t *settings = config_get_ptr();
 #ifdef OSX_PPC
    ComponentDescription desc = {0};
 #else
@@ -300,7 +301,7 @@ static void *coreaudio_init(const char *device,
 
    RARCH_LOG("[CoreAudio]: Using output sample rate of %.1f Hz\n",
          (float)real_desc.mSampleRate);
-   g_settings.audio.out_rate = real_desc.mSampleRate;
+   settings->audio.out_rate = real_desc.mSampleRate;
 
    /* Set channel layout (fails on iOS). */
 #ifndef IOS
@@ -321,7 +322,7 @@ static void *coreaudio_init(const char *device,
    if (AudioUnitInitialize(dev->dev) != noErr)
       goto error;
 
-   fifo_size = (latency * g_settings.audio.out_rate) / 1000;
+   fifo_size = (latency * settings->audio.out_rate) / 1000;
    fifo_size *= 2 * sizeof(float);
    dev->buffer_size = fifo_size;
 

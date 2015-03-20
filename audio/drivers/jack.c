@@ -89,9 +89,10 @@ static void shutdown_cb(void *data)
 static int parse_ports(char **dest_ports, const char **jports)
 {
    int i;
-   char *save;
+   char *save = NULL;
    int parsed = 0;
-   const char *con = strtok_r(g_settings.audio.device, ",", &save);
+   settings_t *settings = config_get_ptr();
+   const char *con = strtok_r(settings->audio.device, ",", &save);
 
    if (con)
       dest_ports[parsed++] = strdup(con);
@@ -107,9 +108,10 @@ static int parse_ports(char **dest_ports, const char **jports)
 
 static size_t find_buffersize(jack_t *jd, int latency)
 {
-   int i, buffer_frames, min_buffer_frames, jack_latency = 0;
    jack_latency_range_t range;
-   int frames = latency * g_settings.audio.out_rate / 1000;
+   int i, buffer_frames, min_buffer_frames, jack_latency = 0;
+   settings_t *settings = config_get_ptr();
+   int frames = latency * settings->audio.out_rate / 1000;
 
    for (i = 0; i < 2; i++)
    {
@@ -138,6 +140,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
    char *dest_ports[2];
    size_t bufsize = 0;
    int parsed = 0;
+   settings_t *settings = config_get_ptr();
    jack_t *jd = (jack_t*)calloc(1, sizeof(jack_t));
 
    if (!jd)
@@ -150,7 +153,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
    if (jd->client == NULL)
       goto error;
 
-   g_settings.audio.out_rate = jack_get_sample_rate(jd->client);
+   settings->audio.out_rate = jack_get_sample_rate(jd->client);
 
    jack_set_process_callback(jd->client, process_cb, jd);
    jack_on_shutdown(jd->client, shutdown_cb, jd);

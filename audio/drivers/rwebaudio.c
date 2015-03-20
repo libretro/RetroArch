@@ -27,13 +27,14 @@ static void rwebaudio_free(void *data)
 
 static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency)
 {
-   void *data;
+   settings_t *settings = config_get_ptr();
+   void *data           = RWebAudioInit(latency);
+
    (void)device;
    (void)rate;
-   data = RWebAudioInit(latency);
 
    if (data)
-      g_settings.audio.out_rate = RWebAudioSampleRate();
+      settings->audio.out_rate = RWebAudioSampleRate();
    return data;
 }
 

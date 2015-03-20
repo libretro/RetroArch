@@ -83,7 +83,8 @@ static void dma_callback(void)
 static void *gx_audio_init(const char *device,
       unsigned rate, unsigned latency)
 {
-   gx_audio_t *wa = (gx_audio_t*)memalign(32, sizeof(*wa));
+   settings_t *settings = config_get_ptr();
+   gx_audio_t *wa       = (gx_audio_t*)memalign(32, sizeof(*wa));
    if (!wa)
       return NULL;
 
@@ -97,12 +98,12 @@ static void *gx_audio_init(const char *device,
    if (rate < 33000)
    {
       AISetDSPSampleRate(AI_SAMPLERATE_32KHZ);
-      g_settings.audio.out_rate = 32000;
+      settings->audio.out_rate = 32000;
    }
    else
    {
       AISetDSPSampleRate(AI_SAMPLERATE_48KHZ);
-      g_settings.audio.out_rate = 48000;
+      settings->audio.out_rate = 48000;
    }
 
    OSInitThreadQueue(&wa->cond);

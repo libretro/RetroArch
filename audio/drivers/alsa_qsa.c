@@ -52,15 +52,14 @@ static void *alsa_qsa_init(const char *device,
    snd_pcm_channel_params_t params = {0};
    snd_pcm_channel_info_t pi;
    snd_pcm_channel_setup_t setup = {0};
-   alsa_t *alsa;
+   settings_t *settings = config_get_ptr();
+   alsa_t *alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
+   if (!alsa)
+      return NULL;
 
    (void)device;
    (void)rate;
    (void)latency;
-
-   alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
-   if (!alsa)
-      return NULL;
 
    if ((err = snd_pcm_open_preferred(&alsa->pcm, &card, &dev,
                SND_PCM_OPEN_PLAYBACK)) < 0)
@@ -123,8 +122,8 @@ static void *alsa_qsa_init(const char *device,
       goto error;
    }
 
-   if (g_settings.audio.block_frames)
-      alsa->buf_size = g_settings.audio.block_frames * 4;
+   if (settings->audio.block_frames)
+      alsa->buf_size = settings->audio.block_frames * 4;
    else
       alsa->buf_size = next_pow2(32 * latency);
 
