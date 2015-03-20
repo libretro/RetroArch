@@ -329,6 +329,8 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
 static void input_get_bind_string_joykey(char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
+   settings_t *settings = config_get_ptr();
+
    if (GET_HAT_DIR(bind->joykey))
    {
       const char *dir;
@@ -352,7 +354,7 @@ static void input_get_bind_string_joykey(char *buf, const char *prefix,
             break;
       }
 
-      if (bind->joykey_label[0] != '\0' && g_settings.input.autoconfig_descriptor_label_show)
+      if (bind->joykey_label[0] != '\0' && settings->input.autoconfig_descriptor_label_show)
          snprintf(buf, size, "%s %s ", prefix, bind->joykey_label);
       else
          snprintf(buf, size, "%sHat #%u %s ", prefix,
@@ -360,7 +362,7 @@ static void input_get_bind_string_joykey(char *buf, const char *prefix,
    }
    else
    {
-      if (bind->joykey_label[0] != '\0' && g_settings.input.autoconfig_descriptor_label_show)
+      if (bind->joykey_label[0] != '\0' && settings->input.autoconfig_descriptor_label_show)
          snprintf(buf, size, "%s%s (btn) ", prefix, bind->joykey_label);
       else
          snprintf(buf, size, "%s%u (btn) ", prefix, (unsigned)bind->joykey);
@@ -372,6 +374,7 @@ static void input_get_bind_string_joyaxis(char *buf, const char *prefix,
 {
    unsigned axis = 0;
    char dir = '\0';
+   settings_t *settings = config_get_ptr();
 
    if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
@@ -383,7 +386,7 @@ static void input_get_bind_string_joyaxis(char *buf, const char *prefix,
       dir = '+';
       axis = AXIS_POS_GET(bind->joyaxis);
    }
-   if (bind->joyaxis_label[0] != '\0' && g_settings.input.autoconfig_descriptor_label_show)
+   if (bind->joyaxis_label[0] != '\0' && settings->input.autoconfig_descriptor_label_show)
       snprintf(buf, size, "%s%s (axis) ", prefix, bind->joyaxis_label);
    else
       snprintf(buf, size, "%s%c%u (axis) ", prefix, dir, axis);

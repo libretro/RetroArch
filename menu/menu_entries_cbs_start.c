@@ -27,7 +27,9 @@
 static int action_start_remap_file_load(unsigned type, const char *label,
       unsigned action)
 {
-   g_settings.input.remapping_path[0] = '\0';
+   settings_t *settings = config_get_ptr();
+
+   settings->input.remapping_path[0] = '\0';
    input_remapping_set_defaults();
    return 0;
 }
@@ -35,7 +37,9 @@ static int action_start_remap_file_load(unsigned type, const char *label,
 static int action_start_video_filter_file_load(unsigned type, const char *label,
       unsigned action)
 {
-   g_settings.video.softfilter_plugin[0] = '\0';
+   settings_t *settings = config_get_ptr();
+
+   settings->video.softfilter_plugin[0] = '\0';
    rarch_main_command(RARCH_CMD_REINIT);
    return 0;
 }
@@ -62,6 +66,7 @@ static int action_start_performance_counters_core(unsigned type, const char *lab
 static int action_start_input_desc(unsigned type, const char *label,
       unsigned action)
 {
+   settings_t *settings = config_get_ptr();
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
    unsigned inp_desc_user         = inp_desc_index_offset / RARCH_FIRST_CUSTOM_BIND;
    unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * RARCH_FIRST_CUSTOM_BIND);
@@ -69,8 +74,8 @@ static int action_start_input_desc(unsigned type, const char *label,
    (void)label;
    (void)action;
 
-   g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset] = 
-      g_settings.input.binds[inp_desc_user][inp_desc_button_index_offset].id;
+   settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] = 
+      settings->input.binds[inp_desc_user][inp_desc_button_index_offset].id;
 
    return 0;
 }

@@ -45,9 +45,11 @@ static void menu_action_setting_disp_set_label_remap_file_load(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   settings_t *settings = config_get_ptr();
+
    *w = 19;
    strlcpy(path_buf, path, path_buf_size);
-   fill_pathname_base(type_str, g_settings.input.remapping_path,
+   fill_pathname_base(type_str, settings->input.remapping_path,
          type_str_size);
 }
 
@@ -116,13 +118,15 @@ static void menu_action_setting_disp_set_label_filter(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   settings_t *settings = config_get_ptr();
+
    *type_str = '\0';
    *w = 19;
    strlcpy(path_buf, path, path_buf_size);
    strlcpy(type_str, "N/A", type_str_size);
 
-   if (*g_settings.video.softfilter_plugin)
-   strlcpy(type_str, path_basename(g_settings.video.softfilter_plugin),
+   if (*settings->video.softfilter_plugin)
+   strlcpy(type_str, path_basename(settings->video.softfilter_plugin),
          type_str_size);
 }
 
@@ -188,10 +192,12 @@ static void menu_action_setting_disp_set_label_shader_default_filter(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   settings_t *settings = config_get_ptr();
+
    *type_str = '\0';
    *w = 19;
    snprintf(type_str, type_str_size, "%s",
-         g_settings.video.smooth ? "Linear" : "Nearest");
+         settings->video.smooth ? "Linear" : "Nearest");
 }
 
 static void menu_action_setting_disp_set_label_shader_parameter(
@@ -333,16 +339,17 @@ static void menu_action_setting_disp_set_label_input_desc(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   settings_t *settings = config_get_ptr();
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
    unsigned inp_desc_user         = inp_desc_index_offset / 
       RARCH_FIRST_CUSTOM_BIND;
    unsigned inp_desc_button_index_offset = inp_desc_index_offset - 
       (inp_desc_user * RARCH_FIRST_CUSTOM_BIND);
-   unsigned remap_id = g_settings.input.remap_ids
+   unsigned remap_id = settings->input.remap_ids
       [inp_desc_user][inp_desc_button_index_offset];
 
    snprintf(type_str, type_str_size, "%s",
-         g_settings.input.binds[inp_desc_user][remap_id].desc);
+         settings->input.binds[inp_desc_user][remap_id].desc);
    *w = 19;
    strlcpy(path_buf, path, path_buf_size);
 }

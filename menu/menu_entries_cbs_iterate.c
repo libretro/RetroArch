@@ -68,8 +68,9 @@ static int archive_load(void)
    const char *menu_path  = NULL;
    const char *menu_label = NULL;
    const char* path       = NULL;
-   unsigned int type = 0;
-   menu_handle_t *menu = menu_driver_resolve();
+   unsigned int type      = 0;
+   menu_handle_t *menu    = menu_driver_resolve();
+   settings_t *settings   = config_get_ptr();
 
    if (!menu)
       return -1;
@@ -97,7 +98,7 @@ static int archive_load(void)
       case 0:
          menu_list_push_stack_refresh(
                menu->menu_list,
-               g_settings.libretro_directory,
+               settings->libretro_directory,
                "deferred_core_list",
                0,
                menu->navigation.selection_ptr);
@@ -159,10 +160,12 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
       const char *label, unsigned type, unsigned action)
 {
    menu_handle_t *menu    = menu_driver_resolve();
+   settings_t *settings   = config_get_ptr();
+
    if (!menu)
       return -1;
 
-   if (!g_settings.menu.mouse.enable)
+   if (!settings->menu.mouse.enable)
    {
       menu->mouse.wheeldown = false;
       menu->mouse.wheelup   = false;
@@ -242,7 +245,8 @@ static int action_iterate_help(const char *label, unsigned action)
    char desc[ARRAY_SIZE(binds)][64];
    char msg[PATH_MAX_LENGTH];
    menu_handle_t *menu    = menu_driver_resolve();
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver       = driver_get_ptr();
+   settings_t *settings   = config_get_ptr();
 
    if (!menu)
       return 0;
@@ -253,7 +257,7 @@ static int action_iterate_help(const char *label, unsigned action)
    for (i = 0; i < ARRAY_SIZE(binds); i++)
    {
       const struct retro_keybind *keybind = (const struct retro_keybind*)
-         &g_settings.input.binds[0][binds[i]];
+         &settings->input.binds[0][binds[i]];
       const struct retro_keybind *auto_bind = (const struct retro_keybind*)
          input_get_auto_bind(0, binds[i]);
 
@@ -352,7 +356,9 @@ static int action_iterate_info(const char *label, unsigned action)
 
 static int action_iterate_load_open_zip(const char *label, unsigned action)
 {
-   switch (g_settings.archive.mode)
+   settings_t *settings   = config_get_ptr();
+
+   switch (settings->archive.mode)
    {
       case 0:
          return load_or_open_zip_iterate(action);
@@ -377,6 +383,8 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
    video_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
    menu_handle_t *menu    = menu_driver_resolve();
    driver_t *driver       = driver_get_ptr();
+   settings_t *settings   = config_get_ptr();
+
    if (!menu)
       return -1;
 
@@ -384,7 +392,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 
    geom = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
 
-   if (g_settings.video.scale_integer)
+   if (settings->video.scale_integer)
    {
       stride_x = geom->base_width;
       stride_y = geom->base_height;
@@ -457,7 +465,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
          menu_list_pop_stack(menu->menu_list);
 
          if (type == MENU_SETTINGS_CUSTOM_VIEWPORT
-               && !g_settings.video.scale_integer)
+               && !settings->video.scale_integer)
          {
             menu_list_push_stack(menu->menu_list, "",
                   "custom_viewport_2", 0, menu->navigation.selection_ptr);
@@ -465,7 +473,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
          break;
 
       case MENU_ACTION_START:
-         if (!g_settings.video.scale_integer)
+         if (!settings->video.scale_integer)
          {
             video_viewport_t vp;
 
@@ -503,7 +511,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
    if (driver->video_data && driver->menu_ctx && driver->menu_ctx->render)
       driver->menu_ctx->render();
 
-   if (g_settings.video.scale_integer)
+   if (settings->video.scale_integer)
    {
       custom->x = 0;
       custom->y = 0;
@@ -591,10 +599,12 @@ static int mouse_iterate(unsigned *action)
    menu_handle_t *menu    = menu_driver_resolve();
    runloop_t *runloop     = rarch_main_get_ptr();
    driver_t *driver       = driver_get_ptr();
+   settings_t *settings   = config_get_ptr();
+
    if (!menu)
       return -1;
 
-   if (!g_settings.menu.mouse.enable)
+   if (!settings->menu.mouse.enable)
    {
       menu->mouse.left       = 0;
       menu->mouse.right      = 0;

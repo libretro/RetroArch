@@ -47,6 +47,7 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    int input_vid = 0, input_pid = 0;
    bool cond_found_idx, cond_found_general,
         cond_found_vid = false, cond_found_pid = false;
+   settings_t *settings = config_get_ptr();
 
    if (!conf)
       return false;
@@ -85,8 +86,8 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    return false;
 
 found:
-   g_settings.input.autoconfigured[idx] = true;
-   input_autoconfigure_joypad_conf(conf, g_settings.input.autoconf_binds[idx]);
+   settings->input.autoconfigured[idx] = true;
+   input_autoconfigure_joypad_conf(conf, settings->input.autoconf_binds[idx]);
 
    snprintf(msg, sizeof(msg), "Joypad port #%u (%s) configured.",
          idx, name);
@@ -105,29 +106,30 @@ void input_config_autoconfigure_joypad(unsigned idx,
    size_t i;
    bool internal_only, block_osd_spam;
    struct string_list *list = NULL;
+   settings_t *settings = config_get_ptr();
 
-   if (!g_settings.input.autodetect_enable)
+   if (!settings->input.autodetect_enable)
       return;
 
    /* This will be the case if input driver is reinit.
     * No reason to spam autoconfigure messages
     * every time (fine in log). */
-   block_osd_spam = g_settings.input.autoconfigured[idx] && name;
+   block_osd_spam = settings->input.autoconfigured[idx] && name;
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      g_settings.input.autoconf_binds[idx][i].joykey = NO_BTN;
-      g_settings.input.autoconf_binds[idx][i].joyaxis = AXIS_NONE;
-      g_settings.input.autoconf_binds[idx][i].joykey_label[0] = '\0';
-      g_settings.input.autoconf_binds[idx][i].joyaxis_label[0] = '\0';
+      settings->input.autoconf_binds[idx][i].joykey = NO_BTN;
+      settings->input.autoconf_binds[idx][i].joyaxis = AXIS_NONE;
+      settings->input.autoconf_binds[idx][i].joykey_label[0] = '\0';
+      settings->input.autoconf_binds[idx][i].joyaxis_label[0] = '\0';
    }
-   g_settings.input.autoconfigured[idx] = false;
+   settings->input.autoconfigured[idx] = false;
 
    if (!name)
       return;
 
    /* if false, load from both cfg files and internal */
-   internal_only = !*g_settings.input.autoconfig_dir;
+   internal_only = !*settings->input.autoconfig_dir;
 
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
    /* First internal */
@@ -148,7 +150,7 @@ void input_config_autoconfigure_joypad(unsigned idx,
       return;
 
    /* Now try files */
-   list = dir_list_new(g_settings.input.autoconfig_dir, "cfg", false);
+   list = dir_list_new(settings->input.autoconfig_dir, "cfg", false);
 
    if (!list)
       return;
@@ -172,9 +174,10 @@ void input_config_autoconfigure_joypad(unsigned idx,
 
 const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
 {
-   unsigned joy_idx = g_settings.input.joypad_map[port];
+   settings_t *settings = config_get_ptr();
+   unsigned joy_idx     = settings->input.joypad_map[port];
 
    if (joy_idx < MAX_USERS)
-      return &g_settings.input.autoconf_binds[joy_idx][id];
+      return &settings->input.autoconf_binds[joy_idx][id];
    return NULL;
 }

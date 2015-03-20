@@ -117,20 +117,17 @@ static int action_toggle_input_desc(unsigned type, const char *label,
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
    unsigned inp_desc_user         = inp_desc_index_offset / RARCH_FIRST_CUSTOM_BIND;
    unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * RARCH_FIRST_CUSTOM_BIND);
+   settings_t *settings = config_get_ptr();
 
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         if (g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset] > 0)
-         {
-            g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset]--;
-         }
+         if (settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] > 0)
+            settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset]--;
          break;
       case MENU_ACTION_RIGHT:
-         if (g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_CUSTOM_BIND)
-         {
-            g_settings.input.remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
-         }
+         if (settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_CUSTOM_BIND)
+            settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
          break;
    }
 
@@ -140,17 +137,17 @@ static int action_toggle_input_desc(unsigned type, const char *label,
 static int action_toggle_save_state(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
+   settings_t *settings = config_get_ptr();
+
    switch (action)
    {
       case MENU_ACTION_LEFT:
          /* Slot -1 is (auto) slot. */
-         if (g_settings.state_slot >= 0)
-         {
-            g_settings.state_slot--;
-         }
+         if (settings->state_slot >= 0)
+            settings->state_slot--;
          break;
       case MENU_ACTION_RIGHT:
-         g_settings.state_slot++;
+         settings->state_slot++;
          break;
    }
 

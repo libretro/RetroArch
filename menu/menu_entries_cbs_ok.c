@@ -118,14 +118,15 @@ extern size_t hack_shader_pass;
 static int action_ok_shader_pass(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
-   menu_handle_t *menu = menu_driver_resolve();
+   hack_shader_pass      = type - MENU_SETTINGS_SHADER_PASS_0;
+   menu_handle_t *menu   = menu_driver_resolve();
+   settings_t *settings  = config_get_ptr();
    if (!menu)
       return -1;
 
    return menu_list_push_stack_refresh(
          menu->menu_list,
-         g_settings.video.shader_dir, 
+         settings->video.shader_dir, 
          label,
          type,
          idx);
@@ -173,44 +174,53 @@ static int action_ok_push_default(const char *path,
 static int action_ok_shader_preset(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu   = menu_driver_resolve();
+   settings_t *settings  = config_get_ptr();
+
    if (!menu)
       return -1;
+
    return menu_list_push_stack_refresh(
          menu->menu_list,
-         g_settings.video.shader_dir, 
+         settings->video.shader_dir, 
          label, type, idx);
 }
 
 static int action_ok_push_content_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu   = menu_driver_resolve();
+   settings_t *settings  = config_get_ptr();
+
    if (!menu)
       return -1;
+
    return menu_list_push_stack_refresh(
          menu->menu_list,
-         g_settings.menu_content_directory,
+         settings->menu_content_directory,
          label, MENU_FILE_DIRECTORY, idx);
 }
 
 static int action_ok_disk_image_append_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu      = menu_driver_resolve();
+   settings_t *settings     = config_get_ptr();
+
    if (!menu)
       return -1;
    return menu_list_push_stack_refresh(
          menu->menu_list,
-         g_settings.menu_content_directory, label, type,
+         settings->menu_content_directory, label, type,
          idx);
 }
 
 static int action_ok_configurations_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   const char *dir = g_settings.menu_config_directory;
-   menu_handle_t *menu = menu_driver_resolve();
+   settings_t *settings     = config_get_ptr();
+   menu_handle_t *menu      = menu_driver_resolve();
+   const char *dir          = settings->menu_config_directory;
    if (!menu)
       return -1;
 
@@ -223,13 +233,14 @@ static int action_ok_configurations_list(const char *path,
 static int action_ok_cheat_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu      = menu_driver_resolve();
+   settings_t *settings     = config_get_ptr();
    if (!menu)
       return -1;
 
    return menu_list_push_stack_refresh(
          menu->menu_list,
-         g_settings.cheat_database,
+         settings->cheat_database,
          label, type, idx);
 }
 
@@ -242,13 +253,14 @@ static int action_ok_audio_dsp_plugin(const char *path,
 static int action_ok_video_filter(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu      = menu_driver_resolve();
+   settings_t *settings     = config_get_ptr();
    if (!menu)
       return -1;
 
    return menu_list_push_stack_refresh(
          menu->menu_list,
-         g_settings.video.filter_dir,
+         settings->video.filter_dir,
          "deferred_video_filter",
          0, idx);
 }
@@ -257,8 +269,9 @@ static int action_ok_core_updater_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    char url_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu = menu_driver_resolve();
-   driver_t *driver = driver_get_ptr();
+   menu_handle_t *menu      = menu_driver_resolve();
+   driver_t *driver         = driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
    if (!menu)
       return -1;
 
@@ -271,15 +284,13 @@ static int action_ok_core_updater_list(const char *path,
    core_updater_list_type = type;
 #endif
 
-   if (g_settings.network.buildbot_url[0] == '\0')
-   {
+   if (settings->network.buildbot_url[0] == '\0')
       return -1;
-   }
 
 #ifdef HAVE_NETWORKING
    rarch_main_command(RARCH_CMD_NETWORK_INIT);
 
-   fill_pathname_join(url_path, g_settings.network.buildbot_url,
+   fill_pathname_join(url_path, settings->network.buildbot_url,
          ".index", sizeof(url_path));
 
    rarch_main_data_msg_queue_push(DATA_TYPE_HTTP, url_path, "cb_core_updater_list", 0, 1,
@@ -294,26 +305,30 @@ static int action_ok_core_updater_list(const char *path,
 static int action_ok_remap_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu      = menu_driver_resolve();
+   settings_t *settings     = config_get_ptr();
+
    if (!menu)
       return -1;
 
    return menu_list_push_stack_refresh(
          menu->menu_list,
-         g_settings.input_remapping_directory,
+         settings->input_remapping_directory,
          label, type, idx);
 }
 
 static int action_ok_core_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu      = menu_driver_resolve();
+   settings_t *settings     = config_get_ptr();
+
    if (!menu)
       return -1;
 
    return menu_list_push_stack_refresh(
          menu->menu_list,
-         g_settings.libretro_directory,
+         settings->libretro_directory,
          label, type, idx);
 }
 
@@ -343,9 +358,11 @@ static int action_ok_remap_file_load(const char *path,
 static int action_ok_video_filter_file_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   const char *menu_path = NULL;
    char filter_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu = menu_driver_resolve();
+   const char *menu_path    = NULL;
+   menu_handle_t *menu      = menu_driver_resolve();
+   settings_t *settings     = config_get_ptr();
+
    if (!menu)
       return -1;
 
@@ -357,8 +374,8 @@ static int action_ok_video_filter_file_load(const char *path,
 
    fill_pathname_join(filter_path, menu_path, path, sizeof(filter_path));
 
-   strlcpy(g_settings.video.softfilter_plugin, filter_path,
-         sizeof(g_settings.video.softfilter_plugin));
+   strlcpy(settings->video.softfilter_plugin, filter_path,
+         sizeof(settings->video.softfilter_plugin));
 
    rarch_main_command(RARCH_CMD_REINIT);
 
@@ -399,11 +416,12 @@ static int action_ok_cheat_file_load(const char *path,
 static int action_ok_menu_wallpaper_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   const char *menu_label   = NULL;
-   const char *menu_path = NULL;
-   rarch_setting_t *setting = NULL;
    char wallpaper_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu = menu_driver_resolve();
+   const char *menu_label   = NULL;
+   const char *menu_path    = NULL;
+   rarch_setting_t *setting = NULL;
+   menu_handle_t *menu      = menu_driver_resolve();
+   settings_t *settings     = config_get_ptr();
    if (!menu)
       return -1;
 
@@ -419,7 +437,7 @@ static int action_ok_menu_wallpaper_load(const char *path,
 
    if (path_file_exists(wallpaper_path))
    {
-      strlcpy(g_settings.menu.wallpaper, wallpaper_path, sizeof(g_settings.menu.wallpaper));
+      strlcpy(settings->menu.wallpaper, wallpaper_path, sizeof(settings->menu.wallpaper));
 
       rarch_main_data_msg_queue_push(DATA_TYPE_IMAGE, wallpaper_path, "cb_menu_wallpaper", 0, 1,
             true);
@@ -518,12 +536,14 @@ static int action_ok_path_use_directory(const char *path,
 static int action_ok_core_load_deferred(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu      = menu_driver_resolve();
+   settings_t *settings     = config_get_ptr();
+
    if (!menu)
       return -1;
 
    if (path)
-      strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
+      strlcpy(settings->libretro, path, sizeof(settings->libretro));
    strlcpy(g_extern.fullpath, menu->deferred_path,
          sizeof(g_extern.fullpath));
 
@@ -566,15 +586,17 @@ static int action_ok_core_load(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *menu_path    = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu      = menu_driver_resolve();
+   settings_t *settings     = config_get_ptr();
+
    if (!menu)
       return -1;
 
    menu_list_get_last_stack(menu->menu_list,
          &menu_path, NULL, NULL);
 
-   fill_pathname_join(g_settings.libretro, menu_path, path,
-         sizeof(g_settings.libretro));
+   fill_pathname_join(settings->libretro, menu_path, path,
+         sizeof(settings->libretro));
    rarch_main_command(RARCH_CMD_LOAD_CORE);
    menu_list_flush_stack(menu->menu_list, MENU_SETTINGS);
 #if defined(HAVE_DYNAMIC)
@@ -645,7 +667,9 @@ static int action_ok_database_manager_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    char rdb_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu      = menu_driver_resolve();
+   settings_t *settings     = config_get_ptr();
+
    if (!menu)
       return -1;
    if (!path)
@@ -653,7 +677,7 @@ static int action_ok_database_manager_list(const char *path,
    if (!label)
       return -1;
 
-   fill_pathname_join(rdb_path, g_settings.content_database,
+   fill_pathname_join(rdb_path, settings->content_database,
          path, sizeof(rdb_path));
 
    return menu_list_push_stack_refresh(
@@ -667,12 +691,13 @@ static int action_ok_cursor_manager_list(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    char cursor_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu      = menu_driver_resolve();
+   settings_t *settings     = config_get_ptr();
 
    if (!menu)
       return -1;
 
-   fill_pathname_join(cursor_path, g_settings.cursor_directory,
+   fill_pathname_join(cursor_path, settings->cursor_directory,
          path, sizeof(cursor_path));
 
    return menu_list_push_stack_refresh(
@@ -734,7 +759,8 @@ static int action_ok_file_load_with_detect_core(const char *path,
 {
    int ret;
    const char *menu_path    = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu      = menu_driver_resolve();
+   settings_t *settings     = config_get_ptr();
 
    if (!menu)
       return -1;
@@ -756,7 +782,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
    if (ret == 0)
       menu_list_push_stack_refresh(
             menu->menu_list,
-            g_settings.libretro_directory,
+            settings->libretro_directory,
             "deferred_core_list",
             0, idx);
 
@@ -831,8 +857,9 @@ static int action_ok_custom_viewport(const char *path,
 {
    /* Start with something sane. */
    video_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
-   menu_handle_t *menu = menu_driver_resolve();
-   driver_t *driver = driver_get_ptr();
+   menu_handle_t *menu      = menu_driver_resolve();
+   driver_t *driver         = driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
 
    if (!menu)
       return -1;
@@ -852,7 +879,7 @@ static int action_ok_custom_viewport(const char *path,
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
       (float)custom->width / custom->height;
 
-   g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
+   settings->video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
 
    rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
    return 0;
@@ -889,8 +916,9 @@ static int action_ok_core_updater_download(const char *path,
 {
 #ifdef HAVE_NETWORKING
    char core_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
+   settings_t *settings  = config_get_ptr();
 
-   fill_pathname_join(core_path, g_settings.network.buildbot_url,
+   fill_pathname_join(core_path, settings->network.buildbot_url,
          path, sizeof(core_path));
 
    strlcpy(core_updater_path, path, sizeof(core_updater_path));

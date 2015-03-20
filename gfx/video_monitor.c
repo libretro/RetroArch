@@ -25,24 +25,25 @@ void video_monitor_adjust_system_rates(void)
    float timing_skew;
    const struct retro_system_timing *info = 
       (const struct retro_system_timing*)&g_extern.system.av_info.timing;
+   settings_t *settings = config_get_ptr();
 
    g_extern.system.force_nonblock = false;
 
    if (info->fps <= 0.0)
       return;
 
-   timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
+   timing_skew = fabs(1.0f - info->fps / settings->video.refresh_rate);
 
    /* We don't want to adjust pitch too much. If we have extreme cases,
     * just don't readjust at all. */
-   if (timing_skew <= g_settings.audio.max_timing_skew)
+   if (timing_skew <= settings->audio.max_timing_skew)
       return;
 
    RARCH_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
-         g_settings.video.refresh_rate,
+         settings->video.refresh_rate,
          (float)info->fps);
 
-   if (info->fps <= g_settings.video.refresh_rate)
+   if (info->fps <= settings->video.refresh_rate)
       return;
 
    /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
@@ -59,11 +60,13 @@ void video_monitor_adjust_system_rates(void)
 void video_monitor_set_refresh_rate(float hz)
 {
    char msg[PATH_MAX_LENGTH];
+   settings_t *settings = config_get_ptr();
+
    snprintf(msg, sizeof(msg), "Setting refresh rate to: %.3f Hz.", hz);
    rarch_main_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
 
-   g_settings.video.refresh_rate = hz;
+   settings->video.refresh_rate = hz;
 }
 
 /**
@@ -75,9 +78,10 @@ void video_monitor_compute_fps_statistics(void)
 {
    double avg_fps = 0.0, stddev = 0.0;
    unsigned samples = 0;
-   runloop_t *runloop = rarch_main_get_ptr();
+   runloop_t *runloop   = rarch_main_get_ptr();
+   settings_t *settings = config_get_ptr();
 
-   if (g_settings.video.threaded)
+   if (settings->video.threaded)
    {
       RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
       return;
@@ -118,14 +122,15 @@ bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points)
 {
    unsigned i;
-   retro_time_t accum = 0, avg, accum_var = 0;
-   unsigned samples   = 0;
-   runloop_t *runloop = rarch_main_get_ptr();
+   retro_time_t accum   = 0, avg, accum_var = 0;
+   unsigned samples     = 0;
+   runloop_t *runloop   = rarch_main_get_ptr();
+   settings_t *settings = config_get_ptr();
    
    samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
          runloop->measure_data.frame_time_samples_count);
 
-   if (g_settings.video.threaded || (samples < 2))
+   if (settings->video.threaded || (samples < 2))
       return false;
 
    /* Measure statistics on frame time (microsecs), *not* FPS. */

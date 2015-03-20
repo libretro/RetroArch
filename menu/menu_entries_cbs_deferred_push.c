@@ -131,7 +131,8 @@ static int deferred_push_core_information(void *data, void *userdata,
    core_info_t *info      = NULL;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver       = driver_get_ptr();
+   settings_t *settings   = config_get_ptr();
 
    if (!list || !menu_list)
       return -1;
@@ -218,7 +219,7 @@ static int deferred_push_core_information(void *data, void *userdata,
       {
          core_info_list_update_missing_firmware(
                g_extern.core_info, info->path,
-               g_settings.system_directory);
+               settings->system_directory);
 
          menu_list_push(list, "Firmware: ", "",
                MENU_SETTINGS_CORE_INFO_NONE, 0);
@@ -278,11 +279,12 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
    char path_rdl[PATH_MAX_LENGTH], path_base[PATH_MAX_LENGTH];
    unsigned i, j;
    database_info_list_t *db_info = NULL;
-   file_list_t *list = NULL;
-   file_list_t *menu_list = NULL;
-   struct string_list *str_list = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
-   driver_t *driver = driver_get_ptr();
+   file_list_t *list             = NULL;
+   file_list_t *menu_list        = NULL;
+   struct string_list *str_list  = NULL;
+   menu_handle_t *menu           = menu_driver_resolve();
+   driver_t *driver              = driver_get_ptr();
+   settings_t *settings          = config_get_ptr();
    if (!menu)
       return -1;
 
@@ -315,7 +317,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
    path_remove_extension(path_base);
    strlcat(path_base, ".rdl", sizeof(path_base));
 
-   fill_pathname_join(path_rdl, g_settings.content_database, path_base,
+   fill_pathname_join(path_rdl, settings->content_database, path_base,
          sizeof(path_rdl));
 
    menu_database_realloc(path_rdl, false);
@@ -624,6 +626,7 @@ static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata
    file_list_t *list      = NULL;
    file_list_t *menu_list = NULL;
    menu_handle_t *menu    = menu_driver_resolve();
+   settings_t *settings   = config_get_ptr();
    if (!menu)
       return -1;
 
@@ -646,7 +649,7 @@ static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata
    if (!config_get_string(conf, "rdb", &rdb))
       return -1;
 
-   fill_pathname_join(rdb_path, g_settings.content_database,
+   fill_pathname_join(rdb_path, settings->content_database,
          rdb, sizeof(rdb_path));
 
    menu_database_populate_query(list, rdb_path, query);
@@ -861,7 +864,7 @@ static int deferred_push_core_information(void *data, void *userdata,
       {
          core_info_list_update_missing_firmware(
                g_extern.core_info, info->path,
-               g_settings.system_directory);
+               settings->system_directory);
 
          menu_list_push(list, "Firmware: ", "",
                MENU_SETTINGS_CORE_INFO_NONE, 0);
@@ -995,10 +998,11 @@ static int deferred_push_settings(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
    rarch_setting_t *setting = NULL;
-   file_list_t *list = NULL;
-   file_list_t *menu_list = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
-   driver_t *driver = driver_get_ptr();
+   file_list_t *list        = NULL;
+   file_list_t *menu_list   = NULL;
+   menu_handle_t *menu      = menu_driver_resolve();
+   driver_t *driver         = driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
 
    if (!menu)
       return -1;
@@ -1016,7 +1020,7 @@ static int deferred_push_settings(void *data, void *userdata,
 
    menu_list_clear(list);
 
-   if (g_settings.menu.collapse_subgroups_enable)
+   if (settings->menu.collapse_subgroups_enable)
    {
       for (; setting->type != ST_NONE; setting++)
       {
@@ -1417,7 +1421,8 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
 {
    unsigned p, retro_id;
    file_list_t *list      = (file_list_t*)data;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver       = driver_get_ptr();
+   settings_t *settings   = config_get_ptr();
 
    (void)userdata;
    (void)type;
@@ -1431,7 +1436,7 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
    menu_list_push(list, "Remap File Save As",
          "remap_file_save_as", MENU_SETTING_ACTION, 0);
 
-   for (p = 0; p < g_settings.input.max_users; p++)
+   for (p = 0; p < settings->input.max_users; p++)
    {
       for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
       {
@@ -1701,14 +1706,16 @@ int deferred_push_content_list(void *data, void *userdata,
 static int deferred_push_database_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, g_settings.content_database, label, type,
+   settings_t *settings   = config_get_ptr();
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, settings->content_database, label, type,
          MENU_FILE_RDB, "rdb", NULL);
 }
 
 static int deferred_push_cursor_manager_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, g_settings.cursor_directory, label, type,
+   settings_t *settings   = config_get_ptr();
+   return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, settings->cursor_directory, label, type,
          MENU_FILE_CURSOR, "dbc", NULL);
 }
 
@@ -1849,6 +1856,8 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1)
 {
+   settings_t *settings   = config_get_ptr();
+
    if (!cbs)
       return;
 
@@ -1858,7 +1867,7 @@ void menu_entries_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
    {
       if (menu_entries_common_is_settings_entry(elem0))
       {
-         if (!g_settings.menu.collapse_subgroups_enable)
+         if (!settings->menu.collapse_subgroups_enable)
          {
             cbs->action_deferred_push = deferred_push_settings_subgroup;
             return;

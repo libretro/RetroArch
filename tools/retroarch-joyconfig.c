@@ -46,6 +46,11 @@ static char *g_auto_path = NULL;
 static char *g_driver = NULL;
 static unsigned g_meta_level = 0;
 
+settings_t *config_get_ptr(void)
+{
+   return &g_settings;
+}
+
 driver_t *driver_get_ptr(void)
 {
    return &driver;

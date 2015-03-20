@@ -145,8 +145,9 @@ const char* config_get_input_driver_options(void)
 
 void find_input_driver(void)
 {
-   int i = find_driver_index("input_driver", g_settings.input.driver);
    driver_t *driver = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+   int i = find_driver_index("input_driver", settings->input.driver);
 
    if (i >= 0)
       driver->input = (const input_driver_t*)input_driver_find_handle(i);
@@ -154,7 +155,7 @@ void find_input_driver(void)
    {
       unsigned d;
       RARCH_ERR("Couldn't find any input driver named \"%s\"\n",
-            g_settings.input.driver);
+            settings->input.driver);
       RARCH_LOG_OUTPUT("Available input drivers are:\n");
       for (d = 0; input_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", input_driver_find_ident(d));

@@ -83,7 +83,9 @@ unsigned video_texture_load(void *data,
       enum texture_backend_type type,
       enum texture_filter_type  filter_type)
 {
-   if (g_settings.video.threaded
+   settings_t *settings = config_get_ptr();
+
+   if (settings->video.threaded
          && !g_extern.system.hw_render_callback.context_type)
    {
       driver_t     *driver = driver_get_ptr();

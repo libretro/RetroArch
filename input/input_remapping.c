@@ -31,13 +31,14 @@
 bool input_remapping_load_file(const char *path)
 {
    unsigned i, j;
-   config_file_t *conf = config_file_new(path);
+   config_file_t *conf  = config_file_new(path);
+   settings_t *settings = config_get_ptr();
 
    if (!conf)
       return false;
 
-   strlcpy(g_settings.input.remapping_path, path,
-         sizeof(g_settings.input.remapping_path));
+   strlcpy(settings->input.remapping_path, path,
+         sizeof(settings->input.remapping_path));
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -54,7 +55,7 @@ bool input_remapping_load_file(const char *path)
 
          snprintf(key_ident[j], sizeof(key_ident[j]), "%s_%s", buf, key_strings[j]);
          if (config_get_int(conf, key_ident[j], &key_remap))
-            g_settings.input.remap_ids[i][j] = key_remap;
+            settings->input.remap_ids[i][j] = key_remap;
       }
    }
 
@@ -75,8 +76,9 @@ void input_remapping_save_file(const char *path)
    char buf[PATH_MAX_LENGTH];
    char remap_file[PATH_MAX_LENGTH];
    config_file_t *conf = NULL;
+   settings_t *settings = config_get_ptr();
 
-   fill_pathname_join(buf, g_settings.input_remapping_directory,
+   fill_pathname_join(buf, settings->input_remapping_directory,
          path, sizeof(buf));
 
    fill_pathname_noext(remap_file, buf, ".rmp", sizeof(remap_file));
@@ -89,7 +91,7 @@ void input_remapping_save_file(const char *path)
    if (!conf)
       return;
 
-   for (i = 0; i < g_settings.input.max_users; i++)
+   for (i = 0; i < settings->input.max_users; i++)
    {
       char key_ident[RARCH_FIRST_META_KEY][128];
       char key_strings[RARCH_FIRST_META_KEY][128] = { "b", "y", "select", "start",
@@ -100,7 +102,7 @@ void input_remapping_save_file(const char *path)
       for (j = 0; j < RARCH_FIRST_META_KEY; j++)
       {
          snprintf(key_ident[j], sizeof(key_ident[j]), "%s_%s", buf, key_strings[j]);
-         config_set_int(conf, key_ident[j], g_settings.input.remap_ids[i][j]);
+         config_set_int(conf, key_ident[j], settings->input.remap_ids[i][j]);
       }
    }
 
@@ -111,10 +113,11 @@ void input_remapping_save_file(const char *path)
 void input_remapping_set_defaults(void)
 {
    unsigned i, j;
+   settings_t *settings = config_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
    {
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
-         g_settings.input.remap_ids[i][j] = g_settings.input.binds[i][j].id;
+         settings->input.remap_ids[i][j] = settings->input.binds[i][j].id;
    }
 }

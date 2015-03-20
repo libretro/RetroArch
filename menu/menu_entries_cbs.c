@@ -94,11 +94,12 @@ int cb_core_updater_download(void *data_, size_t len)
    const char* file_ext = NULL;
    char output_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
    char *data = (char*)data_;
+   settings_t *settings = config_get_ptr();
 
    if (!data)
       return -1;
 
-   fill_pathname_join(output_path, g_settings.libretro_directory,
+   fill_pathname_join(output_path, settings->libretro_directory,
          core_updater_path, sizeof(output_path));
    
    f = fopen(output_path, "wb");
@@ -117,14 +118,14 @@ int cb_core_updater_download(void *data_, size_t len)
 #ifdef HAVE_ZLIB
    file_ext = path_get_extension(output_path);
 
-   if (!g_settings.network.buildbot_auto_extract_archive)
+   if (!settings->network.buildbot_auto_extract_archive)
       return 0;
 
    if (!strcasecmp(file_ext,"zip"))
    {
       if (!zlib_parse_file(output_path, NULL, zlib_extract_core_callback,
 
-               (void*)g_settings.libretro_directory))
+               (void*)settings->libretro_directory))
          RARCH_LOG("Could not process ZIP file.\n");
    }
 #endif

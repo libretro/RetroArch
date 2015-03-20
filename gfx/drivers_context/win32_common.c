@@ -55,6 +55,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
     WPARAM mode      = wparam & 0xffff;
 	unsigned cmd     = RARCH_CMD_NONE;
 	bool do_wm_close = false;
+   settings_t *settings = config_get_ptr();
 
 	switch (mode)
    {
@@ -70,13 +71,13 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             {
                extensions  = "All Files\0*.*\0 Libretro core(.dll)\0*.dll\0";
                title       = "Load Core";
-               initial_dir = g_settings.libretro_directory;
+               initial_dir = settings->libretro_directory;
             }
             else if (mode == ID_M_LOAD_CONTENT)
             {
                extensions  = "All Files\0*.*\0\0";
                title       = "Load Content";
-               initial_dir = g_settings.menu_content_directory;
+               initial_dir = settings->menu_content_directory;
             }
 
             if (win32_browser(owner, win32_file, extensions, title, initial_dir))
@@ -84,7 +85,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                switch (mode)
                {
                   case ID_M_LOAD_CORE:
-                     strlcpy(g_settings.libretro, win32_file, sizeof(g_settings.libretro));
+                     strlcpy(settings->libretro, win32_file, sizeof(settings->libretro));
                      cmd = RARCH_CMD_LOAD_CORE;
                      break;
                   case ID_M_LOAD_CONTENT:
@@ -145,12 +146,12 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          else if (mode == ID_M_STATE_INDEX_AUTO)
          {
             signed idx = -1;
-            g_settings.state_slot = idx;
+            settings->state_slot = idx;
          }
          else if (mode >= (ID_M_STATE_INDEX_AUTO+1) && mode <= (ID_M_STATE_INDEX_AUTO+10))
          {
             signed idx = (mode - (ID_M_STATE_INDEX_AUTO+1));
-            g_settings.state_slot = idx;
+            settings->state_slot = idx;
          }
          break;
    }

@@ -55,7 +55,8 @@ const char *input_joypad_name(const rarch_joypad_driver_t *drv,
 bool input_joypad_set_rumble(const rarch_joypad_driver_t *drv,
       unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
-   unsigned joy_idx = g_settings.input.joypad_map[port];
+   settings_t *settings = config_get_ptr();
+   unsigned joy_idx     = settings->input.joypad_map[port];
    
    if (!drv || !drv->set_rumble)
       return false;
@@ -90,7 +91,8 @@ bool input_joypad_pressed(
    uint32_t joyaxis;
    uint64_t joykey;
    const struct retro_keybind *auto_binds = NULL;
-   unsigned joy_idx = g_settings.input.joypad_map[port];
+   settings_t *settings = config_get_ptr();
+   unsigned joy_idx = settings->input.joypad_map[port];
 
    if (joy_idx >= MAX_USERS)
       return false;
@@ -98,7 +100,7 @@ bool input_joypad_pressed(
       return false;
 
    /* Auto-binds are per joypad, not per user. */
-   auto_binds = g_settings.input.autoconf_binds[joy_idx];
+   auto_binds = settings->input.autoconf_binds[joy_idx];
 
    joykey = binds[key].joykey;
    if (joykey == NO_BTN)
@@ -113,7 +115,7 @@ bool input_joypad_pressed(
 
    axis        = drv->axis(joy_idx, joyaxis);
    scaled_axis = (float)abs(axis) / 0x8000;
-   return scaled_axis > g_settings.input.axis_threshold;
+   return scaled_axis > settings->input.axis_threshold;
 }
 
 /**
@@ -147,7 +149,8 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
    const struct retro_keybind *auto_binds = NULL;
    const struct retro_keybind *bind_minus = NULL;
    const struct retro_keybind *bind_plus  = NULL;
-   unsigned joy_idx = g_settings.input.joypad_map[port];
+   settings_t *settings = config_get_ptr();
+   unsigned joy_idx = settings->input.joypad_map[port];
 
    if (!drv)
       return 0;
@@ -156,7 +159,7 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *drv,
       return 0;
 
    /* Auto-binds are per joypad, not per user. */
-   auto_binds = g_settings.input.autoconf_binds[joy_idx];
+   auto_binds = settings->input.autoconf_binds[joy_idx];
 
    input_conv_analog_id_to_bind_id(idx, ident, &ident_minus, &ident_plus);
 

@@ -259,6 +259,7 @@ static void state_tracker_update_input(state_tracker_t *tracker)
 {
    unsigned i;
    uint16_t state[2] = {0};
+   settings_t *settings = config_get_ptr();
 
    static const unsigned buttons[] = {
       RETRO_DEVICE_ID_JOYPAD_R,
@@ -286,11 +287,11 @@ static void state_tracker_update_input(state_tracker_t *tracker)
       return;
 
    for (i = 0; i < 2; i++)
-      input_push_analog_dpad(g_settings.input.binds[i],
-            g_settings.input.analog_dpad_mode[i]);
+      input_push_analog_dpad(settings->input.binds[i],
+            settings->input.analog_dpad_mode[i]);
    for (i = 0; i < MAX_USERS; i++)
-      input_push_analog_dpad(g_settings.input.autoconf_binds[i],
-            g_settings.input.analog_dpad_mode[i]);
+      input_push_analog_dpad(settings->input.autoconf_binds[i],
+            settings->input.analog_dpad_mode[i]);
 
    if (!driver->block_libretro_input)
    {
@@ -306,9 +307,9 @@ static void state_tracker_update_input(state_tracker_t *tracker)
    }
 
    for (i = 0; i < 2; i++)
-      input_pop_analog_dpad(g_settings.input.binds[i]);
+      input_pop_analog_dpad(settings->input.binds[i]);
    for (i = 0; i < MAX_USERS; i++)
-      input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
+      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
 
    for (i = 0; i < 2; i++)
       tracker->input_state[i] = state[i];

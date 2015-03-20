@@ -3865,11 +3865,12 @@ static bool setting_data_append_list_video_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Video Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
-   CONFIG_BOOL(g_settings.fps_show,
+   CONFIG_BOOL(settings->fps_show,
          "fps_show",
          "Show Framerate",
          fps_show,
@@ -3881,7 +3882,7 @@ static bool setting_data_append_list_video_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.video.shared_context,
+         settings->video.shared_context,
          "video_shared_context",
          "HW Shared Context Enable",
          false,
@@ -3897,7 +3898,7 @@ static bool setting_data_append_list_video_options(
    START_SUB_GROUP(list, list_info, "Monitor", group_info.name, subgroup_info);
 
    CONFIG_UINT(
-         g_settings.video.monitor_index,
+         settings->video.monitor_index,
          "video_monitor_index",
          "Monitor Index",
          monitor_index,
@@ -3913,7 +3914,7 @@ static bool setting_data_append_list_video_options(
 
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
    CONFIG_BOOL(
-         g_settings.video.fullscreen,
+         settings->video.fullscreen,
          "video_fullscreen",
          "Use Fullscreen mode",
          fullscreen,
@@ -3927,7 +3928,7 @@ static bool setting_data_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #endif
    CONFIG_BOOL(
-         g_settings.video.windowed_fullscreen,
+         settings->video.windowed_fullscreen,
          "video_windowed_fullscreen",
          "Windowed Fullscreen Mode",
          windowed_fullscreen,
@@ -3939,7 +3940,7 @@ static bool setting_data_append_list_video_options(
          general_read_handler);
 
    CONFIG_UINT(
-         g_settings.video.fullscreen_x,
+         settings->video.fullscreen_x,
          "video_fullscreen_x",
          "Fullscreen Width",
          fullscreen_x,
@@ -3950,7 +3951,7 @@ static bool setting_data_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
-         g_settings.video.fullscreen_y,
+         settings->video.fullscreen_y,
          "video_fullscreen_y",
          "Fullscreen Height",
          fullscreen_y,
@@ -3961,7 +3962,7 @@ static bool setting_data_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_FLOAT(
-         g_settings.video.refresh_rate,
+         settings->video.refresh_rate,
          "video_refresh_rate",
          "Refresh Rate",
          refresh_rate,
@@ -3973,7 +3974,7 @@ static bool setting_data_append_list_video_options(
    settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
 
    CONFIG_FLOAT(
-         g_settings.video.refresh_rate,
+         settings->video.refresh_rate,
          "video_refresh_rate_auto",
          "Estimated Monitor FPS",
          refresh_rate,
@@ -3990,7 +3991,7 @@ static bool setting_data_append_list_video_options(
       &setting_data_get_string_representation_st_float_video_refresh_rate_auto;
 
    CONFIG_BOOL(
-         g_settings.video.force_srgb_disable,
+         settings->video.force_srgb_disable,
          "video_force_srgb_disable",
          "Force-disable sRGB FBO",
          false,
@@ -4007,7 +4008,7 @@ static bool setting_data_append_list_video_options(
 
    START_SUB_GROUP(list, list_info, "Aspect", group_info.name, subgroup_info);
    CONFIG_BOOL(
-         g_settings.video.force_aspect,
+         settings->video.force_aspect,
          "video_force_aspect",
          "Force aspect ratio",
          force_aspect,
@@ -4019,7 +4020,7 @@ static bool setting_data_append_list_video_options(
          general_read_handler);
 
    CONFIG_FLOAT(
-         g_settings.video.aspect_ratio,
+         settings->video.aspect_ratio,
          "video_aspect_ratio",
          "Aspect Ratio",
          aspect_ratio,
@@ -4030,7 +4031,7 @@ static bool setting_data_append_list_video_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.video.aspect_ratio_auto,
+         settings->video.aspect_ratio_auto,
          "video_aspect_ratio_auto",
          "Use Auto Aspect Ratio",
          aspect_ratio_auto,
@@ -4042,7 +4043,7 @@ static bool setting_data_append_list_video_options(
          general_read_handler);
 
    CONFIG_UINT(
-         g_settings.video.aspect_ratio_idx,
+         settings->video.aspect_ratio_idx,
          "aspect_ratio_index",
          "Aspect Ratio Index",
          aspect_ratio_idx,
@@ -4072,7 +4073,7 @@ static bool setting_data_append_list_video_options(
 
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
    CONFIG_FLOAT(
-         g_settings.video.scale,
+         settings->video.scale,
          "video_scale",
          "Windowed Scale",
          scale,
@@ -4085,7 +4086,7 @@ static bool setting_data_append_list_video_options(
 #endif
 
    CONFIG_BOOL(
-         g_settings.video.scale_integer,
+         settings->video.scale_integer,
          "video_scale_integer",
          "Integer Scale",
          scale_integer,
@@ -4142,7 +4143,7 @@ static bool setting_data_append_list_video_options(
 
 #ifdef GEKKO
    CONFIG_UINT(
-         g_settings.video.viwidth,
+         settings->video.viwidth,
          "video_viwidth",
          "Set Screen Width",
          video_viwidth,
@@ -4153,7 +4154,7 @@ static bool setting_data_append_list_video_options(
    settings_list_current_add_range(list, list_info, 640, 720, 2, true, true);
 
    CONFIG_BOOL(
-         g_settings.video.vfilter,
+         settings->video.vfilter,
          "video_vfilter",
          "Deflicker",
          video_vfilter,
@@ -4166,7 +4167,7 @@ static bool setting_data_append_list_video_options(
 #endif
 
    CONFIG_BOOL(
-         g_settings.video.smooth,
+         settings->video.smooth,
          "video_smooth",
          "Use Bilinear Filtering",
          video_smooth,
@@ -4192,7 +4193,7 @@ static bool setting_data_append_list_video_options(
 #endif
 
    CONFIG_UINT(
-         g_settings.video.rotation,
+         settings->video.rotation,
          "video_rotation",
          "Rotation",
          0,
@@ -4241,7 +4242,7 @@ static bool setting_data_append_list_video_options(
 
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
    CONFIG_BOOL(
-         g_settings.video.threaded,
+         settings->video.threaded,
          "video_threaded",
          "Threaded Video",
          video_threaded,
@@ -4256,7 +4257,7 @@ static bool setting_data_append_list_video_options(
 #endif
 
    CONFIG_BOOL(
-         g_settings.video.vsync,
+         settings->video.vsync,
          "video_vsync",
          "VSync",
          vsync,
@@ -4268,7 +4269,7 @@ static bool setting_data_append_list_video_options(
          general_read_handler);
 
    CONFIG_UINT(
-         g_settings.video.swap_interval,
+         settings->video.swap_interval,
          "video_swap_interval",
          "VSync Swap Interval",
          swap_interval,
@@ -4281,7 +4282,7 @@ static bool setting_data_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         g_settings.video.hard_sync,
+         settings->video.hard_sync,
          "video_hard_sync",
          "Hard GPU Sync",
          hard_sync,
@@ -4293,7 +4294,7 @@ static bool setting_data_append_list_video_options(
          general_read_handler);
 
    CONFIG_UINT(
-         g_settings.video.hard_sync_frames,
+         settings->video.hard_sync_frames,
          "video_hard_sync_frames",
          "Hard GPU Sync Frames",
          hard_sync_frames,
@@ -4305,7 +4306,7 @@ static bool setting_data_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
-         g_settings.video.frame_delay,
+         settings->video.frame_delay,
          "video_frame_delay",
          "Frame Delay",
          frame_delay,
@@ -4318,7 +4319,7 @@ static bool setting_data_append_list_video_options(
 
 #if !defined(RARCH_MOBILE)
    CONFIG_BOOL(
-         g_settings.video.black_frame_insertion,
+         settings->video.black_frame_insertion,
          "video_black_frame_insertion",
          "Black Frame Insertion",
          black_frame_insertion,
@@ -4339,7 +4340,7 @@ static bool setting_data_append_list_video_options(
          subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.video.post_filter_record,
+         settings->video.post_filter_record,
          "video_post_filter_record",
          "Post filter record Enable",
          post_filter_record,
@@ -4352,7 +4353,7 @@ static bool setting_data_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         g_settings.video.gpu_record,
+         settings->video.gpu_record,
          "video_gpu_record",
          "GPU Record Enable",
          gpu_record,
@@ -4365,7 +4366,7 @@ static bool setting_data_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         g_settings.video.gpu_screenshot,
+         settings->video.gpu_screenshot,
          "video_gpu_screenshot",
          "GPU Screenshot Enable",
          gpu_screenshot,
@@ -4378,7 +4379,7 @@ static bool setting_data_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         g_settings.video.allow_rotate,
+         settings->video.allow_rotate,
          "video_allow_rotate",
          "Allow rotation",
          allow_rotate,
@@ -4391,7 +4392,7 @@ static bool setting_data_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         g_settings.video.crop_overscan,
+         settings->video.crop_overscan,
          "video_crop_overscan",
          "Crop Overscan (reload)",
          crop_overscan,
@@ -4422,7 +4423,7 @@ static bool setting_data_append_list_video_options(
 
 #ifdef _XBOX1
    CONFIG_UINT(
-         g_settings.video.swap_interval,
+         settings->video.swap_interval,
          "video_filter_flicker",
          "Flicker filter",
          0,
@@ -4444,12 +4445,13 @@ static bool setting_data_append_list_font_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Font Settings");
    START_SUB_GROUP(list, list_info, "Messages", group_info.name, subgroup_info);
 
    CONFIG_PATH(
-         g_settings.video.font_path,
+         settings->video.font_path,
          "video_font_path",
          "Font Path",
          "",
@@ -4460,7 +4462,7 @@ static bool setting_data_append_list_font_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_FLOAT(
-         g_settings.video.font_size,
+         settings->video.font_size,
          "video_font_size",
          "OSD Font Size",
          font_size,
@@ -4473,7 +4475,7 @@ static bool setting_data_append_list_font_options(
 
 #ifndef RARCH_CONSOLE
    CONFIG_BOOL(
-         g_settings.video.font_enable,
+         settings->video.font_enable,
          "video_font_enable",
          "OSD Font Enable",
          font_enable,
@@ -4486,7 +4488,7 @@ static bool setting_data_append_list_font_options(
 #endif
 
    CONFIG_FLOAT(
-         g_settings.video.msg_pos_x,
+         settings->video.msg_pos_x,
          "video_message_pos_x",
          "Message X Position",
          message_pos_offset_x,
@@ -4498,7 +4500,7 @@ static bool setting_data_append_list_font_options(
    settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
 
    CONFIG_FLOAT(
-         g_settings.video.msg_pos_y,
+         settings->video.msg_pos_y,
          "video_message_pos_y",
          "Message Y Position",
          message_pos_offset_y,
@@ -4521,12 +4523,13 @@ static bool setting_data_append_list_audio_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Audio Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.audio.enable,
+         settings->audio.enable,
          "audio_enable",
          "Audio Enable",
          audio_enable,
@@ -4538,7 +4541,7 @@ static bool setting_data_append_list_audio_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.audio.mute_enable,
+         settings->audio.mute_enable,
          "audio_mute_enable",
          "Audio Mute",
          false,
@@ -4550,7 +4553,7 @@ static bool setting_data_append_list_audio_options(
          general_read_handler);
 
    CONFIG_FLOAT(
-         g_settings.audio.volume,
+         settings->audio.volume,
          "audio_volume",
          "Volume Level",
          audio_volume,
@@ -4585,7 +4588,7 @@ static bool setting_data_append_list_audio_options(
          subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.audio.sync,
+         settings->audio.sync,
          "audio_sync",
          "Audio Sync Enable",
          audio_sync,
@@ -4598,7 +4601,7 @@ static bool setting_data_append_list_audio_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
-         g_settings.audio.latency,
+         settings->audio.latency,
          "audio_latency",
          "Audio Latency",
          g_defaults.settings.out_latency ? 
@@ -4611,7 +4614,7 @@ static bool setting_data_append_list_audio_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DEFERRED|SD_FLAG_ADVANCED);
 
    CONFIG_FLOAT(
-         g_settings.audio.rate_control_delta,
+         settings->audio.rate_control_delta,
          "audio_rate_control_delta",
          "Audio Rate Control Delta",
          rate_control_delta,
@@ -4631,7 +4634,7 @@ static bool setting_data_append_list_audio_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_FLOAT(
-         g_settings.audio.max_timing_skew,
+         settings->audio.max_timing_skew,
          "audio_max_timing_skew",
          "Audio Maximum Timing Skew",
          max_timing_skew,
@@ -4651,7 +4654,7 @@ static bool setting_data_append_list_audio_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
-         g_settings.audio.block_frames,
+         settings->audio.block_frames,
          "audio_block_frames",
          "Block Frames",
          0,
@@ -4671,7 +4674,7 @@ static bool setting_data_append_list_audio_options(
          subgroup_info);
 
    CONFIG_STRING(
-         g_settings.audio.device,
+         settings->audio.device,
          "audio_device",
          "Device",
          "",
@@ -4682,7 +4685,7 @@ static bool setting_data_append_list_audio_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT | SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
-         g_settings.audio.out_rate,
+         settings->audio.out_rate,
          "audio_out_rate",
          "Audio Output Rate",
          out_rate,
@@ -4693,10 +4696,10 @@ static bool setting_data_append_list_audio_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_PATH(
-         g_settings.audio.dsp_plugin,
+         settings->audio.dsp_plugin,
          "audio_dsp_plugin",
          "DSP Plugin",
-         g_settings.audio.filter_dir,
+         settings->audio.filter_dir,
          group_info.name,
          subgroup_info.name,
          general_write_handler,
@@ -4718,12 +4721,13 @@ static bool setting_data_append_list_input_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    unsigned i, user;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Input Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_UINT(
-         g_settings.input.max_users,
+         settings->input.max_users,
          "input_max_users",
          "Max Users",
          MAX_USERS,
@@ -4734,7 +4738,7 @@ static bool setting_data_append_list_input_options(
    settings_list_current_add_range(list, list_info, 1, MAX_USERS, 1, true, true);
 
    CONFIG_BOOL(
-         g_settings.input.remap_binds_enable,
+         settings->input.remap_binds_enable,
          "input_remap_binds_enable",
          "Remap Binds Enable",
          true,
@@ -4746,7 +4750,7 @@ static bool setting_data_append_list_input_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.input.autodetect_enable,
+         settings->input.autodetect_enable,
          "input_autodetect_enable",
          "Autoconfig Enable",
          input_autodetect_enable,
@@ -4758,7 +4762,7 @@ static bool setting_data_append_list_input_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.input.autoconfig_descriptor_label_show,
+         settings->input.autoconfig_descriptor_label_show,
          "autoconfig_descriptor_label_show",
          "Show Autoconfig Descriptor Labels",
          true,
@@ -4770,7 +4774,7 @@ static bool setting_data_append_list_input_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.input.input_descriptor_label_show,
+         settings->input.input_descriptor_label_show,
          "input_descriptor_label_show",
          "Show Core Input Descriptor Labels",
          input_descriptor_label_show,
@@ -4782,7 +4786,7 @@ static bool setting_data_append_list_input_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.input.input_descriptor_hide_unbound,
+         settings->input.input_descriptor_hide_unbound,
          "input_descriptor_hide_unbound",
          "Hide Unbound Core Input Descriptors",
          input_descriptor_hide_unbound,
@@ -4814,7 +4818,7 @@ static bool setting_data_append_list_input_options(
          general_write_handler,
          general_read_handler);
 
-   for (user = 0; user < g_settings.input.max_users; user ++)
+   for (user = 0; user < settings->input.max_users; user ++)
    {
       /* These constants match the string lengths.
        * Keep them up to date or you'll get some really obvious bugs.
@@ -4856,7 +4860,7 @@ static bool setting_data_append_list_input_options(
                "User %d Bind Default All", user + 1);
 
       CONFIG_UINT(
-            g_settings.input.libretro_device[user],
+            settings->input.libretro_device[user],
             key_type[user],
             label_type[user],
             user,
@@ -4872,7 +4876,7 @@ static bool setting_data_append_list_input_options(
          &setting_data_get_string_representation_uint_libretro_device;
 
       CONFIG_UINT(
-            g_settings.input.analog_dpad_mode[user],
+            settings->input.analog_dpad_mode[user],
             key_analog[user],
             label_analog[user],
             user,
@@ -4927,7 +4931,7 @@ static bool setting_data_append_list_input_options(
          subgroup_info);
 
    CONFIG_FLOAT(
-         g_settings.input.axis_threshold,
+         settings->input.axis_threshold,
          "input_axis_threshold",
          "Input Axis Threshold",
          axis_threshold,
@@ -4939,7 +4943,7 @@ static bool setting_data_append_list_input_options(
    settings_list_current_add_range(list, list_info, 0, 1.00, 0.001, true, true);
 
    CONFIG_UINT(
-         g_settings.input.turbo_period,
+         settings->input.turbo_period,
          "input_turbo_period",
          "Turbo Period",
          turbo_period,
@@ -4950,7 +4954,7 @@ static bool setting_data_append_list_input_options(
    settings_list_current_add_range(list, list_info, 1, 0, 1, true, false);
 
    CONFIG_UINT(
-         g_settings.input.turbo_duty_cycle,
+         settings->input.turbo_duty_cycle,
          "input_duty_cycle",
          "Duty Cycle",
          turbo_duty_cycle,
@@ -4979,14 +4983,14 @@ static bool setting_data_append_list_input_options(
       if (!keybind || !keybind->meta)
          continue;
 
-      CONFIG_BIND(g_settings.input.binds[0][i], 0, 0,
+      CONFIG_BIND(settings->input.binds[0][i], 0, 0,
             keybind->base, keybind->desc, &retro_keybinds_1[i],
             group_info.name, subgroup_info.name);
       settings_list_current_add_bind_type(list, list_info, i + MENU_SETTINGS_BIND_BEGIN);
    }
    END_SUB_GROUP(list, list_info);
 
-   for (user = 0; user < g_settings.input.max_users; user++)
+   for (user = 0; user < settings->input.max_users; user++)
    {
       /* This constants matches the string length.
        * Keep it up to date or you'll get some really obvious bugs.
@@ -5017,7 +5021,7 @@ static bool setting_data_append_list_input_options(
             continue;
 
          if (
-               g_settings.input.input_descriptor_label_show
+               settings->input.input_descriptor_label_show
                && (i < RARCH_FIRST_META_KEY)
                && (g_extern.has_set_input_descriptors)
                && (i != RARCH_TURBO_ENABLE)
@@ -5030,7 +5034,7 @@ static bool setting_data_append_list_input_options(
             {
                snprintf(label, sizeof(label), "%s %s", buffer[user], "N/A");
 
-               if (g_settings.input.input_descriptor_hide_unbound)
+               if (settings->input.input_descriptor_hide_unbound)
                   do_add = false;
             }
          }
@@ -5042,7 +5046,7 @@ static bool setting_data_append_list_input_options(
          if (do_add)
          {
             CONFIG_BIND(
-                  g_settings.input.binds[user][i],
+                  settings->input.binds[user][i],
                   user + 1,
                   user,
                   strdup(name), /* TODO: Find a way to fix these memleaks. */
@@ -5068,12 +5072,13 @@ static bool setting_data_append_list_overlay_options(
 #ifdef HAVE_OVERLAY
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Overlay Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.input.overlay_enable,
+         settings->input.overlay_enable,
          "input_overlay_enable",
          "Overlay Enable",
          true,
@@ -5086,7 +5091,7 @@ static bool setting_data_append_list_overlay_options(
    (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
    CONFIG_PATH(
-         g_settings.input.overlay,
+         settings->input.overlay,
          "input_overlay",
          "Overlay Preset",
          g_extern.overlay_dir,
@@ -5099,7 +5104,7 @@ static bool setting_data_append_list_overlay_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_FLOAT(
-         g_settings.input.overlay_opacity,
+         settings->input.overlay_opacity,
          "input_overlay_opacity",
          "Overlay Opacity",
          0.7f,
@@ -5113,7 +5118,7 @@ static bool setting_data_append_list_overlay_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    CONFIG_FLOAT(
-         g_settings.input.overlay_scale,
+         settings->input.overlay_scale,
          "input_overlay_scale",
          "Overlay Scale",
          1.0f,
@@ -5140,12 +5145,13 @@ static bool setting_data_append_list_osk_overlay_options(
 #ifdef HAVE_OVERLAY
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Onscreen Keyboard Overlay Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.osk.enable,
+         settings->osk.enable,
          "input_osk_overlay_enable",
          "OSK Overlay Enable",
          true,
@@ -5157,7 +5163,7 @@ static bool setting_data_append_list_osk_overlay_options(
          general_read_handler);
 
    CONFIG_PATH(
-         g_settings.osk.overlay,
+         settings->osk.overlay,
          "input_osk_overlay",
          "OSK Overlay Preset",
          g_extern.osk_overlay_dir,
@@ -5182,12 +5188,13 @@ static bool setting_data_append_list_menu_options(
 #ifdef HAVE_MENU
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Menu Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_PATH(
-         g_settings.menu.wallpaper,
+         settings->menu.wallpaper,
          "menu_wallpaper",
          "Menu Wallpaper",
          "",
@@ -5199,7 +5206,7 @@ static bool setting_data_append_list_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_BOOL(
-         g_settings.menu.pause_libretro,
+         settings->menu.pause_libretro,
          "menu_pause_libretro",
          "Pause Libretro",
          true,
@@ -5213,7 +5220,7 @@ static bool setting_data_append_list_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    CONFIG_BOOL(
-         g_settings.menu.mouse.enable,
+         settings->menu.mouse.enable,
          "menu_mouse_enable",
          "Mouse Enable",
          false,
@@ -5229,7 +5236,7 @@ static bool setting_data_append_list_menu_options(
    START_SUB_GROUP(list, list_info, "Navigation", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.menu.navigation.wraparound.horizontal_enable,
+         settings->menu.navigation.wraparound.horizontal_enable,
          "menu_navigation_wraparound_horizontal_enable",
          "Navigation Wrap-Around Horizontal",
          true,
@@ -5241,7 +5248,7 @@ static bool setting_data_append_list_menu_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.menu.navigation.wraparound.vertical_enable,
+         settings->menu.navigation.wraparound.vertical_enable,
          "menu_navigation_wraparound_vertical_enable",
          "Navigation Wrap-Around Vertical",
          true,
@@ -5257,7 +5264,7 @@ static bool setting_data_append_list_menu_options(
    START_SUB_GROUP(list, list_info, "Settings View", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.menu.collapse_subgroups_enable,
+         settings->menu.collapse_subgroups_enable,
          "menu_collapse_subgroups_enable",
          "Collapse SubGroups",
          collapse_subgroups_enable,
@@ -5270,7 +5277,7 @@ static bool setting_data_append_list_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         g_settings.menu.show_advanced_settings,
+         settings->menu.show_advanced_settings,
          "menu_show_advanced_settings",
          "Show advanced settings",
          show_advanced_settings,
@@ -5283,7 +5290,7 @@ static bool setting_data_append_list_menu_options(
 
 #ifdef HAVE_THREADS
    CONFIG_BOOL(
-         g_settings.menu.threaded_data_runloop_enable,
+         settings->menu.threaded_data_runloop_enable,
          "threaded_data_runloop_enable",
          "Threaded data runloop",
          true,
@@ -5297,7 +5304,7 @@ static bool setting_data_append_list_menu_options(
 
    /* These colors are hints. The menu driver is not required to use them. */
    CONFIG_HEX(
-         g_settings.menu.entry_normal_color,
+         settings->menu.entry_normal_color,
          "menu_entry_normal_color",
          "Menu entry normal color",
          menu_entry_normal_color,
@@ -5308,7 +5315,7 @@ static bool setting_data_append_list_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_HEX(
-         g_settings.menu.entry_hover_color,
+         settings->menu.entry_hover_color,
          "menu_entry_hover_color",
          "Menu entry hover color",
          menu_entry_hover_color,
@@ -5319,7 +5326,7 @@ static bool setting_data_append_list_menu_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_HEX(
-         g_settings.menu.title_color,
+         settings->menu.title_color,
          "menu_title_color",
          "Menu title color",
          menu_title_color,
@@ -5334,7 +5341,7 @@ static bool setting_data_append_list_menu_options(
    START_SUB_GROUP(list, list_info, "Browser", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.menu.navigation.browser.filter.supported_extensions_enable,
+         settings->menu.navigation.browser.filter.supported_extensions_enable,
          "menu_navigation_browser_filter_supported_extensions_enable",
          "Browser - Filter by supported extensions",
          true,
@@ -5346,7 +5353,7 @@ static bool setting_data_append_list_menu_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.menu_show_start_screen,
+         settings->menu_show_start_screen,
          "rgui_show_start_screen",
          "Show Start Screen",
          menu_show_start_screen,
@@ -5358,7 +5365,7 @@ static bool setting_data_append_list_menu_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.menu.timedate_enable,
+         settings->menu.timedate_enable,
          "menu_timedate_enable",
          "Show time / date",
          true,
@@ -5370,7 +5377,7 @@ static bool setting_data_append_list_menu_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.menu.core_enable,
+         settings->menu.core_enable,
          "menu_core_enable",
          "Show core name",
          true,
@@ -5396,12 +5403,13 @@ static bool setting_data_append_list_ui_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "UI Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.video.disable_composition,
+         settings->video.disable_composition,
          "video_disable_composition",
          "Window Compositing Disable Hint",
          disable_composition,
@@ -5415,7 +5423,7 @@ static bool setting_data_append_list_ui_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
    CONFIG_BOOL(
-         g_settings.pause_nonactive,
+         settings->pause_nonactive,
          "pause_nonactive",
          "Window Unfocus Pause Hint",
          pause_nonactive,
@@ -5427,7 +5435,7 @@ static bool setting_data_append_list_ui_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.ui.menubar_enable,
+         settings->ui.menubar_enable,
          "ui_menubar_enable",
          "Menubar Enable Hint",
          true,
@@ -5439,7 +5447,7 @@ static bool setting_data_append_list_ui_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.ui.suspend_screensaver_enable,
+         settings->ui.suspend_screensaver_enable,
          "suspend_screensaver_enable",
          "Suspend Screensaver Enable Hint",
          true,
@@ -5463,12 +5471,13 @@ static bool setting_data_append_list_archive_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Archive Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_UINT(
-         g_settings.archive.mode,
+         settings->archive.mode,
          "archive_mode",
          "Archive Mode",
          0,
@@ -5493,13 +5502,14 @@ static bool setting_data_append_list_core_updater_options(
 #ifdef HAVE_NETWORKING
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Core Updater Settings");
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_STRING(
-         g_settings.network.buildbot_url,
+         settings->network.buildbot_url,
          "core_updater_buildbot_url",
          "Buildbot Core URL",
          buildbot_server_url, 
@@ -5510,7 +5520,7 @@ static bool setting_data_append_list_core_updater_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_STRING(
-         g_settings.network.buildbot_assets_url,
+         settings->network.buildbot_assets_url,
          "core_updater_buildbot_assets_url",
          "Buildbot Assets URL",
          buildbot_assets_server_url, 
@@ -5521,7 +5531,7 @@ static bool setting_data_append_list_core_updater_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_BOOL(
-         g_settings.network.buildbot_auto_extract_archive,
+         settings->network.buildbot_auto_extract_archive,
          "core_updater_auto_extract_archive",
          "Automatically extract downloaded archive",
          true,
@@ -5546,6 +5556,7 @@ static bool setting_data_append_list_netplay_options(
 #ifdef HAVE_NETPLAY
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Network Settings");
 
@@ -5564,7 +5575,7 @@ static bool setting_data_append_list_netplay_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.input.netplay_client_swap_input,
+         settings->input.netplay_client_swap_input,
          "netplay_client_swap_input",
          "Swap Netplay Input",
          netplay_client_swap_input,
@@ -5646,7 +5657,7 @@ static bool setting_data_append_list_netplay_options(
 
 #if defined(HAVE_NETWORK_CMD)
    CONFIG_BOOL(
-         g_settings.network_cmd_enable,
+         settings->network_cmd_enable,
          "network_cmd_enable",
          "Network Commands",
          network_cmd_enable,
@@ -5659,7 +5670,7 @@ static bool setting_data_append_list_netplay_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 #if 0
    CONFIG_INT(
-         g_settings.network_cmd_port,
+         settings->network_cmd_port,
          "network_cmd_port",
          "Network Command Port",
          network_cmd_port,
@@ -5669,7 +5680,7 @@ static bool setting_data_append_list_netplay_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 #endif
    CONFIG_BOOL(
-         g_settings.stdin_cmd_enable,
+         settings->stdin_cmd_enable,
          "stdin_cmd_enable",
          "stdin command",
          stdin_cmd_enable,
@@ -5748,12 +5759,13 @@ static bool setting_data_append_list_playlist_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Playlist Settings");
    START_SUB_GROUP(list, list_info, "History", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.history_list_enable,
+         settings->history_list_enable,
          "history_list_enable",
          "History List Enable",
          true,
@@ -5765,7 +5777,7 @@ static bool setting_data_append_list_playlist_options(
          general_read_handler);
 
    CONFIG_UINT(
-         g_settings.content_history_size,
+         settings->content_history_size,
          "game_history_size",
          "History List Size",
          default_content_history_size,
@@ -5787,12 +5799,13 @@ static bool setting_data_append_list_user_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "User Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_STRING(
-         g_settings.username,
+         settings->username,
          "netplay_nickname",
          "Username",
          "",
@@ -5803,7 +5816,7 @@ static bool setting_data_append_list_user_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_UINT(
-         g_settings.user_language,
+         settings->user_language,
          "user_language",
          "Language",
          def_user_language,
@@ -5835,13 +5848,14 @@ static bool setting_data_append_list_path_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Path Settings");
 
    START_SUB_GROUP(list, list_info, "Paths", group_info.name, subgroup_info);
 #ifdef HAVE_MENU
    CONFIG_DIR(
-         g_settings.menu_content_directory,
+         settings->menu_content_directory,
          "rgui_browser_directory",
          "Browser Directory",
          "",
@@ -5856,7 +5870,7 @@ static bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_settings.core_assets_directory,
+         settings->core_assets_directory,
          "core_assets_directory",
          "Core Assets Directory",
          "",
@@ -5871,7 +5885,7 @@ static bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_settings.assets_directory,
+         settings->assets_directory,
          "assets_directory",
          "Assets Directory",
          "",
@@ -5886,7 +5900,7 @@ static bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_settings.menu_config_directory,
+         settings->menu_config_directory,
          "rgui_config_directory",
          "Config Directory",
          "",
@@ -5903,7 +5917,7 @@ static bool setting_data_append_list_path_options(
 #endif
 
    CONFIG_DIR(
-         g_settings.libretro_directory,
+         settings->libretro_directory,
          "libretro_dir_path",
          "Core Directory",
          g_defaults.core_dir,
@@ -5919,7 +5933,7 @@ static bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_settings.libretro_info_path,
+         settings->libretro_info_path,
          "libretro_info_path",
          "Core Info Directory",
          g_defaults.core_info_dir,
@@ -5936,7 +5950,7 @@ static bool setting_data_append_list_path_options(
 
 #ifdef HAVE_LIBRETRODB
    CONFIG_DIR(
-         g_settings.content_database,
+         settings->content_database,
          "content_database_path",
          "Content Database Directory",
          "",
@@ -5951,7 +5965,7 @@ static bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_settings.cursor_directory,
+         settings->cursor_directory,
          "cursor_directory",
          "Cursor Directory",
          "",
@@ -5967,7 +5981,7 @@ static bool setting_data_append_list_path_options(
 #endif
 
    CONFIG_DIR(
-         g_settings.cheat_database,
+         settings->cheat_database,
          "cheat_database_path",
          "Cheat Database Directory",
          "",
@@ -5982,7 +5996,7 @@ static bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_PATH(
-         g_settings.content_history_path,
+         settings->content_history_path,
          "game_history_path",
          "Content History Path",
          "",
@@ -5993,7 +6007,7 @@ static bool setting_data_append_list_path_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
    CONFIG_DIR(
-         g_settings.video.filter_dir,
+         settings->video.filter_dir,
          "video_filter_dir",
          "VideoFilter Directory",
          "",
@@ -6008,7 +6022,7 @@ static bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_settings.audio.filter_dir,
+         settings->audio.filter_dir,
          "audio_filter_dir",
          "AudioFilter Directory",
          "",
@@ -6023,7 +6037,7 @@ static bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_settings.video.shader_dir,
+         settings->video.shader_dir,
          "video_shader_dir",
          "Shader Directory",
          g_defaults.shader_dir,
@@ -6070,7 +6084,7 @@ static bool setting_data_append_list_path_options(
 #endif
 
    CONFIG_DIR(
-         g_settings.screenshot_directory,
+         settings->screenshot_directory,
          "screenshot_directory",
          "Screenshot Directory",
          "",
@@ -6085,7 +6099,7 @@ static bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_settings.input.autoconfig_dir,
+         settings->input.autoconfig_dir,
          "joypad_autoconfig_dir",
          "Joypad Autoconfig Directory",
          "",
@@ -6100,7 +6114,7 @@ static bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_settings.input_remapping_directory,
+         settings->input_remapping_directory,
          "input_remapping_directory",
          "Input Remapping Directory",
          "",
@@ -6115,7 +6129,7 @@ static bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_settings.playlist_directory,
+         settings->playlist_directory,
          "playlist_directory",
          "Playlist Directory",
          "",
@@ -6160,7 +6174,7 @@ static bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_settings.system_directory,
+         settings->system_directory,
          "system_directory",
          "System Directory",
          "",
@@ -6175,7 +6189,7 @@ static bool setting_data_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_settings.extraction_directory,
+         settings->extraction_directory,
          "extraction_directory",
          "Extraction Directory",
          "",
@@ -6200,12 +6214,13 @@ static bool setting_data_append_list_privacy_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Privacy Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.camera.allow,
+         settings->camera.allow,
          "camera_allow",
          "Allow Camera",
          false,
@@ -6217,7 +6232,7 @@ static bool setting_data_append_list_privacy_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.location.allow,
+         settings->location.allow,
          "location_allow",
          "Allow Location",
          false,
