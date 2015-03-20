@@ -1014,7 +1014,7 @@ static int deferred_push_settings(void *data, void *userdata,
       return -1;
 
    settings_list_free(menu->list_settings);
-   menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
+   menu->list_settings = (rarch_setting_t *)setting_new(SL_FLAG_ALL_SETTINGS);
 
    setting = menu_setting_find("Driver Settings");
 
@@ -1099,7 +1099,7 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
    }
 
    settings_list_free(menu->list_settings);
-   menu->list_settings = (rarch_setting_t *)setting_data_new(SL_FLAG_ALL_SETTINGS);
+   menu->list_settings = (rarch_setting_t *)setting_new(SL_FLAG_ALL_SETTINGS);
 
    setting = menu_setting_find(elem0);
 

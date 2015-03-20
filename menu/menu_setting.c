@@ -134,7 +134,7 @@ static int menu_action_handle_setting(rarch_setting_t *setting,
 rarch_setting_t *menu_setting_find(const char *label)
 {
    driver_t *driver = driver_get_ptr();
-   return (rarch_setting_t*)setting_data_find_setting(
+   return (rarch_setting_t*)setting_find_setting(
          driver->menu->list_settings, label);
 }
 

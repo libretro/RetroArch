@@ -42,12 +42,12 @@
 #endif
 
 /**
- * setting_data_reset_setting:
+ * setting_reset_setting:
  * @setting            : pointer to setting
  *
  * Reset a setting's value to its defaults.
  **/
-void setting_data_reset_setting(rarch_setting_t* setting)
+void setting_reset_setting(rarch_setting_t* setting)
 {
    if (!setting)
       return;
@@ -104,19 +104,19 @@ void setting_data_reset_setting(rarch_setting_t* setting)
 }
 
 /**
- * setting_data_reset:
+ * setting_reset:
  * @settings           : pointer to settings
  *
  * Reset all settings to their default values.
  **/
-void setting_data_reset(rarch_setting_t* settings)
+void setting_reset(rarch_setting_t* settings)
 {
    for (; settings->type != ST_NONE; settings++)
-      setting_data_reset_setting(settings);
+      setting_reset_setting(settings);
 }
 
 /**
- * setting_data_reset:
+ * setting_reset:
  * @settings           : pointer to settings
  * @name               : name of setting to search for
  *
@@ -124,7 +124,7 @@ void setting_data_reset(rarch_setting_t* settings)
  *
  * Returns: pointer to setting if found, NULL otherwise.
  **/
-rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings,
+rarch_setting_t* setting_find_setting(rarch_setting_t* settings,
       const char* name)
 {
    bool found = false;
@@ -154,14 +154,14 @@ rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings,
 }
 
 /**
- * setting_data_set_with_string_representation:
+ * setting_set_with_string_representation:
  * @setting            : pointer to setting
  * @value              : value for the setting (string)
  *
  * Set a settings' value with a string. It is assumed
  * that the string has been properly formatted.
  **/
-void setting_data_set_with_string_representation(rarch_setting_t* setting,
+void setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
    if (!setting || !value)
@@ -230,14 +230,14 @@ void setting_data_set_with_string_representation(rarch_setting_t* setting,
 }
 
 /**
- * setting_data_get_string_representation:
+ * setting_get_string_representation:
  * @setting            : pointer to setting
  * @type_str           : buffer to write contents of string representation to.
  * @sizeof_type_str    : size of the buffer (@type_str)
  *
  * Get a setting value's string representation.
  **/
-void setting_data_get_string_representation(void *data,
+void setting_get_string_representation(void *data,
       char *type_str, size_t sizeof_type_str)
 {
    rarch_setting_t* setting = (rarch_setting_t*)data;
@@ -253,7 +253,7 @@ void setting_data_get_string_representation(void *data,
 **/
 
 /**
- * setting_data_action_start_savestates:
+ * setting_action_start_savestates:
  * @data               : pointer to setting
  *
  * Function callback for 'Savestate' action's 'Action Start'
@@ -261,7 +261,7 @@ void setting_data_get_string_representation(void *data,
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_data_action_start_savestates(void *data)
+static int setting_action_start_savestates(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
@@ -274,7 +274,7 @@ static int setting_data_action_start_savestates(void *data)
    return 0;
 }
 
-static int setting_data_action_start_bind_device(void *data)
+static int setting_action_start_bind_device(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
@@ -286,7 +286,7 @@ static int setting_data_action_start_bind_device(void *data)
    return 0;
 }
 
-static int setting_data_bool_action_start_default(void *data)
+static int setting_bool_action_start_default(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -298,7 +298,7 @@ static int setting_data_bool_action_start_default(void *data)
    return 0;
 }
 
-static int setting_data_string_dir_action_start_default(void *data)
+static int setting_string_dir_action_start_default(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -310,7 +310,7 @@ static int setting_data_string_dir_action_start_default(void *data)
    return 0;
 }
 
-static int setting_data_action_start_analog_dpad_mode(void *data)
+static int setting_action_start_analog_dpad_mode(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -322,7 +322,7 @@ static int setting_data_action_start_analog_dpad_mode(void *data)
    return 0;
 }
 
-static int setting_data_uint_action_start_default(void *data)
+static int setting_uint_action_start_default(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -334,7 +334,7 @@ static int setting_data_uint_action_start_default(void *data)
    return 0;
 }
 
-static int setting_data_action_start_libretro_device_type(void *data)
+static int setting_action_start_libretro_device_type(void *data)
 {
    unsigned current_device, i, devices[128], types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
@@ -380,7 +380,7 @@ static int setting_data_action_start_libretro_device_type(void *data)
    return 0;
 }
 
-static int setting_data_action_start_video_refresh_rate_auto(
+static int setting_action_start_video_refresh_rate_auto(
       void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -394,7 +394,7 @@ static int setting_data_action_start_video_refresh_rate_auto(
    return 0;
 }
 
-static int setting_data_fraction_action_start_default(
+static int setting_fraction_action_start_default(
       void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -407,7 +407,7 @@ static int setting_data_fraction_action_start_default(
    return 0;
 }
 
-static int setting_data_uint_action_start_linefeed(void *data)
+static int setting_uint_action_start_linefeed(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -419,7 +419,7 @@ static int setting_data_uint_action_start_linefeed(void *data)
    return 0;
 }
 
-static int setting_data_string_action_start_allow_input(void *data)
+static int setting_string_action_start_allow_input(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -431,7 +431,7 @@ static int setting_data_string_action_start_allow_input(void *data)
    return 0;
 }
 
-static int setting_data_bind_action_start(void *data)
+static int setting_bind_action_start(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
@@ -467,7 +467,7 @@ static int setting_data_bind_action_start(void *data)
 **/
 
 /**
- * setting_data_action_toggle_analog_dpad_mode
+ * setting_action_toggle_analog_dpad_mode
  * @data               : pointer to setting
  * @action             : toggle action value. Can be either one of :
  *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
@@ -477,7 +477,7 @@ static int setting_data_bind_action_start(void *data)
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_data_action_toggle_analog_dpad_mode(void *data,
+static int setting_action_toggle_analog_dpad_mode(void *data,
       unsigned action, bool wraparound)
 {
    unsigned port = 0;
@@ -508,7 +508,7 @@ static int setting_data_action_toggle_analog_dpad_mode(void *data,
 }
 
 /**
- * setting_data_action_toggle_libretro_device_type
+ * setting_action_toggle_libretro_device_type
  * @data               : pointer to setting
  * @action             : toggle action value. Can be either one of :
  *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
@@ -518,7 +518,7 @@ static int setting_data_action_toggle_analog_dpad_mode(void *data,
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_data_action_toggle_libretro_device_type(
+static int setting_action_toggle_libretro_device_type(
       void *data, unsigned action, bool wraparound)
 {
    unsigned current_device, current_idx, i, devices[128],
@@ -588,7 +588,7 @@ static int setting_data_action_toggle_libretro_device_type(
 }
 
 /**
- * setting_data_action_toggle_savestates
+ * setting_action_toggle_savestates
  * @data               : pointer to setting
  * @action             : toggle action value. Can be either one of :
  *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
@@ -598,7 +598,7 @@ static int setting_data_action_toggle_libretro_device_type(
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_data_action_toggle_savestates(
+static int setting_action_toggle_savestates(
       void *data, unsigned action, bool wraparound)
 {
    rarch_setting_t *setting  = (rarch_setting_t*)data;
@@ -623,7 +623,7 @@ static int setting_data_action_toggle_savestates(
 }
 
 /**
- * setting_data_action_toggle_bind_device
+ * setting_action_toggle_bind_device
  * @data               : pointer to setting
  * @action             : toggle action value. Can be either one of :
  *                       MENU_ACTION_RIGHT | MENU_ACTION_LEFT
@@ -633,7 +633,7 @@ static int setting_data_action_toggle_savestates(
  *
  * Returns: 0 on success, -1 on error.
  **/
-static int setting_data_action_toggle_bind_device(void *data,
+static int setting_action_toggle_bind_device(void *data,
       unsigned action, bool wraparound)
 {
    unsigned *p = NULL;
@@ -662,7 +662,7 @@ static int setting_data_action_toggle_bind_device(void *data,
    return 0;
 }
 
-static int setting_data_bool_action_toggle_default(void *data,
+static int setting_bool_action_toggle_default(void *data,
       unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -681,7 +681,7 @@ static int setting_data_bool_action_toggle_default(void *data,
    return 0;
 }
 
-static int setting_data_uint_action_toggle_default(void *data,
+static int setting_uint_action_toggle_default(void *data,
       unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -718,7 +718,7 @@ static int setting_data_uint_action_toggle_default(void *data,
    return 0;
 }
 
-static int setting_data_fraction_action_toggle_default(
+static int setting_fraction_action_toggle_default(
       void *data, unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -754,7 +754,7 @@ static int setting_data_fraction_action_toggle_default(
    return 0;
 }
 
-static int setting_data_string_action_toggle_driver(void *data,
+static int setting_string_action_toggle_driver(void *data,
       unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -847,7 +847,7 @@ static int load_content_action_toggle(void *data, unsigned action,
  ******* ACTION OK CALLBACK FUNCTIONS *******
 **/
 
-static int setting_data_action_ok_bind_all(void *data, unsigned action)
+static int setting_action_ok_bind_all(void *data, unsigned action)
 {
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    menu_handle_t *menu       = menu_driver_resolve();
@@ -887,7 +887,7 @@ static int setting_data_action_ok_bind_all(void *data, unsigned action)
    return 0;
 }
 
-static int setting_data_action_ok_bind_defaults(void *data, unsigned action)
+static int setting_action_ok_bind_defaults(void *data, unsigned action)
 {
    unsigned i;
    struct retro_keybind *target = NULL;
@@ -927,7 +927,7 @@ static int setting_data_action_ok_bind_defaults(void *data, unsigned action)
    return 0;
 }
 
-static int setting_data_bool_action_ok_exit(void *data, unsigned action)
+static int setting_bool_action_ok_exit(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -945,7 +945,7 @@ static int setting_data_bool_action_ok_exit(void *data, unsigned action)
 
 
 
-static int setting_data_bool_action_ok_default(void *data, unsigned action)
+static int setting_bool_action_ok_default(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -960,7 +960,7 @@ static int setting_data_bool_action_ok_default(void *data, unsigned action)
 
 
 
-static int setting_data_uint_action_ok_default(void *data, unsigned action)
+static int setting_uint_action_ok_default(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -974,7 +974,7 @@ static int setting_data_uint_action_ok_default(void *data, unsigned action)
 }
 
 
-static int setting_data_action_ok_video_refresh_rate_auto(
+static int setting_action_ok_video_refresh_rate_auto(
       void *data, unsigned action)
 {
    double video_refresh_rate, deviation = 0.0;
@@ -999,7 +999,7 @@ static int setting_data_action_ok_video_refresh_rate_auto(
 }
 
 
-static int setting_data_fraction_action_ok_default(
+static int setting_fraction_action_ok_default(
       void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1014,7 +1014,7 @@ static int setting_data_fraction_action_ok_default(
 }
 
 
-static int setting_data_uint_action_ok_linefeed(void *data, unsigned action)
+static int setting_uint_action_ok_linefeed(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -1027,7 +1027,7 @@ static int setting_data_uint_action_ok_linefeed(void *data, unsigned action)
    return 0;
 }
 
-static int setting_data_hex_action_ok_linefeed(void *data, unsigned action)
+static int setting_hex_action_ok_linefeed(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -1040,7 +1040,7 @@ static int setting_data_hex_action_ok_linefeed(void *data, unsigned action)
    return 0;
 }
 
-static int setting_data_action_action_ok(void *data, unsigned action)
+static int setting_action_action_ok(void *data, unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
@@ -1053,7 +1053,7 @@ static int setting_data_action_action_ok(void *data, unsigned action)
    return 0;
 }
 
-static int setting_data_bind_action_ok(void *data, unsigned action)
+static int setting_bind_action_ok(void *data, unsigned action)
 {
    struct retro_keybind *keybind = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1098,7 +1098,7 @@ static int setting_data_bind_action_ok(void *data, unsigned action)
    return 0;
 }
 
-static int setting_data_string_action_ok_allow_input(void *data,
+static int setting_string_action_ok_allow_input(void *data,
       unsigned action)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1121,7 +1121,7 @@ static int setting_data_string_action_ok_allow_input(void *data,
 **/
 
 /**
- * setting_data_get_string_representation_st_bool:
+ * setting_get_string_representation_st_bool:
  * @setting            : pointer to setting
  * @type_str           : string for the type to be represented on-screen as
  *                       a label.
@@ -1129,7 +1129,7 @@ static int setting_data_string_action_ok_allow_input(void *data,
  *
  * Set a settings' label value. The setting is of type ST_BOOL.
  **/
-static void setting_data_get_string_representation_st_bool(void *data,
+static void setting_get_string_representation_st_bool(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1139,13 +1139,13 @@ static void setting_data_get_string_representation_st_bool(void *data,
             setting->boolean.off_label, type_str_size);
 }
 
-static void setting_data_get_string_representation_st_action(void *data,
+static void setting_get_string_representation_st_action(void *data,
       char *type_str, size_t type_str_size)
 {
    strlcpy(type_str, "...", type_str_size);
 }
 
-static void setting_data_get_string_representation_st_group(void *data,
+static void setting_get_string_representation_st_group(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1154,7 +1154,7 @@ static void setting_data_get_string_representation_st_group(void *data,
       strlcpy(type_str, "...", type_str_size);
 }
 
-static void setting_data_get_string_representation_st_sub_group(void *data,
+static void setting_get_string_representation_st_sub_group(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1164,7 +1164,7 @@ static void setting_data_get_string_representation_st_sub_group(void *data,
 }
 
 /**
- * setting_data_get_string_representation_st_float:
+ * setting_get_string_representation_st_float:
  * @setting            : pointer to setting
  * @type_str           : string for the type to be represented on-screen as
  *                       a label.
@@ -1172,7 +1172,7 @@ static void setting_data_get_string_representation_st_sub_group(void *data,
  *
  * Set a settings' label value. The setting is of type ST_FLOAT.
  **/
-static void setting_data_get_string_representation_st_float(void *data,
+static void setting_get_string_representation_st_float(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1182,7 +1182,7 @@ static void setting_data_get_string_representation_st_float(void *data,
             *setting->value.fraction);
 }
 
-static void setting_data_get_string_representation_st_float_video_refresh_rate_auto(void *data,
+static void setting_get_string_representation_st_float_video_refresh_rate_auto(void *data,
       char *type_str, size_t type_str_size)
 {
    double video_refresh_rate = 0.0;
@@ -1204,7 +1204,7 @@ static void setting_data_get_string_representation_st_float_video_refresh_rate_a
       strlcpy(type_str, "N/A", type_str_size);
 }
 
-static void setting_data_get_string_representation_st_dir(void *data,
+static void setting_get_string_representation_st_dir(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1216,7 +1216,7 @@ static void setting_data_get_string_representation_st_dir(void *data,
             type_str_size);
 }
 
-static void setting_data_get_string_representation_st_path(void *data,
+static void setting_get_string_representation_st_path(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1225,7 +1225,7 @@ static void setting_data_get_string_representation_st_path(void *data,
       strlcpy(type_str, path_basename(setting->value.string), type_str_size);
 }
 
-static void setting_data_get_string_representation_st_string(void *data,
+static void setting_get_string_representation_st_string(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1234,7 +1234,7 @@ static void setting_data_get_string_representation_st_string(void *data,
       strlcpy(type_str, setting->value.string, type_str_size);
 }
 
-static void setting_data_get_string_representation_st_bind(void *data,
+static void setting_get_string_representation_st_bind(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1250,7 +1250,7 @@ static void setting_data_get_string_representation_st_bind(void *data,
    input_get_bind_string(type_str, keybind, auto_bind, type_str_size);
 }
 
-static void setting_data_get_string_representation_int(void *data,
+static void setting_get_string_representation_int(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1259,7 +1259,7 @@ static void setting_data_get_string_representation_int(void *data,
       snprintf(type_str, type_str_size, "%d", *setting->value.integer);
 }
 
-static void setting_data_get_string_representation_uint_video_monitor_index(void *data,
+static void setting_get_string_representation_uint_video_monitor_index(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1273,7 +1273,7 @@ static void setting_data_get_string_representation_uint_video_monitor_index(void
       strlcpy(type_str, "0 (Auto)", type_str_size);
 }
 
-static void setting_data_get_string_representation_uint_video_rotation(void *data,
+static void setting_get_string_representation_uint_video_rotation(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1282,7 +1282,7 @@ static void setting_data_get_string_representation_uint_video_rotation(void *dat
             type_str_size);
 }
 
-static void setting_data_get_string_representation_uint_aspect_ratio_index(void *data,
+static void setting_get_string_representation_uint_aspect_ratio_index(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1292,7 +1292,7 @@ static void setting_data_get_string_representation_uint_aspect_ratio_index(void 
             type_str_size);
 }
 
-static void setting_data_get_string_representation_uint_libretro_device(void *data,
+static void setting_get_string_representation_uint_libretro_device(void *data,
       char *type_str, size_t type_str_size)
 {
    const struct retro_controller_description *desc = NULL;
@@ -1337,7 +1337,7 @@ static void setting_data_get_string_representation_uint_libretro_device(void *da
    strlcpy(type_str, name, type_str_size);
 }
 
-static void setting_data_get_string_representation_uint_archive_mode(void *data,
+static void setting_get_string_representation_uint_archive_mode(void *data,
       char *type_str, size_t type_str_size)
 {
    const char *name = "Unknown";
@@ -1361,7 +1361,7 @@ static void setting_data_get_string_representation_uint_archive_mode(void *data,
    strlcpy(type_str, name, type_str_size);
 }
 
-static void setting_data_get_string_representation_uint_analog_dpad_mode(void *data,
+static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
       char *type_str, size_t type_str_size)
 {
    static const char *modes[] = {
@@ -1381,7 +1381,7 @@ static void setting_data_get_string_representation_uint_analog_dpad_mode(void *d
          type_str_size);
 }
 
-static void setting_data_get_string_representation_uint_autosave_interval(void *data,
+static void setting_get_string_representation_uint_autosave_interval(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1395,7 +1395,7 @@ static void setting_data_get_string_representation_uint_autosave_interval(void *
       strlcpy(type_str, "OFF", type_str_size);
 }
 
-static void setting_data_get_string_representation_uint_user_language(void *data,
+static void setting_get_string_representation_uint_user_language(void *data,
       char *type_str, size_t type_str_size)
 {
    static const char *modes[] = {
@@ -1420,7 +1420,7 @@ static void setting_data_get_string_representation_uint_user_language(void *data
    strlcpy(type_str, modes[settings->user_language], type_str_size);
 }
 
-static void setting_data_get_string_representation_uint_libretro_log_level(void *data,
+static void setting_get_string_representation_uint_libretro_log_level(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1437,7 +1437,7 @@ static void setting_data_get_string_representation_uint_libretro_log_level(void 
          type_str_size);
 }
 
-static void setting_data_get_string_representation_uint(void *data,
+static void setting_get_string_representation_uint(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1446,7 +1446,7 @@ static void setting_data_get_string_representation_uint(void *data,
             *setting->value.unsigned_integer);
 }
 
-static void setting_data_get_string_representation_hex(void *data,
+static void setting_get_string_representation_hex(void *data,
       char *type_str, size_t type_str_size)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1460,7 +1460,7 @@ static void setting_data_get_string_representation_hex(void *data,
 **/
 
 /**
- * setting_data_action_setting:
+ * setting_action_setting:
  * @name               : Name of setting.
  * @short_description  : Short description of setting.
  * @group              : Group that the setting belongs to.
@@ -1470,7 +1470,7 @@ static void setting_data_get_string_representation_hex(void *data,
  *
  * Returns: setting of type ST_ACTION.
  **/
-rarch_setting_t setting_data_action_setting(const char* name,
+rarch_setting_t setting_action_setting(const char* name,
       const char* short_description,
       const char *group, const char *subgroup)
 {
@@ -1487,18 +1487,18 @@ rarch_setting_t setting_data_action_setting(const char* name,
    result.change_handler            = NULL;
    result.deferred_handler          = NULL;
    result.read_handler              = NULL;
-   result.get_string_representation = &setting_data_get_string_representation_st_action;
+   result.get_string_representation = &setting_get_string_representation_st_action;
    result.action_start              = NULL;
    result.action_iterate            = NULL;
    result.action_toggle             = NULL;
-   result.action_ok                 = setting_data_action_action_ok;
+   result.action_ok                 = setting_action_action_ok;
    result.action_cancel             = NULL;
 
    return result;
 }
 
 /**
- * setting_data_group_setting:
+ * setting_group_setting:
  * @type               : type of settting.
  * @name               : name of setting.
  *
@@ -1506,7 +1506,7 @@ rarch_setting_t setting_data_action_setting(const char* name,
  *
  * Returns: setting of type ST_GROUP.
  **/
-rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name)
+rarch_setting_t setting_group_setting(enum setting_type type, const char* name)
 {
    rarch_setting_t result;
 
@@ -1516,13 +1516,13 @@ rarch_setting_t setting_data_group_setting(enum setting_type type, const char* n
    result.name              = name;
    result.short_description = name;
 
-   result.get_string_representation       = &setting_data_get_string_representation_st_group;
+   result.get_string_representation       = &setting_get_string_representation_st_group;
 
    return result;
 }
 
 /**
- * setting_data_subgroup_setting:
+ * setting_subgroup_setting:
  * @type               : type of settting.
  * @name               : name of setting.
  * @parent_name        : group that the subgroup setting belongs to.
@@ -1531,7 +1531,7 @@ rarch_setting_t setting_data_group_setting(enum setting_type type, const char* n
  *
  * Returns: setting of type ST_SUBGROUP.
  **/
-rarch_setting_t setting_data_subgroup_setting(enum setting_type type,
+rarch_setting_t setting_subgroup_setting(enum setting_type type,
       const char* name, const char *parent_name)
 {
    rarch_setting_t result;
@@ -1544,13 +1544,13 @@ rarch_setting_t setting_data_subgroup_setting(enum setting_type type,
    result.short_description = name;
    result.group             = parent_name;
 
-   result.get_string_representation       = &setting_data_get_string_representation_st_sub_group;
+   result.get_string_representation       = &setting_get_string_representation_st_sub_group;
 
    return result;
 }
 
 /**
- * setting_data_float_setting:
+ * setting_float_setting:
  * @name               : name of setting.
  * @short_description  : Short description of setting.
  * @target             : Target of float setting.
@@ -1565,7 +1565,7 @@ rarch_setting_t setting_data_subgroup_setting(enum setting_type type,
  *
  * Returns: setting of type ST_FLOAT.
  **/
-rarch_setting_t setting_data_float_setting(const char* name,
+rarch_setting_t setting_float_setting(const char* name,
       const char* short_description, float* target, float default_value,
       const char *rounding, const char *group, const char *subgroup,
       change_handler_t change_handler, change_handler_t read_handler)
@@ -1587,18 +1587,18 @@ rarch_setting_t setting_data_float_setting(const char* name,
    result.value.fraction          = target;
    result.original_value.fraction = *target;
    result.default_value.fraction  = default_value;
-   result.action_start            = setting_data_fraction_action_start_default;
-   result.action_toggle           = setting_data_fraction_action_toggle_default;
-   result.action_ok               = setting_data_fraction_action_ok_default;
+   result.action_start            = setting_fraction_action_start_default;
+   result.action_toggle           = setting_fraction_action_toggle_default;
+   result.action_ok               = setting_fraction_action_ok_default;
    result.action_cancel           = NULL;
 
-   result.get_string_representation       = &setting_data_get_string_representation_st_float;
+   result.get_string_representation       = &setting_get_string_representation_st_float;
 
    return result;
 }
 
 /**
- * setting_data_bool_setting:
+ * setting_bool_setting:
  * @name               : name of setting.
  * @short_description  : Short description of setting.
  * @target             : Target of bool setting.
@@ -1614,7 +1614,7 @@ rarch_setting_t setting_data_float_setting(const char* name,
  *
  * Returns: setting of type ST_BOOL.
  **/
-rarch_setting_t setting_data_bool_setting(const char* name,
+rarch_setting_t setting_bool_setting(const char* name,
       const char* short_description, bool* target, bool default_value,
       const char *off, const char *on,
       const char *group, const char *subgroup,
@@ -1639,17 +1639,17 @@ rarch_setting_t setting_data_bool_setting(const char* name,
    result.boolean.off_label      = off;
    result.boolean.on_label       = on;
 
-   result.action_start           = setting_data_bool_action_start_default;
-   result.action_toggle          = setting_data_bool_action_toggle_default;
-   result.action_ok              = setting_data_bool_action_ok_default;
+   result.action_start           = setting_bool_action_start_default;
+   result.action_toggle          = setting_bool_action_toggle_default;
+   result.action_ok              = setting_bool_action_ok_default;
    result.action_cancel          = NULL;
 
-   result.get_string_representation       = &setting_data_get_string_representation_st_bool;
+   result.get_string_representation       = &setting_get_string_representation_st_bool;
    return result;
 }
 
 /**
- * setting_data_int_setting:
+ * setting_int_setting:
  * @name               : name of setting.
  * @short_description  : Short description of setting.
  * @target             : Target of signed integer setting.
@@ -1663,7 +1663,7 @@ rarch_setting_t setting_data_bool_setting(const char* name,
  *
  * Returns: setting of type ST_INT.
  **/
-rarch_setting_t setting_data_int_setting(const char* name,
+rarch_setting_t setting_int_setting(const char* name,
       const char* short_description, int* target, int default_value,
       const char *group, const char *subgroup, change_handler_t change_handler,
       change_handler_t read_handler)
@@ -1685,13 +1685,13 @@ rarch_setting_t setting_data_int_setting(const char* name,
    result.original_value.integer = *target;
    result.default_value.integer  = default_value;
 
-   result.get_string_representation       = &setting_data_get_string_representation_int;
+   result.get_string_representation       = &setting_get_string_representation_int;
 
    return result;
 }
 
 /**
- * setting_data_uint_setting:
+ * setting_uint_setting:
  * @name               : name of setting.
  * @short_description  : Short description of setting.
  * @target             : Target of unsigned integer setting.
@@ -1705,7 +1705,7 @@ rarch_setting_t setting_data_int_setting(const char* name,
  *
  * Returns: setting of type ST_UINT.
  **/
-rarch_setting_t setting_data_uint_setting(const char* name,
+rarch_setting_t setting_uint_setting(const char* name,
       const char* short_description, unsigned int* target,
       unsigned int default_value, const char *group, const char *subgroup,
       change_handler_t change_handler, change_handler_t read_handler)
@@ -1726,17 +1726,17 @@ rarch_setting_t setting_data_uint_setting(const char* name,
    result.value.unsigned_integer          = target;
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
-   result.action_start                    = setting_data_uint_action_start_default;
-   result.action_toggle                   = setting_data_uint_action_toggle_default;
-   result.action_ok                       = setting_data_uint_action_ok_default;
+   result.action_start                    = setting_uint_action_start_default;
+   result.action_toggle                   = setting_uint_action_toggle_default;
+   result.action_ok                       = setting_uint_action_ok_default;
    result.action_cancel                   = NULL;
-   result.get_string_representation       = &setting_data_get_string_representation_uint;
+   result.get_string_representation       = &setting_get_string_representation_uint;
 
    return result;
 }
 
 /**
- * setting_data_uint_setting:
+ * setting_uint_setting:
  * @name               : name of setting.
  * @short_description  : Short description of setting.
  * @target             : Target of unsigned integer setting.
@@ -1750,7 +1750,7 @@ rarch_setting_t setting_data_uint_setting(const char* name,
  *
  * Returns: setting of type ST_HEX.
  **/
-rarch_setting_t setting_data_hex_setting(const char* name,
+rarch_setting_t setting_hex_setting(const char* name,
       const char* short_description, unsigned int* target,
       unsigned int default_value, const char *group, const char *subgroup,
       change_handler_t change_handler, change_handler_t read_handler)
@@ -1771,17 +1771,17 @@ rarch_setting_t setting_data_hex_setting(const char* name,
    result.value.unsigned_integer          = target;
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
-   result.action_start                    = setting_data_uint_action_start_default;
+   result.action_start                    = setting_uint_action_start_default;
    result.action_toggle                   = NULL;
-   result.action_ok                       = setting_data_uint_action_ok_default;
+   result.action_ok                       = setting_uint_action_ok_default;
    result.action_cancel                   = NULL;
-   result.get_string_representation       = &setting_data_get_string_representation_hex;
+   result.get_string_representation       = &setting_get_string_representation_hex;
 
    return result;
 }
 
 /**
- * setting_data_bind_setting:
+ * setting_bind_setting:
  * @name               : name of setting.
  * @short_description  : Short description of setting.
  * @target             : Target of bind setting.
@@ -1795,7 +1795,7 @@ rarch_setting_t setting_data_hex_setting(const char* name,
  *
  * Returns: setting of type ST_BIND.
  **/
-rarch_setting_t setting_data_bind_setting(const char* name,
+rarch_setting_t setting_bind_setting(const char* name,
       const char* short_description, struct retro_keybind* target,
       uint32_t idx, uint32_t idx_offset,
       const struct retro_keybind* default_value,
@@ -1816,16 +1816,16 @@ rarch_setting_t setting_data_bind_setting(const char* name,
    result.default_value.keybind = default_value;
    result.index                 = idx;
    result.index_offset          = idx_offset;
-   result.action_start          = setting_data_bind_action_start;
-   result.action_ok             = setting_data_bind_action_ok;
+   result.action_start          = setting_bind_action_start;
+   result.action_ok             = setting_bind_action_ok;
    result.action_cancel         = NULL;
-   result.get_string_representation       = &setting_data_get_string_representation_st_bind;
+   result.get_string_representation       = &setting_get_string_representation_st_bind;
 
    return result;
 }
 
 /**
- * setting_data_string_setting:
+ * setting_string_setting:
  * @type               : type of setting.
  * @name               : name of setting.
  * @short_description  : Short description of setting.
@@ -1842,7 +1842,7 @@ rarch_setting_t setting_data_bind_setting(const char* name,
  *
  * Returns: String setting of type @type.
  **/
-rarch_setting_t setting_data_string_setting(enum setting_type type,
+rarch_setting_t setting_string_setting(enum setting_type type,
       const char* name, const char* short_description, char* target,
       unsigned size, const char* default_value, const char *empty,
       const char *group, const char *subgroup, change_handler_t change_handler,
@@ -1865,19 +1865,19 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
    result.value.string         = target;
    result.default_value.string = default_value;
    result.action_start         = NULL;
-   result.get_string_representation       = &setting_data_get_string_representation_st_string;
+   result.get_string_representation       = &setting_get_string_representation_st_string;
 
    switch (type)
    {
       case ST_DIR:
-         result.action_start           = setting_data_string_dir_action_start_default;
+         result.action_start           = setting_string_dir_action_start_default;
          result.browser_selection_type = ST_DIR;
-         result.get_string_representation = &setting_data_get_string_representation_st_dir;
+         result.get_string_representation = &setting_get_string_representation_st_dir;
          break;
       case ST_PATH:
-         result.action_start           = setting_data_string_dir_action_start_default;
+         result.action_start           = setting_string_dir_action_start_default;
          result.browser_selection_type = ST_PATH;
-         result.get_string_representation = &setting_data_get_string_representation_st_path;
+         result.get_string_representation = &setting_get_string_representation_st_path;
          break;
       default:
          break;
@@ -1887,7 +1887,7 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
 }
 
 /**
- * setting_data_string_setting_options:
+ * setting_string_setting_options:
  * @type               : type of settting.
  * @name               : name of setting.
  * @short_description  : Short description of setting.
@@ -1905,14 +1905,14 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
  *
  * Returns: string option list setting.
  **/
-rarch_setting_t setting_data_string_setting_options(enum setting_type type,
+rarch_setting_t setting_string_setting_options(enum setting_type type,
  const char* name, const char* short_description, char* target,
  unsigned size, const char* default_value,
  const char *empty, const char *values,
  const char *group, const char *subgroup,
  change_handler_t change_handler, change_handler_t read_handler)
 {
-  rarch_setting_t result = setting_data_string_setting(type, name,
+  rarch_setting_t result = setting_string_setting(type, name,
         short_description, target, size, default_value, empty, group,
         subgroup, change_handler, read_handler);
 
@@ -1921,7 +1921,7 @@ rarch_setting_t setting_data_string_setting_options(enum setting_type type,
 }
 
 /**
- * setting_data_get_description:
+ * setting_get_description:
  * @label              : identifier label of setting
  * @msg                : output message 
  * @sizeof_msg         : size of @msg
@@ -1932,7 +1932,7 @@ rarch_setting_t setting_data_string_setting_options(enum setting_type type,
  *
  * Returns: 0 (always for now). TODO: make it handle -1 as well.
  **/
-int setting_data_get_description(const char *label, char *msg,
+int setting_get_description(const char *label, char *msg,
       size_t sizeof_msg)
 {
    settings_t      *settings = config_get_ptr();
@@ -2908,7 +2908,7 @@ static void get_string_representation_savestate(void * data, char *type_str,
 }
 
 /**
- * setting_data_get_label:
+ * setting_get_label:
  * @list               : File list on which to perform the search
  * @type_str           : String for the type to be represented on-screen as
  *                       a label.
@@ -2922,7 +2922,7 @@ static void get_string_representation_savestate(void * data, char *type_str,
  *
  * Get associated label of a setting.
  **/
-void setting_data_get_label(file_list_t *list, char *type_str,
+void setting_get_label(file_list_t *list, char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx)
 {
@@ -2938,11 +2938,11 @@ void setting_data_get_label(file_list_t *list, char *type_str,
    if (!setting_data)
       return;
 
-   setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
+   setting = (rarch_setting_t*)setting_find_setting(setting_data,
          list->list[idx].label);
 
    if (setting)
-      setting_data_get_string_representation(setting, type_str, type_str_size);
+      setting_get_string_representation(setting, type_str, type_str_size);
 }
 #endif
 
@@ -3138,78 +3138,78 @@ static void general_write_handler(void *data)
 #define START_GROUP(group_info, NAME) \
 { \
    group_info.name = NAME; \
-   if (!(settings_list_append(list, list_info, setting_data_group_setting (ST_GROUP, NAME)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_group_setting (ST_GROUP, NAME)))) return false; \
 }
 
 #define END_GROUP(list, list_info) \
 { \
-   if (!(settings_list_append(list, list_info, setting_data_group_setting (ST_END_GROUP, 0)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_group_setting (ST_END_GROUP, 0)))) return false; \
 }
 
 #define START_SUB_GROUP(list, list_info, NAME, group_info, subgroup_info) \
 { \
    subgroup_info.name = NAME; \
-   if (!(settings_list_append(list, list_info, setting_data_subgroup_setting (ST_SUB_GROUP, NAME, group_info)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_subgroup_setting (ST_SUB_GROUP, NAME, group_info)))) return false; \
 }
 
 #define END_SUB_GROUP(list, list_info) \
 { \
-   if (!(settings_list_append(list, list_info, setting_data_group_setting (ST_END_SUB_GROUP, 0)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_group_setting (ST_END_SUB_GROUP, 0)))) return false; \
 }
 
 #define CONFIG_ACTION(NAME, SHORT, group_info, subgroup_info) \
 { \
-   if (!settings_list_append(list, list_info, setting_data_action_setting  (NAME, SHORT, group_info, subgroup_info))) return false; \
+   if (!settings_list_append(list, list_info, setting_action_setting  (NAME, SHORT, group_info, subgroup_info))) return false; \
 }
 
 #define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!settings_list_append(list, list_info, setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))return false; \
+   if (!settings_list_append(list, list_info, setting_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))return false; \
 }
 
 #define CONFIG_INT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(settings_list_append(list, list_info, setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_int_setting   (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_UINT(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(settings_list_append(list, list_info, setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_uint_setting  (NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(settings_list_append(list, list_info, setting_data_float_setting (NAME, SHORT, &TARGET, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_float_setting (NAME, SHORT, &TARGET, DEF, ROUNDING, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_PATH(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(settings_list_append(list, list_info, setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_DIR(TARGET, NAME, SHORT, DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(settings_list_append(list, list_info, setting_data_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, EMPTY, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_STRING(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(settings_list_append(list, list_info, setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_STRING_OPTIONS(TARGET, NAME, SHORT, DEF, OPTS, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-  if (!(settings_list_append(list, list_info, setting_data_string_setting_options(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", OPTS, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+  if (!(settings_list_append(list, list_info, setting_string_setting_options(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, "", OPTS, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_HEX(TARGET, NAME, SHORT, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER) \
 { \
-   if (!(settings_list_append(list, list_info, setting_data_hex_setting(NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_hex_setting(NAME, SHORT, &TARGET, DEF, group_info, subgroup_info, CHANGE_HANDLER, READ_HANDLER)))) return false; \
 }
 
 #define CONFIG_BIND(TARGET, PLAYER, PLAYER_OFFSET, NAME, SHORT, DEF, group_info, subgroup_info) \
 { \
-   if (!(settings_list_append(list, list_info, setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, PLAYER_OFFSET, DEF, group_info, subgroup_info)))) return false; \
+   if (!(settings_list_append(list, list_info, setting_bind_setting  (NAME, SHORT, &TARGET, PLAYER, PLAYER_OFFSET, DEF, group_info, subgroup_info)))) return false; \
 }
 
 #ifdef GEKKO
@@ -3218,7 +3218,7 @@ static void general_write_handler(void *data)
 #define MAX_GAMMA_SETTING 1
 #endif
 
-static void setting_data_add_special_callbacks(
+static void setting_add_special_callbacks(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       unsigned values)
@@ -3230,18 +3230,18 @@ static void setting_data_add_special_callbacks(
       switch ((*list)[idx].type)
       {
          case ST_UINT:
-            (*list)[idx].action_start  = setting_data_uint_action_start_linefeed;
-            (*list)[idx].action_ok     = setting_data_uint_action_ok_linefeed;
+            (*list)[idx].action_start  = setting_uint_action_start_linefeed;
+            (*list)[idx].action_ok     = setting_uint_action_ok_linefeed;
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_HEX:
-            (*list)[idx].action_start  = setting_data_uint_action_start_linefeed;
-            (*list)[idx].action_ok     = setting_data_hex_action_ok_linefeed;
+            (*list)[idx].action_start  = setting_uint_action_start_linefeed;
+            (*list)[idx].action_ok     = setting_hex_action_ok_linefeed;
             (*list)[idx].action_cancel = NULL;
             break;
          case ST_STRING:
-            (*list)[idx].action_start  = setting_data_string_action_start_allow_input;
-            (*list)[idx].action_ok     = setting_data_string_action_ok_allow_input;
+            (*list)[idx].action_start  = setting_string_action_start_allow_input;
+            (*list)[idx].action_ok     = setting_string_action_ok_allow_input;
             (*list)[idx].action_cancel = NULL;
             break;
          default:
@@ -3249,7 +3249,7 @@ static void setting_data_add_special_callbacks(
       }
    }
    else if (values & SD_FLAG_IS_DRIVER)
-      (*list)[idx].action_toggle = setting_data_string_action_toggle_driver;
+      (*list)[idx].action_toggle = setting_string_action_toggle_driver;
 }
 
 static void settings_data_list_current_add_flags(
@@ -3261,7 +3261,7 @@ static void settings_data_list_current_add_flags(
          list,
          list_info,
          values);
-   setting_data_add_special_callbacks(list, list_info, values);
+   setting_add_special_callbacks(list, list_info, values);
 }
 
 
@@ -3299,7 +3299,7 @@ static void overlay_enable_toggle_change_handler(void *data)
       rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
 }
 
-static bool setting_data_append_list_main_menu_options(
+static bool setting_append_list_main_menu_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -3408,9 +3408,9 @@ static bool setting_data_append_list_main_menu_options(
             "Save State",
             group_info.name,
             subgroup_info.name);
-      (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_savestates;
-      (*list)[list_info->index - 1].action_start  = &setting_data_action_start_savestates;
-      (*list)[list_info->index - 1].action_ok     = &setting_data_bool_action_ok_exit;
+      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_savestates;
+      (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
+      (*list)[list_info->index - 1].action_ok     = &setting_bool_action_ok_exit;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_SAVE_STATE);
 
@@ -3419,9 +3419,9 @@ static bool setting_data_append_list_main_menu_options(
             "Load State",
             group_info.name,
             subgroup_info.name);
-      (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_savestates;
-      (*list)[list_info->index - 1].action_start  = &setting_data_action_start_savestates;
-      (*list)[list_info->index - 1].action_ok     = &setting_data_bool_action_ok_exit;
+      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_savestates;
+      (*list)[list_info->index - 1].action_start  = &setting_action_start_savestates;
+      (*list)[list_info->index - 1].action_ok     = &setting_bool_action_ok_exit;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_savestate;
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_LOAD_STATE);
 
@@ -3438,7 +3438,7 @@ static bool setting_data_append_list_main_menu_options(
             group_info.name,
             subgroup_info.name);
       settings_list_current_add_cmd  (list, list_info, RARCH_CMD_RESUME);
-      (*list)[list_info->index - 1].action_ok     = &setting_data_bool_action_ok_exit;
+      (*list)[list_info->index - 1].action_ok     = &setting_bool_action_ok_exit;
 
       CONFIG_ACTION(
             "restart_content",
@@ -3446,7 +3446,7 @@ static bool setting_data_append_list_main_menu_options(
             group_info.name,
             subgroup_info.name);
       settings_list_current_add_cmd(list, list_info, RARCH_CMD_RESET);
-      (*list)[list_info->index - 1].action_ok = &setting_data_bool_action_ok_exit;
+      (*list)[list_info->index - 1].action_ok = &setting_bool_action_ok_exit;
    }
 #ifndef HAVE_DYNAMIC
    CONFIG_ACTION(
@@ -3492,7 +3492,7 @@ static bool setting_data_append_list_main_menu_options(
    return true;
 }
 
-static bool setting_data_append_list_driver_options(
+static bool setting_append_list_driver_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -3608,7 +3608,7 @@ static bool setting_data_append_list_driver_options(
    return true;
 }
 
-static bool setting_data_append_list_general_options(
+static bool setting_append_list_general_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -3673,7 +3673,7 @@ static bool setting_data_append_list_general_options(
          general_read_handler);
    settings_list_current_add_range(list, list_info, 0, 3, 1.0, true, true);
    (*list)[list_info->index - 1].get_string_representation = 
-      &setting_data_get_string_representation_uint_libretro_log_level;
+      &setting_get_string_representation_uint_libretro_log_level;
 
    END_SUB_GROUP(list, list_info);
 
@@ -3772,7 +3772,7 @@ static bool setting_data_append_list_general_options(
    settings_list_current_add_range(list, list_info, 0, 0, 10, true, false);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
    (*list)[list_info->index - 1].get_string_representation = 
-      &setting_data_get_string_representation_uint_autosave_interval;
+      &setting_get_string_representation_uint_autosave_interval;
 #endif
 
    CONFIG_BOOL(
@@ -3859,7 +3859,7 @@ static bool setting_data_append_list_general_options(
    return true;
 }
 
-static bool setting_data_append_list_video_options(
+static bool setting_append_list_video_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -3909,7 +3909,7 @@ static bool setting_data_append_list_video_options(
    settings_list_current_add_cmd(list, list_info, RARCH_CMD_REINIT);
    settings_list_current_add_range(list, list_info, 0, 1, 1, true, false);
    (*list)[list_info->index - 1].get_string_representation = 
-      &setting_data_get_string_representation_uint_video_monitor_index;
+      &setting_get_string_representation_uint_video_monitor_index;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
@@ -3984,11 +3984,11 @@ static bool setting_data_append_list_video_options(
          general_write_handler,
          general_read_handler);
    (*list)[list_info->index - 1].action_start = 
-      &setting_data_action_start_video_refresh_rate_auto;
+      &setting_action_start_video_refresh_rate_auto;
    (*list)[list_info->index - 1].action_ok = 
-      &setting_data_action_ok_video_refresh_rate_auto;
+      &setting_action_ok_video_refresh_rate_auto;
    (*list)[list_info->index - 1].get_string_representation = 
-      &setting_data_get_string_representation_st_float_video_refresh_rate_auto;
+      &setting_get_string_representation_st_float_video_refresh_rate_auto;
 
    CONFIG_BOOL(
          settings->video.force_srgb_disable,
@@ -4065,7 +4065,7 @@ static bool setting_data_append_list_video_options(
          true);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
    (*list)[list_info->index - 1].get_string_representation = 
-      &setting_data_get_string_representation_uint_aspect_ratio_index;
+      &setting_get_string_representation_uint_aspect_ratio_index;
 
    END_SUB_GROUP(list, list_info);
 
@@ -4203,7 +4203,7 @@ static bool setting_data_append_list_video_options(
          general_read_handler);
    settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
    (*list)[list_info->index - 1].get_string_representation = 
-      &setting_data_get_string_representation_uint_video_rotation;
+      &setting_get_string_representation_uint_video_rotation;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
 #if defined(HW_RVL) || defined(_XBOX360)
@@ -4439,7 +4439,7 @@ static bool setting_data_append_list_video_options(
    return true;
 }
 
-static bool setting_data_append_list_font_options(
+static bool setting_append_list_font_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -4517,7 +4517,7 @@ static bool setting_data_append_list_font_options(
    return true;
 }
 
-static bool setting_data_append_list_audio_options(
+static bool setting_append_list_audio_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -4714,7 +4714,7 @@ static bool setting_data_append_list_audio_options(
    return true;
 }
 
-static bool setting_data_append_list_input_options(
+static bool setting_append_list_input_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -4870,10 +4870,10 @@ static bool setting_data_append_list_input_options(
             general_read_handler);
       (*list)[list_info->index - 1].index = user + 1;
       (*list)[list_info->index - 1].index_offset = user;
-      (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_libretro_device_type;
-      (*list)[list_info->index - 1].action_start = &setting_data_action_start_libretro_device_type;
+      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_libretro_device_type;
+      (*list)[list_info->index - 1].action_start = &setting_action_start_libretro_device_type;
       (*list)[list_info->index - 1].get_string_representation = 
-         &setting_data_get_string_representation_uint_libretro_device;
+         &setting_get_string_representation_uint_libretro_device;
 
       CONFIG_UINT(
             settings->input.analog_dpad_mode[user],
@@ -4886,10 +4886,10 @@ static bool setting_data_append_list_input_options(
             general_read_handler);
       (*list)[list_info->index - 1].index = user + 1;
       (*list)[list_info->index - 1].index_offset = user;
-      (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_analog_dpad_mode;
-      (*list)[list_info->index - 1].action_start = &setting_data_action_start_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_analog_dpad_mode;
+      (*list)[list_info->index - 1].action_start = &setting_action_start_analog_dpad_mode;
       (*list)[list_info->index - 1].get_string_representation = 
-         &setting_data_get_string_representation_uint_analog_dpad_mode;
+         &setting_get_string_representation_uint_analog_dpad_mode;
 
       CONFIG_ACTION(
             key[user],
@@ -4898,8 +4898,8 @@ static bool setting_data_append_list_input_options(
             subgroup_info.name);
       (*list)[list_info->index - 1].index = user + 1;
       (*list)[list_info->index - 1].index_offset = user;
-      (*list)[list_info->index - 1].action_start  = &setting_data_action_start_bind_device;
-      (*list)[list_info->index - 1].action_toggle = &setting_data_action_toggle_bind_device;
+      (*list)[list_info->index - 1].action_start  = &setting_action_start_bind_device;
+      (*list)[list_info->index - 1].action_toggle = &setting_action_toggle_bind_device;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_bind_device;
 
       CONFIG_ACTION(
@@ -4909,7 +4909,7 @@ static bool setting_data_append_list_input_options(
             subgroup_info.name);
       (*list)[list_info->index - 1].index          = user + 1;
       (*list)[list_info->index - 1].index_offset   = user;
-      (*list)[list_info->index - 1].action_ok      = &setting_data_action_ok_bind_all;
+      (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_all;
       (*list)[list_info->index - 1].action_cancel  = NULL;
 
       CONFIG_ACTION(
@@ -4919,7 +4919,7 @@ static bool setting_data_append_list_input_options(
             subgroup_info.name);
       (*list)[list_info->index - 1].index          = user + 1;
       (*list)[list_info->index - 1].index_offset   = user;
-      (*list)[list_info->index - 1].action_ok      = &setting_data_action_ok_bind_defaults;
+      (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_defaults;
       (*list)[list_info->index - 1].action_cancel  = NULL;
    }
 
@@ -5065,7 +5065,7 @@ static bool setting_data_append_list_input_options(
    return true;
 }
 
-static bool setting_data_append_list_overlay_options(
+static bool setting_append_list_overlay_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -5138,7 +5138,7 @@ static bool setting_data_append_list_overlay_options(
    return true;
 }
 
-static bool setting_data_append_list_osk_overlay_options(
+static bool setting_append_list_osk_overlay_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -5181,7 +5181,7 @@ static bool setting_data_append_list_osk_overlay_options(
    return true;
 }
 
-static bool setting_data_append_list_menu_options(
+static bool setting_append_list_menu_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -5397,7 +5397,7 @@ static bool setting_data_append_list_menu_options(
    return true;
 }
 
-static bool setting_data_append_list_ui_options(
+static bool setting_append_list_ui_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -5465,7 +5465,7 @@ static bool setting_data_append_list_ui_options(
    return true;
 }
 
-static bool setting_data_append_list_archive_options(
+static bool setting_append_list_archive_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -5487,7 +5487,7 @@ static bool setting_data_append_list_archive_options(
          general_read_handler);
    settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
    (*list)[list_info->index - 1].get_string_representation = 
-      &setting_data_get_string_representation_uint_archive_mode;
+      &setting_get_string_representation_uint_archive_mode;
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -5495,7 +5495,7 @@ static bool setting_data_append_list_archive_options(
    return true;
 }
 
-static bool setting_data_append_list_core_updater_options(
+static bool setting_append_list_core_updater_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -5549,7 +5549,7 @@ static bool setting_data_append_list_core_updater_options(
    return true;
 }
 
-static bool setting_data_append_list_netplay_options(
+static bool setting_append_list_netplay_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -5700,7 +5700,7 @@ static bool setting_data_append_list_netplay_options(
 }
 
 #if 0
-static bool setting_data_append_list_patch_options(
+static bool setting_append_list_patch_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -5753,7 +5753,7 @@ static bool setting_data_append_list_patch_options(
 }
 #endif
 
-static bool setting_data_append_list_playlist_options(
+static bool setting_append_list_playlist_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -5793,7 +5793,7 @@ static bool setting_data_append_list_playlist_options(
    return true;
 }
 
-static bool setting_data_append_list_user_options(
+static bool setting_append_list_user_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -5834,7 +5834,7 @@ static bool setting_data_append_list_user_options(
          true);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
    (*list)[list_info->index - 1].get_string_representation = 
-      &setting_data_get_string_representation_uint_user_language;
+      &setting_get_string_representation_uint_user_language;
 
    END_SUB_GROUP(list, list_info);
    END_GROUP(list, list_info);
@@ -5842,7 +5842,7 @@ static bool setting_data_append_list_user_options(
    return true;
 }
 
-static bool setting_data_append_list_path_options(
+static bool setting_append_list_path_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -6208,7 +6208,7 @@ static bool setting_data_append_list_path_options(
    return true;
 }
 
-static bool setting_data_append_list_privacy_options(
+static bool setting_append_list_privacy_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {
@@ -6250,7 +6250,7 @@ static bool setting_data_append_list_privacy_options(
 
 
 /**
- * setting_data_new:
+ * setting_new:
  * @mask               : Bitmask of settings to include.
  *
  * Request a list of settings based on @mask.
@@ -6258,7 +6258,7 @@ static bool setting_data_append_list_privacy_options(
  * Returns: settings list composed of all requested
  * settings on success, otherwise NULL.
  **/
-rarch_setting_t *setting_data_new(unsigned mask)
+rarch_setting_t *setting_new(unsigned mask)
 {
    rarch_setting_t terminator = { ST_NONE };
    rarch_setting_t* list = NULL;
@@ -6274,117 +6274,117 @@ rarch_setting_t *setting_data_new(unsigned mask)
 
    if (mask & SL_FLAG_MAIN_MENU)
    {
-      if (!setting_data_append_list_main_menu_options(&list, list_info))
+      if (!setting_append_list_main_menu_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_DRIVER_OPTIONS)
    {
-      if (!setting_data_append_list_driver_options(&list, list_info))
+      if (!setting_append_list_driver_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_GENERAL_OPTIONS)
    {
-      if (!setting_data_append_list_general_options(&list, list_info))
+      if (!setting_append_list_general_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_GENERAL_OPTIONS)
    {
-      if (!setting_data_append_list_video_options(&list, list_info))
+      if (!setting_append_list_video_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_FONT_OPTIONS)
    {
-      if (!setting_data_append_list_font_options(&list, list_info))
+      if (!setting_append_list_font_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_AUDIO_OPTIONS)
    {
-      if (!setting_data_append_list_audio_options(&list, list_info))
+      if (!setting_append_list_audio_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_INPUT_OPTIONS)
    {
-      if (!setting_data_append_list_input_options(&list, list_info))
+      if (!setting_append_list_input_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_OVERLAY_OPTIONS)
    {
-      if (!setting_data_append_list_overlay_options(&list, list_info))
+      if (!setting_append_list_overlay_options(&list, list_info))
          goto error;
    }
    
    if (mask & SL_FLAG_OSK_OVERLAY_OPTIONS)
    {
-      if (!setting_data_append_list_osk_overlay_options(&list, list_info))
+      if (!setting_append_list_osk_overlay_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_MENU_OPTIONS)
    {
-      if (!setting_data_append_list_menu_options(&list, list_info))
+      if (!setting_append_list_menu_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_UI_OPTIONS)
    {
-      if (!setting_data_append_list_ui_options(&list, list_info))
+      if (!setting_append_list_ui_options(&list, list_info))
          goto error;
    }
 
 #if 0
    if (mask & SL_FLAG_PATCH_OPTIONS)
    {
-      if (!setting_data_append_list_patch_options(&list, list_info))
+      if (!setting_append_list_patch_options(&list, list_info))
          goto error;
    }
 #endif
 
    if (mask & SL_FLAG_PLAYLIST_OPTIONS)
    {
-      if (!setting_data_append_list_playlist_options(&list, list_info))
+      if (!setting_append_list_playlist_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_CORE_UPDATER_OPTIONS)
    {
-      if (!setting_data_append_list_core_updater_options(&list, list_info))
+      if (!setting_append_list_core_updater_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_NETPLAY_OPTIONS)
    {
-      if (!setting_data_append_list_netplay_options(&list, list_info))
+      if (!setting_append_list_netplay_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_ARCHIVE_OPTIONS)
    {
-      if (!setting_data_append_list_archive_options(&list, list_info))
+      if (!setting_append_list_archive_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_USER_OPTIONS)
    {
-      if (!setting_data_append_list_user_options(&list, list_info))
+      if (!setting_append_list_user_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_PATH_OPTIONS)
    {
-      if (!setting_data_append_list_path_options(&list, list_info))
+      if (!setting_append_list_path_options(&list, list_info))
          goto error;
    }
 
    if (mask & SL_FLAG_PRIVACY_OPTIONS)
    {
-      if (!setting_data_append_list_privacy_options(&list, list_info))
+      if (!setting_append_list_privacy_options(&list, list_info))
          goto error;
    }
 

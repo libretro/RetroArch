@@ -279,7 +279,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       if (self.setting->short_description)
          result.textLabel.text = BOXSTRING(self.setting->short_description);
 
-      setting_data_get_string_representation(self.setting, buffer, sizeof(buffer));
+      setting_get_string_representation(self.setting, buffer, sizeof(buffer));
       if (buffer[0] == '\0')
          strlcpy(buffer, "<default>", sizeof(buffer));
 
@@ -308,7 +308,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    
    field.delegate = self.formatter;
 
-   setting_data_get_string_representation(self.setting, buffer, sizeof(buffer));
+   setting_get_string_representation(self.setting, buffer, sizeof(buffer));
    if (buffer[0] == '\0')
       strlcpy(buffer, "N/A", sizeof(buffer));
 
@@ -326,7 +326,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
     if (!text.length)
         return;
     
-    setting_data_set_with_string_representation(self.setting, [text UTF8String]);
+    setting_set_with_string_representation(self.setting, [text UTF8String]);
     [self.parentTable reloadData];
 }
 
@@ -353,7 +353,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
          {
             if (buttonIndex != actionSheet.cancelButtonIndex)
-               setting_data_reset_setting(self.setting);
+               setting_reset_setting(self.setting);
             [weakSelf.parentTable reloadData];
          });
    
@@ -458,7 +458,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
             return;
         }
 
-        setting_data_set_with_string_representation(weakSelf.setting, newval);
+        setting_set_with_string_representation(weakSelf.setting, newval);
         [[list navigationController] popViewControllerAnimated:YES];
 
         weakSelf.action();
@@ -494,7 +494,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          if (buttonIndex == actionSheet.cancelButtonIndex)
             return;
          
-         setting_data_set_with_string_representation(self.setting, [[actionSheet buttonTitleAtIndex:buttonIndex] UTF8String]);
+         setting_set_with_string_representation(self.setting, [[actionSheet buttonTitleAtIndex:buttonIndex] UTF8String]);
          [weakSelf.parentTable reloadData];
       });
    string_list_free(items);
@@ -653,7 +653,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
      menu_list_get_at_offset(menu->menu_list->selection_buf, i, &path,
                              &entry_label, &type);
      setting =
-       (rarch_setting_t*)setting_data_find_setting
+       (rarch_setting_t*)setting_find_setting
        (menu->list_settings,
         menu->menu_list->selection_buf->list[i].label);
 

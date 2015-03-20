@@ -30,23 +30,23 @@ extern "C" {
 #define BINDFOR(s) (*(&(s))->value.keybind)
 
 /**
- * setting_data_reset_setting:
+ * setting_reset_setting:
  * @setting            : pointer to setting
  *
  * Reset a setting's value to its defaults.
  **/
-void setting_data_reset_setting(rarch_setting_t* setting);
+void setting_reset_setting(rarch_setting_t* setting);
 
 /**
- * setting_data_reset:
+ * setting_reset:
  * @settings           : pointer to settings
  *
  * Reset all settings to their default values.
  **/
-void setting_data_reset(rarch_setting_t* settings);
+void setting_reset(rarch_setting_t* settings);
 
 /**
- * setting_data_reset:
+ * setting_reset:
  * @settings           : pointer to settings
  * @name               : name of setting to search for
  *
@@ -54,33 +54,33 @@ void setting_data_reset(rarch_setting_t* settings);
  *
  * Returns: pointer to setting if found, NULL otherwise.
  **/
-rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings,
+rarch_setting_t* setting_find_setting(rarch_setting_t* settings,
       const char* name);
 
 /**
- * setting_data_set_with_string_representation:
+ * setting_set_with_string_representation:
  * @setting            : pointer to setting
  * @value              : value for the setting (string)
  *
  * Set a settings' value with a string. It is assumed
  * that the string has been properly formatted.
  **/
-void setting_data_set_with_string_representation(
+void setting_set_with_string_representation(
       rarch_setting_t* setting, const char* value);
 
 /**
- * setting_data_get_string_representation:
+ * setting_get_string_representation:
  * @setting            : pointer to setting
  * @buf                : buffer to write contents of string representation to.
  * @sizeof_buf         : size of the buffer (@buf)
  *
  * Get a setting value's string representation.
  **/
-void setting_data_get_string_representation(void *data,
+void setting_get_string_representation(void *data,
       char* buf, size_t sizeof_buf);
 
 /**
- * setting_data_action_setting:
+ * setting_action_setting:
  * @name               : name of setting.
  * @short_description  : short description of setting.
  * @group              : group that the setting belongs to.
@@ -90,13 +90,13 @@ void setting_data_get_string_representation(void *data,
  *
  * Returns: setting of type ST_ACTION.
  **/
-rarch_setting_t setting_data_action_setting(const char *name,
+rarch_setting_t setting_action_setting(const char *name,
       const char *short_description,
       const char *group,
       const char *subgroup);
 
 /**
- * setting_data_group_setting:
+ * setting_group_setting:
  * @type               : type of settting.
  * @name               : name of setting.
  *
@@ -104,11 +104,11 @@ rarch_setting_t setting_data_action_setting(const char *name,
  *
  * Returns: setting of type ST_GROUP.
  **/
-rarch_setting_t setting_data_group_setting(enum setting_type type,
+rarch_setting_t setting_group_setting(enum setting_type type,
       const char* name);
 
 /**
- * setting_data_subgroup_setting:
+ * setting_subgroup_setting:
  * @type               : type of settting.
  * @name               : name of setting.
  * @parent_name        : group that the subgroup setting belongs to.
@@ -117,11 +117,11 @@ rarch_setting_t setting_data_group_setting(enum setting_type type,
  *
  * Returns: setting of type ST_SUBGROUP.
  **/
-rarch_setting_t setting_data_subgroup_setting(enum setting_type type,
+rarch_setting_t setting_subgroup_setting(enum setting_type type,
       const char* name, const char *parent_name);
 
 /**
- * setting_data_bool_setting:
+ * setting_bool_setting:
  * @name               : name of setting.
  * @short_description  : Short description of setting.
  * @target             : Target of bool setting.
@@ -137,14 +137,14 @@ rarch_setting_t setting_data_subgroup_setting(enum setting_type type,
  *
  * Returns: setting of type ST_BOOL.
  **/
-rarch_setting_t setting_data_bool_setting(const char* name,
+rarch_setting_t setting_bool_setting(const char* name,
       const char* description, bool* target, bool default_value,
       const char *off, const char *on, const char * group,
       const char *subgroup, change_handler_t change_handler,
       change_handler_t read_handler);
 
 /**
- * setting_data_int_setting:
+ * setting_int_setting:
  * @name               : name of setting.
  * @short_description  : Short description of setting.
  * @target             : Target of signed integer setting.
@@ -158,13 +158,13 @@ rarch_setting_t setting_data_bool_setting(const char* name,
  *
  * Returns: setting of type ST_INT.
  **/
-rarch_setting_t setting_data_int_setting(const char* name,
+rarch_setting_t setting_int_setting(const char* name,
       const char* description, int* target, int default_value,
       const char *group, const char *subgroup,
       change_handler_t change_handler, change_handler_t read_handler);
 
 /**
- * setting_data_uint_setting:
+ * setting_uint_setting:
  * @name               : name of setting.
  * @short_description  : Short description of setting.
  * @target             : Target of unsigned integer setting.
@@ -178,14 +178,14 @@ rarch_setting_t setting_data_int_setting(const char* name,
  *
  * Returns: setting of type ST_UINT.
  **/
-rarch_setting_t setting_data_uint_setting(const char* name,
+rarch_setting_t setting_uint_setting(const char* name,
       const char* description, unsigned int* target,
       unsigned int default_value, const char *group,
       const char *subgroup, change_handler_t change_handler,
       change_handler_t read_handler);
 
 /**
- * setting_data_float_setting:
+ * setting_float_setting:
  * @name               : name of setting.
  * @short_description  : Short description of setting.
  * @target             : Target of float setting.
@@ -200,13 +200,13 @@ rarch_setting_t setting_data_uint_setting(const char* name,
  *
  * Returns: setting of type ST_FLOAT.
  **/
-rarch_setting_t setting_data_float_setting(const char* name,
+rarch_setting_t setting_float_setting(const char* name,
       const char* description, float* target, float default_value,
       const char *rounding, const char *group, const char *subgroup,
       change_handler_t change_handler, change_handler_t read_handler);
 
 /**
- * setting_data_string_setting:
+ * setting_string_setting:
  * @type               : type of setting.
  * @name               : name of setting.
  * @short_description  : Short description of setting.
@@ -223,14 +223,14 @@ rarch_setting_t setting_data_float_setting(const char* name,
  *
  * Returns: String setting of type @type.
  **/
-rarch_setting_t setting_data_string_setting(enum setting_type type,
+rarch_setting_t setting_string_setting(enum setting_type type,
       const char* name, const char* description, char* target,
       unsigned size, const char* default_value, const char *empty,
       const char *group, const char *subgroup,
       change_handler_t change_handler, change_handler_t read_handler);
 
 /**
- * setting_data_bind_setting:
+ * setting_bind_setting:
  * @name               : name of setting.
  * @short_description  : Short description of setting.
  * @target             : Target of bind setting.
@@ -244,14 +244,14 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
  *
  * Returns: setting of type ST_BIND.
  **/
-rarch_setting_t setting_data_bind_setting(const char* name,
+rarch_setting_t setting_bind_setting(const char* name,
       const char* description, struct retro_keybind* target, uint32_t idx,
       uint32_t idx_offset,
       const struct retro_keybind* default_value, const char *group,
       const char *subgroup);
     
 /**
- * setting_data_string_setting_options:
+ * setting_string_setting_options:
  * @type               : type of settting.
  * @name               : name of setting.
  * @short_description  : Short description of setting.
@@ -269,14 +269,14 @@ rarch_setting_t setting_data_bind_setting(const char* name,
  *
  * Returns: string option list setting.
  **/
-rarch_setting_t setting_data_string_setting_options(enum setting_type type,
+rarch_setting_t setting_string_setting_options(enum setting_type type,
      const char* name, const char* short_description, char* target,
      unsigned size, const char* default_value, const char *empty, const char *values,
      const char *group, const char *subgroup, change_handler_t change_handler,
      change_handler_t read_handler);
 
 /**
- * setting_data_get_description:
+ * setting_get_description:
  * @label              : identifier label of setting
  * @msg                : output message 
  * @sizeof_msg         : size of @msg
@@ -287,12 +287,12 @@ rarch_setting_t setting_data_string_setting_options(enum setting_type type,
  *
  * Returns: 0 (always for now). TODO: make it handle -1 as well.
  **/
-int setting_data_get_description(const char *label, char *msg,
+int setting_get_description(const char *label, char *msg,
       size_t msg_sizeof);
 
 #ifdef HAVE_MENU
 /**
- * setting_data_get_label:
+ * setting_get_label:
  * @list               : File list on which to perform the search
  * @type_str           : String for the type to be represented on-screen as
  *                       a label.
@@ -306,13 +306,13 @@ int setting_data_get_description(const char *label, char *msg,
  *
  * Get associated label of a setting.
  **/
-void setting_data_get_label(file_list_t *list, char *type_str,
+void setting_get_label(file_list_t *list, char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx);
 #endif
 
 /**
- * setting_data_new:
+ * setting_new:
  * @mask               : Bitmask of settings to include.
  *
  * Request a list of settings based on @mask.
@@ -320,7 +320,7 @@ void setting_data_get_label(file_list_t *list, char *type_str,
  * Returns: settings list composed of all requested
  * settings on success, otherwise NULL.
  **/
-rarch_setting_t* setting_data_new(unsigned mask);
+rarch_setting_t* setting_new(unsigned mask);
 
 #ifdef __cplusplus
 }

@@ -180,7 +180,7 @@ static int mouse_post_iterate(menu_file_list_cbs_t *cbs, const char *path,
       {
          driver_t *driver = driver_get_ptr();
          rarch_setting_t *setting =
-            (rarch_setting_t*)setting_data_find_setting
+            (rarch_setting_t*)setting_find_setting
             (driver->menu->list_settings,
              driver->menu->menu_list->selection_buf->list[menu->navigation.selection_ptr].label);
          menu->mouse.oldleft = true;
@@ -315,13 +315,13 @@ static int action_iterate_info(const char *label, unsigned action)
    if (driver->video_data && driver->menu_ctx && driver->menu_ctx->render)
       driver->menu_ctx->render();
 
-   current_setting = (rarch_setting_t*)setting_data_find_setting(
+   current_setting = (rarch_setting_t*)setting_find_setting(
          menu->list_settings,
          list->list[menu->navigation.selection_ptr].label);
 
    if (current_setting)
       strlcpy(needle, current_setting->name, sizeof(needle));
-   else if ((current_setting = (rarch_setting_t*)setting_data_find_setting(
+   else if ((current_setting = (rarch_setting_t*)setting_find_setting(
                menu->list_settings,
                list->list[menu->navigation.selection_ptr].label)))
    {
@@ -339,7 +339,7 @@ static int action_iterate_info(const char *label, unsigned action)
          strlcpy(needle, lbl, sizeof(needle));
    }
 
-   setting_data_get_description(needle, msg, sizeof(msg));
+   setting_get_description(needle, msg, sizeof(msg));
 
    if (driver->video_data && driver->menu_ctx &&
          driver->menu_ctx->render_messagebox)

@@ -91,7 +91,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    settings_t *settings     = config_get_ptr();
    
    settings_list_free(menu->list_settings);
-   menu->list_settings = (rarch_setting_t *)setting_data_new(setting_flags);
+   menu->list_settings = (rarch_setting_t *)setting_new(setting_flags);
 
    if (!(setting = (rarch_setting_t*)menu_setting_find(label)))
       return -1;
@@ -517,7 +517,7 @@ bool menu_entries_init(menu_handle_t *menu)
    if (!menu)
       return false;
 
-   menu->list_settings = setting_data_new(SL_FLAG_ALL);
+   menu->list_settings = setting_new(SL_FLAG_ALL);
 
    menu_list_push_stack(menu->menu_list, "", "Main Menu", MENU_SETTINGS, 0);
    menu_navigation_clear(&menu->navigation, true);

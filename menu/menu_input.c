@@ -89,7 +89,7 @@ void menu_input_st_uint_callback(void *userdata, const char *str)
    {
       rarch_setting_t *current_setting = NULL;
       if ((current_setting = (rarch_setting_t*)
-               setting_data_find_setting(
+               setting_find_setting(
                   menu->list_settings, menu->keyboard.label_setting)))
          *current_setting->value.unsigned_integer = strtoul(str, NULL, 0);
    }
@@ -108,7 +108,7 @@ void menu_input_st_hex_callback(void *userdata, const char *str)
    {
       rarch_setting_t *current_setting = NULL;
       if ((current_setting = (rarch_setting_t*)
-               setting_data_find_setting(
+               setting_find_setting(
                   menu->list_settings, menu->keyboard.label_setting)))
          if (str[0] == '#')
             str++;
@@ -131,7 +131,7 @@ void menu_input_st_string_callback(void *userdata, const char *str)
       rarch_setting_t *current_setting = NULL;
 
       if ((current_setting = (rarch_setting_t*)
-               setting_data_find_setting(
+               setting_find_setting(
                   menu->list_settings, menu->keyboard.label_setting)))
          menu_action_setting_set_current_string(current_setting, str);
       else

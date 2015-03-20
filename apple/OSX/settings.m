@@ -283,7 +283,7 @@ NSWindowDelegate>
             return BOXINT(*setting->value.boolean);
          default:
             {
-               setting_data_get_string_representation(setting, buffer, sizeof(buffer));
+               setting_get_string_representation(setting, buffer, sizeof(buffer));
                if (buffer[0] == '\0')
                   strlcpy(buffer, "N/A", sizeof(buffer));
                return BOXSTRING(buffer);
@@ -376,7 +376,7 @@ NSWindowDelegate>
       rarch_setting_t *setting      = (rarch_setting_t*)&setting_data[[item intValue]];
       NSString *editor_string       = (NSString*)editor.string;
 
-      setting_data_set_with_string_representation(setting, editor_string.UTF8String);
+      setting_set_with_string_representation(setting, editor_string.UTF8String);
    }
 }
 
