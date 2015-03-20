@@ -154,15 +154,10 @@ static bool input_overlay_load_desc_image(input_overlay_t *ol,
       unsigned width, unsigned height,
       bool normalized, float alpha_mod, float range_mod)
 {
-   bool ret = true, by_pixel;
-   char overlay_desc_key[64], overlay_desc_image_key[64], conf_key[64],
-        overlay_desc_normalized_key[64], image_path[PATH_MAX_LENGTH];
-   char overlay[256], *save, *key;
-   float width_mod, height_mod;
+   bool ret = true;
+   char overlay_desc_key[64], overlay_desc_image_key[64],
+        image_path[PATH_MAX_LENGTH];
    struct string_list *list = NULL;
-   const char *x            = NULL;
-   const char *y            = NULL;
-   const char *box          = NULL;
 
    snprintf(overlay_desc_key, sizeof(overlay_desc_key),
          "overlay%u_desc%u", ol_idx, desc_idx);
@@ -203,7 +198,7 @@ static bool input_overlay_load_desc(input_overlay_t *ol,
 {
    bool ret = true, by_pixel;
    char overlay_desc_key[64], conf_key[64],
-        overlay_desc_normalized_key[64], image_path[PATH_MAX_LENGTH];
+        overlay_desc_normalized_key[64];
    char overlay[256], *save, *key;
    float width_mod, height_mod;
    struct string_list *list = NULL;
