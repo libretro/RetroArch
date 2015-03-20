@@ -1227,15 +1227,15 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(video.gpu_record, "video_gpu_record");
    CONFIG_GET_BOOL(video.gpu_screenshot, "video_gpu_screenshot");
 
-   config_get_path(conf, "video_shader_dir", g_settings.video.shader_dir, sizeof(g_settings.video.shader_dir));
+   config_get_path(conf, "video_shader_dir", settings->video.shader_dir, sizeof(settings->video.shader_dir));
    if (!strcmp(settings->video.shader_dir, "default"))
       *settings->video.shader_dir = '\0';
 
-   config_get_path(conf, "video_filter_dir", g_settings.video.filter_dir, sizeof(g_settings.video.filter_dir));
+   config_get_path(conf, "video_filter_dir", settings->video.filter_dir, sizeof(settings->video.filter_dir));
    if (!strcmp(settings->video.filter_dir, "default"))
       *settings->video.filter_dir = '\0';
 
-   config_get_path(conf, "audio_filter_dir", g_settings.audio.filter_dir, sizeof(g_settings.audio.filter_dir));
+   config_get_path(conf, "audio_filter_dir", settings->audio.filter_dir, sizeof(settings->audio.filter_dir));
    if (!strcmp(settings->audio.filter_dir, "default"))
       *settings->audio.filter_dir = '\0';
 
@@ -1253,9 +1253,9 @@ static bool config_load_file(const char *path, bool set_defaults)
          "autoconfig_descriptor_label_show");
 
    config_get_path(conf, "core_updater_buildbot_url",
-         g_settings.network.buildbot_url, sizeof(g_settings.network.buildbot_url));
+         settings->network.buildbot_url, sizeof(settings->network.buildbot_url));
    config_get_path(conf, "core_updater_buildbot_assets_url",
-         g_settings.network.buildbot_assets_url, sizeof(g_settings.network.buildbot_assets_url));
+         settings->network.buildbot_assets_url, sizeof(settings->network.buildbot_assets_url));
    CONFIG_GET_BOOL(network.buildbot_auto_extract_archive,
          "core_updater_auto_extract_archive");
 
@@ -1399,7 +1399,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (!strcmp(g_extern.osk_overlay_dir, "default"))
       *g_extern.osk_overlay_dir = '\0';
 
-   config_get_path(conf, "input_osk_overlay", g_settings.osk.overlay, sizeof(g_settings.osk.overlay));
+   config_get_path(conf, "input_osk_overlay", settings->osk.overlay, sizeof(settings->osk.overlay));
    CONFIG_GET_BOOL(osk.enable, "input_osk_overlay_enable");
 #endif
 
