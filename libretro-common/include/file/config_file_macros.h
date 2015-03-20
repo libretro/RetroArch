@@ -64,8 +64,6 @@
 
 #define CONFIG_GET_BOOL(var, key) CONFIG_GET_BOOL_BASE(conf, g_settings, var, key)
 #define CONFIG_GET_INT(var, key) CONFIG_GET_INT_BASE(conf, g_settings, var, key)
-#define CONFIG_GET_UINT64(var, key) CONFIG_GET_UINT64_BASE(conf, g_settings, var, key)
-#define CONFIG_GET_HEX(var, key) CONFIG_GET_HEX_BASE(conf, g_settings, var, key)
 #define CONFIG_GET_FLOAT(var, key) CONFIG_GET_FLOAT_BASE(conf, g_settings, var, key)
 #define CONFIG_GET_STRING(var, key) CONFIG_GET_STRING_BASE(conf, g_settings, var, key)
 #define CONFIG_GET_PATH(var, key) CONFIG_GET_PATH_BASE(conf, g_settings, var, key)
