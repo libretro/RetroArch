@@ -175,7 +175,6 @@ bool network_init(void)
       network_deinit();
       return false;
    }
-   RARCH_LOG("WSA Initialized.\n");
 #elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
    sys_net_initialize_network();
