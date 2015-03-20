@@ -288,6 +288,7 @@ static void set_special_paths(char **argv, unsigned num_content)
 {
    unsigned i;
    union string_list_elem_attr attr;
+   settings_t *settings = config_get_ptr();
 
    /* First content file is the significant one. */
    set_basename(argv[0]);
@@ -318,9 +319,9 @@ static void set_special_paths(char **argv, unsigned num_content)
    /* If this is already set,
     * do not overwrite it as this was initialized before in
     * a menu or otherwise. */
-   if (!*g_settings.system_directory)
-      fill_pathname_basedir(g_settings.system_directory, argv[0],
-            sizeof(g_settings.system_directory));
+   if (!*settings->system_directory)
+      fill_pathname_basedir(settings->system_directory, argv[0],
+            sizeof(settings->system_directory));
 }
 
 static void set_paths_redirect(const char *path)
@@ -349,6 +350,8 @@ static void set_paths_redirect(const char *path)
 
 static void set_paths(const char *path)
 {
+   settings_t *settings = config_get_ptr();
+
    set_basename(path);
 
    if (!g_extern.has_set_save_path)
@@ -364,11 +367,11 @@ static void set_paths(const char *path)
 
    /* If this is already set, do not overwrite it
     * as this was initialized before in a menu or otherwise. */
-   if (*g_settings.system_directory)
+   if (*settings->system_directory)
       return;
 
-   fill_pathname_basedir(g_settings.system_directory, path,
-         sizeof(g_settings.system_directory));
+   fill_pathname_basedir(settings->system_directory, path,
+         sizeof(settings->system_directory));
 }
 
 /**
@@ -483,12 +486,13 @@ static void parse_input(int argc, char *argv[])
 #define BSV_MOVIE_ARG "P:R:M:"
 
    const char *optstring = "hs:fvS:A:c:U:DN:d:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
+   settings_t *settings = config_get_ptr();
 
    for (;;)
    {
+      int port;
       val = 0;
       int c = getopt_long(argc, argv, optstring, opts, NULL);
-      int port;
 
       if (c == -1)
          break;
@@ -521,7 +525,7 @@ static void parse_input(int argc, char *argv[])
                print_help();
                rarch_fail(1, "parse_input()");
             }
-            g_settings.input.libretro_device[port - 1] = id;
+            settings->input.libretro_device[port - 1] = id;
             g_extern.has_set_libretro_device[port - 1] = true;
             break;
          }
@@ -534,7 +538,7 @@ static void parse_input(int argc, char *argv[])
                print_help();
                rarch_fail(1, "parse_input()");
             }
-            g_settings.input.libretro_device[port - 1] = RETRO_DEVICE_ANALOG;
+            settings->input.libretro_device[port - 1] = RETRO_DEVICE_ANALOG;
             g_extern.has_set_libretro_device[port - 1] = true;
             break;
 
@@ -567,7 +571,7 @@ static void parse_input(int argc, char *argv[])
                print_help();
                rarch_fail(1, "parse_input()");
             }
-            g_settings.input.libretro_device[port - 1] = RETRO_DEVICE_NONE;
+            settings->input.libretro_device[port - 1] = RETRO_DEVICE_NONE;
             g_extern.has_set_libretro_device[port - 1] = true;
             break;
 
@@ -586,17 +590,17 @@ static void parse_input(int argc, char *argv[])
          case 'L':
             if (path_is_directory(optarg))
             {
-               *g_settings.libretro = '\0';
-               strlcpy(g_settings.libretro_directory, optarg,
-                     sizeof(g_settings.libretro_directory));
+               *settings->libretro = '\0';
+               strlcpy(settings->libretro_directory, optarg,
+                     sizeof(settings->libretro_directory));
                g_extern.has_set_libretro = true;
                g_extern.has_set_libretro_directory = true;
                RARCH_WARN("Using old --libretro behavior. Setting libretro_directory to \"%s\" instead.\n", optarg);
             }
             else
             {
-               strlcpy(g_settings.libretro, optarg,
-                     sizeof(g_settings.libretro));
+               strlcpy(settings->libretro, optarg,
+                     sizeof(settings->libretro));
                g_extern.has_set_libretro = true;
             }
             break;
@@ -685,8 +689,8 @@ static void parse_input(int argc, char *argv[])
 #endif
                case 'N':
                   g_extern.has_set_username = true;
-                  strlcpy(g_settings.username, optarg,
-                        sizeof(g_settings.username));
+                  strlcpy(settings->username, optarg,
+                        sizeof(settings->username));
                   break;
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
@@ -794,12 +798,13 @@ static void parse_input(int argc, char *argv[])
 static void init_controllers(void)
 {
    unsigned i;
+   settings_t *settings = config_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      unsigned device = g_settings.input.libretro_device[i];
-      const struct retro_controller_description *desc = NULL;
       const char *ident = NULL;
+      const struct retro_controller_description *desc = NULL;
+      unsigned device = settings->input.libretro_device[i];
 
       if (i < g_extern.system.num_ports)
          desc = libretro_find_controller_description(
@@ -815,7 +820,7 @@ static void init_controllers(void)
          
          if (device != RETRO_DEVICE_JOYPAD && device != RETRO_DEVICE_NONE)
          {
-            /* Do not fix g_settings.input.libretro_device[i],
+            /* Do not fix settings->input.libretro_device[i],
              * because any use of dummy core will reset this,
              * which is not a good idea. */
             RARCH_WARN("Input device ID %u is unknown to this libretro implementation. Using RETRO_DEVICE_JOYPAD.\n", device);
@@ -876,10 +881,12 @@ static void save_files(void)
 
 static void init_remapping(void)
 {
-   if (!g_settings.input.remap_binds_enable)
+   settings_t *settings = config_get_ptr();
+
+   if (!settings->input.remap_binds_enable)
       return;
 
-   input_remapping_load_file(g_settings.input.remapping_path);
+   input_remapping_load_file(settings->input.remapping_path);
 }
 
 static void init_cheats(void)
@@ -904,6 +911,7 @@ static void init_rewind(void)
 {
    void *state = NULL;
    driver_t *driver = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    (void)driver;
 
@@ -912,7 +920,7 @@ static void init_rewind(void)
       return;
 #endif
 
-   if (!g_settings.rewind_enable || g_extern.rewind.state)
+   if (!settings->rewind_enable || g_extern.rewind.state)
       return;
 
    if (g_extern.system.audio_callback.callback)
@@ -930,10 +938,10 @@ static void init_rewind(void)
    }
 
    RARCH_LOG(RETRO_MSG_REWIND_INIT "%u MB\n",
-         (unsigned)(g_settings.rewind_buffer_size / 1000000));
+         (unsigned)(settings->rewind_buffer_size / 1000000));
 
    g_extern.rewind.state = state_manager_new(g_extern.rewind.size,
-         g_settings.rewind_buffer_size);
+         settings->rewind_buffer_size);
 
    if (!g_extern.rewind.state)
       RARCH_WARN(RETRO_LOG_REWIND_INIT_FAILED);
@@ -945,6 +953,8 @@ static void init_rewind(void)
 
 static void init_movie(void)
 {
+   settings_t *settings = config_get_ptr();
+
    if (g_extern.bsv.movie_start_playback)
    {
       if (!(g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path,
@@ -958,7 +968,7 @@ static void init_movie(void)
       g_extern.bsv.movie_playback = true;
       rarch_main_msg_queue_push("Starting movie playback.", 2, 180, false);
       RARCH_LOG("Starting movie playback.\n");
-      g_settings.rewind_granularity = 1;
+      settings->rewind_granularity = 1;
    }
    else if (g_extern.bsv.movie_start_recording)
    {
@@ -977,7 +987,7 @@ static void init_movie(void)
       rarch_main_msg_queue_push(msg, 1, 180, true);
       RARCH_LOG("Starting movie record to \"%s\".\n",
             g_extern.bsv.movie_start_path);
-      g_settings.rewind_granularity = 1;
+      settings->rewind_granularity = 1;
    }
 }
 
@@ -997,7 +1007,8 @@ static void init_movie(void)
 static bool init_netplay(void)
 {
    struct retro_callbacks cbs = {0};
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!g_extern.netplay_enable)
       return false;
@@ -1022,7 +1033,7 @@ static bool init_netplay(void)
          g_extern.netplay_is_client ? g_extern.netplay_server : NULL,
          g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT,
          g_extern.netplay_sync_frames, &cbs, g_extern.netplay_is_spectate,
-         g_settings.username);
+         settings->username);
 
    if (driver->netplay_data)
       return true;
@@ -1040,20 +1051,21 @@ static bool init_netplay(void)
 #ifdef HAVE_COMMAND
 static void init_command(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
-   if (!g_settings.stdin_cmd_enable && !g_settings.network_cmd_enable)
+   if (!settings->stdin_cmd_enable && !settings->network_cmd_enable)
       return;
 
-   if (g_settings.stdin_cmd_enable && driver->stdin_claimed)
+   if (settings->stdin_cmd_enable && driver->stdin_claimed)
    {
       RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
             "Cannot use this command interface.\n");
    }
 
-   if (!(driver->command = rarch_cmd_new(g_settings.stdin_cmd_enable
+   if (!(driver->command = rarch_cmd_new(settings->stdin_cmd_enable
                && !driver->stdin_claimed,
-               g_settings.network_cmd_enable, g_settings.network_cmd_port)))
+               settings->network_cmd_enable, settings->network_cmd_port)))
       RARCH_ERR("Failed to initialize command interface.\n");
 }
 #endif
@@ -1062,8 +1074,9 @@ static void init_command(void)
 static void init_autosave(void)
 {
    unsigned i;
+   settings_t *settings = config_get_ptr();
 
-   if (g_settings.autosave_interval < 1 || !g_extern.savefiles)
+   if (settings->autosave_interval < 1 || !g_extern.savefiles)
       return;
 
    if (!(g_extern.autosave = (autosave_t**)calloc(g_extern.savefiles->size,
@@ -1083,7 +1096,7 @@ static void init_autosave(void)
       g_extern.autosave[i] = autosave_new(path,
             pretro_get_memory_data(type),
             pretro_get_memory_size(type),
-            g_settings.autosave_interval);
+            settings->autosave_interval);
       if (!g_extern.autosave[i])
          RARCH_WARN(RETRO_LOG_INIT_AUTOSAVE_FAILED);
    }
@@ -1110,8 +1123,9 @@ static void set_savestate_auto_index(void)
    size_t i;
    struct string_list *dir_list = NULL;
    unsigned max_idx = 0;
+   settings_t *settings = config_get_ptr();
 
-   if (!g_settings.savestate_auto_index)
+   if (!settings->savestate_auto_index)
       return;
 
    /* Find the file in the same directory as g_extern.savestate_name
@@ -1152,8 +1166,8 @@ static void set_savestate_auto_index(void)
 
    dir_list_free(dir_list);
 
-   g_settings.state_slot = max_idx;
-   RARCH_LOG("Found last state slot: #%d\n", g_settings.state_slot);
+   settings->state_slot = max_idx;
+   RARCH_LOG("Found last state slot: #%d\n", settings->state_slot);
 }
 
 static void rarch_init_savefile_paths(void)
@@ -1264,13 +1278,14 @@ static void load_auto_state(void)
    char msg[PATH_MAX_LENGTH];
    char savestate_name_auto[PATH_MAX_LENGTH];
    bool ret;
+   settings_t *settings = config_get_ptr();
 
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay_enable && !g_extern.netplay_is_spectate)
       return;
 #endif
 
-   if (!g_settings.savestate_auto_load)
+   if (!settings->savestate_auto_load)
       return;
 
    fill_pathname_noext(savestate_name_auto, g_extern.savestate_name,
@@ -1293,8 +1308,9 @@ static bool save_auto_state(void)
 {
    bool ret;
    char savestate_name_auto[PATH_MAX_LENGTH];
+   settings_t *settings = config_get_ptr();
 
-   if (!g_settings.savestate_auto_save || g_extern.libretro_dummy ||
+   if (!settings->savestate_auto_save || g_extern.libretro_dummy ||
        g_extern.libretro_no_content)
        return false;
 
@@ -1319,6 +1335,8 @@ static bool save_auto_state(void)
 static void rarch_load_state(const char *path,
       char *msg, size_t sizeof_msg)
 {
+   settings_t *settings = config_get_ptr();
+
    if (!load_state(path))
    {
       snprintf(msg, sizeof_msg,
@@ -1327,12 +1345,12 @@ static void rarch_load_state(const char *path,
 
    }
 
-   if (g_settings.state_slot < 0)
+   if (settings->state_slot < 0)
       snprintf(msg, sizeof_msg,
             "Loaded state from slot #-1 (auto).");
    else
       snprintf(msg, sizeof_msg,
-            "Loaded state from slot #%d.", g_settings.state_slot);
+            "Loaded state from slot #%d.", settings->state_slot);
 }
 
 /**
@@ -1346,6 +1364,8 @@ static void rarch_load_state(const char *path,
 static void rarch_save_state(const char *path,
       char *msg, size_t sizeof_msg)
 {
+   settings_t *settings = config_get_ptr();
+
    if (!save_state(path))
    {
       snprintf(msg, sizeof_msg,
@@ -1353,22 +1373,23 @@ static void rarch_save_state(const char *path,
       return;
    }
 
-   if (g_settings.state_slot < 0)
+   if (settings->state_slot < 0)
       snprintf(msg, sizeof_msg,
             "Saved state to slot #-1 (auto).");
    else
       snprintf(msg, sizeof_msg,
-            "Saved state to slot #%d.", g_settings.state_slot);
+            "Saved state to slot #%d.", settings->state_slot);
 }
 
 static void main_state(unsigned cmd)
 {
    char path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
+   settings_t *settings = config_get_ptr();
 
-   if (g_settings.state_slot > 0)
+   if (settings->state_slot > 0)
       snprintf(path, sizeof(path), "%s%d",
-            g_extern.savestate_name, g_settings.state_slot);
-   else if (g_settings.state_slot < 0)
+            g_extern.savestate_name, settings->state_slot);
+   else if (settings->state_slot < 0)
       snprintf(path, sizeof(path), "%s.auto",
             g_extern.savestate_name);
    else
@@ -1851,6 +1872,7 @@ static bool init_core(void)
 int rarch_main_init(int argc, char *argv[])
 {
    int sjlj_ret;
+   settings_t *settings = config_get_ptr();
 
    init_state();
 
@@ -1900,7 +1922,7 @@ int rarch_main_init(int argc, char *argv[])
       if (driver->video_data && driver->video_poke
             && driver->video_poke->set_aspect_ratio)
          driver->video_poke->set_aspect_ratio(driver->video_data,
-               g_settings.video.aspect_ratio_idx);
+               settings->video.aspect_ratio_idx);
    }
 #endif
 
@@ -1981,8 +2003,9 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 
 void rarch_main_set_state(unsigned cmd)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
-   driver_t *driver   = driver_get_ptr();
+   runloop_t *runloop   = rarch_main_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    switch (cmd)
    {
@@ -2001,7 +2024,7 @@ void rarch_main_set_state(unsigned cmd)
             /* Stop all rumbling before entering the menu. */
             rarch_main_command(RARCH_CMD_RUMBLE_STOP);
 
-            if (g_settings.menu.pause_libretro)
+            if (settings->menu.pause_libretro)
                rarch_main_command(RARCH_CMD_AUDIO_STOP);
 
             /* Override keyboard callback to redirect to menu instead.
@@ -2036,7 +2059,7 @@ void rarch_main_set_state(unsigned cmd)
 
          driver_set_nonblock_state(driver->nonblock_state);
 
-         if (g_settings.menu.pause_libretro)
+         if (settings->menu.pause_libretro)
             rarch_main_command(RARCH_CMD_AUDIO_START);
 
          /* Prevent stray input from going to libretro core */
@@ -2078,11 +2101,12 @@ static bool save_core_config(void)
    char config_dir[PATH_MAX_LENGTH], config_name[PATH_MAX_LENGTH],
         config_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
    bool found_path = false;
+   settings_t *settings = config_get_ptr();
 
    *config_dir = '\0';
 
-   if (*g_settings.menu_config_directory)
-      strlcpy(config_dir, g_settings.menu_config_directory,
+   if (*settings->menu_config_directory)
+      strlcpy(config_dir, settings->menu_config_directory,
             sizeof(config_dir));
    else if (*g_extern.config_path) /* Fallback */
       fill_pathname_basedir(config_dir, g_extern.config_path,
@@ -2096,7 +2120,7 @@ static bool save_core_config(void)
    }
 
    /* Infer file name based on libretro core. */
-   if (*g_settings.libretro && path_file_exists(g_settings.libretro))
+   if (*settings->libretro && path_file_exists(settings->libretro))
    {
       unsigned i;
 
@@ -2105,7 +2129,7 @@ static bool save_core_config(void)
       {
          char tmp[64];
 
-         fill_pathname_base(config_name, g_settings.libretro,
+         fill_pathname_base(config_name, settings->libretro,
                sizeof(config_name));
          path_remove_extension(config_name);
          fill_pathname_join(config_path, config_dir, config_name,
@@ -2160,18 +2184,20 @@ static bool save_core_config(void)
 static bool rarch_update_system_info(struct retro_system_info *_info,
       bool *load_no_content)
 {
+   settings_t *settings = config_get_ptr();
+
 #if defined(HAVE_DYNAMIC)
-   if (!(*g_settings.libretro))
+   if (!(*settings->libretro))
       return false;
 
-   libretro_get_system_info(g_settings.libretro, _info,
+   libretro_get_system_info(settings->libretro, _info,
          load_no_content);
 #endif
    if (!g_extern.core_info)
       return false;
 
    if (!core_info_list_get_info(g_extern.core_info,
-            g_extern.core_info_current, g_settings.libretro))
+            g_extern.core_info_current, settings->libretro))
       return false;
 
    return true;
@@ -2189,8 +2215,9 @@ bool rarch_main_command(unsigned cmd)
 {
    unsigned i   = 0;
    bool boolean = false;
-   runloop_t *runloop = rarch_main_get_ptr();
-   driver_t  *driver  = driver_get_ptr();
+   runloop_t *runloop   = rarch_main_get_ptr();
+   driver_t  *driver    = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    (void)i;
 
@@ -2207,7 +2234,7 @@ bool rarch_main_command(unsigned cmd)
          rarch_main_command(RARCH_CMD_LOAD_CONTENT_PERSIST);
 #else
          rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH,
-               (void*)g_settings.libretro);
+               (void*)settings->libretro);
          rarch_environment_cb(RETRO_ENVIRONMENT_EXEC,
                (void*)g_extern.fullpath);
          rarch_main_command(RARCH_CMD_QUIT);
@@ -2251,9 +2278,9 @@ bool rarch_main_command(unsigned cmd)
          if (g_extern.pending.windowed_scale == 0)
             return false;
 
-         g_settings.video.scale = g_extern.pending.windowed_scale;
+         settings->video.scale = g_extern.pending.windowed_scale;
 
-         if (!g_settings.video.fullscreen)
+         if (!settings->video.fullscreen)
             rarch_main_command(RARCH_CMD_REINIT);
 
          g_extern.pending.windowed_scale = 0;
@@ -2277,8 +2304,8 @@ bool rarch_main_command(unsigned cmd)
          rarch_main_command(RARCH_CMD_CONTROLLERS_INIT);
          break;
       case RARCH_CMD_SAVE_STATE:
-         if (g_settings.savestate_auto_index)
-            g_settings.state_slot++;
+         if (settings->savestate_auto_index)
+            settings->state_slot++;
 
          main_state(cmd);
          break;
@@ -2349,7 +2376,7 @@ bool rarch_main_command(unsigned cmd)
          init_rewind();
          break;
       case RARCH_CMD_REWIND_TOGGLE:
-         if (g_settings.rewind_enable)
+         if (settings->rewind_enable)
             rarch_main_command(RARCH_CMD_REWIND_INIT);
          else
             rarch_main_command(RARCH_CMD_REWIND_DEINIT);
@@ -2380,7 +2407,7 @@ bool rarch_main_command(unsigned cmd)
          if (!driver->audio_data || driver->audio->alive(driver->audio_data))
             return false;
 
-         if (!g_settings.audio.mute_enable
+         if (!settings->audio.mute_enable
                && !driver->audio->start(driver->audio_data))
          {
             RARCH_ERR("Failed to start audio driver. Will continue without audio.\n");
@@ -2389,7 +2416,7 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_AUDIO_MUTE_TOGGLE:
          {
-            const char *msg = !g_settings.audio.mute_enable ?
+            const char *msg = !settings->audio.mute_enable ?
                "Audio muted." : "Audio unmuted.";
 
             if (!audio_driver_mute_toggle())
@@ -2416,25 +2443,25 @@ bool rarch_main_command(unsigned cmd)
 #ifdef HAVE_OVERLAY
          if (driver->osk_enable)
          {
-            if (!*g_settings.osk.overlay)
+            if (!*settings->osk.overlay)
                break;
          }
          else
          {
-            if (!*g_settings.input.overlay)
+            if (!*settings->input.overlay)
                break;
          }
 
-         driver->overlay = input_overlay_new(driver->osk_enable ? g_settings.osk.overlay : g_settings.input.overlay,
-               driver->osk_enable ? g_settings.osk.enable   : g_settings.input.overlay_enable,
-               g_settings.input.overlay_opacity, g_settings.input.overlay_scale);
+         driver->overlay = input_overlay_new(driver->osk_enable ? settings->osk.overlay : settings->input.overlay,
+               driver->osk_enable ? settings->osk.enable   : settings->input.overlay_enable,
+               settings->input.overlay_opacity, settings->input.overlay_scale);
          if (!driver->overlay)
             RARCH_ERR("Failed to load overlay.\n");
 #endif
          break;
       case RARCH_CMD_OVERLAY_NEXT:
 #ifdef HAVE_OVERLAY
-         input_overlay_next(driver->overlay, g_settings.input.overlay_opacity);
+         input_overlay_next(driver->overlay, settings->input.overlay_opacity);
 #endif
          break;
       case RARCH_CMD_DSP_FILTER_DEINIT:
@@ -2444,14 +2471,14 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_DSP_FILTER_INIT:
          rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
-         if (!*g_settings.audio.dsp_plugin)
+         if (!*settings->audio.dsp_plugin)
             break;
 
          g_extern.audio_data.dsp = rarch_dsp_filter_new(
-               g_settings.audio.dsp_plugin, g_extern.audio_data.in_rate);
+               settings->audio.dsp_plugin, g_extern.audio_data.in_rate);
          if (!g_extern.audio_data.dsp)
             RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n",
-                  g_settings.audio.dsp_plugin);
+                  settings->audio.dsp_plugin);
          break;
       case RARCH_CMD_GPU_RECORD_DEINIT:
          if (g_extern.record.gpu_buffer)
@@ -2474,12 +2501,12 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_HISTORY_INIT:
          rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
-         if (!g_settings.history_list_enable)
+         if (!settings->history_list_enable)
             return false;
-         RARCH_LOG("Loading history file: [%s].\n", g_settings.content_history_path);
+         RARCH_LOG("Loading history file: [%s].\n", settings->content_history_path);
          g_defaults.history = content_playlist_init(
-               g_settings.content_history_path,
-               g_settings.content_history_size);
+               settings->content_history_path,
+               settings->content_history_size);
          break;
       case RARCH_CMD_CORE_INFO_DEINIT:
          if (g_extern.core_info)
@@ -2489,8 +2516,8 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_CORE_INFO_INIT:
          rarch_main_command(RARCH_CMD_CORE_INFO_DEINIT);
 
-         if (*g_settings.libretro_directory)
-            g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
+         if (*settings->libretro_directory)
+            g_extern.core_info = core_info_list_new(settings->libretro_directory);
          break;
       case RARCH_CMD_CORE_DEINIT:
          deinit_core();
@@ -2514,7 +2541,7 @@ bool rarch_main_command(unsigned cmd)
          if (driver->video_data && driver->video_poke
                && driver->video_poke->set_aspect_ratio)
             driver->video_poke->set_aspect_ratio(driver->video_data,
-                  g_settings.video.aspect_ratio_idx);
+                  settings->video.aspect_ratio_idx);
          break;
       case RARCH_CMD_AUDIO_SET_NONBLOCKING_STATE:
          boolean = true; /* fall-through */
@@ -2525,13 +2552,13 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
          input_overlay_set_scale_factor(driver->overlay,
-               g_settings.input.overlay_scale);
+               settings->input.overlay_scale);
 #endif
          break;
       case RARCH_CMD_OVERLAY_SET_ALPHA_MOD:
 #ifdef HAVE_OVERLAY
          input_overlay_set_alpha_mod(driver->overlay,
-               g_settings.input.overlay_opacity);
+               settings->input.overlay_opacity);
 #endif
          break;
       case RARCH_CMD_DRIVERS_DEINIT:
@@ -2578,7 +2605,7 @@ bool rarch_main_command(unsigned cmd)
             RARCH_LOG("Paused.\n");
             rarch_main_command(RARCH_CMD_AUDIO_STOP);
 
-            if (g_settings.video.black_frame_insertion)
+            if (settings->video.black_frame_insertion)
                rarch_render_cached_frame();
          }
          else
@@ -2602,14 +2629,14 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_MENU_PAUSE_LIBRETRO:
          if (runloop->is_menu)
          {
-            if (g_settings.menu.pause_libretro)
+            if (settings->menu.pause_libretro)
                rarch_main_command(RARCH_CMD_AUDIO_STOP);
             else
                rarch_main_command(RARCH_CMD_AUDIO_START);
          }
          else
          {
-            if (g_settings.menu.pause_libretro)
+            if (settings->menu.pause_libretro)
                rarch_main_command(RARCH_CMD_AUDIO_START);
          }
          break;
@@ -2621,10 +2648,10 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_SHADER_DIR_INIT:
          rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
 
-         if (!*g_settings.video.shader_dir)
+         if (!*settings->video.shader_dir)
             return false;
 
-         g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir,
+         g_extern.shader_dir.list = dir_list_new(settings->video.shader_dir,
                "cg|cgp|glsl|glslp", false);
 
          if (!g_extern.shader_dir.list || g_extern.shader_dir.list->size == 0)
@@ -2725,7 +2752,7 @@ bool rarch_main_command(unsigned cmd)
 
          /* If we go fullscreen we drop all drivers and 
           * reinitialize to be safe. */
-         g_settings.video.fullscreen = !g_settings.video.fullscreen;
+         settings->video.fullscreen = !settings->video.fullscreen;
          rarch_main_command(RARCH_CMD_REINIT);
          break;
       case RARCH_CMD_COMMAND_DEINIT:
@@ -2882,11 +2909,12 @@ void rarch_playlist_load_content(content_playlist_t *playlist,
    const char *path      = NULL;
    const char *core_path = NULL;
    menu_handle_t *menu   = menu_driver_resolve();
+   settings_t  *settings = config_get_ptr();
 
    content_playlist_get_index(playlist,
          idx, &path, &core_path, NULL);
 
-   strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
+   strlcpy(settings->libretro, core_path, sizeof(settings->libretro));
 
    if (menu)
       menu->load_no_content = (path) ? false : true;
@@ -2919,6 +2947,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    char new_core_path[PATH_MAX_LENGTH];
    const core_info_t *info = NULL;
    size_t supported = 0;
+   settings_t *settings = config_get_ptr();
 
    fill_pathname_join(deferred_path, dir, path, sizeof_deferred_path);
 
@@ -2958,8 +2987,8 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
          sizeof(g_extern.fullpath));
 
    if (path_file_exists(new_core_path))
-      strlcpy(g_settings.libretro, new_core_path,
-            sizeof(g_settings.libretro));
+      strlcpy(settings->libretro, new_core_path,
+            sizeof(settings->libretro));
    return -1;
 }
 
@@ -2985,17 +3014,19 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
 
 bool rarch_replace_config(const char *path)
 {
+   settings_t *settings = config_get_ptr();
+
    /* If config file to be replaced is the same as the 
     * current config file, exit. */
    if (!strcmp(path, g_extern.config_path))
       return false;
 
-   if (g_settings.config_save_on_exit && *g_extern.config_path)
+   if (settings->config_save_on_exit && *g_extern.config_path)
       config_save_file(g_extern.config_path);
 
    strlcpy(g_extern.config_path, path, sizeof(g_extern.config_path));
    g_extern.block_config_read = false;
-   *g_settings.libretro = '\0'; /* Load core in new config. */
+   *settings->libretro = '\0'; /* Load core in new config. */
 
    rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
 
