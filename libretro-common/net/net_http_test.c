@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <net/net_http.h>
+#include <net/net_compat.h>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -7,16 +8,12 @@
 
 int main(void)
 {
-#ifdef _WIN32
-   WSADATA wsaData;
-#endif
    char   *data;
    http_t *http1, *http2, *http3;
    size_t len, pos = 0, tot = 0;
 
-#ifdef _WIN32
-   WSAStartup(MAKEWORD(2, 2), &wsaData);
-#endif
+   if (!network_init())
+      return -1;
 
    http1 = net_http_new("http://buildbot.libretro.com/nightly/win-x86/latest/mednafen_psx_libretro.dll.zip");
 
@@ -32,6 +29,8 @@ int main(void)
 
    net_http_delete(http1);
    net_http_delete(http3);
+   
+   network_deinit();
 
    return 0;
 }
