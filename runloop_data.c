@@ -109,11 +109,11 @@ typedef struct data_runloop
 #endif
 } data_runloop_t;
 
-struct data_runloop g_data_runloop;
+static struct data_runloop *g_data_runloop;
 
 static void *rarch_main_data_get_ptr(void)
 {
-   return &g_data_runloop;
+   return g_data_runloop;
 }
 
 #ifdef HAVE_NETWORKING
@@ -784,7 +784,7 @@ void rarch_main_data_deinit(void)
 {
    data_runloop_t *data_runloop = rarch_main_data_get_ptr();
 
-   if (!data_runloop || !data_runloop->inited)
+   if (!data_runloop)
       return;
 
 #ifdef HAVE_THREADS
@@ -796,6 +796,7 @@ void rarch_main_data_deinit(void)
 #endif
 
    data_runloop->inited = false;
+
 }
 
 static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
@@ -892,13 +893,12 @@ void rarch_main_data_iterate(void)
    data_runloop_iterate(false, data_runloop);
 }
 
-static void rarch_main_data_init(void)
+static data_runloop_t *rarch_main_data_init(void)
 {
-   data_runloop_t *data_runloop = rarch_main_data_get_ptr();
-   if (!data_runloop || data_runloop->inited)
-      return;
+   data_runloop_t *data_runloop = (data_runloop_t*)calloc(1, sizeof(data_runloop_t));
 
-   memset(data_runloop, 0, sizeof(*data_runloop));
+   if (!data_runloop)
+      return NULL;
 
 #ifdef HAVE_THREADS
    data_runloop->thread_inited = false;
@@ -906,12 +906,14 @@ static void rarch_main_data_init(void)
 #endif
 
    data_runloop->inited = true;
+
+   return data_runloop;
 }
 
 void rarch_main_data_clear_state(void)
 {
    rarch_main_data_deinit();
-   rarch_main_data_init();
+   g_data_runloop = rarch_main_data_init();
 }
 
 
