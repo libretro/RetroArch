@@ -22,10 +22,10 @@
 #include <limits.h>
 
 #include "../menu.h"
-#include "../menu_texture.h"
 
 #include <file/file_path.h>
 #include "../../gfx/gl_common.h"
+#include "../../gfx/video_texture.h"
 #include <compat/posix_string.h>
 
 #include "shared.h"
@@ -546,7 +546,7 @@ static bool glui_load_wallpaper(void *data)
    if (glui->textures.bg.id)
       glDeleteTextures(1, &glui->textures.bg.id);
 
-   glui->textures.bg.id   = menu_texture_load(data,
+   glui->textures.bg.id   = video_texture_load(data,
          TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
    return true;

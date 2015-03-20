@@ -22,11 +22,11 @@
 
 #include "../menu.h"
 #include "../menu_animation.h"
-#include "../menu_texture.h"
 
 #include <file/file_path.h>
-#include "../../gfx/gl_common.h"
 #include "../../gfx/video_thread_wrapper.h"
+#include "../../gfx/gl_common.h"
+#include "../../gfx/video_texture.h"
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 
@@ -1545,7 +1545,7 @@ static bool xmb_load_wallpaper(void *data)
    if (xmb->textures.bg.id)
       glDeleteTextures(1, &xmb->textures.bg.id);
 
-   xmb->textures.bg.id   = menu_texture_load(data,
+   xmb->textures.bg.id   = video_texture_load(data,
          TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
 
@@ -1652,7 +1652,7 @@ static void xmb_context_reset(void)
 
       texture_image_load(&ti, path);
 
-      xmb->textures.list[k].id   = menu_texture_load(&ti,
+      xmb->textures.list[k].id   = video_texture_load(&ti,
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
       texture_image_free(&ti);
@@ -1738,14 +1738,14 @@ static void xmb_context_reset(void)
 
       texture_image_load(&ti, texturepath);
 
-      node->icon         = menu_texture_load(&ti,
+      node->icon         = video_texture_load(&ti,
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
       texture_image_free(&ti);
 
       texture_image_load(&ti, content_texturepath);
 
-      node->content_icon = menu_texture_load(&ti,
+      node->content_icon = video_texture_load(&ti,
             TEXTURE_BACKEND_OPENGL, TEXTURE_FILTER_MIPMAP_LINEAR);
 
       texture_image_free(&ti);

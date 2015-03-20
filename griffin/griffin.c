@@ -169,6 +169,7 @@ VIDEO IMAGE
 ============================================================ */
 
 #include "../gfx/image/image.c"
+#include "../gfx/video_texture.c"
 
 #include "../libretro-common/formats/tga/tga_decode.c"
 #include "../libretro-common/formats/png/rpng_fbio.c"
@@ -695,7 +696,6 @@ MENU
 #include "../menu/menu_entries_cbs_contentlist_switch.c"
 #include "../menu/menu_entries_cbs.c"
 #include "../menu/menu_shader.c"
-#include "../menu/menu_texture.c"
 #include "../menu/menu_navigation.c"
 #include "../menu/menu_animation.c"
 #include "../menu/menu_database.c"

@@ -14,10 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _MENU_TEXTURE_MANAGER_H
-#define _MENU_TEXTURE_MANAGER_H
+#ifndef _VIDEO_TEXTURE_H
+#define _VIDEO_TEXTURE_H
 
-#include "../gfx/video_driver.h"
+#include "video_driver.h"
 
 enum texture_backend_type
 {
@@ -29,7 +29,7 @@ enum texture_backend_type
 extern "C" {
 #endif
 
-unsigned menu_texture_load(void *data,
+unsigned video_texture_load(void *data,
       enum texture_backend_type type,
       enum texture_filter_type  filter_type);
 

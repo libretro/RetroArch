@@ -312,7 +312,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 menu/menu_setting.o \
 			 menu/menu_database.o \
 			 menu/menu_shader.o \
-			 menu/menu_texture.o \
 			 menu/menu_entries.o \
 			 menu/menu_entries_cbs_ok.o \
 			 menu/menu_entries_cbs_cancel.o \
@@ -405,6 +404,7 @@ ifeq ($(HAVE_OPENGL), 1)
 			 gfx/drivers_font/gl_raster_font.o \
 			 libretro-common/gfx/math/matrix_4x4.o \
 			 gfx/video_state_tracker.o \
+			 gfx/video_texture.o \
 			 libretro-common/glsym/rglgen.o
 
    ifeq ($(HAVE_KMS), 1)

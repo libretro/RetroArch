@@ -14,16 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "menu_texture.h"
+#include "video_texture.h"
 #include <file/file_path.h>
-#include "../general.h"
-#include "../gfx/video_pixel_converter.h"
-#include "../gfx/video_thread_wrapper.h"
+#include "video_pixel_converter.h"
+#include "video_thread_wrapper.h"
 
 #ifdef HAVE_OPENGL
-#include "../gfx/gl_common.h"
+#include "gl_common.h"
 
-static void menu_texture_png_load_gl(struct texture_image *ti,
+static void video_texture_png_load_gl(struct texture_image *ti,
       enum texture_filter_type filter_type,
       unsigned *id)
 {
@@ -38,7 +37,7 @@ static void menu_texture_png_load_gl(struct texture_image *ti,
 }
 #endif
 
-static unsigned menu_texture_png_load(void *data,
+static unsigned video_texture_png_load(void *data,
       enum texture_backend_type type,
       enum texture_filter_type  filter_type)
 {
@@ -51,7 +50,7 @@ static unsigned menu_texture_png_load(void *data,
    {
       case TEXTURE_BACKEND_OPENGL:
 #ifdef HAVE_OPENGL
-         menu_texture_png_load_gl((struct texture_image*)data, filter_type, &id);
+         video_texture_png_load_gl((struct texture_image*)data, filter_type, &id);
 #endif
          break;
       case TEXTURE_BACKEND_DEFAULT:
@@ -62,25 +61,25 @@ static unsigned menu_texture_png_load(void *data,
    return id;
 }
 
-static int menu_texture_png_load_wrap(void *data)
+static int video_texture_png_load_wrap(void *data)
 {
-   return menu_texture_png_load(data, TEXTURE_BACKEND_DEFAULT,
+   return video_texture_png_load(data, TEXTURE_BACKEND_DEFAULT,
          TEXTURE_FILTER_LINEAR);
 }
 
-static int menu_texture_png_load_wrap_gl_mipmap(void *data)
+static int video_texture_png_load_wrap_gl_mipmap(void *data)
 {
-   return menu_texture_png_load(data, TEXTURE_BACKEND_OPENGL,
+   return video_texture_png_load(data, TEXTURE_BACKEND_OPENGL,
          TEXTURE_FILTER_MIPMAP_LINEAR);
 }
 
-static int menu_texture_png_load_wrap_gl(void *data)
+static int video_texture_png_load_wrap_gl(void *data)
 {
-   return menu_texture_png_load(data, TEXTURE_BACKEND_OPENGL,
+   return video_texture_png_load(data, TEXTURE_BACKEND_OPENGL,
          TEXTURE_FILTER_LINEAR);
 }
 
-unsigned menu_texture_load(void *data,
+unsigned video_texture_load(void *data,
       enum texture_backend_type type,
       enum texture_filter_type  filter_type)
 {
@@ -98,13 +97,13 @@ unsigned menu_texture_load(void *data,
          case TEXTURE_BACKEND_OPENGL:
             if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR ||
                   filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
-               thr->cmd_data.custom_command.method = menu_texture_png_load_wrap_gl_mipmap;
+               thr->cmd_data.custom_command.method = video_texture_png_load_wrap_gl_mipmap;
             else
-               thr->cmd_data.custom_command.method = menu_texture_png_load_wrap_gl;
+               thr->cmd_data.custom_command.method = video_texture_png_load_wrap_gl;
             break;
          case TEXTURE_BACKEND_DEFAULT:
          default:
-            thr->cmd_data.custom_command.method = menu_texture_png_load_wrap;
+            thr->cmd_data.custom_command.method = video_texture_png_load_wrap;
             break;
       }
 
@@ -116,5 +115,5 @@ unsigned menu_texture_load(void *data,
       return thr->cmd_data.custom_command.return_value;
    }
 
-   return menu_texture_png_load(data, type, filter_type);
+   return video_texture_png_load(data, type, filter_type);
 }
