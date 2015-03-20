@@ -1135,10 +1135,10 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(menu.navigation.browser.filter.supported_extensions_enable,   "menu_navigation_browser_filter_supported_extensions_enable");
    CONFIG_GET_BOOL(menu.collapse_subgroups_enable,   "menu_collapse_subgroups_enable");
    CONFIG_GET_BOOL(menu.show_advanced_settings,   "menu_show_advanced_settings");
-   CONFIG_GET_HEX(menu.entry_normal_color,   "menu_entry_normal_color");
-   CONFIG_GET_HEX(menu.entry_hover_color,   "menu_entry_hover_color");
-   CONFIG_GET_HEX(menu.title_color,   "menu_title_color");
-   CONFIG_GET_PATH(menu.wallpaper, "menu_wallpaper");
+   CONFIG_GET_HEX_BASE(conf, g_settings, menu.entry_normal_color,   "menu_entry_normal_color");
+   CONFIG_GET_HEX_BASE(conf, g_settings, menu.entry_hover_color,   "menu_entry_hover_color");
+   CONFIG_GET_HEX_BASE(conf, g_settings, menu.title_color,   "menu_title_color");
+   config_get_path(conf, "menu_wallpaper", settings->menu.wallpaper, sizeof(settings->menu.wallpaper));
    if (!strcmp(settings->menu.wallpaper, "default"))
       *settings->menu.wallpaper = '\0';
 #endif
@@ -1170,12 +1170,12 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(video.aspect_ratio_auto, "video_aspect_ratio_auto");
    CONFIG_GET_FLOAT(video.refresh_rate, "video_refresh_rate");
 
-   CONFIG_GET_PATH(video.shader_path, "video_shader");
+   config_get_path(conf, "video_shader", settings->video.shader_path, sizeof(settings->video.shader_path));
    CONFIG_GET_BOOL(video.shader_enable, "video_shader_enable");
 
    CONFIG_GET_BOOL(video.allow_rotate, "video_allow_rotate");
 
-   CONFIG_GET_PATH(video.font_path, "video_font_path");
+   config_get_path(conf, "video_font_path", settings->video.font_path, sizeof(settings->video.font_path));
    CONFIG_GET_FLOAT(video.font_size, "video_font_size");
    CONFIG_GET_BOOL(video.font_enable, "video_font_enable");
    CONFIG_GET_FLOAT(video.msg_pos_x, "video_message_pos_x");
@@ -1311,8 +1311,8 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
    CONFIG_GET_STRING(video.context_driver, "video_context_driver");
    CONFIG_GET_STRING(audio.driver, "audio_driver");
-   CONFIG_GET_PATH(video.softfilter_plugin, "video_filter");
-   CONFIG_GET_PATH(audio.dsp_plugin, "audio_dsp_plugin");
+   config_get_path(conf, "video_filter", settings->video.softfilter_plugin, sizeof(settings->video.softfilter_plugin));
+   config_get_path(conf, "audio_dsp_plugin", settings->audio.dsp_plugin, sizeof(settings->audio.dsp_plugin));
    CONFIG_GET_STRING(input.driver, "input_driver");
    CONFIG_GET_STRING(input.joypad_driver, "input_joypad_driver");
    CONFIG_GET_STRING(input.keyboard_layout, "input_keyboard_layout");
@@ -1336,9 +1336,9 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(fps_show, "fps_show");
    CONFIG_GET_BOOL(load_dummy_on_core_shutdown, "load_dummy_on_core_shutdown");
 
-   CONFIG_GET_PATH(libretro_info_path, "libretro_info_path");
+   config_get_path(conf, "libretro_info_path", settings->libretro_info_path, sizeof(settings->libretro_info_path));
 
-   CONFIG_GET_PATH(core_options_path, "core_options_path");
+   config_get_path(conf, "core_options_path", settings->core_options_path, sizeof(settings->core_options_path));
    CONFIG_GET_PATH(screenshot_directory, "screenshot_directory");
    if (*settings->screenshot_directory)
    {
