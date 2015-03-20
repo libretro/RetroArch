@@ -21,7 +21,7 @@
 #import <CoreFoundation/CoreFoundation.h>
 
 #include "../../core_info.h"
-#include "../../settings_data.h"
+#include "../../settings.h"
 
 @protocol RetroArch_Platform
 - (void)loadingCore:(NSString*)core withFile:(const char*)file;

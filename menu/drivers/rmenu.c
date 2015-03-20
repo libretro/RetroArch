@@ -29,7 +29,7 @@
 #include <compat/posix_string.h>
 #include "../../performance.h"
 
-#include "../../settings_data.h"
+#include "../../settings.h"
 #include "../../screenshot.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 

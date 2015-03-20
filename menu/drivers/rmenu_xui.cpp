@@ -31,7 +31,7 @@
 
 #include "../../gfx/video_context_driver.h"
 
-#include "../../settings_data.h"
+#include "../../settings.h"
 #include "../../general.h"
 
 #include "../../gfx/d3d/d3d.h"

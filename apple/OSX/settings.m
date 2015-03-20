@@ -17,7 +17,7 @@
 #import <objc/runtime.h>
 #import "../common/RetroArch_Apple.h"
 #include <retro_miscellaneous.h>
-#include "../../settings_data.h"
+#include "../../settings.h"
 #include "../../input/drivers/apple_input.h"
 
 #include "../../driver.h"

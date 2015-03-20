@@ -16,7 +16,7 @@
 #ifndef _DISP_SHARED_H
 #define _DISP_SHARED_H
 
-#include "../../settings_data.h"
+#include "../../settings.h"
 #include <string/string_list.h>
 #include <time.h>
 

@@ -17,7 +17,7 @@
 
 #include "driver.h"
 #include "gfx/video_monitor.h"
-#include "settings_data.h"
+#include "settings.h"
 #include "dynamic.h"
 #include <file/file_path.h>
 #include "input/input_autodetect.h"

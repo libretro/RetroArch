@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include "menu.h"
 #include <file/file_list.h>
-#include "../settings_data.h"
+#include "../settings.h"
 #ifdef HAVE_LIBRETRODB
 #include "menu_database.h"
 #endif

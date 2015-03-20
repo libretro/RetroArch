@@ -119,7 +119,7 @@ OBJ += frontend/frontend.o \
 		driver.o \
 		configuration.o \
 		settings_list.o \
-		settings_data.o \
+		settings.o \
 		dynamic.o \
 		dynamic_dummy.o \
 		libretro-common/queues/message_queue.o \

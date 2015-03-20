@@ -19,7 +19,7 @@
 
 #include "../../playlist.h"
 #include "views.h"
-#include "../../settings_data.h"
+#include "../../settings.h"
 
 @protocol RAMenuItemBase
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView;

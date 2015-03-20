@@ -29,7 +29,7 @@
 #include "menu_navigation.h"
 #include "../cheats.h"
 #include "../performance.h"
-#include "../settings_data.h"
+#include "../settings.h"
 #include "../input/input_joypad.h"
 #include "../input/input_remapping.h"
 

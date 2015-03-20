@@ -799,7 +799,7 @@ XML
  SETTINGS
 ============================================================ */
 #include "../settings_list.c"
-#include "../settings_data.c"
+#include "../settings.c"
 
 /*============================================================
  AUDIO UTILS
