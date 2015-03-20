@@ -80,13 +80,14 @@ static void set_volume(float gain)
  **/
 static bool check_pause(bool pressed, bool frameadvance_pressed)
 {
+   runloop_t *runloop       = rarch_main_get_ptr();
    static bool old_focus    = true;
    bool focus               = true;
-   bool old_is_paused       = g_runloop.is_paused;
    unsigned cmd             = RARCH_CMD_NONE;
+   bool old_is_paused       = runloop->is_paused;
 
    /* FRAMEADVANCE will set us into pause mode. */
-   pressed |= !g_runloop.is_paused && frameadvance_pressed;
+   pressed |= !runloop->is_paused && frameadvance_pressed;
 
    if (g_settings.pause_nonactive)
       focus = video_driver_has_focus();
@@ -103,7 +104,7 @@ static bool check_pause(bool pressed, bool frameadvance_pressed)
    if (cmd != RARCH_CMD_NONE)
       rarch_main_command(cmd);
 
-   if (g_runloop.is_paused == old_is_paused)
+   if (runloop->is_paused == old_is_paused)
       return false;
 
    return true;
@@ -237,6 +238,7 @@ static void check_rewind(bool pressed)
    if (pressed)
    {
       const void *buf = NULL;
+      runloop_t *runloop = rarch_main_get_ptr();
 
       if (state_manager_pop(g_extern.rewind.state, &buf))
       {
@@ -244,7 +246,7 @@ static void check_rewind(bool pressed)
          setup_rewind_audio();
 
          rarch_main_msg_queue_push(RETRO_MSG_REWINDING, 0,
-               g_runloop.is_paused ? 1 : 30, true);
+               runloop->is_paused ? 1 : 30, true);
          pretro_unserialize(buf, g_extern.rewind.size);
 
          if (g_extern.bsv.movie)
@@ -286,9 +288,11 @@ static void check_rewind(bool pressed)
  **/
 static void check_slowmotion(bool pressed)
 {
-   g_runloop.is_slowmotion = pressed;
+   runloop_t *runloop = rarch_main_get_ptr();
 
-   if (!g_runloop.is_slowmotion)
+   runloop->is_slowmotion = pressed;
+
+   if (!runloop->is_slowmotion)
       return;
 
    if (g_settings.video.black_frame_insertion)
@@ -467,7 +471,9 @@ static void check_cheats(retro_input_t trigger_input)
 #ifdef HAVE_MENU
 static void do_state_check_menu_toggle(void)
 {
-   if (g_runloop.is_menu)
+   runloop_t *runloop = rarch_main_get_ptr();
+
+   if (runloop->is_menu)
    {
       if (g_extern.main_is_init && !g_extern.libretro_dummy)
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
@@ -496,10 +502,12 @@ static int do_pre_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
+   runloop_t *runloop = rarch_main_get_ptr();
+
    if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))
       rarch_main_command(RARCH_CMD_OVERLAY_NEXT);
 
-   if (!g_runloop.is_paused || g_runloop.is_menu)
+   if (!runloop->is_paused || runloop->is_menu)
    {
       if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
          rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
@@ -534,9 +542,10 @@ static int do_pause_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
+   runloop_t *runloop = rarch_main_get_ptr();
    check_pause_func(trigger_input);
 
-   if (!g_runloop.is_paused)
+   if (!runloop->is_paused)
       return 0;
 
    if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
@@ -566,11 +575,12 @@ static int do_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t  *driver  = driver_get_ptr();
+   runloop_t *runloop = rarch_main_get_ptr();
 
    (void)driver;
 
-   if (g_runloop.is_idle)
+   if (runloop->is_idle)
       return 1;
 
    if (BIT64_GET(trigger_input, RARCH_SCREENSHOT))
@@ -646,11 +656,12 @@ static int do_state_checks(
  **/
 static INLINE int time_to_exit(retro_input_t input)
 {
+   runloop_t *runloop = rarch_main_get_ptr();
    if (
          g_extern.system.shutdown
          || check_quit_key_func(input)
-         || (g_runloop.frames.video.max && 
-            g_runloop.frames.video.count >= g_runloop.frames.video.max)
+         || (runloop->frames.video.max && 
+            runloop->frames.video.count >= runloop->frames.video.max)
          || (g_extern.bsv.movie_end && g_extern.bsv.eof_exit)
          || !video_driver_is_alive()
       )
@@ -665,16 +676,17 @@ static INLINE int time_to_exit(retro_input_t input)
  **/
 static void rarch_update_frame_time(void)
 {
+   runloop_t *runloop = rarch_main_get_ptr();
    driver_t *driver = driver_get_ptr();
    retro_time_t curr_time = rarch_get_time_usec();
    retro_time_t delta     = curr_time - g_extern.system.frame_time_last;
-   bool is_locked_fps     = g_runloop.is_paused || driver->nonblock_state;
+   bool is_locked_fps     = runloop->is_paused || driver->nonblock_state;
    is_locked_fps         |= !!driver->recording_data;
 
    if (!g_extern.system.frame_time_last || is_locked_fps)
       delta = g_extern.system.frame_time.reference;
 
-   if (!is_locked_fps && g_runloop.is_slowmotion)
+   if (!is_locked_fps && runloop->is_slowmotion)
       delta /= g_settings.slowmotion_ratio;
 
    g_extern.system.frame_time_last = curr_time;
@@ -695,29 +707,30 @@ static void rarch_limit_frame_time(void)
 {
    double effective_fps, mft_f;
    retro_time_t current, target = 0, to_sleep_ms = 0;
+   runloop_t *runloop = rarch_main_get_ptr();
 
    current       = rarch_get_time_usec();
    effective_fps = g_extern.system.av_info.timing.fps 
       * g_settings.fastforward_ratio;
    mft_f         = 1000000.0f / effective_fps;
 
-   g_runloop.frames.limit.minimum_time = (retro_time_t) roundf(mft_f);
+   runloop->frames.limit.minimum_time = (retro_time_t) roundf(mft_f);
 
-   target        = g_runloop.frames.limit.last_time + 
-                   g_runloop.frames.limit.minimum_time;
+   target        = runloop->frames.limit.last_time + 
+                   runloop->frames.limit.minimum_time;
    to_sleep_ms   = (target - current) / 1000;
 
    if (to_sleep_ms <= 0)
    {
-      g_runloop.frames.limit.last_time = rarch_get_time_usec();
+      runloop->frames.limit.last_time = rarch_get_time_usec();
       return;
    }
 
    rarch_sleep((unsigned int)to_sleep_ms);
 
    /* Combat jitter a bit. */
-   g_runloop.frames.limit.last_time += 
-      g_runloop.frames.limit.minimum_time;
+   runloop->frames.limit.last_time += 
+      runloop->frames.limit.minimum_time;
 }
 
 /**
@@ -840,11 +853,13 @@ static INLINE retro_input_t input_keys_pressed(void)
  **/
 static bool input_flush(retro_input_t *input)
 {
+   runloop_t *runloop = rarch_main_get_ptr();
+
    *input = 0;
 
    /* If core was paused before entering menu, evoke
     * pause toggle to wake it up. */
-   if (g_runloop.is_paused)
+   if (runloop->is_paused)
       BIT64_SET(*input, RARCH_PAUSE_TOGGLE);
 
    return true;
@@ -908,31 +923,35 @@ static void rarch_main_iterate_linefeed_overlay(void)
 
 const char *rarch_main_msg_queue_pull(void)
 {
-   return msg_queue_pull(g_runloop.msg_queue);
+   runloop_t *runloop = rarch_main_get_ptr();
+   return msg_queue_pull(runloop->msg_queue);
 }
 
 void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
       bool flush)
 {
-   if (!g_runloop.msg_queue)
+   runloop_t *runloop = rarch_main_get_ptr();
+   if (!runloop->msg_queue)
       return;
 
    if (flush)
-      msg_queue_clear(g_runloop.msg_queue);
-   msg_queue_push(g_runloop.msg_queue, msg, prio, duration);
+      msg_queue_clear(runloop->msg_queue);
+   msg_queue_push(runloop->msg_queue, msg, prio, duration);
 }
 
 void rarch_main_msg_queue_free(void)
 {
-   if (g_runloop.msg_queue)
-      msg_queue_free(g_runloop.msg_queue);
-   g_runloop.msg_queue = NULL;
+   runloop_t *runloop = rarch_main_get_ptr();
+   if (runloop->msg_queue)
+      msg_queue_free(runloop->msg_queue);
+   runloop->msg_queue = NULL;
 }
 
 void rarch_main_msg_queue_init(void)
 {
-   if (!g_runloop.msg_queue)
-      rarch_assert(g_runloop.msg_queue = msg_queue_new(8));
+   runloop_t *runloop = rarch_main_get_ptr();
+   if (!runloop->msg_queue)
+      rarch_assert(runloop->msg_queue = msg_queue_new(8));
 }
 
 runloop_t *rarch_main_get_ptr(void)
@@ -947,7 +966,8 @@ void rarch_main_clear_state(void)
 
 bool rarch_main_is_idle(void)
 {
-   return g_runloop.is_idle;
+   runloop_t *runloop = rarch_main_get_ptr();
+   return runloop->is_idle;
 }
 
 /**
@@ -962,6 +982,7 @@ int rarch_main_iterate(void)
 {
    unsigned i;
    retro_input_t trigger_input;
+   runloop_t *runloop = rarch_main_get_ptr();
    int ret                         = 0;
    static retro_input_t last_input = 0;
    retro_input_t old_input         = last_input;
@@ -989,7 +1010,7 @@ int rarch_main_iterate(void)
    rarch_main_data_iterate();
 
 #ifdef HAVE_MENU
-   if (g_runloop.is_menu)
+   if (runloop->is_menu)
    {
       menu_handle_t *menu = menu_driver_resolve();
       if (menu)
