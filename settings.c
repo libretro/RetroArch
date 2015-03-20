@@ -1339,7 +1339,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_path(conf, "libretro_info_path", settings->libretro_info_path, sizeof(settings->libretro_info_path));
 
    config_get_path(conf, "core_options_path", settings->core_options_path, sizeof(settings->core_options_path));
-   CONFIG_GET_PATH(screenshot_directory, "screenshot_directory");
+   config_get_path(conf, "screenshot_directory", settings->screenshot_directory, sizeof(settings->screenshot_directory));
    if (*settings->screenshot_directory)
    {
       if (!strcmp(settings->screenshot_directory, "default"))
@@ -1351,14 +1351,14 @@ static bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
-   CONFIG_GET_PATH(input.remapping_path, "input_remapping_path");
+   config_get_path(conf, "input_remapping_path", settings->input.remapping_path, sizeof(settings->input.remapping_path));
 
-   CONFIG_GET_PATH(resampler_directory, "resampler_directory");
-   CONFIG_GET_PATH(extraction_directory, "extraction_directory");
-   CONFIG_GET_PATH(input_remapping_directory, "input_remapping_directory");
-   CONFIG_GET_PATH(core_assets_directory, "core_assets_directory");
-   CONFIG_GET_PATH(assets_directory, "assets_directory");
-   CONFIG_GET_PATH(playlist_directory, "playlist_directory");
+   config_get_path(conf, "resampler_directory", settings->resampler_directory, sizeof(settings->resampler_directory));
+   config_get_path(conf, "extraction_directory", settings->extraction_directory, sizeof(settings->extraction_directory));
+   config_get_path(conf, "input_remapping_directory", settings->input_remapping_directory, sizeof(settings->input_remapping_directory));
+   config_get_path(conf, "core_assets_directory", settings->core_assets_directory, sizeof(settings->core_assets_directory));
+   config_get_path(conf, "assets_directory", settings->assets_directory, sizeof(settings->assets_directory));
+   config_get_path(conf, "playlist_directory", settings->playlist_directory, sizeof(settings->playlist_directory));
    if (!strcmp(settings->core_assets_directory, "default"))
       *settings->core_assets_directory = '\0';
    if (!strcmp(settings->assets_directory, "default"))
