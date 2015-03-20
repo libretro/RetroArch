@@ -24,15 +24,12 @@ void gl_load_texture_data(GLuint id,
       const void *frame, unsigned base_size)
 {
    GLint mag_filter, min_filter;
-   GLenum wrap;
    bool want_mipmap = false;
    bool rgb32 = (base_size == (sizeof(uint32_t)));
    driver_t *driver = driver_get_ptr();
+   GLenum wrap = gl_wrap_type_to_enum(wrap_type);
 
    glBindTexture(GL_TEXTURE_2D, id);
-   
-   wrap = gl_wrap_type_to_enum(wrap_type);
-
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
 
