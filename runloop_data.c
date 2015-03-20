@@ -891,8 +891,10 @@ static void rarch_main_data_init(void)
 
    memset(&g_data_runloop, 0, sizeof(g_data_runloop));
 
+#ifdef HAVE_THREADS
    g_data_runloop.thread_inited = false;
    g_data_runloop.alive         = false;
+#endif
 
    g_data_runloop.inited = true;
 }
