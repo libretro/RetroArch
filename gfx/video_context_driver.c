@@ -98,12 +98,13 @@ static int find_gfx_ctx_driver_index(const char *ident)
  **/
 void find_prev_gfx_context_driver(void)
 {
-   int i = find_gfx_ctx_driver_index(g_settings.video.context_driver);
+   settings_t *settings = config_get_ptr();
+   int i = find_gfx_ctx_driver_index(settings->video.context_driver);
    
    if (i > 0)
    {
-      strlcpy(g_settings.video.context_driver, gfx_ctx_drivers[i - 1]->ident,
-            sizeof(g_settings.video.context_driver));
+      strlcpy(settings->video.context_driver, gfx_ctx_drivers[i - 1]->ident,
+            sizeof(settings->video.context_driver));
    }
    else
       RARCH_WARN("Couldn't find any previous video context driver.\n");
@@ -116,12 +117,13 @@ void find_prev_gfx_context_driver(void)
  **/
 void find_next_context_driver(void)
 {
-   int i = find_gfx_ctx_driver_index(g_settings.video.context_driver);
+   settings_t *settings = config_get_ptr();
+   int i = find_gfx_ctx_driver_index(settings->video.context_driver);
 
    if (i >= 0 && gfx_ctx_drivers[i + 1])
    {
-      strlcpy(g_settings.video.context_driver, gfx_ctx_drivers[i + 1]->ident,
-            sizeof(g_settings.video.context_driver));
+      strlcpy(settings->video.context_driver, gfx_ctx_drivers[i + 1]->ident,
+            sizeof(settings->video.context_driver));
    }
    else
       RARCH_WARN("Couldn't find any next video context driver.\n");
@@ -148,6 +150,8 @@ static const gfx_ctx_driver_t *gfx_ctx_init(void *data,
       enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx)
 {
+   settings_t *settings = config_get_ptr();
+
    if (ctx->bind_api(data, api, major, minor))
    {
       bool initialized = ctx->init(data);
@@ -157,7 +161,7 @@ static const gfx_ctx_driver_t *gfx_ctx_init(void *data,
 
       if (ctx->bind_hw_render)
          ctx->bind_hw_render(data,
-               g_settings.video.shared_context && hw_render_ctx);
+               settings->video.shared_context && hw_render_ctx);
 
       return ctx;
    }

@@ -186,7 +186,8 @@ bool recording_init(void)
 {
    struct ffemu_params params = {0};
    const struct retro_system_av_info *info = &g_extern.system.av_info;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!g_extern.record.enable)
       return false;
@@ -197,7 +198,7 @@ bool recording_init(void)
       return false;
    }
 
-   if (!g_settings.video.gpu_record
+   if (!settings->video.gpu_record
          && g_extern.system.hw_render_callback.context_type)
    {
       RARCH_WARN("Libretro core is hardware rendered. Must use post-shaded recording as well.\n");
@@ -223,7 +224,7 @@ bool recording_init(void)
    if (*g_extern.record.config)
       params.config = g_extern.record.config;
 
-   if (g_settings.video.gpu_record && driver->video->read_viewport)
+   if (settings->video.gpu_record && driver->video->read_viewport)
    {
       struct video_viewport vp = {0};
 
@@ -242,7 +243,7 @@ bool recording_init(void)
       params.fb_width   = next_pow2(vp.width);
       params.fb_height  = next_pow2(vp.height);
 
-      if (g_settings.video.force_aspect &&
+      if (settings->video.force_aspect &&
             (g_extern.system.aspect_ratio > 0.0f))
          params.aspect_ratio  = g_extern.system.aspect_ratio;
       else
@@ -270,13 +271,13 @@ bool recording_init(void)
          params.out_height = g_extern.record.height;
       }
 
-      if (g_settings.video.force_aspect &&
+      if (settings->video.force_aspect &&
             (g_extern.system.aspect_ratio > 0.0f))
          params.aspect_ratio = g_extern.system.aspect_ratio;
       else
          params.aspect_ratio = (float)params.out_width / params.out_height;
 
-      if (g_settings.video.post_filter_record && g_extern.filter.filter)
+      if (settings->video.post_filter_record && g_extern.filter.filter)
       {
          unsigned max_width  = 0;
          unsigned max_height = 0;

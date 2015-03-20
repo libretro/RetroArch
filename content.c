@@ -181,13 +181,12 @@ bool save_state(const char *path)
 bool load_state(const char *path)
 {
    unsigned i;
+   ssize_t size;
    unsigned num_blocks = 0;
-   bool ret = true;
    void *buf = NULL;
    struct sram_block *blocks = NULL;
-   ssize_t size;
-
-   ret = read_file(path, &buf, &size);
+   settings_t *settings = config_get_ptr();
+   bool ret = read_file(path, &buf, &size);
 
    RARCH_LOG("Loading state: \"%s\".\n", path);
 
@@ -199,7 +198,7 @@ bool load_state(const char *path)
 
    RARCH_LOG("State size: %u bytes.\n", (unsigned)size);
 
-   if (g_settings.block_sram_overwrite && g_extern.savefiles
+   if (settings->block_sram_overwrite && g_extern.savefiles
          && g_extern.savefiles->size)
    {
       RARCH_LOG("Blocking SRAM overwrite.\n");
@@ -351,6 +350,7 @@ static bool load_content_need_fullpath(
    char new_path[PATH_MAX_LENGTH], new_basedir[PATH_MAX_LENGTH];
    ssize_t len;
    union string_list_elem_attr attributes;
+   settings_t *settings = config_get_ptr();
    bool ret = false;
 
    if (g_extern.system.info.block_extract)
@@ -365,7 +365,7 @@ static bool load_content_need_fullpath(
    RARCH_LOG("Compressed file in case of need_fullpath."
          "Now extracting to temporary directory.\n");
 
-   strlcpy(new_basedir, g_settings.extraction_directory,
+   strlcpy(new_basedir, settings->extraction_directory,
          sizeof(new_basedir));
 
    if ((!strcmp(new_basedir, "")) ||
@@ -504,6 +504,7 @@ bool init_content_file(void)
    bool ret = false;
    struct string_list *content = NULL;
    const struct retro_subsystem_info *special = NULL;
+   settings_t *settings = config_get_ptr();
 
    g_extern.temporary_content = string_list_new();
 
@@ -597,8 +598,8 @@ bool init_content_file(void)
 
          if (!zlib_extract_first_content_file(temporary_content,
                   sizeof(temporary_content), valid_ext,
-                  *g_settings.extraction_directory ?
-                  g_settings.extraction_directory : NULL))
+                  *settings->extraction_directory ?
+                  settings->extraction_directory : NULL))
          {
             RARCH_ERR("Failed to extract content from zipped file: %s.\n",
                   temporary_content);

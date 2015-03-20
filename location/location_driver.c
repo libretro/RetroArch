@@ -112,8 +112,9 @@ const char* config_get_location_driver_options(void)
 
 void find_location_driver(void)
 {
-   driver_t *driver = driver_get_ptr();
-   int i = find_driver_index("location_driver", g_settings.location.driver);
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+   int i                = find_driver_index("location_driver", settings->location.driver);
 
    if (i >= 0)
       driver->location = (const location_driver_t*)location_driver_find_handle(i);
@@ -121,7 +122,7 @@ void find_location_driver(void)
    {
       unsigned d;
       RARCH_ERR("Couldn't find any location driver named \"%s\"\n",
-            g_settings.location.driver);
+            settings->location.driver);
       RARCH_LOG_OUTPUT("Available location drivers are:\n");
       for (d = 0; location_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", location_driver_find_ident(d));
@@ -145,10 +146,12 @@ void find_location_driver(void)
  **/
 bool driver_location_start(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+
    if (driver->location && driver->location_data && driver->location->start)
    {
-      if (g_settings.location.allow)
+      if (settings->location.allow)
          return driver->location->start(driver->location_data);
 
       rarch_main_msg_queue_push("Location is explicitly disabled.\n", 1, 180, true);

@@ -123,16 +123,17 @@ const char* config_get_menu_driver_options(void)
 
 void find_menu_driver(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
-   int i = find_driver_index("menu_driver", g_settings.menu.driver);
+   int i = find_driver_index("menu_driver", settings->menu.driver);
    if (i >= 0)
       driver->menu_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
    else
    {
       unsigned d;
       RARCH_WARN("Couldn't find any menu driver named \"%s\"\n",
-            g_settings.menu.driver);
+            settings->menu.driver);
       RARCH_LOG_OUTPUT("Available menu drivers are:\n");
       for (d = 0; menu_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", menu_driver_find_ident(d));

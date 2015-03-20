@@ -196,7 +196,8 @@ void menu_input_poll_bind_state(struct menu_bind_state *state)
 {
    unsigned i, b, a, h;
    const rarch_joypad_driver_t *joypad = NULL;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!state)
       return;
@@ -217,7 +218,7 @@ void menu_input_poll_bind_state(struct menu_bind_state *state)
    if (joypad->poll)
       joypad->poll();
 
-   for (i = 0; i < g_settings.input.max_users; i++)
+   for (i = 0; i < settings->input.max_users; i++)
    {
       for (b = 0; b < MENU_MAX_BUTTONS; b++)
          state->state[i].buttons[b] = input_joypad_button_raw(joypad, i, b);
@@ -243,7 +244,8 @@ void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state)
 {
    unsigned i, a;
    const rarch_joypad_driver_t *joypad = NULL;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!state)
       return;
@@ -257,7 +259,7 @@ void menu_input_poll_bind_get_rested_axes(struct menu_bind_state *state)
       return;
    }
 
-   for (i = 0; i < g_settings.input.max_users; i++)
+   for (i = 0; i < settings->input.max_users; i++)
       for (a = 0; a < MENU_MAX_AXES; a++)
          state->axis_state[i].rested_axes[a] =
             input_joypad_axis_raw(joypad, i, a);
@@ -339,18 +341,19 @@ bool menu_input_poll_find_trigger(struct menu_bind_state *state,
       struct menu_bind_state *new_state)
 {
    unsigned i;
+   settings_t *settings = config_get_ptr();
 
    if (!state || !new_state)
       return false;
 
-   for (i = 0; i < g_settings.input.max_users; i++)
+   for (i = 0; i < settings->input.max_users; i++)
    {
       if (!menu_input_poll_find_trigger_pad(state, new_state, i))
          continue;
 
       /* Update the joypad mapping automatically.
        * More friendly that way. */
-      g_settings.input.joypad_map[state->user] = i;
+      settings->input.joypad_map[state->user] = i;
       return true;
    }
    return false;

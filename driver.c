@@ -243,19 +243,21 @@ void driver_set_refresh_rate(float hz)
  **/
 void driver_set_nonblock_state(bool enable)
 {
+   settings_t *settings = config_get_ptr();
+
    /* Only apply non-block-state for video if we're using vsync. */
    if (driver.video_active && driver.video_data)
    {
       bool video_nonblock = enable;
 
-      if (!g_settings.video.vsync || g_extern.system.force_nonblock)
+      if (!settings->video.vsync || g_extern.system.force_nonblock)
          video_nonblock = true;
       driver.video->set_nonblock_state(driver.video_data, video_nonblock);
    }
 
    if (driver.audio_active && driver.audio_data)
       driver.audio->set_nonblock_state(driver.audio_data,
-            g_settings.audio.sync ? enable : true);
+            settings->audio.sync ? enable : true);
 
    g_extern.audio_data.chunk_size = enable ?
       g_extern.audio_data.nonblock_chunk_size : 

@@ -148,7 +148,8 @@ const char* config_get_video_driver_options(void)
 void find_video_driver(void)
 {
    int i;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
 #if defined(HAVE_OPENGL) && defined(HAVE_FBO)
    if (g_extern.system.hw_render_callback.context_type)
@@ -169,14 +170,14 @@ void find_video_driver(void)
       RARCH_WARN("Frontend supports get_video_driver() but did not specify one.\n");
    }
 
-   i = find_driver_index("video_driver", g_settings.video.driver);
+   i = find_driver_index("video_driver", settings->video.driver);
    if (i >= 0)
       driver->video = (const video_driver_t*)video_driver_find_handle(i);
    else
    {
       unsigned d;
       RARCH_ERR("Couldn't find any video driver named \"%s\"\n",
-            g_settings.video.driver);
+            settings->video.driver);
       RARCH_LOG_OUTPUT("Available video drivers are:\n");
       for (d = 0; video_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", video_driver_find_ident(d));
@@ -200,9 +201,11 @@ void find_video_driver(void)
  **/
 void *video_driver_resolve(const video_driver_t **drv)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+
 #ifdef HAVE_THREADS
-   if (g_settings.video.threaded
+   if (settings->video.threaded
          && !g_extern.system.hw_render_callback.context_type)
       return rarch_threaded_video_resolve(drv);
 #endif
@@ -281,10 +284,11 @@ static void init_video_filter(enum retro_pixel_format colfmt)
 {
    unsigned width, height, pow2_x, pow2_y, maxsize;
    struct retro_game_geometry *geom = NULL;
+   settings_t *settings             = config_get_ptr();
 
    deinit_video_filter();
 
-   if (!*g_settings.video.softfilter_plugin)
+   if (!*settings->video.softfilter_plugin)
       return;
 
    /* Deprecated format. Gets pre-converted. */
@@ -302,7 +306,7 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    height  = geom->max_height;
 
    g_extern.filter.filter = rarch_softfilter_new(
-         g_settings.video.softfilter_plugin,
+         settings->video.softfilter_plugin,
          RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
 
    if (!g_extern.filter.filter)
@@ -403,8 +407,9 @@ void init_video(void)
    const struct retro_game_geometry *geom = NULL;
    video_info_t video = {0};
    static uint16_t dummy_pixels[32] = {0};
-   runloop_t *runloop = rarch_main_get_ptr();
-   driver_t *driver = driver_get_ptr();
+   runloop_t *runloop   = rarch_main_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    init_video_filter(g_extern.system.pix_fmt);
    rarch_main_command(RARCH_CMD_SHADER_DIR_INIT);
@@ -424,7 +429,7 @@ void init_video(void)
 
    /* Update CUSTOM viewport. */
    custom_vp = &g_extern.console.screen.viewports.custom_vp;
-   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;
       aspectratio_lut[ASPECT_RATIO_CUSTOM].value = 
@@ -433,27 +438,27 @@ void init_video(void)
    }
 
    g_extern.system.aspect_ratio = 
-      aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
+      aspectratio_lut[settings->video.aspect_ratio_idx].value;
 
-   if (g_settings.video.fullscreen)
+   if (settings->video.fullscreen)
    {
-      width = g_settings.video.fullscreen_x;
-      height = g_settings.video.fullscreen_y;
+      width  = settings->video.fullscreen_x;
+      height = settings->video.fullscreen_y;
    }
    else
    {
-      if (g_settings.video.force_aspect)
+      if (settings->video.force_aspect)
       {
          /* Do rounding here to simplify integer scale correctness. */
          unsigned base_width = roundf(geom->base_height *
                g_extern.system.aspect_ratio);
-         width = roundf(base_width * g_settings.video.scale);
-         height = roundf(geom->base_height * g_settings.video.scale);
+         width = roundf(base_width * settings->video.scale);
+         height = roundf(geom->base_height * settings->video.scale);
       }
       else
       {
-         width = roundf(geom->base_width * g_settings.video.scale);
-         height = roundf(geom->base_height * g_settings.video.scale);
+         width = roundf(geom->base_width   * settings->video.scale);
+         height = roundf(geom->base_height * settings->video.scale);
       }
    }
 
@@ -472,18 +477,18 @@ void init_video(void)
       rarch_fail(1, "init_video()");
    }
 
-   video.width = width;
-   video.height = height;
-   video.fullscreen = g_settings.video.fullscreen;
-   video.vsync = g_settings.video.vsync && !g_extern.system.force_nonblock;
-   video.force_aspect = g_settings.video.force_aspect;
+   video.width        = width;
+   video.height       = height;
+   video.fullscreen   = settings->video.fullscreen;
+   video.vsync        = settings->video.vsync && !g_extern.system.force_nonblock;
+   video.force_aspect = settings->video.force_aspect;
 #ifdef GEKKO
-   video.viwidth = g_settings.video.viwidth;
-   video.vfilter = g_settings.video.vfilter;
+   video.viwidth      = settings->video.viwidth;
+   video.vfilter      = settings->video.vfilter;
 #endif
-   video.smooth = g_settings.video.smooth;
-   video.input_scale = scale;
-   video.rgb32 = g_extern.filter.filter ? 
+   video.smooth       = settings->video.smooth;
+   video.input_scale  = scale;
+   video.rgb32        = g_extern.filter.filter ? 
       g_extern.filter.out_rgb32 : 
       (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
@@ -492,7 +497,7 @@ void init_video(void)
    find_video_driver();
 
 #ifdef HAVE_THREADS
-   if (g_settings.video.threaded && !g_extern.system.hw_render_callback.context_type)
+   if (settings->video.threaded && !g_extern.system.hw_render_callback.context_type)
    {
       /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("Starting threaded video driver ...\n");
@@ -531,11 +536,11 @@ void init_video(void)
 
    if (driver->video->set_rotation)
       driver->video->set_rotation(driver->video_data,
-            (g_settings.video.rotation + g_extern.system.rotation) % 4);
+            (settings->video.rotation + g_extern.system.rotation) % 4);
 
    if (driver->video->suppress_screensaver)
       driver->video->suppress_screensaver(driver->video_data,
-            g_settings.ui.suspend_screensaver_enable);
+            settings->ui.suspend_screensaver_enable);
 
    if (!driver->input)
       init_video_input(tmp);

@@ -178,7 +178,8 @@ static bool take_screenshot_viewport(void)
    uint8_t *buffer = NULL;
    bool retval = false;
    struct video_viewport vp = {0};
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (driver->video && driver->video->viewport_info)
       driver->video->viewport_info(driver->video_data, &vp);
@@ -193,9 +194,9 @@ static bool take_screenshot_viewport(void)
       if (!driver->video->read_viewport(driver->video_data, buffer))
          goto done;
 
-   screenshot_dir = g_settings.screenshot_directory;
+   screenshot_dir = settings->screenshot_directory;
 
-   if (!*g_settings.screenshot_directory)
+   if (!*settings->screenshot_directory)
    {
       fill_pathname_basedir(screenshot_path, g_extern.basename,
             sizeof(screenshot_path));
@@ -222,9 +223,12 @@ static bool take_screenshot_raw(void)
    unsigned width             = g_extern.frame_cache.width;
    unsigned height            = g_extern.frame_cache.height;
    int pitch                  = g_extern.frame_cache.pitch;
-   const char *screenshot_dir = g_settings.screenshot_directory;
+   settings_t *settings       = config_get_ptr();
+   const char *screenshot_dir = NULL;
+   
+   screenshot_dir = settings->screenshot_directory;
 
-   if (!*g_settings.screenshot_directory)
+   if (!*settings->screenshot_directory)
    {
       fill_pathname_basedir(screenshot_path, g_extern.basename,
             sizeof(screenshot_path));
@@ -249,14 +253,15 @@ bool take_screenshot(void)
    bool viewport_read = false;
    bool ret = true;
    const char *msg = NULL;
-   runloop_t *runloop = rarch_main_get_ptr();
-   driver_t *driver   = driver_get_ptr();
+   runloop_t *runloop   = rarch_main_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    /* No way to infer screenshot directory. */
-   if ((!*g_settings.screenshot_directory) && (!*g_extern.basename))
+   if ((!*settings->screenshot_directory) && (!*g_extern.basename))
       return false;
 
-   viewport_read = (g_settings.video.gpu_screenshot ||
+   viewport_read = (settings->video.gpu_screenshot ||
          ((g_extern.system.hw_render_callback.context_type
          != RETRO_HW_CONTEXT_NONE) && !driver->video->read_frame_raw))
          && driver->video->read_viewport && driver->video->viewport_info;

@@ -87,7 +87,8 @@ int menu_entries_push_list(menu_handle_t *menu,
       unsigned type, unsigned setting_flags)
 {
    rarch_setting_t *setting = NULL;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver         = driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
    
    settings_list_free(menu->list_settings);
    menu->list_settings = (rarch_setting_t *)setting_data_new(setting_flags);
@@ -103,7 +104,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             setting->type == ST_GROUP ||
             setting->type == ST_SUB_GROUP ||
             setting->type == ST_END_SUB_GROUP ||
-            (setting->flags & SD_FLAG_ADVANCED && !g_settings.menu.show_advanced_settings)
+            (setting->flags & SD_FLAG_ADVANCED && !settings->menu.show_advanced_settings)
          )
          continue;
 
@@ -157,6 +158,7 @@ static int menu_entries_push_cores_list(file_list_t *list, core_info_t *info,
       const char *path, bool push_databases_enable)
 {
    size_t i;
+   settings_t *settings     = config_get_ptr();
 
    if (!info->supports_no_game)
       menu_entries_content_list_push(list, info, path);
@@ -177,7 +179,7 @@ static int menu_entries_push_cores_list(file_list_t *list, core_info_t *info,
       if (!str_list)
          continue;
 
-      fill_pathname_join(db_path, g_settings.content_database,
+      fill_pathname_join(db_path, settings->content_database,
             str_list->elems[i].data, sizeof(db_path));
       strlcat(db_path, ".rdb", sizeof(db_path));
 
@@ -198,6 +200,7 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
 {
    core_info_t *info = NULL;
    core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
+   settings_t *settings        = config_get_ptr();
 
    if (!info_list)
       return -1;
@@ -207,11 +210,11 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
    if (!info)
       return -1;
 
-   strlcpy(g_settings.libretro, info->path, sizeof(g_settings.libretro));
+   strlcpy(settings->libretro, info->path, sizeof(settings->libretro));
 
    menu_list_clear(list);
 
-   menu_entries_push_cores_list(list, info, g_settings.core_assets_directory, true);
+   menu_entries_push_cores_list(list, info, settings->core_assets_directory, true);
 
    menu_list_populate_generic(list, path, label, menu_type);
 
@@ -323,6 +326,7 @@ int menu_entries_parse_list(
    bool path_is_compressed, push_dir;
    int device = 0;
    struct string_list *str_list = NULL;
+   settings_t *settings        = config_get_ptr();
 
    (void)device;
 
@@ -358,7 +362,7 @@ int menu_entries_parse_list(
       str_list = compressed_file_list_new(dir,exts);
    else
       str_list = dir_list_new(dir,
-            g_settings.menu.navigation.browser.filter.supported_extensions_enable 
+            settings->menu.navigation.browser.filter.supported_extensions_enable 
             ? exts : NULL, true);
 
    if (!str_list)

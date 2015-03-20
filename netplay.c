@@ -184,9 +184,10 @@ static bool send_chunk(netplay_t *netplay)
 static bool get_self_input_state(netplay_t *netplay)
 {
    unsigned i;
+   uint32_t state          = 0;
    struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
-   uint32_t state = 0;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver        = driver_get_ptr();
+   settings_t *settings    = config_get_ptr();
 
    if (!driver->block_libretro_input && netplay->frame_count > 0)
    {
@@ -195,7 +196,7 @@ static bool get_self_input_state(netplay_t *netplay)
       retro_input_state_t cb = netplay->cbs.state_cb;
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
-         int16_t tmp = cb(g_settings.input.netplay_client_swap_input ?
+         int16_t tmp = cb(settings->input.netplay_client_swap_input ?
                0 : !netplay->port,
                RETRO_DEVICE_JOYPAD, 0, i);
          state |= tmp ? 1 << i : 0;

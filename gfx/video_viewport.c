@@ -110,11 +110,13 @@ void video_viewport_set_core(void)
  **/
 void video_viewport_set_config(void)
 {
-   if (g_settings.video.aspect_ratio < 0.0f)
+   settings_t *settings = config_get_ptr();
+
+   if (settings->video.aspect_ratio < 0.0f)
    {
       struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
 
-      if (geom && geom->aspect_ratio > 0.0f && g_settings.video.aspect_ratio_auto)
+      if (geom && geom->aspect_ratio > 0.0f && settings->video.aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
       else
       {
@@ -132,7 +134,7 @@ void video_viewport_set_config(void)
    }
    else
       aspectratio_lut[ASPECT_RATIO_CONFIG].value = 
-         g_settings.video.aspect_ratio;
+         settings->video.aspect_ratio;
 }
 
 /**
@@ -151,11 +153,12 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       float aspect_ratio, bool keep_aspect)
 {
    int padding_x = 0, padding_y = 0;
+   settings_t *settings = config_get_ptr();
 
    if (!vp)
       return;
 
-   if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       const struct video_viewport *custom = 
          &g_extern.console.screen.viewports.custom_vp;

@@ -59,8 +59,9 @@ bool cheat_manager_save(cheat_manager_t *handle, const char *path)
    char buf[PATH_MAX_LENGTH];
    char cheats_file[PATH_MAX_LENGTH];
    config_file_t *conf = NULL;
+   settings_t *settings = config_get_ptr();
 
-   fill_pathname_join(buf, g_settings.cheat_database,
+   fill_pathname_join(buf, settings->cheat_database,
          path, sizeof(buf));
 
    fill_pathname_noext(cheats_file, buf, ".cht", sizeof(cheats_file));

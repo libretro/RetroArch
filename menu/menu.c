@@ -42,13 +42,15 @@ bool menu_display_update_pending(void)
  **/
 static void draw_frame(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+
    if (driver->video_data && driver->video_poke &&
          driver->video_poke->set_texture_enable)
       driver->video_poke->set_texture_enable(driver->video_data,
             true, false);
 
-   if (!g_settings.menu.pause_libretro)
+   if (!settings->menu.pause_libretro)
    {
       if (g_extern.main_is_init && !g_extern.libretro_dummy)
       {
@@ -88,7 +90,8 @@ static void menu_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
     
    if (!wrap_args)
       return;
@@ -101,13 +104,14 @@ static void menu_environment_get(int *argc, char *argv[],
    wrap_args->state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
    wrap_args->content_path  = *g_extern.fullpath ? g_extern.fullpath : NULL;
    if (!g_extern.has_set_libretro)
-      wrap_args->libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
+      wrap_args->libretro_path = *settings->libretro ? settings->libretro : NULL;
    wrap_args->touched       = true;
 }
 
 static void push_to_history_playlist(void)
 {
-   if (!g_settings.history_list_enable)
+   settings_t *settings = config_get_ptr();
+   if (!settings->history_list_enable)
       return;
 
    if (*g_extern.fullpath)
@@ -122,7 +126,7 @@ static void push_to_history_playlist(void)
 
    content_playlist_push(g_defaults.history,
          g_extern.fullpath,
-         g_settings.libretro,
+         settings->libretro,
          g_extern.menu.info.library_name);
 }
 
@@ -188,7 +192,8 @@ void *menu_init(const void *data)
 {
    menu_handle_t *menu = NULL;
    menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
-   runloop_t *runloop = rarch_main_get_ptr();
+   runloop_t *runloop   = rarch_main_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!menu_ctx)
       return NULL;
@@ -198,8 +203,8 @@ void *menu_init(const void *data)
    if (!(menu = (menu_handle_t*)menu_ctx->init()))
       return NULL;
 
-   strlcpy(g_settings.menu.driver, menu_ctx->ident,
-         sizeof(g_settings.menu.driver));
+   strlcpy(settings->menu.driver, menu_ctx->ident,
+         sizeof(settings->menu.driver));
 
    if (!(menu->menu_list = (menu_list_t*)menu_list_new()))
       goto error;
@@ -213,8 +218,8 @@ void *menu_init(const void *data)
    if (!menu->shader)
       goto error;
 #endif
-   menu->push_start_screen = g_settings.menu_show_start_screen;
-   g_settings.menu_show_start_screen = false;
+   menu->push_start_screen = settings->menu_show_start_screen;
+   settings->menu_show_start_screen = false;
 
    menu_shader_manager_init(menu);
 
@@ -251,7 +256,8 @@ error:
  **/
 void menu_free_list(void *data)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
+   menu_handle_t *menu  = (menu_handle_t*)data;
+
    if (!menu)
       return;
 
@@ -395,11 +401,11 @@ int menu_iterate(retro_input_t input,
 {
    static retro_time_t last_clock_update = 0;
    int32_t ret     = 0;
-   unsigned action = menu_input_frame(input, trigger_input);
-   runloop_t *runloop = rarch_main_get_ptr();
-
-   menu_handle_t *menu = menu_driver_resolve();
-   driver_t *driver    = driver_get_ptr();
+   unsigned action      = menu_input_frame(input, trigger_input);
+   runloop_t *runloop   = rarch_main_get_ptr();
+   menu_handle_t *menu  = menu_driver_resolve();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    menu->cur_time = rarch_get_time_usec();
    menu->dt = menu->cur_time - menu->old_time;
@@ -409,7 +415,7 @@ int menu_iterate(retro_input_t input,
       menu->dt = IDEAL_DT / 4;
    menu->old_time = menu->cur_time;
 
-   if (menu->cur_time - last_clock_update > 1000000 && g_settings.menu.timedate_enable)
+   if (menu->cur_time - last_clock_update > 1000000 && settings->menu.timedate_enable)
    {
       runloop->frames.video.current.menu.label.is_updated = true;
       last_clock_update = menu->cur_time;

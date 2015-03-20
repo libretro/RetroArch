@@ -58,7 +58,8 @@
  **/
 void main_exit_save_config(void)
 {
-   if (g_settings.config_save_on_exit && *g_extern.config_path)
+   settings_t *settings = config_get_ptr();
+   if (settings->config_save_on_exit && *g_extern.config_path)
    {
       /* Save last core-specific config to the default config location,
        * needed on consoles for core switching and reusing last good 
@@ -68,7 +69,7 @@ void main_exit_save_config(void)
 
       /* Flush out the core specific config. */
       if (*g_extern.core_specific_config_path &&
-            g_settings.core_specific_config)
+            settings->core_specific_config)
          config_save_file(g_extern.core_specific_config_path);
    }
 
@@ -85,7 +86,8 @@ void main_exit_save_config(void)
  **/
 void main_exit(args_type() args)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    g_extern.system.shutdown = false;
 
@@ -110,8 +112,8 @@ void main_exit(args_type() args)
       driver->frontend_ctx->deinit(args);
 
    if (driver->frontend_ctx && driver->frontend_ctx->exitspawn)
-      driver->frontend_ctx->exitspawn(g_settings.libretro,
-            sizeof(g_settings.libretro));
+      driver->frontend_ctx->exitspawn(settings->libretro,
+            sizeof(settings->libretro));
 
    rarch_main_state_free();
 
@@ -275,6 +277,7 @@ returntype main_entry(signature())
    declare_argv();
    args_type() args = (args_type())args_initial_ptr();
    int ret = 0;
+   settings_t *settings = NULL;
    driver_t *driver = driver_get_ptr();
 
    driver->frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
@@ -299,12 +302,14 @@ returntype main_entry(signature())
 
    rarch_main_command(RARCH_CMD_HISTORY_INIT);
 
-   if (g_settings.history_list_enable)
+   settings = config_get_ptr();
+
+   if (settings->history_list_enable)
    {
       if (g_extern.content_is_init || g_extern.system.no_content)
          history_playlist_push(g_defaults.history,
                g_extern.fullpath,
-               g_settings.libretro,
+               settings->libretro,
                &g_extern.system.info);
    }
 
