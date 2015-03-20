@@ -112,7 +112,8 @@ static bool dinput_init_context(void)
 static void *dinput_init(void)
 {
    struct dinput_input *di = NULL;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    if (!dinput_init_context())
    {
@@ -166,7 +167,7 @@ static void *dinput_init(void)
    }
 
    input_keymaps_init_keyboard_lut(rarch_key_map_dinput);
-   di->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+   di->joypad = input_joypad_init_driver(settings->input.joypad_driver);
 
    return di;
 }
@@ -271,8 +272,9 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
 
 static bool dinput_key_pressed(void *data, int key)
 {
+   settings_t *settings = config_get_ptr();
    return dinput_is_pressed((struct dinput_input*)data,
-         g_settings.input.binds[0], 0, key);
+         settings->input.binds[0], 0, key);
 }
 
 static int16_t dinput_lightgun_state(struct dinput_input *di, unsigned id)
@@ -398,6 +400,7 @@ static int16_t dinput_input_state(void *data,
 {
    int16_t ret;
    struct dinput_input *di = (struct dinput_input*)data;
+   settings_t *settings    = config_get_ptr();
 
    switch (device)
    {
@@ -411,7 +414,7 @@ static int16_t dinput_input_state(void *data,
          ret = dinput_pressed_analog(di, binds[port], idx, id);
          if (!ret)
             ret = input_joypad_analog(di->joypad, port,
-                  idx, id, g_settings.input.binds[port]);
+                  idx, id, settings->input.binds[port]);
          return ret;
 
       case RETRO_DEVICE_MOUSE:
@@ -524,6 +527,7 @@ extern "C"
 bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam)
 {
    struct dinput_input *di = (struct dinput_input *)dinput;
+   settings_t *settings    = config_get_ptr();
    /* WM_POINTERDOWN   : Arrives for each new touch event 
     *                    with a new ID - add to list.
     * WM_POINTERUP     : Arrives once the pointer is no 
@@ -568,7 +572,7 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
       {
          if (di->joypad)
             di->joypad->destroy();
-         di->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+         di->joypad = input_joypad_init_driver(settings->input.joypad_driver);
          break;
       }
       case WM_MOUSEWHEEL:
@@ -588,6 +592,7 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
           }
           break;
    }
+
    return false;
 }
 
@@ -691,6 +696,7 @@ bool g_xinput_block_pads;
 static void dinput_joypad_destroy(void)
 {
    unsigned i;
+   settings_t *settings = config_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -702,7 +708,7 @@ static void dinput_joypad_destroy(void)
       
       free(g_pads[i].joy_name);
       g_pads[i].joy_name = NULL;
-      *g_settings.input.device_names[i] = '\0';
+      *settings->input.device_names[i] = '\0';
    }
 
    g_joypad_cnt = 0;
@@ -811,7 +817,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 {
    bool is_xinput_pad;
    LPDIRECTINPUTDEVICE8 *pad = NULL;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    (void)p;
 
@@ -858,9 +865,9 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    if (!is_xinput_pad)
 #endif
    {
-      strlcpy(g_settings.input.device_names[g_joypad_cnt],
+      strlcpy(settings->input.device_names[g_joypad_cnt],
             dinput_joypad_name(g_joypad_cnt),
-            sizeof(g_settings.input.device_names[g_joypad_cnt]));
+            sizeof(settings->input.device_names[g_joypad_cnt]));
       /* TODO - implement VID/PID? */
       input_config_autoconfigure_joypad(g_joypad_cnt,
             dinput_joypad_name(g_joypad_cnt), 0, 0,

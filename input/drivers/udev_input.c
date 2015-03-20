@@ -557,8 +557,10 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
 static bool udev_input_bind_button_pressed(void *data, int key)
 {
    udev_input_t *udev = (udev_input_t*)data;
-   return udev_input_is_pressed(udev, g_settings.input.binds[0], key) ||
-      input_joypad_pressed(udev->joypad, 0, g_settings.input.binds[0], key);
+   settings_t *settings = config_get_ptr();
+
+   return udev_input_is_pressed(udev, settings->input.binds[0], key) ||
+      input_joypad_pressed(udev->joypad, 0, settings->input.binds[0], key);
 }
 
 static void udev_input_free(void *data)
@@ -705,6 +707,7 @@ static void disable_terminal_input(void)
 
 static void *udev_input_init(void)
 {
+   settings_t *settings = config_get_ptr();
    udev_input_t *udev = (udev_input_t*)calloc(1, sizeof(*udev));
 
    if (!udev)
@@ -743,9 +746,9 @@ static void *udev_input_init(void)
 
       rule.rules = "evdev";
 
-      if (*g_settings.input.keyboard_layout)
+      if (*settings->input.keyboard_layout)
       {
-         list = string_split(g_settings.input.keyboard_layout, ":");
+         list = string_split(settings->input.keyboard_layout, ":");
          if (list && list->size >= 2)
             rule.variant = list->elems[1].data;
          if (list && list->size >= 1)
@@ -814,7 +817,7 @@ static void *udev_input_init(void)
    if (!udev->num_devices)
       RARCH_WARN("[udev]: Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event*?\n");
 
-   udev->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+   udev->joypad = input_joypad_init_driver(settings->input.joypad_driver);
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
    disable_terminal_input();

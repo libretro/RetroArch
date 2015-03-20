@@ -304,13 +304,14 @@ error:
 static void *android_input_init(void)
 {
    int32_t sdk;
+   settings_t *settings = config_get_ptr();
    android_input_t *android = (android_input_t*)calloc(1, sizeof(*android));
 
    if (!android)
       return NULL;
 
    android->pads_connected = 0;
-   android->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+   android->joypad = input_joypad_init_driver(settings->input.joypad_driver);
 
    frontend_android_get_version_sdk(&sdk);
 
@@ -441,8 +442,9 @@ static void handle_hotplug(android_input_t *android,
    char device_name[256], name_buf[256];
    name_buf[0] = device_name[0] = 0;
    int vendorId = 0, productId = 0;
+   settings_t *settings = config_get_ptr();
 
-   if (!g_settings.input.autodetect_enable)
+   if (!settings->input.autodetect_enable)
       return;
 
    if (*port > MAX_PADS)
@@ -595,8 +597,8 @@ static void handle_hotplug(android_input_t *android,
 
    if (name_buf[0] != '\0')
    {
-      strlcpy(g_settings.input.device_names[*port],
-            name_buf, sizeof(g_settings.input.device_names[*port]));
+      strlcpy(settings->input.device_names[*port],
+            name_buf, sizeof(settings->input.device_names[*port]));
 
       input_config_autoconfigure_joypad(*port, name_buf,
             vendorId, productId,
@@ -744,13 +746,15 @@ static int16_t android_input_state(void *data,
 
 static bool android_input_key_pressed(void *data, int key)
 {
-   driver_t *driver = driver_get_ptr();
    android_input_t *android = (android_input_t*)data;
+   driver_t *driver = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+
    if (!android)
       return false;
    return ((g_extern.lifecycle_state | driver->overlay_state.buttons)
          & (1ULL << key)) || input_joypad_pressed(android->joypad,
-         0, g_settings.input.binds[0], key);
+         0, settings->input.binds[0], key);
 }
 
 static void android_input_free_input(void *data)

@@ -231,15 +231,14 @@ static int16_t apple_input_is_pressed(apple_input_data_t *apple, unsigned port_n
 
 static void *apple_input_init(void)
 {
-   apple_input_data_t *apple = NULL;
-    
-   apple = (apple_input_data_t*)calloc(1, sizeof(*apple));
+   settings_t *settings = config_get_ptr();
+   apple_input_data_t *apple = (apple_input_data_t*)calloc(1, sizeof(*apple));
    if (!apple)
       return NULL;
     
    input_keymaps_init_keyboard_lut(rarch_key_map_apple_hid);
 
-   apple->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+   apple->joypad = input_joypad_init_driver(settings->input.joypad_driver);
     
    return apple;
 }
@@ -365,9 +364,10 @@ static int16_t apple_input_state(void *data,
 static bool apple_input_bind_button_pressed(void *data, int key)
 {
    apple_input_data_t *apple = (apple_input_data_t*)data;
+   settings_t *settings = config_get_ptr();
    if (apple && apple->joypad)
-      return apple_input_is_pressed(apple, 0, g_settings.input.binds[0], key) ||
-         input_joypad_pressed(apple->joypad, 0, g_settings.input.binds[0], key);
+      return apple_input_is_pressed(apple, 0, settings->input.binds[0], key) ||
+         input_joypad_pressed(apple->joypad, 0, settings->input.binds[0], key);
    return false;
 }
 

@@ -75,11 +75,12 @@ static void xdk_input_free_input(void *data)
 
 static void *xdk_input_init(void)
 {
-   xdk_input_t *xdk = (xdk_input_t*)calloc(1, sizeof(*xdk));
+   settings_t *settings = config_get_ptr();
+   xdk_input_t *xdk     = (xdk_input_t*)calloc(1, sizeof(*xdk));
    if (!xdk)
       return NULL;
 
-   xdk->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+   xdk->joypad = input_joypad_init_driver(settings->input.joypad_driver);
 
    return xdk;
 }
@@ -87,8 +88,9 @@ static void *xdk_input_init(void)
 static bool xdk_input_key_pressed(void *data, int key)
 {
    xdk_input_t *xdk = (xdk_input_t*)data;
+   settings_t *settings = config_get_ptr();
    return (g_extern.lifecycle_state & (1ULL << key)) ||
-      input_joypad_pressed(xdk->joypad, 0, g_settings.input.binds[0], key);
+      input_joypad_pressed(xdk->joypad, 0, settings->input.binds[0], key);
 }
 
 static uint64_t xdk_input_get_capabilities(void *data)

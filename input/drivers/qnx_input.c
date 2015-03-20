@@ -92,8 +92,9 @@ static void process_gamepad_event(void *data,
    int i;
    screen_device_t device;
    input_device_t* controller = NULL;
-
+   settings_t *settings = config_get_ptr();
    qnx_input_t *qnx = (qnx_input_t*)data;
+
    (void)type;
 
    screen_get_event_property_pv(screen_event,
@@ -133,7 +134,7 @@ static void process_gamepad_event(void *data,
     * TODO: Am I missing something? Is there a better way? */
    if((controller->port == 0) && 
          (controller->buttons & 
-          g_settings.input.binds[0][RARCH_MENU_TOGGLE].joykey))
+          settings->input.binds[0][RARCH_MENU_TOGGLE].joykey))
       g_extern.lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
 }
 
@@ -273,6 +274,7 @@ static void qnx_input_autodetect_gamepad(void *data,
 {
    char name_buf[256];
    qnx_input_t *qnx = (qnx_input_t*)data;
+   settings_t *settings = config_get_ptr();
 
    if (!qnx)
       return;
@@ -303,8 +305,8 @@ static void qnx_input_autodetect_gamepad(void *data,
 
    if (name_buf[0] != '\0')
    {
-      strlcpy(g_settings.input.device_names[port],
-            name_buf, sizeof(g_settings.input.device_names[port]));
+      strlcpy(settings->input.device_names[port],
+            name_buf, sizeof(settings->input.device_names[port]));
 
       input_config_autoconfigure_joypad(port, name_buf,
             controller->vid, controller->vid,
@@ -322,6 +324,7 @@ static void process_keyboard_event(void *data,
    input_device_t* controller = NULL;
    int i, b, sym, modifiers, flags, scan, cap;
    qnx_input_t *qnx = (qnx_input_t*)data;
+   settings_t *settings = config_get_ptr();
 
    (void)type;
 
@@ -375,7 +378,7 @@ static void process_keyboard_event(void *data,
    for (b = 0; b < RARCH_FIRST_CUSTOM_BIND; ++b)
    {
       if ((unsigned int)
-            g_settings.input.binds[controller->port][b].joykey 
+            settings->input.binds[controller->port][b].joykey 
             == (unsigned int)(sym & 0xFF))
       {
          if (flags & KEY_DOWN)
@@ -390,7 +393,7 @@ static void process_keyboard_event(void *data,
 
    /* TODO: Am I missing something? Is there a better way? */
    if((controller->port == 0) && ((unsigned int)
-            g_settings.input.binds[0][RARCH_MENU_TOGGLE].joykey 
+            settings->input.binds[0][RARCH_MENU_TOGGLE].joykey 
             == (unsigned int)(sym&0xFF)))
    {
       if (flags & KEY_DOWN)
@@ -638,6 +641,7 @@ static void handle_navigator_event(void *data, bps_event_t *event)
 static void *qnx_input_init(void)
 {
    int i;
+   settings_t *settings = config_get_ptr();
    qnx_input_t *qnx = (qnx_input_t*)calloc(1, sizeof(*qnx));
    if (!qnx)
       return NULL;
@@ -648,7 +652,7 @@ static void *qnx_input_init(void)
       qnx->touch_map[i] = -1;
    }
 
-   qnx->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+   qnx->joypad = input_joypad_init_driver(settings->input.joypad_driver);
 
    for (i = 0; i < MAX_PADS; ++i)
    {
@@ -770,12 +774,13 @@ static int16_t qnx_input_state(void *data,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    qnx_input_t *qnx = (qnx_input_t*)data;
+   settings_t *settings = config_get_ptr();
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
          return input_joypad_pressed(qnx->joypad, port,
-               (unsigned int)g_settings.input.binds[port], id);
+               (unsigned int)settings->input.binds[port], id);
       case RETRO_DEVICE_ANALOG:
          return qnx_analog_input_state(qnx, port, idx, id);
       case RARCH_DEVICE_POINTER_SCREEN:
@@ -790,8 +795,10 @@ static int16_t qnx_input_state(void *data,
 static bool qnx_input_key_pressed(void *data, int key)
 {
    qnx_input_t *qnx = (qnx_input_t*)data;
+   settings_t *settings = config_get_ptr();
+
    return ((g_extern.lifecycle_state | driver.overlay_state.buttons ) & (1ULL << key) ||
-         input_joypad_pressed(qnx->joypad, 0, g_settings.input.binds[0], key));
+         input_joypad_pressed(qnx->joypad, 0, settings->input.binds[0], key));
 }
 
 static void qnx_input_free_input(void *data)

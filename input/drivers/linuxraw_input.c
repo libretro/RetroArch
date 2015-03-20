@@ -60,7 +60,8 @@ static void *linuxraw_input_init(void)
 {
    struct sigaction sa;
    linuxraw_input_t *linuxraw = NULL;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    /* Only work on terminals. */
    if (!isatty(0))
@@ -116,7 +117,7 @@ static void *linuxraw_input_init(void)
 
    atexit(linuxraw_resetKbmd);
 
-   linuxraw->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+   linuxraw->joypad = input_joypad_init_driver(settings->input.joypad_driver);
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
    /* We need to disable use of stdin command interface if 
@@ -165,8 +166,10 @@ static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
 static bool linuxraw_bind_button_pressed(void *data, int key)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
-   return linuxraw_is_pressed(linuxraw, g_settings.input.binds[0], key) ||
-      input_joypad_pressed(linuxraw->joypad, 0, g_settings.input.binds[0], key);
+   settings_t *settings       = config_get_ptr();
+
+   return linuxraw_is_pressed(linuxraw, settings->input.binds[0], key) ||
+      input_joypad_pressed(linuxraw->joypad, 0, settings->input.binds[0], key);
 }
 
 static int16_t linuxraw_input_state(void *data,

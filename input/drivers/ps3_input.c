@@ -156,11 +156,12 @@ static void ps3_input_free_input(void *data)
 
 static void* ps3_input_init(void)
 {
+   settings_t *settings = config_get_ptr();
    ps3_input_t *ps3 = (ps3_input_t*)calloc(1, sizeof(*ps3));
    if (!ps3)
       return NULL;
 
-   ps3->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+   ps3->joypad = input_joypad_init_driver(settings->input.joypad_driver);
 
    if (ps3->joypad)
       ps3->joypad->init();
@@ -174,10 +175,12 @@ static void* ps3_input_init(void)
 static bool ps3_input_key_pressed(void *data, int key)
 {
    ps3_input_t *ps3 = (ps3_input_t*)data;
-   if (ps3)
-      return (g_extern.lifecycle_state & (1ULL << key)) || 
-         input_joypad_pressed(ps3->joypad, 0, g_settings.input.binds[0], key);
-   return false;
+   settings_t *settings = config_get_ptr();
+
+   if (!ps3)
+      return false;
+   return (g_extern.lifecycle_state & (1ULL << key)) || 
+      input_joypad_pressed(ps3->joypad, 0, settings->input.binds[0], key);
 }
 
 static uint64_t ps3_input_get_capabilities(void *data)

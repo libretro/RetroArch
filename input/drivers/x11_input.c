@@ -47,7 +47,9 @@ typedef struct x11_input
 
 static void *x_input_init(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
+
    if (driver->display_type != RARCH_DISPLAY_X11)
    {
       RARCH_ERR("Currently active window is not an X11 window. Cannot use this driver.\n");
@@ -62,7 +64,7 @@ static void *x_input_init(void)
    x11->display = (Display*)driver->video_display;
    x11->win     = (Window)driver->video_window;
 
-   x11->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+   x11->joypad = input_joypad_init_driver(settings->input.joypad_driver);
    input_keymaps_init_keyboard_lut(rarch_key_map_x11);
 
    return x11;
@@ -116,10 +118,11 @@ static int16_t x_pressed_analog(x11_input_t *x11,
 static bool x_bind_button_pressed(void *data, int key)
 {
    x11_input_t *x11 = (x11_input_t*)data;
+   settings_t *settings = config_get_ptr();
    if (!x11)
       return false;
-   return x_is_pressed(x11, g_settings.input.binds[0], key) ||
-      input_joypad_pressed(x11->joypad, 0, g_settings.input.binds[0], key);
+   return x_is_pressed(x11, settings->input.binds[0], key) ||
+      input_joypad_pressed(x11->joypad, 0, settings->input.binds[0], key);
 }
 
 static int16_t x_mouse_state(x11_input_t *x11, unsigned id)

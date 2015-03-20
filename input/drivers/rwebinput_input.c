@@ -79,7 +79,8 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput, const struct retr
 static bool rwebinput_bind_button_pressed(void *data, int key)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
-   return rwebinput_is_pressed(rwebinput, g_settings.input.binds[0], key);
+   settings_t *settings = config_get_ptr();
+   return rwebinput_is_pressed(rwebinput, settings->input.binds[0], key);
 }
 
 static int16_t rwebinput_mouse_state(rwebinput_input_t *rwebinput, unsigned id)
