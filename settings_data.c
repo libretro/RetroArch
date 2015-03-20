@@ -264,11 +264,12 @@ void setting_data_get_string_representation(void *data,
 static int setting_data_action_start_savestates(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
 
    if (!setting)
       return -1;
 
-   g_settings.state_slot = 0;
+   settings->state_slot = 0;
 
    return 0;
 }
@@ -276,11 +277,12 @@ static int setting_data_action_start_savestates(void *data)
 static int setting_data_action_start_bind_device(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
 
    if (!setting)
       return -1;
 
-   g_settings.input.joypad_map[setting->index_offset] = setting->index_offset;
+   settings->input.joypad_map[setting->index_offset] = setting->index_offset;
    return 0;
 }
 
@@ -337,6 +339,7 @@ static int setting_data_action_start_libretro_device_type(void *data)
    unsigned current_device, i, devices[128], types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
 
    if (!setting)
       return -1;
@@ -367,11 +370,11 @@ static int setting_data_action_start_libretro_device_type(void *data)
       }
    }
 
-   current_device = g_settings.input.libretro_device[port];
+   current_device = settings->input.libretro_device[port];
 
    current_device = RETRO_DEVICE_JOYPAD;
 
-   g_settings.input.libretro_device[port] = current_device;
+   settings->input.libretro_device[port] = current_device;
    pretro_set_controller_port_device(port, current_device);
 
    return 0;
@@ -478,7 +481,8 @@ static int setting_data_action_toggle_analog_dpad_mode(void *data,
       unsigned action, bool wraparound)
 {
    unsigned port = 0;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
 
    if (!setting)
       return -1;
@@ -488,14 +492,14 @@ static int setting_data_action_toggle_analog_dpad_mode(void *data,
    switch (action)
    {
       case MENU_ACTION_RIGHT:
-         g_settings.input.analog_dpad_mode[port] =
-            (g_settings.input.analog_dpad_mode[port] + 1)
+         settings->input.analog_dpad_mode[port] =
+            (settings->input.analog_dpad_mode[port] + 1)
             % ANALOG_DPAD_LAST;
          break;
 
       case MENU_ACTION_LEFT:
-         g_settings.input.analog_dpad_mode[port] =
-            (g_settings.input.analog_dpad_mode
+         settings->input.analog_dpad_mode[port] =
+            (settings->input.analog_dpad_mode
              [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
          break;
    }
@@ -520,7 +524,8 @@ static int setting_data_action_toggle_libretro_device_type(
    unsigned current_device, current_idx, i, devices[128],
             types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
 
    if (!setting)
       return -1;
@@ -549,7 +554,7 @@ static int setting_data_action_toggle_libretro_device_type(
       }
    }
 
-   current_device = g_settings.input.libretro_device[port];
+   current_device = settings->input.libretro_device[port];
    current_idx = 0;
    for (i = 0; i < types; i++)
    {
@@ -566,7 +571,7 @@ static int setting_data_action_toggle_libretro_device_type(
          current_device = devices
             [(current_idx + types - 1) % types];
 
-         g_settings.input.libretro_device[port] = current_device;
+         settings->input.libretro_device[port] = current_device;
          pretro_set_controller_port_device(port, current_device);
          break;
 
@@ -574,7 +579,7 @@ static int setting_data_action_toggle_libretro_device_type(
          current_device = devices
             [(current_idx + 1) % types];
 
-         g_settings.input.libretro_device[port] = current_device;
+         settings->input.libretro_device[port] = current_device;
          pretro_set_controller_port_device(port, current_device);
          break;
    }
@@ -596,7 +601,8 @@ static int setting_data_action_toggle_libretro_device_type(
 static int setting_data_action_toggle_savestates(
       void *data, unsigned action, bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
 
    if (!setting)
       return -1;
@@ -605,11 +611,11 @@ static int setting_data_action_toggle_savestates(
    {
       case MENU_ACTION_LEFT:
          /* Slot -1 is (auto) slot. */
-         if (g_settings.state_slot >= 0)
-            g_settings.state_slot--;
+         if (settings->state_slot >= 0)
+            settings->state_slot--;
          break;
       case MENU_ACTION_RIGHT:
-         g_settings.state_slot++;
+         settings->state_slot++;
          break;
    }
 
@@ -631,23 +637,24 @@ static int setting_data_action_toggle_bind_device(void *data,
       unsigned action, bool wraparound)
 {
    unsigned *p = NULL;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
 
    if (!setting)
       return -1;
 
-   p = &g_settings.input.joypad_map[setting->index_offset];
+   p = &settings->input.joypad_map[setting->index_offset];
 
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         if ((*p) >= g_settings.input.max_users)
-            *p = g_settings.input.max_users - 1;
+         if ((*p) >= settings->input.max_users)
+            *p = settings->input.max_users - 1;
          else if ((*p) > 0)
             (*p)--;
          break;
       case MENU_ACTION_RIGHT:
-         if (*p < g_settings.input.max_users)
+         if (*p < settings->input.max_users)
             (*p)++;
          break;
    }
@@ -782,16 +789,17 @@ static int setting_data_string_action_toggle_driver(void *data,
 static int core_list_action_toggle(void *data, unsigned action, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t *)data;
+   settings_t      *settings = config_get_ptr();
 
    if (!setting)
       return -1;
 
-   /* If the user CANCELs the browse, then g_settings.libretro is now
+   /* If the user CANCELs the browse, then settings->libretro is now
     * set to a directory, which is very bad and will cause a crash
     * later on. I need to be able to add something to call when a
     * cancel happens.
     */
-   strlcpy(setting->value.string, g_settings.libretro_directory, setting->size);
+   strlcpy(setting->value.string, settings->libretro_directory, setting->size);
 
    return 0;
 }
@@ -819,12 +827,13 @@ static void core_list_change_handler(void *data)
 static int load_content_action_toggle(void *data, unsigned action,
       bool wraparound)
 {
-   rarch_setting_t *setting = (rarch_setting_t *)data;
+   rarch_setting_t *setting  = (rarch_setting_t *)data;
+   settings_t      *settings = config_get_ptr();
 
    if (!setting)
       return -1;
 
-   strlcpy(setting->value.string, g_settings.menu_content_directory, setting->size);
+   strlcpy(setting->value.string, settings->menu_content_directory, setting->size);
 
    if (g_extern.menu.info.valid_extensions)
       setting->values = g_extern.menu.info.valid_extensions;
@@ -840,13 +849,14 @@ static int load_content_action_toggle(void *data, unsigned action,
 
 static int setting_data_action_ok_bind_all(void *data, unsigned action)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-   menu_handle_t *menu = menu_driver_resolve();
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   menu_handle_t *menu       = menu_driver_resolve();
+   settings_t      *settings = config_get_ptr();
 
    if (!setting || !menu)
       return -1;
 
-   menu->binds.target = &g_settings.input.binds
+   menu->binds.target = &settings->input.binds
       [setting->index_offset][0];
    menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
    menu->binds.last = MENU_SETTINGS_BIND_LAST;
@@ -882,8 +892,9 @@ static int setting_data_action_ok_bind_defaults(void *data, unsigned action)
    unsigned i;
    struct retro_keybind *target = NULL;
    const struct retro_keybind *def_binds = NULL;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-   menu_handle_t *menu = menu_driver_resolve();
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   menu_handle_t *menu       = menu_driver_resolve();
+   settings_t      *settings = config_get_ptr();
 
    if (!menu)
       return -1;
@@ -891,7 +902,7 @@ static int setting_data_action_ok_bind_defaults(void *data, unsigned action)
       return -1;
 
    target = (struct retro_keybind*)
-      &g_settings.input.binds[setting->index_offset][0];
+      &settings->input.binds[setting->index_offset][0];
    def_binds =  (setting->index_offset) ? 
       retro_keybinds_rest : retro_keybinds_1;
 
@@ -1286,14 +1297,16 @@ static void setting_data_get_string_representation_uint_libretro_device(void *da
 {
    const struct retro_controller_description *desc = NULL;
    const char *name = NULL;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
+
    if (!setting)
       return;
 
    if (setting->index_offset < g_extern.system.num_ports)
       desc = libretro_find_controller_description(
             &g_extern.system.ports[setting->index_offset],
-            g_settings.input.libretro_device
+            settings->input.libretro_device
             [setting->index_offset]);
 
    if (desc)
@@ -1303,7 +1316,7 @@ static void setting_data_get_string_representation_uint_libretro_device(void *da
    {
       /* Find generic name. */
 
-      switch (g_settings.input.libretro_device
+      switch (settings->input.libretro_device
             [setting->index_offset])
       {
          case RETRO_DEVICE_NONE:
@@ -1328,10 +1341,11 @@ static void setting_data_get_string_representation_uint_archive_mode(void *data,
       char *type_str, size_t type_str_size)
 {
    const char *name = "Unknown";
+   settings_t      *settings = config_get_ptr();
 
    (void)data;
 
-   switch (g_settings.archive.mode)
+   switch (settings->archive.mode)
    {
       case 0:
          name = "Ask";
@@ -1355,13 +1369,14 @@ static void setting_data_get_string_representation_uint_analog_dpad_mode(void *d
       "Left Analog",
       "Right Analog",
    };
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
    if (!setting)
       return;
 
    (void)data;
 
-   strlcpy(type_str, modes[g_settings.input.analog_dpad_mode
+   strlcpy(type_str, modes[settings->input.analog_dpad_mode
          [setting->index_offset] % ANALOG_DPAD_LAST],
          type_str_size);
 }
@@ -1397,11 +1412,12 @@ static void setting_data_get_string_representation_uint_user_language(void *data
       "Chinese (Traditional)",
       "Chinese (Simplified)"
    };
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
    if (!setting)
       return;
 
-   strlcpy(type_str, modes[g_settings.user_language], type_str_size);
+   strlcpy(type_str, modes[settings->user_language], type_str_size);
 }
 
 static void setting_data_get_string_representation_uint_libretro_log_level(void *data,
@@ -1919,9 +1935,11 @@ rarch_setting_t setting_data_string_setting_options(enum setting_type type,
 int setting_data_get_description(const char *label, char *msg,
       size_t sizeof_msg)
 {
+   settings_t      *settings = config_get_ptr();
+
    if (!strcmp(label, "input_driver"))
    {
-      if (!strcmp(g_settings.input.driver, "udev"))
+      if (!strcmp(settings->input.driver, "udev"))
          snprintf(msg, sizeof_msg,
                " -- udev Input driver. \n"
                " \n"
@@ -1940,7 +1958,7 @@ int setting_data_get_description(const char *label, char *msg,
                "are root-only (mode 600). You can set up a udev \n"
                "rule which makes these accessible to non-root."
                );
-      else if (!strcmp(g_settings.input.driver, "linuxraw"))
+      else if (!strcmp(settings->input.driver, "linuxraw"))
          snprintf(msg, sizeof_msg,
                " -- linuxraw Input driver. \n"
                " \n"
@@ -2011,16 +2029,16 @@ int setting_data_get_description(const char *label, char *msg,
    }
    else if (!strcmp(label, "audio_resampler_driver"))
    {
-      if (!strcmp(g_settings.audio.resampler, "sinc"))
+      if (!strcmp(settings->audio.resampler, "sinc"))
          snprintf(msg, sizeof_msg,
                " -- Windowed SINC implementation.");
-      else if (!strcmp(g_settings.audio.resampler, "CC"))
+      else if (!strcmp(settings->audio.resampler, "CC"))
          snprintf(msg, sizeof_msg,
                " -- Convoluted Cosine implementation.");
    }
    else if (!strcmp(label, "video_driver"))
    {
-      if (!strcmp(g_settings.video.driver, "gl"))
+      if (!strcmp(settings->video.driver, "gl"))
          snprintf(msg, sizeof_msg,
                " -- OpenGL Video driver. \n"
                " \n"
@@ -2032,7 +2050,7 @@ int setting_data_get_description(const char *label, char *msg,
                "libretro GL core implementations is \n"
                "dependent on your graphics card's \n"
                "underlying GL driver).");
-      else if (!strcmp(g_settings.video.driver, "sdl2"))
+      else if (!strcmp(settings->video.driver, "sdl2"))
          snprintf(msg, sizeof_msg,
                " -- SDL 2 Video driver.\n"
                " \n"
@@ -2042,7 +2060,7 @@ int setting_data_get_description(const char *label, char *msg,
                "Performance for software-rendered libretro \n"
                "core implementations is dependent \n"
                "on your platform SDL implementation.");
-      else if (!strcmp(g_settings.video.driver, "sdl"))
+      else if (!strcmp(settings->video.driver, "sdl"))
          snprintf(msg, sizeof_msg,
                " -- SDL Video driver.\n"
                " \n"
@@ -2051,14 +2069,14 @@ int setting_data_get_description(const char *label, char *msg,
                " \n"
                "Performance is considered to be suboptimal. \n"
                "Consider using it only as a last resort.");
-      else if (!strcmp(g_settings.video.driver, "d3d"))
+      else if (!strcmp(settings->video.driver, "d3d"))
          snprintf(msg, sizeof_msg,
                " -- Direct3D Video driver. \n"
                " \n"
                "Performance for software-rendered cores \n"
                "is dependent on your graphic card's \n"
                "underlying D3D driver).");
-      else if (!strcmp(g_settings.video.driver, "exynos"))
+      else if (!strcmp(settings->video.driver, "exynos"))
          snprintf(msg, sizeof_msg,
                " -- Exynos-G2D Video Driver. \n"
                " \n"
@@ -2068,7 +2086,7 @@ int setting_data_get_description(const char *label, char *msg,
                " \n"
                "Performance for software rendered cores \n"
                "should be optimal.");
-      else if (!strcmp(g_settings.video.driver, "sunxi"))
+      else if (!strcmp(settings->video.driver, "sunxi"))
          snprintf(msg, sizeof_msg,
                " -- Sunxi-G2D Video Driver. \n"
                " \n"
@@ -2856,17 +2874,17 @@ static void get_string_representation_bind_device(void * data, char *type_str,
       size_t type_str_size)
 {
    unsigned map = 0;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
 
    if (!setting)
       return;
 
-   map = g_settings.input.joypad_map[setting->index_offset];
+   map = settings->input.joypad_map[setting->index_offset];
 
-   if (map < g_settings.input.max_users)
+   if (map < settings->input.max_users)
    {
-      const char *device_name = 
-         g_settings.input.device_names[map];
+      const char *device_name = settings->input.device_names[map];
 
       if (*device_name)
          strlcpy(type_str, device_name, type_str_size);
@@ -2882,8 +2900,10 @@ static void get_string_representation_bind_device(void * data, char *type_str,
 static void get_string_representation_savestate(void * data, char *type_str,
       size_t type_str_size)
 {
-   snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
-   if (g_settings.state_slot == -1)
+   settings_t      *settings = config_get_ptr();
+
+   snprintf(type_str, type_str_size, "%d", settings->state_slot);
+   if (settings->state_slot == -1)
       strlcat(type_str, " (Auto)", type_str_size);
 }
 
@@ -2928,46 +2948,48 @@ void setting_data_get_label(file_list_t *list, char *type_str,
 
 static void general_read_handler(void *data)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   settings_t      *settings = config_get_ptr();
 
    if (!setting)
       return;
 
    if (!strcmp(setting->name, "audio_rate_control_delta"))
    {
-      *setting->value.fraction = g_settings.audio.rate_control_delta;
+      *setting->value.fraction = settings->audio.rate_control_delta;
       if (*setting->value.fraction < 0.0005)
       {
-         g_settings.audio.rate_control = false;
-         g_settings.audio.rate_control_delta = 0.0;
+         settings->audio.rate_control = false;
+         settings->audio.rate_control_delta = 0.0;
       }
       else
       {
-         g_settings.audio.rate_control = true;
-         g_settings.audio.rate_control_delta = *setting->value.fraction;
+         settings->audio.rate_control = true;
+         settings->audio.rate_control_delta = *setting->value.fraction;
       }
    }
    else if (!strcmp(setting->name, "audio_max_timing_skew"))
-      *setting->value.fraction = g_settings.audio.max_timing_skew;
+      *setting->value.fraction = settings->audio.max_timing_skew;
    else if (!strcmp(setting->name, "video_refresh_rate_auto"))
-      *setting->value.fraction = g_settings.video.refresh_rate;
+      *setting->value.fraction = settings->video.refresh_rate;
    else if (!strcmp(setting->name, "input_player1_joypad_index"))
-      *setting->value.integer = g_settings.input.joypad_map[0];
+      *setting->value.integer = settings->input.joypad_map[0];
    else if (!strcmp(setting->name, "input_player2_joypad_index"))
-      *setting->value.integer = g_settings.input.joypad_map[1];
+      *setting->value.integer = settings->input.joypad_map[1];
    else if (!strcmp(setting->name, "input_player3_joypad_index"))
-      *setting->value.integer = g_settings.input.joypad_map[2];
+      *setting->value.integer = settings->input.joypad_map[2];
    else if (!strcmp(setting->name, "input_player4_joypad_index"))
-      *setting->value.integer = g_settings.input.joypad_map[3];
+      *setting->value.integer = settings->input.joypad_map[3];
    else if (!strcmp(setting->name, "input_player5_joypad_index"))
-      *setting->value.integer = g_settings.input.joypad_map[4];
+      *setting->value.integer = settings->input.joypad_map[4];
 }
 
 static void general_write_handler(void *data)
 {
    unsigned rarch_cmd = RARCH_CMD_NONE;
    rarch_setting_t *setting = (rarch_setting_t*)data;
-   driver_t *driver = driver_get_ptr();
+   settings_t *settings     = config_get_ptr();
+   driver_t *driver         = driver_get_ptr();
 
    if (!setting)
       return;
@@ -3009,7 +3031,7 @@ static void general_write_handler(void *data)
       if (driver->video_data && driver->video_poke
             && driver->video_poke->set_filtering)
          driver->video_poke->set_filtering(driver->video_data,
-               1, g_settings.video.smooth);
+               1, settings->video.smooth);
    }
    else if (!strcmp(setting->name, "pal60_enable"))
    {
@@ -3048,17 +3070,17 @@ static void general_write_handler(void *data)
    {
       if (*setting->value.fraction < 0.0005)
       {
-         g_settings.audio.rate_control = false;
-         g_settings.audio.rate_control_delta = 0.0;
+         settings->audio.rate_control = false;
+         settings->audio.rate_control_delta = 0.0;
       }
       else
       {
-         g_settings.audio.rate_control = true;
-         g_settings.audio.rate_control_delta = *setting->value.fraction;
+         settings->audio.rate_control = true;
+         settings->audio.rate_control_delta = *setting->value.fraction;
       }
    }
    else if (!strcmp(setting->name, "audio_max_timing_skew"))
-      g_settings.audio.max_timing_skew = *setting->value.fraction;
+      settings->audio.max_timing_skew = *setting->value.fraction;
    else if (!strcmp(setting->name, "video_refresh_rate_auto"))
    {
       if (driver->video && driver->video_data)
@@ -3071,21 +3093,21 @@ static void general_write_handler(void *data)
    }
    else if (!strcmp(setting->name, "video_scale"))
    {
-      g_settings.video.scale = roundf(*setting->value.fraction);
+      settings->video.scale = roundf(*setting->value.fraction);
 
-      if (!g_settings.video.fullscreen)
+      if (!settings->video.fullscreen)
          rarch_cmd = RARCH_CMD_REINIT;
    }
    else if (!strcmp(setting->name, "input_player1_joypad_index"))
-      g_settings.input.joypad_map[0] = *setting->value.integer;
+      settings->input.joypad_map[0] = *setting->value.integer;
    else if (!strcmp(setting->name, "input_player2_joypad_index"))
-      g_settings.input.joypad_map[1] = *setting->value.integer;
+      settings->input.joypad_map[1] = *setting->value.integer;
    else if (!strcmp(setting->name, "input_player3_joypad_index"))
-      g_settings.input.joypad_map[2] = *setting->value.integer;
+      settings->input.joypad_map[2] = *setting->value.integer;
    else if (!strcmp(setting->name, "input_player4_joypad_index"))
-      g_settings.input.joypad_map[3] = *setting->value.integer;
+      settings->input.joypad_map[3] = *setting->value.integer;
    else if (!strcmp(setting->name, "input_player5_joypad_index"))
-      g_settings.input.joypad_map[4] = *setting->value.integer;
+      settings->input.joypad_map[4] = *setting->value.integer;
 #ifdef HAVE_NETPLAY
    else if (!strcmp(setting->name, "netplay_ip_address"))
       g_extern.has_set_netplay_ip_address = (setting->value.string[0] != '\0');
@@ -3283,7 +3305,8 @@ static bool setting_data_append_list_main_menu_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "Main Menu");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
@@ -3293,8 +3316,8 @@ static bool setting_data_append_list_main_menu_options(
          "Core Selection",
          group_info.name,
          subgroup_info.name);
-   (*list)[list_info->index - 1].size = sizeof(g_settings.libretro);
-   (*list)[list_info->index - 1].value.string = g_settings.libretro;
+   (*list)[list_info->index - 1].size = sizeof(settings->libretro);
+   (*list)[list_info->index - 1].value.string = settings->libretro;
    (*list)[list_info->index - 1].values = EXT_EXECUTABLES;
    // It is not a good idea to have chosen action_toggle as the place
    // to put this callback. It should be called whenever the browser
@@ -3313,7 +3336,7 @@ static bool setting_data_append_list_main_menu_options(
          subgroup_info.name);
 #endif
 
-   if (g_settings.history_list_enable)
+   if (settings->history_list_enable)
    {
       CONFIG_ACTION(
             "history_list",
@@ -3475,13 +3498,14 @@ static bool setting_data_append_list_driver_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
    
    START_GROUP(group_info, "Driver Settings");
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
    
    CONFIG_STRING_OPTIONS(
-         g_settings.input.driver,
+         settings->input.driver,
          "input_driver",
          "Input Driver",
          config_get_default_input(),
@@ -3493,7 +3517,7 @@ static bool setting_data_append_list_driver_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING_OPTIONS(
-         g_settings.video.driver,
+         settings->video.driver,
          "video_driver",
          "Video Driver",
          config_get_default_video(),
@@ -3505,7 +3529,7 @@ static bool setting_data_append_list_driver_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING_OPTIONS(
-         g_settings.audio.driver,
+         settings->audio.driver,
          "audio_driver",
          "Audio Driver",
          config_get_default_audio(),
@@ -3517,7 +3541,7 @@ static bool setting_data_append_list_driver_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING_OPTIONS(
-         g_settings.audio.resampler,
+         settings->audio.resampler,
          "audio_resampler_driver",
          "Audio Resampler Driver",
          config_get_default_audio_resampler(),
@@ -3529,7 +3553,7 @@ static bool setting_data_append_list_driver_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING_OPTIONS(
-         g_settings.camera.driver,
+         settings->camera.driver,
          "camera_driver",
          "Camera Driver",
          config_get_default_camera(),
@@ -3541,7 +3565,7 @@ static bool setting_data_append_list_driver_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
 
    CONFIG_STRING_OPTIONS(
-         g_settings.location.driver,
+         settings->location.driver,
          "location_driver",
          "Location Driver",
          config_get_default_location(),
@@ -3554,7 +3578,7 @@ static bool setting_data_append_list_driver_options(
 
 #ifdef HAVE_MENU
    CONFIG_STRING_OPTIONS(
-         g_settings.menu.driver,
+         settings->menu.driver,
          "menu_driver",
          "Menu Driver",
          config_get_default_menu(),
@@ -3567,7 +3591,7 @@ static bool setting_data_append_list_driver_options(
 #endif
 
    CONFIG_STRING_OPTIONS(
-         g_settings.input.joypad_driver,
+         settings->input.joypad_driver,
          "input_joypad_driver",
          "Joypad Driver",
          config_get_default_joypad(),
@@ -3590,13 +3614,14 @@ static bool setting_data_append_list_general_options(
 {
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
+   settings_t *settings = config_get_ptr();
 
    START_GROUP(group_info, "General Settings");
 
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.load_dummy_on_core_shutdown,
+         settings->load_dummy_on_core_shutdown,
          "dummy_on_core_shutdown",
          "Dummy On Core Shutdown",
          load_dummy_on_core_shutdown,
@@ -3609,7 +3634,7 @@ static bool setting_data_append_list_general_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_BOOL(
-         g_settings.core_specific_config,
+         settings->core_specific_config,
          "core_specific_config",
          "Configuration Per-Core",
          default_core_specific_config,
@@ -3638,7 +3663,7 @@ static bool setting_data_append_list_general_options(
          general_read_handler);
 
 
-   CONFIG_UINT(g_settings.libretro_log_level,
+   CONFIG_UINT(settings->libretro_log_level,
          "libretro_log_level",
          "Libretro Logging Level",
          libretro_log_level,
@@ -3666,7 +3691,7 @@ static bool setting_data_append_list_general_options(
          general_read_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   CONFIG_BOOL(g_settings.config_save_on_exit,
+   CONFIG_BOOL(settings->config_save_on_exit,
          "config_save_on_exit",
          "Configuration Save On Exit",
          config_save_on_exit,
@@ -3682,7 +3707,7 @@ static bool setting_data_append_list_general_options(
    START_SUB_GROUP(list, list_info, "Frame rewinding", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.rewind_enable,
+         settings->rewind_enable,
          "rewind_enable",
          "Rewind",
          rewind_enable,
@@ -3696,7 +3721,7 @@ static bool setting_data_append_list_general_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 #if 0
    CONFIG_SIZE(
-         g_settings.rewind_buffer_size,
+         settings->rewind_buffer_size,
          "rewind_buffer_size",
          "Rewind Buffer Size",
          rewind_buffer_size,
@@ -3706,7 +3731,7 @@ static bool setting_data_append_list_general_options(
          general_read_handler)
 #endif
       CONFIG_UINT(
-            g_settings.rewind_granularity,
+            settings->rewind_granularity,
             "rewind_granularity",
             "Rewind Granularity",
             rewind_granularity,
@@ -3722,7 +3747,7 @@ static bool setting_data_append_list_general_options(
    START_SUB_GROUP(list, list_info, "Saving", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.block_sram_overwrite,
+         settings->block_sram_overwrite,
          "block_sram_overwrite",
          "SRAM Block overwrite",
          block_sram_overwrite,
@@ -3735,7 +3760,7 @@ static bool setting_data_append_list_general_options(
 
 #ifdef HAVE_THREADS
    CONFIG_UINT(
-         g_settings.autosave_interval,
+         settings->autosave_interval,
          "autosave_interval",
          "SRAM Autosave",
          autosave_interval,
@@ -3751,7 +3776,7 @@ static bool setting_data_append_list_general_options(
 #endif
 
    CONFIG_BOOL(
-         g_settings.savestate_auto_index,
+         settings->savestate_auto_index,
          "savestate_auto_index",
          "Save State Auto Index",
          savestate_auto_index,
@@ -3763,7 +3788,7 @@ static bool setting_data_append_list_general_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.savestate_auto_save,
+         settings->savestate_auto_save,
          "savestate_auto_save",
          "Auto Save State",
          savestate_auto_save,
@@ -3775,7 +3800,7 @@ static bool setting_data_append_list_general_options(
             general_read_handler);
 
    CONFIG_BOOL(
-         g_settings.savestate_auto_load,
+         settings->savestate_auto_load,
          "savestate_auto_load",
          "Auto Load State",
          savestate_auto_load,
@@ -3792,7 +3817,7 @@ static bool setting_data_append_list_general_options(
    START_SUB_GROUP(list, list_info, "Frame throttling", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_settings.fastforward_ratio_throttle_enable,
+         settings->fastforward_ratio_throttle_enable,
          "fastforward_ratio_throttle_enable",
          "Limit Maximum Run Speed",
          fastforward_ratio_throttle_enable,
@@ -3804,7 +3829,7 @@ static bool setting_data_append_list_general_options(
          general_read_handler);
 
    CONFIG_FLOAT(
-         g_settings.fastforward_ratio,
+         settings->fastforward_ratio,
          "fastforward_ratio",
          "Maximum Run Speed",
          fastforward_ratio,
@@ -3816,7 +3841,7 @@ static bool setting_data_append_list_general_options(
    settings_list_current_add_range(list, list_info, 1, 10, 0.1, true, true);
 
    CONFIG_FLOAT(
-         g_settings.slowmotion_ratio,
+         settings->slowmotion_ratio,
          "slowmotion_ratio",
          "Slow-Motion Ratio",
          slowmotion_ratio,
