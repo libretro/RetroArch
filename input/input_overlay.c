@@ -457,7 +457,6 @@ error:
 
 static bool input_overlay_load_overlay_image_done(struct overlay *overlay)
 {
-
    overlay->pos = 0;
    /* Divide iteration steps by half of total descs if size is even,
     * otherwise default to 8 (arbitrary value for now to speed things up). */
@@ -474,9 +473,12 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
 {
    size_t i = 0;
    bool not_done = true;
-
+   struct overlay *overlay = NULL;
+   
    if (!ol)
       return false;
+
+   overlay = &ol->overlays[ol->pos];
 
    not_done = ol->pos < ol->size;
 
@@ -498,67 +500,55 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
          ol->overlays[ol->pos].pos = 0;
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_IMAGE_ITERATE:
+         for (i = 0; i < overlay->pos_increment; i++)
          {
-            struct overlay *overlay = &ol->overlays[ol->pos];
-
-            for (i = 0; i < overlay->pos_increment; i++)
+            if (overlay->pos < overlay->size)
             {
-               unsigned idx = ol->pos;
-
-               if (overlay->pos < overlay->size)
+               if (!input_overlay_load_desc_image(ol, &overlay->descs[overlay->pos], overlay,
+                        ol->pos, overlay->pos,
+                        overlay->image.width, overlay->image.height,
+                        overlay->config.normalized,
+                        overlay->config.alpha_mod, overlay->config.range_mod))
                {
-                  if (!input_overlay_load_desc_image(ol, &overlay->descs[overlay->pos], overlay,
-                           idx, overlay->pos,
-                           overlay->image.width, overlay->image.height,
-                           overlay->config.normalized,
-                           overlay->config.alpha_mod, overlay->config.range_mod))
-                  {
-                     RARCH_ERR("[Overlay]: Failed to load overlay desc images for overlay #%u.\n",
-                           (unsigned)overlay->pos);
-                     goto error;
-                  }
-
-               }
-               else
-               {
-                  overlay->pos       = 0;
-                  ol->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_ITERATE;
-                  break;
+                  RARCH_ERR("[Overlay]: Failed to load overlay desc images for overlay #%u.\n",
+                        (unsigned)overlay->pos);
+                  goto error;
                }
 
             }
+            else
+            {
+               overlay->pos       = 0;
+               ol->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_ITERATE;
+               break;
+            }
+
          }
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_ITERATE:
+         for (i = 0; i < overlay->pos_increment; i++)
          {
-            struct overlay *overlay = &ol->overlays[ol->pos];
-
-            for (i = 0; i < overlay->pos_increment; i++)
+            if (overlay->pos < overlay->size)
             {
-               unsigned idx = ol->pos;
-
-               if (overlay->pos < overlay->size)
+               if (!input_overlay_load_desc(ol, &overlay->descs[overlay->pos], overlay,
+                        ol->pos, overlay->pos,
+                        overlay->image.width, overlay->image.height,
+                        overlay->config.normalized,
+                        overlay->config.alpha_mod, overlay->config.range_mod))
                {
-                  if (!input_overlay_load_desc(ol, &overlay->descs[overlay->pos], overlay,
-                           idx, overlay->pos,
-                           overlay->image.width, overlay->image.height,
-                           overlay->config.normalized,
-                           overlay->config.alpha_mod, overlay->config.range_mod))
-                  {
-                     RARCH_ERR("[Overlay]: Failed to load overlay descs for overlay #%u.\n",
-                           (unsigned)overlay->pos);
-                     goto error;
-                  }
-
-               }
-               else
-               {
-                  overlay->pos       = 0;
-                  ol->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_DONE;
-                  break;
+                  RARCH_ERR("[Overlay]: Failed to load overlay descs for overlay #%u.\n",
+                        (unsigned)overlay->pos);
+                  goto error;
                }
 
             }
+            else
+            {
+               overlay->pos       = 0;
+               ol->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_DONE;
+               break;
+            }
+
          }
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_DONE:
@@ -572,6 +562,7 @@ bool input_overlay_load_overlays_iterate(input_overlay_t *ol)
    }
 
    return true;
+
 error:
    ol->state = OVERLAY_STATUS_DEFERRED_ERROR;
 
