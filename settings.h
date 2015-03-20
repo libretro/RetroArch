@@ -23,7 +23,7 @@ extern "C" {
 
 /* All config related settings go here. */
 
-struct settings
+typedef struct settings
 {
    struct 
    {
@@ -294,7 +294,7 @@ struct settings
    unsigned int user_language;
 
    bool config_save_on_exit;
-};
+} settings_t;
 
 /**
  * config_get_default_camera:
@@ -407,8 +407,10 @@ bool config_save_keybinds_file(const char *path);
  **/
 bool config_save_file(const char *path);
 
+settings_t *config_get_ptr(void);
+
 /* Public data structures. */
-extern struct settings g_settings;
+extern settings_t g_settings;
 
 #ifdef __cplusplus
 }

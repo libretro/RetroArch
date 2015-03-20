@@ -34,7 +34,7 @@
 
 #include <ctype.h>
 
-struct settings g_settings;
+settings_t g_settings;
 struct global g_extern;
 struct defaults g_defaults;
 
@@ -353,6 +353,7 @@ const char *config_get_default_location(void)
 static void config_set_defaults(void)
 {
    unsigned i, j;
+   settings_t *settings = config_get_ptr();
    const char *def_video = config_get_default_video();
    const char *def_audio = config_get_default_audio();
    const char *def_audio_resampler = config_get_default_audio_resampler();
@@ -365,167 +366,167 @@ static void config_set_defaults(void)
    const char *def_location = config_get_default_location();
 
    if (def_camera)
-      strlcpy(g_settings.camera.driver,
-            def_camera, sizeof(g_settings.camera.driver));
+      strlcpy(settings->camera.driver,
+            def_camera, sizeof(settings->camera.driver));
    if (def_location)
-      strlcpy(g_settings.location.driver,
-            def_location, sizeof(g_settings.location.driver));
+      strlcpy(settings->location.driver,
+            def_location, sizeof(settings->location.driver));
    if (def_video)
-      strlcpy(g_settings.video.driver,
-            def_video, sizeof(g_settings.video.driver));
+      strlcpy(settings->video.driver,
+            def_video, sizeof(settings->video.driver));
    if (def_audio)
-      strlcpy(g_settings.audio.driver,
-            def_audio, sizeof(g_settings.audio.driver));
+      strlcpy(settings->audio.driver,
+            def_audio, sizeof(settings->audio.driver));
    if (def_audio_resampler)
-      strlcpy(g_settings.audio.resampler,
-            def_audio_resampler, sizeof(g_settings.audio.resampler));
+      strlcpy(settings->audio.resampler,
+            def_audio_resampler, sizeof(settings->audio.resampler));
    if (def_input)
-      strlcpy(g_settings.input.driver,
-            def_input, sizeof(g_settings.input.driver));
+      strlcpy(settings->input.driver,
+            def_input, sizeof(settings->input.driver));
    if (def_joypad)
-      strlcpy(g_settings.input.joypad_driver,
-            def_input, sizeof(g_settings.input.joypad_driver));
+      strlcpy(settings->input.joypad_driver,
+            def_input, sizeof(settings->input.joypad_driver));
 #ifdef HAVE_MENU
    if (def_menu)
-      strlcpy(g_settings.menu.driver,
-            def_menu,  sizeof(g_settings.menu.driver));
+      strlcpy(settings->menu.driver,
+            def_menu,  sizeof(settings->menu.driver));
 #endif
 
-   g_settings.history_list_enable = def_history_list_enable;
-   g_settings.load_dummy_on_core_shutdown = load_dummy_on_core_shutdown;
+   settings->history_list_enable = def_history_list_enable;
+   settings->load_dummy_on_core_shutdown = load_dummy_on_core_shutdown;
 
-   g_settings.video.scale = scale;
-   g_settings.video.fullscreen = g_extern.force_fullscreen ? true : fullscreen;
-   g_settings.video.windowed_fullscreen = windowed_fullscreen;
-   g_settings.video.monitor_index = monitor_index;
-   g_settings.video.fullscreen_x = fullscreen_x;
-   g_settings.video.fullscreen_y = fullscreen_y;
-   g_settings.video.disable_composition = disable_composition;
-   g_settings.video.vsync = vsync;
-   g_settings.video.hard_sync = hard_sync;
-   g_settings.video.hard_sync_frames = hard_sync_frames;
-   g_settings.video.frame_delay = frame_delay;
-   g_settings.video.black_frame_insertion = black_frame_insertion;
-   g_settings.video.swap_interval = swap_interval;
-   g_settings.video.threaded = video_threaded;
+   settings->video.scale = scale;
+   settings->video.fullscreen = g_extern.force_fullscreen ? true : fullscreen;
+   settings->video.windowed_fullscreen = windowed_fullscreen;
+   settings->video.monitor_index = monitor_index;
+   settings->video.fullscreen_x = fullscreen_x;
+   settings->video.fullscreen_y = fullscreen_y;
+   settings->video.disable_composition = disable_composition;
+   settings->video.vsync = vsync;
+   settings->video.hard_sync = hard_sync;
+   settings->video.hard_sync_frames = hard_sync_frames;
+   settings->video.frame_delay = frame_delay;
+   settings->video.black_frame_insertion = black_frame_insertion;
+   settings->video.swap_interval = swap_interval;
+   settings->video.threaded = video_threaded;
 
    if (g_defaults.settings.video_threaded_enable != video_threaded)
-      g_settings.video.threaded = g_defaults.settings.video_threaded_enable;
+      settings->video.threaded = g_defaults.settings.video_threaded_enable;
 
 #ifdef HAVE_THREADS
-   g_settings.menu.threaded_data_runloop_enable = true;
+   settings->menu.threaded_data_runloop_enable = true;
 #endif
-   g_settings.video.shared_context = video_shared_context;
-   g_settings.video.force_srgb_disable = false;
+   settings->video.shared_context = video_shared_context;
+   settings->video.force_srgb_disable = false;
 #ifdef GEKKO
-   g_settings.video.viwidth = video_viwidth;
-   g_settings.video.vfilter = video_vfilter;
+   settings->video.viwidth = video_viwidth;
+   settings->video.vfilter = video_vfilter;
 #endif
-   g_settings.video.smooth = video_smooth;
-   g_settings.video.force_aspect = force_aspect;
-   g_settings.video.scale_integer = scale_integer;
-   g_settings.video.crop_overscan = crop_overscan;
-   g_settings.video.aspect_ratio = aspect_ratio;
-   g_settings.video.aspect_ratio_auto = aspect_ratio_auto; // Let implementation decide if automatic, or 1:1 PAR.
-   g_settings.video.aspect_ratio_idx = aspect_ratio_idx;
-   g_settings.video.shader_enable = shader_enable;
-   g_settings.video.allow_rotate = allow_rotate;
+   settings->video.smooth = video_smooth;
+   settings->video.force_aspect = force_aspect;
+   settings->video.scale_integer = scale_integer;
+   settings->video.crop_overscan = crop_overscan;
+   settings->video.aspect_ratio = aspect_ratio;
+   settings->video.aspect_ratio_auto = aspect_ratio_auto; /* Let implementation decide if automatic, or 1:1 PAR. */
+   settings->video.aspect_ratio_idx = aspect_ratio_idx;
+   settings->video.shader_enable = shader_enable;
+   settings->video.allow_rotate = allow_rotate;
 
-   g_settings.video.font_enable = font_enable;
-   g_settings.video.font_size = font_size;
-   g_settings.video.msg_pos_x = message_pos_offset_x;
-   g_settings.video.msg_pos_y = message_pos_offset_y;
+   settings->video.font_enable = font_enable;
+   settings->video.font_size = font_size;
+   settings->video.msg_pos_x = message_pos_offset_x;
+   settings->video.msg_pos_y = message_pos_offset_y;
    
-   g_settings.video.msg_color_r = ((message_color >> 16) & 0xff) / 255.0f;
-   g_settings.video.msg_color_g = ((message_color >>  8) & 0xff) / 255.0f;
-   g_settings.video.msg_color_b = ((message_color >>  0) & 0xff) / 255.0f;
+   settings->video.msg_color_r = ((message_color >> 16) & 0xff) / 255.0f;
+   settings->video.msg_color_g = ((message_color >>  8) & 0xff) / 255.0f;
+   settings->video.msg_color_b = ((message_color >>  0) & 0xff) / 255.0f;
 
-   g_settings.video.refresh_rate = refresh_rate;
+   settings->video.refresh_rate = refresh_rate;
 
    if (g_defaults.settings.video_refresh_rate > 0.0 &&
          g_defaults.settings.video_refresh_rate != refresh_rate)
-      g_settings.video.refresh_rate = g_defaults.settings.video_refresh_rate;
+      settings->video.refresh_rate = g_defaults.settings.video_refresh_rate;
 
-   g_settings.video.post_filter_record = post_filter_record;
-   g_settings.video.gpu_record = gpu_record;
-   g_settings.video.gpu_screenshot = gpu_screenshot;
-   g_settings.video.rotation = ORIENTATION_NORMAL;
+   settings->video.post_filter_record = post_filter_record;
+   settings->video.gpu_record = gpu_record;
+   settings->video.gpu_screenshot = gpu_screenshot;
+   settings->video.rotation = ORIENTATION_NORMAL;
 
-   g_settings.audio.enable = audio_enable;
-   g_settings.audio.mute_enable = false;
-   g_settings.audio.out_rate = out_rate;
-   g_settings.audio.block_frames = 0;
+   settings->audio.enable = audio_enable;
+   settings->audio.mute_enable = false;
+   settings->audio.out_rate = out_rate;
+   settings->audio.block_frames = 0;
    if (audio_device)
-      strlcpy(g_settings.audio.device,
-            audio_device, sizeof(g_settings.audio.device));
+      strlcpy(settings->audio.device,
+            audio_device, sizeof(settings->audio.device));
 
    if (!g_defaults.settings.out_latency)
       g_defaults.settings.out_latency = out_latency;
 
 
-   g_settings.audio.latency = g_defaults.settings.out_latency;
-   g_settings.audio.sync = audio_sync;
-   g_settings.audio.rate_control = rate_control;
-   g_settings.audio.rate_control_delta = rate_control_delta;
-   g_settings.audio.max_timing_skew = max_timing_skew;
-   g_settings.audio.volume = audio_volume;
-   g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
+   settings->audio.latency = g_defaults.settings.out_latency;
+   settings->audio.sync = audio_sync;
+   settings->audio.rate_control = rate_control;
+   settings->audio.rate_control_delta = rate_control_delta;
+   settings->audio.max_timing_skew = max_timing_skew;
+   settings->audio.volume = audio_volume;
+   g_extern.audio_data.volume_gain = db_to_gain(settings->audio.volume);
 
-   g_settings.rewind_enable = rewind_enable;
-   g_settings.rewind_buffer_size = rewind_buffer_size;
-   g_settings.rewind_granularity = rewind_granularity;
-   g_settings.slowmotion_ratio = slowmotion_ratio;
-   g_settings.fastforward_ratio = fastforward_ratio;
-   g_settings.fastforward_ratio_throttle_enable = fastforward_ratio_throttle_enable;
-   g_settings.pause_nonactive = pause_nonactive;
-   g_settings.autosave_interval = autosave_interval;
+   settings->rewind_enable = rewind_enable;
+   settings->rewind_buffer_size = rewind_buffer_size;
+   settings->rewind_granularity = rewind_granularity;
+   settings->slowmotion_ratio = slowmotion_ratio;
+   settings->fastforward_ratio = fastforward_ratio;
+   settings->fastforward_ratio_throttle_enable = fastforward_ratio_throttle_enable;
+   settings->pause_nonactive = pause_nonactive;
+   settings->autosave_interval = autosave_interval;
 
-   g_settings.block_sram_overwrite = block_sram_overwrite;
-   g_settings.savestate_auto_index = savestate_auto_index;
-   g_settings.savestate_auto_save  = savestate_auto_save;
-   g_settings.savestate_auto_load  = savestate_auto_load;
-   g_settings.network_cmd_enable   = network_cmd_enable;
-   g_settings.network_cmd_port     = network_cmd_port;
-   g_settings.stdin_cmd_enable     = stdin_cmd_enable;
-   g_settings.content_history_size    = default_content_history_size;
-   g_settings.libretro_log_level   = libretro_log_level;
+   settings->block_sram_overwrite = block_sram_overwrite;
+   settings->savestate_auto_index = savestate_auto_index;
+   settings->savestate_auto_save  = savestate_auto_save;
+   settings->savestate_auto_load  = savestate_auto_load;
+   settings->network_cmd_enable   = network_cmd_enable;
+   settings->network_cmd_port     = network_cmd_port;
+   settings->stdin_cmd_enable     = stdin_cmd_enable;
+   settings->content_history_size    = default_content_history_size;
+   settings->libretro_log_level   = libretro_log_level;
 
 #ifdef HAVE_MENU
-   g_settings.menu_show_start_screen = menu_show_start_screen;
-   g_settings.menu.pause_libretro = true;
-   g_settings.menu.mouse.enable = false;
-   g_settings.menu.timedate_enable = true;
-   g_settings.menu.core_enable = true;
-   *g_settings.menu.wallpaper = '\0';
-   g_settings.menu.navigation.wraparound.horizontal_enable = true;
-   g_settings.menu.navigation.wraparound.vertical_enable = true;
-   g_settings.menu.navigation.browser.filter.supported_extensions_enable = true;
-   g_settings.menu.collapse_subgroups_enable = collapse_subgroups_enable;
-   g_settings.menu.show_advanced_settings = show_advanced_settings;
-   g_settings.menu.entry_normal_color = menu_entry_normal_color;
-   g_settings.menu.entry_hover_color  = menu_entry_hover_color;
-   g_settings.menu.title_color        = menu_title_color;
+   settings->menu_show_start_screen = menu_show_start_screen;
+   settings->menu.pause_libretro = true;
+   settings->menu.mouse.enable = false;
+   settings->menu.timedate_enable = true;
+   settings->menu.core_enable = true;
+   *settings->menu.wallpaper = '\0';
+   settings->menu.navigation.wraparound.horizontal_enable = true;
+   settings->menu.navigation.wraparound.vertical_enable = true;
+   settings->menu.navigation.browser.filter.supported_extensions_enable = true;
+   settings->menu.collapse_subgroups_enable = collapse_subgroups_enable;
+   settings->menu.show_advanced_settings = show_advanced_settings;
+   settings->menu.entry_normal_color = menu_entry_normal_color;
+   settings->menu.entry_hover_color  = menu_entry_hover_color;
+   settings->menu.title_color        = menu_title_color;
 #endif
 
-   g_settings.ui.menubar_enable = true;
-   g_settings.ui.suspend_screensaver_enable = true;
+   settings->ui.menubar_enable = true;
+   settings->ui.suspend_screensaver_enable = true;
 
-   g_settings.location.allow = false;
-   g_settings.camera.allow = false;
+   settings->location.allow = false;
+   settings->camera.allow = false;
 
-   g_settings.input.autoconfig_descriptor_label_show = true;
-   g_settings.input.input_descriptor_label_show = input_descriptor_label_show;
-   g_settings.input.input_descriptor_hide_unbound = input_descriptor_hide_unbound;
-   g_settings.input.remap_binds_enable = true;
-   g_settings.input.max_users = MAX_USERS;
+   settings->input.autoconfig_descriptor_label_show = true;
+   settings->input.input_descriptor_label_show = input_descriptor_label_show;
+   settings->input.input_descriptor_hide_unbound = input_descriptor_hide_unbound;
+   settings->input.remap_binds_enable = true;
+   settings->input.max_users = MAX_USERS;
 
-   rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
-   rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
+   rarch_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
+   rarch_assert(sizeof(settings->input.binds[1]) >= sizeof(retro_keybinds_rest));
 
-   memcpy(g_settings.input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
+   memcpy(settings->input.binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
 
    for (i = 1; i < MAX_USERS; i++)
-      memcpy(g_settings.input.binds[i], retro_keybinds_rest,
+      memcpy(settings->input.binds[i], retro_keybinds_rest,
             sizeof(retro_keybinds_rest));
 
    input_remapping_set_defaults();
@@ -534,44 +535,44 @@ static void config_set_defaults(void)
    {
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
       {
-         g_settings.input.autoconf_binds[i][j].joykey = NO_BTN;
-         g_settings.input.autoconf_binds[i][j].joyaxis = AXIS_NONE;
+         settings->input.autoconf_binds[i][j].joykey = NO_BTN;
+         settings->input.autoconf_binds[i][j].joyaxis = AXIS_NONE;
       }
    }
-   memset(g_settings.input.autoconfigured, 0,
-         sizeof(g_settings.input.autoconfigured));
+   memset(settings->input.autoconfigured, 0,
+         sizeof(settings->input.autoconfigured));
 
    /* Verify that binds are in proper order. */
    for (i = 0; i < MAX_USERS; i++)
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
       {
-         if (g_settings.input.binds[i][j].valid)
-            rarch_assert(j == g_settings.input.binds[i][j].id);
+         if (settings->input.binds[i][j].valid)
+            rarch_assert(j == settings->input.binds[i][j].id);
       }
 
-   g_settings.input.axis_threshold = axis_threshold;
-   g_settings.input.netplay_client_swap_input = netplay_client_swap_input;
-   g_settings.input.turbo_period = turbo_period;
-   g_settings.input.turbo_duty_cycle = turbo_duty_cycle;
+   settings->input.axis_threshold = axis_threshold;
+   settings->input.netplay_client_swap_input = netplay_client_swap_input;
+   settings->input.turbo_period = turbo_period;
+   settings->input.turbo_duty_cycle = turbo_duty_cycle;
 
-   strlcpy(g_settings.network.buildbot_url, buildbot_server_url,
-         sizeof(g_settings.network.buildbot_url));
-   strlcpy(g_settings.network.buildbot_assets_url, buildbot_assets_server_url,
-         sizeof(g_settings.network.buildbot_assets_url));
-   g_settings.network.buildbot_auto_extract_archive = true;
+   strlcpy(settings->network.buildbot_url, buildbot_server_url,
+         sizeof(settings->network.buildbot_url));
+   strlcpy(settings->network.buildbot_assets_url, buildbot_assets_server_url,
+         sizeof(settings->network.buildbot_assets_url));
+   settings->network.buildbot_auto_extract_archive = true;
 
-   g_settings.input.overlay_enable = true;
-   g_settings.input.overlay_opacity = 0.7f;
-   g_settings.input.overlay_scale = 1.0f;
-   g_settings.input.autodetect_enable = input_autodetect_enable;
-   *g_settings.input.keyboard_layout = '\0';
+   settings->input.overlay_enable = true;
+   settings->input.overlay_opacity = 0.7f;
+   settings->input.overlay_scale = 1.0f;
+   settings->input.autodetect_enable = input_autodetect_enable;
+   *settings->input.keyboard_layout = '\0';
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      g_settings.input.joypad_map[i] = i;
-      g_settings.input.analog_dpad_mode[i] = ANALOG_DPAD_NONE;
+      settings->input.joypad_map[i] = i;
+      settings->input.analog_dpad_mode[i] = ANALOG_DPAD_NONE;
       if (!g_extern.has_set_libretro_device[i])
-         g_settings.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
+         settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
    }
 
    g_extern.console.screen.viewports.custom_vp.width = 0;
@@ -587,9 +588,9 @@ static void config_set_defaults(void)
    if (!g_extern.has_set_state_path)
       *g_extern.savestate_dir = '\0';
 
-   *g_settings.libretro_info_path = '\0';
+   *settings->libretro_info_path = '\0';
    if (!g_extern.has_set_libretro_directory)
-      *g_settings.libretro_directory = '\0';
+      *settings->libretro_directory = '\0';
 
    if (!g_extern.has_set_ups_pref)
       g_extern.ups_pref = false;
@@ -598,36 +599,35 @@ static void config_set_defaults(void)
    if (!g_extern.has_set_ips_pref)
       g_extern.ips_pref = false;
 
-   *g_settings.core_options_path = '\0';
-   *g_settings.content_history_path = '\0';
-   *g_settings.content_history_directory = '\0';
-   *g_settings.content_database = '\0';
-   *g_settings.cheat_database = '\0';
-   *g_settings.cursor_directory = '\0';
-   *g_settings.cheat_settings_path = '\0';
-   *g_settings.resampler_directory = '\0';
-   *g_settings.screenshot_directory = '\0';
-   *g_settings.system_directory = '\0';
-   *g_settings.extraction_directory = '\0';
-   *g_settings.input_remapping_directory = '\0';
-   *g_settings.input.autoconfig_dir = '\0';
-   *g_settings.input.overlay = '\0';
-   *g_settings.core_assets_directory = '\0';
-   *g_settings.assets_directory = '\0';
-   *g_settings.playlist_directory = '\0';
-   *g_settings.video.shader_path = '\0';
-   *g_settings.video.shader_dir = '\0';
-   *g_settings.video.filter_dir = '\0';
-   *g_settings.audio.filter_dir = '\0';
-   *g_settings.video.softfilter_plugin = '\0';
-   *g_settings.audio.dsp_plugin = '\0';
+   *settings->core_options_path = '\0';
+   *settings->content_history_path = '\0';
+   *settings->content_history_directory = '\0';
+   *settings->content_database = '\0';
+   *settings->cheat_database = '\0';
+   *settings->cursor_directory = '\0';
+   *settings->cheat_settings_path = '\0';
+   *settings->resampler_directory = '\0';
+   *settings->screenshot_directory = '\0';
+   *settings->system_directory = '\0';
+   *settings->extraction_directory = '\0';
+   *settings->input_remapping_directory = '\0';
+   *settings->input.autoconfig_dir = '\0';
+   *settings->input.overlay = '\0';
+   *settings->core_assets_directory = '\0';
+   *settings->assets_directory = '\0';
+   *settings->playlist_directory = '\0';
+   *settings->video.shader_path = '\0';
+   *settings->video.shader_dir = '\0';
+   *settings->video.filter_dir = '\0';
+   *settings->audio.filter_dir = '\0';
+   *settings->video.softfilter_plugin = '\0';
+   *settings->audio.dsp_plugin = '\0';
 #ifdef HAVE_MENU
-   *g_settings.menu_content_directory = '\0';
-   *g_settings.menu_config_directory = '\0';
+   *settings->menu_content_directory = '\0';
+   *settings->menu_config_directory = '\0';
 #endif
-   g_settings.core_specific_config = default_core_specific_config;
-
-   g_settings.user_language = 0;
+   settings->core_specific_config = default_core_specific_config;
+   settings->user_language = 0;
 
    g_extern.console.sound.system_bgm_enable = false;
 #ifdef RARCH_CONSOLE
@@ -638,49 +638,49 @@ static void config_set_defaults(void)
 #endif
    
    if (*g_defaults.extraction_dir)
-      strlcpy(g_settings.extraction_directory,
-            g_defaults.extraction_dir, sizeof(g_settings.extraction_directory));
+      strlcpy(settings->extraction_directory,
+            g_defaults.extraction_dir, sizeof(settings->extraction_directory));
    if (*g_defaults.audio_filter_dir)
-      strlcpy(g_settings.audio.filter_dir,
-            g_defaults.audio_filter_dir, sizeof(g_settings.audio.filter_dir));
+      strlcpy(settings->audio.filter_dir,
+            g_defaults.audio_filter_dir, sizeof(settings->audio.filter_dir));
    if (*g_defaults.video_filter_dir)
-      strlcpy(g_settings.video.filter_dir,
-            g_defaults.video_filter_dir, sizeof(g_settings.video.filter_dir));
+      strlcpy(settings->video.filter_dir,
+            g_defaults.video_filter_dir, sizeof(settings->video.filter_dir));
    if (*g_defaults.assets_dir)
-      strlcpy(g_settings.assets_directory,
-            g_defaults.assets_dir, sizeof(g_settings.assets_directory));
+      strlcpy(settings->assets_directory,
+            g_defaults.assets_dir, sizeof(settings->assets_directory));
    if (*g_defaults.playlist_dir)
-      strlcpy(g_settings.playlist_directory,
-            g_defaults.playlist_dir, sizeof(g_settings.playlist_directory));
+      strlcpy(settings->playlist_directory,
+            g_defaults.playlist_dir, sizeof(settings->playlist_directory));
    if (*g_defaults.core_dir)
-      fill_pathname_expand_special(g_settings.libretro_directory,
-            g_defaults.core_dir, sizeof(g_settings.libretro_directory));
+      fill_pathname_expand_special(settings->libretro_directory,
+            g_defaults.core_dir, sizeof(settings->libretro_directory));
    if (*g_defaults.core_path)
-      strlcpy(g_settings.libretro, g_defaults.core_path,
-            sizeof(g_settings.libretro));
+      strlcpy(settings->libretro, g_defaults.core_path,
+            sizeof(settings->libretro));
    if (*g_defaults.database_dir)
-      strlcpy(g_settings.content_database, g_defaults.database_dir,
-            sizeof(g_settings.content_database));
+      strlcpy(settings->content_database, g_defaults.database_dir,
+            sizeof(settings->content_database));
    if (*g_defaults.cursor_dir)
-      strlcpy(g_settings.cursor_directory, g_defaults.cursor_dir,
-            sizeof(g_settings.cursor_directory));
+      strlcpy(settings->cursor_directory, g_defaults.cursor_dir,
+            sizeof(settings->cursor_directory));
    if (*g_defaults.cheats_dir)
-      strlcpy(g_settings.cheat_database, g_defaults.cheats_dir,
-            sizeof(g_settings.cheat_database));
+      strlcpy(settings->cheat_database, g_defaults.cheats_dir,
+            sizeof(settings->cheat_database));
    if (*g_defaults.core_info_dir)
-      fill_pathname_expand_special(g_settings.libretro_info_path,
-            g_defaults.core_info_dir, sizeof(g_settings.libretro_info_path));
+      fill_pathname_expand_special(settings->libretro_info_path,
+            g_defaults.core_info_dir, sizeof(settings->libretro_info_path));
 #ifdef HAVE_OVERLAY
    if (*g_defaults.overlay_dir)
    {
       fill_pathname_expand_special(g_extern.overlay_dir,
             g_defaults.overlay_dir, sizeof(g_extern.overlay_dir));
 #ifdef RARCH_MOBILE
-      if (!*g_settings.input.overlay)
-            fill_pathname_join(g_settings.input.overlay,
+      if (!*settings->input.overlay)
+            fill_pathname_join(settings->input.overlay,
                   g_extern.overlay_dir,
                   "gamepads/retropad/retropad.cfg",
-                  sizeof(g_settings.input.overlay));
+                  sizeof(settings->input.overlay));
 #endif
    }
 
@@ -689,11 +689,11 @@ static void config_set_defaults(void)
       fill_pathname_expand_special(g_extern.osk_overlay_dir,
             g_defaults.osk_overlay_dir, sizeof(g_extern.osk_overlay_dir));
 #ifdef RARCH_MOBILE
-      if (!*g_settings.input.overlay)
-            fill_pathname_join(g_settings.osk.overlay,
+      if (!*settings->input.overlay)
+            fill_pathname_join(settings->osk.overlay,
                   g_extern.osk_overlay_dir,
                   "overlays/keyboards/US-101/US-101.cfg",
-                  sizeof(g_settings.osk.overlay));
+                  sizeof(settings->osk.overlay));
 #endif
    }
    else
@@ -702,17 +702,17 @@ static void config_set_defaults(void)
 #endif
 #ifdef HAVE_MENU
    if (*g_defaults.menu_config_dir)
-      strlcpy(g_settings.menu_config_directory,
+      strlcpy(settings->menu_config_directory,
             g_defaults.menu_config_dir,
-            sizeof(g_settings.menu_config_directory));
+            sizeof(settings->menu_config_directory));
 #endif
    if (*g_defaults.shader_dir)
-      fill_pathname_expand_special(g_settings.video.shader_dir,
-            g_defaults.shader_dir, sizeof(g_settings.video.shader_dir));
+      fill_pathname_expand_special(settings->video.shader_dir,
+            g_defaults.shader_dir, sizeof(settings->video.shader_dir));
    if (*g_defaults.autoconfig_dir)
-      strlcpy(g_settings.input.autoconfig_dir,
+      strlcpy(settings->input.autoconfig_dir,
             g_defaults.autoconfig_dir,
-            sizeof(g_settings.input.autoconfig_dir));
+            sizeof(settings->input.autoconfig_dir));
 
    if (!g_extern.has_set_state_path && *g_defaults.savestate_dir)
       strlcpy(g_extern.savestate_dir,
@@ -721,26 +721,26 @@ static void config_set_defaults(void)
       strlcpy(g_extern.savefile_dir,
             g_defaults.sram_dir, sizeof(g_extern.savefile_dir));
    if (*g_defaults.system_dir)
-      strlcpy(g_settings.system_directory,
-            g_defaults.system_dir, sizeof(g_settings.system_directory));
+      strlcpy(settings->system_directory,
+            g_defaults.system_dir, sizeof(settings->system_directory));
    if (*g_defaults.screenshot_dir)
-      strlcpy(g_settings.screenshot_directory,
+      strlcpy(settings->screenshot_directory,
             g_defaults.screenshot_dir,
-            sizeof(g_settings.screenshot_directory));
+            sizeof(settings->screenshot_directory));
    if (*g_defaults.resampler_dir)
-      strlcpy(g_settings.resampler_directory,
+      strlcpy(settings->resampler_directory,
             g_defaults.resampler_dir,
-            sizeof(g_settings.resampler_directory));
+            sizeof(settings->resampler_directory));
    if (*g_defaults.content_history_dir)
-      strlcpy(g_settings.content_history_directory,
+      strlcpy(settings->content_history_directory,
             g_defaults.content_history_dir,
-            sizeof(g_settings.content_history_directory));
+            sizeof(settings->content_history_directory));
 
    if (*g_defaults.config_path)
       fill_pathname_expand_special(g_extern.config_path,
             g_defaults.config_path, sizeof(g_extern.config_path));
    
-   g_settings.config_save_on_exit = config_save_on_exit;
+   settings->config_save_on_exit = config_save_on_exit;
 
    /* Avoid reloading config on every content load */
    g_extern.block_config_read = default_block_config_read;
@@ -2137,4 +2137,9 @@ bool config_save_file(const char *path)
    ret = config_file_write(conf, path);
    config_file_free(conf);
    return ret;
+}
+
+settings_t *config_get_ptr(void)
+{
+   return &g_settings;
 }
