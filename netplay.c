@@ -18,15 +18,15 @@
 #pragma comment(lib, "ws2_32")
 #endif
 
-#include "net_compat.h"
+#include <stdlib.h>
+#include <string.h>
+#include <net/net_compat.h>
+#include <queues/message_queue.h>
 #include "netplay.h"
 #include "general.h"
 #include "runloop.h"
 #include "autosave.h"
 #include "dynamic.h"
-#include <queues/message_queue.h>
-#include <stdlib.h>
-#include <string.h>
 
 struct delta_frame
 {

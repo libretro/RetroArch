@@ -14,11 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "net_http.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "net_compat.h"
+#include <net/net_http.h>
+#include <net/net_compat.h>
 #include <compat/strl.h>
 
 enum

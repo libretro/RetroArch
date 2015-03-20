@@ -27,10 +27,6 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 
-#ifdef HAVE_NETWORKING
-#include "../net_http.h"
-#endif
-
 void menu_entries_common_load_content(bool persist)
 {
    menu_handle_t *menu = menu_driver_resolve();

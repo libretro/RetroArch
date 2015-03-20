@@ -53,8 +53,7 @@
 #endif
 
 #ifdef HAVE_NETWORKING
-#include "net_compat.h"
-#include "net_http.h"
+#include <net/net_compat.h>
 #endif
 
 #ifdef HAVE_NETPLAY

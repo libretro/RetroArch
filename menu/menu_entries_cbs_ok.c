@@ -24,10 +24,6 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 
-#ifdef HAVE_NETWORKING
-#include "../net_http.h"
-#endif
-
 #include "../input/input_remapping.h"
 
 /* FIXME - Global variables, refactor */

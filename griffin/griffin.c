@@ -655,8 +655,8 @@ NETPLAY
 ============================================================ */
 #ifdef HAVE_NETPLAY
 #include "../netplay.c"
-#include "../net_compat.c"
-#include "../net_http.c"
+#include "../libretro-common/net/net_compat.c"
+#include "../libretro-common/net/net_http.c"
 #endif
 
 /*============================================================

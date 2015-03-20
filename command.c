@@ -16,7 +16,7 @@
 
 #include "command.h"
 
-#include "net_compat.h"
+#include <net/net_compat.h>
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 #include "netplay.h"
 #endif

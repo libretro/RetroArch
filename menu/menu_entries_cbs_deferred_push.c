@@ -23,10 +23,6 @@
 #include "../retroarch.h"
 #include "../performance.h"
 
-#ifdef HAVE_NETWORKING
-#include "../net_http.h"
-#endif
-
 #ifdef HAVE_LIBRETRODB
 #include "../database_info.h"
 #endif

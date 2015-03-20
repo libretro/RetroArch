@@ -25,7 +25,7 @@
 typedef int (*transfer_cb_t               )(void *data, size_t len);
 
 #ifdef HAVE_NETWORKING
-#include "net_http.h"
+#include <net/net_http.h>
 
 typedef struct http_handle
 {
