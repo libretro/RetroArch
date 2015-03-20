@@ -68,14 +68,15 @@ static RAScreen* get_chosen_screen(void)
 #if defined(OSX) && !defined(MAC_OS_X_VERSION_10_6)
 	return [NSScreen mainScreen];
 #else
-   if (g_settings.video.monitor_index >= RAScreen.screens.count)
+   settings_t *settings = config_get_ptr();
+   if (settings->video.monitor_index >= RAScreen.screens.count)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
       return RAScreen.mainScreen;
    }
 	
    NSArray *screens = [RAScreen screens];
-   return (RAScreen*)[screens objectAtIndex:g_settings.video.monitor_index];
+   return (RAScreen*)[screens objectAtIndex:settings->video.monitor_index];
 #endif
 }
 
@@ -281,13 +282,16 @@ static void apple_gfx_ctx_update_window_title(void *data)
    static char buf[128], buf_fps[128];
    bool got_text = video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
+   settings_t *settings = config_get_ptr();
+
    (void)got_text;
+
 #ifdef OSX
    static const char* const text = buf; /* < Can't access buffer directly in the block */
    if (got_text)
        [[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
 #endif
-    if (g_settings.fps_show)
+    if (settings->fps_show)
         rarch_main_msg_queue_push(buf_fps, 1, 1, false);
 }
 

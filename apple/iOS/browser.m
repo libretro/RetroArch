@@ -231,6 +231,8 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
 - (void)browseTo:(NSString*)path
 {
+   settings_t *settings = config_get_ptr();
+
    self.path = path;
    self.title = self.path.lastPathComponent;
 
@@ -241,7 +243,8 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [self.sections addObject:[NSMutableArray arrayWithObject:i]];
 
    /* List contents */
-   struct string_list *contents = dir_list_new(self.path.UTF8String, g_settings.menu.navigation.browser.filter.supported_extensions_enable ? self.extensions.UTF8String : NULL, true);
+   struct string_list *contents = dir_list_new(self.path.UTF8String,
+         settings->menu.navigation.browser.filter.supported_extensions_enable ? self.extensions.UTF8String : NULL, true);
 
    if (contents)
    {

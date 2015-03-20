@@ -18,18 +18,20 @@
 
 static const char *android_joypad_name(unsigned pad)
 {
-   return g_settings.input.device_names[pad];
+   settings_t *settings = config_get_ptr();
+   return settings->input.device_names[pad];
 }
 
 static bool android_joypad_init(void)
 {
    unsigned autoconf_pad;
+   settings_t *settings = config_get_ptr();
 
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
    {
-      strlcpy(g_settings.input.device_names[autoconf_pad],
+      strlcpy(settings->input.device_names[autoconf_pad],
             android_joypad_name(autoconf_pad),
-            sizeof(g_settings.input.device_names[autoconf_pad]));
+            sizeof(settings->input.device_names[autoconf_pad]));
       /* TODO - implement VID/PID? */
       input_config_autoconfigure_joypad(autoconf_pad,
             android_joypad_name(autoconf_pad), 0, 0,

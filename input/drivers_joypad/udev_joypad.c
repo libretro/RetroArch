@@ -315,6 +315,8 @@ static int find_vacant_pad(void)
 
 static void free_pad(unsigned pad, bool hotplug)
 {
+   settings_t *settings = config_get_ptr();
+
    if (udev_pads[pad].fd >= 0)
       close(udev_pads[pad].fd);
 
@@ -323,8 +325,8 @@ static void free_pad(unsigned pad, bool hotplug)
       *udev_pads[pad].ident = '\0';
    memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
 
-   udev_pads[pad].fd = -1;
-   udev_pads[pad].ident = g_settings.input.device_names[pad];
+   udev_pads[pad].fd    = -1;
+   udev_pads[pad].ident = settings->input.device_names[pad];
 
    /* Avoid autoconfig spam if we're reiniting driver. */
    /* TODO - implement VID/PID? */
@@ -345,8 +347,9 @@ static bool add_pad(struct udev_device *dev, unsigned p, int fd, const char *pat
    unsigned long absbit[NBITS(ABS_MAX)] = {0};
    unsigned long ffbit[NBITS(FF_MAX)]   = {0};
    unsigned buttons = 0, axes = 0;
+   settings_t *settings = config_get_ptr();
 
-   if (ioctl(fd, EVIOCGNAME(sizeof(g_settings.input.device_names[0])), pad->ident) < 0)
+   if (ioctl(fd, EVIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) < 0)
    {
       RARCH_LOG("[udev]: Failed to get pad name.\n");
       return false;
@@ -515,11 +518,12 @@ static bool udev_joypad_init(void)
    struct udev_list_entry *devs = NULL;
    struct udev_list_entry *item = NULL;
    struct udev_enumerate *enumerate = NULL;
+   settings_t *settings = config_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
    {
       udev_pads[i].fd = -1;
-      udev_pads[i].ident = g_settings.input.device_names[i];
+      udev_pads[i].ident = settings->input.device_names[i];
    }
 
    g_udev = udev_new();

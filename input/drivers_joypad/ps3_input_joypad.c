@@ -34,20 +34,22 @@ static INLINE int16_t convert_u8_to_s16(uint8_t val)
 
 static const char *ps3_joypad_name(unsigned pad)
 {
-   return g_settings.input.device_names[pad];
+   settings_t *settings = config_get_ptr();
+   return settings->input.device_names[pad];
 }
 
 static bool ps3_joypad_init(void)
 {
    unsigned autoconf_pad;
+   settings_t *settings = config_get_ptr();
 
    cellPadInit(MAX_PADS);
 
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
    {
-      strlcpy(g_settings.input.device_names[autoconf_pad],
+      strlcpy(settings->input.device_names[autoconf_pad],
             "SixAxis Controller",
-            sizeof(g_settings.input.device_names[autoconf_pad]));
+            sizeof(settings->input.device_names[autoconf_pad]));
       /* TODO - implement VID/PID? */
       input_config_autoconfigure_joypad(autoconf_pad,
             ps3_joypad_name(autoconf_pad),

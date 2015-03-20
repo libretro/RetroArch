@@ -76,6 +76,8 @@ static void poll_pad(struct linuxraw_joypad *pad)
 
 static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *pad)
 {
+   settings_t *settings = config_get_ptr();
+
    if (pad->fd >= 0)
       return false;
 
@@ -89,7 +91,7 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
    *pad->ident = '\0';
    if (pad->fd >= 0)
    {
-      if (ioctl(pad->fd, JSIOCGNAME(sizeof(g_settings.input.device_names[0])), pad->ident) >= 0)
+      if (ioctl(pad->fd, JSIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) >= 0)
       {
          RARCH_LOG("[Joypad]: Found pad: %s on %s.\n", pad->ident, path);
 
@@ -216,6 +218,7 @@ static void linuxraw_joypad_setup_notify(void)
 static bool linuxraw_joypad_init(void)
 {
    unsigned i;
+   settings_t *settings = config_get_ptr();
 
    g_epoll = epoll_create(MAX_USERS + 1);
    if (g_epoll < 0)
@@ -229,8 +232,8 @@ static bool linuxraw_joypad_init(void)
       if (!pad)
          continue;
 
-      pad->fd = -1;
-      pad->ident = g_settings.input.device_names[i];
+      pad->fd    = -1;
+      pad->ident = settings->input.device_names[i];
       
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
 

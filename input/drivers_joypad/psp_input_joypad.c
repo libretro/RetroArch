@@ -27,12 +27,13 @@ static const char *psp_joypad_name(unsigned pad)
 static bool psp_joypad_init(void)
 {
    unsigned autoconf_pad;
+   settings_t *settings = config_get_ptr();
 
    for (autoconf_pad = 0; autoconf_pad < MAX_PADS; autoconf_pad++)
    {
-      strlcpy(g_settings.input.device_names[autoconf_pad],
+      strlcpy(settings->input.device_names[autoconf_pad],
             psp_joypad_name(autoconf_pad),
-            sizeof(g_settings.input.device_names[autoconf_pad]));
+            sizeof(settings->input.device_names[autoconf_pad]));
       /* TODO - implement VID/PID? */
       input_config_autoconfigure_joypad(autoconf_pad,
             psp_joypad_name(autoconf_pad),

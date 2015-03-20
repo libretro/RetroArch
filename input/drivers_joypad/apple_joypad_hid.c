@@ -160,6 +160,7 @@ static void add_device(void* context, IOReturn result,
    char device_name[PATH_MAX_LENGTH];
    CFStringRef device_name_ref;
    CFNumberRef vendorID, productID;
+   settings_t *settings = config_get_ptr();
    struct pad_connection* connection = (struct pad_connection*)
       calloc(1, sizeof(*connection));
 
@@ -199,8 +200,8 @@ static void add_device(void* context, IOReturn result,
    if (device_name[0] == '\0')
       return;
 
-   strlcpy(g_settings.input.device_names[connection->slot],
-         device_name, sizeof(g_settings.input.device_names));
+   strlcpy(settings->input.device_names[connection->slot],
+         device_name, sizeof(settings->input.device_names));
 
    input_config_autoconfigure_joypad(connection->slot,
          device_name, connection->v_id, connection->p_id, apple_hid_joypad.ident);

@@ -35,12 +35,14 @@ static const char* const XBOX_CONTROLLER_NAMES[4] =
 
 static const char *xdk_joypad_name(unsigned pad)
 {
-   return g_settings.input.device_names[pad];
+   settings_t *settings = config_get_ptr();
+   return settings->input.device_names[pad];
 }
 
 static bool xdk_joypad_init(void)
 {
    unsigned autoconf_pad;
+   settings_t *settings = config_get_ptr();
 
 #ifdef _XBOX1
    XInitDevices(0, NULL);
@@ -63,9 +65,9 @@ static bool xdk_joypad_init(void)
 
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
    {
-      strlcpy(g_settings.input.device_names[autoconf_pad],
+      strlcpy(settings->input.device_names[autoconf_pad],
             "XInput Controller",
-            sizeof(g_settings.input.device_names[autoconf_pad]));
+            sizeof(settings->input.device_names[autoconf_pad]));
       
       /* TODO - implement VID/PID? */
       input_config_autoconfigure_joypad(autoconf_pad,

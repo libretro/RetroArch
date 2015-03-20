@@ -196,14 +196,16 @@ static const char *gx_joypad_name_static(unsigned pad)
 
 static void handle_hotplug(unsigned port, uint32_t ptype)
 {
+   settings_t *settings = config_get_ptr();
+   
    pad_type[port] = ptype;
 
-   if (!g_settings.input.autodetect_enable)
+   if (!settings->input.autodetect_enable)
       return;
 
-   strlcpy(g_settings.input.device_names[port],
+   strlcpy(settings->input.device_names[port],
          gx_joypad_name(port),
-         sizeof(g_settings.input.device_names[port]));
+         sizeof(settings->input.device_names[port]));
    /* TODO - implement VID/PID? */
    input_config_autoconfigure_joypad(port,
          gx_joypad_name(port),
@@ -214,6 +216,7 @@ static void handle_hotplug(unsigned port, uint32_t ptype)
 static bool gx_joypad_init(void)
 {
    int autoconf_pad;
+   settings_t *settings = config_get_ptr();
 
    SYS_SetResetCallback(reset_cb);
 #ifdef HW_RVL
@@ -235,9 +238,9 @@ static bool gx_joypad_init(void)
    for (autoconf_pad = 0; autoconf_pad < MAX_PADS; autoconf_pad++)
    {
       pad_type[autoconf_pad] = WPAD_EXP_GAMECUBE;
-      strlcpy(g_settings.input.device_names[autoconf_pad],
+      strlcpy(settings->input.device_names[autoconf_pad],
             gx_joypad_name_static(autoconf_pad),
-            sizeof(g_settings.input.device_names[autoconf_pad]));
+            sizeof(settings->input.device_names[autoconf_pad]));
       /* TODO - implement VID/PID? */
       input_config_autoconfigure_joypad(autoconf_pad,
             gx_joypad_name_static(autoconf_pad),

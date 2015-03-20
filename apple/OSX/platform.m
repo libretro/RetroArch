@@ -360,7 +360,8 @@ static void poll_iteration(void)
 #pragma mark Menus
 - (IBAction)showCoresDirectory:(id)sender
 {
-   [[NSWorkspace sharedWorkspace] openFile:BOXSTRING(g_settings.libretro_directory)];
+   settings_t *settings = config_get_ptr();
+   [[NSWorkspace sharedWorkspace] openFile:BOXSTRING(settings->libretro_directory)];
 }
 
 - (IBAction)showPreferences:(id)sender
