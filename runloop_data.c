@@ -835,7 +835,6 @@ static void data_thread_loop(void *data)
    
    data_runloop_thread_deinit(runloop);
 }
-#endif
 
 static void rarch_main_data_thread_init(void)
 {
@@ -857,6 +856,8 @@ static void rarch_main_data_thread_init(void)
    g_data_runloop.alive       = true;
    g_data_runloop.thread_code = THREAD_CODE_ALIVE;
 }
+#endif
+
 
 void rarch_main_data_iterate(void)
 {
