@@ -145,7 +145,7 @@ error:
  * Extracts to buf, unless optional_filename != 0
  * Then extracts to optional_filename and leaves buf alone.
  */
-bool read_compressed_file(const char * path, void **buf,
+int read_compressed_file(const char * path, void **buf,
       const char* optional_filename, ssize_t *length)
 {
    const char* file_ext;
@@ -162,7 +162,7 @@ bool read_compressed_file(const char * path, void **buf,
       if(path_file_exists(optional_filename))
       {
          *length = 0;
-         return true;
+         return 1;
       }
    }
 
@@ -184,7 +184,7 @@ bool read_compressed_file(const char * path, void **buf,
       RARCH_ERR("Could not extract image path and carchive path from "
             "path: %s.\n", path);
       *length = 0;
-      return false;
+      return 0;
    }
 
    /* We split the string in two, by putting a \0, where the hash was: */
@@ -197,7 +197,7 @@ bool read_compressed_file(const char * path, void **buf,
    {
       *length = read_7zip_file(archive_path,archive_found,buf,optional_filename);
       if (*length != -1)
-         return true;
+         return 1;
    }
 #endif
 #ifdef HAVE_ZLIB
@@ -205,10 +205,10 @@ bool read_compressed_file(const char * path, void **buf,
    {
       *length = read_zip_file(archive_path,archive_found,buf,optional_filename);
       if (*length != -1)
-         return true;
+         return 1;
    }
 #endif
-   return false;
+   return 0;
 }
 #endif
 
@@ -222,23 +222,16 @@ bool read_compressed_file(const char * path, void **buf,
  * Read the contents of a file into @buf. Will call read_compressed_file
  * if path contains a compressed file, otherwise will call read_generic_file.
  *
- * Returns: true if file read, false on error.
+ * Returns: 1 if file read, 0 on error.
  */
 int read_file(const char *path, void **buf, ssize_t *length)
 {
 #ifdef HAVE_COMPRESSION
-   /* Here we check, whether the file, we are about to read is
-    * inside an archive, or not.
-    *
-    * We determine, whether a file is inside a compressed archive,
-    * by checking for the # inside the URL.
-    *
-    * For example: fullpath: /home/user/game.7z/mygame.rom
-    * carchive_path: /home/user/game.7z
-    * */
    if (path_contains_compressed_file(path))
+   {
       if (read_compressed_file(path, buf, NULL, length))
-         return true;
+         return 1;
+   }
 #endif
    return read_generic_file(path, buf, length);
 }

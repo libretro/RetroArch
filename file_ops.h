@@ -33,7 +33,7 @@ extern "C" {
  * Extracts to buf, unless optional_filename != 0
  * Then extracts to optional_filename and leaves buf alone.
  */
-bool read_compressed_file(const char * path, void **buf,
+int read_compressed_file(const char * path, void **buf,
       const char* optional_filename, ssize_t *length);
 #endif
 
