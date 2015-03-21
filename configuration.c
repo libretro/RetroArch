@@ -31,7 +31,7 @@
 #include "config.h"
 #endif
 
-static settings_t g_config;
+static settings_t *g_config;
 struct global g_extern;
 struct defaults g_defaults;
 
@@ -1068,6 +1068,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    unsigned msg_color = 0;
    config_file_t *conf = NULL;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = &g_extern;
 
    if (path)
    {
@@ -2148,5 +2149,24 @@ bool config_save_file(const char *path)
 
 settings_t *config_get_ptr(void)
 {
-   return &g_config;
+   return g_config;
+}
+
+void config_free(void)
+{
+   if (!g_config)
+      return;
+
+   free(g_config);
+   g_config = NULL;
+}
+
+settings_t *config_init(void)
+{
+   g_config = (settings_t*)calloc(1, sizeof(settings_t));
+
+   if (!g_config)
+      return NULL;
+
+   return g_config;
 }

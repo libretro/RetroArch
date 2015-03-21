@@ -1674,7 +1674,13 @@ static void main_clear_state(bool inited)
    unsigned i;
    settings_t *settings = config_get_ptr();
 
-   memset(settings, 0, sizeof(*settings));
+   if (settings)
+      config_free();
+
+   settings = config_init();
+
+   if (!settings)
+      return;
 
    if (inited)
       rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);

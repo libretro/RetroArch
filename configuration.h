@@ -407,6 +407,10 @@ bool config_save_keybinds_file(const char *path);
  **/
 bool config_save_file(const char *path);
 
+settings_t *config_init(void);
+
+void config_free(void);
+
 settings_t *config_get_ptr(void);
 
 #ifdef __cplusplus

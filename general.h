@@ -124,7 +124,7 @@ typedef struct rarch_resolution
 
 /* All run-time- / command line flag-related globals go here. */
 
-struct global
+typedef struct global
 {
    bool verbosity;
    bool perfcnt_enable;
@@ -441,10 +441,10 @@ struct global
    char core_specific_config_path[PATH_MAX_LENGTH];
 
    retro_keyboard_event_t frontend_key_event;
-};
+} global_t;
 
 /* Public data structures. */
-extern struct global g_extern;
+extern global_t g_extern;
 extern struct defaults g_defaults;
 
 /* Public functions. */
