@@ -99,8 +99,9 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
       CELL_VIDEO_OUT_RESOLUTION_1600x1080,
       CELL_VIDEO_OUT_RESOLUTION_1080
    };
+   global_t *global = global_get_ptr();
 
-   if (g_extern.console.screen.resolutions.check)
+   if (global->console.screen.resolutions.check)
       return;
 
    defaultresolution = true;
@@ -116,31 +117,31 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
          resolution_count++;
    }
 
-   g_extern.console.screen.resolutions.list = malloc(resolution_count * sizeof(uint32_t));
-   g_extern.console.screen.resolutions.count = 0;
+   global->console.screen.resolutions.list = malloc(resolution_count * sizeof(uint32_t));
+   global->console.screen.resolutions.count = 0;
 
    for (i = 0; i < num_videomodes; i++)
    {
       if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i],
                CELL_VIDEO_OUT_ASPECT_AUTO, 0))
       {
-         g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.count++] = videomode[i];
-         g_extern.console.screen.resolutions.initial.id = videomode[i];
+         global->console.screen.resolutions.list[global->console.screen.resolutions.count++] = videomode[i];
+         global->console.screen.resolutions.initial.id = videomode[i];
 
-         if (g_extern.console.screen.resolutions.current.id == videomode[i])
+         if (global->console.screen.resolutions.current.id == videomode[i])
          {
             defaultresolution = false;
-            g_extern.console.screen.resolutions.current.idx = g_extern.console.screen.resolutions.count-1;
+            global->console.screen.resolutions.current.idx = global->console.screen.resolutions.count-1;
          }
       }
    }
 
    /* In case we didn't specify a resolution - make the last resolution
       that was added to the list (the highest resolution) the default resolution */
-   if (g_extern.console.screen.resolutions.current.id > num_videomodes || defaultresolution)
-      g_extern.console.screen.resolutions.current.idx = g_extern.console.screen.resolutions.count - 1;
+   if (global->console.screen.resolutions.current.id > num_videomodes || defaultresolution)
+      global->console.screen.resolutions.current.idx = global->console.screen.resolutions.count - 1;
 
-   g_extern.console.screen.resolutions.check = true;
+   global->console.screen.resolutions.check = true;
 }
 
 static void gfx_ctx_ps3_set_swap_interval(void *data, unsigned interval)
@@ -244,15 +245,18 @@ static void gfx_ctx_ps3_get_video_size(void *data,
 static bool gfx_ctx_ps3_init(void *data)
 {
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
    gfx_ctx_ps3_data_t *ps3 = (gfx_ctx_ps3_data_t*)
       calloc(1, sizeof(gfx_ctx_ps3_data_t));
 
    (void)data;
+   (void)global;
 
    if (!ps3)
       return false;
 
 #if defined(HAVE_PSGL)
+   PSGLdeviceParameters params;
    PSGLinitOptions options = {
       .enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS,
       .maxSPUs = 1,
@@ -263,7 +267,6 @@ static bool gfx_ctx_ps3_init(void *data)
    sys_spu_initialize(6, 1);
    psglInit(&options);
 
-   PSGLdeviceParameters params;
 
    params.enable = PSGL_DEVICE_PARAMETERS_COLOR_FORMAT |
       PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT |
@@ -272,21 +275,21 @@ static bool gfx_ctx_ps3_init(void *data)
    params.depthFormat = GL_NONE;
    params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
 
-   if (g_extern.console.screen.resolutions.current.id)
+   if (global->console.screen.resolutions.current.id)
    {
       params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
-      params.width = gfx_ctx_ps3_get_resolution_width(g_extern.console.screen.resolutions.current.id);
-      params.height = gfx_ctx_ps3_get_resolution_height(g_extern.console.screen.resolutions.current.id);
-      g_extern.console.screen.pal_enable = false;
+      params.width = gfx_ctx_ps3_get_resolution_width(global->console.screen.resolutions.current.id);
+      params.height = gfx_ctx_ps3_get_resolution_height(global->console.screen.resolutions.current.id);
+      global->console.screen.pal_enable = false;
 
       if (params.width == 720 && params.height == 576)
       {
          RARCH_LOG("[PSGL Context]: 720x576 resolution detected, setting MODE_VIDEO_PAL_ENABLE.\n");
-         g_extern.console.screen.pal_enable = true;
+         global->console.screen.pal_enable = true;
       }
    }
 
-   if (g_extern.console.screen.pal60_enable)
+   if (global->console.screen.pal60_enable)
    {
       RARCH_LOG("[PSGL Context]: Setting temporal PAL60 mode.\n");
       params.enable |= PSGL_DEVICE_PARAMETERS_RESC_PAL_TEMPORAL_MODE;
@@ -302,7 +305,7 @@ static bool gfx_ctx_ps3_init(void *data)
    psglResetCurrentContext();
 #endif
 
-   g_extern.console.screen.pal_enable = 
+   global->console.screen.pal_enable = 
       cellVideoOutGetResolutionAvailability(
             CELL_VIDEO_OUT_PRIMARY, CELL_VIDEO_OUT_RESOLUTION_576,
             CELL_VIDEO_OUT_ASPECT_AUTO, 0);

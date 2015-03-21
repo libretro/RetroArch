@@ -35,6 +35,8 @@
 
 static struct runloop *g_runloop;
 
+struct global g_extern;
+
 /* Convenience macros. */
 #define check_oneshot_func(trigger_input) (check_is_oneshot(BIT64_GET(trigger_input, RARCH_FRAMEADVANCE), BIT64_GET(trigger_input, RARCH_REWIND)))
 #define check_slowmotion_func(input)      (check_slowmotion(BIT64_GET(input, RARCH_SLOWMOTION)))

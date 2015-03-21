@@ -105,8 +105,9 @@ static void setup_pixel_format(HDC hdc)
 static void create_gl_context(HWND hwnd)
 {
    bool core_context;
-   bool debug = g_extern.system.hw_render_callback.debug_context;
+   global_t *global = global_get_ptr();
    driver_t *driver = driver_get_ptr();
+   bool debug       = global->system.hw_render_callback.debug_context;
 
 #ifdef _WIN32
    dll_handle = LoadLibrary("OpenGL32.dll");

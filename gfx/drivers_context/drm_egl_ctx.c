@@ -598,11 +598,12 @@ static EGLint *egl_fill_attribs(EGLint *attr)
       case GFX_CTX_OPENGL_API:
       {
          unsigned version = g_major * 1000 + g_minor;
-         bool core = version >= 3001;
+         bool core        = version >= 3001;
 #ifdef GL_DEBUG
-         bool debug = true;
+         bool debug       = true;
 #else
-         bool debug = g_extern.system.hw_render_callback.debug_context;
+         global_t *global = global_get_ptr();
+         bool debug       = global->system.hw_render_callback.debug_context;
 #endif
 
          if (core)

@@ -947,6 +947,7 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    const struct gl_tex_info *fbo_info = (const struct gl_tex_info*)_fbo_info;
    struct glsl_attrib *attr = (struct glsl_attrib*)attribs;
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)driver->video_shader_data;
 
    if (!glsl)
@@ -985,7 +986,7 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    }
 
    if (uni->frame_direction >= 0)
-      glUniform1i(uni->frame_direction, g_extern.rewind.frame_is_reverse ? -1 : 1);
+      glUniform1i(uni->frame_direction, global->rewind.frame_is_reverse ? -1 : 1);
 
 
    for (i = 0; i < glsl->glsl_shader->luts; i++)

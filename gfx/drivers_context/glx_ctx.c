@@ -345,9 +345,10 @@ static bool gfx_ctx_glx_init(void *data)
       None
    };
    int nelements, major, minor;
-   GLXFBConfig *fbcs = NULL;
+   GLXFBConfig *fbcs       = NULL;
    gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)calloc(1, sizeof(gfx_ctx_glx_data_t));
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver        = driver_get_ptr();
+   global_t *global        = global_get_ptr();
 
    if (!glx)
       return false;
@@ -373,7 +374,7 @@ static bool gfx_ctx_glx_init(void *data)
 #ifdef GL_DEBUG
    glx->g_debug = true;
 #else
-   glx->g_debug = g_extern.system.hw_render_callback.debug_context;
+   glx->g_debug = global->system.hw_render_callback.debug_context;
 #endif
 
    glx->g_core = (g_major * 1000 + g_minor) >= 3001; /* Have to use ContextAttribs */

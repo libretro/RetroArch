@@ -52,10 +52,13 @@ static bool win32_browser(HWND owner, char *filename, const char *extensions,
 
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 {
-    WPARAM mode      = wparam & 0xffff;
-	unsigned cmd     = RARCH_CMD_NONE;
-	bool do_wm_close = false;
+    WPARAM mode         = wparam & 0xffff;
+	unsigned cmd         = RARCH_CMD_NONE;
+	bool do_wm_close     = false;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
+
+   (void)global;
 
 	switch (mode)
    {
@@ -89,7 +92,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                      cmd = RARCH_CMD_LOAD_CORE;
                      break;
                   case ID_M_LOAD_CONTENT:
-                     strlcpy(g_extern.fullpath, win32_file, sizeof(g_extern.fullpath));
+                     strlcpy(global->fullpath, win32_file, sizeof(global->fullpath));
                      cmd = RARCH_CMD_LOAD_CONTENT;
                      do_wm_close = true;
                      break;
@@ -140,7 +143,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
          {
             unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
-            g_extern.pending.windowed_scale = idx;
+            global->pending.windowed_scale = idx;
             cmd = RARCH_CMD_RESIZE_WINDOWED_SCALE;
          }
          else if (mode == ID_M_STATE_INDEX_AUTO)

@@ -522,7 +522,8 @@ static EGLint *egl_fill_attribs(EGLint *attr)
 #ifdef GL_DEBUG
          bool debug = true;
 #else
-         bool debug = g_extern.system.hw_render_callback.debug_context;
+         global_t *global = global_get_ptr();
+         bool debug = global->system.hw_render_callback.debug_context;
 #endif
 
          if (core)

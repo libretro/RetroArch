@@ -169,6 +169,7 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 {
    d3d_video_t *d3d =(d3d_video_t*)data;
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
    memset(d3dpp, 0, sizeof(*d3dpp));
 
@@ -204,7 +205,7 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
 #ifdef _XBOX
    d3dpp->BackBufferFormat = 
 #ifdef _XBOX360
-      g_extern.console.screen.gamma_correction ? 
+      global->console.screen.gamma_correction ? 
       (D3DFORMAT)MAKESRGBFMT(info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5) :
 #endif
       info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
@@ -271,7 +272,7 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
    if (!widescreen_mode)
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
 
-   if (g_extern.console.screen.gamma_correction)
+   if (global->console.screen.gamma_correction)
       d3dpp->FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
    else
       d3dpp->FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;

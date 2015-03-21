@@ -385,7 +385,8 @@ static EGLint *xegl_fill_attribs(EGLint *attr)
       {
          unsigned version = g_major * 1000 + g_minor;
          bool core = version >= 3001;
-         bool debug = g_extern.system.hw_render_callback.debug_context;
+         global_t *global = global_get_ptr();
+         bool debug = global->system.hw_render_callback.debug_context;
 
 #ifdef GL_DEBUG
          debug = true;
