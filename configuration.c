@@ -66,11 +66,11 @@
 #define CONFIG_GET_PATH_BASE(conf, base, var, key) \
    config_get_path(conf, key, base->var, sizeof(base->var))
 
-#define CONFIG_GET_BOOL(var, key) CONFIG_GET_BOOL_BASE(conf, g_config, var, key)
-#define CONFIG_GET_INT(var, key) CONFIG_GET_INT_BASE(conf, g_config, var, key)
-#define CONFIG_GET_FLOAT(var, key) CONFIG_GET_FLOAT_BASE(conf, g_config, var, key)
-#define CONFIG_GET_STRING(var, key) CONFIG_GET_STRING_BASE(conf, g_config, var, key)
-#define CONFIG_GET_PATH(var, key) CONFIG_GET_PATH_BASE(conf, g_config, var, key)
+#define CONFIG_GET_BOOL(var, key) CONFIG_GET_BOOL_BASE(conf, settings, var, key)
+#define CONFIG_GET_INT(var, key) CONFIG_GET_INT_BASE(conf, settings, var, key)
+#define CONFIG_GET_FLOAT(var, key) CONFIG_GET_FLOAT_BASE(conf, settings, var, key)
+#define CONFIG_GET_STRING(var, key) CONFIG_GET_STRING_BASE(conf, settings, var, key)
+#define CONFIG_GET_PATH(var, key) CONFIG_GET_PATH_BASE(conf, settings, var, key)
 
 #define CONFIG_GET_BOOL_EXTERN(var, key) CONFIG_GET_BOOL_BASE(conf, global, var, key)
 #define CONFIG_GET_INT_EXTERN(var, key) CONFIG_GET_INT_BASE(conf, global, var, key)
@@ -1179,9 +1179,9 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(menu.navigation.browser.filter.supported_extensions_enable,   "menu_navigation_browser_filter_supported_extensions_enable");
    CONFIG_GET_BOOL(menu.collapse_subgroups_enable,   "menu_collapse_subgroups_enable");
    CONFIG_GET_BOOL(menu.show_advanced_settings,   "menu_show_advanced_settings");
-   CONFIG_GET_HEX_BASE(conf, g_config, menu.entry_normal_color,   "menu_entry_normal_color");
-   CONFIG_GET_HEX_BASE(conf, g_config, menu.entry_hover_color,   "menu_entry_hover_color");
-   CONFIG_GET_HEX_BASE(conf, g_config, menu.title_color,   "menu_title_color");
+   CONFIG_GET_HEX_BASE(conf, settings, menu.entry_normal_color,   "menu_entry_normal_color");
+   CONFIG_GET_HEX_BASE(conf, settings, menu.entry_hover_color,   "menu_entry_hover_color");
+   CONFIG_GET_HEX_BASE(conf, settings, menu.title_color,   "menu_title_color");
    config_get_path(conf, "menu_wallpaper", settings->menu.wallpaper, sizeof(settings->menu.wallpaper));
    if (!strcmp(settings->menu.wallpaper, "default"))
       *settings->menu.wallpaper = '\0';
