@@ -490,9 +490,6 @@ void rarch_main_data_deinit(void);
 
 void rarch_main_data_init_queues(void);
 
-/* Public data structures. */
-extern global_t g_extern;
-
 #ifdef __cplusplus
 }
 #endif

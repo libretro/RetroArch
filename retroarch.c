@@ -1717,7 +1717,7 @@ void rarch_main_state_new(void)
 {
    global_t *global = global_get_ptr();
 
-   main_clear_state(global->main_is_init);
+   main_clear_state(global ? global->main_is_init: false);
    rarch_main_command(RARCH_CMD_MSG_QUEUE_INIT);
 }
 
@@ -2385,6 +2385,9 @@ bool rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_CHEATS_DEINIT:
+         if (!global)
+            break;
+
          if (global->cheat)
             cheat_manager_free(global->cheat);
          global->cheat = NULL;
@@ -2400,6 +2403,8 @@ bool rarch_main_command(unsigned cmd)
          init_remapping();
          break;
       case RARCH_CMD_REWIND_DEINIT:
+         if (!global)
+            break;
 #ifdef HAVE_NETPLAY
          if (driver->netplay_data)
             return false;
@@ -2501,6 +2506,9 @@ bool rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_DSP_FILTER_DEINIT:
+         if (!global)
+            break;
+
          if (global->audio_data.dsp)
             rarch_dsp_filter_free(global->audio_data.dsp);
          global->audio_data.dsp = NULL;
@@ -2517,6 +2525,9 @@ bool rarch_main_command(unsigned cmd)
                   settings->audio.dsp_plugin);
          break;
       case RARCH_CMD_GPU_RECORD_DEINIT:
+         if (!global)
+            break;
+
          if (global->record.gpu_buffer)
             free(global->record.gpu_buffer);
          global->record.gpu_buffer = NULL;
@@ -2545,6 +2556,9 @@ bool rarch_main_command(unsigned cmd)
                settings->content_history_size);
          break;
       case RARCH_CMD_CORE_INFO_DEINIT:
+         if (!global)
+            break;
+
          if (global->core_info)
             core_info_list_free(global->core_info);
          global->core_info = NULL;
@@ -2677,6 +2691,9 @@ bool rarch_main_command(unsigned cmd)
          }
          break;
       case RARCH_CMD_SHADER_DIR_DEINIT:
+         if (!global)
+            break;
+
          dir_list_free(global->shader_dir.list);
          global->shader_dir.list = NULL;
          global->shader_dir.ptr  = 0;
@@ -2707,6 +2724,9 @@ bool rarch_main_command(unsigned cmd)
          save_files();
          break;
       case RARCH_CMD_SAVEFILES_DEINIT:
+         if (!global)
+            break;
+
          if (global->savefiles)
             string_list_free(global->savefiles);
          global->savefiles = NULL;
@@ -2733,6 +2753,9 @@ bool rarch_main_command(unsigned cmd)
          rarch_main_data_init_queues();
          break;
       case RARCH_CMD_BSV_MOVIE_DEINIT:
+         if (!global)
+            break;
+
          if (global->bsv.movie)
             bsv_movie_free(global->bsv.movie);
          global->bsv.movie = NULL;
@@ -2806,16 +2829,25 @@ bool rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_TEMPORARY_CONTENT_DEINIT:
+         if (!global)
+            break;
+
          if (global->temporary_content)
             free_temporary_content();
          global->temporary_content = NULL;
          break;
       case RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT:
+         if (!global)
+            break;
+
          if (global->subsystem_fullpaths)
             string_list_free(global->subsystem_fullpaths);
          global->subsystem_fullpaths = NULL;
          break;
       case RARCH_CMD_LOG_FILE_DEINIT:
+         if (!global)
+            break;
+
          if (global->log_file)
             fclose(global->log_file);
          global->log_file = NULL;

@@ -35,7 +35,7 @@
 
 static struct runloop *g_runloop;
 
-struct global g_extern;
+static struct global *g_extern;
 
 /* Convenience macros. */
 #define check_oneshot_func(trigger_input) (check_is_oneshot(BIT64_GET(trigger_input, RARCH_FRAMEADVANCE), BIT64_GET(trigger_input, RARCH_REWIND)))
@@ -992,7 +992,7 @@ void rarch_main_msg_queue_init(void)
 
 global_t *global_get_ptr(void)
 {
-   return &g_extern;
+   return g_extern;
 }
 
 runloop_t *rarch_main_get_ptr(void)
@@ -1012,19 +1012,19 @@ static void rarch_main_state_deinit(void)
 
 static void rarch_main_global_deinit(void)
 {
+   global_t *global = NULL;
+   
    rarch_main_command(RARCH_CMD_TEMPORARY_CONTENT_DEINIT);
    rarch_main_command(RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
    rarch_main_command(RARCH_CMD_RECORD_DEINIT);
    rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
 
-#if 0
-   global_t *global = global_get_ptr();
+   global = global_get_ptr();
 
    if (!global)
       return;
 
    free(global);
-#endif
 }
 
 bool rarch_main_verbosity(void)
@@ -1043,13 +1043,14 @@ FILE *rarch_main_log_file(void)
    return global->log_file;
 }
 
-static void rarch_main_global_init(void)
+static global_t *rarch_main_global_init(void)
 {
-#if 0
-   g_extern  = rarch_main_global_init();
-#else
-   memset(&g_extern, 0, sizeof(g_extern));
-#endif
+   global_t *global = (global_t*)calloc(1, sizeof(global_t));
+
+   if (!global)
+      return NULL;
+
+   return global;
 }
 
 static runloop_t *rarch_main_state_init(void)
@@ -1068,7 +1069,7 @@ void rarch_main_clear_state(void)
    g_runloop = rarch_main_state_init();
 
    rarch_main_global_deinit();
-   rarch_main_global_init();
+   g_extern  = rarch_main_global_init();
 }
 
 bool rarch_main_is_idle(void)
