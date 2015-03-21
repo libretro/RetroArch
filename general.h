@@ -138,14 +138,16 @@ static INLINE float db_to_gain(float db)
  **/
 static INLINE void rarch_fail(int error_code, const char *error)
 {
+   global_t *global = global_get_ptr();
+
    /* We cannot longjmp unless we're in rarch_main_init().
     * If not, something went very wrong, and we should 
     * just exit right away. */
-   rarch_assert(g_extern.error_in_init);
+   rarch_assert(global->error_in_init);
 
-   strlcpy(g_extern.error_string, error,
-         sizeof(g_extern.error_string));
-   longjmp(g_extern.error_sjlj_context, error_code);
+   strlcpy(global->error_string, error,
+         sizeof(global->error_string));
+   longjmp(global->error_sjlj_context, error_code);
 }
 
 #endif

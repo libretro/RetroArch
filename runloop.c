@@ -57,6 +57,7 @@ static void set_volume(float gain)
 {
    char msg[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    settings->audio.volume += gain;
    settings->audio.volume = max(settings->audio.volume, -80.0f);
@@ -66,7 +67,7 @@ static void set_volume(float gain)
    rarch_main_msg_queue_push(msg, 1, 180, true);
    RARCH_LOG("%s\n", msg);
 
-   g_extern.audio_data.volume_gain = db_to_gain(settings->audio.volume);
+   global->audio_data.volume_gain = db_to_gain(settings->audio.volume);
 }
 
 /**
@@ -193,20 +194,21 @@ static void check_stateslots(bool pressed_increase, bool pressed_decrease)
 static INLINE void setup_rewind_audio(void)
 {
    unsigned i;
+   global_t *global = global_get_ptr();
 
    /* Push audio ready to be played. */
-   g_extern.audio_data.rewind_ptr = g_extern.audio_data.rewind_size;
+   global->audio_data.rewind_ptr = global->audio_data.rewind_size;
 
-   for (i = 0; i < g_extern.audio_data.data_ptr; i += 2)
+   for (i = 0; i < global->audio_data.data_ptr; i += 2)
    {
-      g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] =
-         g_extern.audio_data.conv_outsamples[i + 1];
+      global->audio_data.rewind_buf[--global->audio_data.rewind_ptr] =
+         global->audio_data.conv_outsamples[i + 1];
 
-      g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] =
-         g_extern.audio_data.conv_outsamples[i + 0];
+      global->audio_data.rewind_buf[--global->audio_data.rewind_ptr] =
+         global->audio_data.conv_outsamples[i + 0];
    }
 
-   g_extern.audio_data.data_ptr = 0;
+   global->audio_data.data_ptr = 0;
 }
 
 /**
@@ -218,15 +220,16 @@ static INLINE void setup_rewind_audio(void)
 static void check_rewind(bool pressed)
 {
    static bool first = true;
+   global_t *global = global_get_ptr();
 
-   if (g_extern.rewind.frame_is_reverse)
+   if (global->rewind.frame_is_reverse)
    {
       /* We just rewound. Flush rewind audio buffer. */
-      retro_flush_audio(g_extern.audio_data.rewind_buf
-            + g_extern.audio_data.rewind_ptr,
-            g_extern.audio_data.rewind_size - g_extern.audio_data.rewind_ptr);
+      retro_flush_audio(global->audio_data.rewind_buf
+            + global->audio_data.rewind_ptr,
+            global->audio_data.rewind_size - global->audio_data.rewind_ptr);
 
-      g_extern.rewind.frame_is_reverse = false;
+      global->rewind.frame_is_reverse = false;
    }
 
    if (first)
@@ -235,7 +238,7 @@ static void check_rewind(bool pressed)
       return;
    }
 
-   if (!g_extern.rewind.state)
+   if (!global->rewind.state)
       return;
 
    if (pressed)
@@ -243,17 +246,17 @@ static void check_rewind(bool pressed)
       const void *buf = NULL;
       runloop_t *runloop = rarch_main_get_ptr();
 
-      if (state_manager_pop(g_extern.rewind.state, &buf))
+      if (state_manager_pop(global->rewind.state, &buf))
       {
-         g_extern.rewind.frame_is_reverse = true;
+         global->rewind.frame_is_reverse = true;
          setup_rewind_audio();
 
          rarch_main_msg_queue_push(RETRO_MSG_REWINDING, 0,
                runloop->is_paused ? 1 : 30, true);
-         pretro_unserialize(buf, g_extern.rewind.size);
+         pretro_unserialize(buf, global->rewind.size);
 
-         if (g_extern.bsv.movie)
-            bsv_movie_frame_rewind(g_extern.bsv.movie);
+         if (global->bsv.movie)
+            bsv_movie_frame_rewind(global->bsv.movie);
       }
       else
          rarch_main_msg_queue_push(RETRO_MSG_REWIND_REACHED_END,
@@ -267,17 +270,17 @@ static void check_rewind(bool pressed)
       cnt = (cnt + 1) % (settings->rewind_granularity ?
             settings->rewind_granularity : 1); /* Avoid possible SIGFPE. */
 
-      if ((cnt == 0) || g_extern.bsv.movie)
+      if ((cnt == 0) || global->bsv.movie)
       {
          void *state = NULL;
-         state_manager_push_where(g_extern.rewind.state, &state);
+         state_manager_push_where(global->rewind.state, &state);
 
          RARCH_PERFORMANCE_INIT(rewind_serialize);
          RARCH_PERFORMANCE_START(rewind_serialize);
-         pretro_serialize(state, g_extern.rewind.size);
+         pretro_serialize(state, global->rewind.size);
          RARCH_PERFORMANCE_STOP(rewind_serialize);
 
-         state_manager_push_do(g_extern.rewind.state);
+         state_manager_push_do(global->rewind.state);
       }
    }
 
@@ -294,6 +297,7 @@ static void check_slowmotion(bool pressed)
 {
    runloop_t *runloop       = rarch_main_get_ptr();
    settings_t *settings     = config_get_ptr();
+   global_t *global         = global_get_ptr();
 
    runloop->is_slowmotion = pressed;
 
@@ -303,7 +307,7 @@ static void check_slowmotion(bool pressed)
    if (settings->video.black_frame_insertion)
       rarch_render_cached_frame();
 
-   rarch_main_msg_queue_push(g_extern.rewind.frame_is_reverse ?
+   rarch_main_msg_queue_push(global->rewind.frame_is_reverse ?
          "Slow motion rewind." : "Slow motion.", 0, 30, true);
 }
 
@@ -312,8 +316,9 @@ static bool check_movie_init(void)
    char path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
    bool ret = true;
    settings_t *settings     = config_get_ptr();
+   global_t *global         = global_get_ptr();
    
-   if (g_extern.bsv.movie)
+   if (global->bsv.movie)
       return false;
 
    settings->rewind_granularity = 1;
@@ -321,25 +326,25 @@ static bool check_movie_init(void)
    if (settings->state_slot > 0)
    {
       snprintf(path, sizeof(path), "%s%d.bsv",
-            g_extern.bsv.movie_path, settings->state_slot);
+            global->bsv.movie_path, settings->state_slot);
    }
    else
    {
       snprintf(path, sizeof(path), "%s.bsv",
-            g_extern.bsv.movie_path);
+            global->bsv.movie_path);
    }
 
    snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
 
-   g_extern.bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
+   global->bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
 
-   if (!g_extern.bsv.movie)
+   if (!global->bsv.movie)
       ret = false;
 
-   rarch_main_msg_queue_push(g_extern.bsv.movie ?
+   rarch_main_msg_queue_push(global->bsv.movie ?
          msg : "Failed to start movie record.", 1, 180, true);
 
-   if (g_extern.bsv.movie)
+   if (global->bsv.movie)
       RARCH_LOG("Starting movie record to \"%s\".\n", path);
    else
       RARCH_ERR("Failed to start movie record.\n");
@@ -356,7 +361,8 @@ static bool check_movie_init(void)
  **/
 static bool check_movie_record(void)
 {
-   if (!g_extern.bsv.movie)
+   global_t *global = global_get_ptr();
+   if (!global->bsv.movie)
       return false;
 
    rarch_main_msg_queue_push(
@@ -377,7 +383,8 @@ static bool check_movie_record(void)
  **/
 static bool check_movie_playback(void)
 {
-   if (!g_extern.bsv.movie_end)
+   global_t *global = global_get_ptr();
+   if (!global->bsv.movie_end)
       return false;
 
    rarch_main_msg_queue_push(
@@ -386,17 +393,19 @@ static bool check_movie_playback(void)
 
    rarch_main_command(RARCH_CMD_BSV_MOVIE_DEINIT);
 
-   g_extern.bsv.movie_end = false;
-   g_extern.bsv.movie_playback = false;
+   global->bsv.movie_end = false;
+   global->bsv.movie_playback = false;
 
    return true;
 }
 
 static bool check_movie(void)
 {
-   if (g_extern.bsv.movie_playback)
+   global_t *global = global_get_ptr();
+
+   if (global->bsv.movie_playback)
       return check_movie_playback();
-   if (!g_extern.bsv.movie)
+   if (!global->bsv.movie)
       return check_movie_init();
    return check_movie_record();
 }
@@ -417,26 +426,27 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
    char msg[PATH_MAX_LENGTH];
    const char *shader = NULL, *ext = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
+   global_t *global = global_get_ptr();
 
-   if (!g_extern.shader_dir.list)
+   if (!global->shader_dir.list)
       return;
 
    if (pressed_next)
    {
-      g_extern.shader_dir.ptr = (g_extern.shader_dir.ptr + 1) %
-         g_extern.shader_dir.list->size;
+      global->shader_dir.ptr = (global->shader_dir.ptr + 1) %
+         global->shader_dir.list->size;
    }
    else if (pressed_prev)
    {
-      if (g_extern.shader_dir.ptr == 0)
-         g_extern.shader_dir.ptr = g_extern.shader_dir.list->size - 1;
+      if (global->shader_dir.ptr == 0)
+         global->shader_dir.ptr = global->shader_dir.list->size - 1;
       else
-         g_extern.shader_dir.ptr--;
+         global->shader_dir.ptr--;
    }
    else
       return;
 
-   shader = g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
+   shader = global->shader_dir.list->elems[global->shader_dir.ptr].data;
    ext    = path_get_extension(shader);
 
    if (strcmp(ext, "glsl") == 0 || strcmp(ext, "glslp") == 0)
@@ -447,7 +457,7 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
       return;
 
    snprintf(msg, sizeof(msg), "Shader #%u: \"%s\".",
-         (unsigned)g_extern.shader_dir.ptr, shader);
+         (unsigned)global->shader_dir.ptr, shader);
    rarch_main_msg_queue_push(msg, 1, 120, true);
    RARCH_LOG("Applying shader \"%s\".\n", shader);
 
@@ -466,22 +476,25 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
  **/
 static void check_cheats(retro_input_t trigger_input)
 {
+   global_t *global = global_get_ptr();
+
    if (BIT64_GET(trigger_input, RARCH_CHEAT_INDEX_PLUS))
-      cheat_manager_index_next(g_extern.cheat);
+      cheat_manager_index_next(global->cheat);
    else if (BIT64_GET(trigger_input, RARCH_CHEAT_INDEX_MINUS))
-      cheat_manager_index_prev(g_extern.cheat);
+      cheat_manager_index_prev(global->cheat);
    else if (BIT64_GET(trigger_input, RARCH_CHEAT_TOGGLE))
-      cheat_manager_toggle(g_extern.cheat);
+      cheat_manager_toggle(global->cheat);
 }
 
 #ifdef HAVE_MENU
 static void do_state_check_menu_toggle(void)
 {
    runloop_t *runloop = rarch_main_get_ptr();
+   global_t *global   = global_get_ptr();
 
    if (runloop->is_menu)
    {
-      if (g_extern.main_is_init && !g_extern.libretro_dummy)
+      if (global->main_is_init && !global->libretro_dummy)
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
       return;
    }
@@ -509,6 +522,7 @@ static int do_pre_state_checks(
       retro_input_t trigger_input)
 {
    runloop_t *runloop = rarch_main_get_ptr();
+   global_t *global   = global_get_ptr();
 
    if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))
       rarch_main_command(RARCH_CMD_OVERLAY_NEXT);
@@ -523,7 +537,7 @@ static int do_pre_state_checks(
       rarch_main_command(RARCH_CMD_GRAB_MOUSE_TOGGLE);
 
 #ifdef HAVE_MENU
-   if (check_enter_menu_func(trigger_input) || (g_extern.libretro_dummy))
+   if (check_enter_menu_func(trigger_input) || (global->libretro_dummy))
       do_state_check_menu_toggle();
 #endif
 
@@ -583,6 +597,7 @@ static int do_state_checks(
 {
    driver_t  *driver  = driver_get_ptr();
    runloop_t *runloop = rarch_main_get_ptr();
+   global_t  *global  = global_get_ptr();
 
    (void)driver;
 
@@ -638,7 +653,7 @@ static int do_state_checks(
    if (BIT64_GET(trigger_input, RARCH_RESET))
       rarch_main_command(RARCH_CMD_RESET);
 
-   if (g_extern.cheat)
+   if (global->cheat)
       check_cheats(trigger_input);
 
    return 0;
@@ -663,12 +678,14 @@ static int do_state_checks(
 static INLINE int time_to_exit(retro_input_t input)
 {
    runloop_t *runloop = rarch_main_get_ptr();
+   global_t  *global  = global_get_ptr();
+
    if (
-         g_extern.system.shutdown
+         global->system.shutdown
          || check_quit_key_func(input)
          || (runloop->frames.video.max && 
             runloop->frames.video.count >= runloop->frames.video.max)
-         || (g_extern.bsv.movie_end && g_extern.bsv.eof_exit)
+         || (global->bsv.movie_end && global->bsv.eof_exit)
          || !video_driver_is_alive()
       )
       return 1;
@@ -686,23 +703,24 @@ static void rarch_update_frame_time(void)
    driver_t *driver         = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
    retro_time_t curr_time   = rarch_get_time_usec();
-   retro_time_t delta       = curr_time - g_extern.system.frame_time_last;
+   global_t  *global        = global_get_ptr();
+   retro_time_t delta       = curr_time - global->system.frame_time_last;
    bool is_locked_fps       = runloop->is_paused || driver->nonblock_state;
 
    is_locked_fps         |= !!driver->recording_data;
 
-   if (!g_extern.system.frame_time_last || is_locked_fps)
-      delta = g_extern.system.frame_time.reference;
+   if (!global->system.frame_time_last || is_locked_fps)
+      delta = global->system.frame_time.reference;
 
    if (!is_locked_fps && runloop->is_slowmotion)
       delta /= settings->slowmotion_ratio;
 
-   g_extern.system.frame_time_last = curr_time;
+   global->system.frame_time_last = curr_time;
 
    if (is_locked_fps)
-      g_extern.system.frame_time_last = 0;
+      global->system.frame_time_last = 0;
 
-   g_extern.system.frame_time.callback(delta);
+   global->system.frame_time.callback(delta);
 }
 
 
@@ -717,9 +735,10 @@ static void rarch_limit_frame_time(void)
    retro_time_t current, target = 0, to_sleep_ms = 0;
    runloop_t *runloop       = rarch_main_get_ptr();
    settings_t *settings     = config_get_ptr();
+   global_t  *global        = global_get_ptr();
 
    current       = rarch_get_time_usec();
-   effective_fps = g_extern.system.av_info.timing.fps 
+   effective_fps = global->system.av_info.timing.fps 
       * settings->fastforward_ratio;
    mft_f         = 1000000.0f / effective_fps;
 
@@ -795,6 +814,7 @@ static INLINE retro_input_t input_keys_pressed(void)
    retro_input_t ret        = 0;
    driver_t *driver         = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
+   global_t   *global       = global_get_ptr();
    const struct retro_keybind *binds[MAX_USERS] = {
       settings->input.binds[0],
       settings->input.binds[1],
@@ -817,7 +837,7 @@ static INLINE retro_input_t input_keys_pressed(void)
    if (!driver->input || !driver->input_data)
       return 0;
 
-   g_extern.turbo_count++;
+   global->turbo_count++;
 
    driver->block_libretro_input = check_block_hotkey(
          driver->input->key_pressed(driver->input_data,
@@ -830,14 +850,14 @@ static INLINE retro_input_t input_keys_pressed(void)
       input_push_analog_dpad(settings->input.autoconf_binds[i],
             settings->input.analog_dpad_mode[i]);
 
-      g_extern.turbo_frame_enable[i] = 0;
+      global->turbo_frame_enable[i] = 0;
    }
 
    if (!driver->block_libretro_input)
    {
       for (i = 0; i < settings->input.max_users; i++)
       {
-         g_extern.turbo_frame_enable[i] = 
+         global->turbo_frame_enable[i] = 
             driver->input->input_state(driver->input_data, binds, i,
                   RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
       }
@@ -890,15 +910,16 @@ static bool input_flush(retro_input_t *input)
 static int rarch_main_iterate_quit(void)
 {
    settings_t *settings     = config_get_ptr();
+   global_t   *global       = global_get_ptr();
 
-   if (g_extern.core_shutdown_initiated
+   if (global->core_shutdown_initiated
          && settings->load_dummy_on_core_shutdown)
    {
       rarch_main_data_deinit();
       if (!rarch_main_command(RARCH_CMD_PREPARE_DUMMY))
          return -1;
 
-      g_extern.core_shutdown_initiated = false;
+      global->core_shutdown_initiated = false;
 
       return 0;
    }
@@ -1058,6 +1079,7 @@ int rarch_main_iterate(void)
    last_input                      = input;
    driver_t *driver                = driver_get_ptr();
    settings_t *settings            = config_get_ptr();
+   global_t   *global              = global_get_ptr();
 
    if (driver->flushing_input)
       driver->flushing_input = (input) ? input_flush(&input) : false;
@@ -1067,7 +1089,7 @@ int rarch_main_iterate(void)
    if (time_to_exit(input))
       return rarch_main_iterate_quit();
 
-   if (g_extern.system.frame_time.callback)
+   if (global->system.frame_time.callback)
       rarch_update_frame_time();
 
    do_pre_state_checks(input, old_input, trigger_input);
@@ -1092,9 +1114,9 @@ int rarch_main_iterate(void)
    }
 #endif
 
-   if (g_extern.exec)
+   if (global->exec)
    {
-      g_extern.exec = false;
+      global->exec = false;
       return rarch_main_iterate_quit();
    }
 
@@ -1116,10 +1138,10 @@ int rarch_main_iterate(void)
       netplay_pre_frame((netplay_t*)driver->netplay_data);
 #endif
 
-   if (g_extern.bsv.movie)
-      bsv_movie_set_frame_start(g_extern.bsv.movie);
+   if (global->bsv.movie)
+      bsv_movie_set_frame_start(global->bsv.movie);
 
-   if (g_extern.system.camera_callback.caps)
+   if (global->system.camera_callback.caps)
       driver_camera_poll();
 
    /* Update binds for analog dpad modes. */
@@ -1150,8 +1172,8 @@ int rarch_main_iterate(void)
       input_pop_analog_dpad(settings->input.autoconf_binds[i]);
    }
 
-   if (g_extern.bsv.movie)
-      bsv_movie_set_frame_end(g_extern.bsv.movie);
+   if (global->bsv.movie)
+      bsv_movie_set_frame_end(global->bsv.movie);
 
 #ifdef HAVE_NETPLAY
    if (driver->netplay_data)
