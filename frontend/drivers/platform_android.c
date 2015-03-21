@@ -38,6 +38,7 @@ void engine_handle_cmd(void *data)
    struct android_app *android_app = (struct android_app*)g_android;
    runloop_t *runloop = rarch_main_get_ptr();
    global_t  *global  = global_get_ptr();
+   driver_t  *driver  = driver_get_ptr();
 
    if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
       cmd = -1;
@@ -134,8 +135,8 @@ void engine_handle_cmd(void *data)
          if ((android_app->sensor_state_mask 
                   & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
                && android_app->accelerometerSensor == NULL
-               && driver.input_data)
-            android_input_set_sensor_state(driver.input_data, 0,
+               && driver->input_data)
+            android_input_set_sensor_state(driver->input_data, 0,
                   RETRO_SENSOR_ACCELEROMETER_ENABLE,
                   android_app->accelerometer_event_rate);
          break;
@@ -144,8 +145,8 @@ void engine_handle_cmd(void *data)
          if ((android_app->sensor_state_mask
                   & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
                && android_app->accelerometerSensor != NULL
-               && driver.input_data)
-            android_input_set_sensor_state(driver.input_data, 0,
+               && driver->input_data)
+            android_input_set_sensor_state(driver->input_data, 0,
                   RETRO_SENSOR_ACCELEROMETER_DISABLE,
                   android_app->accelerometer_event_rate);
          break;
@@ -420,10 +421,11 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
 static bool android_run_events(void *data)
 {
    global_t *global = global_get_ptr();
+   driver_t *driver = driver_get_ptr();
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
    if (id == LOOPER_ID_MAIN)
-      engine_handle_cmd(driver.input_data);
+      engine_handle_cmd(driver->input_data);
 
    /* Check if we are exiting. */
    if (global->system.shutdown)
