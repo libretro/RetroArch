@@ -516,12 +516,18 @@ static INLINE void check_shader_dir_func(retro_input_t trigger_input)
 static void check_cheats(retro_input_t trigger_input)
 {
    global_t *global = global_get_ptr();
+   bool cheat_index_plus_pressed = BIT64_GET(trigger_input,
+         RARCH_CHEAT_INDEX_PLUS);
+   bool cheat_index_minus_pressed = BIT64_GET(trigger_input,
+         RARCH_CHEAT_INDEX_MINUS);
+   bool cheat_toggle_pressed = BIT64_GET(trigger_input,
+         RARCH_CHEAT_TOGGLE);
 
-   if (BIT64_GET(trigger_input, RARCH_CHEAT_INDEX_PLUS))
+   if (cheat_index_plus_pressed)
       cheat_manager_index_next(global->cheat);
-   else if (BIT64_GET(trigger_input, RARCH_CHEAT_INDEX_MINUS))
+   else if (cheat_index_minus_pressed)
       cheat_manager_index_prev(global->cheat);
-   else if (BIT64_GET(trigger_input, RARCH_CHEAT_TOGGLE))
+   else if (cheat_toggle_pressed)
       cheat_manager_toggle(global->cheat);
 }
 
@@ -560,25 +566,28 @@ static int do_pre_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
-   global_t *global   = global_get_ptr();
-   bool menu_pressed  = false;
-   
+   runloop_t *runloop        = rarch_main_get_ptr();
+   global_t *global          = global_get_ptr();
+   bool fullscreen_toggle    = BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
+   bool overlay_next_pressed = BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT);
+   bool grab_mouse_pressed   = BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE);
+#ifdef HAVE_MENU
+   bool menu_pressed         = BIT64_GET(trigger_input, RARCH_MENU_TOGGLE);
+#endif
 
-   if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))
+   if (overlay_next_pressed)
       rarch_main_command(RARCH_CMD_OVERLAY_NEXT);
 
    if (!runloop->is_paused || runloop->is_menu)
    {
-      if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+      if (fullscreen_toggle)
          rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
    }
 
-   if (BIT64_GET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
+   if (grab_mouse_pressed)
       rarch_main_command(RARCH_CMD_GRAB_MOUSE_TOGGLE);
 
 #ifdef HAVE_MENU
-   menu_pressed = BIT64_GET(trigger_input, RARCH_MENU_TOGGLE);
    if (menu_pressed || (global->libretro_dummy))
       do_state_check_menu_toggle();
 #endif
@@ -591,10 +600,13 @@ static int do_netplay_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
-   if (BIT64_GET(trigger_input, RARCH_NETPLAY_FLIP))
+   bool netplay_flip_pressed = BIT64_GET(trigger_input, RARCH_NETPLAY_FLIP);
+   bool fullscreen_toggle    = BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
+
+   if (netplay_flip_pressed)
       rarch_main_command(RARCH_CMD_NETPLAY_FLIP_PLAYERS);
 
-   if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+   if (fullscreen_toggle)
       rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
    return 0;
 }
@@ -604,13 +616,16 @@ static int do_pause_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
+   runloop_t *runloop             = rarch_main_get_ptr();
+   bool fullscreen_toggle_pressed = BIT64_GET(trigger_input, 
+         RARCH_FULLSCREEN_TOGGLE_KEY);
+
    check_pause_func(trigger_input);
 
    if (!runloop->is_paused)
       return 0;
 
-   if (BIT64_GET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+   if (fullscreen_toggle_pressed)
    {
       rarch_main_command(RARCH_CMD_FULLSCREEN_TOGGLE);
       rarch_render_cached_frame();
@@ -637,24 +652,34 @@ static int do_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
-   driver_t  *driver  = driver_get_ptr();
-   runloop_t *runloop = rarch_main_get_ptr();
-   global_t  *global  = global_get_ptr();
-
+   driver_t  *driver       = driver_get_ptr();
+   runloop_t *runloop      = rarch_main_get_ptr();
+   global_t  *global       = global_get_ptr();
+   bool screenshot_pressed = BIT64_GET(trigger_input, RARCH_SCREENSHOT);
+   bool mute_pressed       = BIT64_GET(trigger_input, RARCH_MUTE);
+   bool volume_up_pressed  = BIT64_GET(input, RARCH_VOLUME_UP);
+   bool volume_down_pressed= BIT64_GET(input, RARCH_VOLUME_DOWN);
+   bool reset_pressed      = BIT64_GET(trigger_input, RARCH_RESET);
+   bool disk_prev_pressed  = BIT64_GET(trigger_input, RARCH_DISK_PREV);
+   bool disk_next_pressed  = BIT64_GET(trigger_input, RARCH_DISK_NEXT);
+   bool disk_eject_pressed = BIT64_GET(trigger_input, RARCH_DISK_EJECT_TOGGLE);
+   bool movie_record       = BIT64_GET(trigger_input, RARCH_MOVIE_RECORD_TOGGLE);
+   bool save_state_pressed = BIT64_GET(trigger_input, RARCH_SAVE_STATE_KEY);
+   bool load_state_pressed = BIT64_GET(trigger_input, RARCH_LOAD_STATE_KEY);
    (void)driver;
 
    if (runloop->is_idle)
       return 1;
 
-   if (BIT64_GET(trigger_input, RARCH_SCREENSHOT))
+   if (screenshot_pressed)
       rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
 
-   if (BIT64_GET(trigger_input, RARCH_MUTE))
+   if (mute_pressed)
       rarch_main_command(RARCH_CMD_AUDIO_MUTE_TOGGLE);
 
-   if (BIT64_GET(input, RARCH_VOLUME_UP))
+   if (volume_up_pressed)
       set_volume(0.5f);
-   else if (BIT64_GET(input, RARCH_VOLUME_DOWN))
+   else if (volume_down_pressed)
       set_volume(-0.5f);
 
 #ifdef HAVE_NETPLAY
@@ -671,28 +696,28 @@ static int do_state_checks(
 
    check_stateslots_func(trigger_input);
 
-   if (BIT64_GET(trigger_input, RARCH_SAVE_STATE_KEY))
+   if (save_state_pressed)
       rarch_main_command(RARCH_CMD_SAVE_STATE);
-   else if (BIT64_GET(trigger_input, RARCH_LOAD_STATE_KEY))
+   else if (load_state_pressed)
       rarch_main_command(RARCH_CMD_LOAD_STATE);
 
    check_rewind_func(input);
 
    check_slowmotion_func(input);
 
-   if (BIT64_GET(trigger_input, RARCH_MOVIE_RECORD_TOGGLE))
+   if (movie_record)
       check_movie();
 
    check_shader_dir_func(trigger_input);
 
-   if (BIT64_GET(trigger_input, RARCH_DISK_EJECT_TOGGLE))
+   if (disk_eject_pressed)
       rarch_main_command(RARCH_CMD_DISK_EJECT_TOGGLE);
-   else if (BIT64_GET(trigger_input, RARCH_DISK_NEXT))
+   else if (disk_next_pressed)
       rarch_main_command(RARCH_CMD_DISK_NEXT);
-   else if (BIT64_GET(trigger_input, RARCH_DISK_PREV))
+   else if (disk_prev_pressed)
       rarch_main_command(RARCH_CMD_DISK_PREV);	  
 
-   if (BIT64_GET(trigger_input, RARCH_RESET))
+   if (reset_pressed)
       rarch_main_command(RARCH_CMD_RESET);
 
    if (global->cheat)
