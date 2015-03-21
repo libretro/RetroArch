@@ -104,12 +104,6 @@ static bool check_pause(bool pause_pressed, bool frameadvance_pressed)
    return true;
 }
 
-static INLINE bool check_pause_func(retro_input_t input)
-{
-   bool pause_pressed        = BIT64_GET(input, RARCH_PAUSE_TOGGLE);
-   bool frameadvance_pressed = BIT64_GET(input, RARCH_FRAMEADVANCE);
-   return check_pause(pause_pressed, frameadvance_pressed);
-}
 /**
  * check_is_oneshot:
  * @oneshot_pressed      : is this a oneshot frame?
@@ -126,13 +120,6 @@ static INLINE bool check_pause_func(retro_input_t input)
 static INLINE bool check_is_oneshot(bool oneshot_pressed, bool rewind_pressed)
 {
    return (oneshot_pressed | rewind_pressed);
-}
-
-static INLINE bool check_oneshot_func(retro_input_t trigger_input)
-{
-   bool oneshot_pressed = BIT64_GET(trigger_input, RARCH_FRAMEADVANCE);
-   bool rewind_pressed  = BIT64_GET(trigger_input, RARCH_REWIND);
-   return check_is_oneshot(oneshot_pressed, rewind_pressed);
 }
 
 /**
@@ -307,12 +294,6 @@ static void check_rewind(bool pressed)
    retro_set_rewind_callbacks();
 }
 
-static INLINE void check_rewind_func(retro_input_t input)
-{
-   bool rewind_pressed = BIT64_GET(input, RARCH_REWIND);
-   check_rewind(rewind_pressed);
-}
-
 /**
  * check_slowmotion:
  * @slowmotion_pressed   : was slow motion key pressed or held?
@@ -335,12 +316,6 @@ static void check_slowmotion(bool slowmotion_pressed)
 
    rarch_main_msg_queue_push(global->rewind.frame_is_reverse ?
          "Slow motion rewind." : "Slow motion.", 0, 30, true);
-}
-
-static INLINE void check_slowmotion_func(retro_input_t input)
-{
-   bool slowmotion_pressed = BIT64_GET(input, RARCH_SLOWMOTION);
-   check_slowmotion(slowmotion_pressed);
 }
 
 static bool check_movie_init(void)
@@ -497,13 +472,6 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
       RARCH_WARN("Failed to apply shader.\n");
 }
 
-static INLINE void check_shader_dir_func(retro_input_t trigger_input)
-{
-   bool shader_next_pressed = BIT64_GET(trigger_input, RARCH_SHADER_NEXT);
-   bool shader_prev_pressed = BIT64_GET(trigger_input, RARCH_SHADER_PREV);
-   check_shader_dir(shader_next_pressed, shader_prev_pressed);
-}
-
 /**
  * check_cheats:
  * @trigger_input        : difference' input sample - difference
@@ -619,8 +587,12 @@ static int do_pause_state_checks(
    runloop_t *runloop             = rarch_main_get_ptr();
    bool fullscreen_toggle_pressed = BIT64_GET(trigger_input, 
          RARCH_FULLSCREEN_TOGGLE_KEY);
+   bool pause_pressed        = BIT64_GET(trigger_input, RARCH_PAUSE_TOGGLE);
+   bool frameadvance_pressed = BIT64_GET(trigger_input, RARCH_FRAMEADVANCE);
+   bool oneshot_pressed      = BIT64_GET(trigger_input, RARCH_FRAMEADVANCE);
+   bool rewind_pressed       = BIT64_GET(trigger_input, RARCH_REWIND);
 
-   check_pause_func(trigger_input);
+   check_pause(pause_pressed, frameadvance_pressed);
 
    if (!runloop->is_paused)
       return 0;
@@ -631,7 +603,7 @@ static int do_pause_state_checks(
       rarch_render_cached_frame();
    }
 
-   if (!check_oneshot_func(trigger_input))
+   if (!check_is_oneshot(oneshot_pressed, rewind_pressed))
       return 1;
 
    return 0;
@@ -652,20 +624,24 @@ static int do_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
-   driver_t  *driver       = driver_get_ptr();
-   runloop_t *runloop      = rarch_main_get_ptr();
-   global_t  *global       = global_get_ptr();
-   bool screenshot_pressed = BIT64_GET(trigger_input, RARCH_SCREENSHOT);
-   bool mute_pressed       = BIT64_GET(trigger_input, RARCH_MUTE);
-   bool volume_up_pressed  = BIT64_GET(input, RARCH_VOLUME_UP);
-   bool volume_down_pressed= BIT64_GET(input, RARCH_VOLUME_DOWN);
-   bool reset_pressed      = BIT64_GET(trigger_input, RARCH_RESET);
-   bool disk_prev_pressed  = BIT64_GET(trigger_input, RARCH_DISK_PREV);
-   bool disk_next_pressed  = BIT64_GET(trigger_input, RARCH_DISK_NEXT);
-   bool disk_eject_pressed = BIT64_GET(trigger_input, RARCH_DISK_EJECT_TOGGLE);
-   bool movie_record       = BIT64_GET(trigger_input, RARCH_MOVIE_RECORD_TOGGLE);
-   bool save_state_pressed = BIT64_GET(trigger_input, RARCH_SAVE_STATE_KEY);
-   bool load_state_pressed = BIT64_GET(trigger_input, RARCH_LOAD_STATE_KEY);
+   driver_t  *driver        = driver_get_ptr();
+   runloop_t *runloop       = rarch_main_get_ptr();
+   global_t  *global        = global_get_ptr();
+   bool screenshot_pressed  = BIT64_GET(trigger_input, RARCH_SCREENSHOT);
+   bool mute_pressed        = BIT64_GET(trigger_input, RARCH_MUTE);
+   bool volume_up_pressed   = BIT64_GET(input, RARCH_VOLUME_UP);
+   bool volume_down_pressed = BIT64_GET(input, RARCH_VOLUME_DOWN);
+   bool reset_pressed       = BIT64_GET(trigger_input, RARCH_RESET);
+   bool disk_prev_pressed   = BIT64_GET(trigger_input, RARCH_DISK_PREV);
+   bool disk_next_pressed   = BIT64_GET(trigger_input, RARCH_DISK_NEXT);
+   bool disk_eject_pressed  = BIT64_GET(trigger_input, RARCH_DISK_EJECT_TOGGLE);
+   bool movie_record        = BIT64_GET(trigger_input, RARCH_MOVIE_RECORD_TOGGLE);
+   bool save_state_pressed  = BIT64_GET(trigger_input, RARCH_SAVE_STATE_KEY);
+   bool load_state_pressed  = BIT64_GET(trigger_input, RARCH_LOAD_STATE_KEY);
+   bool rewind_pressed      = BIT64_GET(input, RARCH_REWIND);
+   bool slowmotion_pressed  = BIT64_GET(input, RARCH_SLOWMOTION);
+   bool shader_next_pressed = BIT64_GET(trigger_input, RARCH_SHADER_NEXT);
+   bool shader_prev_pressed = BIT64_GET(trigger_input, RARCH_SHADER_PREV);
    (void)driver;
 
    if (runloop->is_idle)
@@ -701,14 +677,13 @@ static int do_state_checks(
    else if (load_state_pressed)
       rarch_main_command(RARCH_CMD_LOAD_STATE);
 
-   check_rewind_func(input);
-
-   check_slowmotion_func(input);
+   check_rewind(rewind_pressed);
+   check_slowmotion(slowmotion_pressed);
 
    if (movie_record)
       check_movie();
 
-   check_shader_dir_func(trigger_input);
+   check_shader_dir(shader_next_pressed, shader_prev_pressed);
 
    if (disk_eject_pressed)
       rarch_main_command(RARCH_CMD_DISK_EJECT_TOGGLE);
