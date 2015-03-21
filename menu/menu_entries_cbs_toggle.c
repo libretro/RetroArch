@@ -61,7 +61,7 @@ static int shader_action_parameter_preset_toggle(unsigned type, const char *labe
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
    struct video_shader_parameter *param = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -159,7 +159,7 @@ static int action_toggle_scroll(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
    unsigned scroll_speed = 0, fast_scroll_speed = 0;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -200,7 +200,7 @@ static int action_toggle_mainmenu(unsigned type, const char *label,
    menu_file_list_cbs_t *cbs = NULL;
    unsigned push_list = 0;
    driver_t *driver = driver_get_ptr();
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -265,7 +265,7 @@ static int action_toggle_shader_scale_pass(unsigned type, const char *label,
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
    struct video_shader *shader = NULL;
    struct video_shader_pass *shader_pass = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
    
@@ -302,7 +302,7 @@ static int action_toggle_shader_filter_pass(unsigned type, const char *label,
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
    struct video_shader *shader = NULL;
    struct video_shader_pass *shader_pass = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
    
@@ -345,7 +345,7 @@ static int action_toggle_cheat_num_passes(unsigned type, const char *label,
    unsigned new_size = 0;
    global_t *global       = global_get_ptr();
    cheat_manager_t *cheat = global->cheat;
-   menu_handle_t *menu    = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -377,7 +377,7 @@ static int action_toggle_shader_num_passes(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
    

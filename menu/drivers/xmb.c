@@ -247,9 +247,9 @@ static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
 
 static int xmb_entry_iterate(unsigned action)
 {
-   const char *label = NULL;
+   const char *label         = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu       = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -486,8 +486,8 @@ static void xmb_frame_background(settings_t *settings,
 
 static void xmb_render_messagebox_internal(const char *message)
 {
-   xmb_handle_t *xmb = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   xmb_handle_t *xmb   = NULL;
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -505,9 +505,9 @@ static void xmb_frame_messagebox(const char *message)
    int x, y;
    unsigned i;
    struct string_list *list = NULL;
-   gl_t *gl = NULL;
-   xmb_handle_t *xmb = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   gl_t *gl                 = NULL;
+   xmb_handle_t *xmb        = NULL;
+   menu_handle_t *menu      = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -547,8 +547,8 @@ end:
 static void xmb_selection_pointer_changed(void)
 {
    unsigned i, current, end;
-   xmb_handle_t *xmb = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   xmb_handle_t *xmb   = NULL;
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -590,7 +590,7 @@ static void xmb_selection_pointer_changed(void)
 static void xmb_list_open_old(xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
    unsigned i;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -617,7 +617,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb, file_list_t *list, int dir, siz
 static void xmb_list_open_new(xmb_handle_t *xmb, file_list_t *list, int dir, size_t current)
 {
    unsigned i;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -731,7 +731,7 @@ static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, core_info_t *in
 
 static void xmb_push_animations(xmb_node_t *node, float ia, float ix)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
 
@@ -744,7 +744,7 @@ static void xmb_list_switch_old(xmb_handle_t *xmb, file_list_t *list, int dir, s
 {
    unsigned i;
    size_t end = 0;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -768,7 +768,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb, file_list_t *list, int dir, s
 {
    unsigned i;
    size_t end = 0;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -797,7 +797,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb, file_list_t *list, int dir, s
 
 static void xmb_set_title(xmb_handle_t *xmb)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -831,7 +831,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 {
    unsigned j;
    int dir = -1;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -881,7 +881,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
 {
    unsigned j;
    int dir = 0;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -940,7 +940,7 @@ static void xmb_populate_entries(const char *path,
       const char *label, unsigned k)
 {
    xmb_handle_t *xmb   = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -1212,7 +1212,7 @@ static void xmb_render(void)
    unsigned i, current, end;
    runloop_t *runloop = rarch_main_get_ptr();
 
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
 
@@ -1250,7 +1250,7 @@ static void xmb_frame(void)
    const char *core_version = NULL;
    xmb_handle_t *xmb = NULL;
    gl_t *gl = NULL;
-   menu_handle_t *menu  = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
@@ -1541,7 +1541,7 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
 static bool xmb_load_wallpaper(void *data)
 {
    xmb_handle_t *xmb = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return false;
@@ -1576,7 +1576,7 @@ static void xmb_context_reset(void)
    gl_t *gl = NULL;
    xmb_handle_t *xmb = NULL;
    xmb_node_t *node = NULL;
-   menu_handle_t *menu  = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -1815,7 +1815,7 @@ static void xmb_list_insert(file_list_t *list,
    int current = 0, i = list_size;
    xmb_node_t *node = NULL;
    xmb_handle_t *xmb = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -1869,7 +1869,7 @@ static void xmb_list_cache(bool horizontal, unsigned action)
 {
    size_t stack_size;
    xmb_handle_t *xmb = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -1922,7 +1922,7 @@ static void xmb_context_destroy(void)
 {
    unsigned i;
    xmb_handle_t *xmb = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -1951,8 +1951,8 @@ static void xmb_context_destroy(void)
 static void xmb_toggle(bool menu_on)
 {
    unsigned i;
-   xmb_handle_t *xmb = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   xmb_handle_t *xmb   = NULL;
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;

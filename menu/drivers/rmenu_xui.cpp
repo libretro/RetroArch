@@ -62,7 +62,7 @@ static int rmenu_xui_entry_iterate(unsigned action)
 {
    const char *label = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -423,7 +423,7 @@ static void rmenu_xui_frame(void)
    D3DVIEWPORT vp_full;
    LPDIRECT3DDEVICE d3dr;
    d3d_video_t *d3d = NULL;
-   menu_handle_t *menu   = menu_driver_resolve();
+   menu_handle_t *menu   = menu_driver_get_ptr();
    driver_t      *driver = driver_get_ptr();
 
    if (!menu)
@@ -559,7 +559,7 @@ static void rmenu_xui_render(void)
 	char title[PATH_MAX_LENGTH];
 	const char *dir = NULL, *label = NULL;
 	unsigned menu_type = 0;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    runloop_t *runloop  = rarch_main_get_ptr();
 
    if (!menu)
@@ -650,7 +650,7 @@ static void rmenu_xui_render(void)
 static void rmenu_xui_populate_entries(const char *path,
       const char *label, unsigned i)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -663,7 +663,7 @@ static void rmenu_xui_populate_entries(const char *path,
 
 static void rmenu_xui_navigation_clear(bool pending_push)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (menu)
       XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);
@@ -671,7 +671,7 @@ static void rmenu_xui_navigation_clear(bool pending_push)
 
 static void rmenu_xui_navigation_set_visible(void)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (menu)
       XuiListSetCurSelVisible(m_menulist, menu->navigation.selection_ptr);

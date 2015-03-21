@@ -52,7 +52,7 @@ static int glui_entry_iterate(unsigned action)
 {
    const char *label = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -205,7 +205,7 @@ static void glui_draw_cursor(gl_t *gl, float x, float y)
 static void glui_get_message(const char *message)
 {
    glui_handle_t *glui = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -227,7 +227,7 @@ static void glui_render_messagebox(const char *message)
    struct string_list *list = NULL;
    glui_handle_t *glui = NULL;
    gl_t *gl = NULL;
-   menu_handle_t *menu  = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
    if (!menu)
@@ -271,7 +271,7 @@ static void glui_render(void)
 {
    glui_handle_t *glui = NULL;
    gl_t *gl = NULL;
-   menu_handle_t *menu  = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_get_ptr();
    runloop_t *runloop   = rarch_main_get_ptr();
    settings_t *settings = config_get_ptr();
 
@@ -331,7 +331,7 @@ static void glui_frame(void)
    glui_handle_t *glui = NULL;
    const char *core_name = NULL;
    const char *core_version = NULL;
-   menu_handle_t *menu  = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
    const uint32_t normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
    const uint32_t hover_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_hover_color);
@@ -522,7 +522,7 @@ static void glui_free(void *data)
 static void glui_context_destroy(void)
 {
    glui_handle_t *glui = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
     
    if (!menu)
       return;
@@ -539,7 +539,7 @@ static void glui_context_destroy(void)
 static bool glui_load_wallpaper(void *data)
 {
    glui_handle_t *glui = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return false;
@@ -562,7 +562,7 @@ static void glui_context_reset(void)
 {
    const char *path = NULL;
    glui_handle_t *glui = NULL;
-   menu_handle_t *menu  = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
     
    if (!menu)
@@ -601,7 +601,7 @@ static void glui_context_reset(void)
 
 static void glui_navigation_clear(bool pending_push)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (menu)
       menu->begin = 0;
 }
@@ -609,7 +609,7 @@ static void glui_navigation_clear(bool pending_push)
 static void glui_navigation_set(bool scroll)
 {
    glui_handle_t *glui = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -635,21 +635,21 @@ static void glui_navigation_set(bool scroll)
 
 static void glui_navigation_set_last(void)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (menu)
       glui_navigation_set(true);
 }
 
 static void glui_navigation_descend_alphabet(size_t *unused)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (menu)
       glui_navigation_set(true);
 }
 
 static void glui_navigation_ascend_alphabet(size_t *unused)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (menu)
       glui_navigation_set(true);
 }

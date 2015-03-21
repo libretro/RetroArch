@@ -68,7 +68,7 @@ static int rmenu_entry_iterate(unsigned action)
 {
    const char *label = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -93,7 +93,7 @@ static void rmenu_render_messagebox(const char *message)
    struct font_params font_parms;
    size_t i, j;
    struct string_list *list = NULL;
-   menu_handle_t *menu   = menu_driver_resolve();
+   menu_handle_t *menu   = menu_driver_get_ptr();
    driver_t      *driver = driver_get_ptr();
 
    if (!menu)
@@ -144,20 +144,19 @@ end:
 
 static void rmenu_render(void)
 {
-   size_t begin, end;
-   size_t i, j;
+   size_t begin, end, i, j;
    struct font_params font_parms;
-   char title[256];
-   char title_buf[256], title_msg[64];
-   const char *dir = NULL;
-   const char *label = NULL;
-   const char *core_name = NULL;
+   char title[256], title_buf[256];
+   char title_msg[64];
+   const char *dir          = NULL;
+   const char *label        = NULL;
+   const char *core_name    = NULL;
    const char *core_version = NULL;
-   unsigned menu_type = 0;
-   menu_handle_t *menu = menu_driver_resolve();
-   global_t    *global = global_get_ptr();
-   driver_t    *driver = driver_get_ptr();
-   runloop_t *runloop = rarch_main_get_ptr();
+   unsigned menu_type       = 0;
+   menu_handle_t *menu      = menu_driver_get_ptr();
+   global_t    *global      = global_get_ptr();
+   driver_t    *driver      = driver_get_ptr();
+   runloop_t *runloop       = rarch_main_get_ptr();
 
    if (!menu)
       return;
@@ -298,7 +297,7 @@ static void rmenu_render(void)
 
 static void rmenu_set_texture(void)
 {
-   menu_handle_t *menu   = menu_driver_resolve();
+   menu_handle_t *menu   = menu_driver_get_ptr();
    driver_t      *driver = driver_get_ptr();
 
    if (!menu)
@@ -340,7 +339,7 @@ static void rmenu_wallpaper_set_defaults(char *menu_bg, size_t sizeof_menu_bg)
 static void rmenu_context_reset(void)
 {
    char menu_bg[PATH_MAX_LENGTH];
-   menu_handle_t *menu  = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
    if (!menu)

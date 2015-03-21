@@ -22,7 +22,7 @@ static int action_bind_up_or_down_generic(unsigned type, const char *label,
       unsigned action)
 {
    unsigned scroll_speed  = 0;
-   menu_handle_t *menu    = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return -1;
 

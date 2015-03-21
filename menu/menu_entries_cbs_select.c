@@ -20,7 +20,7 @@
 static int action_select_default(unsigned type, const char *label,
       unsigned action)
 {
-   menu_handle_t *menu    = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return 0;
    menu_list_push_stack(menu->menu_list, "", "info_screen",

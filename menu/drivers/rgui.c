@@ -57,7 +57,7 @@ static int rgui_entry_iterate(unsigned action)
 {
    const char *label = NULL;
    menu_file_list_cbs_t *cbs = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    runloop_t *runloop  = rarch_main_get_ptr();
 
    if (!menu)
@@ -242,7 +242,7 @@ static bool rguidisp_init_font(menu_handle_t *menu)
 
 static void rgui_render_background(void)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
 
@@ -273,7 +273,7 @@ static void rgui_render_messagebox(const char *message)
    unsigned width, glyphs_width, height;
    uint16_t color;
    struct string_list *list = NULL;
-   menu_handle_t *menu  = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
    if (!menu)
@@ -356,7 +356,7 @@ static void rgui_render(void)
    const char *label        = NULL;
    const char *core_name    = NULL;
    const char *core_version = NULL;
-   menu_handle_t *menu      = menu_driver_resolve();
+   menu_handle_t *menu      = menu_driver_get_ptr();
    runloop_t *runloop       = rarch_main_get_ptr();
    driver_t *driver         = driver_get_ptr();
    global_t *global         = global_get_ptr();
@@ -589,7 +589,7 @@ static void rgui_free(void *data)
 
 static void rgui_set_texture(void)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    runloop_t *runloop  = rarch_main_get_ptr();
    driver_t *driver    = driver_get_ptr();
 
@@ -613,14 +613,14 @@ static void rgui_set_texture(void)
 
 static void rgui_navigation_clear(bool pending_push)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (menu)
       menu->begin = 0;
 }
 
 static void rgui_navigation_set(bool scroll)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
 
@@ -641,21 +641,21 @@ static void rgui_navigation_set(bool scroll)
 
 static void rgui_navigation_set_last(void)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (menu)
       rgui_navigation_set(true);
 }
 
 static void rgui_navigation_descend_alphabet(size_t *unused)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (menu)
       rgui_navigation_set(true);
 }
 
 static void rgui_navigation_ascend_alphabet(size_t *unused)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (menu)
       rgui_navigation_set(true);
 }
@@ -663,7 +663,7 @@ static void rgui_navigation_ascend_alphabet(size_t *unused)
 static void rgui_populate_entries(const char *path,
       const char *label, unsigned k)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (menu)
       rgui_navigation_set(true);
 }

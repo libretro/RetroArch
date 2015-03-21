@@ -29,7 +29,7 @@
 
 void menu_entries_common_load_content(bool persist)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
 
@@ -162,12 +162,12 @@ void menu_entries_cbs_init(void *data,
       const char *path, const char *label,
       unsigned type, size_t idx)
 {
-   struct string_list *str_list = NULL;
    char elem0[PATH_MAX_LENGTH], elem1[PATH_MAX_LENGTH];
-   const char *menu_label = NULL;
-   menu_file_list_cbs_t *cbs = NULL;
-   file_list_t *list = (file_list_t*)data;
-   menu_handle_t *menu    = menu_driver_resolve();
+   struct string_list *str_list = NULL;
+   const char *menu_label       = NULL;
+   menu_file_list_cbs_t *cbs    = NULL;
+   file_list_t *list            = (file_list_t*)data;
+   menu_handle_t *menu          = menu_driver_get_ptr();
    if (!menu)
       return;
 

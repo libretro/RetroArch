@@ -611,7 +611,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    const char *dir           = NULL;
    const char *label         = NULL;
    unsigned menu_type        = 0;
-   menu_handle_t *menu       = menu_driver_resolve();
+   menu_handle_t *menu       = menu_driver_get_ptr();
    
    if (!menu)
       return;
@@ -732,7 +732,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)menuRefresh
 {
-  menu_handle_t *menu = menu_driver_resolve();
+  menu_handle_t *menu = menu_driver_get_ptr();
   if (!menu)
      return;
   if (!menu->need_refresh)
@@ -745,7 +745,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)menuBack
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
    

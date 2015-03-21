@@ -234,7 +234,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    unsigned modetype, level, viHeightMultiplier, viWidth, tvmode,
             max_width, max_height, i;
    gx_video_t *gx       = (gx_video_t*)data;
-   menu_handle_t *menu  = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -479,7 +479,7 @@ static void init_texture(void *data, unsigned width, unsigned height)
    gx_video_t *gx = (gx_video_t*)data;
    struct __gx_texobj *fb_ptr = (struct __gx_texobj*)&g_tex.obj;
    struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
-   menu_handle_t *menu  = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
    width &= ~3;
@@ -1086,7 +1086,7 @@ static bool gx_frame(void *data, const void *frame,
 
    if (gx->menu_texture_enable && gx->menu_data)
    {
-      menu_handle_t *menu = menu_driver_resolve();
+      menu_handle_t *menu = menu_driver_get_ptr();
 
       if (menu)
       {

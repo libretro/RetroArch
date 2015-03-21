@@ -2048,7 +2048,7 @@ void rarch_main_set_state(unsigned cmd)
       case RARCH_ACTION_STATE_MENU_RUNNING:
 #ifdef HAVE_MENU
          {
-            menu_handle_t *menu = menu_driver_resolve();
+            menu_handle_t *menu = menu_driver_get_ptr();
             if (!menu)
                return;
 
@@ -2312,7 +2312,7 @@ bool rarch_main_command(unsigned cmd)
          rarch_main_command(RARCH_CMD_LOAD_CORE_DEINIT);
          {
 #ifdef HAVE_MENU
-            menu_handle_t *menu = menu_driver_resolve();
+            menu_handle_t *menu = menu_driver_get_ptr();
             if (menu)
                rarch_update_system_info(&global->menu.info,
                      &menu->load_no_content);
@@ -2378,7 +2378,7 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_PREPARE_DUMMY:
          {
-            menu_handle_t *menu = menu_driver_resolve();
+            menu_handle_t *menu = menu_driver_get_ptr();
             *global->fullpath = '\0';
 
             (void)menu;
@@ -3011,7 +3011,7 @@ void rarch_playlist_load_content(content_playlist_t *playlist,
 {
    const char *path      = NULL;
    const char *core_path = NULL;
-   menu_handle_t *menu   = menu_driver_resolve();
+   menu_handle_t *menu   = menu_driver_get_ptr();
    settings_t  *settings = config_get_ptr();
 
    content_playlist_get_index(playlist,

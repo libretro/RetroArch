@@ -19,8 +19,8 @@
 
 static int action_refresh_default(file_list_t *list, file_list_t *menu_list)
 {
-   int ret = 0;
-   menu_handle_t *menu    = menu_driver_resolve();
+   int ret                = 0;
+   menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return -1;
 

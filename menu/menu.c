@@ -333,7 +333,7 @@ void menu_free(void *data)
 void menu_apply_deferred_settings(void)
 {
    rarch_setting_t *setting = NULL;
-   menu_handle_t   *menu = menu_driver_resolve();
+   menu_handle_t   *menu = menu_driver_get_ptr();
     
    if (!menu)
       return;
@@ -412,7 +412,7 @@ int menu_iterate(retro_input_t input,
    int32_t ret     = 0;
    unsigned action      = menu_input_frame(input, trigger_input);
    runloop_t *runloop   = rarch_main_get_ptr();
-   menu_handle_t *menu  = menu_driver_resolve();
+   menu_handle_t *menu  = menu_driver_get_ptr();
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 

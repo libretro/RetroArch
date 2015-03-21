@@ -89,7 +89,7 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
       "Linear",
       "Nearest"
    };
-   menu_handle_t *menu    = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return;
 
@@ -142,7 +142,7 @@ static void menu_action_setting_disp_set_label_shader_num_passes(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
-   menu_handle_t *menu    = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return;
 
@@ -166,7 +166,7 @@ static void menu_action_setting_disp_set_label_shader_pass(
       char *path_buf, size_t path_buf_size)
 {
    unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_0);
-   menu_handle_t *menu    = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return;
 
@@ -255,7 +255,7 @@ static void menu_action_setting_disp_set_label_shader_preset_parameter(
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    const struct video_shader_parameter *param = NULL;
 #endif
-   menu_handle_t *menu    = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return;
 
@@ -290,7 +290,7 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
 {
    unsigned pass = 0;
    unsigned scale_value = 0;
-   menu_handle_t *menu    = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return;
 

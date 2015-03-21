@@ -28,7 +28,7 @@ static int action_cancel_lookup_setting(const char *path,
 static int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
 

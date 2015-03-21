@@ -31,7 +31,7 @@
  **/
 static void menu_entries_refresh(file_list_t *list)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
    if (!list)
@@ -100,7 +100,7 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
    int current;
    bool current_is_dir;
    menu_navigation_t *nav = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu || !list)
       return;
@@ -243,7 +243,7 @@ void menu_list_flush_stack(menu_list_t *list,
    const char *path = NULL;
    const char *label = NULL;
    unsigned type = 0;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu || !list)
       return;
 
@@ -263,7 +263,7 @@ void menu_list_flush_stack_by_needle(menu_list_t *list,
    const char *path = NULL;
    const char *label = NULL;
    unsigned type = 0;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu || !list)
       return;
 
@@ -279,7 +279,7 @@ void menu_list_flush_stack_by_needle(menu_list_t *list,
 
 void menu_list_pop_stack(menu_list_t *list)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver = driver_get_ptr();
    if (!menu || !list)
       return;
@@ -300,7 +300,7 @@ void menu_list_pop_stack_by_needle(menu_list_t *list,
    const char *path = NULL;
    const char *label = NULL;
    unsigned type = 0;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu || !list)
       return;
@@ -384,7 +384,7 @@ void menu_list_push_refresh(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu || !list)
       return;
 
@@ -403,7 +403,7 @@ void menu_list_push_stack(menu_list_t *list, const char *path, const char *label
 int menu_list_push_stack_refresh(menu_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver = driver_get_ptr();
    if (!menu)
       return -1;
@@ -440,7 +440,7 @@ void menu_list_sort_on_alt(file_list_t *list)
 int menu_list_populate_generic(file_list_t *list, const char *path,
       const char *label, unsigned type)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver = driver_get_ptr();
 
    if (!menu)

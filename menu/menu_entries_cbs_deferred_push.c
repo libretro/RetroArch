@@ -283,7 +283,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
    file_list_t *list             = NULL;
    file_list_t *menu_list        = NULL;
    struct string_list *str_list  = NULL;
-   menu_handle_t *menu           = menu_driver_resolve();
+   menu_handle_t *menu           = menu_driver_get_ptr();
    driver_t *driver              = driver_get_ptr();
    settings_t *settings          = config_get_ptr();
    if (!menu)
@@ -564,7 +564,7 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
    file_list_t *list       = NULL;
    file_list_t *menu_list  = NULL;
    global_t *global        = global_get_ptr();
-   menu_handle_t *menu     = menu_driver_resolve();
+   menu_handle_t *menu     = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -598,7 +598,7 @@ static int deferred_push_database_manager_list_deferred(void *data, void *userda
 {
    file_list_t *list      = NULL;
    file_list_t *menu_list = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -627,7 +627,7 @@ static int deferred_push_cursor_manager_list_deferred(void *data, void *userdata
    config_file_t *conf    = NULL;
    file_list_t *list      = NULL;
    file_list_t *menu_list = NULL;
-   menu_handle_t *menu    = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    settings_t *settings   = config_get_ptr();
    if (!menu)
       return -1;
@@ -672,7 +672,7 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
    bool add_quotes = true;
    file_list_t *list = NULL;
    file_list_t *menu_list = NULL;
-   menu_handle_t *menu    = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -970,7 +970,7 @@ static int deferred_push_video_shader_parameters_common(void *data, void *userda
 static int deferred_push_video_shader_preset_parameters(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
    if (!menu->shader)
@@ -1003,7 +1003,7 @@ static int deferred_push_settings(void *data, void *userdata,
    rarch_setting_t *setting = NULL;
    file_list_t *list        = NULL;
    file_list_t *menu_list   = NULL;
-   menu_handle_t *menu      = menu_driver_resolve();
+   menu_handle_t *menu      = menu_driver_get_ptr();
    driver_t *driver         = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
 
@@ -1073,7 +1073,7 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
    struct string_list *str_list = NULL;
    file_list_t *list      = NULL;
    file_list_t *menu_list = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver = driver_get_ptr();
 
    if (!menu)
@@ -1143,7 +1143,7 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
 static int deferred_push_category(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -1156,7 +1156,7 @@ static int deferred_push_video_options(void *data, void *userdata,
 {
    file_list_t *list      = NULL;
    file_list_t *menu_list = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver = driver_get_ptr();
 
    if (!menu)
@@ -1193,7 +1193,7 @@ static int deferred_push_shader_options(void *data, void *userdata,
    struct video_shader *shader = NULL;
    file_list_t *list      = NULL;
    file_list_t *menu_list = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver = driver_get_ptr();
 
    if (!menu)
@@ -1335,7 +1335,7 @@ static int push_perfcounter_generic(
 {
    file_list_t *list      = NULL;
    file_list_t *menu_list = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver = driver_get_ptr();
 
    if (!menu)
@@ -1580,7 +1580,7 @@ static size_t core_len;
 int cb_core_updater_list(void *data_, size_t len)
 {
    char *data = (char*)data_;
-   menu_handle_t *menu    = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -1665,7 +1665,7 @@ static int deferred_push_content_actions(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
    file_list_t *list      = (file_list_t*)data;
-   menu_handle_t *menu    = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    global_t *global       = global_get_ptr();
    if (!menu)
       return -1;
@@ -1704,7 +1704,7 @@ static int deferred_push_content_actions(void *data, void *userdata,
 int deferred_push_content_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   menu_handle_t *menu    = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return -1;
    return menu_entries_deferred_push((file_list_t*)data, menu->menu_list->selection_buf);

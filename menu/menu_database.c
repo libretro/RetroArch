@@ -59,7 +59,7 @@ void menu_database_free(void *data)
 bool menu_database_realloc(const char *path,
       bool force)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return false;
 

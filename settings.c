@@ -854,7 +854,7 @@ static int load_content_action_toggle(void *data, unsigned action,
 static int setting_action_ok_bind_all(void *data, unsigned action)
 {
    rarch_setting_t *setting  = (rarch_setting_t*)data;
-   menu_handle_t *menu       = menu_driver_resolve();
+   menu_handle_t *menu       = menu_driver_get_ptr();
    settings_t      *settings = config_get_ptr();
    global_t      *global     = global_get_ptr();
 
@@ -898,7 +898,7 @@ static int setting_action_ok_bind_defaults(void *data, unsigned action)
    struct retro_keybind *target = NULL;
    const struct retro_keybind *def_binds = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
-   menu_handle_t *menu       = menu_driver_resolve();
+   menu_handle_t *menu       = menu_driver_get_ptr();
    settings_t    *settings   = config_get_ptr();
    global_t      *global     = global_get_ptr();
 
@@ -1063,7 +1063,7 @@ static int setting_bind_action_ok(void *data, unsigned action)
 {
    struct retro_keybind *keybind = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
-   menu_handle_t *menu       = menu_driver_resolve();
+   menu_handle_t *menu       = menu_driver_get_ptr();
    global_t      *global     = global_get_ptr();
 
    if (!setting)
@@ -2936,7 +2936,7 @@ void setting_get_label(file_list_t *list, char *type_str,
 {
    rarch_setting_t *setting_data = NULL;
    rarch_setting_t *setting      = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu || !menu->menu_list || !label)
       return;
@@ -3017,7 +3017,7 @@ static void general_write_handler(void *data)
 
    if (!strcmp(setting->name, "help"))
    {
-      menu_handle_t *menu = menu_driver_resolve();
+      menu_handle_t *menu = menu_driver_get_ptr();
 
       if (!menu || !menu->menu_list)
          return;

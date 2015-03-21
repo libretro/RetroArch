@@ -37,7 +37,7 @@ void menu_input_key_start_line(const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
 
@@ -52,7 +52,7 @@ void menu_input_key_start_line(const char *label,
 static void menu_input_key_end_line(void)
 {
    driver_t *driver    = driver_get_ptr();
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
 
@@ -67,7 +67,7 @@ static void menu_input_key_end_line(void)
 static void menu_input_search_callback(void *userdata, const char *str)
 {
    size_t idx;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -80,7 +80,7 @@ static void menu_input_search_callback(void *userdata, const char *str)
 
 void menu_input_st_uint_callback(void *userdata, const char *str)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -99,7 +99,7 @@ void menu_input_st_uint_callback(void *userdata, const char *str)
 
 void menu_input_st_hex_callback(void *userdata, const char *str)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -121,7 +121,7 @@ void menu_input_st_hex_callback(void *userdata, const char *str)
 
 void menu_input_st_string_callback(void *userdata, const char *str)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return;
@@ -173,7 +173,7 @@ void menu_input_st_cheat_callback(void *userdata, const char *str)
 void menu_input_search_start(void)
 {
    driver_t *driver    = driver_get_ptr();
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return;
 
@@ -381,7 +381,7 @@ int menu_input_bind_iterate(void)
 {
    char msg[PATH_MAX_LENGTH];
    struct menu_bind_state binds;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver = driver_get_ptr();
 
    if (!menu)
@@ -430,7 +430,7 @@ int menu_input_bind_iterate_keyboard(void)
    int64_t current;
    int timeout = 0;
    bool timed_out = false;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver = driver_get_ptr();
 
    if (!menu)
@@ -491,7 +491,7 @@ unsigned menu_input_frame(retro_input_t input, retro_input_t trigger_input)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    driver_t *driver    = driver_get_ptr();
 
    if (!menu)

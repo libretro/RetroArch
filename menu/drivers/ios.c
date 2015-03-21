@@ -28,7 +28,7 @@
 static int ios_entry_iterate(unsigned action)
 {
    ios_handle_t *ios   = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
 
    if (!menu)
       return -1;

@@ -105,7 +105,7 @@ static int action_start_shader_action_preset_parameter(unsigned type, const char
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
    struct video_shader_parameter *param = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -127,7 +127,7 @@ static int action_start_shader_pass(unsigned type, const char *label,
    hack_shader_pass = type - MENU_SETTINGS_SHADER_PASS_0;
    struct video_shader *shader = NULL;
    struct video_shader_pass *shader_pass = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -151,7 +151,7 @@ static int action_start_shader_scale_pass(unsigned type, const char *label,
    struct video_shader *shader = NULL;
    struct video_shader_pass *shader_pass = NULL;
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
 
@@ -179,7 +179,7 @@ static int action_start_shader_filter_pass(unsigned type, const char *label,
    unsigned pass = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
    struct video_shader *shader = NULL;
    struct video_shader_pass *shader_pass = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
    
@@ -201,7 +201,7 @@ static int action_start_shader_num_passes(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu)
       return -1;
    
@@ -222,7 +222,7 @@ static int action_start_cheat_num_passes(unsigned type, const char *label,
 {
    global_t *global       = global_get_ptr();
    cheat_manager_t *cheat = global->cheat;
-   menu_handle_t *menu    = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_get_ptr();
    if (!menu)
       return -1;
 

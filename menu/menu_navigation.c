@@ -125,8 +125,8 @@ void menu_navigation_set(menu_navigation_t *nav,
  **/
 void menu_navigation_set_last(menu_navigation_t *nav)
 {
-   driver_t *driver = driver_get_ptr();
-   menu_handle_t *menu = menu_driver_resolve();
+   driver_t *driver    = driver_get_ptr();
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (!menu || !nav)
       return;
 
