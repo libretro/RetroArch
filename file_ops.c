@@ -87,10 +87,10 @@ bool write_file(const char *path, const void *data, ssize_t size)
  */
 static int read_generic_file(const char *path, void **buf, ssize_t *len)
 {
-   long ret                = 0;
-   size_t content_buf_size = 0;
-   void *content_buf       = NULL;
-   FILE *file              = fopen(path, "rb");
+   long ret                 = 0;
+   ssize_t content_buf_size = 0;
+   void *content_buf        = NULL;
+   FILE *file               = fopen(path, "rb");
 
    if (!file)
       goto error;

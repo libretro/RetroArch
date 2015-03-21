@@ -100,11 +100,12 @@ extern void apple_rarch_exited(void);
 
 static void frontend_apple_load_content(void)
 {
-    if (!driver.menu_ctx)
+    driver_t *driver = driver_get_ptr();
+    if (!driver->menu_ctx)
         return;
-    if (!driver.menu)
+    if (!driver->menu)
         return;
-    if (!driver.menu->userdata)
+    if (!driver->menu->userdata)
         return;
     
 #ifdef IOS
