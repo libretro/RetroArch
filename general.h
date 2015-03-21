@@ -20,11 +20,10 @@
 #include <boolean.h>
 #include <stdint.h>
 #include <limits.h>
-#include "driver.h"
 #include <compat/strl.h>
 #include <retro_inline.h>
-#include "gfx/video_viewport.h"
 #include "configuration.h"
+#include "driver.h"
 #include "playlist.h"
 #include "runloop.h"
 
