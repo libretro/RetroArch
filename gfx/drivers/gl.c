@@ -1824,6 +1824,8 @@ static bool resolve_extensions(gl_t *gl)
    driver_t *driver     = driver_get_ptr();
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
+    
+   (void)global;
 #ifndef HAVE_OPENGLES
    const char *vendor   = NULL;
    const char *renderer = NULL;
