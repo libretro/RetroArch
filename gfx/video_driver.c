@@ -211,7 +211,7 @@ void *video_driver_get_ptr(const video_driver_t **drv)
 #ifdef HAVE_THREADS
    if (settings->video.threaded
          && !global->system.hw_render_callback.context_type)
-      return rarch_threaded_video_resolve(drv);
+      return rarch_threaded_video_get_ptr(drv);
 #endif
    if (drv)
       *drv = driver->video;

@@ -1040,7 +1040,7 @@ bool rarch_threaded_video_init(const video_driver_t **out_driver,
 }
 
 /**
- * rarch_threaded_video_resolve:
+ * rarch_threaded_video_get_ptr:
  * @drv                       : Found driver.
  *
  * Gets the underlying video driver associated with the 
@@ -1051,9 +1051,9 @@ bool rarch_threaded_video_init(const video_driver_t **out_driver,
  * with the threaded wrapper (if successful). If not successful,
  * NULL.
  **/
-void *rarch_threaded_video_resolve(const video_driver_t **drv)
+void *rarch_threaded_video_get_ptr(const video_driver_t **drv)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver          = driver_get_ptr();
    const thread_video_t *thr = (const thread_video_t*)driver->video_data;
 
    if (drv)

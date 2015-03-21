@@ -224,7 +224,7 @@ bool rarch_threaded_video_init(
       const video_driver_t *driver, const video_info_t *info);
 
 /**
- * rarch_threaded_video_resolve:
+ * rarch_threaded_video_get_ptr:
  * @drv                       : Found driver.
  *
  * Gets the underlying video driver associated with the 
@@ -235,7 +235,7 @@ bool rarch_threaded_video_init(
  * with the threaded wrapper (if successful). If not successful,
  * NULL.
  **/
-void *rarch_threaded_video_resolve(const video_driver_t **drv);
+void *rarch_threaded_video_get_ptr(const video_driver_t **drv);
 
 #endif
 
