@@ -264,12 +264,14 @@ void notify_content_loaded(void)
 
    // Setup window
    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-   [self showPauseMenu:self];
    [self.window makeKeyAndVisible];
 
    [self pushViewController:[RAMainMenu new] animated:YES];
 
    [apple_platform loadingCore:nil withFile:nil];
+
+   if (rarch_main(0, NULL))
+      apple_rarch_exited();
 
    driver = driver_get_ptr();
     
@@ -281,6 +283,8 @@ void notify_content_loaded(void)
    }
    
    apple_gamecontroller_init();
+    
+   [self showPauseMenu:self];
 
    [self apple_start_iteration];
 }
