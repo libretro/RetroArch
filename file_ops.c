@@ -87,8 +87,9 @@ bool write_file(const char *path, const void *data, ssize_t size)
  */
 static int read_generic_file(const char *path, void **buf, ssize_t *len)
 {
-   long ret = 0, _len = 0;
-   void *rom_buf = NULL;
+   long ret = 0;
+   size_t content_buf_size = 0;
+   void *content_buf       = NULL;
 
    FILE *file = fopen(path, "rb");
 
@@ -98,28 +99,28 @@ static int read_generic_file(const char *path, void **buf, ssize_t *len)
    if (fseek(file, 0, SEEK_END) != 0)
       goto error;
 
-   _len     = ftell(file);
-   if (_len < 0)
+   content_buf_size  = ftell(file);
+   if (content_buf_size < 0)
       goto error;
 
    rewind(file);
 
-   rom_buf = malloc(_len + 1);
+   content_buf = malloc(content_buf_size + 1);
 
-   if (!rom_buf)
+   if (!content_buf)
       goto error;
 
-   if ((ret = fread(rom_buf, 1, _len, file)) < _len)
+   if ((ret = fread(content_buf, 1, content_buf_size, file)) < content_buf_size)
       RARCH_WARN("Didn't read whole file.\n");
 
-   if (!rom_buf)
+   if (!content_buf)
       goto error;
 
-   *buf    = rom_buf;
+   *buf    = content_buf;
 
    /* Allow for easy reading of strings to be safe.
     * Will only work with sane character formatting (Unix). */
-   ((char*)rom_buf)[_len] = '\0';
+   ((char*)content_buf)[content_buf_size] = '\0';
 
    if (fclose(file) != 0)
       RARCH_WARN("Failed to close file stream.\n");
@@ -132,8 +133,8 @@ static int read_generic_file(const char *path, void **buf, ssize_t *len)
 error:
    if (file)
       fclose(file);
-   if (rom_buf)
-      free(rom_buf);
+   if (content_buf)
+      free(content_buf);
    if (len)
       *len = -1;
    *buf = NULL;
