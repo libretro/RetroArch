@@ -194,10 +194,12 @@ void autosave_free(autosave_t *handle)
 void lock_autosave(void)
 {
    unsigned i;
-   for (i = 0; i < g_extern.num_autosave; i++)
+   global_t *global = global_get_ptr();
+
+   for (i = 0; i < global->num_autosave; i++)
    {
-      if (g_extern.autosave[i])
-         autosave_lock(g_extern.autosave[i]);
+      if (global->autosave[i])
+         autosave_lock(global->autosave[i]);
    }
 }
 
@@ -209,10 +211,12 @@ void lock_autosave(void)
 void unlock_autosave(void)
 {
    unsigned i;
-   for (i = 0; i < g_extern.num_autosave; i++)
+   global_t *global = global_get_ptr();
+
+   for (i = 0; i < global->num_autosave; i++)
    {
-      if (g_extern.autosave[i])
-         autosave_unlock(g_extern.autosave[i]);
+      if (global->autosave[i])
+         autosave_unlock(global->autosave[i]);
    }
 }
 

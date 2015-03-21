@@ -263,6 +263,7 @@ static void *psp_init(const video_info_t *video,
    int pixel_format, lut_pixel_format, lut_block_count;
    unsigned int red_shift, color_mask;
    void *displayBuffer, *LUT_r, *LUT_b;
+   global_t *global   = global_get_ptr();
    psp1_video_t *psp  = (psp1_video_t*)calloc(1, sizeof(psp1_video_t));
 
    if (!psp)
@@ -358,7 +359,7 @@ static void *psp_init(const video_info_t *video,
       psp->bpp_log2 = 1;
 
       pixel_format = 
-         (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555) 
+         (global->system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555) 
          ? GU_PSM_5551 : GU_PSM_5650 ;
 
       lut_pixel_format = GU_PSM_T16;
@@ -698,24 +699,25 @@ static void psp_update_viewport(psp1_video_t* psp)
    float width = SCEGU_SCR_WIDTH;
    float height = SCEGU_SCR_HEIGHT;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    if (settings->video.scale_integer)
    {
       video_viewport_get_scaled_integer(&psp->vp, SCEGU_SCR_WIDTH,
-            SCEGU_SCR_HEIGHT, g_extern.system.aspect_ratio, psp->keep_aspect);
+            SCEGU_SCR_HEIGHT, global->system.aspect_ratio, psp->keep_aspect);
       width  = psp->vp.width;
       height = psp->vp.height;
    }
    else if (psp->keep_aspect)
    {
       float delta;
-      float desired_aspect = g_extern.system.aspect_ratio;
+      float desired_aspect = global->system.aspect_ratio;
 
 #if defined(HAVE_MENU)
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport *custom = 
-            &g_extern.console.screen.viewports.custom_vp;
+            &global->console.screen.viewports.custom_vp;
 
          if (custom)
          {
@@ -795,13 +797,14 @@ static void psp_set_filtering(void *data, unsigned index, bool smooth)
 static void psp_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
+   global_t *global  = global_get_ptr();
 
    switch (aspectratio_index)
    {
       case ASPECT_RATIO_SQUARE:
          video_viewport_set_square_pixel(
-               g_extern.system.av_info.geometry.base_width, 
-               g_extern.system.av_info.geometry.base_height);
+               global->system.av_info.geometry.base_width, 
+               global->system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
@@ -816,7 +819,7 @@ static void psp_set_aspect_ratio(void *data, unsigned aspectratio_index)
          break;
    }
 
-   g_extern.system.aspect_ratio = aspectratio_lut[aspectratio_index].value;
+   global->system.aspect_ratio = aspectratio_lut[aspectratio_index].value;
 
    psp->keep_aspect = true;
    psp->should_resize = true;

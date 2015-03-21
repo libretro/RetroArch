@@ -77,6 +77,7 @@ void rarch_render_cached_frame(void)
 {
    void *recording    = NULL;
    driver_t *driver   = driver_get_ptr();
+   global_t *global   = global_get_ptr();
    runloop_t *runloop = rarch_main_get_ptr();
 
    recording = driver->recording_data;
@@ -93,11 +94,11 @@ void rarch_render_cached_frame(void)
     */
    if (driver->retro_ctx.frame_cb)
       driver->retro_ctx.frame_cb(
-            (g_extern.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)
-            ? NULL : g_extern.frame_cache.data,
-            g_extern.frame_cache.width,
-            g_extern.frame_cache.height,
-            g_extern.frame_cache.pitch);
+            (global->frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)
+            ? NULL : global->frame_cache.data,
+            global->frame_cache.width,
+            global->frame_cache.height,
+            global->frame_cache.pitch);
 
    driver->recording_data = recording;
 }
@@ -251,9 +252,10 @@ static void print_help(void)
 static void set_basename(const char *path)
 {
    char *dst = NULL;
+   global_t *global   = global_get_ptr();
 
-   strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
-   strlcpy(g_extern.basename, path, sizeof(g_extern.basename));
+   strlcpy(global->fullpath, path, sizeof(global->fullpath));
+   strlcpy(global->basename, path, sizeof(global->basename));
 
 #ifdef HAVE_COMPRESSION
    /* Removing extension is a bit tricky for compressed files.
@@ -275,11 +277,11 @@ static void set_basename(const char *path)
     * directory then and the name of srm and states are meaningful.
     *
     */
-   path_basedir(g_extern.basename);
-   fill_pathname_dir(g_extern.basename, path, "", sizeof(g_extern.basename));
+   path_basedir(global->basename);
+   fill_pathname_dir(global->basename, path, "", sizeof(global->basename));
 #endif
 
-   if ((dst = strrchr(g_extern.basename, '.')))
+   if ((dst = strrchr(global->basename, '.')))
       *dst = '\0';
 }
 
@@ -287,32 +289,33 @@ static void set_special_paths(char **argv, unsigned num_content)
 {
    unsigned i;
    union string_list_elem_attr attr;
+   global_t   *global   = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    /* First content file is the significant one. */
    set_basename(argv[0]);
 
-   g_extern.subsystem_fullpaths = string_list_new();
-   rarch_assert(g_extern.subsystem_fullpaths);
+   global->subsystem_fullpaths = string_list_new();
+   rarch_assert(global->subsystem_fullpaths);
 
    attr.i = 0;
 
    for (i = 0; i < num_content; i++)
-      string_list_append(g_extern.subsystem_fullpaths, argv[i], attr);
+      string_list_append(global->subsystem_fullpaths, argv[i], attr);
 
    /* We defer SRAM path updates until we can resolve it.
     * It is more complicated for special content types. */
 
-   if (!g_extern.has_set_state_path)
-      fill_pathname_noext(g_extern.savestate_name, g_extern.basename,
-            ".state", sizeof(g_extern.savestate_name));
+   if (!global->has_set_state_path)
+      fill_pathname_noext(global->savestate_name, global->basename,
+            ".state", sizeof(global->savestate_name));
 
-   if (path_is_directory(g_extern.savestate_name))
+   if (path_is_directory(global->savestate_name))
    {
-      fill_pathname_dir(g_extern.savestate_name, g_extern.basename,
-            ".state", sizeof(g_extern.savestate_name));
+      fill_pathname_dir(global->savestate_name, global->basename,
+            ".state", sizeof(global->savestate_name));
       RARCH_LOG("Redirecting save state to \"%s\".\n",
-            g_extern.savestate_name);
+            global->savestate_name);
    }
 
    /* If this is already set,
@@ -325,42 +328,45 @@ static void set_special_paths(char **argv, unsigned num_content)
 
 static void set_paths_redirect(const char *path)
 {
-   if (path_is_directory(g_extern.savefile_name))
+   global_t   *global   = global_get_ptr();
+
+   if (path_is_directory(global->savefile_name))
    {
-      fill_pathname_dir(g_extern.savefile_name, g_extern.basename,
-            ".srm", sizeof(g_extern.savefile_name));
-      RARCH_LOG("Redirecting save file to \"%s\".\n", g_extern.savefile_name);
+      fill_pathname_dir(global->savefile_name, global->basename,
+            ".srm", sizeof(global->savefile_name));
+      RARCH_LOG("Redirecting save file to \"%s\".\n", global->savefile_name);
    }
 
-   if (path_is_directory(g_extern.savestate_name))
+   if (path_is_directory(global->savestate_name))
    {
-      fill_pathname_dir(g_extern.savestate_name, g_extern.basename,
-            ".state", sizeof(g_extern.savestate_name));
-      RARCH_LOG("Redirecting save state to \"%s\".\n", g_extern.savestate_name);
+      fill_pathname_dir(global->savestate_name, global->basename,
+            ".state", sizeof(global->savestate_name));
+      RARCH_LOG("Redirecting save state to \"%s\".\n", global->savestate_name);
    }
 
-   if (path_is_directory(g_extern.cheatfile_name))
+   if (path_is_directory(global->cheatfile_name))
    {
-      fill_pathname_dir(g_extern.cheatfile_name, g_extern.basename,
-            ".state", sizeof(g_extern.cheatfile_name));
-      RARCH_LOG("Redirecting cheat file to \"%s\".\n", g_extern.cheatfile_name);
+      fill_pathname_dir(global->cheatfile_name, global->basename,
+            ".state", sizeof(global->cheatfile_name));
+      RARCH_LOG("Redirecting cheat file to \"%s\".\n", global->cheatfile_name);
    }
 }
 
 static void set_paths(const char *path)
 {
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    set_basename(path);
 
-   if (!g_extern.has_set_save_path)
-      fill_pathname_noext(g_extern.savefile_name, g_extern.basename,
-            ".srm", sizeof(g_extern.savefile_name));
-   if (!g_extern.has_set_state_path)
-      fill_pathname_noext(g_extern.savestate_name, g_extern.basename,
-            ".state", sizeof(g_extern.savestate_name));
-   fill_pathname_noext(g_extern.cheatfile_name, g_extern.basename,
-         ".cht", sizeof(g_extern.cheatfile_name));
+   if (!global->has_set_save_path)
+      fill_pathname_noext(global->savefile_name, global->basename,
+            ".srm", sizeof(global->savefile_name));
+   if (!global->has_set_state_path)
+      fill_pathname_noext(global->savestate_name, global->basename,
+            ".state", sizeof(global->savestate_name));
+   fill_pathname_noext(global->cheatfile_name, global->basename,
+         ".cht", sizeof(global->cheatfile_name));
 
    set_paths_redirect(path);
 
@@ -384,37 +390,37 @@ static void set_paths(const char *path)
 static void parse_input(int argc, char *argv[])
 {
    runloop_t *runloop = rarch_main_get_ptr();
+   global_t  *global  = global_get_ptr();
 
-   g_extern.libretro_no_content = false;
-   g_extern.libretro_dummy = false;
-   g_extern.has_set_save_path = false;
-   g_extern.has_set_state_path = false;
-   g_extern.has_set_libretro = false;
-   g_extern.has_set_libretro_directory = false;
-   g_extern.has_set_verbosity = false;
+   global->libretro_no_content           = false;
+   global->libretro_dummy                = false;
+   global->has_set_save_path             = false;
+   global->has_set_state_path            = false;
+   global->has_set_libretro              = false;
+   global->has_set_libretro_directory    = false;
+   global->has_set_verbosity             = false;
 
-   g_extern.has_set_netplay_mode = false;
-   g_extern.has_set_username = false;
-   g_extern.has_set_netplay_ip_address = false;
-   g_extern.has_set_netplay_delay_frames = false;
-   g_extern.has_set_netplay_ip_port = false;
+   global->has_set_netplay_mode          = false;
+   global->has_set_username              = false;
+   global->has_set_netplay_ip_address    = false;
+   global->has_set_netplay_delay_frames  = false;
+   global->has_set_netplay_ip_port       = false;
 
-   g_extern.has_set_ups_pref = false;
-   g_extern.has_set_bps_pref = false;
-   g_extern.has_set_ips_pref = false;
+   global->has_set_ups_pref              = false;
+   global->has_set_bps_pref              = false;
+   global->has_set_ips_pref              = false;
 
-   g_extern.ups_pref = false;
-   g_extern.bps_pref = false;
-   g_extern.ips_pref = false;
-   *g_extern.ups_name = '\0';
-   *g_extern.bps_name = '\0';
-   *g_extern.ips_name = '\0';
-
-   *g_extern.subsystem = '\0';
+   global->ups_pref                      = false;
+   global->bps_pref                      = false;
+   global->ips_pref                      = false;
+   *global->ups_name                     = '\0';
+   *global->bps_name                     = '\0';
+   *global->ips_name                     = '\0';
+   *global->subsystem                    = '\0';
 
    if (argc < 2)
    {
-      g_extern.libretro_dummy = true;
+      global->libretro_dummy             = true;
       return;
    }
 
@@ -503,7 +509,7 @@ static void parse_input(int argc, char *argv[])
             exit(0);
 
          case 'Z':
-            strlcpy(g_extern.subsystem, optarg, sizeof(g_extern.subsystem));
+            strlcpy(global->subsystem, optarg, sizeof(global->subsystem));
             break;
 
          case 'd':
@@ -525,7 +531,7 @@ static void parse_input(int argc, char *argv[])
                rarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = id;
-            g_extern.has_set_libretro_device[port - 1] = true;
+            global->has_set_libretro_device[port - 1] = true;
             break;
          }
 
@@ -538,28 +544,28 @@ static void parse_input(int argc, char *argv[])
                rarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_ANALOG;
-            g_extern.has_set_libretro_device[port - 1] = true;
+            global->has_set_libretro_device[port - 1] = true;
             break;
 
          case 's':
-            strlcpy(g_extern.savefile_name, optarg,
-                  sizeof(g_extern.savefile_name));
-            g_extern.has_set_save_path = true;
+            strlcpy(global->savefile_name, optarg,
+                  sizeof(global->savefile_name));
+            global->has_set_save_path = true;
             break;
 
          case 'f':
-            g_extern.force_fullscreen = true;
+            global->force_fullscreen = true;
             break;
 
          case 'S':
-            strlcpy(g_extern.savestate_name, optarg,
-                  sizeof(g_extern.savestate_name));
-            g_extern.has_set_state_path = true;
+            strlcpy(global->savestate_name, optarg,
+                  sizeof(global->savestate_name));
+            global->has_set_state_path = true;
             break;
 
          case 'v':
-            g_extern.verbosity = true;
-            g_extern.has_set_verbosity = true;
+            global->verbosity = true;
+            global->has_set_verbosity = true;
             break;
 
          case 'N':
@@ -571,18 +577,18 @@ static void parse_input(int argc, char *argv[])
                rarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_NONE;
-            g_extern.has_set_libretro_device[port - 1] = true;
+            global->has_set_libretro_device[port - 1] = true;
             break;
 
          case 'c':
-            strlcpy(g_extern.config_path, optarg,
-                  sizeof(g_extern.config_path));
+            strlcpy(global->config_path, optarg,
+                  sizeof(global->config_path));
             break;
 
          case 'r':
-            strlcpy(g_extern.record.path, optarg,
-                  sizeof(g_extern.record.path));
-            g_extern.record.enable = true;
+            strlcpy(global->record.path, optarg,
+                  sizeof(global->record.path));
+            global->record.enable = true;
             break;
 
 #ifdef HAVE_DYNAMIC
@@ -592,36 +598,36 @@ static void parse_input(int argc, char *argv[])
                *settings->libretro = '\0';
                strlcpy(settings->libretro_directory, optarg,
                      sizeof(settings->libretro_directory));
-               g_extern.has_set_libretro = true;
-               g_extern.has_set_libretro_directory = true;
+               global->has_set_libretro = true;
+               global->has_set_libretro_directory = true;
                RARCH_WARN("Using old --libretro behavior. Setting libretro_directory to \"%s\" instead.\n", optarg);
             }
             else
             {
                strlcpy(settings->libretro, optarg,
                      sizeof(settings->libretro));
-               g_extern.has_set_libretro = true;
+               global->has_set_libretro = true;
             }
             break;
 #endif
          case 'P':
          case 'R':
-            strlcpy(g_extern.bsv.movie_start_path, optarg,
-                  sizeof(g_extern.bsv.movie_start_path));
-            g_extern.bsv.movie_start_playback  = (c == 'P');
-            g_extern.bsv.movie_start_recording = (c == 'R');
+            strlcpy(global->bsv.movie_start_path, optarg,
+                  sizeof(global->bsv.movie_start_path));
+            global->bsv.movie_start_playback  = (c == 'P');
+            global->bsv.movie_start_recording = (c == 'R');
             break;
 
          case 'M':
             if (strcmp(optarg, "noload-nosave") == 0)
             {
-               g_extern.sram_load_disable = true;
-               g_extern.sram_save_disable = true;
+               global->sram_load_disable = true;
+               global->sram_save_disable = true;
             }
             else if (strcmp(optarg, "noload-save") == 0)
-               g_extern.sram_load_disable = true;
+               global->sram_load_disable = true;
             else if (strcmp(optarg, "load-nosave") == 0)
-               g_extern.sram_save_disable = true;
+               global->sram_save_disable = true;
             else if (strcmp(optarg, "load-save") != 0)
             {
                RARCH_ERR("Invalid argument in --sram-mode.\n");
@@ -632,29 +638,29 @@ static void parse_input(int argc, char *argv[])
 
 #ifdef HAVE_NETPLAY
          case 'H':
-            g_extern.has_set_netplay_ip_address = true;
-            g_extern.netplay_enable = true;
-            *g_extern.netplay_server = '\0';
+            global->has_set_netplay_ip_address = true;
+            global->netplay_enable = true;
+            *global->netplay_server = '\0';
             break;
 
          case 'C':
-            g_extern.has_set_netplay_ip_address = true;
-            g_extern.netplay_enable = true;
-            strlcpy(g_extern.netplay_server, optarg,
-                  sizeof(g_extern.netplay_server));
+            global->has_set_netplay_ip_address = true;
+            global->netplay_enable = true;
+            strlcpy(global->netplay_server, optarg,
+                  sizeof(global->netplay_server));
             break;
 
          case 'F':
-            g_extern.netplay_sync_frames = strtol(optarg, NULL, 0);
-            g_extern.has_set_netplay_delay_frames = true;
+            global->netplay_sync_frames = strtol(optarg, NULL, 0);
+            global->has_set_netplay_delay_frames = true;
             break;
 #endif
 
          case 'U':
-            strlcpy(g_extern.ups_name, optarg,
-                  sizeof(g_extern.ups_name));
-            g_extern.ups_pref = true;
-            g_extern.has_set_ups_pref = true;
+            strlcpy(global->ups_name, optarg,
+                  sizeof(global->ups_name));
+            global->ups_pref = true;
+            global->has_set_ups_pref = true;
             break;
 
          case 'D':
@@ -671,23 +677,23 @@ static void parse_input(int argc, char *argv[])
             switch (val)
             {
                case 'M':
-                  g_extern.libretro_dummy = true;
+                  global->libretro_dummy = true;
                   break;
 
 #ifdef HAVE_NETPLAY
                case 'p':
-                  g_extern.has_set_netplay_ip_port = true;
-                  g_extern.netplay_port = strtoul(optarg, NULL, 0);
+                  global->has_set_netplay_ip_port = true;
+                  global->netplay_port = strtoul(optarg, NULL, 0);
                   break;
 
                case 'S':
-                  g_extern.has_set_netplay_mode = true;
-                  g_extern.netplay_is_spectate = true;
+                  global->has_set_netplay_mode = true;
+                  global->netplay_is_spectate = true;
                   break;
 
 #endif
                case 'N':
-                  g_extern.has_set_username = true;
+                  global->has_set_username = true;
                   strlcpy(settings->username, optarg,
                         sizeof(settings->username));
                   break;
@@ -702,32 +708,32 @@ static void parse_input(int argc, char *argv[])
 #endif
 
                case 'C':
-                  strlcpy(g_extern.append_config_path, optarg,
-                        sizeof(g_extern.append_config_path));
+                  strlcpy(global->append_config_path, optarg,
+                        sizeof(global->append_config_path));
                   break;
 
                case 'B':
-                  strlcpy(g_extern.bps_name, optarg,
-                        sizeof(g_extern.bps_name));
-                  g_extern.bps_pref = true;
-                  g_extern.has_set_bps_pref = true;
+                  strlcpy(global->bps_name, optarg,
+                        sizeof(global->bps_name));
+                  global->bps_pref = true;
+                  global->has_set_bps_pref = true;
                   break;
 
                case 'I':
-                  strlcpy(g_extern.ips_name, optarg,
-                        sizeof(g_extern.ips_name));
-                  g_extern.ips_pref = true;
-                  g_extern.has_set_ips_pref = true;
+                  strlcpy(global->ips_name, optarg,
+                        sizeof(global->ips_name));
+                  global->ips_pref = true;
+                  global->has_set_ips_pref = true;
                   break;
 
                case 'n':
-                  g_extern.block_patch = true;
+                  global->block_patch = true;
                   break;
 
                case 's':
                {
-                  if (sscanf(optarg, "%ux%u", &g_extern.record.width,
-                           &g_extern.record.height) != 2)
+                  if (sscanf(optarg, "%ux%u", &global->record.width,
+                           &global->record.height) != 2)
                   {
                      RARCH_ERR("Wrong format for --size.\n");
                      print_help();
@@ -737,15 +743,15 @@ static void parse_input(int argc, char *argv[])
                }
 
                case 'R':
-                  strlcpy(g_extern.record.config, optarg,
-                        sizeof(g_extern.record.config));
+                  strlcpy(global->record.config, optarg,
+                        sizeof(global->record.config));
                   break;
                case 'f':
                   print_features();
                   exit(0);
 
                case 'e':
-                  g_extern.bsv.eof_exit = true;
+                  global->bsv.eof_exit = true;
                   break;
 
                default:
@@ -763,7 +769,7 @@ static void parse_input(int argc, char *argv[])
       }
    }
 
-   if (g_extern.libretro_dummy)
+   if (global->libretro_dummy)
    {
       if (optind < argc)
       {
@@ -771,22 +777,23 @@ static void parse_input(int argc, char *argv[])
          rarch_fail(1, "parse_input()");
       }
    }
-   else if (!*g_extern.subsystem && optind < argc)
+   else if (!*global->subsystem && optind < argc)
       set_paths(argv[optind]);
-   else if (*g_extern.subsystem && optind < argc)
+   else if (*global->subsystem && optind < argc)
       set_special_paths(argv + optind, argc - optind);
    else
-      g_extern.libretro_no_content = true;
+      global->libretro_no_content = true;
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
-   if (g_extern.has_set_save_path &&
-         path_is_directory(g_extern.savefile_name))
-      strlcpy(g_extern.savefile_dir, g_extern.savefile_name,
-            sizeof(g_extern.savefile_dir));
-   if (g_extern.has_set_state_path &&
-         path_is_directory(g_extern.savestate_name))
-      strlcpy(g_extern.savestate_dir, g_extern.savestate_name,
-            sizeof(g_extern.savestate_dir));
+   if (global->has_set_save_path &&
+         path_is_directory(global->savefile_name))
+      strlcpy(global->savefile_dir, global->savefile_name,
+            sizeof(global->savefile_dir));
+
+   if (global->has_set_state_path &&
+         path_is_directory(global->savestate_name))
+      strlcpy(global->savestate_dir, global->savestate_name,
+            sizeof(global->savestate_dir));
 }
 
 /**
@@ -798,6 +805,7 @@ static void init_controllers(void)
 {
    unsigned i;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -805,9 +813,9 @@ static void init_controllers(void)
       const struct retro_controller_description *desc = NULL;
       unsigned device = settings->input.libretro_device[i];
 
-      if (i < g_extern.system.num_ports)
+      if (i < global->system.num_ports)
          desc = libretro_find_controller_description(
-               &g_extern.system.ports[i], device);
+               &global->system.ports[i], device);
 
       if (desc)
          ident = desc->desc;
@@ -851,13 +859,14 @@ static void init_controllers(void)
 static bool load_save_files(void)
 {
    unsigned i;
+   global_t *global = global_get_ptr();
 
-   if (!g_extern.savefiles || g_extern.sram_load_disable)
+   if (!global->savefiles || global->sram_load_disable)
       return false;
 
-   for (i = 0; i < g_extern.savefiles->size; i++)
-      load_ram_file(g_extern.savefiles->elems[i].data,
-            g_extern.savefiles->elems[i].attr.i);
+   for (i = 0; i < global->savefiles->size; i++)
+      load_ram_file(global->savefiles->elems[i].data,
+            global->savefiles->elems[i].attr.i);
     
    return true;
 }
@@ -865,14 +874,15 @@ static bool load_save_files(void)
 static void save_files(void)
 {
    unsigned i;
+   global_t *global = global_get_ptr();
 
-   if (!g_extern.savefiles || !g_extern.use_sram)
+   if (!global->savefiles || !global->use_sram)
       return;
 
-   for (i = 0; i < g_extern.savefiles->size; i++)
+   for (i = 0; i < global->savefiles->size; i++)
    {
-      unsigned type    = g_extern.savefiles->elems[i].attr.i;
-      const char *path = g_extern.savefiles->elems[i].data;
+      unsigned type    = global->savefiles->elems[i].attr.i;
+      const char *path = global->savefiles->elems[i].data;
       RARCH_LOG("Saving RAM type #%u to \"%s\".\n", type, path);
       save_ram_file(path, type);
    }
@@ -890,15 +900,16 @@ static void init_remapping(void)
 
 static void init_cheats(void)
 {
-   driver_t *driver = driver_get_ptr();
    bool allow_cheats = true;
+   driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
 
    (void)driver;
 
 #ifdef HAVE_NETPLAY
    allow_cheats &= !driver->netplay_data;
 #endif
-   allow_cheats &= !g_extern.bsv.movie;
+   allow_cheats &= !global->bsv.movie;
 
    if (!allow_cheats)
       return;
@@ -909,8 +920,9 @@ static void init_cheats(void)
 static void init_rewind(void)
 {
    void *state = NULL;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
    (void)driver;
 
@@ -919,18 +931,18 @@ static void init_rewind(void)
       return;
 #endif
 
-   if (!settings->rewind_enable || g_extern.rewind.state)
+   if (!settings->rewind_enable || global->rewind.state)
       return;
 
-   if (g_extern.system.audio_callback.callback)
+   if (global->system.audio_callback.callback)
    {
       RARCH_ERR(RETRO_LOG_REWIND_INIT_FAILED_THREADED_AUDIO);
       return;
    }
 
-   g_extern.rewind.size = pretro_serialize_size();
+   global->rewind.size = pretro_serialize_size();
 
-   if (!g_extern.rewind.size)
+   if (!global->rewind.size)
    {
       RARCH_ERR(RETRO_LOG_REWIND_INIT_FAILED_NO_SAVESTATES);
       return;
@@ -939,43 +951,44 @@ static void init_rewind(void)
    RARCH_LOG(RETRO_MSG_REWIND_INIT "%u MB\n",
          (unsigned)(settings->rewind_buffer_size / 1000000));
 
-   g_extern.rewind.state = state_manager_new(g_extern.rewind.size,
+   global->rewind.state = state_manager_new(global->rewind.size,
          settings->rewind_buffer_size);
 
-   if (!g_extern.rewind.state)
+   if (!global->rewind.state)
       RARCH_WARN(RETRO_LOG_REWIND_INIT_FAILED);
 
-   state_manager_push_where(g_extern.rewind.state, &state);
-   pretro_serialize(state, g_extern.rewind.size);
-   state_manager_push_do(g_extern.rewind.state);
+   state_manager_push_where(global->rewind.state, &state);
+   pretro_serialize(state, global->rewind.size);
+   state_manager_push_do(global->rewind.state);
 }
 
 static void init_movie(void)
 {
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
-   if (g_extern.bsv.movie_start_playback)
+   if (global->bsv.movie_start_playback)
    {
-      if (!(g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path,
+      if (!(global->bsv.movie = bsv_movie_init(global->bsv.movie_start_path,
                   RARCH_MOVIE_PLAYBACK)))
       {
          RARCH_ERR("Failed to load movie file: \"%s\".\n",
-               g_extern.bsv.movie_start_path);
+               global->bsv.movie_start_path);
          rarch_fail(1, "init_movie()");
       }
 
-      g_extern.bsv.movie_playback = true;
+      global->bsv.movie_playback = true;
       rarch_main_msg_queue_push("Starting movie playback.", 2, 180, false);
       RARCH_LOG("Starting movie playback.\n");
       settings->rewind_granularity = 1;
    }
-   else if (g_extern.bsv.movie_start_recording)
+   else if (global->bsv.movie_start_recording)
    {
       char msg[PATH_MAX_LENGTH];
       snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".",
-            g_extern.bsv.movie_start_path);
+            global->bsv.movie_start_path);
 
-      if (!(g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path,
+      if (!(global->bsv.movie = bsv_movie_init(global->bsv.movie_start_path,
                   RARCH_MOVIE_RECORD)))
       {
          rarch_main_msg_queue_push("Failed to start movie record.", 1, 180, true);
@@ -985,7 +998,7 @@ static void init_movie(void)
 
       rarch_main_msg_queue_push(msg, 1, 180, true);
       RARCH_LOG("Starting movie record to \"%s\".\n",
-            g_extern.bsv.movie_start_path);
+            global->bsv.movie_start_path);
       settings->rewind_granularity = 1;
    }
 }
@@ -1008,11 +1021,12 @@ static bool init_netplay(void)
    struct retro_callbacks cbs = {0};
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
-   if (!g_extern.netplay_enable)
+   if (!global->netplay_enable)
       return false;
 
-   if (g_extern.bsv.movie_start_playback)
+   if (global->bsv.movie_start_playback)
    {
       RARCH_WARN(RETRO_LOG_MOVIE_STARTED_INIT_NETPLAY_FAILED);
       return false;
@@ -1020,24 +1034,24 @@ static bool init_netplay(void)
 
    retro_set_default_callbacks(&cbs);
 
-   if (*g_extern.netplay_server)
+   if (*global->netplay_server)
    {
       RARCH_LOG("Connecting to netplay host...\n");
-      g_extern.netplay_is_client = true;
+      global->netplay_is_client = true;
    }
    else
       RARCH_LOG("Waiting for client...\n");
 
    driver->netplay_data = (netplay_t*)netplay_new(
-         g_extern.netplay_is_client ? g_extern.netplay_server : NULL,
-         g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT,
-         g_extern.netplay_sync_frames, &cbs, g_extern.netplay_is_spectate,
+         global->netplay_is_client ? global->netplay_server : NULL,
+         global->netplay_port ? global->netplay_port : RARCH_DEFAULT_PORT,
+         global->netplay_sync_frames, &cbs, global->netplay_is_spectate,
          settings->username);
 
    if (driver->netplay_data)
       return true;
 
-   g_extern.netplay_is_client = false;
+   global->netplay_is_client = false;
    RARCH_WARN(RETRO_LOG_INIT_NETPLAY_FAILED);
 
    rarch_main_msg_queue_push(
@@ -1074,29 +1088,31 @@ static void init_autosave(void)
 {
    unsigned i;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
-   if (settings->autosave_interval < 1 || !g_extern.savefiles)
+   if (settings->autosave_interval < 1 || !global->savefiles)
       return;
 
-   if (!(g_extern.autosave = (autosave_t**)calloc(g_extern.savefiles->size,
-               sizeof(*g_extern.autosave))))
+   if (!(global->autosave = (autosave_t**)calloc(global->savefiles->size,
+               sizeof(*global->autosave))))
       return;
 
-   g_extern.num_autosave = g_extern.savefiles->size;
+   global->num_autosave = global->savefiles->size;
 
-   for (i = 0; i < g_extern.savefiles->size; i++)
+   for (i = 0; i < global->savefiles->size; i++)
    {
-      const char *path = g_extern.savefiles->elems[i].data;
-      unsigned    type = g_extern.savefiles->elems[i].attr.i;
+      const char *path = global->savefiles->elems[i].data;
+      unsigned    type = global->savefiles->elems[i].attr.i;
 
       if (pretro_get_memory_size(type) <= 0)
          continue;
 
-      g_extern.autosave[i] = autosave_new(path,
+      global->autosave[i] = autosave_new(path,
             pretro_get_memory_data(type),
             pretro_get_memory_size(type),
             settings->autosave_interval);
-      if (!g_extern.autosave[i])
+
+      if (!global->autosave[i])
          RARCH_WARN(RETRO_LOG_INIT_AUTOSAVE_FAILED);
    }
 }
@@ -1104,15 +1120,16 @@ static void init_autosave(void)
 static void deinit_autosave(void)
 {
    unsigned i;
+   global_t *global = global_get_ptr();
 
-   for (i = 0; i < g_extern.num_autosave; i++)
-      autosave_free(g_extern.autosave[i]);
+   for (i = 0; i < global->num_autosave; i++)
+      autosave_free(global->autosave[i]);
 
-   if (g_extern.autosave)
-      free(g_extern.autosave);
-   g_extern.autosave = NULL;
+   if (global->autosave)
+      free(global->autosave);
+   global->autosave     = NULL;
 
-   g_extern.num_autosave = 0;
+   global->num_autosave = 0;
 }
 #endif
 
@@ -1123,20 +1140,21 @@ static void set_savestate_auto_index(void)
    struct string_list *dir_list = NULL;
    unsigned max_idx = 0;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    if (!settings->savestate_auto_index)
       return;
 
-   /* Find the file in the same directory as g_extern.savestate_name
+   /* Find the file in the same directory as global->savestate_name
     * with the largest numeral suffix.
     *
     * E.g. /foo/path/content.state, will try to find
     * /foo/path/content.state%d, where %d is the largest number available.
     */
 
-   fill_pathname_basedir(state_dir, g_extern.savestate_name,
+   fill_pathname_basedir(state_dir, global->savestate_name,
          sizeof(state_dir));
-   fill_pathname_base(state_base, g_extern.savestate_name,
+   fill_pathname_base(state_base, global->savestate_name,
          sizeof(state_base));
 
    if (!(dir_list = dir_list_new(state_dir, NULL, false)))
@@ -1171,27 +1189,29 @@ static void set_savestate_auto_index(void)
 
 static void rarch_init_savefile_paths(void)
 {
+   global_t *global = global_get_ptr();
+
    rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
 
-   g_extern.savefiles = string_list_new();
-   rarch_assert(g_extern.savefiles);
+   global->savefiles = string_list_new();
+   rarch_assert(global->savefiles);
 
-   if (*g_extern.subsystem)
+   if (*global->subsystem)
    {
       /* For subsystems, we know exactly which RAM types are supported. */
 
       unsigned i, j;
       const struct retro_subsystem_info *info = 
          libretro_find_subsystem_info(
-               g_extern.system.special, g_extern.system.num_special,
-               g_extern.subsystem);
+               global->system.special, global->system.num_special,
+               global->subsystem);
 
       /* We'll handle this error gracefully later. */
       unsigned num_content = min(info ? info->num_roms : 0,
-            g_extern.subsystem_fullpaths ?
-            g_extern.subsystem_fullpaths->size : 0);
+            global->subsystem_fullpaths ?
+            global->subsystem_fullpaths->size : 0);
 
-      bool use_sram_dir = path_is_directory(g_extern.savefile_name);
+      bool use_sram_dir = path_is_directory(global->savefile_name);
 
       for (i = 0; i < num_content; i++)
       {
@@ -1208,32 +1228,32 @@ static void rarch_init_savefile_paths(void)
             if (use_sram_dir)
             {
                /* Redirect content fullpath to save directory. */
-               strlcpy(path, g_extern.savefile_name, sizeof(path));
+               strlcpy(path, global->savefile_name, sizeof(path));
                fill_pathname_dir(path,
-                     g_extern.subsystem_fullpaths->elems[i].data, ext,
+                     global->subsystem_fullpaths->elems[i].data, ext,
                      sizeof(path));
             }
             else
             {
-               fill_pathname(path, g_extern.subsystem_fullpaths->elems[i].data,
+               fill_pathname(path, global->subsystem_fullpaths->elems[i].data,
                      ext, sizeof(path));
             }
 
             attr.i = mem->type;
-            string_list_append(g_extern.savefiles, path, attr);
+            string_list_append(global->savefiles, path, attr);
          }
       }
 
       /* Let other relevant paths be inferred from the main SRAM location. */
-      if (!g_extern.has_set_save_path)
-         fill_pathname_noext(g_extern.savefile_name, g_extern.basename, ".srm",
-               sizeof(g_extern.savefile_name));
-      if (path_is_directory(g_extern.savefile_name))
+      if (!global->has_set_save_path)
+         fill_pathname_noext(global->savefile_name, global->basename, ".srm",
+               sizeof(global->savefile_name));
+      if (path_is_directory(global->savefile_name))
       {
-         fill_pathname_dir(g_extern.savefile_name, g_extern.basename, ".srm",
-               sizeof(g_extern.savefile_name));
+         fill_pathname_dir(global->savefile_name, global->basename, ".srm",
+               sizeof(global->savefile_name));
          RARCH_LOG("Redirecting save file to \"%s\".\n",
-               g_extern.savefile_name);
+               global->savefile_name);
       }
    }
    else
@@ -1242,34 +1262,36 @@ static void rarch_init_savefile_paths(void)
       union string_list_elem_attr attr;
 
       attr.i = RETRO_MEMORY_SAVE_RAM;
-      string_list_append(g_extern.savefiles, g_extern.savefile_name, attr);
+      string_list_append(global->savefiles, global->savefile_name, attr);
 
       /* Infer .rtc save path from save ram path. */
       attr.i = RETRO_MEMORY_RTC;
       fill_pathname(savefile_name_rtc,
-            g_extern.savefile_name, ".rtc", sizeof(savefile_name_rtc));
-      string_list_append(g_extern.savefiles, savefile_name_rtc, attr);
+            global->savefile_name, ".rtc", sizeof(savefile_name_rtc));
+      string_list_append(global->savefiles, savefile_name_rtc, attr);
    }
 }
 
 static void fill_pathnames(void)
 {
-   rarch_init_savefile_paths();
-   fill_pathname(g_extern.bsv.movie_path, g_extern.savefile_name, "",
-         sizeof(g_extern.bsv.movie_path));
+   global_t   *global   = global_get_ptr();
 
-   if (!*g_extern.basename)
+   rarch_init_savefile_paths();
+   fill_pathname(global->bsv.movie_path, global->savefile_name, "",
+         sizeof(global->bsv.movie_path));
+
+   if (!*global->basename)
       return;
 
-   if (!*g_extern.ups_name)
-      fill_pathname_noext(g_extern.ups_name, g_extern.basename, ".ups",
-            sizeof(g_extern.ups_name));
-   if (!*g_extern.bps_name)
-      fill_pathname_noext(g_extern.bps_name, g_extern.basename, ".bps",
-            sizeof(g_extern.bps_name));
-   if (!*g_extern.ips_name)
-      fill_pathname_noext(g_extern.ips_name, g_extern.basename, ".ips",
-            sizeof(g_extern.ips_name));
+   if (!*global->ups_name)
+      fill_pathname_noext(global->ups_name, global->basename, ".ups",
+            sizeof(global->ups_name));
+   if (!*global->bps_name)
+      fill_pathname_noext(global->bps_name, global->basename, ".bps",
+            sizeof(global->bps_name));
+   if (!*global->ips_name)
+      fill_pathname_noext(global->ips_name, global->basename, ".ips",
+            sizeof(global->ips_name));
 }
 
 static void load_auto_state(void)
@@ -1278,16 +1300,17 @@ static void load_auto_state(void)
    char savestate_name_auto[PATH_MAX_LENGTH];
    bool ret;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
 #ifdef HAVE_NETPLAY
-   if (g_extern.netplay_enable && !g_extern.netplay_is_spectate)
+   if (global->netplay_enable && !global->netplay_is_spectate)
       return;
 #endif
 
    if (!settings->savestate_auto_load)
       return;
 
-   fill_pathname_noext(savestate_name_auto, g_extern.savestate_name,
+   fill_pathname_noext(savestate_name_auto, global->savestate_name,
          ".auto", sizeof(savestate_name_auto));
 
    if (!path_file_exists(savestate_name_auto))
@@ -1308,12 +1331,13 @@ static bool save_auto_state(void)
    bool ret;
    char savestate_name_auto[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
-   if (!settings->savestate_auto_save || g_extern.libretro_dummy ||
-       g_extern.libretro_no_content)
+   if (!settings->savestate_auto_save || global->libretro_dummy ||
+       global->libretro_no_content)
        return false;
 
-   fill_pathname_noext(savestate_name_auto, g_extern.savestate_name,
+   fill_pathname_noext(savestate_name_auto, global->savestate_name,
          ".auto", sizeof(savestate_name_auto));
 
    ret = save_state(savestate_name_auto);
@@ -1383,16 +1407,17 @@ static void rarch_save_state(const char *path,
 static void main_state(unsigned cmd)
 {
    char path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
+   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    if (settings->state_slot > 0)
       snprintf(path, sizeof(path), "%s%d",
-            g_extern.savestate_name, settings->state_slot);
+            global->savestate_name, settings->state_slot);
    else if (settings->state_slot < 0)
       snprintf(path, sizeof(path), "%s.auto",
-            g_extern.savestate_name);
+            global->savestate_name);
    else
-      strlcpy(path, g_extern.savestate_name, sizeof(path));
+      strlcpy(path, global->savestate_name, sizeof(path));
 
    if (pretro_serialize_size())
    {
@@ -1418,8 +1443,9 @@ void rarch_disk_control_append_image(const char *path)
 {
    char msg[PATH_MAX_LENGTH];
    unsigned new_idx;
+   global_t *global = global_get_ptr();
    const struct retro_disk_control_callback *control = 
-      (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
+      (const struct retro_disk_control_callback*)&global->system.disk_control;
    struct retro_game_info info = {0};
    rarch_disk_control_set_eject(true, false);
 
@@ -1439,7 +1465,7 @@ void rarch_disk_control_append_image(const char *path)
    rarch_main_command(RARCH_CMD_AUTOSAVE_DEINIT);
 
    /* TODO: Need to figure out what to do with subsystems case. */
-   if (!*g_extern.subsystem)
+   if (!*global->subsystem)
    {
       /* Update paths for our new image.
        * If we actually use append_image, we assume that we
@@ -1466,8 +1492,9 @@ void rarch_disk_control_append_image(const char *path)
 void rarch_disk_control_set_eject(bool new_state, bool print_log)
 {
    char msg[PATH_MAX_LENGTH];
+   global_t *global = global_get_ptr();
    const struct retro_disk_control_callback *control = 
-      (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
+      (const struct retro_disk_control_callback*)&global->system.disk_control;
    bool error = false;
 
    if (!control->get_num_images)
@@ -1508,8 +1535,9 @@ void rarch_disk_control_set_index(unsigned idx)
 {
    char msg[PATH_MAX_LENGTH];
    unsigned num_disks;
+   global_t *global = global_get_ptr();
    const struct retro_disk_control_callback *control = 
-      (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
+      (const struct retro_disk_control_callback*)&global->system.disk_control;
    bool error = false;
 
    if (!control->get_num_images)
@@ -1624,15 +1652,17 @@ static void init_state(void)
 static void free_temporary_content(void)
 {
    unsigned i;
-   for (i = 0; i < g_extern.temporary_content->size; i++)
+   global_t *global = global_get_ptr();
+
+   for (i = 0; i < global->temporary_content->size; i++)
    {
-      const char *path = g_extern.temporary_content->elems[i].data;
+      const char *path = global->temporary_content->elems[i].data;
 
       RARCH_LOG("Removing temporary content file: %s.\n", path);
       if (remove(path) < 0)
          RARCH_ERR("Failed to remove temporary file: %s.\n", path);
    }
-   string_list_free(g_extern.temporary_content);
+   string_list_free(global->temporary_content);
 }
 
 /* main_clear_state_extern:
@@ -1685,7 +1715,9 @@ static void main_clear_state(bool inited)
 
 void rarch_main_state_new(void)
 {
-   main_clear_state(g_extern.main_is_init);
+   global_t *global = global_get_ptr();
+
+   main_clear_state(global->main_is_init);
    rarch_main_command(RARCH_CMD_MSG_QUEUE_INIT);
 }
 
@@ -1706,8 +1738,9 @@ void rarch_main_state_free(void)
 
 static void init_system_info(void)
 {
+   global_t *global = global_get_ptr();
    struct retro_system_info *info = (struct retro_system_info*)
-      &g_extern.system.info;
+      &global->system.info;
 
    pretro_get_system_info(info);
 
@@ -1717,17 +1750,17 @@ static void init_system_info(void)
       info->library_version = "v0";
 
 #ifdef RARCH_CONSOLE
-   snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "%s %s",
+   snprintf(global->title_buf, sizeof(global->title_buf), "%s %s",
          info->library_name, info->library_version);
 #else
-   snprintf(g_extern.title_buf, sizeof(g_extern.title_buf),
+   snprintf(global->title_buf, sizeof(global->title_buf),
          RETRO_FRONTEND " : %s %s",
          info->library_name, info->library_version);
 #endif
-   strlcpy(g_extern.system.valid_extensions, info->valid_extensions ?
+   strlcpy(global->system.valid_extensions, info->valid_extensions ?
          info->valid_extensions : DEFAULT_EXT,
-         sizeof(g_extern.system.valid_extensions));
-   g_extern.system.block_extract = info->block_extract;
+         sizeof(global->system.valid_extensions));
+   global->system.block_extract = info->block_extract;
 }
 
 /* 
@@ -1790,8 +1823,9 @@ static void validate_cpu_features(void)
 static void init_system_av_info(void)
 {
    runloop_t *runloop = rarch_main_get_ptr();
+   global_t  *global  = global_get_ptr();
 
-   pretro_get_system_av_info(&g_extern.system.av_info);
+   pretro_get_system_av_info(&global->system.av_info);
    runloop->frames.limit.last_time = rarch_get_time_usec();
 }
 
@@ -1807,18 +1841,20 @@ static void deinit_core(void)
 
 static bool init_content(void)
 {
+   global_t *global = global_get_ptr();
+
    /* No content to be loaded for dummy core,
     * just successfully exit. */
-   if (g_extern.libretro_dummy) 
+   if (global->libretro_dummy) 
       return true;
 
-   if (!g_extern.libretro_no_content)
+   if (!global->libretro_no_content)
       fill_pathnames();
 
    if (!init_content_file())
       return false;
 
-   if (g_extern.libretro_no_content)
+   if (global->libretro_no_content)
       return true;
 
    set_savestate_auto_index();
@@ -1837,12 +1873,13 @@ static bool init_content(void)
 static bool init_core(void)
 {
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
 
    verify_api_version();
    pretro_init();
 
-   g_extern.use_sram = !g_extern.libretro_dummy &&
-      !g_extern.libretro_no_content;
+   global->use_sram = !global->libretro_dummy &&
+      !global->libretro_no_content;
 
    if (!init_content())
       return false;
@@ -1865,18 +1902,19 @@ static bool init_core(void)
 int rarch_main_init(int argc, char *argv[])
 {
    int sjlj_ret;
+   global_t *global = global_get_ptr();
 
    init_state();
 
-   if ((sjlj_ret = setjmp(g_extern.error_sjlj_context)) > 0)
+   if ((sjlj_ret = setjmp(global->error_sjlj_context)) > 0)
    {
-      RARCH_ERR("Fatal error received in: \"%s\"\n", g_extern.error_string);
+      RARCH_ERR("Fatal error received in: \"%s\"\n", global->error_string);
       return sjlj_ret;
    }
-   g_extern.error_in_init = true;
+   global->error_in_init = true;
    parse_input(argc, argv);
 
-   if (g_extern.verbosity)
+   if (global->verbosity)
    {
       RARCH_LOG_OUTPUT("=== Build =======================================");
       print_compiler(stderr);
@@ -1890,7 +1928,7 @@ int rarch_main_init(int argc, char *argv[])
    validate_cpu_features();
    config_load();
 
-   init_libretro_sym(g_extern.libretro_dummy);
+   init_libretro_sym(global->libretro_dummy);
    init_system_info();
 
    init_drivers_pre();
@@ -1920,14 +1958,14 @@ int rarch_main_init(int argc, char *argv[])
    }
 #endif
 
-   g_extern.error_in_init = false;
-   g_extern.main_is_init  = true;
+   global->error_in_init = false;
+   global->main_is_init  = true;
    return 0;
 
 error:
    rarch_main_command(RARCH_CMD_CORE_DEINIT);
 
-   g_extern.main_is_init = false;
+   global->main_is_init = false;
    return 1;
 }
 
@@ -1999,6 +2037,7 @@ void rarch_main_set_state(unsigned cmd)
 {
    runloop_t *runloop   = rarch_main_get_ptr();
    driver_t *driver     = driver_get_ptr();
+   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    switch (cmd)
@@ -2024,11 +2063,11 @@ void rarch_main_set_state(unsigned cmd)
             /* Override keyboard callback to redirect to menu instead.
              * We'll use this later for something ...
              * FIXME: This should probably be moved to menu_common somehow. */
-            g_extern.frontend_key_event = g_extern.system.key_event;
-            g_extern.system.key_event   = menu_input_key_event;
+            global->frontend_key_event = global->system.key_event;
+            global->system.key_event   = menu_input_key_event;
 
             menu->need_refresh = true;
-            g_extern.system.frame_time_last = 0;
+            global->system.frame_time_last = 0;
             runloop->is_menu = true;
          }
 #endif
@@ -2060,7 +2099,7 @@ void rarch_main_set_state(unsigned cmd)
          driver->flushing_input = true;
 
          /* Restore libretro keyboard callback. */
-         g_extern.system.key_event = g_extern.frontend_key_event;
+         global->system.key_event = global->frontend_key_event;
 #endif
          if (driver->video_data && driver->video_poke &&
                driver->video_poke->set_texture_enable)
@@ -2068,11 +2107,11 @@ void rarch_main_set_state(unsigned cmd)
                   false, false);
          break;
       case RARCH_ACTION_STATE_QUIT:
-         g_extern.system.shutdown = true;
+         global->system.shutdown = true;
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
          break;
       case RARCH_ACTION_STATE_FORCE_QUIT:
-         g_extern.lifecycle_state = 0;
+         global->lifecycle_state = 0;
          rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
          break;
       case RARCH_ACTION_STATE_NONE:
@@ -2096,14 +2135,15 @@ static bool save_core_config(void)
         config_path[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
    bool found_path = false;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    *config_dir = '\0';
 
    if (*settings->menu_config_directory)
       strlcpy(config_dir, settings->menu_config_directory,
             sizeof(config_dir));
-   else if (*g_extern.config_path) /* Fallback */
-      fill_pathname_basedir(config_dir, g_extern.config_path,
+   else if (*global->config_path) /* Fallback */
+      fill_pathname_basedir(config_dir, global->config_path,
             sizeof(config_dir));
    else
    {
@@ -2157,8 +2197,8 @@ static bool save_core_config(void)
 
    if ((ret = config_save_file(config_path)))
    {
-      strlcpy(g_extern.config_path, config_path,
-            sizeof(g_extern.config_path));
+      strlcpy(global->config_path, config_path,
+            sizeof(global->config_path));
       snprintf(msg, sizeof(msg), "Saved new config to \"%s\".",
             config_path);
       RARCH_LOG("%s\n", msg);
@@ -2179,6 +2219,7 @@ static bool rarch_update_system_info(struct retro_system_info *_info,
       bool *load_no_content)
 {
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
 #if defined(HAVE_DYNAMIC)
    if (!(*settings->libretro))
@@ -2187,11 +2228,11 @@ static bool rarch_update_system_info(struct retro_system_info *_info,
    libretro_get_system_info(settings->libretro, _info,
          load_no_content);
 #endif
-   if (!g_extern.core_info)
+   if (!global->core_info)
       return false;
 
-   if (!core_info_list_get_info(g_extern.core_info,
-            g_extern.core_info_current, settings->libretro))
+   if (!core_info_list_get_info(global->core_info,
+            global->core_info_current, settings->libretro))
       return false;
 
    return true;
@@ -2211,6 +2252,7 @@ bool rarch_main_command(unsigned cmd)
    bool boolean = false;
    runloop_t *runloop   = rarch_main_get_ptr();
    driver_t  *driver    = driver_get_ptr();
+   global_t  *global    = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    (void)i;
@@ -2230,13 +2272,13 @@ bool rarch_main_command(unsigned cmd)
          rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH,
                (void*)settings->libretro);
          rarch_environment_cb(RETRO_ENVIRONMENT_EXEC,
-               (void*)g_extern.fullpath);
+               (void*)global->fullpath);
          rarch_main_command(RARCH_CMD_QUIT);
 #endif
          break;
       case RARCH_CMD_LOAD_CORE_DEINIT:
 #ifdef HAVE_DYNAMIC
-         libretro_free_system_info(&g_extern.menu.info);
+         libretro_free_system_info(&global->menu.info);
 #endif
          break;
       case RARCH_CMD_LOAD_CORE_PERSIST:
@@ -2245,7 +2287,7 @@ bool rarch_main_command(unsigned cmd)
 #ifdef HAVE_MENU
             menu_handle_t *menu = menu_driver_resolve();
             if (menu)
-               rarch_update_system_info(&g_extern.menu.info,
+               rarch_update_system_info(&global->menu.info,
                      &menu->load_no_content);
 #endif
          }
@@ -2259,7 +2301,7 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_LOAD_STATE:
          /* Immutable - disallow savestate load when 
           * we absolutely cannot change game state. */
-         if (g_extern.bsv.movie)
+         if (global->bsv.movie)
             return false;
 
 #ifdef HAVE_NETPLAY
@@ -2269,15 +2311,15 @@ bool rarch_main_command(unsigned cmd)
          main_state(cmd);
          break;
       case RARCH_CMD_RESIZE_WINDOWED_SCALE:
-         if (g_extern.pending.windowed_scale == 0)
+         if (global->pending.windowed_scale == 0)
             return false;
 
-         settings->video.scale = g_extern.pending.windowed_scale;
+         settings->video.scale = global->pending.windowed_scale;
 
          if (!settings->video.fullscreen)
             rarch_main_command(RARCH_CMD_REINIT);
 
-         g_extern.pending.windowed_scale = 0;
+         global->pending.windowed_scale = 0;
          break;
       case RARCH_CMD_MENU_TOGGLE:
          if (runloop->is_menu)
@@ -2310,7 +2352,7 @@ bool rarch_main_command(unsigned cmd)
       case RARCH_CMD_PREPARE_DUMMY:
          {
             menu_handle_t *menu = menu_driver_resolve();
-            *g_extern.fullpath = '\0';
+            *global->fullpath = '\0';
 
             (void)menu;
 
@@ -2320,7 +2362,7 @@ bool rarch_main_command(unsigned cmd)
 #endif
 
             rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
-            g_extern.system.shutdown = false;
+            global->system.shutdown = false;
          }
          break;
       case RARCH_CMD_QUIT:
@@ -2328,7 +2370,7 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_REINIT:
          driver->video_cache_context = 
-            g_extern.system.hw_render_callback.cache_context;
+            global->system.hw_render_callback.cache_context;
          driver->video_cache_context_ack = false;
          rarch_main_command(RARCH_CMD_RESET_CONTEXT);
          driver->video_cache_context = false;
@@ -2343,9 +2385,9 @@ bool rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_CHEATS_DEINIT:
-         if (g_extern.cheat)
-            cheat_manager_free(g_extern.cheat);
-         g_extern.cheat = NULL;
+         if (global->cheat)
+            cheat_manager_free(global->cheat);
+         global->cheat = NULL;
          break;
       case RARCH_CMD_CHEATS_INIT:
          rarch_main_command(RARCH_CMD_CHEATS_DEINIT);
@@ -2362,9 +2404,9 @@ bool rarch_main_command(unsigned cmd)
          if (driver->netplay_data)
             return false;
 #endif
-         if (g_extern.rewind.state)
-            state_manager_free(g_extern.rewind.state);
-         g_extern.rewind.state = NULL;
+         if (global->rewind.state)
+            state_manager_free(global->rewind.state);
+         global->rewind.state = NULL;
          break;
       case RARCH_CMD_REWIND_INIT:
          init_rewind();
@@ -2459,25 +2501,25 @@ bool rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_DSP_FILTER_DEINIT:
-         if (g_extern.audio_data.dsp)
-            rarch_dsp_filter_free(g_extern.audio_data.dsp);
-         g_extern.audio_data.dsp = NULL;
+         if (global->audio_data.dsp)
+            rarch_dsp_filter_free(global->audio_data.dsp);
+         global->audio_data.dsp = NULL;
          break;
       case RARCH_CMD_DSP_FILTER_INIT:
          rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
          if (!*settings->audio.dsp_plugin)
             break;
 
-         g_extern.audio_data.dsp = rarch_dsp_filter_new(
-               settings->audio.dsp_plugin, g_extern.audio_data.in_rate);
-         if (!g_extern.audio_data.dsp)
+         global->audio_data.dsp = rarch_dsp_filter_new(
+               settings->audio.dsp_plugin, global->audio_data.in_rate);
+         if (!global->audio_data.dsp)
             RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n",
                   settings->audio.dsp_plugin);
          break;
       case RARCH_CMD_GPU_RECORD_DEINIT:
-         if (g_extern.record.gpu_buffer)
-            free(g_extern.record.gpu_buffer);
-         g_extern.record.gpu_buffer = NULL;
+         if (global->record.gpu_buffer)
+            free(global->record.gpu_buffer);
+         global->record.gpu_buffer = NULL;
          break;
       case RARCH_CMD_RECORD_DEINIT:
          if (!recording_deinit())
@@ -2503,15 +2545,15 @@ bool rarch_main_command(unsigned cmd)
                settings->content_history_size);
          break;
       case RARCH_CMD_CORE_INFO_DEINIT:
-         if (g_extern.core_info)
-            core_info_list_free(g_extern.core_info);
-         g_extern.core_info = NULL;
+         if (global->core_info)
+            core_info_list_free(global->core_info);
+         global->core_info = NULL;
          break;
       case RARCH_CMD_CORE_INFO_INIT:
          rarch_main_command(RARCH_CMD_CORE_INFO_DEINIT);
 
          if (*settings->libretro_directory)
-            g_extern.core_info = core_info_list_new(settings->libretro_directory);
+            global->core_info = core_info_list_new(settings->libretro_directory);
          break;
       case RARCH_CMD_CORE_DEINIT:
          deinit_core();
@@ -2577,9 +2619,9 @@ bool rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_RESTART_RETROARCH:
 #if defined(GEKKO) && defined(HW_RVL)
-         fill_pathname_join(g_extern.fullpath, g_defaults.core_dir,
+         fill_pathname_join(global->fullpath, g_defaults.core_dir,
                SALAMANDER_FILE,
-               sizeof(g_extern.fullpath));
+               sizeof(global->fullpath));
 #endif
          if (driver->frontend_ctx && driver->frontend_ctx->set_fork)
             driver->frontend_ctx->set_fork(true, false);
@@ -2635,9 +2677,9 @@ bool rarch_main_command(unsigned cmd)
          }
          break;
       case RARCH_CMD_SHADER_DIR_DEINIT:
-         dir_list_free(g_extern.shader_dir.list);
-         g_extern.shader_dir.list = NULL;
-         g_extern.shader_dir.ptr  = 0;
+         dir_list_free(global->shader_dir.list);
+         global->shader_dir.list = NULL;
+         global->shader_dir.ptr  = 0;
          break;
       case RARCH_CMD_SHADER_DIR_INIT:
          rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
@@ -2645,41 +2687,41 @@ bool rarch_main_command(unsigned cmd)
          if (!*settings->video.shader_dir)
             return false;
 
-         g_extern.shader_dir.list = dir_list_new(settings->video.shader_dir,
+         global->shader_dir.list = dir_list_new(settings->video.shader_dir,
                "cg|cgp|glsl|glslp", false);
 
-         if (!g_extern.shader_dir.list || g_extern.shader_dir.list->size == 0)
+         if (!global->shader_dir.list || global->shader_dir.list->size == 0)
          {
             rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
             return false;
          }
 
-         g_extern.shader_dir.ptr  = 0;
-         dir_list_sort(g_extern.shader_dir.list, false);
+         global->shader_dir.ptr  = 0;
+         dir_list_sort(global->shader_dir.list, false);
 
-         for (i = 0; i < g_extern.shader_dir.list->size; i++)
+         for (i = 0; i < global->shader_dir.list->size; i++)
             RARCH_LOG("Found shader \"%s\"\n",
-                  g_extern.shader_dir.list->elems[i].data);
+                  global->shader_dir.list->elems[i].data);
          break;
       case RARCH_CMD_SAVEFILES:
          save_files();
          break;
       case RARCH_CMD_SAVEFILES_DEINIT:
-         if (g_extern.savefiles)
-            string_list_free(g_extern.savefiles);
-         g_extern.savefiles = NULL;
+         if (global->savefiles)
+            string_list_free(global->savefiles);
+         global->savefiles = NULL;
          break;
       case RARCH_CMD_SAVEFILES_INIT:
-         g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable
+         global->use_sram = global->use_sram && !global->sram_save_disable
 #ifdef HAVE_NETPLAY
-            && (!driver->netplay_data || !g_extern.netplay_is_client)
+            && (!driver->netplay_data || !global->netplay_is_client)
 #endif
             ;
 
-         if (!g_extern.use_sram)
+         if (!global->use_sram)
             RARCH_LOG("SRAM will not be saved.\n");
 
-         if (g_extern.use_sram)
+         if (global->use_sram)
             rarch_main_command(RARCH_CMD_AUTOSAVE_INIT);
          break;
       case RARCH_CMD_MSG_QUEUE_DEINIT:
@@ -2691,9 +2733,9 @@ bool rarch_main_command(unsigned cmd)
          rarch_main_data_init_queues();
          break;
       case RARCH_CMD_BSV_MOVIE_DEINIT:
-         if (g_extern.bsv.movie)
-            bsv_movie_free(g_extern.bsv.movie);
-         g_extern.bsv.movie = NULL;
+         if (global->bsv.movie)
+            bsv_movie_free(global->bsv.movie);
+         global->bsv.movie = NULL;
          break;
       case RARCH_CMD_BSV_MOVIE_INIT:
          rarch_main_command(RARCH_CMD_BSV_MOVIE_DEINIT);
@@ -2764,26 +2806,26 @@ bool rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_TEMPORARY_CONTENT_DEINIT:
-         if (g_extern.temporary_content)
+         if (global->temporary_content)
             free_temporary_content();
-         g_extern.temporary_content = NULL;
+         global->temporary_content = NULL;
          break;
       case RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT:
-         if (g_extern.subsystem_fullpaths)
-            string_list_free(g_extern.subsystem_fullpaths);
-         g_extern.subsystem_fullpaths = NULL;
+         if (global->subsystem_fullpaths)
+            string_list_free(global->subsystem_fullpaths);
+         global->subsystem_fullpaths = NULL;
          break;
       case RARCH_CMD_LOG_FILE_DEINIT:
-         if (g_extern.log_file)
-            fclose(g_extern.log_file);
-         g_extern.log_file = NULL;
+         if (global->log_file)
+            fclose(global->log_file);
+         global->log_file = NULL;
          break;
       case RARCH_CMD_DISK_EJECT_TOGGLE:
-         if (g_extern.system.disk_control.get_num_images)
+         if (global->system.disk_control.get_num_images)
          {
             const struct retro_disk_control_callback *control = 
                (const struct retro_disk_control_callback*)
-               &g_extern.system.disk_control;
+               &global->system.disk_control;
 
             if (control)
                check_disk_eject(control);
@@ -2792,11 +2834,11 @@ bool rarch_main_command(unsigned cmd)
             rarch_main_msg_queue_push("Core does not support Disk Options.", 1, 120, true);
          break;
       case RARCH_CMD_DISK_NEXT:
-         if (g_extern.system.disk_control.get_num_images)
+         if (global->system.disk_control.get_num_images)
          {
             const struct retro_disk_control_callback *control = 
                (const struct retro_disk_control_callback*)
-               &g_extern.system.disk_control;
+               &global->system.disk_control;
 
             if (!control)
                return false;
@@ -2810,11 +2852,11 @@ bool rarch_main_command(unsigned cmd)
             rarch_main_msg_queue_push("Core does not support Disk Options.", 1, 120, true);
          break;
       case RARCH_CMD_DISK_PREV:
-         if (g_extern.system.disk_control.get_num_images)
+         if (global->system.disk_control.get_num_images)
          {
             const struct retro_disk_control_callback *control = 
                (const struct retro_disk_control_callback*)
-               &g_extern.system.disk_control;
+               &global->system.disk_control;
 
             if (!control)
                return false;
@@ -2866,10 +2908,12 @@ bool rarch_main_command(unsigned cmd)
  **/
 void rarch_main_deinit(void)
 {
+   global_t *global = global_get_ptr();
+
    rarch_main_command(RARCH_CMD_NETPLAY_DEINIT);
    rarch_main_command(RARCH_CMD_COMMAND_DEINIT);
 
-   if (g_extern.use_sram)
+   if (global->use_sram)
       rarch_main_command(RARCH_CMD_AUTOSAVE_DEINIT);
 
    rarch_main_command(RARCH_CMD_RECORD_DEINIT);
@@ -2887,7 +2931,7 @@ void rarch_main_deinit(void)
    rarch_main_command(RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
    rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
 
-   g_extern.main_is_init = false;
+   global->main_is_init = false;
 }
 
 /**
@@ -2942,6 +2986,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    const core_info_t *info = NULL;
    size_t supported = 0;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    fill_pathname_join(deferred_path, dir, path, sizeof_deferred_path);
 
@@ -2961,7 +3006,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
 
    if (!strcmp(menu_label, "load_content"))
    {
-      info = (const core_info_t*)&g_extern.core_info_current;
+      info = (const core_info_t*)&global->core_info_current;
 
       if (info)
       {
@@ -2977,8 +3022,7 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    if (supported != 1)
       return 0;
 
-   strlcpy(g_extern.fullpath, deferred_path,
-         sizeof(g_extern.fullpath));
+   strlcpy(global->fullpath, deferred_path, sizeof(global->fullpath));
 
    if (path_file_exists(new_core_path))
       strlcpy(settings->libretro, new_core_path,
@@ -3009,17 +3053,18 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
 bool rarch_replace_config(const char *path)
 {
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    /* If config file to be replaced is the same as the 
     * current config file, exit. */
-   if (!strcmp(path, g_extern.config_path))
+   if (!strcmp(path, global->config_path))
       return false;
 
-   if (settings->config_save_on_exit && *g_extern.config_path)
-      config_save_file(g_extern.config_path);
+   if (settings->config_save_on_exit && *global->config_path)
+      config_save_file(global->config_path);
 
-   strlcpy(g_extern.config_path, path, sizeof(g_extern.config_path));
-   g_extern.block_config_read = false;
+   strlcpy(global->config_path, path, sizeof(global->config_path));
+   global->block_config_read = false;
    *settings->libretro = '\0'; /* Load core in new config. */
 
    rarch_main_command(RARCH_CMD_PREPARE_DUMMY);

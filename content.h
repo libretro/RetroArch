@@ -76,7 +76,7 @@ void save_ram_file(const char *path, int type);
  * Initializes and loads a content file for the currently
  * selected libretro core.
  *
- * g_extern.content_is_init will be set to the return value
+ * global->content_is_init will be set to the return value
  * on exit.
  *
  * Returns : true if successful, otherwise false.

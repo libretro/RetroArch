@@ -20,8 +20,9 @@
 void audio_monitor_adjust_system_rates(void)
 {
    float timing_skew;
+   global_t *global = global_get_ptr();
    const struct retro_system_timing *info = 
-      (const struct retro_system_timing*)&g_extern.system.av_info.timing;
+      (const struct retro_system_timing*)&global->system.av_info.timing;
    settings_t *settings = config_get_ptr();
 
    if (info->sample_rate <= 0.0)
@@ -29,13 +30,13 @@ void audio_monitor_adjust_system_rates(void)
 
    timing_skew                 = fabs(1.0f - info->fps / 
                                  settings->video.refresh_rate);
-   g_extern.audio_data.in_rate = info->sample_rate;
+   global->audio_data.in_rate = info->sample_rate;
 
    if (timing_skew <= settings->audio.max_timing_skew)
-      g_extern.audio_data.in_rate *= (settings->video.refresh_rate / info->fps);
+      global->audio_data.in_rate *= (settings->video.refresh_rate / info->fps);
 
    RARCH_LOG("Set audio input rate to: %.2f Hz.\n",
-         g_extern.audio_data.in_rate);
+         global->audio_data.in_rate);
 }
 
 /**
@@ -46,9 +47,11 @@ void audio_monitor_adjust_system_rates(void)
 void audio_monitor_set_refresh_rate(void)
 {
    settings_t *settings = config_get_ptr();
-   double new_src_ratio = (double)settings->audio.out_rate / 
-                           g_extern.audio_data.in_rate;
+   global_t   *global   = global_get_ptr();
 
-   g_extern.audio_data.orig_src_ratio = new_src_ratio;
-   g_extern.audio_data.src_ratio      = new_src_ratio;
+   double new_src_ratio = (double)settings->audio.out_rate / 
+                           global->audio_data.in_rate;
+
+   global->audio_data.orig_src_ratio = new_src_ratio;
+   global->audio_data.src_ratio      = new_src_ratio;
 }

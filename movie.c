@@ -46,6 +46,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
 {
    uint32_t state_size;
    uint32_t header[4] = {0};
+   global_t *global = global_get_ptr();
 
    handle->playback = true;
    handle->file = fopen(path, "rb");
@@ -70,7 +71,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
       return false;
    }
 
-   if (swap_if_big32(header[CRC_INDEX]) != g_extern.content_crc)
+   if (swap_if_big32(header[CRC_INDEX]) != global->content_crc)
       RARCH_WARN("CRC32 checksum mismatch between content file and saved content checksum in replay file header; replay highly likely to desync on playback.\n");
 
    state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
@@ -103,6 +104,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
 {
    uint32_t state_size;
    uint32_t header[4] = {0};
+   global_t *global = global_get_ptr();
 
    handle->file = fopen(path, "wb");
    if (!handle->file)
@@ -116,7 +118,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
     * BSV1 in a HEX editor, big-endian. */
    header[MAGIC_INDEX] = swap_if_little32(BSV_MAGIC);
 
-   header[CRC_INDEX] = swap_if_big32(g_extern.content_crc);
+   header[CRC_INDEX] = swap_if_big32(global->content_crc);
 
    state_size = pretro_serialize_size();
 

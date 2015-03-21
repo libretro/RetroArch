@@ -23,11 +23,12 @@
 void video_monitor_adjust_system_rates(void)
 {
    float timing_skew;
+   global_t *global = global_get_ptr();
    const struct retro_system_timing *info = 
-      (const struct retro_system_timing*)&g_extern.system.av_info.timing;
+      (const struct retro_system_timing*)&global->system.av_info.timing;
    settings_t *settings = config_get_ptr();
 
-   g_extern.system.force_nonblock = false;
+   global->system.force_nonblock = false;
 
    if (info->fps <= 0.0)
       return;
@@ -47,7 +48,7 @@ void video_monitor_adjust_system_rates(void)
       return;
 
    /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
-   g_extern.system.force_nonblock = true;
+   global->system.force_nonblock = true;
    RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 }
 
@@ -186,6 +187,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    runloop_t *runloop = rarch_main_get_ptr();
+   global_t  *global  = global_get_ptr();
 
    *buf = '\0';
 
@@ -207,7 +209,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
          curr_time = new_time;
 
          snprintf(buf, size, "%s || FPS: %6.1f || Frames: %u",
-               g_extern.title_buf, last_fps, runloop->frames.video.count);
+               global->title_buf, last_fps, runloop->frames.video.count);
          ret = true;
       }
 
@@ -219,7 +221,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
    }
 
    curr_time = fps_time = new_time;
-   strlcpy(buf, g_extern.title_buf, size);
+   strlcpy(buf, global->title_buf, size);
    if (buf_fps)
       strlcpy(buf_fps, "N/A", size_fps);
 

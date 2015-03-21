@@ -124,20 +124,21 @@ static void dump_content(FILE *file, const void *frame,
 {
    size_t line_size;
    int i, j;
-   uint8_t **lines;
+   global_t *global = NULL;
    union
    {
       const uint8_t *u8;
       const uint16_t *u16;
       const uint32_t *u32;
    } u;
-   u.u8 = (const uint8_t*)frame;
+   uint8_t **lines = (uint8_t**)calloc(height, sizeof(uint8_t*));
 
-   lines = (uint8_t**)calloc(height, sizeof(uint8_t*));
    if (!lines)
       return;
 
+   u.u8      = (const uint8_t*)frame;
    line_size = (width * 3 + 3) & ~3;
+   global    = global_get_ptr();
 
    for (i = 0; i < height; i++)
    {
@@ -151,7 +152,7 @@ static void dump_content(FILE *file, const void *frame,
       for (j = 0; j < height; j++, u.u8 += pitch)
          dump_line_bgr(lines[j], u.u8, width);
    }
-   else if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
+   else if (global->system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
    {
       for (j = 0; j < height; j++, u.u8 += pitch)
          dump_line_32(lines[j], u.u32, width);
@@ -180,6 +181,7 @@ static bool take_screenshot_viewport(void)
    struct video_viewport vp = {0};
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
    if (driver->video && driver->video->viewport_info)
       driver->video->viewport_info(driver->video_data, &vp);
@@ -198,7 +200,7 @@ static bool take_screenshot_viewport(void)
 
    if (!*settings->screenshot_directory)
    {
-      fill_pathname_basedir(screenshot_path, g_extern.basename,
+      fill_pathname_basedir(screenshot_path, global->basename,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
    }
@@ -219,10 +221,11 @@ done:
 static bool take_screenshot_raw(void)
 {
    char screenshot_path[PATH_MAX_LENGTH];
-   const void *data           = g_extern.frame_cache.data;
-   unsigned width             = g_extern.frame_cache.width;
-   unsigned height            = g_extern.frame_cache.height;
-   int pitch                  = g_extern.frame_cache.pitch;
+   global_t *global           = global_get_ptr();
+   const void *data           = global->frame_cache.data;
+   unsigned width             = global->frame_cache.width;
+   unsigned height            = global->frame_cache.height;
+   int pitch                  = global->frame_cache.pitch;
    settings_t *settings       = config_get_ptr();
    const char *screenshot_dir = NULL;
    
@@ -230,7 +233,7 @@ static bool take_screenshot_raw(void)
 
    if (!*settings->screenshot_directory)
    {
-      fill_pathname_basedir(screenshot_path, g_extern.basename,
+      fill_pathname_basedir(screenshot_path, global->basename,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
    }
@@ -256,13 +259,14 @@ bool take_screenshot(void)
    runloop_t *runloop   = rarch_main_get_ptr();
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
    /* No way to infer screenshot directory. */
-   if ((!*settings->screenshot_directory) && (!*g_extern.basename))
+   if ((!*settings->screenshot_directory) && (!*global->basename))
       return false;
 
    viewport_read = (settings->video.gpu_screenshot ||
-         ((g_extern.system.hw_render_callback.context_type
+         ((global->system.hw_render_callback.context_type
          != RETRO_HW_CONTEXT_NONE) && !driver->video->read_frame_raw))
          && driver->video->read_viewport && driver->video->viewport_info;
 
@@ -281,33 +285,33 @@ bool take_screenshot(void)
 
    if (viewport_read)
       ret = take_screenshot_viewport();
-   else if (g_extern.frame_cache.data &&
-         (g_extern.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
+   else if (global->frame_cache.data &&
+         (global->frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
       ret = take_screenshot_raw();
    else if (driver->video->read_frame_raw)
    {
-      const void* old_data = g_extern.frame_cache.data;
-      unsigned old_width   = g_extern.frame_cache.width;
-      unsigned old_height  = g_extern.frame_cache.height;
-      size_t old_pitch     = g_extern.frame_cache.pitch;
+      const void* old_data = global->frame_cache.data;
+      unsigned old_width   = global->frame_cache.width;
+      unsigned old_height  = global->frame_cache.height;
+      size_t old_pitch     = global->frame_cache.pitch;
 
       void* frame_data = driver->video->read_frame_raw
-         (driver->video_data, &g_extern.frame_cache.width,
-          &g_extern.frame_cache.height, &g_extern.frame_cache.pitch);
+         (driver->video_data, &global->frame_cache.width,
+          &global->frame_cache.height, &global->frame_cache.pitch);
 
       if (frame_data)
       {
-         g_extern.frame_cache.data = frame_data;
+         global->frame_cache.data = frame_data;
          ret = take_screenshot_raw();
          free(frame_data);
       }
       else
          ret = false;
 
-      g_extern.frame_cache.data   = old_data;
-      g_extern.frame_cache.width  = old_width;
-      g_extern.frame_cache.height = old_height;
-      g_extern.frame_cache.pitch  = old_pitch;
+      global->frame_cache.data   = old_data;
+      global->frame_cache.width  = old_width;
+      global->frame_cache.height = old_height;
+      global->frame_cache.pitch  = old_pitch;
    }
    else
    {
@@ -346,6 +350,7 @@ bool screenshot_dump(const char *folder, const void *frame,
    FILE *file          = NULL;
    uint8_t *out_buffer = NULL;
    bool ret            = false;
+   global_t *global    = global_get_ptr();
 
    (void)file;
    (void)out_buffer;
@@ -370,7 +375,7 @@ bool screenshot_dump(const char *folder, const void *frame,
 
    if (bgr24)
       scaler.in_fmt = SCALER_FMT_BGR24;
-   else if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
+   else if (global->system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
       scaler.in_fmt = SCALER_FMT_ARGB8888;
    else
       scaler.in_fmt = SCALER_FMT_RGB565;

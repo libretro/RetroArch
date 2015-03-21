@@ -497,40 +497,43 @@ error:
 
 static bool try_bps_patch(uint8_t **buf, ssize_t *size)
 {
-   bool allow_bps = !g_extern.ups_pref && !g_extern.ips_pref;
+   global_t *global = global_get_ptr();
+   bool allow_bps   = !global->ups_pref && !global->ips_pref;
 
    if (!allow_bps)
       return false;
-   if (g_extern.bps_name[0] == '\0')
+   if (global->bps_name[0] == '\0')
       return false;
 
-   return apply_patch_content(buf, size, "BPS", g_extern.bps_name,
+   return apply_patch_content(buf, size, "BPS", global->bps_name,
          bps_apply_patch);
 }
 
 static bool try_ups_patch(uint8_t **buf, ssize_t *size)
 {
-   bool allow_ups = !g_extern.bps_pref && !g_extern.ips_pref;
+   global_t *global = global_get_ptr();
+   bool allow_ups   = !global->bps_pref && !global->ips_pref;
 
    if (!allow_ups)
       return false;
-   if (g_extern.ups_name[0] == '\0')
+   if (global->ups_name[0] == '\0')
       return false;
 
-   return apply_patch_content(buf, size, "UPS", g_extern.ups_name,
+   return apply_patch_content(buf, size, "UPS", global->ups_name,
          ups_apply_patch);
 }
 
 static bool try_ips_patch(uint8_t **buf, ssize_t *size)
 {
-   bool allow_ips = !g_extern.ups_pref && !g_extern.bps_pref;
+   global_t *global = global_get_ptr();
+   bool allow_ips   = !global->ups_pref && !global->bps_pref;
 
    if (!allow_ips)
       return false;
-   if (g_extern.ips_name[0] == '\0')
+   if (global->ips_name[0] == '\0')
       return false;
 
-   return apply_patch_content(buf, size, "IPS", g_extern.ips_name,
+   return apply_patch_content(buf, size, "IPS", global->ips_name,
          ips_apply_patch);
 }
 
@@ -544,7 +547,9 @@ static bool try_ips_patch(uint8_t **buf, ssize_t *size)
  **/
 void patch_content(uint8_t **buf, ssize_t *size)
 {
-   if (g_extern.ups_pref + g_extern.bps_pref + g_extern.ips_pref > 1)
+   global_t *global = global_get_ptr();
+
+   if (global->ups_pref + global->bps_pref + global->ips_pref > 1)
    {
       RARCH_WARN("Several patches are explicitly defined, ignoring all ...\n");
       return;

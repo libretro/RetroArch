@@ -470,6 +470,7 @@ void init_libretro_sym(bool dummy)
 void uninit_libretro_sym(void)
 {
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
 
 #ifdef HAVE_DYNAMIC
    if (lib_handle)
@@ -477,16 +478,16 @@ void uninit_libretro_sym(void)
    lib_handle = NULL;
 #endif
 
-   if (g_extern.system.core_options)
+   if (global->system.core_options)
    {
-      core_option_flush(g_extern.system.core_options);
-      core_option_free(g_extern.system.core_options);
+      core_option_flush(global->system.core_options);
+      core_option_free(global->system.core_options);
    }
 
    /* No longer valid. */
-   free(g_extern.system.special);
-   free(g_extern.system.ports);
-   memset(&g_extern.system, 0, sizeof(g_extern.system));
+   free(global->system.special);
+   free(global->system.ports);
+   memset(&global->system, 0, sizeof(global->system));
    driver->camera_active = false;
    driver->location_active = false;
 
@@ -619,6 +620,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
    unsigned p;
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
    if (ignore_environment_cb)
       return false;
@@ -641,8 +643,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_variable *var = (struct retro_variable*)data;
          RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
 
-         if (g_extern.system.core_options)
-            core_option_get(g_extern.system.core_options, var);
+         if (global->system.core_options)
+            core_option_get(global->system.core_options, var);
          else
             var->value = NULL;
 
@@ -651,18 +653,18 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
-         *(bool*)data = g_extern.system.core_options ?
-            core_option_updated(g_extern.system.core_options) : false;
+         *(bool*)data = global->system.core_options ?
+            core_option_updated(global->system.core_options) : false;
          break;
 
       case RETRO_ENVIRONMENT_SET_VARIABLES:
       {
          RARCH_LOG("Environ SET_VARIABLES.\n");
 
-         if (g_extern.system.core_options)
+         if (global->system.core_options)
          {
-            core_option_flush(g_extern.system.core_options);
-            core_option_free(g_extern.system.core_options);
+            core_option_flush(global->system.core_options);
+            core_option_free(global->system.core_options);
          }
 
          const struct retro_variable *vars = 
@@ -670,13 +672,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          const char *options_path = settings->core_options_path;
          char buf[PATH_MAX_LENGTH];
-         if (!*options_path && *g_extern.config_path)
+         if (!*options_path && *global->config_path)
          {
-            fill_pathname_resolve_relative(buf, g_extern.config_path,
+            fill_pathname_resolve_relative(buf, global->config_path,
                   "retroarch-core-options.cfg", sizeof(buf));
             options_path = buf;
          }
-         g_extern.system.core_options = core_option_new(options_path, vars);
+         global->system.core_options = core_option_new(options_path, vars);
 
          break;
       }
@@ -696,7 +698,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (!settings->video.allow_rotate)
             break;
 
-         g_extern.system.rotation = rotation;
+         global->system.rotation = rotation;
 
          if (driver->video && driver->video->set_rotation)
          {
@@ -710,14 +712,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SHUTDOWN:
          RARCH_LOG("Environ SHUTDOWN.\n");
-         g_extern.system.shutdown = true;
-         g_extern.core_shutdown_initiated = true;
+         global->system.shutdown = true;
+         global->core_shutdown_initiated = true;
          break;
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
-         g_extern.system.performance_level = *(const unsigned*)data;
+         global->system.performance_level = *(const unsigned*)data;
          RARCH_LOG("Environ PERFORMANCE_LEVEL: %u.\n",
-               g_extern.system.performance_level);
+               global->system.performance_level);
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
@@ -728,10 +730,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         *(const char**)data = *g_extern.savefile_dir ?
-            g_extern.savefile_dir : NULL;
+         *(const char**)data = *global->savefile_dir ?
+            global->savefile_dir : NULL;
          RARCH_LOG("Environ SAVE_DIRECTORY: \"%s\".\n",
-               g_extern.savefile_dir);
+               global->savefile_dir);
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -768,7 +770,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                return false;
          }
 
-         g_extern.system.pix_fmt = pix_fmt;
+         global->system.pix_fmt = pix_fmt;
          break;
       }
 
@@ -777,8 +779,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          unsigned retro_id, retro_port;
          const struct retro_input_descriptor *desc = NULL;
 
-         memset(g_extern.system.input_desc_btn, 0,
-               sizeof(g_extern.system.input_desc_btn));
+         memset(global->system.input_desc_btn, 0,
+               sizeof(global->system.input_desc_btn));
 
          desc = (const struct retro_input_descriptor*)data;
 
@@ -806,12 +808,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                      switch (desc->index)
                      {
                         case RETRO_DEVICE_INDEX_ANALOG_LEFT:
-                           g_extern.system.input_desc_btn[retro_port][RARCH_ANALOG_LEFT_X_PLUS] = desc->description;
-                           g_extern.system.input_desc_btn[retro_port][RARCH_ANALOG_LEFT_X_MINUS] = desc->description;
+                           global->system.input_desc_btn[retro_port][RARCH_ANALOG_LEFT_X_PLUS] = desc->description;
+                           global->system.input_desc_btn[retro_port][RARCH_ANALOG_LEFT_X_MINUS] = desc->description;
                            break;
                         case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
-                           g_extern.system.input_desc_btn[retro_port][RARCH_ANALOG_RIGHT_X_PLUS] = desc->description;
-                           g_extern.system.input_desc_btn[retro_port][RARCH_ANALOG_RIGHT_X_MINUS] = desc->description;
+                           global->system.input_desc_btn[retro_port][RARCH_ANALOG_RIGHT_X_PLUS] = desc->description;
+                           global->system.input_desc_btn[retro_port][RARCH_ANALOG_RIGHT_X_MINUS] = desc->description;
                            break;
                      }
                      break;
@@ -819,21 +821,19 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                      switch (desc->index)
                      {
                         case RETRO_DEVICE_INDEX_ANALOG_LEFT:
-                           g_extern.system.input_desc_btn[retro_port][RARCH_ANALOG_LEFT_Y_PLUS] = desc->description;
-                           g_extern.system.input_desc_btn[retro_port][RARCH_ANALOG_LEFT_Y_MINUS] = desc->description;
+                           global->system.input_desc_btn[retro_port][RARCH_ANALOG_LEFT_Y_PLUS] = desc->description;
+                           global->system.input_desc_btn[retro_port][RARCH_ANALOG_LEFT_Y_MINUS] = desc->description;
                            break;
                         case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
-                           g_extern.system.input_desc_btn[retro_port][RARCH_ANALOG_RIGHT_Y_PLUS] = desc->description;
-                           g_extern.system.input_desc_btn[retro_port][RARCH_ANALOG_RIGHT_Y_MINUS] = desc->description;
+                           global->system.input_desc_btn[retro_port][RARCH_ANALOG_RIGHT_Y_PLUS] = desc->description;
+                           global->system.input_desc_btn[retro_port][RARCH_ANALOG_RIGHT_Y_MINUS] = desc->description;
                            break;
                      }
                      break;
                }
             }
             else
-            {
-               g_extern.system.input_desc_btn[retro_port][retro_id] = desc->description;
-            }
+               global->system.input_desc_btn[retro_port][retro_id] = desc->description;
          }
 
          static const char *libretro_btn_desc[] = {
@@ -848,7 +848,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          {
             for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
             {
-               const char *description = g_extern.system.input_desc_btn[p][retro_id];
+               const char *description = global->system.input_desc_btn[p][retro_id];
 
                if (!description)
                   continue;
@@ -858,7 +858,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
          }
 
-         g_extern.has_set_input_descriptors = true;
+         global->has_set_input_descriptors = true;
 
          break;
       }
@@ -869,14 +869,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             (const struct retro_keyboard_callback*)data;
 
          RARCH_LOG("Environ SET_KEYBOARD_CALLBACK.\n");
-         g_extern.system.key_event = info->callback;
-         g_extern.frontend_key_event = g_extern.system.key_event;
+         global->system.key_event   = info->callback;
+         global->frontend_key_event = global->system.key_event;
          break;
       }
 
       case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE:
          RARCH_LOG("Environ SET_DISK_CONTROL_INTERFACE.\n");
-         g_extern.system.disk_control = 
+         global->system.disk_control = 
             *(const struct retro_disk_control_callback*)data;
          break;
 
@@ -944,10 +944,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->get_proc_address        = video_driver_get_proc_address;
 
          if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL) /* Old ABI. Don't copy garbage. */
-            memcpy(&g_extern.system.hw_render_callback,
+            memcpy(&global->system.hw_render_callback,
                   cb, offsetof(struct retro_hw_render_callback, stencil));
          else
-            memcpy(&g_extern.system.hw_render_callback, cb, sizeof(*cb));
+            memcpy(&global->system.hw_render_callback, cb, sizeof(*cb));
          break;
       }
 
@@ -955,7 +955,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          bool state = *(const bool*)data;
          RARCH_LOG("Environ SET_SUPPORT_NO_GAME: %s.\n", state ? "yes" : "no");
-         g_extern.system.no_content = state;
+         global->system.no_content = state;
          break;
       }
 
@@ -984,11 +984,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             return false;
 
 #ifdef HAVE_NETPLAY
-         if (g_extern.netplay_enable)
+         if (global->netplay_enable)
             return false;
 #endif
 
-         g_extern.system.audio_callback = *info;
+         global->system.audio_callback = *info;
          break;
       }
 #endif
@@ -1003,11 +1003,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 #ifdef HAVE_NETPLAY
          /* retro_run() will be called in very strange and 
           * mysterious ways, have to disable it. */
-         if (g_extern.netplay_enable)
+         if (global->netplay_enable)
             return false;
 #endif
 
-         g_extern.system.frame_time = *info;
+         global->system.frame_time = *info;
          break;
       }
 
@@ -1051,9 +1051,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             (struct retro_camera_callback*)data;
 
          RARCH_LOG("Environ GET_CAMERA_INTERFACE.\n");
-         cb->start = driver_camera_start;
-         cb->stop = driver_camera_stop;
-         g_extern.system.camera_callback = *cb;
+         cb->start                      = driver_camera_start;
+         cb->stop                       = driver_camera_stop;
+         global->system.camera_callback = *cb;
          driver->camera_active = cb->caps != 0;
          break;
       }
@@ -1068,7 +1068,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->stop = driver_location_stop;
          cb->get_position = driver_location_get_position;
          cb->set_interval = driver_location_set_interval;
-         g_extern.system.location_callback = *cb;
+         global->system.location_callback = *cb;
          driver->location_active = true;
          break;
       }
@@ -1137,16 +1137,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
          }
 
-         free(g_extern.system.special);
-         g_extern.system.special = (struct retro_subsystem_info*)
-            calloc(i, sizeof(*g_extern.system.special));
+         free(global->system.special);
+         global->system.special = (struct retro_subsystem_info*)
+            calloc(i, sizeof(*global->system.special));
 
-         if (!g_extern.system.special)
+         if (!global->system.special)
             return false;
 
-         memcpy(g_extern.system.special, info,
-               i * sizeof(*g_extern.system.special));
-         g_extern.system.num_special = i;
+         memcpy(global->system.special, info,
+               i * sizeof(*global->system.special));
+         global->system.num_special = i;
          break;
       }
 
@@ -1166,15 +1166,15 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                      info[i].types[j].id);
          }
 
-         free(g_extern.system.ports);
-         g_extern.system.ports = (struct retro_controller_info*)
-            calloc(i, sizeof(*g_extern.system.ports));
-         if (!g_extern.system.ports)
+         free(global->system.ports);
+         global->system.ports = (struct retro_controller_info*)
+            calloc(i, sizeof(*global->system.ports));
+         if (!global->system.ports)
             return false;
 
-         memcpy(g_extern.system.ports, info,
-               i * sizeof(*g_extern.system.ports));
-         g_extern.system.num_ports = i;
+         memcpy(global->system.ports, info,
+               i * sizeof(*global->system.ports));
+         global->system.num_ports = i;
          break;
       }
 
@@ -1182,7 +1182,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const struct retro_game_geometry *in_geom = 
             (const struct retro_game_geometry*)data;
-         struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+         struct retro_game_geometry *geom = &global->system.av_info.geometry;
 
          RARCH_LOG("Environ SET_GEOMETRY.\n");
 
@@ -1222,10 +1222,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_EXEC_ESCAPE:
 
          if (data)
-            strlcpy(g_extern.fullpath, (const char*)data,
-                  sizeof(g_extern.fullpath));
+            strlcpy(global->fullpath, (const char*)data,
+                  sizeof(global->fullpath));
          else
-            *g_extern.fullpath = '\0';
+            *global->fullpath = '\0';
 
 #if defined(RARCH_CONSOLE)
          if (driver->frontend_ctx && driver->frontend_ctx->set_fork)
@@ -1237,7 +1237,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (cmd == RETRO_ENVIRONMENT_EXEC_ESCAPE)
          {
             RARCH_LOG("Environ (Private) EXEC_ESCAPE.\n");
-            g_extern.exec = true;
+            global->exec = true;
          }
          else
             RARCH_LOG("Environ (Private) EXEC.\n");

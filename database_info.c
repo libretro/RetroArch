@@ -62,12 +62,13 @@ database_info_rdl_handle_t *database_info_write_rdl_init(const char *dir)
 {
    const char *exts = "";
    database_info_rdl_handle_t *dbl = (database_info_rdl_handle_t*)calloc(1, sizeof(*dbl));
+   global_t *global = global_get_ptr();
 
    if (!dbl)
       return NULL;
 
-   if (g_extern.core_info)
-      exts = core_info_list_get_all_extensions(g_extern.core_info);
+   if (global->core_info)
+      exts = core_info_list_get_all_extensions(global->core_info);
    
    dbl->list      = dir_list_new(dir, exts, false);
    dbl->list_ptr  = 0;

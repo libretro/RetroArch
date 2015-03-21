@@ -199,7 +199,8 @@ int menu_entries_push_horizontal_menu_list(menu_handle_t *menu,
       unsigned menu_type)
 {
    core_info_t *info = NULL;
-   core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
+   global_t *global = global_get_ptr();
+   core_info_list_t *info_list = (core_info_list_t*)global->core_info;
    settings_t *settings        = config_get_ptr();
 
    if (!info_list)
@@ -327,6 +328,7 @@ int menu_entries_parse_list(
    int device = 0;
    struct string_list *str_list = NULL;
    settings_t *settings        = config_get_ptr();
+   global_t *global            = global_get_ptr();
 
    (void)device;
 
@@ -466,8 +468,8 @@ int menu_entries_parse_list(
 
          fill_pathname_join(core_path, dir, path, sizeof(core_path));
 
-         if (g_extern.core_info &&
-               core_info_list_get_display_name(g_extern.core_info,
+         if (global->core_info &&
+               core_info_list_get_display_name(global->core_info,
                   core_path, display_name, sizeof(display_name)))
             menu_list_set_alt_at_offset(list, i, display_name);
       }

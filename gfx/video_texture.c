@@ -84,9 +84,10 @@ unsigned video_texture_load(void *data,
       enum texture_filter_type  filter_type)
 {
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    if (settings->video.threaded
-         && !g_extern.system.hw_render_callback.context_type)
+         && !global->system.hw_render_callback.context_type)
    {
       driver_t     *driver = driver_get_ptr();
       thread_video_t *thr  = (thread_video_t*)driver->video_data;

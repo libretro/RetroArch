@@ -336,8 +336,9 @@ static int setting_action_start_libretro_device_type(void *data)
 {
    unsigned current_device, i, devices[128], types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
+   global_t        *global   = global_get_ptr();
 
    if (!setting)
       return -1;
@@ -351,11 +352,12 @@ static int setting_action_start_libretro_device_type(void *data)
 
    /* Only push RETRO_DEVICE_ANALOG as default if we use an 
     * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!g_extern.system.num_ports)
+   if (!global->system.num_ports)
       devices[types++] = RETRO_DEVICE_ANALOG;
 
-   desc = port < g_extern.system.num_ports ?
-      &g_extern.system.ports[port] : NULL;
+   desc = port < global->system.num_ports ?
+      &global->system.ports[port] : NULL;
+
    if (desc)
    {
       for (i = 0; i < desc->num_types; i++)
@@ -431,9 +433,10 @@ static int setting_string_action_start_allow_input(void *data)
 
 static int setting_bind_action_start(void *data)
 {
+   struct retro_keybind *keybind = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
    struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
-   struct retro_keybind *keybind = NULL;
+   global_t *global = global_get_ptr();
 
    if (!setting)
       return -1;
@@ -442,7 +445,7 @@ static int setting_bind_action_start(void *data)
    if (!keybind)
       return -1;
 
-   if (!g_extern.menu.bind_mode_keyboard)
+   if (!global->menu.bind_mode_keyboard)
    {
       keybind->joykey = NO_BTN;
       keybind->joyaxis = AXIS_NONE;
@@ -524,6 +527,7 @@ static int setting_action_toggle_libretro_device_type(
    const struct retro_controller_info *desc = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
+   global_t          *global = global_get_ptr();
 
    if (!setting)
       return -1;
@@ -535,11 +539,12 @@ static int setting_action_toggle_libretro_device_type(
 
    /* Only push RETRO_DEVICE_ANALOG as default if we use an 
     * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!g_extern.system.num_ports)
+   if (!global->system.num_ports)
       devices[types++] = RETRO_DEVICE_ANALOG;
 
-   desc = port < g_extern.system.num_ports ?
-      &g_extern.system.ports[port] : NULL;
+   if (port < global->system.num_ports)
+      desc = &global->system.ports[port];
+
    if (desc)
    {
       for (i = 0; i < desc->num_types; i++)
@@ -827,16 +832,17 @@ static int load_content_action_toggle(void *data, unsigned action,
 {
    rarch_setting_t *setting  = (rarch_setting_t *)data;
    settings_t      *settings = config_get_ptr();
+   global_t        *global   = global_get_ptr();
 
    if (!setting)
       return -1;
 
    strlcpy(setting->value.string, settings->menu_content_directory, setting->size);
 
-   if (g_extern.menu.info.valid_extensions)
-      setting->values = g_extern.menu.info.valid_extensions;
+   if (global->menu.info.valid_extensions)
+      setting->values = global->menu.info.valid_extensions;
    else
-      setting->values = g_extern.system.valid_extensions;
+      setting->values = global->system.valid_extensions;
 
    return 0;
 }

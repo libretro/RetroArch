@@ -316,10 +316,11 @@ static size_t pulse_write_avail(void *data)
 {
    size_t length;
    pa_t *pa = (pa_t*)data;
+   global_t *global = global_get_ptr();
 
    pa_threaded_mainloop_lock(pa->mainloop);
    length = pa_stream_writable_size(pa->stream);
-   g_extern.audio_data.driver_buffer_size = pa->buffer_size; /* Can change spuriously. */
+   global->audio_data.driver_buffer_size = pa->buffer_size; /* Can change spuriously. */
    pa_threaded_mainloop_unlock(pa->mainloop);
    return length;
 }

@@ -88,7 +88,8 @@ void retro_perf_log(void);
  **/
 static INLINE void rarch_perf_start(struct retro_perf_counter *perf)
 {
-   if (!g_extern.perfcnt_enable || !perf)
+   global_t *global = global_get_ptr();
+   if (!global->perfcnt_enable || !perf)
       return;
 
    perf->call_cnt++;
@@ -103,7 +104,8 @@ static INLINE void rarch_perf_start(struct retro_perf_counter *perf)
  **/
 static INLINE void rarch_perf_stop(struct retro_perf_counter *perf)
 {
-   if (!g_extern.perfcnt_enable || !perf)
+   global_t *global = global_get_ptr();
+   if (!global->perfcnt_enable || !perf)
       return;
 
    perf->total += rarch_get_perf_counter() - perf->start;

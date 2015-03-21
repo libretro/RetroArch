@@ -149,10 +149,11 @@ void find_video_driver(void)
 {
    int i;
    driver_t *driver     = driver_get_ptr();
+   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
 #if defined(HAVE_OPENGL) && defined(HAVE_FBO)
-   if (g_extern.system.hw_render_callback.context_type)
+   if (global->system.hw_render_callback.context_type)
    {
       RARCH_LOG("Using HW render, OpenGL driver forced.\n");
       driver->video = &video_gl;
@@ -202,11 +203,12 @@ void find_video_driver(void)
 void *video_driver_resolve(const video_driver_t **drv)
 {
    driver_t *driver     = driver_get_ptr();
+   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
 #ifdef HAVE_THREADS
    if (settings->video.threaded
-         && !g_extern.system.hw_render_callback.context_type)
+         && !global->system.hw_render_callback.context_type)
       return rarch_threaded_video_resolve(drv);
 #endif
    if (drv)
@@ -275,15 +277,18 @@ bool video_driver_set_shader(enum rarch_shader_type type,
 
 static void deinit_video_filter(void)
 {
-   rarch_softfilter_free(g_extern.filter.filter);
-   free(g_extern.filter.buffer);
-   memset(&g_extern.filter, 0, sizeof(g_extern.filter));
+   global_t *global     = global_get_ptr();
+
+   rarch_softfilter_free(global->filter.filter);
+   free(global->filter.buffer);
+   memset(&global->filter, 0, sizeof(global->filter));
 }
 
 static void init_video_filter(enum retro_pixel_format colfmt)
 {
    unsigned width, height, pow2_x, pow2_y, maxsize;
    struct retro_game_geometry *geom = NULL;
+   global_t *global                 = global_get_ptr();
    settings_t *settings             = config_get_ptr();
 
    deinit_video_filter();
@@ -295,43 +300,43 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    if (colfmt == RETRO_PIXEL_FORMAT_0RGB1555)
       colfmt = RETRO_PIXEL_FORMAT_RGB565;
 
-   if (g_extern.system.hw_render_callback.context_type)
+   if (global->system.hw_render_callback.context_type)
    {
       RARCH_WARN("Cannot use CPU filters when hardware rendering is used.\n");
       return;
    }
 
-   geom    = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
+   geom    = (struct retro_game_geometry*)&global->system.av_info.geometry;
    width   = geom->max_width;
    height  = geom->max_height;
 
-   g_extern.filter.filter = rarch_softfilter_new(
+   global->filter.filter = rarch_softfilter_new(
          settings->video.softfilter_plugin,
          RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
 
-   if (!g_extern.filter.filter)
+   if (!global->filter.filter)
    {
       RARCH_ERR("Failed to load filter.\n");
       return;
    }
 
-   rarch_softfilter_get_max_output_size(g_extern.filter.filter,
+   rarch_softfilter_get_max_output_size(global->filter.filter,
          &width, &height);
 
    pow2_x                = next_pow2(width);
    pow2_y                = next_pow2(height);
    maxsize               = max(pow2_x, pow2_y); 
-   g_extern.filter.scale = maxsize / RARCH_SCALE_BASE;
+   global->filter.scale  = maxsize / RARCH_SCALE_BASE;
 
-   g_extern.filter.out_rgb32 = rarch_softfilter_get_output_format(
-         g_extern.filter.filter) == RETRO_PIXEL_FORMAT_XRGB8888;
+   global->filter.out_rgb32 = rarch_softfilter_get_output_format(
+         global->filter.filter) == RETRO_PIXEL_FORMAT_XRGB8888;
 
-   g_extern.filter.out_bpp = g_extern.filter.out_rgb32 ?
+   global->filter.out_bpp = global->filter.out_rgb32 ?
       sizeof(uint32_t) : sizeof(uint16_t);
 
    /* TODO: Aligned output. */
-   g_extern.filter.buffer = malloc(width * height * g_extern.filter.out_bpp);
-   if (!g_extern.filter.buffer)
+   global->filter.buffer = malloc(width * height * global->filter.out_bpp);
+   if (!global->filter.buffer)
       goto error;
 
    return;
@@ -409,18 +414,19 @@ void init_video(void)
    static uint16_t dummy_pixels[32] = {0};
    runloop_t *runloop   = rarch_main_get_ptr();
    driver_t *driver     = driver_get_ptr();
+   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
-   init_video_filter(g_extern.system.pix_fmt);
+   init_video_filter(global->system.pix_fmt);
    rarch_main_command(RARCH_CMD_SHADER_DIR_INIT);
 
-   geom = (const struct retro_game_geometry*)&g_extern.system.av_info.geometry;
+   geom = (const struct retro_game_geometry*)&global->system.av_info.geometry;
    max_dim = max(geom->max_width, geom->max_height);
    scale = next_pow2(max_dim) / RARCH_SCALE_BASE;
    scale = max(scale, 1);
 
-   if (g_extern.filter.filter)
-      scale = g_extern.filter.scale;
+   if (global->filter.filter)
+      scale = global->filter.scale;
 
    /* Update core-dependent aspect ratio values. */
    video_viewport_set_square_pixel(geom->base_width, geom->base_height);
@@ -428,7 +434,8 @@ void init_video(void)
    video_viewport_set_config();
 
    /* Update CUSTOM viewport. */
-   custom_vp = &g_extern.console.screen.viewports.custom_vp;
+   custom_vp = &global->console.screen.viewports.custom_vp;
+
    if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;
@@ -437,7 +444,7 @@ void init_video(void)
          (float)custom_vp->width / custom_vp->height : default_aspect;
    }
 
-   g_extern.system.aspect_ratio = 
+   global->system.aspect_ratio = 
       aspectratio_lut[settings->video.aspect_ratio_idx].value;
 
    if (settings->video.fullscreen)
@@ -451,13 +458,13 @@ void init_video(void)
       {
          /* Do rounding here to simplify integer scale correctness. */
          unsigned base_width = roundf(geom->base_height *
-               g_extern.system.aspect_ratio);
-         width = roundf(base_width * settings->video.scale);
+               global->system.aspect_ratio);
+         width  = roundf(base_width * settings->video.scale);
          height = roundf(geom->base_height * settings->video.scale);
       }
       else
       {
-         width = roundf(geom->base_width   * settings->video.scale);
+         width  = roundf(geom->base_width   * settings->video.scale);
          height = roundf(geom->base_height * settings->video.scale);
       }
    }
@@ -480,7 +487,7 @@ void init_video(void)
    video.width        = width;
    video.height       = height;
    video.fullscreen   = settings->video.fullscreen;
-   video.vsync        = settings->video.vsync && !g_extern.system.force_nonblock;
+   video.vsync        = settings->video.vsync && !global->system.force_nonblock;
    video.force_aspect = settings->video.force_aspect;
 #ifdef GEKKO
    video.viwidth      = settings->video.viwidth;
@@ -488,16 +495,16 @@ void init_video(void)
 #endif
    video.smooth       = settings->video.smooth;
    video.input_scale  = scale;
-   video.rgb32        = g_extern.filter.filter ? 
-      g_extern.filter.out_rgb32 : 
-      (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+   video.rgb32        = global->filter.filter ? 
+      global->filter.out_rgb32 : 
+      (global->system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
    tmp = (const input_driver_t*)driver->input;
    /* Need to grab the "real" video driver interface on a reinit. */
    find_video_driver();
 
 #ifdef HAVE_THREADS
-   if (settings->video.threaded && !g_extern.system.hw_render_callback.context_type)
+   if (settings->video.threaded && !global->system.hw_render_callback.context_type)
    {
       /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("Starting threaded video driver ...\n");
@@ -536,7 +543,7 @@ void init_video(void)
 
    if (driver->video->set_rotation)
       driver->video->set_rotation(driver->video_data,
-            (settings->video.rotation + g_extern.system.rotation) % 4);
+            (settings->video.rotation + global->system.rotation) % 4);
 
    if (driver->video->suppress_screensaver)
       driver->video->suppress_screensaver(driver->video_data,
@@ -550,10 +557,10 @@ void init_video(void)
 
    runloop->measure_data.frame_time_samples_count = 0;
 
-   g_extern.frame_cache.width = 4;
-   g_extern.frame_cache.height = 4;
-   g_extern.frame_cache.pitch = 8;
-   g_extern.frame_cache.data = &dummy_pixels;
+   global->frame_cache.width = 4;
+   global->frame_cache.height = 4;
+   global->frame_cache.pitch = 8;
+   global->frame_cache.data = &dummy_pixels;
 
 #if defined(PSP)
    if (driver->video_poke && driver->video_poke->set_texture_frame)

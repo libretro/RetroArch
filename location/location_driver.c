@@ -224,6 +224,8 @@ bool driver_location_get_position(double *lat, double *lon,
 void init_location(void)
 {
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
+
    /* Resource leaks will follow if location interface is initialized twice. */
    if (driver->location_data)
       return;
@@ -238,17 +240,19 @@ void init_location(void)
       driver->location_active = false;
    }
 
-   if (g_extern.system.location_callback.initialized)
-      g_extern.system.location_callback.initialized();
+   if (global->system.location_callback.initialized)
+      global->system.location_callback.initialized();
 }
 
 void uninit_location(void)
 {
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
+
    if (driver->location_data && driver->location)
    {
-      if (g_extern.system.location_callback.deinitialized)
-         g_extern.system.location_callback.deinitialized();
+      if (global->system.location_callback.deinitialized)
+         global->system.location_callback.deinitialized();
 
       if (driver->location->free)
          driver->location->free(driver->location_data);

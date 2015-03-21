@@ -815,10 +815,12 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
 static uint32_t implementation_magic_value(void)
 {
    size_t i, len;
-   uint32_t res    = 0;
-   const char *lib = g_extern.system.info.library_name;
-   const char *ver = PACKAGE_VERSION;
-   unsigned api    = pretro_api_version();
+   uint32_t res     = 0;
+   const char *lib  = NULL;
+   const char *ver  = PACKAGE_VERSION;
+   unsigned api     = pretro_api_version();
+   global_t *global = global_get_ptr();
+   lib              = global->system.info.library_name;
 
    res |= api;
 
@@ -826,8 +828,9 @@ static uint32_t implementation_magic_value(void)
    for (i = 0; i < len; i++)
       res ^= lib[i] << (i & 0xf);
 
-   lib = g_extern.system.info.library_version;
+   lib = global->system.info.library_version;
    len = strlen(lib);
+
    for (i = 0; i < len; i++)
       res ^= lib[i] << (i & 0xf);
 
@@ -887,11 +890,12 @@ static bool send_info(netplay_t *netplay)
    unsigned sram_size;
    char msg[512];
    void *sram = NULL;
-   uint32_t header[3] = {
-      htonl(g_extern.content_crc),
-      htonl(implementation_magic_value()),
-      htonl(pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM))
-   };
+   uint32_t header[3];
+   global_t *global = global_get_ptr();
+   
+   header[0] = htonl(global->content_crc);
+   header[1] = htonl(implementation_magic_value());
+   header[2] = htonl(pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM));
 
    if (!socket_send_all_blocking(netplay->fd, header, sizeof(header)))
       return false;
@@ -930,6 +934,7 @@ static bool get_info(netplay_t *netplay)
    unsigned sram_size;
    uint32_t header[3];
    const void *sram = NULL;
+   global_t *global = global_get_ptr();
 
    if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
    {
@@ -937,7 +942,7 @@ static bool get_info(netplay_t *netplay)
       return false;
    }
 
-   if (g_extern.content_crc != ntohl(header[0]))
+   if (global->content_crc != ntohl(header[0]))
    {
       RARCH_ERR("Content CRC32s differ. Cannot use different games.\n");
       return false;
@@ -989,6 +994,7 @@ static uint32_t *bsv_header_generate(size_t *size, uint32_t magic)
    uint32_t *header, bsv_header[4] = {0};
    size_t serialize_size = pretro_serialize_size();
    size_t header_size = sizeof(bsv_header) + serialize_size;
+   global_t *global = global_get_ptr();
 
    *size = header_size;
 
@@ -996,9 +1002,9 @@ static uint32_t *bsv_header_generate(size_t *size, uint32_t magic)
    if (!header)
       return NULL;
 
-   bsv_header[MAGIC_INDEX] = swap_if_little32(BSV_MAGIC);
+   bsv_header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
    bsv_header[SERIALIZER_INDEX] = swap_if_big32(magic);
-   bsv_header[CRC_INDEX] = swap_if_big32(g_extern.content_crc);
+   bsv_header[CRC_INDEX]        = swap_if_big32(global->content_crc);
    bsv_header[STATE_SIZE_INDEX] = swap_if_big32(serialize_size);
 
    if (serialize_size && !pretro_serialize(header + 4, serialize_size))
@@ -1015,6 +1021,7 @@ static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
 {
    uint32_t in_crc, in_magic, in_state_size;
    uint32_t in_bsv = swap_if_little32(header[MAGIC_INDEX]);
+   global_t *global = global_get_ptr();
 
    if (in_bsv != BSV_MAGIC)
    {
@@ -1031,10 +1038,10 @@ static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
    }
 
    in_crc = swap_if_big32(header[CRC_INDEX]);
-   if (in_crc != g_extern.content_crc)
+   if (in_crc != global->content_crc)
    {
       RARCH_ERR("CRC32 mismatch, got 0x%x, expected 0x%x.\n", in_crc,
-            g_extern.content_crc);
+            global->content_crc);
       return false;
    }
 

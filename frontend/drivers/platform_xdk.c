@@ -65,8 +65,9 @@ HRESULT xbox_io_mount(const char* szDrive, char* szDevice)
 static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 {
 #ifndef IS_SALAMANDER
-   bool original_verbose = g_extern.verbosity;
-   g_extern.verbosity = true;
+   global_t *global = global_get_ptr();
+   bool original_verbose = global->verbosity;
+   global->verbosity     = true;
 #endif
    char szSourceDevice[48];
    char szDestinationDrive[16];
@@ -97,7 +98,7 @@ static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
    IoCreateSymbolicLink(&LinkName, &DeviceName);
 
 #ifndef IS_SALAMANDER
-   g_extern.verbosity = original_verbose;
+   global->verbosity = original_verbose;
 #endif
    return S_OK;
 }
@@ -128,15 +129,16 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    (void)ret;
 
 #ifndef IS_SALAMANDER
-   bool original_verbose = g_extern.verbosity;
-   g_extern.verbosity = true;
+   global_t *global = global_get_ptr();
+   bool original_verbose = global->verbosity;
+   global->verbosity = true;
 #endif
 
 #ifndef IS_SALAMANDER
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
-   g_extern.log_file = fopen("/retroarch-log.txt", "w");
+   global->log_file = fopen("/retroarch-log.txt", "w");
 #endif
 #endif
 
@@ -278,7 +280,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 
 #ifndef IS_SALAMANDER
 exit:
-   g_extern.verbosity = original_verbose;
+   global->verbosity = original_verbose;
 #endif
 }
 
@@ -320,8 +322,9 @@ static void frontend_xdk_exitspawn(char *core_path,
 static void frontend_xdk_exec(const char *path, bool should_load_game)
 {
 #ifndef IS_SALAMANDER
-   bool original_verbose = g_extern.verbosity;
-   g_extern.verbosity = true;
+   global_t *global = global_get_ptr();
+   bool original_verbose = global->verbosity;
+   global->verbosity = true;
 #endif
    (void)should_load_game;
 
@@ -333,16 +336,16 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #if defined(_XBOX1)
    LAUNCH_DATA ptr;
    memset(&ptr, 0, sizeof(ptr));
-   if (should_load_game && g_extern.fullpath[0] != '\0')
-      snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", g_extern.fullpath);
+   if (should_load_game && global->fullpath[0] != '\0')
+      snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", global->fullpath);
 
    if (path[0] != '\0')
       XLaunchNewImage(path, ptr.Data[0] != '\0' ? &ptr : NULL);
 #elif defined(_XBOX360)
    char game_path[1024];
-   if (should_load_game && g_extern.fullpath[0] != '\0')
+   if (should_load_game && global->fullpath[0] != '\0')
    {
-      strlcpy(game_path, g_extern.fullpath, sizeof(game_path));
+      strlcpy(game_path, global->fullpath, sizeof(game_path));
       XSetLaunchData(game_path, MAX_LAUNCH_DATA_SIZE);
    }
 
@@ -351,7 +354,7 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #endif
 #endif
 #ifndef IS_SALAMANDER
-   g_extern.verbosity = original_verbose;
+   global->verbosity = original_verbose;
 #endif
 }
 

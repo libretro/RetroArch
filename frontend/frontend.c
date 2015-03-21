@@ -58,18 +58,20 @@
 void main_exit_save_config(void)
 {
    settings_t *settings = config_get_ptr();
-   if (settings->config_save_on_exit && *g_extern.config_path)
+   global_t   *global   = global_get_ptr();
+
+   if (settings->config_save_on_exit && *global->config_path)
    {
       /* Save last core-specific config to the default config location,
        * needed on consoles for core switching and reusing last good 
        * config for new cores.
        */
-      config_save_file(g_extern.config_path);
+      config_save_file(global->config_path);
 
       /* Flush out the core specific config. */
-      if (*g_extern.core_specific_config_path &&
+      if (*global->core_specific_config_path &&
             settings->core_specific_config)
-         config_save_file(g_extern.core_specific_config_path);
+         config_save_file(global->core_specific_config_path);
    }
 
    rarch_main_command(RARCH_CMD_AUTOSAVE_STATE);
@@ -87,12 +89,13 @@ void main_exit(args_type() args)
 {
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
-   g_extern.system.shutdown = false;
+   global->system.shutdown = false;
 
    main_exit_save_config();
 
-   if (g_extern.main_is_init)
+   if (global->main_is_init)
    {
 #ifdef HAVE_MENU
       /* Do not want menu context to live any more. */
@@ -169,8 +172,9 @@ static void history_playlist_push(content_playlist_t *playlist,
       struct retro_system_info *info)
 {
    char tmp[PATH_MAX_LENGTH];
+   global_t   *global   = global_get_ptr();
 
-   if (!playlist || g_extern.libretro_dummy || !info)
+   if (!playlist || global->libretro_dummy || !info)
       return;
 
    /* Path can be relative here.
@@ -181,7 +185,7 @@ static void history_playlist_push(content_playlist_t *playlist,
    if (*tmp)
       path_resolve_realpath(tmp, sizeof(tmp));
 
-   if (g_extern.system.no_content || *tmp)
+   if (global->system.no_content || *tmp)
       content_playlist_push(playlist,
             *tmp ? tmp : NULL,
             core_path,
@@ -207,21 +211,22 @@ bool main_load_content(int argc, char **argv, args_type() args,
       process_args_t process_args)
 {
    unsigned i;
-   bool retval = true;
-   int ret = 0, rarch_argc = 0;
-   char *rarch_argv[MAX_ARGS] = {NULL};
-   char *argv_copy [MAX_ARGS] = {NULL};
-   char **rarch_argv_ptr = (char**)argv;
-   int *rarch_argc_ptr = (int*)&argc;
+   bool retval                       = true;
+   int ret = 0, rarch_argc           = 0;
+   char *rarch_argv[MAX_ARGS]        = {NULL};
+   char *argv_copy [MAX_ARGS]        = {NULL};
+   char **rarch_argv_ptr             = (char**)argv;
+   int *rarch_argc_ptr               = (int*)&argc;
+   global_t *global                  = global_get_ptr();
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)
       calloc(1, sizeof(*wrap_args));
+
+   if (!wrap_args)
+      return false;
 
    (void)rarch_argc_ptr;
    (void)rarch_argv_ptr;
    (void)ret;
-
-   if (!wrap_args)
-      return false;
 
    rarch_assert(wrap_args);
 
@@ -238,7 +243,7 @@ bool main_load_content(int argc, char **argv, args_type() args,
       rarch_argc_ptr = (int*)&rarch_argc;
    }
 
-   if (g_extern.main_is_init)
+   if (global->main_is_init)
       rarch_main_deinit();
 
    if ((ret = rarch_main_init(*rarch_argc_ptr, rarch_argv_ptr)))
@@ -305,11 +310,13 @@ returntype main_entry(signature())
 
    if (settings->history_list_enable)
    {
-      if (g_extern.content_is_init || g_extern.system.no_content)
+      global_t *global = global_get_ptr();
+
+      if (global->content_is_init || global->system.no_content)
          history_playlist_push(g_defaults.history,
-               g_extern.fullpath,
+               global->fullpath,
                settings->libretro,
-               &g_extern.system.info);
+               &global->system.info);
    }
 
 #if defined(HAVE_MAIN_LOOP)

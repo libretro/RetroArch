@@ -190,16 +190,19 @@ void driver_camera_stop(void)
 void driver_camera_poll(void)
 {
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
+
    if (driver->camera && driver->camera->poll && driver->camera_data)
       driver->camera->poll(driver->camera_data,
-            g_extern.system.camera_callback.frame_raw_framebuffer,
-            g_extern.system.camera_callback.frame_opengl_texture);
+            global->system.camera_callback.frame_raw_framebuffer,
+            global->system.camera_callback.frame_opengl_texture);
 }
 
 void init_camera(void)
 {
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
    if (driver->camera_data)
    {
@@ -211,11 +214,11 @@ void init_camera(void)
 
    driver->camera_data = driver->camera->init(
          *settings->camera.device ? settings->camera.device : NULL,
-         g_extern.system.camera_callback.caps,
+         global->system.camera_callback.caps,
          settings->camera.width ?
-         settings->camera.width : g_extern.system.camera_callback.width,
+         settings->camera.width : global->system.camera_callback.width,
          settings->camera.height ?
-         settings->camera.height : g_extern.system.camera_callback.height);
+         settings->camera.height : global->system.camera_callback.height);
 
    if (!driver->camera_data)
    {
@@ -223,18 +226,19 @@ void init_camera(void)
       driver->camera_active = false;
    }
 
-   if (g_extern.system.camera_callback.initialized)
-      g_extern.system.camera_callback.initialized();
+   if (global->system.camera_callback.initialized)
+      global->system.camera_callback.initialized();
 }
 
 void uninit_camera(void)
 {
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
 
    if (driver->camera_data && driver->camera)
    {
-      if (g_extern.system.camera_callback.deinitialized)
-         g_extern.system.camera_callback.deinitialized();
+      if (global->system.camera_callback.deinitialized)
+         global->system.camera_callback.deinitialized();
 
       if (driver->camera->free)
          driver->camera->free(driver->camera_data);

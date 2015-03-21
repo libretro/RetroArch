@@ -598,12 +598,14 @@ static bool verify_command(const char *cmd)
 
 bool network_cmd_send(const char *cmd_)
 {
-   char *command, *save;
    bool ret;
-   const char *cmd = NULL;
-   const char *host = NULL;
-   const char *port_ = NULL;
-   bool old_verbose = g_extern.verbosity;
+   char *command       = NULL;
+   char *save          = NULL;
+   const char *cmd     = NULL;
+   const char *host    = NULL;
+   const char *port_   = NULL;
+   global_t *global    = global_get_ptr();
+   bool old_verbose    = global->verbosity;
    uint16_t port = DEFAULT_NETWORK_CMD_PORT;
 
    if (!network_init())
@@ -612,7 +614,7 @@ bool network_cmd_send(const char *cmd_)
    if (!(command = strdup(cmd_)))
       return false;
 
-   g_extern.verbosity = true;
+   global->verbosity = true;
 
    cmd = strtok_r(command, ";", &save);
    if (cmd)
@@ -638,7 +640,7 @@ bool network_cmd_send(const char *cmd_)
    ret = verify_command(cmd) && send_udp_packet(host, port, cmd);
    free(command);
 
-   g_extern.verbosity = old_verbose;
+   global->verbosity = old_verbose;
    return ret;
 }
 #endif

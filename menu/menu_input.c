@@ -129,6 +129,7 @@ void menu_input_st_string_callback(void *userdata, const char *str)
    if (str && *str)
    {
       rarch_setting_t *current_setting = NULL;
+      global_t *global = global_get_ptr();
 
       if ((current_setting = (rarch_setting_t*)
                setting_find_setting(
@@ -141,7 +142,7 @@ void menu_input_st_string_callback(void *userdata, const char *str)
          else if (!strcmp(menu->keyboard.label_setting, "remap_file_save_as"))
             input_remapping_save_file(str);
          else if (!strcmp(menu->keyboard.label_setting, "cheat_file_save_as"))
-            cheat_manager_save(g_extern.cheat, str);
+            cheat_manager_save(global->cheat, str);
       }
    }
 
@@ -150,7 +151,8 @@ void menu_input_st_string_callback(void *userdata, const char *str)
 
 void menu_input_st_cheat_callback(void *userdata, const char *str)
 {
-   cheat_manager_t *cheat = g_extern.cheat;
+   global_t *global       = global_get_ptr();
+   cheat_manager_t *cheat = global->cheat;
    menu_handle_t *menu = (menu_handle_t*)userdata;
 
    if (!menu)

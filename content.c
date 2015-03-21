@@ -57,6 +57,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
       ssize_t *length)
 {
    uint8_t *ret_buf = NULL;
+   global_t *global = global_get_ptr();
 
    RARCH_LOG("Loading content file: %s.\n", path);
    if (!read_file(path, (void**) &ret_buf, length))
@@ -69,12 +70,12 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
       return true;
 
    /* Attempt to apply a patch. */
-   if (!g_extern.block_patch)
+   if (!global->block_patch)
       patch_content(&ret_buf, length);
    
-   g_extern.content_crc = crc32_calculate(ret_buf, *length);
+   global->content_crc = crc32_calculate(ret_buf, *length);
 
-   RARCH_LOG("CRC32: 0x%x .\n", (unsigned)g_extern.content_crc);
+   RARCH_LOG("CRC32: 0x%x .\n", (unsigned)global->content_crc);
    *buf = ret_buf;
 
    return true;
@@ -186,6 +187,7 @@ bool load_state(const char *path)
    void *buf = NULL;
    struct sram_block *blocks = NULL;
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
    bool ret = read_file(path, &buf, &size);
 
    RARCH_LOG("Loading state: \"%s\".\n", path);
@@ -198,18 +200,18 @@ bool load_state(const char *path)
 
    RARCH_LOG("State size: %u bytes.\n", (unsigned)size);
 
-   if (settings->block_sram_overwrite && g_extern.savefiles
-         && g_extern.savefiles->size)
+   if (settings->block_sram_overwrite && global->savefiles
+         && global->savefiles->size)
    {
       RARCH_LOG("Blocking SRAM overwrite.\n");
       blocks = (struct sram_block*)
-         calloc(g_extern.savefiles->size, sizeof(*blocks));
+         calloc(global->savefiles->size, sizeof(*blocks));
 
       if (blocks)
       {
-         num_blocks = g_extern.savefiles->size;
+         num_blocks = global->savefiles->size;
          for (i = 0; i < num_blocks; i++)
-            blocks[i].type = g_extern.savefiles->elems[i].attr.i;
+            blocks[i].type = global->savefiles->elems[i].attr.i;
       }
    }
 
@@ -350,10 +352,11 @@ static bool load_content_need_fullpath(
    char new_path[PATH_MAX_LENGTH], new_basedir[PATH_MAX_LENGTH];
    ssize_t len;
    union string_list_elem_attr attributes;
-   settings_t *settings = config_get_ptr();
    bool ret = false;
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
-   if (g_extern.system.info.block_extract)
+   if (global->system.info.block_extract)
       return true;
 
    if (!need_fullpath)
@@ -396,12 +399,12 @@ static bool load_content_need_fullpath(
       additional_path_allocs->elems
       [additional_path_allocs->size -1 ].data;
 
-   /* g_extern.temporary_content is initialized in init_content_file
+   /* global->temporary_content is initialized in init_content_file
     * The following part takes care of cleanup of the unzipped files
     * after exit.
     */
-   rarch_assert(g_extern.temporary_content != NULL);
-   string_list_append(g_extern.temporary_content,
+   rarch_assert(global->temporary_content != NULL);
+   string_list_append(global->temporary_content,
          new_path, attributes);
 
 #endif
@@ -492,7 +495,7 @@ end:
  * Initializes and loads a content file for the currently
  * selected libretro core.
  *
- * g_extern.content_is_init will be set to the return value
+ * global->content_is_init will be set to the return value
  * on exit.
  *
  * Returns : true if successful, otherwise false.
@@ -505,44 +508,45 @@ bool init_content_file(void)
    struct string_list *content = NULL;
    const struct retro_subsystem_info *special = NULL;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
-   g_extern.temporary_content = string_list_new();
+   global->temporary_content = string_list_new();
 
-   if (!g_extern.temporary_content)
+   if (!global->temporary_content)
       goto error;
 
-   if (*g_extern.subsystem)
+   if (*global->subsystem)
    {
-      special = libretro_find_subsystem_info(g_extern.system.special,
-            g_extern.system.num_special, g_extern.subsystem);
+      special = libretro_find_subsystem_info(global->system.special,
+            global->system.num_special, global->subsystem);
 
       if (!special)
       {
          RARCH_ERR(
                "Failed to find subsystem \"%s\" in libretro implementation.\n",
-               g_extern.subsystem);
+               global->subsystem);
          goto error;
       }
 
-      if (special->num_roms && !g_extern.subsystem_fullpaths)
+      if (special->num_roms && !global->subsystem_fullpaths)
       {
          RARCH_ERR("libretro core requires special content, but none were provided.\n");
          goto error;
       }
       else if (special->num_roms && special->num_roms
-            != g_extern.subsystem_fullpaths->size)
+            != global->subsystem_fullpaths->size)
       {
          RARCH_ERR("libretro core requires %u content files for subsystem \"%s\", but %u content files were provided.\n",
                special->num_roms, special->desc,
-               (unsigned)g_extern.subsystem_fullpaths->size);
+               (unsigned)global->subsystem_fullpaths->size);
          goto error;
       }
-      else if (!special->num_roms && g_extern.subsystem_fullpaths
-            && g_extern.subsystem_fullpaths->size)
+      else if (!special->num_roms && global->subsystem_fullpaths
+            && global->subsystem_fullpaths->size)
       {
          RARCH_ERR("libretro core takes no content for subsystem \"%s\", but %u content files were provided.\n",
                special->desc,
-               (unsigned)g_extern.subsystem_fullpaths->size);
+               (unsigned)global->subsystem_fullpaths->size);
          goto error;
       }
    }
@@ -554,24 +558,24 @@ bool init_content_file(void)
    if (!content)
       goto error;
 
-   if (*g_extern.subsystem)
+   if (*global->subsystem)
    {
-      for (i = 0; i < g_extern.subsystem_fullpaths->size; i++)
+      for (i = 0; i < global->subsystem_fullpaths->size; i++)
       {
          attr.i  = special->roms[i].block_extract;
          attr.i |= special->roms[i].need_fullpath << 1;
          attr.i |= special->roms[i].required << 2;
          string_list_append(content,
-               g_extern.subsystem_fullpaths->elems[i].data, attr);
+               global->subsystem_fullpaths->elems[i].data, attr);
       }
    }
    else
    {
-      attr.i  = g_extern.system.info.block_extract;
-      attr.i |= g_extern.system.info.need_fullpath << 1;
-      attr.i |= (!g_extern.system.no_content) << 2;
+      attr.i  = global->system.info.block_extract;
+      attr.i |= global->system.info.need_fullpath << 1;
+      attr.i |= (!global->system.no_content) << 2;
       string_list_append(content,
-            g_extern.libretro_no_content ? "" : g_extern.fullpath, attr);
+            global->libretro_no_content ? "" : global->fullpath, attr);
    }
 
 #ifdef HAVE_ZLIB
@@ -587,7 +591,7 @@ bool init_content_file(void)
 
       ext       = path_get_extension(content->elems[i].data);
       valid_ext = special ? special->roms[i].valid_extensions :
-         g_extern.system.info.valid_extensions;
+         global->system.info.valid_extensions;
 
       if (ext && !strcasecmp(ext, "zip"))
       {
@@ -606,7 +610,7 @@ bool init_content_file(void)
             goto error;
          }
          string_list_set(content, i, temporary_content);
-         string_list_append(g_extern.temporary_content,
+         string_list_append(global->temporary_content,
                temporary_content, attr);
       }
    }
@@ -616,7 +620,7 @@ bool init_content_file(void)
    ret = load_content(special, content);
 
 error:
-   g_extern.content_is_init = (ret) ? true : false;
+   global->content_is_init = (ret) ? true : false;
 
    if (content)
       string_list_free(content);

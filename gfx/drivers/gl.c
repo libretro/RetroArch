@@ -660,6 +660,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    unsigned i;
    bool depth = false, stencil = false;
    GLint max_fbo_size = 0, max_renderbuffer_size = 0;
+   global_t *global = global_get_ptr();
 
    /* We can only share texture objects through contexts.
     * FBOs are "abstract" objects and are not shared. */
@@ -677,8 +678,8 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    glBindTexture(GL_TEXTURE_2D, 0);
    glGenFramebuffers(gl->textures, gl->hw_render_fbo);
 
-   depth = g_extern.system.hw_render_callback.depth;
-   stencil = g_extern.system.hw_render_callback.stencil;
+   depth   = global->system.hw_render_callback.depth;
+   stencil = global->system.hw_render_callback.stencil;
 
 #ifdef HAVE_OPENGLES2
    if (stencil && !gl_query_extension(gl, "OES_packed_depth_stencil"))
@@ -773,6 +774,7 @@ void gl_set_viewport(gl_t *gl, unsigned width,
    float device_aspect   = (float)width / height;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
    settings_t *settings  = config_get_ptr();
+   global_t   *global    = global_get_ptr();
 
    if (gl->ctx_driver->translate_aspect)
       device_aspect = gl->ctx_driver->translate_aspect(gl, width, height);
@@ -780,19 +782,19 @@ void gl_set_viewport(gl_t *gl, unsigned width,
    if (settings->video.scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl->vp, width, height,
-            g_extern.system.aspect_ratio, gl->keep_aspect);
+            global->system.aspect_ratio, gl->keep_aspect);
       width  = gl->vp.width;
       height = gl->vp.height;
    }
    else if (gl->keep_aspect && !force_full)
    {
       float delta;
-      float desired_aspect = g_extern.system.aspect_ratio;
+      float desired_aspect = global->system.aspect_ratio;
 
 #if defined(HAVE_MENU)
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         const struct video_viewport *custom = &g_extern.console.screen.viewports.custom_vp;
+         const struct video_viewport *custom = &global->console.screen.viewports.custom_vp;
 
          /* GL has bottom-left origin viewport. */
          x      = custom->x;
@@ -1820,12 +1822,13 @@ static void gl_set_nonblock_state(void *data, bool state)
 static bool resolve_extensions(gl_t *gl)
 {
    driver_t *driver     = driver_get_ptr();
+   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 #ifndef HAVE_OPENGLES
    const char *vendor   = NULL;
    const char *renderer = NULL;
    gl->core_context     = 
-      (g_extern.system.hw_render_callback.context_type 
+      (global->system.hw_render_callback.context_type 
        == RETRO_HW_CONTEXT_OPENGL_CORE);
    
    if (gl->core_context)
@@ -1987,16 +1990,17 @@ static void gl_init_pbo_readback(gl_t *gl)
 {
    unsigned i;
    struct scaler_ctx *scaler = NULL;
+   global_t   *global   = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    (void)scaler;
    /* Only bother with this if we're doing GPU recording.
-    * Check g_extern.recording_enable and not 
+    * Check global->recording_enable and not 
     * driver.recording_data, because recording is 
     * not initialized yet.
     */
    gl->pbo_readback_enable = settings->video.gpu_record 
-      && g_extern.record.enable;
+      && global->record.enable;
    if (!gl->pbo_readback_enable)
       return;
 
@@ -2036,9 +2040,10 @@ static void gl_init_pbo_readback(gl_t *gl)
 
 static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 {
+   global_t *global = global_get_ptr();
    const struct retro_hw_render_callback *cb = 
       (const struct retro_hw_render_callback*)
-      &g_extern.system.hw_render_callback;
+      &global->system.hw_render_callback;
    unsigned major = cb->version_major;
    unsigned minor = cb->version_minor;
    settings_t *settings = config_get_ptr();
@@ -2216,6 +2221,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    const char *version                = NULL;
    struct retro_hw_render_callback *hw_render = NULL;
    settings_t *settings               = config_get_ptr();
+   global_t   *global                 = global_get_ptr();
 #ifdef _WIN32
    gfx_set_dwm();
 #endif
@@ -2299,7 +2305,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->full_y = gl->win_height;
    }
 
-   hw_render         = &g_extern.system.hw_render_callback;
+   hw_render         = &global->system.hw_render_callback;
    gl->vertex_ptr    = hw_render->bottom_left_origin ? vertexes : vertexes_flipped;
 
    /* Better pipelining with GPU due to synchronous glSubTexImage.
@@ -3066,14 +3072,15 @@ static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 
 static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-   gl_t *gl = (gl_t*)data;
+   gl_t *gl         = (gl_t*)data;
+   global_t *global = global_get_ptr();
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
          video_viewport_set_square_pixel(
-               g_extern.system.av_info.geometry.base_width,
-               g_extern.system.av_info.geometry.base_height);
+               global->system.av_info.geometry.base_width,
+               global->system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
@@ -3088,7 +3095,7 @@ static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
          break;
    }
 
-   g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
+   global->system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
 
    if (!gl)
       return;

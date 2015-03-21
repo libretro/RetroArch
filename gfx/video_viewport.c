@@ -90,7 +90,8 @@ void video_viewport_set_square_pixel(unsigned width, unsigned height)
  **/
 void video_viewport_set_core(void)
 {
-   struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+   global_t *global = global_get_ptr();
+   struct retro_game_geometry *geom = &global->system.av_info.geometry;
 
    if (!geom || geom->base_width <= 0.0f || geom->base_height <= 0.0f)
       return;
@@ -111,10 +112,11 @@ void video_viewport_set_core(void)
 void video_viewport_set_config(void)
 {
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
    if (settings->video.aspect_ratio < 0.0f)
    {
-      struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+      struct retro_game_geometry *geom = &global->system.av_info.geometry;
 
       if (geom && geom->aspect_ratio > 0.0f && settings->video.aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
@@ -154,6 +156,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 {
    int padding_x = 0, padding_y = 0;
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
    if (!vp)
       return;
@@ -161,7 +164,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       const struct video_viewport *custom = 
-         &g_extern.console.screen.viewports.custom_vp;
+         &global->console.screen.viewports.custom_vp;
 
       if (custom)
       {
@@ -176,7 +179,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned base_width;
       /* Use system reported sizes as these define the 
        * geometry for the "normal" case. */
-      unsigned base_height = g_extern.system.av_info.geometry.base_height;
+      unsigned base_height = global->system.av_info.geometry.base_height;
 
       if (base_height == 0)
          base_height = 1;
@@ -186,7 +189,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
        * but it is desirable in some cases.
        *
        * If square pixels are used, base_height will be equal to 
-       * g_extern.system.av_info.base_height. */
+       * global->system.av_info.base_height. */
       base_width = (unsigned)roundf(base_height * aspect_ratio);
 
       /* Make sure that we don't get 0x scale ... */

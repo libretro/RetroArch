@@ -104,7 +104,9 @@ unsigned perf_ptr_libretro;
 
 void rarch_perf_register(struct retro_perf_counter *perf)
 {
-   if (!g_extern.perfcnt_enable || perf->registered 
+   global_t *global = global_get_ptr();
+
+   if (!global->perfcnt_enable || perf->registered 
          || perf_ptr_rarch >= MAX_COUNTERS)
       return;
 
@@ -146,7 +148,9 @@ static void log_counters(
 
 void rarch_perf_log(void)
 {
-   if (!g_extern.perfcnt_enable)
+   global_t *global = global_get_ptr();
+
+   if (!global->perfcnt_enable)
       return;
 
    RARCH_LOG("[PERF]: Performance counters (RetroArch):\n");

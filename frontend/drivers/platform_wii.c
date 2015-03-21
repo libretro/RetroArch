@@ -106,8 +106,9 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
 void system_exec_wii(const char *_path, bool should_load_game)
 {
 #ifndef IS_SALAMANDER
-   bool original_verbose = g_extern.verbosity;
-   g_extern.verbosity = true;
+   global_t *global = global_get_ptr();
+   bool original_verbose = global->verbosity;
+   global->verbosity = true;
 #endif
 
    char path[PATH_MAX_LENGTH];
@@ -120,7 +121,7 @@ void system_exec_wii(const char *_path, bool should_load_game)
 #ifdef IS_SALAMANDER
       strlcpy(game_path, gx_rom_path, sizeof(game_path));
 #else
-      strlcpy(game_path, g_extern.fullpath, sizeof(game_path));
+      strlcpy(game_path, global->fullpath, sizeof(game_path));
 #endif
    }
 
@@ -173,6 +174,6 @@ void system_exec_wii(const char *_path, bool should_load_game)
 exit:
    (void)0;
 #ifndef IS_SALAMANDER
-   g_extern.verbosity = original_verbose;
+   global->verbosity = original_verbose;
 #endif
 }

@@ -205,13 +205,15 @@ void init_drivers_pre(void)
 
 static void driver_adjust_system_rates(void)
 {
+   global_t *global = global_get_ptr();
+
    audio_monitor_adjust_system_rates();
    video_monitor_adjust_system_rates();
 
    if (!driver.video_data)
       return;
 
-   if (g_extern.system.force_nonblock)
+   if (global->system.force_nonblock)
       rarch_main_command(RARCH_CMD_VIDEO_SET_NONBLOCKING_STATE);
    else
       driver_set_nonblock_state(driver.nonblock_state);
@@ -244,13 +246,14 @@ void driver_set_refresh_rate(float hz)
 void driver_set_nonblock_state(bool enable)
 {
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
    /* Only apply non-block-state for video if we're using vsync. */
    if (driver.video_active && driver.video_data)
    {
       bool video_nonblock = enable;
 
-      if (!settings->video.vsync || g_extern.system.force_nonblock)
+      if (!settings->video.vsync || global->system.force_nonblock)
          video_nonblock = true;
       driver.video->set_nonblock_state(driver.video_data, video_nonblock);
    }
@@ -259,9 +262,9 @@ void driver_set_nonblock_state(bool enable)
       driver.audio->set_nonblock_state(driver.audio_data,
             settings->audio.sync ? enable : true);
 
-   g_extern.audio_data.chunk_size = enable ?
-      g_extern.audio_data.nonblock_chunk_size : 
-      g_extern.audio_data.block_chunk_size;
+   global->audio_data.chunk_size = enable ?
+      global->audio_data.nonblock_chunk_size : 
+      global->audio_data.block_chunk_size;
 }
 
 /**
@@ -276,7 +279,9 @@ void driver_set_nonblock_state(bool enable)
  **/
 bool driver_update_system_av_info(const struct retro_system_av_info *info)
 {
-   g_extern.system.av_info = *info;
+   global_t *global = global_get_ptr();
+
+   global->system.av_info = *info;
    rarch_main_command(RARCH_CMD_REINIT);
 
    /* Cannot continue recording with different parameters.
@@ -324,17 +329,18 @@ void init_drivers(int flags)
    if (flags & DRIVER_VIDEO)
    {
       runloop_t *runloop = rarch_main_get_ptr();
+      global_t *global   = global_get_ptr();
 
       runloop->frames.video.count = 0;
 
       init_video();
 
       if (!driver.video_cache_context_ack
-            && g_extern.system.hw_render_callback.context_reset)
-         g_extern.system.hw_render_callback.context_reset();
+            && global->system.hw_render_callback.context_reset)
+         global->system.hw_render_callback.context_reset();
       driver.video_cache_context_ack = false;
 
-      g_extern.system.frame_time_last = 0;
+      global->system.frame_time_last = 0;
    }
 
    if (flags & DRIVER_AUDIO)
@@ -381,9 +387,11 @@ void uninit_drivers(int flags)
 
    if (flags & DRIVER_VIDEO)
    {
-      if (g_extern.system.hw_render_callback.context_destroy &&
+      global_t *global = global_get_ptr();
+
+      if (global->system.hw_render_callback.context_destroy &&
                !driver.video_cache_context)
-            g_extern.system.hw_render_callback.context_destroy();
+            global->system.hw_render_callback.context_destroy();
    }
 
 #ifdef HAVE_MENU

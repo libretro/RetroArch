@@ -43,6 +43,7 @@ bool menu_display_update_pending(void)
 static void draw_frame(void)
 {
    driver_t *driver     = driver_get_ptr();
+   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    if (driver->video_data && driver->video_poke &&
@@ -52,7 +53,7 @@ static void draw_frame(void)
 
    if (!settings->menu.pause_libretro)
    {
-      if (g_extern.main_is_init && !g_extern.libretro_dummy)
+      if (global->main_is_init && !global->libretro_dummy)
       {
          bool block_libretro_input = driver->block_libretro_input;
          driver->block_libretro_input = true;
@@ -91,19 +92,22 @@ static void menu_environment_get(int *argc, char *argv[],
 {
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
    driver_t *driver     = driver_get_ptr();
+   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
     
    if (!wrap_args)
       return;
 
    wrap_args->no_content    = driver->menu->load_no_content;
-   if (!g_extern.has_set_verbosity)
-      wrap_args->verbose       = g_extern.verbosity;
-   wrap_args->config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
-   wrap_args->sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
-   wrap_args->state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
-   wrap_args->content_path  = *g_extern.fullpath ? g_extern.fullpath : NULL;
-   if (!g_extern.has_set_libretro)
+   if (!global->has_set_verbosity)
+      wrap_args->verbose       =  global->verbosity;
+
+   wrap_args->config_path      = *global->config_path   ? global->config_path   : NULL;
+   wrap_args->sram_path        = *global->savefile_dir  ? global->savefile_dir  : NULL;
+   wrap_args->state_path       = *global->savestate_dir ? global->savestate_dir : NULL;
+   wrap_args->content_path     = *global->fullpath      ? global->fullpath      : NULL;
+
+   if (!global->has_set_libretro)
       wrap_args->libretro_path = *settings->libretro ? settings->libretro : NULL;
    wrap_args->touched       = true;
 }
@@ -111,23 +115,25 @@ static void menu_environment_get(int *argc, char *argv[],
 static void push_to_history_playlist(void)
 {
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
+
    if (!settings->history_list_enable)
       return;
 
-   if (*g_extern.fullpath)
+   if (*global->fullpath)
    {
       char tmp[PATH_MAX_LENGTH];
       char str[PATH_MAX_LENGTH];
 
-      fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
+      fill_pathname_base(tmp, global->fullpath, sizeof(tmp));
       snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
       rarch_main_msg_queue_push(str, 1, 1, false);
    }
 
    content_playlist_push(g_defaults.history,
-         g_extern.fullpath,
+         global->fullpath,
          settings->libretro,
-         g_extern.menu.info.library_name);
+         global->menu.info.library_name);
 }
 
 /**
@@ -140,9 +146,10 @@ static void push_to_history_playlist(void)
  **/
 bool menu_load_content(void)
 {
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver     = driver_get_ptr();
+   global_t *global     = global_get_ptr();
 
-   if (*g_extern.fullpath || (driver->menu && driver->menu->load_no_content))
+   if (*global->fullpath || (driver->menu && driver->menu->load_no_content))
       push_to_history_playlist();
 
    /* redraw menu frame */
@@ -159,7 +166,7 @@ bool menu_load_content(void)
    {
       char name[PATH_MAX_LENGTH], msg[PATH_MAX_LENGTH];
 
-      fill_pathname_base(name, g_extern.fullpath, sizeof(name));
+      fill_pathname_base(name, global->fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
       rarch_main_msg_queue_push(msg, 1, 90, false);
 
@@ -169,7 +176,7 @@ bool menu_load_content(void)
       return false;
    }
 
-   menu_update_libretro_info(&g_extern.menu.info);
+   menu_update_libretro_info(&global->menu.info);
 
    menu_shader_manager_init(driver->menu);
 
@@ -193,12 +200,13 @@ void *menu_init(const void *data)
    menu_handle_t *menu = NULL;
    menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
    runloop_t *runloop   = rarch_main_get_ptr();
+   global_t  *global    = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    if (!menu_ctx)
       return NULL;
 
-   menu_update_libretro_info(&g_extern.menu.info);
+   menu_update_libretro_info(&global->menu.info);
 
    if (!(menu = (menu_handle_t*)menu_ctx->init()))
       return NULL;
@@ -209,8 +217,8 @@ void *menu_init(const void *data)
    if (!(menu->menu_list = (menu_list_t*)menu_list_new()))
       goto error;
 
-   g_extern.core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
-   if (!g_extern.core_info_current)
+   global->core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
+   if (!global->core_info_current)
       goto error;
 
 #ifdef HAVE_SHADER_MANAGER
@@ -237,9 +245,9 @@ error:
    if (menu->menu_list)
       menu_list_free(menu->menu_list);
    menu->menu_list = NULL;
-   if (g_extern.core_info_current)
-      free(g_extern.core_info_current);
-   g_extern.core_info_current = NULL;
+   if (global->core_info_current)
+      free(global->core_info_current);
+   global->core_info_current = NULL;
    if (menu->shader)
       free(menu->shader);
    menu->shader = NULL;
@@ -275,6 +283,7 @@ void menu_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
 
    if (!menu)
       return;
@@ -293,7 +302,7 @@ void menu_free(void *data)
 #endif
 
 #ifdef HAVE_DYNAMIC
-   libretro_free_system_info(&g_extern.menu.info);
+   libretro_free_system_info(&global->menu.info);
 #endif
 
    if (menu->msg_queue)
@@ -312,11 +321,11 @@ void menu_free(void *data)
 
    rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
 
-   if (g_extern.core_info)
-      core_info_list_free(g_extern.core_info);
+   if (global->core_info)
+      core_info_list_free(global->core_info);
 
-   if (g_extern.core_info_current)
-      free(g_extern.core_info_current);
+   if (global->core_info_current)
+      free(global->core_info_current);
 
    free(data);
 }

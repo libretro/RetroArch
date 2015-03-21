@@ -37,6 +37,7 @@ void engine_handle_cmd(void *data)
    int8_t cmd;
    struct android_app *android_app = (struct android_app*)g_android;
    runloop_t *runloop = rarch_main_get_ptr();
+   global_t  *global  = global_get_ptr();
 
    if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
       cmd = -1;
@@ -94,7 +95,7 @@ void engine_handle_cmd(void *data)
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
-         if (!g_extern.system.shutdown)
+         if (!global->system.shutdown)
          {
             RARCH_LOG("Pausing RetroArch.\n");
             runloop->is_paused = true;
@@ -150,7 +151,7 @@ void engine_handle_cmd(void *data)
          break;
 
       case APP_CMD_DESTROY:
-         g_extern.system.shutdown = true;
+         global->system.shutdown = true;
          break;
    }
 }
@@ -418,13 +419,14 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
 
 static bool android_run_events(void *data)
 {
+   global_t *global = global_get_ptr();
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
    if (id == LOOPER_ID_MAIN)
       engine_handle_cmd(driver.input_data);
 
    /* Check if we are exiting. */
-   if (g_extern.system.shutdown)
+   if (global->system.shutdown)
       return false;
 
    return true;

@@ -30,8 +30,9 @@ typedef struct
 static void *xa_init(const char *device, unsigned rate, unsigned latency)
 {
    size_t bufsize;
-   xa_t *xa;
+   xa_t *xa = NULL;
    unsigned device_index = 0;
+   global_t *global = global_get_ptr();
 
    if (latency < 8)
       latency = 8; /* Do not allow shenanigans. */
@@ -58,7 +59,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
       return NULL;
    }
 
-   if (g_extern.verbosity)
+   if (global->verbosity)
       xaudio2_enumerate_devices(xa->xa);
 
    return xa;

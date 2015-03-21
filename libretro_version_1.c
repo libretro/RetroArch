@@ -44,12 +44,13 @@ static bool video_frame_scale(const void *data,
       size_t pitch)
 {
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
 
    RARCH_PERFORMANCE_INIT(video_frame_conv);
 
    if (!data)
       return false;
-   if (g_extern.system.pix_fmt != RETRO_PIXEL_FORMAT_0RGB1555)
+   if (global->system.pix_fmt != RETRO_PIXEL_FORMAT_0RGB1555)
       return false;
    if (data == RETRO_HW_FRAME_BUFFER_VALID)
       return false;
@@ -77,26 +78,28 @@ static bool video_frame_filter(const void *data,
       unsigned *output_pitch)
 {
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
+
    RARCH_PERFORMANCE_INIT(softfilter_process);
 
-   if (!g_extern.filter.filter)
+   if (!global->filter.filter)
       return false;
    if (!data)
       return false;
 
-   rarch_softfilter_get_output_size(g_extern.filter.filter,
+   rarch_softfilter_get_output_size(global->filter.filter,
          output_width, output_height, width, height);
 
-   *output_pitch = (*output_width) * g_extern.filter.out_bpp;
+   *output_pitch = (*output_width) * global->filter.out_bpp;
 
    RARCH_PERFORMANCE_START(softfilter_process);
-   rarch_softfilter_process(g_extern.filter.filter,
-         g_extern.filter.buffer, *output_pitch,
+   rarch_softfilter_process(global->filter.filter,
+         global->filter.buffer, *output_pitch,
          data, width, height, pitch);
    RARCH_PERFORMANCE_STOP(softfilter_process);
 
    if (settings->video.post_filter_record)
-      recording_dump_frame(g_extern.filter.buffer,
+      recording_dump_frame(global->filter.buffer,
             *output_width, *output_height, *output_pitch);
 
    return true;
@@ -118,15 +121,16 @@ static void video_frame(const void *data, unsigned width,
    const char *msg = NULL;
    runloop_t *runloop   = rarch_main_get_ptr();
    driver_t  *driver    = driver_get_ptr();
+   global_t  *global    = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    if (!driver->video_active)
       return;
 
-   g_extern.frame_cache.data   = data;
-   g_extern.frame_cache.width  = width;
-   g_extern.frame_cache.height = height;
-   g_extern.frame_cache.pitch  = pitch;
+   global->frame_cache.data   = data;
+   global->frame_cache.width  = width;
+   global->frame_cache.height = height;
+   global->frame_cache.pitch  = pitch;
 
    if (video_frame_scale(data, width, height, pitch))
    {
@@ -138,9 +142,9 @@ static void video_frame(const void *data, unsigned width,
     * but we really need to do processing before blocking on VSync
     * for best possible scheduling.
     */
-   if ((!g_extern.filter.filter
+   if ((!global->filter.filter
             || !settings->video.post_filter_record || !data
-            || g_extern.record.gpu_buffer)
+            || global->record.gpu_buffer)
       )
       recording_dump_frame(data, width, height, pitch);
 
@@ -150,7 +154,7 @@ static void video_frame(const void *data, unsigned width,
    if (video_frame_filter(data, width, height, pitch,
             &output_width, &output_height, &output_pitch))
    {
-      data   = g_extern.filter.buffer;
+      data   = global->filter.buffer;
       width  = output_width;
       height = output_height;
       pitch  = output_pitch;
@@ -185,6 +189,7 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
    struct rarch_dsp_data dsp_data = {0};
    runloop_t *runloop             = rarch_main_get_ptr();
    driver_t  *driver              = driver_get_ptr();
+   global_t  *global              = global_get_ptr();
    settings_t *settings           = config_get_ptr();
 
    if (driver->recording_data)
@@ -199,26 +204,26 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
 
    if (runloop->is_paused || settings->audio.mute_enable)
       return true;
-   if (!driver->audio_active || !g_extern.audio_data.data)
+   if (!driver->audio_active || !global->audio_data.data)
       return false;
 
    RARCH_PERFORMANCE_INIT(audio_convert_s16);
    RARCH_PERFORMANCE_START(audio_convert_s16);
-   audio_convert_s16_to_float(g_extern.audio_data.data, data, samples,
-         g_extern.audio_data.volume_gain);
+   audio_convert_s16_to_float(global->audio_data.data, data, samples,
+         global->audio_data.volume_gain);
    RARCH_PERFORMANCE_STOP(audio_convert_s16);
 
-   src_data.data_in               = g_extern.audio_data.data;
+   src_data.data_in               = global->audio_data.data;
    src_data.input_frames          = samples >> 1;
 
-   dsp_data.input                 = g_extern.audio_data.data;
+   dsp_data.input                 = global->audio_data.data;
    dsp_data.input_frames          = samples >> 1;
 
-   if (g_extern.audio_data.dsp)
+   if (global->audio_data.dsp)
    {
       RARCH_PERFORMANCE_INIT(audio_dsp);
       RARCH_PERFORMANCE_START(audio_dsp);
-      rarch_dsp_filter_process(g_extern.audio_data.dsp, &dsp_data);
+      rarch_dsp_filter_process(global->audio_data.dsp, &dsp_data);
       RARCH_PERFORMANCE_STOP(audio_dsp);
 
       if (dsp_data.output)
@@ -228,12 +233,12 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
       }
    }
 
-   src_data.data_out = g_extern.audio_data.outsamples;
+   src_data.data_out = global->audio_data.outsamples;
 
-   if (g_extern.audio_data.rate_control)
+   if (global->audio_data.rate_control)
       audio_driver_readjust_input_rate();
 
-   src_data.ratio = g_extern.audio_data.src_ratio;
+   src_data.ratio = global->audio_data.src_ratio;
    if (runloop->is_slowmotion)
       src_data.ratio *= settings->slowmotion_ratio;
 
@@ -243,18 +248,18 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
          driver->resampler_data, &src_data);
    RARCH_PERFORMANCE_STOP(resampler_proc);
 
-   output_data   = g_extern.audio_data.outsamples;
+   output_data   = global->audio_data.outsamples;
    output_frames = src_data.output_frames;
 
-   if (!g_extern.audio_data.use_float)
+   if (!global->audio_data.use_float)
    {
       RARCH_PERFORMANCE_INIT(audio_convert_float);
       RARCH_PERFORMANCE_START(audio_convert_float);
-      audio_convert_float_to_s16(g_extern.audio_data.conv_outsamples,
+      audio_convert_float_to_s16(global->audio_data.conv_outsamples,
             (const float*)output_data, output_frames * 2);
       RARCH_PERFORMANCE_STOP(audio_convert_float);
 
-      output_data = g_extern.audio_data.conv_outsamples;
+      output_data = global->audio_data.conv_outsamples;
       output_size = sizeof(int16_t);
    }
 
@@ -279,15 +284,17 @@ bool retro_flush_audio(const int16_t *data, size_t samples)
  **/
 static void audio_sample(int16_t left, int16_t right)
 {
-   g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr++] = left;
-   g_extern.audio_data.conv_outsamples[g_extern.audio_data.data_ptr++] = right;
+   global_t *global = global_get_ptr();
 
-   if (g_extern.audio_data.data_ptr < g_extern.audio_data.chunk_size)
+   global->audio_data.conv_outsamples[global->audio_data.data_ptr++] = left;
+   global->audio_data.conv_outsamples[global->audio_data.data_ptr++] = right;
+
+   if (global->audio_data.data_ptr < global->audio_data.chunk_size)
       return;
 
-   retro_flush_audio(g_extern.audio_data.conv_outsamples, g_extern.audio_data.data_ptr);
+   retro_flush_audio(global->audio_data.conv_outsamples, global->audio_data.data_ptr);
 
-   g_extern.audio_data.data_ptr = 0;
+   global->audio_data.data_ptr = 0;
 }
 
 /**
@@ -320,8 +327,10 @@ static size_t audio_sample_batch(const int16_t *data, size_t frames)
  **/
 static void audio_sample_rewind(int16_t left, int16_t right)
 {
-   g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = right;
-   g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = left;
+   global_t *global = global_get_ptr();
+
+   global->audio_data.rewind_buf[--global->audio_data.rewind_ptr] = right;
+   global->audio_data.rewind_buf[--global->audio_data.rewind_ptr] = left;
 }
 
 /**
@@ -339,9 +348,10 @@ static size_t audio_sample_batch_rewind(const int16_t *data, size_t frames)
 {
    size_t i;
    size_t samples = frames << 1;
+   global_t *global = global_get_ptr();
 
    for (i = 0; i < samples; i++)
-      g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = data[i];
+      global->audio_data.rewind_buf[--global->audio_data.rewind_ptr] = data[i];
 
    return frames;
 }
@@ -366,14 +376,15 @@ static size_t audio_sample_batch_rewind(const int16_t *data, size_t frames)
 static bool input_apply_turbo(unsigned port, unsigned id, bool res)
 {
    settings_t *settings           = config_get_ptr();
+   global_t *global               = global_get_ptr();
 
-   if (res && g_extern.turbo_frame_enable[port])
-      g_extern.turbo_enable[port] |= (1 << id);
+   if (res && global->turbo_frame_enable[port])
+      global->turbo_enable[port] |= (1 << id);
    else if (!res)
-      g_extern.turbo_enable[port] &= ~(1 << id);
+      global->turbo_enable[port] &= ~(1 << id);
 
-   if (g_extern.turbo_enable[port] & (1 << id))
-      return res && ((g_extern.turbo_count % settings->input.turbo_period)
+   if (global->turbo_enable[port] & (1 << id))
+      return res && ((global->turbo_count % settings->input.turbo_period)
             < settings->input.turbo_duty_cycle);
    return res;
 }
@@ -396,6 +407,7 @@ static int16_t input_state(unsigned port, unsigned device,
    int16_t res = 0;
    settings_t *settings           = config_get_ptr();
    driver_t *driver               = driver_get_ptr();
+   global_t *global               = global_get_ptr();
    const struct retro_keybind *libretro_input_binds[MAX_USERS] = {
       settings->input.binds[0],
       settings->input.binds[1],
@@ -417,13 +429,13 @@ static int16_t input_state(unsigned port, unsigned device,
 
    device &= RETRO_DEVICE_MASK;
 
-   if (g_extern.bsv.movie && g_extern.bsv.movie_playback)
+   if (global->bsv.movie && global->bsv.movie_playback)
    {
       int16_t ret;
-      if (bsv_movie_get_input(g_extern.bsv.movie, &ret))
+      if (bsv_movie_get_input(global->bsv.movie, &ret))
          return ret;
 
-      g_extern.bsv.movie_end = true;
+      global->bsv.movie_end = true;
    }
 
    if (settings->input.remap_binds_enable)
@@ -480,8 +492,8 @@ static int16_t input_state(unsigned port, unsigned device,
             id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
       res = input_apply_turbo(port, id, res);
 
-   if (g_extern.bsv.movie && !g_extern.bsv.movie_playback)
-      bsv_movie_set_input(g_extern.bsv.movie, res);
+   if (global->bsv.movie && !global->bsv.movie_playback)
+      bsv_movie_set_input(global->bsv.movie, res);
 
    return res;
 }
@@ -679,6 +691,7 @@ void retro_init_libretro_cbs(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
 
    if (!cbs)
       return;
@@ -697,10 +710,10 @@ void retro_init_libretro_cbs(void *data)
    if (!driver->netplay_data)
       return;
 
-   if (g_extern.netplay_is_spectate)
+   if (global->netplay_is_spectate)
    {
       pretro_set_input_state(
-            (g_extern.netplay_is_client ?
+            (global->netplay_is_client ?
              input_state_spectate_client : input_state_spectate)
             );
    }
@@ -722,7 +735,9 @@ void retro_init_libretro_cbs(void *data)
  **/
 void retro_set_rewind_callbacks(void)
 {
-   if (g_extern.rewind.frame_is_reverse)
+   global_t *global = global_get_ptr();
+
+   if (global->rewind.frame_is_reverse)
    {
       pretro_set_audio_sample(audio_sample_rewind);
       pretro_set_audio_sample_batch(audio_sample_batch_rewind);

@@ -73,6 +73,8 @@ static void audio_thread_loop(void *data)
 
    for (;;)
    {
+      global_t *global = global_get_ptr();
+      
       slock_lock(thr->lock);
 
       if (!thr->alive)
@@ -91,7 +93,7 @@ static void audio_thread_loop(void *data)
       }
 
       slock_unlock(thr->lock);
-      g_extern.system.audio_callback.callback();
+      global->system.audio_callback.callback();
    }
 
    RARCH_LOG("[Audio Thread]: Tearing down driver.\n");
@@ -163,13 +165,14 @@ static bool audio_thread_alive(void *data)
 static bool audio_thread_stop(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
+   global_t *global = global_get_ptr();
 
    if (!thr)
       return false;
 
    audio_thread_block(thr);
    thr->is_paused = true;
-   g_extern.system.audio_callback.set_state(false);
+   global->system.audio_callback.set_state(false);
 
    return true;
 }
@@ -177,11 +180,12 @@ static bool audio_thread_stop(void *data)
 static bool audio_thread_start(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
+   global_t *global = global_get_ptr();
 
    if (!thr)
       return false;
 
-   g_extern.system.audio_callback.set_state(true);
+   global->system.audio_callback.set_state(true);
    thr->is_paused = false;
    audio_thread_unblock(thr);
 

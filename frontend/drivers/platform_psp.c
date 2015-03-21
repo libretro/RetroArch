@@ -57,7 +57,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
-   g_extern.log_file = fopen("ms0:/retroarch-log.txt", "w");
+   global_t *global  = global_get_ptr();
+   global->log_file = fopen("ms0:/retroarch-log.txt", "w");
 #endif
 #endif
 
@@ -119,12 +120,13 @@ static void frontend_psp_deinit(void *data)
 {
    (void)data;
 #ifndef IS_SALAMANDER
-   g_extern.verbosity = false;
+   global_t *global   = global_get_ptr();
+   global->verbosity = false;
 
 #ifdef HAVE_FILE_LOGGER
-   if (g_extern.log_file)
-      fclose(g_extern.log_file);
-   g_extern.log_file = NULL;
+   if (global->log_file)
+      fclose(global->log_file);
+   global->log_file = NULL;
 #endif
 
 #endif
@@ -196,10 +198,12 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
    args = strlen(argp) + 1;
 
 #ifndef IS_SALAMANDER
-   if (should_load_game && g_extern.fullpath[0] != '\0')
+   global_t *global   = global_get_ptr();
+
+   if (should_load_game && global->fullpath[0] != '\0')
    {
       argp[args] = '\0';
-      strlcat(argp + args, g_extern.fullpath, sizeof(argp) - args);
+      strlcat(argp + args, global->fullpath, sizeof(argp) - args);
       args += strlen(argp + args) + 1;
    }
 #endif
