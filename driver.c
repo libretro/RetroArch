@@ -30,7 +30,7 @@
 #include "config.h"
 #endif
 
-driver_t driver;
+static driver_t g_driver;
 
 /**
  * find_driver_nonempty:
@@ -206,17 +206,18 @@ void init_drivers_pre(void)
 static void driver_adjust_system_rates(void)
 {
    global_t *global = global_get_ptr();
+   driver_t *driver = driver_get_ptr();
 
    audio_monitor_adjust_system_rates();
    video_monitor_adjust_system_rates();
 
-   if (!driver.video_data)
+   if (!driver->video_data)
       return;
 
    if (global->system.force_nonblock)
       rarch_main_command(RARCH_CMD_VIDEO_SET_NONBLOCKING_STATE);
    else
-      driver_set_nonblock_state(driver.nonblock_state);
+      driver_set_nonblock_state(driver->nonblock_state);
 }
 
 /**
@@ -247,19 +248,20 @@ void driver_set_nonblock_state(bool enable)
 {
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
+   driver_t *driver     = driver_get_ptr();
 
    /* Only apply non-block-state for video if we're using vsync. */
-   if (driver.video_active && driver.video_data)
+   if (driver->video_active && driver->video_data)
    {
       bool video_nonblock = enable;
 
       if (!settings->video.vsync || global->system.force_nonblock)
          video_nonblock = true;
-      driver.video->set_nonblock_state(driver.video_data, video_nonblock);
+      driver->video->set_nonblock_state(driver->video_data, video_nonblock);
    }
 
-   if (driver.audio_active && driver.audio_data)
-      driver.audio->set_nonblock_state(driver.audio_data,
+   if (driver->audio_active && driver->audio_data)
+      driver->audio->set_nonblock_state(driver->audio_data,
             settings->audio.sync ? enable : true);
 
    global->audio_data.chunk_size = enable ?
@@ -280,13 +282,14 @@ void driver_set_nonblock_state(bool enable)
 bool driver_update_system_av_info(const struct retro_system_av_info *info)
 {
    global_t *global = global_get_ptr();
+   driver_t *driver = driver_get_ptr();
 
    global->system.av_info = *info;
    rarch_main_command(RARCH_CMD_REINIT);
 
    /* Cannot continue recording with different parameters.
     * Take the easiest route out and just restart the recording. */
-   if (driver.recording_data)
+   if (driver->recording_data)
    {
       static const char *msg = "Restarting recording due to driver reinit.";
       rarch_main_msg_queue_push(msg, 2, 180, false);
@@ -307,20 +310,22 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
  **/
 void init_drivers(int flags)
 {
+   driver_t *driver = driver_get_ptr();
+
    if (flags & DRIVER_VIDEO)
-      driver.video_data_own = false;
+      driver->video_data_own = false;
    if (flags & DRIVER_AUDIO)
-      driver.audio_data_own = false;
+      driver->audio_data_own = false;
    if (flags & DRIVER_INPUT)
-      driver.input_data_own = false;
+      driver->input_data_own = false;
    if (flags & DRIVER_CAMERA)
-      driver.camera_data_own = false;
+      driver->camera_data_own = false;
    if (flags & DRIVER_LOCATION)
-      driver.location_data_own = false;
+      driver->location_data_own = false;
 
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
-   driver.menu_data_own = true;
+   driver->menu_data_own = true;
 #endif
 
    if (flags & (DRIVER_VIDEO | DRIVER_AUDIO))
@@ -335,10 +340,10 @@ void init_drivers(int flags)
 
       init_video();
 
-      if (!driver.video_cache_context_ack
+      if (!driver->video_cache_context_ack
             && global->system.hw_render_callback.context_reset)
          global->system.hw_render_callback.context_reset();
-      driver.video_cache_context_ack = false;
+      driver->video_cache_context_ack = false;
 
       global->system.frame_time_last = 0;
    }
@@ -347,11 +352,11 @@ void init_drivers(int flags)
       init_audio();
 
    /* Only initialize camera driver if we're ever going to use it. */
-   if ((flags & DRIVER_CAMERA) && driver.camera_active)
+   if ((flags & DRIVER_CAMERA) && driver->camera_active)
       init_camera();
 
    /* Only initialize location driver if we're ever going to use it. */
-   if ((flags & DRIVER_LOCATION) && driver.location_active)
+   if ((flags & DRIVER_LOCATION) && driver->location_active)
       init_location();
 
 #ifdef HAVE_MENU
@@ -359,16 +364,16 @@ void init_drivers(int flags)
    {
       init_menu();
 
-      if (driver.menu_ctx && driver.menu_ctx->context_reset)
-         driver.menu_ctx->context_reset();
+      if (driver->menu_ctx && driver->menu_ctx->context_reset)
+         driver->menu_ctx->context_reset();
    }
 #endif
 
    if (flags & (DRIVER_VIDEO | DRIVER_AUDIO))
    {
       /* Keep non-throttled state as good as possible. */
-      if (driver.nonblock_state)
-         driver_set_nonblock_state(driver.nonblock_state);
+      if (driver->nonblock_state)
+         driver_set_nonblock_state(driver->nonblock_state);
    }
 }
 
@@ -382,6 +387,8 @@ void init_drivers(int flags)
  **/
 void uninit_drivers(int flags)
 {
+   driver_t *driver = driver_get_ptr();
+
    if (flags & DRIVER_AUDIO)
       uninit_audio();
 
@@ -390,21 +397,21 @@ void uninit_drivers(int flags)
       global_t *global = global_get_ptr();
 
       if (global->system.hw_render_callback.context_destroy &&
-               !driver.video_cache_context)
+               !driver->video_cache_context)
             global->system.hw_render_callback.context_destroy();
    }
 
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU)
    {
-      if (driver.menu_ctx && driver.menu_ctx->context_destroy)
-            driver.menu_ctx->context_destroy();
+      if (driver->menu_ctx && driver->menu_ctx->context_destroy)
+            driver->menu_ctx->context_destroy();
 
-         if (!driver.menu_data_own)
+         if (!driver->menu_data_own)
          {
-            menu_free_list(driver.menu);
-            menu_free(driver.menu);
-            driver.menu = NULL;
+            menu_free_list(driver->menu);
+            menu_free(driver->menu);
+            driver->menu = NULL;
          }
    }
 #endif
@@ -412,29 +419,29 @@ void uninit_drivers(int flags)
    if (flags & DRIVERS_VIDEO_INPUT)
       uninit_video_input();
 
-   if ((flags & DRIVER_VIDEO) && !driver.video_data_own)
-      driver.video_data = NULL;
+   if ((flags & DRIVER_VIDEO) && !driver->video_data_own)
+      driver->video_data = NULL;
 
-   if ((flags & DRIVER_CAMERA) && !driver.camera_data_own)
+   if ((flags & DRIVER_CAMERA) && !driver->camera_data_own)
    {
       uninit_camera();
-      driver.camera_data = NULL;
+      driver->camera_data = NULL;
    }
 
-   if ((flags & DRIVER_LOCATION) && !driver.location_data_own)
+   if ((flags & DRIVER_LOCATION) && !driver->location_data_own)
    {
       uninit_location();
-      driver.location_data = NULL;
+      driver->location_data = NULL;
    }
    
-   if ((flags & DRIVER_INPUT) && !driver.input_data_own)
-      driver.input_data = NULL;
+   if ((flags & DRIVER_INPUT) && !driver->input_data_own)
+      driver->input_data = NULL;
 
-   if ((flags & DRIVER_AUDIO) && !driver.audio_data_own)
-      driver.audio_data = NULL;
+   if ((flags & DRIVER_AUDIO) && !driver->audio_data_own)
+      driver->audio_data = NULL;
 }
 
 driver_t *driver_get_ptr(void)
 {
-   return &driver;
+   return &g_driver;
 }
