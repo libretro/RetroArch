@@ -690,11 +690,11 @@ static void psp_set_texture_enable(void *data, bool state, bool full_screen)
 
 static void psp_update_viewport(psp1_video_t* psp)
 {
-   int x = 0;
-   int y = 0;
-   float device_aspect = ((float)SCEGU_SCR_WIDTH) / SCEGU_SCR_HEIGHT;
-   float width = SCEGU_SCR_WIDTH;
-   float height = SCEGU_SCR_HEIGHT;
+   int x                = 0;
+   int y                = 0;
+   float device_aspect  = ((float)SCEGU_SCR_WIDTH) / SCEGU_SCR_HEIGHT;
+   float width          = SCEGU_SCR_WIDTH;
+   float height         = SCEGU_SCR_HEIGHT;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
@@ -868,17 +868,18 @@ static void psp_get_poke_interface(void *data,
 
 static bool psp_read_viewport(void *data, uint8_t *buffer)
 {
-   (void)data;
-   (void)buffer;
-   psp1_video_t *psp = (psp1_video_t*)data;
-   uint8_t* dst = buffer;
    void* src_buffer;
    int i, j, src_bufferwidth, src_pixelformat, src_x, src_y, src_x_max, src_y_max;
+   uint8_t* dst = buffer;
+   psp1_video_t *psp = (psp1_video_t*)data;
+
+   (void)data;
+   (void)buffer;
 
    sceDisplayGetFrameBuf(&src_buffer, &src_bufferwidth, &src_pixelformat, PSP_DISPLAY_SETBUF_NEXTFRAME);
 
-   src_x = (psp->vp.x > 0)? psp->vp.x : 0;
-   src_y = (psp->vp.y > 0)? psp->vp.y : 0;
+   src_x     = (psp->vp.x > 0)? psp->vp.x : 0;
+   src_y     = (psp->vp.y > 0)? psp->vp.y : 0;
    src_x_max = ((psp->vp.x + psp->vp.width) < src_bufferwidth)? (psp->vp.x + psp->vp.width): src_bufferwidth;
    src_y_max = ((psp->vp.y + psp->vp.height) < SCEGU_SCR_HEIGHT)? (psp->vp.y + psp->vp.height): SCEGU_SCR_HEIGHT;
 
