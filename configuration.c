@@ -31,7 +31,7 @@
 #include "config.h"
 #endif
 
-settings_t g_settings;
+settings_t g_config;
 struct global g_extern;
 struct defaults g_defaults;
 
@@ -1132,9 +1132,9 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(menu.navigation.browser.filter.supported_extensions_enable,   "menu_navigation_browser_filter_supported_extensions_enable");
    CONFIG_GET_BOOL(menu.collapse_subgroups_enable,   "menu_collapse_subgroups_enable");
    CONFIG_GET_BOOL(menu.show_advanced_settings,   "menu_show_advanced_settings");
-   CONFIG_GET_HEX_BASE(conf, g_settings, menu.entry_normal_color,   "menu_entry_normal_color");
-   CONFIG_GET_HEX_BASE(conf, g_settings, menu.entry_hover_color,   "menu_entry_hover_color");
-   CONFIG_GET_HEX_BASE(conf, g_settings, menu.title_color,   "menu_title_color");
+   CONFIG_GET_HEX_BASE(conf, g_config, menu.entry_normal_color,   "menu_entry_normal_color");
+   CONFIG_GET_HEX_BASE(conf, g_config, menu.entry_hover_color,   "menu_entry_hover_color");
+   CONFIG_GET_HEX_BASE(conf, g_config, menu.title_color,   "menu_title_color");
    config_get_path(conf, "menu_wallpaper", settings->menu.wallpaper, sizeof(settings->menu.wallpaper));
    if (!strcmp(settings->menu.wallpaper, "default"))
       *settings->menu.wallpaper = '\0';
@@ -2148,5 +2148,5 @@ bool config_save_file(const char *path)
 
 settings_t *config_get_ptr(void)
 {
-   return &g_settings;
+   return &g_config;
 }

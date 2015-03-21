@@ -438,7 +438,6 @@ static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
 #elif defined(RARCH_CONSOLE)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_4_3;
 #else
-/* Use g_settings.video.aspect_ratio. */
 static unsigned aspect_ratio_idx = ASPECT_RATIO_CONFIG;
 #endif
 

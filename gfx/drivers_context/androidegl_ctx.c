@@ -34,7 +34,7 @@ typedef struct gfx_ctx_android_data
    EGLContext g_egl_ctx;
    EGLSurface g_egl_surf;
    EGLDisplay g_egl_dpy;
-   EGLConfig g_config;
+   EGLConfig g_egl_config;
 } gfx_ctx_android_data_t;
 
 static bool g_es3;
@@ -81,7 +81,7 @@ static void android_gfx_ctx_destroy_resources(gfx_ctx_android_data_t *android)
    android->g_egl_hw_ctx  = NULL;
    android->g_egl_surf    = NULL;
    android->g_egl_dpy     = NULL;
-   android->g_config      = 0;
+   android->g_egl_config  = 0;
 }
 
 static void android_gfx_ctx_destroy(void *data)
@@ -177,10 +177,10 @@ static bool android_gfx_ctx_init(void *data)
          egl_version_major, egl_version_minor);
 
    if (!eglChooseConfig(android->g_egl_dpy,
-            attribs, &android->g_config, 1, &num_config))
+            attribs, &android->g_egl_config, 1, &num_config))
       goto error;
 
-   var = eglGetConfigAttrib(android->g_egl_dpy, android->g_config,
+   var = eglGetConfigAttrib(android->g_egl_dpy, android->g_egl_config,
          EGL_NATIVE_VISUAL_ID, &format);
 
    if (!var)
@@ -192,7 +192,7 @@ static bool android_gfx_ctx_init(void *data)
    ANativeWindow_setBuffersGeometry(android_app->window, 0, 0, format);
 
    android->g_egl_ctx = eglCreateContext(android->g_egl_dpy,
-         android->g_config, EGL_NO_CONTEXT, context_attributes);
+         android->g_egl_config, EGL_NO_CONTEXT, context_attributes);
 
    if (android->g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
@@ -200,7 +200,7 @@ static bool android_gfx_ctx_init(void *data)
    if (android->g_use_hw_ctx)
    {
       android->g_egl_hw_ctx = eglCreateContext(android->g_egl_dpy,
-           android->g_config, android->g_egl_ctx,
+           android->g_egl_config, android->g_egl_ctx,
             context_attributes);
       RARCH_LOG("[Android/EGL]: Created shared context: %p.\n",
             (void*)android->g_egl_hw_ctx);
@@ -210,7 +210,7 @@ static bool android_gfx_ctx_init(void *data)
    }
 
    android->g_egl_surf = eglCreateWindowSurface(android->g_egl_dpy,
-         android->g_config, android_app->window, 0);
+         android->g_egl_config, android_app->window, 0);
    if (!android->g_egl_surf)
       goto error;
 

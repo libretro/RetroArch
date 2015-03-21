@@ -33,7 +33,7 @@ struct fbdev_window native_window;
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
-static EGLConfig g_config;
+static EGLConfig g_egl_config;
 static bool g_resize;
 static unsigned g_width, g_height;
 
@@ -72,12 +72,12 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
       eglTerminate(g_egl_dpy);
    }
 
-   g_egl_dpy  = EGL_NO_DISPLAY;
-   g_egl_surf = EGL_NO_SURFACE;
-   g_egl_ctx  = EGL_NO_CONTEXT;
-   g_config   = 0;
-   g_quit     = 0;
-   g_resize   = false;
+   g_egl_dpy      = EGL_NO_DISPLAY;
+   g_egl_surf     = EGL_NO_SURFACE;
+   g_egl_ctx      = EGL_NO_CONTEXT;
+   g_egl_config   = 0;
+   g_quit         = 0;
+   g_resize       = false;
 
    /* Clear framebuffer and set cursor on again */
    int fd = open("/dev/tty", O_RDWR);
@@ -148,7 +148,7 @@ static bool gfx_ctx_mali_fbdev_init(void *data)
    RARCH_LOG("[Mali fbdev]: EGL version: %d.%d\n", egl_version_major, egl_version_minor);
 
 
-   if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &num_config))
+   if (!eglChooseConfig(g_egl_dpy, attribs, &g_egl_config, 1, &num_config))
    {
       RARCH_ERR("[Mali fbdev]: eglChooseConfig failed.\n");
       goto error;
@@ -236,13 +236,13 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
    native_window.width = vinfo.xres;
    native_window.height = vinfo.yres;
 
-   if ((g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, &native_window, 0)) == EGL_NO_SURFACE)
+   if ((g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, &native_window, 0)) == EGL_NO_SURFACE)
    {
       RARCH_ERR("eglCreateWindowSurface failed.\n");
       goto error;
    }
 
-   if ((g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, 0, attribs)) == EGL_NO_CONTEXT)
+   if ((g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, 0, attribs)) == EGL_NO_CONTEXT)
    {
       RARCH_ERR("eglCreateContext failed.\n");
       goto error;

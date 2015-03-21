@@ -26,7 +26,7 @@
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
-static EGLConfig g_config;
+static EGLConfig g_egl_config;
 static bool g_resize;
 static unsigned g_width, g_height;
 
@@ -67,12 +67,12 @@ static void gfx_ctx_vivante_destroy(void *data)
       eglTerminate(g_egl_dpy);
    }
 
-   g_egl_dpy  = EGL_NO_DISPLAY;
-   g_egl_surf = EGL_NO_SURFACE;
-   g_egl_ctx  = EGL_NO_CONTEXT;
-   g_config   = 0;
-   g_quit     = 0;
-   g_resize   = false;
+   g_egl_dpy      = EGL_NO_DISPLAY;
+   g_egl_surf     = EGL_NO_SURFACE;
+   g_egl_ctx      = EGL_NO_CONTEXT;
+   g_egl_config   = 0;
+   g_quit         = 0;
+   g_resize       = false;
 }
 
 static void gfx_ctx_vivante_get_video_size(void *data,
@@ -138,7 +138,7 @@ static bool gfx_ctx_vivante_init(void *data)
    RARCH_LOG("[Vivante fbdev]: EGL version: %d.%d\n",
          egl_version_major, egl_version_minor);
 
-   if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &num_config))
+   if (!eglChooseConfig(g_egl_dpy, attribs, &g_egl_config, 1, &num_config))
    {
       RARCH_ERR("[Vivante fbdev]: eglChooseConfig failed.\n");
       goto error;
@@ -218,7 +218,7 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
    g_height = height;
 
    window     = fbCreateWindow(fbGetDisplayByIndex(0), 0, 0, 0, 0);
-   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, window, 0);
+   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, window, 0);
 
    if (g_egl_surf == EGL_NO_SURFACE)
    {
@@ -226,7 +226,7 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
       goto error;
    }
 
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, 0, attribs);
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, 0, attribs);
    if (g_egl_ctx == EGL_NO_CONTEXT)
    {
       RARCH_ERR("eglCreateContext failed.\n");

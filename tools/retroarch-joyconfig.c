@@ -33,7 +33,7 @@
  * Better than having to build special versions of lots of objects 
  * with special #ifdefs.
  */
-struct settings g_settings;
+struct settings g_config;
 struct global g_extern;
 driver_t driver;
 
@@ -48,7 +48,7 @@ static unsigned g_meta_level = 0;
 
 settings_t *config_get_ptr(void)
 {
-   return &g_settings;
+   return &g_config;
 }
 
 driver_t *driver_get_ptr(void)

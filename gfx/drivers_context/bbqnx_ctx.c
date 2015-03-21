@@ -43,7 +43,7 @@ static EGLContext g_egl_hw_ctx;
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
-static EGLConfig g_config;
+static EGLConfig g_egl_config;
 static bool g_resize;
 
 screen_context_t screen_ctx;
@@ -84,7 +84,7 @@ static void gfx_ctx_qnx_destroy(void *data)
    g_egl_hw_ctx  = NULL;
    g_egl_surf    = NULL;
    g_egl_dpy     = NULL;
-   g_config      = 0;
+   g_egl_config  = 0;
    g_resize      = false;
 }
 
@@ -176,17 +176,17 @@ static bool gfx_ctx_qnx_init(void *data)
 
    RARCH_LOG("[BLACKBERRY QNX/EGL]: EGL version: %d.%d\n", egl_version_major, egl_version_minor);
 
-   if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &num_config))
+   if (!eglChooseConfig(g_egl_dpy, attribs, &g_egl_config, 1, &num_config))
       goto error;
 
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, context_attributes);
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT, context_attributes);
 
    if (g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
 
    if (g_use_hw_ctx)
    {
-      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_config, g_egl_ctx,
+      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_egl_config, g_egl_ctx,
             context_attributes);
       RARCH_LOG("[Android/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
 
@@ -291,7 +291,7 @@ static bool gfx_ctx_qnx_init(void *data)
       goto error;
    }
 
-   if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, screen_win, 0)))
+   if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, screen_win, 0)))
    {
       RARCH_ERR("eglCreateWindowSurface failed.\n");
       goto error;

@@ -34,7 +34,7 @@
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
-static EGLConfig g_config;
+static EGLConfig g_egl_config;
 
 static bool g_inited;
 
@@ -145,16 +145,16 @@ static bool gfx_ctx_emscripten_init(void *data)
       goto error;
 
    /* Get an appropriate EGL frame buffer configuration. */
-   if (!eglChooseConfig(g_egl_dpy, attribute_list, &g_config, 1, &num_config))
+   if (!eglChooseConfig(g_egl_dpy, attribute_list, &g_egl_config, 1, &num_config))
       goto error;
 
    /* Create an EGL rendering context. */
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, context_attributes);
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT, context_attributes);
    if (!g_egl_ctx)
       goto error;
 
    /* create an EGL window surface. */
-   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, 0, NULL);
+   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, 0, NULL);
    if (!g_egl_surf)
       goto error;
 
@@ -225,7 +225,7 @@ static void gfx_ctx_emscripten_destroy(void *data)
    g_egl_ctx      = NULL;
    g_egl_surf     = NULL;
    g_egl_dpy      = NULL;
-   g_config       = 0;
+   g_egl_config   = 0;
    g_inited       = false;
 }
 

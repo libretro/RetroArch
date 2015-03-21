@@ -75,7 +75,7 @@ typedef struct gfx_ctx_drm_egl_data
    EGLContext g_egl_ctx;
    EGLSurface g_egl_surf;
    EGLDisplay g_egl_dpy;
-   EGLConfig g_config;
+   EGLConfig g_egl_config;
    struct gbm_device *g_gbm_dev;
    struct gbm_surface *g_gbm_surface;
 } gfx_ctx_drm_egl_data_t;
@@ -360,7 +360,7 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
    drm->g_egl_hw_ctx  = NULL;
    drm->g_egl_surf    = NULL;
    drm->g_egl_dpy     = NULL;
-   drm->g_config      = 0;
+   drm->g_egl_config  = 0;
 
    /* Restore original CRTC. */
    if (drm->g_orig_crtc)
@@ -797,12 +797,12 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    if (!eglInitialize(drm->g_egl_dpy, &major, &minor))
       goto error;
 
-   if (!eglChooseConfig(drm->g_egl_dpy, attrib_ptr, &drm->g_config, 1, &n) || n != 1)
+   if (!eglChooseConfig(drm->g_egl_dpy, attrib_ptr, &drm->g_egl_config, 1, &n) || n != 1)
       goto error;
 
    attr = egl_fill_attribs(egl_attribs);
 
-   drm->g_egl_ctx = eglCreateContext(drm->g_egl_dpy, drm->g_config, EGL_NO_CONTEXT,
+   drm->g_egl_ctx = eglCreateContext(drm->g_egl_dpy, drm->g_egl_config, EGL_NO_CONTEXT,
          attr != egl_attribs ? egl_attribs : NULL);
 
    if (drm->g_egl_ctx == EGL_NO_CONTEXT)
@@ -810,7 +810,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
 
    if (drm->g_use_hw_ctx)
    {
-      drm->g_egl_hw_ctx = eglCreateContext(drm->g_egl_dpy, drm->g_config, drm->g_egl_ctx,
+      drm->g_egl_hw_ctx = eglCreateContext(drm->g_egl_dpy, drm->g_egl_config, drm->g_egl_ctx,
             attr != egl_attribs ? egl_attribs : NULL);
       RARCH_LOG("[KMS/EGL]: Created shared context: %p.\n", (void*)drm->g_egl_hw_ctx);
 
@@ -819,7 +819,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    }
 
    drm->g_egl_surf = eglCreateWindowSurface(drm->g_egl_dpy,
-         drm->g_config, (EGLNativeWindowType)drm->g_gbm_surface, NULL);
+         drm->g_egl_config, (EGLNativeWindowType)drm->g_gbm_surface, NULL);
    if (!drm->g_egl_surf)
       goto error;
 

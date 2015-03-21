@@ -51,7 +51,7 @@ static EGLContext g_egl_hw_ctx;
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
-static EGLConfig g_config;
+static EGLConfig g_egl_config;
 
 static XF86VidModeModeInfo g_desktop_mode;
 static bool g_should_reset_mode;
@@ -357,13 +357,13 @@ static bool gfx_ctx_xegl_init(void *data)
    RARCH_LOG("[X/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
 
    EGLint num_configs;
-   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_config, 1, &num_configs))
+   if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_egl_config, 1, &num_configs))
    {
       RARCH_ERR("[X/EGL]: eglChooseConfig failed with 0x%x.\n", eglGetError());
       goto error;
    }
 
-   if (num_configs == 0 || !g_config)
+   if (num_configs == 0 || !g_egl_config)
    {
       RARCH_ERR("[X/EGL]: No EGL configurations available.\n");
       goto error;
@@ -472,7 +472,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    attr = egl_attribs;
    attr = xegl_fill_attribs(attr);
 
-   if (!eglGetConfigAttrib(g_egl_dpy, g_config, EGL_NATIVE_VISUAL_ID, &vid))
+   if (!eglGetConfigAttrib(g_egl_dpy, g_egl_config, EGL_NATIVE_VISUAL_ID, &vid))
       goto error;
 
    temp.visualid = vid;
@@ -528,7 +528,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          CWBorderPixel | CWColormap | CWEventMask | (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_dpy, g_win, 0);
 
-   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT,
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_egl_config, EGL_NO_CONTEXT,
          attr != egl_attribs ? egl_attribs : NULL);
 
    RARCH_LOG("[X/EGL]: Created context: %p.\n", (void*)g_egl_ctx);
@@ -538,7 +538,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    if (g_use_hw_ctx)
    {
-      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_config, g_egl_ctx,
+      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_egl_config, g_egl_ctx,
             attr != egl_attribs ? egl_attribs : NULL);
       RARCH_LOG("[X/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
 
@@ -546,7 +546,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          goto error;
    }
 
-   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, (EGLNativeWindowType)g_win, NULL);
+   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, (EGLNativeWindowType)g_win, NULL);
    if (!g_egl_surf)
       goto error;
 
@@ -659,7 +659,7 @@ static void gfx_ctx_xegl_destroy(void *data)
    g_egl_hw_ctx  = NULL;
    g_egl_surf    = NULL;
    g_egl_dpy     = NULL;
-   g_config      = 0;
+   g_egl_config  = 0;
 
    if (g_win)
    {

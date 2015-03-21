@@ -410,7 +410,7 @@ bool config_save_file(const char *path);
 settings_t *config_get_ptr(void);
 
 /* Public data structures. */
-extern settings_t g_settings;
+extern settings_t g_config;
 
 #ifdef __cplusplus
 }

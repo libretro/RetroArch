@@ -35,7 +35,7 @@ typedef struct gfx_ctx_wayland_data
    EGLContext g_egl_hw_ctx;
    EGLSurface g_egl_surf;
    EGLDisplay g_egl_dpy;
-   EGLConfig g_config;
+   EGLConfig g_egl_config;
    bool g_resize;
    bool g_use_hw_ctx;
    int g_fd;
@@ -172,7 +172,7 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    wl->g_egl_hw_ctx  = NULL;
    wl->g_egl_surf    = NULL;
    wl->g_egl_dpy     = NULL;
-   wl->g_config      = 0;
+   wl->g_egl_config  = 0;
 
    if (wl->g_win)
       wl_egl_window_destroy(wl->g_win);
@@ -483,13 +483,13 @@ static bool gfx_ctx_wl_init(void *data)
 
    RARCH_LOG("[Wayland/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
 
-   if (!eglChooseConfig(wl->g_egl_dpy, attrib_ptr, &wl->g_config, 1, &num_configs))
+   if (!eglChooseConfig(wl->g_egl_dpy, attrib_ptr, &wl->g_egl_config, 1, &num_configs))
    {
       RARCH_ERR("[Wayland/EGL]: eglChooseConfig failed with 0x%x.\n", eglGetError());
       goto error;
    }
 
-   if (num_configs == 0 || !wl->g_config)
+   if (num_configs == 0 || !wl->g_egl_config)
    {
       RARCH_ERR("[Wayland/EGL]: No EGL configurations available.\n");
       goto error;
@@ -619,7 +619,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    wl_shell_surface_set_class(wl->g_shell_surf, "RetroArch");
    wl_shell_surface_set_title(wl->g_shell_surf, "RetroArch");
 
-   wl->g_egl_ctx = eglCreateContext(wl->g_egl_dpy, wl->g_config, EGL_NO_CONTEXT,
+   wl->g_egl_ctx = eglCreateContext(wl->g_egl_dpy, wl->g_egl_config, EGL_NO_CONTEXT,
          attr != egl_attribs ? egl_attribs : NULL);
 
    RARCH_LOG("[Wayland/EGL]: Created context: %p.\n", (void*)wl->g_egl_ctx);
@@ -628,7 +628,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 
    if (wl->g_use_hw_ctx)
    {
-      wl->g_egl_hw_ctx = eglCreateContext(wl->g_egl_dpy, wl->g_config, wl->g_egl_ctx,
+      wl->g_egl_hw_ctx = eglCreateContext(wl->g_egl_dpy, wl->g_egl_config, wl->g_egl_ctx,
             attr != egl_attribs ? egl_attribs : NULL);
       RARCH_LOG("[Wayland/EGL]: Created shared context: %p.\n", (void*)wl->g_egl_hw_ctx);
 
@@ -636,7 +636,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
          goto error;
    }
 
-   wl->g_egl_surf = eglCreateWindowSurface(wl->g_egl_dpy, wl->g_config,
+   wl->g_egl_surf = eglCreateWindowSurface(wl->g_egl_dpy, wl->g_egl_config,
          (EGLNativeWindowType)wl->g_win, NULL);
    if (!wl->g_egl_surf)
       goto error;

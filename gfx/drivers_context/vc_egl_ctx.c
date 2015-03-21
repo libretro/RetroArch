@@ -42,7 +42,7 @@ static EGLContext g_egl_hw_ctx;
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
-static EGLConfig g_config;
+static EGLConfig g_egl_config;
 
 static volatile sig_atomic_t g_quit;
 static bool g_inited;
@@ -214,19 +214,19 @@ static bool gfx_ctx_vc_init(void *data)
       goto error;
 
    /* Get an appropriate EGL frame buffer configuration. */
-   if (!eglChooseConfig(g_egl_dpy, attribute_list, &g_config, 1, &num_config))
+   if (!eglChooseConfig(g_egl_dpy, attribute_list, &g_egl_config, 1, &num_config))
       goto error;
 
    /* Create an EGL rendering context. */
    g_egl_ctx = eglCreateContext(
-         g_egl_dpy, g_config, EGL_NO_CONTEXT,
+         g_egl_dpy, g_egl_config, EGL_NO_CONTEXT,
          (g_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL);
    if (!g_egl_ctx)
       goto error;
 
    if (g_use_hw_ctx)
    {
-      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_config, g_egl_ctx,
+      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_egl_config, g_egl_ctx,
             context_attributes);
       RARCH_LOG("[VC/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
 
@@ -307,7 +307,7 @@ static bool gfx_ctx_vc_init(void *data)
    }
    vc_dispmanx_update_submit_sync(dispman_update);
 
-   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, &nativewindow, NULL);
+   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_egl_config, &nativewindow, NULL);
    if (!g_egl_surf)
       goto error;
 
@@ -438,7 +438,7 @@ static void gfx_ctx_vc_destroy(void *data)
    g_egl_surf     = NULL;
    g_pbuff_surf   = NULL;
    g_egl_dpy      = NULL;
-   g_config       = 0;
+   g_egl_config   = 0;
    g_inited       = false;
 
    for (i = 0; i < MAX_EGLIMAGE_TEXTURES; i++)
@@ -519,14 +519,14 @@ static bool gfx_ctx_vc_init_egl_image_buffer(void *data,
    g_egl_res = video->input_scale * RARCH_SCALE_BASE;
 
    eglBindAPI(EGL_OPENVG_API);
-   g_pbuff_surf = eglCreatePbufferSurface(g_egl_dpy, g_config, pbufsurface_list);
+   g_pbuff_surf = eglCreatePbufferSurface(g_egl_dpy, g_egl_config, pbufsurface_list);
    if (g_pbuff_surf == EGL_NO_SURFACE)
    {
       RARCH_ERR("[VideoCore:EGLImage] failed to create PbufferSurface\n");
       goto fail;
    }
 
-   g_eglimage_ctx = eglCreateContext(g_egl_dpy, g_config, NULL, NULL);
+   g_eglimage_ctx = eglCreateContext(g_egl_dpy, g_egl_config, NULL, NULL);
    if (g_eglimage_ctx == EGL_NO_CONTEXT)
    {
       RARCH_ERR("[VideoCore:EGLImage] failed to create context\n");
