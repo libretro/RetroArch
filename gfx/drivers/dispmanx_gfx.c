@@ -420,7 +420,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
 static void dispmanx_free_menu_resources (void *data)
 {
    struct dispmanx_video *_dispvars = data;
-   
+
    if (!_dispvars)
       return;
 
