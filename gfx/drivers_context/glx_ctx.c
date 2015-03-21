@@ -35,7 +35,8 @@ typedef struct gfx_ctx_glx_data
    bool g_has_focus;
    bool g_true_full;
    bool g_use_hw_ctx;
-   bool g_core;
+   bool g_core_es;
+   bool g_core_es_core;
    bool g_debug;
    bool g_should_reset_mode;
    bool g_is_double;
@@ -326,7 +327,7 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
    g_pglSwapIntervalSGI = NULL;
    g_pglSwapIntervalEXT = NULL;
    g_major = g_minor = 0;
-   glx->g_core = false;
+   glx->g_core_es = false;
 }
 
 static bool gfx_ctx_glx_init(void *data)
@@ -377,8 +378,16 @@ static bool gfx_ctx_glx_init(void *data)
    glx->g_debug = global->system.hw_render_callback.debug_context;
 #endif
 
-   glx->g_core = (g_major * 1000 + g_minor) >= 3001; /* Have to use ContextAttribs */
-   if ((glx->g_core || glx->g_debug) && !glx_create_context_attribs)
+   /* Have to use ContextAttribs */
+#ifdef HAVE_OPENGLES2
+   glx->g_core_es      = true;
+   glx->g_core_es_core = true;
+#else
+   glx->g_core_es      = (g_major * 1000 + g_minor) >= 3001;
+   glx->g_core_es_core = (g_major * 1000 + g_minor) >= 3002;
+#endif
+
+   if ((glx->g_core_es || glx->g_debug) && !glx_create_context_attribs)
       goto error;
 
    fbcs = glXChooseFBConfig(glx->g_dpy, DefaultScreen(glx->g_dpy),
@@ -526,25 +535,29 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
 
    if (!glx->g_ctx)
    {
-      if (glx->g_core || glx->g_debug)
+      if (glx->g_core_es || glx->g_debug)
       {
          int attribs[16];
          int *aptr = attribs;
 
-         if (glx->g_core)
+         if (glx->g_core_es)
          {
             *aptr++ = GLX_CONTEXT_MAJOR_VERSION_ARB;
             *aptr++ = g_major;
             *aptr++ = GLX_CONTEXT_MINOR_VERSION_ARB;
             *aptr++ = g_minor;
 
-            /* Technically, we don't have core/compat until 3.2.
-             * Version 3.1 is either compat or not depending on GL_ARB_compatibility.
-             */
-            if ((g_major * 1000 + g_minor) >= 3002)
+            if (glx->g_core_es_core)
             {
+               /* Technically, we don't have core/compat until 3.2.
+                * Version 3.1 is either compat or not depending on GL_ARB_compatibility.
+                */
                *aptr++ = GLX_CONTEXT_PROFILE_MASK_ARB;
+#ifdef HAVE_OPENGLES2
+               *aptr++ = GLX_CONTEXT_ES_PROFILE_BIT_EXT;
+#else
                *aptr++ = GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
+#endif
             }
          }
 
@@ -725,7 +738,21 @@ static bool gfx_ctx_glx_bind_api(void *data, enum gfx_ctx_api api,
    g_major = major;
    g_minor = minor;
 
+#ifdef HAVE_OPENGLES2
+   Display *dpy = XOpenDisplay(NULL);
+   const char *exts = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
+   bool ret = api == GFX_CTX_OPENGL_ES_API &&
+      exts && strstr(exts, "GLX_EXT_create_context_es2_profile");
+   XCloseDisplay(dpy);
+   if (ret && g_major < 3)
+   {
+      g_major = 2; /* ES 2.0. */
+      g_minor = 0;
+   }
+   return ret;
+#else
    return api == GFX_CTX_OPENGL_API;
+#endif
 }
 
 static void gfx_ctx_glx_show_mouse(void *data, bool state)

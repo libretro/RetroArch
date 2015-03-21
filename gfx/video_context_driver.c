@@ -41,7 +41,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(_WIN32) && defined(HAVE_OPENGL)
    &gfx_ctx_wgl,
 #endif
-#if defined(HAVE_X11) && defined(HAVE_OPENGL) && !defined(HAVE_OPENGLES)
+#if defined(HAVE_X11) && defined(HAVE_OPENGL)
    &gfx_ctx_glx,
 #endif
 #if defined(HAVE_WAYLAND) && defined(HAVE_OPENGL) && defined(HAVE_EGL)
