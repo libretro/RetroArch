@@ -66,17 +66,7 @@
 #define CONFIG_GET_PATH_BASE(conf, base, var, key) \
    config_get_path(conf, key, base->var, sizeof(base->var))
 
-#define CONFIG_GET_BOOL(var, key) CONFIG_GET_BOOL_BASE(conf, settings, var, key)
 #define CONFIG_GET_INT(var, key) CONFIG_GET_INT_BASE(conf, settings, var, key)
-#define CONFIG_GET_FLOAT(var, key) CONFIG_GET_FLOAT_BASE(conf, settings, var, key)
-#define CONFIG_GET_STRING(var, key) CONFIG_GET_STRING_BASE(conf, settings, var, key)
-#define CONFIG_GET_PATH(var, key) CONFIG_GET_PATH_BASE(conf, settings, var, key)
-
-#define CONFIG_GET_BOOL_EXTERN(var, key) CONFIG_GET_BOOL_BASE(conf, global, var, key)
-#define CONFIG_GET_INT_EXTERN(var, key) CONFIG_GET_INT_BASE(conf, global, var, key)
-#define CONFIG_GET_FLOAT_EXTERN(var, key) CONFIG_GET_FLOAT_BASE(conf, global, var, key)
-#define CONFIG_GET_STRING_EXTERN(var, key) CONFIG_GET_STRING_BASE(conf, global, var, key)
-#define CONFIG_GET_PATH_EXTERN(var, key) CONFIG_GET_PATH_BASE(conf, global, var, key)
 
 static settings_t *g_config;
 struct defaults g_defaults;
@@ -1153,32 +1143,32 @@ static bool config_load_file(const char *path, bool set_defaults)
    }
 
 
-   CONFIG_GET_FLOAT(video.scale, "video_scale");
+   CONFIG_GET_FLOAT_BASE(conf, settings, video.scale, "video_scale");
    CONFIG_GET_INT(video.fullscreen_x, "video_fullscreen_x");
    CONFIG_GET_INT(video.fullscreen_y, "video_fullscreen_y");
 
    if (!global->force_fullscreen)
-      CONFIG_GET_BOOL(video.fullscreen, "video_fullscreen");
+      CONFIG_GET_BOOL_BASE(conf, settings, video.fullscreen, "video_fullscreen");
 
-   CONFIG_GET_BOOL(video.windowed_fullscreen, "video_windowed_fullscreen");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.windowed_fullscreen, "video_windowed_fullscreen");
    CONFIG_GET_INT(video.monitor_index, "video_monitor_index");
-   CONFIG_GET_BOOL(video.disable_composition, "video_disable_composition");
-   CONFIG_GET_BOOL(video.vsync, "video_vsync");
-   CONFIG_GET_BOOL(video.hard_sync, "video_hard_sync");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.disable_composition, "video_disable_composition");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.vsync, "video_vsync");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.hard_sync, "video_hard_sync");
 
 #ifdef HAVE_MENU
 #ifdef HAVE_THREADS
-   CONFIG_GET_BOOL(menu.threaded_data_runloop_enable, "threaded_data_runloop_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.threaded_data_runloop_enable, "threaded_data_runloop_enable");
 #endif
-   CONFIG_GET_BOOL(menu.pause_libretro, "menu_pause_libretro");
-   CONFIG_GET_BOOL(menu.mouse.enable,   "menu_mouse_enable");
-   CONFIG_GET_BOOL(menu.timedate_enable,   "menu_timedate_enable");
-   CONFIG_GET_BOOL(menu.core_enable,   "menu_core_enable");
-   CONFIG_GET_BOOL(menu.navigation.wraparound.horizontal_enable, "menu_navigation_wraparound_horizontal_enable");
-   CONFIG_GET_BOOL(menu.navigation.wraparound.vertical_enable,   "menu_navigation_wraparound_vertical_enable");
-   CONFIG_GET_BOOL(menu.navigation.browser.filter.supported_extensions_enable,   "menu_navigation_browser_filter_supported_extensions_enable");
-   CONFIG_GET_BOOL(menu.collapse_subgroups_enable,   "menu_collapse_subgroups_enable");
-   CONFIG_GET_BOOL(menu.show_advanced_settings,   "menu_show_advanced_settings");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.pause_libretro, "menu_pause_libretro");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.mouse.enable,   "menu_mouse_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.timedate_enable,   "menu_timedate_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.core_enable,   "menu_core_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.horizontal_enable, "menu_navigation_wraparound_horizontal_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.vertical_enable,   "menu_navigation_wraparound_vertical_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.browser.filter.supported_extensions_enable,   "menu_navigation_browser_filter_supported_extensions_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.collapse_subgroups_enable,   "menu_collapse_subgroups_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.show_advanced_settings,   "menu_show_advanced_settings");
    CONFIG_GET_HEX_BASE(conf, settings, menu.entry_normal_color,   "menu_entry_normal_color");
    CONFIG_GET_HEX_BASE(conf, settings, menu.entry_hover_color,   "menu_entry_hover_color");
    CONFIG_GET_HEX_BASE(conf, settings, menu.title_color,   "menu_title_color");
@@ -1195,44 +1185,44 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (settings->video.frame_delay > 15)
       settings->video.frame_delay = 15;
 
-   CONFIG_GET_BOOL(video.black_frame_insertion, "video_black_frame_insertion");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.black_frame_insertion, "video_black_frame_insertion");
    CONFIG_GET_INT(video.swap_interval, "video_swap_interval");
    settings->video.swap_interval = max(settings->video.swap_interval, 1);
    settings->video.swap_interval = min(settings->video.swap_interval, 4);
-   CONFIG_GET_BOOL(video.threaded, "video_threaded");
-   CONFIG_GET_BOOL(video.shared_context, "video_shared_context");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.threaded, "video_threaded");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.shared_context, "video_shared_context");
 #ifdef GEKKO
    CONFIG_GET_INT(video.viwidth, "video_viwidth");
-   CONFIG_GET_BOOL(video.vfilter, "video_vfilter");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.vfilter, "video_vfilter");
 #endif
-   CONFIG_GET_BOOL(video.smooth, "video_smooth");
-   CONFIG_GET_BOOL(video.force_aspect, "video_force_aspect");
-   CONFIG_GET_BOOL(video.scale_integer, "video_scale_integer");
-   CONFIG_GET_BOOL(video.crop_overscan, "video_crop_overscan");
-   CONFIG_GET_FLOAT(video.aspect_ratio, "video_aspect_ratio");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.smooth, "video_smooth");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.force_aspect, "video_force_aspect");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.scale_integer, "video_scale_integer");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.crop_overscan, "video_crop_overscan");
+   CONFIG_GET_FLOAT_BASE(conf, settings, video.aspect_ratio, "video_aspect_ratio");
    CONFIG_GET_INT(video.aspect_ratio_idx, "aspect_ratio_index");
-   CONFIG_GET_BOOL(video.aspect_ratio_auto, "video_aspect_ratio_auto");
-   CONFIG_GET_FLOAT(video.refresh_rate, "video_refresh_rate");
+   CONFIG_GET_BOOL_BASE(conf,  settings, video.aspect_ratio_auto, "video_aspect_ratio_auto");
+   CONFIG_GET_FLOAT_BASE(conf, settings, video.refresh_rate, "video_refresh_rate");
 
    config_get_path(conf, "video_shader", settings->video.shader_path, sizeof(settings->video.shader_path));
-   CONFIG_GET_BOOL(video.shader_enable, "video_shader_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.shader_enable, "video_shader_enable");
 
-   CONFIG_GET_BOOL(video.allow_rotate, "video_allow_rotate");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.allow_rotate, "video_allow_rotate");
 
    config_get_path(conf, "video_font_path", settings->video.font_path, sizeof(settings->video.font_path));
-   CONFIG_GET_FLOAT(video.font_size, "video_font_size");
-   CONFIG_GET_BOOL(video.font_enable, "video_font_enable");
-   CONFIG_GET_FLOAT(video.msg_pos_x, "video_message_pos_x");
-   CONFIG_GET_FLOAT(video.msg_pos_y, "video_message_pos_y");
+   CONFIG_GET_FLOAT_BASE(conf, settings, video.font_size, "video_font_size");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.font_enable, "video_font_enable");
+   CONFIG_GET_FLOAT_BASE(conf, settings, video.msg_pos_x, "video_message_pos_x");
+   CONFIG_GET_FLOAT_BASE(conf, settings, video.msg_pos_y, "video_message_pos_y");
    CONFIG_GET_INT(video.rotation, "video_rotation");
 
-   CONFIG_GET_BOOL(video.force_srgb_disable, "video_force_srgb_disable");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.force_srgb_disable, "video_force_srgb_disable");
 
 #ifdef RARCH_CONSOLE
    /* TODO - will be refactored later to make it more clean - it's more 
     * important that it works for consoles right now */
 
-   CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
+   CONFIG_GET_BOOL_BASE(conf, global, console.screen.gamma_correction, "gamma_correction");
 
    config_get_bool(conf, "custom_bgm_enable",
          &global->console.sound.system_bgm_enable);
@@ -1241,23 +1231,23 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_bool(conf, "soft_filter_enable",
          &global->console.softfilter_enable);
 
-   CONFIG_GET_INT_EXTERN(console.screen.flicker_filter_index,
+   CONFIG_GET_INT_BASE(conf, global, console.screen.flicker_filter_index,
          "flicker_filter_index");
-   CONFIG_GET_INT_EXTERN(console.screen.soft_filter_index,
+   CONFIG_GET_INT_BASE(conf, global, console.screen.soft_filter_index,
          "soft_filter_index");
-   CONFIG_GET_INT_EXTERN(console.screen.resolutions.current.id,
+   CONFIG_GET_INT_BASE(conf, global, console.screen.resolutions.current.id,
          "current_resolution_id");
-   CONFIG_GET_INT_EXTERN(console.sound.mode, "sound_mode");
+   CONFIG_GET_INT_BASE(conf, global, console.sound.mode, "sound_mode");
 #endif
    CONFIG_GET_INT(state_slot, "state_slot");
 
-   CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.x,
+   CONFIG_GET_INT_BASE(conf, global, console.screen.viewports.custom_vp.x,
          "custom_viewport_x");
-   CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.y,
+   CONFIG_GET_INT_BASE(conf, global, console.screen.viewports.custom_vp.y,
          "custom_viewport_y");
-   CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.width,
+   CONFIG_GET_INT_BASE(conf, global, console.screen.viewports.custom_vp.width,
          "custom_viewport_width");
-   CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.height,
+   CONFIG_GET_INT_BASE(conf, global, console.screen.viewports.custom_vp.height,
          "custom_viewport_height");
 
    if (config_get_hex(conf, "video_message_color", &msg_color))
@@ -1267,9 +1257,9 @@ static bool config_load_file(const char *path, bool set_defaults)
       settings->video.msg_color_b = ((msg_color >>  0) & 0xff) / 255.0f;
    }
 
-   CONFIG_GET_BOOL(video.post_filter_record, "video_post_filter_record");
-   CONFIG_GET_BOOL(video.gpu_record, "video_gpu_record");
-   CONFIG_GET_BOOL(video.gpu_screenshot, "video_gpu_screenshot");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.post_filter_record, "video_post_filter_record");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.gpu_record, "video_gpu_record");
+   CONFIG_GET_BOOL_BASE(conf, settings, video.gpu_screenshot, "video_gpu_screenshot");
 
    config_get_path(conf, "video_shader_dir", settings->video.shader_dir, sizeof(settings->video.shader_dir));
    if (!strcmp(settings->video.shader_dir, "default"))
@@ -1283,25 +1273,19 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (!strcmp(settings->audio.filter_dir, "default"))
       *settings->audio.filter_dir = '\0';
 
-   CONFIG_GET_BOOL(input.remap_binds_enable,
-         "input_remap_binds_enable");
-   CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
-   CONFIG_GET_BOOL(input.netplay_client_swap_input,
-         "netplay_client_swap_input");
+   CONFIG_GET_BOOL_BASE(conf, settings, input.remap_binds_enable, "input_remap_binds_enable");
+   CONFIG_GET_FLOAT_BASE(conf, settings, input.axis_threshold, "input_axis_threshold");
+   CONFIG_GET_BOOL_BASE(conf, settings, input.netplay_client_swap_input, "netplay_client_swap_input");
    CONFIG_GET_INT(input.max_users, "input_max_users");
-   CONFIG_GET_BOOL(input.input_descriptor_label_show,
-         "input_descriptor_label_show");
-   CONFIG_GET_BOOL(input.input_descriptor_hide_unbound,
-         "input_descriptor_hide_unbound");
-   CONFIG_GET_BOOL(input.autoconfig_descriptor_label_show,
-         "autoconfig_descriptor_label_show");
+   CONFIG_GET_BOOL_BASE(conf, settings, input.input_descriptor_label_show, "input_descriptor_label_show");
+   CONFIG_GET_BOOL_BASE(conf, settings, input.input_descriptor_hide_unbound, "input_descriptor_hide_unbound");
+   CONFIG_GET_BOOL_BASE(conf, settings, input.autoconfig_descriptor_label_show, "autoconfig_descriptor_label_show");
 
    config_get_path(conf, "core_updater_buildbot_url",
          settings->network.buildbot_url, sizeof(settings->network.buildbot_url));
    config_get_path(conf, "core_updater_buildbot_assets_url",
          settings->network.buildbot_assets_url, sizeof(settings->network.buildbot_assets_url));
-   CONFIG_GET_BOOL(network.buildbot_auto_extract_archive,
-         "core_updater_auto_extract_archive");
+   CONFIG_GET_BOOL_BASE(conf, settings, network.buildbot_auto_extract_archive, "core_updater_auto_extract_archive");
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -1321,47 +1305,47 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    if (!global->has_set_ups_pref)
    {
-      CONFIG_GET_BOOL_EXTERN(ups_pref, "ups_pref");
+      CONFIG_GET_BOOL_BASE(conf, global, ups_pref, "ups_pref");
    }
    if (!global->has_set_bps_pref)
    {
-      CONFIG_GET_BOOL_EXTERN(bps_pref, "bps_pref");
+      CONFIG_GET_BOOL_BASE(conf, global, bps_pref, "bps_pref");
    }
    if (!global->has_set_ips_pref)
    {
-      CONFIG_GET_BOOL_EXTERN(ips_pref, "ips_pref");
+      CONFIG_GET_BOOL_BASE(conf, global, ips_pref, "ips_pref");
    }
 
    /* Audio settings. */
-   CONFIG_GET_BOOL(audio.enable, "audio_enable");
-   CONFIG_GET_BOOL(audio.mute_enable, "audio_mute_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, audio.enable, "audio_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, audio.mute_enable, "audio_mute_enable");
    CONFIG_GET_INT(audio.out_rate, "audio_out_rate");
    CONFIG_GET_INT(audio.block_frames, "audio_block_frames");
-   CONFIG_GET_STRING(audio.device, "audio_device");
+   CONFIG_GET_STRING_BASE(conf, settings, audio.device, "audio_device");
    CONFIG_GET_INT(audio.latency, "audio_latency");
-   CONFIG_GET_BOOL(audio.sync, "audio_sync");
-   CONFIG_GET_BOOL(audio.rate_control, "audio_rate_control");
-   CONFIG_GET_FLOAT(audio.rate_control_delta, "audio_rate_control_delta");
-   CONFIG_GET_FLOAT(audio.max_timing_skew, "audio_max_timing_skew");
-   CONFIG_GET_FLOAT(audio.volume, "audio_volume");
-   CONFIG_GET_STRING(audio.resampler, "audio_resampler");
+   CONFIG_GET_BOOL_BASE(conf, settings, audio.sync, "audio_sync");
+   CONFIG_GET_BOOL_BASE(conf, settings, audio.rate_control, "audio_rate_control");
+   CONFIG_GET_FLOAT_BASE(conf, settings, audio.rate_control_delta, "audio_rate_control_delta");
+   CONFIG_GET_FLOAT_BASE(conf, settings, audio.max_timing_skew, "audio_max_timing_skew");
+   CONFIG_GET_FLOAT_BASE(conf, settings, audio.volume, "audio_volume");
+   CONFIG_GET_STRING_BASE(conf, settings, audio.resampler, "audio_resampler");
    global->audio_data.volume_gain = db_to_gain(settings->audio.volume);
 
-   CONFIG_GET_STRING(camera.device, "camera_device");
-   CONFIG_GET_BOOL(camera.allow, "camera_allow");
+   CONFIG_GET_STRING_BASE(conf, settings, camera.device, "camera_device");
+   CONFIG_GET_BOOL_BASE(conf, settings, camera.allow, "camera_allow");
 
-   CONFIG_GET_BOOL(location.allow, "location_allow");
-   CONFIG_GET_STRING(video.driver, "video_driver");
+   CONFIG_GET_BOOL_BASE(conf, settings, location.allow, "location_allow");
+   CONFIG_GET_STRING_BASE(conf, settings, video.driver, "video_driver");
 #ifdef HAVE_MENU
-   CONFIG_GET_STRING(menu.driver, "menu_driver");
+   CONFIG_GET_STRING_BASE(conf, settings, menu.driver, "menu_driver");
 #endif
-   CONFIG_GET_STRING(video.context_driver, "video_context_driver");
-   CONFIG_GET_STRING(audio.driver, "audio_driver");
+   CONFIG_GET_STRING_BASE(conf, settings, video.context_driver, "video_context_driver");
+   CONFIG_GET_STRING_BASE(conf, settings, audio.driver, "audio_driver");
    config_get_path(conf, "video_filter", settings->video.softfilter_plugin, sizeof(settings->video.softfilter_plugin));
    config_get_path(conf, "audio_dsp_plugin", settings->audio.dsp_plugin, sizeof(settings->audio.dsp_plugin));
-   CONFIG_GET_STRING(input.driver, "input_driver");
-   CONFIG_GET_STRING(input.joypad_driver, "input_joypad_driver");
-   CONFIG_GET_STRING(input.keyboard_layout, "input_keyboard_layout");
+   CONFIG_GET_STRING_BASE(conf, settings, input.driver, "input_driver");
+   CONFIG_GET_STRING_BASE(conf, settings, input.joypad_driver, "input_joypad_driver");
+   CONFIG_GET_STRING_BASE(conf, settings, input.keyboard_layout, "input_keyboard_layout");
 
    if (!global->has_set_libretro)
       config_get_path(conf, "libretro_path", settings->libretro, sizeof(settings->libretro));
@@ -1377,10 +1361,10 @@ static bool config_load_file(const char *path, bool set_defaults)
       *settings->libretro = '\0';
    }
 
-   CONFIG_GET_BOOL(ui.menubar_enable, "ui_menubar_enable");
-   CONFIG_GET_BOOL(ui.suspend_screensaver_enable, "suspend_screensaver_enable");
-   CONFIG_GET_BOOL(fps_show, "fps_show");
-   CONFIG_GET_BOOL(load_dummy_on_core_shutdown, "load_dummy_on_core_shutdown");
+   CONFIG_GET_BOOL_BASE(conf, settings, ui.menubar_enable, "ui_menubar_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, ui.suspend_screensaver_enable, "suspend_screensaver_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, fps_show, "fps_show");
+   CONFIG_GET_BOOL_BASE(conf, settings, load_dummy_on_core_shutdown, "load_dummy_on_core_shutdown");
 
    config_get_path(conf, "libretro_info_path", settings->libretro_info_path, sizeof(settings->libretro_info_path));
 
@@ -1418,14 +1402,14 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_path(conf, "rgui_config_directory", settings->menu_config_directory, sizeof(settings->menu_config_directory));
    if (!strcmp(settings->menu_config_directory, "default"))
       *settings->menu_config_directory = '\0';
-   CONFIG_GET_BOOL(menu_show_start_screen, "rgui_show_start_screen");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu_show_start_screen, "rgui_show_start_screen");
 #endif
    CONFIG_GET_INT(libretro_log_level, "libretro_log_level");
 
    if (!global->has_set_verbosity)
-      CONFIG_GET_BOOL_EXTERN(verbosity, "log_verbosity");
+      CONFIG_GET_BOOL_BASE(conf, global, verbosity, "log_verbosity");
 
-   CONFIG_GET_BOOL_EXTERN(perfcnt_enable, "perfcnt_enable");
+   CONFIG_GET_BOOL_BASE(conf, global, perfcnt_enable, "perfcnt_enable");
 
    CONFIG_GET_INT(archive.mode, "archive_mode");
 
@@ -1435,86 +1419,86 @@ static bool config_load_file(const char *path, bool set_defaults)
       *global->overlay_dir = '\0';
 
    config_get_path(conf, "input_overlay", settings->input.overlay, sizeof(settings->input.overlay));
-   CONFIG_GET_BOOL(input.overlay_enable, "input_overlay_enable");
-   CONFIG_GET_FLOAT(input.overlay_opacity, "input_overlay_opacity");
-   CONFIG_GET_FLOAT(input.overlay_scale, "input_overlay_scale");
+   CONFIG_GET_BOOL_BASE(conf, settings, input.overlay_enable, "input_overlay_enable");
+   CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_opacity, "input_overlay_opacity");
+   CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_scale, "input_overlay_scale");
 
    config_get_path(conf, "osk_overlay_directory", global->osk_overlay_dir, sizeof(global->osk_overlay_dir));
    if (!strcmp(global->osk_overlay_dir, "default"))
       *global->osk_overlay_dir = '\0';
 
    config_get_path(conf, "input_osk_overlay", settings->osk.overlay, sizeof(settings->osk.overlay));
-   CONFIG_GET_BOOL(osk.enable, "input_osk_overlay_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, osk.enable, "input_osk_overlay_enable");
 #endif
 
-   CONFIG_GET_BOOL(rewind_enable, "rewind_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, rewind_enable, "rewind_enable");
 
    int buffer_size = 0;
    if (config_get_int(conf, "rewind_buffer_size", &buffer_size))
       settings->rewind_buffer_size = buffer_size * UINT64_C(1000000);
 
    CONFIG_GET_INT(rewind_granularity, "rewind_granularity");
-   CONFIG_GET_FLOAT(slowmotion_ratio, "slowmotion_ratio");
+   CONFIG_GET_FLOAT_BASE(conf, settings, slowmotion_ratio, "slowmotion_ratio");
    if (settings->slowmotion_ratio < 1.0f)
       settings->slowmotion_ratio = 1.0f;
 
-   CONFIG_GET_FLOAT(fastforward_ratio, "fastforward_ratio");
+   CONFIG_GET_FLOAT_BASE(conf, settings, fastforward_ratio, "fastforward_ratio");
 
    /* Sanitize fastforward_ratio value - previously range was -1
     * and up (with 0 being skipped) */
    if (settings->fastforward_ratio <= 0.0f)
       settings->fastforward_ratio = 1.0f;
 
-   CONFIG_GET_BOOL(fastforward_ratio_throttle_enable, "fastforward_ratio_throttle_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, fastforward_ratio_throttle_enable, "fastforward_ratio_throttle_enable");
 
-   CONFIG_GET_BOOL(pause_nonactive, "pause_nonactive");
+   CONFIG_GET_BOOL_BASE(conf, settings, pause_nonactive, "pause_nonactive");
    CONFIG_GET_INT(autosave_interval, "autosave_interval");
 
-   CONFIG_GET_PATH(content_database, "content_database_path");
-   CONFIG_GET_PATH(cheat_database, "cheat_database_path");
-   CONFIG_GET_PATH(cursor_directory, "cursor_directory");
-   CONFIG_GET_PATH(cheat_settings_path, "cheat_settings_path");
+   CONFIG_GET_PATH_BASE(conf, settings, content_database, "content_database_path");
+   CONFIG_GET_PATH_BASE(conf, settings, cheat_database, "cheat_database_path");
+   CONFIG_GET_PATH_BASE(conf, settings, cursor_directory, "cursor_directory");
+   CONFIG_GET_PATH_BASE(conf, settings, cheat_settings_path, "cheat_settings_path");
 
-   CONFIG_GET_BOOL(block_sram_overwrite, "block_sram_overwrite");
-   CONFIG_GET_BOOL(savestate_auto_index, "savestate_auto_index");
-   CONFIG_GET_BOOL(savestate_auto_save, "savestate_auto_save");
-   CONFIG_GET_BOOL(savestate_auto_load, "savestate_auto_load");
+   CONFIG_GET_BOOL_BASE(conf, settings, block_sram_overwrite, "block_sram_overwrite");
+   CONFIG_GET_BOOL_BASE(conf, settings, savestate_auto_index, "savestate_auto_index");
+   CONFIG_GET_BOOL_BASE(conf, settings, savestate_auto_save, "savestate_auto_save");
+   CONFIG_GET_BOOL_BASE(conf, settings, savestate_auto_load, "savestate_auto_load");
 
-   CONFIG_GET_BOOL(network_cmd_enable, "network_cmd_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, network_cmd_enable, "network_cmd_enable");
    CONFIG_GET_INT(network_cmd_port, "network_cmd_port");
-   CONFIG_GET_BOOL(stdin_cmd_enable, "stdin_cmd_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, stdin_cmd_enable, "stdin_cmd_enable");
 
-   CONFIG_GET_PATH(content_history_directory, "content_history_dir");
+   CONFIG_GET_PATH_BASE(conf, settings, content_history_directory, "content_history_dir");
 
-   CONFIG_GET_BOOL(history_list_enable, "history_list_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, history_list_enable, "history_list_enable");
 
-   CONFIG_GET_PATH(content_history_path, "game_history_path");
+   CONFIG_GET_PATH_BASE(conf, settings, content_history_path, "game_history_path");
    CONFIG_GET_INT(content_history_size, "game_history_size");
 
    CONFIG_GET_INT(input.turbo_period, "input_turbo_period");
    CONFIG_GET_INT(input.turbo_duty_cycle, "input_duty_cycle");
 
-   CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
-   CONFIG_GET_PATH(input.autoconfig_dir, "joypad_autoconfig_dir");
+   CONFIG_GET_BOOL_BASE(conf, settings, input.autodetect_enable, "input_autodetect_enable");
+   CONFIG_GET_PATH_BASE(conf, settings, input.autoconfig_dir, "joypad_autoconfig_dir");
 
    if (!global->has_set_username)
-      CONFIG_GET_PATH(username, "netplay_nickname");
+      CONFIG_GET_PATH_BASE(conf, settings, username, "netplay_nickname");
    CONFIG_GET_INT(user_language, "user_language");
 #ifdef HAVE_NETPLAY
    if (!global->has_set_netplay_mode)
-      CONFIG_GET_BOOL_EXTERN(netplay_is_spectate,
+      CONFIG_GET_BOOL_BASE(conf, global, netplay_is_spectate,
             "netplay_spectator_mode_enable");
    if (!global->has_set_netplay_mode)
-      CONFIG_GET_BOOL_EXTERN(netplay_is_client, "netplay_mode");
+      CONFIG_GET_BOOL_BASE(conf, global, netplay_is_client, "netplay_mode");
    if (!global->has_set_netplay_ip_address)
-      CONFIG_GET_PATH_EXTERN(netplay_server, "netplay_ip_address");
+      CONFIG_GET_PATH_BASE(conf, global, netplay_server, "netplay_ip_address");
    if (!global->has_set_netplay_delay_frames)
-      CONFIG_GET_INT_EXTERN(netplay_sync_frames, "netplay_delay_frames");
+      CONFIG_GET_INT_BASE(conf, global, netplay_sync_frames, "netplay_delay_frames");
    if (!global->has_set_netplay_ip_port)
-      CONFIG_GET_INT_EXTERN(netplay_port, "netplay_ip_port");
+      CONFIG_GET_INT_BASE(conf, global, netplay_port, "netplay_ip_port");
 #endif
 
-   CONFIG_GET_BOOL(config_save_on_exit, "config_save_on_exit");
+   CONFIG_GET_BOOL_BASE(conf, settings, config_save_on_exit, "config_save_on_exit");
 
    if (!global->has_set_save_path &&
          config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
@@ -1583,7 +1567,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    config_read_keybinds_conf(conf);
 
-   CONFIG_GET_BOOL(core_specific_config, "core_specific_config");
+   CONFIG_GET_BOOL_BASE(conf, settings, core_specific_config, "core_specific_config");
 
    config_file_free(conf);
    return true;
