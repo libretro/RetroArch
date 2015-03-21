@@ -49,73 +49,7 @@
 #elif defined(ANDROID) && defined(HAVE_LOGGER) && defined(RARCH_INTERNAL)
 #include "logger/android_logger_override.h"
 #else
-
-#ifndef RARCH_LOG
-#undef RARCH_LOG_V
-#define RARCH_LOG(...) do { \
-      if (RARCH_LOG_VERBOSE) \
-      { \
-         fprintf(LOG_FILE, "%s: %s: ", PROGRAM_NAME, __FUNCTION__); \
-         fprintf(LOG_FILE, __VA_ARGS__); \
-         fflush(LOG_FILE); \
-      } \
-   } while (0)
-#define RARCH_LOG_V(tag, fmt, vp) do { \
-      if (RARCH_LOG_VERBOSE) \
-      { \
-         fprintf(LOG_FILE, "%s: %s: ", PROGRAM_NAME, __FUNCTION__); \
-         fprintf(LOG_FILE, tag);\
-         vfprintf(LOG_FILE, fmt, vp); \
-         fflush(LOG_FILE); \
-      } \
-   } while (0)
-#endif
-
-#ifndef RARCH_LOG_OUTPUT
-#undef RARCH_LOG_OUTPUT_V
-#define RARCH_LOG_OUTPUT(...) do { \
-      fprintf(LOG_FILE, "%s: ", __FUNCTION__); \
-      fprintf(LOG_FILE, __VA_ARGS__); \
-      fflush(LOG_FILE); \
-   } while (0)
-#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
-      fprintf(LOG_FILE, "%s: %s: ", PROGRAM_NAME, __FUNCTION__); \
-      fprintf(LOG_FILE, tag); \
-      vfprintf(LOG_FILE, fmt, vp); \
-      fflush(LOG_FILE); \
-   } while (0)
-#endif
-
-#ifndef RARCH_ERR
-#undef RARCH_ERR_V
-#define RARCH_ERR(...) do { \
-      fprintf(LOG_FILE, "%s [ERROR] :: %s :: ", PROGRAM_NAME, __FUNCTION__); \
-      fprintf(LOG_FILE, __VA_ARGS__); \
-      fflush(LOG_FILE); \
-   } while (0)
-#define RARCH_ERR_V(tag, fmt, vp) do { \
-      fprintf(LOG_FILE, "%s [ERROR] :: %s :: ", PROGRAM_NAME, __FUNCTION__); \
-      fprintf(LOG_FILE, tag); \
-      vfprintf(LOG_FILE, fmt, vp); \
-      fflush(LOG_FILE); \
-   } while (0)
-#endif
-
-#ifndef RARCH_WARN
-#undef RARCH_WARN_V
-#define RARCH_WARN(...) do { \
-      fprintf(LOG_FILE, "%s [WARN] :: %s :: ", PROGRAM_NAME, __FUNCTION__); \
-      fprintf(LOG_FILE, __VA_ARGS__); \
-      fflush(LOG_FILE); \
-   } while (0)
-#define RARCH_WARN_V(tag, fmt, vp) do { \
-      fprintf(LOG_FILE, "%s [WARN] :: %s :: ", PROGRAM_NAME, __FUNCTION__); \
-      fprintf(LOG_FILE, tag); \
-      vfprintf(LOG_FILE, fmt, vp); \
-      fflush(LOG_FILE); \
-   } while (0)
-#endif
-
+#include "logger/generic_logger_override.h"
 #endif
 
 #endif
