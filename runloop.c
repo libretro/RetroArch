@@ -762,16 +762,14 @@ static void rarch_update_frame_time(void)
  **/
 static void rarch_limit_frame_time(void)
 {
-   double effective_fps, mft_f;
-   retro_time_t current, target = 0, to_sleep_ms = 0;
+   retro_time_t target = 0, to_sleep_ms = 0;
    runloop_t *runloop       = rarch_main_get_ptr();
    settings_t *settings     = config_get_ptr();
    global_t  *global        = global_get_ptr();
-
-   current       = rarch_get_time_usec();
-   effective_fps = global->system.av_info.timing.fps 
+   retro_time_t current     = rarch_get_time_usec();
+   double effective_fps     = global->system.av_info.timing.fps 
       * settings->fastforward_ratio;
-   mft_f         = 1000000.0f / effective_fps;
+   double mft_f             = 1000000.0f / effective_fps;
 
    runloop->frames.limit.minimum_time = (retro_time_t) roundf(mft_f);
 
