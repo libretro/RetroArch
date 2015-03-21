@@ -150,15 +150,6 @@ static void check_fast_forward_button(bool fastforward_pressed,
    driver_set_nonblock_state(driver->nonblock_state);
 }
 
-static void check_fast_forward_button_func(retro_input_t input,
-      retro_input_t old_input, retro_input_t trigger_input)
-{
-   bool fastforward_pressed = BIT64_GET(trigger_input, RARCH_FAST_FORWARD_KEY);
-   bool hold_pressed        = BIT64_GET(input, RARCH_FAST_FORWARD_HOLD_KEY);
-   bool old_hold_pressed    = BIT64_GET(old_input, RARCH_FAST_FORWARD_HOLD_KEY);
-   check_fast_forward_button(fastforward_pressed, hold_pressed, old_hold_pressed);
-}
-
 /**
  * check_stateslots:
  * @pressed_increase     : is state slot increase key pressed?
@@ -189,13 +180,6 @@ static void check_stateslots(bool pressed_increase, bool pressed_decrease)
    rarch_main_msg_queue_push(msg, 1, 180, true);
 
    RARCH_LOG("%s\n", msg);
-}
-
-static void check_stateslots_func(retro_input_t trigger_input)
-{
-   bool pressed_increase = BIT64_GET(trigger_input, RARCH_STATE_SLOT_PLUS);
-   bool pressed_decrease = BIT64_GET(trigger_input, RARCH_STATE_SLOT_MINUS);
-   check_stateslots(pressed_increase, pressed_decrease);
 }
 
 static INLINE void setup_rewind_audio(void)
@@ -642,6 +626,12 @@ static int do_state_checks(
    bool slowmotion_pressed  = BIT64_GET(input, RARCH_SLOWMOTION);
    bool shader_next_pressed = BIT64_GET(trigger_input, RARCH_SHADER_NEXT);
    bool shader_prev_pressed = BIT64_GET(trigger_input, RARCH_SHADER_PREV);
+   bool fastforward_pressed = BIT64_GET(trigger_input, RARCH_FAST_FORWARD_KEY);
+   bool hold_pressed        = BIT64_GET(input, RARCH_FAST_FORWARD_HOLD_KEY);
+   bool old_hold_pressed    = BIT64_GET(old_input, RARCH_FAST_FORWARD_HOLD_KEY);
+   bool state_slot_increase = BIT64_GET(trigger_input, RARCH_STATE_SLOT_PLUS);
+   bool state_slot_decrease = BIT64_GET(trigger_input, RARCH_STATE_SLOT_MINUS);
+
    (void)driver;
 
    if (runloop->is_idle)
@@ -668,9 +658,8 @@ static int do_state_checks(
             trigger_input))
       return 1;
 
-   check_fast_forward_button_func(input, old_input, trigger_input);
-
-   check_stateslots_func(trigger_input);
+   check_fast_forward_button(fastforward_pressed, hold_pressed, old_hold_pressed);
+   check_stateslots(state_slot_increase, state_slot_decrease);
 
    if (save_state_pressed)
       rarch_main_command(RARCH_CMD_SAVE_STATE);
