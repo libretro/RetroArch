@@ -1668,7 +1668,10 @@ static void free_temporary_content(void)
 static void main_clear_state_drivers(void)
 {
    global_t *global = global_get_ptr();
-   bool inited      = global->main_is_init;
+   bool inited      = false;
+   if (!global)
+      return;
+   inited           = global->main_is_init;
    if (!inited)
       return;
 

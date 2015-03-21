@@ -981,6 +981,9 @@ void rarch_main_msg_queue_push(const char *msg, unsigned prio, unsigned duration
 void rarch_main_msg_queue_free(void)
 {
    runloop_t *runloop = rarch_main_get_ptr();
+   if (!runloop)
+      return;
+
    if (runloop->msg_queue)
       msg_queue_free(runloop->msg_queue);
    runloop->msg_queue = NULL;
@@ -989,6 +992,9 @@ void rarch_main_msg_queue_free(void)
 void rarch_main_msg_queue_init(void)
 {
    runloop_t *runloop = rarch_main_get_ptr();
+   if (!runloop)
+      return;
+
    if (!runloop->msg_queue)
       rarch_assert(runloop->msg_queue = msg_queue_new(8));
 }
