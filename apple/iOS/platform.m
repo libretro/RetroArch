@@ -258,6 +258,9 @@ void notify_content_loaded(void)
 
    apple_platform = self;
    [self setDelegate:self];
+    
+   if (rarch_main(0, NULL))
+       apple_rarch_exited();
 
    // Setup window
    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
@@ -267,9 +270,6 @@ void notify_content_loaded(void)
    [self pushViewController:[RAMainMenu new] animated:YES];
 
    [apple_platform loadingCore:nil withFile:nil];
-
-   if (rarch_main(0, NULL))
-      apple_rarch_exited();
 
    driver = driver_get_ptr();
     
