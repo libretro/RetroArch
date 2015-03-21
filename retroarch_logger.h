@@ -21,7 +21,7 @@
 #include <stdio.h>
 
 #if defined(HAVE_FILE_LOGGER) && defined(RARCH_INTERNAL)
-#define LOG_FILE (g_extern.log_file)
+#define LOG_FILE (rarch_main_log_file())
 #else
 #define LOG_FILE (stderr)
 #endif
@@ -35,7 +35,7 @@
 #endif
 
 #if defined(RARCH_INTERNAL)
-#define RARCH_LOG_VERBOSE g_extern.verbosity
+#define RARCH_LOG_VERBOSE (rarch_main_verbosity())
 #else
 #define RARCH_LOG_VERBOSE (true)
 #endif

@@ -476,6 +476,10 @@ void rarch_main_data_msg_queue_push(unsigned type,
 
 void rarch_main_clear_state(void);
 
+bool rarch_main_verbosity(void);
+
+FILE *rarch_main_log_file(void);
+
 bool rarch_main_is_idle(void);
 
 void rarch_main_data_clear_state(void);

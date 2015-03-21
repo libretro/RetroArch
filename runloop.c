@@ -1027,6 +1027,22 @@ static void rarch_main_global_deinit(void)
 #endif
 }
 
+bool rarch_main_verbosity(void)
+{
+   global_t *global = global_get_ptr();
+   if (!global)
+      return false;
+   return global->verbosity;
+}
+
+FILE *rarch_main_log_file(void)
+{
+   global_t *global = global_get_ptr();
+   if (!global)
+      return NULL;
+   return global->log_file;
+}
+
 static void rarch_main_global_init(void)
 {
 #if 0
