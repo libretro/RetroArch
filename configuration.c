@@ -31,7 +31,7 @@
 #include "config.h"
 #endif
 
-settings_t g_config;
+static settings_t g_config;
 struct global g_extern;
 struct defaults g_defaults;
 
