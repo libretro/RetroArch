@@ -218,6 +218,8 @@ struct rarch_main_wrap
    bool touched;
 };
 
+void rarch_main_state_alloc(void);
+
 void rarch_main_state_new(void);
 
 void rarch_main_state_free(void);

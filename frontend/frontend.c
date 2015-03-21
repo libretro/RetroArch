@@ -284,15 +284,18 @@ returntype main_entry(signature())
    settings_t *settings = NULL;
    driver_t *driver = driver_get_ptr();
 
-   rarch_main_state_new();
+   rarch_main_state_alloc();
 
-   driver->frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
+   if (driver)
+      driver->frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
-   if (!driver->frontend_ctx)
+   if (!driver || !driver->frontend_ctx)
       RARCH_WARN("Frontend context could not be initialized.\n");
 
    if (driver->frontend_ctx && driver->frontend_ctx->init)
       driver->frontend_ctx->init(args);
+
+   rarch_main_state_new();
 
    if (driver->frontend_ctx)
    {

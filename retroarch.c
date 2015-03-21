@@ -1665,16 +1665,25 @@ static void free_temporary_content(void)
    string_list_free(global->temporary_content);
 }
 
-/* main_clear_state_extern:
- *
- * Clears all external state.
- */
-static void main_clear_state_extern(void)
+static void main_clear_state_drivers(bool inited)
 {
-   rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
+   if (!inited)
+      return;
 
-   rarch_main_clear_state();
-   rarch_main_data_clear_state();
+   rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
+   rarch_main_command(RARCH_CMD_DRIVERS_INIT);
+}
+
+static void main_init_state_config(void)
+{
+   unsigned i;
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return;
+
+   for (i = 0; i < MAX_USERS; i++)
+      settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
 }
 
 /**
@@ -1688,36 +1697,33 @@ static void main_clear_state_extern(void)
  **/
 static void main_clear_state(bool inited)
 {
-   unsigned i;
+   main_clear_state_drivers(inited);
+   init_state();
+   main_init_state_config();
+}
+
+void rarch_main_state_alloc(void)
+{
    settings_t *settings = config_get_ptr();
 
    if (settings)
       config_free();
-
    settings = config_init();
 
    if (!settings)
       return;
 
-   if (inited)
-      rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
+   rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
 
-   main_clear_state_extern();
-
-   if (inited)
-      rarch_main_command(RARCH_CMD_DRIVERS_INIT);
-
-   init_state();
-
-   for (i = 0; i < MAX_USERS; i++)
-      settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
+   rarch_main_clear_state();
+   rarch_main_data_clear_state();
 }
 
 void rarch_main_state_new(void)
 {
    global_t *global = global_get_ptr();
 
-   main_clear_state(global ? global->main_is_init: false);
+   main_clear_state(global->main_is_init);
    rarch_main_command(RARCH_CMD_MSG_QUEUE_INIT);
 }
 
