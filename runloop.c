@@ -37,17 +37,6 @@ static struct runloop *g_runloop;
 
 static struct global *g_extern;
 
-/* Convenience macros. */
-#define check_oneshot_func(trigger_input) (check_is_oneshot(BIT64_GET(trigger_input, RARCH_FRAMEADVANCE), BIT64_GET(trigger_input, RARCH_REWIND)))
-#define check_slowmotion_func(input)      (check_slowmotion(BIT64_GET(input, RARCH_SLOWMOTION)))
-#define check_quit_key_func(input)        (BIT64_GET(input, RARCH_QUIT_KEY))
-#define check_pause_func(input)           (check_pause(BIT64_GET(input, RARCH_PAUSE_TOGGLE), BIT64_GET(input, RARCH_FRAMEADVANCE)))
-#define check_stateslots_func(trigger_input) (check_stateslots(BIT64_GET(trigger_input, RARCH_STATE_SLOT_PLUS), BIT64_GET(trigger_input, RARCH_STATE_SLOT_MINUS)))
-#define check_rewind_func(input)          (check_rewind(BIT64_GET(input, RARCH_REWIND)))
-#define check_fast_forward_button_func(input, old_input, trigger_input) (check_fast_forward_button(BIT64_GET(trigger_input, RARCH_FAST_FORWARD_KEY), BIT64_GET(input, RARCH_FAST_FORWARD_HOLD_KEY), BIT64_GET(old_input, RARCH_FAST_FORWARD_HOLD_KEY)))
-#define check_enter_menu_func(input)      (BIT64_GET(input, RARCH_MENU_TOGGLE))
-#define check_shader_dir_func(trigger_input) (check_shader_dir(BIT64_GET(trigger_input, RARCH_SHADER_NEXT), BIT64_GET(trigger_input, RARCH_SHADER_PREV)))
-
 /**
  * set_volume:
  * @gain      : amount of gain to be applied to current volume level.
@@ -82,7 +71,7 @@ static void set_volume(float gain)
  *
  * Returns: true if libretro pause key was toggled, otherwise false.
  **/
-static bool check_pause(bool pressed, bool frameadvance_pressed)
+static bool check_pause(bool pause_pressed, bool frameadvance_pressed)
 {
    runloop_t *runloop       = rarch_main_get_ptr();
    static bool old_focus    = true;
@@ -92,12 +81,12 @@ static bool check_pause(bool pressed, bool frameadvance_pressed)
    settings_t *settings     = config_get_ptr();
 
    /* FRAMEADVANCE will set us into pause mode. */
-   pressed |= !runloop->is_paused && frameadvance_pressed;
+   pause_pressed |= !runloop->is_paused && frameadvance_pressed;
 
    if (settings->pause_nonactive)
       focus = video_driver_has_focus();
 
-   if (focus && pressed)
+   if (focus && pause_pressed)
       cmd = RARCH_CMD_PAUSE_TOGGLE;
    else if (focus && !old_focus)
       cmd = RARCH_CMD_UNPAUSE;
@@ -115,6 +104,12 @@ static bool check_pause(bool pressed, bool frameadvance_pressed)
    return true;
 }
 
+static INLINE bool check_pause_func(retro_input_t input)
+{
+   bool pause_pressed        = BIT64_GET(input, RARCH_PAUSE_TOGGLE);
+   bool frameadvance_pressed = BIT64_GET(input, RARCH_FRAMEADVANCE);
+   return check_pause(pause_pressed, frameadvance_pressed);
+}
 /**
  * check_is_oneshot:
  * @oneshot_pressed      : is this a oneshot frame?
@@ -131,6 +126,13 @@ static bool check_pause(bool pressed, bool frameadvance_pressed)
 static INLINE bool check_is_oneshot(bool oneshot_pressed, bool rewind_pressed)
 {
    return (oneshot_pressed | rewind_pressed);
+}
+
+static INLINE bool check_oneshot_func(retro_input_t trigger_input)
+{
+   bool oneshot_pressed = BIT64_GET(trigger_input, RARCH_FRAMEADVANCE);
+   bool rewind_pressed  = BIT64_GET(trigger_input, RARCH_REWIND);
+   return check_is_oneshot(oneshot_pressed, rewind_pressed);
 }
 
 /**
@@ -159,6 +161,15 @@ static void check_fast_forward_button(bool fastforward_pressed,
       return;
 
    driver_set_nonblock_state(driver->nonblock_state);
+}
+
+static void check_fast_forward_button_func(retro_input_t input,
+      retro_input_t old_input, retro_input_t trigger_input)
+{
+   bool fastforward_pressed = BIT64_GET(trigger_input, RARCH_FAST_FORWARD_KEY);
+   bool hold_pressed        = BIT64_GET(input, RARCH_FAST_FORWARD_HOLD_KEY);
+   bool old_hold_pressed    = BIT64_GET(old_input, RARCH_FAST_FORWARD_HOLD_KEY);
+   check_fast_forward_button(fastforward_pressed, hold_pressed, old_hold_pressed);
 }
 
 /**
@@ -191,6 +202,13 @@ static void check_stateslots(bool pressed_increase, bool pressed_decrease)
    rarch_main_msg_queue_push(msg, 1, 180, true);
 
    RARCH_LOG("%s\n", msg);
+}
+
+static void check_stateslots_func(retro_input_t trigger_input)
+{
+   bool pressed_increase = BIT64_GET(trigger_input, RARCH_STATE_SLOT_PLUS);
+   bool pressed_decrease = BIT64_GET(trigger_input, RARCH_STATE_SLOT_MINUS);
+   check_stateslots(pressed_increase, pressed_decrease);
 }
 
 static INLINE void setup_rewind_audio(void)
@@ -289,19 +307,25 @@ static void check_rewind(bool pressed)
    retro_set_rewind_callbacks();
 }
 
+static INLINE void check_rewind_func(retro_input_t input)
+{
+   bool rewind_pressed = BIT64_GET(input, RARCH_REWIND);
+   check_rewind(rewind_pressed);
+}
+
 /**
  * check_slowmotion:
- * @pressed              : was slow motion key pressed or held?
+ * @slowmotion_pressed   : was slow motion key pressed or held?
  *
  * Checks if slowmotion toggle/hold was being pressed and/or held.
  **/
-static void check_slowmotion(bool pressed)
+static void check_slowmotion(bool slowmotion_pressed)
 {
    runloop_t *runloop       = rarch_main_get_ptr();
    settings_t *settings     = config_get_ptr();
    global_t *global         = global_get_ptr();
 
-   runloop->is_slowmotion = pressed;
+   runloop->is_slowmotion = slowmotion_pressed;
 
    if (!runloop->is_slowmotion)
       return;
@@ -311,6 +335,12 @@ static void check_slowmotion(bool pressed)
 
    rarch_main_msg_queue_push(global->rewind.frame_is_reverse ?
          "Slow motion rewind." : "Slow motion.", 0, 30, true);
+}
+
+static INLINE void check_slowmotion_func(retro_input_t input)
+{
+   bool slowmotion_pressed = BIT64_GET(input, RARCH_SLOWMOTION);
+   check_slowmotion(slowmotion_pressed);
 }
 
 static bool check_movie_init(void)
@@ -467,6 +497,13 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
       RARCH_WARN("Failed to apply shader.\n");
 }
 
+static INLINE void check_shader_dir_func(retro_input_t trigger_input)
+{
+   bool shader_next_pressed = BIT64_GET(trigger_input, RARCH_SHADER_NEXT);
+   bool shader_prev_pressed = BIT64_GET(trigger_input, RARCH_SHADER_PREV);
+   check_shader_dir(shader_next_pressed, shader_prev_pressed);
+}
+
 /**
  * check_cheats:
  * @trigger_input        : difference' input sample - difference
@@ -525,6 +562,8 @@ static int do_pre_state_checks(
 {
    runloop_t *runloop = rarch_main_get_ptr();
    global_t *global   = global_get_ptr();
+   bool menu_pressed  = false;
+   
 
    if (BIT64_GET(trigger_input, RARCH_OVERLAY_NEXT))
       rarch_main_command(RARCH_CMD_OVERLAY_NEXT);
@@ -539,7 +578,8 @@ static int do_pre_state_checks(
       rarch_main_command(RARCH_CMD_GRAB_MOUSE_TOGGLE);
 
 #ifdef HAVE_MENU
-   if (check_enter_menu_func(trigger_input) || (global->libretro_dummy))
+   menu_pressed = BIT64_GET(trigger_input, RARCH_MENU_TOGGLE);
+   if (menu_pressed || (global->libretro_dummy))
       do_state_check_menu_toggle();
 #endif
 
@@ -679,12 +719,13 @@ static int do_state_checks(
  **/
 static INLINE int time_to_exit(retro_input_t input)
 {
-   runloop_t *runloop = rarch_main_get_ptr();
-   global_t  *global  = global_get_ptr();
+   runloop_t *runloop    = rarch_main_get_ptr();
+   global_t  *global     = global_get_ptr();
+   bool quit_key_pressed = BIT64_GET(input, RARCH_QUIT_KEY);
 
    if (
          global->system.shutdown
-         || check_quit_key_func(input)
+         || quit_key_pressed
          || (runloop->frames.video.max && 
             runloop->frames.video.count >= runloop->frames.video.max)
          || (global->bsv.movie_end && global->bsv.eof_exit)
