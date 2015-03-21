@@ -355,6 +355,7 @@ bool screenshot_dump(const char *folder, const void *frame,
    (void)file;
    (void)out_buffer;
    (void)scaler;
+   (void)global;
 
    fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
    fill_pathname_join(filename, folder, shotname, sizeof(filename));

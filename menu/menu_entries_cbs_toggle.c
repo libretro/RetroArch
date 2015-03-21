@@ -412,6 +412,8 @@ static int action_toggle_video_resolution(unsigned type, const char *label,
 {
    driver_t *driver = driver_get_ptr();
    global_t *global = global_get_ptr();
+    
+   (void)global;
 
 #if defined(__CELLOS_LV2__)
    switch (action)
