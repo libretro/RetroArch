@@ -38,30 +38,6 @@ static struct runloop *g_runloop;
 static struct global *g_extern;
 
 /**
- * set_volume:
- * @gain      : amount of gain to be applied to current volume level.
- *
- * Adjusts the current audio volume level.
- *
- **/
-static void set_volume(float gain)
-{
-   char msg[PATH_MAX_LENGTH];
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   settings->audio.volume += gain;
-   settings->audio.volume = max(settings->audio.volume, -80.0f);
-   settings->audio.volume = min(settings->audio.volume, 12.0f);
-
-   snprintf(msg, sizeof(msg), "Volume: %.1f dB", settings->audio.volume);
-   rarch_main_msg_queue_push(msg, 1, 180, true);
-   RARCH_LOG("%s\n", msg);
-
-   global->audio_data.volume_gain = db_to_gain(settings->audio.volume);
-}
-
-/**
  * check_pause:
  * @pressed              : was libretro pause key pressed?
  * @frameadvance_pressed : was frameadvance key pressed?
@@ -644,9 +620,9 @@ static int do_state_checks(
       rarch_main_command(RARCH_CMD_AUDIO_MUTE_TOGGLE);
 
    if (volume_up_pressed)
-      set_volume(0.5f);
+      rarch_main_command(RARCH_CMD_VOLUME_UP);
    else if (volume_down_pressed)
-      set_volume(-0.5f);
+      rarch_main_command(RARCH_CMD_VOLUME_DOWN);
 
 #ifdef HAVE_NETPLAY
    if (driver->netplay_data)
