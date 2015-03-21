@@ -148,7 +148,7 @@ end:
    close (_dispvars->fd);
 }
 
-static void dispmanx_unblank_console(void *data)
+static void dispmanx_restore_console(void *data)
 {
    struct dispmanx_video *_dispvars = data;
 
@@ -631,6 +631,10 @@ static void dispmanx_gfx_free(void *data)
    if (!_dispvars)
       return;
 
+   /* Free menu resurces if we are in menu when exiting. */
+   if (_dispvars->menu_active)
+   	dispmanx_free_menu_resources(_dispvars);
+
    dispmanx_free_main_resources(_dispvars);
 
    /* Close display and deinitialize. */
@@ -645,7 +649,7 @@ static void dispmanx_gfx_free(void *data)
       free (_dispvars->pages);
    _dispvars->pages = NULL;
 
-   dispmanx_unblank_console(_dispvars);
+   dispmanx_restore_console(_dispvars);
 }
 
 video_driver_t video_dispmanx = {
