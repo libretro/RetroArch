@@ -450,12 +450,13 @@ static void sdl_set_filtering(void *data, unsigned index, bool smooth)
 static void sdl_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
    sdl_video_t *vid = (sdl_video_t*)data;
+   global_t *global = global_get_ptr();
 
    switch (aspectratio_index)
    {
       case ASPECT_RATIO_SQUARE:
-         video_viewport_set_square_pixel(g_extern.system.av_info.geometry.base_width,
-                                       g_extern.system.av_info.geometry.base_height);
+         video_viewport_set_square_pixel(global->system.av_info.geometry.base_width,
+                                       global->system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
@@ -470,7 +471,7 @@ static void sdl_set_aspect_ratio(void *data, unsigned aspectratio_index)
          break;
    }
 
-   g_extern.system.aspect_ratio = aspectratio_lut[aspectratio_index].value;
+   global->system.aspect_ratio = aspectratio_lut[aspectratio_index].value;
 }
 
 static void sdl_apply_state_changes(void *data)

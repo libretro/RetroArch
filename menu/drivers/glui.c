@@ -124,6 +124,7 @@ static void glui_render_background(settings_t *settings,
       0.0f, 0.0f, 0.0f, alpha,
       0.0f, 0.0f, 0.0f, alpha,
    };
+   global_t *global = global_get_ptr();
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
@@ -133,7 +134,7 @@ static void glui_render_background(settings_t *settings,
    coords.lut_tex_coord = tex_coord;
 
    if ((settings->menu.pause_libretro
-      || !g_extern.main_is_init || g_extern.libretro_dummy)
+      || !global->main_is_init || global->libretro_dummy)
       && !force_transparency
       && glui->textures.bg.id)
    {
@@ -335,6 +336,7 @@ static void glui_frame(void)
    const uint32_t normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
    const uint32_t hover_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_hover_color);
    runloop_t *runloop = rarch_main_get_ptr();
+   global_t  *global  = global_get_ptr();
 
    if (!menu)
       return;
@@ -372,17 +374,17 @@ static void glui_frame(void)
    glui_blit_line(gl, glui->margin * 2, glui->margin + glui->line_height,
          title_buf, FONT_COLOR_ARGB_TO_RGBA(settings->menu.title_color));
 
-   core_name = g_extern.menu.info.library_name;
+   core_name = global->menu.info.library_name;
    if (!core_name)
-      core_name = g_extern.system.info.library_name;
+      core_name = global->system.info.library_name;
    if (!core_name)
       core_name = "No Core";
 
    if (settings->menu.core_enable)
    {
-      core_version = g_extern.menu.info.library_version;
+      core_version = global->menu.info.library_version;
       if (!core_version)
-         core_version = g_extern.system.info.library_version;
+         core_version = global->system.info.library_version;
       if (!core_version)
          core_version = "";
 

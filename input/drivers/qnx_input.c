@@ -92,8 +92,10 @@ static void process_gamepad_event(void *data,
    int i;
    screen_device_t device;
    input_device_t* controller = NULL;
-   settings_t *settings = config_get_ptr();
    qnx_input_t *qnx = (qnx_input_t*)data;
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
+   uint64_t *state_cur = NULL;
 
    (void)type;
 
@@ -116,9 +118,9 @@ static void process_gamepad_event(void *data,
    screen_get_event_property_iv(screen_event,
          SCREEN_PROPERTY_BUTTONS, &controller->buttons);
 
-   uint64_t *state_cur = (uint64_t*)&qnx->pad_state[controller->port];
-
+   state_cur = (uint64_t*)&qnx->pad_state[controller->port];
    *state_cur = 0;
+
    for (i = 0; i < 20; i++)
       *state_cur |= (controller->buttons & (1 << i) ? (1 << i) : 0);
 
@@ -135,7 +137,7 @@ static void process_gamepad_event(void *data,
    if((controller->port == 0) && 
          (controller->buttons & 
           settings->input.binds[0][RARCH_MENU_TOGGLE].joykey))
-      g_extern.lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
+      global->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
 }
 
 static void handle_device(void *data, input_device_t* controller)
@@ -325,6 +327,7 @@ static void process_keyboard_event(void *data,
    int i, b, sym, modifiers, flags, scan, cap;
    qnx_input_t *qnx = (qnx_input_t*)data;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    (void)type;
 
@@ -397,7 +400,7 @@ static void process_keyboard_event(void *data,
             == (unsigned int)(sym&0xFF)))
    {
       if (flags & KEY_DOWN)
-         g_extern.lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
+         global->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
    }
 }
 
@@ -588,9 +591,10 @@ static void handle_screen_event(void *data, bps_event_t *event)
 
 static void handle_navigator_event(void *data, bps_event_t *event)
 {
+   int rc;
    navigator_window_state_t state;
    bps_event_t *event_pause = NULL;
-   int rc;
+   global_t *global = global_get_ptr();
 
    (void)data;
    (void)rc;
@@ -598,7 +602,7 @@ static void handle_navigator_event(void *data, bps_event_t *event)
    switch (bps_event_get_code(event))
    {
       case NAVIGATOR_SWIPE_DOWN:
-    	  g_extern.lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
+         global->lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
          break;
       case NAVIGATOR_EXIT:
          /* Catch this in thumbnail loop. */
@@ -622,7 +626,7 @@ static void handle_navigator_event(void *data, bps_event_t *event)
                   }
                   else if (bps_event_get_code(event_pause) == NAVIGATOR_EXIT)
                   {
-                     g_extern.system.shutdown = true;
+                     global->system.shutdown = true;
                      break;
                   }
                }
@@ -676,12 +680,13 @@ static void *qnx_input_init(void)
 
 static void qnx_input_poll(void *data)
 {
-   (void)data;
-   /* Request and process all available BPS events. */
-
    int rc, domain;
+   global_t *global = global_get_ptr();
 
-   g_extern.lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
+   (void)data;
+   global->lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
+
+   /* Request and process all available BPS events. */
 
    while(true)
    {
@@ -794,10 +799,11 @@ static int16_t qnx_input_state(void *data,
 
 static bool qnx_input_key_pressed(void *data, int key)
 {
-   qnx_input_t *qnx = (qnx_input_t*)data;
+   qnx_input_t *qnx     = (qnx_input_t*)data;
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
-   return ((g_extern.lifecycle_state | driver.overlay_state.buttons ) & (1ULL << key) ||
+   return ((global->lifecycle_state | driver.overlay_state.buttons ) & (1ULL << key) ||
          input_joypad_pressed(qnx->joypad, 0, settings->input.binds[0], key));
 }
 

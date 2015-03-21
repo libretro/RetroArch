@@ -242,6 +242,7 @@ void input_keyboard_event(bool down, unsigned code,
 {
    static bool deferred_wait_keys;
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
 
    if (deferred_wait_keys)
    {
@@ -285,7 +286,7 @@ void input_keyboard_event(bool down, unsigned code,
       /* Unblock all hotkeys. */
       driver->block_input = false;
    }
-   else if (g_extern.system.key_event)
-      g_extern.system.key_event(down, code, character, mod);
+   else if (global->system.key_event)
+      global->system.key_event(down, code, character, mod);
 }
 

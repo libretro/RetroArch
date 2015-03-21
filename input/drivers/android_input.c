@@ -747,12 +747,14 @@ static int16_t android_input_state(void *data,
 static bool android_input_key_pressed(void *data, int key)
 {
    android_input_t *android = (android_input_t*)data;
-   driver_t *driver = driver_get_ptr();
-   settings_t *settings = config_get_ptr();
+   driver_t *driver         = driver_get_ptr();
+   global_t *global         = global_get_ptr();
+   settings_t *settings     = config_get_ptr();
 
    if (!android)
       return false;
-   return ((g_extern.lifecycle_state | driver->overlay_state.buttons)
+
+   return ((global->lifecycle_state | driver->overlay_state.buttons)
          & (1ULL << key)) || input_joypad_pressed(android->joypad,
          0, settings->input.binds[0], key);
 }

@@ -93,19 +93,20 @@ static bool renderchain_create_first_pass(void *data,
 
 static bool renderchain_init(void *data, const video_info_t *info)
 {
-   d3d_video_t *chain = (d3d_video_t*)data;
+   d3d_video_t *chain    = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+   global_t *global      = global_get_ptr();
 
    chain->pixel_size   = info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    if (!renderchain_create_first_pass(chain, info))
       return false;
 
-   if (g_extern.console.screen.viewports.custom_vp.width == 0)
-      g_extern.console.screen.viewports.custom_vp.width = chain->screen_width;
+   if (global->console.screen.viewports.custom_vp.width == 0)
+      global->console.screen.viewports.custom_vp.width = chain->screen_width;
 
-   if (g_extern.console.screen.viewports.custom_vp.height == 0)
-      g_extern.console.screen.viewports.custom_vp.height = chain->screen_height;
+   if (global->console.screen.viewports.custom_vp.height == 0)
+      global->console.screen.viewports.custom_vp.height = chain->screen_height;
 
    return true;
 }
@@ -116,10 +117,11 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    runloop_t *runloop    = rarch_main_get_ptr();
    settings_t *settings  = config_get_ptr();
+   global_t *global      = global_get_ptr();
 
 #if defined(_XBOX1)
-   d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
-   d3dr->SetSoftDisplayFilter(g_extern.console.softfilter_enable);
+   d3dr->SetFlickerFilter(global->console.screen.flicker_filter_index);
+   d3dr->SetSoftDisplayFilter(global->console.softfilter_enable);
 #endif
 
    renderchain_blit_to_texture(d3d, frame, width, height, pitch);

@@ -856,6 +856,7 @@ static int setting_action_ok_bind_all(void *data, unsigned action)
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    menu_handle_t *menu       = menu_driver_resolve();
    settings_t      *settings = config_get_ptr();
+   global_t      *global     = global_get_ptr();
 
    if (!setting || !menu)
       return -1;
@@ -869,12 +870,12 @@ static int setting_action_ok_bind_all(void *data, unsigned action)
          menu->menu_list,
          "",
          "custom_bind_all",
-         g_extern.menu.bind_mode_keyboard ?
+         global->menu.bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
          MENU_SETTINGS_CUSTOM_BIND,
          menu->navigation.selection_ptr);
 
-   if (g_extern.menu.bind_mode_keyboard)
+   if (global->menu.bind_mode_keyboard)
    {
       menu->binds.timeout_end =
          rarch_get_time_usec() + 
@@ -898,7 +899,8 @@ static int setting_action_ok_bind_defaults(void *data, unsigned action)
    const struct retro_keybind *def_binds = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    menu_handle_t *menu       = menu_driver_resolve();
-   settings_t      *settings = config_get_ptr();
+   settings_t    *settings   = config_get_ptr();
+   global_t      *global     = global_get_ptr();
 
    if (!menu)
       return -1;
@@ -919,7 +921,7 @@ static int setting_action_ok_bind_defaults(void *data, unsigned action)
    for (i = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)
    {
-      if (g_extern.menu.bind_mode_keyboard)
+      if (global->menu.bind_mode_keyboard)
          target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
       else
       {
@@ -1060,8 +1062,9 @@ static int setting_action_action_ok(void *data, unsigned action)
 static int setting_bind_action_ok(void *data, unsigned action)
 {
    struct retro_keybind *keybind = NULL;
-   rarch_setting_t *setting = (rarch_setting_t*)data;
-   menu_handle_t *menu = menu_driver_resolve();
+   rarch_setting_t *setting  = (rarch_setting_t*)data;
+   menu_handle_t *menu       = menu_driver_resolve();
+   global_t      *global     = global_get_ptr();
 
    if (!setting)
       return -1;
@@ -1082,11 +1085,11 @@ static int setting_bind_action_ok(void *data, unsigned action)
          menu->menu_list,
          "",
          "custom_bind",
-         g_extern.menu.bind_mode_keyboard ?
+         global->menu.bind_mode_keyboard ?
          MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
          menu->navigation.selection_ptr);
 
-   if (g_extern.menu.bind_mode_keyboard)
+   if (global->menu.bind_mode_keyboard)
    {
       menu->binds.timeout_end = rarch_get_time_usec() +
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
@@ -1303,13 +1306,14 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
    const char *name = NULL;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
+   global_t        *global   = global_get_ptr();
 
    if (!setting)
       return;
 
-   if (setting->index_offset < g_extern.system.num_ports)
+   if (setting->index_offset < global->system.num_ports)
       desc = libretro_find_controller_description(
-            &g_extern.system.ports[setting->index_offset],
+            &global->system.ports[setting->index_offset],
             settings->input.libretro_device
             [setting->index_offset]);
 
@@ -2994,6 +2998,7 @@ static void general_write_handler(void *data)
    rarch_setting_t *setting = (rarch_setting_t*)data;
    settings_t *settings     = config_get_ptr();
    driver_t *driver         = driver_get_ptr();
+   global_t *global         = global_get_ptr();
 
    if (!setting)
       return;
@@ -3039,7 +3044,7 @@ static void general_write_handler(void *data)
    }
    else if (!strcmp(setting->name, "pal60_enable"))
    {
-      if (*setting->value.boolean && g_extern.console.screen.pal_enable)
+      if (*setting->value.boolean && global->console.screen.pal_enable)
          rarch_cmd = RARCH_CMD_REINIT;
       else
          *setting->value.boolean = false;
@@ -3049,7 +3054,7 @@ static void general_write_handler(void *data)
       if (driver->video && driver->video->set_rotation)
          driver->video->set_rotation(driver->video_data,
                (*setting->value.unsigned_integer +
-                g_extern.system.rotation) % 4);
+                global->system.rotation) % 4);
    }
    else if (!strcmp(setting->name, "system_bgm_enable"))
    {
@@ -3067,7 +3072,7 @@ static void general_write_handler(void *data)
       }
    }
    else if (!strcmp(setting->name, "audio_volume"))
-      g_extern.audio_data.volume_gain = db_to_gain(*setting->value.fraction);
+      global->audio_data.volume_gain = db_to_gain(*setting->value.fraction);
    else if (!strcmp(setting->name, "audio_latency"))
       rarch_cmd = RARCH_CMD_AUDIO_REINIT;
    else if (!strcmp(setting->name, "audio_rate_control_delta"))
@@ -3114,25 +3119,25 @@ static void general_write_handler(void *data)
       settings->input.joypad_map[4] = *setting->value.integer;
 #ifdef HAVE_NETPLAY
    else if (!strcmp(setting->name, "netplay_ip_address"))
-      g_extern.has_set_netplay_ip_address = (setting->value.string[0] != '\0');
+      global->has_set_netplay_ip_address = (setting->value.string[0] != '\0');
    else if (!strcmp(setting->name, "netplay_mode"))
    {
-      if (!g_extern.netplay_is_client)
-         *g_extern.netplay_server = '\0';
-      g_extern.has_set_netplay_mode = true;
+      if (!global->netplay_is_client)
+         *global->netplay_server = '\0';
+      global->has_set_netplay_mode = true;
    }
    else if (!strcmp(setting->name, "netplay_spectator_mode_enable"))
    {
-      if (g_extern.netplay_is_spectate)
-         *g_extern.netplay_server = '\0';
+      if (global->netplay_is_spectate)
+         *global->netplay_server = '\0';
    }
    else if (!strcmp(setting->name, "netplay_delay_frames"))
-      g_extern.has_set_netplay_delay_frames = (g_extern.netplay_sync_frames > 0);
+      global->has_set_netplay_delay_frames = (global->netplay_sync_frames > 0);
 #endif
    else if (!strcmp(setting->name, "log_verbosity"))
    {
-      g_extern.verbosity         = *setting->value.boolean;
-      g_extern.has_set_verbosity = *setting->value.boolean;
+      global->verbosity         = *setting->value.boolean;
+      global->has_set_verbosity = *setting->value.boolean;
    }
 
    if (rarch_cmd || setting->cmd_trigger.triggered)
@@ -3311,6 +3316,7 @@ static bool setting_append_list_main_menu_options(
    rarch_setting_group_info_t subgroup_info;
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
    START_GROUP(group_info, "Main Menu");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
@@ -3350,8 +3356,8 @@ static bool setting_append_list_main_menu_options(
    }
    if (
          driver->menu 
-         && g_extern.core_info 
-         && core_info_list_num_info_files(g_extern.core_info))
+         && global->core_info 
+         && core_info_list_num_info_files(global->core_info))
    {
       CONFIG_ACTION(
             "detect_core_list",
@@ -3365,8 +3371,8 @@ static bool setting_append_list_main_menu_options(
          "Load Content",
          group_info.name,
          subgroup_info.name);
-   (*list)[list_info->index - 1].size = sizeof(g_extern.fullpath);
-   (*list)[list_info->index - 1].value.string = g_extern.fullpath;
+   (*list)[list_info->index - 1].size = sizeof(global->fullpath);
+   (*list)[list_info->index - 1].value.string = global->fullpath;
    (*list)[list_info->index - 1].action_toggle = load_content_action_toggle;
    (*list)[list_info->index - 1].change_handler = load_content_change_handler;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
@@ -3396,7 +3402,7 @@ static bool setting_append_list_main_menu_options(
          group_info.name,
          subgroup_info.name);
 
-   if (g_extern.perfcnt_enable)
+   if (global->perfcnt_enable)
    {
       CONFIG_ACTION(
             "performance_counters",
@@ -3405,7 +3411,7 @@ static bool setting_append_list_main_menu_options(
             subgroup_info.name);
       settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
    }
-   if (g_extern.main_is_init && !g_extern.libretro_dummy)
+   if (global->main_is_init && !global->libretro_dummy)
    {
       CONFIG_ACTION(
             "savestate",
@@ -3619,6 +3625,7 @@ static bool setting_append_list_general_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "General Settings");
 
@@ -3655,7 +3662,7 @@ static bool setting_append_list_general_options(
    START_SUB_GROUP(list, list_info, "Logging", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_extern.verbosity,
+         global->verbosity,
          "log_verbosity",
          "Logging Verbosity",
          false,
@@ -3683,7 +3690,7 @@ static bool setting_append_list_general_options(
 
    START_SUB_GROUP(list, list_info, "Performance Counters", group_info.name, subgroup_info);
 
-   CONFIG_BOOL(g_extern.perfcnt_enable,
+   CONFIG_BOOL(global->perfcnt_enable,
          "perfcnt_enable",
          "Performance Counters",
          false,
@@ -3870,6 +3877,7 @@ static bool setting_append_list_video_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Video Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
@@ -4102,7 +4110,7 @@ static bool setting_append_list_video_options(
          general_read_handler);
 
    CONFIG_INT(
-         g_extern.console.screen.viewports.custom_vp.x,
+         global->console.screen.viewports.custom_vp.x,
          "custom_viewport_x",
          "Custom Viewport X",
          0,
@@ -4113,7 +4121,7 @@ static bool setting_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
    
    CONFIG_INT(
-         g_extern.console.screen.viewports.custom_vp.y,
+         global->console.screen.viewports.custom_vp.y,
          "custom_viewport_y",
          "Custom Viewport Y",
          0,
@@ -4124,7 +4132,7 @@ static bool setting_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
-         g_extern.console.screen.viewports.custom_vp.width,
+         global->console.screen.viewports.custom_vp.width,
          "custom_viewport_width",
          "Custom Viewport Width",
          0,
@@ -4135,7 +4143,7 @@ static bool setting_append_list_video_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
-         g_extern.console.screen.viewports.custom_vp.height,
+         global->console.screen.viewports.custom_vp.height,
          "custom_viewport_height",
          "Custom Viewport Height",
          0,
@@ -4184,7 +4192,7 @@ static bool setting_append_list_video_options(
 
 #if defined(__CELLOS_LV2__)
    CONFIG_BOOL(
-         g_extern.console.screen.pal60_enable,
+         global->console.screen.pal60_enable,
          "pal60_enable",
          "Use PAL60 Mode",
          false,
@@ -4212,7 +4220,7 @@ static bool setting_append_list_video_options(
 
 #if defined(HW_RVL) || defined(_XBOX360)
    CONFIG_UINT(
-         g_extern.console.screen.gamma_correction,
+         global->console.screen.gamma_correction,
          "video_gamma",
          "Gamma",
          0,
@@ -4409,7 +4417,7 @@ static bool setting_append_list_video_options(
 
 #if defined(_XBOX1) || defined(HW_RVL)
    CONFIG_BOOL(
-         g_extern.console.softfilter_enable,
+         global->console.softfilter_enable,
          "soft_filter",
          "Soft Filter Enable",
          false,
@@ -4570,7 +4578,7 @@ static bool setting_append_list_audio_options(
 
 #ifdef __CELLOS_LV2__
    CONFIG_BOOL(
-         g_extern.console.sound.system_bgm_enable,
+         global->console.sound.system_bgm_enable,
          "system_bgm_enable",
          "System BGM Enable",
          false,
@@ -4726,6 +4734,7 @@ static bool setting_append_list_input_options(
    rarch_setting_group_info_t subgroup_info;
    unsigned i, user;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Input Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
@@ -4811,7 +4820,7 @@ static bool setting_append_list_input_options(
          subgroup_info);
 
    CONFIG_BOOL(
-         g_extern.menu.bind_mode_keyboard,
+         global->menu.bind_mode_keyboard,
          "input_bind_mode",
          "Bind Mode",
          false,
@@ -5027,13 +5036,13 @@ static bool setting_append_list_input_options(
          if (
                settings->input.input_descriptor_label_show
                && (i < RARCH_FIRST_META_KEY)
-               && (g_extern.has_set_input_descriptors)
+               && (global->has_set_input_descriptors)
                && (i != RARCH_TURBO_ENABLE)
                )
          {
-            if (g_extern.system.input_desc_btn[user][i])
+            if (global->system.input_desc_btn[user][i])
                snprintf(label, sizeof(label), "%s %s", buffer[user],
-                     g_extern.system.input_desc_btn[user][i]);
+                     global->system.input_desc_btn[user][i]);
             else
             {
                snprintf(label, sizeof(label), "%s %s", buffer[user], "N/A");
@@ -5077,6 +5086,7 @@ static bool setting_append_list_overlay_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Overlay Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
@@ -5098,7 +5108,7 @@ static bool setting_append_list_overlay_options(
          settings->input.overlay,
          "input_overlay",
          "Overlay Preset",
-         g_extern.overlay_dir,
+         global->overlay_dir,
          group_info.name,
          subgroup_info.name,
          general_write_handler,
@@ -5150,6 +5160,7 @@ static bool setting_append_list_osk_overlay_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Onscreen Keyboard Overlay Settings");
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
@@ -5170,7 +5181,7 @@ static bool setting_append_list_osk_overlay_options(
          settings->osk.overlay,
          "input_osk_overlay",
          "OSK Overlay Preset",
-         g_extern.osk_overlay_dir,
+         global->osk_overlay_dir,
          group_info.name,
          subgroup_info.name,
          general_write_handler,
@@ -5561,13 +5572,14 @@ static bool setting_append_list_netplay_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    START_GROUP(group_info, "Network Settings");
 
    START_SUB_GROUP(list, list_info, "Netplay", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_extern.netplay_enable,
+         global->netplay_enable,
          "netplay_enable",
          "Netplay Enable",
          false,
@@ -5591,7 +5603,7 @@ static bool setting_append_list_netplay_options(
          general_read_handler);
 
    CONFIG_STRING(
-         g_extern.netplay_server,
+         global->netplay_server,
          "netplay_ip_address",
          "IP Address",
          "",
@@ -5602,7 +5614,7 @@ static bool setting_append_list_netplay_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
    CONFIG_BOOL(
-         g_extern.netplay_is_client,
+         global->netplay_is_client,
          "netplay_mode",
          "Netplay Client Enable",
          false,
@@ -5614,7 +5626,7 @@ static bool setting_append_list_netplay_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_extern.netplay_is_spectate,
+         global->netplay_is_spectate,
          "netplay_spectator_mode_enable",
          "Netplay Spectator Enable",
          false,
@@ -5626,7 +5638,7 @@ static bool setting_append_list_netplay_options(
          general_read_handler);
    
    CONFIG_UINT(
-         g_extern.netplay_sync_frames,
+         global->netplay_sync_frames,
          "netplay_delay_frames",
          "Netplay Delay Frames",
          0,
@@ -5638,7 +5650,7 @@ static bool setting_append_list_netplay_options(
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
    CONFIG_UINT(
-         g_extern.netplay_port,
+         global->netplay_port,
          "netplay_tcp_udp_port",
          "Netplay TCP/UDP Port",
          RARCH_DEFAULT_PORT,
@@ -5715,7 +5727,7 @@ static bool setting_append_list_patch_options(
    START_SUB_GROUP(list, list_info, "State", group_info.name, subgroup_info);
 
    CONFIG_BOOL(
-         g_extern.ups_pref,
+         global->ups_pref,
          "ups_pref",
          "UPS Patching Enable",
          true,
@@ -5727,7 +5739,7 @@ static bool setting_append_list_patch_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_extern.bps_pref,
+         global->bps_pref,
          "bps_pref",
          "BPS Patching Enable",
          true,
@@ -5739,7 +5751,7 @@ static bool setting_append_list_patch_options(
          general_read_handler);
 
    CONFIG_BOOL(
-         g_extern.ips_pref,
+         global->ips_pref,
          "ips_pref",
          "IPS Patching Enable",
          true,
@@ -5853,6 +5865,7 @@ static bool setting_append_list_path_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
    START_GROUP(group_info, "Path Settings");
 
@@ -6057,7 +6070,7 @@ static bool setting_append_list_path_options(
 
 #ifdef HAVE_OVERLAY
    CONFIG_DIR(
-         g_extern.overlay_dir,
+         global->overlay_dir,
          "overlay_directory",
          "Overlay Directory",
          g_defaults.overlay_dir,
@@ -6072,7 +6085,7 @@ static bool setting_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_extern.osk_overlay_dir,
+         global->osk_overlay_dir,
          "osk_overlay_directory",
          "OSK Overlay Directory",
          g_defaults.osk_overlay_dir,
@@ -6148,7 +6161,7 @@ static bool setting_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_extern.savefile_dir,
+         global->savefile_dir,
          "savefile_directory",
          "Savefile Directory",
          "",
@@ -6163,7 +6176,7 @@ static bool setting_append_list_path_options(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    CONFIG_DIR(
-         g_extern.savestate_dir,
+         global->savestate_dir,
          "savestate_directory",
          "Savestate Directory",
          "",

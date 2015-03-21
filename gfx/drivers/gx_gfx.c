@@ -236,6 +236,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    gx_video_t *gx       = (gx_video_t*)data;
    menu_handle_t *menu  = menu_driver_resolve();
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    (void)level;
 
@@ -422,10 +423,10 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    }
 
    /* custom viewports for older resolutions will most likely be corrupted, reset them */
-   g_extern.console.screen.viewports.custom_vp.x = 0;
-   g_extern.console.screen.viewports.custom_vp.y = 0;
-   g_extern.console.screen.viewports.custom_vp.width = 0;
-   g_extern.console.screen.viewports.custom_vp.height = 0;
+   global->console.screen.viewports.custom_vp.x = 0;
+   global->console.screen.viewports.custom_vp.y = 0;
+   global->console.screen.viewports.custom_vp.width = 0;
+   global->console.screen.viewports.custom_vp.height = 0;
 
    g_current_framebuf = 0;
 }
@@ -433,24 +434,25 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
    gx_video_t *gx = (gx_video_t*)driver->video_data;
 
    if (aspect_ratio_idx == ASPECT_RATIO_SQUARE)
       video_viewport_set_square_pixel(
-            g_extern.system.av_info.geometry.base_width,
-            g_extern.system.av_info.geometry.base_height);
+            global->system.av_info.geometry.base_width,
+            global->system.av_info.geometry.base_height);
    else if (aspect_ratio_idx == ASPECT_RATIO_CORE)
       video_viewport_set_core();
    else if (aspect_ratio_idx == ASPECT_RATIO_CONFIG)
       video_viewport_set_config();
 
-   g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
+   global->system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
 
-   if (gx)
-   {
-      gx->keep_aspect = true;
-      gx->should_resize = true;
-   }
+   if (!gx)
+      return;
+
+   gx->keep_aspect = true;
+   gx->should_resize = true;
 }
 
 static void setup_video_mode(void *data)
@@ -833,15 +835,16 @@ static void gx_resize(void *data)
    int x = 0, y = 0;
    unsigned width = gx->vp.full_width, height = gx->vp.full_height;
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
 #ifdef HW_RVL
-   VIDEO_SetTrapFilter(g_extern.console.softfilter_enable);
+   VIDEO_SetTrapFilter(global->console.softfilter_enable);
 #endif
-   GX_SetDispCopyGamma(g_extern.console.screen.gamma_correction);
+   GX_SetDispCopyGamma(global->console.screen.gamma_correction);
 
    if (gx->keep_aspect && gx_mode.efbHeight >= 240) /* ignore this for custom resolutions */
    {
-      float desired_aspect = g_extern.system.aspect_ratio;
+      float desired_aspect = global->system.aspect_ratio;
       if (desired_aspect == 0.0)
          desired_aspect = 1.0;
 #ifdef HW_RVL
@@ -858,19 +861,19 @@ static void gx_resize(void *data)
 #ifdef RARCH_CONSOLE
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         if (!g_extern.console.screen.viewports.custom_vp.width ||
-               !g_extern.console.screen.viewports.custom_vp.height)
+         if (!global->console.screen.viewports.custom_vp.width ||
+               !global->console.screen.viewports.custom_vp.height)
          {
-            g_extern.console.screen.viewports.custom_vp.x = 0;
-            g_extern.console.screen.viewports.custom_vp.y = 0;
-            g_extern.console.screen.viewports.custom_vp.width = gx->vp.full_width;
-            g_extern.console.screen.viewports.custom_vp.height = gx->vp.full_height;
+            global->console.screen.viewports.custom_vp.x = 0;
+            global->console.screen.viewports.custom_vp.y = 0;
+            global->console.screen.viewports.custom_vp.width = gx->vp.full_width;
+            global->console.screen.viewports.custom_vp.height = gx->vp.full_height;
          }
 
-         x      = g_extern.console.screen.viewports.custom_vp.x;
-         y      = g_extern.console.screen.viewports.custom_vp.y;
-         width  = g_extern.console.screen.viewports.custom_vp.width;
-         height = g_extern.console.screen.viewports.custom_vp.height;
+         x      = global->console.screen.viewports.custom_vp.x;
+         y      = global->console.screen.viewports.custom_vp.y;
+         width  = global->console.screen.viewports.custom_vp.width;
+         height = global->console.screen.viewports.custom_vp.height;
       }
       else
 #endif

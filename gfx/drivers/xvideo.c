@@ -357,12 +357,13 @@ static void calc_out_rect(bool keep_aspect, struct video_viewport *vp,
       unsigned vp_width, unsigned vp_height)
 {
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    vp->full_width  = vp_width;
    vp->full_height = vp_height;
 
    if (settings->video.scale_integer)
-      video_viewport_get_scaled_integer(vp, vp_width, vp_height, g_extern.system.aspect_ratio, keep_aspect);
+      video_viewport_get_scaled_integer(vp, vp_width, vp_height, global->system.aspect_ratio, keep_aspect);
    else if (!keep_aspect)
    {
       vp->x = 0; vp->y = 0;
@@ -371,8 +372,8 @@ static void calc_out_rect(bool keep_aspect, struct video_viewport *vp,
    }
    else
    {
-      float desired_aspect = g_extern.system.aspect_ratio;
-      float device_aspect = (float)vp_width / vp_height;
+      float desired_aspect = global->system.aspect_ratio;
+      float device_aspect  = (float)vp_width / vp_height;
 
       /* If the aspect ratios of screen and desired aspect ratio 
        * are sufficiently equal (floating point stuff),
@@ -421,6 +422,7 @@ static void *xv_init(const video_info_t *video,
    const struct retro_game_geometry *geom = NULL;
    driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
    xv_t *xv = (xv_t*)calloc(1, sizeof(*xv));
    if (!xv)
       return NULL;
@@ -428,7 +430,7 @@ static void *xv_init(const video_info_t *video,
    XInitThreads();
 
    xv->display = XOpenDisplay(NULL);
-   geom = &g_extern.system.av_info.geometry;
+   geom        = &global->system.av_info.geometry;
 
    if (!XShmQueryExtension(xv->display))
    {

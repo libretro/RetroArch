@@ -70,6 +70,7 @@ static int archive_load(void)
    unsigned int type      = 0;
    menu_handle_t *menu    = menu_driver_resolve();
    settings_t *settings   = config_get_ptr();
+   global_t      *global  = global_get_ptr();
 
    if (!menu)
       return -1;
@@ -85,7 +86,7 @@ static int archive_load(void)
    menu_list_get_at_offset(menu->menu_list->selection_buf,
          menu->navigation.selection_ptr, &path, NULL, &type);
 
-   ret = rarch_defer_core(g_extern.core_info, menu_path, path, menu_label,
+   ret = rarch_defer_core(global->core_info, menu_path, path, menu_label,
          menu->deferred_path, sizeof(menu->deferred_path));
 
    switch (ret)
@@ -379,7 +380,8 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
    struct retro_game_geometry *geom = NULL;
    const char *base_msg = NULL;
    unsigned type = 0;
-   video_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
+   global_t      *global  = global_get_ptr();
+   video_viewport_t *custom = &global->console.screen.viewports.custom_vp;
    menu_handle_t *menu    = menu_driver_resolve();
    driver_t *driver       = driver_get_ptr();
    settings_t *settings   = config_get_ptr();
@@ -389,7 +391,7 @@ static int action_iterate_menu_viewport(const char *label, unsigned action)
 
    menu_list_get_last_stack(menu->menu_list, NULL, NULL, &type);
 
-   geom = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
+   geom = (struct retro_game_geometry*)&global->system.av_info.geometry;
 
    if (settings->video.scale_integer)
    {
@@ -683,7 +685,8 @@ static int action_iterate_main(const char *label, unsigned action)
    const char *path_offset = NULL;
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t *menu    = menu_driver_resolve();
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver       = driver_get_ptr();
+   global_t *global       = global_get_ptr();
    if (!menu)
       return 0;
 
@@ -715,7 +718,7 @@ static int action_iterate_main(const char *label, unsigned action)
          !strcmp(label, "custom_bind_defaults")
          )
    {
-      if (g_extern.menu.bind_mode_keyboard)
+      if (global->menu.bind_mode_keyboard)
          return action_iterate_custom_bind_keyboard(label, action);
       else
          return action_iterate_custom_bind(label, action);

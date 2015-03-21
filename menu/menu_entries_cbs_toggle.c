@@ -93,8 +93,9 @@ static int shader_action_parameter_preset_toggle(unsigned type, const char *labe
 static int action_toggle_cheat(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
-   cheat_manager_t *cheat = g_extern.cheat;
-   size_t idx = type - MENU_SETTINGS_CHEAT_BEGIN;
+   global_t *global       = global_get_ptr();
+   cheat_manager_t *cheat = global->cheat;
+   size_t idx             = type - MENU_SETTINGS_CHEAT_BEGIN;
 
    if (!cheat)
       return -1;
@@ -342,8 +343,9 @@ static int action_toggle_cheat_num_passes(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
    unsigned new_size = 0;
-   cheat_manager_t *cheat = g_extern.cheat;
-   menu_handle_t *menu = menu_driver_resolve();
+   global_t *global       = global_get_ptr();
+   cheat_manager_t *cheat = global->cheat;
+   menu_handle_t *menu    = menu_driver_resolve();
    if (!menu)
       return -1;
 
@@ -409,27 +411,28 @@ static int action_toggle_video_resolution(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
    driver_t *driver = driver_get_ptr();
+   global_t *global = global_get_ptr();
 
 #if defined(__CELLOS_LV2__)
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         if (g_extern.console.screen.resolutions.current.idx)
+         if (global->console.screen.resolutions.current.idx)
          {
-            g_extern.console.screen.resolutions.current.idx--;
-            g_extern.console.screen.resolutions.current.id =
-               g_extern.console.screen.resolutions.list
-               [g_extern.console.screen.resolutions.current.idx];
+            global->console.screen.resolutions.current.idx--;
+            global->console.screen.resolutions.current.id =
+               global->onsole.screen.resolutions.list
+               [global->console.screen.resolutions.current.idx];
          }
          break;
       case MENU_ACTION_RIGHT:
-         if (g_extern.console.screen.resolutions.current.idx + 1 <
-               g_extern.console.screen.resolutions.count)
+         if (global->console.screen.resolutions.current.idx + 1 <
+               global->console.screen.resolutions.count)
          {
-            g_extern.console.screen.resolutions.current.idx++;
-            g_extern.console.screen.resolutions.current.id =
-               g_extern.console.screen.resolutions.list
-               [g_extern.console.screen.resolutions.current.idx];
+            global->console.screen.resolutions.current.idx++;
+            global->console.screen.resolutions.current.id =
+               global->console.screen.resolutions.list
+               [global->console.screen.resolutions.current.idx];
          }
          break;
    }
@@ -459,18 +462,19 @@ static int action_toggle_video_resolution(unsigned type, const char *label,
 static int core_setting_toggle(unsigned type, const char *label,
       unsigned action, bool wraparound)
 {
-   unsigned idx = type - MENU_SETTINGS_CORE_OPTION_START;
+   unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;
+   global_t *global = global_get_ptr();
 
    (void)label;
 
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         core_option_prev(g_extern.system.core_options, idx);
+         core_option_prev(global->system.core_options, idx);
          break;
 
       case MENU_ACTION_RIGHT:
-         core_option_next(g_extern.system.core_options, idx);
+         core_option_next(global->system.core_options, idx);
          break;
    }
 

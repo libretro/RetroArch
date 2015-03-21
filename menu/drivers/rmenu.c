@@ -154,6 +154,7 @@ static void rmenu_render(void)
    const char *core_version = NULL;
    unsigned menu_type = 0;
    menu_handle_t *menu = menu_driver_resolve();
+   global_t    *global = global_get_ptr();
    runloop_t *runloop = rarch_main_get_ptr();
 
    if (!menu)
@@ -209,15 +210,15 @@ static void rmenu_render(void)
       driver.video_poke->set_osd_msg(driver.video_data,
             title_buf, &font_parms, NULL);
 
-   core_name = g_extern.menu.info.library_name;
+   core_name = global->menu.info.library_name;
    if (!core_name)
-      core_name = g_extern.system.info.library_name;
+      core_name = global->system.info.library_name;
    if (!core_name)
       core_name = "No Core";
 
-   core_version = g_extern.menu.info.library_version;
+   core_version = global->menu.info.library_version;
    if (!core_version)
-      core_version = g_extern.system.info.library_version;
+      core_version = global->system.info.library_version;
    if (!core_version)
       core_version = "";
 

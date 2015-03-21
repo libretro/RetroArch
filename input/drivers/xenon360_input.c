@@ -89,7 +89,8 @@ static void* xenon360_input_init(void)
 
 static bool xenon360_input_key_pressed(void *data, int key)
 {
-   return (g_extern.lifecycle_state & (1ULL << key));
+   global_t *global = global_get_ptr();
+   return (global->lifecycle_state & (1ULL << key));
 }
 
 static uint64_t xenon360_get_capabilities(void *data)

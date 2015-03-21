@@ -346,9 +346,11 @@ static INLINE void get_title(const char *label, const char *dir,
          snprintf(title, sizeof_title, "CONTENT %s", dir);
       else
       {
-         const char *core_name = g_extern.menu.info.library_name;
+         global_t *global      = global_get_ptr();
+         const char *core_name = global->menu.info.library_name;
+
          if (!core_name)
-            core_name = g_extern.system.info.library_name;
+            core_name = global->system.info.library_name;
          if (!core_name)
             core_name = "No Core";
          snprintf(title, sizeof_title, "CONTENT (%s) %s", core_name, dir);

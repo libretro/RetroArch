@@ -426,6 +426,7 @@ static void xmb_frame_background(settings_t *settings,
       0, 1,
       1, 1,
    };
+   global_t *global = global_get_ptr();
 
    static const GLfloat tex_coord[] = {
       0, 1,
@@ -460,7 +461,7 @@ static void xmb_frame_background(settings_t *settings,
    coords.lut_tex_coord = tex_coord;
 
    if ((settings->menu.pause_libretro
-      || !g_extern.main_is_init || g_extern.libretro_dummy)
+      || !global->main_is_init || global->libretro_dummy)
       && !force_transparency
       && xmb->textures.bg.id)
    {
@@ -662,8 +663,9 @@ static void xmb_list_open_new(xmb_handle_t *xmb, file_list_t *list, int dir, siz
 
 static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, core_info_t *info, unsigned i)
 {
-   core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
    xmb_node_t *node            = NULL;
+   global_t *global            = global_get_ptr();
+   core_info_list_t *info_list = (core_info_list_t*)global->core_info;
 
    if (!info_list)
       return NULL;
@@ -706,7 +708,8 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, core_info_t *in
 
 static xmb_node_t* xmb_get_userdata_from_core(xmb_handle_t *xmb, core_info_t *info, unsigned i)
 {
-   core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
+   global_t *global            = global_get_ptr();
+   core_info_list_t *info_list = (core_info_list_t*)global->core_info;
 
    if (!info_list)
       return NULL;
@@ -810,8 +813,9 @@ static void xmb_set_title(xmb_handle_t *xmb)
    }
    else
    {
-      core_info_t *info = NULL;
-      core_info_list_t *info_list = (core_info_list_t*)g_extern.core_info;
+      core_info_t *info           = NULL;
+      global_t *global            = global_get_ptr();
+      core_info_list_t *info_list = (core_info_list_t*)global->core_info;
 
       if (!info_list)
          return;
@@ -1248,6 +1252,7 @@ static void xmb_frame(void)
    gl_t *gl = NULL;
    menu_handle_t *menu  = menu_driver_resolve();
    settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
    if (!menu)
       return;
@@ -1278,17 +1283,17 @@ static void xmb_frame(void)
 
    if (settings->menu.core_enable)
    {
-      core_name = g_extern.menu.info.library_name;
+      core_name = global->menu.info.library_name;
 
       if (!core_name)
-         core_name = g_extern.system.info.library_name;
+         core_name = global->system.info.library_name;
       if (!core_name)
          core_name = "No Core";
 
-      core_version = g_extern.menu.info.library_version;
+      core_version = global->menu.info.library_version;
 
       if (!core_version)
-         core_version = g_extern.system.info.library_version;
+         core_version = global->system.info.library_version;
       if (!core_version)
          core_version = "";
 
@@ -1384,11 +1389,12 @@ static void xmb_frame(void)
 
 static void *xmb_init(void)
 {
-   menu_handle_t *menu = NULL;
-   xmb_handle_t *xmb = NULL;
+   menu_handle_t *menu                = NULL;
+   xmb_handle_t *xmb                  = NULL;
    const video_driver_t *video_driver = NULL;
-   float scale_factor = 1;
-   gl_t *gl = (gl_t*)video_driver_resolve(&video_driver);
+   float scale_factor                 = 1;
+   gl_t *gl                           = (gl_t*)video_driver_resolve(&video_driver);
+   global_t *global                   = global_get_ptr();
 
    if (video_driver != &video_gl || !gl)
    {
@@ -1477,8 +1483,8 @@ static void *xmb_init(void)
 
    menu->categories.size      = 1;
 
-   if (g_extern.core_info)
-      menu->categories.size   = g_extern.core_info->count + 1;
+   if (global->core_info)
+      menu->categories.size   = global->core_info->count + 1;
 
    return menu;
 
@@ -1505,9 +1511,10 @@ static bool xmb_font_init_first(const gl_font_renderer_t **font_driver,
       float xmb_font_size)
 {
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    if (settings->video.threaded
-         && !g_extern.system.hw_render_callback.context_type)
+         && !global->system.hw_render_callback.context_type)
    {
       driver_t *driver    = driver_get_ptr();
       thread_video_t *thr = (thread_video_t*)driver->video_data;
@@ -1571,6 +1578,7 @@ static void xmb_context_reset(void)
    xmb_node_t *node = NULL;
    menu_handle_t *menu  = menu_driver_resolve();
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    if (!menu)
       return;
@@ -1688,7 +1696,7 @@ static void xmb_context_reset(void)
    xmb->settings_node.alpha = xmb->categories.active.alpha;
    xmb->settings_node.zoom  = xmb->categories.active.zoom;
 
-   info_list = (core_info_list_t*)g_extern.core_info;
+   info_list = (core_info_list_t*)global->core_info;
 
    if (!info_list)
       return;

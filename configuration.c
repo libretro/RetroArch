@@ -351,6 +351,7 @@ static void config_set_defaults(void)
 {
    unsigned i, j;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
    const char *def_video = config_get_default_video();
    const char *def_audio = config_get_default_audio();
    const char *def_audio_resampler = config_get_default_audio_resampler();
@@ -392,20 +393,20 @@ static void config_set_defaults(void)
    settings->history_list_enable = def_history_list_enable;
    settings->load_dummy_on_core_shutdown = load_dummy_on_core_shutdown;
 
-   settings->video.scale = scale;
-   settings->video.fullscreen = g_extern.force_fullscreen ? true : fullscreen;
-   settings->video.windowed_fullscreen = windowed_fullscreen;
-   settings->video.monitor_index = monitor_index;
-   settings->video.fullscreen_x = fullscreen_x;
-   settings->video.fullscreen_y = fullscreen_y;
-   settings->video.disable_composition = disable_composition;
-   settings->video.vsync = vsync;
-   settings->video.hard_sync = hard_sync;
-   settings->video.hard_sync_frames = hard_sync_frames;
-   settings->video.frame_delay = frame_delay;
+   settings->video.scale                 = scale;
+   settings->video.fullscreen            = global->force_fullscreen ? true : fullscreen;
+   settings->video.windowed_fullscreen   = windowed_fullscreen;
+   settings->video.monitor_index         = monitor_index;
+   settings->video.fullscreen_x          = fullscreen_x;
+   settings->video.fullscreen_y          = fullscreen_y;
+   settings->video.disable_composition   = disable_composition;
+   settings->video.vsync                 = vsync;
+   settings->video.hard_sync             = hard_sync;
+   settings->video.hard_sync_frames      = hard_sync_frames;
+   settings->video.frame_delay           = frame_delay;
    settings->video.black_frame_insertion = black_frame_insertion;
-   settings->video.swap_interval = swap_interval;
-   settings->video.threaded = video_threaded;
+   settings->video.swap_interval         = swap_interval;
+   settings->video.threaded              = video_threaded;
 
    if (g_defaults.settings.video_threaded_enable != video_threaded)
       settings->video.threaded = g_defaults.settings.video_threaded_enable;
@@ -467,7 +468,7 @@ static void config_set_defaults(void)
    settings->audio.rate_control_delta = rate_control_delta;
    settings->audio.max_timing_skew = max_timing_skew;
    settings->audio.volume = audio_volume;
-   g_extern.audio_data.volume_gain = db_to_gain(settings->audio.volume);
+   global->audio_data.volume_gain = db_to_gain(settings->audio.volume);
 
    settings->rewind_enable = rewind_enable;
    settings->rewind_buffer_size = rewind_buffer_size;
@@ -568,33 +569,32 @@ static void config_set_defaults(void)
    {
       settings->input.joypad_map[i] = i;
       settings->input.analog_dpad_mode[i] = ANALOG_DPAD_NONE;
-      if (!g_extern.has_set_libretro_device[i])
+      if (!global->has_set_libretro_device[i])
          settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
    }
 
-   g_extern.console.screen.viewports.custom_vp.width = 0;
-   g_extern.console.screen.viewports.custom_vp.height = 0;
-   g_extern.console.screen.viewports.custom_vp.x = 0;
-   g_extern.console.screen.viewports.custom_vp.y = 0;
-
+   global->console.screen.viewports.custom_vp.width = 0;
+   global->console.screen.viewports.custom_vp.height = 0;
+   global->console.screen.viewports.custom_vp.x = 0;
+   global->console.screen.viewports.custom_vp.y = 0;
 
    /* Make sure settings from other configs carry over into defaults 
     * for another config. */
-   if (!g_extern.has_set_save_path)
-      *g_extern.savefile_dir = '\0';
-   if (!g_extern.has_set_state_path)
-      *g_extern.savestate_dir = '\0';
+   if (!global->has_set_save_path)
+      *global->savefile_dir = '\0';
+   if (!global->has_set_state_path)
+      *global->savestate_dir = '\0';
 
    *settings->libretro_info_path = '\0';
-   if (!g_extern.has_set_libretro_directory)
+   if (!global->has_set_libretro_directory)
       *settings->libretro_directory = '\0';
 
-   if (!g_extern.has_set_ups_pref)
-      g_extern.ups_pref = false;
-   if (!g_extern.has_set_bps_pref)
-      g_extern.bps_pref = false;
-   if (!g_extern.has_set_ips_pref)
-      g_extern.ips_pref = false;
+   if (!global->has_set_ups_pref)
+      global->ups_pref = false;
+   if (!global->has_set_bps_pref)
+      global->bps_pref = false;
+   if (!global->has_set_ips_pref)
+      global->ips_pref = false;
 
    *settings->core_options_path = '\0';
    *settings->content_history_path = '\0';
@@ -626,12 +626,11 @@ static void config_set_defaults(void)
    settings->core_specific_config = default_core_specific_config;
    settings->user_language = 0;
 
-   g_extern.console.sound.system_bgm_enable = false;
+   global->console.sound.system_bgm_enable = false;
 #ifdef RARCH_CONSOLE
-   g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
-
-   g_extern.console.screen.resolutions.current.id = 0;
-   g_extern.console.sound.mode = SOUND_MODE_NORMAL;
+   global->console.screen.gamma_correction = DEFAULT_GAMMA;
+   global->console.screen.resolutions.current.id = 0;
+   global->console.sound.mode = SOUND_MODE_NORMAL;
 #endif
    
    if (*g_defaults.extraction_dir)
@@ -670,12 +669,12 @@ static void config_set_defaults(void)
 #ifdef HAVE_OVERLAY
    if (*g_defaults.overlay_dir)
    {
-      fill_pathname_expand_special(g_extern.overlay_dir,
-            g_defaults.overlay_dir, sizeof(g_extern.overlay_dir));
+      fill_pathname_expand_special(global->overlay_dir,
+            g_defaults.overlay_dir, sizeof(global->overlay_dir));
 #ifdef RARCH_MOBILE
       if (!*settings->input.overlay)
             fill_pathname_join(settings->input.overlay,
-                  g_extern.overlay_dir,
+                  global->overlay_dir,
                   "gamepads/retropad/retropad.cfg",
                   sizeof(settings->input.overlay));
 #endif
@@ -683,19 +682,19 @@ static void config_set_defaults(void)
 
    if (*g_defaults.osk_overlay_dir)
    {
-      fill_pathname_expand_special(g_extern.osk_overlay_dir,
-            g_defaults.osk_overlay_dir, sizeof(g_extern.osk_overlay_dir));
+      fill_pathname_expand_special(global->osk_overlay_dir,
+            g_defaults.osk_overlay_dir, sizeof(global->osk_overlay_dir));
 #ifdef RARCH_MOBILE
       if (!*settings->input.overlay)
             fill_pathname_join(settings->osk.overlay,
-                  g_extern.osk_overlay_dir,
+                  global->osk_overlay_dir,
                   "overlays/keyboards/US-101/US-101.cfg",
                   sizeof(settings->osk.overlay));
 #endif
    }
    else
-      strlcpy(g_extern.osk_overlay_dir,
-            g_extern.overlay_dir, sizeof(g_extern.osk_overlay_dir));
+      strlcpy(global->osk_overlay_dir,
+            global->overlay_dir, sizeof(global->osk_overlay_dir));
 #endif
 #ifdef HAVE_MENU
    if (*g_defaults.menu_config_dir)
@@ -711,12 +710,12 @@ static void config_set_defaults(void)
             g_defaults.autoconfig_dir,
             sizeof(settings->input.autoconfig_dir));
 
-   if (!g_extern.has_set_state_path && *g_defaults.savestate_dir)
-      strlcpy(g_extern.savestate_dir,
-            g_defaults.savestate_dir, sizeof(g_extern.savestate_dir));
-   if (!g_extern.has_set_save_path && *g_defaults.sram_dir)
-      strlcpy(g_extern.savefile_dir,
-            g_defaults.sram_dir, sizeof(g_extern.savefile_dir));
+   if (!global->has_set_state_path && *g_defaults.savestate_dir)
+      strlcpy(global->savestate_dir,
+            g_defaults.savestate_dir, sizeof(global->savestate_dir));
+   if (!global->has_set_save_path && *g_defaults.sram_dir)
+      strlcpy(global->savefile_dir,
+            g_defaults.sram_dir, sizeof(global->savefile_dir));
    if (*g_defaults.system_dir)
       strlcpy(settings->system_directory,
             g_defaults.system_dir, sizeof(settings->system_directory));
@@ -734,13 +733,13 @@ static void config_set_defaults(void)
             sizeof(settings->content_history_directory));
 
    if (*g_defaults.config_path)
-      fill_pathname_expand_special(g_extern.config_path,
-            g_defaults.config_path, sizeof(g_extern.config_path));
+      fill_pathname_expand_special(global->config_path,
+            g_defaults.config_path, sizeof(global->config_path));
    
    settings->config_save_on_exit = config_save_on_exit;
 
    /* Avoid reloading config on every content load */
-   g_extern.block_config_read = default_block_config_read;
+   global->block_config_read = default_block_config_read;
 }
 
 #ifndef GLOBAL_CONFIG_DIR
@@ -760,9 +759,10 @@ static void config_set_defaults(void)
  **/
 static config_file_t *open_default_config_file(void)
 {
-   bool saved = false;
    char conf_path[PATH_MAX_LENGTH], app_path[PATH_MAX_LENGTH];
    config_file_t *conf = NULL;
+   bool saved = false;
+   global_t *global = global_get_ptr();
 
    (void)conf_path;
    (void)app_path;
@@ -940,8 +940,8 @@ static config_file_t *open_default_config_file(void)
    if (!conf)
       return NULL;
 
-   strlcpy(g_extern.config_path, conf_path,
-         sizeof(g_extern.config_path));
+   strlcpy(global->config_path, conf_path,
+         sizeof(global->config_path));
    
    return conf;
 }
@@ -1068,7 +1068,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    unsigned msg_color = 0;
    config_file_t *conf = NULL;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = &g_extern;
+   global_t   *global   = global_get_ptr();
 
    if (path)
    {
@@ -1085,7 +1085,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (set_defaults)
       config_set_defaults();
 
-   strlcpy(tmp_append_path, g_extern.append_config_path,
+   strlcpy(tmp_append_path, global->append_config_path,
          sizeof(tmp_append_path));
    extra_path = strtok_r(tmp_append_path, ",", &save);
 
@@ -1099,7 +1099,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       extra_path = strtok_r(NULL, ",", &save);
    }
 
-   if (g_extern.verbosity)
+   if (global->verbosity)
    {
       RARCH_LOG_OUTPUT("=== Config ===\n");
       config_file_dump_all(conf);
@@ -1111,7 +1111,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT(video.fullscreen_x, "video_fullscreen_x");
    CONFIG_GET_INT(video.fullscreen_y, "video_fullscreen_y");
 
-   if (!g_extern.force_fullscreen)
+   if (!global->force_fullscreen)
       CONFIG_GET_BOOL(video.fullscreen, "video_fullscreen");
 
    CONFIG_GET_BOOL(video.windowed_fullscreen, "video_windowed_fullscreen");
@@ -1189,11 +1189,11 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
 
    config_get_bool(conf, "custom_bgm_enable",
-         &g_extern.console.sound.system_bgm_enable);
+         &global->console.sound.system_bgm_enable);
    config_get_bool(conf, "flicker_filter_enable",
-         &g_extern.console.flickerfilter_enable);
+         &global->console.flickerfilter_enable);
    config_get_bool(conf, "soft_filter_enable",
-         &g_extern.console.softfilter_enable);
+         &global->console.softfilter_enable);
 
    CONFIG_GET_INT_EXTERN(console.screen.flicker_filter_index,
          "flicker_filter_index");
@@ -1266,22 +1266,22 @@ static bool config_load_file(const char *path, bool set_defaults)
       snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
       CONFIG_GET_INT(input.analog_dpad_mode[i], buf);
 
-      if (!g_extern.has_set_libretro_device[i])
+      if (!global->has_set_libretro_device[i])
       {
          snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
          CONFIG_GET_INT(input.libretro_device[i], buf);
       }
    }
 
-   if (!g_extern.has_set_ups_pref)
+   if (!global->has_set_ups_pref)
    {
       CONFIG_GET_BOOL_EXTERN(ups_pref, "ups_pref");
    }
-   if (!g_extern.has_set_bps_pref)
+   if (!global->has_set_bps_pref)
    {
       CONFIG_GET_BOOL_EXTERN(bps_pref, "bps_pref");
    }
-   if (!g_extern.has_set_ips_pref)
+   if (!global->has_set_ips_pref)
    {
       CONFIG_GET_BOOL_EXTERN(ips_pref, "ips_pref");
    }
@@ -1299,7 +1299,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_FLOAT(audio.max_timing_skew, "audio_max_timing_skew");
    CONFIG_GET_FLOAT(audio.volume, "audio_volume");
    CONFIG_GET_STRING(audio.resampler, "audio_resampler");
-   g_extern.audio_data.volume_gain = db_to_gain(settings->audio.volume);
+   global->audio_data.volume_gain = db_to_gain(settings->audio.volume);
 
    CONFIG_GET_STRING(camera.device, "camera_device");
    CONFIG_GET_BOOL(camera.allow, "camera_allow");
@@ -1317,9 +1317,9 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_STRING(input.joypad_driver, "input_joypad_driver");
    CONFIG_GET_STRING(input.keyboard_layout, "input_keyboard_layout");
 
-   if (!g_extern.has_set_libretro)
+   if (!global->has_set_libretro)
       config_get_path(conf, "libretro_path", settings->libretro, sizeof(settings->libretro));
-   if (!g_extern.has_set_libretro_directory)
+   if (!global->has_set_libretro_directory)
       config_get_path(conf, "libretro_directory", settings->libretro_directory, sizeof(settings->libretro_directory));
 
    /* Safe-guard against older behavior. */
@@ -1376,7 +1376,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
    CONFIG_GET_INT(libretro_log_level, "libretro_log_level");
 
-   if (!g_extern.has_set_verbosity)
+   if (!global->has_set_verbosity)
       CONFIG_GET_BOOL_EXTERN(verbosity, "log_verbosity");
 
    CONFIG_GET_BOOL_EXTERN(perfcnt_enable, "perfcnt_enable");
@@ -1384,18 +1384,18 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT(archive.mode, "archive_mode");
 
 #ifdef HAVE_OVERLAY
-   config_get_path(conf, "overlay_directory", g_extern.overlay_dir, sizeof(g_extern.overlay_dir));
-   if (!strcmp(g_extern.overlay_dir, "default"))
-      *g_extern.overlay_dir = '\0';
+   config_get_path(conf, "overlay_directory", global->overlay_dir, sizeof(global->overlay_dir));
+   if (!strcmp(global->overlay_dir, "default"))
+      *global->overlay_dir = '\0';
 
    config_get_path(conf, "input_overlay", settings->input.overlay, sizeof(settings->input.overlay));
    CONFIG_GET_BOOL(input.overlay_enable, "input_overlay_enable");
    CONFIG_GET_FLOAT(input.overlay_opacity, "input_overlay_opacity");
    CONFIG_GET_FLOAT(input.overlay_scale, "input_overlay_scale");
 
-   config_get_path(conf, "osk_overlay_directory", g_extern.osk_overlay_dir, sizeof(g_extern.osk_overlay_dir));
-   if (!strcmp(g_extern.osk_overlay_dir, "default"))
-      *g_extern.osk_overlay_dir = '\0';
+   config_get_path(conf, "osk_overlay_directory", global->osk_overlay_dir, sizeof(global->osk_overlay_dir));
+   if (!strcmp(global->osk_overlay_dir, "default"))
+      *global->osk_overlay_dir = '\0';
 
    config_get_path(conf, "input_osk_overlay", settings->osk.overlay, sizeof(settings->osk.overlay));
    CONFIG_GET_BOOL(osk.enable, "input_osk_overlay_enable");
@@ -1451,58 +1451,58 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
    CONFIG_GET_PATH(input.autoconfig_dir, "joypad_autoconfig_dir");
 
-   if (!g_extern.has_set_username)
+   if (!global->has_set_username)
       CONFIG_GET_PATH(username, "netplay_nickname");
    CONFIG_GET_INT(user_language, "user_language");
 #ifdef HAVE_NETPLAY
-   if (!g_extern.has_set_netplay_mode)
+   if (!global->has_set_netplay_mode)
       CONFIG_GET_BOOL_EXTERN(netplay_is_spectate,
             "netplay_spectator_mode_enable");
-   if (!g_extern.has_set_netplay_mode)
+   if (!global->has_set_netplay_mode)
       CONFIG_GET_BOOL_EXTERN(netplay_is_client, "netplay_mode");
-   if (!g_extern.has_set_netplay_ip_address)
+   if (!global->has_set_netplay_ip_address)
       CONFIG_GET_PATH_EXTERN(netplay_server, "netplay_ip_address");
-   if (!g_extern.has_set_netplay_delay_frames)
+   if (!global->has_set_netplay_delay_frames)
       CONFIG_GET_INT_EXTERN(netplay_sync_frames, "netplay_delay_frames");
-   if (!g_extern.has_set_netplay_ip_port)
+   if (!global->has_set_netplay_ip_port)
       CONFIG_GET_INT_EXTERN(netplay_port, "netplay_ip_port");
 #endif
 
    CONFIG_GET_BOOL(config_save_on_exit, "config_save_on_exit");
 
-   if (!g_extern.has_set_save_path &&
+   if (!global->has_set_save_path &&
          config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
       if (!strcmp(tmp_str, "default"))
-         strlcpy(g_extern.savefile_dir, g_defaults.sram_dir,
-               sizeof(g_extern.savefile_dir));
+         strlcpy(global->savefile_dir, g_defaults.sram_dir,
+               sizeof(global->savefile_dir));
       else if (path_is_directory(tmp_str))
       {
-         strlcpy(g_extern.savefile_dir, tmp_str,
-               sizeof(g_extern.savefile_dir));
-         strlcpy(g_extern.savefile_name, tmp_str,
-               sizeof(g_extern.savefile_name));
-         fill_pathname_dir(g_extern.savefile_name, g_extern.basename,
-               ".srm", sizeof(g_extern.savefile_name));
+         strlcpy(global->savefile_dir, tmp_str,
+               sizeof(global->savefile_dir));
+         strlcpy(global->savefile_name, tmp_str,
+               sizeof(global->savefile_name));
+         fill_pathname_dir(global->savefile_name, global->basename,
+               ".srm", sizeof(global->savefile_name));
       }
       else
          RARCH_WARN("savefile_directory is not a directory, ignoring ...\n");
    }
 
-   if (!g_extern.has_set_state_path &&
+   if (!global->has_set_state_path &&
          config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
       if (!strcmp(tmp_str, "default"))
-         strlcpy(g_extern.savestate_dir, g_defaults.savestate_dir,
-               sizeof(g_extern.savestate_dir));
+         strlcpy(global->savestate_dir, g_defaults.savestate_dir,
+               sizeof(global->savestate_dir));
       else if (path_is_directory(tmp_str))
       {
-         strlcpy(g_extern.savestate_dir, tmp_str,
-               sizeof(g_extern.savestate_dir));
-         strlcpy(g_extern.savestate_name, tmp_str,
-               sizeof(g_extern.savestate_name));
-         fill_pathname_dir(g_extern.savestate_name, g_extern.basename,
-               ".state", sizeof(g_extern.savestate_name));
+         strlcpy(global->savestate_dir, tmp_str,
+               sizeof(global->savestate_dir));
+         strlcpy(global->savestate_name, tmp_str,
+               sizeof(global->savestate_name));
+         fill_pathname_dir(global->savestate_name, global->basename,
+               ".state", sizeof(global->savestate_name));
       }
       else
          RARCH_WARN("savestate_directory is not a directory, ignoring ...\n");
@@ -1520,7 +1520,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       else
       {
          fill_pathname_resolve_relative(settings->content_history_path,
-               g_extern.config_path, "retroarch-content-history.txt",
+               global->config_path, "retroarch-content-history.txt",
                sizeof(settings->content_history_path));
       }
    }
@@ -1546,12 +1546,13 @@ static bool config_load_file(const char *path, bool set_defaults)
 static void config_load_core_specific(void)
 {
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
-   *g_extern.core_specific_config_path = '\0';
+   *global->core_specific_config_path = '\0';
 
    if (!*settings->libretro
 #ifdef HAVE_DYNAMIC
-      || g_extern.libretro_dummy
+      || global->libretro_dummy
 #endif
       )
       return;
@@ -1561,29 +1562,29 @@ static void config_load_core_specific(void)
    {
       path_resolve_realpath(settings->menu_config_directory,
             sizeof(settings->menu_config_directory));
-      strlcpy(g_extern.core_specific_config_path,
+      strlcpy(global->core_specific_config_path,
             settings->menu_config_directory,
-            sizeof(g_extern.core_specific_config_path));
+            sizeof(global->core_specific_config_path));
    }
    else
 #endif
    {
       /* Use original config file's directory as a fallback. */
-      fill_pathname_basedir(g_extern.core_specific_config_path,
-            g_extern.config_path, sizeof(g_extern.core_specific_config_path));
+      fill_pathname_basedir(global->core_specific_config_path,
+            global->config_path, sizeof(global->core_specific_config_path));
    }
 
-   fill_pathname_dir(g_extern.core_specific_config_path, settings->libretro,
-         ".cfg", sizeof(g_extern.core_specific_config_path));
+   fill_pathname_dir(global->core_specific_config_path, settings->libretro,
+         ".cfg", sizeof(global->core_specific_config_path));
 
    if (settings->core_specific_config)
    {
       char tmp[PATH_MAX_LENGTH];
       strlcpy(tmp, settings->libretro, sizeof(tmp));
       RARCH_LOG("Loading core-specific config from: %s.\n",
-            g_extern.core_specific_config_path);
+            global->core_specific_config_path);
 
-      if (!config_load_file(g_extern.core_specific_config_path, true))
+      if (!config_load_file(global->core_specific_config_path, true))
          RARCH_WARN("Core-specific config not found, reusing last config.\n");
 
       /* Force some parameters which are implied when using core specific configs.
@@ -1597,27 +1598,27 @@ static void config_load_core_specific(void)
 
 static void parse_config_file(void)
 {
-   bool ret = config_load_file((*g_extern.config_path) 
-         ? g_extern.config_path : NULL, false);
+   global_t *global = global_get_ptr();
+   bool ret = config_load_file((*global->config_path) 
+         ? global->config_path : NULL, false);
 
-   if (*g_extern.config_path)
+   if (*global->config_path)
    {
-      RARCH_LOG("Loading config from: %s.\n", g_extern.config_path);
+      RARCH_LOG("Loading config from: %s.\n", global->config_path);
    }
    else
    {
       RARCH_LOG("Loading default config.\n");
-      if (*g_extern.config_path)
-         RARCH_LOG("Found default config: %s.\n", g_extern.config_path);
+      if (*global->config_path)
+         RARCH_LOG("Found default config: %s.\n", global->config_path);
    }
 
    if (ret)
       return;
 
    RARCH_ERR("Couldn't find config at path: \"%s\"\n",
-         g_extern.config_path);
+         global->config_path);
 }
-
 
 
 #if 0
@@ -1775,16 +1776,17 @@ static void save_keybinds_user(config_file_t *conf, unsigned user)
 void config_load(void)
 {
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    /* Flush out per-core configs before loading a new config. */
-   if (*g_extern.core_specific_config_path &&
+   if (*global->core_specific_config_path &&
          settings->config_save_on_exit && settings->core_specific_config)
-      config_save_file(g_extern.core_specific_config_path);
+      config_save_file(global->core_specific_config_path);
 
    /* Flush out some states that could have been set by core environment variables */
-   g_extern.has_set_input_descriptors = false;
+   global->has_set_input_descriptors = false;
 
-   if (!g_extern.block_config_read)
+   if (!global->block_config_read)
    {
       config_set_defaults();
       parse_config_file();
@@ -1838,6 +1840,7 @@ bool config_save_file(const char *path)
    bool ret = false;
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -1959,12 +1962,12 @@ bool config_save_file(const char *path)
    config_set_float(conf, "video_font_size", settings->video.font_size);
    config_set_bool(conf,  "video_font_enable", settings->video.font_enable);
 
-   if (!g_extern.has_set_ups_pref)
-      config_set_bool(conf, "ups_pref", g_extern.ups_pref);
-   if (!g_extern.has_set_bps_pref)
-      config_set_bool(conf, "bps_pref", g_extern.bps_pref);
-   if (!g_extern.has_set_ips_pref)
-      config_set_bool(conf, "ips_pref", g_extern.ips_pref);
+   if (!global->has_set_ups_pref)
+      config_set_bool(conf, "ups_pref", global->ups_pref);
+   if (!global->has_set_bps_pref)
+      config_set_bool(conf, "bps_pref", global->bps_pref);
+   if (!global->has_set_ips_pref)
+      config_set_bool(conf, "ips_pref", global->ips_pref);
 
    config_set_path(conf, "system_directory",
          *settings->system_directory ?
@@ -1979,9 +1982,9 @@ bool config_save_file(const char *path)
          settings->resampler_directory);
    config_set_string(conf, "audio_resampler", settings->audio.resampler);
    config_set_path(conf, "savefile_directory",
-         *g_extern.savefile_dir ? g_extern.savefile_dir : "default");
+         *global->savefile_dir ? global->savefile_dir : "default");
    config_set_path(conf, "savestate_directory",
-         *g_extern.savestate_dir ? g_extern.savestate_dir : "default");
+         *global->savestate_dir ? global->savestate_dir : "default");
    config_set_path(conf, "video_shader_dir",
          *settings->video.shader_dir ?
          settings->video.shader_dir : "default");
@@ -2037,7 +2040,7 @@ bool config_save_file(const char *path)
 
 #ifdef HAVE_OVERLAY
    config_set_path(conf, "overlay_directory",
-         *g_extern.overlay_dir ? g_extern.overlay_dir : "default");
+         *global->overlay_dir ? global->overlay_dir : "default");
    config_set_path(conf, "input_overlay", settings->input.overlay);
    config_set_bool(conf, "input_overlay_enable", settings->input.overlay_enable);
    config_set_float(conf, "input_overlay_opacity",
@@ -2046,7 +2049,7 @@ bool config_save_file(const char *path)
          settings->input.overlay_scale);
 
    config_set_path(conf, "osk_overlay_directory",
-         *g_extern.osk_overlay_dir ? g_extern.osk_overlay_dir : "default");
+         *global->osk_overlay_dir ? global->osk_overlay_dir : "default");
    config_set_path(conf, "input_osk_overlay", settings->osk.overlay);
    config_set_bool(conf, "input_osk_overlay_enable", settings->osk.enable);
 #endif
@@ -2056,26 +2059,26 @@ bool config_save_file(const char *path)
    config_set_float(conf, "video_message_pos_y", settings->video.msg_pos_y);
 
    config_set_bool(conf, "gamma_correction",
-         g_extern.console.screen.gamma_correction);
+         global->console.screen.gamma_correction);
    config_set_bool(conf, "soft_filter_enable",
-         g_extern.console.softfilter_enable);
+         global->console.softfilter_enable);
    config_set_bool(conf, "flicker_filter_enable",
-         g_extern.console.flickerfilter_enable);
+         global->console.flickerfilter_enable);
 
    config_set_int(conf, "flicker_filter_index",
-         g_extern.console.screen.flicker_filter_index);
+         global->console.screen.flicker_filter_index);
    config_set_int(conf, "soft_filter_index",
-         g_extern.console.screen.soft_filter_index);
+         global->console.screen.soft_filter_index);
    config_set_int(conf, "current_resolution_id",
-         g_extern.console.screen.resolutions.current.id);
+         global->console.screen.resolutions.current.id);
    config_set_int(conf, "custom_viewport_width",
-         g_extern.console.screen.viewports.custom_vp.width);
+         global->console.screen.viewports.custom_vp.width);
    config_set_int(conf, "custom_viewport_height",
-         g_extern.console.screen.viewports.custom_vp.height);
+         global->console.screen.viewports.custom_vp.height);
    config_set_int(conf, "custom_viewport_x",
-         g_extern.console.screen.viewports.custom_vp.x);
+         global->console.screen.viewports.custom_vp.x);
    config_set_int(conf, "custom_viewport_y",
-         g_extern.console.screen.viewports.custom_vp.y);
+         global->console.screen.viewports.custom_vp.y);
    config_set_float(conf, "video_font_size", settings->video.font_size);
 
    config_set_bool(conf, "block_sram_overwrite",
@@ -2095,22 +2098,22 @@ bool config_save_file(const char *path)
 
    config_set_bool(conf, "config_save_on_exit",
          settings->config_save_on_exit);
-   config_set_int(conf, "sound_mode", g_extern.console.sound.mode);
+   config_set_int(conf, "sound_mode", global->console.sound.mode);
    config_set_int(conf, "state_slot", settings->state_slot);
 
 #ifdef HAVE_NETPLAY
    config_set_bool(conf, "netplay_spectator_mode_enable",
-         g_extern.netplay_is_spectate);
-   config_set_bool(conf, "netplay_mode", g_extern.netplay_is_client);
-   config_set_string(conf, "netplay_ip_address", g_extern.netplay_server);
-   config_set_int(conf, "netplay_ip_port", g_extern.netplay_port);
-   config_set_int(conf, "netplay_delay_frames", g_extern.netplay_sync_frames);
+         global->netplay_is_spectate);
+   config_set_bool(conf, "netplay_mode", global->netplay_is_client);
+   config_set_string(conf, "netplay_ip_address", global->netplay_server);
+   config_set_int(conf, "netplay_ip_port", global->netplay_port);
+   config_set_int(conf, "netplay_delay_frames", global->netplay_sync_frames);
 #endif
    config_set_string(conf, "netplay_nickname", settings->username);
    config_set_int(conf, "user_language", settings->user_language);
 
    config_set_bool(conf, "custom_bgm_enable",
-         g_extern.console.sound.system_bgm_enable);
+         global->console.sound.system_bgm_enable);
 
    config_set_string(conf, "input_driver", settings->input.driver);
    config_set_string(conf, "input_joypad_driver",
@@ -2137,8 +2140,8 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "core_specific_config",
          settings->core_specific_config);
    config_set_int(conf, "libretro_log_level", settings->libretro_log_level);
-   config_set_bool(conf, "log_verbosity", g_extern.verbosity);
-   config_set_bool(conf, "perfcnt_enable", g_extern.perfcnt_enable);
+   config_set_bool(conf, "log_verbosity", global->verbosity);
+   config_set_bool(conf, "perfcnt_enable", global->perfcnt_enable);
 
    config_set_int(conf, "archive_mode", settings->archive.mode);
 

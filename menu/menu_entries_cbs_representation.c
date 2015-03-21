@@ -30,9 +30,11 @@ static void menu_action_setting_disp_set_label_cheat_num_passes(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   global_t *global = global_get_ptr();
+
    *w = 19;
    strlcpy(path_buf, path, path_buf_size);
-   snprintf(type_str, type_str_size, "%u", g_extern.cheat->buf_size);
+   snprintf(type_str, type_str_size, "%u", global->cheat->buf_size);
 }
 
 static void menu_action_setting_disp_set_label_remap_file_load(
@@ -61,10 +63,12 @@ static void menu_action_setting_disp_set_label_configurations(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   global_t *global = global_get_ptr();
+
    *w = 19;
    strlcpy(path_buf, path, path_buf_size);
-   if (*g_extern.config_path)
-      fill_pathname_base(type_str, g_extern.config_path,
+   if (*global->config_path)
+      fill_pathname_base(type_str, global->config_path,
             type_str_size);
    else
       strlcpy(type_str, "<default>", type_str_size);
@@ -362,13 +366,14 @@ static void menu_action_setting_disp_set_label_cheat(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   global_t *global     = global_get_ptr();
    unsigned cheat_index = type - MENU_SETTINGS_CHEAT_BEGIN;
 
-   if (cheat_index < g_extern.cheat->buf_size)
+   if (cheat_index < global->cheat->buf_size)
       snprintf(type_str, type_str_size, "%s : (%s)",
-            (g_extern.cheat->cheats[cheat_index].code != NULL)
-            ? g_extern.cheat->cheats[cheat_index].code : "N/A",
-            g_extern.cheat->cheats[cheat_index].state ? "ON" : "OFF"
+            (global->cheat->cheats[cheat_index].code != NULL)
+            ? global->cheat->cheats[cheat_index].code : "N/A",
+            global->cheat->cheats[cheat_index].state ? "ON" : "OFF"
             );
    *w = 19;
    strlcpy(path_buf, path, path_buf_size);
@@ -470,10 +475,11 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   unsigned images = 0, current = 0;
+   global_t *global     = global_get_ptr();
    const struct retro_disk_control_callback *control =
       (const struct retro_disk_control_callback*)
-      &g_extern.system.disk_control;
-   unsigned images = 0, current = 0;
+      &global->system.disk_control;
 
    *w = 19;
    *type_str = '\0';
@@ -738,6 +744,8 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       const char *path,
       char *path_buf, size_t path_buf_size)
 {
+   global_t *global     = global_get_ptr();
+
    *type_str = '\0';
    *w = 19;
 
@@ -750,7 +758,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
    if (type >= MENU_SETTINGS_CORE_OPTION_START)
       strlcpy(
             type_str,
-            core_option_get_val(g_extern.system.core_options,
+            core_option_get_val(global->system.core_options,
                type - MENU_SETTINGS_CORE_OPTION_START),
             type_str_size);
    else

@@ -1541,14 +1541,15 @@ static void exynos_gfx_viewport_info(void *data, struct video_viewport *vp)
 
 static void exynos_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-   struct exynos_video *vid = data;
+   struct exynos_video *vid = (struct exynos_video*)data;
+   global_t *global         = global_get_ptr();
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
          video_viewport_set_square_pixel(
-               g_extern.system.av_info.geometry.base_width,
-               g_extern.system.av_info.geometry.base_height);
+               global->system.av_info.geometry.base_width,
+               global->system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
@@ -1563,7 +1564,7 @@ static void exynos_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
          break;
    }
 
-   g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
+   global->system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
    vid->aspect_changed = true;
 }
 

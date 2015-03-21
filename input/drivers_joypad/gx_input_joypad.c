@@ -401,7 +401,8 @@ static s8 WPAD_StickY(WPADData *data, u8 chan, u8 right)
 static void gx_joypad_poll(void)
 {
    unsigned i, j, port;
-   uint8_t gcpad = 0;
+   uint8_t gcpad    = 0;
+   global_t *global = global_get_ptr();
 
    pad_state[0] = 0;
    pad_state[1] = 0;
@@ -592,8 +593,8 @@ static void gx_joypad_poll(void)
                analog_state[port][i][j] = -0x7fff;
    }
 
-   uint64_t *state_p1 = &pad_state[0];
-   uint64_t *lifecycle_state = &g_extern.lifecycle_state;
+   uint64_t *state_p1        = &pad_state[0];
+   uint64_t *lifecycle_state = &global->lifecycle_state;
 
    *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
 

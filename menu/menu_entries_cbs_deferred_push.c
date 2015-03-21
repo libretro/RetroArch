@@ -133,11 +133,12 @@ static int deferred_push_core_information(void *data, void *userdata,
    file_list_t *menu_list = (file_list_t*)userdata;
    driver_t *driver       = driver_get_ptr();
    settings_t *settings   = config_get_ptr();
+   global_t *global       = global_get_ptr();
 
    if (!list || !menu_list)
       return -1;
 
-   info = (core_info_t*)g_extern.core_info_current;
+   info = (core_info_t*)global->core_info_current;
    menu_list_clear(list);
 
    if (info && info->data)
@@ -218,7 +219,7 @@ static int deferred_push_core_information(void *data, void *userdata,
       if (info->firmware_count > 0)
       {
          core_info_list_update_missing_firmware(
-               g_extern.core_info, info->path,
+               global->core_info, info->path,
                settings->system_directory);
 
          menu_list_push(list, "Firmware: ", "",
@@ -560,9 +561,10 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
    unsigned i;
    size_t list_size = 0;
    const core_info_t *info = NULL;
-   file_list_t *list      = NULL;
-   file_list_t *menu_list = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   file_list_t *list       = NULL;
+   file_list_t *menu_list  = NULL;
+   global_t *global        = global_get_ptr();
+   menu_handle_t *menu     = menu_driver_resolve();
    if (!menu)
       return -1;
 
@@ -573,7 +575,7 @@ static int deferred_push_core_list_deferred(void *data, void *userdata,
       return -1;
 
    menu_list_clear(list);
-   core_info_list_get_supported_cores(g_extern.core_info,
+   core_info_list_get_supported_cores(global->core_info,
          menu->deferred_path, &info, &list_size);
 
    for (i = 0; i < list_size; i++)
@@ -777,12 +779,13 @@ static int deferred_push_core_information(void *data, void *userdata,
    core_info_t *info      = NULL;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver       = driver_get_ptr();
+   global_t *global       = global_get_ptr();
 
    if (!list || !menu_list)
       return -1;
 
-   info = (core_info_t*)g_extern.core_info_current;
+   info = (core_info_t*)global->core_info_current;
    menu_list_clear(list);
 
    if (info->data)
@@ -863,7 +866,7 @@ static int deferred_push_core_information(void *data, void *userdata,
       if (info->firmware_count > 0)
       {
          core_info_list_update_missing_firmware(
-               g_extern.core_info, info->path,
+               global->core_info, info->path,
                settings->system_directory);
 
          menu_list_push(list, "Firmware: ", "",
@@ -1249,7 +1252,8 @@ static int deferred_push_options(void *data, void *userdata,
 {
    file_list_t *list           = (file_list_t*)data;
    file_list_t *menu_list      = (file_list_t*)userdata;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver            = driver_get_ptr();
+   global_t *global            = global_get_ptr();
 
    if (!list || !menu_list)
       return -1;
@@ -1257,14 +1261,14 @@ static int deferred_push_options(void *data, void *userdata,
    menu_list_clear(list);
    menu_list_push(list, "Core Options", "core_options",
          MENU_SETTING_ACTION, 0);
-   if (g_extern.main_is_init)
+   if (global->main_is_init)
    {
-      if (g_extern.has_set_input_descriptors)
+      if (global->has_set_input_descriptors)
          menu_list_push(list, "Core Input Remapping Options", "core_input_remapping_options",
                MENU_SETTING_ACTION, 0);
       menu_list_push(list, "Core Cheat Options", "core_cheat_options",
             MENU_SETTING_ACTION, 0);
-      if (!g_extern.libretro_dummy && g_extern.system.disk_control.get_num_images)
+      if (!global->libretro_dummy && global->system.disk_control.get_num_images)
          menu_list_push(list, "Core Disk Options", "core_disk_options",
                MENU_SETTING_ACTION, 0);
    }
@@ -1373,8 +1377,9 @@ static int deferred_push_core_cheat_options(void *data, void *userdata,
 {
    unsigned i;
    file_list_t *list      = (file_list_t*)data;
-   cheat_manager_t *cheat = g_extern.cheat;
-   driver_t *driver = driver_get_ptr();
+   global_t *global       = global_get_ptr();
+   driver_t *driver       = driver_get_ptr();
+   cheat_manager_t *cheat = global->cheat;
 
    (void)userdata;
    (void)type;
@@ -1384,11 +1389,11 @@ static int deferred_push_core_cheat_options(void *data, void *userdata,
 
    if (!cheat)
    {
-      g_extern.cheat = cheat_manager_new(0);
+      global->cheat = cheat_manager_new(0);
 
-      if (!g_extern.cheat)
+      if (!global->cheat)
          return -1;
-      cheat = g_extern.cheat;
+      cheat = global->cheat;
    }
 
    menu_list_clear(list);
@@ -1423,6 +1428,7 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
    file_list_t *list      = (file_list_t*)data;
    driver_t *driver       = driver_get_ptr();
    settings_t *settings   = config_get_ptr();
+   global_t *global       = global_get_ptr();
 
    (void)userdata;
    (void)type;
@@ -1442,7 +1448,7 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
       {
          char desc_label[64];
          unsigned user = p + 1;
-         const char *description = g_extern.system.input_desc_btn[p][retro_id];
+         const char *description = global->system.input_desc_btn[p][retro_id];
 
          if (!description)
             continue;
@@ -1466,7 +1472,8 @@ static int deferred_push_core_options(void *data, void *userdata,
 {
    unsigned i;
    file_list_t *list      = (file_list_t*)data;
-   driver_t *driver = driver_get_ptr();
+   driver_t *driver       = driver_get_ptr();
+   global_t *global       = global_get_ptr();
 
    (void)userdata;
 
@@ -1475,13 +1482,13 @@ static int deferred_push_core_options(void *data, void *userdata,
 
    menu_list_clear(list);
 
-   if (g_extern.system.core_options)
+   if (global->system.core_options)
    {
-      size_t opts = core_option_size(g_extern.system.core_options);
+      size_t opts = core_option_size(global->system.core_options);
 
       for (i = 0; i < opts; i++)
          menu_list_push(list,
-               core_option_get_desc(g_extern.system.core_options, i), "",
+               core_option_get_desc(global->system.core_options, i), "",
                MENU_SETTINGS_CORE_OPTION_START + i, 0);
    }
    else
@@ -1657,8 +1664,9 @@ static int deferred_push_history_list(void *data, void *userdata,
 static int deferred_push_content_actions(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
-   file_list_t *list = (file_list_t*)data;
+   file_list_t *list      = (file_list_t*)data;
    menu_handle_t *menu    = menu_driver_resolve();
+   global_t *global       = global_get_ptr();
    if (!menu)
       return -1;
 
@@ -1669,19 +1677,18 @@ static int deferred_push_content_actions(void *data, void *userdata,
 
    menu_list_clear(list);
 
-
-   if (g_extern.main_is_init && !g_extern.libretro_dummy &&
-         !strcmp(menu->deferred_path, g_extern.fullpath))
+   if (global->main_is_init && !global->libretro_dummy &&
+         !strcmp(menu->deferred_path, global->fullpath))
    {
       menu_list_push(list, "Resume", "file_load_or_resume", MENU_SETTING_ACTION_RUN, 0);
       menu_list_push(list, "Save State", "savestate", MENU_SETTING_ACTION_SAVESTATE, 0);
       menu_list_push(list, "Load State", "loadstate", MENU_SETTING_ACTION_LOADSTATE, 0);
       menu_list_push(list, "Core Information", "core_information", MENU_SETTING_ACTION_CORE_INFORMATION, 0);
       menu_list_push(list, "Core Options", "core_options", MENU_SETTING_ACTION_CORE_OPTIONS, 0);
-      if (g_extern.has_set_input_descriptors)
+      if (global->has_set_input_descriptors)
          menu_list_push(list, "Core Input Remapping Options", "core_input_remapping_options", MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS, 0);
       menu_list_push(list, "Core Cheat Options", "core_cheat_options", MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS, 0);
-      if ( !g_extern.libretro_dummy && g_extern.system.disk_control.get_num_images)
+      if ( !global->libretro_dummy && global->system.disk_control.get_num_images)
          menu_list_push(list, "Core Disk Options", "disk_options", MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0);
       menu_list_push(list, "Take Screenshot", "take_screenshot", MENU_SETTING_ACTION_SCREENSHOT, 0);
       menu_list_push(list, "Reset", "restart_content", MENU_SETTING_ACTION_RESET, 0);
@@ -1813,38 +1820,41 @@ static int deferred_push_content_history_path(void *data, void *userdata,
 static int deferred_push_detect_core_list(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
+   global_t *global = global_get_ptr();
+
    return menu_entries_parse_list((file_list_t*)data, (file_list_t*)userdata, path, label, type,
          MENU_FILE_PLAIN, 
-         g_extern.core_info ? core_info_list_get_all_extensions(
-         g_extern.core_info) : "", NULL);
+         global->core_info ? core_info_list_get_all_extensions(
+         global->core_info) : "", NULL);
 }
 
 static int deferred_push_default(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
    char ext_buf[PATH_MAX_LENGTH];
-   const char *exts = NULL;
-   file_list_t *list      = (file_list_t*)data;
-   file_list_t *menu_list = (file_list_t*)userdata;
+   const char *exts         = NULL;
+   file_list_t *list        = (file_list_t*)data;
+   file_list_t *menu_list   = (file_list_t*)userdata;
    rarch_setting_t *setting = (rarch_setting_t*)
       menu_setting_find(label);
+   global_t *global         = global_get_ptr();
 
    if (!list || !menu_list)
       return -1;
 
    if (setting && setting->browser_selection_type == ST_DIR)
       exts = ""; /* we ignore files anyway */
-   else if (g_extern.menu.info.valid_extensions)
+   else if (global->menu.info.valid_extensions)
    {
       exts = ext_buf;
-      if (*g_extern.menu.info.valid_extensions)
+      if (*global->menu.info.valid_extensions)
          snprintf(ext_buf, sizeof(ext_buf), "%s",
-               g_extern.menu.info.valid_extensions);
+               global->menu.info.valid_extensions);
       else
          *ext_buf = '\0';
    }
    else
-      exts = g_extern.system.valid_extensions;
+      exts = global->system.valid_extensions;
 
    menu_entries_parse_list(list, menu_list, path, label,
          type, MENU_FILE_PLAIN, exts, setting);

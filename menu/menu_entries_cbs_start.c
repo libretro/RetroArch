@@ -220,8 +220,9 @@ static int action_start_shader_num_passes(unsigned type, const char *label,
 static int action_start_cheat_num_passes(unsigned type, const char *label,
       unsigned action)
 {
-   cheat_manager_t *cheat = g_extern.cheat;
-   menu_handle_t *menu = menu_driver_resolve();
+   global_t *global       = global_get_ptr();
+   cheat_manager_t *cheat = global->cheat;
+   menu_handle_t *menu    = menu_driver_resolve();
    if (!menu)
       return -1;
 
@@ -258,11 +259,12 @@ static int action_start_performance_counters_frontend(unsigned type, const char 
 static int action_start_core_setting(unsigned type,
       const char *label, unsigned action)
 {
-   unsigned idx = type - MENU_SETTINGS_CORE_OPTION_START;
+   global_t *global       = global_get_ptr();
+   unsigned idx           = type - MENU_SETTINGS_CORE_OPTION_START;
 
    (void)label;
 
-   core_option_set_default(g_extern.system.core_options, idx);
+   core_option_set_default(global->system.core_options, idx);
 
    return 0;
 }

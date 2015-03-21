@@ -250,11 +250,12 @@ static void poll_iteration(void)
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
-    NSApplicationTerminateReply reply = NSTerminateNow;
+   NSApplicationTerminateReply reply = NSTerminateNow;
+   global_t *global = global_get_ptr();
 
-   if (g_extern.main_is_init)
-       reply = NSTerminateCancel;
-   
+   if (global->main_is_init)
+      reply = NSTerminateCancel;
+
    rarch_main_command(RARCH_CMD_QUIT);
 
    return reply;
@@ -265,15 +266,16 @@ static void poll_iteration(void)
 {
    if (filenames.count == 1 && [filenames objectAtIndex:0])
    {
-       NSString *__core = [filenames objectAtIndex:0];
-       const char *core_name = g_extern.menu.info.library_name;
-       strlcpy(g_extern.fullpath, __core.UTF8String, sizeof(g_extern.fullpath));
-       
-       if (core_name)
-           rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-       else
+      global_t *global = global_get_ptr();
+      NSString *__core = [filenames objectAtIndex:0];
+      const char *core_name = global->menu.info.library_name;
+      strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
+
+      if (core_name)
+         rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+      else
          [self chooseCore];
-      
+
       [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
    }
    else
@@ -290,22 +292,23 @@ static void poll_iteration(void)
    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
    {
       [[NSApplication sharedApplication] stopModal];
-   
+
       if (result == NSOKButton && panel.URL)
       {
-          NSURL *url = (NSURL*)panel.URL;
-          NSString *__core = url.path;
-          const char *core_name = g_extern.menu.info.library_name;
-          strlcpy(g_extern.fullpath, __core.UTF8String, sizeof(g_extern.fullpath));
-          
-          if (core_name)
-              rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-          else
-              [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
+         global_t *global = global_get_ptr();
+         NSURL *url = (NSURL*)panel.URL;
+         NSString *__core = url.path;
+         const char *core_name = global->menu.info.library_name;
+         strlcpy(global->fullpath, __core.UTF8String, sizeof(global->fullpath));
+
+         if (core_name)
+            rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+         else
+            [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
       }
    }];
 #else
-	[panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
+   [panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
 #endif
    [[NSApplication sharedApplication] runModalForWindow:panel];
 }
@@ -318,31 +321,32 @@ static void poll_iteration(void)
 
 - (IBAction)coreWasChosen:(id)sender
 {
-   NSComboBox* cb;
-    
+   NSComboBox* cb = NULL;
+   global_t *global = global_get_ptr();
+
    [[NSApplication sharedApplication] stopModal];
    [[NSApplication sharedApplication] endSheet:self.coreSelectSheet returnCode:0];
    [self.coreSelectSheet orderOut:self];
 
-   if (g_extern.system.shutdown)
+   if (global->system.shutdown)
       return;
-   
+
    /* TODO - rewrite this. */
 
    cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
 #if defined(MAC_OS_X_VERSION_10_6)
-	/* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
+   /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
    self.core = objc_getAssociatedObject(cb.objectValueOfSelectedItem, associated_core_key);
 #endif
-    
-    if (!g_extern.main_is_init)
-    {
-       /* TODO/FIXME: Set core/content here. */
+
+   if (!global->main_is_init)
+   {
+      /* TODO/FIXME: Set core/content here. */
       rarch_main_command(RARCH_CMD_LOAD_CORE);
       rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-    }
-    else
-       rarch_main_command(RARCH_CMD_QUIT);
+   }
+   else
+      rarch_main_command(RARCH_CMD_QUIT);
 }
 
 #pragma mark RetroArch_Platform
@@ -371,8 +375,9 @@ static void poll_iteration(void)
 
 - (IBAction)basicEvent:(id)sender
 {
-   unsigned sender_tag, cmd;
-   sender_tag = (unsigned)[sender tag];
+   unsigned cmd;
+   unsigned sender_tag = (unsigned)[sender tag];
+   global_t *global = global_get_ptr();
    
    RARCH_LOG("Gets here, sender tag is: %d\n", sender_tag);
 
@@ -416,7 +421,7 @@ static void poll_iteration(void)
    if (sender_tag >= 10 && sender_tag <= 19)
    {
       unsigned idx = (sender_tag - (10-1));
-      g_extern.pending.windowed_scale = idx;
+      global->pending.windowed_scale = idx;
       cmd = RARCH_CMD_RESIZE_WINDOWED_SCALE;
    }
 

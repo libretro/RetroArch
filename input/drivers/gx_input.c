@@ -91,8 +91,9 @@ static void gx_input_poll(void *data)
 static bool gx_input_key_pressed(void *data, int key)
 {
    settings_t *settings = config_get_ptr();
-   gx_input_t *gx = (gx_input_t*)data;
-   return (g_extern.lifecycle_state & (1ULL << key)) || 
+   global_t   *global   = global_get_ptr();
+   gx_input_t *gx       = (gx_input_t*)data;
+   return (global->lifecycle_state & (1ULL << key)) || 
       input_joypad_pressed(gx->joypad, 0, settings->input.binds[0], key);
 }
 

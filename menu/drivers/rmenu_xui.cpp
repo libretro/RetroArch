@@ -166,6 +166,8 @@ HRESULT CRetroArch::UnregisterXuiClasses (void)
 
 HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 {
+   global_t *global = global_get_ptr();
+
    GetChildById(L"XuiMenuList", &m_menulist);
    GetChildById(L"XuiTxtTitle", &m_menutitle);
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
@@ -174,7 +176,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    if (XuiHandleIsValid(m_menutitlebottom))
    {
 	   char str[PATH_MAX_LENGTH];
-	   snprintf(str, sizeof(str), "%s - %s", PACKAGE_VERSION, g_extern.title_buf);
+	   snprintf(str, sizeof(str), "%s - %s", PACKAGE_VERSION, global->title_buf);
 	   mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
 	   XuiTextElementSetText(m_menutitlebottom, strw_buffer);
    }
@@ -477,7 +479,9 @@ static void blit_line(int x, int y, const char *message, bool green)
 
 static void rmenu_xui_render_background(void)
 {
-	if (g_extern.content_is_init)
+   global_t *global = global_get_ptr();
+
+	if (global->content_is_init)
 		XuiElementSetShow(m_background, FALSE);
 	else
 		XuiElementSetShow(m_background, TRUE);
@@ -580,15 +584,16 @@ static void rmenu_xui_render(void)
 	if (XuiHandleIsValid(m_menutitle))
 	{
       const char *core_version = NULL;
-		const char *core_name    = g_extern.menu.info.library_name;
+      global_t *global         = global_get_ptr();
+		const char *core_name    = global->menu.info.library_name;
 		if (!core_name)
-			core_name = g_extern.system.info.library_name;
+			core_name = global->system.info.library_name;
 		if (!core_name)
 			core_name = "No Core";
 
-		core_version = g_extern.menu.info.library_version;
+		core_version = global->menu.info.library_version;
 		if (!core_version)
-			core_version = g_extern.system.info.library_version;
+			core_version = global->system.info.library_version;
 		if (!core_version)
 			core_version = "";
 

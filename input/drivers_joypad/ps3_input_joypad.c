@@ -120,8 +120,9 @@ static void ps3_joypad_poll(void)
 {
    unsigned port;
    CellPadInfo2 pad_info;
-   uint64_t *lifecycle_state = (uint64_t*)&g_extern.lifecycle_state;
-   runloop_t *runloop = rarch_main_get_ptr();
+   global_t *global          = global_get_ptr();
+   runloop_t *runloop        = rarch_main_get_ptr();
+   uint64_t *lifecycle_state = (uint64_t*)&global->lifecycle_state;
 
    for (port = 0; port < MAX_PADS; port++)
    {

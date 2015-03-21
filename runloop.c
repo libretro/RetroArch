@@ -1016,7 +1016,7 @@ static void rarch_main_global_deinit(void)
    rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
 
 #if 0
-   global_t *global = &g_extern;
+   global_t *global = global_get_ptr();
 
    if (!global)
       return;

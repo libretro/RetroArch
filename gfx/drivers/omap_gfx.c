@@ -388,9 +388,10 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata)
 {
   struct omapfb_plane_info pi;
   struct omapfb_mem_info mi;
-  const struct retro_game_geometry *geom;
   unsigned mem_size;
-  void* mem;
+  void* mem = NULL;
+  const struct retro_game_geometry *geom = NULL;
+  global_t   *global   = global_get_ptr();
 
   assert(pdata->current_state == NULL);
 
@@ -420,7 +421,7 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata)
     }
   }
 
-  geom = &g_extern.system.av_info.geometry;
+  geom = &global->system.av_info.geometry;
   mem_size = geom->max_width * geom->max_height *
              pdata->bpp * pdata->num_pages;
 
@@ -916,10 +917,11 @@ static void *omap_gfx_init(const video_info_t *video,
 {
   omap_video_t *vid = NULL;
   settings_t *settings = config_get_ptr();
+  global_t   *global   = global_get_ptr();
 
   /* Don't support filters at the moment since they make estimations  *
    * on the maximum used resolution difficult.                        */
-  if (g_extern.filter.filter)
+  if (global->filter.filter)
   {
     RARCH_ERR("video_omap: filters are not supported\n");
     return NULL;

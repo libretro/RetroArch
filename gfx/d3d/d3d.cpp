@@ -234,6 +234,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 {
    bool ret = true;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    if (!d3d)
       return false;
@@ -287,7 +288,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
       return ret;
 
    d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height,
-         info->force_aspect, g_extern.system.aspect_ratio);
+         info->force_aspect, global->system.aspect_ratio);
 
 #ifdef HAVE_SHADERS
    if (!d3d_init_shader(d3d))
@@ -357,6 +358,7 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
    bool keep, float desired_aspect)
 {
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    if (settings->video.scale_integer)
    {
@@ -371,7 +373,7 @@ static void d3d_calculate_rect(d3d_video_t *d3d,
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const video_viewport_t *custom = 
-            &g_extern.console.screen.viewports.custom_vp;
+            &global->console.screen.viewports.custom_vp;
 
 		 if (custom)
             d3d_set_viewport(d3d, custom->x, custom->y, 
@@ -459,13 +461,14 @@ static bool d3d_has_windowed(void *data)
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+   global_t *global = global_get_ptr();
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
          video_viewport_set_square_pixel(
-               g_extern.system.av_info.geometry.base_width,
-               g_extern.system.av_info.geometry.base_height);
+               global->system.av_info.geometry.base_width,
+               global->system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
@@ -480,13 +483,13 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
          break;
    }
 
-   g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
+   global->system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
 
-   if (d3d)
-   {
-      d3d->video_info.force_aspect = true;
-      d3d->should_resize = true;
-   }
+   if (!d3d)
+      return;
+
+   d3d->video_info.force_aspect = true;
+   d3d->should_resize = true;
 }
 
 static void d3d_apply_state_changes(void *data)
@@ -1625,6 +1628,7 @@ static bool d3d_frame(void *data, const void *frame,
    runloop_t *runloop    = rarch_main_get_ptr();
    driver_t *driver      = driver_get_ptr();
    settings_t *settings  = config_get_ptr();
+   global_t *global      = global_get_ptr();
 
    (void)i;
 
@@ -1649,7 +1653,7 @@ static bool d3d_frame(void *data, const void *frame,
    {
       d3d_calculate_rect(d3d, d3d->screen_width,
             d3d->screen_height, d3d->video_info.force_aspect,
-            g_extern.system.aspect_ratio);
+            global->system.aspect_ratio);
 
 #ifndef _XBOX
       renderchain_set_final_viewport(d3d->chain, &d3d->final_viewport);

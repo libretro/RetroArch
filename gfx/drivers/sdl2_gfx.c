@@ -266,6 +266,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
 {
    int win_w, win_h;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    SDL_GetWindowSize(vid->window, &win_w, &win_h);
 
@@ -277,11 +278,11 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
    vid->vp.full_height = win_h;
 
    if (settings->video.scale_integer)
-      video_viewport_get_scaled_integer(&vid->vp, win_w, win_h, g_extern.system.aspect_ratio,
+      video_viewport_get_scaled_integer(&vid->vp, win_w, win_h, global->system.aspect_ratio,
                         vid->video.force_aspect);
    else if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      const struct video_viewport *custom = &g_extern.console.screen.viewports.custom_vp;
+      const struct video_viewport *custom = &global->console.screen.viewports.custom_vp;
 
       if (custom)
       {
@@ -295,7 +296,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
    {
       float delta;
       float device_aspect  = (float)win_w / win_h;
-      float desired_aspect = g_extern.system.aspect_ratio;
+      float desired_aspect = global->system.aspect_ratio;
 
       if (fabsf(device_aspect - desired_aspect) < 0.0001f)
       {
@@ -647,13 +648,14 @@ void sdl2_poke_set_filtering(void *data, unsigned index, bool smooth)
 
 static void sdl2_poke_set_aspect_ratio(void *data, unsigned aspectratio_index)
 {
-   sdl2_video_t *vid = (sdl2_video_t*)data;
+   sdl2_video_t *vid    = (sdl2_video_t*)data;
+   global_t     *global = global_get_ptr();
 
    switch (aspectratio_index)
    {
       case ASPECT_RATIO_SQUARE:
-         video_viewport_set_square_pixel(g_extern.system.av_info.geometry.base_width,
-                                       g_extern.system.av_info.geometry.base_height);
+         video_viewport_set_square_pixel(global->system.av_info.geometry.base_width,
+                                       global->system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
@@ -668,7 +670,7 @@ static void sdl2_poke_set_aspect_ratio(void *data, unsigned aspectratio_index)
          break;
    }
 
-   g_extern.system.aspect_ratio = aspectratio_lut[aspectratio_index].value;
+   global->system.aspect_ratio = aspectratio_lut[aspectratio_index].value;
 
    vid->video.force_aspect = true;
    vid->should_resize = true;

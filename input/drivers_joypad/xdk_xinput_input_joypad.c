@@ -137,8 +137,10 @@ static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 static void xdk_joypad_poll(void)
 {
-   uint64_t *state_p1, *lifecycle_state;
    unsigned port;
+   uint64_t *state_p1 = NULL;
+   uint64_t *lifecycle_state = NULL;
+   global_t *global = global_get_ptr();
 #if defined(_XBOX1)
    unsigned int dwInsertions, dwRemovals;
 
@@ -247,7 +249,7 @@ static void xdk_joypad_poll(void)
    }
 
    state_p1 = &pad_state[0];
-   lifecycle_state = &g_extern.lifecycle_state;
+   lifecycle_state = &global->lifecycle_state;
 
    *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
 

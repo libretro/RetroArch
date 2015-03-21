@@ -605,12 +605,13 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    char title[256], title_msg[256];
    NSMutableArray *everything;
    RAMainMenu* __weak weakSelf;
-   const char *core_name = g_extern.menu.info.library_name;
-   const char *core_version = g_extern.menu.info.library_version;
-   const char *dir = NULL;
-   const char *label = NULL;
-   unsigned menu_type = 0;
-   menu_handle_t *menu = menu_driver_resolve();
+   global_t *global          = global_get_ptr();
+   const char *core_name     = global->menu.info.library_name;
+   const char *core_version  = global->menu.info.library_version;
+   const char *dir           = NULL;
+   const char *label         = NULL;
+   unsigned menu_type        = 0;
+   menu_handle_t *menu       = menu_driver_resolve();
    
    if (!menu)
       return;
@@ -624,12 +625,12 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    self.sections = [NSMutableArray array];
 
    if (!core_name)
-     core_name = g_extern.system.info.library_name;
+     core_name = global->system.info.library_name;
    if (!core_name)
      core_name = "No Core";
 
    if (!core_version)
-     core_version = g_extern.system.info.library_version;
+     core_version = global->system.info.library_version;
    if (!core_version)
      core_version = "";
 

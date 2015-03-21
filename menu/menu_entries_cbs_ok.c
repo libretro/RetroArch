@@ -73,7 +73,8 @@ static int action_ok_playlist_entry(const char *path,
 static int action_ok_cheat_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   cheat_manager_t *cheat = g_extern.cheat;
+   global_t *global       = global_get_ptr();
+   cheat_manager_t *cheat = global->cheat;
 
    if (!cheat)
       return -1;
@@ -389,7 +390,8 @@ static int action_ok_cheat_file_load(const char *path,
 {
    const char *menu_path = NULL;
    char cheat_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu    = menu_driver_resolve();
+   global_t *global       = global_get_ptr();
    if (!menu)
       return -1;
 
@@ -400,12 +402,12 @@ static int action_ok_cheat_file_load(const char *path,
 
    fill_pathname_join(cheat_path, menu_path, path, sizeof(cheat_path));
 
-   if (g_extern.cheat)
-      cheat_manager_free(g_extern.cheat);
+   if (global->cheat)
+      cheat_manager_free(global->cheat);
 
-   g_extern.cheat = cheat_manager_load(cheat_path);
+   global->cheat = cheat_manager_load(cheat_path);
 
-   if (!g_extern.cheat)
+   if (!global->cheat)
       return -1;
 
    menu_list_flush_stack_by_needle(menu->menu_list, "core_cheat_options");
@@ -538,14 +540,15 @@ static int action_ok_core_load_deferred(const char *path,
 {
    menu_handle_t *menu      = menu_driver_resolve();
    settings_t *settings     = config_get_ptr();
+   global_t *global         = global_get_ptr();
 
    if (!menu)
       return -1;
 
    if (path)
       strlcpy(settings->libretro, path, sizeof(settings->libretro));
-   strlcpy(g_extern.fullpath, menu->deferred_path,
-         sizeof(g_extern.fullpath));
+   strlcpy(global->fullpath, menu->deferred_path,
+         sizeof(global->fullpath));
 
    menu_entries_common_load_content(false);
 
@@ -588,6 +591,7 @@ static int action_ok_core_load(const char *path,
    const char *menu_path    = NULL;
    menu_handle_t *menu      = menu_driver_resolve();
    settings_t *settings     = config_get_ptr();
+   global_t *global         = global_get_ptr();
 
    if (!menu)
       return -1;
@@ -603,7 +607,7 @@ static int action_ok_core_load(const char *path,
    /* No content needed for this core, load core immediately. */
    if (menu->load_no_content)
    {
-      *g_extern.fullpath = '\0';
+      *global->fullpath = '\0';
 
       menu_entries_common_load_content(false);
       return -1;
@@ -761,6 +765,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
    const char *menu_path    = NULL;
    menu_handle_t *menu      = menu_driver_resolve();
    settings_t *settings     = config_get_ptr();
+   global_t *global         = global_get_ptr();
 
    if (!menu)
       return -1;
@@ -768,7 +773,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
    menu_list_get_last_stack(menu->menu_list,
          &menu_path, NULL, NULL);
 
-   ret = rarch_defer_core(g_extern.core_info,
+   ret = rarch_defer_core(global->core_info,
          menu_path, path, label, menu->deferred_path,
          sizeof(menu->deferred_path));
 
@@ -795,7 +800,8 @@ static int action_ok_file_load(const char *path,
    const char *menu_label   = NULL;
    const char *menu_path    = NULL;
    rarch_setting_t *setting = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu      = menu_driver_resolve();
+   global_t *global         = global_get_ptr();
 
    if (!menu)
       return -1;
@@ -813,11 +819,11 @@ static int action_ok_file_load(const char *path,
    else
    {
       if (type == MENU_FILE_IN_CARCHIVE)
-         fill_pathname_join_delim(g_extern.fullpath, menu_path, path,
-               '#',sizeof(g_extern.fullpath));
+         fill_pathname_join_delim(global->fullpath, menu_path, path,
+               '#',sizeof(global->fullpath));
       else
-         fill_pathname_join(g_extern.fullpath, menu_path, path,
-               sizeof(g_extern.fullpath));
+         fill_pathname_join(global->fullpath, menu_path, path,
+               sizeof(global->fullpath));
 
       menu_entries_common_load_content(true);
 
@@ -856,7 +862,8 @@ static int action_ok_custom_viewport(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    /* Start with something sane. */
-   video_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
+   global_t *global         = global_get_ptr();
+   video_viewport_t *custom = &global->console.screen.viewports.custom_vp;
    menu_handle_t *menu      = menu_driver_resolve();
    driver_t *driver         = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
@@ -971,17 +978,18 @@ static int action_ok_screenshot(const char *path,
 static int action_ok_file_load_or_resume(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu   = menu_driver_resolve();
+   global_t      *global = global_get_ptr();
 
    if (!menu)
       return -1;
 
-   if (!strcmp(menu->deferred_path, g_extern.fullpath))
+   if (!strcmp(menu->deferred_path, global->fullpath))
       return generic_action_ok_command(RARCH_CMD_RESUME);
    else
    {
-      strlcpy(g_extern.fullpath,
-            menu->deferred_path, sizeof(g_extern.fullpath));
+      strlcpy(global->fullpath,
+            menu->deferred_path, sizeof(global->fullpath));
       rarch_main_command(RARCH_CMD_LOAD_CORE);
       rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
       return -1;
@@ -1090,19 +1098,20 @@ static int action_ok_help(const char *path,
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   global_t *global = global_get_ptr();
 
 #ifdef __CELLOS_LV2__
-   if (g_extern.console.screen.resolutions.list[
-         g_extern.console.screen.resolutions.current.idx] == 
+   if (global->console.screen.resolutions.list[
+         global->console.screen.resolutions.current.idx] == 
          CELL_VIDEO_OUT_RESOLUTION_576)
    {
-      if (g_extern.console.screen.pal_enable)
-         g_extern.console.screen.pal60_enable = true;
+      if (global->console.screen.pal_enable)
+         global->console.screen.pal60_enable = true;
    }
    else
    {
-      g_extern.console.screen.pal_enable = false;
-      g_extern.console.screen.pal60_enable = false;
+      global->console.screen.pal_enable = false;
+      global->console.screen.pal60_enable = false;
    }
 
    rarch_main_command(RARCH_CMD_REINIT);

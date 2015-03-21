@@ -357,6 +357,7 @@ static void rgui_render(void)
    menu_handle_t *menu      = menu_driver_resolve();
    runloop_t *runloop       = rarch_main_get_ptr();
    driver_t *driver         = driver_get_ptr();
+   global_t *global         = global_get_ptr();
    settings_t *settings     = config_get_ptr();
 
    (void)driver;
@@ -416,17 +417,17 @@ static void rgui_render(void)
 
    blit_line(menu, RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, TITLE_COLOR(settings));
 
-   core_name = g_extern.menu.info.library_name;
+   core_name = global->menu.info.library_name;
    if (!core_name)
-      core_name = g_extern.system.info.library_name;
+      core_name = global->system.info.library_name;
    if (!core_name)
       core_name = "No Core";
 
    if (settings->menu.core_enable)
    {
-      core_version = g_extern.menu.info.library_version;
+      core_version = global->menu.info.library_version;
       if (!core_version)
-         core_version = g_extern.system.info.library_version;
+         core_version = global->system.info.library_version;
       if (!core_version)
          core_version = "";
 

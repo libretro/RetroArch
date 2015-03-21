@@ -102,8 +102,9 @@ static int16_t psp_joypad_axis(unsigned port_num, uint32_t joyaxis)
 static void psp_joypad_poll(void)
 {
    int32_t ret;
-   uint64_t *lifecycle_state = (uint64_t*)&g_extern.lifecycle_state;
    SceCtrlData state_tmp;
+   global_t *global = global_get_ptr();
+   uint64_t *lifecycle_state = (uint64_t*)&global->lifecycle_state;
 
 #ifdef PSP
    sceCtrlSetSamplingCycle(0);
