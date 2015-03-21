@@ -2095,7 +2095,7 @@ void rarch_main_set_state(unsigned cmd)
 
          driver_set_nonblock_state(driver->nonblock_state);
 
-         if (settings->menu.pause_libretro)
+         if (settings && settings->menu.pause_libretro)
             rarch_main_command(RARCH_CMD_AUDIO_START);
 
          /* Prevent stray input from going to libretro core */
