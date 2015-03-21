@@ -1871,7 +1871,6 @@ static bool init_core(void)
 int rarch_main_init(int argc, char *argv[])
 {
    int sjlj_ret;
-   settings_t *settings = config_get_ptr();
 
    init_state();
 
@@ -1916,7 +1915,9 @@ int rarch_main_init(int argc, char *argv[])
    rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
 #if defined(GEKKO) && defined(HW_RVL)
    {
-      driver_t *driver = driver_get_ptr();
+      driver_t *driver     = driver_get_ptr();
+      settings_t *settings = config_get_ptr();
+       
       rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
       if (driver->video_data && driver->video_poke
             && driver->video_poke->set_aspect_ratio)
