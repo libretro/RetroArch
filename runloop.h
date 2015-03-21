@@ -39,10 +39,6 @@
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 #endif
 
-#ifndef MAX_USERS
-#define MAX_USERS 16
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif

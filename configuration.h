@@ -17,6 +17,14 @@
 #ifndef __RARCH_SETTINGS_H__
 #define __RARCH_SETTINGS_H__
 
+#include <stdint.h>
+#include <retro_miscellaneous.h>
+#include "driver.h"
+
+#ifndef MAX_USERS
+#define MAX_USERS 16
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
