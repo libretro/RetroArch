@@ -44,7 +44,8 @@ static bool qnx_joypad_init(void)
 
 static bool qnx_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   qnx_input_t *qnx = (qnx_input_t*)driver.input_data;
+   driver_t    *driver = driver_get_ptr();
+   qnx_input_t *qnx    = (qnx_input_t*)driver->input_data;
 
    if (!qnx || port_num >= MAX_PADS)
       return false;
@@ -54,7 +55,8 @@ static bool qnx_joypad_button(unsigned port_num, uint16_t joykey)
 
 static uint64_t qnx_joypad_get_buttons(unsigned port_num)
 {
-   qnx_input_t *qnx = (qnx_input_t*)driver.input_data;
+   driver_t    *driver = driver_get_ptr();
+   qnx_input_t *qnx    = (qnx_input_t*)driver->input_data;
 
    if (!qnx || port_num >= MAX_PADS)
       return 0;
@@ -63,7 +65,8 @@ static uint64_t qnx_joypad_get_buttons(unsigned port_num)
 
 static int16_t qnx_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
-   qnx_input_t *qnx = (qnx_input_t*)driver.input_data;
+   driver_t    *driver = driver_get_ptr();
+   qnx_input_t *qnx    = (qnx_input_t*)driver->input_data;
 
    if (!qnx || joyaxis == AXIS_NONE || port_num >= MAX_PADS)
       return 0;
@@ -115,7 +118,8 @@ static void qnx_joypad_poll(void)
 
 static bool qnx_joypad_query_pad(unsigned pad)
 {
-   qnx_input_t *qnx = (qnx_input_t*)driver.input_data;
+   driver_t    *driver = driver_get_ptr();
+   qnx_input_t *qnx    = (qnx_input_t*)driver->input_data;
    return (qnx && pad < MAX_USERS && qnx->pad_state[pad]);
 }
 

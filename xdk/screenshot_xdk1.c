@@ -25,8 +25,9 @@ bool screenshot_dump(const char *folder, const void *frame,
    char filename[PATH_MAX_LENGTH];
    char shotname[PATH_MAX_LENGTH];
    HRESULT ret = S_OK;
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
+   d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
 
    (void)folder;
    (void)frame;
