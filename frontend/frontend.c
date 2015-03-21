@@ -279,12 +279,14 @@ returntype main_entry(signature())
 {
    declare_argc();
    declare_argv();
-   args_type() args = (args_type())args_initial_ptr();
-   int ret = 0;
+   args_type() args     = (args_type())args_initial_ptr();
+   int ret              = 0;
    settings_t *settings = NULL;
-   driver_t *driver = driver_get_ptr();
-
+   driver_t *driver     = NULL;
+   
    rarch_main_state_alloc();
+
+   driver = driver_get_ptr();
 
    if (driver)
       driver->frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
