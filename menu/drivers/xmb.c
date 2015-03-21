@@ -517,7 +517,7 @@ static void xmb_frame_messagebox(const char *message)
    if (!xmb)
       return;
 
-   gl = (gl_t*)video_driver_resolve(NULL);
+   gl = (gl_t*)video_driver_get_ptr(NULL);
 
    if (!gl)
       return;
@@ -1262,7 +1262,7 @@ static void xmb_frame(void)
    if (!xmb)
       return;
 
-   gl = (gl_t*)video_driver_resolve(NULL);
+   gl = (gl_t*)video_driver_get_ptr(NULL);
 
    if (!gl)
       return;
@@ -1393,7 +1393,7 @@ static void *xmb_init(void)
    xmb_handle_t *xmb                  = NULL;
    const video_driver_t *video_driver = NULL;
    float scale_factor                 = 1;
-   gl_t *gl                           = (gl_t*)video_driver_resolve(&video_driver);
+   gl_t *gl                           = (gl_t*)video_driver_get_ptr(&video_driver);
    global_t *global                   = global_get_ptr();
 
    if (video_driver != &video_gl || !gl)
@@ -1583,7 +1583,7 @@ static void xmb_context_reset(void)
    if (!menu)
       return;
 
-   gl = (gl_t*)video_driver_resolve(NULL);
+   gl = (gl_t*)video_driver_get_ptr(NULL);
    if (!gl)
       return;
 

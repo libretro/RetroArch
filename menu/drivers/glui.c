@@ -233,7 +233,7 @@ static void glui_render_messagebox(const char *message)
    if (!menu)
       return;
 
-   gl = (gl_t*)video_driver_resolve(NULL);
+   gl = (gl_t*)video_driver_get_ptr(NULL);
 
    if (!gl)
       return;
@@ -283,7 +283,7 @@ static void glui_render(void)
    if (!glui)
       return;
 
-   gl = (gl_t*)video_driver_resolve(NULL);
+   gl = (gl_t*)video_driver_get_ptr(NULL);
 
    if (!gl)
       return;
@@ -341,7 +341,7 @@ static void glui_frame(void)
    if (!menu)
       return;
 
-   gl = (gl_t*)video_driver_resolve(NULL);
+   gl = (gl_t*)video_driver_get_ptr(NULL);
 
    if (!gl)
       return;
@@ -478,7 +478,7 @@ static void *glui_init(void)
    glui_handle_t *glui = NULL;
    const video_driver_t *video_driver = NULL;
    menu_handle_t *menu = NULL;
-   gl_t *gl = (gl_t*)video_driver_resolve(&video_driver);
+   gl_t *gl = (gl_t*)video_driver_get_ptr(&video_driver);
 
    if (video_driver != &video_gl || !gl)
    {

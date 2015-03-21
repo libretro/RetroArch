@@ -239,7 +239,7 @@ const char* config_get_video_driver_options(void);
 void find_video_driver(void);
 
 /**
- * video_driver_resolve:
+ * video_driver_get_ptr:
  * @drv                : real video driver will be set to this.
  *
  * Use this if you need the real video driver 
@@ -247,7 +247,7 @@ void find_video_driver(void);
  *
  * Returns: video driver's userdata.
  **/
-void *video_driver_resolve(const video_driver_t **drv);
+void *video_driver_get_ptr(const video_driver_t **drv);
 
 /**
  * video_driver_get_current_framebuffer:
