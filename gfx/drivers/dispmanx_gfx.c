@@ -148,7 +148,7 @@ end:
    close (_dispvars->fd);
 }
 
-static void dispmanx_unblank_console(void *data)
+static void dispmanx_restore_console(void *data)
 {
    struct dispmanx_video *_dispvars = data;
 
@@ -176,7 +176,6 @@ static void vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
 
    /* Changing the page to write must be done before the signaling
     * so we have the right page in nextPage when update_main continues */
-
    if (_dispvars->nextPage == &_dispvars->pages[0])	
       _dispvars->nextPage = &_dispvars->pages[1];
    else 
@@ -215,7 +214,6 @@ static bool dispmanx_setup_scale(void *data, unsigned width,
    int i, dst_ypos;
    VC_DISPMANX_ALPHA_T layerAlpha;    
    struct dispmanx_video *_dispvars = data;
-   settings_t *settings = config_get_ptr();
 
    if (!_dispvars)
       return false;
@@ -256,7 +254,7 @@ static bool dispmanx_setup_scale(void *data, unsigned width,
    layerAlpha.mask = 0;
    _dispvars->alpha = &layerAlpha;	
 
-   switch (settings->video.aspect_ratio_idx)
+   switch (g_settings.video.aspect_ratio_idx)
    {
       case ASPECT_RATIO_4_3: 
          _dispvars->aspect = (float)4 / (float)3;
@@ -630,6 +628,9 @@ static void dispmanx_gfx_free(void *data)
 
    if (!_dispvars)
       return;
+  
+   if (_dispvars->menu_active)
+	dispmanx_free_menu_resources(_dispvars);
 
    dispmanx_free_main_resources(_dispvars);
 
@@ -645,7 +646,7 @@ static void dispmanx_gfx_free(void *data)
       free (_dispvars->pages);
    _dispvars->pages = NULL;
 
-   dispmanx_unblank_console(_dispvars);
+   dispmanx_restore_console(_dispvars);
 }
 
 video_driver_t video_dispmanx = {
