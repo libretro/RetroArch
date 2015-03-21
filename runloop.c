@@ -967,6 +967,11 @@ void rarch_main_msg_queue_init(void)
       rarch_assert(runloop->msg_queue = msg_queue_new(8));
 }
 
+global_t *global_get_ptr(void)
+{
+   return &g_extern;
+}
+
 runloop_t *rarch_main_get_ptr(void)
 {
    return g_runloop;
