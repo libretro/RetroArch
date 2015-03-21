@@ -1686,22 +1686,6 @@ static void main_init_state_config(void)
       settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
 }
 
-/**
- * main_clear_state:
- * @inited               : Init the drivers after teardown?
- *
- * Will teardown drivers and clears all 
- * internal state of RetroArch.
- * If @inited is true, will initialize all
- * drivers again after teardown.
- **/
-static void main_clear_state(bool inited)
-{
-   main_clear_state_drivers(inited);
-   init_state();
-   main_init_state_config();
-}
-
 void rarch_main_state_alloc(void)
 {
    settings_t *settings = config_get_ptr();
@@ -1719,11 +1703,23 @@ void rarch_main_state_alloc(void)
    rarch_main_data_clear_state();
 }
 
+/**
+ * rarch_main_state_new:
+ *
+ * Will teardown drivers and clears all 
+ * internal state of RetroArch.
+ * If @inited is true, will initialize all
+ * drivers again after teardown.
+ **/
 void rarch_main_state_new(void)
 {
    global_t *global = global_get_ptr();
+   bool inited      = global->main_is_init;
 
-   main_clear_state(global->main_is_init);
+   main_clear_state_drivers(inited);
+   init_state();
+   main_init_state_config();
+
    rarch_main_command(RARCH_CMD_MSG_QUEUE_INIT);
 }
 
@@ -1732,8 +1728,9 @@ void rarch_main_state_free(void)
    rarch_main_command(RARCH_CMD_MSG_QUEUE_DEINIT);
    rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
 
-   main_clear_state(false);
-
+   rarch_main_state_deinit();
+   rarch_main_global_deinit();
+   config_free();
 }
 
 #ifdef HAVE_ZLIB

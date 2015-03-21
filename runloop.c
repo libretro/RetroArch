@@ -1003,7 +1003,7 @@ runloop_t *rarch_main_get_ptr(void)
    return g_runloop;
 }
 
-static void rarch_main_state_deinit(void)
+void rarch_main_state_deinit(void)
 {
    runloop_t *runloop = rarch_main_get_ptr();
 
@@ -1013,7 +1013,7 @@ static void rarch_main_state_deinit(void)
    free(runloop);
 }
 
-static void rarch_main_global_deinit(void)
+void rarch_main_global_deinit(void)
 {
    global_t *global = NULL;
    
