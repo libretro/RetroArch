@@ -109,9 +109,9 @@ static void frontend_apple_load_content(void)
         return;
     
 #ifdef IOS
-   if (driver.menu_ctx == &menu_ctx_ios)
+   if (driver->menu_ctx == &menu_ctx_ios)
    {
-      ios_handle_t *ih = (ios_handle_t*)driver.menu->userdata;
+      ios_handle_t *ih = (ios_handle_t*)driver->menu->userdata;
       if (ih)
          ih->notify_content_loaded();
    }
