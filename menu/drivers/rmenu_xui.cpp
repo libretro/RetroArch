@@ -285,12 +285,13 @@ static void* rmenu_xui_init(void)
    video_info_t video_info = {0};
    TypefaceDescriptor typeface = {0};
    settings_t *settings = config_get_ptr();
+   driver_t   *driver   = driver_get_ptr();
    menu_handle_t *menu  = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
       return NULL;
 
-   d3d= (d3d_video_t*)driver.video_data;
+   d3d= (d3d_video_t*)driver->video_data;
 
    if (d3d->resolution_hd_enable)
       RARCH_LOG("HD menus enabled.\n");
@@ -313,8 +314,8 @@ static void* rmenu_xui_init(void)
    }
 
    /* Register font */
-   typeface.szTypeface = L"Arial Unicode MS";
-   typeface.szLocator = L"file://game:/media/rarch.ttf";
+   typeface.szTypeface  = L"Arial Unicode MS";
+   typeface.szLocator   = L"file://game:/media/rarch.ttf";
    typeface.szReserved1 = NULL;
 
    hr = XuiRegisterTypeface( &typeface, TRUE );
@@ -350,9 +351,9 @@ static void* rmenu_xui_init(void)
       goto error;
    }
 
-   if (driver.video_data && driver.video_poke
-         && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_frame(driver.video_data, NULL,
+   if (driver->video_data && driver->video_poke
+         && driver->video_poke->set_texture_enable)
+      driver->video_poke->set_texture_frame(driver->video_data, NULL,
             true, 0, 0, 1.0f);
 
    xui_msg_queue = msg_queue_new(16);
@@ -379,7 +380,8 @@ static void xui_render_message(const char *msg)
    size_t i = 0;
    size_t j = 0;
    struct string_list *list = NULL;
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   driver_t *driver = driver_get_ptr();
+   d3d_video_t *d3d = (d3d_video_t*)driver->video_data;
 
    if (!d3d)
       return;
@@ -404,8 +406,8 @@ static void xui_render_message(const char *msg)
       font_parms.y = msg_height + (msg_offset * j);
       font_parms.scale = 21;
 
-      if (driver.video_poke && driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data,
+      if (driver->video_poke && driver->video_poke->set_osd_msg)
+         driver->video_poke->set_osd_msg(driver->video_data,
                msg, &font_parms, NULL);
    }
 
@@ -421,12 +423,13 @@ static void rmenu_xui_frame(void)
    D3DVIEWPORT vp_full;
    LPDIRECT3DDEVICE d3dr;
    d3d_video_t *d3d = NULL;
-   menu_handle_t *menu = menu_driver_resolve();
+   menu_handle_t *menu   = menu_driver_resolve();
+   driver_t      *driver = driver_get_ptr();
 
    if (!menu)
       return;
 
-   d3d = (d3d_video_t*)driver.video_data;
+   d3d = (d3d_video_t*)driver->video_data;
    
    if (!d3d)
       return;

@@ -977,6 +977,11 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 #endif
 
    (void)i;
+   (void)current_width;
+   (void)current_height;
+   (void)out_width;
+   (void)out_height;
+
    /* Setup information for first pass. */
 #ifdef _XBOX
    /* TODO - properly implement this. */
