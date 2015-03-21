@@ -1665,8 +1665,10 @@ static void free_temporary_content(void)
    string_list_free(global->temporary_content);
 }
 
-static void main_clear_state_drivers(bool inited)
+static void main_clear_state_drivers(void)
 {
+   global_t *global = global_get_ptr();
+   bool inited      = global->main_is_init;
    if (!inited)
       return;
 
@@ -1713,10 +1715,7 @@ void rarch_main_state_alloc(void)
  **/
 void rarch_main_state_new(void)
 {
-   global_t *global = global_get_ptr();
-   bool inited      = global->main_is_init;
-
-   main_clear_state_drivers(inited);
+   main_clear_state_drivers();
    init_state();
    main_init_state_config();
 
@@ -1727,6 +1726,7 @@ void rarch_main_state_free(void)
 {
    rarch_main_command(RARCH_CMD_MSG_QUEUE_DEINIT);
    rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
+   rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
 
    rarch_main_state_deinit();
    rarch_main_global_deinit();
