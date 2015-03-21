@@ -20,7 +20,6 @@
 #include "menu_shader.h"
 
 #include "../performance.h"
-#include "../runloop.h"
 
 static void menu_action_setting_disp_set_label_cheat_num_passes(
       file_list_t* list,
