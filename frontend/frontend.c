@@ -284,6 +284,8 @@ returntype main_entry(signature())
    settings_t *settings = NULL;
    driver_t *driver = driver_get_ptr();
 
+   rarch_main_state_new();
+
    driver->frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
    if (!driver->frontend_ctx)
@@ -291,8 +293,6 @@ returntype main_entry(signature())
 
    if (driver->frontend_ctx && driver->frontend_ctx->init)
       driver->frontend_ctx->init(args);
-
-   rarch_main_state_new();
 
    if (driver->frontend_ctx)
    {
