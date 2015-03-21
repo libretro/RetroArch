@@ -1672,8 +1672,9 @@ static void main_clear_state_extern(void)
 static void main_clear_state(bool inited)
 {
    unsigned i;
+   settings_t *settings = config_get_ptr();
 
-   memset(&g_config, 0, sizeof(g_config));
+   memset(settings, 0, sizeof(*settings));
 
    if (inited)
       rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
@@ -1686,7 +1687,7 @@ static void main_clear_state(bool inited)
    init_state();
 
    for (i = 0; i < MAX_USERS; i++)
-      g_config.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
+      settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
 }
 
 void rarch_main_state_new(void)
