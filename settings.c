@@ -23,9 +23,7 @@
 #include "input/input_autodetect.h"
 #include "config.def.h"
 #include "file_ext.h"
-#include "configuration.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "performance.h"
 
 #if defined(__CELLOS_LV2__)
