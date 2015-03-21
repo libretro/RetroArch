@@ -18,21 +18,18 @@
 #include <file/config_file_macros.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <ctype.h>
 #include "config.def.h"
 #include <file/file_path.h>
 #include "input/input_common.h"
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
-#include "gfx/video_viewport.h"
 #include "configuration.h"
 #include "general.h"
-#include "runloop.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include <ctype.h>
 
 settings_t g_settings;
 struct global g_extern;
