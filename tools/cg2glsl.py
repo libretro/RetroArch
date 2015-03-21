@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Python 3 script which converts simple RetroArch Cg shaders to modern GLSL (ES) format.
