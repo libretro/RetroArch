@@ -85,7 +85,7 @@ bool write_file(const char *path, const void *data, ssize_t size)
  *
  * Returns: number of items read, -1 on error.
  */
-static bool read_generic_file(const char *path, void **buf, ssize_t *len)
+static int read_generic_file(const char *path, void **buf, ssize_t *len)
 {
    long ret = 0, _len = 0;
    void *rom_buf = NULL;
@@ -127,7 +127,7 @@ static bool read_generic_file(const char *path, void **buf, ssize_t *len)
    if (len)
       *len = ret;
 
-   return true;
+   return 1;
 
 error:
    if (file)
@@ -137,7 +137,7 @@ error:
    if (len)
       *len = -1;
    *buf = NULL;
-   return false;
+   return 0;
 }
 
 #ifdef HAVE_COMPRESSION
@@ -240,7 +240,5 @@ int read_file(const char *path, void **buf, ssize_t *length)
       if (read_compressed_file(path, buf, NULL, length))
          return true;
 #endif
-   if (read_generic_file(path, buf, length))
-      return 1;
-   return 0;
+   return read_generic_file(path, buf, length);
 }
