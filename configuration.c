@@ -15,7 +15,6 @@
  */
 
 #include <file/config_file.h>
-#include <file/config_file_macros.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <ctype.h>
@@ -30,6 +29,54 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#define CONFIG_GET_BOOL_BASE(conf, base, var, key) do { \
+   bool tmp = false; \
+   if (config_get_bool(conf, key, &tmp)) \
+      base->var = tmp; \
+} while(0)
+
+#define CONFIG_GET_INT_BASE(conf, base, var, key) do { \
+   int tmp = 0; \
+   if (config_get_int(conf, key, &tmp)) \
+      base->var = tmp; \
+} while(0)
+
+#define CONFIG_GET_UINT64_BASE(conf, base, var, key) do { \
+   uint64_t tmp = 0; \
+   if (config_get_int(conf, key, &tmp)) \
+      base->var = tmp; \
+} while(0)
+
+#define CONFIG_GET_HEX_BASE(conf, base, var, key) do { \
+   unsigned tmp = 0; \
+   if (config_get_hex(conf, key, &tmp)) \
+      base->var = tmp; \
+} while(0)
+
+#define CONFIG_GET_FLOAT_BASE(conf, base, var, key) do { \
+   float tmp = 0.0f; \
+   if (config_get_float(conf, key, &tmp)) \
+      base->var = tmp; \
+} while(0)
+
+#define CONFIG_GET_STRING_BASE(conf, base, var, key) \
+   config_get_array(conf, key, base->var, sizeof(base->var))
+
+#define CONFIG_GET_PATH_BASE(conf, base, var, key) \
+   config_get_path(conf, key, base->var, sizeof(base->var))
+
+#define CONFIG_GET_BOOL(var, key) CONFIG_GET_BOOL_BASE(conf, g_config, var, key)
+#define CONFIG_GET_INT(var, key) CONFIG_GET_INT_BASE(conf, g_config, var, key)
+#define CONFIG_GET_FLOAT(var, key) CONFIG_GET_FLOAT_BASE(conf, g_config, var, key)
+#define CONFIG_GET_STRING(var, key) CONFIG_GET_STRING_BASE(conf, g_config, var, key)
+#define CONFIG_GET_PATH(var, key) CONFIG_GET_PATH_BASE(conf, g_config, var, key)
+
+#define CONFIG_GET_BOOL_EXTERN(var, key) CONFIG_GET_BOOL_BASE(conf, global, var, key)
+#define CONFIG_GET_INT_EXTERN(var, key) CONFIG_GET_INT_BASE(conf, global, var, key)
+#define CONFIG_GET_FLOAT_EXTERN(var, key) CONFIG_GET_FLOAT_BASE(conf, global, var, key)
+#define CONFIG_GET_STRING_EXTERN(var, key) CONFIG_GET_STRING_BASE(conf, global, var, key)
+#define CONFIG_GET_PATH_EXTERN(var, key) CONFIG_GET_PATH_BASE(conf, global, var, key)
 
 static settings_t *g_config;
 struct defaults g_defaults;
