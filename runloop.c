@@ -744,18 +744,17 @@ static int do_state_checks(
  **/
 static INLINE int time_to_exit(retro_input_t input)
 {
-   runloop_t *runloop    = rarch_main_get_ptr();
-   global_t  *global     = global_get_ptr();
-   bool quit_key_pressed = BIT64_GET(input, RARCH_QUIT_KEY);
+   runloop_t *runloop            = rarch_main_get_ptr();
+   global_t  *global             = global_get_ptr();
+   bool shutdown_pressed         = global->system.shutdown;
+   bool quit_key_pressed         = BIT64_GET(input, RARCH_QUIT_KEY);
+   bool video_alive              = video_driver_is_alive();
+   bool movie_end                = (global->bsv.movie_end && global->bsv.eof_exit);
+   bool frame_count_end          = (runloop->frames.video.max && 
+         runloop->frames.video.count >= runloop->frames.video.max);
 
-   if (
-         global->system.shutdown
-         || quit_key_pressed
-         || (runloop->frames.video.max && 
-            runloop->frames.video.count >= runloop->frames.video.max)
-         || (global->bsv.movie_end && global->bsv.eof_exit)
-         || !video_driver_is_alive()
-      )
+   if (shutdown_pressed || quit_key_pressed || frame_count_end || movie_end
+         || !video_alive)
       return 1;
    return 0;
 }
