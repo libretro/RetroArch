@@ -423,7 +423,7 @@ static int action_toggle_video_resolution(unsigned type, const char *label,
          {
             global->console.screen.resolutions.current.idx--;
             global->console.screen.resolutions.current.id =
-               global->onsole.screen.resolutions.list
+               global->console.screen.resolutions.list
                [global->console.screen.resolutions.current.idx];
          }
          break;
