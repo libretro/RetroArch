@@ -982,6 +982,32 @@ static void rarch_main_state_deinit(void)
    free(runloop);
 }
 
+static void rarch_main_global_deinit(void)
+{
+   rarch_main_command(RARCH_CMD_TEMPORARY_CONTENT_DEINIT);
+   rarch_main_command(RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
+   rarch_main_command(RARCH_CMD_RECORD_DEINIT);
+   rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
+
+#if 0
+   global_t *global = &g_extern;
+
+   if (!global)
+      return;
+
+   free(global);
+#endif
+}
+
+static void rarch_main_global_init(void)
+{
+#if 0
+   g_extern  = rarch_main_global_init();
+#else
+   memset(&g_extern, 0, sizeof(g_extern));
+#endif
+}
+
 static runloop_t *rarch_main_state_init(void)
 {
    runloop_t *runloop = (runloop_t*)calloc(1, sizeof(runloop_t));
@@ -996,6 +1022,9 @@ void rarch_main_clear_state(void)
 {
    rarch_main_state_deinit();
    g_runloop = rarch_main_state_init();
+
+   rarch_main_global_deinit();
+   rarch_main_global_init();
 }
 
 bool rarch_main_is_idle(void)

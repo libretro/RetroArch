@@ -1638,23 +1638,10 @@ static void free_temporary_content(void)
 /* main_clear_state_extern:
  *
  * Clears all external state.
- *
- * XXX This memset is really dangerous.
- *
- * (a) it can leak memory because the pointers 
- * in g_extern aren't freed.
- * (b) it can zero pointers that the rest of 
- * the code will look at.
  */
 static void main_clear_state_extern(void)
 {
-   rarch_main_command(RARCH_CMD_TEMPORARY_CONTENT_DEINIT);
-   rarch_main_command(RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
-   rarch_main_command(RARCH_CMD_RECORD_DEINIT);
-   rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
    rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
-
-   memset(&g_extern, 0, sizeof(g_extern));
 
    rarch_main_clear_state();
    rarch_main_data_clear_state();
