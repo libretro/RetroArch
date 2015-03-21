@@ -697,6 +697,7 @@ void retro_init_libretro_cbs(void *data)
       return;
 
    (void)driver;
+   (void)global;
 
    pretro_set_video_refresh(video_frame);
    pretro_set_audio_sample(audio_sample);

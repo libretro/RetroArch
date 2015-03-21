@@ -596,6 +596,8 @@ static int action_ok_core_load(const char *path,
    if (!menu)
       return -1;
 
+   (void)global;
+
    menu_list_get_last_stack(menu->menu_list,
          &menu_path, NULL, NULL);
 
