@@ -278,6 +278,14 @@ void video_driver_set_nonblock_state(bool toggle);
 
 bool video_driver_set_rotation(unsigned rotation);
 
+void video_driver_set_video_mode(unsigned width,
+      unsigned height, bool fullscreen);
+
+bool video_driver_get_video_output_size(
+      unsigned *width, unsigned *height);
+
+void video_driver_set_aspect_ratio(unsigned aspectratio_index);
+
 #ifdef __cplusplus
 }
 #endif

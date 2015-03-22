@@ -516,13 +516,8 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
 
    strlcpy(path_buf, path, path_buf_size);
 
-   if (driver->video_data && driver->video_poke &&
-         driver->video_poke->get_video_output_size)
-   {
-      driver->video_poke->get_video_output_size(driver->video_data,
-            &width, &height);
+   if (video_driver_get_video_output_size(&width, &height))
       snprintf(type_str, type_str_size, "%ux%u", width, height);
-   }
    else
       strlcpy(type_str, "N/A", type_str_size);
 }

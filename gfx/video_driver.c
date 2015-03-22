@@ -608,3 +608,50 @@ bool video_driver_set_rotation(unsigned rotation)
 
    return true;
 }
+
+void video_driver_set_video_mode(unsigned width,
+      unsigned height, bool fullscreen)
+{
+   driver_t *driver = driver_get_ptr();
+
+   if (!driver->video_data)
+      return;
+   if (!driver->video_poke)
+      return;
+   if (!driver->video_poke->set_video_mode)
+      return;
+
+   driver->video_poke->set_video_mode(driver->video_data,
+         width, height, fullscreen);
+}
+
+bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
+{
+   driver_t *driver = driver_get_ptr();
+
+   if (!driver->video_data)
+      return false;
+   if (!driver->video_poke)
+      return false;
+   if (!driver->video_poke->get_video_output_size)
+      return false;
+
+   driver->video_poke->get_video_output_size(driver->video_data,
+         width, height);
+   return true;
+}
+
+void video_driver_set_aspect_ratio(unsigned aspectratio_index)
+{
+   driver_t *driver     = driver_get_ptr();
+
+   if (!driver->video_data)
+      return;
+   if (!driver->video_poke)
+      return;
+   if (!driver->video_poke->set_aspect_ratio)
+      return;
+
+   driver->video_poke->set_aspect_ratio(driver->video_data,
+         aspectratio_index);
+}

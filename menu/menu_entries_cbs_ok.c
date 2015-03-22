@@ -1100,6 +1100,7 @@ static int action_ok_help(const char *path,
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   unsigned width = 0, height = 0;
    global_t *global = global_get_ptr();
     
    (void)global;
@@ -1122,18 +1123,9 @@ static int action_ok_video_resolution(const char *path,
 #else
    driver_t *driver = driver_get_ptr();
 
-   if (driver->video_data && driver->video_poke &&
-         driver->video_poke->get_video_output_size)
-   {
-      unsigned width = 0, height = 0;
-      driver->video_poke->get_video_output_size(driver->video_data,
-            &width, &height);
 
-      if (driver->video_data && driver->video_poke &&
-            driver->video_poke->set_video_mode)
-         driver->video_poke->set_video_mode(driver->video_data,
-               width, height, true);
-   }
+   if (video_driver_get_video_output_size(&width, &height))
+      video_driver_set_video_mode(width, height, true);
 #endif
 
    return 0;
