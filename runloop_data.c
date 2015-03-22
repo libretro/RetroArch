@@ -802,6 +802,7 @@ void rarch_main_data_deinit(void)
 
 static void data_runloop_iterate(bool is_thread, data_runloop_t *runloop)
 {
+   runloop = (data_runloop_t*)rarch_main_data_get_ptr();
 #ifdef HAVE_OVERLAY
    rarch_main_data_overlay_iterate(is_thread, runloop);
 #endif
