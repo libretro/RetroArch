@@ -310,6 +310,8 @@ void menu_driver_free(menu_handle_t *menu);
 
 void menu_driver_render(void);
 
+void menu_driver_toggle(bool latch);
+
 #ifdef __cplusplus
 }
 #endif

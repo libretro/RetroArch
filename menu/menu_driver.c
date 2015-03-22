@@ -287,3 +287,13 @@ void menu_driver_render(void)
    if (driver->menu_ctx && driver->menu_ctx->render)
       driver->menu_ctx->render();
 }
+
+void menu_driver_toggle(bool latch)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return;
+
+   if (driver->menu_ctx && driver->menu_ctx->toggle)
+      driver->menu_ctx->toggle(latch);
+}
