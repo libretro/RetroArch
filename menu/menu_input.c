@@ -389,9 +389,7 @@ int menu_input_bind_iterate(void)
    
    binds = menu->binds;
     
-   if (driver->video_data && driver->menu_ctx &&
-         driver->menu_ctx->render)
-      driver->menu_ctx->render();
+   menu_driver_render();
 
    snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)",
          input_config_bind_map[
@@ -436,9 +434,7 @@ int menu_input_bind_iterate_keyboard(void)
    if (!menu)
       return -1;
 
-   if (driver->video_data && driver->menu_ctx &&
-         driver->menu_ctx->render)
-      driver->menu_ctx->render();
+   menu_driver_render();
 
    current = rarch_get_time_usec();
    timeout = (menu->binds.timeout_end - current) / 1000000;

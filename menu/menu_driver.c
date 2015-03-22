@@ -275,3 +275,15 @@ void menu_driver_free(menu_handle_t *menu)
    if (driver->menu_ctx && driver->menu_ctx->free)
       driver->menu_ctx->free(menu);
 }
+
+void menu_driver_render(void)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return;
+   if (!driver->video_data)
+      return;
+   
+   if (driver->menu_ctx && driver->menu_ctx->render)
+      driver->menu_ctx->render();
+}

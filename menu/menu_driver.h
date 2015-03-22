@@ -308,6 +308,8 @@ void menu_driver_entry_iterate(unsigned action);
 
 void menu_driver_free(menu_handle_t *menu);
 
+void menu_driver_render(void);
+
 #ifdef __cplusplus
 }
 #endif
