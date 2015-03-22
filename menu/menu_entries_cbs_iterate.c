@@ -112,7 +112,6 @@ static int load_or_open_zip_iterate(unsigned action)
 {
    char msg[PATH_MAX_LENGTH];
    menu_handle_t *menu = menu_driver_get_ptr();
-   driver_t *driver = driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -240,7 +239,6 @@ static int action_iterate_help(const char *label, unsigned action)
    char desc[ARRAY_SIZE(binds)][64];
    char msg[PATH_MAX_LENGTH];
    menu_handle_t *menu    = menu_driver_get_ptr();
-   driver_t *driver       = driver_get_ptr();
    settings_t *settings   = config_get_ptr();
 
    if (!menu)
@@ -299,7 +297,6 @@ static int action_iterate_info(const char *label, unsigned action)
    rarch_setting_t *current_setting = NULL;
    file_list_t *list = NULL;
    menu_handle_t *menu    = menu_driver_get_ptr();
-   driver_t *driver = driver_get_ptr();
    if (!menu)
       return 0;
 
@@ -563,8 +560,6 @@ static int action_iterate_custom_bind_keyboard(const char *label, unsigned actio
 static int action_iterate_message(const char *label, unsigned action)
 {
    menu_handle_t *menu    = menu_driver_get_ptr();
-   driver_t *driver = driver_get_ptr();
-
    if (!menu)
       return -1;
 
@@ -667,7 +662,6 @@ static int action_iterate_main(const char *label, unsigned action)
    const char *path_offset = NULL;
    menu_file_list_cbs_t *cbs = NULL;
    menu_handle_t *menu    = menu_driver_get_ptr();
-   driver_t *driver       = driver_get_ptr();
    global_t *global       = global_get_ptr();
    if (!menu)
       return 0;

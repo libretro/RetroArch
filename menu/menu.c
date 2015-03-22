@@ -280,7 +280,6 @@ void menu_free_list(void *data)
 void menu_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
-   driver_t *driver    = driver_get_ptr();
    global_t *global    = global_get_ptr();
 
    if (!menu)
@@ -405,7 +404,6 @@ int menu_iterate(retro_input_t input,
    unsigned action      = menu_input_frame(input, trigger_input);
    runloop_t *runloop   = rarch_main_get_ptr();
    menu_handle_t *menu  = menu_driver_get_ptr();
-   driver_t *driver     = driver_get_ptr();
    settings_t *settings = config_get_ptr();
 
    menu->cur_time       = rarch_get_time_usec();

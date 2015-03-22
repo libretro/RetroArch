@@ -131,7 +131,6 @@ static int deferred_push_core_information(void *data, void *userdata,
    core_info_t *info      = NULL;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
-   driver_t *driver       = driver_get_ptr();
    settings_t *settings   = config_get_ptr();
    global_t *global       = global_get_ptr();
 
@@ -283,7 +282,6 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
    file_list_t *menu_list        = NULL;
    struct string_list *str_list  = NULL;
    menu_handle_t *menu           = menu_driver_get_ptr();
-   driver_t *driver              = driver_get_ptr();
    settings_t *settings          = config_get_ptr();
    if (!menu)
       return -1;
@@ -919,7 +917,6 @@ static int deferred_push_performance_counters(void *data, void *userdata,
 {
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
-   driver_t *driver = driver_get_ptr();
 
    if (!list || !menu_list)
       return -1;
@@ -942,7 +939,6 @@ static int deferred_push_video_shader_parameters_common(void *data, void *userda
    unsigned i;
    file_list_t *list      = (file_list_t*)data;
    file_list_t *menu_list = (file_list_t*)userdata;
-   driver_t *driver = driver_get_ptr();
 
    if (!list || !menu_list)
       return -1;
@@ -998,7 +994,6 @@ static int deferred_push_settings(void *data, void *userdata,
    file_list_t *list        = NULL;
    file_list_t *menu_list   = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
-   driver_t *driver         = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
 
    if (!menu)
@@ -1067,7 +1062,6 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
    file_list_t *list      = NULL;
    file_list_t *menu_list = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
-   driver_t *driver = driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -1148,8 +1142,7 @@ static int deferred_push_video_options(void *data, void *userdata,
 {
    file_list_t *list      = NULL;
    file_list_t *menu_list = NULL;
-   menu_handle_t *menu = menu_driver_get_ptr();
-   driver_t *driver = driver_get_ptr();
+   menu_handle_t *menu    = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -1185,7 +1178,6 @@ static int deferred_push_shader_options(void *data, void *userdata,
    file_list_t *list      = NULL;
    file_list_t *menu_list = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
-   driver_t *driver = driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -1242,7 +1234,6 @@ static int deferred_push_options(void *data, void *userdata,
 {
    file_list_t *list           = (file_list_t*)data;
    file_list_t *menu_list      = (file_list_t*)userdata;
-   driver_t *driver            = driver_get_ptr();
    global_t *global            = global_get_ptr();
 
    if (!list || !menu_list)
@@ -1279,7 +1270,6 @@ static int deferred_push_management_options(void *data, void *userdata,
 {
    file_list_t *list           = (file_list_t*)data;
    file_list_t *menu_list      = (file_list_t*)userdata;
-   driver_t *driver = driver_get_ptr();
 
    if (!list || !menu_list)
       return -1;
@@ -1324,7 +1314,6 @@ static int push_perfcounter_generic(
    file_list_t *list      = NULL;
    file_list_t *menu_list = NULL;
    menu_handle_t *menu = menu_driver_get_ptr();
-   driver_t *driver = driver_get_ptr();
 
    if (!menu)
       return -1;
@@ -1365,7 +1354,6 @@ static int deferred_push_core_cheat_options(void *data, void *userdata,
    unsigned i;
    file_list_t *list      = (file_list_t*)data;
    global_t *global       = global_get_ptr();
-   driver_t *driver       = driver_get_ptr();
    cheat_manager_t *cheat = global->cheat;
 
    (void)userdata;
@@ -1412,7 +1400,6 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
 {
    unsigned p, retro_id;
    file_list_t *list      = (file_list_t*)data;
-   driver_t *driver       = driver_get_ptr();
    settings_t *settings   = config_get_ptr();
    global_t *global       = global_get_ptr();
 
@@ -1457,7 +1444,6 @@ static int deferred_push_core_options(void *data, void *userdata,
 {
    unsigned i;
    file_list_t *list      = (file_list_t*)data;
-   driver_t *driver       = driver_get_ptr();
    global_t *global       = global_get_ptr();
 
    (void)userdata;
@@ -1489,7 +1475,6 @@ static int deferred_push_disk_options(void *data, void *userdata,
       const char *path, const char *label, unsigned type)
 {
    file_list_t *list      = (file_list_t*)data;
-   driver_t *driver = driver_get_ptr();
 
    (void)userdata;
 

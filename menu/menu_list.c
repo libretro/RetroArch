@@ -441,7 +441,6 @@ int menu_list_populate_generic(file_list_t *list, const char *path,
       const char *label, unsigned type)
 {
    menu_handle_t *menu = menu_driver_get_ptr();
-   driver_t *driver = driver_get_ptr();
 
    if (!menu)
       return -1;

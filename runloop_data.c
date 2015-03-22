@@ -267,7 +267,6 @@ static int rarch_main_data_http_iterate_poll(http_handle_t *http)
 static int cb_image_menu_wallpaper_upload(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
-   driver_t *driver    = driver_get_ptr();
 
    if (!nbio || !data)
       return -1;

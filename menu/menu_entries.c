@@ -87,7 +87,6 @@ int menu_entries_push_list(menu_handle_t *menu,
       unsigned type, unsigned setting_flags)
 {
    rarch_setting_t *setting = NULL;
-   driver_t *driver         = driver_get_ptr();
    settings_t *settings     = config_get_ptr();
    
    settings_list_free(menu->list_settings);
