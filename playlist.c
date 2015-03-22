@@ -155,8 +155,8 @@ void content_playlist_push(content_playlist_t *playlist,
          (playlist->cap - 1) * sizeof(content_playlist_entry_t));
 
    playlist->entries[0].path      = path ? strdup(path) : NULL;
-   playlist->entries[0].core_path = strdup(core_path);
-   playlist->entries[0].core_name = strdup(core_name);
+   playlist->entries[0].core_path = core_path ? strdup(core_path) : NULL;
+   playlist->entries[0].core_name = core_name ? strdup(core_name) : NULL;
    playlist->size++;
 }
 
