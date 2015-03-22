@@ -1121,9 +1121,6 @@ static int action_ok_video_resolution(const char *path,
 
    rarch_main_command(RARCH_CMD_REINIT);
 #else
-   driver_t *driver = driver_get_ptr();
-
-
    if (video_driver_get_video_output_size(&width, &height))
       video_driver_set_video_mode(width, height, true);
 #endif

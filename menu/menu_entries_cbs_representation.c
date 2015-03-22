@@ -506,7 +506,6 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
       char *path_buf, size_t path_buf_size)
 {
    unsigned width = 0, height = 0;
-   driver_t *driver = driver_get_ptr();
 
    *w = 19;
    *type_str = '\0';
