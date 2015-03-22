@@ -157,8 +157,7 @@ void menu_navigation_descend_alphabet(menu_navigation_t *nav, size_t *ptr_out)
       i--;
    *ptr_out = nav->scroll.indices.list[i - 1];
 
-   if (driver->menu_ctx && driver->menu_ctx->navigation_descend_alphabet)
-      driver->menu_ctx->navigation_descend_alphabet(ptr_out);
+   menu_driver_navigation_descend_alphabet(ptr_out);
 }
 
 /**
@@ -189,6 +188,5 @@ void menu_navigation_ascend_alphabet(menu_navigation_t *nav, size_t *ptr_out)
       i++;
    *ptr_out = nav->scroll.indices.list[i + 1];
 
-   if (driver->menu_ctx && driver->menu_ctx->navigation_descend_alphabet)
-      driver->menu_ctx->navigation_descend_alphabet(ptr_out);
+   menu_driver_navigation_ascend_alphabet(ptr_out);
 }

@@ -319,6 +319,10 @@ void menu_driver_populate_entries(const char *path, const char *label,
 
 bool menu_driver_load_background(void *data);
 
+void  menu_driver_navigation_descend_alphabet(size_t *);
+
+void  menu_driver_navigation_ascend_alphabet(size_t *);
+
 #ifdef __cplusplus
 }
 #endif

@@ -336,3 +336,23 @@ bool menu_driver_load_background(void *data)
 
    return false;
 }
+
+void  menu_driver_navigation_descend_alphabet(size_t *ptr_out)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return;
+
+   if (driver->menu_ctx && driver->menu_ctx->navigation_descend_alphabet)
+      driver->menu_ctx->navigation_descend_alphabet(ptr_out);
+}
+
+void  menu_driver_navigation_ascend_alphabet(size_t *ptr_out)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return;
+
+   if (driver->menu_ctx && driver->menu_ctx->navigation_ascend_alphabet)
+      driver->menu_ctx->navigation_ascend_alphabet(ptr_out);
+}
