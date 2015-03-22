@@ -171,7 +171,6 @@ static bool input_overlay_load_desc_image(input_overlay_t *ol,
    bool ret = true;
    char overlay_desc_key[64], overlay_desc_image_key[64],
         image_path[PATH_MAX_LENGTH];
-   struct string_list *list = NULL;
 
    snprintf(overlay_desc_key, sizeof(overlay_desc_key),
          "overlay%u_desc%u", ol_idx, desc_idx);
@@ -192,8 +191,6 @@ static bool input_overlay_load_desc_image(input_overlay_t *ol,
 
    input_overlay->pos ++;
 
-   if (list)
-      string_list_free(list);
    return ret;
 }
 
