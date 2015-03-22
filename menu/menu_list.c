@@ -451,8 +451,7 @@ int menu_list_populate_generic(file_list_t *list, const char *path,
    menu_entries_build_scroll_indices(list);
    menu_entries_refresh(list);
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }

@@ -264,8 +264,7 @@ static int deferred_push_core_information(void *data, void *userdata,
             "No information available.", "",
             MENU_SETTINGS_CORE_OPTION_NONE, 0);
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -542,9 +541,7 @@ static int deferred_push_rdb_entry_detail(void *data, void *userdata,
             "No information available.", "",
             0, 0);
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path,
-            str_list->elems[0].data, type);
+   menu_driver_populate_entries(path, str_list->elems[0].data, type);
 
    ret = 0;
 
@@ -911,8 +908,7 @@ static int deferred_push_core_information(void *data, void *userdata,
             "No information available.", "",
             MENU_SETTINGS_CORE_OPTION_NONE, 0);
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -934,8 +930,7 @@ static int deferred_push_performance_counters(void *data, void *userdata,
    menu_list_push(list, "Core Counters", "core_counters",
          MENU_SETTING_ACTION, 0);
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -961,8 +956,7 @@ static int deferred_push_video_shader_parameters_common(void *data, void *userda
             base_parameter + i, 0);
    }
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -1059,8 +1053,7 @@ static int deferred_push_settings(void *data, void *userdata,
       }
    }
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -1134,8 +1127,7 @@ static int deferred_push_settings_subgroup(void *data, void *userdata,
             group_label, menu_entries_setting_set_flags(setting), 0);
    }
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -1180,8 +1172,7 @@ static int deferred_push_video_options(void *data, void *userdata,
          0, 0);
 #endif
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -1241,8 +1232,7 @@ static int deferred_push_shader_options(void *data, void *userdata,
             MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0);
    }
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -1279,8 +1269,7 @@ static int deferred_push_options(void *data, void *userdata,
          MENU_SETTING_ACTION, 0);
 #endif
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -1304,8 +1293,7 @@ static int deferred_push_management_options(void *data, void *userdata,
          MENU_SETTING_ACTION, 0);
 #endif
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -1350,8 +1338,7 @@ static int push_perfcounter_generic(
    menu_list_clear(list);
    push_perfcounter(menu, list, counters, num, ident);
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -1415,8 +1402,7 @@ static int deferred_push_core_cheat_options(void *data, void *userdata,
       menu_list_push(list, cheat_label, "", MENU_SETTINGS_CHEAT_BEGIN + i, 0);
    }
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -1461,8 +1447,7 @@ static int deferred_push_core_input_remapping_options(void *data, void *userdata
       }
    }
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -1495,8 +1480,7 @@ static int deferred_push_core_options(void *data, void *userdata,
       menu_list_push(list, "No options available.", "",
                MENU_SETTINGS_CORE_OPTION_NONE, 0);
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -1520,8 +1504,7 @@ static int deferred_push_disk_options(void *data, void *userdata,
    menu_list_push(list, "Disk Image Append", "disk_image_append",
          MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0);
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }

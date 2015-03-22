@@ -313,3 +313,14 @@ void menu_driver_toggle(bool latch)
    if (driver->menu_ctx && driver->menu_ctx->toggle)
       driver->menu_ctx->toggle(latch);
 }
+
+void menu_driver_populate_entries(const char *path, const char *label,
+         unsigned k)
+{
+   driver_t *driver     = driver_get_ptr();
+   if (!driver)
+      return;
+
+   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
+      driver->menu_ctx->populate_entries(path, label, k);
+}

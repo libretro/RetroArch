@@ -112,8 +112,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             setting->name, menu_entries_setting_set_flags(setting), 0);
    }
 
-   if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-      driver->menu_ctx->populate_entries(path, label, type);
+   menu_driver_populate_entries(path, label, type);
 
    return 0;
 }
@@ -339,13 +338,11 @@ int menu_entries_parse_list(
 
    if (!*dir)
    {
-      driver_t *driver = driver_get_ptr();
-
       menu_entries_parse_drive_list(list);
-      if (driver->menu_ctx && driver->menu_ctx->populate_entries)
-         driver->menu_ctx->populate_entries(dir, label, type);
+      menu_driver_populate_entries(dir, label, type);
       return 0;
    }
+
 #if defined(GEKKO) && defined(HW_RVL)
    LWP_MutexLock(gx_device_mutex);
    device = gx_get_device_from_path(dir);

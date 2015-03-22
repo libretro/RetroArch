@@ -314,6 +314,9 @@ void menu_driver_toggle(bool latch);
 
 void menu_driver_render_messagebox(const char *msg);
 
+void menu_driver_populate_entries(const char *path, const char *label,
+         unsigned k);
+
 #ifdef __cplusplus
 }
 #endif
